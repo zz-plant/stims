@@ -696,45 +696,55 @@ bDarkenCenter=1
   test.each([
     ['init', 'init_1=echo_orient=3;'],
     ['per-frame', 'per_frame_1=echo_orient=3;'],
-  ])('applies echo_orient program aliases to runtime post state in %s programs', (_label, programLine) => {
-    const preset = compileMilkdropPresetSource(
-      `
+  ])(
+    'applies echo_orient program aliases to runtime post state in %s programs',
+    (_label, programLine) => {
+      const preset = compileMilkdropPresetSource(
+        `
 title=Echo Orientation VM Alias
 video_echo=1
 ${programLine}
         `.trim(),
-      { id: 'echo-orientation-vm-alias' },
-    );
+        { id: 'echo-orientation-vm-alias' },
+      );
 
-    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+      const frameState = createMilkdropVM(preset).step(
+        makeSignals({ frame: 1 }),
+      );
 
-    expect(frameState.post.videoEchoEnabled).toBe(true);
-    expect(frameState.post.videoEchoOrientation).toBe(3);
-    expect(frameState.variables.video_echo_orientation).toBeCloseTo(3, 6);
-    expect(frameState.variables.echo_orient).toBeUndefined();
-  });
+      expect(frameState.post.videoEchoEnabled).toBe(true);
+      expect(frameState.post.videoEchoOrientation).toBe(3);
+      expect(frameState.variables.video_echo_orientation).toBeCloseTo(3, 6);
+      expect(frameState.variables.echo_orient).toBeUndefined();
+    },
+  );
 
   test.each([
     ['init', 'init_1=echo_orient=echo_orient+1; q1=echo_orient;'],
     ['per-frame', 'per_frame_1=echo_orient=echo_orient+1; q1=echo_orient;'],
-  ])('keeps echo_orient self-references and follow-up reads normalized in %s programs', (_label, programLine) => {
-    const preset = compileMilkdropPresetSource(
-      `
+  ])(
+    'keeps echo_orient self-references and follow-up reads normalized in %s programs',
+    (_label, programLine) => {
+      const preset = compileMilkdropPresetSource(
+        `
 title=Echo Orientation VM Self Reference
 video_echo=1
 video_echo_orientation=2
 ${programLine}
         `.trim(),
-      { id: 'echo-orientation-vm-self-reference' },
-    );
+        { id: 'echo-orientation-vm-self-reference' },
+      );
 
-    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+      const frameState = createMilkdropVM(preset).step(
+        makeSignals({ frame: 1 }),
+      );
 
-    expect(frameState.post.videoEchoOrientation).toBe(3);
-    expect(frameState.variables.video_echo_orientation).toBeCloseTo(3, 6);
-    expect(frameState.variables.q1).toBeCloseTo(3, 6);
-    expect(frameState.variables.echo_orient).toBeUndefined();
-  });
+      expect(frameState.post.videoEchoOrientation).toBe(3);
+      expect(frameState.variables.video_echo_orientation).toBeCloseTo(3, 6);
+      expect(frameState.variables.q1).toBeCloseTo(3, 6);
+      expect(frameState.variables.echo_orient).toBeUndefined();
+    },
+  );
 
   test('builds motion vector overlays from per-pixel transforms', () => {
     const preset = compileMilkdropPresetSource(

@@ -48,11 +48,12 @@ describe('fallback state machine - valid transitions', () => {
     expect(isValidTransition(from, to)).toBe(true);
   });
 
-  test.each(
-    validTransitions,
-  )('transition from %s to %s returns the target state', (from, to) => {
-    expect(transition(from, to)).toBe(to);
-  });
+  test.each(validTransitions)(
+    'transition from %s to %s returns the target state',
+    (from, to) => {
+      expect(transition(from, to)).toBe(to);
+    },
+  );
 });
 
 describe('fallback state machine - invalid transitions', () => {
@@ -93,19 +94,21 @@ describe('fallback state machine - invalid transitions', () => {
     expect(isValidTransition(from, to)).toBe(false);
   });
 
-  test.each(
-    invalidTransitions,
-  )('transition from %s to %s throws', (from, to) => {
-    expect(() => transition(from, to)).toThrow(
-      `Invalid fallback state transition: ${from} → ${to}`,
-    );
-  });
+  test.each(invalidTransitions)(
+    'transition from %s to %s throws',
+    (from, to) => {
+      expect(() => transition(from, to)).toThrow(
+        `Invalid fallback state transition: ${from} → ${to}`,
+      );
+    },
+  );
 
-  test.each(
-    invalidTransitions,
-  )('getInvalidTransitionMessage for %s → %s returns reason', (from, to, reason) => {
-    expect(getInvalidTransitionMessage(from, to)).toBe(reason);
-  });
+  test.each(invalidTransitions)(
+    'getInvalidTransitionMessage for %s → %s returns reason',
+    (from, to, reason) => {
+      expect(getInvalidTransitionMessage(from, to)).toBe(reason);
+    },
+  );
 });
 
 describe('fallback state machine - self-transitions on valid states', () => {

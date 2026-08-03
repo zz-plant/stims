@@ -1146,7 +1146,8 @@ body[data-page="workspace"][data-live="true"] {
    * and slider). Give them shell-consistent styling so the legacy controls
    * match the rest of the live chrome.
    */
-  .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
     .milkdrop-overlay__toolbar
     button {
     min-height: 36px;

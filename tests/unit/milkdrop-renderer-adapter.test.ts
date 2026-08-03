@@ -1892,12 +1892,11 @@ video_echo=1
     );
   });
 
-  test.each([
-    'webgl',
-    'webgpu',
-  ] as const)('routes video echo orientation through the feedback composite state on %s', (backend) => {
-    const preset = compileMilkdropPresetSource(
-      `
+  test.each(['webgl', 'webgpu'] as const)(
+    'routes video echo orientation through the feedback composite state on %s',
+    (backend) => {
+      const preset = compileMilkdropPresetSource(
+        `
 title=Feedback Orientation Routing
 video_echo=1
 video_echo_alpha=0.42
@@ -1906,51 +1905,52 @@ warp_shader=warp=0.6
 comp_shader=mix=0.25
 video_echo_orientation=3
         `.trim(),
-      { id: `feedback-orientation-routing-${backend}` },
-    );
+        { id: `feedback-orientation-routing-${backend}` },
+      );
 
-    const frameState = createMilkdropVM(preset).step(makeSignals());
-    const compositeStates: MilkdropFeedbackCompositeState[] = [];
-    const feedback = {
-      applyCompositeState(state: MilkdropFeedbackCompositeState) {
-        compositeStates.push(state);
-      },
-      render() {
-        return true;
-      },
-      swap() {},
-      resize() {},
-      dispose() {},
-    } as MilkdropFeedbackManager;
+      const frameState = createMilkdropVM(preset).step(makeSignals());
+      const compositeStates: MilkdropFeedbackCompositeState[] = [];
+      const feedback = {
+        applyCompositeState(state: MilkdropFeedbackCompositeState) {
+          compositeStates.push(state);
+        },
+        render() {
+          return true;
+        },
+        swap() {},
+        resize() {},
+        dispose() {},
+      } as MilkdropFeedbackManager;
 
-    const adapter = createMilkdropRendererAdapterCore({
-      scene: new Scene(),
-      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
-      renderer: {
-        getSize: (target: Vector2) => target.set(320, 180),
-        render() {},
-        setRenderTarget() {},
-      },
-      backend,
-      createFeedbackManager: () => feedback,
-    });
+      const adapter = createMilkdropRendererAdapterCore({
+        scene: new Scene(),
+        camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+        renderer: {
+          getSize: (target: Vector2) => target.set(320, 180),
+          render() {},
+          setRenderTarget() {},
+        },
+        backend,
+        createFeedbackManager: () => feedback,
+      });
 
-    adapter.attach();
-    expect(
-      adapter.render({
-        frameState,
-        blendState: null,
-      }),
-    ).toBe(true);
+      adapter.attach();
+      expect(
+        adapter.render({
+          frameState,
+          blendState: null,
+        }),
+      ).toBe(true);
 
-    expect(compositeStates[0]).toMatchObject({
-      mixAlpha: 0.25,
-      videoEchoAlpha: 0.42,
-      videoEchoOrientation: 3,
-      zoom: frameState.post.videoEchoZoom,
-      warpScale: frameState.post.shaderControls.warpScale,
-    });
-  });
+      expect(compositeStates[0]).toMatchObject({
+        mixAlpha: 0.25,
+        videoEchoAlpha: 0.42,
+        videoEchoOrientation: 3,
+        zoom: frameState.post.videoEchoZoom,
+        warpScale: frameState.post.shaderControls.warpScale,
+      });
+    },
+  );
 
   test('routes red-blue stereo flag through the feedback composite state', async () => {
     const preset = compileMilkdropPresetSource(

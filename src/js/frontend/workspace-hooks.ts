@@ -314,6 +314,17 @@ export function useWorkspaceSessionState({
       return;
     }
 
+    // This effect re-runs whenever the engine snapshot changes — notably when
+    // `catalogEntries` lands, which on slower devices happens well before
+    // `activePresetId` catches up. Without an in-flight check the same preset
+    // gets requested again while the first request is still compiling, and the
+    // navigation controller discards the earlier one as `superseded` after it
+    // has already paid for the fetch and compile. The ref is always cleared on
+    // success, failure, or the 10s timeout below, so this cannot wedge.
+    if (pendingPresetIdRef.current === requestedPresetId) {
+      return;
+    }
+
     pendingPresetIdRef.current = requestedPresetId;
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
