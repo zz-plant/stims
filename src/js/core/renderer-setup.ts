@@ -166,6 +166,27 @@ export async function initRenderer(
     };
   };
 
+  // A canvas element permanently binds the first rendering-context type
+  // requested from it. Once a WebGPURenderer has been constructed on the
+  // canvas, `getContext('webgl2')` returns null there forever — so a WebGL
+  // fallback after a failed WebGPU attempt must run on a fresh element, or
+  // the renderer silently gets no context and the stage stays black.
+  let webgpuBoundToCanvas = false;
+
+  const resolveFallbackCanvas = (): HTMLCanvasElement => {
+    if (!webgpuBoundToCanvas || typeof canvas.cloneNode !== 'function') {
+      return canvas;
+    }
+    const replacement = canvas.cloneNode(false) as HTMLCanvasElement;
+    if (canvas.parentNode) {
+      canvas.parentNode.replaceChild(replacement, canvas);
+    }
+    console.info(
+      'Replaced WebGPU-bound canvas with a fresh element for the WebGL fallback.',
+    );
+    return replacement;
+  };
+
   const fallbackToWebGL = (
     reason: string,
     error?: unknown,
@@ -181,7 +202,7 @@ export async function initRenderer(
     });
 
     const renderer = createWebGLRenderer({
-      canvas,
+      canvas: resolveFallbackCanvas(),
       antialias,
       alpha,
       powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
@@ -245,6 +266,10 @@ export async function initRenderer(
 
     try {
       const WebGPURendererConstructor = await loadWebGPURenderer();
+      // From this point the canvas may carry a `webgpu` context — even a
+      // timed-out init keeps running in the background and can bind it later,
+      // so any fallback below must treat the canvas as WebGPU-bound.
+      webgpuBoundToCanvas = true;
       const renderer = new WebGPURendererConstructor({
         canvas,
         antialias,

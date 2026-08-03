@@ -281,6 +281,20 @@ async function createRendererHandle(
   }
   let initResult: RendererInitResult = initialResult;
 
+  // The WebGL fallback may replace a WebGPU-bound canvas with a fresh
+  // element (a canvas permanently binds its first context type), so the
+  // renderer's domElement — not the canvas passed in — is the live one.
+  const resolveLiveCanvas = (
+    result: RendererInitResult,
+    fallback: HTMLCanvasElement,
+  ): HTMLCanvasElement => {
+    const dom = (result.renderer as { domElement?: HTMLCanvasElement })
+      .domElement;
+    // Duck-typed: HTMLCanvasElement is not a global in every test DOM.
+    return dom && typeof dom.getContext === 'function' ? dom : fallback;
+  };
+  let activeCanvas = resolveLiveCanvas(initResult, canvas);
+
   let activeOptions = options;
   let activeViewport: RendererViewport | undefined;
   let activeRenderer: RendererInstance = initResult.renderer;
@@ -305,7 +319,7 @@ async function createRendererHandle(
     const previousRenderer = activeRenderer;
     const previousBackend = initResult.backend;
     const nextResult = await initRendererImpl(
-      canvas,
+      activeCanvas,
       buildSettings(
         {
           ...activeOptions,
@@ -334,6 +348,7 @@ async function createRendererHandle(
     previousRenderer.setAnimationLoop?.(null);
     previousRenderer.dispose?.();
     activeRenderer = nextResult.renderer;
+    activeCanvas = resolveLiveCanvas(nextResult, activeCanvas);
     applyFacadeOverrides?.(activeRenderer);
     applyPoolSettings(
       activeRenderer,
@@ -458,7 +473,11 @@ async function createRendererHandle(
     renderer,
     backend: initResult.backend,
     info: initResult,
-    canvas,
+    // Live canvas: a WebGL fallback or renderer recreation can swap the
+    // element, and the pool's attach/detach must follow the swap.
+    get canvas() {
+      return activeCanvas;
+    },
     getRuntimeControls: () => activeRuntimeControls,
     applySettings: (nextOptions, viewport) => {
       if (nextOptions) {
