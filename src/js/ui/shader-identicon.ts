@@ -1,5 +1,10 @@
 /**
  * WebGL 2D/3D Signed Distance Field (SDF) Parametric Icon Renderer
+ *
+ * Every identicon draws through ONE shared offscreen WebGL context and blits
+ * the frame into its own 2D canvas. Browsers cap concurrent WebGL contexts
+ * per page (~8–16) and silently evict the oldest, so per-identicon contexts
+ * could evict the main visualizer's context; 2D canvases have no such cap.
  */
 
 const VERTEX_SHADER_SOURCE = `
@@ -77,9 +82,14 @@ void main() {
   float glow = 0.025 / (abs(d) + 0.012) * (0.7 + totalPeak * 0.8);
 
   vec3 baseColor = 0.5 + 0.5 * cos(6.28318 * (hue / 360.0 + vec3(0.0, 0.33, 0.67)));
-  vec3 finalColor = baseColor * (alpha + glow);
 
-  gl_FragColor = vec4(finalColor, clamp(alpha + glow, 0.0, 1.0));
+  // Historical note: this shader originally wrote straight alpha into a
+  // premultiplied-alpha canvas, so the compositor contributed color (not
+  // color * alpha) — a brightness boost the identicon look depends on. The
+  // shared-context blit composites correctly, so reproduce that exact
+  // contribution algebraically: color' * alpha' == baseColor * (alpha + glow).
+  float intensity = alpha + glow;
+  gl_FragColor = vec4(baseColor * max(intensity, 1.0), clamp(intensity, 0.0, 1.0));
 }
 `;
 
@@ -95,91 +105,126 @@ export interface ShaderIdenticonRenderState {
   timeSec: number;
 }
 
+type SharedIdenticonGl = {
+  canvas: HTMLCanvasElement;
+  gl: WebGLRenderingContext;
+  program: WebGLProgram;
+  seedHashLocation: WebGLUniformLocation | null;
+  audioBassLocation: WebGLUniformLocation | null;
+  audioMidLocation: WebGLUniformLocation | null;
+  audioTrebleLocation: WebGLUniformLocation | null;
+  modeLocation: WebGLUniformLocation | null;
+  timeLocation: WebGLUniformLocation | null;
+  resolutionLocation: WebGLUniformLocation | null;
+};
+
+/** undefined = not yet attempted, null = attempted and unavailable. */
+let sharedGl: SharedIdenticonGl | null | undefined;
+
+function compileShader(
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string,
+): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function createSharedGl(): SharedIdenticonGl | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl', {
+    alpha: true,
+    antialias: true,
+    // The shader writes straight (non-premultiplied) alpha, and glow lets
+    // color exceed alpha. A premultiplied buffer clamps that on the 2D-canvas
+    // blit and unpremultiplies into blown-out white — request straight alpha
+    // so drawImage carries the shader's output through unchanged.
+    premultipliedAlpha: false,
+  });
+  if (!gl) return null;
+
+  const vertShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE);
+  const fragShader = compileShader(
+    gl,
+    gl.FRAGMENT_SHADER,
+    FRAGMENT_SHADER_SOURCE,
+  );
+  if (!vertShader || !fragShader) return null;
+
+  const program = gl.createProgram();
+  if (!program) return null;
+  gl.attachShader(program, vertShader);
+  gl.attachShader(program, fragShader);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    return null;
+  }
+
+  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL API method call gl.useProgram, not a React hook
+  gl.useProgram(program);
+
+  // The quad geometry binds once and persists — this context runs only this
+  // program, so no per-draw rebinding is needed.
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+    gl.STATIC_DRAW,
+  );
+  const posAttr = gl.getAttribLocation(program, 'a_position');
+  gl.enableVertexAttribArray(posAttr);
+  gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+
+  return {
+    canvas,
+    gl,
+    program,
+    seedHashLocation: gl.getUniformLocation(program, 'u_seed_hash'),
+    audioBassLocation: gl.getUniformLocation(program, 'u_audio_bass'),
+    audioMidLocation: gl.getUniformLocation(program, 'u_audio_mid'),
+    audioTrebleLocation: gl.getUniformLocation(program, 'u_audio_treble'),
+    modeLocation: gl.getUniformLocation(program, 'u_mode'),
+    timeLocation: gl.getUniformLocation(program, 'u_time'),
+    resolutionLocation: gl.getUniformLocation(program, 'u_resolution'),
+  };
+}
+
+function getSharedGl(): SharedIdenticonGl | null {
+  if (sharedGl === undefined) {
+    sharedGl = createSharedGl();
+  } else if (sharedGl?.gl.isContextLost()) {
+    // The browser reclaimed the shared context (context-cap pressure or GPU
+    // reset). Rebuild on a fresh canvas; the old one is unrecoverable.
+    sharedGl = createSharedGl();
+  }
+  return sharedGl;
+}
+
 export class ShaderIdenticonRenderer {
-  private gl: WebGLRenderingContext | null = null;
-  private program: WebGLProgram | null = null;
-  private seedHashLocation: WebGLUniformLocation | null = null;
-  private audioBassLocation: WebGLUniformLocation | null = null;
-  private audioMidLocation: WebGLUniformLocation | null = null;
-  private audioTrebleLocation: WebGLUniformLocation | null = null;
-  private modeLocation: WebGLUniformLocation | null = null;
-  private timeLocation: WebGLUniformLocation | null = null;
-  private resolutionLocation: WebGLUniformLocation | null = null;
+  private ctx2d: CanvasRenderingContext2D | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
-    this.initWebGL();
-  }
-
-  private initWebGL() {
-    const gl = this.canvas.getContext('webgl', {
-      alpha: true,
-      antialias: true,
-    });
-    if (!gl) return;
-    this.gl = gl;
-
-    const vertShader = this.compileShader(
-      gl.VERTEX_SHADER,
-      VERTEX_SHADER_SOURCE,
-    );
-    const fragShader = this.compileShader(
-      gl.FRAGMENT_SHADER,
-      FRAGMENT_SHADER_SOURCE,
-    );
-    if (!vertShader || !fragShader) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      return;
-    }
-
-    this.program = program;
-    // biome-ignore lint/correctness/useHookAtTopLevel: WebGL API method call gl.useProgram, not a React hook
-    gl.useProgram(program);
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-
-    const posAttr = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(posAttr);
-    gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
-
-    this.seedHashLocation = gl.getUniformLocation(program, 'u_seed_hash');
-    this.audioBassLocation = gl.getUniformLocation(program, 'u_audio_bass');
-    this.audioMidLocation = gl.getUniformLocation(program, 'u_audio_mid');
-    this.audioTrebleLocation = gl.getUniformLocation(program, 'u_audio_treble');
-    this.modeLocation = gl.getUniformLocation(program, 'u_mode');
-    this.timeLocation = gl.getUniformLocation(program, 'u_time');
-    this.resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-  }
-
-  private compileShader(type: number, source: string): WebGLShader | null {
-    const gl = this.gl;
-    if (!gl) return null;
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      gl.deleteShader(shader);
-      return null;
-    }
-    return shader;
+    this.ctx2d = this.canvas.getContext('2d');
   }
 
   public render(state: ShaderIdenticonRenderState) {
-    const gl = this.gl;
-    if (!gl || !this.program) return;
+    const ctx2d = this.ctx2d;
+    if (!ctx2d) return;
+    const shared = getSharedGl();
+    if (!shared) return;
+
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    if (width === 0 || height === 0) return;
 
     let hash = 0;
     for (let i = 0; i < state.seed.length; i++) {
@@ -193,29 +238,35 @@ export class ShaderIdenticonRenderer {
     const treble = state.multiBand?.treble ?? state.audioPeak;
     const mode = state.mode === '3d-polyhedron' ? 1.0 : 0.0;
 
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    const { gl, canvas: glCanvas, program } = shared;
+    if (glCanvas.width !== width || glCanvas.height !== height) {
+      glCanvas.width = width;
+      glCanvas.height = height;
+    }
+
+    gl.viewport(0, 0, width, height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     // biome-ignore lint/correctness/useHookAtTopLevel: WebGL API method call gl.useProgram, not a React hook
-    gl.useProgram(this.program);
-    gl.uniform1f(this.seedHashLocation, normalizedHash);
-    gl.uniform1f(this.audioBassLocation, bass);
-    gl.uniform1f(this.audioMidLocation, mid);
-    gl.uniform1f(this.audioTrebleLocation, treble);
-    gl.uniform1f(this.modeLocation, mode);
-    gl.uniform1f(this.timeLocation, state.timeSec);
-    gl.uniform2f(
-      this.resolutionLocation,
-      this.canvas.width,
-      this.canvas.height,
-    );
+    gl.useProgram(program);
+    gl.uniform1f(shared.seedHashLocation, normalizedHash);
+    gl.uniform1f(shared.audioBassLocation, bass);
+    gl.uniform1f(shared.audioMidLocation, mid);
+    gl.uniform1f(shared.audioTrebleLocation, treble);
+    gl.uniform1f(shared.modeLocation, mode);
+    gl.uniform1f(shared.timeLocation, state.timeSec);
+    gl.uniform2f(shared.resolutionLocation, width, height);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // Blit synchronously in the same task as the draw — once control returns
+    // to the browser, the shared drawing buffer may be cleared.
+    ctx2d.clearRect(0, 0, width, height);
+    ctx2d.drawImage(glCanvas, 0, 0, width, height, 0, 0, width, height);
   }
 
   public destroy() {
-    this.gl = null;
-    this.program = null;
+    this.ctx2d = null;
   }
 }
