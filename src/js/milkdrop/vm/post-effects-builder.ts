@@ -266,7 +266,7 @@ export function deriveMilkdropPostprocessingProfile({
   );
   const bloomThreshold = clamp(
     0.9 - audioDrive * 0.18 - visualDrive * 0.1,
-    0.45,
+    0.6,
     0.98,
   );
   const filmNoise =
@@ -292,7 +292,7 @@ export function deriveMilkdropPostprocessingProfile({
             visualDrive * 0.06 +
             (post.videoEchoEnabled ? post.videoEchoAlpha * 0.08 : 0),
           0.72,
-          0.96,
+          0.9,
         )
       : 0;
   const vignetteStrength =

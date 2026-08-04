@@ -154,16 +154,6 @@ export function installMilkdropRuntimeKeybindings({
       return;
     }
 
-    if (event.key === 'm' || event.key === 'M') {
-      overlay.toggleOpen();
-      event.preventDefault();
-      return;
-    }
-    if (event.key === '?') {
-      overlay.toggleShortcutHud();
-      event.preventDefault();
-      return;
-    }
     if (event.key === 'Escape' && overlay.isOpen()) {
       overlay.toggleOpen(false);
       event.preventDefault();
@@ -172,22 +162,15 @@ export function installMilkdropRuntimeKeybindings({
     if (event.key === 'Escape') {
       overlay.toggleShortcutHud(false);
     }
-    if (event.key === 'n') {
-      selectAdjacentPreset(1);
-      event.preventDefault();
-      return;
-    }
-    if (event.key === 'p') {
-      selectAdjacentPreset(-1);
-      event.preventDefault();
-      return;
-    }
+    // n, p, f, b, e, m, ?, 1-5 are handled by the React shell's keyboard
+    // shortcuts (useKeyboardShortcuts). Skip them here to avoid dual-fire
+    // races where both handlers trigger conflicting preset switches.
     if (event.key === 'r') {
       selectRandomPreset();
       event.preventDefault();
       return;
     }
-    if (event.key === 'b' || event.key === 'Backspace') {
+    if (event.key === 'Backspace') {
       goBackPreset();
       event.preventDefault();
       return;
@@ -252,22 +235,6 @@ export function installMilkdropRuntimeKeybindings({
         digits: 3,
       },
       e: {
-        key: 'wave_a',
-        delta: -0.04,
-        min: 0,
-        max: 1,
-        label: 'Wave alpha',
-        digits: 3,
-      },
-      E: {
-        key: 'wave_a',
-        delta: 0.04,
-        min: 0,
-        max: 1,
-        label: 'Wave alpha',
-        digits: 3,
-      },
-      q: {
         key: 'video_echo_zoom',
         delta: -0.01,
         min: 0.85,

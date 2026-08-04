@@ -20,7 +20,7 @@ export function shouldAutoAdvancePreset({
   return (
     autoplay &&
     catalogSize > 1 &&
-    now - lastPresetSwitchAt > Math.max(12000, blendDuration * 1000 + 6000)
+    now - lastPresetSwitchAt > Math.max(30000, blendDuration * 1000 + 6000)
   );
 }
 

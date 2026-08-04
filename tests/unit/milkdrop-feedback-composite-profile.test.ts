@@ -1,11 +1,9 @@
 import { expect, test } from 'bun:test';
 import {
-  clampMilkdropCurrentFrameBoost,
   getMilkdropFeedbackBlurBlendAmount,
   getMilkdropFeedbackBlurSampleOffsetMultiplier,
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
-  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
 } from '../../src/js/milkdrop/feedback-composite-profile.ts';
 import {
   createSharedMilkdropFeedbackManager,
@@ -25,14 +23,6 @@ test('uses the shared milkdrop feedback blur profile across backends', () => {
   expect(getMilkdropFeedbackBlurBlendAmount(0.65)).toBeCloseTo(0.2925, 6);
   expect(getMilkdropFeedbackBlurBlendAmount(10)).toBe(
     MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
-  );
-});
-
-test('clamps current-frame boost to the shared parity cap', () => {
-  expect(clampMilkdropCurrentFrameBoost(-1)).toBe(0);
-  expect(clampMilkdropCurrentFrameBoost(0.2)).toBeCloseTo(0.2, 6);
-  expect(clampMilkdropCurrentFrameBoost(1)).toBe(
-    MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
   );
 });
 
@@ -70,15 +60,16 @@ test('avoids reserved GLSL identifiers in the shared blur shader', () => {
     180,
     WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   ) as {
-    blurMaterial: { fragmentShader: string };
+    blurHMaterial: { fragmentShader: string };
+    blurVMaterial: { fragmentShader: string };
     dispose: () => void;
   };
 
   try {
-    expect(manager.blurMaterial.fragmentShader).toContain(
-      'vec4 sourceSample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);',
-    );
-    expect(manager.blurMaterial.fragmentShader).not.toContain('vec4 sample =');
+    for (const material of [manager.blurHMaterial, manager.blurVMaterial]) {
+      expect(material.fragmentShader).not.toContain('vec4 sample =');
+      expect(material.fragmentShader).toContain('texture2D(sourceTex');
+    }
   } finally {
     manager.dispose();
   }

@@ -36,8 +36,6 @@ import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-exec
 import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
-  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
-  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
 import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
@@ -51,10 +49,6 @@ import type {
   MilkdropFeedbackManager,
   MilkdropShaderProgramPayload,
 } from './types';
-
-export type MilkdropCompositeShaderConfig = {
-  enhancedFeedbackBlur?: boolean;
-};
 
 export function resolveMilkdropBlurShaderRanges(
   variables: Readonly<Record<string, number>> | undefined,
@@ -217,52 +211,6 @@ function resolveAuxTextureName(source: number) {
     return 'perlin';
   }
   return null;
-}
-
-export function createCompositeFragmentShaderVariant(
-  source: string,
-  { enhancedFeedbackBlur = false }: MilkdropCompositeShaderConfig = {},
-) {
-  const blurBlock = enhancedFeedbackBlur
-    ? `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
-            vec2 sampleOffset = texelSize * (0.65 + feedbackSoftness * 0.6);
-            vec3 softened = (
-              previous.rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + sampleOffset, textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - sampleOffset, textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, -sampleOffset.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(-sampleOffset.x, sampleOffset.y), textureWrap)).rgb
-            ) / 9.0;
-            previousColor = mix(
-              previousColor,
-              softened,
-              clamp(feedbackSoftness * 0.6, 0.0, 0.65)
-            );
-          }`
-    : `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
-            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
-            vec3 softened = (
-              previous.rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
-            ) / 5.0;
-            previousColor = mix(
-              previousColor,
-              softened,
-              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
-            );
-          }`;
-
-  return source.replace(
-    /if \(feedbackSoftness > 0\.01\) \{[\s\S]*?clamp\(feedbackSoftness \* 0\.45, 0\.0, 0\.5\)\s*\);\s*\}/,
-    blurBlock,
-  );
 }
 
 const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
@@ -788,7 +736,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     WebGLRenderTarget,
     WebGLRenderTarget,
   ];
-  readonly blurMaterial: ShaderMaterial;
+  readonly blurHTargets: [
+    WebGLRenderTarget,
+    WebGLRenderTarget,
+    WebGLRenderTarget,
+  ];
+  readonly blurHMaterial: ShaderMaterial;
+  readonly blurVMaterial: ShaderMaterial;
   readonly blurQuad: Mesh;
   readonly blurScene: Scene;
   readonly sceneResolutionScale: number;
@@ -799,6 +753,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   currentFeedbackResolutionScale: number;
   viewportWidth: number;
   viewportHeight: number;
+  private blurEnabled = false;
   private adaptiveResizeFrameId: number | null = null;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
@@ -859,19 +814,37 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         samples: 1,
       }),
     ];
-    this.blurMaterial = new ShaderMaterial({
+    this.blurHTargets = [
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+    ];
+    const blurVertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+    this.blurHMaterial = new ShaderMaterial({
       uniforms: {
         sourceTex: { value: null },
-        texelSize: { value: [0, 0] },
+        texelSize: { value: new Vector2(1, 1) },
         radius: { value: 2 },
       },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
+      vertexShader: blurVertexShader,
       fragmentShader: `
         uniform sampler2D sourceTex;
         uniform vec2 texelSize;
@@ -881,20 +854,42 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           vec4 result = vec4(0.0);
           float totalWeight = 0.0;
           float r = radius;
-          for (float y = -r; y <= r; y += 1.0) {
-            for (float x = -r; x <= r; x += 1.0) {
-              vec4 sourceSample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);
-              float weight = 1.0;
-              result += sourceSample * weight;
-              totalWeight += weight;
-            }
+          for (float x = -8.0; x <= 8.0; x += 1.0) {
+            if (abs(x) > r) continue;
+            result += texture2D(sourceTex, vUv + vec2(x * texelSize.x, 0.0));
+            totalWeight += 1.0;
+          }
+          gl_FragColor = result / totalWeight;
+        }
+      `,
+    });
+    this.blurVMaterial = new ShaderMaterial({
+      uniforms: {
+        sourceTex: { value: null },
+        texelSize: { value: new Vector2(1, 1) },
+        radius: { value: 2 },
+      },
+      vertexShader: blurVertexShader,
+      fragmentShader: `
+        uniform sampler2D sourceTex;
+        uniform vec2 texelSize;
+        uniform float radius;
+        varying vec2 vUv;
+        void main() {
+          vec4 result = vec4(0.0);
+          float totalWeight = 0.0;
+          float r = radius;
+          for (float y = -8.0; y <= 8.0; y += 1.0) {
+            if (abs(y) > r) continue;
+            result += texture2D(sourceTex, vUv + vec2(0.0, y * texelSize.y));
+            totalWeight += 1.0;
           }
           gl_FragColor = result / totalWeight;
         }
       `,
     });
     this.blurScene = new Scene();
-    this.blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurMaterial);
+    this.blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurHMaterial);
     this.blurScene.add(this.blurQuad);
     this.warpMaterial = new ShaderMaterial({
       uniforms: {
@@ -1171,6 +1166,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       newMaterial;
     const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
     this.compositeScene.add(quad);
+
+    this.blurEnabled = /texture2D\s*\(\s*blur[123]Tex/.test(
+      newMaterial.fragmentShader,
+    );
   }
 
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
@@ -1342,7 +1341,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     renderer.setRenderTarget(this.writeTarget);
     renderer.render(this.compositeScene, this.camera);
 
-    if (this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD) {
+    if (
+      this.blurEnabled &&
+      this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
+    ) {
       this.renderBlurPasses(renderer);
     }
 
@@ -1361,14 +1363,25 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const srcH = this.writeTarget.height;
 
     for (let i = 0; i < 3; i++) {
-      const target = this.blurTargets[i];
+      const hTarget = this.blurHTargets[i];
+      const vTarget = this.blurTargets[i];
       const radius = [2, 4, 8][i];
 
-      this.blurMaterial.uniforms.sourceTex.value = srcTex;
-      this.blurMaterial.uniforms.texelSize.value = [1 / srcW, 1 / srcH];
-      this.blurMaterial.uniforms.radius.value = radius;
+      this.blurHMaterial.uniforms.sourceTex.value = srcTex;
+      this.blurHMaterial.uniforms.texelSize.value.set(1 / srcW, 1 / srcH);
+      this.blurHMaterial.uniforms.radius.value = radius;
+      this.blurQuad.material = this.blurHMaterial;
+      renderer.setRenderTarget?.(hTarget);
+      renderer.render(this.blurScene, this.camera);
 
-      renderer.setRenderTarget?.(target);
+      this.blurVMaterial.uniforms.sourceTex.value = hTarget.texture;
+      this.blurVMaterial.uniforms.texelSize.value.set(
+        1 / hTarget.width,
+        1 / hTarget.height,
+      );
+      this.blurVMaterial.uniforms.radius.value = radius;
+      this.blurQuad.material = this.blurVMaterial;
+      renderer.setRenderTarget?.(vTarget);
       renderer.render(this.blurScene, this.camera);
     }
   }
@@ -1438,11 +1451,20 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       target.setSize(feedbackWidth, feedbackHeight),
     );
     this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
+    this.blurHTargets[0].setSize(feedbackWidth, feedbackHeight);
     this.blurTargets[1].setSize(
       Math.max(1, Math.round(feedbackWidth * 0.5)),
       Math.max(1, Math.round(feedbackHeight * 0.5)),
     );
+    this.blurHTargets[1].setSize(
+      Math.max(1, Math.round(feedbackWidth * 0.5)),
+      Math.max(1, Math.round(feedbackHeight * 0.5)),
+    );
     this.blurTargets[2].setSize(
+      Math.max(1, Math.round(feedbackWidth * 0.25)),
+      Math.max(1, Math.round(feedbackHeight * 0.25)),
+    );
+    this.blurHTargets[2].setSize(
       Math.max(1, Math.round(feedbackWidth * 0.25)),
       Math.max(1, Math.round(feedbackHeight * 0.25)),
     );
@@ -1464,9 +1486,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.warpTarget.dispose();
     this.targets.forEach((target) => target.dispose());
     this.blurTargets.forEach((target) => target.dispose());
+    this.blurHTargets.forEach((target) => target.dispose());
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
-    disposeMaterial(this.blurMaterial);
+    disposeMaterial(this.blurHMaterial);
+    disposeMaterial(this.blurVMaterial);
     disposeMaterial(this.warpMaterial);
     this.compositeScene.clear();
     this.presentScene.clear();
