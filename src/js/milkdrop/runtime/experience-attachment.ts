@@ -88,7 +88,13 @@ export function createMilkdropExperienceAttachmentController({
       setRuntime(nextRuntime);
       const attachmentRevision = lifetime.beginAttachment();
       ensureKeyboardShortcuts();
+      console.info('[attach-debug] awaiting rendererReady');
       nextRuntime.toy.rendererReady.then(async (handle) => {
+        console.info('[attach-debug] rendererReady resolved', {
+          backend: handle?.backend,
+          current: lifetime.isCurrentAttachment(attachmentRevision),
+          sameRuntime: getRuntime() === nextRuntime,
+        });
         if (
           !lifetime.isCurrentAttachment(attachmentRevision) ||
           getRuntime() !== nextRuntime
@@ -116,6 +122,7 @@ export function createMilkdropExperienceAttachmentController({
           });
           return;
         }
+        console.info('[attach-debug] creating adapter', { nextBackend });
         const nextAdapter =
           nextBackend === 'webgpu'
             ? await createMilkdropRendererAdapter({
@@ -142,6 +149,9 @@ export function createMilkdropExperienceAttachmentController({
           nextAdapter.dispose();
           return;
         }
+        console.info('[attach-debug] adapter created, activating', {
+          nextBackend,
+        });
         setActiveBackend(nextBackend);
         setDocumentActiveBackend(nextBackend);
         vm.setWebGpuOptimizationFlags(effectiveOptimizationFlags);
