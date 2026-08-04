@@ -1,0 +1,106 @@
+/**
+ * Guard against CI/build/config drift — the class of break that recurred
+ * 14+ times in the last 400 commits: deleted workflows, npm→bun switches,
+ * husky blocking deploys, build.mjs conflict markers, and scripts that
+ * vanish while workflows still reference them.
+ *
+ * Checks:
+ *  1. Every `bun run <script>` in workflow files resolves to a package.json
+ *     script — catches deleted/renamed scripts before they break a deploy.
+ *  2. `.bun-version` exists — workflows reference it via `bun-version-file`.
+ *  3. No `npm `/`npx ` invocations in `.github/workflows/**` — the repo
+ *     standardised on Bun; an npm command silently falls back to the npm
+ *     registry and can re-introduce the husky-in-CI and lockfile drift.
+ *  4. No git conflict markers in build/config files — `build.mjs` shipped
+ *     with `<<<<<<<` markers once (`5e4fb1df`).
+ *  5. husky hook stubs referenced by `prepare` exist.
+ */
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const ROOT = process.cwd();
+const errors: string[] = [];
+
+function readText(file: string): string {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+const pkg = JSON.parse(readText(join(ROOT, 'package.json'))) as {
+  scripts?: Record<string, string>;
+};
+
+/* 1 + 3: workflow script references and npm leakage */
+const workflowDir = join(ROOT, '.github/workflows');
+if (existsSync(workflowDir)) {
+  const BUN_RUN = /\bbun run (?!--)([A-Za-z0-9:_-]+)/g;
+  const NPM_CMD = /(^|\s)(npm|npx) (?:run |ci |install |test )/;
+  for (const file of readdirSync(workflowDir)) {
+    if (!file.endsWith('.yml') && !file.endsWith('.yaml')) continue;
+    const path = join(workflowDir, file);
+    const text = readText(path);
+    for (const match of text.matchAll(BUN_RUN)) {
+      const script = match[1];
+      if (!(script in (pkg.scripts ?? {}))) {
+        errors.push(
+          `${file}: references 'bun run ${script}' which is not a package.json script`,
+        );
+      }
+    }
+    if (NPM_CMD.test(text)) {
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (NPM_CMD.test(lines[i])) {
+          errors.push(
+            `${file}:${i + 1}: uses npm/npx instead of bun/bunx — ${lines[i].trim()}`,
+          );
+        }
+      }
+    }
+  }
+}
+
+/* 2: .bun-version */
+if (!existsSync(join(ROOT, '.bun-version'))) {
+  errors.push(
+    '.bun-version is missing — GitHub Actions setup-bun uses bun-version-file',
+  );
+}
+
+/* 4: conflict markers in build/config files */
+const CONFLICT = /^(<{7}|={7}|>{7})(?: |$)/m;
+const MARKER_FILES = [
+  'scripts/build.mjs',
+  'scripts/postinstall.mjs',
+  'vite.config.js',
+  'biome.json',
+  'wrangler.toml',
+  'wrangler.cron.jsonc',
+  'wrangler.mcp.jsonc',
+  'package.json',
+];
+for (const file of MARKER_FILES) {
+  const text = readText(join(ROOT, file));
+  if (CONFLICT.test(text)) {
+    errors.push(
+      `${file}: contains git conflict markers — resolve before committing`,
+    );
+  }
+}
+
+/* 5: husky prepare hook */
+const prepare = pkg.scripts?.prepare;
+if (prepare && !existsSync(join(ROOT, '.husky'))) {
+  errors.push("package.json 'prepare' references husky but .husky/ is missing");
+}
+
+if (errors.length > 0) {
+  console.error(`✖ CI config drift detected (${errors.length}):\n`);
+  for (const e of errors) console.error(`  ${e}`);
+  process.exit(1);
+}
+
+console.log('✔ CI config is consistent');

@@ -38,8 +38,19 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing. If `bun run check` fails, fix the root cause — do not chain fix-attempt commits.
 - **Done criteria by change type:** JS/TS changes need `bun run check`; runtime, preset, audio, shell, or routing changes also need browser verification on `http://localhost:5173/?agent=true`; docs-only edits can skip typecheck/tests unless commands, paths, or workflow-critical instructions changed.
 - **Cloudflare Pages deploy default:** GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) own preview and production deploys; keep local `pages:deploy:*` scripts as the manual fallback.
-- **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit.
+- **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and husky `commit-msg` hook.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
+
+## Regression guards
+
+The quality gate (`bun run check`) runs these guards automatically. New code must pass them:
+
+- `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
+- `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
+- `check:stale-paths` — references to the removed `assets/` tree.
+- `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
+- `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
+- `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).
 
 ## Recommended execution order
 

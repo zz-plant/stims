@@ -16,7 +16,7 @@ test('quick gate defaults to parallel execution', () => {
 test('quick gate plan keeps tests out of the concurrent lane', () => {
   const plan = buildGatePlan('quick', 'parallel');
 
-  expect(plan.preflight).toHaveLength(1);
+  expect(plan.preflight).toHaveLength(2);
 
   // The invariant is that nothing in the concurrent lane runs tests, not that
   // the lane holds one particular list. Pinning the list meant every new check

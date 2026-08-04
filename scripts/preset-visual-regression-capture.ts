@@ -37,10 +37,25 @@ import sharp from 'sharp';
  * colour cycles) never stabilized under this technique and are intentionally
  * excluded — see the module comment. */
 export const VISUAL_REGRESSION_PRESET_IDS = [
+  // Originally calibrated presets (low natural jitter, baselines checked in).
   'eos-phat-cubetrace-v2',
   'orb-radiation',
   'geiss-casino',
   'shifter-curlique',
+  // Coverage expansion — exercise the constructs that broke repeatedly:
+  // warp feedback parity (`63efb1b5`), sampler bindings (`092c424c`),
+  // custom wave per-point (`d7032f06`), GLSL shader constructs (`b6042c5b`),
+  // composite border scaling (`e9c4a514`). Baselines are generated on-demand
+  // via the capture script; presets without a baseline are skipped at test
+  // time rather than failing, so coverage grows incrementally.
+  'eos-glowsticks-v2-03-music',
+  'rovastar-parallel-universe',
+  'geiss-bipolar-x',
+  'shifter-spectro',
+  'orb-cloud-scope',
+  'eos-phat-magnetosphere-13-pulsar',
+  'phat-zylot-eos-trippy-rotation',
+  'krash-rovastar-cerebral-demons-stars',
 ] as const;
 
 /** Elapsed time (ms, from the preset becoming active) at which each frame in

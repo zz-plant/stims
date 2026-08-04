@@ -4,6 +4,18 @@
 # Workflow and automation changes
 /.github/ @zz-plant
 
+# Build, deploy, and CI config — historically edited 14+ times,
+# each edit risked config rot (npm→bun, deleted workflows, husky).
+/.github/workflows/ @zz-plant
+/scripts/build.mjs @zz-plant
+/scripts/postinstall.mjs @zz-plant
+/vite.config.js @zz-plant
+/biome.json @zz-plant
+/wrangler.toml @zz-plant
+/wrangler.cron.jsonc @zz-plant
+/wrangler.mcp.jsonc @zz-plant
+/.husky/ @zz-plant
+
 # Toy implementation and metadata
 /src/js/toys/ @zz-plant
 /src/data/toys.json @zz-plant
