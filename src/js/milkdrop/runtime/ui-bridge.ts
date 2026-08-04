@@ -100,19 +100,14 @@ export function createMilkdropOverlayCallbacks(
 
 export function installMilkdropRuntimeKeybindings({
   overlay,
-  getActivePresetId,
-  getActiveCatalogEntry,
   getTransitionMode,
   getBlendDuration,
-  selectAdjacentPreset,
   selectRandomPreset,
   goBackPreset,
   setTransitionMode,
   setOverlayStatus,
   cycleWaveMode,
   nudgeNumericField,
-  toggleFavorite,
-  setRating,
   togglePresetLock,
   isPresetLocked,
 }: {
@@ -121,11 +116,8 @@ export function installMilkdropRuntimeKeybindings({
     toggleOpen: (open?: boolean) => void;
     toggleShortcutHud: (open?: boolean) => void;
   };
-  getActivePresetId: () => string;
-  getActiveCatalogEntry: () => unknown;
   getTransitionMode: () => 'blend' | 'cut';
   getBlendDuration: () => number;
-  selectAdjacentPreset: (direction: 1 | -1) => void;
   selectRandomPreset: () => void;
   goBackPreset: () => void;
   setTransitionMode: (mode: 'blend' | 'cut') => void;
@@ -139,8 +131,6 @@ export function installMilkdropRuntimeKeybindings({
     label: string;
     digits?: number;
   }) => void;
-  toggleFavorite: (id: string) => void;
-  setRating: (id: string, rating: number) => void;
   togglePresetLock?: () => void;
   isPresetLocked?: () => boolean;
 }) {
