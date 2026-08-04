@@ -1,6 +1,7 @@
 import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
+import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
 import {
   type FourBandTransientMetrics,
   getFourBandTransientMetrics,
@@ -26,9 +27,8 @@ const logger = createLogger('AudioHandler');
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
-const FREQUENCY_ANALYSER_PROCESSOR = new URL(
-  '../utils/audio/frequency-analyser-processor.ts',
-  import.meta.url,
+const FREQUENCY_ANALYSER_PROCESSOR = URL.createObjectURL(
+  new Blob([workletSource], { type: 'application/javascript' }),
 );
 const MEYDA_FEATURES = [
   'rms',

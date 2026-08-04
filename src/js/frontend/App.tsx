@@ -160,6 +160,7 @@ function StimsWorkspaceAppShell() {
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
     handleAudioStop: engine.handleAudioStop,
+    handleVisualSearch: engine.handleVisualSearch,
     handleToggleFullscreen,
     setShowShortcuts,
   });

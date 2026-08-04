@@ -405,6 +405,20 @@ export function createMilkdropEngineAdapter() {
       experience?.exportPreset();
     },
 
+    revertEditorSource() {
+      experience?.revertEditorSource();
+    },
+
+    async duplicatePreset() {
+      await experience?.duplicatePreset();
+      emit();
+    },
+
+    async deleteActivePreset() {
+      await experience?.deleteActivePreset();
+      emit();
+    },
+
     getSnapshot() {
       return lastSnapshot;
     },

@@ -4,6 +4,8 @@ export type ShortcutActionId =
   | 'browse'
   | 'settings'
   | 'editor'
+  | 'refine'
+  | 'visualsearch'
   | 'shuffle'
   | 'previous'
   | 'quick-select'
@@ -30,6 +32,8 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   { id: 'browse', label: 'Browse panel', defaultKeys: ['B'] },
   { id: 'settings', label: 'Settings', defaultKeys: ['S'] },
   { id: 'editor', label: 'Editor', defaultKeys: ['E'] },
+  { id: 'refine', label: 'Refine preset', defaultKeys: ['G'] },
+  { id: 'visualsearch', label: 'More like this', defaultKeys: ['M'] },
   { id: 'shuffle', label: 'Shuffle preset', defaultKeys: ['N', 'ArrowRight'] },
   { id: 'previous', label: 'Previous preset', defaultKeys: ['P', 'ArrowLeft'] },
   {

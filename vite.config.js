@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
+import { transform } from 'esbuild';
 import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
@@ -15,6 +16,7 @@ const htmlInputs = {
   index: path.resolve(rootDir, 'index.html'),
   milkdrop: path.resolve(rootDir, 'milkdrop/index.html'),
   certify: path.resolve(rootDir, 'certify/index.html'),
+  performance: path.resolve(rootDir, 'performance/index.html'),
 };
 const moduleInputs = Object.fromEntries(
   toyEntries
@@ -30,8 +32,27 @@ if (!rollupInputs.index) {
   rollupInputs.index = path.resolve(rootDir, 'index.html');
 }
 
+function audioWorkletTransform() {
+  return {
+    name: 'audio-worklet-transform',
+    enforce: 'pre',
+    async load(id) {
+      const match = id.match(/^(.+?\.ts)\?worklet/);
+      if (!match) return null;
+      const filePath = match[1];
+      const source = fs.readFileSync(filePath, 'utf8');
+      const result = await transform(source, {
+        loader: 'ts',
+        target: 'es2022',
+        format: 'esm',
+      });
+      return `export default ${JSON.stringify(result.code)}`;
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), audioWorkletTransform()],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],
   },

@@ -6,11 +6,9 @@ export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
 export type PanelState =
   | 'browse'
   | 'editor'
-  | 'inspector'
   | 'refine'
   | 'audiomatch'
   | 'visualsearch'
-  | 'blend'
   | 'capture'
   | 'settings'
   | 'synthesize'

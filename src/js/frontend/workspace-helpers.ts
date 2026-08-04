@@ -72,6 +72,14 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
       return 'Browse';
     case 'editor':
       return 'Edit';
+    case 'refine':
+      return 'Refine';
+    case 'audiomatch':
+      return 'Match my music';
+    case 'visualsearch':
+      return 'More like this';
+    case 'synthesize':
+      return 'Generate';
     case 'capture':
       return 'Record video';
     case 'settings':
@@ -618,10 +626,7 @@ export function buildLaunchIntent(routeState: SessionRouteState): LaunchIntent {
   return {
     presetId: routeState.presetId,
     collectionTag: routeState.collectionTag,
-    panel:
-      routeState.panel === 'editor' || routeState.panel === 'inspector'
-        ? routeState.panel
-        : null,
+    panel: routeState.panel === 'editor' ? routeState.panel : null,
     audioSource: routeState.audioSource,
     agentMode: routeState.agentMode,
     previewMode: routeState.previewMode,
