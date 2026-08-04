@@ -23,8 +23,8 @@ import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium } from 'playwright';
 import {
-  capturePresetFrames,
   CAPTURE_VIEWPORT,
+  capturePresetFrames,
   computeDHash,
   DHASH_BITS,
   DHASH_FAIL_THRESHOLD,

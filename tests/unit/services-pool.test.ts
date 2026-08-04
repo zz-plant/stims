@@ -25,6 +25,7 @@ import type {
   subscribeToRendererRuntimeControls as subscribeType,
 } from '../../src/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../../src/js/core/settings-panel.ts';
+import { setQualityPresetById } from '../../src/js/core/state/quality-preset-store.ts';
 import { flushTasks, importFresh } from '../test-helpers.ts';
 
 let getRendererRuntimeControls: typeof getControlsType;
@@ -169,6 +170,10 @@ describe('render-service pooling', () => {
       }),
     );
 
+    // Init renderScale is runtimeControls.renderScale × quality renderScale.
+    // Pin a preset with renderScale 1 so this test isolates the runtime factor
+    // from the device-tier default (balanced is 0.85).
+    setQualityPresetById('hi-fi');
     setRendererRuntimeControls({ renderScale: 0.5 });
 
     const first = await requestRenderer({ initRendererImpl });

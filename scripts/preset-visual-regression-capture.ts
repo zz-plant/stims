@@ -138,10 +138,9 @@ export async function capturePresetFrames({
   serverUrl: string;
   presetId: string;
 }): Promise<Buffer[]> {
-  await page.goto(
-    `${serverUrl}/?preset=${presetId}&audio=none&agent=true`,
-    { waitUntil: 'domcontentloaded' },
-  );
+  await page.goto(`${serverUrl}/?preset=${presetId}&audio=none&agent=true`, {
+    waitUntil: 'domcontentloaded',
+  });
   // 60s, not 30s: preset source resolution measured up to ~16s under
   // SwiftShader, matching the wait budget e2e-engine-mount.test.ts uses for
   // the same "preset becomes active" gate.
@@ -257,7 +256,9 @@ if (import.meta.main) {
         const page = await context.newPage();
         const frames = await capturePresetFrames({ page, serverUrl, presetId });
         writeBaselineFrames(repoRoot, presetId, frames);
-        console.log(`Wrote baseline for ${presetId} (${frames.length} frames).`);
+        console.log(
+          `Wrote baseline for ${presetId} (${frames.length} frames).`,
+        );
       } finally {
         await context.close();
       }
