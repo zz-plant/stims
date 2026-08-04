@@ -123,36 +123,56 @@ browserTest(
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
 
       // Canvas must appear once engine finishes mounting
-      const canvas = await page.waitForSelector('canvas', { timeout: 30000 });
+      const canvas = await page.waitForSelector(
+        '.stims-shell__stage-frame canvas',
+        { timeout: 30000 },
+      );
       expect(canvas).not.toBeNull();
 
       // Wait for the GPU to produce non-zero output before asserting.
       await page.waitForFunction(
         () => {
           const canvas = document.querySelector(
-            'canvas',
+            '.stims-shell__stage-frame canvas',
           ) as HTMLCanvasElement | null;
-          if (!canvas) return false;
-          const gl = (canvas.getContext('webgl') ||
-            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
-          if (!gl) return false;
-          const pixels = new Uint8Array(4);
-          gl.readPixels(
+          if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            return false;
+          }
+          // Read-only probe. Calling getContext('webgl') here would bind a
+          // context to the app's canvas whenever the poll wins the race
+          // against renderer init — a canvas keeps its first context type
+          // forever, so THREE's webgl2 init then fails ("existing context
+          // of a different type") and the app must recover on a fresh
+          // canvas. drawImage into a scratch 2D canvas reads the same
+          // pixel without ever touching the app canvas's context.
+          const scratch = document.createElement('canvas');
+          scratch.width = 1;
+          scratch.height = 1;
+          const ctx = scratch.getContext('2d');
+          if (!ctx) return false;
+          ctx.drawImage(
+            canvas,
             Math.floor(canvas.width / 2),
             Math.floor(canvas.height / 2),
             1,
             1,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            pixels,
+            0,
+            0,
+            1,
+            1,
           );
-          return pixels.some((p) => p > 0);
+          const data = ctx.getImageData(0, 0, 1, 1).data;
+          // RGB only: an opaque-black cleared buffer has alpha 255 and must
+          // not count as rendered content.
+          return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         { timeout: 30000 },
       );
 
       const info = await page.evaluate(() => {
-        const c = document.querySelector('canvas') as HTMLCanvasElement | null;
+        const c = document.querySelector(
+          '.stims-shell__stage-frame canvas',
+        ) as HTMLCanvasElement | null;
         if (!c) return null;
         return {
           width: c.width,
@@ -199,34 +219,53 @@ browserTest(
       await page.waitForSelector('#stims-main', { timeout: 30000 });
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
-      await page.waitForSelector('canvas', { timeout: 30000 });
+      await page.waitForSelector('.stims-shell__stage-frame canvas', {
+        timeout: 30000,
+      });
       // Wait for the GPU to produce non-zero output before capturing.
       await page.waitForFunction(
         () => {
           const canvas = document.querySelector(
-            'canvas',
+            '.stims-shell__stage-frame canvas',
           ) as HTMLCanvasElement | null;
-          if (!canvas) return false;
-          const gl = (canvas.getContext('webgl') ||
-            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
-          if (!gl) return false;
-          const pixels = new Uint8Array(4);
-          gl.readPixels(
+          if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            return false;
+          }
+          // Read-only probe. Calling getContext('webgl') here would bind a
+          // context to the app's canvas whenever the poll wins the race
+          // against renderer init — a canvas keeps its first context type
+          // forever, so THREE's webgl2 init then fails ("existing context
+          // of a different type") and the app must recover on a fresh
+          // canvas. drawImage into a scratch 2D canvas reads the same
+          // pixel without ever touching the app canvas's context.
+          const scratch = document.createElement('canvas');
+          scratch.width = 1;
+          scratch.height = 1;
+          const ctx = scratch.getContext('2d');
+          if (!ctx) return false;
+          ctx.drawImage(
+            canvas,
             Math.floor(canvas.width / 2),
             Math.floor(canvas.height / 2),
             1,
             1,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            pixels,
+            0,
+            0,
+            1,
+            1,
           );
-          return pixels.some((p) => p > 0);
+          const data = ctx.getImageData(0, 0, 1, 1).data;
+          // RGB only: an opaque-black cleared buffer has alpha 255 and must
+          // not count as rendered content.
+          return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         { timeout: 30000 },
       );
 
       const hash1 = await page.evaluate(() =>
-        document.querySelector('canvas')?.toDataURL('image/png'),
+        document
+          .querySelector<HTMLCanvasElement>('.stims-shell__stage-frame canvas')
+          ?.toDataURL('image/png'),
       );
 
       // Switch through the app's shareable route transition without tearing
@@ -240,35 +279,54 @@ browserTest(
       });
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'rovastar-parallel-universe');
-      await page.waitForSelector('canvas', { timeout: 30000 });
+      await page.waitForSelector('.stims-shell__stage-frame canvas', {
+        timeout: 30000,
+      });
 
       // Wait for the GPU to produce non-zero output after the preset switch.
       await page.waitForFunction(
         () => {
           const canvas = document.querySelector(
-            'canvas',
+            '.stims-shell__stage-frame canvas',
           ) as HTMLCanvasElement | null;
-          if (!canvas) return false;
-          const gl = (canvas.getContext('webgl') ||
-            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
-          if (!gl) return false;
-          const pixels = new Uint8Array(4);
-          gl.readPixels(
+          if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            return false;
+          }
+          // Read-only probe. Calling getContext('webgl') here would bind a
+          // context to the app's canvas whenever the poll wins the race
+          // against renderer init — a canvas keeps its first context type
+          // forever, so THREE's webgl2 init then fails ("existing context
+          // of a different type") and the app must recover on a fresh
+          // canvas. drawImage into a scratch 2D canvas reads the same
+          // pixel without ever touching the app canvas's context.
+          const scratch = document.createElement('canvas');
+          scratch.width = 1;
+          scratch.height = 1;
+          const ctx = scratch.getContext('2d');
+          if (!ctx) return false;
+          ctx.drawImage(
+            canvas,
             Math.floor(canvas.width / 2),
             Math.floor(canvas.height / 2),
             1,
             1,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            pixels,
+            0,
+            0,
+            1,
+            1,
           );
-          return pixels.some((p) => p > 0);
+          const data = ctx.getImageData(0, 0, 1, 1).data;
+          // RGB only: an opaque-black cleared buffer has alpha 255 and must
+          // not count as rendered content.
+          return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         { timeout: 30000 },
       );
 
       const hash2 = await page.evaluate(() =>
-        document.querySelector('canvas')?.toDataURL('image/png'),
+        document
+          .querySelector<HTMLCanvasElement>('.stims-shell__stage-frame canvas')
+          ?.toDataURL('image/png'),
       );
 
       // Verify the runtime switched to the requested preset.
