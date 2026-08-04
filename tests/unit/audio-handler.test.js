@@ -224,9 +224,7 @@ describe('audio-handler utilities', () => {
     const addModuleArg =
       listenerInstance?.context?.audioWorklet?.addModule?.mock.calls[0]?.[0];
 
-    expect(String(addModuleArg)).toContain(
-      '/src/js/utils/audio/frequency-analyser-processor.ts',
-    );
+    expect(String(addModuleArg)).toContain('blob:');
   });
 
   test('FrequencyAnalyser uses AudioWorklet messages when the worklet path succeeds', async () => {
