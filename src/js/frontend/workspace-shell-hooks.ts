@@ -32,6 +32,7 @@ type WorkspaceShellOrchestrationArgs = {
   fallbackCatalogError: string | null;
   fallbackCatalogReady: boolean;
   activityCatalog: PresetCatalogEntry[];
+  goBackPreset: () => Promise<void>;
   importPresetFiles: (files: FileList | null) => Promise<void>;
   pendingPresetIdRef: { current: string | null };
   routeState: SessionRouteState;
@@ -55,6 +56,7 @@ export function useWorkspaceShellOrchestration({
   fallbackCatalogError,
   fallbackCatalogReady,
   activityCatalog,
+  goBackPreset,
   importPresetFiles,
   pendingPresetIdRef,
   routeState,
@@ -66,7 +68,6 @@ export function useWorkspaceShellOrchestration({
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
   const fileAudioContextRef = useRef<AudioContext | null>(null);
-  const lastPresetIdRef = useRef<string | null>(null);
 
   const enrichedCatalog = useMemo(() => {
     const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
@@ -215,9 +216,6 @@ export function useWorkspaceShellOrchestration({
   }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {
-    if (routeState.presetId && routeState.presetId !== presetId) {
-      lastPresetIdRef.current = routeState.presetId;
-    }
     commitRoute({ ...routeState, presetId, panel: null });
   };
 
@@ -295,13 +293,7 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handlePreviousPreset = () => {
-    if (lastPresetIdRef.current) {
-      const prevId = lastPresetIdRef.current;
-      lastPresetIdRef.current = null;
-      commitRoute({ ...routeState, presetId: prevId, panel: null });
-    } else {
-      handleShufflePreset();
-    }
+    void goBackPreset();
   };
 
   const handleAudioFile = async (file: File) => {

@@ -387,6 +387,9 @@ export function useWorkspaceSessionState({
     exportPreset: () => {
       engineRef.current?.exportPreset();
     },
+    goBackPreset: async () => {
+      await engineRef.current?.goBackPreset();
+    },
     revertEditorSource: () => {
       engineRef.current?.revertEditorSource();
     },

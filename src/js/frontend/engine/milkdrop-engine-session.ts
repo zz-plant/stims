@@ -260,6 +260,17 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    async goBackPreset() {
+      if (!experience) {
+        throw new Error('MilkDrop engine session is not mounted.');
+      }
+      if (runtime?.resumePreview) {
+        runtime.resumePreview();
+      }
+      await experience.goBackPreset();
+      emit();
+    },
+
     async setAudioSource(request: EngineAudioRequest) {
       if (audioActive && audioSource === request.source) {
         return;

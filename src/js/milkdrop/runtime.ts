@@ -609,14 +609,8 @@ export function createMilkdropExperience({
       onInspectorFieldChange: (key, value) => session.updateField(key, value),
     },
     keybindingActions: {
-      getActivePresetId: () => activePresetId,
-      getActiveCatalogEntry: () =>
-        catalogCoordinator.getActiveCatalogEntry(activePresetId),
       getTransitionMode: () => transitionMode,
       getBlendDuration: () => blendDuration,
-      selectAdjacentPreset: (direction) => {
-        void navigation.selectAdjacentPreset(direction);
-      },
       selectRandomPreset: () => {
         void navigation.selectRandomPreset();
       },
@@ -630,12 +624,6 @@ export function createMilkdropExperience({
       },
       nudgeNumericField: (args) => {
         void nudgeNumericField(args);
-      },
-      toggleFavorite: (id) => {
-        void catalogActions.toggleFavorite(id);
-      },
-      setRating: (id, rating) => {
-        void catalogActions.setRating(id, rating);
       },
       togglePresetLock: () => {
         lockedPreset = !lockedPreset;
@@ -939,6 +927,7 @@ function buildExperienceController(deps: Record<string, any>) {
       return deps.activePresetId;
     },
     selectPreset: deps.navigation.selectPreset,
+    goBackPreset: deps.navigation.goBackPreset,
 
     setActiveCollectionTag(collectionTag: string | null) {
       if (!collectionTag) return;

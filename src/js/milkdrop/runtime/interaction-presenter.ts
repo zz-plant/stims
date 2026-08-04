@@ -1,4 +1,3 @@
-import type { MilkdropCatalogEntry } from '../types';
 import {
   createMilkdropOverlayCallbacks,
   installMilkdropRuntimeKeybindings,
@@ -20,11 +19,8 @@ export function createMilkdropRuntimeInteractionPresenter({
   };
   overlayActions: MilkdropOverlayActionHandlers;
   keybindingActions: {
-    getActivePresetId: () => string;
-    getActiveCatalogEntry: () => MilkdropCatalogEntry | null;
     getTransitionMode: () => 'blend' | 'cut';
     getBlendDuration: () => number;
-    selectAdjacentPreset: (direction: 1 | -1) => void;
     selectRandomPreset: () => void;
     goBackPreset: () => void;
     setTransitionMode: (mode: 'blend' | 'cut') => void;
@@ -38,8 +34,6 @@ export function createMilkdropRuntimeInteractionPresenter({
       label: string;
       digits?: number;
     }) => void;
-    toggleFavorite: (id: string) => void;
-    setRating: (id: string, rating: number) => void;
     togglePresetLock?: () => void;
     isPresetLocked?: () => boolean;
   };

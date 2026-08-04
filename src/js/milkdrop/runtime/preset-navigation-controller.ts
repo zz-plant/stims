@@ -258,19 +258,40 @@ export function createMilkdropPresetNavigationController({
       return;
     }
 
-    const weightedPool = candidates.flatMap((entry) => {
-      const weight = Math.max(
+    const scatterWeight = (entry: (typeof candidates)[number]) => {
+      const fidelityWeight =
+        entry.fidelityClass === 'exact'
+          ? 8
+          : entry.fidelityClass === 'near-exact'
+            ? 6
+            : entry.fidelityClass === 'partial'
+              ? 4
+              : 2;
+      const favoriteWeight = entry.isFavorite ? 6 : 0;
+      const historyBonus =
+        entry.historyIndex !== undefined && entry.historyIndex >= 0 ? 3 : 0;
+      const recentPenalty =
+        entry.lastOpenedAt && entry.lastOpenedAt > Date.now() - 300_000
+          ? -4
+          : 0;
+      return Math.max(
         1,
-        1 +
-          (entry.isFavorite ? 2 : 0) +
-          entry.rating +
-          (entry.historyIndex !== undefined ? 1 : 0),
+        fidelityWeight + favoriteWeight + historyBonus + recentPenalty,
       );
-      return Array.from({ length: weight }, () => entry.id);
+    };
+
+    const scoredPool = candidates.map((entry) => ({
+      entry,
+      weight: scatterWeight(entry),
+    }));
+    const totalWeight = scoredPool.reduce((sum, s) => sum + s.weight, 0);
+    let roll = Math.random() * totalWeight;
+    const picked = scoredPool.find((s) => {
+      roll -= s.weight;
+      return roll <= 0;
     });
 
-    const selectionId =
-      weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    const selectionId = picked?.entry.id ?? candidates[0]?.id;
     if (selectionId) {
       await selectPreset(selectionId);
     }
