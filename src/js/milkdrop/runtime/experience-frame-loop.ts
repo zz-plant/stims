@@ -207,6 +207,8 @@ export function createMilkdropExperienceFrameLoop({
       Object.assign(mergedSignals, baseSignals);
       mergedSignals.aspect =
         frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);
+      mergedSignals.pixelsx = frame.toy.viewportWidth;
+      mergedSignals.pixelsy = frame.toy.viewportHeight;
       buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
       if (options?.signalOverrides) {
         Object.assign(mergedSignals, options.signalOverrides);

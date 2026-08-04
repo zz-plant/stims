@@ -34,7 +34,46 @@ export const MILKDROP_WGSL_SIGNAL_FIELDS = [
   'music',
   'weighted_energy',
   'progress',
+  'aspectx',
+  'aspecty',
+  'pixelsx',
+  'pixelsy',
 ] as const;
+
+/** Nominal major-axis resolution used when the host has not reported real
+ * viewport pixels — presets read pixelsx/pixelsy only for resolution-relative
+ * scaling, so any plausible value beats the previous implicit 0. */
+const FALLBACK_MAJOR_AXIS_PIXELS = 1280;
+
+/** MilkDrop exposes the inverse aspect pair to presets: both values are >= 1
+ * and only the minor axis is stretched (aspectx = h/w on portrait, aspecty =
+ * w/h on landscape). */
+export function deriveMilkdropViewportSignalValues(signals: {
+  aspect?: number;
+  pixelsx?: number;
+  pixelsy?: number;
+}) {
+  const aspect =
+    signals.aspect && Number.isFinite(signals.aspect) && signals.aspect > 0
+      ? signals.aspect
+      : 1;
+  const pixelsx =
+    signals.pixelsx ??
+    (aspect >= 1
+      ? FALLBACK_MAJOR_AXIS_PIXELS
+      : Math.round(FALLBACK_MAJOR_AXIS_PIXELS * aspect));
+  const pixelsy =
+    signals.pixelsy ??
+    (aspect >= 1
+      ? Math.round(FALLBACK_MAJOR_AXIS_PIXELS / aspect)
+      : FALLBACK_MAJOR_AXIS_PIXELS);
+  return {
+    aspectx: aspect < 1 ? 1 / aspect : 1,
+    aspecty: aspect > 1 ? aspect : 1,
+    pixelsx,
+    pixelsy,
+  };
+}
 
 export type MilkdropWgslSignalField =
   (typeof MILKDROP_WGSL_SIGNAL_FIELDS)[number];

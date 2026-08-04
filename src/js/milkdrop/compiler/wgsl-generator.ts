@@ -177,11 +177,11 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'sign':
           return `sign(${args[0] ?? '0.0f'})`;
         case 'bor':
-          return `f32(i32(${args[0] ?? '0.0f'}) | i32(${args[1] ?? '0.0f'}))`;
+          return `select(0.0f, 1.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f || abs(${args[1] ?? '0.0f'}) > 0.00001f)`;
         case 'band':
-          return `f32(i32(${args[0] ?? '0.0f'}) & i32(${args[1] ?? '0.0f'}))`;
+          return `select(0.0f, 1.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f && abs(${args[1] ?? '0.0f'}) > 0.00001f)`;
         case 'bnot':
-          return `f32(~i32(${args[0] ?? '0.0f'}))`;
+          return `select(1.0f, 0.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f)`;
         case 'atan2':
           return `atan2(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
         case 'saturate':
@@ -210,6 +210,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `gmegabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
         case 'rand':
           return 'rand()';
+        case 'exec2':
+        case 'exec3':
+          return args[args.length - 1] ?? '0.0f';
         default:
           return '0.0f';
       }

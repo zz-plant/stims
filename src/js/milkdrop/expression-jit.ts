@@ -195,11 +195,11 @@ function compileNode(
         case 'sign':
           return `Math.sign(${args[0] ?? '0'})`;
         case 'bor':
-          return `((Math.trunc(${args[0] ?? '0'})||0) | (Math.trunc(${args[1] ?? '0'})||0))`;
+          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 || Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
         case 'band':
-          return `((Math.trunc(${args[0] ?? '0'})||0) & (Math.trunc(${args[1] ?? '0'})||0))`;
+          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 && Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
         case 'bnot':
-          return `(~(Math.trunc(${args[0] ?? '0'})||0))`;
+          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? 0 : 1)`;
         case 'atan2':
           return `Math.atan2(${args[0] ?? '0'}, ${args[1] ?? '0'})`;
         case 'frac':
@@ -216,6 +216,11 @@ function compileNode(
           return `(rnd() * (${args[0] ?? '1'}))`;
         case 'randint':
           return `Math.floor(rnd() * (${args[0] ?? '1'}))`;
+        case 'exec2':
+        case 'exec3':
+          return args.length > 0
+            ? `(${args.map((arg) => `(${arg})`).join(', ')})`
+            : '(0)';
       }
       return '(0)';
     }

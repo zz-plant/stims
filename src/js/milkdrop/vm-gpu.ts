@@ -7,6 +7,7 @@ import {
 import type { MilkdropProgramBlock } from './types';
 import { createVmBufferManager } from './vm/buffer-manager';
 import {
+  deriveMilkdropViewportSignalValues,
   MILKDROP_WGSL_SIGNAL_FIELDS,
   type MilkdropGpuVmSignals,
 } from './wgsl-signal-layout.ts';
@@ -109,6 +110,7 @@ function populateSignalData(
   target: Float32Array,
   signals: MilkdropGpuVmSignals,
 ): void {
+  const viewport = deriveMilkdropViewportSignalValues(signals);
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
     const field = MILKDROP_WGSL_SIGNAL_FIELDS[i];
     switch (field) {
@@ -190,6 +192,18 @@ function populateSignalData(
         break;
       case 'weighted_energy':
         target[i] = signals.weightedEnergy ?? 0;
+        break;
+      case 'aspectx':
+        target[i] = viewport.aspectx;
+        break;
+      case 'aspecty':
+        target[i] = viewport.aspecty;
+        break;
+      case 'pixelsx':
+        target[i] = viewport.pixelsx;
+        break;
+      case 'pixelsy':
+        target[i] = viewport.pixelsy;
         break;
       default:
         target[i] = 0;

@@ -382,7 +382,8 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__launch,
-  .stims-shell__launch-panel {
+  .stims-shell__launch-panel,
+  .stims-shell__launch-hero {
     display: grid;
     gap: 20px;
   }
@@ -448,6 +449,14 @@ body[data-page="workspace"][data-live="true"] {
     opacity: 0.65;
     pointer-events: none;
     animation: ambientGlow 20s ease-in-out infinite alternate;
+  }
+
+  .stims-shell__launch-hero {
+    position: relative;
+    z-index: var(--z-stage-root);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 18px;
   }
 
   .stims-shell__launch-layout {
@@ -2088,6 +2097,7 @@ body[data-page="workspace"][data-live="true"] {
   /* Collapse launch hero to single column at tablet widths */
   @media (max-width: 1280px) {
     .stims-shell__launch,
+    .stims-shell__launch-hero,
     .stims-shell__launch-recommendation {
       grid-template-columns: 1fr;
     }
@@ -2142,6 +2152,10 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__launch-panel {
       width: min(62rem, 100%);
+    }
+
+    .stims-shell__launch-hero {
+      grid-template-columns: 1fr;
     }
 
     .stims-shell__launch-layout {
@@ -2239,6 +2253,10 @@ body[data-page="workspace"][data-live="true"] {
       padding: 22px;
       border-radius: 26px;
     }
+
+    .stims-shell__launch-hero {
+      grid-template-columns: 1fr;
+    }
     .stims-shell__launch-copy h1,
     .stims-shell__stage-header h2 {
       font-size: clamp(1.9rem, 5.4vw, 3.4rem);
@@ -2280,6 +2298,10 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__launch-panel {
       padding: 14px;
+    }
+
+    .stims-shell__launch-hero {
+      gap: 10px;
     }
     .stims-shell__launch-copy h1,
     .stims-shell__stage-header h2 {
@@ -2423,6 +2445,10 @@ body[data-page="workspace"][data-live="true"] {
       width: min(100%, calc(100vw - 20px));
       padding: 16px;
       border-radius: 22px;
+    }
+
+    .stims-shell__launch-hero {
+      grid-template-columns: 1fr;
     }
 
     .stims-shell__launch-actions {
@@ -2674,6 +2700,10 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
   @media (max-width: 640px) {
+    .stims-shell__launch-hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .stims-shell__browse-toolbar-extras > summary {
       list-style: none;
       cursor: pointer;
@@ -2747,6 +2777,10 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
       padding: 10px 12px;
+    }
+
+    .stims-shell__launch-hero {
+      gap: 14px;
     }
 
     .stims-shell__launch-recommendation {

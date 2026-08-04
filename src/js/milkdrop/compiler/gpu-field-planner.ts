@@ -88,6 +88,8 @@ const GPU_FIELD_FUNCTIONS = new Set([
   'above',
   'below',
   'equal',
+  'exec2',
+  'exec3',
 ]);
 
 type LowerGpuFieldProgramOptions = {

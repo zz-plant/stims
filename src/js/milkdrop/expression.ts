@@ -86,7 +86,12 @@ export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
   'log10',
   'megabuf',
   'gmegabuf',
+  'exec2',
+  'exec3',
 ]);
+
+/** NS-EEL treats values within this distance of zero as false. */
+export const MILKDROP_EEL_CLOSE_FACTOR = 0.00001;
 
 function toMilkdropInt(value: number) {
   return Number.isFinite(value) ? Math.trunc(value) : 0;
@@ -618,11 +623,17 @@ export function evaluateMilkdropExpression(
         case 'sign':
           return Math.sign(args[0] ?? 0);
         case 'bor':
-          return toMilkdropInt(args[0] ?? 0) | toMilkdropInt(args[1] ?? 0);
+          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR ||
+            Math.abs(args[1] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
+            ? 1
+            : 0;
         case 'band':
-          return toMilkdropInt(args[0] ?? 0) & toMilkdropInt(args[1] ?? 0);
+          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR &&
+            Math.abs(args[1] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
+            ? 1
+            : 0;
         case 'bnot':
-          return ~toMilkdropInt(args[0] ?? 0);
+          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR ? 0 : 1;
         case 'atan2':
           return Math.atan2(args[0] ?? 0, args[1] ?? 0);
         case 'frac': {
@@ -645,6 +656,9 @@ export function evaluateMilkdropExpression(
           return helpers.megabuf?.(args[0] ?? 0) ?? 0;
         case 'gmegabuf':
           return helpers.gmegabuf?.(args[0] ?? 0) ?? 0;
+        case 'exec2':
+        case 'exec3':
+          return args[args.length - 1] ?? 0;
         default:
           return 0;
       }

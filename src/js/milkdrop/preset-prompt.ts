@@ -13,7 +13,7 @@ export interface GeneratedPresetResult {
 const MILKDROP_DSL_SPEC = `
 ## MilkDrop Expression Language
 
-Available functions: sin, cos, tan, asin, acos, atan, atan2, abs, sqrt, pow, mod, fmod, min, max, mix, lerp, floor, int, ceil, sqr, clamp, step, smoothstep, log, exp, sigmoid, sign, frac, rand, if, above, below, equal, bor, band, bnot.
+Available functions: sin, cos, tan, asin, acos, atan, atan2, abs, sqrt, pow, mod, fmod, min, max, mix, lerp, floor, int, ceil, sqr, clamp, step, smoothstep, log, exp, sigmoid, sign, frac, rand, if, above, below, equal, bor, band, bnot, exec2, exec3.
 
 Operators: + - * / % ^ < <= > >= == != && || !
 

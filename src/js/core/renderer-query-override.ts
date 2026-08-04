@@ -115,13 +115,23 @@ export function hasWebGPUCompatibilityGapOverride() {
  * Determine whether the renderer should prefer WebGL over WebGPU.
  *
  * Priority order:
- * 1. Explicit URL param `?renderer=webgl` or `?renderer=webgpu`
- * 2. Session-level WebGPU override (via `setWebGPUCompatibilityGapOverride`)
- * 3. The active preset previously failed WebGPU descriptor routing this session
+ * 1. The active preset already failed WebGPU descriptor routing this
+ *    session — this must win over every other signal. The fallback flow
+ *    (backend-fallback.ts) marks the preset and reloads the page expecting
+ *    the reload to land on WebGL; if a renderer request could still force
+ *    WebGPU past this point, that reload repeats forever without ever
+ *    producing a frame, since the canvas's WebGPU context blocks WebGL
+ *    from ever attaching to the same element.
+ * 2. Explicit URL param `?renderer=webgl` or `?renderer=webgpu`
+ * 3. Session-level WebGPU override (via `setWebGPUCompatibilityGapOverride`)
  * 4. Default: prefer WebGL only when this browser is not in the stable
  *    Chromium WebGPU set
  */
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
+  if (presetNeedsWebgl(parseURLParams().routing.presetId)) {
+    return true;
+  }
+
   const requestedRenderer = getRequestedRenderer();
 
   if (requestedRenderer === 'webgl') {
@@ -135,12 +145,6 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
   // Session-level gap override forces WebGPU
   if (hasWebGPUCompatibilityGapOverride()) {
     return false;
-  }
-
-  // This specific preset already fell back once this session; honour that
-  // without downgrading the renderer for any other preset.
-  if (presetNeedsWebgl(parseURLParams().routing.presetId)) {
-    return true;
   }
 
   // Default: only prefer WebGL in browsers where WebGPU isn't stable
