@@ -20,10 +20,3 @@ export function getMilkdropFeedbackBlurBlendAmount(feedbackSoftness: number) {
     Math.max(0, feedbackSoftness * MILKDROP_FEEDBACK_BLUR_BLEND_SCALE),
   );
 }
-
-export function clampMilkdropCurrentFrameBoost(currentFrameBoost: number) {
-  return Math.min(
-    MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
-    Math.max(0, currentFrameBoost),
-  );
-}

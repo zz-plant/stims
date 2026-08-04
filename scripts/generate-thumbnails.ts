@@ -27,9 +27,9 @@ const PREVIEW_W = 480;
 const PREVIEW_H = 270;
 const INIT_TIMEOUT = 30000;
 const DEFAULT_LIMIT = 50;
-const DEFAULT_WORKERS = 4;
-const MIN_RENDER_MS = 2500;
-const RETRY_WAIT_MS = 3000;
+const DEFAULT_WORKERS = 6;
+const MIN_RENDER_MS = 1500;
+const RETRY_WAIT_MS = 1500;
 const MAX_RETRIES = 2;
 const PER_PRESET_TIMEOUT_MS = 45000;
 
@@ -118,7 +118,7 @@ async function downscaleToPreview(
   const tmpPath = `${filePath}.tmp`;
   await sharp(buffer)
     .resize(PREVIEW_W, PREVIEW_H, { fit: 'cover', position: 'center' })
-    .png({ compressionLevel: 9 })
+    .png({ compressionLevel: 6 })
     .toFile(tmpPath);
   renameSync(tmpPath, filePath);
 }
@@ -129,9 +129,12 @@ async function renderPreset(
 ): Promise<{ black: boolean }> {
   const page = await ctx.newPage();
   try {
-    await page.goto(`${DEV_SERVER}/?preset=${preset.id}&audio=demo`, {
-      waitUntil: 'domcontentloaded',
-    });
+    await page.goto(
+      `${DEV_SERVER}/?preset=${preset.id}&audio=demo&agent=true`,
+      {
+        waitUntil: 'domcontentloaded',
+      },
+    );
     await page.waitForSelector('#stims-main', { timeout: 10000 });
 
     await page.evaluate(() => {
@@ -194,7 +197,6 @@ async function worker(
       if (!ctx) {
         ctx = await browser.newContext({
           viewport: { ...DEFAULT_VIEWPORT },
-          deviceScaleFactor: 2,
         });
         await ctx.addInitScript(() => {
           localStorage.setItem('stims:quality-preset', 'ultra');

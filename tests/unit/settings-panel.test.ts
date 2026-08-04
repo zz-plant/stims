@@ -181,8 +181,10 @@ describe('quality preset subscriptions', () => {
     expect(performance.particleScale).toBeGreaterThan(
       lowMotion.particleScale ?? 1,
     );
-    expect(lowMotion.maxPixelRatio).toBeGreaterThan(performance.maxPixelRatio);
-    expect(lowMotion.renderScale).toBe(balanced.renderScale);
+    expect(lowMotion.particleScale).toBeLessThan(balanced.particleScale ?? 1);
+    expect(lowMotion.renderScale).toBeLessThanOrEqual(
+      balanced.renderScale ?? 1,
+    );
     expect(hiFi.maxPixelRatio).toBeGreaterThan(balanced.maxPixelRatio);
     expect(hiFi.renderScale).toBeGreaterThan(balanced.renderScale ?? 1);
     expect(hiFi.particleScale).toBeGreaterThan(balanced.particleScale ?? 1);

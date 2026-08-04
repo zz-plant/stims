@@ -19,12 +19,12 @@ export type MilkdropBackendBehavior = {
 export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   feedbackProfile: {
     currentFrameBoost: 0.1,
-    feedbackSoftness: 0.2,
+    feedbackSoftness: 0.12,
     sceneResolutionScale: 1,
     feedbackResolutionScale: 1,
     samples: 0,
   },
-  useHalfFloatFeedback: false,
+  useHalfFloatFeedback: true,
   closeLinesManually: false,
   useLineLoopPrimitives: true,
   supportsShapeGradient: true,
