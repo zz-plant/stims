@@ -144,11 +144,12 @@ describe('milkdrop runtime lifetime seams', () => {
 
 describe('milkdrop runtime lifecycle seams', () => {
   test('only auto-advances after autoplay thresholds are met', () => {
+    // The dwell floor is max(30s, blend + 6s), so a 2s blend still waits 30s.
     expect(
       shouldAutoAdvancePreset({
         autoplay: true,
         catalogSize: 3,
-        now: 19_000,
+        now: 31_500,
         lastPresetSwitchAt: 1_000,
         blendDuration: 2,
       }),
@@ -156,9 +157,19 @@ describe('milkdrop runtime lifecycle seams', () => {
 
     expect(
       shouldAutoAdvancePreset({
+        autoplay: true,
+        catalogSize: 3,
+        now: 29_000,
+        lastPresetSwitchAt: 1_000,
+        blendDuration: 2,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldAutoAdvancePreset({
         autoplay: false,
         catalogSize: 3,
-        now: 19_000,
+        now: 31_500,
         lastPresetSwitchAt: 1_000,
         blendDuration: 2,
       }),
