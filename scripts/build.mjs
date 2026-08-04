@@ -63,6 +63,11 @@ if (!existsSync(vitePackagePath)) {
   }
 }
 
+console.log('[build] Generating catalog search index...');
+execSync('bun run scripts/generate-catalog-search-index.ts', {
+  stdio: 'inherit',
+});
+
 console.log(`[build] Running Vite build with "${viteCommand}"...`);
 execSync(viteCommand, { stdio: 'inherit' });
 
