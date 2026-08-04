@@ -165,37 +165,6 @@
 }
 
 /* Utility classes for coordinated entry animations */
-.anim-enter-up {
-  animation: sheet-enter-up var(--spring-enter) forwards;
-}
-
-.anim-exit-down {
-  animation: sheet-exit-down var(--spring-exit) forwards;
-}
-
-.anim-enter-fade {
-  animation: fade-in var(--transition-base) forwards;
-}
-
-.anim-exit-fade {
-  animation: fade-out var(--transition-base) forwards;
-}
-
-.anim-enter-scale {
-  animation: scale-in var(--spring-enter) forwards;
-}
-
-.anim-exit-scale {
-  animation: scale-out var(--spring-exit) forwards;
-}
-
-.anim-enter-right {
-  animation: slide-in-right var(--spring-enter) forwards;
-}
-
-.anim-exit-right {
-  animation: slide-out-right var(--spring-exit) forwards;
-}
 
 /* Preset card stagger — each card enters with a delay */
 .stims-shell__preset-list > li {
@@ -238,17 +207,6 @@
 
 /* Reduced motion: disable all animations */
 @media (prefers-reduced-motion: reduce) {
-  .anim-enter-up,
-  .anim-exit-down,
-  .anim-enter-fade,
-  .anim-exit-fade,
-  .anim-enter-scale,
-  .anim-exit-scale,
-  .anim-enter-right,
-  .anim-exit-right {
-    animation: none;
-  }
-
   .stims-shell__preset-list > li {
     animation: none;
   }
