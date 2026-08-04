@@ -5038,6 +5038,182 @@
         "audioMode": "demo",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--geiss-happy-drops--20260804184745",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "geiss-happy-drops",
+      "title": null,
+      "createdAt": "2026-08-04T18:47:45.490Z",
+      "files": {
+        "image": "milkdrop--preset-geiss-happy-drops-1785869265186.png",
+        "debugSnapshot": "milkdrop--preset-geiss-happy-drops-1785869265186.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=geiss-happy-drops&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260804184814",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-04T18:48:14.227Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785869293887.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785869293887.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260804184905",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "orb-acid-in-my-eyes",
+      "title": null,
+      "createdAt": "2026-08-04T18:49:05.637Z",
+      "files": {
+        "image": "milkdrop--preset-orb-acid-in-my-eyes-1785869345210.png",
+        "debugSnapshot": "milkdrop--preset-orb-acid-in-my-eyes-1785869345210.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=orb-acid-in-my-eyes&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--evet-proteus-core-element-5--20260804185032",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "evet-proteus-core-element-5",
+      "title": null,
+      "createdAt": "2026-08-04T18:50:32.348Z",
+      "files": {
+        "image": "milkdrop--preset-evet-proteus-core-element-5-1785869432066.png",
+        "debugSnapshot": "milkdrop--preset-evet-proteus-core-element-5-1785869432066.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=evet-proteus-core-element-5&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260804185118",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-04T18:51:18.597Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785869478382.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785869478382.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-and-idiot24-7-abstract-psychaos--20260804185346",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-and-idiot24-7-abstract-psychaos",
+      "title": null,
+      "createdAt": "2026-08-04T18:53:46.188Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-and-idiot24-7-abstract-psychaos-1785869626003.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-and-idiot24-7-abstract-psychaos-1785869626003.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-and-idiot24-7-abstract-psychaos&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260804185436",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-04T18:54:36.827Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785869676582.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785869676582.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--shifter-snakeskin--20260804185558",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "shifter-snakeskin",
+      "title": null,
+      "createdAt": "2026-08-04T18:55:58.314Z",
+      "files": {
+        "image": "milkdrop--preset-shifter-snakeskin-1785869758124.png",
+        "debugSnapshot": "milkdrop--preset-shifter-snakeskin-1785869758124.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=shifter-snakeskin&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
     }
   ]
 }

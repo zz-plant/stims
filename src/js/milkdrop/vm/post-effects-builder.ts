@@ -377,8 +377,7 @@ export function buildPost({
   const invert = (state.invert ?? 0) > 0.5;
   const gammaAdj = clamp(state.gammaadj ?? 1, 0.25, 4);
   const videoEchoEnabled =
-    (state.video_echo_enabled ?? ((state.video_echo_alpha ?? 0) > 0 ? 1 : 0)) >
-    0.5;
+    (state.video_echo_enabled ?? 0) > 0.5 || (state.video_echo_alpha ?? 0) > 0;
   const redBlueStereo =
     (state.red_blue_stereo ?? state.redbluestereo ?? 0) > 0.5;
   const shaderEnabled =

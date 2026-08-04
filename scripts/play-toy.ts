@@ -391,7 +391,7 @@ async function createPlayToyContext({
   browser: Browser;
   options: NormalizedPlayToyOptions;
 }): Promise<BrowserContext> {
-  return await browser.newContext({
+  const context = await browser.newContext({
     viewport: {
       width: options.viewportWidth,
       height: options.viewportHeight,
@@ -400,6 +400,14 @@ async function createPlayToyContext({
     recordVideo: options.video ? { dir: options.outputDir } : undefined,
     permissions: ['microphone'],
   });
+
+  if (options.catalogMode === 'certification') {
+    await context.addInitScript(() => {
+      window.localStorage.setItem('stims:quality-preset', 'ultra');
+    });
+  }
+
+  return context;
 }
 
 async function clickVisibleButton(page: Page, selector: string) {

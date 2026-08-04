@@ -130,8 +130,8 @@ export function buildFeatureAnalysis({
   }
 
   if (
-    (numericFields.video_echo_enabled ??
-      ((numericFields.video_echo_alpha ?? 0) > 0 ? 1 : 0)) > 0.5
+    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
+    (numericFields.video_echo_alpha ?? 0) > 0
   ) {
     features.add('video-echo');
   }
