@@ -68,6 +68,8 @@
     "generate:toys": "bun run scripts/generate-toy-manifest.ts",
     "generate:seo": "bun run scripts/generate-seo.ts",
     "generate:search-index": "bun run scripts/generate-catalog-search-index.ts",
+    "generate:previews": "bun run scripts/generate-thumbnails.ts",
+    "generate:all": "bun run generate:search-index && bun run generate:previews",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "node --max-old-space-size=4096 ./node_modules/vite/bin/vite.js preview --host",
     "cf:whoami": "bunx wrangler whoami",
