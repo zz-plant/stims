@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
-  type TextScale,
   applyAccessibility,
   getActiveAccessibilityPreference,
   setAccessibilityPreference,
+  type TextScale,
 } from '../core/accessibility-preferences.ts';
 import {
   hasWebGPUCompatibilityGapOverride,
@@ -155,11 +155,7 @@ function AccessibilitySection({
           setAccessibilityPreference({ freezeFrame });
         }}
       />
-      <button
-        type="button"
-        className="ctl-btn"
-        onClick={onOpenShortcuts}
-      >
+      <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
         Keyboard shortcuts
       </button>
     </section>

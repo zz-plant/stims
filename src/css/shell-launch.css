@@ -505,7 +505,8 @@
     display: none;
   }
 
-  .stims-shell__launch-source-minimal .stims-shell__meta-copy:not(:first-child) {
+  .stims-shell__launch-source-minimal
+    .stims-shell__meta-copy:not(:first-child) {
     display: none;
   }
 

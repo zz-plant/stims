@@ -113,7 +113,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Launch deck');
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__stage-frame"');
-    expect(stageControlsSource).toContain('className={styles.toolbar}');
+    expect(stageControlsSource).toContain('className={styles.pill}');
     expect(stageControlsSource).toContain('title="Surprise me"');
     expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
     expect(homeSource).toContain('Browse presets');
@@ -151,7 +151,7 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(stageControlsCss).toMatch(
-      /\.wrap\s*\{[\s\S]*?z-index:\s*var\(--z-dock\);/u,
+      /\.bar\s*\{[\s\S]*?z-index:\s*var\(--z-dock\);/u,
     );
   });
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/StageControls.module.css';
+import type { UiIconName } from '../ui/icon-library.ts';
 import {
   getAudioEnergy,
   subscribeAudioEnergy,
@@ -7,7 +8,6 @@ import {
 import { pulseHaptic } from './haptics.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { UiIcon } from './UiIcon.tsx';
-import type { UiIconName } from '../ui/icon-library.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 type MenuItem = {
@@ -67,8 +67,7 @@ export function StageControls({
     document.addEventListener('pointerdown', handlePointerDown, {
       passive: true,
     });
-    return () =>
-      document.removeEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [showMenu]);
 
   useEffect(() => {
@@ -129,12 +128,6 @@ export function StageControls({
     ui.updatePanel(panel === 'browse' ? null : 'browse');
   }, [ui, panel, signalActivity]);
 
-  const handleFullscreen = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    onToggleFullscreen();
-  }, [onToggleFullscreen, signalActivity]);
-
   const run = useCallback(
     (fn: () => void) => {
       signalActivity();
@@ -149,7 +142,8 @@ export function StageControls({
     {
       icon: 'sparkles' as const,
       label: 'Browse presets',
-      action: () => run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
+      action: () =>
+        run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
       active: panel === 'browse',
     },
     {
@@ -173,14 +167,16 @@ export function StageControls({
     {
       icon: 'gauge' as const,
       label: 'Edit preset',
-      action: () => run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
+      action: () =>
+        run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
       active: panel === 'editor',
       separatorBefore: true,
     },
     {
       icon: 'wand' as const,
       label: 'Refine',
-      action: () => run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
+      action: () =>
+        run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
       active: panel === 'refine',
     },
     {
@@ -193,7 +189,8 @@ export function StageControls({
     {
       icon: 'image' as const,
       label: 'Record video',
-      action: () => run(() => ui.updatePanel(panel === 'capture' ? null : 'capture')),
+      action: () =>
+        run(() => ui.updatePanel(panel === 'capture' ? null : 'capture')),
       active: panel === 'capture',
       separatorBefore: true,
     },
@@ -205,7 +202,8 @@ export function StageControls({
     {
       icon: 'sliders' as const,
       label: 'Settings',
-      action: () => run(() => ui.updatePanel(panel === 'settings' ? null : 'settings')),
+      action: () =>
+        run(() => ui.updatePanel(panel === 'settings' ? null : 'settings')),
       active: panel === 'settings',
       separatorBefore: true,
     },
@@ -241,7 +239,10 @@ export function StageControls({
             title="Previous"
             onClick={handlePrevious}
           >
-            <UiIcon name="arrow-left" className="stims-icon-slot stims-icon-slot--sm" />
+            <UiIcon
+              name="arrow-left"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
           </button>
           <button
             type="button"
@@ -250,7 +251,10 @@ export function StageControls({
             title="Surprise me"
             onClick={handleShuffle}
           >
-            <UiIcon name="shuffle" className="stims-icon-slot stims-icon-slot--sm" />
+            <UiIcon
+              name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
           </button>
 
           <button
@@ -279,7 +283,10 @@ export function StageControls({
               setShowMenu((s) => !s);
             }}
           >
-            <UiIcon name="menu" className="stims-icon-slot stims-icon-slot--sm" />
+            <UiIcon
+              name="menu"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
           </button>
         </div>
       </div>

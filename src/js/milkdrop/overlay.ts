@@ -1,6 +1,6 @@
 import { parseURLParams } from '../core/url-params.ts';
 
-const OSD_HIDE_TIMEOUT_MS = 1800;
+const OSD_HIDE_TIMEOUT_MS = 4000;
 
 export class MilkdropOverlay {
   readonly root: HTMLElement;
@@ -15,6 +15,7 @@ export class MilkdropOverlay {
   private readonly presetOsdMeta: HTMLElement;
   private readonly osdBackendEl: HTMLElement;
   private osdHideTimeoutId: number | null = null;
+  private osdPinned = false;
 
   constructor({
     host = document.body,
@@ -35,6 +36,9 @@ export class MilkdropOverlay {
     this.presetOsd = document.createElement('div');
     this.presetOsd.className = 'milkdrop-overlay__osd';
     this.presetOsd.hidden = true;
+    this.presetOsd.setAttribute('role', 'status');
+    this.presetOsd.setAttribute('aria-live', 'polite');
+    this.presetOsd.setAttribute('aria-atomic', 'true');
     this.presetOsdTitle = document.createElement('div');
     this.presetOsdTitle.className = 'milkdrop-overlay__osd-title';
     this.presetOsdMeta = document.createElement('div');
@@ -43,6 +47,27 @@ export class MilkdropOverlay {
     osdBackend.className = 'milkdrop-overlay__osd-backend';
     this.osdBackendEl = osdBackend;
     this.presetOsd.append(this.presetOsdTitle, this.presetOsdMeta, osdBackend);
+
+    const pinBtn = document.createElement('button');
+    pinBtn.type = 'button';
+    pinBtn.className = 'milkdrop-overlay__osd-pin';
+    pinBtn.textContent = 'Pin';
+    pinBtn.setAttribute('aria-label', 'Keep preset info visible');
+    pinBtn.setAttribute('aria-pressed', 'false');
+    pinBtn.addEventListener('click', () => {
+      this.osdPinned = !this.osdPinned;
+      pinBtn.setAttribute('aria-pressed', String(this.osdPinned));
+      pinBtn.textContent = this.osdPinned ? 'Unpin' : 'Pin';
+      if (this.osdPinned) {
+        if (this.osdHideTimeoutId !== null) {
+          window.clearTimeout(this.osdHideTimeoutId);
+          this.osdHideTimeoutId = null;
+        }
+      } else {
+        this.scheduleOsdHide();
+      }
+    });
+    this.presetOsd.append(pinBtn);
 
     const toolbar = document.createElement('div');
     toolbar.className = 'milkdrop-overlay__toolbar';
@@ -111,6 +136,8 @@ export class MilkdropOverlay {
 
     this.currentPresetLabel = document.createElement('div');
     this.currentPresetLabel.className = 'milkdrop-overlay__title';
+    this.currentPresetLabel.setAttribute('role', 'status');
+    this.currentPresetLabel.setAttribute('aria-live', 'polite');
 
     this.statusLabel = document.createElement('div');
     this.statusLabel.className = 'milkdrop-overlay__status';
@@ -170,6 +197,12 @@ export class MilkdropOverlay {
     this.presetOsd.hidden = false;
     if (this.osdHideTimeoutId !== null)
       window.clearTimeout(this.osdHideTimeoutId);
+    if (!this.osdPinned) {
+      this.scheduleOsdHide();
+    }
+  }
+
+  private scheduleOsdHide() {
     this.osdHideTimeoutId = window.setTimeout(() => {
       this.presetOsd.hidden = true;
     }, OSD_HIDE_TIMEOUT_MS);

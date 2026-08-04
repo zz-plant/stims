@@ -40,9 +40,9 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(homeSource).toContain(
       "import { AudioSourcePanel } from './AudioSourcePanel.tsx';",
     );
-    expect(homeSource).toContain('stims-shell__launch-layout');
-    expect(homeSource).toContain('stims-shell__launch-rail');
-    expect(homeSource).toContain('stims-shell__launch-source-dock');
+    expect(homeSource).toContain('stims-shell__launch--minimal');
+    expect(homeSource).toContain('stims-shell__launch-center');
+    expect(homeSource).toContain('stims-shell__launch-source-minimal');
     expect(homeSource).toContain('<AudioSourcePanel showHelp={false} />');
     expect(homeSource).not.toContain('Create a visual preset');
     expect(homeSource).not.toContain('useGeneratePreset');
