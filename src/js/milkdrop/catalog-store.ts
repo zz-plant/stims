@@ -44,8 +44,6 @@ export function createMilkdropCatalogStore({
   });
   const analysis = createCatalogAnalysis();
 
-  let prefetched = false;
-
   const getHistoryRecord = async () =>
     (await persistence.readMeta(HISTORY_RECORD_ID)) ?? {
       id: HISTORY_RECORD_ID,
@@ -154,27 +152,6 @@ export function createMilkdropCatalogStore({
       const source = await bundledCatalog.loadBundledSource(entry);
       analysis.getCompiled(source);
       return source;
-    },
-
-    async prefetchCompiledPresets() {
-      if (prefetched) return;
-      prefetched = true;
-
-      try {
-        const bundled = await bundledCatalog.getBundledCatalog();
-        for (const entry of bundled) {
-          if (analysis.getCachedCompiled(entry.id)) continue;
-          try {
-            const source = await bundledCatalog.loadBundledSource(entry);
-            analysis.getCompiled(source);
-          } catch {
-            // Skip presets that fail to load or compile
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } catch {
-        // If the bundled catalog itself fails, there is nothing to prefetch
-      }
     },
 
     async savePreset(source) {
