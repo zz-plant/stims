@@ -6,6 +6,10 @@ import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium, devices } from 'playwright';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import {
+  HEADLESS,
+  WEBGL_RENDERER_ARGS as RENDERER_ARGS,
+} from './webgl-launch.ts';
 
 /**
  * Not every workflow installs Playwright browsers — upgrade-guardrails runs
@@ -18,30 +22,6 @@ const browserTest = hasChromium ? test : test.skip;
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
-
-/**
- * Headed Chromium is what exercises a real GPU locally, which is the point of
- * this suite on a developer machine. CI has no GPU: it runs under xvfb, and a
- * headed browser there dies partway through the first test. Headless plus a
- * software renderer is stable there and still produces real canvas content,
- * which is all these assertions read.
- */
-const HEADLESS = !!process.env.CI;
-
-/**
- * CI runs headed Chromium under xvfb with no real GPU. Without an explicit
- * software renderer the browser crashes mid-test, and the failure surfaces as
- * "Target page, context or browser has been closed" from the cleanup block
- * rather than as the crash it actually is. These are the same flags the
- * agent-integration suite already uses to stay green on CI.
- */
-const RENDERER_ARGS = [
-  '--use-angle=swiftshader',
-  '--use-gl=angle',
-  '--enable-webgl',
-  '--enable-unsafe-swiftshader',
-  '--ignore-gpu-blocklist',
-];
 
 /** Never let teardown mask the assertion failure that got us here. */
 async function closeQuietly(
