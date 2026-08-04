@@ -43,7 +43,7 @@ export function PresetArtwork({
 }) {
   const mood = describePresetMood(entry);
   const staticThumbUrl = entry.preview
-    ? `/thumbnails/${entry.id}.thumb.png`
+    ? `/milkdrop-presets/previews/${entry.id}.png`
     : null;
   const imageUrl = preview?.imageUrl ?? staticThumbUrl;
   const previewStatus = preview?.imageUrl
