@@ -895,8 +895,8 @@ export function createMilkdropIr({
     },
     gammaAdj: numericFields.gammaadj ?? 1,
     videoEchoEnabled:
-      (numericFields.video_echo_enabled ??
-        ((numericFields.video_echo_alpha ?? 0) > 0 ? 1 : 0)) > 0.5,
+      (numericFields.video_echo_enabled ?? 0) > 0.5 ||
+      (numericFields.video_echo_alpha ?? 0) > 0,
     videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
     videoEchoZoom: numericFields.video_echo_zoom ?? 1,
     videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
@@ -973,8 +973,8 @@ export function createMilkdropIr({
   const solarize = (numericFields.solarize ?? 0) > 0.5;
   const invert = (numericFields.invert ?? 0) > 0.5;
   const videoEchoEnabled =
-    (numericFields.video_echo_enabled ??
-      ((numericFields.video_echo_alpha ?? 0) > 0 ? 1 : 0)) > 0.5;
+    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
+    (numericFields.video_echo_alpha ?? 0) > 0;
   const redBlueStereo =
     (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
   const gammaAdj = numericFields.gammaadj ?? 1;
