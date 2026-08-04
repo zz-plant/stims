@@ -46,7 +46,7 @@ import { resolvePresetPerformanceOverride } from './runtime/preset-performance-o
 import { createMilkdropPresetPreviewService } from './runtime/preset-preview-service.ts';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
-import { cloneBlendState } from './runtime/session';
+import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import {
@@ -69,6 +69,8 @@ export const applyMilkdropInteractionResponse =
 export const buildMilkdropInputSignalOverrides =
   buildMilkdropInputSignalOverridesImpl;
 export const getMilkdropDetailScale = getMilkdropDetailScaleImpl;
+
+const MAX_BLEND_WORKLOAD = 900;
 
 export function createMilkdropExperience({
   container,
@@ -798,6 +800,20 @@ export function createMilkdropExperience({
         `${nextCompiled.source.id}: subscriber: preset ID change, applying`,
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
+      const canBlend =
+        transitionMode === 'blend' &&
+        blendDuration > 0 &&
+        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+      blendState = canBlend ? cloneBlendState(currentFrameState) : null;
+      blendEndAtMs =
+        blendState && blendDuration > 0
+          ? performance.now() + blendDuration * 1000
+          : 0;
+      lastPresetSwitchAt = performance.now();
+      if (!previewMode) {
+        void catalogCoordinator.rememberSelection(nextCompiled.source.id);
+        preferences.rememberLastPreset(nextCompiled.source.id);
+      }
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
       scheduleDeferredCatalogSync();

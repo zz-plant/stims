@@ -243,6 +243,7 @@
 
   /* ── TV Mode Scaling ────────────────────────────────────────-- */
   --tv-scale-multiplier: 1;
+  --ui-scale: 1;
   --tv-focus-outline-width: 2px;
   --tv-focus-outline-offset: 3px;
   --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
