@@ -741,6 +741,11 @@ function installResumeOnVisible() {
   });
 }
 
+// ── AudioContext / stream lifecycle ──────────────────────────────────
+// The ordering invariants (no leak, permission-before-mount, generation
+// race) are formalised in `audio-lifecycle.ts`. See that module and
+// `tests/unit/audio-lifecycle.test.ts` for the contract.
+
 export function registerAudioContext(context: AudioContext) {
   activeContexts.add(context);
   installResumeOnVisible();

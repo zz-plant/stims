@@ -58,6 +58,10 @@ export function buildGatePlan(
         label: noTsNoCheckLabel,
         cmd: ['bun', 'run', 'check:no-ts-nocheck'],
       },
+      {
+        label: 'CI config drift check',
+        cmd: ['bun', 'run', 'check:ci-config'],
+      },
     ],
     concurrent: [
       {
@@ -87,6 +91,10 @@ export function buildGatePlan(
       {
         label: 'Stale assets/ path check',
         cmd: ['bun', 'run', 'check:stale-paths'],
+      },
+      {
+        label: 'Duplicate CSS check',
+        cmd: ['bun', 'run', 'check:duplicate-css'],
       },
       {
         label: 'Architecture boundary check',
