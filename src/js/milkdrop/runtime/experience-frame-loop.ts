@@ -62,6 +62,7 @@ export function createMilkdropExperienceFrameLoop({
   getPostprocessingPipeline,
   setPostprocessingPipeline,
   capturedVideoOverlay,
+  getFreezeFrame,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
   getAdapter: () => {
@@ -149,6 +150,7 @@ export function createMilkdropExperienceFrameLoop({
       reactivity: MilkdropCapturedVideoReactiveState;
     }) => void;
   };
+  getFreezeFrame: () => boolean;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   const getCurrentFrameWorkload = () =>
@@ -174,6 +176,10 @@ export function createMilkdropExperienceFrameLoop({
 
       if (typeof document !== 'undefined' && document.hidden) {
         setCurrentFrameState(null);
+        return;
+      }
+
+      if (getFreezeFrame()) {
         return;
       }
 

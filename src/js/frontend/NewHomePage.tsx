@@ -14,9 +14,7 @@ export function NewHomePage() {
         <h1 id="stims-launch-title" className="stims-shell__launch-title">
           Stims
         </h1>
-        <p className="stims-shell__launch-tagline">
-          Audio-reactive visualizer
-        </p>
+        <p className="stims-shell__launch-tagline">Audio-reactive visualizer</p>
         <div className="stims-shell__launch-actions-minimal">
           <button
             id="use-demo-audio"

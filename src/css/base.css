@@ -3173,6 +3173,29 @@ body.tv-mode .control-panel input {
   letter-spacing: 0.06em;
 }
 
+.milkdrop-overlay__osd-pin {
+  display: block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(191, 219, 254, 0.8);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.milkdrop-overlay__osd-pin:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.milkdrop-overlay__osd-pin[aria-pressed="true"] {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(125, 211, 252, 0.5);
+  color: #f8fafc;
+}
+
 .milkdrop-overlay__search {
   width: 100%;
   padding: 8px 12px;

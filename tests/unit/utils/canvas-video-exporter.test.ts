@@ -342,7 +342,7 @@ describe('Canvas Video Exporter Utility', () => {
     expect(panelSource).toContain('<fieldset');
     expect(panelSource).toContain('aria-live="polite"');
     expect(panelSource).toContain('Stop and save video');
-    expect(stageControlsSource).toContain('Record visualizer video');
+    expect(stageControlsSource).toContain('Record video');
     expect(stageControlsSource).toContain(
       "ui.updatePanel(panel === 'capture' ? null : 'capture')",
     );

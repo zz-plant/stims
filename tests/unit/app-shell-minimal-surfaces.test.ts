@@ -82,8 +82,8 @@ describe('minimal workspace surfaces', () => {
     const css = cssSource('app-shell.css');
     const artwork = frontendSource('PresetArtwork.tsx');
 
-    expect(controls).toContain('className={styles.toolbar}');
-    expect(controls).toContain('className={styles.btn}');
+    expect(controls).toContain('className={styles.pill}');
+    expect(controls).toContain('className={styles.navBtn}');
     expect(artwork).not.toContain('stims-shell__preset-art-caption');
     expect(artwork).not.toContain('stims-shell__preset-art-status');
     expect(artwork).not.toContain('stims-shell__preset-art-grid');

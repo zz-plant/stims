@@ -1,3 +1,4 @@
+import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
@@ -770,6 +771,7 @@ export function createMilkdropExperience({
       postprocessingPipeline = pipeline;
     },
     capturedVideoOverlay,
+    getFreezeFrame: () => isFreezeFrameActive(),
   });
 
   _disposeSessionSubscription = session.subscribe((state) => {

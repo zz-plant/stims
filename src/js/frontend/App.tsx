@@ -10,11 +10,11 @@ import '../../css/app-shell.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
-import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,
   searchByAudioProfile,

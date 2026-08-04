@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 
 export function StimsStageFrame({
   activePresetId,
+  activePresetTitle,
   children,
   liveMode,
   stageRef,
 }: {
   activePresetId?: string | null;
+  activePresetTitle?: string | null;
   children: ReactNode;
   liveMode: boolean;
   stageRef: React.RefObject<HTMLDivElement | null>;
@@ -29,6 +31,9 @@ export function StimsStageFrame({
           aria-label="Audio-reactive visual output"
           tabIndex={-1}
         />
+        <div className="stims-shell__sr-only" role="status" aria-live="polite">
+          {activePresetTitle ? `Now playing: ${activePresetTitle}` : ''}
+        </div>
         {children}
       </div>
     </section>
