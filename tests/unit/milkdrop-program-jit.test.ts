@@ -263,6 +263,25 @@ describe('compiled milkdrop programs', () => {
     );
   });
 
+  test('match the interpreter for logical helpers and exec2/exec3', () => {
+    const block = blockFromSource([
+      'q1 = bnot(0) + bnot(3) * 10;',
+      'q2 = band(0.5, 0.25) + bor(0, 0) * 10;',
+      'q3 = exec2(q1 + 100, q2 + 2);',
+      'q4 = exec3(1, 2, q3 + 3);',
+      'megabuf(5) = 41;',
+      'q5 = exec2(megabuf(5), megabuf(5) + 1);',
+    ]);
+
+    const compiled = runCompiled(block, makeScopes(false));
+    expectSameScopes(compiled, runInterpreted(block, makeScopes(false)));
+    expect(compiled.registers.q1).toBe(1);
+    expect(compiled.registers.q2).toBe(1);
+    expect(compiled.registers.q3).toBe(3);
+    expect(compiled.registers.q4).toBe(6);
+    expect(compiled.registers.q5).toBe(42);
+  });
+
   test('match the interpreter for randomness ordering', () => {
     const block = blockFromSource([
       'q1 = rand(10);',

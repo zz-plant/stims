@@ -247,16 +247,27 @@ describe('wgsl expression generation', () => {
     );
   });
 
-  test('function calls - bitwise', () => {
+  test('function calls - logical bor/band/bnot', () => {
     expect(
       buildWgslExpressionString(call('bor', [literal(1), literal(2)])),
-    ).toBe('f32(i32(1) | i32(2))');
+    ).toBe('select(0.0f, 1.0f, abs(1) > 0.00001f || abs(2) > 0.00001f)');
     expect(
       buildWgslExpressionString(call('band', [literal(3), literal(1)])),
-    ).toBe('f32(i32(3) & i32(1))');
+    ).toBe('select(0.0f, 1.0f, abs(3) > 0.00001f && abs(1) > 0.00001f)');
     expect(buildWgslExpressionString(call('bnot', [literal(0)]))).toBe(
-      'f32(~i32(0))',
+      'select(1.0f, 0.0f, abs(0) > 0.00001f)',
     );
+  });
+
+  test('function calls - exec2/exec3 return their final argument', () => {
+    expect(
+      buildWgslExpressionString(call('exec2', [literal(1), literal(2)])),
+    ).toBe('2');
+    expect(
+      buildWgslExpressionString(
+        call('exec3', [literal(1), literal(2), literal(3)]),
+      ),
+    ).toBe('3');
   });
 
   test('function calls - conditional/rand', () => {

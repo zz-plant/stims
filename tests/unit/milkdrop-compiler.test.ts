@@ -208,6 +208,31 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
+  test('treats MilkDrop viewport/mesh builtins, num_inst, exec2/exec3, and echo aliases as supported', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+shapecode_0_enabled=1
+shapecode_0_num_inst=4
+per_frame_1=q1=aspectx*aspecty;
+per_frame_2=q2=pixelsx/pixelsy;
+per_frame_3=q3=meshx+meshy;
+per_frame_4=q4=exec2(q1, exec3(1, 2, q2));
+per_frame_5=echo_zoom=1.5;
+per_frame_6=q5=echo_zoom+echo_alpha;
+shape_0_per_frame1=ang=instance/num_inst;
+      `.trim(),
+      { id: 'viewport-builtins' },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+  });
+
   test('keeps zoom and fZoomExponent distinct in compiled numeric fields', () => {
     const compiled = compileMilkdropPresetSource(
       `
