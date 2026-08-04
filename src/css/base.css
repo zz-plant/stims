@@ -3,7 +3,7 @@ body {
   margin: 0;
   overflow: hidden;
   height: 100%;
-  font-size: calc(16px * var(--tv-scale-multiplier));
+  font-size: calc(16px * var(--tv-scale-multiplier) * var(--ui-scale, 1));
   font-family: var(--font-family-base);
   color: var(--text-color);
   line-height: var(--line-height-normal);

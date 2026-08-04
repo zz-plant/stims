@@ -36,14 +36,12 @@ export function usePresetRouteSync({
     if (pendingPresetIdRef.current) {
       if (shareableActivePresetId === pendingPresetIdRef.current) {
         pendingPresetIdRef.current = null;
-      } else {
-        // A direct (non-URL) switch loaded a different preset while a
-        // URL-driven load was in flight. Clear the stale pending ref and
-        // sync the URL to the actual active preset instead of leaving it
-        // stuck on the old value for up to 10s.
-        pendingPresetIdRef.current = null;
+        return;
       }
-      return;
+      // A direct (non-URL) switch loaded a different preset while a
+      // URL-driven load was in flight. Clear the stale pending ref and
+      // fall through to sync the URL to the actual active preset.
+      pendingPresetIdRef.current = null;
     }
 
     startTransition(() => {

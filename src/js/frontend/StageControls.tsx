@@ -7,7 +7,16 @@ import {
 import { pulseHaptic } from './haptics.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { UiIcon } from './UiIcon.tsx';
+import type { UiIconName } from '../ui/icon-library.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+
+type MenuItem = {
+  icon: UiIconName;
+  label: string;
+  action: () => void;
+  active?: boolean;
+  separatorBefore?: boolean;
+};
 
 export function StageControls({
   isFullscreen,
@@ -26,52 +35,52 @@ export function StageControls({
     engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? '';
 
   const { visible, signalActivity } = useAutoHideActivity(3000, true);
-  const [showOverflow, setShowOverflow] = useState(false);
-  const nowPlayingBarRef = useRef<HTMLSpanElement>(null);
-  const overflowRef = useRef<HTMLDivElement>(null);
-  const moreBtnRef = useRef<HTMLButtonElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const energyRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const updateEnergyBar = () => {
-      nowPlayingBarRef.current?.style.setProperty(
-        '--stims-energy',
-        String(Math.min(1, Math.max(0, getAudioEnergy()))),
-      );
+    const updateEnergy = () => {
+      const e = Math.min(1, Math.max(0, getAudioEnergy()));
+      energyRef.current?.style.setProperty('--energy', String(e));
     };
-
-    updateEnergyBar();
-    return subscribeAudioEnergy(updateEnergyBar);
+    updateEnergy();
+    return subscribeAudioEnergy(updateEnergy);
   }, []);
 
-  // Close overflow on outside click
   useEffect(() => {
-    if (!showOverflow) return;
+    if (!showMenu) return;
     const handlePointerDown = (event: PointerEvent) => {
       if (
         event.target instanceof Element &&
-        overflowRef.current?.contains(event.target)
-      ) {
+        menuRef.current?.contains(event.target)
+      )
         return;
-      }
-      setShowOverflow(false);
+      if (
+        event.target instanceof Element &&
+        menuBtnRef.current?.contains(event.target)
+      )
+        return;
+      setShowMenu(false);
     };
     document.addEventListener('pointerdown', handlePointerDown, {
       passive: true,
     });
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [showOverflow]);
+    return () =>
+      document.removeEventListener('pointerdown', handlePointerDown);
+  }, [showMenu]);
 
-  // Close overflow on Escape
   useEffect(() => {
-    if (!showOverflow) return;
+    if (!showMenu) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        setShowOverflow(false);
-        moreBtnRef.current?.focus();
+        setShowMenu(false);
+        menuBtnRef.current?.focus();
       }
     };
-    const handleResize = () => setShowOverflow(false);
+    const handleResize = () => setShowMenu(false);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, {
@@ -82,14 +91,15 @@ export function StageControls({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
     };
-  }, [showOverflow]);
+  }, [showMenu]);
 
-  // Re-show controls on any interaction
   useEffect(() => {
     const handleActivity = () => signalActivity();
     document.addEventListener('mousemove', handleActivity, { passive: true });
     document.addEventListener('pointerdown', handleActivity, { passive: true });
-    document.addEventListener('pointermove', handleActivity, { passive: true });
+    document.addEventListener('pointermove', handleActivity, {
+      passive: true,
+    });
     document.addEventListener('wheel', handleActivity, { passive: true });
     document.addEventListener('keydown', handleActivity);
     return () => {
@@ -100,18 +110,6 @@ export function StageControls({
       document.removeEventListener('keydown', handleActivity);
     };
   }, [signalActivity]);
-
-  const handleBrowse = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    ui.updatePanel(panel === 'browse' ? null : 'browse');
-  }, [ui, panel, signalActivity]);
-
-  const handleSettings = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    ui.updatePanel(panel === 'settings' ? null : 'settings');
-  }, [ui, panel, signalActivity]);
 
   const handleShuffle = useCallback(() => {
     signalActivity();
@@ -125,302 +123,194 @@ export function StageControls({
     void engine.handlePreviousPreset();
   }, [engine, signalActivity]);
 
+  const handleBrowse = useCallback(() => {
+    signalActivity();
+    pulseHaptic(10);
+    ui.updatePanel(panel === 'browse' ? null : 'browse');
+  }, [ui, panel, signalActivity]);
+
   const handleFullscreen = useCallback(() => {
     signalActivity();
     pulseHaptic(10);
     onToggleFullscreen();
   }, [onToggleFullscreen, signalActivity]);
 
-  const handleEditor = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow(false);
-    ui.updatePanel(panel === 'editor' ? null : 'editor');
-  }, [ui, panel, signalActivity]);
+  const run = useCallback(
+    (fn: () => void) => {
+      signalActivity();
+      pulseHaptic(10);
+      setShowMenu(false);
+      fn();
+    },
+    [signalActivity],
+  );
 
-  const handleShare = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow(false);
-    void ui.handleShowCurrentLink();
-  }, [ui, signalActivity]);
-
-  const handleCapture = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow(false);
-    ui.updatePanel(panel === 'capture' ? null : 'capture');
-  }, [ui, panel, signalActivity]);
-
-  const handleSynthesize = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow(false);
-    ui.updatePanel(panel === 'synthesize' ? null : 'synthesize');
-  }, [ui, panel, signalActivity]);
-
-  const handleMore = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow((s) => !s);
-  }, [signalActivity]);
-
-  const handleVisualSearch = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    void engine.handleVisualSearch?.();
-  }, [engine, signalActivity]);
-
-  const handleAudioMatch = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    ui.updatePanel(panel === 'audiomatch' ? null : 'audiomatch');
-  }, [ui, panel, signalActivity]);
-
-  const handleRefine = useCallback(() => {
-    signalActivity();
-    pulseHaptic(10);
-    setShowOverflow(false);
-    ui.updatePanel(panel === 'refine' ? null : 'refine');
-  }, [ui, panel, signalActivity]);
+  const menuItems: MenuItem[] = [
+    {
+      icon: 'sparkles' as const,
+      label: 'Browse presets',
+      action: () => run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
+      active: panel === 'browse',
+    },
+    {
+      icon: 'eye' as const,
+      label: 'More like this',
+      action: () => run(() => void engine.handleVisualSearch?.()),
+    },
+    ...(engineSnapshot?.audioActive
+      ? [
+          {
+            icon: 'pulse' as const,
+            label: 'Match my music',
+            action: () =>
+              run(() =>
+                ui.updatePanel(panel === 'audiomatch' ? null : 'audiomatch'),
+              ),
+            active: panel === 'audiomatch',
+          },
+        ]
+      : []),
+    {
+      icon: 'gauge' as const,
+      label: 'Edit preset',
+      action: () => run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
+      active: panel === 'editor',
+      separatorBefore: true,
+    },
+    {
+      icon: 'wand' as const,
+      label: 'Refine',
+      action: () => run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
+      active: panel === 'refine',
+    },
+    {
+      icon: 'sparkles' as const,
+      label: 'Generate',
+      action: () =>
+        run(() => ui.updatePanel(panel === 'synthesize' ? null : 'synthesize')),
+      active: panel === 'synthesize',
+    },
+    {
+      icon: 'image' as const,
+      label: 'Record video',
+      action: () => run(() => ui.updatePanel(panel === 'capture' ? null : 'capture')),
+      active: panel === 'capture',
+      separatorBefore: true,
+    },
+    {
+      icon: 'link' as const,
+      label: 'Share link',
+      action: () => run(() => void ui.handleShowCurrentLink()),
+    },
+    {
+      icon: 'sliders' as const,
+      label: 'Settings',
+      action: () => run(() => ui.updatePanel(panel === 'settings' ? null : 'settings')),
+      active: panel === 'settings',
+      separatorBefore: true,
+    },
+    {
+      icon: 'expand' as const,
+      label: isFullscreen ? 'Exit full screen' : 'Full screen',
+      action: () => run(() => onToggleFullscreen()),
+    },
+    ...(engineSnapshot?.audioSource
+      ? [
+          {
+            icon: 'close' as const,
+            label: 'Stop audio',
+            action: () => run(() => engine.handleAudioStop()),
+            separatorBefore: true,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
       <div
-        className={styles.wrap}
+        className={styles.bar}
         data-visible={String(visible)}
         onPointerEnter={() => signalActivity()}
       >
-        {presetTitle ? (
-          <div className={styles.nowPlaying}>
-            <span className={styles.nowPlayingTitle}>{presetTitle}</span>
-            {presetAuthor ? (
-              <span className={styles.nowPlayingAuthor}>{presetAuthor}</span>
-            ) : null}
-            <span ref={nowPlayingBarRef} className={styles.nowPlayingBar} />
-          </div>
-        ) : null}
-        <div className={styles.toolbar} role="toolbar" aria-label="Controls">
+        <div ref={energyRef} className={styles.pill}>
           <button
             type="button"
-            className={styles.btn}
+            className={styles.navBtn}
             aria-label="Previous preset"
             title="Previous"
             onClick={handlePrevious}
           >
-            <UiIcon
-              name="arrow-left"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
+            <UiIcon name="arrow-left" className="stims-icon-slot stims-icon-slot--sm" />
           </button>
           <button
             type="button"
-            className={styles.btn}
+            className={styles.navBtn}
             aria-label="Shuffle to random preset"
             title="Surprise me"
             onClick={handleShuffle}
           >
-            <UiIcon
-              name="shuffle"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
+            <UiIcon name="shuffle" className="stims-icon-slot stims-icon-slot--sm" />
           </button>
-
-          <span className={styles.sep} aria-hidden="true" />
 
           <button
             type="button"
-            className={styles.btn}
+            className={styles.titleBtn}
             data-active={String(panel === 'browse')}
-            aria-expanded={panel === 'browse'}
             aria-label="Browse presets"
-            title="Browse presets"
             onClick={handleBrowse}
           >
-            <UiIcon
-              name="sparkles"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
+            <span className={styles.titleText}>{presetTitle}</span>
+            {presetAuthor ? (
+              <span className={styles.authorText}>{presetAuthor}</span>
+            ) : null}
           </button>
-          <button
-            type="button"
-            className={styles.btn}
-            data-active={String(panel === 'visualsearch')}
-            aria-expanded={panel === 'visualsearch'}
-            aria-label="More like this"
-            title="More like this"
-            onClick={handleVisualSearch}
-          >
-            <UiIcon
-              name="eye"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </button>
-          {engineSnapshot?.audioActive ? (
-            <button
-              type="button"
-              className={styles.btn}
-              data-active={String(panel === 'audiomatch')}
-              aria-expanded={panel === 'audiomatch'}
-              aria-label="Match my music"
-              title="Match my music"
-              onClick={handleAudioMatch}
-            >
-              <UiIcon
-                name="pulse"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-            </button>
-          ) : null}
-
-          <span className={styles.sep} aria-hidden="true" />
 
           <button
+            ref={menuBtnRef}
             type="button"
-            className={styles.btn}
-            data-active={String(panel === 'settings')}
-            aria-expanded={panel === 'settings'}
-            aria-label="Settings"
-            title="Settings"
-            onClick={handleSettings}
-          >
-            <UiIcon
-              name="sliders"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </button>
-          <button
-            type="button"
-            className={styles.btn}
-            aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-            title={isFullscreen ? 'Exit full screen' : 'Full screen'}
-            onClick={handleFullscreen}
-          >
-            <UiIcon
-              name="expand"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </button>
-          <button
-            ref={moreBtnRef}
-            type="button"
-            className={styles.btn}
-            aria-expanded={showOverflow}
+            className={styles.menuBtn}
+            aria-expanded={showMenu}
             aria-haspopup="menu"
             aria-label="More actions"
-            title="More"
-            onClick={handleMore}
+            onClick={() => {
+              signalActivity();
+              pulseHaptic(10);
+              setShowMenu((s) => !s);
+            }}
           >
-            <UiIcon
-              name="menu"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
+            <UiIcon name="menu" className="stims-icon-slot stims-icon-slot--sm" />
           </button>
         </div>
-        {showOverflow ? (
-          <div
-            ref={overflowRef}
-            className={styles.overflow}
-            role="menu"
-            aria-label="More actions"
-          >
-            {engineSnapshot?.audioSource ? (
+      </div>
+
+      {showMenu ? (
+        <div
+          ref={menuRef}
+          className={styles.menu}
+          role="menu"
+          aria-label="More actions"
+        >
+          {menuItems.map((item) => (
+            <div key={item.label}>
+              {item.separatorBefore ? <div className={styles.menuSep} /> : null}
               <button
                 type="button"
                 role="menuitem"
-                className={styles.btn}
-                aria-label="Stop audio"
-                title="Stop"
-                onClick={() => {
-                  signalActivity();
-                  setShowOverflow(false);
-                  engine.handleAudioStop();
-                }}
+                className={styles.menuItem}
+                data-active={String(item.active ?? false)}
+                onClick={item.action}
               >
                 <UiIcon
-                  name="close"
+                  name={item.icon}
                   className="stims-icon-slot stims-icon-slot--sm"
                 />
-                <span className={styles.btnLabel}>Stop</span>
+                <span>{item.label}</span>
               </button>
-            ) : null}
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'editor')}
-              aria-label="Edit preset code"
-              title="Edit"
-              onClick={handleEditor}
-            >
-              <UiIcon
-                name="gauge"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Edit</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'refine')}
-              aria-label="Refine this preset"
-              title="Refine"
-              onClick={handleRefine}
-            >
-              <UiIcon
-                name="wand"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Refine</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'synthesize')}
-              aria-label="Generate a visualizer from a description"
-              title="Generate"
-              onClick={handleSynthesize}
-            >
-              <UiIcon
-                name="sparkles"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Generate</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'capture')}
-              aria-label="Record visualizer video"
-              title="Record video"
-              onClick={handleCapture}
-            >
-              <UiIcon
-                name="image"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Record video</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              aria-label="Share link"
-              title="Share"
-              onClick={handleShare}
-            >
-              <UiIcon
-                name="link"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Share</span>
-            </button>
-          </div>
-        ) : null}
-      </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {!visible ? (
         <button
@@ -432,7 +322,6 @@ export function StageControls({
           <span className={styles.handleIcon} aria-hidden="true">
             {'⌃'}
           </span>
-          Controls
         </button>
       ) : null}
     </>
