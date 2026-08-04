@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
+  type TextScale,
+  applyAccessibility,
+  getActiveAccessibilityPreference,
+  setAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
+import {
   hasWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
 } from '../core/renderer-query-override.ts';
@@ -67,6 +73,14 @@ const RESOLUTION_LIMIT_STEPS: Array<{ value: number; label: string }> = [
   { value: 2.5, label: '2.5x' },
 ];
 
+/** UI text scale steps for low-vision users. */
+const TEXT_SCALE_STEPS: Array<{ value: TextScale; label: string }> = [
+  { value: 1, label: '100%' },
+  { value: 1.25, label: '125%' },
+  { value: 1.5, label: '150%' },
+  { value: 2, label: '200%' },
+];
+
 /** Snap a stored value onto the nearest offered step so the select stays bound. */
 function nearestStep(
   steps: Array<{ value: number; label: string }>,
@@ -79,6 +93,77 @@ function nearestStep(
     }
   }
   return closest;
+}
+
+function AccessibilitySection({
+  onOpenShortcuts,
+}: {
+  onOpenShortcuts: () => void;
+}) {
+  const [prefs, setPrefs] = useState(() => getActiveAccessibilityPreference());
+
+  useEffect(() => {
+    applyAccessibility(prefs);
+  }, [prefs]);
+
+  return (
+    <section className="ctl-section">
+      <div className="ctl-section__head">
+        <h3 className="ctl-section__title">Accessibility</h3>
+      </div>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="a11y-text-scale">
+            Text size
+          </label>
+          <span className="ctl-row__hint">
+            Enlarges all controls and labels. Browser zoom also works.
+          </span>
+        </span>
+        <select
+          id="a11y-text-scale"
+          className="ctl-select ctl-select--auto"
+          value={prefs.textScale}
+          onChange={(e) => {
+            const textScale = parseFloat(e.target.value) as TextScale;
+            setPrefs((p) => ({ ...p, textScale }));
+            setAccessibilityPreference({ textScale });
+          }}
+        >
+          {TEXT_SCALE_STEPS.map((step) => (
+            <option key={step.value} value={step.value}>
+              {step.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <SwitchRow
+        label="High contrast"
+        hint="Stronger borders and brighter text for the control panels."
+        checked={prefs.highContrast}
+        onChange={(highContrast) => {
+          setPrefs((p) => ({ ...p, highContrast }));
+          setAccessibilityPreference({ highContrast });
+        }}
+      />
+      <SwitchRow
+        label="Freeze visuals"
+        hint="Holds the current frame still so you can inspect it or reduce motion."
+        checked={prefs.freezeFrame}
+        onChange={(freezeFrame) => {
+          setPrefs((p) => ({ ...p, freezeFrame }));
+          setAccessibilityPreference({ freezeFrame });
+        }}
+      />
+      <button
+        type="button"
+        className="ctl-btn"
+        onClick={onOpenShortcuts}
+      >
+        Keyboard shortcuts
+      </button>
+    </section>
+  );
 }
 
 function PerformanceSection() {
@@ -281,6 +366,7 @@ function PerformanceSection() {
 export function SettingsSheetPanel({
   onCompatibilityModeChange,
   onMotionPreferenceChange,
+  onOpenShortcuts,
   thumbMode = false,
   onThumbModeChange,
   partyRemoteMode = false,
@@ -293,6 +379,7 @@ export function SettingsSheetPanel({
 }: {
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
+  onOpenShortcuts: () => void;
   thumbMode?: boolean;
   onThumbModeChange?: (enabled: boolean) => void;
   partyRemoteMode?: boolean;
@@ -352,6 +439,8 @@ export function SettingsSheetPanel({
       <section className="ctl-section">
         <AudioSourcePanel />
       </section>
+
+      <AccessibilitySection onOpenShortcuts={onOpenShortcuts} />
 
       <PerformanceSection />
 

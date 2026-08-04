@@ -336,3 +336,42 @@ html.light
     box-shadow: none;
   }
 }
+
+/* ── Opt-in high-contrast (user toggle, not OS-only) ──────────────── */
+/* Mirrors the prefers-contrast: more block so users on systems without
+   that OS toggle can still get stronger borders and brighter text. */
+[data-contrast="high"] .stims-shell {
+  --stims-muted: #dce7ed;
+  --stims-line: #91a6b3;
+  --stims-line-strong: #c4d4dd;
+  --stims-line-soft: #6f8491;
+  --stims-cool: #b8edff;
+  --stims-accent: #ffb39e;
+}
+
+html.light [data-contrast="high"] .stims-shell,
+[data-contrast="high"].light .stims-shell {
+  --stims-muted: #263d48;
+  --stims-line: #71838b;
+  --stims-line-strong: #3d5964;
+  --stims-line-soft: #9aabb2;
+  --stims-cool: #075574;
+  --stims-accent: #7e2c12;
+}
+
+[data-contrast="high"] .stims-shell button,
+[data-contrast="high"] .stims-shell input,
+[data-contrast="high"] .stims-shell select,
+[data-contrast="high"] .stims-shell textarea,
+[data-contrast="high"].light [data-shell-dialog] button,
+[data-contrast="high"].light [data-shell-dialog] input,
+[data-contrast="high"].light [data-shell-dialog] select,
+[data-contrast="high"].light [data-shell-dialog] textarea {
+  border-width: 2px;
+}
+
+[data-contrast="high"] .stims-shell :focus-visible,
+[data-contrast="high"].light [data-shell-dialog] :focus-visible {
+  outline: 3px solid var(--stims-cool);
+  outline-offset: 3px;
+}

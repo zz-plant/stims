@@ -12,6 +12,10 @@ import '../../css/shell-launch.css';
 import '../../css/chrome.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
+  applyAccessibility,
+  getActiveAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
+import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
@@ -529,6 +533,10 @@ function StimsWorkspaceAppShell() {
   }, []);
 
   useEffect(() => {
+    applyAccessibility(getActiveAccessibilityPreference());
+  }, []);
+
+  useEffect(() => {
     reportLoadStatus('shell-rendered');
     const el = document.getElementById('stims-loading');
     if (el) el.hidden = true;
@@ -603,6 +611,7 @@ function StimsWorkspaceAppShell() {
               onMotionPreferenceChange={(enabled) =>
                 setMotionPreference({ enabled })
               }
+              onOpenShortcuts={() => setShowShortcuts(true)}
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
