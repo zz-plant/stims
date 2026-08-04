@@ -69,6 +69,8 @@ const aliasMap: Record<string, string | null> = {
   finnerbordera: 'ib_a',
   video_echo: 'video_echo_enabled',
   echo_orient: 'video_echo_orientation',
+  echo_zoom: 'video_echo_zoom',
+  echo_alpha: 'video_echo_alpha',
   motionvectorsx: 'motion_vectors_x',
   motionvectorsy: 'motion_vectors_y',
   nmotionvectorsx: 'motion_vectors_x',
