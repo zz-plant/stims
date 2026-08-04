@@ -36,9 +36,12 @@ const workletSource = readFileSync(
   ),
   'utf8',
 );
-mock.module('../src/js/utils/audio/frequency-analyser-processor.ts?worklet', () => ({
-  default: workletSource,
-}));
+mock.module(
+  '../src/js/utils/audio/frequency-analyser-processor.ts?worklet',
+  () => ({
+    default: workletSource,
+  }),
+);
 mock.module('../utils/audio/frequency-analyser-processor.ts?worklet', () => ({
   default: workletSource,
 }));
