@@ -1,4 +1,7 @@
 import { afterEach, beforeEach } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve as resolvePath } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import './environment/install.ts';
 
 Bun.plugin({
@@ -24,6 +27,25 @@ Bun.plugin({
       `,
       loader: 'js',
     }));
+
+    build.onResolve({ filter: /\.ts\?worklet$/ }, (args) => {
+      const filePath = resolvePath(
+        dirname(args.importer),
+        args.path.replace(/\?worklet$/, ''),
+      );
+      return { path: `${filePath}?worklet`, namespace: 'stims-worklet-suffix' };
+    });
+    build.onLoad(
+      { filter: /\.ts\?worklet$/, namespace: 'stims-worklet-suffix' },
+      (args) => {
+        const filePath = args.path.replace(/\?worklet$/, '');
+        const source = readFileSync(filePath, 'utf8');
+        return {
+          contents: `export default ${JSON.stringify(source)}`,
+          loader: 'js',
+        };
+      },
+    );
   },
 });
 
