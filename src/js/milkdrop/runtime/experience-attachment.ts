@@ -70,7 +70,11 @@ export function createMilkdropExperienceAttachmentController({
     backend: 'webgl' | 'webgpu',
     flags: MilkdropWebGpuOptimizationFlags,
   ) => boolean;
-  triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
+  triggerWebglFallback: (args: {
+    presetId: string;
+    reason: string;
+    backend?: 'webgl' | 'webgpu';
+  }) => void;
   scheduleCatalogSync: () => void;
   emitChange: () => void;
   setOverlayStatus: (message: string) => void;
@@ -88,13 +92,7 @@ export function createMilkdropExperienceAttachmentController({
       setRuntime(nextRuntime);
       const attachmentRevision = lifetime.beginAttachment();
       ensureKeyboardShortcuts();
-      console.info('[attach-debug] awaiting rendererReady');
       nextRuntime.toy.rendererReady.then(async (handle) => {
-        console.info('[attach-debug] rendererReady resolved', {
-          backend: handle?.backend,
-          current: lifetime.isCurrentAttachment(attachmentRevision),
-          sameRuntime: getRuntime() === nextRuntime,
-        });
         if (
           !lifetime.isCurrentAttachment(attachmentRevision) ||
           getRuntime() !== nextRuntime
@@ -119,10 +117,10 @@ export function createMilkdropExperienceAttachmentController({
           triggerWebglFallback({
             presetId: compiled.source.id,
             reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            backend: nextBackend,
           });
           return;
         }
-        console.info('[attach-debug] creating adapter', { nextBackend });
         const nextAdapter =
           nextBackend === 'webgpu'
             ? await createMilkdropRendererAdapter({
@@ -149,9 +147,6 @@ export function createMilkdropExperienceAttachmentController({
           nextAdapter.dispose();
           return;
         }
-        console.info('[attach-debug] adapter created, activating', {
-          nextBackend,
-        });
         setActiveBackend(nextBackend);
         setDocumentActiveBackend(nextBackend);
         vm.setWebGpuOptimizationFlags(effectiveOptimizationFlags);
@@ -210,6 +205,7 @@ export function createMilkdropExperienceAttachmentController({
           triggerWebglFallback({
             presetId: compiled.source.id,
             reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            backend: nextBackend,
           });
           return;
         }

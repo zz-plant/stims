@@ -435,11 +435,14 @@
   }
 
   .stims-shell__launch-source-minimal .stims-shell__source-card {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 1px;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
+    min-height: 0;
+    padding: 10px 14px;
+    border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(255, 255, 255, 0.02);
     font-size: 0.82rem;
@@ -453,8 +456,11 @@
     font-size: 0.72rem;
   }
 
+  /* Base styles give the header width:100% for the grid-card layout;
+     here it is a fixed icon column spanning both text rows. */
   .stims-shell__launch-source-minimal .stims-shell__source-card-header {
-    flex-shrink: 0;
+    grid-row: 1 / 3;
+    width: auto;
   }
 
   .stims-shell__launch-source-minimal .stims-shell__source-card-kicker {

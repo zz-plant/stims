@@ -2493,7 +2493,10 @@ body[data-page="workspace"][data-live="true"] {
     }
 
     .stims-shell__stage-frame[data-mode="home"] {
+      /* Fill the stage-section flex column instead of hugging content,
+         so the frame reaches the bottom of small screens. */
       min-height: auto;
+      flex: 1 1 auto;
       overflow: visible;
       border-radius: 14px;
     }
