@@ -25,6 +25,7 @@ import {
   buildMesh,
   buildMeshField,
   buildMotionVectors,
+  getMeshDensity,
   resetFrameTransformCache,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
@@ -50,6 +51,7 @@ import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
+import { deriveMilkdropViewportSignalValues } from './wgsl-signal-layout.ts';
 
 const objectHasOwn = (
   Object as ObjectConstructor & {
@@ -111,6 +113,12 @@ class MilkdropPresetVM implements MilkdropVM {
     music: 0,
     weighted_energy: 0,
     progress: 0,
+    aspectx: 1,
+    aspecty: 1,
+    pixelsx: 1280,
+    pixelsy: 1280,
+    meshx: 48,
+    meshy: 48,
     pi: Math.PI,
     e: Math.E,
   };
@@ -479,6 +487,14 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.frame = signals.frame;
     this.signalEnv.fps = signals.fps;
     this.signalEnv.aspect = signals.aspect ?? 1;
+    const viewport = deriveMilkdropViewportSignalValues(signals);
+    this.signalEnv.aspectx = viewport.aspectx;
+    this.signalEnv.aspecty = viewport.aspecty;
+    this.signalEnv.pixelsx = viewport.pixelsx;
+    this.signalEnv.pixelsy = viewport.pixelsy;
+    const meshDensity = getMeshDensity(this.state, this.detailScale);
+    this.signalEnv.meshx = meshDensity;
+    this.signalEnv.meshy = meshDensity;
     this.signalEnv.bass = signals.bass;
     this.signalEnv.mid = signals.mid;
     this.signalEnv.med = signals.mid;

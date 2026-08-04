@@ -69,10 +69,6 @@ const PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS = `
     return float(int(left) & int(right));
   }
 
-  float milkdropBitNot(float value) {
-    return float(~int(value));
-  }
-
   float milkdropFrac(float value) {
     return value - floor(value);
   }
@@ -256,11 +252,11 @@ function buildGpuFieldExpressionShaderSource(
         case 'sign':
           return `sign(${args[0]})`;
         case 'bor':
-          return `milkdropBitOr(${args[0]}, ${args[1]})`;
+          return `((milkdropBool(${args[0]}) > 0.5 || milkdropBool(${args[1]}) > 0.5) ? 1.0 : 0.0)`;
         case 'band':
-          return `milkdropBitAnd(${args[0]}, ${args[1]})`;
+          return `((milkdropBool(${args[0]}) > 0.5 && milkdropBool(${args[1]}) > 0.5) ? 1.0 : 0.0)`;
         case 'bnot':
-          return `milkdropBitNot(${args[0]})`;
+          return `(milkdropBool(${args[0]}) > 0.5 ? 0.0 : 1.0)`;
         case 'atan2':
           return `atan(${args[0]}, ${args[1]})`;
         case 'frac':
@@ -275,6 +271,9 @@ function buildGpuFieldExpressionShaderSource(
           return `milkdropEqual(${args[0]}, ${args[1]})`;
         case 'rand':
           return `milkdropRand(${args[0]})`;
+        case 'exec2':
+        case 'exec3':
+          return args[args.length - 1] ?? '0.0';
         default:
           return `${expression.name}(${args.join(', ')})`;
       }

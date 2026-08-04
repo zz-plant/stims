@@ -5,6 +5,10 @@ import {
   shouldPreferWebGLForKnownCompatibilityGaps,
 } from '../../src/js/core/renderer-query-override.ts';
 import {
+  clearPresetWebglFallbacks,
+  markPresetNeedsWebgl,
+} from '../../src/js/core/state/preset-webgl-fallback.ts';
+import {
   setWebGpuForceMode,
   shouldUseSafeMilkdropWebGpuPath,
 } from '../../src/js/milkdrop/webgpu-query-override.ts';
@@ -19,6 +23,7 @@ afterEach(() => {
   restoreUserAgent();
   restoreUserAgent = () => {};
   clearWebGPUCompatibilityGapOverride();
+  clearPresetWebglFallbacks();
   setWebGpuForceMode('auto');
 });
 
@@ -37,6 +42,30 @@ test('renderer query override honors explicit live webgpu requests', () => {
     'location',
     new URL('http://localhost/?renderer=webgpu'),
   );
+  expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(false);
+});
+
+test('a preset already marked as needing webgl wins over an explicit renderer=webgpu request', () => {
+  restoreLocation = replaceProperty(
+    window,
+    'location',
+    new URL(
+      'http://localhost/?renderer=webgpu&preset=rovastar-parallel-universe',
+    ),
+  );
+  markPresetNeedsWebgl('rovastar-parallel-universe');
+
+  expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(true);
+});
+
+test('a different preset is unaffected by another preset needing webgl', () => {
+  restoreLocation = replaceProperty(
+    window,
+    'location',
+    new URL('http://localhost/?renderer=webgpu&preset=some-other-preset'),
+  );
+  markPresetNeedsWebgl('rovastar-parallel-universe');
+
   expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(false);
 });
 

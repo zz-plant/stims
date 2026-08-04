@@ -5214,6 +5214,94 @@
         "audioMode": "demo",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--dbleja-hovering-over-mars--20260804200646",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "dbleja-hovering-over-mars",
+      "title": null,
+      "createdAt": "2026-08-04T20:06:46.708Z",
+      "files": {
+        "image": "milkdrop--preset-dbleja-hovering-over-mars-1785874006471.png",
+        "debugSnapshot": "milkdrop--preset-dbleja-hovering-over-mars-1785874006471.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=dbleja-hovering-over-mars&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--dbleja-hovering-over-pluto--20260804200648",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "dbleja-hovering-over-pluto",
+      "title": null,
+      "createdAt": "2026-08-04T20:06:48.633Z",
+      "files": {
+        "image": "milkdrop--preset-dbleja-hovering-over-pluto-1785874008238.png",
+        "debugSnapshot": "milkdrop--preset-dbleja-hovering-over-pluto-1785874008238.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=dbleja-hovering-over-pluto&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-ether--20260804200851",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-ether",
+      "title": null,
+      "createdAt": "2026-08-04T20:08:51.109Z",
+      "files": {
+        "image": "milkdrop--preset-eos-ether-1785874130901.png",
+        "debugSnapshot": "milkdrop--preset-eos-ether-1785874130901.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-ether&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260804201032",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-magnetosphere-13-pulsar",
+      "title": null,
+      "createdAt": "2026-08-04T20:10:32.648Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-magnetosphere-13-pulsar-1785874232446.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-magnetosphere-13-pulsar-1785874232446.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-phat-magnetosphere-13-pulsar&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
     }
   ]
 }

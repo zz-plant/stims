@@ -289,7 +289,7 @@ function transformMeshPoint({
   return transformed;
 }
 
-function getMeshDensity(state: MutableState, detailScale: number) {
+export function getMeshDensity(state: MutableState, detailScale: number) {
   return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 48);
 }
 
