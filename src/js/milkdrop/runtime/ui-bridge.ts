@@ -234,7 +234,7 @@ export function installMilkdropRuntimeKeybindings({
         label: 'Wave scale',
         digits: 3,
       },
-      e: {
+      q: {
         key: 'video_echo_zoom',
         delta: -0.01,
         min: 0.85,
@@ -274,12 +274,6 @@ export function installMilkdropRuntimeKeybindings({
       return;
     }
 
-    const activePresetId = getActivePresetId();
-    if (event.key === 'f' && activePresetId && getActiveCatalogEntry()) {
-      toggleFavorite(activePresetId);
-      event.preventDefault();
-      return;
-    }
     if (
       (event.key === 'l' || event.key === 'L') &&
       togglePresetLock &&
@@ -291,9 +285,6 @@ export function installMilkdropRuntimeKeybindings({
       );
       event.preventDefault();
       return;
-    }
-    if (/^[1-5]$/u.test(event.key) && activePresetId) {
-      setRating(activePresetId, Number.parseInt(event.key, 10));
     }
   };
 
