@@ -248,8 +248,14 @@ export function createMilkdropExperience({
 
   const backendFailover = createMilkdropBackendFailover({
     preferences,
-    reload: () => {
-      window.location.reload();
+    reload: (presetId) => {
+      // Carry the preset id in the URL so the reload's renderer selection can
+      // see it: shouldPreferWebGLForKnownCompatibilityGaps only consults
+      // ?preset=, and without it the reload mounts WebGPU again, hits the same
+      // descriptor fallback, and reloads forever.
+      const url = new URL(window.location.href);
+      url.searchParams.set('preset', presetId);
+      window.location.replace(url.toString());
     },
   });
   let overlay: MilkdropOverlay | null = null;
@@ -363,14 +369,19 @@ export function createMilkdropExperience({
   const triggerWebglFallback = ({
     presetId,
     reason,
+    backend,
   }: {
     presetId: string;
     reason: string;
+    /** The backend the caller is falling back FROM. Needed during attachment,
+     * where the module-level activeBackend still holds its pre-mount default
+     * and would make the failover guard silently drop the request. */
+    backend?: 'webgl' | 'webgpu';
   }) => {
     backendFailover.trigger({
       presetId,
       reason,
-      activeBackend,
+      activeBackend: backend ?? activeBackend,
     });
   };
 

@@ -29,7 +29,7 @@ export function createMilkdropBackendFailover({
   preferences: {
     recordFallback(args: { presetId: string; reason: string }): void;
   };
-  reload: () => void;
+  reload: (presetId: string) => void;
 }) {
   let fallbackTriggered = false;
 
@@ -53,7 +53,7 @@ export function createMilkdropBackendFailover({
       // compatibility-mode preference here would persist a device-wide WebGL
       // downgrade for every future preset and session.
       markPresetNeedsWebgl(presetId);
-      reload();
+      reload(presetId);
       return true;
     },
     hasTriggered() {
