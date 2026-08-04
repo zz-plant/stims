@@ -41,6 +41,9 @@ export interface EngineContextValue {
   starterPresets: StarterPreset[];
 
   exportPreset: () => void;
+  revertEditorSource: () => void;
+  duplicatePreset: () => Promise<void>;
+  deleteActivePreset: () => Promise<void>;
   getVideoExportRuntime: () => CanvasVideoExportRuntime | null;
   importPresetFiles: (files: FileList | null) => Promise<void>;
   requestPresetPreviews: (presetIds: string[]) => Promise<void>;

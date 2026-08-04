@@ -387,6 +387,15 @@ export function useWorkspaceSessionState({
     exportPreset: () => {
       engineRef.current?.exportPreset();
     },
+    revertEditorSource: () => {
+      engineRef.current?.revertEditorSource();
+    },
+    duplicatePreset: async () => {
+      await engineRef.current?.duplicatePreset();
+    },
+    deleteActivePreset: async () => {
+      await engineRef.current?.deleteActivePreset();
+    },
     getVideoExportRuntime: () =>
       engineRef.current?.getVideoExportRuntime() ?? null,
     fallbackCatalog,

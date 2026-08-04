@@ -15,6 +15,7 @@ export function useKeyboardShortcuts({
   handleShufflePreset,
   handlePreviousPreset,
   handleAudioStop,
+  handleVisualSearch,
   handleToggleFullscreen,
   setShowShortcuts,
 }: {
@@ -27,6 +28,7 @@ export function useKeyboardShortcuts({
   handleShufflePreset: () => void;
   handlePreviousPreset: () => void;
   handleAudioStop: () => void;
+  handleVisualSearch: () => Promise<void>;
   handleToggleFullscreen: () => void;
   setShowShortcuts: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
@@ -44,6 +46,8 @@ export function useKeyboardShortcuts({
   handleAudioStopRef.current = handleAudioStop;
   const handleToggleFullscreenRef = useRef(handleToggleFullscreen);
   handleToggleFullscreenRef.current = handleToggleFullscreen;
+  const handleVisualSearchRef = useRef(handleVisualSearch);
+  handleVisualSearchRef.current = handleVisualSearch;
 
   useEffect(() => {
     const shortcutOverrides = readShortcutOverrides();
@@ -79,6 +83,14 @@ export function useKeyboardShortcuts({
       } else if (eventMatchesShortcut(event, 'editor', shortcutOverrides)) {
         event.preventDefault();
         updatePanelRef.current(panel === 'editor' ? null : 'editor');
+      } else if (eventMatchesShortcut(event, 'refine', shortcutOverrides)) {
+        event.preventDefault();
+        updatePanelRef.current(panel === 'refine' ? null : 'refine');
+      } else if (
+        eventMatchesShortcut(event, 'visualsearch', shortcutOverrides)
+      ) {
+        event.preventDefault();
+        void handleVisualSearchRef.current();
       } else if (eventMatchesShortcut(event, 'shuffle', shortcutOverrides)) {
         event.preventDefault();
         void handleShufflePresetRef.current();

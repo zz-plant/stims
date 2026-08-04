@@ -1,47 +1,65 @@
 import { useEffect, useRef } from 'react';
+import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
+import { useEngineSnapshot } from './engine-context.tsx';
+import { useWorkspace } from './workspace-context.tsx';
 
 export function EditorPanel() {
   const hostRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<{
+    setSessionState: (state: MilkdropEditorSessionState) => void;
+    element: HTMLElement;
+  } | null>(null);
+  const { engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
+
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    let panel: InstanceType<
-      typeof import('../milkdrop/overlay/editor-panel.ts').EditorPanel
-    > | null = null;
+    let cancelled = false;
 
     import('../milkdrop/overlay/editor-panel.ts').then(({ EditorPanel }) => {
-      panel = new EditorPanel({
-        onEditorSourceChange: (source) => {
-          window.dispatchEvent(
-            new CustomEvent('stims:editor:source-change', {
-              detail: { source },
-            }),
-          );
+      if (cancelled) return;
+
+      const panel = new EditorPanel({
+        onEditorSourceChange: (source: string) => {
+          engineRef.current.updateEditorSource(source);
         },
         onRevertToActive: () => {
-          window.dispatchEvent(new CustomEvent('stims:editor:revert'));
+          engineRef.current.revertEditorSource();
         },
         onExport: () => {
-          window.dispatchEvent(new CustomEvent('stims:editor:export'));
+          engineRef.current.exportPreset();
         },
         onDuplicatePreset: () => {
-          window.dispatchEvent(new CustomEvent('stims:editor:duplicate'));
+          void engineRef.current.duplicatePreset();
         },
         onDeletePreset: () => {
-          window.dispatchEvent(new CustomEvent('stims:editor:delete'));
+          void engineRef.current.deleteActivePreset();
         },
         onRequestImport: () => {},
       });
+      panelRef.current = panel;
       host.appendChild(panel.element);
     });
 
     return () => {
-      panel?.element.remove();
-      panel = null;
+      cancelled = true;
+      panelRef.current?.element.remove();
+      panelRef.current = null;
     };
   }, []);
+
+  const sessionState = engineSnapshot?.sessionState ?? null;
+
+  useEffect(() => {
+    if (sessionState && panelRef.current) {
+      panelRef.current.setSessionState(sessionState);
+    }
+  }, [sessionState]);
 
   return <div ref={hostRef} className="stims-shell__editor-host" />;
 }

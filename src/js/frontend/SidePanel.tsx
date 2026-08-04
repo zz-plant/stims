@@ -13,6 +13,10 @@ import {
 } from '../core/services/audio-matcher.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -244,8 +248,11 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
   }> | null>(null);
   const [loading, setLoading] = useState(false);
   const { engine } = useWorkspace();
-  const { engineSnapshot } = useEngineSnapshot();
-  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
+  const [audioEnergy, setEnergy] = useState(getAudioEnergy);
+
+  useEffect(() => {
+    return subscribeAudioEnergy(() => setEnergy(getAudioEnergy()));
+  }, []);
 
   const handleMatch = useCallback(async () => {
     if (!audioEnergy || loading) return;
