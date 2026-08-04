@@ -107,8 +107,9 @@ browserTest(
     });
 
     try {
+      // agent=true keeps the drawing buffer readable for readPixels below.
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true`,
         { waitUntil: 'domcontentloaded' },
       );
 
@@ -187,9 +188,12 @@ browserTest(
     });
 
     try {
-      // Load first preset
+      // Load first preset. agent=true turns on preserveDrawingBuffer —
+      // without it, toDataURL() outside the frame callback reads the
+      // cleared (opaque black) buffer, and both captures hash identically
+      // no matter what the preset draws.
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true`,
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('#stims-main', { timeout: 30000 });
