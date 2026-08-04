@@ -233,6 +233,38 @@ per_frame_1=q1=aspect
     ).toBeCloseTo(16 / 9, 6);
   });
 
+  test('exposes MilkDrop aspect, pixel, and mesh builtins to VM equations', () => {
+    const preset = compileMilkdropPresetSource(`
+[preset00]
+title=viewport-builtins
+mesh_density=24
+per_frame_1=q1=aspectx
+per_frame_2=q2=aspecty
+per_frame_3=q3=pixelsx
+per_frame_4=q4=pixelsy
+per_frame_5=q5=meshx
+per_frame_6=q6=meshy
+`);
+    const vm = createMilkdropVM(preset);
+
+    const landscape = vm.step(
+      makeSignals({ frame: 1, aspect: 16 / 9 }),
+    ).variables;
+    expect(landscape.q1).toBeCloseTo(1, 6);
+    expect(landscape.q2).toBeCloseTo(16 / 9, 6);
+    expect(landscape.q3).toBeGreaterThan(0);
+    expect(landscape.q4).toBeGreaterThan(0);
+    expect((landscape.q3 ?? 0) / (landscape.q4 ?? 1)).toBeCloseTo(16 / 9, 2);
+    expect(landscape.q5).toBe(24);
+    expect(landscape.q6).toBe(24);
+
+    const portrait = vm.step(
+      makeSignals({ frame: 2, aspect: 9 / 16 }),
+    ).variables;
+    expect(portrait.q1).toBeCloseTo(16 / 9, 6);
+    expect(portrait.q2).toBeCloseTo(1, 6);
+  });
+
   test('generates parity-oriented frame state with custom waves, shapes, borders, and post state', () => {
     const preset = compileMilkdropPresetSource(
       `
