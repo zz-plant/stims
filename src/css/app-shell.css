@@ -1324,6 +1324,93 @@ body[data-page="workspace"][data-live="true"] {
     width: auto;
   }
 
+  .stims-shell__launch-center {
+    display: grid;
+    justify-items: start;
+    gap: 18px;
+    width: min(52rem, 100%);
+  }
+
+  .stims-shell__launch-title {
+    margin: 0;
+    font-family: var(--stims-display);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 600;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    color: var(--stims-ink-strong);
+  }
+
+  .stims-shell__launch-tagline {
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .stims-shell__launch-resume-art {
+    width: min(16rem, 100%);
+  }
+
+  .stims-shell__launch-actions-minimal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .stims-shell__launch-cta,
+  .stims-shell__launch-secondary {
+    padding: 12px 22px;
+    border-radius: var(--stims-radius-control);
+    font-family: var(--font-family-base);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background-color var(--transition-base),
+      border-color var(--transition-base),
+      transform var(--transition-base);
+  }
+
+  .stims-shell__launch-cta {
+    border: 1px solid transparent;
+    background: var(--stims-accent);
+    color: #14100c;
+  }
+
+  .stims-shell__launch-cta:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--stims-accent) 88%, #ffffff);
+    transform: translateY(-1px);
+  }
+
+  .stims-shell__launch-cta:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .stims-shell__launch-secondary {
+    border: 1px solid var(--stims-line-strong);
+    background: var(--stims-control-fill);
+    color: var(--stims-ink-strong);
+  }
+
+  .stims-shell__launch-secondary:hover {
+    border-color: color-mix(
+      in srgb,
+      var(--stims-cool) 55%,
+      var(--stims-line-strong)
+    );
+    background: var(--stims-control-fill-hover);
+  }
+
+  .stims-shell__launch-source-minimal {
+    width: 100%;
+    margin-top: 10px;
+  }
+
   .stims-shell__preset-tech {
     padding: 4px 8px;
     border: 1px solid var(--stims-line-soft);

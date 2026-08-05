@@ -71,6 +71,10 @@ html.light .stims-shell__preset-card {
   box-shadow: 0 8px 18px rgba(35, 48, 56, 0.08);
 }
 
+html.light .stims-shell__launch-cta {
+  color: #fffaf0;
+}
+
 html.light .stims-shell__launch-source-dock .stims-shell__youtube-primary,
 html.light .stims-shell__launch-source-dock .stims-shell__source-grid {
   background: transparent;
@@ -258,6 +262,41 @@ html.light .milkdrop-overlay__editor .cm-focused .cm-cursor {
 html.light .milkdrop-overlay__editor .cm-focused .cm-selectionBackground,
 html.light .milkdrop-overlay__editor ::selection {
   background-color: rgba(59, 130, 246, 0.18);
+}
+
+/* Tooltips (hover docs, lint) and panels (search, lint list) render inside
+   the editor root but the base theme is oneDark, so they stay dark-styled
+   unless patched here too. */
+html.light .milkdrop-overlay__editor .cm-tooltip {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+html.light
+  .milkdrop-overlay__editor
+  .cm-tooltip-autocomplete
+  ul
+  li[aria-selected] {
+  background: rgba(59, 130, 246, 0.16);
+  color: #1e293b;
+}
+
+html.light .milkdrop-overlay__editor .cm-panels {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+html.light .milkdrop-overlay__editor .cm-panel input.cm-textfield {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+html.light .milkdrop-overlay__editor .cm-panel button.cm-button {
+  background: rgba(226, 232, 240, 0.8);
+  color: #1e293b;
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 html.light .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool,

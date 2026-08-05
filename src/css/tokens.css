@@ -68,6 +68,23 @@
   --highlight-glow: rgba(244, 122, 84, 0.22);
 
   /* ── App-shell semantic colors ──────────────────────────────── */
+  --stims-ink: var(--text-color);
+  --stims-ink-strong: #fff8ef;
+  --stims-muted: rgba(246, 239, 228, 0.74);
+  --stims-line: var(--stims-white-12);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-line-soft: var(--stims-white-08);
+  --stims-cool: #77c9ff;
+  --stims-accent: #f47a54;
+  --stims-accent-soft: rgba(244, 122, 84, 0.2);
+  --stims-accent-glow: rgba(244, 122, 84, 0.18);
+  --stims-good: #7de0a2;
+  --stims-warn: #ffd166;
+  --stims-bad: #ff7b72;
+  --stims-danger: var(--stims-bad);
+  /* Ink on top of the warm accent fill (accent is light in dark mode,
+     dark in light mode — flipped in the light block below). */
+  --stims-on-accent: #14100c;
 
   /* ── Surface Gradients & Effects ──────────────────────────────── */
   --surface-gradient: linear-gradient(
@@ -149,7 +166,7 @@
   --stims-radius: 4px;
   --stims-radius-panel: 4px;
   --stims-radius-card: 4px;
-  --stims-radius-control: 2px;
+  --stims-radius-control: 4px;
   --stims-radius-stage: 6px;
 
   /* ── Typography ────────────────────────────────────────────── */
@@ -195,7 +212,8 @@
   --content-width: 1220px;
   --section-gap: clamp(1.9rem, 2.8vw, 3rem);
   --touch-target-min: 44px;
-  --focus-ring: 0 0 0 3px rgba(119, 201, 255, 0.42);
+  /* Focus = warm accent, everywhere. Selection stays cool. */
+  --focus-ring: 0 0 0 3px rgba(244, 122, 84, 0.42);
   --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
 
   /* ── Z-Index Scale ─────────────────────────────────────────-- */
