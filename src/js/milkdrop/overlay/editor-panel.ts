@@ -1617,7 +1617,7 @@ export class EditorPanel {
     const instruction = `Fix this compiler error: "${diag.message}" at line ${diag.line}. Keep the preset style but fix the syntax or math.`;
 
     this.setRefinePending(true);
-    fetch('https://toil.fyi/api/refine-preset', {
+    fetch('/api/refine-preset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentSource: source, instruction }),
@@ -1644,7 +1644,7 @@ export class EditorPanel {
   private handleBatchGenerate() {
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
-    fetch('https://toil.fyi/api/batch-generate', {
+    fetch('/api/batch-generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: source.slice(0, 500), count: 3 }),
@@ -1686,7 +1686,7 @@ export class EditorPanel {
   private doBlend(sourceB: string) {
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
-    fetch('https://toil.fyi/api/blend-presets', {
+    fetch('/api/blend-presets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourceA: source, sourceB }),

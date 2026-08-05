@@ -302,6 +302,7 @@ export function createMilkdropPostprocessingComposer({
     render: () => composer.render(),
     updateSize,
     dispose: () => {
+      bloomPass?.dispose();
       afterimagePass?.dispose();
       composer.dispose();
     },

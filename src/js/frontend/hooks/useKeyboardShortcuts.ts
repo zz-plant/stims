@@ -50,8 +50,8 @@ export function useKeyboardShortcuts({
   handleVisualSearchRef.current = handleVisualSearch;
 
   useEffect(() => {
-    const shortcutOverrides = readShortcutOverrides();
     const handleKeyDown = (event: KeyboardEvent) => {
+      const shortcutOverrides = readShortcutOverrides();
       if (
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement ||
