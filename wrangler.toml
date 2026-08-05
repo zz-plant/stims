@@ -23,7 +23,3 @@ database_id = "89718825-6d36-4578-b97e-9eba1d60d75d"
 binding = "GALLERY_R2"
 bucket_name = "stims-gallery"
 
-[[env.production.vectorize]]
-binding = "VECTOR_INDEX"
-index_name = "stims-presets"
-

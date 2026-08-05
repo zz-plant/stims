@@ -17,11 +17,5 @@
       "database_name": "stims-gallery",
       "database_id": "89718825-6d36-4578-b97e-9eba1d60d75d"
     }
-  ],
-  "vectorize": [
-    {
-      "binding": "VECTOR_INDEX",
-      "index_name": "stims-presets"
-    }
   ]
 }
