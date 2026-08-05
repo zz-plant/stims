@@ -16,25 +16,11 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 ## 60-second bootstrap
 
-When the repo state is unknown, start here:
-
-```bash
-bun run setup:codex --status
-bun run setup:codex --print-plan
-bun run setup:codex
-```
-
-The default setup path installs dependencies and runs `bun run check:quick`, which is usually enough to establish a safe starting point before targeted work. Repeated setup runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
-
-If you want a warmer long-lived session on a machine that exposes the local helper commands, use:
-
-```bash
-bun run session:codex -- --profile review
-```
+When the repo state is unknown, run `bun run setup:codex --status` for a quick readiness read, then follow the full bootstrap sequence and session-profile options in [`agent-handoffs.md`](./agent-handoffs.md#60-second-bootstrap) — that page is the canonical source for this, kept here as a pointer only so the two copies can't drift.
 
 ## Task routing
 
-Use [`custom-capabilities.md`](./custom-capabilities.md) first when the task matches a repeatable repo-local workflow. Fast path:
+[`custom-capabilities.md`](./custom-capabilities.md#skills) holds the canonical skill/workflow routing table (15 skills, 5 workflows) — open it first when the task matches a repeatable repo-local pattern. If you need the five most common entry points before opening that file:
 
 | If the task is mainly about... | Start here |
 | --- | --- |

@@ -83,13 +83,7 @@ Keep ownership crisp:
 
 ## Fast routing
 
-Use this map before opening deeper docs:
-
-- runtime, shell, loader, renderer, audio, or routing: [`../../.agent/skills/modify-visualizer-runtime/SKILL.md`](../../.agent/skills/modify-visualizer-runtime/SKILL.md)
-- presets, catalog, editor, import/export, or compatibility: [`../../.agent/skills/modify-preset-workflow/SKILL.md`](../../.agent/skills/modify-preset-workflow/SKILL.md)
-- browser verification: [`../../.agent/skills/play-visualizer/SKILL.md`](../../.agent/skills/play-visualizer/SKILL.md) and [`./visual-testing.md`](./visual-testing.md)
-- iterative checks during implementation: [`../../.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md)
-- end-to-end product work: [`../../.agent/skills/ship-visualizer-change/SKILL.md`](../../.agent/skills/ship-visualizer-change/SKILL.md)
+[`custom-capabilities.md`](./custom-capabilities.md#skills) is the canonical skill/workflow routing table — use it to pick the right playbook before splitting or starting work.
 
 ## Handoff packet
 
