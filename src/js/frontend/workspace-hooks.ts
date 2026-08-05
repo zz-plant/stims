@@ -40,6 +40,9 @@ import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
 const log = createLogger('WorkspaceHooks');
 
+const SUPERSEDED_MOUNT_MESSAGE =
+  'MilkDrop engine session was superseded during mount.';
+
 export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
@@ -214,9 +217,7 @@ export function useWorkspaceSessionState({
           // avoids leaking a second live renderer that could resurface and
           // fight the active one for the canvas.
           adapter.dispose();
-          throw new Error(
-            'MilkDrop engine session was superseded during mount.',
-          );
+          throw new Error(SUPERSEDED_MOUNT_MESSAGE);
         }
         return adapter;
       })();
@@ -269,6 +270,14 @@ export function useWorkspaceSessionState({
     }
 
     void ensureEngineMounted().catch((error) => {
+      if (
+        error instanceof Error &&
+        error.message === SUPERSEDED_MOUNT_MESSAGE
+      ) {
+        // Benign: a newer session generation owns the canvas. The remounted
+        // effect runs its own ensureEngineMounted, so nothing is lost.
+        return;
+      }
       setStatusMessage(
         error instanceof Error
           ? error.message
