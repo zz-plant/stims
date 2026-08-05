@@ -65,6 +65,10 @@ export function buildGatePlan(
     ],
     concurrent: [
       {
+        label: 'Asset health check',
+        cmd: ['bun', 'run', 'assets:check'],
+      },
+      {
         label: 'Biome check',
         cmd: ['bun', 'run', 'biome:check'],
       },
@@ -172,27 +176,58 @@ async function runStepListSerial(steps: readonly GateStep[]) {
   }
 }
 
+type RunningStep = {
+  step: GateStep;
+  proc: ReturnType<typeof Bun.spawn>;
+  promise: Promise<GateStepResult>;
+};
+
 async function runStepListConcurrent(steps: readonly GateStep[]) {
-  const pending = new Map(steps.map((step, index) => [index, runStep(step)]));
-  const results: GateStepResult[] = [];
+  const runningSteps: RunningStep[] = steps.map((step) => {
+    const proc = Bun.spawn({
+      cmd: step.cmd,
+      cwd: process.cwd(),
+      stdin: 'inherit',
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const promise = Promise.all([
+      proc.exited,
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]).then(([exitCode, stdout, stderr]) => ({
+      step,
+      exitCode,
+      stdout: stdout.trim(),
+      stderr: stderr.trim(),
+    }));
+
+    return { step, proc, promise };
+  });
+
+  const pending = new Map(
+    runningSteps.map((item, index) => [
+      index,
+      item.promise.then((result) => ({ index, result })),
+    ]),
+  );
 
   while (pending.size > 0) {
-    const { index, result } = await Promise.race(
-      Array.from(pending.entries(), ([currentIndex, promise]) =>
-        promise.then((stepResult) => ({
-          index: currentIndex,
-          result: stepResult,
-        })),
-      ),
-    );
+    const { index, result } = await Promise.race(pending.values());
     pending.delete(index);
-    results.push(result);
     printStepResult(result);
-  }
 
-  const firstFailure = results.find((result) => result.exitCode !== 0);
-  if (firstFailure) {
-    process.exit(firstFailure.exitCode);
+    if (result.exitCode !== 0) {
+      for (const [idx] of pending.entries()) {
+        try {
+          runningSteps[idx].proc.kill();
+        } catch {
+          // ignore if process exited
+        }
+      }
+      process.exit(result.exitCode);
+    }
   }
 }
 
