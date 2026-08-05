@@ -40,6 +40,7 @@ import {
   lineNumbers,
   rectangularSelection,
 } from '@codemirror/view';
+import { renderIconSvg } from '../../ui/icon-library.ts';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
@@ -1279,14 +1280,20 @@ export class EditorPanel {
     );
     const shouldShowStatus = hasErrors || state.dirty || this.hasBufferedEdits;
     const baseStatus = hasErrors
-      ? `⚠️ ${errors.length} compile/syntax error${errors.length === 1 ? '' : 's'} in draft. The stage is holding the last good frame.`
+      ? `${errors.length} compile/syntax error${errors.length === 1 ? '' : 's'} in draft. The stage is holding the last good frame.`
       : this.hasBufferedEdits
         ? 'Typing… the next patch is queued. Press Cmd/Ctrl+Enter to punch it in immediately.'
         : state.dirty
           ? 'Live patch applied. Keep shaping the draft or reset to return to the active source.'
           : '';
 
-    this.editorStatus.textContent = baseStatus;
+    if (hasErrors) {
+      this.editorStatus.innerHTML = `${renderIconSvg('warning', {
+        className: 'milkdrop-overlay__editor-status-icon',
+      })}${baseStatus}`;
+    } else {
+      this.editorStatus.textContent = baseStatus;
+    }
     this.editorStatus.hidden = !shouldShowStatus;
     if (hasErrors) {
       this.editorStatus.classList.add('milkdrop-overlay__editor-status--error');

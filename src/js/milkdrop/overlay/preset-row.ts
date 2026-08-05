@@ -1,3 +1,4 @@
+import { renderIconSvg } from '../../ui/icon-library.ts';
 import type { VisualFidelityTier } from '../catalog-store-analysis.ts';
 import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type {
@@ -464,7 +465,11 @@ function buildPresetRow({
   const favorite = document.createElement('button');
   favorite.type = 'button';
   favorite.className = 'milkdrop-overlay__favorite';
-  favorite.textContent = preset.isFavorite ? '★' : '☆';
+  favorite.classList.toggle(
+    'milkdrop-overlay__favorite--active',
+    preset.isFavorite,
+  );
+  favorite.innerHTML = renderIconSvg('star');
   favorite.setAttribute(
     'aria-label',
     preset.isFavorite ? 'Remove saved preset' : 'Save preset',

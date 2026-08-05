@@ -59,9 +59,14 @@ export function ShortcutsDialog({
     }
     const next = { ...overrides, [actionId]: keys };
     setOverrides(next);
-    writeShortcutOverrides(next);
     setEditing(null);
-    setWarning(null);
+    if (writeShortcutOverrides(next)) {
+      setWarning(null);
+    } else {
+      setWarning(
+        'Shortcut updated for this session, but could not be saved for next time.',
+      );
+    }
   };
 
   return (

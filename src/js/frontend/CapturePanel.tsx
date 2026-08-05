@@ -54,7 +54,7 @@ export function CapturePanel() {
     setSupport(exporter.getSupport());
     return () => {
       if (exporter.getRecordingStatus()) {
-        void exporter.stopRecording();
+        void exporter.stopRecording().catch(() => {});
       }
       exporterRef.current = null;
     };
@@ -94,14 +94,25 @@ export function CapturePanel() {
     const exporter = exporterRef.current;
     if (!exporter) return;
     setStatus('Finishing video…');
-    const blob = await exporter.stopRecording();
-    setRecording(false);
-    if (!blob) {
-      setStatus('No video frames were captured. Try recording again.');
-      return;
+    try {
+      const blob = await exporter.stopRecording();
+      if (!blob) {
+        setStatus('No video frames were captured. Try recording again.');
+        return;
+      }
+      exporter.downloadVideo(blob, getFilename(preset, blob.type));
+      setStatus('Video saved to your downloads.');
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? `Recording could not be saved: ${error.message}`
+          : 'Recording could not be saved. Try again.',
+      );
+    } finally {
+      // Always clear the recording flag so a failure can't wedge the Stop
+      // button into a permanently "Finishing video…" state.
+      setRecording(false);
     }
-    exporter.downloadVideo(blob, getFilename(preset, blob.type));
-    setStatus('Video saved to your downloads.');
   }, [preset]);
 
   return (

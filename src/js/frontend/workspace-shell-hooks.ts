@@ -86,7 +86,12 @@ export function useWorkspaceShellOrchestration({
     [engineSnapshot, fallbackCatalogReady, enrichedCatalog],
   );
 
-  const catalogError = null;
+  // Only report a catalog error when there is nothing to show — a fallback
+  // fetch failure is irrelevant once the runtime catalog is populated.
+  const catalogError = useMemo(
+    () => (enrichedCatalog.length === 0 ? fallbackCatalogError : null),
+    [enrichedCatalog, fallbackCatalogError],
+  );
 
   const filteredCatalog = useMemo(
     () =>
@@ -149,10 +154,7 @@ export function useWorkspaceShellOrchestration({
     [engineSnapshot?.runtimeReady],
   );
 
-  const engineReady = useMemo(
-    () => fallbackCatalogError === null,
-    [fallbackCatalogError],
-  );
+  const engineReady = useMemo(() => catalogError === null, [catalogError]);
 
   const missingRequestedPreset = Boolean(
     routeState.presetId &&
@@ -188,6 +190,7 @@ export function useWorkspaceShellOrchestration({
     }),
     [
       enrichedCatalog,
+      catalogError,
       catalogReady,
       currentPreset,
       engineReady,
@@ -534,8 +537,16 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handleImport = async (files: FileList | null) => {
-    await importPresetFiles(files);
-    updatePanel('editor');
+    try {
+      await importPresetFiles(files);
+      updatePanel('editor');
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : 'Preset import failed. The files may be unreadable or storage may be full.',
+      );
+    }
   };
 
   const handleShowCurrentLink = async () => {

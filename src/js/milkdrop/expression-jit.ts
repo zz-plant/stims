@@ -303,8 +303,13 @@ function compileStatementSource(
   }
 
   // The value is evaluated before the target index, matching the order the
-  // interpreter used.
+  // interpreter used. Non-finite results (e.g. pow(-1, 0.5), ^ with a
+  // fractional exponent on a negative base) are clamped to 0 here, matching
+  // MilkDrop's own behavior of never letting NaN/Infinity escape an
+  // expression — state persists across frames, so an unclamped NaN would
+  // otherwise poison that variable for the rest of the preset's lifetime.
   body.push(`_v = ${compileNode(statement.expression, context)};`);
+  body.push('if (!Number.isFinite(_v)) { _v = 0; }');
   body.push(compileStore(statement, context));
   body.push(`e[${JSON.stringify(statement.target)}] = _v;`);
 }

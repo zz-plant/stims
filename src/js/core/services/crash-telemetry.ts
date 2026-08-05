@@ -13,6 +13,7 @@ export type CrashTelemetryEntry = {
     | 'unhandledrejection'
     | 'webgpu-device-lost'
     | 'webgpu-uncaptured-error'
+    | 'webgl-context-lost'
     | 'manual';
   timestamp: number;
   iso: string;
@@ -28,6 +29,7 @@ export type CrashTelemetryReport = {
     unhandledRejections: number;
     webgpuDeviceLost: number;
     webgpuUncapturedErrors: number;
+    webglContextLost: number;
     firstAt: string | null;
     lastAt: string | null;
   };
@@ -152,6 +154,25 @@ export function recordWebGpuUncapturedError(
   logger.error(`WebGPU uncaptured error: ${message}`, { message });
 }
 
+export function recordWebGLContextLost(
+  event?: { statusMessage?: string } | null,
+) {
+  const statusMessage =
+    event &&
+    typeof event.statusMessage === 'string' &&
+    event.statusMessage.trim().length > 0
+      ? event.statusMessage.trim()
+      : 'unknown';
+  pushEntry({
+    type: 'webgl-context-lost',
+    timestamp: Date.now(),
+    iso: new Date().toISOString(),
+    message: `WebGL context lost: ${statusMessage}`,
+    detail: { statusMessage },
+  });
+  logger.error(`WebGL context lost: ${statusMessage}`, { statusMessage });
+}
+
 export function getCrashTelemetryReport(): CrashTelemetryReport {
   const env =
     typeof navigator !== 'undefined'
@@ -179,6 +200,8 @@ export function getCrashTelemetryReport(): CrashTelemetryReport {
       webgpuUncapturedErrors: entries.filter(
         (e) => e.type === 'webgpu-uncaptured-error',
       ).length,
+      webglContextLost: entries.filter((e) => e.type === 'webgl-context-lost')
+        .length,
       firstAt: entries[0]?.iso ?? null,
       lastAt: entries[entries.length - 1]?.iso ?? null,
     },

@@ -83,9 +83,19 @@ export function readShortcutOverrides(): ShortcutOverrides {
   }
 }
 
-export function writeShortcutOverrides(overrides: ShortcutOverrides) {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(overrides));
+/** Returns false (instead of throwing) when the write could not persist. */
+export function writeShortcutOverrides(overrides: ShortcutOverrides): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(overrides));
+    return true;
+  } catch (error) {
+    // A quota/private-browsing failure here runs inside a keydown handler;
+    // letting it throw would take down the whole app via the error boundary
+    // for what is only a rebind that fails to persist.
+    console.warn('[shortcuts] Could not save shortcut overrides:', error);
+    return false;
+  }
 }
 
 export function eventMatchesShortcut(

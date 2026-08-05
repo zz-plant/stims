@@ -369,6 +369,7 @@ export function createToyRuntime({
     };
     previewStart = timeSource.now();
     previewLastFrame = previewStart;
+    let failureStreak = 0;
 
     const tick = (now: number) => {
       if (!previewActive) return;
@@ -392,7 +393,25 @@ export function createToyRuntime({
       frameState.waveformData = previewWaveformData;
       frameState.input = inputController.getState();
       frameState.performance = performanceController.getSettings();
-      pluginManager.update(frameState);
+      // A throwing plugin must not freeze the pre-audio preview — skip the
+      // frame and keep the loop alive unless the failure is sustained.
+      try {
+        pluginManager.update(frameState);
+        failureStreak = 0;
+      } catch (error) {
+        failureStreak += 1;
+        if (failureStreak === 1) {
+          console.warn('[stims] Preview frame failed; continuing.', error);
+        }
+        if (failureStreak >= 60) {
+          console.error(
+            '[stims] Preview loop stopped after repeated frame failures.',
+            error,
+          );
+          stopPreviewLoop();
+          return;
+        }
+      }
       previewAnimationId = requestAnimationFrame(tick);
     };
 

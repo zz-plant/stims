@@ -140,7 +140,7 @@ export function StageControls({
 
   const menuItems: MenuItem[] = [
     {
-      icon: 'sparkles' as const,
+      icon: 'grid' as const,
       label: 'Browse presets',
       action: () =>
         run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
@@ -165,7 +165,7 @@ export function StageControls({
         ]
       : []),
     {
-      icon: 'gauge' as const,
+      icon: 'pencil' as const,
       label: 'Edit preset',
       action: () =>
         run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
@@ -187,7 +187,7 @@ export function StageControls({
       active: panel === 'synthesize',
     },
     {
-      icon: 'image' as const,
+      icon: 'video' as const,
       label: 'Record video',
       action: () =>
         run(() => ui.updatePanel(panel === 'capture' ? null : 'capture')),
@@ -215,7 +215,7 @@ export function StageControls({
     ...(engineSnapshot?.audioSource
       ? [
           {
-            icon: 'close' as const,
+            icon: 'volume-off' as const,
             label: 'Stop audio',
             action: () => run(() => engine.handleAudioStop()),
             separatorBefore: true,
@@ -277,6 +277,7 @@ export function StageControls({
             aria-expanded={showMenu}
             aria-haspopup="menu"
             aria-label="More actions"
+            title="More actions"
             onClick={() => {
               signalActivity();
               pulseHaptic(10);
@@ -324,10 +325,14 @@ export function StageControls({
           type="button"
           className={styles.handle}
           aria-label="Show controls"
+          title="Show controls"
           onClick={() => signalActivity()}
         >
           <span className={styles.handleIcon} aria-hidden="true">
-            {'⌃'}
+            <UiIcon
+              name="chevron-up"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
           </span>
         </button>
       ) : null}

@@ -392,6 +392,7 @@ export function useWorkspaceSessionState({
     engineRef,
     engineSnapshot,
     routeState,
+    setRouteState,
     setStatusMessage,
   });
 

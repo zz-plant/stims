@@ -555,6 +555,7 @@ export function createMilkdropExperience({
         activeBackend,
       }),
     selectPreset: navigation.selectPreset,
+    setStatus: setOverlayStatus,
   });
 
   const interactionPresenter = createMilkdropRuntimeInteractionPresenter({
@@ -607,7 +608,12 @@ export function createMilkdropExperience({
         blendDuration = value;
         preferences.setBlendDuration(value);
       },
-      onImportFiles: presetFileActions.importFiles,
+      onImportFiles: (files) =>
+        presetFileActions.importFiles(files).catch((error: unknown) => {
+          setOverlayStatus(
+            error instanceof Error ? error.message : 'Preset import failed.',
+          );
+        }),
       onExport: presetFileActions.exportPreset,
       onDuplicatePreset: presetFileActions.duplicatePreset,
       onDeletePreset: presetFileActions.deleteActivePreset,

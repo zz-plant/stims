@@ -29,6 +29,37 @@ function transactionDone(transaction: IDBTransaction) {
   });
 }
 
+function migrateStoreToV2(
+  db: IDBDatabase,
+  transaction: IDBTransaction | null,
+  storeName: string,
+) {
+  if (!db.objectStoreNames.contains(storeName)) {
+    db.createObjectStore(storeName, { keyPath: 'id' });
+    return;
+  }
+  if (!transaction) {
+    return;
+  }
+  // Rebuild the store on the v2 keyPath, carrying every record that still
+  // fits the schema — these stores hold user-authored presets, so a plain
+  // deleteObjectStore would destroy them.
+  const readBack = transaction.objectStore(storeName).getAll();
+  readBack.onsuccess = () => {
+    db.deleteObjectStore(storeName);
+    const rebuilt = db.createObjectStore(storeName, { keyPath: 'id' });
+    for (const record of readBack.result as Array<{ id?: unknown }>) {
+      if (record && typeof record.id === 'string') {
+        try {
+          rebuilt.put(record);
+        } catch {
+          // Skip the record the new schema cannot hold; keep the rest.
+        }
+      }
+    }
+  };
+}
+
 function openDb(name: string) {
   if (typeof indexedDB === 'undefined') {
     return Promise.resolve<IDBDatabase | null>(null);
@@ -39,14 +70,8 @@ function openDb(name: string) {
     request.onupgradeneeded = (event) => {
       const db = request.result;
       if (event.oldVersion < 2) {
-        if (db.objectStoreNames.contains('presets')) {
-          db.deleteObjectStore('presets');
-        }
-        if (db.objectStoreNames.contains('meta')) {
-          db.deleteObjectStore('meta');
-        }
-        db.createObjectStore('presets', { keyPath: 'id' });
-        db.createObjectStore('meta', { keyPath: 'id' });
+        migrateStoreToV2(db, request.transaction, 'presets');
+        migrateStoreToV2(db, request.transaction, 'meta');
       }
       // Future: if (event.oldVersion < 3) { /* migrate v2 → v3 */ }
     };
@@ -60,46 +85,6 @@ function openDb(name: string) {
       }
       reject(error);
     };
-  });
-}
-
-export function openDbWithTimeout(
-  name: string,
-  timeoutMs = DB_OPEN_TIMEOUT_MS,
-) {
-  return new Promise<IDBDatabase | null>((resolve, reject) => {
-    let settled = false;
-    const timeout = globalThis.setTimeout(() => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      resolve(null);
-    }, timeoutMs);
-
-    openDb(name).then(
-      (db) => {
-        if (settled) {
-          db?.close();
-          return;
-        }
-        settled = true;
-        clearTimeout(timeout);
-        resolve(db);
-      },
-      (error) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTimeout(timeout);
-        console.warn(
-          '[catalog-store] IndexedDB open failed:',
-          error?.name ?? error,
-        );
-        reject(error);
-      },
-    );
   });
 }
 
@@ -161,73 +146,187 @@ export async function deleteRecord(
 }
 
 export function createCatalogPersistence({ dbName }: { dbName: string }) {
+  // Holds records that could not be persisted (DB still opening, open failed,
+  // or a write failed). Entries here are always newer than their DB
+  // counterparts, so reads must prefer them.
   const memoryPresets = new Map<string, StoredPresetRecord>();
   const memoryMeta = new Map<string, StoredMetaRecord>();
-  let dbPromise: Promise<IDBDatabase | null> | null = null;
+  let openPromise: Promise<IDBDatabase | null> | null = null;
+  let adoptedDb: IDBDatabase | null = null;
 
-  const getDb = () => {
-    if (!dbPromise) {
-      dbPromise = openDbWithTimeout(dbName).catch(() => null);
+  const warnWriteFailure = (what: string, error: unknown) => {
+    const name = error instanceof DOMException ? error.name : String(error);
+    const detail =
+      name === 'QuotaExceededError'
+        ? 'storage is full — delete unused custom presets to free space'
+        : name;
+    console.warn(
+      `[catalog-store] Could not persist ${what}; keeping it in memory for this session (${detail})`,
+    );
+  };
+
+  const flushMemory = async (db: IDBDatabase) => {
+    for (const [id, record] of [...memoryPresets]) {
+      try {
+        await putRecord(db, 'presets', record);
+        memoryPresets.delete(id);
+      } catch (error) {
+        warnWriteFailure('preset', error);
+        return;
+      }
     }
-    return dbPromise;
+    for (const [id, record] of [...memoryMeta]) {
+      try {
+        await putRecord(db, 'meta', record);
+        memoryMeta.delete(id);
+      } catch (error) {
+        warnWriteFailure('preset metadata', error);
+        return;
+      }
+    }
+  };
+
+  const startOpen = () => {
+    if (!openPromise) {
+      openPromise = openDb(dbName)
+        .then(async (db) => {
+          adoptedDb = db;
+          if (db && (memoryPresets.size > 0 || memoryMeta.size > 0)) {
+            await flushMemory(db);
+          }
+          return db;
+        })
+        .catch((error: unknown) => {
+          console.warn(
+            '[catalog-store] IndexedDB unavailable; changes will not persist beyond this session:',
+            error instanceof DOMException ? error.name : error,
+          );
+          return null;
+        });
+    }
+    return openPromise;
+  };
+
+  // Callers get the DB if it opens within the timeout and null otherwise, but
+  // the open attempt itself is never abandoned: once it lands, later calls
+  // adopt it and any writes stranded in memory are flushed into it.
+  const getDb = () => {
+    const pending = startOpen();
+    if (adoptedDb) {
+      return Promise.resolve<IDBDatabase | null>(adoptedDb);
+    }
+    return Promise.race([
+      pending,
+      new Promise<null>((resolve) => {
+        globalThis.setTimeout(() => resolve(null), DB_OPEN_TIMEOUT_MS);
+      }),
+    ]);
   };
 
   return {
     async listPresets() {
       const db = await getDb();
-      return db
-        ? getAllRecords<StoredPresetRecord>(db, 'presets')
-        : [...memoryPresets.values()];
+      let stored: StoredPresetRecord[] = [];
+      try {
+        stored = await getAllRecords<StoredPresetRecord>(db, 'presets');
+      } catch (error) {
+        warnWriteFailure('preset list read', error);
+      }
+      if (memoryPresets.size === 0) {
+        return stored;
+      }
+      const merged = new Map(stored.map((record) => [record.id, record]));
+      for (const [id, record] of memoryPresets) {
+        merged.set(id, record);
+      }
+      return [...merged.values()];
     },
 
     async getPreset(id: string) {
+      const fromMemory = memoryPresets.get(id);
+      if (fromMemory) {
+        return fromMemory;
+      }
       const db = await getDb();
-      return db
-        ? getRecord<StoredPresetRecord>(db, 'presets', id)
-        : (memoryPresets.get(id) ?? null);
+      try {
+        return await getRecord<StoredPresetRecord>(db, 'presets', id);
+      } catch {
+        return null;
+      }
     },
 
     async savePreset(record: StoredPresetRecord) {
       const db = await getDb();
-      if (!db) {
-        memoryPresets.set(record.id, record);
-        return;
+      if (db) {
+        try {
+          await putRecord(db, 'presets', record);
+          memoryPresets.delete(record.id);
+          return;
+        } catch (error) {
+          warnWriteFailure('preset', error);
+        }
       }
-      await putRecord(db, 'presets', record);
+      memoryPresets.set(record.id, record);
     },
 
     async deletePreset(id: string) {
+      memoryPresets.delete(id);
+      memoryMeta.delete(id);
       const db = await getDb();
       if (!db) {
-        memoryPresets.delete(id);
-        memoryMeta.delete(id);
         return;
       }
-      await deleteRecord(db, 'presets', id);
-      await deleteRecord(db, 'meta', id);
+      try {
+        await deleteRecord(db, 'presets', id);
+        await deleteRecord(db, 'meta', id);
+      } catch (error) {
+        warnWriteFailure('preset deletion', error);
+      }
     },
 
     async listMeta() {
       const db = await getDb();
-      return db
-        ? getAllRecords<StoredMetaRecord>(db, 'meta')
-        : [...memoryMeta.values()];
+      let stored: StoredMetaRecord[] = [];
+      try {
+        stored = await getAllRecords<StoredMetaRecord>(db, 'meta');
+      } catch (error) {
+        warnWriteFailure('preset metadata read', error);
+      }
+      if (memoryMeta.size === 0) {
+        return stored;
+      }
+      const merged = new Map(stored.map((record) => [record.id, record]));
+      for (const [id, record] of memoryMeta) {
+        merged.set(id, record);
+      }
+      return [...merged.values()];
     },
 
     async readMeta(id: string) {
+      const fromMemory = memoryMeta.get(id);
+      if (fromMemory) {
+        return fromMemory;
+      }
       const db = await getDb();
-      return db
-        ? getRecord<StoredMetaRecord>(db, 'meta', id)
-        : (memoryMeta.get(id) ?? null);
+      try {
+        return await getRecord<StoredMetaRecord>(db, 'meta', id);
+      } catch {
+        return null;
+      }
     },
 
     async writeMeta(record: StoredMetaRecord) {
       const db = await getDb();
-      if (!db) {
-        memoryMeta.set(record.id, record);
-        return;
+      if (db) {
+        try {
+          await putRecord(db, 'meta', record);
+          memoryMeta.delete(record.id);
+          return;
+        } catch (error) {
+          warnWriteFailure('preset metadata', error);
+        }
       }
-      await putRecord(db, 'meta', record);
+      memoryMeta.set(record.id, record);
     },
   };
 }

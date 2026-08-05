@@ -411,6 +411,7 @@ export function BrowseSheetPanel({
                       ? `Remove ${entry.title} from saved`
                       : `Save ${entry.title}`
                   }
+                  title={entry.isFavorite ? 'Remove from saved' : 'Save preset'}
                   aria-pressed={Boolean(entry.isFavorite)}
                   onClick={() => {
                     void engine.toggleFavoritePreset(

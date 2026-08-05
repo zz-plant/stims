@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 import {
   type AudioInitOptions,
+  classifyAudioAccessError,
   DEFAULT_MICROPHONE_CONSTRAINTS,
   type FrequencyAnalyser,
   getMicrophonePermissionState,
@@ -40,20 +41,48 @@ async function getOrCreateStream(constraints?: MediaStreamConstraints) {
     throw new Error('Microphone capture is not available in this environment.');
   }
 
-  if (pooledStream?.stream) return pooledStream.stream;
+  if (pooledStream?.stream) {
+    const isLive = pooledStream.stream
+      .getAudioTracks()
+      .some((track) => track.readyState !== 'ended');
+    if (isLive) return pooledStream.stream;
+    // The pooled stream's track ended out from under us (permission
+    // revoked, device unplugged) — don't hand a dead stream to the next
+    // caller. Tear the pool down so we acquire a fresh stream below.
+    stopPooledStream();
+  }
   if (streamPromise) return streamPromise;
 
   streamPromise = navigator.mediaDevices
     ?.getUserMedia(constraints ?? DEFAULT_MICROPHONE_CONSTRAINTS)
     .catch((error) => {
       streamPromise = null;
-      throw error;
+      // Classify through the same mapping initAudio uses, so callers that
+      // opted into fallbackToSynthetic (via AudioAccessError detection)
+      // still get it on the pooled path, and denials surface the same
+      // actionable message either way.
+      throw classifyAudioAccessError(error);
     });
 
   const stream = await streamPromise;
   if (!stream) return null;
 
   pooledStream = { stream, users: 0 };
+  // Proactively tear the pool down the moment the live track ends, rather
+  // than waiting for the next getOrCreateStream() call to notice — any
+  // consumer still holding a reference to acquire an AudioHandle for this
+  // stream still gets the dedicated initAudio-level onStreamEnded callback.
+  for (const track of stream.getAudioTracks?.() ?? []) {
+    track.addEventListener(
+      'ended',
+      () => {
+        if (pooledStream?.stream === stream) {
+          stopPooledStream();
+        }
+      },
+      { once: true },
+    );
+  }
   return stream;
 }
 

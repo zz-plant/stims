@@ -153,6 +153,7 @@ export function createMilkdropExperienceFrameLoop({
   getFreezeFrame: () => boolean;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
+  let consecutiveFrameFailures = 0;
   const getCurrentFrameWorkload = () =>
     estimateFrameBlendWorkload(blendWorkloadFrameState);
 
@@ -183,166 +184,190 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      const now = frame.realTimeMs;
-      const frameStartAt = now;
-      const activeBackend = getActiveBackend();
-      const detailScale = getMilkdropDetailScale({
-        backend: activeBackend,
-        particleScale: quality.activeQuality.particleScale,
-        particleBudget: frame.performance.particleBudget,
-        shaderQuality: frame.performance.shaderQuality,
-      });
-      const adaptiveDensityMultiplier =
-        activeBackend === 'webgpu'
-          ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
-          : 1;
-      vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
-      const baseSignals = signalTracker.update({
-        time: frame.time,
-        deltaMs: frame.deltaMs,
-        analyser: frame.analyser,
-        frequencyData: frame.frequencyData,
-        waveformData: frame.waveformData,
-      });
-      Object.assign(mergedSignals, baseSignals);
-      mergedSignals.aspect =
-        frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);
-      mergedSignals.pixelsx = frame.toy.viewportWidth;
-      mergedSignals.pixelsy = frame.toy.viewportHeight;
-      buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
-      if (options?.signalOverrides) {
-        Object.assign(mergedSignals, options.signalOverrides);
-      }
-      const signals = mergedSignals as MilkdropRuntimeSignals;
-      const capturedVideoReady = isMilkdropCapturedVideoReady();
-      const capturedVideoReactivity = updateCapturedVideoReactivityIfReady(
-        capturedVideoReady,
-        capturedVideoReactivityTracker,
-        signals,
-      );
+      // One crashing preset must not leave a frozen canvas: a throw anywhere
+      // in the VM step or render path skips the frame, and a sustained
+      // failure streak advances to another preset.
+      try {
+        const now = frame.realTimeMs;
+        const frameStartAt = now;
+        const activeBackend = getActiveBackend();
+        const detailScale = getMilkdropDetailScale({
+          backend: activeBackend,
+          particleScale: quality.activeQuality.particleScale,
+          particleBudget: frame.performance.particleBudget,
+          shaderQuality: frame.performance.shaderQuality,
+        });
+        const adaptiveDensityMultiplier =
+          activeBackend === 'webgpu'
+            ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
+            : 1;
+        vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
+        const baseSignals = signalTracker.update({
+          time: frame.time,
+          deltaMs: frame.deltaMs,
+          analyser: frame.analyser,
+          frequencyData: frame.frequencyData,
+          waveformData: frame.waveformData,
+        });
+        Object.assign(mergedSignals, baseSignals);
+        mergedSignals.aspect =
+          frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);
+        mergedSignals.pixelsx = frame.toy.viewportWidth;
+        mergedSignals.pixelsy = frame.toy.viewportHeight;
+        buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
+        if (options?.signalOverrides) {
+          Object.assign(mergedSignals, options.signalOverrides);
+        }
+        const signals = mergedSignals as MilkdropRuntimeSignals;
+        const capturedVideoReady = isMilkdropCapturedVideoReady();
+        const capturedVideoReactivity = updateCapturedVideoReactivityIfReady(
+          capturedVideoReady,
+          capturedVideoReactivityTracker,
+          signals,
+        );
 
-      if (
-        shouldAutoAdvancePreset({
-          autoplay: getAutoplay(),
-          catalogSize: catalogCoordinator.getCatalogEntries().length,
+        if (
+          shouldAutoAdvancePreset({
+            autoplay: getAutoplay(),
+            catalogSize: catalogCoordinator.getCatalogEntries().length,
+            now: frameStartAt,
+            lastPresetSwitchAt: getLastPresetSwitchAt(),
+            blendDuration: getBlendDuration(),
+          })
+        ) {
+          void navigation.selectRandomPreset();
+        }
+
+        const currentFrameState = applyMilkdropInteractionResponse(
+          vm.step(signals),
+          frame.input,
+          activeBackend,
+        );
+        setCurrentFrameState(currentFrameState);
+        if (agentModeEnabled) {
+          updateAgentDebugSnapshot();
+        }
+        blendWorkloadFrameState = currentFrameState;
+        const activeBlendState = buildBlendStateForRender({
+          transitionMode: getTransitionMode(),
+          shaderQuality: frame.performance.shaderQuality,
+          getCurrentFrameWorkload,
+          maxWorkload: 900,
+          blendState: getBlendState(),
           now: frameStartAt,
-          lastPresetSwitchAt: getLastPresetSwitchAt(),
+          blendEndAtMs: getBlendEndAtMs(),
           blendDuration: getBlendDuration(),
-        })
-      ) {
-        void navigation.selectRandomPreset();
-      }
+        });
 
-      const currentFrameState = applyMilkdropInteractionResponse(
-        vm.step(signals),
-        frame.input,
-        activeBackend,
-      );
-      setCurrentFrameState(currentFrameState);
-      if (agentModeEnabled) {
-        updateAgentDebugSnapshot();
-      }
-      blendWorkloadFrameState = currentFrameState;
-      const activeBlendState = buildBlendStateForRender({
-        transitionMode: getTransitionMode(),
-        shaderQuality: frame.performance.shaderQuality,
-        getCurrentFrameWorkload,
-        maxWorkload: 900,
-        blendState: getBlendState(),
-        now: frameStartAt,
-        blendEndAtMs: getBlendEndAtMs(),
-        blendDuration: getBlendDuration(),
-      });
-
-      const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
-        frameState: buildRenderFrameState({
-          frameState: applyMilkdropCapturedVideoFrameState({
-            frameState: currentFrameState,
-            capturedVideoReady,
-            reactivity: capturedVideoReactivity,
+        const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
+          frameState: buildRenderFrameState({
+            frameState: applyMilkdropCapturedVideoFrameState({
+              frameState: currentFrameState,
+              capturedVideoReady,
+              reactivity: capturedVideoReactivity,
+            }),
+            shaderQuality: frame.performance.shaderQuality,
+            lowQualityPostOverride,
           }),
           shaderQuality: frame.performance.shaderQuality,
-          lowQualityPostOverride,
-        }),
-        shaderQuality: frame.performance.shaderQuality,
-        qualityPresetId: quality.activeQuality.id,
-      });
-      capturedVideoOverlay.update({
-        camera: runtime.toy.camera,
-        reactivity: capturedVideoReactivity,
-      });
+          qualityPresetId: quality.activeQuality.id,
+        });
+        capturedVideoOverlay.update({
+          camera: runtime.toy.camera,
+          reactivity: capturedVideoReactivity,
+        });
 
-      const renderStartAt = performance.now();
-      const adapterPresentedFrame = adapter.render({
-        frameState: renderFrameState,
-        blendState: activeBlendState,
-      });
-      if (!adapterPresentedFrame) {
-        if (activeBackend === 'webgpu' && renderFrameState.post.shaderEnabled) {
-          disposePostprocessingPipeline();
-        } else {
-          const profile = renderFrameState.post.postprocessingProfile ?? null;
-          const webglRenderer = resolveWebGLRenderer(
-            activeBackend,
-            runtime.toy.renderer,
-          );
-
+        const renderStartAt = performance.now();
+        const adapterPresentedFrame = adapter.render({
+          frameState: renderFrameState,
+          blendState: activeBlendState,
+        });
+        if (!adapterPresentedFrame) {
           if (
-            profile &&
-            shouldRenderMilkdropPostprocessing({
-              backend: activeBackend,
-              renderer: runtime.toy.renderer,
-              profile,
-            }) &&
-            webglRenderer
+            activeBackend === 'webgpu' &&
+            renderFrameState.post.shaderEnabled
           ) {
-            let postprocessingPipeline = getPostprocessingPipeline();
-            if (!postprocessingPipeline) {
-              postprocessingPipeline = createMilkdropPostprocessingComposer({
-                renderer: webglRenderer,
-                scene: runtime.toy.scene,
-                camera: runtime.toy.camera,
-                profile,
-              });
-              setPostprocessingPipeline(postprocessingPipeline);
-            } else {
-              postprocessingPipeline.applyProfile(profile);
-            }
+            disposePostprocessingPipeline();
+          } else {
+            const profile = renderFrameState.post.postprocessingProfile ?? null;
+            const webglRenderer = resolveWebGLRenderer(
+              activeBackend,
+              runtime.toy.renderer,
+            );
 
-            if (postprocessingPipeline) {
-              postprocessingPipeline.updateSize();
-              postprocessingPipeline.render();
+            if (
+              profile &&
+              shouldRenderMilkdropPostprocessing({
+                backend: activeBackend,
+                renderer: runtime.toy.renderer,
+                profile,
+              }) &&
+              webglRenderer
+            ) {
+              let postprocessingPipeline = getPostprocessingPipeline();
+              if (!postprocessingPipeline) {
+                postprocessingPipeline = createMilkdropPostprocessingComposer({
+                  renderer: webglRenderer,
+                  scene: runtime.toy.scene,
+                  camera: runtime.toy.camera,
+                  profile,
+                });
+                setPostprocessingPipeline(postprocessingPipeline);
+              } else {
+                postprocessingPipeline.applyProfile(profile);
+              }
+
+              if (postprocessingPipeline) {
+                postprocessingPipeline.updateSize();
+                postprocessingPipeline.render();
+              } else {
+                runtime.toy.render();
+              }
             } else {
+              disposePostprocessingPipeline();
               runtime.toy.render();
             }
-          } else {
-            disposePostprocessingPipeline();
-            runtime.toy.render();
           }
+        } else {
+          disposePostprocessingPipeline();
         }
-      } else {
-        disposePostprocessingPipeline();
-      }
-      const frameEndAt = performance.now();
-      performanceTracker.recordFrame({
-        frameMs: frameEndAt - frameStartAt,
-        simulationMs: renderStartAt - frameStartAt,
-        renderMs: frameEndAt - renderStartAt,
-      });
-      getAdaptiveQualityController()?.recordFrame({
-        frameMs: frameEndAt - frameStartAt,
-        cadenceMs: frame.deltaMs,
-        phases: {
+        const frameEndAt = performance.now();
+        performanceTracker.recordFrame({
+          frameMs: frameEndAt - frameStartAt,
           simulationMs: renderStartAt - frameStartAt,
           renderMs: frameEndAt - renderStartAt,
-        },
-      });
-      if (
-        overlay?.shouldRenderInspectorMetrics() &&
-        now - getLastInspectorOverlaySyncAt() >= 120
-      ) {
-        setLastInspectorOverlaySyncAt(now);
-        presentationController.syncInspectorState();
+        });
+        getAdaptiveQualityController()?.recordFrame({
+          frameMs: frameEndAt - frameStartAt,
+          cadenceMs: frame.deltaMs,
+          phases: {
+            simulationMs: renderStartAt - frameStartAt,
+            renderMs: frameEndAt - renderStartAt,
+          },
+        });
+        if (
+          overlay?.shouldRenderInspectorMetrics() &&
+          now - getLastInspectorOverlaySyncAt() >= 120
+        ) {
+          setLastInspectorOverlaySyncAt(now);
+          presentationController.syncInspectorState();
+        }
+        consecutiveFrameFailures = 0;
+      } catch (error) {
+        consecutiveFrameFailures += 1;
+        if (consecutiveFrameFailures === 1) {
+          console.warn(
+            '[milkdrop] Frame update failed; skipping frame.',
+            error,
+          );
+        }
+        if (consecutiveFrameFailures >= 120) {
+          consecutiveFrameFailures = 0;
+          console.warn(
+            '[milkdrop] Preset kept failing; selecting another preset.',
+          );
+          void navigation.selectRandomPreset();
+        }
       }
     },
   };

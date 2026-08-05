@@ -340,6 +340,15 @@ html.light .stims-shell {
     filter: grayscale(1) opacity(0.5);
   }
 
+  /* iOS Safari zooms the viewport on focus for any text input under
+     16px — below that threshold, tapping search yanks the whole page
+     in. Keep the dense desktop size everywhere above the breakpoint. */
+  @media (width < 768px) {
+    .ctl-field {
+      font-size: 16px;
+    }
+  }
+
   /* ── Buttons ───────────────────────────────────────────────────── */
   .ctl-btn {
     display: inline-flex;

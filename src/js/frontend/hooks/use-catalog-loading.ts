@@ -111,9 +111,15 @@ export function useCatalogLoading() {
         setFallbackCatalogReady(true);
         reportLoadStatus('starter-catalog');
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
         setFallbackCatalogReady(false);
+        // Surface the failure instead of leaving the UI in a permanent
+        // "loading" state; the background full-catalog load clears it if it
+        // succeeds.
+        setFallbackCatalogError(
+          error instanceof Error ? error.message : 'Unable to load catalog.',
+        );
       });
 
     const cancelBackgroundLoad = scheduleBackgroundTask(() => {
@@ -121,6 +127,7 @@ export function useCatalogLoading() {
         .then((mapped) => {
           if (cancelled) return;
           setFallbackCatalog(mapped);
+          setFallbackCatalogError(null);
           setFallbackCatalogReady(true);
           setActivityCatalog(mapped);
           reportLoadStatus('full-catalog');
@@ -144,6 +151,7 @@ export function useCatalogLoading() {
     try {
       const mapped = await loadFullCatalog();
       setFallbackCatalog(mapped);
+      setFallbackCatalogError(null);
       setFallbackCatalogReady(true);
       setActivityCatalog(mapped);
       reportLoadStatus('full-catalog');

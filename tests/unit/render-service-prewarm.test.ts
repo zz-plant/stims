@@ -29,6 +29,14 @@ describe('render-service prewarm', () => {
         hasWebGL: true,
       }),
       rememberRendererFallback: mock(),
+      getCurrentRetrySnapshot: () => ({
+        attempts: 0,
+        maxAttempts: 3,
+        lastFailureKind: null,
+        lastFailureReason: null,
+        nextRetryAt: null,
+        canRetryNow: true,
+      }),
     }));
 
     const renderService = await importFresh<
