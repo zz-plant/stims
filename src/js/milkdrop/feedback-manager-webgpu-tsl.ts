@@ -491,17 +491,24 @@ function getShaderEnvValue(
     aspect: () => shaderFloat(env.uniforms.aspect),
     bass: () => shaderFloat(env.uniforms.signalBass),
     bass_att: () => shaderFloat(env.uniforms.signalBassAtt),
+    bassatt: () => shaderFloat(env.uniforms.signalBassAtt),
     mid: () => shaderFloat(env.uniforms.signalMid),
     mids: () => shaderFloat(env.uniforms.signalMid),
     mid_att: () => shaderFloat(env.uniforms.signalMidAtt),
     mids_att: () => shaderFloat(env.uniforms.signalMidAtt),
+    midatt: () => shaderFloat(env.uniforms.signalMidAtt),
+    midsatt: () => shaderFloat(env.uniforms.signalMidAtt),
     treb: () => shaderFloat(env.uniforms.signalTreb),
     treb_att: () => shaderFloat(env.uniforms.signalTrebAtt),
+    trebatt: () => shaderFloat(env.uniforms.signalTrebAtt),
     treble: () => shaderFloat(env.uniforms.signalTreb),
     treble_att: () => shaderFloat(env.uniforms.signalTrebAtt),
+    trebleatt: () => shaderFloat(env.uniforms.signalTrebAtt),
     beat: () => shaderFloat(env.uniforms.signalBeat),
     beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
-    progress: () => shaderFloat(env.uniforms.signalTime),
+    progress: () => shaderFloat(env.uniforms.signalFrame),
+    frame: () => shaderFloat(env.uniforms.signalFrame),
+    fps: () => shaderFloat(env.uniforms.signalFps),
     vol: () => shaderFloat(env.uniforms.signalEnergy),
     rms: () => shaderFloat(env.uniforms.signalEnergy),
     music: () => shaderFloat(env.uniforms.signalEnergy),
@@ -1762,6 +1769,8 @@ class WebGPUMilkdropFeedbackManager {
       state.signalBeatPulse;
     this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
     this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
+    this.compositeMaterial.uniforms.signalFrame.value = state.signalFrame ?? 0;
+    this.compositeMaterial.uniforms.signalFps.value = state.signalFps ?? 60;
     for (let index = 0; index < 32; index += 1) {
       this.compositeMaterial.uniforms.perPixelQ[index].value =
         state.perPixelVariables?.[`q${index + 1}`] ?? 0;

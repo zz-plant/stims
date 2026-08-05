@@ -537,6 +537,8 @@ export function createCompositeUniforms(
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
+    signalFrame: uniform(0),
+    signalFps: uniform(60),
     perPixelQ: Array.from({ length: 32 }, () => uniform(0)),
     perPixelT: Array.from({ length: 32 }, () => uniform(0)),
     aspect: uniform(1),

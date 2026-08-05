@@ -385,6 +385,8 @@ export type MilkdropFeedbackCompositeState = {
   signalBeatPulse: number;
   signalEnergy: number;
   signalTime: number;
+  signalFrame?: number;
+  signalFps?: number;
   aspect: number;
   decay: number;
 };
