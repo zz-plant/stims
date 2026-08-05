@@ -142,6 +142,7 @@
     "@codemirror/autocomplete": "6.20.3",
     "@codemirror/commands": "6.10.4",
     "@codemirror/language": "6.12.4",
+    "@codemirror/lint": "^6.9.7",
     "@codemirror/search": "^6.7.0",
     "@codemirror/state": "6.7.1",
     "@codemirror/theme-one-dark": "^6.1.3",

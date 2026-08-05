@@ -1,25 +1,45 @@
-import type { CompletionSource } from '@codemirror/autocomplete';
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
+import type { Completion, CompletionSource } from '@codemirror/autocomplete';
+import {
+  autocompletion,
+  clearSnippet,
+  closeBrackets,
+  closeBracketsKeymap,
+  nextSnippetField,
+  prevSnippetField,
+  snippetCompletion,
+} from '@codemirror/autocomplete';
 import {
   defaultKeymap,
   history,
   historyKeymap,
   indentWithTab,
+  toggleComment,
 } from '@codemirror/commands';
 import {
   bracketMatching,
   foldGutter,
   indentOnInput,
 } from '@codemirror/language';
+import type { Diagnostic as CmDiagnostic } from '@codemirror/lint';
+import { lintGutter, lintKeymap, setDiagnostics } from '@codemirror/lint';
 import {
   highlightSelectionMatches,
   search,
   searchKeymap,
 } from '@codemirror/search';
-import { Compartment, EditorState, RangeSetBuilder } from '@codemirror/state';
+import { EditorState, Prec } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { KeyBinding } from '@codemirror/view';
-import { Decoration, EditorView, keymap, lineNumbers } from '@codemirror/view';
+import {
+  crosshairCursor,
+  EditorView,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  keymap,
+  lineNumbers,
+  rectangularSelection,
+} from '@codemirror/view';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
@@ -381,119 +401,208 @@ export type EditorPanelCallbacks = {
   onRequestImport: () => void;
 };
 
-function buildDiagnosticDecorations(
+const MILKDROP_TO_CM_SEVERITY: Record<
+  MilkdropDiagnostic['severity'],
+  CmDiagnostic['severity']
+> = {
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+};
+
+function toLintDiagnostics(
   state: EditorState,
   diagnostics: MilkdropDiagnostic[],
-) {
-  const lineDecorations = new Map<number, MilkdropDiagnostic['severity']>();
-  const severityRank = {
-    info: 1,
-    warning: 2,
-    error: 3,
-  } as const;
-
-  diagnostics.forEach((diagnostic) => {
-    if (!diagnostic.line) {
-      return;
-    }
-    const current = lineDecorations.get(diagnostic.line);
-    if (!current || severityRank[diagnostic.severity] > severityRank[current]) {
-      lineDecorations.set(diagnostic.line, diagnostic.severity);
-    }
-  });
-
-  const builder = new RangeSetBuilder<Decoration>();
-  [...lineDecorations.entries()].forEach(([lineNumber, severity]) => {
-    if (lineNumber < 1 || lineNumber > state.doc.lines) {
-      return;
-    }
-    const line = state.doc.line(lineNumber);
-    builder.add(
-      line.from,
-      line.from,
-      Decoration.line({
-        attributes: {
-          class: `milkdrop-editor-line--${severity}`,
-        },
-      }),
-    );
-  });
-  return builder.finish();
+  onQuickFix: (diagnostic: MilkdropDiagnostic) => void,
+): CmDiagnostic[] {
+  return diagnostics
+    .filter(
+      (diagnostic) =>
+        typeof diagnostic.line === 'number' &&
+        diagnostic.line >= 1 &&
+        diagnostic.line <= state.doc.lines,
+    )
+    .map((diagnostic) => {
+      const line = state.doc.line(diagnostic.line as number);
+      const from =
+        line.from + (line.text.length - line.text.trimStart().length);
+      return {
+        from: Math.min(from, line.to),
+        to: line.to,
+        severity: MILKDROP_TO_CM_SEVERITY[diagnostic.severity],
+        message: diagnostic.message,
+        source: diagnostic.code,
+        actions:
+          diagnostic.severity === 'error'
+            ? [
+                {
+                  name: 'Fix with AI',
+                  markClass: 'cm-quickfix-action',
+                  apply: () => onQuickFix(diagnostic),
+                },
+              ]
+            : undefined,
+      };
+    });
 }
+
+// Multi-argument functions get a snippet template so accepting the
+// completion drops in placeholder args the user can Tab through, instead of
+// leaving them to hand-type parens and commas.
+const FUNCTION_SNIPPET_TEMPLATES: Record<string, string> = {
+  atan2: 'atan2(#{y}, #{x})',
+  pow: 'pow(#{x}, #{y})',
+  mod: 'mod(#{x}, #{y})',
+  clamp: 'clamp(#{x}, #{min}, #{max})',
+  step: 'step(#{threshold}, #{x})',
+  smoothstep: 'smoothstep(#{min}, #{max}, #{x})',
+  sigmoid: 'sigmoid(#{x}, #{k})',
+  if: 'if(#{cond}, #{then}, #{else})',
+  above: 'above(#{a}, #{b})',
+  below: 'below(#{a}, #{b})',
+  equal: 'equal(#{a}, #{b})',
+  min: 'min(#{a}, #{b})',
+  max: 'max(#{a}, #{b})',
+  mix: 'mix(#{a}, #{b}, #{t})',
+  lerp: 'lerp(#{a}, #{b}, #{t})',
+};
+
+const MILKDROP_BUILTIN_OPTIONS: Array<{
+  label: string;
+  type: string;
+  detail?: string;
+}> = [
+  { label: 'sin', type: 'function', detail: 'sine' },
+  { label: 'cos', type: 'function', detail: 'cosine' },
+  { label: 'tan', type: 'function' },
+  { label: 'asin', type: 'function' },
+  { label: 'acos', type: 'function' },
+  { label: 'atan', type: 'function' },
+  { label: 'atan2', type: 'function' },
+  { label: 'abs', type: 'function' },
+  { label: 'sqrt', type: 'function' },
+  { label: 'pow', type: 'function' },
+  { label: 'mod', type: 'function' },
+  { label: 'floor', type: 'function', detail: 'round down' },
+  { label: 'ceil', type: 'function', detail: 'round up' },
+  { label: 'sqr', type: 'function', detail: 'x*x' },
+  { label: 'clamp', type: 'function', detail: 'clamp(x, min, max)' },
+  { label: 'step', type: 'function' },
+  { label: 'smoothstep', type: 'function' },
+  { label: 'log', type: 'function' },
+  { label: 'exp', type: 'function' },
+  { label: 'sigmoid', type: 'function' },
+  { label: 'sign', type: 'function' },
+  { label: 'frac', type: 'function', detail: 'fractional part' },
+  { label: 'rand', type: 'function', detail: 'random 0-scale' },
+  { label: 'if', type: 'function', detail: 'if(cond, then, else)' },
+  { label: 'above', type: 'function' },
+  { label: 'below', type: 'function' },
+  { label: 'equal', type: 'function' },
+  { label: 'min', type: 'function' },
+  { label: 'max', type: 'function' },
+  { label: 'mix', type: 'function' },
+  { label: 'lerp', type: 'function' },
+  { label: 'bass', type: 'variable', detail: 'bass energy' },
+  { label: 'mid', type: 'variable', detail: 'mid energy' },
+  { label: 'treb', type: 'variable', detail: 'treble energy' },
+  { label: 'bass_att', type: 'variable', detail: 'bass with envelope' },
+  { label: 'mid_att', type: 'variable', detail: 'mid with envelope' },
+  { label: 'treb_att', type: 'variable', detail: 'treble with envelope' },
+  { label: 'beat', type: 'variable' },
+  { label: 'time', type: 'variable', detail: 'seconds' },
+  { label: 'frame', type: 'variable', detail: 'frame count' },
+  { label: 'fps', type: 'variable' },
+  { label: 'rms', type: 'variable' },
+  { label: 'vol', type: 'variable' },
+  { label: 'q1', type: 'variable', detail: 'persistent state' },
+  { label: 'q2', type: 'variable' },
+  { label: 'q3', type: 'variable' },
+  { label: 'q4', type: 'variable' },
+  { label: 'q5', type: 'variable' },
+  { label: 'q6', type: 'variable' },
+  { label: 'q7', type: 'variable' },
+  { label: 'q8', type: 'variable' },
+  { label: 'zoom', type: 'variable' },
+  { label: 'rot', type: 'variable' },
+  { label: 'warp', type: 'variable' },
+  { label: 'sx', type: 'variable' },
+  { label: 'sy', type: 'variable' },
+  { label: 'dx', type: 'variable' },
+  { label: 'dy', type: 'variable' },
+  { label: 'cx', type: 'variable' },
+  { label: 'cy', type: 'variable' },
+  { label: 'pi', type: 'constant' },
+  { label: 'e', type: 'constant' },
+];
+
+// Keeps the dropdown grouped by kind (functions, then variables, then
+// constants) instead of letting fuzzy-match score interleave them; doc-derived
+// variables (see below) sort after all of these.
+const COMPLETION_TYPE_SORT_TIER: Record<string, string> = {
+  function: '0',
+  variable: '1',
+  constant: '2',
+};
+const DOC_VARIABLE_SORT_TIER = '3';
+
+const MILKDROP_BUILTIN_COMPLETIONS: Completion[] = MILKDROP_BUILTIN_OPTIONS.map(
+  (opt) => {
+    const withTier: Completion = {
+      ...opt,
+      sortText: `${COMPLETION_TYPE_SORT_TIER[opt.type] ?? '9'}${opt.label}`,
+    };
+    const template = FUNCTION_SNIPPET_TEMPLATES[opt.label];
+    if (!template) return withTier;
+    return snippetCompletion(template, withTier);
+  },
+);
+
+const MILKDROP_BUILTIN_LABELS = new Set(
+  MILKDROP_BUILTIN_OPTIONS.map((opt) => opt.label.toLowerCase()),
+);
 
 const MILKDROP_COMPLETIONS: CompletionSource = (context) => {
   const word = context.matchBefore(/\w*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
 
-  const options = [
-    { label: 'sin', type: 'function', detail: 'sine' },
-    { label: 'cos', type: 'function', detail: 'cosine' },
-    { label: 'tan', type: 'function' },
-    { label: 'asin', type: 'function' },
-    { label: 'acos', type: 'function' },
-    { label: 'atan', type: 'function' },
-    { label: 'atan2', type: 'function' },
-    { label: 'abs', type: 'function' },
-    { label: 'sqrt', type: 'function' },
-    { label: 'pow', type: 'function' },
-    { label: 'mod', type: 'function' },
-    { label: 'floor', type: 'function', detail: 'round down' },
-    { label: 'ceil', type: 'function', detail: 'round up' },
-    { label: 'sqr', type: 'function', detail: 'x*x' },
-    { label: 'clamp', type: 'function', detail: 'clamp(x, min, max)' },
-    { label: 'step', type: 'function' },
-    { label: 'smoothstep', type: 'function' },
-    { label: 'log', type: 'function' },
-    { label: 'exp', type: 'function' },
-    { label: 'sigmoid', type: 'function' },
-    { label: 'sign', type: 'function' },
-    { label: 'frac', type: 'function', detail: 'fractional part' },
-    { label: 'rand', type: 'function', detail: 'random 0-scale' },
-    { label: 'if', type: 'function', detail: 'if(cond, then, else)' },
-    { label: 'above', type: 'function' },
-    { label: 'below', type: 'function' },
-    { label: 'equal', type: 'function' },
-    { label: 'min', type: 'function' },
-    { label: 'max', type: 'function' },
-    { label: 'mix', type: 'function' },
-    { label: 'lerp', type: 'function' },
-    { label: 'bass', type: 'variable', detail: 'bass energy' },
-    { label: 'mid', type: 'variable', detail: 'mid energy' },
-    { label: 'treb', type: 'variable', detail: 'treble energy' },
-    { label: 'bass_att', type: 'variable', detail: 'bass with envelope' },
-    { label: 'mid_att', type: 'variable', detail: 'mid with envelope' },
-    { label: 'treb_att', type: 'variable', detail: 'treble with envelope' },
-    { label: 'beat', type: 'variable' },
-    { label: 'time', type: 'variable', detail: 'seconds' },
-    { label: 'frame', type: 'variable', detail: 'frame count' },
-    { label: 'fps', type: 'variable' },
-    { label: 'rms', type: 'variable' },
-    { label: 'vol', type: 'variable' },
-    { label: 'q1', type: 'variable', detail: 'persistent state' },
-    { label: 'q2', type: 'variable' },
-    { label: 'q3', type: 'variable' },
-    { label: 'q4', type: 'variable' },
-    { label: 'q5', type: 'variable' },
-    { label: 'q6', type: 'variable' },
-    { label: 'q7', type: 'variable' },
-    { label: 'q8', type: 'variable' },
-    { label: 'zoom', type: 'variable' },
-    { label: 'rot', type: 'variable' },
-    { label: 'warp', type: 'variable' },
-    { label: 'sx', type: 'variable' },
-    { label: 'sy', type: 'variable' },
-    { label: 'dx', type: 'variable' },
-    { label: 'dy', type: 'variable' },
-    { label: 'cx', type: 'variable' },
-    { label: 'cy', type: 'variable' },
-    { label: 'pi', type: 'constant' },
-    { label: 'e', type: 'constant' },
-  ];
+  return {
+    from: word.from,
+    options: MILKDROP_BUILTIN_COMPLETIONS.filter((opt) =>
+      opt.label.toLowerCase().startsWith(word.text.toLowerCase()),
+    ),
+  };
+};
+
+// Surfaces identifiers the user already assigned elsewhere in this preset
+// (custom accumulators, reused field names) so they don't have to scroll
+// back up to recall the exact spelling.
+const DOC_VARIABLE_PATTERN = /(?:^|\n|;)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=(?!=)/g;
+
+const MILKDROP_DOC_VARIABLE_COMPLETIONS: CompletionSource = (context) => {
+  const word = context.matchBefore(/\w*/);
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+
+  const doc = context.state.doc.toString();
+  const seen = new Set<string>();
+  const options: Completion[] = [];
+  for (const match of doc.matchAll(DOC_VARIABLE_PATTERN)) {
+    const name = match[1];
+    const key = name.toLowerCase();
+    if (MILKDROP_BUILTIN_LABELS.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    options.push({
+      label: name,
+      type: 'variable',
+      detail: 'used in this preset',
+      sortText: `${DOC_VARIABLE_SORT_TIER}${name}`,
+    });
+  }
 
   return {
     from: word.from,
     options: options.filter((opt) =>
-      opt.label.startsWith(word.text.toLowerCase()),
+      opt.label.toLowerCase().startsWith(word.text.toLowerCase()),
     ),
   };
 };
@@ -534,14 +643,9 @@ function createEditorTheme() {
     '&.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(34, 211, 238, 0.22)',
     },
-    '.cm-line.milkdrop-editor-line--info': {
-      backgroundColor: 'rgba(14, 116, 144, 0.12)',
-    },
-    '.cm-line.milkdrop-editor-line--warning': {
-      backgroundColor: 'rgba(180, 83, 9, 0.16)',
-    },
-    '.cm-line.milkdrop-editor-line--error': {
-      backgroundColor: 'rgba(153, 27, 27, 0.18)',
+    '.cm-quickfix-action': {
+      backgroundColor: 'rgba(34, 211, 238, 0.16)',
+      color: '#67e8f9',
     },
   });
 }
@@ -551,14 +655,15 @@ function createEditorView({
   onDocChange,
   onBufferedEdit,
   isChangeSuppressed,
+  onQuickFixDiagnostic,
 }: {
   parent: HTMLElement;
   onDocChange: (source: string) => void;
   onBufferedEdit: () => void;
   isChangeSuppressed: () => boolean;
+  onQuickFixDiagnostic: (diagnostic: MilkdropDiagnostic) => void;
 }) {
   let debounceId: number | null = null;
-  const diagnosticsCompartment = new Compartment();
   let view: EditorView;
 
   const flushDocChange = () => {
@@ -578,6 +683,9 @@ function createEditorView({
       doc: '',
       extensions: [
         lineNumbers(),
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        highlightSpecialChars(),
         history(),
         createMilkdropLanguage(),
         oneDark,
@@ -586,25 +694,39 @@ function createEditorView({
         closeBrackets(),
         autocompletion({
           activateOnTyping: true,
-          override: [MILKDROP_COMPLETIONS],
+          override: [MILKDROP_COMPLETIONS, MILKDROP_DOC_VARIABLE_COMPLETIONS],
         }),
         search(),
         highlightSelectionMatches(),
         foldGutter(),
         indentOnInput(),
-        diagnosticsCompartment.of(
-          EditorView.decorations.of(Decoration.set([])),
-        ),
+        lintGutter(),
+        // Editing MilkDrop presets means repeatedly touching aligned
+        // per-channel triples (wave_r/g/b, shapecode_N_border_r/g/b, ...);
+        // multi-cursor + column selection make that a single edit instead
+        // of N repetitive ones.
+        EditorState.allowMultipleSelections.of(true),
+        rectangularSelection(),
+        crosshairCursor(),
         keymap.of([
+          ...closeBracketsKeymap,
           ...searchKeymap,
+          ...lintKeymap,
           {
             key: 'Mod-Enter',
             run: () => flushDocChange(),
           },
+          { key: 'Mod-/', run: toggleComment },
           ...defaultEditorKeymap,
           ...historyEditorKeymap,
           indentWithTabKeybinding,
         ]),
+        Prec.highest(
+          keymap.of([
+            { key: 'Tab', run: nextSnippetField, shift: prevSnippetField },
+            { key: 'Escape', run: clearSnippet },
+          ]),
+        ),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (!update.docChanged || isChangeSuppressed()) {
@@ -634,13 +756,12 @@ function createEditorView({
     },
     flushDocChange,
     setDiagnostics(diagnostics: MilkdropDiagnostic[]) {
-      view.dispatch({
-        effects: diagnosticsCompartment.reconfigure(
-          EditorView.decorations.of(
-            buildDiagnosticDecorations(view.state, diagnostics),
-          ),
+      view.dispatch(
+        setDiagnostics(
+          view.state,
+          toLintDiagnostics(view.state, diagnostics, onQuickFixDiagnostic),
         ),
-      });
+      );
     },
   };
 }
@@ -824,6 +945,8 @@ export class EditorPanel {
         }
       },
       isChangeSuppressed: () => this.suppressEditorChange,
+      onQuickFixDiagnostic: (diagnostic) =>
+        this.applyQuickFixForDiagnostic(diagnostic),
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
@@ -1467,10 +1590,12 @@ export class EditorPanel {
   }
 
   private handleQuickFix() {
-    const source = this.editor.state.doc.toString();
-    const diag = this.mostRecentDiagnostic;
-    if (!diag) return;
+    if (!this.mostRecentDiagnostic) return;
+    this.applyQuickFixForDiagnostic(this.mostRecentDiagnostic);
+  }
 
+  private applyQuickFixForDiagnostic(diag: MilkdropDiagnostic) {
+    const source = this.editor.state.doc.toString();
     const instruction = `Fix this compiler error: "${diag.message}" at line ${diag.line}. Keep the preset style but fix the syntax or math.`;
 
     this.setRefinePending(true);
