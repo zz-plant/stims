@@ -3,7 +3,7 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v8';
+const CACHE_NAME = 'stims-shell-v9';
 // Keep this list to what the shell needs to paint offline. The full preset
 // catalog (~1.5 MB) is deliberately absent: the app loads a 20 KB starter
 // catalog first and defers the full one to a background task, and precaching
