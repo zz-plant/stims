@@ -1125,13 +1125,6 @@ body[data-page="workspace"][data-live="true"] {
     z-index: var(--z-stage-root);
   }
 
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-root,
-  .stims-shell__stage-frame[data-mode="live"]
-    .stims-shell__stage-root
-    > canvas {
-    pointer-events: none;
-  }
-
   .stims-shell__stage-hero {
     position: absolute;
     inset: max(72px, 8vh) auto 26px 28px;
