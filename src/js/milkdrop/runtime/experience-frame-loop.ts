@@ -70,6 +70,7 @@ export function createMilkdropExperienceFrameLoop({
       frameState: MilkdropFrameState;
       blendState: ReturnType<typeof buildBlendStateForRender>;
     }) => boolean;
+    setTransitionBlend?: (alpha: number) => void;
   } | null;
   getActiveBackend: () => 'webgl' | 'webgpu';
   setCurrentFrameState: (frameState: MilkdropFrameState | null) => void;
@@ -79,7 +80,10 @@ export function createMilkdropExperienceFrameLoop({
   getTransitionMode: () => 'blend' | 'cut';
   getAutoplay: () => boolean;
   getLastPresetSwitchAt: () => number;
-  updateAgentDebugSnapshot: (force?: boolean) => void;
+  updateAgentDebugSnapshot: (
+    force?: boolean,
+    renderFrameStateOverride?: MilkdropFrameState | null,
+  ) => void;
   agentModeEnabled: boolean;
   quality: {
     activeQuality: {
@@ -244,9 +248,6 @@ export function createMilkdropExperienceFrameLoop({
           activeBackend,
         );
         setCurrentFrameState(currentFrameState);
-        if (agentModeEnabled) {
-          updateAgentDebugSnapshot();
-        }
         blendWorkloadFrameState = currentFrameState;
         const activeBlendState = buildBlendStateForRender({
           transitionMode: getTransitionMode(),
@@ -272,12 +273,20 @@ export function createMilkdropExperienceFrameLoop({
           shaderQuality: frame.performance.shaderQuality,
           qualityPresetId: quality.activeQuality.id,
         });
+        if (agentModeEnabled) {
+          updateAgentDebugSnapshot(false, renderFrameState);
+        }
         capturedVideoOverlay.update({
           camera: runtime.toy.camera,
           reactivity: capturedVideoReactivity,
         });
 
         const renderStartAt = performance.now();
+        if (activeBlendState) {
+          adapter.setTransitionBlend?.(activeBlendState.alpha);
+        } else {
+          adapter.setTransitionBlend?.(0);
+        }
         const adapterPresentedFrame = adapter.render({
           frameState: renderFrameState,
           blendState: activeBlendState,
