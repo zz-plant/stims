@@ -1041,9 +1041,11 @@ function buildExperienceController(deps: Record<string, any>) {
       const result = deps.attachmentController.attachRuntime(nextRuntime);
       const rt = nextRuntime as { toy: { rendererReady: Promise<unknown> } };
       rt.toy.rendererReady.then((handle: unknown) => {
-        void deps.statsOverlay.init(
-          (handle as { renderer?: unknown }).renderer,
-        );
+        // rendererReady resolves null when the runtime is disposed before the
+        // renderer finishes booting (e.g. a superseded mount).
+        const renderer = (handle as { renderer?: unknown } | null)?.renderer;
+        if (!renderer || !deps.lifetime.isActive()) return;
+        void deps.statsOverlay.init(renderer);
       });
       return result;
     },
