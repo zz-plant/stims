@@ -93,4 +93,9 @@ window.addEventListener('pagehide', () => {
   void import('./core/audio-handler.ts').then(({ stopAllAudioForBfcache }) => {
     stopAllAudioForBfcache();
   });
+  void import('./core/services/render-service.ts')
+    .then(({ resetRendererPool }) => {
+      resetRendererPool({ dispose: true });
+    })
+    .catch(() => {});
 });

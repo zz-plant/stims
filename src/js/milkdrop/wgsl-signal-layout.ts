@@ -45,14 +45,32 @@ export const MILKDROP_WGSL_SIGNAL_FIELDS = [
  * scaling, so any plausible value beats the previous implicit 0. */
 const FALLBACK_MAJOR_AXIS_PIXELS = 1280;
 
+export type MilkdropViewportSignalValues = {
+  aspectx: number;
+  aspecty: number;
+  pixelsx: number;
+  pixelsy: number;
+};
+
+const SHARED_VIEWPORT_SIGNAL_TARGET: MilkdropViewportSignalValues = {
+  aspectx: 1,
+  aspecty: 1,
+  pixelsx: FALLBACK_MAJOR_AXIS_PIXELS,
+  pixelsy: FALLBACK_MAJOR_AXIS_PIXELS,
+};
+
 /** MilkDrop exposes the inverse aspect pair to presets: both values are >= 1
  * and only the minor axis is stretched (aspectx = h/w on portrait, aspecty =
- * w/h on landscape). */
-export function deriveMilkdropViewportSignalValues(signals: {
-  aspect?: number;
-  pixelsx?: number;
-  pixelsy?: number;
-}) {
+ * w/h on landscape). Writes into `target` to avoid a per-frame allocation;
+ * callers should pass a long-lived object. */
+export function deriveMilkdropViewportSignalValues(
+  signals: {
+    aspect?: number;
+    pixelsx?: number;
+    pixelsy?: number;
+  },
+  target: Record<string, number> = SHARED_VIEWPORT_SIGNAL_TARGET,
+): MilkdropViewportSignalValues {
   const aspect =
     signals.aspect && Number.isFinite(signals.aspect) && signals.aspect > 0
       ? signals.aspect
@@ -67,12 +85,11 @@ export function deriveMilkdropViewportSignalValues(signals: {
     (aspect >= 1
       ? Math.round(FALLBACK_MAJOR_AXIS_PIXELS / aspect)
       : FALLBACK_MAJOR_AXIS_PIXELS);
-  return {
-    aspectx: aspect < 1 ? 1 / aspect : 1,
-    aspecty: aspect > 1 ? aspect : 1,
-    pixelsx,
-    pixelsy,
-  };
+  target.aspectx = aspect < 1 ? 1 / aspect : 1;
+  target.aspecty = aspect > 1 ? aspect : 1;
+  target.pixelsx = pixelsx;
+  target.pixelsy = pixelsy;
+  return target as MilkdropViewportSignalValues;
 }
 
 export type MilkdropWgslSignalField =

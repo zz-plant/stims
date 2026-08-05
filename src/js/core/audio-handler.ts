@@ -758,6 +758,7 @@ export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
 
 const activeContexts = new Set<AudioContext>();
 const activeStreams = new Set<MediaStream>();
+const unmuteHandlerTracks = new WeakSet<MediaStreamTrack>();
 
 let resumeOnVisibleInstalled = false;
 
@@ -770,6 +771,11 @@ function tryResumeAllActiveContexts() {
     }
   }
 }
+
+const handleTrackUnmute = () => {
+  logger.log('Microphone track unmuted; resuming active audio contexts.');
+  tryResumeAllActiveContexts();
+};
 
 /**
  * Mobile browsers (iOS Safari, Android Chrome/Samsung Internet) suspend
@@ -823,16 +829,25 @@ export function registerMediaStream(stream: MediaStream) {
 
   if (typeof stream.getAudioTracks === 'function') {
     for (const track of stream.getAudioTracks()) {
-      track.onunmute = () => {
-        logger.log('Microphone track unmuted; resuming active audio contexts.');
-        tryResumeAllActiveContexts();
-      };
+      track.onunmute = handleTrackUnmute;
+      unmuteHandlerTracks.add(track);
     }
   }
 }
 
 export function unregisterMediaStream(stream: MediaStream) {
   activeStreams.delete(stream);
+
+  if (typeof stream.getAudioTracks === 'function') {
+    for (const track of stream.getAudioTracks()) {
+      if (
+        unmuteHandlerTracks.delete(track) &&
+        track.onunmute === handleTrackUnmute
+      ) {
+        track.onunmute = null;
+      }
+    }
+  }
 }
 
 export function stopAllAudioForBfcache() {

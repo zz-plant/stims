@@ -10,6 +10,7 @@ import {
   deriveMilkdropViewportSignalValues,
   MILKDROP_WGSL_SIGNAL_FIELDS,
   type MilkdropGpuVmSignals,
+  type MilkdropViewportSignalValues,
 } from './wgsl-signal-layout.ts';
 
 export type GpuVmResult = {
@@ -106,11 +107,21 @@ function getOrCreatePipeline(
 
 const SIGNAL_BUFFER_SIZE_BYTES = MILKDROP_WGSL_SIGNAL_FIELDS.length * 4;
 
+const VIEWPORT_SIGNAL_SCRATCH: MilkdropViewportSignalValues = {
+  aspectx: 1,
+  aspecty: 1,
+  pixelsx: 1280,
+  pixelsy: 1280,
+};
+
 function populateSignalData(
   target: Float32Array,
   signals: MilkdropGpuVmSignals,
 ): void {
-  const viewport = deriveMilkdropViewportSignalValues(signals);
+  const viewport = deriveMilkdropViewportSignalValues(
+    signals,
+    VIEWPORT_SIGNAL_SCRATCH,
+  );
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
     const field = MILKDROP_WGSL_SIGNAL_FIELDS[i];
     switch (field) {
@@ -360,6 +371,7 @@ export function createGpuVmRunner() {
   }
 
   function dispose() {
+    clearGpuVmCaches();
     if (currentSignalBuffer) {
       currentSignalBuffer.destroy();
       currentSignalBuffer = null;

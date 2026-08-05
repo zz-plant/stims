@@ -61,6 +61,7 @@ export function createMilkdropCatalogCoordinator({
     activeBackend: MilkdropRenderBackend;
   } | null = null;
   let catalogSyncRunning = false;
+  let disposed = false;
 
   const syncCatalog = async ({
     activePresetId,
@@ -157,6 +158,9 @@ export function createMilkdropCatalogCoordinator({
     activePresetId: string;
     activeBackend: MilkdropRenderBackend;
   }) => {
+    if (disposed) {
+      return Promise.resolve();
+    }
     catalogSyncQueuedArgs = args;
     const scheduledSync = ensureCatalogSyncPromise();
 
@@ -218,6 +222,7 @@ export function createMilkdropCatalogCoordinator({
     getActiveCatalogEntry: (activePresetId: string) =>
       catalogEntries.find((entry) => entry.id === activePresetId) ?? null,
     dispose() {
+      disposed = true;
       disposeScheduledCatalogSync();
     },
   };

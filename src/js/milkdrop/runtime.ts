@@ -925,12 +925,13 @@ export function createMilkdropExperience({
     capturedVideoOverlay,
     adapter,
     performanceTracker,
-    adaptiveQualityUnsubscribe,
+    getAdaptiveQualityUnsubscribe: () => adaptiveQualityUnsubscribe,
     adaptiveQualityController,
     runtime,
-    disposeKeyboardShortcuts,
-    disposeRequestedPresetListener,
-    disposeRequestedOverlayTabListener,
+    getDisposeKeyboardShortcuts: () => disposeKeyboardShortcuts,
+    getDisposeRequestedPresetListener: () => disposeRequestedPresetListener,
+    getDisposeRequestedOverlayTabListener: () =>
+      disposeRequestedOverlayTabListener,
     catalogCoordinator,
     disposeRuntimeSignalHub,
     setQualityPresetById,
@@ -1067,7 +1068,10 @@ function buildExperienceController(deps: Record<string, any>) {
       deps.capturedVideoOverlay?.dispose();
       deps.adapter?.dispose();
       deps.performanceTracker?.reset();
-      deps.adaptiveQualityUnsubscribe?.();
+      deps.getAdaptiveQualityUnsubscribe?.()?.();
+      deps.getDisposeKeyboardShortcuts?.()?.();
+      deps.getDisposeRequestedPresetListener?.()?.();
+      deps.getDisposeRequestedOverlayTabListener?.()?.();
       deps.catalogCoordinator?.dispose();
       deps.disposeRuntimeSignalHub?.();
     },

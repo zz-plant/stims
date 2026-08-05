@@ -42,6 +42,7 @@ class PerformancePanel {
   private particleInput: HTMLInputElement;
   private shaderSelect: HTMLSelectElement;
   private storageKey: string;
+  private disposeSettingsSubscription: (() => void) | null = null;
 
   constructor(options: PerformancePanelOptions = {}) {
     const {
@@ -119,8 +120,16 @@ class PerformancePanel {
 
     document.body.appendChild(this.container);
 
-    subscribeToPerformanceSettings((settings) => this.syncUi(settings));
+    this.disposeSettingsSubscription = subscribeToPerformanceSettings(
+      (settings) => this.syncUi(settings),
+    );
     this.syncUi(getActivePerformanceSettings({ storageKey }));
+  }
+
+  dispose() {
+    this.disposeSettingsSubscription?.();
+    this.disposeSettingsSubscription = null;
+    this.container.remove();
   }
 
   getElement() {
@@ -247,7 +256,7 @@ export function resetPerformancePanelState(
   resetPerformanceSettingsStore();
 
   if (options.removePanel && singletonPanel) {
-    singletonPanel.getElement().remove();
+    singletonPanel.dispose();
     singletonPanel = null;
   }
 }

@@ -7,6 +7,7 @@ import {
   Sphere,
   Vector3,
 } from 'three';
+import { disposeGeometry } from '../../utils/three/three-dispose';
 import { createProceduralMeshMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type {
   MilkdropGpuGeometryHints,
@@ -83,6 +84,13 @@ function getProceduralMeshGeometry(density: number) {
   );
   proceduralMeshGeometryCache.set(safeDensity, geometry);
   return geometry;
+}
+
+export function clearProceduralMeshGeometryCache() {
+  for (const geometry of proceduralMeshGeometryCache.values()) {
+    disposeGeometry(geometry);
+  }
+  proceduralMeshGeometryCache.clear();
 }
 
 export function renderMesh({

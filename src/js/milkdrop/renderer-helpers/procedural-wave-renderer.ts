@@ -77,6 +77,13 @@ function getProceduralWaveGeometry(sampleCount: number) {
   return geometry;
 }
 
+export function clearProceduralWaveGeometryCache() {
+  for (const geometry of proceduralWaveGeometryCache.values()) {
+    disposeGeometry(geometry);
+  }
+  proceduralWaveGeometryCache.clear();
+}
+
 function createProceduralWaveObjectGeometry(sampleCount: number) {
   const geometry = getProceduralWaveGeometry(sampleCount).clone();
   setGeometryBoundingSphere(

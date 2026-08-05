@@ -64,7 +64,13 @@ type RendererPoolEntry = {
   inUse: boolean;
 };
 
+type RendererPoolLifecycle = {
+  release: () => void;
+  retain: () => void;
+};
+
 const rendererPool: RendererPoolEntry[] = [];
+const rendererLifecycles = new WeakMap<RendererHandle, RendererPoolLifecycle>();
 let activeQuality: QualityPreset = getActiveQualityPreset();
 let _activeRenderPreferences = getActiveRenderPreferences();
 let activeRuntimeControls: RendererRuntimeControls =
@@ -339,9 +345,21 @@ async function createRendererHandle(
   let applyFacadeOverrides: ((renderer: RendererInstance) => void) | null =
     null;
   let webGpuRecovery: Promise<void> | null = null;
+  let cancelWebGpuRecovery: (() => void) | null = null;
+  let released = false;
   let observedWebGpuDeviceRevision = 0;
   let cleanupObservedWebGpuDeviceError: (() => void) | null = null;
   let reattachAnimationLoop: (() => void) | null = null;
+
+  const releaseRendererLifecycle = () => {
+    released = true;
+    cancelWebGpuRecovery?.();
+    cancelWebGpuRecovery = null;
+  };
+
+  const retainRendererLifecycle = () => {
+    released = false;
+  };
 
   const clearObservedWebGpuDevice = () => {
     observedWebGpuDeviceRevision += 1;
@@ -379,6 +397,12 @@ async function createRendererHandle(
     if (!nextResult) {
       rememberRendererFallback('Renderer recreation failed.');
       throw new Error('Unable to recreate renderer.');
+    }
+    if (released) {
+      nextResult.renderer.dispose?.();
+      throw new Error(
+        'Renderer recreation aborted: the renderer handle was released.',
+      );
     }
     if (!allowBackendSwitch && nextResult.backend !== previousBackend) {
       nextResult.renderer.dispose?.();
@@ -430,6 +454,25 @@ async function createRendererHandle(
       return webGpuRecovery;
     }
 
+    let cancelled = false;
+    let recoverySleepId: ReturnType<typeof setTimeout> | null = null;
+
+    const cancellableSleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        recoverySleepId = setTimeout(() => {
+          recoverySleepId = null;
+          resolve();
+        }, ms);
+      });
+
+    const cancel = () => {
+      cancelled = true;
+      if (recoverySleepId !== null) {
+        clearTimeout(recoverySleepId);
+        recoverySleepId = null;
+      }
+    };
+
     const recovery = (async () => {
       for (
         let attempt = 1;
@@ -437,13 +480,17 @@ async function createRendererHandle(
         attempt += 1
       ) {
         const lastAttempt = attempt === WEBGPU_RECOVERY_MAX_ATTEMPTS;
-        await new Promise((resolve) =>
-          setTimeout(resolve, nextRecoveryDelayMs()),
-        );
+        await cancellableSleep(nextRecoveryDelayMs());
+        if (cancelled) {
+          return;
+        }
         try {
           // A working compatibility renderer beats a permanently lost
           // device, so the final attempt accepts a WebGL replacement.
           await recreateRenderer({ allowBackendSwitch: lastAttempt });
+          if (cancelled) {
+            return;
+          }
           if (handle.backend !== 'webgpu') {
             console.warn(
               'WebGPU device was lost; switched to the WebGL compatibility renderer.',
@@ -451,6 +498,9 @@ async function createRendererHandle(
           }
           return;
         } catch (error) {
+          if (cancelled) {
+            return;
+          }
           rememberRendererFallback(reason, {
             backend: 'webgl',
             shouldRetryWebGPU: !lastAttempt,
@@ -465,7 +515,11 @@ async function createRendererHandle(
       if (webGpuRecovery === recovery) {
         webGpuRecovery = null;
       }
+      if (cancelWebGpuRecovery === cancel) {
+        cancelWebGpuRecovery = null;
+      }
     });
+    cancelWebGpuRecovery = cancel;
     return webGpuRecovery;
   };
 
@@ -493,6 +547,9 @@ async function createRendererHandle(
 
     void device.lost
       ?.then((info) => {
+        if (released) {
+          return;
+        }
         if (observedRevision !== observedWebGpuDeviceRevision) {
           return;
         }
@@ -572,6 +629,9 @@ async function createRendererHandle(
     };
 
     const handleContextRestored = () => {
+      if (released) {
+        return;
+      }
       if (observedRevision !== observedWebGLContextRevision) {
         return;
       }
@@ -649,6 +709,7 @@ async function createRendererHandle(
       );
     },
     release: () => {
+      releaseRendererLifecycle();
       activeOptions = {};
       activeViewport = undefined;
       stopRendererAnimationLoop?.();
@@ -657,6 +718,11 @@ async function createRendererHandle(
 
   observeActiveWebGpuDevice();
   observeActiveWebGLContext();
+
+  rendererLifecycles.set(handle, {
+    release: releaseRendererLifecycle,
+    retain: retainRendererLifecycle,
+  });
 
   return handle;
 }
@@ -692,6 +758,7 @@ export async function requestRenderer({
 
   if (entry) {
     entry.inUse = true;
+    rendererLifecycles.get(entry.handle)?.retain();
     attachCanvas(entry.handle.canvas, host ?? undefined);
     entry.handle.applySettings(options);
     return entry.handle;
@@ -772,6 +839,7 @@ export function resetRendererPool({
 } = {}) {
   rendererPool.forEach((entry) => {
     entry.inUse = false;
+    rendererLifecycles.get(entry.handle)?.release();
     if (dispose) {
       entry.handle.renderer.setAnimationLoop?.(null);
       entry.handle.renderer.dispose?.();

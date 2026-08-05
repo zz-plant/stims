@@ -45,6 +45,7 @@ export function createMilkdropEditorSession({
   let worker: Worker | null = null;
   let compiler: Remote<MilkdropEditorCompiler> | null = null;
   let commitId = 0;
+  let compileTimeoutId: ReturnType<typeof setTimeout> | null = null;
   let sourceMeta: MilkdropPresetSource = initialPreset;
   let lastGood =
     initialCompiled ??
@@ -91,25 +92,37 @@ export function createMilkdropEditorSession({
     }
 
     editorLog(sourceMeta.id, 'compile via worker');
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Worker compilation timed out')), 1000),
-    );
-    return Promise.race([
-      activeCompiler.compile(source, sourceMeta),
-      timeout,
-    ]).catch((error) => {
-      editorWarn(
-        sourceMeta.id,
-        'worker compilation failed or timed out, falling back to main thread',
-        error,
+    const timeout = new Promise<never>((_, reject) => {
+      compileTimeoutId = setTimeout(
+        () => reject(new Error('Worker compilation timed out')),
+        1000,
       );
-      if (error && error.message === 'Worker compilation timed out') {
-        worker?.terminate();
-        worker = null;
-        compiler = null;
-      }
-      return compileMilkdropPresetSource(source, sourceMeta);
     });
+    const clearCompileTimeout = () => {
+      if (compileTimeoutId !== null) {
+        clearTimeout(compileTimeoutId);
+        compileTimeoutId = null;
+      }
+    };
+    return Promise.race([activeCompiler.compile(source, sourceMeta), timeout])
+      .then((result) => {
+        clearCompileTimeout();
+        return result;
+      })
+      .catch((error) => {
+        clearCompileTimeout();
+        editorWarn(
+          sourceMeta.id,
+          'worker compilation failed or timed out, falling back to main thread',
+          error,
+        );
+        if (error && error.message === 'Worker compilation timed out') {
+          worker?.terminate();
+          worker = null;
+          compiler = null;
+        }
+        return compileMilkdropPresetSource(source, sourceMeta);
+      });
   };
 
   const commit = async (
@@ -197,6 +210,10 @@ export function createMilkdropEditorSession({
     },
 
     dispose() {
+      if (compileTimeoutId !== null) {
+        clearTimeout(compileTimeoutId);
+        compileTimeoutId = null;
+      }
       void compiler?.[releaseProxy]();
       compiler = null;
       worker?.terminate();

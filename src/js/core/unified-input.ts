@@ -773,6 +773,7 @@ export function createUnifiedInput({
   const dispose = () => {
     if (inputFrameId != null) {
       cancelAnimationFrame(inputFrameId);
+      inputFrameId = null;
     }
     resizeObserver?.disconnect();
     if (!resizeObserver) {
@@ -804,9 +805,18 @@ export function createUnifiedInput({
           handleVisibilityChange,
         );
       }
+      if (lastGamepadConnected) {
+        document.body?.classList.remove('gamepad-active');
+        lastGamepadConnected = false;
+      }
     }
     subscribers.clear();
     activePointers.clear();
+    pendingPointerEvents.length = 0;
+    pendingPointerMoveIndexes.clear();
+    keyState.clear();
+    wheelDelta = 0;
+    wheelAccum = 0;
     hoverPointer = null;
   };
 

@@ -21,6 +21,7 @@ import {
   applyBlendModeToGroup,
   BACKGROUND_GEOMETRY,
   clearGroup,
+  clearSharedMilkdropGeometries,
   disposeObject,
   ensureGeometryPositions,
   getBorderLinePositions,
@@ -56,10 +57,17 @@ import {
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
 import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
-import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
-import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
+import {
+  clearProceduralMeshGeometryCache,
+  renderMesh as renderMeshHelper,
+} from './renderer-helpers/mesh-renderer';
+import {
+  clearProceduralMotionVectorGeometryCache,
+  renderMotionVectors as renderMotionVectorsHelper,
+} from './renderer-helpers/motion-vector-renderer';
 import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
 import {
+  clearProceduralWaveGeometryCache,
   syncInterpolatedProceduralCustomWaveObject,
   syncInterpolatedProceduralWaveObject,
   syncProceduralCustomWaveObject,
@@ -1333,7 +1341,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       disposeGeometry(this.meshLines.geometry);
     }
     disposeMaterial(this.meshLines.material);
-    this.batcher?.dispose();
+    this.batcher?.disposeWithCaches
+      ? this.batcher.disposeWithCaches()
+      : this.batcher?.dispose();
+    clearSharedMilkdropGeometries();
+    clearProceduralMeshGeometryCache();
+    clearProceduralWaveGeometryCache();
+    clearProceduralMotionVectorGeometryCache();
     this.feedback?.dispose();
     this.audioTexture.dispose();
     this.scene.remove(this.root);
