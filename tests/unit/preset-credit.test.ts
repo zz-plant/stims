@@ -42,12 +42,12 @@ describe('parsePresetCredit', () => {
   });
 
   test('comma and "and" as author separators', () => {
-    expect(parsePresetCredit('Flexi, Rovastar + Geiss - Fractopia').authors).toEqual(
-      ['Flexi', 'Rovastar', 'Geiss'],
-    );
-    expect(parsePresetCredit('Illusion and Rovastar - Grand Odyssey Mod').authors).toEqual(
-      ['Illusion', 'Rovastar'],
-    );
+    expect(
+      parsePresetCredit('Flexi, Rovastar + Geiss - Fractopia').authors,
+    ).toEqual(['Flexi', 'Rovastar', 'Geiss']);
+    expect(
+      parsePresetCredit('Illusion and Rovastar - Grand Odyssey Mod').authors,
+    ).toEqual(['Illusion', 'Rovastar']);
   });
 
   test('dotted names survive author splitting', () => {
@@ -125,7 +125,9 @@ describe('format round-trips', () => {
 
 describe('splitPresetDisplay', () => {
   test('strips the redundant author prefix for byline surfaces', () => {
-    expect(splitPresetDisplay('Eo.S. + Phat - Cubetrace v2', 'Eo.S. + Phat')).toEqual({
+    expect(
+      splitPresetDisplay('Eo.S. + Phat - Cubetrace v2', 'Eo.S. + Phat'),
+    ).toEqual({
       title: 'Cubetrace v2',
       byline: 'Eo.S. + Phat',
     });

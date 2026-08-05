@@ -175,7 +175,11 @@ function applyShaderAstStatement({
     shaderExpressionEnv,
   );
 
-  if (hasUnsupportedVolumeSample(resolvedExpression)) {
+  // Allow 3D textures in warp_texture_source, shader_body, and ret to be handled by the direct program (native shader body)
+  if (
+    hasUnsupportedVolumeSample(resolvedExpression) &&
+    !(key === 'warp_texture_source' || key === 'shader_body' || key === 'ret')
+  ) {
     return false;
   }
 

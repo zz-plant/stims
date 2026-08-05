@@ -29,6 +29,7 @@ import {
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
+import { CreditsDialog } from './CreditsDialog.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
   getAudioEnergy,
@@ -42,7 +43,6 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
-import { CreditsDialog } from './CreditsDialog.tsx';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
