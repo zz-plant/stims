@@ -23,11 +23,16 @@ export function classifyMilkdropShaderProgramExecution(
   const requiresControlFallback = program.execution.requiresControlFallback;
 
   if (backends.length > 0) {
+    // When raw GLSL is also preserved, WebGL can execute it natively even if
+    // the supportedBackends list only carries WebGPU (which uses TSL nodes).
+    const effectiveBackends: MilkdropRenderBackend[] = preservesRawGlsl
+      ? [...new Set<MilkdropRenderBackend>([...backends, 'webgl'])]
+      : backends;
     return {
       kind: requiresControlFallback
         ? 'backend-executable-with-control-fallback'
         : 'backend-executable',
-      backends,
+      backends: effectiveBackends,
       preservesRawGlsl,
       requiresControlFallback,
     };
@@ -36,7 +41,7 @@ export function classifyMilkdropShaderProgramExecution(
   if (preservesRawGlsl) {
     return {
       kind: 'backend-executable',
-      backends: ['webgl'],
+      backends: ['webgl' as MilkdropRenderBackend],
       preservesRawGlsl,
       requiresControlFallback,
     };

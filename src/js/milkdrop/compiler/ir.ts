@@ -85,6 +85,8 @@ type ShaderControlAnalysis = {
   supported: boolean;
   controls: MilkdropShaderControls;
   expressions: MilkdropPresetIR['shaderText']['controlExpressions'];
+  hasNativeBody: boolean;
+  nativeBodyUnparsedLines: string[];
 };
 
 type ProgramAssemblyHelpers = {
@@ -582,12 +584,17 @@ export function createMilkdropIr({
             shaderWarpAnalysis.statements.length,
         supportedBackends:
           warpHasTranslatedDirectStatements &&
-          shaderWarpAnalysis.unsupportedLines.length === 0
-            ? ['webgl', 'webgpu']
+          (shaderWarpAnalysis.hasNativeBody
+            ? shaderWarpAnalysis.nativeBodyUnparsedLines.length === 0
+            : shaderWarpAnalysis.unsupportedLines.length === 0)
+            ? shaderWarpAnalysis.hasNativeBody
+              ? ['webgpu' as const]
+              : ['webgl' as const, 'webgpu' as const]
             : [],
-        rawGlsl: !warpHasTranslatedDirectStatements
-          ? shaderWarpAnalysis.directProgramLines.join('\n')
-          : undefined,
+        rawGlsl:
+          shaderWarpAnalysis.hasNativeBody || !warpHasTranslatedDirectStatements
+            ? shaderWarpAnalysis.directProgramLines.join('\n')
+            : undefined,
       })
     : null;
   const compShaderProgram = shaderCompAnalysis.directProgramRequired
@@ -601,12 +608,17 @@ export function createMilkdropIr({
             shaderCompAnalysis.statements.length,
         supportedBackends:
           compHasTranslatedDirectStatements &&
-          shaderCompAnalysis.unsupportedLines.length === 0
-            ? ['webgl', 'webgpu']
+          (shaderCompAnalysis.hasNativeBody
+            ? shaderCompAnalysis.nativeBodyUnparsedLines.length === 0
+            : shaderCompAnalysis.unsupportedLines.length === 0)
+            ? shaderCompAnalysis.hasNativeBody
+              ? ['webgpu' as const]
+              : ['webgl' as const, 'webgpu' as const]
             : [],
-        rawGlsl: !compHasTranslatedDirectStatements
-          ? shaderCompAnalysis.directProgramLines.join('\n')
-          : undefined,
+        rawGlsl:
+          shaderCompAnalysis.hasNativeBody || !compHasTranslatedDirectStatements
+            ? shaderCompAnalysis.directProgramLines.join('\n')
+            : undefined,
       })
     : null;
   const ignoredFields = [
