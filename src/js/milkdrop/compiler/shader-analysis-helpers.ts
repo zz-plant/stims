@@ -180,6 +180,12 @@ export function resolveShaderExpressionIdentifiers(
         property: node.property.toLowerCase(),
         object: resolveShaderExpressionIdentifiers(node.object, env, visited),
       };
+    case 'index':
+      return {
+        ...node,
+        object: resolveShaderExpressionIdentifiers(node.object, env, visited),
+        index: resolveShaderExpressionIdentifiers(node.index, env, visited),
+      };
     case 'literal':
       return node;
   }
@@ -243,6 +249,8 @@ export function toMilkdropExpression(
       };
     }
     case 'member':
+      return null;
+    case 'index':
       return null;
   }
 }
@@ -908,6 +916,11 @@ export function hasUnsupportedVolumeSample(
       );
     case 'member':
       return hasUnsupportedVolumeSample(node.object);
+    case 'index':
+      return (
+        hasUnsupportedVolumeSample(node.object) ||
+        hasUnsupportedVolumeSample(node.index)
+      );
     case 'call': {
       const callName = normalizeShaderCallName(node.name);
       if (callName === 'tex3d') {

@@ -633,6 +633,9 @@ function compileShaderExpressionNode(
       }
       return buildDirectShaderSwizzleValue(object, node.property);
     }
+    case 'index': {
+      return null;
+    }
     case 'call': {
       const name = node.name.toLowerCase();
       const args = node.args
