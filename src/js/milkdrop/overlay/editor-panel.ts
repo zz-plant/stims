@@ -790,6 +790,7 @@ export class EditorPanel {
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
   private snapshots: Array<{ source: string; timestamp: number }> = [];
+  private disposeDiagnosticsListener: (() => void) | null = null;
   private sliderInputs: Map<
     string,
     { input: HTMLInputElement; display: HTMLSpanElement; defaultValue: number }
@@ -1194,11 +1195,18 @@ export class EditorPanel {
       editorWorkbench,
     );
 
-    window.addEventListener('stims:editor:diagnostics', ((
+    const diagnosticsListener = ((
       e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
     ) => {
       this.setEditorDiagnostics(e.detail.diagnostics);
-    }) as EventListener);
+    }) as EventListener;
+    window.addEventListener('stims:editor:diagnostics', diagnosticsListener);
+    this.disposeDiagnosticsListener = () => {
+      window.removeEventListener(
+        'stims:editor:diagnostics',
+        diagnosticsListener,
+      );
+    };
   }
 
   setVisible(visible: boolean) {
@@ -1424,8 +1432,11 @@ export class EditorPanel {
   }
 
   dispose() {
+    this.disposeDiagnosticsListener?.();
+    this.disposeDiagnosticsListener = null;
     this.clearEditorDebounce();
     this.editor.destroy();
+    this.element.remove();
   }
 
   private applyCurrentSource() {

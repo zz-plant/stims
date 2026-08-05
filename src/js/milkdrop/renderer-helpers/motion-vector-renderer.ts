@@ -7,6 +7,7 @@ import {
   Sphere,
   Vector3,
 } from 'three';
+import { disposeGeometry } from '../../utils/three/three-dispose';
 import { createProceduralMotionVectorMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type { MilkdropRenderPayload } from '../types';
 import type { ProceduralFieldVisualWithSignals } from './procedural-field-uniforms';
@@ -89,6 +90,13 @@ export function getProceduralMotionVectorGeometry(
   );
   proceduralMotionVectorGeometryCache.set(cacheKey, geometry);
   return geometry;
+}
+
+export function clearProceduralMotionVectorGeometryCache() {
+  for (const geometry of proceduralMotionVectorGeometryCache.values()) {
+    disposeGeometry(geometry);
+  }
+  proceduralMotionVectorGeometryCache.clear();
 }
 
 export function renderMotionVectors({

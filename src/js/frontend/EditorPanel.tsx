@@ -6,6 +6,7 @@ import { useWorkspace } from './workspace-context.tsx';
 export function EditorPanel() {
   const hostRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<{
+    dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
     element: HTMLElement;
   } | null>(null);
@@ -48,7 +49,7 @@ export function EditorPanel() {
 
     return () => {
       cancelled = true;
-      panelRef.current?.element.remove();
+      panelRef.current?.dispose();
       panelRef.current = null;
     };
   }, []);

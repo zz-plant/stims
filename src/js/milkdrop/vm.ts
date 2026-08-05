@@ -180,16 +180,73 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
+
+  /** Resolves `wave${slot}_${key}` / `shape${slot}_${key}` composite keys that
+   * exist only in the synthesized snapshot, returning the owning locals object
+   * and key without materializing the snapshot itself. */
+  private parseFrameLocalKey(prop: string) {
+    const prefix = prop.startsWith('wave')
+      ? 'wave'
+      : prop.startsWith('shape')
+        ? 'shape'
+        : null;
+    if (prefix === null) {
+      return null;
+    }
+    const localsList =
+      prefix === 'wave'
+        ? this.waveState.customWaveLocals
+        : this.shapeState.customShapeLocals;
+    const separatorIndex = prop.indexOf('_', prefix.length);
+    if (separatorIndex < 0) {
+      return null;
+    }
+    const rawSlot = prop.slice(prefix.length, separatorIndex);
+    const localKey = prop.slice(separatorIndex + 1);
+    if (rawSlot.length === 0 || localKey.length === 0) {
+      return null;
+    }
+    const slot = Number(rawSlot);
+    if (!Number.isInteger(slot) || slot < 1) {
+      return null;
+    }
+    const locals = localsList[slot - 1];
+    if (!locals) {
+      return null;
+    }
+    return { locals, localKey };
+  }
+
+  /** Resolves a frame variable directly against the live state/register/local
+   * objects. This is the per-frame hot path: the feedback managers read
+   * `q1..q32`/`t1..t32` and `blur*_min/max` here, so the large lazy snapshot is
+   * never materialized for steady-state frames. The snapshot stays as a
+   * fallback for whole-object enumeration (`ownKeys`/`getOwnPropertyDescriptor`). */
+  private resolveFrameVariable(prop: string): number | undefined {
+    if (prop in this.frameCommonVars) {
+      return this.frameCommonVars[prop];
+    }
+    const parsed = this.parseFrameLocalKey(prop);
+    if (parsed) {
+      const { locals, localKey } = parsed;
+      return localKey in locals ? (locals[localKey] ?? 0) : undefined;
+    }
+    // `registers` is `Object.create(state)`, so `in` covers state keys and
+    // reads resolve through the prototype chain exactly like `{...state,
+    // ...registers}`.
+    if (prop in this.registers) {
+      return this.registers[prop];
+    }
+    return undefined;
+  }
+
   private readonly variablesProxy = new Proxy({} as Record<string, number>, {
     get: (_target, prop) => {
       if (typeof prop !== 'string') {
         return undefined;
       }
-      if (prop in this.frameCommonVars) {
-        return this.frameCommonVars[prop];
-      }
       if (this.frameVariablesSnapshot === null) {
-        this.frameVariablesSnapshot = this.getStateSnapshot();
+        return this.resolveFrameVariable(prop);
       }
       return this.frameVariablesSnapshot[prop];
     },
@@ -200,10 +257,11 @@ class MilkdropPresetVM implements MilkdropVM {
       if (prop in this.frameCommonVars) {
         return this.frameCommonVars[prop] !== undefined;
       }
-      if (this.frameVariablesSnapshot === null) {
-        this.frameVariablesSnapshot = this.getStateSnapshot();
+      const parsed = this.parseFrameLocalKey(prop);
+      if (parsed) {
+        return parsed.localKey in parsed.locals;
       }
-      return prop in this.frameVariablesSnapshot;
+      return prop in this.registers;
     },
     ownKeys: () => {
       if (this.frameVariablesSnapshot === null) {
@@ -486,11 +544,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.frame = signals.frame;
     this.signalEnv.fps = signals.fps;
     this.signalEnv.aspect = signals.aspect ?? 1;
-    const viewport = deriveMilkdropViewportSignalValues(signals);
-    this.signalEnv.aspectx = viewport.aspectx;
-    this.signalEnv.aspecty = viewport.aspecty;
-    this.signalEnv.pixelsx = viewport.pixelsx;
-    this.signalEnv.pixelsy = viewport.pixelsy;
+    deriveMilkdropViewportSignalValues(signals, this.signalEnv);
     const meshDensity = getMeshDensity(this.state, this.detailScale);
     this.signalEnv.meshx = meshDensity;
     this.signalEnv.meshy = meshDensity;

@@ -6,6 +6,7 @@ export function createMilkdropRuntimeSignalHub<TSnapshot>({
   scheduleCatalogSync: () => Promise<unknown> | undefined;
 }) {
   let deferredCatalogSyncTimeoutId: number | null = null;
+  let disposed = false;
   const subscribers = new Set<(snapshot: TSnapshot) => void>();
 
   const emitChange = () => {
@@ -22,6 +23,9 @@ export function createMilkdropRuntimeSignalHub<TSnapshot>({
   };
 
   const scheduleDeferredCatalogSync = (delayMs = 48) => {
+    if (disposed) {
+      return;
+    }
     clearDeferredCatalogSync();
     deferredCatalogSyncTimeoutId = window.setTimeout(() => {
       deferredCatalogSyncTimeoutId = null;
@@ -38,6 +42,7 @@ export function createMilkdropRuntimeSignalHub<TSnapshot>({
   };
 
   const dispose = () => {
+    disposed = true;
     clearDeferredCatalogSync();
     subscribers.clear();
   };

@@ -15,6 +15,7 @@ export class MilkdropOverlay {
   private readonly presetOsdMeta: HTMLElement;
   private readonly osdBackendEl: HTMLElement;
   private osdHideTimeoutId: number | null = null;
+  private readonly startupTimerIds: number[] = [];
   private osdPinned = false;
 
   constructor({
@@ -164,14 +165,18 @@ export class MilkdropOverlay {
       if (paramAutoplay !== null) {
         const isAutoplay = paramAutoplay === 'true';
         this.autoplayToggle.checked = isAutoplay;
-        setTimeout(() => callbacks.onToggleAutoplay(isAutoplay), 0);
+        this.startupTimerIds.push(
+          window.setTimeout(() => callbacks.onToggleAutoplay(isAutoplay), 0),
+        );
       }
       if (paramBlend !== null) {
         const blend = Number.parseFloat(paramBlend);
         if (!Number.isNaN(blend)) {
           this.blendSlider.value = String(blend);
           this.blendValue.textContent = `${blend.toFixed(2)}s`;
-          setTimeout(() => callbacks.onBlendDurationChange(blend), 0);
+          this.startupTimerIds.push(
+            window.setTimeout(() => callbacks.onBlendDurationChange(blend), 0),
+          );
         }
       }
       if (
@@ -179,12 +184,14 @@ export class MilkdropOverlay {
         (paramTransition === 'blend' || paramTransition === 'cut')
       ) {
         this.transitionModeSelect.value = paramTransition;
-        setTimeout(
-          () =>
-            callbacks.onTransitionModeChange(
-              paramTransition as 'blend' | 'cut',
-            ),
-          0,
+        this.startupTimerIds.push(
+          window.setTimeout(
+            () =>
+              callbacks.onTransitionModeChange(
+                paramTransition as 'blend' | 'cut',
+              ),
+            0,
+          ),
         );
       }
     } catch (_err) {}
@@ -247,6 +254,12 @@ export class MilkdropOverlay {
   }
 
   dispose() {
+    if (this.osdHideTimeoutId !== null) {
+      window.clearTimeout(this.osdHideTimeoutId);
+      this.osdHideTimeoutId = null;
+    }
+    this.startupTimerIds.forEach((id) => window.clearTimeout(id));
+    this.startupTimerIds.length = 0;
     this.root.remove();
   }
 }

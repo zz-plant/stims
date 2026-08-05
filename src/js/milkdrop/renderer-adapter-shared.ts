@@ -71,6 +71,7 @@ export type MilkdropRendererAdapterConfig = {
 export type MilkdropRendererBatcher = {
   attach: (root: Group) => void;
   dispose: () => void;
+  disposeWithCaches?: () => void;
   setShapeTexture?: (texture: Texture | null) => void;
   renderWaveGroup?: (
     target:
@@ -339,6 +340,18 @@ export function getUnitPolygonClosedLineGeometry(sides: number) {
   ensureGeometryPositions(geometry, positions);
   polygonOutlineGeometryCache.set(`closed:${safeSides}`, geometry);
   return geometry;
+}
+
+export function clearSharedMilkdropGeometries() {
+  disposeGeometry(BACKGROUND_GEOMETRY);
+  for (const geometry of polygonFillGeometryCache.values()) {
+    disposeGeometry(geometry);
+  }
+  polygonFillGeometryCache.clear();
+  for (const geometry of polygonOutlineGeometryCache.values()) {
+    disposeGeometry(geometry);
+  }
+  polygonOutlineGeometryCache.clear();
 }
 
 export function closeLinePositions<T extends ArrayLike<number>>(
