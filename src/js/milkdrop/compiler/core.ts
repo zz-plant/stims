@@ -148,9 +148,11 @@ export function createPresetSource(
     raw,
     origin: source.origin ?? 'draft',
     author: source.author ?? author,
+    authorUrl: source.authorUrl,
     fileName: source.fileName,
     path: source.path,
     updatedAt: source.updatedAt ?? Date.now(),
+    derivedFrom: source.derivedFrom,
   };
 }
 

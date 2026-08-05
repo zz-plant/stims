@@ -42,6 +42,7 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { CreditsDialog } from './CreditsDialog.tsx';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -98,6 +99,7 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
     name: string;
@@ -142,6 +144,7 @@ function StimsWorkspaceAppShell() {
   // ShortcutsDialog owns the focus trap and initial focus placement via
   // `useFocusTrap` while this shell controls when it opens.
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
+  const creditsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
@@ -554,6 +557,13 @@ function StimsWorkspaceAppShell() {
   }, []);
 
   useEffect(() => {
+    const handleOpenCredits = () => setShowCredits(true);
+    window.addEventListener('stims:credits:open', handleOpenCredits);
+    return () =>
+      window.removeEventListener('stims:credits:open', handleOpenCredits);
+  }, []);
+
+  useEffect(() => {
     const preference = getActiveThemePreference();
     applyTheme(preference.theme);
   }, []);
@@ -638,6 +648,7 @@ function StimsWorkspaceAppShell() {
                 setMotionPreference({ enabled })
               }
               onOpenShortcuts={() => setShowShortcuts(true)}
+              onOpenCredits={() => setShowCredits(true)}
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
@@ -673,6 +684,11 @@ function StimsWorkspaceAppShell() {
         open={showShortcuts}
         onClose={() => setShowShortcuts(false)}
         shortcutsRef={shortcutsRef}
+      />
+      <CreditsDialog
+        open={showCredits}
+        onClose={() => setShowCredits(false)}
+        creditsRef={creditsRef}
       />
     </main>
   );
