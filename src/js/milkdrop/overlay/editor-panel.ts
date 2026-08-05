@@ -18,7 +18,9 @@ import {
 import {
   bracketMatching,
   foldGutter,
+  HighlightStyle,
   indentOnInput,
+  syntaxHighlighting,
 } from '@codemirror/language';
 import type { Diagnostic as CmDiagnostic } from '@codemirror/lint';
 import { lintGutter, lintKeymap, setDiagnostics } from '@codemirror/lint';
@@ -27,8 +29,11 @@ import {
   search,
   searchKeymap,
 } from '@codemirror/search';
-import { EditorState, Prec } from '@codemirror/state';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { Compartment, EditorState, Prec } from '@codemirror/state';
+import {
+  oneDarkHighlightStyle,
+  oneDarkTheme,
+} from '@codemirror/theme-one-dark';
 import type { KeyBinding } from '@codemirror/view';
 import {
   crosshairCursor,
@@ -36,10 +41,16 @@ import {
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
+  hoverTooltip,
   keymap,
   lineNumbers,
   rectangularSelection,
 } from '@codemirror/view';
+import { tags } from '@lezer/highlight';
+import {
+  getActiveThemePreference,
+  subscribeToThemePreference,
+} from '../../core/theme-preferences';
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
 import { parseMilkdropPreset } from '../preset-parser';
@@ -608,6 +619,70 @@ const MILKDROP_DOC_VARIABLE_COMPLETIONS: CompletionSource = (context) => {
   };
 };
 
+// Reuses the same label/type/detail already authored for autocomplete so
+// hovering a builtin doesn't require the completion popup to be open.
+const MILKDROP_DOC_LOOKUP = new Map(
+  MILKDROP_BUILTIN_OPTIONS.map((opt) => [opt.label.toLowerCase(), opt]),
+);
+
+function wordAtPos(view: EditorView, pos: number) {
+  const { text, from } = view.state.doc.lineAt(pos);
+  let start = pos - from;
+  let end = pos - from;
+  while (start > 0 && /\w/.test(text[start - 1])) start -= 1;
+  while (end < text.length && /\w/.test(text[end])) end += 1;
+  if (start === end) return null;
+  return { from: from + start, to: from + end, word: text.slice(start, end) };
+}
+
+const milkdropHoverTooltip = hoverTooltip((view, pos) => {
+  const match = wordAtPos(view, pos);
+  if (!match) return null;
+  const entry = MILKDROP_DOC_LOOKUP.get(match.word.toLowerCase());
+  if (!entry) return null;
+  return {
+    pos: match.from,
+    end: match.to,
+    above: true,
+    create() {
+      const dom = document.createElement('div');
+      dom.className = 'cm-milkdrop-hover-doc';
+      const label = document.createElement('strong');
+      label.textContent = entry.label;
+      dom.appendChild(label);
+      if (entry.detail) {
+        const detail = document.createElement('span');
+        detail.textContent = ` — ${entry.detail}`;
+        dom.appendChild(detail);
+      }
+      const kind = document.createElement('div');
+      kind.className = 'cm-milkdrop-hover-doc__kind';
+      kind.textContent = entry.type;
+      dom.appendChild(kind);
+      return { dom };
+    },
+  };
+});
+
+// oneDark bundles both chrome colors and token colors into a single
+// Extension; we only want its token colors for dark mode, and swap in an
+// equivalent light-mode HighlightStyle when the app theme flips, using the
+// same lezer tags the milkdrop StreamLanguage tokens resolve to (see
+// editor-language.ts): heading, comment, keyword, atom, variableName
+// (registers) / variableName.standard (the legacy "builtin" token, used for
+// pi/e), number, operator, propertyName.
+const milkdropLightHighlightStyle = HighlightStyle.define([
+  { tag: tags.heading, color: '#0f766e', fontWeight: 'bold' },
+  { tag: tags.comment, color: '#64748b', fontStyle: 'italic' },
+  { tag: tags.keyword, color: '#9333ea' },
+  { tag: tags.atom, color: '#0891b2' },
+  { tag: tags.variableName, color: '#b45309' },
+  { tag: tags.standard(tags.variableName), color: '#be185d' },
+  { tag: tags.number, color: '#059669' },
+  { tag: tags.operator, color: '#475569' },
+  { tag: tags.propertyName, color: '#1d4ed8' },
+]);
+
 function createEditorTheme() {
   return EditorView.theme({
     '&': {
@@ -648,6 +723,19 @@ function createEditorTheme() {
       backgroundColor: 'rgba(34, 211, 238, 0.16)',
       color: '#67e8f9',
     },
+    '.cm-milkdrop-hover-doc': {
+      maxWidth: '280px',
+      padding: '6px 8px',
+      fontSize: '0.82rem',
+      lineHeight: '1.4',
+    },
+    '.cm-milkdrop-hover-doc__kind': {
+      marginTop: '2px',
+      fontSize: '0.7rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.04em',
+      opacity: 0.65,
+    },
   });
 }
 
@@ -666,6 +754,11 @@ function createEditorView({
 }) {
   let debounceId: number | null = null;
   let view: EditorView;
+  const syntaxThemeCompartment = new Compartment();
+  const syntaxHighlightStyleForTheme = (theme: 'light' | 'dark') =>
+    syntaxHighlighting(
+      theme === 'light' ? milkdropLightHighlightStyle : oneDarkHighlightStyle,
+    );
 
   const flushDocChange = () => {
     if (isChangeSuppressed()) {
@@ -689,7 +782,10 @@ function createEditorView({
         highlightSpecialChars(),
         history(),
         createMilkdropLanguage(),
-        oneDark,
+        oneDarkTheme,
+        syntaxThemeCompartment.of(
+          syntaxHighlightStyleForTheme(getActiveThemePreference().theme),
+        ),
         createEditorTheme(),
         bracketMatching(),
         closeBrackets(),
@@ -697,6 +793,7 @@ function createEditorView({
           activateOnTyping: true,
           override: [MILKDROP_COMPLETIONS, MILKDROP_DOC_VARIABLE_COMPLETIONS],
         }),
+        milkdropHoverTooltip,
         search(),
         highlightSelectionMatches(),
         foldGutter(),
@@ -747,6 +844,14 @@ function createEditorView({
     parent,
   });
 
+  const unsubscribeTheme = subscribeToThemePreference(({ theme }) => {
+    view.dispatch({
+      effects: syntaxThemeCompartment.reconfigure(
+        syntaxHighlightStyleForTheme(theme),
+      ),
+    });
+  });
+
   return {
     view,
     clearDebounce() {
@@ -755,6 +860,7 @@ function createEditorView({
         debounceId = null;
       }
     },
+    unsubscribeTheme,
     flushDocChange,
     setDiagnostics(diagnostics: MilkdropDiagnostic[]) {
       view.dispatch(
@@ -779,6 +885,7 @@ export class EditorPanel {
   private readonly deleteButton: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
+  private readonly unsubscribeTheme: () => void;
   private readonly flushEditorDocChange: () => boolean;
   private readonly setEditorDiagnostics: (
     diagnostics: MilkdropDiagnostic[],
@@ -952,6 +1059,7 @@ export class EditorPanel {
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
+    this.unsubscribeTheme = editorViewState.unsubscribeTheme;
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
@@ -1435,6 +1543,7 @@ export class EditorPanel {
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
     this.clearEditorDebounce();
+    this.unsubscribeTheme();
     this.editor.destroy();
     this.element.remove();
   }
