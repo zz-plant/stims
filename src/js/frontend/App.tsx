@@ -20,6 +20,7 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { useTemporalMemory } from '../core/services/temporal-memory.ts';
+import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
@@ -486,6 +487,28 @@ function StimsWorkspaceAppShell() {
       return [{ presetId, title, at: Date.now() }, ...current].slice(0, 50);
     });
   }, [engineSnapshot?.activePresetId, engine.selectedPreset?.title]);
+
+  useEffect(() => {
+    const presetId = engineSnapshot?.activePresetId;
+    const presetTitle = engine.selectedPreset?.title;
+    const source = currentAudioSource;
+    if (!presetId || !presetTitle || !engineSnapshot?.audioActive) return;
+    // 'file' sources can't be resumed — there's no persisted handle to reopen.
+    if (
+      source !== 'demo' &&
+      source !== 'microphone' &&
+      source !== 'tab' &&
+      source !== 'youtube'
+    ) {
+      return;
+    }
+    saveLastSession({ presetId, presetTitle, source });
+  }, [
+    engineSnapshot?.activePresetId,
+    engineSnapshot?.audioActive,
+    engine.selectedPreset?.title,
+    currentAudioSource,
+  ]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
