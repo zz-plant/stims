@@ -1255,7 +1255,33 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.signals.waveformData,
       );
       const backgroundMaterial = this.background.material as MeshBasicMaterial;
-      setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
+      const blend = payload.blendState;
+      if (blend && blend.mode === 'gpu' && blend.alpha > 0) {
+        const mix = 1 - blend.alpha;
+        setMaterialColor(
+          backgroundMaterial,
+          {
+            r: lerpNumber(
+              blend.previousFrame.background.r,
+              payload.frameState.background.r,
+              mix,
+            ),
+            g: lerpNumber(
+              blend.previousFrame.background.g,
+              payload.frameState.background.g,
+              mix,
+            ),
+            b: lerpNumber(
+              blend.previousFrame.background.b,
+              payload.frameState.background.b,
+              mix,
+            ),
+          },
+          1,
+        );
+      } else {
+        setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
+      }
 
       this.renderMesh(
         payload.frameState.mesh,
@@ -1275,7 +1301,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         this.proceduralMotionVectors,
       );
 
-      const blend = payload.blendState;
       if (blend) {
         this.renderBlendVisuals(payload, blend);
       }
