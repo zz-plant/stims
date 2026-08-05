@@ -29,6 +29,10 @@ function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
   return geometry;
 }
 
+function isSharedGeometry(geometry: BufferGeometry) {
+  return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
+}
+
 function setGeometryBoundingSphere(
   geometry: BufferGeometry,
   center: Vector3,
@@ -161,6 +165,10 @@ export function renderMesh({
       transparent: true,
       opacity: 0.24,
     });
+  }
+
+  if (isSharedGeometry(meshLines.geometry)) {
+    meshLines.geometry = new BufferGeometry();
   }
 
   const meshMaterial = meshLines.material as LineBasicMaterial;

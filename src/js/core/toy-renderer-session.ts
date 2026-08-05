@@ -22,6 +22,7 @@ export function createToyRendererSession({
   let rendererOptions = options;
   let viewportState: ToyViewportState | null = null;
   let captureViewport: { width: number; height: number } | null = null;
+  let disposed = false;
 
   const ready = requestRendererImpl({
     host,
@@ -29,6 +30,11 @@ export function createToyRendererSession({
     canvas,
   })
     .then((handle) => {
+      if (disposed) {
+        handle?.release();
+        onReady?.(null);
+        return null;
+      }
       rendererHandle = handle;
       onReady?.(handle);
       return handle;
@@ -100,6 +106,7 @@ export function createToyRendererSession({
       };
     },
     dispose: () => {
+      disposed = true;
       captureViewport = null;
       rendererHandle?.renderer.setAnimationLoop?.(null);
       rendererHandle?.release();

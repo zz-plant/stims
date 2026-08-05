@@ -819,12 +819,7 @@ export class BrowsePanel {
       return;
     }
 
-    const useSections =
-      this.browseMode === 'featured' &&
-      !query &&
-      !this.activeCollectionTag &&
-      this.browseSupportFilter === 'all' &&
-      this.browseSort === 'recommended';
+    const useSections = this.isFeaturedSectionsActive(query);
 
     if (!useSections) {
       this.appendVisibleRows(filtered);
@@ -843,6 +838,18 @@ export class BrowsePanel {
       this.appendPresetSection(section.title, section.presets, fragment);
     });
     this.browseList.replaceChildren(fragment);
+  }
+
+  private isFeaturedSectionsActive(
+    query: string = this.searchInput.value.trim().toLowerCase(),
+  ) {
+    return (
+      this.browseMode === 'featured' &&
+      !query &&
+      !this.activeCollectionTag &&
+      this.browseSupportFilter === 'all' &&
+      this.browseSort === 'recommended'
+    );
   }
 
   private matchesActiveBrowseFilters(
@@ -892,6 +899,9 @@ export class BrowsePanel {
   }
 
   private loadMoreRows() {
+    if (this.isFeaturedSectionsActive()) {
+      return;
+    }
     const filtered = this.lastFilteredPresets;
     if (this.browseVisibleRowCount >= filtered.length) {
       return;

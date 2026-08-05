@@ -35,7 +35,8 @@ function emitExpression(
       if (operand === null) return null;
       if (node.operator === '+') return operand;
       if (node.operator === '-') return `-(${operand})`;
-      if (node.operator === '!') return `(1.0 - (${operand}))`;
+      if (node.operator === '!')
+        return `(abs(${operand}) > 0.000001 ? 0.0 : 1.0)`;
       return null;
     }
     case 'binary': {
@@ -242,7 +243,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const cond = args[0] ?? '0.0';
         const thenVal = args[1] ?? '0.0';
         const elseVal = args[2] ?? '0.0';
-        return `mix(${elseVal}, ${thenVal}, step(0.0001, ${cond}))`;
+        return `mix(${elseVal}, ${thenVal}, step(0.0001, abs(${cond})))`;
       }
       if (lower === 'abs') {
         return `abs(${args[0] ?? '0.0'})`;

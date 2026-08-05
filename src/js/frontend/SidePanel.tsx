@@ -359,8 +359,11 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
     }
   }, [audioEnergy, loading]);
 
+  const autoMatchTriggeredRef = useRef(false);
   useEffect(() => {
+    if (autoMatchTriggeredRef.current) return;
     if (audioEnergy > 0.02) {
+      autoMatchTriggeredRef.current = true;
       handleMatch();
     }
   }, [handleMatch, audioEnergy]);

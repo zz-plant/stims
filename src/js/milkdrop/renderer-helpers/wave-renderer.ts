@@ -454,6 +454,9 @@ export function renderWaveGroup({
     const existing = group.children[index] as Group | undefined;
     const synced = syncWaveObject(existing, wave, alphaMultiplier);
     if (!synced) {
+      if (existing) {
+        group.remove(existing);
+      }
       continue;
     }
     if (!existing) {

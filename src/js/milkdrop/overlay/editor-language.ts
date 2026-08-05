@@ -18,20 +18,20 @@ const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
       }
       if (
         stream.match(
-          /sin|cos|tan|asin|acos|atan|atan2|abs|sqrt|pow|mod|fmod|min|max|mix|lerp|floor|int|ceil|sqr|clamp|step|smoothstep|log|exp|sigmoid|sign|frac|rand|if|above|below|equal|bor|band|bnot|exec2|exec3\b/,
+          /\b(?:sin|cos|tan|asin|acos|atan|atan2|abs|sqrt|pow|mod|fmod|min|max|mix|lerp|floor|int|ceil|sqr|clamp|step|smoothstep|log|exp|sigmoid|sign|frac|rand|if|above|below|equal|bor|band|bnot|exec2|exec3)\b/,
         )
       )
         return 'keyword';
       if (
         stream.match(
-          /bass_att|bass|mid_att|mid|treb_att|treb|treble|beat_pulse|beat|rms|vol|time|frame|fps|progress\b/,
+          /\b(?:bass_att|bass|mid_att|mid|treb_att|treb|treble|beat_pulse|beat|rms|vol|time|frame|fps|progress)\b/,
         )
       )
         return 'atom';
-      if (stream.match(/q[1-8]|t[1-9]|t[12]\d|t3[0-2]\b/))
+      if (stream.match(/\b(?:q[1-8]|t[1-9]|t[12]\d|t3[0-2])\b/))
         return 'variableName';
       if (stream.match(/[0-9]+(\.[0-9]+)?/)) return 'number';
-      if (stream.match(/pi|e\b/)) return 'builtin';
+      if (stream.match(/\b(?:pi|e)\b/)) return 'builtin';
       if (stream.match(/[+\-*/%^<>=!&|]+/)) return 'operator';
       stream.next();
       return null;

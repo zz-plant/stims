@@ -167,6 +167,8 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         }
         case 'log':
           return `log(max(0.000001f, ${args[0] ?? '1.0f'}))`;
+        case 'log10':
+          return `(log(max(0.000001f, ${args[0] ?? '1.0f'})) * 0.4342944819f)`;
         case 'exp':
           return `exp(${args[0] ?? '0.0f'})`;
         case 'sigmoid': {
@@ -210,6 +212,8 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `gmegabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
         case 'rand':
           return 'rand()';
+        case 'randint':
+          return `floor(rand() * (${args[0] ?? '1.0f'}))`;
         case 'exec2':
         case 'exec3':
           return args[args.length - 1] ?? '0.0f';

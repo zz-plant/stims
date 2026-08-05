@@ -45,6 +45,11 @@ export function CapturePanel() {
       });
       return;
     }
+    if (exporterRef.current?.getRecordingStatus()) {
+      // A recording is in progress; avoid tearing it down just because an
+      // unrelated workspace context value changed identity.
+      return;
+    }
     const exporter = new CanvasVideoExporter(
       canvas,
       undefined,
