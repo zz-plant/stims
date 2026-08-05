@@ -133,7 +133,7 @@
     "playwright": "1.62.1",
     "sharp": "^0.34.5",
     "typescript": "^6.0.3",
-    "vite": "8.0.13",
+    "vite": "8.2.0",
     "wrangler": "4.118.0"
   },
   "engines": {
