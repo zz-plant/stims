@@ -5,6 +5,7 @@ import type {
   MilkdropFeatureKey,
   MilkdropFidelityClass,
   MilkdropParityReport,
+  MilkdropPresetLineageRef,
   MilkdropPresetOrigin,
   MilkdropPresetSource,
   MilkdropSemanticSupport,
@@ -38,6 +39,7 @@ export type MilkdropCatalogEntry = {
   title: string;
   author?: string;
   authorUrl?: string;
+  derivedFrom?: MilkdropPresetLineageRef[];
   origin: MilkdropPresetOrigin;
   tags: string[];
   curatedRank?: number;

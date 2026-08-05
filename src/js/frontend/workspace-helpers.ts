@@ -529,6 +529,7 @@ export function mapRuntimeCatalogEntry(
     title: entry.title,
     author: entry.author,
     authorUrl: resolveAuthorUrl(entry.author, entry.authorUrl),
+    derivedFrom: entry.derivedFrom,
     file: entry.bundledFile,
     tags: entry.tags,
     isFavorite: entry.isFavorite,

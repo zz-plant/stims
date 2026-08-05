@@ -978,8 +978,11 @@ export class EditorPanel {
 
     const duplicateButton = document.createElement('button');
     duplicateButton.type = 'button';
-    duplicateButton.textContent = 'Duplicate';
-    duplicateButton.setAttribute('aria-label', 'Duplicate current preset');
+    duplicateButton.textContent = 'Remix';
+    duplicateButton.setAttribute(
+      'aria-label',
+      'Remix current preset (keeps its credit lineage)',
+    );
     duplicateButton.addEventListener('click', () =>
       this.callbacks.onDuplicatePreset(),
     );

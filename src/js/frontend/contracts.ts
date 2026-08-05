@@ -1,5 +1,8 @@
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
-import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
+import type {
+  MilkdropPresetLineageRef,
+  MilkdropVisualCertification,
+} from '../milkdrop/types.ts';
 
 export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
 
@@ -48,6 +51,7 @@ export type PresetCatalogEntry = {
   title: string;
   author?: string;
   authorUrl?: string;
+  derivedFrom?: MilkdropPresetLineageRef[];
   file?: string;
   tags?: string[];
   preview?: boolean;

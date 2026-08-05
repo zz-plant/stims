@@ -128,6 +128,7 @@ export function toCatalogEntry(
     title: compiled.title,
     author: compiled.author ?? source.author,
     authorUrl: source.authorUrl,
+    derivedFrom: source.derivedFrom,
     origin: source.origin,
     tags: Array.from(
       new Set([
