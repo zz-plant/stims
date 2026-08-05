@@ -1429,7 +1429,10 @@ function prepareShaderSource(shaderText: string): ShaderSourcePrep {
   const prep: ShaderSourcePrep = {
     nativeShaderBody,
     normalized: nativeShaderBody
-      ? []
+      ? nativeShaderBody
+          .split(/;\n?|\n/u)
+          .map((line) => line.replace(/\/\/.*$/u, '').trim())
+          .filter(Boolean)
       : shaderText
           .split(/[\r\n;]+/u)
           .map((line) => line.replace(/\/\/.*$/u, '').trim())
@@ -1469,22 +1472,12 @@ export function extractShaderControls(
       directProgramStatements: [],
       directProgramLines: [],
       directProgramRequired: false,
+      hasNativeBody: false,
+      nativeBodyUnparsedLines: [],
     };
   }
 
   const { nativeShaderBody, normalized } = prepareShaderSource(shaderText);
-  if (nativeShaderBody) {
-    return {
-      controls: createDefaultShaderControls(),
-      expressions: createDefaultShaderControlExpressions(),
-      unsupportedLines: [],
-      supported: true,
-      statements: [],
-      directProgramStatements: [],
-      directProgramLines: [nativeShaderBody],
-      directProgramRequired: true,
-    };
-  }
 
   const controls = createDefaultShaderControls();
   const expressions = createDefaultShaderControlExpressions();
@@ -1507,6 +1500,19 @@ export function extractShaderControls(
   const directProgramStatements: MilkdropShaderStatement[] = [];
   const directProgramLines: string[] = [];
   let directProgramRequired = false;
+
+  // When processing a native shader_body, parse failures don't make the
+  // raw GLSL invalid — WebGL can still execute it. Unparseable lines only
+  // affect whether the WebGPU TSL path can do direct execution. Track them
+  // separately so unsupportedLines stays clean for native bodies.
+  const nativeBodyUnparsedLines: string[] = [];
+  const trackUnsupported = (line: string) => {
+    if (nativeShaderBody) {
+      nativeBodyUnparsedLines.push(line);
+    } else {
+      unsupportedLines.push(line);
+    }
+  };
 
   let supportedLineCount = 0;
   normalized.forEach((line) => {
@@ -1573,7 +1579,7 @@ export function extractShaderControls(
           shaderExpressionEnv,
         })
       ) {
-        unsupportedLines.push(line);
+        trackUnsupported(line);
         return;
       }
       if (requiresDirectProgram) {
@@ -1595,7 +1601,25 @@ export function extractShaderControls(
       /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
     );
     if (!fallbackAssignment) {
-      unsupportedLines.push(line);
+      // Pure GLSL declarations (e.g. `vec2 tmpvar_1`, `vec4 tmpvar_2`) carry
+      // no executable logic — silently skip them instead of marking them
+      // unsupported. This lets native shader_body lines flow through the
+      // statement parser so the WebGPU TSL path can execute them.
+      if (
+        /^(?:float|int|bool|vec[234]|mat[234]|float2|float3|float4)\s+[a-z_]\w*(?:\s*,\s*[a-z_]\w*)*\s*$/iu.test(
+          line,
+        )
+      ) {
+        return;
+      }
+      // For native shader bodies, parse failures don't invalidate the raw
+      // GLSL — they only mean the TSL path can't execute that line. Track
+      // separately so WebGL keeps direct execution via rawGlsl.
+      if (nativeShaderBody) {
+        nativeBodyUnparsedLines.push(line);
+        return;
+      }
+      trackUnsupported(line);
       return;
     }
     const key = fallbackAssignment[1]?.toLowerCase() ?? '';
@@ -1644,7 +1668,7 @@ export function extractShaderControls(
         directProgramLines.push(line);
         return;
       }
-      unsupportedLines.push(line);
+      trackUnsupported(line);
       return;
     }
     switch (key) {
@@ -1691,7 +1715,7 @@ export function extractShaderControls(
         break;
       }
     }
-    unsupportedLines.push(line);
+    trackUnsupported(line);
   });
 
   return {
@@ -1706,6 +1730,8 @@ export function extractShaderControls(
     directProgramStatements,
     directProgramLines,
     directProgramRequired,
+    hasNativeBody: Boolean(nativeShaderBody),
+    nativeBodyUnparsedLines,
   };
 }
 
