@@ -573,10 +573,7 @@ shape_0_init1=ang=tex_ang+instance*0.1;
       textureZoom: 0.9,
       textureAngle: 0.25,
     });
-    expect(frameState.shapes[0]?.rotation).toBeCloseTo(
-      0.25 + signals.time * 0.08,
-      6,
-    );
+    expect(frameState.shapes[0]?.rotation).toBeCloseTo(0.25, 6);
   });
 
   test('runs custom shape per-frame code once per instance', () => {

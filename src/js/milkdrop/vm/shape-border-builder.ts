@@ -19,8 +19,7 @@ const MAX_SHAPE_INSTANCES = 1024;
 export function shapeVisualFromLocals(
   key: string,
   locals: MutableState,
-  signals: MilkdropRuntimeSignals,
-  disableEnhancements = false,
+  _signals: MilkdropRuntimeSignals,
 ): MilkdropShapeVisual {
   const secondaryAlpha = locals.a2 ?? 0;
   return {
@@ -30,17 +29,9 @@ export function shapeVisualFromLocals(
     // The lower bound only guards against degenerate geometry. It has to stay
     // well below MilkDrop's typical instanced-dot radii (0.005-0.02), which an
     // aggressive floor would inflate into overlapping blobs.
-    radius: clamp(
-      disableEnhancements
-        ? (locals.rad ?? 0.15)
-        : (locals.rad ?? 0.15) * (1 + signals.beatPulse * 0.1),
-      0.002,
-      0.9,
-    ),
+    radius: clamp(locals.rad ?? 0.15, 0.002, 0.9),
     sides: Math.max(3, Math.round(locals.sides ?? 6)),
-    rotation: disableEnhancements
-      ? (locals.ang ?? 0)
-      : (locals.ang ?? 0) + signals.time * 0.08,
+    rotation: locals.ang ?? 0,
     textured: (locals.textured ?? 0) >= 0.5,
     textureZoom: Math.max(0.0001, Math.abs(locals.tex_zoom ?? 1)),
     textureAngle: locals.tex_ang ?? 0,
@@ -104,7 +95,6 @@ export function buildShapes({
   runProgram,
   createEnv,
   seedCustomShapeState,
-  disableEnhancements = false,
 }: {
   preset: MilkdropCompiledPreset;
   state: MutableState;
@@ -123,7 +113,6 @@ export function buildShapes({
     },
   ) => MutableState;
   seedCustomShapeState: (shape: MilkdropShapeDefinition) => MutableState;
-  disableEnhancements?: boolean;
 }): MilkdropShapeVisual[] {
   const built: MilkdropShapeVisual[] = [];
   const customShapeIndices = preset.ir.customShapeIndices;
@@ -162,7 +151,6 @@ export function buildShapes({
             : `shape_${shape.index}`,
           locals,
           signals,
-          disableEnhancements,
         ),
       );
     }
@@ -181,7 +169,6 @@ export function buildShapes({
         prefix,
         fallbackShapeLocals(state, prefix),
         signals,
-        disableEnhancements,
       ),
     );
   }
