@@ -125,6 +125,25 @@ bun run dev
    - Clicking a preset updates the live session and canonical route state
 3. Open `http://localhost:5173/milkdrop/?preset=eos-glowsticks-v2-03-music` and confirm the alias lands in the same root workspace state
 
+## Measured preset lab (no eyes required)
+
+Prefer measured evidence over eyeballing whenever the question is "does this
+preset look right / react to audio?". The preset lab produces numeric verdicts
+that work for agents without vision or hearing, plus PNG contact sheets for
+agents that can see:
+
+```bash
+bun run lab:reactivity -- --preset <id> --baseline   # headless VM, ~15s, deterministic
+bun run lab:visual -- --preset <id> --baseline       # headless Chromium pixels
+# …edit the preset or runtime…
+bun run lab:reactivity -- --preset <id> --compare    # ▲ improved / ▼ REGRESSED
+bun run lab:visual -- --preset <id> --compare
+```
+
+Reports land in `scratch/preset-lab/<id>/` (gitignored). The full loop and
+metric interpretation guide live in
+[`.agent/skills/improve-preset-fidelity/SKILL.md`](../../.agent/skills/improve-preset-fidelity/SKILL.md).
+
 ## Automated visual regression testing
 
 For visual changes that need to be tracked over time, refer to:

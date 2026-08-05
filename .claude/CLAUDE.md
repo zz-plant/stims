@@ -22,6 +22,8 @@ bun run setup:codex             # install + quick-check if not
 | Warm long-lived session | `bun run session:codex -- --profile review` | — |
 | Check everything at once | `bun run agent:status` | < 5s |
 | Quick verify loop | `bun run agent:verify` | < 1 min |
+| Measure preset audio reactivity (no browser) | `bun run lab:reactivity -- --preset <id>` | ~15s |
+| Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
 
 ## Where things live
 
@@ -53,6 +55,7 @@ Use `.agent/skills/*/SKILL.md` for repeatable work classes:
 | --- | --- |
 | runtime, loader, renderer, shell, controls, audio, routing | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
 | presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
+| preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
 | browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
 | quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
 | end-to-end product change → PR | `.agent/skills/ship-visualizer-change/SKILL.md` |

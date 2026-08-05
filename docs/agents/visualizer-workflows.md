@@ -6,6 +6,7 @@ Task routing goes through repo-local skills under `.agent/skills/`. Each skill i
 
 - [`/modify-visualizer-runtime`](../../.agent/skills/modify-visualizer-runtime/SKILL.md) — update shared runtime, loader, renderer, shell, audio, or capability behavior.
 - [`/modify-preset-workflow`](../../.agent/skills/modify-preset-workflow/SKILL.md) — update bundled presets, catalog/editor flows, import/export, or compatibility behavior.
+- [`/improve-preset-fidelity`](../../.agent/skills/improve-preset-fidelity/SKILL.md) — tune preset visual fidelity and audio reactivity with the preset lab's measured baseline→edit→compare loops (works with or without vision/hearing).
 - [`/play-visualizer`](../../.agent/skills/play-visualizer/SKILL.md) — run and manually verify the flagship visualizer.
 - [`/test-visualizer`](../../.agent/skills/test-visualizer/SKILL.md) — execute visualizer-focused tests.
 - [`/ship-visualizer-change`](../../.agent/skills/ship-visualizer-change/SKILL.md) — orchestrate implementation, checks, and PR-ready docs alignment.
@@ -40,6 +41,10 @@ bun run session:codex -- --profile review
 
 # Scripted visualizer smoke run
 bun run play:toy milkdrop
+
+# Preset lab: measured reactivity (headless VM) and visual (headless browser) reports
+bun run lab:reactivity -- --preset <id>
+bun run lab:visual -- --preset <id>
 
 # Targeted and broader test passes
 bun run test tests/path/to/spec.test.ts

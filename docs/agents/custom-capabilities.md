@@ -36,6 +36,7 @@ If a task cannot be described with a clean file boundary and a small validation 
 | --- | --- | --- |
 | `.agent/skills/modify-visualizer-runtime/SKILL.md` | Updating shared runtime, loader, renderer, shell, controls, audio, capability checks, or routing. | targeted tests while iterating, then `bun run check` |
 | `.agent/skills/modify-preset-workflow/SKILL.md` | Updating bundled presets, catalog/editor flows, import/export, compatibility, or preset fixtures/metadata. | targeted tests, then `bun run test:compat` or `bun run test:integration` as needed, then `bun run check` |
+| `.agent/skills/improve-preset-fidelity/SKILL.md` | Tuning a preset's visual fidelity or audio reactivity with measured baseline→edit→compare loops; works without vision or hearing (numeric reports), with contact-sheet images for vision-capable agents. | `bun run lab:reactivity -- --preset <id> --compare`, `bun run lab:visual -- --preset <id> --compare`, then `bun run check:quick` |
 | `.agent/skills/play-visualizer/SKILL.md` | Launching or visually checking the flagship visualizer in the browser. | `bun run play:toy milkdrop` or local `bun run dev` session |
 | `.agent/skills/test-visualizer/SKILL.md` | Running visualizer-focused validation or full repo quality gates. | `bun run test …`, `bun run test:integration`, `bun run test:compat`, `bun run check` |
 | `.agent/skills/verify-visualizer-work/SKILL.md` | Quick validation checks during implementation; iterative testing without full quality gate. | `bun run check:quick`, `bun run test`, `bun run dev` with browser testing |
