@@ -663,6 +663,61 @@ export class AudioAccessError extends Error {
   }
 }
 
+/**
+ * Maps a raw getUserMedia rejection (a DOMException) to an AudioAccessError
+ * with an actionable message. Shared by every getUserMedia call site so a
+ * denied/busy/missing microphone is always classified the same way,
+ * regardless of whether the stream came from initAudio or a pooled stream.
+ */
+export function classifyAudioAccessError(error: unknown): AudioAccessError {
+  if (error instanceof AudioAccessError) {
+    return error;
+  }
+
+  if (
+    error &&
+    typeof error === 'object' &&
+    'name' in error &&
+    ((error as Error).name === 'NotAllowedError' ||
+      (error as Error).name === 'PermissionDeniedError')
+  ) {
+    return new AudioAccessError(
+      'denied',
+      'Microphone access was denied. If site permissions are allowed, check OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
+    );
+  }
+
+  if (
+    error &&
+    typeof error === 'object' &&
+    'name' in error &&
+    (error as Error).name === 'NotFoundError'
+  ) {
+    return new AudioAccessError(
+      'unavailable',
+      'No microphone hardware was found. Please connect a microphone and try again.',
+    );
+  }
+
+  if (
+    error &&
+    typeof error === 'object' &&
+    'name' in error &&
+    ((error as Error).name === 'NotReadableError' ||
+      (error as Error).name === 'TrackStartError')
+  ) {
+    return new AudioAccessError(
+      'unavailable',
+      'Microphone hardware is currently in use by another application (e.g. Zoom, Teams, Discord). Please close other apps and try again.',
+    );
+  }
+
+  return new AudioAccessError(
+    'unavailable',
+    'Microphone access is unavailable. Please check your device settings.',
+  );
+}
+
 export type AudioInitOptions = {
   fftSize?: number;
   deviceId?: string;
@@ -680,6 +735,14 @@ export type AudioInitOptions = {
     audio: Audio | PositionalAudio;
     stream?: MediaStream;
   }) => void;
+  /**
+   * Invoked when the underlying stream's audio track ends unexpectedly
+   * (mic permission revoked, device unplugged, tab/display share or
+   * YouTube capture stopped from the browser's native UI). Not called for
+   * intentional teardown via `cleanup()` — `MediaStreamTrack.stop()` does
+   * not fire the browser's `ended` event.
+   */
+  onStreamEnded?: () => void;
   stopStreamOnCleanup?: boolean;
   closeContextOnCleanup?: boolean;
   monitorInput?: boolean;
@@ -1059,6 +1122,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     constraints,
     stream,
     onCleanup,
+    onStreamEnded,
     stopStreamOnCleanup = true,
     closeContextOnCleanup = true,
     monitorInput = false,
@@ -1166,6 +1230,23 @@ export async function initAudio(options: AudioInitOptions = {}) {
     }
     registerMediaStream(streamSource);
 
+    // Detect the stream dying out from under us (mic permission revoked,
+    // device unplugged, tab/display share or YouTube capture stopped from
+    // the browser's native chrome) so callers can recover instead of
+    // silently animating on frozen/zero audio data forever. `stop()` does
+    // not fire `ended`, so this only fires for unexpected termination.
+    let cleanedUp = false;
+    let streamEndedNotified = false;
+    const audioTracks = streamSource.getAudioTracks?.() ?? [];
+    const handleStreamTrackEnded = () => {
+      if (cleanedUp || streamEndedNotified) return;
+      streamEndedNotified = true;
+      onStreamEnded?.();
+    };
+    for (const track of audioTracks) {
+      track.addEventListener('ended', handleStreamTrackEnded);
+    }
+
     const audio = positional
       ? new PositionalAudio(activeListener)
       : new Audio(activeListener);
@@ -1183,7 +1264,6 @@ export async function initAudio(options: AudioInitOptions = {}) {
       smoothingTimeConstant,
     );
 
-    let cleanedUp = false;
     const cleanup = async () => {
       if (cleanedUp) return;
       cleanedUp = true;
@@ -1203,6 +1283,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
       analyser?.disconnect();
 
       if (streamSource) {
+        for (const track of audioTracks) {
+          track.removeEventListener('ended', handleStreamTrackEnded);
+        }
         unregisterMediaStream(streamSource);
         if (stopStreamOnCleanup) {
           streamSource.getTracks().forEach((track) => track.stop());
@@ -1290,52 +1373,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       );
     }
 
-    if (error instanceof AudioAccessError) {
-      throw error;
-    }
-
-    if (
-      error &&
-      typeof error === 'object' &&
-      'name' in error &&
-      ((error as Error).name === 'NotAllowedError' ||
-        (error as Error).name === 'PermissionDeniedError')
-    ) {
-      throw new AudioAccessError(
-        'denied',
-        'Microphone access was denied. If site permissions are allowed, check OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
-      );
-    }
-
-    if (
-      error &&
-      typeof error === 'object' &&
-      'name' in error &&
-      (error as Error).name === 'NotFoundError'
-    ) {
-      throw new AudioAccessError(
-        'unavailable',
-        'No microphone hardware was found. Please connect a microphone and try again.',
-      );
-    }
-
-    if (
-      error &&
-      typeof error === 'object' &&
-      'name' in error &&
-      ((error as Error).name === 'NotReadableError' ||
-        (error as Error).name === 'TrackStartError')
-    ) {
-      throw new AudioAccessError(
-        'unavailable',
-        'Microphone hardware is currently in use by another application (e.g. Zoom, Teams, Discord). Please close other apps and try again.',
-      );
-    }
-
-    throw new AudioAccessError(
-      'unavailable',
-      'Microphone access is unavailable. Please check your device settings.',
-    );
+    throw classifyAudioAccessError(error);
   }
 }
 

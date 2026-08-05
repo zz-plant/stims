@@ -416,10 +416,14 @@ describe('milkdrop catalog store', () => {
       });
 
       await expect(store.listPresets()).resolves.toEqual([]);
+      // A failed fetch must not be cached as a permanently empty catalog —
+      // the second call retries and fails (and warns) again, rather than
+      // silently reusing the earlier empty result for the rest of the
+      // session.
       await expect(
         store.getPresetSource('missing-bundled'),
       ).resolves.toBeNull();
-      expect(warnMock).toHaveBeenCalledTimes(1);
+      expect(warnMock).toHaveBeenCalledTimes(2);
     } finally {
       console.warn = warn;
     }

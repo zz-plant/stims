@@ -74,6 +74,7 @@ export function createMilkdropEngineAdapter() {
   let experience: ExperienceController | null = null;
   let audioActive = false;
   let audioSource: AudioSource | null = null;
+  let audioEndedAt: number | null = null;
   let unsubscribeExperience: (() => void) | null = null;
   let lastSnapshot: EngineSnapshot = createEmptyEngineSnapshot();
   const subscribers = new Set<(snapshot: EngineSnapshot) => void>();
@@ -96,6 +97,7 @@ export function createMilkdropEngineAdapter() {
       runtime,
       audioActive,
       audioSource,
+      audioEndedAt,
       previousSnapshot: lastSnapshot,
     });
     if (next === lastSnapshot) {
@@ -103,6 +105,40 @@ export function createMilkdropEngineAdapter() {
     }
     lastSnapshot = next;
     subscribers.forEach((subscriber) => subscriber(lastSnapshot));
+  };
+
+  const performStopAudio = async () => {
+    if (!audioActive) return;
+
+    if (runtime) {
+      runtime.stopAudio();
+    }
+    if (capturedVideoModulePromise) {
+      const { clearMilkdropCapturedVideoStream } =
+        await loadCapturedVideoModule();
+      clearMilkdropCapturedVideoStream();
+    }
+    audioActive = false;
+    audioSource = null;
+    setAudioActive(false, null);
+    emit();
+  };
+
+  /**
+   * Wired into the toy runtime's audio options (see `mount()` below) so it
+   * fires whenever `initAudio` detects the live stream's track ending
+   * unexpectedly — mic permission revoked, device unplugged, or a tab /
+   * display / YouTube capture stopped from the browser's native UI.
+   * Recording `audioEndedAt` (rather than a boolean) lets the React layer
+   * key an effect off "this happened again", since it never resets to null.
+   */
+  const handleAudioStreamEnded = () => {
+    audioEndedAt = Date.now();
+    // Emit immediately so the React layer observes the audioEndedAt bump
+    // even if performStopAudio's early-return (audioActive already false)
+    // would otherwise swallow it.
+    emit();
+    void performStopAudio();
   };
 
   const disposeRuntime = () => {
@@ -172,6 +208,9 @@ export function createMilkdropEngineAdapter() {
         },
         audio: {
           fftSize: 1024,
+          options: {
+            onStreamEnded: handleAudioStreamEnded,
+          },
         },
         plugins: [
           {
@@ -343,20 +382,7 @@ export function createMilkdropEngineAdapter() {
     },
 
     async stopAudio() {
-      if (!audioActive) return;
-
-      if (runtime) {
-        runtime.stopAudio();
-      }
-      if (capturedVideoModulePromise) {
-        const { clearMilkdropCapturedVideoStream } =
-          await loadCapturedVideoModule();
-        clearMilkdropCapturedVideoStream();
-      }
-      audioActive = false;
-      audioSource = null;
-      setAudioActive(false, null);
-      emit();
+      await performStopAudio();
     },
 
     openTool(tool: 'browse' | 'editor' | 'inspector') {

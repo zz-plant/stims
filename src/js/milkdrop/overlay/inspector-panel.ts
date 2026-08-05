@@ -1,4 +1,5 @@
 import { resolveAuthorUrl } from '../../frontend/workspace-helpers.ts';
+import { renderIconSvg } from '../../ui/icon-library.ts';
 import {
   describeMilkdropScenePickResult,
   getMilkdropSceneDragFieldUpdates,
@@ -477,7 +478,7 @@ export class InspectorPanel {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.className = 'stims-hud-bar__author-link';
-        link.textContent = ' (↗ Profile)';
+        link.innerHTML = ` ${renderIconSvg('external-link', { className: 'stims-hud-bar__author-link-icon' })}Profile`;
         link.title = `View ${value}'s artist profile or resource`;
         title.appendChild(link);
       }

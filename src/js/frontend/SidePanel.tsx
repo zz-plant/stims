@@ -203,6 +203,7 @@ export function SidePanel({
             className={styles.closeBtn}
             onClick={startClose}
             aria-label="Close"
+            title="Close"
           >
             <UiIcon
               name="close"

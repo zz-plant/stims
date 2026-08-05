@@ -451,10 +451,13 @@ function StimsWorkspaceAppShell() {
   }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
 
   useEffect(() => {
-    if (liveMode && engineSnapshot?.audioActive) {
+    // Deferred, not skipped: re-running once showRotateHint clears (it's a
+    // dependency) lets the two toasts land one after another instead of
+    // overlapping in the same bottom-of-screen slot on first mobile launch.
+    if (liveMode && engineSnapshot?.audioActive && !showRotateHint) {
       showHint('first-play');
     }
-  }, [liveMode, engineSnapshot?.audioActive, showHint]);
+  }, [liveMode, engineSnapshot?.audioActive, showRotateHint, showHint]);
 
   useEffect(() => {
     if (ui.routeState.panel === 'browse') {

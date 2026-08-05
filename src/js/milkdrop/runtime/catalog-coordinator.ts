@@ -138,7 +138,14 @@ export function createMilkdropCatalogCoordinator({
       while (catalogSyncQueuedArgs) {
         const nextArgs = catalogSyncQueuedArgs;
         catalogSyncQueuedArgs = null;
-        await syncCatalog(nextArgs);
+        try {
+          await syncCatalog(nextArgs);
+        } catch (error) {
+          console.warn(
+            '[MilkdropCatalogCoordinator] Catalog sync failed, skipping this attempt',
+            error,
+          );
+        }
       }
     } finally {
       catalogSyncRunning = false;

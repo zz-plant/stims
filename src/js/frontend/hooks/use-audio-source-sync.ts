@@ -11,11 +11,15 @@ export function useAudioSourceSync({
   engineRef,
   engineSnapshot,
   routeState,
+  setRouteState,
   setStatusMessage,
 }: {
   engineRef: { current: MilkdropEngineAdapter | null };
   engineSnapshot: EngineSnapshot | null;
   routeState: SessionRouteState;
+  setRouteState: (
+    updater: (previous: SessionRouteState) => SessionRouteState,
+  ) => void;
   setStatusMessage: (message: string | null) => void;
 }) {
   // Autoplay policy keeps the AudioContext suspended until a user gesture, so
@@ -109,4 +113,29 @@ export function useAudioSourceSync({
       console.debug('Audio stop failed during source switch.', error);
     });
   }, [engineRef, engineSnapshot?.audioActive, routeState.audioSource]);
+
+  // The engine's initAudio-level track `ended` listener bumps
+  // audioEndedAt whenever the live stream dies out from under us (mic
+  // permission revoked, device unplugged, tab/display/YouTube capture
+  // stopped from the browser's native UI). Mirror handleAudioStop's
+  // established recovery path — clear the route's audioSource and tell
+  // the user why the visualizer went quiet, rather than leaving it
+  // running on stale audio with no explanation. Keyed off the timestamp
+  // (not a boolean) since it's monotonic and never resets to null, so a
+  // ref tracks the last value we've already reacted to.
+  const lastAudioEndedAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    const endedAt = engineSnapshot?.audioEndedAt ?? null;
+    if (endedAt === null || endedAt === lastAudioEndedAtRef.current) {
+      return;
+    }
+    lastAudioEndedAtRef.current = endedAt;
+
+    setRouteState((previous) =>
+      previous.audioSource === null
+        ? previous
+        : { ...previous, audioSource: null },
+    );
+    setStatusMessage('Audio input ended.');
+  }, [engineSnapshot?.audioEndedAt, setRouteState, setStatusMessage]);
 }

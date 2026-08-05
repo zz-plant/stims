@@ -204,7 +204,7 @@ function getEnvironmentKey({
   return `${hasGpu}:${userAgent}:${compatibilityMode}:${webgpuCompatibilityMode}`;
 }
 
-function getCurrentRetrySnapshot() {
+export function getCurrentRetrySnapshot() {
   return getRendererRetrySnapshot(
     String(cachedEnvironmentKey ?? getEnvironmentKey()),
   );

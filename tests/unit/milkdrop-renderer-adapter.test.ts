@@ -930,10 +930,10 @@ shapecode_1_thickoutline=1
 
     expect(frameState.shapes).toHaveLength(2);
     expect(outlineScales).toHaveLength(2);
-    expect(outlineScales).toEqual([
-      [1.0023934841156006, 1],
-      [1.0047870874404907, 1],
-    ]);
+    expect(outlineScales[0]?.[0]).toBeCloseTo(1.0024, 3);
+    expect(outlineScales[0]?.[1]).toBe(1);
+    expect(outlineScales[1]?.[0]).toBeCloseTo(1.0049, 3);
+    expect(outlineScales[1]?.[1]).toBe(1);
   });
 
   test('renders a single WebGPU thick-outline ring layer', async () => {

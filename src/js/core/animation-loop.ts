@@ -6,7 +6,7 @@ export interface AudioLoopToy {
   initAudio: (options?: AudioInitOptions) => Promise<unknown>;
   analyser: FrequencyAnalyser | null;
   renderer: {
-    setAnimationLoop: ((callback: () => void) => void) | null;
+    setAnimationLoop: ((callback: (() => void) | null) => void) | null;
   } | null;
 }
 
@@ -92,12 +92,31 @@ export async function startAudioLoop(
   if (!toy.renderer?.setAnimationLoop) {
     throw new Error('Renderer is not available to start the animation loop.');
   }
+  // three.js schedules the next frame only after the callback returns, so a
+  // single uncaught throw would freeze the visual permanently. Guard each
+  // frame and stop only after a sustained failure streak.
+  let failureStreak = 0;
   toy.renderer.setAnimationLoop(() => {
     const now =
       typeof performance !== 'undefined' ? performance.now() : Date.now();
     ctx.time = now / 1000;
     ctx.realTimeMs = now;
-    animate(ctx);
+    try {
+      animate(ctx);
+      failureStreak = 0;
+    } catch (error) {
+      failureStreak += 1;
+      if (failureStreak === 1) {
+        console.warn('[stims] Animation frame failed; continuing.', error);
+      }
+      if (failureStreak >= 60) {
+        console.error(
+          '[stims] Animation loop stopped after repeated frame failures.',
+          error,
+        );
+        toy.renderer?.setAnimationLoop?.(null);
+      }
+    }
   });
   return ctx;
 }

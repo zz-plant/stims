@@ -100,7 +100,7 @@ describe('home shell user journeys', () => {
             didTimeout: false,
             timeRemaining: () => 0,
           }),
-        50,
+        5000,
       );
     globalThis.cancelIdleCallback = (handle) => {
       if (handle) clearTimeout(handle);

@@ -17,6 +17,14 @@ export type EngineSnapshot = {
   audioActive: boolean;
   audioSource: AudioSource | null;
   audioEnergy: number;
+  /**
+   * Timestamp (`Date.now()`) of the most recent unexpected audio stream
+   * termination (mic revoked, tab/display share or YouTube capture
+   * stopped from the browser's native UI, device unplugged). `null` until
+   * the first occurrence. Consumers should key off changes to this value
+   * (not truthiness) since it never resets back to `null`.
+   */
+  audioEndedAt: number | null;
 };
 
 export function createEmptyEngineSnapshot(): EngineSnapshot {
@@ -32,6 +40,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioActive: false,
     audioSource: null,
     audioEnergy: 0,
+    audioEndedAt: null,
   };
 }
 
@@ -48,7 +57,8 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.runtimeReady === b.runtimeReady &&
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
-    a.audioEnergy === b.audioEnergy
+    a.audioEnergy === b.audioEnergy &&
+    a.audioEndedAt === b.audioEndedAt
   );
 }
 
@@ -57,12 +67,14 @@ export function buildEngineSnapshot({
   runtime,
   audioActive,
   audioSource,
+  audioEndedAt,
   previousSnapshot,
 }: {
   experience: ExperienceController | null;
   runtime: ToyRuntimeInstance | null;
   audioActive: boolean;
   audioSource: AudioSource | null;
+  audioEndedAt?: number | null;
   previousSnapshot?: EngineSnapshot | null;
 }): EngineSnapshot {
   const snapshot = experience?.getStateSnapshot();
@@ -78,6 +90,7 @@ export function buildEngineSnapshot({
     audioActive,
     audioSource,
     audioEnergy: snapshot?.audioEnergy ?? 0,
+    audioEndedAt: audioEndedAt ?? null,
   };
   if (previousSnapshot && shallowEqual(next, previousSnapshot)) {
     return previousSnapshot;

@@ -30,14 +30,10 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm9 9 6 6' } },
   ],
   expand: [
-    { tag: 'path', attrs: { d: 'M9 3H3v6' } },
-    { tag: 'path', attrs: { d: 'm3 3 7 7' } },
-    { tag: 'path', attrs: { d: 'M15 21h6v-6' } },
-    { tag: 'path', attrs: { d: 'm21 21-7-7' } },
-    { tag: 'path', attrs: { d: 'M21 9V3h-6' } },
-    { tag: 'path', attrs: { d: 'm14 10 7-7' } },
-    { tag: 'path', attrs: { d: 'M3 15v6h6' } },
-    { tag: 'path', attrs: { d: 'm10 14-7 7' } },
+    { tag: 'path', attrs: { d: 'M8 3H5a2 2 0 0 0-2 2v3' } },
+    { tag: 'path', attrs: { d: 'M21 8V5a2 2 0 0 0-2-2h-3' } },
+    { tag: 'path', attrs: { d: 'M3 16v3a2 2 0 0 0 2 2h3' } },
+    { tag: 'path', attrs: { d: 'M16 21h3a2 2 0 0 0 2-2v-3' } },
   ],
   gauge: [
     { tag: 'path', attrs: { d: 'M4.5 14a7.5 7.5 0 1 1 15 0' } },
@@ -137,16 +133,16 @@ const ICON_NODES = {
   ],
   spinner: [{ tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-6.219-8.56' } }],
   shuffle: [
-    { tag: 'path', attrs: { d: 'M18 8h3V5' } },
     {
       tag: 'path',
       attrs: { d: 'M3 19h4a4 4 0 0 0 3.2-1.6l3.6-4.8A4 4 0 0 1 17 11h4' },
     },
-    { tag: 'path', attrs: { d: 'M18 16v3h3' } },
+    { tag: 'path', attrs: { d: 'm18 6 3 3-3 3' } },
     {
       tag: 'path',
       attrs: { d: 'M3 5h4a4 4 0 0 1 3.2 1.6l3.6 4.8A4 4 0 0 0 17 13h4' },
     },
+    { tag: 'path', attrs: { d: 'm18 14 3 3-3 3' } },
   ],
   eye: [
     {
@@ -162,6 +158,54 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M22 6h.01' } },
     { tag: 'path', attrs: { d: 'M22 2h.01' } },
   ],
+  pencil: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z',
+      },
+    },
+    { tag: 'path', attrs: { d: 'm15 5 4 4' } },
+  ],
+  video: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'm16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.94a.5.5 0 0 0-.78-.42L16 11',
+      },
+    },
+    { tag: 'rect', attrs: { x: 2, y: 6, width: 14, height: 12, rx: 2 } },
+  ],
+  'volume-off': [
+    { tag: 'path', attrs: { d: 'M11 5 6 9H2v6h4l5 4z' } },
+    { tag: 'path', attrs: { d: 'm22 9-6 6' } },
+    { tag: 'path', attrs: { d: 'm16 9 6 6' } },
+  ],
+  star: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'm12 2.75 2.95 5.94 6.55.95-4.75 4.62 1.12 6.52L12 17.7l-5.87 3.08 1.12-6.52L2.5 9.64l6.55-.95Z',
+      },
+    },
+  ],
+  'external-link': [
+    { tag: 'path', attrs: { d: 'M15 3h6v6' } },
+    { tag: 'path', attrs: { d: 'M10 14 21 3' } },
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+      },
+    },
+  ],
+  'chevron-up': [{ tag: 'path', attrs: { d: 'm6 15 6-6 6 6' } }],
+  grid: [
+    { tag: 'rect', attrs: { x: 3, y: 3, width: 7, height: 7, rx: 1.5 } },
+    { tag: 'rect', attrs: { x: 14, y: 3, width: 7, height: 7, rx: 1.5 } },
+    { tag: 'rect', attrs: { x: 3, y: 14, width: 7, height: 7, rx: 1.5 } },
+    { tag: 'rect', attrs: { x: 14, y: 14, width: 7, height: 7, rx: 1.5 } },
+  ],
   trash: [
     { tag: 'path', attrs: { d: 'M3 6h18' } },
     { tag: 'path', attrs: { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' } },
@@ -173,20 +217,13 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M21 15l-5-5L5 17' } },
   ],
   music: [
-    {
-      tag: 'path',
-      attrs: {
-        d: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
-      },
-    },
+    { tag: 'path', attrs: { d: 'M9 18V5l12-2v13' } },
+    { tag: 'circle', attrs: { cx: 6, cy: 18, r: 3 } },
+    { tag: 'circle', attrs: { cx: 18, cy: 16, r: 3 } },
   ],
   refresh: [
-    {
-      tag: 'path',
-      attrs: {
-        d: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
-      },
-    },
+    { tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-2.64-6.36L21 8' } },
+    { tag: 'path', attrs: { d: 'M21 3v5h-5' } },
   ],
 } as const satisfies Record<string, readonly IconNode[]>;
 

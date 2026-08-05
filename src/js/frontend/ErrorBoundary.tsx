@@ -1,5 +1,6 @@
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
+import { UiIcon } from './UiIcon.tsx';
 
 function ErrorButton({
   onClick,
@@ -40,7 +41,12 @@ export class StimsErrorBoundary extends Component<
       return (
         <div className="stims-shell stims-shell__error-boundary">
           <div className="stims-shell__error-card">
-            <div className="stims-shell__error-icon">⚠</div>
+            <div className="stims-shell__error-icon">
+              <UiIcon
+                name="warning"
+                className="stims-icon-slot stims-icon-slot--md"
+              />
+            </div>
             <h1 className="stims-shell__error-heading">Unexpected Error</h1>
             <p className="stims-shell__error-copy">
               Stims encountered an issue. Reload to retry, or try compatibility
