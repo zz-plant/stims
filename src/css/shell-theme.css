@@ -260,18 +260,6 @@ html.light .milkdrop-overlay__editor ::selection {
   background-color: rgba(59, 130, 246, 0.18);
 }
 
-html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--info {
-  background-color: rgba(14, 116, 144, 0.08);
-}
-
-html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--warning {
-  background-color: rgba(180, 83, 9, 0.1);
-}
-
-html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--error {
-  background-color: rgba(153, 27, 27, 0.1);
-}
-
 html.light .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool,
 html.light
   .stims-shell__stage-frame[data-mode="live"]

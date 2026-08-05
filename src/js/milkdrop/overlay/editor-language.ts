@@ -52,6 +52,9 @@ const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
   startState() {
     return { afterEquals: false };
   },
+  languageData: {
+    commentTokens: { line: '//' },
+  },
 };
 
 export function createMilkdropLanguage() {
