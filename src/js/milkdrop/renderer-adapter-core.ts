@@ -56,7 +56,10 @@ import {
   updateBorderFill as updateBorderFillHelper,
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
-import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
+import {
+  buildFeedbackCompositeState as buildFeedbackCompositeStateHelper,
+  interpolateFeedbackCompositeState,
+} from './renderer-helpers/feedback-composite';
 import {
   clearProceduralMeshGeometryCache,
   renderMesh as renderMeshHelper,
@@ -1284,9 +1287,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       ) {
         return false;
       }
-      this.feedback.applyCompositeState(
-        this.buildFeedbackCompositeState(payload.frameState),
-      );
+      let compositeState = this.buildFeedbackCompositeState(payload.frameState);
+      if (blend && blend.mode === 'gpu' && blend.alpha > 0) {
+        const prevComposite = this.buildFeedbackCompositeState(
+          blend.previousFrame,
+        );
+        compositeState = interpolateFeedbackCompositeState(
+          compositeState,
+          prevComposite,
+          1 - blend.alpha,
+        );
+      }
+      this.feedback.applyCompositeState(compositeState);
       this.feedback.applyPostprocessingProfile?.(
         payload.frameState.post.postprocessingProfile,
       );
