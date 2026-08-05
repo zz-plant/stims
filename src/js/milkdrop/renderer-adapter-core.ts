@@ -56,10 +56,7 @@ import {
   updateBorderFill as updateBorderFillHelper,
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
-import {
-  buildFeedbackCompositeState as buildFeedbackCompositeStateHelper,
-  interpolateFeedbackCompositeState,
-} from './renderer-helpers/feedback-composite';
+import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
 import {
   clearProceduralMeshGeometryCache,
   renderMesh as renderMeshHelper,
@@ -471,6 +468,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       descriptorPlan: preset.ir.compatibility.gpuDescriptorPlans.webgpu,
       flags: this.webgpuOptimizationFlags,
     }).effectiveWebGpuDescriptorPlan;
+  }
+
+  saveFeedbackFrame(): void {
+    this.feedback?.saveCurrentFrame?.();
+  }
+
+  setTransitionBlend(alpha: number): void {
+    this.feedback?.setTransitionBlend?.(alpha);
   }
 
   assessSupport(preset: MilkdropCompiledPreset) {
@@ -1255,33 +1260,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.signals.waveformData,
       );
       const backgroundMaterial = this.background.material as MeshBasicMaterial;
-      const blend = payload.blendState;
-      if (blend && blend.mode === 'gpu' && blend.alpha > 0) {
-        const mix = 1 - blend.alpha;
-        setMaterialColor(
-          backgroundMaterial,
-          {
-            r: lerpNumber(
-              blend.previousFrame.background.r,
-              payload.frameState.background.r,
-              mix,
-            ),
-            g: lerpNumber(
-              blend.previousFrame.background.g,
-              payload.frameState.background.g,
-              mix,
-            ),
-            b: lerpNumber(
-              blend.previousFrame.background.b,
-              payload.frameState.background.b,
-              mix,
-            ),
-          },
-          1,
-        );
-      } else {
-        setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
-      }
+      setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
 
       this.renderMesh(
         payload.frameState.mesh,
@@ -1301,6 +1280,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         this.proceduralMotionVectors,
       );
 
+      const blend = payload.blendState;
       if (blend) {
         this.renderBlendVisuals(payload, blend);
       }
@@ -1312,17 +1292,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       ) {
         return false;
       }
-      let compositeState = this.buildFeedbackCompositeState(payload.frameState);
-      if (blend && blend.mode === 'gpu' && blend.alpha > 0) {
-        const prevComposite = this.buildFeedbackCompositeState(
-          blend.previousFrame,
-        );
-        compositeState = interpolateFeedbackCompositeState(
-          compositeState,
-          prevComposite,
-          1 - blend.alpha,
-        );
-      }
+      const compositeState = this.buildFeedbackCompositeState(
+        payload.frameState,
+      );
       this.feedback.applyCompositeState(compositeState);
       this.feedback.applyPostprocessingProfile?.(
         payload.frameState.post.postprocessingProfile,

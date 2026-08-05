@@ -537,6 +537,9 @@ export function createMilkdropExperience({
         nextBlendState && blendDuration > 0
           ? performance.now() + blendDuration * 1000
           : 0;
+      if (nextBlendState) {
+        adapter?.saveFeedbackFrame?.();
+      }
     },
     markPresetSwitched() {
       lastPresetSwitchAt = performance.now();
@@ -828,6 +831,9 @@ export function createMilkdropExperience({
         blendState && blendDuration > 0
           ? performance.now() + blendDuration * 1000
           : 0;
+      if (blendState) {
+        adapter?.saveFeedbackFrame?.();
+      }
       lastPresetSwitchAt = performance.now();
       if (!previewMode) {
         void catalogCoordinator.rememberSelection(nextCompiled.source.id);

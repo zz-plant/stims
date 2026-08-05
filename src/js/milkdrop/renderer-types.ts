@@ -407,6 +407,8 @@ export interface MilkdropFeedbackManager {
       feedbackResolutionMultiplier: number;
     }>,
   ): void;
+  saveCurrentFrame?(): void;
+  setTransitionBlend?(alpha: number): void;
   render(
     renderer: {
       render(scene: Scene, camera: Camera): void;
@@ -442,6 +444,8 @@ export interface MilkdropRendererAdapter {
       feedbackResolutionMultiplier: number;
     }>,
   ): void;
+  saveFeedbackFrame?(): void;
+  setTransitionBlend?(alpha: number): void;
   render(payload: MilkdropRenderPayload): boolean;
   getAudioTexture?(): Texture | null;
   resize(width: number, height: number): void;

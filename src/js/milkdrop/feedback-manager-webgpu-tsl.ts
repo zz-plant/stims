@@ -2,10 +2,10 @@
 import type { Camera, Texture } from 'three';
 import {
   Mesh,
-  MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  ShaderMaterial,
   Vector2,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
@@ -49,6 +49,7 @@ import {
   resolveMilkdropShaderConstructorPattern,
 } from './shader-expression-shared.ts';
 import type {
+  MilkdropExpressionNode,
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropPostprocessingProfile,
@@ -601,7 +602,7 @@ function getShaderEnvValue(
 }
 
 function compileShaderExpressionNode(
-  node: MilkdropShaderExpressionNode,
+  node: MilkdropShaderExpressionNode | MilkdropExpressionNode,
   env: ShaderNodeEnv,
 ): ShaderNodeValue | null {
   switch (node.type) {
@@ -626,6 +627,9 @@ function compileShaderExpressionNode(
       return shaderFloat(float(1).sub(toShaderBool(operand)));
     }
     case 'binary': {
+      if (node.operator === '=') {
+        return null;
+      }
       const left = compileShaderExpressionNode(node.left, env);
       const right = compileShaderExpressionNode(node.right, env);
       if (!left || !right) {
@@ -1466,7 +1470,7 @@ class WebGPUMilkdropFeedbackManager {
   readonly presentScene = new Scene();
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   readonly compositeMaterial: NodeMaterial & { uniforms: CompositeUniformBag };
-  readonly presentMaterial: MeshBasicMaterial;
+  readonly presentMaterial: ShaderMaterial;
   readonly blurMaterial: NodeMaterial & {
     uniforms: ReturnType<typeof createGaussianBlurUniforms>;
   };
@@ -1485,6 +1489,8 @@ class WebGPUMilkdropFeedbackManager {
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   viewportWidth: number;
   viewportHeight: number;
+  private savedFrameTarget: RenderTarget | null = null;
+  private lastRenderer: FeedbackRendererLike | null = null;
   private adaptiveResizeFrameId: number | null = null;
 
   constructor(width: number, height: number) {
@@ -1546,8 +1552,34 @@ class WebGPUMilkdropFeedbackManager {
     blurMaterial.needsUpdate = true;
     this.blurMaterial = Object.assign(blurMaterial, { uniforms: blurUniforms });
 
-    this.presentMaterial = new MeshBasicMaterial({
-      map: this.targets[0].texture,
+    this.presentMaterial = new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.targets[0].texture },
+        savedTex: { value: null },
+        transitionAlpha: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D currentTex;
+        uniform sampler2D savedTex;
+        uniform float transitionAlpha;
+        varying vec2 vUv;
+        void main() {
+          vec4 current = texture2D(currentTex, vUv);
+          if (transitionAlpha < 0.001) {
+            gl_FragColor = current;
+            return;
+          }
+          vec4 saved = texture2D(savedTex, vUv);
+          gl_FragColor = mix(current, saved, transitionAlpha);
+        }
+      `,
     });
 
     const compositeQuad = new Mesh(
@@ -1583,8 +1615,31 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   swap() {
-    this.presentMaterial.map = this.readTarget.texture;
+    this.presentMaterial.uniforms.currentTex.value = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+  }
+
+  saveCurrentFrame(): void {
+    if (!this.savedFrameTarget) {
+      this.savedFrameTarget = createFeedbackRenderTarget(
+        this.viewportWidth,
+        this.viewportHeight,
+        this.currentFeedbackResolutionScale,
+      );
+    }
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) return;
+    renderer.setRenderTarget(this.savedFrameTarget);
+    const oldAlpha = this.presentMaterial.uniforms.transitionAlpha.value;
+    this.presentMaterial.uniforms.transitionAlpha.value = 0;
+    renderer.render(this.presentScene, this.camera);
+    this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
+    this.presentMaterial.uniforms.savedTex.value =
+      this.savedFrameTarget.texture;
+  }
+
+  setTransitionBlend(alpha: number): void {
+    this.presentMaterial.uniforms.transitionAlpha.value = alpha;
   }
 
   applyPostprocessingProfile(
@@ -1821,6 +1876,7 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {
+    this.lastRenderer = renderer;
     this.compositeMaterial.uniforms.currentTex.value = this.sceneTarget.texture;
 
     const softness =
@@ -1893,6 +1949,9 @@ class WebGPUMilkdropFeedbackManager {
       target.setSize(feedbackWidth, feedbackHeight),
     );
     this.blurTarget.setSize(feedbackWidth, feedbackHeight);
+    if (this.savedFrameTarget) {
+      this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
+    }
     this.compositeMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
@@ -1920,6 +1979,8 @@ class WebGPUMilkdropFeedbackManager {
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
     this.blurTarget.dispose();
+    this.savedFrameTarget?.dispose();
+    this.savedFrameTarget = null;
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     disposeMaterial(this.blurMaterial);

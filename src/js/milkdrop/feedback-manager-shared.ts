@@ -3,7 +3,6 @@ import {
   Color,
   DataTexture,
   Mesh,
-  MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
@@ -747,7 +746,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly presentScene = new Scene();
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   readonly compositeMaterial: ShaderMaterial;
-  readonly presentMaterial: MeshBasicMaterial;
+  readonly presentMaterial: ShaderMaterial;
   readonly sceneTarget: WebGLRenderTarget;
   readonly warpTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
@@ -765,6 +764,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly blurVMaterial: ShaderMaterial;
   readonly blurQuad: Mesh;
   readonly blurScene: Scene;
+  private savedFrameTarget: WebGLRenderTarget | null = null;
+  private readonly halfFloatFeedback: boolean;
+  private lastRenderer: {
+    render(scene: Scene, camera: Camera): void;
+    setRenderTarget?: (target: WebGLRenderTarget | null) => void;
+  } | null = null;
   readonly sceneResolutionScale: number;
   readonly feedbackResolutionScale: number;
   readonly profile: FeedbackBackendProfile;
@@ -795,6 +800,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
     this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
+    this.halfFloatFeedback = behavior.useHalfFloatFeedback;
     this.sceneTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.sceneResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
@@ -975,8 +981,34 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.compositeMaterial = this.createCompositeMaterial(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
     );
-    this.presentMaterial = new MeshBasicMaterial({
-      map: this.targets[0].texture,
+    this.presentMaterial = new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.targets[0].texture },
+        savedTex: { value: null },
+        transitionAlpha: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D currentTex;
+        uniform sampler2D savedTex;
+        uniform float transitionAlpha;
+        varying vec2 vUv;
+        void main() {
+          vec4 current = texture2D(currentTex, vUv);
+          if (transitionAlpha < 0.001) {
+            gl_FragColor = current;
+            return;
+          }
+          vec4 saved = texture2D(savedTex, vUv);
+          gl_FragColor = mix(current, saved, transitionAlpha);
+        }
+      `,
     });
     const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
     const presentQuad = new Mesh(
@@ -1116,7 +1148,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
   swap() {
     this.index = (this.index + 1) % 2;
-    this.presentMaterial.map = this.readTarget.texture;
+    this.presentMaterial.uniforms.currentTex.value = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.previousTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.currentTex.value = this.readTarget.texture;
@@ -1124,6 +1156,42 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       1 / this.readTarget.width,
       1 / this.readTarget.height,
     );
+  }
+
+  saveCurrentFrame(): void {
+    if (!this.savedFrameTarget) {
+      this.savedFrameTarget = createWebGLFeedbackRenderTarget(
+        this.viewportWidth,
+        this.viewportHeight,
+        {
+          resolutionScale: this.currentFeedbackResolutionScale,
+          useHalfFloatFeedback: this.halfFloatFeedback,
+          samples: 1,
+        },
+      );
+    }
+    if (
+      this.savedFrameTarget.width !== this.readTarget.width ||
+      this.savedFrameTarget.height !== this.readTarget.height
+    ) {
+      this.savedFrameTarget.setSize(
+        this.readTarget.width,
+        this.readTarget.height,
+      );
+    }
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) return;
+    renderer.setRenderTarget(this.savedFrameTarget);
+    const oldAlpha = this.presentMaterial.uniforms.transitionAlpha.value;
+    this.presentMaterial.uniforms.transitionAlpha.value = 0;
+    renderer.render(this.presentScene, this.camera);
+    this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
+    this.presentMaterial.uniforms.savedTex.value =
+      this.savedFrameTarget.texture;
+  }
+
+  setTransitionBlend(alpha: number): void {
+    this.presentMaterial.uniforms.transitionAlpha.value = alpha;
   }
 
   setDirectShaderPrograms(
@@ -1384,6 +1452,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       return false;
     }
 
+    this.lastRenderer =
+      renderer as SharedMilkdropFeedbackManager['lastRenderer'];
+
     renderer.setRenderTarget(this.sceneTarget);
     renderer.render(sourceScene, sourceCamera);
 
@@ -1504,6 +1575,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
     this.blurHTargets[0].setSize(feedbackWidth, feedbackHeight);
+    if (this.savedFrameTarget) {
+      this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
+    }
     this.blurTargets[1].setSize(
       Math.max(1, Math.round(feedbackWidth * 0.5)),
       Math.max(1, Math.round(feedbackHeight * 0.5)),
@@ -1539,6 +1613,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.targets.forEach((target) => target.dispose());
     this.blurTargets.forEach((target) => target.dispose());
     this.blurHTargets.forEach((target) => target.dispose());
+    this.savedFrameTarget?.dispose();
+    this.savedFrameTarget = null;
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     disposeMaterial(this.blurHMaterial);
