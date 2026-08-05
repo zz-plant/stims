@@ -51,6 +51,21 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/quick-start/SKILL.md` | First entry into the repo or after a long gap; fastest safe path to productive work. | `bun run agent:status`, `bun run setup:codex` |
 | `.agent/skills/agent-ergonomics/SKILL.md` | Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure. | Read-only, then apply changes |
 
+### Review skills are data-driven
+
+The six `review-*` skills aren't generic checklists — each targets the category responsible for the largest share of historical fix commits in this repo (125 sampled), ranked here from highest to lowest:
+
+| Rank | Category | Share of fix commits | Skill |
+| --- | --- | --- | --- |
+| 1 | WebGPU/WebGL parity drift | ~22% | `.agent/skills/review-webgpu-parity/SKILL.md` |
+| 2 | Workspace UI state races | ~18% | `.agent/skills/review-workspace-ui-state/SKILL.md` |
+| 3 | Deploy/tooling (CI, wrangler, build) | ~16% | `.agent/skills/review-deploy-tooling/SKILL.md` |
+| 4 | Test harness drift | ~15% | `.agent/skills/review-test-harness/SKILL.md` |
+| 5 | Module-loading regressions | ~11% | `.agent/skills/review-module-loading/SKILL.md` |
+| 6 | Renderer fallback chain | ~8% | `.agent/skills/review-renderer-fallback/SKILL.md` |
+
+Apply the matching skill whenever a PR touches that category — reviewing with it catches the exact regression classes this repo has shipped most often. The ranking is not static: `.agent/skills/audit-recurring-fixes/SKILL.md` re-mines commit history periodically and updates these skills (and this table) when the distribution shifts.
+
 ## Workflows
 
 | Workflow | Use when | Notes |

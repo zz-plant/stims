@@ -1,3 +1,8 @@
+---
+name: quick-start
+description: "Fastest safe entry into the repo when dropped in cold or after a long gap. Use for first entry into a task, uncertain repo state (new branch, pulled changes), or after a long gap since last session."
+---
+
 # Quick Start Skill
 
 Use this skill when you are dropped into the repo cold and need the fastest safe path to productive work.

@@ -1,3 +1,8 @@
+---
+name: agent-ergonomics
+description: "Understand how this repo's agent infrastructure fits together — skills, workflows, sessions, and quality gates. Use when navigating the agent docs feels like friction or when improving that infrastructure itself."
+---
+
 # Agent Ergonomics Skill
 
 Use this skill to work effectively with the repo's agent infrastructure — skills, workflows, sessions, and quality gates.
