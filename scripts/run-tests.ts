@@ -186,19 +186,42 @@ function resolveShardCount(fileCount: number): number {
 }
 
 /**
- * Balance shards by file size & known execution weight (largest-first greedy)
- * so one shard doesn't end up with all of the heavyweight compiler/shader suites.
+ * A real child-process fork/exec (a spawned shell script, a `sleep`
+ * placeholder process, etc.) costs orders of magnitude more wall-clock time
+ * than the same number of source bytes of pure JS/TS, so byte size badly
+ * underestimates these files and they land on shards by chance rather than
+ * by design. Detect the pattern directly instead of relying solely on the
+ * hand-maintained `KNOWN_HEAVY_TESTS` override list, which drifts stale as
+ * new spawn-based tests get added without anyone remembering to weight them.
+ */
+const SUBPROCESS_SPAWN_WEIGHT = 8000;
+
+function countSubprocessSpawns(source: string): number {
+  if (!/from\s+['"]node:child_process['"]/.test(source)) return 0;
+  const matches = source.match(/\b(?:spawnSync|spawn|execSync|exec)\(/g);
+  return matches ? matches.length : 0;
+}
+
+/**
+ * Balance shards by file size, known execution weight, and detected
+ * subprocess-spawn cost (largest-first greedy) so one shard doesn't end up
+ * with all of the heavyweight compiler/shader/subprocess suites.
  */
 async function buildShards(
   files: string[],
   shardCount: number,
 ): Promise<string[][]> {
-  const sized = files.map((file) => {
-    const statSize = Bun.file(file).size;
-    const knownWeight = KNOWN_HEAVY_TESTS[file] ?? 0;
-    const size = Math.max(statSize, knownWeight);
-    return { file, size };
-  });
+  const sized = await Promise.all(
+    files.map(async (file) => {
+      const statSize = Bun.file(file).size;
+      const knownWeight = KNOWN_HEAVY_TESTS[file] ?? 0;
+      const source = await Bun.file(file).text();
+      const spawnBonus =
+        countSubprocessSpawns(source) * SUBPROCESS_SPAWN_WEIGHT;
+      const size = Math.max(statSize, knownWeight) + spawnBonus;
+      return { file, size };
+    }),
+  );
   sized.sort((a, b) => b.size - a.size);
 
   const shards = Array.from({ length: shardCount }, () => ({
