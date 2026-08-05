@@ -89,6 +89,21 @@ export function interpolateFeedbackCompositeState(
       current.chromaticAberration ?? 0,
       mix,
     ),
+    brighten: lerp(previous.brighten, current.brighten, mix),
+    darken: lerp(previous.darken, current.darken, mix),
+    darkenCenter: lerp(previous.darkenCenter, current.darkenCenter, mix),
+    solarize: lerp(previous.solarize, current.solarize, mix),
+    invert: lerp(previous.invert, current.invert, mix),
+    redBlueStereo: lerp(
+      previous.redBlueStereo ?? 0,
+      current.redBlueStereo ?? 0,
+      mix,
+    ),
+    overlayTextureInvert: lerp(
+      previous.overlayTextureInvert,
+      current.overlayTextureInvert,
+      mix,
+    ),
   };
 }
 
