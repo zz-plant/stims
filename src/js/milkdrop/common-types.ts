@@ -81,7 +81,8 @@ export type MilkdropExpressionNode =
         | '=='
         | '!='
         | '&&'
-        | '||';
+        | '||'
+        | '=';
       left: MilkdropExpressionNode;
       right: MilkdropExpressionNode;
     }
