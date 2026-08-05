@@ -49,6 +49,9 @@ function emitExpression(
       if (object === null) return null;
       return emitter.emitMember(object, node.property);
     }
+    case 'index': {
+      return null;
+    }
     case 'call': {
       const name = node.name;
       const args = node.args

@@ -288,6 +288,11 @@ export type MilkdropShaderExpressionNode =
       type: 'member';
       object: MilkdropShaderExpressionNode;
       property: string;
+    }
+  | {
+      type: 'index';
+      object: MilkdropShaderExpressionNode;
+      index: MilkdropShaderExpressionNode;
     };
 
 export type MilkdropShaderStatement = {

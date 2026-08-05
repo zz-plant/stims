@@ -13,6 +13,7 @@ type Token =
   | { type: 'identifier'; value: string }
   | { type: 'operator'; value: string }
   | { type: 'paren'; value: '(' | ')' }
+  | { type: 'bracket'; value: '[' | ']' }
   | { type: 'comma' }
   | { type: 'dot' }
   | { type: 'eof' };
@@ -105,6 +106,12 @@ function tokenize(source: string) {
       continue;
     }
 
+    if (current === '[' || current === ']') {
+      tokens.push({ type: 'bracket', value: current });
+      index += 1;
+      continue;
+    }
+
     if (current === ',') {
       tokens.push({ type: 'comma' });
       index += 1;
@@ -185,6 +192,11 @@ class ShaderExpressionParser {
   private isParen(value: '(' | ')') {
     const token = this.peek();
     return token.type === 'paren' && token.value === value;
+  }
+
+  private isBracket(value: '[' | ']') {
+    const token = this.peek();
+    return token.type === 'bracket' && token.value === value;
   }
 
   private parseLogicalOr(): MilkdropShaderExpressionNode | null {
@@ -456,6 +468,34 @@ class ShaderExpressionParser {
           property: member.value,
         };
       }
+      while (this.isBracket('[')) {
+        this.advance();
+        const indexExpr = this.parseLogicalOr();
+        if (!indexExpr) {
+          return null;
+        }
+        const closing = this.advance();
+        if (closing.type !== 'bracket' || closing.value !== ']') {
+          return null;
+        }
+        base = {
+          type: 'index',
+          object: base,
+          index: indexExpr,
+        };
+        while (this.peek().type === 'dot') {
+          this.advance();
+          const member = this.advance();
+          if (member.type !== 'identifier') {
+            return null;
+          }
+          base = {
+            type: 'member',
+            object: base,
+            property: member.value,
+          };
+        }
+      }
       return base;
     }
 
@@ -512,7 +552,7 @@ export function parseMilkdropShaderStatement(
   }
 
   const assignment = line.match(
-    /^(?:(const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    /^(?:(const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*(?:\[[^\]]+\])?(?:\.[a-z_][a-z0-9_]*)*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
   );
   if (!assignment) {
     return null;
@@ -776,6 +816,8 @@ function toScalarMilkdropExpression(
       };
     }
     case 'member':
+      return null;
+    case 'index':
       return null;
   }
 }
@@ -1125,6 +1167,9 @@ export function evaluateMilkdropShaderExpression(
               ? scalar(object.value[2])
               : null;
       }
+      return null;
+    }
+    case 'index': {
       return null;
     }
   }
