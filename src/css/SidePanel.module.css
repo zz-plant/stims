@@ -118,6 +118,7 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,6 +126,30 @@
   padding: 14px 16px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--ctl-panel-line, rgba(255, 255, 255, 0.06));
+}
+
+/* Drag affordance for the mobile bottom sheet */
+.grabber {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .header {
+    touch-action: none;
+    padding-top: 22px;
+  }
+
+  .grabber {
+    display: block;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+  }
 }
 
 .title {

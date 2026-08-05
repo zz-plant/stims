@@ -24,6 +24,10 @@ import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 import { resolveAuthorUrl } from './workspace-helpers.ts';
 
+const isMobileSheet = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(max-width: 767px)').matches;
+
 type SidePanelProps = {
   open: boolean;
   onClose: () => void;
@@ -57,6 +61,84 @@ export function SidePanel({
       onClose();
     }, 200);
   }, [exiting, onClose]);
+
+  // Swipe-down-to-close on the mobile bottom sheet. The sheet covers the
+  // whole viewport there, so the backdrop is unreachable and the X sits in
+  // the hardest one-handed spot (top corner).
+  const dragRef = useRef<{
+    pointerId: number;
+    startY: number;
+    lastY: number;
+    lastT: number;
+    velocity: number;
+  } | null>(null);
+
+  const handleDragStart = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!isMobileSheet() || exiting) return;
+      if ((e.target as HTMLElement).closest('button')) return;
+      dragRef.current = {
+        pointerId: e.pointerId,
+        startY: e.clientY,
+        lastY: e.clientY,
+        lastT: e.timeStamp,
+        velocity: 0,
+      };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // pointer already released (or synthetic) — drag still tracks via
+        // the header's own pointer events
+      }
+    },
+    [exiting],
+  );
+
+  const handleDragMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      const panel = panelRef.current;
+      if (!drag || drag.pointerId !== e.pointerId || !panel) return;
+      const dy = Math.max(0, e.clientY - drag.startY);
+      const dt = e.timeStamp - drag.lastT;
+      if (dt > 0) {
+        drag.velocity = (e.clientY - drag.lastY) / dt;
+      }
+      drag.lastY = e.clientY;
+      drag.lastT = e.timeStamp;
+      panel.style.transition = 'none';
+      panel.style.transform = `translateY(${dy}px)`;
+    },
+    [panelRef],
+  );
+
+  const handleDragEnd = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      const panel = panelRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      dragRef.current = null;
+      if (!panel) return;
+      const dy = Math.max(0, e.clientY - drag.startY);
+      const shouldClose = dy > 96 || (dy > 24 && drag.velocity > 0.5);
+      panel.style.transition = 'transform 0.2s ease';
+      if (shouldClose) {
+        // let the transition finish the gesture; the data-exiting keyframe
+        // would snap the sheet back to translateY(0) first
+        panel.style.animation = 'none';
+        panel.style.transform = 'translateY(100%)';
+        if (closeTimerRef.current) return;
+        setExiting(true);
+        closeTimerRef.current = window.setTimeout(() => {
+          closeTimerRef.current = null;
+          onClose();
+        }, 200);
+      } else {
+        panel.style.transform = '';
+      }
+    },
+    [panelRef, onClose],
+  );
 
   useEffect(
     () => () => {
@@ -107,7 +189,14 @@ export function SidePanel({
         data-shell-dialog="true"
         tabIndex={-1}
       >
-        <div className={styles.header}>
+        <div
+          className={styles.header}
+          onPointerDown={handleDragStart}
+          onPointerMove={handleDragMove}
+          onPointerUp={handleDragEnd}
+          onPointerCancel={handleDragEnd}
+        >
+          <div className={styles.grabber} aria-hidden="true" />
           <h2 className={styles.title}>{title}</h2>
           <button
             type="button"

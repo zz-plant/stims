@@ -18,14 +18,26 @@
     transform 0.3s ease;
 }
 
+/* visibility keeps the faded-out bar from catching taps and tab focus —
+   .pill re-enables pointer-events, so opacity alone leaves phantom targets */
 .bar[data-visible="false"] {
   opacity: 0;
   transform: translateY(8px);
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    visibility 0s linear 0.3s;
 }
 
 .bar[data-visible="true"] {
   opacity: 1;
   transform: translateY(0);
+  visibility: visible;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    visibility 0s linear 0s;
 }
 
 /* The pill */
@@ -255,6 +267,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* invisible hit-area extension — the 36x6 visual is far below the 44px
+   touch minimum, and this is the only way back to the controls */
+.handle::before {
+  content: "";
+  position: absolute;
+  inset: -20px -24px;
+}
+
 .handle:hover {
   background: rgba(20, 26, 36, 0.85);
 }
@@ -307,12 +327,16 @@
 @media (pointer: coarse) {
   .navBtn,
   .menuBtn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
 
   .titleBtn {
-    height: 36px;
+    height: 44px;
+  }
+
+  .menuItem {
+    padding: 11px 12px;
   }
 }
 

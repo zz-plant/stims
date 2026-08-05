@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/ContextualHelp.module.css';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 
 type HelpHint = {
   id: string;
@@ -7,10 +8,19 @@ type HelpHint = {
   autoHideMs: number;
 };
 
-const HINTS: HelpHint[] = [
+type HelpHintDef = {
+  id: string;
+  message: string | (() => string);
+  autoHideMs: number;
+};
+
+const HINTS: HelpHintDef[] = [
   {
     id: 'first-play',
-    message: 'ArrowRight to switch presets, E to edit shaders',
+    message: () =>
+      isMobileDevice()
+        ? 'Swipe for presets, long-press to favorite, double-tap to fill screen'
+        : 'ArrowRight to switch presets, E to edit shaders',
     autoHideMs: 6000,
   },
   {
@@ -59,7 +69,12 @@ export function useHelpHints() {
     if (!hint) return;
 
     markHintSeen(id);
-    setVisibleHint(hint);
+    setVisibleHint({
+      id: hint.id,
+      autoHideMs: hint.autoHideMs,
+      message:
+        typeof hint.message === 'function' ? hint.message() : hint.message,
+    });
 
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {

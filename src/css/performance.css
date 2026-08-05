@@ -69,13 +69,7 @@ body[data-page="performance"] {
   top: 0;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(
-    90deg,
-    #8ff54a,
-    #f2cd59 48%,
-    #f49d54 72%,
-    var(--stims-cool)
-  );
+  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
   opacity: 0.8;
 }
 

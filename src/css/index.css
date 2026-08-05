@@ -2126,12 +2126,7 @@ section.intro,
   top: 10px;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(
-    90deg,
-    var(--stims-good),
-    var(--stims-warn) 50%,
-    var(--stims-accent-blue)
-  );
+  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
   opacity: 0.82;
   pointer-events: none;
 }

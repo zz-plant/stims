@@ -632,6 +632,16 @@ html.light .stims-shell {
     -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
   }
 
+  @media (pointer: coarse) {
+    .ctl-preset__fav {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      min-height: 44px;
+      margin-right: 0;
+    }
+  }
+
   /* ── Empty / status states ─────────────────────────────────────── */
   .ctl-empty {
     display: grid;
