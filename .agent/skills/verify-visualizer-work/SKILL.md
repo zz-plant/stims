@@ -1,3 +1,8 @@
+---
+name: verify-visualizer-work
+description: "Run a quick verification loop during implementation, before the full quality gate. Use after code changes to catch runtime, UI, or preset regressions early, or for iterative feedback during development."
+---
+
 # Verify Visualizer Work
 
 Use this skill during implementation to validate your changes before committing.
