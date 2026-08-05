@@ -20,6 +20,10 @@ const ASSETS_DIR = join(process.cwd(), 'docs', 'assets');
 const SVG_PATH = join(ASSETS_DIR, 'source.svg');
 const PROJECT = basename(process.cwd());
 
+// source.svg's own viewBox is 0 0 400 200 — content coordinates are in these units.
+const SOURCE_WIDTH = 400;
+const SOURCE_HEIGHT = 200;
+
 type SceneSpec = {
   width: number;
   height: number;
@@ -190,10 +194,18 @@ function main() {
       const overlay = buildOverlay(spec, hue);
       writeFileSync(overlayPath, overlay);
 
-      // 2. Build composed SVG: overlay background + scaled source.svg content
-      const scale = spec.scale ?? 0.8;
-      const sw = Math.round(spec.width * scale);
-      const sh = Math.round(spec.height * scale);
+      // 2. Build composed SVG: overlay background + scaled source.svg content.
+      // spec.scale is the fraction of the canvas the design's bounding box should
+      // fill; fit source's native 400x200 units into that box, preserving aspect ratio.
+      const fillFraction = spec.scale ?? 0.8;
+      const boxWidth = spec.width * fillFraction;
+      const boxHeight = spec.height * fillFraction;
+      const contentScale = Math.min(
+        boxWidth / SOURCE_WIDTH,
+        boxHeight / SOURCE_HEIGHT,
+      );
+      const sw = SOURCE_WIDTH * contentScale;
+      const sh = SOURCE_HEIGHT * contentScale;
       const sx = spec.center
         ? Math.round((spec.width - sw) / 2)
         : Math.round(spec.width * 0.05);
@@ -204,7 +216,7 @@ function main() {
       // Render source content ON TOP of overlay
       const composed = overlay.replace(
         '</svg>',
-        `\n  <g transform="translate(${sx},${sy}) scale(${scale})">${innerSvg}</g>\n</svg>`,
+        `\n  <g transform="translate(${sx},${sy}) scale(${contentScale})">${innerSvg}</g>\n</svg>`,
       );
       // Also add a subtle pattern for depth
       writeFileSync(compPath, composed);

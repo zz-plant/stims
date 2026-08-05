@@ -88,6 +88,27 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
+// A row of VU-meter bars, echoing the app's own level meter — a real
+// instrument reading, not a decorative logo mark. Heights are fixed (not
+// randomized) so output is reproducible.
+const VU_BAR_HEIGHTS = [26, 46, 78, 54, 88, 38, 64, 44];
+const buildVuMeter = (x: number, y: number) => {
+  const barWidth = 11;
+  const gap = 7;
+  const peakIndex = VU_BAR_HEIGHTS.indexOf(Math.max(...VU_BAR_HEIGHTS));
+  const bars = VU_BAR_HEIGHTS.map((h, i) => {
+    const bx = i * (barWidth + gap);
+    const fill = i === peakIndex ? '#f47a54' : 'rgba(119,201,255,0.55)';
+    return `<rect x="${bx}" y="${-h}" width="${barWidth}" height="${h}" fill="${fill}" />`;
+  }).join('');
+  return `<g transform="translate(${x},${y})">${bars}</g>`;
+};
+
+// A scope trace spanning the full canvas width, kept within a fixed vertical
+// band so it never runs into the footer or corner meter.
+const SCOPE_TRACE_PATH =
+  'M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500';
+
 export const buildOgSvg = ({
   title,
   subtitle,
@@ -98,57 +119,47 @@ export const buildOgSvg = ({
   subtitle: string;
   eyebrow: string;
   chip?: string;
-}) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
-  <defs>
-    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0.08)" />
-      <stop offset="50%" stop-color="rgba(0,0,0,0.48)" />
-      <stop offset="100%" stop-color="rgba(0,0,0,0.78)" />
-    </linearGradient>
-  </defs>
-  <image href="bg-visualizer.png" width="${ogWidth}" height="${ogHeight}" preserveAspectRatio="xMidYMid slice" />
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#overlay)" />
-  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.04)" />
-  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.04)" />
-  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.1)" />
-  <rect x="88" y="86" width="${chip ? '280' : '0'}" height="${chip ? '52' : '0'}" rx="26" fill="rgba(255,255,255,0.12)" />
-  ${chip ? `<text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(chip)}</text>` : ''}
-  <text x="88" y="${chip ? '206' : '152'}" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(eyebrow)}</text>
-  <text x="88" y="${chip ? '306' : '252'}" font-size="72" font-weight="700" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(title)}</text>
-  <text x="88" y="${chip ? '372' : '318'}" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
-</svg>`;
+}) => {
+  const labelY = chip ? 96 : 60;
+  const eyebrowY = chip ? 176 : 140;
+  const titleY = chip ? 258 : 222;
+  const subtitleY = chip ? 314 : 278;
 
-export const buildPresetOgSvg = ({
-  title,
-  author,
-  chip = 'STIMS • AUDIO VISUALIZER',
-}: {
-  title: string;
-  author?: string;
-  chip?: string;
-}) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#050b14"/>
-      <stop offset="45%" stop-color="#0a192f"/>
-      <stop offset="85%" stop-color="#0d2b45"/>
-      <stop offset="100%" stop-color="#093845"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#12191f" />
+      <stop offset="100%" stop-color="#0b1014" />
     </linearGradient>
-    <radialGradient id="glow" cx="80%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="rgba(123, 231, 255, 0.35)"/>
-      <stop offset="100%" stop-color="rgba(123, 231, 255, 0)"/>
+    <radialGradient id="glow" cx="82%" cy="16%" r="55%">
+      <stop offset="0%" stop-color="rgba(119, 201, 255, 0.18)" />
+      <stop offset="100%" stop-color="rgba(119, 201, 255, 0)" />
     </radialGradient>
   </defs>
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)"/>
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#glow)"/>
-  <path d="M 60 480 Q 200 320, 360 440 T 660 380 T 960 480 T 1140 420" fill="none" stroke="rgba(123, 231, 255, 0.4)" stroke-width="4"/>
-  <rect x="48" y="48" width="1104" height="534" rx="24" fill="rgba(10, 25, 47, 0.45)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2"/>
-  <rect x="88" y="88" width="310" height="44" rx="22" fill="rgba(123, 231, 255, 0.15)" stroke="rgba(123, 231, 255, 0.3)" stroke-width="1"/>
-  <text x="112" y="116" font-size="16" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="1.5">${escapeHtml(chip)}</text>
-  <text x="88" y="240" font-size="54" font-weight="800" fill="#ffffff" font-family="Space Grotesk, system-ui, sans-serif">${escapeHtml(title)}</text>
-  ${author ? `<text x="88" y="300" font-size="28" font-weight="500" fill="#94a3b8" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#e2e8f0" font-weight="700">${escapeHtml(author)}</tspan></text>` : ''}
-  <text x="88" y="525" font-size="22" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif">toil.fyi</text>
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)" />
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#glow)" />
+
+  <!-- Scope graticule + trace, full-bleed — reads as a live signal, not decoration -->
+  <g stroke="rgba(119,201,255,0.14)" stroke-width="1">
+    ${Array.from({ length: 11 }, (_, i) => `<line x1="${i * 120}" y1="560" x2="${i * 120}" y2="570" />`).join('')}
+  </g>
+  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(244,122,84,0.16)" stroke-width="2" transform="translate(0,12)" />
+  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3" />
+
+  ${
+    chip
+      ? `<circle cx="92" cy="${labelY - 5}" r="4" fill="#f47a54" />
+  <text x="108" y="${labelY}" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">${escapeHtml(chip.toUpperCase())}</text>`
+      : ''
+  }
+  <text x="88" y="${eyebrowY}" font-size="28" font-weight="600" fill="#77c9ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(eyebrow)}</text>
+  <text x="88" y="${titleY}" font-size="62" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(title)}</text>
+  <text x="88" y="${subtitleY}" font-size="26" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
+
+  ${buildVuMeter(996, 560)}
+  <text x="88" y="602" font-size="20" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
 </svg>`;
+};
 
 export const buildAppIconSvg =
   () => `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stims app icon">

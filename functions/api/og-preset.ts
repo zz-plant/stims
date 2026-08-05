@@ -17,14 +17,40 @@ export type OgPresetOptions = {
   fidelity?: string;
 };
 
+// A row of VU-meter bars, echoing the app's own level meter — a real
+// instrument reading, not a decorative logo mark. Heights are fixed (not
+// randomized) so output is reproducible.
+const VU_BAR_HEIGHTS = [26, 46, 78, 54, 88, 38, 64, 44];
+function buildVuMeter(x: number, y: number): string {
+  const barWidth = 11;
+  const gap = 7;
+  const peakIndex = VU_BAR_HEIGHTS.indexOf(Math.max(...VU_BAR_HEIGHTS));
+  const bars = VU_BAR_HEIGHTS.map((h, i) => {
+    const bx = i * (barWidth + gap);
+    const fill = i === peakIndex ? '#f47a54' : 'rgba(119,201,255,0.55)';
+    return `<rect x="${bx}" y="${-h}" width="${barWidth}" height="${h}" fill="${fill}"/>`;
+  }).join('');
+  return `<g transform="translate(${x},${y})">${bars}</g>`;
+}
+
+// A scope trace spanning the full canvas width, kept within a fixed vertical
+// band so it never runs into the footer or corner meter.
+const SCOPE_TRACE_PATH =
+  'M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500';
+
 export function buildPresetOgSvg({
   title,
   author,
   tags = [],
 }: OgPresetOptions): string {
-  const safeTitle = escapeXml(
-    title.length > 55 ? `${title.slice(0, 52)}...` : title,
-  );
+  const truncatedTitle = title.length > 60 ? `${title.slice(0, 57)}...` : title;
+  const safeTitle = escapeXml(truncatedTitle);
+  // Fixed 54px comfortably fits titles up to ~34 chars at canvas width 1200;
+  // scale down for longer titles instead of letting them run off the edge.
+  const titleFontSize =
+    truncatedTitle.length > 34
+      ? Math.max(32, Math.round(54 * (34 / truncatedTitle.length)))
+      : 54;
   const safeAuthor = author ? escapeXml(author.trim()) : null;
 
   const collectionTag = tags
@@ -37,64 +63,51 @@ export function buildPresetOgSvg({
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${safeTitle}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#050b14"/>
-      <stop offset="45%" stop-color="#0a192f"/>
-      <stop offset="85%" stop-color="#0d2b45"/>
-      <stop offset="100%" stop-color="#093845"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#12191f"/>
+      <stop offset="100%" stop-color="#0b1014"/>
     </linearGradient>
-    <radialGradient id="glow-1" cx="80%" cy="20%" r="60%">
-      <stop offset="0%" stop-color="rgba(123, 231, 255, 0.35)"/>
-      <stop offset="100%" stop-color="rgba(123, 231, 255, 0)"/>
+    <radialGradient id="glow" cx="82%" cy="16%" r="55%">
+      <stop offset="0%" stop-color="rgba(119, 201, 255, 0.22)"/>
+      <stop offset="100%" stop-color="rgba(119, 201, 255, 0)"/>
     </radialGradient>
-    <radialGradient id="glow-2" cx="20%" cy="80%" r="60%">
-      <stop offset="0%" stop-color="rgba(168, 85, 247, 0.30)"/>
-      <stop offset="100%" stop-color="rgba(168, 85, 247, 0)"/>
-    </radialGradient>
-    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0.1)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
-    </linearGradient>
   </defs>
 
   <!-- Background -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow-1)"/>
-  <rect width="1200" height="630" fill="url(#glow-2)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
 
-  <!-- Visualizer Wave Accents -->
-  <path d="M 60 480 Q 200 320, 360 440 T 660 380 T 960 480 T 1140 420" fill="none" stroke="rgba(123, 231, 255, 0.4)" stroke-width="4"/>
-  <path d="M 60 500 Q 240 380, 420 490 T 780 430 T 1140 510" fill="none" stroke="rgba(168, 85, 247, 0.35)" stroke-width="6"/>
-  <path d="M 60 530 Q 300 460, 540 540 T 900 480 T 1140 530" fill="none" stroke="rgba(56, 189, 248, 0.25)" stroke-width="3"/>
+  <!-- Scope graticule + trace, full-bleed — reads as a live signal, not decoration -->
+  <g stroke="rgba(119,201,255,0.14)" stroke-width="1">
+    ${Array.from({ length: 11 }, (_, i) => `<line x1="${i * 120}" y1="560" x2="${i * 120}" y2="570"/>`).join('')}
+  </g>
+  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(244,122,84,0.16)" stroke-width="2" transform="translate(0,12)"/>
+  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3"/>
 
-  <!-- Dark Glass Overlay -->
-  <rect width="1200" height="630" fill="url(#overlay)"/>
-
-  <!-- Card Border / Container -->
-  <rect x="48" y="48" width="1104" height="534" rx="24" fill="rgba(10, 25, 47, 0.45)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2"/>
-
-  <!-- Header Badge -->
-  <rect x="88" y="88" width="310" height="44" rx="22" fill="rgba(123, 231, 255, 0.15)" stroke="rgba(123, 231, 255, 0.3)" stroke-width="1"/>
-  <text x="112" y="116" font-size="16" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="1.5">STIMS • AUDIO VISUALIZER</text>
+  <!-- Header label -->
+  <circle cx="92" cy="91" r="4" fill="#f47a54"/>
+  <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">STIMS • AUDIO VISUALIZER</text>
 
   <!-- Preset Title -->
-  <text x="88" y="240" font-size="54" font-weight="800" fill="#ffffff" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
+  <text x="88" y="${safeAuthor ? '230' : '250'}" font-size="${titleFontSize}" font-weight="800" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
 
   <!-- Author Byline -->
-  ${safeAuthor ? `<text x="88" y="300" font-size="28" font-weight="500" fill="#94a3b8" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#e2e8f0" font-weight="700">${safeAuthor}</tspan></text>` : ''}
+  ${safeAuthor ? `<text x="88" y="286" font-size="26" font-weight="500" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#f7f4eb" font-weight="700">${safeAuthor}</tspan></text>` : ''}
 
   <!-- Badges -->
-  <g transform="translate(88, ${safeAuthor ? 360 : 310})">
-    <rect x="0" y="0" width="180" height="38" rx="19" fill="rgba(255, 255, 255, 0.1)"/>
-    <text x="18" y="25" font-size="15" font-weight="600" fill="#e2e8f0" font-family="Space Grotesk, system-ui, sans-serif">${escapeXml(badgeLabel)}</text>
+  <g transform="translate(88, ${safeAuthor ? 336 : 306})">
+    <rect x="0" y="0" width="180" height="36" rx="4" fill="rgba(119, 201, 255, 0.12)" stroke="rgba(119, 201, 255, 0.35)"/>
+    <text x="16" y="24" font-size="14" font-weight="600" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">${escapeXml(badgeLabel)}</text>
 
-    <rect x="196" y="0" width="180" height="38" rx="19" fill="rgba(168, 85, 247, 0.2)" stroke="rgba(168, 85, 247, 0.4)"/>
-    <text x="214" y="25" font-size="15" font-weight="600" fill="#e9d5ff" font-family="Space Grotesk, system-ui, sans-serif">WebGPU • 60 FPS</text>
+    <rect x="196" y="0" width="176" height="36" rx="4" fill="rgba(244, 122, 84, 0.16)" stroke="rgba(244, 122, 84, 0.4)"/>
+    <text x="212" y="24" font-size="14" font-weight="600" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">WebGPU • 60 FPS</text>
   </g>
 
+  ${buildVuMeter(996, 560)}
+
   <!-- Footer Branding -->
-  <text x="88" y="525" font-size="22" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif">toil.fyi</text>
-  <text x="175" y="525" font-size="20" font-weight="400" fill="#64748b" font-family="Space Grotesk, system-ui, sans-serif">• Instant Sound-Reactive Visuals in Browser</text>
+  <text x="88" y="602" font-size="20" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
+  <text x="215" y="602" font-size="18" font-weight="400" fill="rgba(247,244,235,0.55)" font-family="Space Grotesk, system-ui, sans-serif">Instant sound-reactive visuals in the browser</text>
 </svg>`;
 }
 
