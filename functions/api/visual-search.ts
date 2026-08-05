@@ -9,7 +9,11 @@ interface D1PreparedStatement {
 interface VectorizeIndex {
   query(
     vector: number[],
-    options?: { topK?: number; returnVectors?: boolean; returnMetadata?: boolean },
+    options?: {
+      topK?: number;
+      returnVectors?: boolean;
+      returnMetadata?: boolean;
+    },
   ): Promise<{ matches: Array<{ id: string; score: number }> }>;
 }
 
@@ -23,7 +27,6 @@ interface Env {
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
 }
-
 
 type CachedEmbedding = {
   presetId: string;
@@ -138,17 +141,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
           presetId: m.id,
           score: m.score,
         }));
-        return new Response(JSON.stringify({ results: matches, source: 'vectorize' }), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+        return new Response(
+          JSON.stringify({ results: matches, source: 'vectorize' }),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
           },
-        });
+        );
       } catch {
         // Vectorize query error fallback to D1
       }
     }
-
 
     const cache = await loadEmbeddingCache(env);
     const queryVec = new Float32Array(queryEmbedding);

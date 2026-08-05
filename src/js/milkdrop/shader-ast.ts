@@ -531,7 +531,23 @@ class ShaderExpressionParser {
 export function parseMilkdropShaderStatement(
   line: string,
 ): MilkdropShaderStatement | null {
-  const returnStatement = line.match(/^return\s+(.+)$/iu);
+  const trimmed = line.trim();
+  if (
+    !trimmed ||
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('//') ||
+    trimmed.startsWith('struct') ||
+    trimmed === '}' ||
+    trimmed === '{'
+  ) {
+    return null;
+  }
+
+  const cleanLine = trimmed
+    .replace(/\blum\s*\(([^)]+)\)/gi, 'dot($1, float3(0.32, 0.49, 0.29))')
+    .replace(/\bsat\s*\(([^)]+)\)/gi, 'clamp($1, 0.0, 1.0)');
+
+  const returnStatement = cleanLine.match(/^return\s+(.+)$/iu);
   if (returnStatement) {
     const expressionTokens = tokenize(returnStatement[1] ?? '');
     if (!expressionTokens) {

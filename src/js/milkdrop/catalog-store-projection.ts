@@ -129,7 +129,12 @@ export function toCatalogEntry(
     author: compiled.author ?? source.author,
     authorUrl: source.authorUrl,
     origin: source.origin,
-    tags: options.tags ?? [],
+    tags: Array.from(
+      new Set([
+        ...(options.tags ?? []),
+        ...compiled.ir.compatibility.featureAnalysis.featuresUsed,
+      ]),
+    ),
     curatedRank: options.curatedRank,
     isFavorite: Boolean(meta?.favorite),
     rating: meta?.rating ?? 0,

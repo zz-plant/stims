@@ -9,7 +9,11 @@ interface D1PreparedStatement {
 interface VectorizeIndex {
   query(
     vector: number[],
-    options?: { topK?: number; returnVectors?: boolean; returnMetadata?: boolean },
+    options?: {
+      topK?: number;
+      returnVectors?: boolean;
+      returnMetadata?: boolean;
+    },
   ): Promise<{ matches: Array<{ id: string; score: number }> }>;
 }
 
@@ -67,25 +71,37 @@ export async function onRequest(context: { request: Request; env: Env }) {
       try {
         const featureSummary = [
           features.bpm ? `BPM: ${features.bpm}` : null,
-          features.energy !== undefined ? `Energy: ${features.energy.toFixed(2)}` : null,
-          features.bassEnergy !== undefined ? `Bass Level: ${features.bassEnergy.toFixed(2)}` : null,
-          features.trebleEnergy !== undefined ? `Treble Level: ${features.trebleEnergy.toFixed(2)}` : null,
+          features.energy !== undefined
+            ? `Energy: ${features.energy.toFixed(2)}`
+            : null,
+          features.bassEnergy !== undefined
+            ? `Bass Level: ${features.bassEnergy.toFixed(2)}`
+            : null,
+          features.trebleEnergy !== undefined
+            ? `Treble Level: ${features.trebleEnergy.toFixed(2)}`
+            : null,
           features.genre ? `Genre: ${features.genre}` : null,
           features.mood ? `Mood: ${features.mood}` : null,
         ]
           .filter(Boolean)
           .join(', ');
 
-        const aiResult = await env.AI.run('@cf/ibm-granite/granite-4.0-h-micro', {
-          messages: [
-            {
-              role: 'system',
-              content:
-                'Convert these audio features into a 4-8 word visual style query for MilkDrop visualizers (e.g. "intense pounding bass neon warp", "ethereal slow ambient geometric bloom"). Output ONLY the query string.',
-            },
-            { role: 'user', content: featureSummary || 'high energy bass heavy synthwave' },
-          ],
-        });
+        const aiResult = await env.AI.run(
+          '@cf/ibm-granite/granite-4.0-h-micro',
+          {
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Convert these audio features into a 4-8 word visual style query for MilkDrop visualizers (e.g. "intense pounding bass neon warp", "ethereal slow ambient geometric bloom"). Output ONLY the query string.',
+              },
+              {
+                role: 'user',
+                content: featureSummary || 'high energy bass heavy synthwave',
+              },
+            ],
+          },
+        );
 
         if (aiResult.response) {
           searchPrompt = aiResult.response.trim();
@@ -111,8 +127,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
         });
         const queryEmbedding = embResult.data?.[0];
         if (queryEmbedding) {
-          const vResult = await env.VECTOR_INDEX.query(queryEmbedding, { topK: 6 });
-          results = vResult.matches.map((m) => ({ presetId: m.id, score: m.score }));
+          const vResult = await env.VECTOR_INDEX.query(queryEmbedding, {
+            topK: 6,
+          });
+          results = vResult.matches.map((m) => ({
+            presetId: m.id,
+            score: m.score,
+          }));
         }
       } catch {
         // Fall through to default recommendations
@@ -142,7 +163,8 @@ export async function onRequest(context: { request: Request; env: Env }) {
   } catch (error) {
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Audio selection failed',
+        error:
+          error instanceof Error ? error.message : 'Audio selection failed',
       }),
       {
         status: 500,

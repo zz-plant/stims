@@ -137,7 +137,27 @@ export function buildShapes({
     );
     const env = createEnv(signals, locals, { reuseExtraAsEnv: true });
 
+    const baseTLocals = {
+      t1: locals.t1 ?? 0,
+      t2: locals.t2 ?? 0,
+      t3: locals.t3 ?? 0,
+      t4: locals.t4 ?? 0,
+      t5: locals.t5 ?? 0,
+      t6: locals.t6 ?? 0,
+      t7: locals.t7 ?? 0,
+      t8: locals.t8 ?? 0,
+      v1: locals.v1 ?? 0,
+      v2: locals.v2 ?? 0,
+      v3: locals.v3 ?? 0,
+      v4: locals.v4 ?? 0,
+      v5: locals.v5 ?? 0,
+      v6: locals.v6 ?? 0,
+      v7: locals.v7 ?? 0,
+      v8: locals.v8 ?? 0,
+    };
+
     for (let instance = 0; instance < instanceCount; instance += 1) {
+      Object.assign(locals, baseTLocals);
       locals.instance = instance;
       locals.num_inst = instanceCount;
       runProgram(shape.programs.perFrame, env, locals);

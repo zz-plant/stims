@@ -21,19 +21,19 @@ Single-page MilkDrop-inspired audio-reactive visualizer. Built with Three.js/Web
 Use these in sequence during implementation:
 
 ```bash
-# 1. Syntax + types + lint (15s)
+# 1. Syntax + types + lint + guards (5-10s, fail-fast)
 bun run check:quick
 
-# 2. Targeted test for your change (30-90s)
+# 2. Targeted test for your change (1-3s)
 bun run test tests/path/to/spec.test.ts
 
 # 3. Visual verification (launch dev server)
 bun run dev
 # Visit:
-# - http://localhost:5173/milkdrop/       (visualizer)
-# - http://localhost:5173/milkdrop/?agent=true  (agent testing mode)
+# - http://localhost:5173/           (root workspace)
+# - http://localhost:5173/?agent=true (agent testing mode)
 
-# 4. Full quality gate (before commit, 2-5 min)
+# 4. Full quality gate (before commit, 1-2 min)
 bun run check
 ```
 

@@ -24,10 +24,11 @@ Every test run uses:
 
 Tests are grouped into three speed tiers. Use the right tier for your workflow.
 
-### Tier 1 — Fast (default quality gate, ~2 min)
+### Tier 1 — Fast (default quality gate, ~1-2 min)
 
 **Command:** `bun run test:fast`  
-**What it includes:** All tests **except** the slow corpus/certification/integration list below.  
+**What it includes:** All unit and compatibility tests **except** the slow corpus/certification/integration list below.  
+**Concurrency & Sharding:** Parallel test execution is sharded automatically across CPU cores (`STIMS_TEST_SHARDS=n` overrides core count).  
 **When to use:** Pre-commit, `bun run check`, any time you want confident signal without waiting.
 
 Tests excluded from this tier:
@@ -63,16 +64,16 @@ Tests excluded from this tier:
 ## Quality gate commands
 
 ```
-bun run check:quick   # Biome lint + typecheck only (~10s). Use constantly.
-bun run check         # Lint + typecheck + Tier 1 tests (~2min). Use pre-commit.
-bun run check:all     # Lint + typecheck + Tier 2 tests (all). Use pre-merge on hot files.
+bun run check:quick   # Biome lint + typecheck + guards (~5-10s). Use constantly.
+bun run check         # Guards + Tier 1 sharded tests (~1-2min). Use pre-commit.
+bun run check:all     # Guards + Tier 2 tests (all). Use pre-merge on hot files.
 ```
 
 Each gate runs in this sequence:
 
-1. **Preflight**: `check:no-ts-nocheck` — bans `@ts-nocheck` guards
-2. **Concurrent**: Biome check, catalog fidelity, toy manifest drift, SEO surface, architecture boundaries, TypeScript typecheck
-3. **Postflight**: Test suite (tier depends on mode)
+1. **Preflight**: `check:no-ts-nocheck` (bans `@ts-nocheck` guards) + `check:ci-config` (workflow drift)
+2. **Concurrent Lane (Fail-Fast)**: Asset health (`assets:check`), Biome check, catalog fidelity, catalog integrity, toy manifest drift, SEO surface, CSS token resolution, stale paths, duplicate CSS, architecture boundaries, and TypeScript typecheck run concurrently. If any check fails, remaining concurrent tasks are killed immediately for instant feedback.
+3. **Postflight**: Test suite (tier depends on mode: none for `quick`, `test:fast` for `full`, `test` for `all`).
 
 ---
 

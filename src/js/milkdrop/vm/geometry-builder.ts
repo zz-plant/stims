@@ -229,8 +229,14 @@ function transformMeshPoint({
   const local = scratch;
   local.x = gridX;
   local.y = gridY;
-  local.rad = Math.sqrt(gridX * gridX + gridY * gridY);
-  local.ang = Math.atan2(gridY, gridX);
+  const aspectRatio = signals.aspect ?? 1;
+  const rawSignals = signals as unknown as Record<string, number | undefined>;
+  const aspectX = rawSignals.aspectx ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const aspectY = rawSignals.aspecty ?? (aspectRatio > 1 ? 1 : aspectRatio);
+  const aspectGridX = gridX * aspectX;
+  const aspectGridY = gridY * aspectY;
+  local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
+  local.ang = Math.atan2(aspectGridY, aspectGridX);
   local.zoom = state.zoom ?? 1;
   local.zoomexp = state.zoomexp ?? 1;
   local.rot = state.rot ?? 0;

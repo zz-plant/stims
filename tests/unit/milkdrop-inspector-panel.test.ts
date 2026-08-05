@@ -22,4 +22,70 @@ describe('milkdrop inspector panel selection summary', () => {
 
     panel.dispose();
   });
+
+  test('formats measured drift metric accurately', () => {
+    const {
+      formatInspectorMetrics,
+    } = require('../../src/js/milkdrop/overlay/inspector-panel.ts');
+    const mockCompiled = {
+      ir: {
+        compatibility: {
+          backends: {
+            webgl: { status: 'supported', reasons: [] },
+            webgpu: { status: 'supported', reasons: [] },
+          },
+          parity: {
+            fidelityClass: 'exact',
+            evidence: {
+              compile: 'verified',
+              runtime: 'smoke-tested',
+              visual: 'reference-suite',
+            },
+            visualEvidenceTier: 'visual',
+            backendDivergence: [],
+            visualFallbacks: [],
+            degradationReasons: [],
+            featureAnalysis: {
+              featuresUsed: ['base-globals'],
+              registerUsage: { q: 0, t: 0 },
+            },
+          },
+        },
+      },
+    };
+    const mockFrameState = {
+      signals: { frame: 1, bass: 1, mid: 1, treb: 1, beatPulse: 0 },
+      mainWave: { positions: new Float32Array() },
+      customWaves: [],
+      shapes: [],
+      borders: [],
+    };
+    const mockPresetEntry = {
+      fidelityTier: 'measured-visual',
+      fidelityClass: 'exact',
+      evidence: { visual: 'reference-suite' },
+      visualCertification: {
+        status: 'certified',
+        measured: true,
+        fidelityClass: 'exact',
+        mismatchRatio: 0.035,
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
+        reasons: ['Passed visual tolerance.'],
+      },
+    };
+
+    const metrics = formatInspectorMetrics({
+      compiled: mockCompiled,
+      frameState: mockFrameState,
+      backend: 'webgpu',
+      presetEntry: mockPresetEntry,
+    });
+
+    const driftMetric = metrics.find(
+      (m: { label: string; value: string }) => m.label === 'Measured drift',
+    );
+    expect(driftMetric).toBeDefined();
+    expect(driftMetric?.value).toBe('4%');
+  });
 });
