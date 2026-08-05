@@ -108,6 +108,8 @@ export function useStageGesture({
     let startX = 0;
     let startY = 0;
     let trackingPointerId: number | null = null;
+    let activeTouchPointers = 0;
+    let multiTouchActive = false;
     let longPressFired = false;
 
     const clearLongPress = () => {
@@ -120,6 +122,16 @@ export function useStageGesture({
     const handlePointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'touch' || isInteractiveTarget(event.target))
         return;
+      activeTouchPointers += 1;
+      if (activeTouchPointers > 1) {
+        // A second finger joined — this is the runtime's pinch/rotate domain.
+        // Stop tracking the original pointer so none of the finger lifts are
+        // read as a swipe, tap, or long-press.
+        multiTouchActive = true;
+        trackingPointerId = null;
+        clearLongPress();
+        return;
+      }
       trackingPointerId = event.pointerId;
       startX = event.clientX;
       startY = event.clientY;
@@ -133,7 +145,7 @@ export function useStageGesture({
     };
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (trackingPointerId !== event.pointerId) return;
+      if (multiTouchActive || trackingPointerId !== event.pointerId) return;
       if (
         Math.hypot(event.clientX - startX, event.clientY - startY) >
         LONG_PRESS_MOVE_TOLERANCE_PX
@@ -143,10 +155,22 @@ export function useStageGesture({
     };
 
     const handlePointerEnd = (event: PointerEvent) => {
-      if (trackingPointerId !== event.pointerId) return;
+      if (event.pointerType !== 'touch') return;
+      activeTouchPointers = Math.max(0, activeTouchPointers - 1);
+      if (trackingPointerId !== event.pointerId) {
+        // A finger that wasn't the tracked one lifted (e.g. the first finger
+        // of a pinch). Wait for the rest to lift before resetting.
+        if (activeTouchPointers === 0) {
+          multiTouchActive = false;
+        }
+        return;
+      }
       trackingPointerId = null;
       clearLongPress();
-      if (longPressFired) return;
+      if (activeTouchPointers === 0) {
+        multiTouchActive = false;
+      }
+      if (multiTouchActive || longPressFired) return;
 
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
@@ -206,9 +230,14 @@ export function useStageGesture({
     };
 
     const handlePointerCancel = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch') return;
+      activeTouchPointers = Math.max(0, activeTouchPointers - 1);
       if (trackingPointerId !== event.pointerId) return;
       trackingPointerId = null;
       clearLongPress();
+      if (activeTouchPointers === 0) {
+        multiTouchActive = false;
+      }
     };
 
     stage.addEventListener('pointerdown', handlePointerDown, { passive: true });
