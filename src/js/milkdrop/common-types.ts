@@ -30,6 +30,15 @@ export type MilkdropDiagnostic = {
   category?: MilkdropDiagnosticCategory;
 };
 
+/** A pointer to the preset a derivative was made from. Parents may since
+ * have been deleted, so the ref carries enough to render the lineage
+ * ("remix of Aderrasi - Airhandler") without resolving the id. */
+export type MilkdropPresetLineageRef = {
+  id: string;
+  title: string;
+  author?: string;
+};
+
 export type MilkdropPresetSource = {
   id: string;
   title: string;
@@ -40,6 +49,9 @@ export type MilkdropPresetSource = {
   fileName?: string;
   path?: string;
   updatedAt?: number;
+  /** Immediate parents of this preset: one entry for a remix, two for a
+   * blend/mashup. Absent for root works and bundled catalog entries. */
+  derivedFrom?: MilkdropPresetLineageRef[];
 };
 
 export type MilkdropPresetField = {

@@ -1,4 +1,9 @@
 import { compileMilkdropPresetSource } from '../compiler';
+import {
+  deriveRemixCredit,
+  formatPresetCredit,
+  parsePresetCredit,
+} from '../preset-credit';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -40,12 +45,20 @@ export function createMilkdropPresetFileActions({
             title: file.name.replace(/\.[^.]+$/u, ''),
             origin: 'imported',
           });
+          // Most .milk files omit author= but carry the credit convention
+          // in their filename ("Rovastar - Bytes 03.milk"), so the byline
+          // falls back to the chain parsed from the title.
+          const credit = parsePresetCredit(compiled.title);
           const saved = await catalogStore.savePreset({
             id: `${compiled.source.id}-${Date.now()}`,
             title: compiled.title,
             raw,
             origin: 'imported',
-            author: compiled.author,
+            author:
+              compiled.author ??
+              (credit.authors.length > 0
+                ? credit.authors.join(' + ')
+                : undefined),
             fileName: file.name,
           });
           await catalogStore.saveDraft(saved.id, compiled.formattedSource);
@@ -88,13 +101,38 @@ export function createMilkdropPresetFileActions({
     },
 
     async duplicatePreset() {
+      // A duplicate is a remix in the MilkDrop credit tradition: the parent
+      // keeps its byline, the derivative gains a mix/edit marker, and the
+      // parent ref is recorded so lineage survives renames.
       const compiled = getActiveCompiled();
+      const parent = parsePresetCredit(compiled.title, compiled.author);
+      const takenTitles = new Set(
+        (await catalogStore.listPresets()).map((entry) => entry.title),
+      );
+      let credit = deriveRemixCredit(parent);
+      for (
+        let serial = 2;
+        takenTitles.has(formatPresetCredit(credit)) && serial < 100;
+        serial += 1
+      ) {
+        credit = deriveRemixCredit(parent, { serial });
+      }
       const saved = await catalogStore.savePreset({
-        id: `${compiled.source.id}-copy-${Date.now()}`,
-        title: `${compiled.title} Copy`,
+        id: `${compiled.source.id}-remix-${Date.now()}`,
+        title: formatPresetCredit(credit),
         raw: compiled.formattedSource,
         origin: 'user',
-        author: compiled.author,
+        author:
+          credit.authors.length > 0
+            ? credit.authors.join(' + ')
+            : compiled.author,
+        derivedFrom: [
+          {
+            id: compiled.source.id,
+            title: compiled.title,
+            author: compiled.author,
+          },
+        ],
       });
       await scheduleCatalogSync();
       await selectPreset(saved.id);
