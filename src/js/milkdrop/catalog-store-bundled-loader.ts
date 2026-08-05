@@ -146,6 +146,7 @@ function toBundledCatalogEntries(document: BundledCatalogDocument) {
         semanticSupport: entry.semanticSupport,
         visualCertification: entry.visualCertification,
         supports: entry.supports ?? entry.compatibility,
+        preview: entry.preview,
       }));
 }
 
@@ -238,10 +239,36 @@ export function createBundledCatalogLoader({
             return mergedEntries;
           }
 
-          const certificationEntries = await loadCertificationCorpusCatalog();
+          let certificationEntries: MilkdropBundledCatalogEntry[] = [];
+          try {
+            certificationEntries = await loadCertificationCorpusCatalog();
+          } catch (error) {
+            // A broken supplemental corpus must not take the primary
+            // catalog down with it.
+            console.warn(
+              '[catalog-store] Certification corpus failed to load; continuing without it:',
+              error,
+            );
+          }
           return mergeUniqueCatalogEntries(mergedEntries, certificationEntries);
         })
-        .catch(() => [] as MilkdropBundledCatalogEntry[]);
+        .then((entries) => {
+          if (entries.length === 0) {
+            // Every source failed or came back empty (likely offline). Do not
+            // cache the outcome — the next access should retry the fetch
+            // instead of showing an empty library for the rest of the session.
+            sharedBundledCatalogPromises.delete(cacheKey);
+          }
+          return entries;
+        })
+        .catch((error) => {
+          sharedBundledCatalogPromises.delete(cacheKey);
+          console.warn(
+            '[catalog-store] Bundled catalog failed to load; will retry on next access:',
+            error,
+          );
+          return [] as MilkdropBundledCatalogEntry[];
+        });
       sharedBundledCatalogPromises.set(cacheKey, bundledCatalogPromise);
     }
     return bundledCatalogPromise;

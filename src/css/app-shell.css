@@ -28,12 +28,18 @@ body[data-page="workspace"] {
     linear-gradient(180deg, #05070d 0%, #08111b 48%, #03050a 100%);
 }
 
-html:has(body[data-page="workspace"]),
-body[data-page="workspace"] {
+html:has(body[data-page="workspace"]) {
   height: auto;
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+body[data-page="workspace"] {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 html:has(body[data-page="workspace"][data-live="true"]),
@@ -908,12 +914,11 @@ body[data-page="workspace"][data-live="true"] {
     max-height: calc(100dvh - max(72px, 10vh) - 180px);
     overflow: auto;
     border-radius: 18px;
-    background: rgba(6, 10, 17, 0.88);
+    background: rgba(6, 10, 17, 0.97);
     border: 1px solid rgba(119, 201, 255, 0.16);
     box-shadow:
       0 24px 60px rgba(0, 0, 0, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
   }
 
   .stims-shell__stage-frame[data-mode="live"]
@@ -2902,8 +2907,7 @@ body[data-page="workspace"][data-live="true"] {
   padding: 8px 16px;
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
-  background: rgba(3, 5, 11, 0.7);
-  backdrop-filter: blur(12px);
+  background: rgba(3, 5, 11, 0.96);
   z-index: var(--z-nav);
   font-size: 0.82rem;
   animation: fade-in 0.3s ease;
@@ -2934,8 +2938,7 @@ body[data-page="workspace"][data-live="true"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.65);
 }
 
 .stims-shell__shortcut-card {
@@ -2975,14 +2978,13 @@ body[data-page="workspace"][data-live="true"] {
 }
 
 .stims-shell__select {
-  background: rgba(18, 24, 38, 0.85);
+  background: rgba(18, 24, 38, 0.97);
   color: var(--stims-ink-strong);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--stims-radius-control);
   padding: 8px 12px;
   font-size: 0.85rem;
   font-weight: 500;
-  backdrop-filter: blur(12px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   transition:
     border-color 0.2s ease,
@@ -3337,9 +3339,7 @@ body[data-page="workspace"][data-live="true"] {
   padding: 3px 10px;
   border: 1px solid rgba(255, 184, 77, 0.35);
   border-radius: 999px;
-  background: rgba(12, 16, 26, 0.78);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(12, 16, 26, 0.97);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -3442,17 +3442,33 @@ body[data-page="workspace"][data-live="true"] {
   padding: 10px 12px;
   border: 1px solid var(--stims-line-soft);
   border-radius: 16px;
-  background: rgba(5, 7, 13, 0.94);
+  background: rgba(5, 7, 13, 0.97);
   color: var(--stims-ink);
   box-shadow: var(--stims-shadow);
-  backdrop-filter: blur(12px);
   font-size: 0.82rem;
   pointer-events: none;
+}
+@keyframes mobile-hint-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @media (width < 768px) and (pointer: coarse) {
   .stims-shell__mobile-notice,
   .stims-shell__rotate-hint {
     display: flex;
+    animation: mobile-hint-enter 0.35s ease both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__mobile-notice,
+    .stims-shell__rotate-hint {
+      animation-duration: 0.01ms;
+    }
   }
 
   .stims-shell[data-thumb-mode="true"] .stims-shell__thumb-actions {
@@ -3530,14 +3546,13 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 }
 
 .stims-shell__error-card {
-  background: var(--stims-white-03);
+  background: var(--stims-panel-strong);
   border: 1px solid var(--stims-white-08);
   border-radius: 20px;
   padding: 32px 40px;
   max-width: 460px;
   width: 100%;
   box-shadow: 0 24px 60px var(--stims-shadow-34);
-  backdrop-filter: blur(16px);
 }
 
 .stims-shell__error-icon {
@@ -3550,8 +3565,11 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   place-items: center;
   margin: 0 auto 16px;
   color: var(--stims-bad);
-  font-size: 1.4rem;
-  font-weight: bold;
+}
+
+.stims-shell__error-icon .stims-icon-slot--md {
+  width: 22px;
+  height: 22px;
 }
 
 .stims-shell__error-heading {
@@ -3643,15 +3661,13 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   align-items: center;
   gap: 16px;
   padding: 8px 18px;
-  background: var(--stims-panel);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line);
   border-radius: var(--radius-pill);
   box-shadow:
     var(--shadow-soft),
     0 0 calc(12px + var(--stims-hud-energy) * 24px)
-    rgba(0, 242, 254, calc(0.06 + var(--stims-hud-energy) * 0.25));
+    rgba(119, 201, 255, calc(0.06 + var(--stims-hud-energy) * 0.25));
   max-width: calc(100vw - 32px);
   transition:
     opacity var(--transition-base),
@@ -3764,6 +3780,13 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .ctl-preset__author-link:hover {
   text-decoration: underline;
   opacity: 0.9;
+}
+
+.stims-hud-bar__author-link-icon {
+  width: 0.72em;
+  height: 0.72em;
+  vertical-align: baseline;
+  margin-right: 2px;
 }
 
 .stims-hud-bar__spectrum {
@@ -4104,4 +4127,11 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__editor-host .cm-editor {
   flex: 1;
   min-height: 300px;
+}
+
+/* The workbench's two-column grid (base.css) assumes a full-width desktop
+   layout; docked in this ~560px side panel it has no room for a second
+   column, so the editor+sliders and the cues/console rail stack instead. */
+.stims-shell__editor-host .milkdrop-overlay__editor-workbench {
+  grid-template-columns: 1fr;
 }

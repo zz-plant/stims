@@ -30,6 +30,7 @@ export type MilkdropBundledCatalogEntry = {
     webgl?: boolean;
     webgpu?: boolean;
   };
+  preview?: boolean;
 };
 
 export type MilkdropCatalogEntry = {
@@ -61,6 +62,7 @@ export type MilkdropCatalogEntry = {
   corpusTier: 'bundled' | 'certified' | 'exploratory';
   parity: MilkdropParityReport;
   bundledFile?: string;
+  preview?: boolean;
 };
 
 export interface MilkdropCatalogStore {

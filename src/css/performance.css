@@ -11,7 +11,7 @@ body[data-page="performance"] {
   height: auto;
   min-height: 100dvh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   color: var(--text-color);
   background:
     radial-gradient(circle at 12% 0%, rgba(244, 122, 84, 0.16), transparent 24%),

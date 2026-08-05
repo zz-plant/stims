@@ -87,16 +87,23 @@ if (existsSync(esbuildPackagePath)) {
       (file) =>
         file.endsWith('.css') && existsSync(file) && !file.endsWith('.map'),
     );
-  for (const file of cssFiles) {
-    const original = readFileSync(file, 'utf8');
-    if (original.length === 0) continue;
-    const minified = execSync(`bunx esbuild "${file}" --minify`, {
-      encoding: 'utf8',
-      maxBuffer: 16 * 1024 * 1024,
-    });
-    if (minified.length < original.length) {
-      writeFileSync(file, minified);
-    }
-  }
+  // Import esbuild's JS API once and transform in-process. The previous
+  // version spawned a fresh `bunx esbuild` subprocess per file — each one
+  // paying bun's binary-resolution cost on top of esbuild startup — which
+  // dominated this step's wall time on catalogs with dozens of CSS assets.
+  const { transform } = await import('esbuild');
+  await Promise.all(
+    cssFiles.map(async (file) => {
+      const original = readFileSync(file, 'utf8');
+      if (original.length === 0) return;
+      const { code: minified } = await transform(original, {
+        loader: 'css',
+        minify: true,
+      });
+      if (minified.length < original.length) {
+        writeFileSync(file, minified);
+      }
+    }),
+  );
   console.log(`[build] Minified ${cssFiles.length} CSS file(s).`);
 }

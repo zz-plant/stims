@@ -545,6 +545,7 @@ export function mapRuntimeCatalogEntry(
       webgl: entry.supports.webgl.status === 'supported',
       webgpu: entry.supports.webgpu.status === 'supported',
     },
+    preview: entry.preview,
   };
 }
 

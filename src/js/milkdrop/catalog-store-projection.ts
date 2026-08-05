@@ -109,6 +109,7 @@ export function toCatalogEntry(
     semanticSupport?: MilkdropCatalogEntry['semanticSupport'];
     visualCertification?: MilkdropCatalogEntry['visualCertification'];
     evidence?: MilkdropCatalogEntry['evidence'];
+    preview?: boolean;
   } = {},
 ): MilkdropCatalogEntry {
   const semanticSupport =
@@ -160,6 +161,7 @@ export function toCatalogEntry(
     corpusTier: options.corpusTier ?? 'exploratory',
     parity: compiled.ir.compatibility.parity,
     bundledFile: options.bundledFile,
+    preview: options.preview,
   };
 }
 
@@ -274,6 +276,7 @@ export function toUnavailableBundledCatalogEntry(
       },
     },
     bundledFile: entry.file,
+    preview: entry.preview,
   };
 }
 
@@ -372,5 +375,6 @@ export function toBundledCatalogEntryFromManifest(
       visualCertification,
     },
     bundledFile: entry.file,
+    preview: entry.preview,
   };
 }
