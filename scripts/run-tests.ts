@@ -39,32 +39,22 @@ const PROFILES: Record<string, Category[]> = {
 };
 
 async function listTestFiles(dir: string): Promise<string[]> {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files = await Promise.all(
-    entries.map(async (entry) => {
-      const absolutePath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        return listTestFiles(absolutePath);
-      }
-
-      if (!TEST_FILE_PATTERN.test(entry.name)) {
-        return [];
-      }
-
-      return [path.relative(process.cwd(), absolutePath).replace(/\\/g, '/')];
-    }),
-  );
-
-  return files.flat().sort((a, b) => a.localeCompare(b));
+  try {
+    const glob = new Bun.Glob('**/*.test.{ts,js}');
+    const files: string[] = [];
+    const relDir = path.relative(process.cwd(), dir);
+    for await (const file of glob.scan({ cwd: dir })) {
+      files.push(path.join(relDir, file).replace(/\\/g, '/'));
+    }
+    return files.sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
 }
 
 async function listCategoryFiles(category: Category): Promise<string[]> {
   const dir = path.join(TEST_DIR, category);
-  try {
-    return await listTestFiles(dir);
-  } catch {
-    return [];
-  }
+  return listTestFiles(dir);
 }
 
 /**
@@ -203,17 +193,12 @@ async function buildShards(
   files: string[],
   shardCount: number,
 ): Promise<string[][]> {
-  const sized = await Promise.all(
-    files.map(async (file) => {
-      const statSize = await fs
-        .stat(file)
-        .then((s) => s.size)
-        .catch(() => 0);
-      const knownWeight = KNOWN_HEAVY_TESTS[file] ?? 0;
-      const size = Math.max(statSize, knownWeight);
-      return { file, size };
-    }),
-  );
+  const sized = files.map((file) => {
+    const statSize = Bun.file(file).size;
+    const knownWeight = KNOWN_HEAVY_TESTS[file] ?? 0;
+    const size = Math.max(statSize, knownWeight);
+    return { file, size };
+  });
   sized.sort((a, b) => b.size - a.size);
 
   const shards = Array.from({ length: shardCount }, () => ({

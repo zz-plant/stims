@@ -33,7 +33,8 @@ function logInfo(msg: string) {
 }
 
 export function checkCatalogIntegrity(): boolean {
-  if (!fs.existsSync(CATALOG_PATH)) {
+  const catalogFile = Bun.file(CATALOG_PATH);
+  if (catalogFile.size === 0) {
     logError(`Catalog file not found at: ${CATALOG_PATH}`);
     return false;
   }
@@ -86,7 +87,7 @@ export function checkCatalogIntegrity(): boolean {
         ? preset.file.slice(1)
         : preset.file;
       const filePath = path.join(REPO_ROOT, 'public', rawFile);
-      if (!fs.existsSync(filePath)) {
+      if (Bun.file(filePath).size === 0) {
         logError(
           `${presetDesc} references file that does not exist on disk: ${filePath}`,
         );
@@ -126,7 +127,7 @@ export function checkCatalogIntegrity(): boolean {
     // Verify preview file exists (only for core/bundled presets, not butterchurn ones)
     if (preset.preview === true && !preset.file.includes('/butterchurn/')) {
       const previewFile = path.join(PREVIEWS_DIR, `${preset.id}.png`);
-      if (!fs.existsSync(previewFile)) {
+      if (Bun.file(previewFile).size === 0) {
         logError(
           `${presetDesc} has preview=true but missing preview image at: ${previewFile}`,
         );
