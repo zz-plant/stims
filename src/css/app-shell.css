@@ -103,14 +103,10 @@ body[data-page="workspace"][data-live="true"] {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(95, 192, 181, 0.8) 20%,
-      rgba(244, 122, 84, 0.9) 50%,
-      rgba(119, 201, 255, 0.8) 80%,
+      rgba(244, 122, 84, 0.85) 50%,
       transparent 100%
     );
-    box-shadow:
-      0 1px 10px rgba(95, 192, 181, 0.4),
-      0 2px 20px rgba(244, 122, 84, 0.3);
+    box-shadow: 0 2px 16px rgba(244, 122, 84, 0.3);
     opacity: 0.85;
     pointer-events: none;
   }
@@ -878,6 +874,12 @@ body[data-page="workspace"][data-live="true"] {
     display: none;
   }
 
+  /* the runtime's preset-title readout leaks over the launch screen,
+     clipped against the bottom edge — home mode has its own preset UI */
+  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__title {
+    display: none;
+  }
+
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero > * {
     pointer-events: auto;
   }
@@ -1167,14 +1169,6 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint::after {
     content: "\2193";
-  }
-
-  .stims-shell__stage-frame[data-mode="live"] .stims-shell__now-playing {
-    padding: 3px 4px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: rgba(229, 241, 255, 0.78);
   }
 
   /* Audio-reactive glow on the control dock */
@@ -2577,13 +2571,13 @@ body[data-page="workspace"][data-live="true"] {
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-      position: relative;
-      inset: auto;
-      width: 100%;
-      align-content: start;
-      align-items: start;
+      position: absolute;
+      inset: 0;
+      width: auto;
+      align-content: stretch;
+      align-items: stretch;
       justify-items: stretch;
-      overflow-y: visible;
+      overflow-y: auto;
       overscroll-behavior: contain;
       padding: 112px 10px 18px;
       scrollbar-width: thin;
@@ -2749,11 +2743,6 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
   @media (max-width: 480px) {
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-      top: auto;
-      bottom: auto;
-    }
-
     .stims-shell__launch-panel {
       padding: 14px;
       border-radius: 20px;

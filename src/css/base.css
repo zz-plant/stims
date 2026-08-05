@@ -662,7 +662,7 @@ body {
   top: 12px;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, #c8ff74, #7ce8ff 54%, #ff9f68);
+  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
   opacity: 0.58;
 }
 
@@ -2854,7 +2854,7 @@ body {
   height: 3px;
   margin-bottom: 14px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, #80d84f, #ffb347 48%, #6f7dff);
+  background: linear-gradient(90deg, transparent, #f47a54 50%, transparent);
   opacity: 0.9;
 }
 

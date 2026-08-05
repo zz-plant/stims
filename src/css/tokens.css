@@ -57,42 +57,36 @@
   --text-color: #f7f4eb;
   --text-muted: rgba(247, 244, 235, 0.76);
   --accent-contrast: #fdfdfd;
-  --link-color: #00f3ff;
-  --link-hover: #ff0055;
-  --accent-color: #00f3ff;
-  --accent-purple: #9d4edd;
-  --accent-magenta: #ff0055;
-  --glow-color: rgba(0, 243, 255, 0.22);
-  --accent-soft: rgba(0, 243, 255, 0.12);
-  --hover-bg: rgba(0, 243, 255, 0.14);
-  --highlight-glow: rgba(255, 0, 85, 0.22);
+  --link-color: #77c9ff;
+  --link-hover: #f47a54;
+  --accent-color: #77c9ff;
+  --accent-purple: #77c9ff;
+  --accent-magenta: #f47a54;
+  --glow-color: rgba(119, 201, 255, 0.22);
+  --accent-soft: rgba(119, 201, 255, 0.12);
+  --hover-bg: rgba(119, 201, 255, 0.14);
+  --highlight-glow: rgba(244, 122, 84, 0.22);
 
   /* ── App-shell semantic colors ──────────────────────────────── */
 
   /* ── Surface Gradients & Effects ──────────────────────────────── */
   --surface-gradient: linear-gradient(
     180deg,
-    rgba(0, 243, 255, 0.06),
+    rgba(119, 201, 255, 0.06),
     transparent
   );
-  --surface-border: rgba(0, 243, 255, 0.25);
+  --surface-border: rgba(119, 201, 255, 0.25);
   --surface-sheen: none;
   --surface-texture: none;
   --surface-highlight: none;
   --surface-emboss: none;
-  --accent-gradient: linear-gradient(
-    120deg,
-    rgba(0, 243, 255, 0.95),
-    rgba(157, 78, 221, 0.85),
-    rgba(255, 0, 85, 0.85)
-  );
   --panel-gradient: linear-gradient(
     180deg,
     color-mix(in srgb, var(--card-bg) 95%, transparent),
     color-mix(in srgb, #0a0f13 82%, var(--card-bg))
   );
-  --panel-glass: color-mix(in srgb, var(--card-bg) 84%, transparent);
-  --panel-highlight: rgba(0, 243, 255, 0.12);
+  --panel-glass: color-mix(in srgb, var(--card-bg) 96%, transparent);
+  --panel-highlight: rgba(119, 201, 255, 0.12);
   --aurora-soft: radial-gradient(
     circle at 20% 10%,
     color-mix(in srgb, var(--accent-color) 34%, transparent),
@@ -103,7 +97,7 @@
     var(--accent-color) 45%,
     var(--surface-border)
   );
-  --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
+  --interactive-bg: color-mix(in srgb, var(--card-bg) 96%, transparent);
   --interactive-bg-hover: color-mix(
     in srgb,
     var(--accent-color) 18%,
@@ -120,23 +114,15 @@
     rgba(12, 17, 26, 0.98),
     rgba(4, 7, 12, 0.96)
   );
-  --stims-control-fill: linear-gradient(
-    180deg,
-    var(--stims-white-08),
-    var(--stims-white-02)
-  );
-  --stims-control-fill-hover: linear-gradient(
-    180deg,
-    var(--stims-white-12),
-    var(--stims-white-04)
-  );
+  --stims-control-fill: var(--stims-white-05);
+  --stims-control-fill-hover: var(--stims-white-08);
   /* ── Shadows ───────────────────────────────────────────────── */
   --shadow-strong:
-    0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 243, 255, 0.18);
+    0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(119, 201, 255, 0.18);
   --shadow-soft:
-    0 10px 26px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 243, 255, 0.14);
+    0 10px 26px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(119, 201, 255, 0.14);
   --shadow-surface:
-    0 18px 42px rgba(0, 0, 0, 0.35), 0 2px 12px rgba(0, 243, 255, 0.16);
+    0 18px 42px rgba(0, 0, 0, 0.35), 0 2px 12px rgba(119, 201, 255, 0.16);
   --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   --stims-shadow-soft: 0 14px 34px var(--stims-shadow-22);
   --stims-shadow-control:
@@ -309,7 +295,7 @@ html.light {
   --link-color: #2f6f6a;
   --link-hover: #7e4c2d;
   --accent-color: #2f8b83;
-  --accent-purple: #6c8f89;
+  --accent-purple: #2f8b83;
   --accent-magenta: #b86f3d;
   --glow-color: rgba(47, 139, 131, 0.1);
   --accent-soft: rgba(47, 139, 131, 0.08);
@@ -318,13 +304,7 @@ html.light {
   --highlight-glow: rgba(184, 111, 61, 0.14);
   --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
   --surface-border: rgba(35, 48, 56, 0.14);
-  --accent-gradient: linear-gradient(
-    120deg,
-    rgba(47, 139, 131, 0.78),
-    rgba(232, 198, 127, 0.85),
-    rgba(184, 111, 61, 0.7)
-  );
-  --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  --panel-glass: color-mix(in srgb, var(--card-bg) 97%, transparent);
   --panel-highlight: rgba(255, 255, 255, 0.45);
   --aurora-soft: radial-gradient(
     circle at 20% 10%,
@@ -353,8 +333,8 @@ html.light {
   --stims-bad: #b42318;
   --stims-panel: rgba(255, 250, 240, 0.8);
   --stims-panel-strong: rgba(255, 250, 240, 0.94);
-  --stims-control-fill: linear-gradient(180deg, #fffdf8, #f0ece3);
-  --stims-control-fill-hover: linear-gradient(180deg, #ffffff, #e8f0ef);
+  --stims-control-fill: #f7f3ea;
+  --stims-control-fill-hover: #eef2f1;
   color-scheme: light;
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);

@@ -51,7 +51,11 @@ export function WorkspaceStagePanel({
             onToggleFullscreen={onToggleFullscreen}
           />
         ) : null}
-        <div className="stims-shell__stage-hero">{launchPanel}</div>
+        {/* inert: the hero is pointer-events:none in live mode but its
+            buttons stay in the tab order and accessibility tree without it */}
+        <div className="stims-shell__stage-hero" inert={liveMode}>
+          {launchPanel}
+        </div>
         {invalidExperienceSlug ? (
           <div className="active-toy-status is-error">
             <div className="active-toy-status__content">
