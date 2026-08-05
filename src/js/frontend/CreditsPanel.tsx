@@ -28,16 +28,16 @@ function CreditsSection({
 
 function CreditEntry({
   name,
-  role,
+  creditRole,
   url,
 }: {
   name: string;
-  role: string;
+  creditRole: string;
   url?: string;
 }) {
   const content = (
     <>
-      <strong>{name}</strong> · {role}
+      <strong>{name}</strong> · {creditRole}
     </>
   );
 
@@ -82,21 +82,21 @@ export function CreditsPanel() {
           claims tied to measured evidence.
         </p>
         <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
-          Stims is not affiliated with or endorsed by MilkDrop, Winamp, projectM,
-          or Butterchurn. Each project is independent, and this lineage is
-          acknowledged with respect.
+          Stims is not affiliated with or endorsed by MilkDrop, Winamp,
+          projectM, or Butterchurn. Each project is independent, and this
+          lineage is acknowledged with respect.
         </p>
       </CreditsSection>
 
       <CreditsSection title="Foundational Works">
         <CreditEntry
           name="Ryan Geiss"
-          role="Creator, MilkDrop"
+          creditRole="Creator, MilkDrop"
           url="http://www.geisswerks.com/milkdrop/"
         />
         <CreditEntry
           name="Winamp & Nullsoft"
-          role="Original public product context"
+          creditRole="Original public product context"
         />
         <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
           MilkDrop defined the preset language, visual vocabulary, and real-time
@@ -107,12 +107,12 @@ export function CreditsPanel() {
       <CreditsSection title="Active Ecosystem">
         <CreditEntry
           name="projectM"
-          role="Open-source successor & reference implementation"
+          creditRole="Open-source successor & reference implementation"
           url="https://github.com/projectM-visualizer/projectm"
         />
         <CreditEntry
           name="Butterchurn"
-          role="Web-based MilkDrop player"
+          creditRole="Web-based MilkDrop player"
           url="https://butterchurnviz.com/"
         />
         <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
@@ -130,17 +130,17 @@ export function CreditsPanel() {
         </p>
         <CreditEntry
           name="Eo.S."
-          role="Cream of the Crop curator & artist"
+          creditRole="Cream of the Crop curator & artist"
           url="https://github.com/projectM-visualizer/presets-cream-of-the-crop"
         />
         <CreditEntry
           name="Rovastar"
-          role="Classic MilkDrop packs & projectM development"
+          creditRole="Classic MilkDrop packs & projectM development"
           url="https://sourceforge.net/projects/milkdrop2/"
         />
         <CreditEntry
           name="projectM Community"
-          role="Distributed preset packs & collections"
+          creditRole="Distributed preset packs & collections"
           url="https://github.com/projectM-visualizer/projectm/tree/master/src/libprojectM/presets"
         />
         <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
@@ -157,7 +157,7 @@ export function CreditsPanel() {
           innovation, and open-source visualization work—all of which is honored
           through code comments, test fixtures, and this credit page.
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8', marginTop: '0.75rem' }}>
+        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
           See{' '}
           <a
             href="https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md"
@@ -176,8 +176,8 @@ export function CreditsPanel() {
         <p>
           Stims is released under the Unlicense (public domain). Presets retain
           their original licenses. When you use, share, or remix presets, please
-          credit the original authors—you'll see their names and links throughout
-          the app.
+          credit the original authors—you'll see their names and links
+          throughout the app.
         </p>
       </CreditsSection>
     </div>

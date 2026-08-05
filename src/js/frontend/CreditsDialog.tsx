@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
-import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { CreditsPanel } from './CreditsPanel.tsx';
+import { useFocusTrap } from './hooks/use-focus-trap.ts';
 
 export function CreditsDialog({
   open,

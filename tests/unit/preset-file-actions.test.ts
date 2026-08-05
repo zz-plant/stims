@@ -113,6 +113,8 @@ describe('duplicatePreset mints remix credits', () => {
     });
     await actions.duplicatePreset();
 
-    expect(saved[0].title).toBe('Stahlregen + Geiss + Shifter - Babylon (Remix)');
+    expect(saved[0].title).toBe(
+      'Stahlregen + Geiss + Shifter - Babylon (Remix)',
+    );
   });
 });

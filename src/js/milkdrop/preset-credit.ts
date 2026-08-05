@@ -46,7 +46,9 @@ function splitAuthors(part: string): string[] {
     .filter((name) => name.length > 0);
 }
 
-function firstDashSplit(text: string): { before: string; after: string } | null {
+function firstDashSplit(
+  text: string,
+): { before: string; after: string } | null {
   let bestIndex = -1;
   let bestSeparator = '';
   for (const separator of DASH_SEPARATORS) {
