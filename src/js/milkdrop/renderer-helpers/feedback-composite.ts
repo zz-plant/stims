@@ -4,6 +4,94 @@ import type {
   MilkdropRenderPayload,
 } from '../types';
 
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+export function interpolateFeedbackCompositeState(
+  current: MilkdropFeedbackCompositeState,
+  previous: MilkdropFeedbackCompositeState,
+  mix: number,
+): MilkdropFeedbackCompositeState {
+  return {
+    ...current,
+    warpScale: lerp(previous.warpScale, current.warpScale, mix),
+    offsetX: lerp(previous.offsetX, current.offsetX, mix),
+    offsetY: lerp(previous.offsetY, current.offsetY, mix),
+    rotation: lerp(previous.rotation, current.rotation, mix),
+    zoomMul: lerp(previous.zoomMul, current.zoomMul, mix),
+    saturation: lerp(previous.saturation, current.saturation, mix),
+    contrast: lerp(previous.contrast, current.contrast, mix),
+    hueShift: lerp(previous.hueShift, current.hueShift, mix),
+    mixAlpha: lerp(previous.mixAlpha, current.mixAlpha, mix),
+    brightenBoost: lerp(previous.brightenBoost, current.brightenBoost, mix),
+    invertBoost: lerp(previous.invertBoost, current.invertBoost, mix),
+    solarizeBoost: lerp(previous.solarizeBoost, current.solarizeBoost, mix),
+    colorScale: {
+      r: lerp(previous.colorScale.r, current.colorScale.r, mix),
+      g: lerp(previous.colorScale.g, current.colorScale.g, mix),
+      b: lerp(previous.colorScale.b, current.colorScale.b, mix),
+    },
+    tint: {
+      r: lerp(previous.tint.r, current.tint.r, mix),
+      g: lerp(previous.tint.g, current.tint.g, mix),
+      b: lerp(previous.tint.b, current.tint.b, mix),
+    },
+    decay: lerp(previous.decay, current.decay, mix),
+    videoEchoAlpha: lerp(previous.videoEchoAlpha, current.videoEchoAlpha, mix),
+    zoom: lerp(previous.zoom, current.zoom, mix),
+    gammaAdj: lerp(previous.gammaAdj, current.gammaAdj, mix),
+    overlayTextureAmount: lerp(
+      previous.overlayTextureAmount,
+      current.overlayTextureAmount,
+      mix,
+    ),
+    overlayTextureScale: {
+      x: lerp(
+        previous.overlayTextureScale.x,
+        current.overlayTextureScale.x,
+        mix,
+      ),
+      y: lerp(
+        previous.overlayTextureScale.y,
+        current.overlayTextureScale.y,
+        mix,
+      ),
+    },
+    overlayTextureOffset: {
+      x: lerp(
+        previous.overlayTextureOffset.x,
+        current.overlayTextureOffset.x,
+        mix,
+      ),
+      y: lerp(
+        previous.overlayTextureOffset.y,
+        current.overlayTextureOffset.y,
+        mix,
+      ),
+    },
+    warpTextureAmount: lerp(
+      previous.warpTextureAmount,
+      current.warpTextureAmount,
+      mix,
+    ),
+    warpTextureScale: {
+      x: lerp(previous.warpTextureScale.x, current.warpTextureScale.x, mix),
+      y: lerp(previous.warpTextureScale.y, current.warpTextureScale.y, mix),
+    },
+    warpTextureOffset: {
+      x: lerp(previous.warpTextureOffset.x, current.warpTextureOffset.x, mix),
+      y: lerp(previous.warpTextureOffset.y, current.warpTextureOffset.y, mix),
+    },
+    vignette: lerp(previous.vignette ?? 0, current.vignette ?? 0, mix),
+    chromaticAberration: lerp(
+      previous.chromaticAberration ?? 0,
+      current.chromaticAberration ?? 0,
+      mix,
+    ),
+  };
+}
+
 export function buildFeedbackCompositeState({
   frameState,
   backend,
