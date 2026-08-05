@@ -1,6 +1,5 @@
 /* global GPUDevice */
 
-import { getRequestedCorpus } from '../core/url-params.ts';
 import { DEFAULT_MILKDROP_STATE } from './compiler';
 import {
   compileMilkdropProgram,
@@ -721,8 +720,6 @@ class MilkdropPresetVM implements MilkdropVM {
       createEnv,
       proceduralMotionVectorPlan,
     });
-    const isCertificationMode =
-      getRequestedCorpus()?.toLowerCase() === 'certification';
     const shapes = buildShapes({
       preset: this.preset,
       state: this.state,
@@ -731,7 +728,6 @@ class MilkdropPresetVM implements MilkdropVM {
       runProgram,
       createEnv,
       seedCustomShapeState,
-      disableEnhancements: isCertificationMode,
     });
     const borders = buildBorders(this.state);
     const post = buildPost({

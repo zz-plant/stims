@@ -200,8 +200,10 @@ test('applies comp-stage color controls and overlay work before legacy post effe
 
     expect(hueIndex).toBeGreaterThanOrEqual(0);
     expect(overlayIndex).toBeGreaterThan(hueIndex);
-    expect(gammaIndex).toBeGreaterThan(overlayIndex);
-    expect(brightenIndex).toBeGreaterThan(gammaIndex);
+    expect(brightenIndex).toBeGreaterThan(overlayIndex);
+    // projectM post-effects order: brighten → darken → solarize → invert →
+    // gamma_adj (last). Gamma is applied after all other post effects.
+    expect(gammaIndex).toBeGreaterThan(brightenIndex);
   } finally {
     manager.dispose();
   }

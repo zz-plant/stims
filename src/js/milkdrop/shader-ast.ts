@@ -468,7 +468,20 @@ class ShaderExpressionParser {
       if (closing.type !== 'paren' || closing.value !== ')') {
         return null;
       }
-      return expression;
+      let result = expression;
+      while (this.peek().type === 'dot') {
+        this.advance();
+        const member = this.advance();
+        if (member.type !== 'identifier') {
+          return null;
+        }
+        result = {
+          type: 'member',
+          object: result,
+          property: member.value,
+        };
+      }
+      return result;
     }
 
     return null;

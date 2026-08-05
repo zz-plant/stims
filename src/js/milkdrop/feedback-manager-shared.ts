@@ -523,12 +523,23 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
               color = max(vec3(0.0), color - overlayColor * amount);
             }
           }
-          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          // projectM post-effects order: brighten → darken → solarize → invert
+          // → gamma_adj (last). The extra MilkDrop 2/3 effects (darken_center,
+          // vignette, chromatic aberration, red-blue stereo) are applied after
+          // the core sequence but before gamma.
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), mix(color, color * (1.0 + 0.18 + brightenBoost * 0.35), clamp(max(brighten, brightenBoost), 0.0, 1.0)));
           }
           if (darken > 0.5) {
             color = mix(color, color * 0.82, 1.0);
+          }
+          if (solarize > 0.01 || solarizeBoost > 0.01) {
+            float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
+            color = mix(color, abs(color - 0.5) * 2.0, amount);
+          }
+          if (invert > 0.01 || invertBoost > 0.01) {
+            float amount = clamp(max(invert, invertBoost), 0.0, 1.0);
+            color = mix(color, 1.0 - color, amount);
           }
           if (darkenCenter > 0.5) {
             float centerDist = length(vUv - vec2(0.5));
@@ -547,14 +558,6 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
             float b = texture2D(currentTex, sampleUv(vUv - dir, textureWrap)).b;
             color = vec3(r, color.g, b);
           }
-          if (solarize > 0.01 || solarizeBoost > 0.01) {
-            float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
-            color = mix(color, abs(color - 0.5) * 2.0, amount);
-          }
-          if (invert > 0.01 || invertBoost > 0.01) {
-            float amount = clamp(max(invert, invertBoost), 0.0, 1.0);
-            color = mix(color, 1.0 - color, amount);
-          }
           if (redBlueStereo > 0.5) {
             float stereoOffset = 0.003 + signalEnergy * 0.003;
             vec2 stereoShift = vec2(stereoOffset, 0.0);
@@ -562,6 +565,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
             vec3 rightColor = texture2D(warpTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
+          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
       `;

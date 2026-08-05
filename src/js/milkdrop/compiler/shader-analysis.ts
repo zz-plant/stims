@@ -1430,8 +1430,14 @@ function prepareShaderSource(shaderText: string): ShaderSourcePrep {
     nativeShaderBody,
     normalized: nativeShaderBody
       ? nativeShaderBody
-          .split(/;\n?|\n/u)
-          .map((line) => line.replace(/\/\/.*$/u, '').trim())
+          .split(/;\n?/u)
+          .map((line) =>
+            line
+              .replace(/\/\/.*$/u, '')
+              .replace(/\n/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim(),
+          )
           .filter(Boolean)
       : shaderText
           .split(/[\r\n;]+/u)
@@ -1609,6 +1615,20 @@ export function extractShaderControls(
         /^(?:float|int|bool|vec[234]|mat[234]|float2|float3|float4)\s+[a-z_]\w*(?:\s*,\s*[a-z_]\w*)*\s*$/iu.test(
           line,
         )
+      ) {
+        return;
+      }
+      // Skip control-flow and structural lines that don't translate to TSL:
+      //   `}` `} else { ... }`  — closing braces / else clauses from if-blocks
+      //   `if (...) { ...`       — if-block openings (branching unsupported)
+      //   bare `tmpvar_N`         — declaration without type (e.g. `vec2 tmpvar_2;`
+      //                            split such that the type was consumed by a
+      //                            prior statement)
+      if (
+        /^\}\s*(?:else\s*\{.*)?$/u.test(line) ||
+        /^if\s*\(.*\)\s*\{.*$/u.test(line) ||
+        /^else\s*\{.*$/u.test(line) ||
+        /^[a-z_]\w*\s*$/u.test(line)
       ) {
         return;
       }
