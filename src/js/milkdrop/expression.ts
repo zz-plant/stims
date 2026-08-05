@@ -157,7 +157,13 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
       }
       const rawValue = source.slice(index, end).split('_').join('');
       const parsedValue = Number.parseFloat(rawValue);
-      if (!Number.isFinite(parsedValue)) {
+      // Number.parseFloat parses a leading numeric prefix rather than the
+      // whole string, so a typo like "1.2.3" would silently become 1.2
+      // with the invalid ".3" tail dropped and no diagnostic at all.
+      // Requiring the captured span to be a clean single-dot literal turns
+      // that into a reported error instead of a silent wrong value.
+      const isWellFormedLiteral = /^\d+(\.\d+)?$|^\.\d+$/.test(rawValue);
+      if (!Number.isFinite(parsedValue) || !isWellFormedLiteral) {
         diagnostics.push(
           createDiagnostic(
             line,

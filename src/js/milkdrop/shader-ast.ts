@@ -118,7 +118,12 @@ function tokenize(source: string) {
       continue;
     }
 
-    if (current === '.') {
+    // A '.' followed by a digit starts a leading-dot decimal like ".5"
+    // (common in hand-written shader code) rather than a member-access
+    // dot (e.g. "uv.x") — only treat it as a standalone dot token when it
+    // isn't. Checking this before the digit branch below matters: without
+    // it, ".5" tokenized as a bare dot followed by the separate number 5.
+    if (current === '.' && !/[0-9]/u.test(source[index + 1] ?? '')) {
       tokens.push({ type: 'dot' });
       index += 1;
       continue;
@@ -129,9 +134,16 @@ function tokenize(source: string) {
       while (end < source.length && /[0-9._]/u.test(source[end] ?? '')) {
         end += 1;
       }
+      const digitsOnly = source.slice(index, end).replace(/_/gu, '');
+      // Number.parseFloat only parses a leading numeric prefix, so without
+      // this check a typo like "1.2.3" would silently become 1.2 with the
+      // invalid ".3" tail dropped instead of failing to parse.
+      if (!/^\d+(\.\d+)?$|^\.\d+$/u.test(digitsOnly)) {
+        return null;
+      }
       tokens.push({
         type: 'number',
-        value: Number.parseFloat(source.slice(index, end).replace(/_/gu, '')),
+        value: Number.parseFloat(digitsOnly),
       });
       index = end;
       continue;

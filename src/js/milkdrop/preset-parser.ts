@@ -11,12 +11,27 @@ function stripInlineComment(line: string) {
     const current = line[index];
     const next = line[index + 1];
 
-    if (current === '"' || current === "'") {
-      quote = quote === current ? null : current;
+    if (quote) {
+      // Only the matching quote character closes the string — a stray
+      // apostrophe inside a double-quoted title (or vice versa) is just
+      // literal content, not a toggle. Treating every quote char as a
+      // toggle regardless of kind let mismatched quotes flip `quote` to
+      // null mid-string, so a real "//" later on the line either failed
+      // to strip (comment leaked into the field value) or got stripped
+      // too early (truncating quoted content that legitimately contains
+      // "//").
+      if (current === quote) {
+        quote = null;
+      }
       continue;
     }
 
-    if (!quote && current === '/' && next === '/') {
+    if (current === '"' || current === "'") {
+      quote = current;
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
       return line.slice(0, index).trimEnd();
     }
   }
