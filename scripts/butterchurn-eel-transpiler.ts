@@ -483,7 +483,7 @@ class Parser {
     const token = this.peek();
     if (
       token.type === 'punct' &&
-      (token.value === '-' || token.value === '+' || token.value === '!')
+      (token.value === '-' || token.value === '+' || token.value === '!' || token.value === '++' || token.value === '--')
     ) {
       this.position += 1;
       return {
