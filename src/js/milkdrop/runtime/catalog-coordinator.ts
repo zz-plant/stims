@@ -195,19 +195,27 @@ export function createMilkdropCatalogCoordinator({
     await catalogStore.pushHistory(id);
   };
 
-  const consumePreviousSelection = async () => {
-    if (selectionCursor <= 0) {
-      const persisted = await catalogStore.getHistory();
-      if (persisted.length <= 1) {
-        return null;
-      }
-      selectionHistory = [...persisted].reverse();
-      selectionCursor = Math.max(0, selectionHistory.length - 2);
-      return persisted[1] ?? null;
+  const consumePreviousSelection = async (activePresetId?: string) => {
+    if (selectionCursor > 0) {
+      selectionCursor -= 1;
+      return selectionHistory[selectionCursor] ?? null;
     }
 
-    selectionCursor -= 1;
-    return selectionHistory[selectionCursor] ?? null;
+    const persisted = await catalogStore.getHistory();
+    if (persisted.length <= 1) {
+      return null;
+    }
+    const currentIndex = activePresetId
+      ? persisted.indexOf(activePresetId)
+      : -1;
+    const anchor = currentIndex >= 0 ? currentIndex : 0;
+    const previousId = persisted[anchor + 1] ?? null;
+    if (!previousId) {
+      return null;
+    }
+    selectionHistory = [...persisted].reverse();
+    selectionCursor = Math.max(0, selectionHistory.length - anchor - 2);
+    return previousId;
   };
 
   return {
