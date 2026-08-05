@@ -18,10 +18,7 @@
       "order": 1537,
       "file": "/milkdrop-presets/butterchurn/martin-city-of-shadows.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -41,16 +38,12 @@
           "Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity."
         ]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 11,
       "presetId": "martin-city-of-shadows",
       "status": "runtime-regression",
       "severityScore": 403,
-      "reasons": [
-        "3 browser runtime error(s)"
-      ],
+      "reasons": ["3 browser runtime error(s)"],
       "loadDurationMs": 864.7050830000007,
       "frameRate": 4.433934377810269,
       "maxFrameGapMs": 249.90000000000146,
@@ -80,10 +73,7 @@
       "order": 319,
       "file": "/milkdrop-presets/butterchurn/flexi-impulse-drive.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -98,20 +88,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 7,
       "presetId": "flexi-impulse-drive",
       "status": "visual-regression",
       "severityScore": 250,
-      "reasons": [
-        "Canvas did not visibly change between sampled frames"
-      ],
+      "reasons": ["Canvas did not visibly change between sampled frames"],
       "loadDurationMs": 3502.6127500000002,
       "frameRate": 4.442470013366616,
       "maxFrameGapMs": 240.90000000000146,

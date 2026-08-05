@@ -127,6 +127,7 @@ function createShapeFillShaderMaterial(
       },
     },
     transparent: true,
+    depthWrite: false,
     side: DoubleSide,
     ...(shape.additive ? { blending: AdditiveBlending } : {}),
     vertexShader: `

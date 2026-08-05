@@ -18,10 +18,7 @@
       "order": 730,
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -36,13 +33,9 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 12,
       "presetId": "martin-qbikal-surface-turbulence",
       "status": "pass",

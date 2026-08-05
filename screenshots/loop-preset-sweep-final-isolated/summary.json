@@ -18,10 +18,7 @@
       "order": 1256,
       "file": "/milkdrop-presets/butterchurn/amandio-c-polar-value-shader-pimped.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -36,20 +33,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 1,
       "presetId": "amandio-c-polar-value-shader-pimped",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 237.80870799999957,
       "frameRate": 33.56643356755285,
       "maxFrameGapMs": 42.29999999999973,
@@ -82,10 +73,7 @@
       "order": 302,
       "file": "/milkdrop-presets/butterchurn/flexi-alien-fish-pond.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -100,20 +88,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "flexi-alien-fish-pond",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 89.80120899999929,
       "frameRate": 41.14642451620176,
       "maxFrameGapMs": 34.19999999999982,
@@ -146,10 +128,7 @@
       "order": 43,
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -164,20 +143,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "flexi-amandio-c-organic12-3d-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.64345800000046,
       "frameRate": 52.04670136359482,
       "maxFrameGapMs": 33.5,
@@ -210,10 +183,7 @@
       "order": 1367,
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d3.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -228,20 +198,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "flexi-amandio-c-organic12-3d3",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.87379099999998,
       "frameRate": 47.07837164220439,
       "maxFrameGapMs": 33.200000000000045,
@@ -274,10 +238,7 @@
       "order": 1369,
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d4.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -292,20 +253,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "flexi-amandio-c-organic12-3d4",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 91.08345899999767,
       "frameRate": 52.660753878961124,
       "maxFrameGapMs": 33.09999999999991,
@@ -338,10 +293,7 @@
       "order": 1368,
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d4-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -356,20 +308,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "flexi-amandio-c-organic12-3d4-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 94.44687499999782,
       "frameRate": 34.16856492085326,
       "maxFrameGapMs": 42.40000000000009,
@@ -402,10 +348,7 @@
       "order": 1370,
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic4-columns.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -420,20 +363,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "flexi-amandio-c-organic4-columns",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 82.40191699999923,
       "frameRate": 44.395116536446686,
       "maxFrameGapMs": 33.399999999999864,
@@ -466,10 +403,7 @@
       "order": 1479,
       "file": "/milkdrop-presets/butterchurn/geiss-martin-mandelbox-explorer-high-speed-demo-version-fire-mix.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -484,20 +418,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "geiss-martin-mandelbox-explorer-high-speed-demo-version-fire-mix",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 81.25200000000768,
       "frameRate": 59.794988610985754,
       "maxFrameGapMs": 25.59999999999991,
@@ -530,10 +458,7 @@
       "order": 743,
       "file": "/milkdrop-presets/butterchurn/martin-anandamide-mandelbox-explorer-quantum-timepiece-remix.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -553,16 +478,12 @@
           "Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because q-register uniform binding and custom anandamide sampler parity are not yet measured against projectM."
         ]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-anandamide-mandelbox-explorer-quantum-timepiece-remix",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 84.37858300001244,
       "frameRate": 56.55308921345139,
       "maxFrameGapMs": 25.600000000000136,
@@ -595,10 +516,7 @@
       "order": 1532,
       "file": "/milkdrop-presets/butterchurn/martin-castle-in-the-air.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -618,16 +536,12 @@
           "Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete."
         ]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-castle-in-the-air",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 94.4591250000085,
       "frameRate": 39.89172246792672,
       "maxFrameGapMs": 58.299999999999955,
@@ -660,10 +574,7 @@
       "order": 1534,
       "file": "/milkdrop-presets/butterchurn/martin-chain-breaker.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -678,20 +589,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 3,
       "presetId": "martin-chain-breaker",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 94.28991700000188,
       "frameRate": 55.00705218525285,
       "maxFrameGapMs": 25.799999999999955,
@@ -724,10 +629,7 @@
       "order": 1533,
       "file": "/milkdrop-presets/butterchurn/martin-chain-breaker-xxx.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -742,20 +644,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 3,
       "presetId": "martin-chain-breaker-xxx",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 94.24925000000803,
       "frameRate": 31.962201221842637,
       "maxFrameGapMs": 42.40000000000009,
@@ -788,10 +684,7 @@
       "order": 1535,
       "file": "/milkdrop-presets/butterchurn/martin-cherry-brain-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -806,20 +699,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "martin-cherry-brain-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 83.21791699998721,
       "frameRate": 58.37960985284355,
       "maxFrameGapMs": 33.40000000000009,
@@ -852,10 +739,7 @@
       "order": 1537,
       "file": "/milkdrop-presets/butterchurn/martin-city-of-shadows.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -875,16 +759,12 @@
           "Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity."
         ]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 11,
       "presetId": "martin-city-of-shadows",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 97.60595900000772,
       "frameRate": 33.879164313946916,
       "maxFrameGapMs": 42.5,
@@ -917,10 +797,7 @@
       "order": 1557,
       "file": "/milkdrop-presets/butterchurn/martin-extreme-heat.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -935,20 +812,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 3,
       "presetId": "martin-extreme-heat",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 83.13379200000782,
       "frameRate": 21.84896900159739,
       "maxFrameGapMs": 50.70000000000027,
@@ -981,10 +852,7 @@
       "order": 747,
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -999,20 +867,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 80.78562500000407,
       "frameRate": 48.00903699560316,
       "maxFrameGapMs": 33.40000000000009,
@@ -1045,10 +907,7 @@
       "order": 746,
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1063,20 +922,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.23733300001186,
       "frameRate": 44.855620968503715,
       "maxFrameGapMs": 33.399999999999864,
@@ -1109,10 +962,7 @@
       "order": 744,
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1127,20 +977,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 98.19912499999919,
       "frameRate": 43.51487928057449,
       "maxFrameGapMs": 34.299999999999955,
@@ -1173,10 +1017,7 @@
       "order": 745,
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1191,20 +1032,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 83.32579200001783,
       "frameRate": 44.69273742905143,
       "maxFrameGapMs": 33.399999999999864,
@@ -1237,10 +1072,7 @@
       "order": 1640,
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-mandelbox-explorer-v1-eo-s-optimize-bipolar-witchcraft-mix.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1255,20 +1087,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-fishbrain-flexi-mandelbox-explorer-v1-eo-s-optimize-bipolar-witchcraft-mix",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 91.20149999999558,
       "frameRate": 47.51921733053808,
       "maxFrameGapMs": 40.799999999999955,
@@ -1301,10 +1127,7 @@
       "order": 1645,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1319,20 +1142,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-fishbrain-sto-enterstate",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 95.79595800000243,
       "frameRate": 45.973808859643285,
       "maxFrameGapMs": 34.200000000000045,
@@ -1365,10 +1182,7 @@
       "order": 1644,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1383,20 +1197,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-fishbrain-sto-enterstate-random-mashup",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.36737500000163,
       "frameRate": 67.98002219868256,
       "maxFrameGapMs": 33.40000000000009,
@@ -1429,10 +1237,7 @@
       "order": 1642,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1447,20 +1252,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-fishbrain-sto-enterstate-random-mashup-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.67999999999302,
       "frameRate": 43.723554302568715,
       "maxFrameGapMs": 34.299999999999955,
@@ -1493,10 +1292,7 @@
       "order": 1643,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup-3.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1511,20 +1307,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-fishbrain-sto-enterstate-random-mashup-3",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 89.92900000000373,
       "frameRate": 38.75432525951557,
       "maxFrameGapMs": 41.700000000000045,
@@ -1557,10 +1347,7 @@
       "order": 1498,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-mandelbox-explorer-high-speed-oversustained-bipolar.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1575,20 +1362,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-mandelbox-explorer-high-speed-oversustained-bipolar",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 83.09329099999741,
       "frameRate": 40.94310320589033,
       "maxFrameGapMs": 41.799999999999955,
@@ -1621,10 +1402,7 @@
       "order": 1499,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-mandelbox-stepper-mix-kinetic-triangles-gossip-matrix.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1639,20 +1417,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 15,
       "presetId": "martin-flexi-mandelbox-stepper-mix-kinetic-triangles-gossip-matrix",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 88.85975000000326,
       "frameRate": 52.16410545476842,
       "maxFrameGapMs": 26,
@@ -1685,10 +1457,7 @@
       "order": 1641,
       "file": "/milkdrop-presets/butterchurn/martin-flexi-sto-traumflug.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1703,20 +1472,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-flexi-sto-traumflug",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 93.38862499999232,
       "frameRate": 41.06485414757992,
       "maxFrameGapMs": 41.700000000000045,
@@ -1749,10 +1512,7 @@
       "order": 1561,
       "file": "/milkdrop-presets/butterchurn/martin-frosty-caves-2.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1767,20 +1527,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 16,
       "presetId": "martin-frosty-caves-2",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 91.92141700000502,
       "frameRate": 41.393091636092954,
       "maxFrameGapMs": 50,
@@ -1813,10 +1567,7 @@
       "order": 1495,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-flexi-s-complex-polynomial-version.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1831,20 +1582,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-mandelbox-explorer-high-speed-demo-flexi-s-complex-polynomial-version",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 82.98979200000758,
       "frameRate": 48.48830576113944,
       "maxFrameGapMs": 32.5,
@@ -1877,10 +1622,7 @@
       "order": 1585,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1895,20 +1637,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-mandelbox-explorer-high-speed-demo-version",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 90.97066600000835,
       "frameRate": 62.39364719228589,
       "maxFrameGapMs": 26,
@@ -1941,10 +1677,7 @@
       "order": 1584,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -1959,20 +1692,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 99.506040999986,
       "frameRate": 46.78196767672736,
       "maxFrameGapMs": 32.899999999999864,
@@ -2005,10 +1732,7 @@
       "order": 1583,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave-random-mashup.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2023,20 +1747,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 14,
       "presetId": "martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave-random-mashup",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 90.30874999999651,
       "frameRate": 47.28789985974189,
       "maxFrameGapMs": 41.600000000000136,
@@ -2069,10 +1787,7 @@
       "order": 1586,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-stepper.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2087,20 +1802,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 7,
       "presetId": "martin-mandelbox-stepper",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 95.3709159999853,
       "frameRate": 46.30279220023002,
       "maxFrameGapMs": 33.40000000000009,
@@ -2133,10 +1842,7 @@
       "order": 1587,
       "file": "/milkdrop-presets/butterchurn/martin-mandelbulb-slideshow.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2151,20 +1857,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 1,
       "presetId": "martin-mandelbulb-slideshow",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 84.75562499999069,
       "frameRate": 61.80643348733194,
       "maxFrameGapMs": 25.100000000000136,
@@ -2197,10 +1897,7 @@
       "order": 1616,
       "file": "/milkdrop-presets/butterchurn/martin-sphery-tales.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2215,20 +1912,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-sphery-tales",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 82.01370800001314,
       "frameRate": 44.86190943539521,
       "maxFrameGapMs": 33.5,
@@ -2261,10 +1952,7 @@
       "order": 1615,
       "file": "/milkdrop-presets/butterchurn/martin-sphery-tales-slow-version.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2279,20 +1967,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-sphery-tales-slow-version",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 101.02854200001457,
       "frameRate": 36.04602800588459,
       "maxFrameGapMs": 41.59999999999991,
@@ -2325,10 +2007,7 @@
       "order": 50,
       "file": "/milkdrop-presets/butterchurn/royal-mashup-253.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2343,20 +2022,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 1,
       "presetId": "royal-mashup-253",
       "status": "runtime-regression",
       "severityScore": 404,
-      "reasons": [
-        "4 browser runtime error(s)"
-      ],
+      "reasons": ["4 browser runtime error(s)"],
       "loadDurationMs": 92.30495900000096,
       "frameRate": 52.64616237358711,
       "maxFrameGapMs": 25.799999999999955,
@@ -2389,10 +2062,7 @@
       "order": 379,
       "file": "/milkdrop-presets/butterchurn/fumbling-foo-flexi-martin-orb-star-forge-v16.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2407,20 +2077,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 13,
       "presetId": "fumbling-foo-flexi-martin-orb-star-forge-v16",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 100.60224999999627,
       "frameRate": 2.8960324355466147,
       "maxFrameGapMs": 533.2000000000007,
@@ -2451,10 +2115,7 @@
       "order": 380,
       "file": "/milkdrop-presets/butterchurn/fumbling-foo-flexi-martin-orb-unchained-star-nova-v7b.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2469,20 +2130,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 13,
       "presetId": "fumbling-foo-flexi-martin-orb-unchained-star-nova-v7b",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 87.60358400001132,
       "frameRate": 3.910833007476163,
       "maxFrameGapMs": 350.5,
@@ -2513,10 +2168,7 @@
       "order": 1518,
       "file": "/milkdrop-presets/butterchurn/martin-amandio-c-a-different-view-of-the-green-machine.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2531,20 +2183,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 1,
       "presetId": "martin-amandio-c-a-different-view-of-the-green-machine",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 92.93587500001013,
       "frameRate": 31.232254400644294,
       "maxFrameGapMs": 42.19999999999982,
@@ -2575,10 +2221,7 @@
       "order": 1531,
       "file": "/milkdrop-presets/butterchurn/martin-carpet-weaver.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2593,20 +2236,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-carpet-weaver",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 93.81312500000058,
       "frameRate": 36.77510608203678,
       "maxFrameGapMs": 34.200000000000045,
@@ -2637,10 +2274,7 @@
       "order": 1536,
       "file": "/milkdrop-presets/butterchurn/martin-cherry-brain-wall-mod.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2655,20 +2289,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "martin-cherry-brain-wall-mod",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 84.16033300000709,
       "frameRate": 58.3657587558307,
       "maxFrameGapMs": 33.399999999999864,
@@ -2699,10 +2327,7 @@
       "order": 1511,
       "file": "/milkdrop-presets/butterchurn/martin-flexis-swarm-in-martins-pond-not-yet-a-boid-implementation.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2717,20 +2342,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "martin-flexis-swarm-in-martins-pond-not-yet-a-boid-implementation",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 83.46708400000352,
       "frameRate": 31.072683059383436,
       "maxFrameGapMs": 58.19999999999982,
@@ -2761,10 +2380,7 @@
       "order": 1581,
       "file": "/milkdrop-presets/butterchurn/martin-lock-and-release.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2779,20 +2395,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-lock-and-release",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 82.78270800001337,
       "frameRate": 36.28750872326069,
       "maxFrameGapMs": 42.19999999999982,
@@ -2823,10 +2433,7 @@
       "order": 1580,
       "file": "/milkdrop-presets/butterchurn/martin-lock-and-release-ss.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2841,20 +2448,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-lock-and-release-ss",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 95.03758299999754,
       "frameRate": 33.69366839814684,
       "maxFrameGapMs": 34.20000000000027,
@@ -2885,10 +2486,7 @@
       "order": 728,
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence-ii.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2903,20 +2501,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 12,
       "presetId": "martin-qbikal-surface-turbulence-ii",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 92.11370800001896,
       "frameRate": 31.741650566351623,
       "maxFrameGapMs": 42.69999999999982,
@@ -2947,10 +2539,7 @@
       "order": 729,
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence-iib.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -2965,20 +2554,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 12,
       "presetId": "martin-qbikal-surface-turbulence-iib",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 93.497583999997,
       "frameRate": 46.64970313864581,
       "maxFrameGapMs": 33.40000000000009,
@@ -3009,10 +2592,7 @@
       "order": 1604,
       "file": "/milkdrop-presets/butterchurn/martin-resonant-twister.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3027,20 +2607,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 6,
       "presetId": "martin-resonant-twister",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 93.13283399998909,
       "frameRate": 27.12348322580538,
       "maxFrameGapMs": 50,
@@ -3071,10 +2645,7 @@
       "order": 1603,
       "file": "/milkdrop-presets/butterchurn/martin-resonant-twister-steel-spring.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3089,20 +2660,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 6,
       "presetId": "martin-resonant-twister-steel-spring",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 99.0048330000136,
       "frameRate": 61.83249016145917,
       "maxFrameGapMs": 25.199999999999818,
@@ -3133,10 +2698,7 @@
       "order": 1623,
       "file": "/milkdrop-presets/butterchurn/martin-test.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3151,20 +2713,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 1,
       "presetId": "martin-test",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 93.6339169999992,
       "frameRate": 52.6690391454606,
       "maxFrameGapMs": 26,
@@ -3195,10 +2751,7 @@
       "order": 1638,
       "file": "/milkdrop-presets/butterchurn/martin-witchcraft-reloaded.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3213,20 +2766,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 5,
       "presetId": "martin-witchcraft-reloaded",
       "status": "runtime-regression",
       "severityScore": 402,
-      "reasons": [
-        "2 browser runtime error(s)"
-      ],
+      "reasons": ["2 browser runtime error(s)"],
       "loadDurationMs": 98.0492919999815,
       "frameRate": 24.275118004436113,
       "maxFrameGapMs": 57.5,
@@ -3257,10 +2804,7 @@
       "order": 296,
       "file": "/milkdrop-presets/butterchurn/flexi-fishies.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3275,20 +2819,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "flexi-fishies",
       "status": "visual-regression",
       "severityScore": 300,
-      "reasons": [
-        "Both sampled canvas frames are effectively blank"
-      ],
+      "reasons": ["Both sampled canvas frames are effectively blank"],
       "loadDurationMs": 93.10475000000224,
       "frameRate": 40.02760524499655,
       "maxFrameGapMs": 34.19999999999982,
@@ -3316,10 +2854,7 @@
       "order": 319,
       "file": "/milkdrop-presets/butterchurn/flexi-impulse-drive.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3334,20 +2869,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 7,
       "presetId": "flexi-impulse-drive",
       "status": "visual-regression",
       "severityScore": 300,
-      "reasons": [
-        "Both sampled canvas frames are effectively blank"
-      ],
+      "reasons": ["Both sampled canvas frames are effectively blank"],
       "loadDurationMs": 84.88066700000127,
       "frameRate": 40.57646564992306,
       "maxFrameGapMs": 33.90000000000009,
@@ -3375,10 +2904,7 @@
       "order": 730,
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3393,20 +2919,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 12,
       "presetId": "martin-qbikal-surface-turbulence",
       "status": "visual-regression",
       "severityScore": 290,
-      "reasons": [
-        "Both sampled canvas frames are spatially uniform"
-      ],
+      "reasons": ["Both sampled canvas frames are spatially uniform"],
       "loadDurationMs": 94.68916599999648,
       "frameRate": 46.868342565373325,
       "maxFrameGapMs": 33.59999999999991,
@@ -3434,10 +2954,7 @@
       "order": 1462,
       "file": "/milkdrop-presets/butterchurn/flexi-target-practice.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -3452,13 +2969,9 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 8,
       "presetId": "flexi-target-practice",
       "status": "pass",

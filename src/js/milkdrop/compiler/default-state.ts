@@ -105,6 +105,8 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   wave_usedots: 0,
   wave_brighten: 0,
   mesh_density: 32,
+  mesh_x: 32,
+  mesh_y: 24,
   mesh_alpha: 0,
   mesh_r: 1,
   mesh_g: 1,

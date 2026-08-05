@@ -44,10 +44,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
     const data = (await request.json()) as TelemetryPayload;
 
     if (!data.event) {
-      return new Response(JSON.stringify({ error: 'event parameter required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: 'event parameter required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     // Write to Cloudflare Workers Analytics Engine if configured
@@ -60,11 +63,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
           (data.error || '').slice(0, 256),
           request.headers.get('cf-ipcountry') || 'XX',
         ],
-        doubles: [
-          data.fps || 0,
-          data.audioLatencyMs || 0,
-          Date.now(),
-        ],
+        doubles: [data.fps || 0, data.audioLatencyMs || 0, Date.now()],
         indexes: [data.event.slice(0, 32)],
       });
     }
@@ -78,7 +77,8 @@ export async function onRequest(context: { request: Request; env: Env }) {
   } catch (error) {
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Telemetry logging failed',
+        error:
+          error instanceof Error ? error.message : 'Telemetry logging failed',
       }),
       {
         status: 500,

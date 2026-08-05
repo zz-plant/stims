@@ -10,6 +10,8 @@ export type MilkdropRuntimeSignals = {
   frame: number;
   fps: number;
   aspect?: number;
+  aspectx?: number;
+  aspecty?: number;
   pixelsx?: number;
   pixelsy?: number;
   bass: number;

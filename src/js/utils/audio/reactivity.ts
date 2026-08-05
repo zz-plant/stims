@@ -48,9 +48,9 @@ export type FrequencyBandRanges = {
 const DEFAULT_RATIOS: BandRatios = { bass: 0.12, mid: 0.5 };
 const DEFAULT_WEIGHTS: BandWeights = { bass: 0.6, mid: 0.25, treble: 0.15 };
 export const DEFAULT_FREQUENCY_BAND_RANGES: FrequencyBandRanges = {
-  bass: { minHz: 24, maxHz: 320 },
-  mid: { minHz: 320, maxHz: 2800 },
-  treble: { minHz: 2800, maxHz: 12000 },
+  bass: { minHz: 20, maxHz: 250 },
+  mid: { minHz: 250, maxHz: 4000 },
+  treble: { minHz: 4000, maxHz: 20000 },
 };
 
 function clamp(value: number, min: number, max: number): number {

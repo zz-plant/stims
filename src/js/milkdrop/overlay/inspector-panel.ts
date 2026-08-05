@@ -19,6 +19,7 @@ import {
   compatibilityCategoryLabel,
   fidelityLabel,
   fidelityTierLabel,
+  formatMeasuredMismatchPercent,
   formatPrimaryCompatibilityMessage,
   getPrimaryDegradationReason,
   supportLabel,
@@ -132,6 +133,12 @@ export function formatInspectorMetrics({
           : visualCertification.measured
             ? 'Measured, not certified'
             : 'Pending',
+    },
+    {
+      label: 'Measured drift',
+      value:
+        formatMeasuredMismatchPercent(visualCertification.mismatchRatio) ??
+        'Not measured',
     },
     {
       label: 'Required backend',

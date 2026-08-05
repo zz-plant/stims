@@ -123,7 +123,6 @@ export async function onRequest(context: {
         200,
         60,
       );
-
     }
 
     // POST /api/presets — upload
@@ -245,7 +244,6 @@ export async function onRequest(context: {
         200,
         300,
       );
-
     }
 
     return json({ error: 'Not found' }, 404);
@@ -291,7 +289,8 @@ function json(data: unknown, status = 200, cacheSeconds = 0): Response {
   };
 
   if (cacheSeconds > 0) {
-    headers['Cache-Control'] = `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 5}, stale-while-revalidate=86400`;
+    headers['Cache-Control'] =
+      `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 5}, stale-while-revalidate=86400`;
   } else {
     headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
   }
@@ -301,4 +300,3 @@ function json(data: unknown, status = 200, cacheSeconds = 0): Response {
     headers,
   });
 }
-

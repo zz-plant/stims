@@ -667,19 +667,22 @@ export function evaluateMilkdropExpression(
 }
 
 export function splitMilkdropStatements(source: string) {
+  const normalizedSource = source
+    .replace(/\r\n/gu, '\n')
+    .replace(/\/\/[^\n]*/gu, '');
   const statements: string[] = [];
   let current = '';
   let depth = 0;
 
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index];
+  for (let index = 0; index < normalizedSource.length; index += 1) {
+    const char = normalizedSource[index];
     if (char === '(') {
       depth += 1;
     } else if (char === ')') {
       depth = Math.max(0, depth - 1);
     }
 
-    if (char === ';' && depth === 0) {
+    if ((char === ';' || char === '\n') && depth === 0) {
       const trimmed = current.trim();
       if (trimmed) {
         statements.push(trimmed);

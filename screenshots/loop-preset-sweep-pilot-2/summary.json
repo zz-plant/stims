@@ -18,10 +18,7 @@
       "order": 319,
       "file": "/milkdrop-presets/butterchurn/flexi-impulse-drive.milk",
       "preview": true,
-      "tags": [
-        "collection:butterchurn",
-        "preset"
-      ],
+      "tags": ["collection:butterchurn", "preset"],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
@@ -36,20 +33,14 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
-      "controlKinds": [
-        "while"
-      ],
+      "controlKinds": ["while"],
       "controlStatementCount": 7,
       "presetId": "flexi-impulse-drive",
       "status": "performance-regression",
       "severityScore": 126.38565103462685,
-      "reasons": [
-        "Frame rate 3.6 is below 30 fps"
-      ],
+      "reasons": ["Frame rate 3.6 is below 30 fps"],
       "loadDurationMs": 3601.6276669999997,
       "frameRate": 3.614348965373145,
       "maxFrameGapMs": 1058.3999999999978,

@@ -11,10 +11,13 @@ For a concise parallel execution map across parity, runtime performance, browser
 1. Run `bun run doctor` for a fast readiness summary, then bootstrap with `bun run setup` when state is unknown. Use `bun install` only if you need dependencies without the quick validation pass.
 2. Start local development with `bun run dev` or `bun run session:codex -- --profile review` for a warmer agent session.
 3. Open `http://localhost:5173/`.
-4. Run `bun run check:quick` while iterating.
-5. Run `bun run check` before finalizing changes.
+4. Run `bun run check:quick` while iterating (runs concurrent linting, typechecking, asset, catalog, SEO, and architecture checks with instant fail-fast feedback).
+5. For specific test coverage during iteration, run `bun run test tests/path/to/spec.test.ts`.
+6. Run `bun run check` before finalizing changes (includes asset checks, concurrent guards, and fast sharded test suite).
 
-`bun run check` includes the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+`bun run check` includes parallel asset validation (`assets:check`), the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The quality gate runner executes checks concurrently and fails fast on the first error to provide sub-second feedback. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+
+For high-core machines, tune test worker sharding with `STIMS_TEST_SHARDS=<count>` (e.g. `STIMS_TEST_SHARDS=8 bun run test:fast`).
 
 For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
 
@@ -30,12 +33,15 @@ For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFI
 | Route a task to a local model helper | `bun run model:codex -- --mode auto --task "triage a preset bug" --no-exec` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | WebGPU-focused local session | `bun run dev:webgpu` |
-| Full quality gate | `bun run check` |
-| Faster local quality gate | `bun run check:quick` |
+| Fast quality gate (lint + types + guards) | `bun run check:quick` |
+| Full quality gate (guards + fast test suite) | `bun run check` |
+| Complete quality gate (guards + all test profiles) | `bun run check:all` |
 | Toy manifest, generated docs, and public-claim drift check | `bun run check:toys` |
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
-| Run tests | `bun run test` |
+| Asset health check | `bun run assets:check` |
+| Run tests (all profiles) | `bun run test` |
+| Run fast test suite (sharded unit + compat) | `bun run test:fast` |
 | Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
 | Run browser integration tests | `bun run test:integration` |
 | Run compatibility/preset tests | `bun run test:compat` |

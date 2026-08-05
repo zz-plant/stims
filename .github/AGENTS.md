@@ -16,9 +16,9 @@ You're about to code on Stims. Before you dive into docs, grab these five things
 4. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
 
 5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
-   - `bun run check:quick` — Fast syntax/lint/type check (use often)
-   - `bun run test tests/path/to/file.test.ts` — Test a specific file
-   - `bun run check` — Full quality gate before committing
+   - `bun run check:quick` — Fast syntax/lint/type/guard check (~5-10s with fail-fast feedback)
+   - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
+   - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
 
 ## Task routing
 
