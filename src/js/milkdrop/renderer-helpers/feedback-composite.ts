@@ -151,6 +151,8 @@ export function buildFeedbackCompositeState({
     signalBeatPulse: frameState.signals.beatPulse,
     signalEnergy: frameState.signals.weightedEnergy,
     signalTime: frameState.signals.time,
+    signalFrame: frameState.signals.frame,
+    signalFps: frameState.signals.fps,
     aspect: frameState.signals.aspect ?? 1,
     decay: frameState.post.decay,
   };

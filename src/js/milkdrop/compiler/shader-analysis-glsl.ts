@@ -91,32 +91,29 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       const uniformMap: Record<string, string> = {
         time: 'signalTime',
         bass: 'signalBass',
-        // Composite shader lacks separate attenuated signal uniforms;
-        // bass_att maps to signalBass as the best available approximation.
-        bass_att: 'signalBass',
+        bass_att: 'signalBassAtt',
         mid: 'signalMid',
         mids: 'signalMid',
-        mid_att: 'signalMid',
+        mid_att: 'signalMidAtt',
+        mids_att: 'signalMidAtt',
         treb: 'signalTreb',
-        treb_att: 'signalTreb',
+        treb_att: 'signalTrebAtt',
         treble: 'signalTreb',
         // MilkDrop shader snippets commonly use camelCase attenuated bands;
         // identifiers are lower-cased before lookup, so keep normalized entries here.
-        // Same approximation as above — no separate attenuated uniform exists.
-        bassatt: 'signalBass',
-        midatt: 'signalMid',
-        trebatt: 'signalTreb',
-        trebleatt: 'signalTreb',
+        bassatt: 'signalBassAtt',
+        midatt: 'signalMidAtt',
+        midsatt: 'signalMidAtt',
+        trebatt: 'signalTrebAtt',
+        trebleatt: 'signalTrebAtt',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
         rand_frame:
           'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-        // progress is frame count in ProjectM; signalTime (seconds) is the best proxy.
-        progress: 'signalTime',
-        // frame and fps are not available as composite shader uniforms.
-        // frame uses signalTime as a proxy; fps is a literal 60.0 approximation.
-        frame: 'signalTime',
-        fps: '60.0',
+        // progress is frame count in ProjectM; signalFrame provides the actual value.
+        progress: 'signalFrame',
+        frame: 'signalFrame',
+        fps: 'signalFps',
         aspect: 'aspect',
         vol: 'signalEnergy',
         vol_att: 'signalEnergy',

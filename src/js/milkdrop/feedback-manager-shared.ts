@@ -279,10 +279,15 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalBass;
         uniform float signalMid;
         uniform float signalTreb;
+        uniform float signalBassAtt;
+        uniform float signalMidAtt;
+        uniform float signalTrebAtt;
         uniform float signalBeat;
         uniform float signalBeatPulse;
         uniform float signalEnergy;
         uniform float signalTime;
+        uniform float signalFrame;
+        uniform float signalFps;
         uniform float aspect;
         uniform float decay;
         uniform float hasDirectWarp;
@@ -604,7 +609,18 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform vec2 warpTextureOffset;
         uniform float warpTextureVolumeSliceZ;
         uniform float hasDirectWarp;
+        uniform float signalBass;
+        uniform float signalMid;
+        uniform float signalTreb;
+        uniform float signalBassAtt;
+        uniform float signalMidAtt;
+        uniform float signalTrebAtt;
+        uniform float signalBeat;
+        uniform float signalBeatPulse;
+        uniform float signalEnergy;
         uniform float signalTime;
+        uniform float signalFrame;
+        uniform float signalFps;
         uniform float aspect;
         uniform float videoEchoOrientation;
         varying vec2 vUv;
@@ -930,7 +946,18 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureOffset: { value: new Vector2(0, 0) },
         warpTextureVolumeSliceZ: { value: 0 },
         hasDirectWarp: { value: 0 },
+        signalBass: { value: 0 },
+        signalMid: { value: 0 },
+        signalTreb: { value: 0 },
+        signalBassAtt: { value: 0 },
+        signalMidAtt: { value: 0 },
+        signalTrebAtt: { value: 0 },
+        signalBeat: { value: 0 },
+        signalBeatPulse: { value: 0 },
+        signalEnergy: { value: 0 },
         signalTime: { value: 0 },
+        signalFrame: { value: 0 },
+        signalFps: { value: 60 },
         aspect: { value: 1 },
         videoEchoOrientation: { value: 0 },
       },
@@ -1037,10 +1064,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalBass: { value: 0 },
         signalMid: { value: 0 },
         signalTreb: { value: 0 },
+        signalBassAtt: { value: 0 },
+        signalMidAtt: { value: 0 },
+        signalTrebAtt: { value: 0 },
         signalBeat: { value: 0 },
         signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
         signalTime: { value: 0 },
+        signalFrame: { value: 0 },
+        signalFps: { value: 60 },
         aspect: { value: 1 },
         decay: { value: 0.98 },
         hasDirectWarp: { value: 0 },
@@ -1276,10 +1308,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalBass.value = state.signalBass;
     uniforms.signalMid.value = state.signalMid;
     uniforms.signalTreb.value = state.signalTreb;
+    uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
+    uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
+    uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
     uniforms.signalBeat.value = state.signalBeat;
     uniforms.signalBeatPulse.value = state.signalBeatPulse;
     uniforms.signalEnergy.value = state.signalEnergy;
     uniforms.signalTime.value = state.signalTime;
+    uniforms.signalFrame.value = state.signalFrame ?? 0;
+    uniforms.signalFps.value = state.signalFps ?? 60;
     uniforms.aspect.value = state.aspect;
 
     // Sync warp shader uniforms (subset of composite state)
@@ -1319,7 +1356,18 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.warpTextureOffset.y,
     );
     wu.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+    wu.signalBass.value = state.signalBass;
+    wu.signalMid.value = state.signalMid;
+    wu.signalTreb.value = state.signalTreb;
+    wu.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
+    wu.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
+    wu.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+    wu.signalBeat.value = state.signalBeat;
+    wu.signalBeatPulse.value = state.signalBeatPulse;
+    wu.signalEnergy.value = state.signalEnergy;
     wu.signalTime.value = state.signalTime;
+    wu.signalFrame.value = state.signalFrame ?? 0;
+    wu.signalFps.value = state.signalFps ?? 60;
     wu.aspect.value = state.aspect;
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
   }
