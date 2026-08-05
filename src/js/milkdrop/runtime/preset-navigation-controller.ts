@@ -298,7 +298,9 @@ export function createMilkdropPresetNavigationController({
   };
 
   const goBackPreset = async () => {
-    const previousId = await catalogCoordinator.consumePreviousSelection();
+    const previousId = await catalogCoordinator.consumePreviousSelection(
+      getActivePresetId(),
+    );
     if (previousId) {
       await selectPreset(previousId, { recordHistory: false });
     }

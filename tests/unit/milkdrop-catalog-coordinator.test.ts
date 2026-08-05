@@ -232,6 +232,47 @@ describe('milkdrop catalog coordinator', () => {
     ]);
   });
 
+  test('consumePreviousSelection keeps walking back through persisted history after in-memory history is exhausted', async () => {
+    let persistedStack: string[] = ['older-2', 'older-1'];
+    const coordinator = createMilkdropCatalogCoordinator({
+      catalogStore: {
+        async recordRecent() {},
+        async pushHistory(id: string) {
+          persistedStack = [
+            id,
+            ...persistedStack.filter((entry) => entry !== id),
+          ].slice(0, 32);
+        },
+        async getHistory() {
+          return persistedStack;
+        },
+      } as never,
+      onCatalogChanged() {},
+    });
+
+    // Two forward selections made this session, on top of persisted history
+    // from a prior session (older-1, older-2).
+    await coordinator.rememberSelection('preset-a');
+    await coordinator.rememberSelection('preset-b');
+
+    // First "previous" press: walks in-memory history back to preset-a.
+    expect(await coordinator.consumePreviousSelection('preset-b')).toBe(
+      'preset-a',
+    );
+
+    // Second "previous" press: in-memory history is exhausted, so it must
+    // fall through to persisted history and keep going back, not repeat
+    // the preset that's already showing.
+    expect(await coordinator.consumePreviousSelection('preset-a')).toBe(
+      'older-2',
+    );
+
+    // Third "previous" press: continues further back into persisted history.
+    expect(await coordinator.consumePreviousSelection('older-2')).toBe(
+      'older-1',
+    );
+  });
+
   test('patches cached catalog entries without refetching the full catalog', async () => {
     const requestedStates: Array<{ presetId: string; backend: string }> = [];
     let listCalls = 0;
