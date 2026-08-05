@@ -14,7 +14,11 @@
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
+![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
+
 </div>
+
+[Why Stims](#why-stims) · [What works today](#what-works-today) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
 
 ## Why Stims
 
@@ -74,6 +78,17 @@ These components are useful engineering foundations, but they are not presented 
 3. **Off-main-thread audio analysis** — AudioWorklet processing supplies waveform, frequency-band, transient, and energy-envelope data to the runtime.
 4. **Browser authoring environment** — The editor, importer, exporter, inspector, and live parameter controls share the same running session.
 5. **Evidence-oriented QA** — The repo tracks native projectM references, capture provenance, backend selection, image diffs, and promoted measured results.
+
+```mermaid
+flowchart LR
+  Audio["Audio source\n(demo, mic, tab, file, YouTube)"] --> Worklet["AudioWorklet analysis\nwaveform · bands · transients · envelope"]
+  Worklet --> VM["Preset compiler & VM\nEEL2 per-frame / per-pixel / megabuf"]
+  Milk[".milk preset\n(import / editor)"] --> VM
+  VM --> Render{"WebGL2 baseline\nor guarded WebGPU"}
+  Render --> Canvas["Live canvas"]
+  Canvas --> Record["Recording beta\n(MediaRecorder)"]
+  Canvas --> Capture["Deterministic capture\n→ image diff → measured manifest"]
+```
 
 See [Technical Foundations](./docs/TECHNICAL_ACHIEVEMENTS.md) for the implementation map.
 
