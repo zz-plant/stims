@@ -1,19 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Compatibility and Performance">
   <defs>
-    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0.08)" />
-      <stop offset="50%" stop-color="rgba(0,0,0,0.48)" />
-      <stop offset="100%" stop-color="rgba(0,0,0,0.78)" />
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#12191f" />
+      <stop offset="100%" stop-color="#0b1014" />
     </linearGradient>
+    <radialGradient id="glow" cx="82%" cy="16%" r="55%">
+      <stop offset="0%" stop-color="rgba(119, 201, 255, 0.18)" />
+      <stop offset="100%" stop-color="rgba(119, 201, 255, 0)" />
+    </radialGradient>
   </defs>
-  <image href="bg-visualizer.png" width="1200" height="630" preserveAspectRatio="xMidYMid slice" />
-  <rect width="1200" height="630" fill="url(#overlay)" />
-  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.04)" />
-  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.04)" />
-  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.1)" />
-  <rect x="88" y="86" width="280" height="52" rx="26" fill="rgba(255,255,255,0.12)" />
-  <text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Performance guide</text>
-  <text x="88" y="206" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">What to expect before you start</text>
-  <text x="88" y="306" font-size="72" font-weight="700" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif">Compatibility and Performance</text>
-  <text x="88" y="372" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">Browser support, lighter modes, and first-run guidance</text>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+
+  <!-- Scope graticule + trace, full-bleed — reads as a live signal, not decoration -->
+  <g stroke="rgba(119,201,255,0.14)" stroke-width="1">
+    <line x1="0" y1="560" x2="0" y2="570" /><line x1="120" y1="560" x2="120" y2="570" /><line x1="240" y1="560" x2="240" y2="570" /><line x1="360" y1="560" x2="360" y2="570" /><line x1="480" y1="560" x2="480" y2="570" /><line x1="600" y1="560" x2="600" y2="570" /><line x1="720" y1="560" x2="720" y2="570" /><line x1="840" y1="560" x2="840" y2="570" /><line x1="960" y1="560" x2="960" y2="570" /><line x1="1080" y1="560" x2="1080" y2="570" /><line x1="1200" y1="560" x2="1200" y2="570" />
+  </g>
+  <path d="M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500" fill="none" stroke="rgba(244,122,84,0.16)" stroke-width="2" transform="translate(0,12)" />
+  <path d="M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3" />
+
+  <circle cx="92" cy="91" r="4" fill="#f47a54" />
+  <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">PERFORMANCE GUIDE</text>
+  <text x="88" y="176" font-size="28" font-weight="600" fill="#77c9ff" font-family="Space Grotesk, Arial, sans-serif">What to expect before you start</text>
+  <text x="88" y="258" font-size="62" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, Arial, sans-serif">Compatibility and Performance</text>
+  <text x="88" y="314" font-size="26" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, Arial, sans-serif">Browser support, lighter modes, and first-run guidance</text>
+
+  <g transform="translate(996,560)"><rect x="0" y="-26" width="11" height="26" fill="rgba(119,201,255,0.55)" /><rect x="18" y="-46" width="11" height="46" fill="rgba(119,201,255,0.55)" /><rect x="36" y="-78" width="11" height="78" fill="rgba(119,201,255,0.55)" /><rect x="54" y="-54" width="11" height="54" fill="rgba(119,201,255,0.55)" /><rect x="72" y="-88" width="11" height="88" fill="#f47a54" /><rect x="90" y="-38" width="11" height="38" fill="rgba(119,201,255,0.55)" /><rect x="108" y="-64" width="11" height="64" fill="rgba(119,201,255,0.55)" /><rect x="126" y="-44" width="11" height="44" fill="rgba(119,201,255,0.55)" /></g>
+  <text x="88" y="602" font-size="20" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
 </svg>

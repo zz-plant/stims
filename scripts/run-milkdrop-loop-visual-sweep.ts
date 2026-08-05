@@ -352,8 +352,11 @@ function compareFrames(
   return pixelCount > 0 ? changedPixels / pixelCount : 0;
 }
 
-export async function captureIsolatedVisualizerCanvas(page: Page) {
-  const canvas = page.locator(LOOP_PRESET_CANVAS_SELECTOR);
+export async function captureIsolatedVisualizerCanvas(
+  page: Page,
+  canvasSelector: string = LOOP_PRESET_CANVAS_SELECTOR,
+) {
+  const canvas = page.locator(canvasSelector).first();
   await page.evaluate(
     ({ canvasSelector, hiddenAttribute }) => {
       const activeCanvas = document.querySelector(canvasSelector);
@@ -375,7 +378,7 @@ export async function captureIsolatedVisualizerCanvas(page: Page) {
       }
     },
     {
-      canvasSelector: LOOP_PRESET_CANVAS_SELECTOR,
+      canvasSelector,
       hiddenAttribute: LOOP_SWEEP_HIDDEN_ATTRIBUTE,
     },
   );
@@ -435,25 +438,29 @@ async function measureFrameCadence(page: Page, durationMs: number) {
   );
 }
 
-async function waitForPreset(page: Page, presetId: string) {
+export async function waitForPreset(
+  page: Page,
+  presetId: string,
+  canvasSelector: string = LOOP_PRESET_CANVAS_SELECTOR,
+  timeoutMs: number = LOAD_TIMEOUT_MS,
+) {
   await page.waitForFunction(
-    ({ requestedPresetId, canvasSelector }) => {
+    ({ requestedPresetId, canvasSelector: selector }) => {
+      // Telemetry is the reliable "preset active" signal; the stage frame's
+      // data-active-preset-id attribute is lifecycle-dependent and can lag or
+      // never appear (data-mode="home" states), so it is deliberately not
+      // part of this gate.
       const telemetry = window.__STIMS_AGENT_TELEMETRY__;
-      const frame = [
-        ...document.querySelectorAll<HTMLElement>(
-          '.stims-shell__stage-frame[data-active-preset-id]',
-        ),
-      ].find((element) => element.dataset.activePresetId === requestedPresetId);
       return (
         telemetry?.currentPresetId === requestedPresetId &&
-        frame?.querySelector(canvasSelector) !== null
+        document.querySelector(selector) !== null
       );
     },
     {
       requestedPresetId: presetId,
-      canvasSelector: LOOP_PRESET_CANVAS_SELECTOR,
+      canvasSelector,
     },
-    { timeout: LOAD_TIMEOUT_MS },
+    { timeout: timeoutMs },
   );
 }
 
