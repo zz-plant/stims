@@ -1,6 +1,353 @@
-/* ── Unified control bar ─────────────────────────────────────────────
-   Single bottom-centered pill. Replaces the old top HUD + multi-button
-   dock. Minimal, compact, auto-hiding.
+.wrap {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-dock);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.wrap[data-visible="false"] {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.wrap[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Now-playing strip */
+.nowPlaying {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: rgba(6, 10, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: rgba(229, 241, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-bottom: 6px;
+  pointer-events: auto;
+  max-width: min(32rem, calc(100vw - 32px));
+}
+
+.nowPlayingTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.nowPlayingAuthor {
+  color: rgba(191, 219, 254, 0.65);
+  font-weight: 400;
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.nowPlayingBar {
+  flex-shrink: 0;
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  background: rgba(125, 224, 162, 0.95);
+  opacity: calc(0.35 + var(--stims-energy, 0) * 0.65);
+  box-shadow: 0 0 12px rgba(125, 224, 162, calc(var(--stims-energy, 0) * 0.95));
+  transition:
+    opacity 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+/* Main toolbar */
+.toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(6, 10, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 20px rgba(119, 201, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  pointer-events: auto;
+}
+
+/* Groups the dock into: navigate · find · configure */
+.sep {
+  flex-shrink: 0;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(229, 241, 255, 0.76);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 12px rgba(119, 201, 255, 0.12);
+}
+
+.btn:active {
+  transform: scale(0.92);
+  transition-duration: 60ms;
+}
+
+/* The lit edge, matching the active state used inside the panels. */
+.btn[data-active="true"] {
+  color: #77c9ff;
+  background: radial-gradient(
+    circle at center,
+    rgba(119, 201, 255, 0.28) 0%,
+    rgba(119, 201, 255, 0.12) 100%
+  );
+  border-color: rgba(119, 201, 255, 0.45);
+  box-shadow:
+    0 0 20px rgba(119, 201, 255, 0.32),
+    inset 0 -2px 0 #77c9ff;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
+}
+
+/* Overflow popover */
+.overflow {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(8, 12, 22, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.overflow[data-exiting="true"] {
+  animation: pop-out 0.15s ease forwards;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.95);
+  }
+}
+
+.overflow .btn {
+  min-width: 48px;
+  min-height: 40px;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(229, 241, 255, 0.72);
+}
+
+.overflow .btn:hover {
+  color: #f8fbff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.overflow .btn[data-active="true"] {
+  background: rgba(119, 201, 255, 0.16);
+  color: #f8fbff;
+}
+
+.overflow .btnLabel {
+  display: block;
+  line-height: 1;
+}
+
+/* Reveal handle (when bar is hidden) */
+.handle {
+  position: fixed;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-dock);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: min(280px, calc(100vw - 32px));
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 14px;
+  background: rgba(5, 7, 13, 0.85);
+  color: var(--stims-ink);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.handle:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.handleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:global(html.light) .handle {
+  background: rgba(8, 14, 22, 0.92);
+  color: #f7f4eb;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+@media (min-width: 641px) {
+  .nowPlaying {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (min-height: 500px) {
+  .wrap {
+    bottom: auto;
+    top: 22px;
+    left: auto;
+    right: 22px;
+    padding-bottom: 0;
+  }
+
+  .wrap[data-visible="false"] {
+    transform: translateY(-8px);
+  }
+
+  .wrap[data-visible="true"] {
+    transform: translateY(0);
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    gap: 2px;
+    padding: 4px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .btn {
+    min-width: 46px;
+    min-height: 46px;
+  }
+
+  .overflow {
+    right: 50%;
+    transform: translateX(50%);
+    width: min(320px, calc(100vw - 24px));
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
+  .btn {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .handle,
+  .overflow,
+  .overflow[data-exiting="true"] {
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+  }
+}
+
+/* ── Restored control-bar styles ─────────────────────────────────────
+   StageControls.tsx still renders the pill bar + drop-up menu; these
+   classes were dropped by an in-progress toolbar refactor that has no
+   consumer yet. Remove once the toolbar markup lands.
    ─────────────────────────────────────────────────────────────────── */
 
 .bar {
@@ -40,7 +387,6 @@
     visibility 0s linear 0s;
 }
 
-/* The pill */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -51,10 +397,6 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   pointer-events: auto;
   box-shadow:
     0 8px 28px rgba(0, 0, 0, 0.4),
@@ -62,7 +404,6 @@
     rgba(119, 201, 255, calc(var(--energy, 0) * 0.25));
 }
 
-/* Nav buttons (prev, shuffle) */
 .navBtn {
   display: inline-flex;
   align-items: center;
@@ -90,7 +431,6 @@
   transform: scale(0.92);
 }
 
-/* Title button (center, tap to browse) */
 .titleBtn {
   display: inline-flex;
   align-items: baseline;
@@ -138,7 +478,6 @@
   flex-shrink: 1;
 }
 
-/* Menu button (⋯) */
 .menuBtn {
   display: inline-flex;
   align-items: center;
@@ -173,8 +512,6 @@
   outline: 2px solid var(--stims-accent);
   outline-offset: 1px;
 }
-
-/* ── Drop-up menu ──────────────────────────────────────────────────── */
 
 .menu {
   position: fixed;
@@ -242,72 +579,6 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Reveal handle (when bar is hidden) ───────────────────────────── */
-
-.handle {
-  position: fixed;
-  bottom: max(6px, env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: var(--z-dock);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(5, 7, 13, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  cursor: pointer;
-  transition:
-    opacity 0.25s ease,
-    background 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* invisible hit-area extension — the 36x6 visual is far below the 44px
-   touch minimum, and this is the only way back to the controls */
-.handle::before {
-  content: "";
-  position: absolute;
-  inset: -20px -24px;
-}
-
-.handle:hover {
-  background: rgba(20, 26, 36, 0.85);
-}
-
-.handleIcon {
-  display: none;
-}
-
-/* ── Responsive ───────────────────────────────────────────────────── */
-
-@media (min-width: 768px) and (min-height: 500px) {
-  .bar {
-    bottom: auto;
-    top: 18px;
-    left: auto;
-    right: 18px;
-    justify-content: flex-end;
-    padding-bottom: 0;
-  }
-
-  .bar[data-visible="false"] {
-    transform: translateY(-6px);
-  }
-
-  .bar[data-visible="true"] {
-    transform: translateY(0);
-  }
-
-  .handle {
-    display: none;
-  }
-}
-
 @media (max-width: 480px) {
   .pill {
     max-width: calc(100vw - 16px);
@@ -342,7 +613,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bar,
-  .handle,
   .menu {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;

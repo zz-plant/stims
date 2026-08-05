@@ -12,8 +12,6 @@
   box-shadow:
     var(--stims-shadow),
     0 0 16px rgba(244, 122, 84, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   color: var(--stims-ink);
   font-size: 0.84rem;
   line-height: 1.45;
