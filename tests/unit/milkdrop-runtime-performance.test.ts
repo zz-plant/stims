@@ -113,10 +113,6 @@ test('presentation controller throttles agent debug snapshot refreshes', () => {
   const setDebugSnapshotCalls: Array<{ tool: string; snapshot: unknown }> = [];
 
   const controller = createMilkdropPresentationController({
-    getOverlay: () => null,
-    session: {
-      getState: () => ({}),
-    } as never,
     vm: {
       setPreset: () => {},
       setRenderBackend: () => {},

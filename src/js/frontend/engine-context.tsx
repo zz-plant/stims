@@ -74,6 +74,9 @@ export interface EngineContextValue {
     onLoaded?: () => void,
   ) => void;
   setQualityPreset: (presetId: string) => void;
+  setAutoplay: (enabled: boolean) => void;
+  setTransitionMode: (mode: 'blend' | 'cut') => void;
+  setBlendDuration: (value: number) => void;
   updateEditorSource: (source: string) => void;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;

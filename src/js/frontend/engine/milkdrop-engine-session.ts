@@ -196,15 +196,12 @@ export function createMilkdropEngineAdapter() {
         return;
       }
       experience = createMilkdropExperience({
-        container: nextContainer,
         quality,
         qualityControl: {
           presets: DEFAULT_QUALITY_PRESETS,
           storageKey: QUALITY_STORAGE_KEY,
         },
         initialPresetId: intent.presetId ?? undefined,
-        _showOverlayToggle: false,
-        enableOverlay: !intent.previewMode,
         previewMode: Boolean(intent.previewMode),
       });
 
@@ -419,6 +416,21 @@ export function createMilkdropEngineAdapter() {
 
     setQualityPreset(presetId: string) {
       return experience?.setQualityPreset(presetId) ?? null;
+    },
+
+    setAutoplay(enabled: boolean) {
+      experience?.setAutoplay(enabled);
+      emit();
+    },
+
+    setTransitionMode(mode: 'blend' | 'cut') {
+      experience?.setTransitionMode(mode);
+      emit();
+    },
+
+    setBlendDuration(value: number) {
+      experience?.setBlendDuration(value);
+      emit();
     },
 
     updateEditorSource(source: string) {

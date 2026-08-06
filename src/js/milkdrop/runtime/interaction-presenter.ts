@@ -1,14 +1,9 @@
-import {
-  createMilkdropOverlayCallbacks,
-  installMilkdropRuntimeKeybindings,
-  type MilkdropOverlayActionHandlers,
-} from './ui-bridge';
+import { installMilkdropRuntimeKeybindings } from './ui-bridge';
 
 export type { MilkdropScenePickResult } from './ui-bridge';
 
 export function createMilkdropRuntimeInteractionPresenter({
   overlay,
-  overlayActions,
   keybindingActions,
   sceneInteractionActions,
 }: {
@@ -17,7 +12,6 @@ export function createMilkdropRuntimeInteractionPresenter({
     toggleOpen: (open?: boolean) => void;
     toggleShortcutHud: (open?: boolean) => void;
   };
-  overlayActions: MilkdropOverlayActionHandlers;
   keybindingActions: {
     getTransitionMode: () => 'blend' | 'cut';
     getBlendDuration: () => number;
@@ -42,7 +36,6 @@ export function createMilkdropRuntimeInteractionPresenter({
   };
 }) {
   return {
-    overlayCallbacks: createMilkdropOverlayCallbacks(overlayActions),
     installKeyboardShortcuts() {
       return installMilkdropRuntimeKeybindings({
         overlay,
