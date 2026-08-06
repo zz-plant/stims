@@ -51,6 +51,7 @@ async function waitForMountedStage(page: import('playwright').Page) {
     () =>
       document.querySelector('#stims-main[data-active-preset-id]') !== null &&
       document.querySelector('.stims-shell__stage-frame canvas') !== null,
+    undefined,
     { timeout: 60000 },
   );
 }
@@ -158,6 +159,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
+        undefined,
         { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
@@ -251,6 +253,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
+        undefined,
         { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
@@ -312,6 +315,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
+        undefined,
         { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
@@ -408,10 +412,12 @@ async function verifySmartphoneMicrophoneAccess({
     await page.locator('#start-audio-btn').click();
     await page.waitForFunction(
       () => document.body.dataset.audioActive === 'true',
+      undefined,
       { timeout: 30000 },
     );
     await page.waitForFunction(
       () => window.location.search.includes('audio=microphone'),
+      undefined,
       { timeout: 30000 },
     );
 
