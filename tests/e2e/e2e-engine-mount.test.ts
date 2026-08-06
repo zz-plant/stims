@@ -23,6 +23,17 @@ const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
+// A single preset navigation can fan out into several redundant compile
+// attempts before one wins (confirmed locally: up to 6 `[PresetLoad]`
+// groups for one requested preset, most immediately marked "superseded",
+// but the winning path itself still compiles the source twice before
+// applying it — a pre-existing inefficiency, not something introduced by
+// this budget). That's cheap on real GPU; under CI's SwiftShader software
+// renderer the wasted work is expensive enough to threaten a 60s probe
+// budget outright. Widen it here rather than chase the request
+// duplication itself, which needs its own investigation.
+const GPU_PROBE_TIMEOUT_MS = 120000;
+
 /** Never let teardown mask the assertion failure that got us here. */
 async function closeQuietly(
   ...closeables: Array<{ close: () => Promise<unknown> }>
@@ -146,7 +157,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 60000 },
+        { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
       const info = await page.evaluate(() => {
@@ -168,7 +179,7 @@ browserTest(
       await closeQuietly(ctx, browser);
     }
   },
-  { timeout: 180000 },
+  { timeout: 240000 },
 );
 
 browserTest(
@@ -239,7 +250,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 60000 },
+        { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
       const hash1 = await page.evaluate(() =>
@@ -300,7 +311,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 60000 },
+        { timeout: GPU_PROBE_TIMEOUT_MS },
       );
 
       const hash2 = await page.evaluate(() =>
@@ -324,7 +335,7 @@ browserTest(
       await closeQuietly(ctx, browser);
     }
   },
-  { timeout: 180000 },
+  { timeout: 240000 },
 );
 
 async function verifySmartphoneMicrophoneAccess({
