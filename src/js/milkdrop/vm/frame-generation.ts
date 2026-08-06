@@ -261,10 +261,14 @@ function getMainWaveSampleCount(
   );
 }
 
+const STATIC_DEFAULT_FREQUENCY_DATA = new Uint8Array(64);
+const STATIC_DEFAULT_WAVEFORM_DATA = (() => {
+  const buf = new Uint8Array(64);
+  buf.fill(128);
+  return buf;
+})();
+
 export function defaultSignalEnv(): MilkdropRuntimeSignals {
-  const frequencyData = new Uint8Array(64);
-  const waveformData = new Uint8Array(64);
-  waveformData.fill(128);
   return {
     time: 0,
     deltaMs: 16.67,
@@ -384,8 +388,8 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     motion_enabled: 0,
     motionStrength: 0,
     motion_strength: 0,
-    frequencyData,
-    waveformData,
+    frequencyData: STATIC_DEFAULT_FREQUENCY_DATA,
+    waveformData: STATIC_DEFAULT_WAVEFORM_DATA,
     frequencyDataL: null,
     frequencyDataR: null,
     waveformDataL: null,
