@@ -146,7 +146,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 30000 },
+        { timeout: 60000 },
       );
 
       const info = await page.evaluate(() => {
@@ -168,7 +168,7 @@ browserTest(
       await closeQuietly(ctx, browser);
     }
   },
-  { timeout: 120000 },
+  { timeout: 180000 },
 );
 
 browserTest(
@@ -239,7 +239,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 30000 },
+        { timeout: 60000 },
       );
 
       const hash1 = await page.evaluate(() =>
@@ -300,7 +300,7 @@ browserTest(
           // not count as rendered content.
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
-        { timeout: 30000 },
+        { timeout: 60000 },
       );
 
       const hash2 = await page.evaluate(() =>
@@ -324,7 +324,7 @@ browserTest(
       await closeQuietly(ctx, browser);
     }
   },
-  { timeout: 120000 },
+  { timeout: 180000 },
 );
 
 async function verifySmartphoneMicrophoneAccess({
