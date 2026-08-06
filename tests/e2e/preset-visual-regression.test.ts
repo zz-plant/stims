@@ -116,6 +116,11 @@ for (const presetId of VISUAL_REGRESSION_PRESET_IDS) {
         await browser.close();
       }
     },
-    { timeout: 120000 },
+    // 240s, not 120s: this suite runs after other SwiftShader-rendered e2e
+    // files in the same CI job, and accumulated GPU/CPU pressure has pushed
+    // capture past a 120s budget for some presets (geiss-casino) in CI even
+    // though it completes in under 20s locally with real GPU (2026-08-06 CI
+    // investigation).
+    { timeout: 240000 },
   );
 }

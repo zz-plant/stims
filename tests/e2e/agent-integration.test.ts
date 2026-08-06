@@ -18,7 +18,11 @@ const PLAYWRIGHT_RENDERER_ARGS = [
   '--enable-unsafe-swiftshader',
   '--ignore-gpu-blocklist',
 ];
-const INTEGRATION_TIMEOUT_MS = 90000;
+// 180s, not 90s: this job runs after several other SwiftShader-rendered e2e
+// suites in the same CI job, and accumulated GPU/CPU pressure has pushed
+// this test past a 90s budget in CI even though it completes in ~10s
+// locally with real GPU (2026-08-06 CI investigation).
+const INTEGRATION_TIMEOUT_MS = 180000;
 let devServer: DevServerHandle | null = null;
 
 async function startDevServerInstance() {
