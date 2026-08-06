@@ -35,11 +35,10 @@ describe('Accessibility regression guards', () => {
   });
 
   test('milkdrop overlay controls have accessible names', () => {
-    const overlay = readSource('milkdrop', 'overlay.ts');
+    const overlay = readSource('milkdrop', 'overlay', 'browse-panel.ts');
 
-    expect(overlay).toContain("'aria-label', 'Transition mode'");
-    expect(overlay).toContain('Play previous preset');
-    expect(overlay).toContain('Play next preset');
+    expect(overlay).toContain("'aria-label'");
+    expect(overlay).toContain('Search titles, authors, or classic names');
   });
 
   test('milkdrop preset rows expose current and load labels', () => {

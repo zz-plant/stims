@@ -32,11 +32,15 @@ import { buildBorders, buildShapes } from './vm/shape-border-builder';
 import {
   clamp,
   color,
+  createDefaultSignalEnv,
   type GeometryBuilderState,
   hashSeed,
   MAX_CUSTOM_WAVE_SLOTS,
   type MutableState,
   type ShapeBuilderState,
+  seedCustomShapeFields,
+  seedCustomWaveFields,
+  syncSignalEnvironment,
   type WaveBuilderState,
 } from './vm/shared';
 import {
@@ -50,7 +54,6 @@ import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
-import { deriveMilkdropViewportSignalValues } from './wgsl-signal-layout.ts';
 
 const objectHasOwn = (
   Object as ObjectConstructor & {
@@ -77,53 +80,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
   private registers: MutableState = {};
-  private readonly signalEnv: MutableState = {
-    time: 0,
-    frame: 0,
-    fps: 60,
-    bass: 0,
-    mid: 0,
-    med: 0,
-    mids: 0,
-    treb: 0,
-    att: 0,
-    treble: 0,
-    bass_att: 0,
-    mid_att: 0,
-    med_att: 0,
-    mids_att: 0,
-    treb_att: 0,
-    treble_att: 0,
-    bassAtt: 0,
-    midsAtt: 0,
-    trebleAtt: 0,
-    beat: 0,
-    beat_pulse: 0,
-    beatPulse: 0,
-    beatBass: 0,
-    beatMid: 0,
-    beatTreble: 0,
-    beat_bass: 0,
-    beat_mid: 0,
-    beat_treb: 0,
-    bandFlux: 0,
-    rms: 0,
-    vol: 0,
-    music: 0,
-    weighted_energy: 0,
-    progress: 0,
-    aspectx: 1,
-    aspecty: 1,
-    pixelsx: 1280,
-    pixelsy: 1280,
-    meshx: 48,
-    meshy: 48,
-    pi: Math.PI,
-    e: Math.E,
-    ...Object.fromEntries(
-      Array.from({ length: 32 }, (_, i) => [`spec_${i}`, 0]),
-    ),
-  };
+  private readonly signalEnv: MutableState = createDefaultSignalEnv();
   private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
@@ -447,87 +404,11 @@ class MilkdropPresetVM implements MilkdropVM {
   };
 
   private seedCustomWaveState(wave: MilkdropWaveDefinition) {
-    return {
-      enabled:
-        wave.fields.enabled ??
-        this.state[`custom_wave_${wave.index}_enabled`] ??
-        0,
-      samples:
-        wave.fields.samples ??
-        this.state[`custom_wave_${wave.index}_samples`] ??
-        64,
-      spectrum:
-        wave.fields.spectrum ??
-        this.state[`custom_wave_${wave.index}_spectrum`] ??
-        0,
-      additive:
-        wave.fields.additive ??
-        this.state[`custom_wave_${wave.index}_additive`] ??
-        0,
-      usedots:
-        wave.fields.usedots ??
-        this.state[`custom_wave_${wave.index}_usedots`] ??
-        0,
-      scaling:
-        wave.fields.scaling ??
-        this.state[`custom_wave_${wave.index}_scaling`] ??
-        1,
-      smoothing:
-        wave.fields.smoothing ??
-        this.state[`custom_wave_${wave.index}_smoothing`] ??
-        0.5,
-      mystery:
-        wave.fields.mystery ??
-        this.state[`custom_wave_${wave.index}_mystery`] ??
-        0,
-      thick:
-        wave.fields.thick ?? this.state[`custom_wave_${wave.index}_thick`] ?? 1,
-      x: wave.fields.x ?? this.state[`custom_wave_${wave.index}_x`] ?? 0.5,
-      y: wave.fields.y ?? this.state[`custom_wave_${wave.index}_y`] ?? 0.5,
-      r: wave.fields.r ?? this.state[`custom_wave_${wave.index}_r`] ?? 1,
-      g: wave.fields.g ?? this.state[`custom_wave_${wave.index}_g`] ?? 1,
-      b: wave.fields.b ?? this.state[`custom_wave_${wave.index}_b`] ?? 1,
-      a: wave.fields.a ?? this.state[`custom_wave_${wave.index}_a`] ?? 0.4,
-      ...Object.fromEntries(
-        Array.from({ length: MAX_CUSTOM_WAVE_SLOTS }, (_, index) => [
-          `t${index + 1}`,
-          0,
-        ]),
-      ),
-    };
+    return seedCustomWaveFields(wave, this.state);
   }
 
   private seedCustomShapeState(shape: MilkdropShapeDefinition) {
-    const prefix = `shape_${shape.index}`;
-    return {
-      enabled: shape.fields.enabled ?? this.state[`${prefix}_enabled`] ?? 0,
-      sides: shape.fields.sides ?? this.state[`${prefix}_sides`] ?? 6,
-      x: shape.fields.x ?? this.state[`${prefix}_x`] ?? 0.5,
-      y: shape.fields.y ?? this.state[`${prefix}_y`] ?? 0.5,
-      rad: shape.fields.rad ?? this.state[`${prefix}_rad`] ?? 0.15,
-      ang: shape.fields.ang ?? this.state[`${prefix}_ang`] ?? 0,
-      instance: 0,
-      num_inst: shape.fields.num_inst ?? this.state[`${prefix}_num_inst`] ?? 1,
-      textured: shape.fields.textured ?? this.state[`${prefix}_textured`] ?? 0,
-      tex_zoom: shape.fields.tex_zoom ?? this.state[`${prefix}_tex_zoom`] ?? 1,
-      tex_ang: shape.fields.tex_ang ?? this.state[`${prefix}_tex_ang`] ?? 0,
-      r: shape.fields.r ?? this.state[`${prefix}_r`] ?? 1,
-      g: shape.fields.g ?? this.state[`${prefix}_g`] ?? 1,
-      b: shape.fields.b ?? this.state[`${prefix}_b`] ?? 1,
-      a: shape.fields.a ?? this.state[`${prefix}_a`] ?? 0.2,
-      r2: shape.fields.r2 ?? this.state[`${prefix}_r2`] ?? 0,
-      g2: shape.fields.g2 ?? this.state[`${prefix}_g2`] ?? 0,
-      b2: shape.fields.b2 ?? this.state[`${prefix}_b2`] ?? 0,
-      a2: shape.fields.a2 ?? this.state[`${prefix}_a2`] ?? 0,
-      border_r: shape.fields.border_r ?? this.state[`${prefix}_border_r`] ?? 1,
-      border_g: shape.fields.border_g ?? this.state[`${prefix}_border_g`] ?? 1,
-      border_b: shape.fields.border_b ?? this.state[`${prefix}_border_b`] ?? 1,
-      border_a:
-        shape.fields.border_a ?? this.state[`${prefix}_border_a`] ?? 0.8,
-      additive: shape.fields.additive ?? this.state[`${prefix}_additive`] ?? 0,
-      thickoutline:
-        shape.fields.thickoutline ?? this.state[`${prefix}_thickoutline`] ?? 0,
-    };
+    return seedCustomShapeFields(shape, this.state);
   }
 
   private prepareSignalEnv(signals: MilkdropRuntimeSignals) {
@@ -543,67 +424,8 @@ class MilkdropPresetVM implements MilkdropVM {
     this.lastPreparedSignalFrame = signals.frame;
     this.lastPreparedSignalTime = signals.time;
 
-    this.signalEnv.time = signals.time;
-    this.signalEnv.frame = signals.frame;
-    this.signalEnv.fps = signals.fps;
-    this.signalEnv.aspect = signals.aspect ?? 1;
-    deriveMilkdropViewportSignalValues(signals, this.signalEnv);
     const meshDensity = getMeshDensity(this.state, this.detailScale);
-    this.signalEnv.meshx = meshDensity;
-    this.signalEnv.meshy = meshDensity;
-    this.signalEnv.bass = signals.bass;
-    this.signalEnv.mid = signals.mid;
-    this.signalEnv.med = signals.mid;
-    this.signalEnv.mids = signals.mids;
-    this.signalEnv.treb = signals.treb;
-    this.signalEnv.att = signals.treb;
-    this.signalEnv.treble = signals.treble;
-    this.signalEnv.bass_att = signals.bass_att;
-    this.signalEnv.mid_att = signals.mid_att;
-    this.signalEnv.med_att = signals.mid_att;
-    this.signalEnv.mids_att = signals.mids_att;
-    this.signalEnv.treb_att = signals.treb_att;
-    this.signalEnv.treble_att = signals.treble_att;
-    this.signalEnv.bassAtt = signals.bassAtt;
-    this.signalEnv.midsAtt = signals.midsAtt;
-    this.signalEnv.trebleAtt = signals.trebleAtt;
-    this.signalEnv.beat = signals.beat;
-    this.signalEnv.beat_pulse = signals.beat_pulse;
-    this.signalEnv.beatPulse = signals.beatPulse;
-    this.signalEnv.beatBass = signals.beatBass;
-    this.signalEnv.beatMid = signals.beatMid;
-    this.signalEnv.beatTreble = signals.beatTreble;
-    this.signalEnv.beat_bass = signals.beatBass;
-    this.signalEnv.beat_mid = signals.beatMid;
-    this.signalEnv.beat_treb = signals.beatTreble;
-    this.signalEnv.bandFlux = signals.bandFlux;
-    this.signalEnv.rms = signals.rms;
-    this.signalEnv.vol = signals.vol;
-    this.signalEnv.music = signals.music;
-    this.signalEnv.weighted_energy = signals.weightedEnergy;
-    this.signalEnv.progress = signals.frame;
-
-    const freqData = signals.frequencyData;
-    if (freqData && freqData.length > 0) {
-      const binCount = freqData.length;
-      const maxBin = Math.max(1, Math.floor(binCount / 2));
-      for (let i = 0; i < 32; i += 1) {
-        const lowBin = Math.floor(maxBin ** (i / 32));
-        const highBin = Math.min(maxBin, Math.floor(maxBin ** ((i + 1) / 32)));
-        const end = Math.max(lowBin + 1, highBin);
-        let sum = 0;
-        let count = 0;
-        for (let b = lowBin; b < end && b < binCount; b += 1) {
-          sum += freqData[b] ?? 0;
-          count += 1;
-        }
-        this.signalEnv[`spec_${i}`] = count > 0 ? sum / count / 255 : 0;
-      }
-    } else {
-      for (let i = 0; i < 32; i += 1) {
-        this.signalEnv[`spec_${i}`] = 0;
-      }
-    }
+    syncSignalEnvironment(signals, this.signalEnv, meshDensity);
   }
 
   private createEnv(
@@ -728,21 +550,12 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildFrame(signals: MilkdropRuntimeSignals): MilkdropFrameState {
-    const {
-      supportsProceduralWave,
-      runProgram,
-      createEnv,
-      createFlatEnv,
-      seedCustomWaveState,
-      seedCustomShapeState,
-      getProceduralCustomWaveDescriptor,
-    } = this.frameCallbacks;
     const { visual: mainWave, procedural: proceduralMainWave } = buildMainWave({
       state: this.state,
       signals,
       detailScale: this.detailScale,
       waveState: this.waveState,
-      supportsProceduralWave,
+      supportsProceduralWave: this.frameCallbacks.supportsProceduralWave,
     });
     commitMainWaveFrame({
       waveState: this.waveState,
@@ -759,8 +572,8 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       detailScale: this.detailScale,
       geometryState: this.geometryState,
-      runProgram,
-      createEnv,
+      runProgram: this.frameCallbacks.runProgram,
+      createEnv: this.frameCallbacks.createEnv,
       proceduralMeshPlan,
     });
     const gpuGeometry = buildGpuGeometryHints({
@@ -779,10 +592,11 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       detailScale: this.detailScale,
       waveState: this.waveState,
-      runProgram,
-      createEnv,
-      seedCustomWaveState,
-      getProceduralCustomWaveDescriptor,
+      runProgram: this.frameCallbacks.runProgram,
+      createEnv: this.frameCallbacks.createEnv,
+      seedCustomWaveState: this.frameCallbacks.seedCustomWaveState,
+      getProceduralCustomWaveDescriptor:
+        this.frameCallbacks.getProceduralCustomWaveDescriptor,
     });
     const mesh = buildMesh({
       state: this.state,
@@ -795,8 +609,8 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       meshField,
       geometryState: this.geometryState,
-      runProgram,
-      createEnv,
+      runProgram: this.frameCallbacks.runProgram,
+      createEnv: this.frameCallbacks.createEnv,
       proceduralMotionVectorPlan,
     });
     const shapes = buildShapes({
@@ -804,16 +618,16 @@ class MilkdropPresetVM implements MilkdropVM {
       state: this.state,
       signals,
       shapeState: this.shapeState,
-      runProgram,
-      createEnv,
-      seedCustomShapeState,
+      runProgram: this.frameCallbacks.runProgram,
+      createEnv: this.frameCallbacks.createEnv,
+      seedCustomShapeState: this.frameCallbacks.seedCustomShapeState,
     });
     const borders = buildBorders(this.state);
     const post = buildPost({
       preset: this.preset,
       state: this.state,
       signals,
-      createEnv: createFlatEnv,
+      createEnv: this.frameCallbacks.createFlatEnv,
     });
 
     this.frameVariablesSnapshot = null;
