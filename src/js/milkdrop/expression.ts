@@ -504,7 +504,7 @@ export function evaluateMilkdropExpression(
         case '-':
           return -value;
         case '!':
-          return value === 0 ? 1 : 0;
+          return Math.abs(value) > MILKDROP_EEL_CLOSE_FACTOR ? 0 : 1;
       }
       return 0;
     }
@@ -525,8 +525,10 @@ export function evaluateMilkdropExpression(
           const rightInt = toMilkdropInt(right);
           return rightInt === 0 ? 0 : leftInt % rightInt;
         }
-        case '^':
-          return left ** right;
+        case '^': {
+          const res = left ** right;
+          return Number.isFinite(res) ? res : 0;
+        }
         case '|':
           return toMilkdropInt(left) | toMilkdropInt(right);
         case '&':
@@ -544,9 +546,15 @@ export function evaluateMilkdropExpression(
         case '!=':
           return left !== right ? 1 : 0;
         case '&&':
-          return left !== 0 && right !== 0 ? 1 : 0;
+          return Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR &&
+            Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR
+            ? 1
+            : 0;
         case '||':
-          return left !== 0 || right !== 0 ? 1 : 0;
+          return Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR ||
+            Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR
+            ? 1
+            : 0;
       }
       return 0;
     }
@@ -615,10 +623,14 @@ export function evaluateMilkdropExpression(
           const t = Math.min(Math.max((value - edge0) / (edge1 - edge0), 0), 1);
           return t * t * (3 - 2 * t);
         }
-        case 'log':
-          return Math.log(Math.max(0.000001, args[0] ?? 0));
-        case 'log10':
-          return Math.log10(Math.max(0.000001, args[0] ?? 0));
+        case 'log': {
+          const res = Math.log(Math.max(0, args[0] ?? 0));
+          return Number.isFinite(res) ? res : 0;
+        }
+        case 'log10': {
+          const res = Math.log10(Math.max(0, args[0] ?? 0));
+          return Number.isFinite(res) ? res : 0;
+        }
         case 'exp':
           return Math.exp(args[0] ?? 0);
         case 'sigmoid': {
@@ -627,7 +639,7 @@ export function evaluateMilkdropExpression(
           return 1 / (1 + Math.exp(-value * slope));
         }
         case 'sign':
-          return Math.sign(args[0] ?? 0);
+          return Math.sign(args[0] ?? 0) || 0;
         case 'bor':
           return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR ||
             Math.abs(args[1] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
@@ -647,13 +659,18 @@ export function evaluateMilkdropExpression(
           return value - Math.floor(value);
         }
         case 'if':
-          return (args[0] ?? 0) !== 0 ? (args[1] ?? 0) : (args[2] ?? 0);
+          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
+            ? (args[1] ?? 0)
+            : (args[2] ?? 0);
         case 'above':
           return (args[0] ?? 0) > (args[1] ?? 0) ? 1 : 0;
         case 'below':
           return (args[0] ?? 0) < (args[1] ?? 0) ? 1 : 0;
         case 'equal':
-          return (args[0] ?? 0) === (args[1] ?? 0) ? 1 : 0;
+          return Math.abs((args[0] ?? 0) - (args[1] ?? 0)) <=
+            MILKDROP_EEL_CLOSE_FACTOR
+            ? 1
+            : 0;
         case 'rand':
           return (helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1);
         case 'randint':
@@ -675,6 +692,7 @@ export function evaluateMilkdropExpression(
 export function splitMilkdropStatements(source: string) {
   const normalizedSource = source
     .replace(/\r\n/gu, '\n')
+    .replace(/\/\*[\s\S]*?\*\//gu, '')
     .replace(/\/\/[^\n]*/gu, '');
   const statements: string[] = [];
   let current = '';

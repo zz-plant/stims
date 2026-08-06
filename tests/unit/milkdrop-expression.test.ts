@@ -22,16 +22,30 @@ describe('milkdrop expression', () => {
     expect(evaluateMilkdropExpression(parsed.value, {})).toBeCloseTo(15.25, 6);
   });
 
-  test('implements NS-EEL logical bor/band/bnot with the close factor', () => {
+  test('implements NS-EEL logical bor/band/bnot and operators with the close factor', () => {
     const cases: Array<[string, number]> = [
       ['bnot(0)', 1],
       ['bnot(0.000001)', 1],
       ['bnot(1)', 0],
       ['bnot(-2)', 0],
+      ['!0', 1],
+      ['!0.000001', 1],
+      ['!1', 0],
       ['band(0.5, 0.5)', 1],
       ['band(1, 0)', 0],
+      ['0.5 && 0.5', 1],
+      ['1 && 0.000001', 0],
       ['bor(0, 0.25)', 1],
       ['bor(0, 0)', 0],
+      ['0 || 0.25', 1],
+      ['0.000001 || 0', 0],
+      ['if(0.000001, 10, 20)', 20],
+      ['if(0.5, 10, 20)', 10],
+      ['equal(1.000001, 1.0)', 1],
+      ['equal(1.1, 1.0)', 0],
+      ['log(0)', 0],
+      ['log(-5)', 0],
+      ['log10(0)', 0],
     ];
     for (const [source, expected] of cases) {
       const parsed = parseMilkdropExpression(source, 1);

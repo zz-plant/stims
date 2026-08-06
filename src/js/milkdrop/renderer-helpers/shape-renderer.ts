@@ -166,11 +166,12 @@ function createShapeFillShaderMaterial(
         vec3 color = tint;
 
         if (textured > 0.5) {
-          vec2 rotated = rotate2d(vLocal, textureAngle);
           float zoom = max(textureZoom, 0.0001);
+          vec2 scaled = vLocal / zoom;
+          vec2 rotated = rotate2d(scaled, textureAngle);
           vec2 sampleUv = vec2(
-            0.5 + 0.5 * rotated.x / zoom,
-            0.5 + 0.5 * rotated.y / zoom
+            0.5 + 0.5 * rotated.x,
+            0.5 + 0.5 * rotated.y
           );
           vec4 sampled = texture2D(shapeTexture, fract(sampleUv));
           color = sampled.rgb * tint;

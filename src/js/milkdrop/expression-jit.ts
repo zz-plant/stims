@@ -89,7 +89,7 @@ function compileNode(
         case '-':
           return `(-(${x}))`;
         case '!':
-          return `((${x}) === 0 ? 1 : 0)`;
+          return `(Math.abs(${x}) > 0.00001 ? 0 : 1)`;
       }
       return '(0)';
     }
@@ -108,7 +108,7 @@ function compileNode(
         case '%':
           return `((function(a,b){var ai=Math.trunc(a)||0,bi=Math.trunc(b)||0;return bi===0?0:ai%bi})(${l},${r}))`;
         case '^':
-          return `((${l}) ** (${r}))`;
+          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${l},${r}))`;
         case '|':
           return `((Math.trunc(${l})||0) | (Math.trunc(${r})||0))`;
         case '&':
@@ -126,9 +126,9 @@ function compileNode(
         case '!=':
           return `((${l}) !== (${r}) ? 1 : 0)`;
         case '&&':
-          return `((${l}) !== 0 && (${r}) !== 0 ? 1 : 0)`;
+          return `((Math.abs(${l}) > 0.00001 && Math.abs(${r}) > 0.00001) ? 1 : 0)`;
         case '||':
-          return `((${l}) !== 0 || (${r}) !== 0 ? 1 : 0)`;
+          return `((Math.abs(${l}) > 0.00001 || Math.abs(${r}) > 0.00001) ? 1 : 0)`;
       }
       return '(0)';
     }
@@ -159,7 +159,7 @@ function compileNode(
         case 'sqrt':
           return `Math.sqrt(Math.max(0, ${args[0] ?? '0'}))`;
         case 'pow':
-          return `((${args[0] ?? '0'}) ** (${args[1] ?? '0'}))`;
+          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${args[0] ?? '0'},${args[1] ?? '0'}))`;
         case 'mod':
         case 'fmod':
           return `((${args[1] ?? '0'}) === 0 ? 0 : (${args[0] ?? '0'}) % (${args[1] ?? '0'}))`;
@@ -169,7 +169,7 @@ function compileNode(
           return `Math.max(${args.join(',') || '0'})`;
         case 'mix':
         case 'lerp':
-          return `((${args[0] ?? '0'}) + ((${args[1] ?? '0'}) - (${args[0] ?? '0'})) * (${args[2] ?? '0'}))`;
+          return `((function(a,b,c){return a+(b-a)*c})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '0'}))`;
         case 'floor':
           return `Math.floor(${args[0] ?? '0'})`;
         case 'int':
@@ -177,23 +177,23 @@ function compileNode(
         case 'ceil':
           return `Math.ceil(${args[0] ?? '0'})`;
         case 'sqr':
-          return `((${args[0] ?? '0'}) * (${args[0] ?? '0'}))`;
+          return `((function(v){return v*v})(${args[0] ?? '0'}))`;
         case 'clamp':
-          return `Math.min(Math.max(${args[0] ?? '0'}, ${args[1] ?? '0'}), ${args[2] ?? '1'})`;
+          return `((function(v,lo,hi){return Math.min(Math.max(v,lo),hi)})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '1'}))`;
         case 'step':
           return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
         case 'smoothstep':
           return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
         case 'log':
-          return `Math.log(Math.max(0.000001, ${args[0] ?? '0'}))`;
+          return `Math.log(Math.max(0, ${args[0] ?? '0'}))`;
         case 'log10':
-          return `Math.log10(Math.max(0.000001, ${args[0] ?? '0'}))`;
+          return `Math.log10(Math.max(0, ${args[0] ?? '0'}))`;
         case 'exp':
           return `Math.exp(${args[0] ?? '0'})`;
         case 'sigmoid':
           return `(1 / (1 + Math.exp(-(${args[0] ?? '0'}) * (${args[1] ?? '1'}))))`;
         case 'sign':
-          return `Math.sign(${args[0] ?? '0'})`;
+          return `(Math.sign(${args[0] ?? '0'})||0)`;
         case 'bor':
           return `((Math.abs(${args[0] ?? '0'}) > 0.00001 || Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
         case 'band':
@@ -205,13 +205,13 @@ function compileNode(
         case 'frac':
           return `((${args[0] ?? '0'}) - Math.floor(${args[0] ?? '0'}))`;
         case 'if':
-          return `((${args[0] ?? '0'}) !== 0 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
+          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
         case 'above':
           return `((${args[0] ?? '0'}) > (${args[1] ?? '0'}) ? 1 : 0)`;
         case 'below':
           return `((${args[0] ?? '0'}) < (${args[1] ?? '0'}) ? 1 : 0)`;
         case 'equal':
-          return `((${args[0] ?? '0'}) === (${args[1] ?? '0'}) ? 1 : 0)`;
+          return `(Math.abs((${args[0] ?? '0'}) - (${args[1] ?? '0'})) <= 0.00001 ? 1 : 0)`;
         case 'rand':
           return `(rnd() * (${args[0] ?? '1'}))`;
         case 'randint':
