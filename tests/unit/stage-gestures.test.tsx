@@ -30,6 +30,7 @@ function createGestureHarness() {
       handleToggleFullscreen: callbacks.toggleFullscreen,
       setStatusMessage: callbacks.status,
       hapticsEnabled: false,
+      longPressMs: 20,
     });
     return createElement('div', { ref: stageRef, 'data-stage': 'true' });
   }
@@ -137,7 +138,7 @@ describe('useStageGesture touch gestures', () => {
     const { callbacks, stage } = mount();
 
     dispatchTouch(stage, 'pointerdown', { pointerId: 1, x: 200, y: 200 });
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    await new Promise((resolve) => setTimeout(resolve, 60));
     dispatchTouch(stage, 'pointerup', { pointerId: 1, x: 200, y: 200 });
 
     expect(callbacks.toggleFavorite).toHaveBeenCalledTimes(1);

@@ -3,9 +3,13 @@ import {
   createUnifiedInput,
   type UnifiedInputState,
 } from '../../src/js/core/unified-input.ts';
+import { flushAnimationFrame } from '../environment/animation-frame.ts';
 
 const flushInput = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 24));
+  // Fire the pending requestAnimationFrame synchronously instead of waiting
+  // out the environment's 16ms auto-advance timer.
+  flushAnimationFrame();
+  await Promise.resolve();
 };
 
 function createTarget() {

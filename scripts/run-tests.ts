@@ -159,15 +159,18 @@ async function runBunTest(options: {
   return proc.exited;
 }
 
+// Weights are byte-equivalent shard-packing units, refreshed from measured
+// per-file wall times (2026-08: codex-session 3.3s, catalog-compiler-smoke
+// 1.4s, codex-setup 1.0s; the compiler/shader suites all run under 1s now).
 const KNOWN_HEAVY_TESTS: Record<string, number> = {
-  'tests/unit/milkdrop-projectm-cream-library.test.ts': 80000,
-  'tests/unit/milkdrop-renderer-adapter.test.ts': 80000,
-  'tests/unit/shader-dependent-presets.test.ts': 70000,
-  'tests/unit/milkdrop-program-jit.test.ts': 60000,
-  'tests/unit/app-shell.test.js': 50000,
-  'tests/unit/editor-panel.test.ts': 30000,
-  'tests/unit/check-toys.test.ts': 30000,
+  'tests/unit/codex-session-script.test.ts': 80000,
+  'tests/unit/catalog-compiler-smoke.test.ts': 40000,
+  'tests/unit/codex-setup-script.test.ts': 30000,
+  'tests/unit/milkdrop-catalog-store.test.ts': 25000,
+  'tests/unit/check-toys.test.ts': 25000,
   'tests/unit/agent-api.test.ts': 25000,
+  'tests/unit/catalog-store-analysis.test.ts': 25000,
+  'tests/unit/mcp-server.test.ts': 25000,
 };
 
 /**

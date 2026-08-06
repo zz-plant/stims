@@ -45,10 +45,10 @@ describe('milkdrop inspector panel selection summary', () => {
             backendDivergence: [],
             visualFallbacks: [],
             degradationReasons: [],
-            featureAnalysis: {
-              featuresUsed: ['base-globals'],
-              registerUsage: { q: 0, t: 0 },
-            },
+          },
+          featureAnalysis: {
+            featuresUsed: ['base-globals'],
+            registerUsage: { q: 0, t: 0 },
           },
         },
       },

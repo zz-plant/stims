@@ -334,6 +334,24 @@ describe('editor panel change propagation', () => {
     document.body.innerHTML = '';
   });
 
+  // The editor debounce is 120ms; poll instead of sleeping a fixed 250ms so
+  // the happy path resolves as soon as the debounce fires.
+  async function waitForCalls(
+    fn: ReturnType<typeof mock>,
+    count: number,
+    timeoutMs = 2000,
+  ) {
+    const start = performance.now();
+    while (fn.mock.calls.length < count) {
+      if (performance.now() - start > timeoutMs) {
+        throw new Error(
+          `Timed out waiting for ${count} call(s); saw ${fn.mock.calls.length}.`,
+        );
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 10));
+    }
+  }
+
   function createEditorPanelHarness() {
     const OriginalMutationObserver = globalThis.MutationObserver;
     globalThis.MutationObserver = class {
@@ -386,7 +404,7 @@ describe('editor panel change propagation', () => {
     snippetButton.click();
     expect(harness.onEditorSourceChange).not.toHaveBeenCalled();
 
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    await waitForCalls(harness.onEditorSourceChange, 1);
 
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
     expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
@@ -415,7 +433,8 @@ describe('editor panel change propagation', () => {
     applyButton.click();
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
 
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    // Outlast the 120ms debounce to prove the flush cleared it.
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
 
     harness.restore();
@@ -439,7 +458,7 @@ describe('editor panel change propagation', () => {
     ) as HTMLElement | null;
     expect(editorText?.textContent).toContain('zoom=1.01');
 
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    await waitForCalls(harness.onEditorSourceChange, 1);
     expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
     expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
       'zoom=1.01',

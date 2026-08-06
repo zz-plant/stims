@@ -164,7 +164,9 @@ describe('milkdrop catalog store', () => {
     await store.savePreset({
       id: 'local-shader',
       title: 'Local Shader',
-      raw: 'title=Local Shader\nwarp_shader=unsupported\n',
+      // `goto` is unrepresentable in the shader translator, so this stays a
+      // genuinely blocked construct even as shader-text support widens.
+      raw: 'title=Local Shader\nwarp_1=goto label;\n',
       origin: 'user',
     });
     await store.setFavorite('local-shader', true);
@@ -181,12 +183,12 @@ describe('milkdrop catalog store', () => {
     expect(imported?.supports.webgpu.status).toBe('partial');
     expect(imported?.fidelityClass).toBe('fallback');
     expect(imported?.certification).toBe('exploratory');
-    expect(imported?.parity.approximatedShaderLines).toEqual(['unsupported']);
-    expect(imported?.parity.blockedConstructs).toEqual(['shader:unsupported']);
+    expect(imported?.parity.approximatedShaderLines).toEqual(['goto label']);
+    expect(imported?.parity.blockedConstructs).toEqual(['shader:goto label']);
     expect(imported?.parity.blockingConstructDetails).toEqual([
       {
         kind: 'shader',
-        value: 'unsupported',
+        value: 'goto label',
         system: 'shader-text',
         allowlisted: false,
       },
