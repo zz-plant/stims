@@ -355,9 +355,34 @@ export function buildPlayToyUrl({
   return `http://127.0.0.1:${port}${routePath}?${params.toString()}`;
 }
 
+// A SwiftShader renderer can crash or wedge under load. Playwright's graceful
+// closes then wait on a target that will never settle, and the test eats its
+// whole budget as a hang. Bound every close so a crashed browser degrades to a
+// prompt failure instead of a full-budget timeout.
+const CLOSE_GRACE_MS = 8000;
+
+async function withCloseGrace(close: Promise<void>) {
+  await Promise.race([
+    close.catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, CLOSE_GRACE_MS)),
+  ]);
+}
+
+async function closePage(page: Page | undefined) {
+  if (page) {
+    await withCloseGrace(page.close());
+  }
+}
+
+async function closeContext(context: BrowserContext | undefined) {
+  if (context) {
+    await withCloseGrace(context.close());
+  }
+}
+
 async function closeBrowser(browser?: Browser) {
   if (browser) {
-    await browser.close();
+    await withCloseGrace(browser.close());
   }
 }
 
@@ -1219,8 +1244,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     const initialErrorStatus = await getErrorStatus(page);
     if (initialErrorStatus) {
-      await page.close();
-      await context.close();
+      await closePage(page);
+      await closeContext(context);
       if (ownsBrowser) {
         await closeBrowser(browser);
       }
@@ -1263,8 +1288,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     const statusAfterAudioRequest = await getErrorStatus(page);
     if (statusAfterAudioRequest) {
-      await page.close();
-      await context.close();
+      await closePage(page);
+      await closeContext(context);
       if (ownsBrowser) {
         await closeBrowser(browser);
       }
@@ -1346,8 +1371,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     const loadErrorStatus = await getErrorStatus(page);
     if (loadErrorStatus) {
-      await page.close();
-      await context.close();
+      await closePage(page);
+      await closeContext(context);
       if (ownsBrowser) {
         await closeBrowser(browser);
       }
@@ -1582,8 +1607,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       console.log(`Parity artifact manifest updated at ${manifestPath}`);
     }
 
-    await page.close();
-    await context.close(); // Saves video if enabled
+    await closePage(page);
+    await closeContext(context); // Saves video if enabled
     if (ownsBrowser) {
       await closeBrowser(browser);
     }
@@ -1625,12 +1650,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       // Ignore perf capture errors on failure paths.
     }
     console.error(`Error playing toy ${options.slug}:`, error);
-    if (page) {
-      await page.close().catch(() => {});
-    }
-    if (context) {
-      await context.close().catch(() => {});
-    }
+    await closePage(page);
+    await closeContext(context);
     if (ownsBrowser) {
       await closeBrowser(browser);
     }

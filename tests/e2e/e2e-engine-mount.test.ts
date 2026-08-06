@@ -33,6 +33,10 @@ let devServer: DevServerHandle | null = null;
 // applyCompiledPreset alone has been observed taking 5-13s in CI under
 // SwiftShader's software rasterizer, against 1-4s on real GPU locally, so
 // this budget stays wide for that reason rather than the fan-out.
+// The probes poll at 250ms rather than animation-frame rate: each poll does
+// a full-canvas readback through a scratch 2D canvas, which stalls the
+// software rasterizer on every check. Slower polling cuts that interference
+// while the probe is waiting for the first non-zero frame.
 const GPU_PROBE_TIMEOUT_MS = 120000;
 
 /** Never let teardown mask the assertion failure that got us here. */
@@ -90,9 +94,13 @@ browserTest(
       headless: HEADLESS,
       args: RENDERER_ARGS,
     });
+    // DPR 1 keeps the SwiftShader backing store at 1280×720. CI's 2-core
+    // runner software-rasterizes every frame, so the 4× pixel work of DPR 2
+    // is pure timeout risk with no assertion value here (non-zero pixel and
+    // a differing hash both hold at DPR 1).
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
-      deviceScaleFactor: 2,
+      deviceScaleFactor: 1,
     });
     const page = await ctx.newPage();
     page.on('console', (msg) => {
@@ -160,7 +168,7 @@ browserTest(
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS },
+        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
       );
 
       const info = await page.evaluate(() => {
@@ -194,7 +202,7 @@ browserTest(
     });
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
-      deviceScaleFactor: 2,
+      deviceScaleFactor: 1,
     });
     const page = await ctx.newPage();
     page.on('console', (msg) => {
@@ -254,7 +262,7 @@ browserTest(
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS },
+        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
       );
 
       const hash1 = await page.evaluate(() =>
@@ -316,7 +324,7 @@ browserTest(
           return data[0] > 0 || data[1] > 0 || data[2] > 0;
         },
         undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS },
+        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
       );
 
       const hash2 = await page.evaluate(() =>
