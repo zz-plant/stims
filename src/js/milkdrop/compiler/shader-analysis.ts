@@ -160,6 +160,7 @@ function applyShaderAstStatement({
   shaderEnv,
   shaderValueEnv,
   shaderExpressionEnv,
+  hasNativeBody,
 }: {
   statement: MilkdropShaderStatement;
   controls: MilkdropShaderControls;
@@ -167,6 +168,7 @@ function applyShaderAstStatement({
   shaderEnv: Record<string, number>;
   shaderValueEnv: ShaderRuntimeEnv;
   shaderExpressionEnv: ShaderExpressionEnv;
+  hasNativeBody: boolean;
 }) {
   const key = statement.target.toLowerCase();
   const operator = statement.operator;
@@ -175,10 +177,12 @@ function applyShaderAstStatement({
     shaderExpressionEnv,
   );
 
-  // Allow 3D textures in warp_texture_source, shader_body, and ret to be handled by the direct program (native shader body)
   if (
     hasUnsupportedVolumeSample(resolvedExpression) &&
-    !(key === 'warp_texture_source' || key === 'shader_body' || key === 'ret')
+    !(
+      key === 'warp_texture_source' ||
+      (hasNativeBody && (key === 'shader_body' || key === 'ret'))
+    )
   ) {
     return false;
   }
@@ -223,7 +227,7 @@ function applyShaderAstStatement({
       return false;
     }
     shaderValueEnv[key] = evaluatedValue;
-    shaderExpressionEnv[key] = resolvedExpression;
+    shaderExpressionEnv[key] = statement.expression;
     return true;
   }
 
@@ -290,7 +294,7 @@ function applyShaderAstStatement({
           kind: 'vec2',
           value: [0, 0],
         };
-        shaderExpressionEnv[key] = resolvedExpression;
+        shaderExpressionEnv[key] = statement.expression;
         return true;
       }
     }
@@ -1017,7 +1021,7 @@ function applyShaderAstStatement({
     return false;
   }
   shaderValueEnv[key] = evaluatedValue;
-  shaderExpressionEnv[key] = resolvedExpression;
+  shaderExpressionEnv[key] = statement.expression;
   if (isShaderScalarValue(evaluatedValue)) {
     shaderEnv[key] = evaluatedValue.value;
   }
@@ -1561,6 +1565,7 @@ export function extractShaderControls(
           shaderEnv,
           shaderValueEnv,
           shaderExpressionEnv,
+          hasNativeBody: Boolean(nativeShaderBody),
         })
       ) {
         if (

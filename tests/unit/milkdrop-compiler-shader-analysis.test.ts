@@ -219,11 +219,11 @@ warp_texture_scale = bass_att * 0.5
     );
 
     expect(glsl).not.toBeNull();
-    expect(glsl).toContain('pow(signalBass, 2.0)');
-    expect(glsl).toContain('signalMid');
-    expect(glsl).toContain('signalTreb');
-    expect(glsl).toContain('float(int(signalBass) | int(2.0))');
-    expect(glsl).toContain('float(int(signalMid) & int(1.0))');
+    expect(glsl).toContain('pow(signalBassAtt, 2.0)');
+    expect(glsl).toContain('signalMidAtt');
+    expect(glsl).toContain('signalTrebAtt');
+    expect(glsl).toContain('float(int(signalBassAtt) | int(2.0))');
+    expect(glsl).toContain('float(int(signalMidAtt) & int(1.0))');
   });
 
   test('emits tex3D vec3 coordinates with a real z slice in GLSL', () => {

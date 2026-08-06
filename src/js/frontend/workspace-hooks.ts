@@ -40,9 +40,6 @@ import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
 const log = createLogger('WorkspaceHooks');
 
-const SUPERSEDED_MOUNT_MESSAGE =
-  'MilkDrop engine session was superseded during mount.';
-
 export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
@@ -101,13 +98,6 @@ export function useWorkspaceSessionState({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
   const sessionDisposedRef = useRef(false);
-  // Bumped on every mount of the lifecycle effect below (including React
-  // StrictMode's dev-only double-invoke). `sessionDisposedRef` alone can't
-  // tell a stale generation apart from the current one, since the next mount
-  // resets it back to `false` — a mount promise from a torn-down generation
-  // that resolves after the remount would read "not disposed" and resurrect
-  // a renderer for a session that no longer exists.
-  const sessionGenerationRef = useRef(0);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
     null,
   );
@@ -200,7 +190,6 @@ export function useWorkspaceSessionState({
       }
 
       const intent = launchIntent ?? buildLaunchIntent(routeState);
-      const mountGeneration = sessionGenerationRef.current;
 
       const mountPromise = (async () => {
         reportLoadStatus('runtime');
@@ -210,15 +199,6 @@ export function useWorkspaceSessionState({
         }
 
         await adapter.mount(stage, intent);
-        if (sessionGenerationRef.current !== mountGeneration) {
-          // A newer session generation started (e.g. StrictMode unmounted and
-          // remounted this hook) while this mount was still in flight. The
-          // newer generation already has its own adapter — disposing this one
-          // avoids leaking a second live renderer that could resurface and
-          // fight the active one for the canvas.
-          adapter.dispose();
-          throw new Error(SUPERSEDED_MOUNT_MESSAGE);
-        }
         return adapter;
       })();
 
@@ -241,7 +221,6 @@ export function useWorkspaceSessionState({
   }, [routeState.panel, routeState.presetId, hydrateFullCatalogNow]);
 
   useEffect(() => {
-    sessionGenerationRef.current += 1;
     sessionDisposedRef.current = false;
 
     return () => {
@@ -270,14 +249,6 @@ export function useWorkspaceSessionState({
     }
 
     void ensureEngineMounted().catch((error) => {
-      if (
-        error instanceof Error &&
-        error.message === SUPERSEDED_MOUNT_MESSAGE
-      ) {
-        // Benign: a newer session generation owns the canvas. The remounted
-        // effect runs its own ensureEngineMounted, so nothing is lost.
-        return;
-      }
       setStatusMessage(
         error instanceof Error
           ? error.message

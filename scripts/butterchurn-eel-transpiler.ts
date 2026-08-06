@@ -365,6 +365,13 @@ class Parser {
     if (!this.isPunct(';')) {
       const token = this.peek();
       if (
+        token.type === 'identifier' &&
+        (token.value === 'var' ||
+          token.value === 'let' ||
+          token.value === 'const')
+      ) {
+        this.next();
+      } else if (
         (token.type === 'punct' && token.value === '-') ||
         token.value === '+' ||
         token.value === '!' ||
@@ -484,11 +491,7 @@ class Parser {
     const token = this.peek();
     if (
       token.type === 'punct' &&
-      (token.value === '-' ||
-        token.value === '+' ||
-        token.value === '!' ||
-        token.value === '++' ||
-        token.value === '--')
+      (token.value === '-' || token.value === '+' || token.value === '!')
     ) {
       this.position += 1;
       return {

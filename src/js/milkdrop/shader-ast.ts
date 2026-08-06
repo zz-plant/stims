@@ -138,7 +138,7 @@ function tokenize(source: string) {
       // Number.parseFloat only parses a leading numeric prefix, so without
       // this check a typo like "1.2.3" would silently become 1.2 with the
       // invalid ".3" tail dropped instead of failing to parse.
-      if (!/^\d+(\.\d+)?$|^\.\d+$/u.test(digitsOnly)) {
+      if (!/^\d+(\.\d*)?$|^\.\d+$/u.test(digitsOnly)) {
         return null;
       }
       tokens.push({
