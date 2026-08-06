@@ -181,6 +181,9 @@ export function createMilkdropEngineAdapter() {
 
       const { createMilkdropExperience, createToyRuntimeStarter } =
         await loadRuntimeFactories();
+      if (!container) {
+        return;
+      }
       experience = createMilkdropExperience({
         container: nextContainer,
         quality,
