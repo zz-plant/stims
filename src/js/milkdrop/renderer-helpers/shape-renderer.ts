@@ -41,20 +41,32 @@ function shouldUseShapeShaderFill(
   );
 }
 
+const STATIC_SINGLE_OUTLINE_OFFSET = [{ x: 0, y: 0 }];
+const REUSABLE_THICK_OUTLINE_OFFSETS = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+];
+
 function getShapeOutlineOffsets(shape: MilkdropShapeVisual) {
   if (!shape.thickOutline) {
-    return [{ x: 0, y: 0 }];
+    return STATIC_SINGLE_OUTLINE_OFFSET;
   }
 
   const thickness = shape.borderColor.a ?? 1;
   const offset = MILKDROP_THICK_SHAPE_PASS_OFFSET * thickness * 0.5;
 
-  return [
-    { x: 0, y: 0 },
-    { x: offset, y: 0 },
-    { x: offset, y: offset },
-    { x: 0, y: offset },
-  ];
+  REUSABLE_THICK_OUTLINE_OFFSETS[0].x = 0;
+  REUSABLE_THICK_OUTLINE_OFFSETS[0].y = 0;
+  REUSABLE_THICK_OUTLINE_OFFSETS[1].x = offset;
+  REUSABLE_THICK_OUTLINE_OFFSETS[1].y = 0;
+  REUSABLE_THICK_OUTLINE_OFFSETS[2].x = offset;
+  REUSABLE_THICK_OUTLINE_OFFSETS[2].y = offset;
+  REUSABLE_THICK_OUTLINE_OFFSETS[3].x = 0;
+  REUSABLE_THICK_OUTLINE_OFFSETS[3].y = offset;
+
+  return REUSABLE_THICK_OUTLINE_OFFSETS;
 }
 
 function syncShapeShaderUniforms(
