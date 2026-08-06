@@ -70,6 +70,16 @@ const loadCapturedVideoModule = () => {
 
 export function createMilkdropEngineAdapter() {
   let container: HTMLElement | null = null;
+  // Bumped on every mount() call (including the second call of React
+  // StrictMode's dev-only double-invoke). A stale mount's async
+  // continuation can resume *after* a newer mount() has already reset
+  // `container` to a non-null value, so a bare `container` null-check isn't
+  // enough to tell the two apart — both would see a truthy container and
+  // both would proceed to build a competing experience/runtime. Comparing
+  // against the token captured at the start of this specific call catches
+  // that case; the `container` check below still catches "disposed and
+  // nothing replaced it" (a real, final teardown, not a StrictMode remount).
+  let mountToken = 0;
   let runtime: ToyRuntimeInstance | null = null;
   let experience: ExperienceController | null = null;
   let audioActive = false;
@@ -174,6 +184,7 @@ export function createMilkdropEngineAdapter() {
     async mount(nextContainer: HTMLElement, intent: LaunchIntent) {
       disposeRuntime();
 
+      const myToken = ++mountToken;
       container = nextContainer;
       if (intent.collectionTag) {
         requestMilkdropCollectionSelection(intent.collectionTag);
@@ -181,7 +192,7 @@ export function createMilkdropEngineAdapter() {
 
       const { createMilkdropExperience, createToyRuntimeStarter } =
         await loadRuntimeFactories();
-      if (!container) {
+      if (myToken !== mountToken || !container) {
         return;
       }
       experience = createMilkdropExperience({
