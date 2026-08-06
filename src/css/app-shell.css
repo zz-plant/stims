@@ -524,7 +524,7 @@ body[data-page="workspace"][data-live="true"] {
      matches the SidePanel desktop width; the dock reads it via a variable.
      Mobile renders the panel as a bottom sheet, so no inset there. */
   :scope[data-stage-tool-open="true"] {
-    --stage-tool-inset: 0;
+    --stage-tool-inset: 0px;
   }
 
   @media (min-width: 768px) {

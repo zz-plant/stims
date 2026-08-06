@@ -1,6 +1,4 @@
 import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
-import type { createMilkdropEditorSession } from '../editor-session.ts';
-import type { MilkdropOverlay } from '../overlay.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types.ts';
 import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types.ts';
 import { buildAgentMilkdropDebugSnapshot } from './debug-snapshot.ts';
@@ -17,8 +15,6 @@ type PresentationState = {
 };
 
 export function createMilkdropPresentationController({
-  getOverlay,
-  session,
   vm,
   getAdapter,
   getState,
@@ -27,8 +23,6 @@ export function createMilkdropPresentationController({
   setDebugSnapshot,
   getPerformanceMetrics,
 }: {
-  getOverlay: () => MilkdropOverlay | null;
-  session: Pick<ReturnType<typeof createMilkdropEditorSession>, 'getState'>;
   vm: ReturnTypeOfCreateMilkdropVM;
   getAdapter: () => MilkdropRendererAdapter | null;
   getState: () => PresentationState;
@@ -68,8 +62,7 @@ export function createMilkdropPresentationController({
     );
   };
 
-  const setOverlayStatus = (message: string) => {
-    getOverlay()?.setStatus(message);
+  const setOverlayStatus = () => {
     updateAgentDebugSnapshot(true);
   };
 
@@ -79,37 +72,12 @@ export function createMilkdropPresentationController({
     vm.setPreset(compiled);
     vm.setRenderBackend(state.backend);
     getAdapter()?.setPreset(compiled);
-
-    const overlay = getOverlay();
-    overlay?.setCurrentPresetTitle(compiled.title);
-    overlay?.setSessionState(session.getState());
-    overlay?.setInspectorState({
-      compiled: state.compiledPreset,
-      frameState: state.frameState,
-      backend: state.backend,
-    });
     updateAgentDebugSnapshot(true);
-  };
-
-  const syncInspectorState = () => {
-    const overlay = getOverlay();
-    if (!overlay) {
-      return;
-    }
-
-    const state = getState();
-    overlay.setInspectorState({
-      compiled: state.compiledPreset,
-      frameState: state.frameState,
-      backend: state.backend,
-    });
-    updateAgentDebugSnapshot();
   };
 
   return {
     applyCompiledPreset,
     setOverlayStatus,
-    syncInspectorState,
     updateAgentDebugSnapshot,
   };
 }

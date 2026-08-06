@@ -233,7 +233,7 @@
 .handle {
   position: fixed;
   bottom: max(10px, env(safe-area-inset-bottom));
-  left: calc(50% - var(--stage-tool-inset, 0) / 2);
+  left: calc(50% - var(--stage-tool-inset, 0px) / 2);
   transform: translateX(-50%);
   z-index: var(--z-dock);
   display: inline-flex;

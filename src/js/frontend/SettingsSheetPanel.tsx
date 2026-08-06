@@ -81,6 +81,16 @@ const TEXT_SCALE_STEPS: Array<{ value: TextScale; label: string }> = [
   { value: 2, label: '200%' },
 ];
 
+/** Crossfade duration steps, seconds. */
+const BLEND_DURATION_STEPS: Array<{ value: number; label: string }> = [
+  { value: 0.5, label: '0.5s' },
+  { value: 1, label: '1s' },
+  { value: 2, label: '2s' },
+  { value: 3, label: '3s' },
+  { value: 5, label: '5s' },
+  { value: 8, label: '8s' },
+];
+
 /** Snap a stored value onto the nearest offered step so the select stays bound. */
 function nearestStep(
   steps: Array<{ value: number; label: string }>,
@@ -437,6 +447,68 @@ export function SettingsSheetPanel({
           ))}
         </div>
         <p className="ctl-readout">{describeQualityNumbers(qualityPreset)}</p>
+      </section>
+
+      <section className="ctl-section">
+        <div className="ctl-section__head">
+          <h3 className="ctl-section__title">Playback</h3>
+        </div>
+        <SwitchRow
+          label="Autoplay"
+          hint="Automatically shuffles to a new preset while audio plays."
+          checked={engineSnapshot?.autoplay ?? false}
+          onChange={(next) => engine.setAutoplay(next)}
+        />
+        <div className="ctl-row">
+          <span className="ctl-row__text">
+            <label className="ctl-row__label" htmlFor="transition-mode">
+              Preset transitions
+            </label>
+            <span className="ctl-row__hint">
+              Blend crossfades into the next preset. Cut switches instantly.
+            </span>
+          </span>
+          <select
+            id="transition-mode"
+            className="ctl-select ctl-select--auto"
+            value={engineSnapshot?.transitionMode ?? 'blend'}
+            onChange={(e) =>
+              engine.setTransitionMode(e.target.value as 'blend' | 'cut')
+            }
+          >
+            <option value="blend">Blend</option>
+            <option value="cut">Cut</option>
+          </select>
+        </div>
+        {(engineSnapshot?.transitionMode ?? 'blend') === 'blend' ? (
+          <div className="ctl-row">
+            <span className="ctl-row__text">
+              <label className="ctl-row__label" htmlFor="blend-duration">
+                Blend duration
+              </label>
+              <span className="ctl-row__hint">
+                How long the crossfade between presets takes.
+              </span>
+            </span>
+            <select
+              id="blend-duration"
+              className="ctl-select ctl-select--auto"
+              value={nearestStep(
+                BLEND_DURATION_STEPS,
+                engineSnapshot?.blendDuration ?? 0.3,
+              )}
+              onChange={(e) =>
+                engine.setBlendDuration(parseFloat(e.target.value))
+              }
+            >
+              {BLEND_DURATION_STEPS.map((step) => (
+                <option key={step.value} value={step.value}>
+                  {step.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </section>
 
       <section className="ctl-section">

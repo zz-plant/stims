@@ -53,10 +53,6 @@ export function createMilkdropExperienceFrameLoop({
   catalogCoordinator,
   performanceTracker,
   getAdaptiveQualityController,
-  overlay,
-  getLastInspectorOverlaySyncAt,
-  setLastInspectorOverlaySyncAt,
-  presentationController,
   lowQualityPostOverride,
   mergedSignals,
   getPostprocessingPipeline,
@@ -133,14 +129,6 @@ export function createMilkdropExperienceFrameLoop({
       };
     }) => void;
   } | null;
-  overlay: {
-    shouldRenderInspectorMetrics: () => boolean;
-  } | null;
-  getLastInspectorOverlaySyncAt: () => number;
-  setLastInspectorOverlaySyncAt: (value: number) => void;
-  presentationController: {
-    syncInspectorState: () => void;
-  };
   lowQualityPostOverride: {
     shaderEnabled: boolean;
     videoEchoEnabled: boolean;
@@ -354,13 +342,6 @@ export function createMilkdropExperienceFrameLoop({
             renderMs: frameEndAt - renderStartAt,
           },
         });
-        if (
-          overlay?.shouldRenderInspectorMetrics() &&
-          now - getLastInspectorOverlaySyncAt() >= 120
-        ) {
-          setLastInspectorOverlaySyncAt(now);
-          presentationController.syncInspectorState();
-        }
         consecutiveFrameFailures = 0;
       } catch (error) {
         consecutiveFrameFailures += 1;

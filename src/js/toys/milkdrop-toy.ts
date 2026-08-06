@@ -17,7 +17,6 @@ export function start({ container }: ToyStartOptions = {}) {
   });
 
   const experience = createMilkdropExperience({
-    container,
     quality,
     qualityControl: {
       presets: DEFAULT_QUALITY_PRESETS,

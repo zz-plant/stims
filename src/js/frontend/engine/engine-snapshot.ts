@@ -25,6 +25,9 @@ export type EngineSnapshot = {
    * (not truthiness) since it never resets back to `null`.
    */
   audioEndedAt: number | null;
+  autoplay: boolean;
+  transitionMode: 'blend' | 'cut';
+  blendDuration: number;
 };
 
 export function createEmptyEngineSnapshot(): EngineSnapshot {
@@ -41,6 +44,9 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioSource: null,
     audioEnergy: 0,
     audioEndedAt: null,
+    autoplay: false,
+    transitionMode: 'blend',
+    blendDuration: 0.3,
   };
 }
 
@@ -58,7 +64,10 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
     a.audioEnergy === b.audioEnergy &&
-    a.audioEndedAt === b.audioEndedAt
+    a.audioEndedAt === b.audioEndedAt &&
+    a.autoplay === b.autoplay &&
+    a.transitionMode === b.transitionMode &&
+    a.blendDuration === b.blendDuration
   );
 }
 
@@ -91,6 +100,9 @@ export function buildEngineSnapshot({
     audioSource,
     audioEnergy: snapshot?.audioEnergy ?? 0,
     audioEndedAt: audioEndedAt ?? null,
+    autoplay: snapshot?.autoplay ?? false,
+    transitionMode: snapshot?.transitionMode ?? 'blend',
+    blendDuration: snapshot?.blendDuration ?? 0.3,
   };
   if (previousSnapshot && shallowEqual(next, previousSnapshot)) {
     return previousSnapshot;

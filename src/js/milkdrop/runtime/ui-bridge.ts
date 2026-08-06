@@ -1,7 +1,3 @@
-import {
-  MILKDROP_OVERLAY_TAB_EVENT,
-  type MilkdropOverlayTab,
-} from '../overlay-intent';
 import { MILKDROP_PRESET_SELECTION_EVENT } from '../preset-selection';
 
 export {
@@ -17,86 +13,6 @@ export {
   type MilkdropScenePointerPoint,
   resolveMilkdropScenePointerPoint,
 } from './scene-selection';
-
-export type MilkdropOverlayActionHandlers = {
-  onSelectPreset: (id: string) => void;
-  onSelectQualityPreset: (presetId: string) => void;
-  onToggleFavorite: (id: string, favorite: boolean) => void;
-  onSetRating: (id: string, rating: number) => void;
-  onRequestPresetPreviews: (presetIds: string[]) => void;
-  onRefreshPresetPreviews: (presetIds: string[]) => void;
-  onToggleAutoplay: (enabled: boolean) => void;
-  onTransitionModeChange: (mode: 'blend' | 'cut') => void;
-  onGoBackPreset: () => void;
-  onNextPreset: () => void;
-  onPreviousPreset: () => void;
-  onRandomize: () => void;
-  onBlendDurationChange: (value: number) => void;
-  onImportFiles: (files: FileList) => void;
-  onExport: () => void;
-  onDuplicatePreset: () => void;
-  onDeletePreset: () => void;
-  onEditorSourceChange: (source: string) => void;
-  onRevertToActive: () => void;
-  onInspectorFieldChange: (key: string, value: string | number) => void;
-};
-
-export function createMilkdropOverlayCallbacks(
-  actions: MilkdropOverlayActionHandlers,
-) {
-  return {
-    onSelectPreset: (id: string) => {
-      void actions.onSelectPreset(id);
-    },
-    onSelectQualityPreset: actions.onSelectQualityPreset,
-    onToggleFavorite: (id: string, favorite: boolean) => {
-      void actions.onToggleFavorite(id, favorite);
-    },
-    onSetRating: (id: string, rating: number) => {
-      void actions.onSetRating(id, rating);
-    },
-    onRequestPresetPreviews: (presetIds: string[]) => {
-      void actions.onRequestPresetPreviews(presetIds);
-    },
-    onRefreshPresetPreviews: (presetIds: string[]) => {
-      void actions.onRefreshPresetPreviews(presetIds);
-    },
-    onToggleAutoplay: actions.onToggleAutoplay,
-    onTransitionModeChange: actions.onTransitionModeChange,
-    onGoBackPreset: () => {
-      void actions.onGoBackPreset();
-    },
-    onNextPreset: () => {
-      void actions.onNextPreset();
-    },
-    onPreviousPreset: () => {
-      void actions.onPreviousPreset();
-    },
-    onRandomize: () => {
-      void actions.onRandomize();
-    },
-    onBlendDurationChange: actions.onBlendDurationChange,
-    onImportFiles: (files: FileList) => {
-      void actions.onImportFiles(files);
-    },
-    onExport: actions.onExport,
-    onDuplicatePreset: () => {
-      void actions.onDuplicatePreset();
-    },
-    onDeletePreset: () => {
-      void actions.onDeletePreset();
-    },
-    onEditorSourceChange: (source: string) => {
-      void actions.onEditorSourceChange(source);
-    },
-    onRevertToActive: () => {
-      void actions.onRevertToActive();
-    },
-    onInspectorFieldChange: (key: string, value: string | number) => {
-      void actions.onInspectorFieldChange(key, value);
-    },
-  };
-}
 
 export function installMilkdropRuntimeKeybindings({
   overlay,
@@ -302,25 +218,5 @@ export function installRequestedPresetListener(
   window.addEventListener(MILKDROP_PRESET_SELECTION_EVENT, listener);
   return () => {
     window.removeEventListener(MILKDROP_PRESET_SELECTION_EVENT, listener);
-  };
-}
-
-export function installRequestedOverlayTabListener(
-  onTab: (tab: MilkdropOverlayTab) => void,
-) {
-  if (typeof window === 'undefined') {
-    return () => {};
-  }
-  const listener = (event: Event) => {
-    const tab = (event as CustomEvent<{ tab?: MilkdropOverlayTab }>).detail
-      ?.tab;
-    if (!tab) {
-      return;
-    }
-    onTab(tab);
-  };
-  window.addEventListener(MILKDROP_OVERLAY_TAB_EVENT, listener);
-  return () => {
-    window.removeEventListener(MILKDROP_OVERLAY_TAB_EVENT, listener);
   };
 }

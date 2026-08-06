@@ -456,6 +456,15 @@ export function useWorkspaceSessionState({
         storageKey: QUALITY_STORAGE_KEY,
       });
     },
+    setAutoplay: (enabled: boolean) => {
+      engineRef.current?.setAutoplay(enabled);
+    },
+    setTransitionMode: (mode: 'blend' | 'cut') => {
+      engineRef.current?.setTransitionMode(mode);
+    },
+    setBlendDuration: (value: number) => {
+      engineRef.current?.setBlendDuration(value);
+    },
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
