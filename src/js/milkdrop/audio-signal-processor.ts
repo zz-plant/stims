@@ -52,6 +52,9 @@ const BAND_FLOOR: Record<BandKey, number> = {
   treble: 0.036,
 };
 
+const INV_LOG1P_6_2 = 1 / Math.log1p(6.2);
+const FALLBACK_SYNTHETIC_BUFFER = new Uint8Array(128);
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -105,7 +108,7 @@ function resolveSpectrumSource(
   if (rawData instanceof Uint8Array && rawData.length > 0) {
     return rawData;
   }
-  return createSyntheticBeatFrequencyData(new Uint8Array(128));
+  return createSyntheticBeatFrequencyData(FALLBACK_SYNTHETIC_BUFFER);
 }
 
 function spectralCompensationForRatio(ratio: number) {
@@ -169,7 +172,7 @@ export function createMilkdropAudioSignalProcessor() {
         Math.max(0, current - (previousSpectrum[index] ?? 0)) *
           (0.42 + ratio * 0.08);
       const compressed =
-        Math.log1p(clamp(compensated, 0, 1.6) * 6.2) / Math.log1p(6.2);
+        Math.log1p(clamp(compensated, 0, 1.6) * 6.2) * INV_LOG1P_6_2;
       const target = clamp(compressed, 0, 1);
 
       smoothedSpectrum[index] = smoothLevel(
@@ -189,7 +192,8 @@ export function createMilkdropAudioSignalProcessor() {
   };
 
   const updateBandAttenuation = (bands: BandLevels, deltaMs: number) => {
-    for (const key of BAND_KEYS) {
+    for (let i = 0; i < BAND_KEYS.length; i += 1) {
+      const key = BAND_KEYS[i];
       const current = bands[key];
       bandBaseline[key] = smoothLevel(
         bandBaseline[key],

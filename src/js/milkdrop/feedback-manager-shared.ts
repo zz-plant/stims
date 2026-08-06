@@ -49,40 +49,59 @@ import type {
   MilkdropShaderProgramPayload,
 } from './types';
 
+const CACHED_BLUR_RANGES = [
+  { scale: 1, bias: 0 },
+  { scale: 1, bias: 0 },
+  { scale: 1, bias: 0 },
+];
+
 export function resolveMilkdropBlurShaderRanges(
   variables: Readonly<Record<string, number>> | undefined,
 ) {
-  const minimums = [1, 2, 3].map((level) => {
-    const value = variables?.[`blur${level}_min`];
-    return Number.isFinite(value) ? (value as number) : 0;
-  });
-  const maximums = [1, 2, 3].map((level) => {
-    const value = variables?.[`blur${level}_max`];
-    return Number.isFinite(value) ? (value as number) : 1;
-  });
+  let min1 = variables?.blur1_min;
+  min1 = Number.isFinite(min1) ? (min1 as number) : 0;
+  let min2 = variables?.blur2_min;
+  min2 = Number.isFinite(min2) ? (min2 as number) : 0;
+  let min3 = variables?.blur3_min;
+  min3 = Number.isFinite(min3) ? (min3 as number) : 0;
 
-  for (let index = 0; index < 3; index += 1) {
-    if (index > 0) {
-      minimums[index] = Math.max(
-        minimums[index] ?? 0,
-        minimums[index - 1] ?? 0,
-      );
-      maximums[index] = Math.min(
-        maximums[index] ?? 1,
-        maximums[index - 1] ?? 1,
-      );
-    }
-    if ((maximums[index] ?? 1) - (minimums[index] ?? 0) < 0.1) {
-      const midpoint = ((minimums[index] ?? 0) + (maximums[index] ?? 1)) * 0.5;
-      minimums[index] = midpoint - 0.05;
-      maximums[index] = midpoint + 0.05;
-    }
+  let max1 = variables?.blur1_max;
+  max1 = Number.isFinite(max1) ? (max1 as number) : 1;
+  let max2 = variables?.blur2_max;
+  max2 = Number.isFinite(max2) ? (max2 as number) : 1;
+  let max3 = variables?.blur3_max;
+  max3 = Number.isFinite(max3) ? (max3 as number) : 1;
+
+  if (max1 - min1 < 0.1) {
+    const midpoint = (min1 + max1) * 0.5;
+    min1 = midpoint - 0.05;
+    max1 = midpoint + 0.05;
   }
 
-  return [0, 1, 2].map((index) => ({
-    scale: (maximums[index] ?? 1) - (minimums[index] ?? 0),
-    bias: minimums[index] ?? 0,
-  }));
+  min2 = Math.max(min2, min1);
+  max2 = Math.min(max2, max1);
+  if (max2 - min2 < 0.1) {
+    const midpoint = (min2 + max2) * 0.5;
+    min2 = midpoint - 0.05;
+    max2 = midpoint + 0.05;
+  }
+
+  min3 = Math.max(min3, min2);
+  max3 = Math.min(max3, max2);
+  if (max3 - min3 < 0.1) {
+    const midpoint = (min3 + max3) * 0.5;
+    min3 = midpoint - 0.05;
+    max3 = midpoint + 0.05;
+  }
+
+  CACHED_BLUR_RANGES[0].scale = max1 - min1;
+  CACHED_BLUR_RANGES[0].bias = min1;
+  CACHED_BLUR_RANGES[1].scale = max2 - min2;
+  CACHED_BLUR_RANGES[1].bias = min2;
+  CACHED_BLUR_RANGES[2].scale = max3 - min3;
+  CACHED_BLUR_RANGES[2].bias = min3;
+
+  return CACHED_BLUR_RANGES;
 }
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
