@@ -23,15 +23,16 @@ const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
-// A single preset navigation can fan out into several redundant compile
-// attempts before one wins (confirmed locally: up to 6 `[PresetLoad]`
-// groups for one requested preset, most immediately marked "superseded",
-// but the winning path itself still compiles the source twice before
-// applying it — a pre-existing inefficiency, not something introduced by
-// this budget). That's cheap on real GPU; under CI's SwiftShader software
-// renderer the wasted work is expensive enough to threaten a 60s probe
-// budget outright. Widen it here rather than chase the request
-// duplication itself, which needs its own investigation.
+// A single preset navigation used to fan out into several redundant compile
+// attempts before one won (up to 6 `[PresetLoad]` groups for one requested
+// preset, the winning path itself compiling the source twice). Root-caused
+// to workspace-hooks' StrictMode-remount teardown racing the async engine-
+// adapter factory and fixed in 0c5c979d — locally that's now 3 groups with
+// a single compile, the other two cheap and cancelled before they compile
+// anything. The remaining cost is the one real compile's GPU work itself:
+// applyCompiledPreset alone has been observed taking 5-13s in CI under
+// SwiftShader's software rasterizer, against 1-4s on real GPU locally, so
+// this budget stays wide for that reason rather than the fan-out.
 const GPU_PROBE_TIMEOUT_MS = 120000;
 
 /** Never let teardown mask the assertion failure that got us here. */
