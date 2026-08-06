@@ -34,6 +34,10 @@ type SidePanelProps = {
   title: string;
   children: ReactNode;
   onOpen?: () => void;
+  // When true, the panel is "stage-anchored": no full-screen backdrop is
+  // rendered, so the live stage and its transport dock stay visible and
+  // clickable beside the panel. Used by the editor.
+  stageAnchored?: boolean;
 };
 
 export function SidePanel({
@@ -42,6 +46,7 @@ export function SidePanel({
   title,
   children,
   onOpen,
+  stageAnchored = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
@@ -173,12 +178,14 @@ export function SidePanel({
 
   return (
     <>
-      <div
-        className={styles.backdrop}
-        data-exiting={String(exiting)}
-        onClick={startClose}
-        aria-hidden="true"
-      />
+      {stageAnchored ? null : (
+        <div
+          className={styles.backdrop}
+          data-exiting={String(exiting)}
+          onClick={startClose}
+          aria-hidden="true"
+        />
+      )}
       <div
         ref={panelRef}
         className={styles.panel}

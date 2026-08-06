@@ -97,8 +97,10 @@ function nearestStep(
 
 function AccessibilitySection({
   onOpenShortcuts,
+  onOpenCredits,
 }: {
   onOpenShortcuts: () => void;
+  onOpenCredits: () => void;
 }) {
   const [prefs, setPrefs] = useState(() => getActiveAccessibilityPreference());
 
@@ -157,6 +159,9 @@ function AccessibilitySection({
       />
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
         Keyboard shortcuts
+      </button>
+      <button type="button" className="ctl-btn" onClick={onOpenCredits}>
+        About &amp; credits
       </button>
     </section>
   );
@@ -363,6 +368,7 @@ export function SettingsSheetPanel({
   onCompatibilityModeChange,
   onMotionPreferenceChange,
   onOpenShortcuts,
+  onOpenCredits,
   thumbMode = false,
   onThumbModeChange,
   partyRemoteMode = false,
@@ -376,6 +382,7 @@ export function SettingsSheetPanel({
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
   onOpenShortcuts: () => void;
+  onOpenCredits: () => void;
   thumbMode?: boolean;
   onThumbModeChange?: (enabled: boolean) => void;
   partyRemoteMode?: boolean;
@@ -436,7 +443,10 @@ export function SettingsSheetPanel({
         <AudioSourcePanel />
       </section>
 
-      <AccessibilitySection onOpenShortcuts={onOpenShortcuts} />
+      <AccessibilitySection
+        onOpenShortcuts={onOpenShortcuts}
+        onOpenCredits={onOpenCredits}
+      />
 
       <PerformanceSection />
 

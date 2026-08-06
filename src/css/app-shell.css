@@ -519,6 +519,20 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: none;
   }
 
+  /* Stage-anchored tools (the editor) keep the workspace interactive, so
+     the transport dock must not underlap the right-hand panel. The inset
+     matches the SidePanel desktop width; the dock reads it via a variable.
+     Mobile renders the panel as a bottom sheet, so no inset there. */
+  :scope[data-stage-tool-open="true"] {
+    --stage-tool-inset: 0;
+  }
+
+  @media (min-width: 768px) {
+    :scope[data-stage-tool-open="true"] {
+      --stage-tool-inset: min(560px, calc(100vw - 32px));
+    }
+  }
+
   .stims-shell__workspace[data-mode="home"] {
     padding: 0;
     border: 0;
