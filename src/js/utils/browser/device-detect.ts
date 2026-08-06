@@ -105,11 +105,23 @@ function hasCoarsePrimaryPointer() {
   );
 }
 
-export function isMobileDevice() {
+let cachedIsMobile: boolean | null = null;
+
+export function resetDeviceDetectCache(): void {
+  cachedIsMobile = null;
+}
+
+export function isMobileDevice(): boolean {
+  if (cachedIsMobile !== null) {
+    return cachedIsMobile;
+  }
   if (typeof navigator === 'undefined') return false;
 
   const nav = navigator as NavigatorWithUserAgentData;
-  if (nav.userAgentData?.mobile) return true;
+  if (nav.userAgentData?.mobile) {
+    cachedIsMobile = true;
+    return true;
+  }
 
   const userAgent = nav.userAgent ?? '';
   if (
@@ -117,12 +129,14 @@ export function isMobileDevice() {
       userAgent,
     )
   ) {
+    cachedIsMobile = true;
     return true;
   }
 
   const platform = nav.platform ?? '';
   const maxTouchPoints = nav.maxTouchPoints ?? 0;
   if (platform === 'MacIntel' && maxTouchPoints > 1) {
+    cachedIsMobile = true;
     return true;
   }
 
@@ -131,13 +145,16 @@ export function isMobileDevice() {
     maxTouchPoints > 0 &&
     /android|ios|iphone|ipad|ipod/i.test(userAgentPlatform)
   ) {
+    cachedIsMobile = true;
     return true;
   }
 
   if (maxTouchPoints > 0 && hasCoarsePrimaryPointer()) {
+    cachedIsMobile = true;
     return true;
   }
 
+  cachedIsMobile = false;
   return false;
 }
 

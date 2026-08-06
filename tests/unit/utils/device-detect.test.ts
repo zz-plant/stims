@@ -6,6 +6,7 @@ import {
   isMobileDevice,
   isSmartTvDevice,
   openExternalBrowserIntent,
+  resetDeviceDetectCache,
 } from '../../../src/js/utils/browser/device-detect';
 
 type NavigatorWithUserAgentData = Navigator & {
@@ -75,10 +76,12 @@ function setNavigatorField<K extends keyof NavSnapshot>(
     value,
     configurable: true,
   });
+  resetDeviceDetectCache();
 }
 
 describe('isMobileDevice', () => {
   beforeEach(() => {
+    resetDeviceDetectCache();
     snapshot = {
       userAgent: navigator.userAgent,
       platform: navigator.platform,
