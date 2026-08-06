@@ -4,13 +4,12 @@ import {
   compileProgramToWgsl,
   type WgslProgramCompilation,
 } from './compiler/wgsl-generator';
-import type { MilkdropProgramBlock } from './types';
+import type { MilkdropProgramBlock, MilkdropRuntimeSignals } from './types';
 import { createVmBufferManager } from './vm/buffer-manager';
+import { syncSignalEnvironment } from './vm/shared';
 import {
-  deriveMilkdropViewportSignalValues,
   MILKDROP_WGSL_SIGNAL_FIELDS,
   type MilkdropGpuVmSignals,
-  type MilkdropViewportSignalValues,
 } from './wgsl-signal-layout.ts';
 
 export type GpuVmResult = {
@@ -107,119 +106,19 @@ function getOrCreatePipeline(
 
 const SIGNAL_BUFFER_SIZE_BYTES = MILKDROP_WGSL_SIGNAL_FIELDS.length * 4;
 
-const VIEWPORT_SIGNAL_SCRATCH: MilkdropViewportSignalValues = {
-  aspectx: 1,
-  aspecty: 1,
-  pixelsx: 1280,
-  pixelsy: 1280,
-};
+const SIGNAL_SCRATCH_ENV: Record<string, number> = {};
 
 function populateSignalData(
   target: Float32Array,
   signals: MilkdropGpuVmSignals,
 ): void {
-  const viewport = deriveMilkdropViewportSignalValues(
-    signals,
-    VIEWPORT_SIGNAL_SCRATCH,
+  syncSignalEnvironment(
+    signals as unknown as MilkdropRuntimeSignals,
+    SIGNAL_SCRATCH_ENV,
   );
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
     const field = MILKDROP_WGSL_SIGNAL_FIELDS[i];
-    switch (field) {
-      case 'time':
-        target[i] = signals.time;
-        break;
-      case 'frame':
-      case 'progress':
-        target[i] = signals.frame;
-        break;
-      case 'fps':
-        target[i] = signals.fps;
-        break;
-      case 'aspect':
-        target[i] = signals.aspect ?? 1;
-        break;
-      case 'bass':
-        target[i] = signals.bass ?? 0;
-        break;
-      case 'mid':
-      case 'mids':
-        target[i] = signals.mid ?? signals.mids ?? 0;
-        break;
-      case 'treb':
-      case 'treble':
-        target[i] = signals.treb ?? signals.treble ?? 0;
-        break;
-      case 'bass_att':
-      case 'bassAtt':
-        target[i] = signals.bass_att ?? signals.bassAtt ?? 0;
-        break;
-      case 'mid_att':
-      case 'mids_att':
-      case 'midAtt':
-      case 'midsAtt':
-        target[i] =
-          signals.mid_att ??
-          signals.mids_att ??
-          signals.midAtt ??
-          signals.midsAtt ??
-          0;
-        break;
-      case 'treb_att':
-      case 'treble_att':
-      case 'trebleAtt':
-        target[i] =
-          signals.treb_att ?? signals.treble_att ?? signals.trebleAtt ?? 0;
-        break;
-      case 'beat':
-        target[i] = signals.beat ?? 0;
-        break;
-      case 'beat_pulse':
-      case 'beatPulse':
-        target[i] = signals.beat_pulse ?? signals.beatPulse ?? 0;
-        break;
-      case 'beat_bass':
-      case 'beatBass':
-        target[i] = signals.beat_bass ?? signals.beatBass ?? 0;
-        break;
-      case 'beat_mid':
-      case 'beatMid':
-        target[i] = signals.beat_mid ?? signals.beatMid ?? 0;
-        break;
-      case 'beat_treb':
-      case 'beatTreble':
-        target[i] = signals.beat_treb ?? signals.beatTreble ?? 0;
-        break;
-      case 'bandFlux':
-        target[i] = signals.bandFlux ?? 0;
-        break;
-      case 'rms':
-        target[i] = signals.rms ?? 0;
-        break;
-      case 'vol':
-        target[i] = signals.vol ?? 0;
-        break;
-      case 'music':
-        target[i] = signals.music ?? 0;
-        break;
-      case 'weighted_energy':
-        target[i] = signals.weightedEnergy ?? 0;
-        break;
-      case 'aspectx':
-        target[i] = viewport.aspectx;
-        break;
-      case 'aspecty':
-        target[i] = viewport.aspecty;
-        break;
-      case 'pixelsx':
-        target[i] = viewport.pixelsx;
-        break;
-      case 'pixelsy':
-        target[i] = viewport.pixelsy;
-        break;
-      default:
-        target[i] = 0;
-        break;
-    }
+    target[i] = SIGNAL_SCRATCH_ENV[field] ?? 0;
   }
 }
 

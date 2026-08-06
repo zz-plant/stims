@@ -60,14 +60,13 @@ describe('MilkDrop WebGPU feature routing', () => {
   });
 
   test('enables native feedback for full-path sessions but not the safe path', () => {
+    setWebGpuForceMode('full');
     expect(
       shouldEnableNativeMilkdropWebGpuFeedback({
         search: '?renderer=webgpu&corpus=certification',
       }),
     ).toBe(true);
-    expect(
-      shouldEnableNativeMilkdropWebGpuFeedback({ search: '?renderer=webgpu' }),
-    ).toBe(true);
+    expect(shouldEnableNativeMilkdropWebGpuFeedback({ search: '' })).toBe(true);
 
     setWebGpuForceMode('safe');
     expect(

@@ -6,24 +6,9 @@ import type {
   MilkdropWaveVisual,
 } from '../types';
 
+import { clamp, color, colorTo, mix } from './shared';
+
 const TWO_PI = Math.PI * 2;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function color(r: number, g: number, b: number, a = 1) {
-  return {
-    r: clamp(r, 0, 1),
-    g: clamp(g, 0, 1),
-    b: clamp(b, 0, 1),
-    a: clamp(a, 0, 1),
-  };
-}
-
-function mix(start: number, end: number, amount: number) {
-  return start + (end - start) * amount;
-}
 
 let tempPositionsBuffer = new Float32Array(1024 * 3);
 function ensureTempPositionsCapacity(size: number) {
@@ -34,19 +19,6 @@ function ensureTempPositionsCapacity(size: number) {
 
 const tempWaveColor = { r: 1, g: 1, b: 1, a: 1 };
 const tempFinalColor = { r: 1, g: 1, b: 1, a: 1 };
-
-function colorTo(
-  target: MilkdropColor,
-  r: number,
-  g: number,
-  b: number,
-  a = 1,
-) {
-  target.r = clamp(r, 0, 1);
-  target.g = clamp(g, 0, 1);
-  target.b = clamp(b, 0, 1);
-  target.a = clamp(a, 0, 1);
-}
 
 function brightenWaveColorTo(target: MilkdropColor, source: MilkdropColor) {
   const peak = Math.max(source.r, source.g, source.b);

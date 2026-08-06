@@ -201,10 +201,8 @@ export function shouldEnableNativeMilkdropWebGpuFeedback(
     ? globalThis.location
     : null,
 ): boolean {
-  return (
-    !shouldUseSafeMilkdropWebGpuPath(location) &&
-    getRequestedRenderer(location?.search ?? '') === 'webgpu'
-  );
+  const requested = getRequestedRenderer(location?.search ?? '');
+  return !shouldUseSafeMilkdropWebGpuPath(location) && requested !== 'webgl';
 }
 
 export function resolveMilkdropWebGpuFeatureRouting(

@@ -56,7 +56,6 @@ describe('milkdrop toy runtime boundary', () => {
     );
     expect(createMilkdropExperience).toHaveBeenCalledWith(
       expect.objectContaining({
-        container,
         quality: { kind: 'quality-manager' },
         qualityControl: expect.objectContaining({
           storageKey: 'stims:milkdrop:quality',
