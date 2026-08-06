@@ -89,6 +89,16 @@ function getParticleFieldInstanceCount({
   return clamp(rawCount, 24, 1200);
 }
 
+const STATIC_DISABLED_PARTICLE_FIELD: MilkdropParticleFieldVisual = {
+  enabled: false,
+  instanceCount: 0,
+  size: 0,
+  alpha: 0,
+  motionScale: 0,
+  seed: 0,
+  anchorSource: 'mesh-field',
+};
+
 export function buildParticleFieldVisual({
   state,
   meshField,
@@ -108,15 +118,7 @@ export function buildParticleFieldVisual({
   });
 
   if (!enabled) {
-    return {
-      enabled: false,
-      instanceCount: 0,
-      size: 0,
-      alpha: 0,
-      motionScale: 0,
-      seed: 0,
-      anchorSource: 'mesh-field',
-    };
+    return STATIC_DISABLED_PARTICLE_FIELD;
   }
 
   const instanceCount = getParticleFieldInstanceCount({
@@ -199,6 +201,8 @@ function transformMeshPoint({
   runProgram,
   createEnv,
   scratch,
+  aspectX,
+  aspectY,
 }: {
   signals: MilkdropRuntimeSignals;
   gridX: number;
@@ -219,6 +223,8 @@ function transformMeshPoint({
     },
   ) => MutableState;
   scratch: MutableState;
+  aspectX?: number;
+  aspectY?: number;
 }) {
   const cacheKey = getTransformCacheKey(gridX, gridY);
   const cached = geometryState.frameTransformCache.get(cacheKey);
@@ -230,11 +236,16 @@ function transformMeshPoint({
   local.x = gridX;
   local.y = gridY;
   const aspectRatio = signals.aspect ?? 1;
-  const rawSignals = signals as unknown as Record<string, number | undefined>;
-  const aspectX = rawSignals.aspectx ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
-  const aspectY = rawSignals.aspecty ?? (aspectRatio > 1 ? 1 : aspectRatio);
-  const aspectGridX = gridX * aspectX;
-  const aspectGridY = gridY * aspectY;
+  const resolvedAspectX =
+    aspectX ??
+    (signals as unknown as Record<string, number | undefined>).aspectx ??
+    (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const resolvedAspectY =
+    aspectY ??
+    (signals as unknown as Record<string, number | undefined>).aspecty ??
+    (aspectRatio > 1 ? 1 : aspectRatio);
+  const aspectGridX = gridX * resolvedAspectX;
+  const aspectGridY = gridY * resolvedAspectY;
   local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
   local.ang = Math.atan2(aspectGridY, aspectGridX);
   local.zoom = state.zoom ?? 1;
@@ -457,6 +468,14 @@ export function buildMeshField({
   const points = geometryState.meshPoints;
   points.length = density * density;
 
+  const aspectRatio = signals.aspect ?? 1;
+  const aspectX =
+    (signals as unknown as Record<string, number | undefined>).aspectx ??
+    (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const aspectY =
+    (signals as unknown as Record<string, number | undefined>).aspecty ??
+    (aspectRatio > 1 ? 1 : aspectRatio);
+
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
       const x = (col / Math.max(1, density - 1)) * 2 - 1;
@@ -471,6 +490,8 @@ export function buildMeshField({
         runProgram,
         createEnv,
         scratch: geometryState.pointScratch,
+        aspectX,
+        aspectY,
       });
       const pointIndex = row * density + col;
       const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
@@ -766,6 +787,14 @@ export function buildMotionVectors({
     legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale;
   let vectorCount = 0;
 
+  const aspectRatio = signals.aspect ?? 1;
+  const aspectX =
+    (signals as unknown as Record<string, number | undefined>).aspectx ??
+    (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const aspectY =
+    (signals as unknown as Record<string, number | undefined>).aspecty ??
+    (aspectRatio > 1 ? 1 : aspectRatio);
+
   for (let row = 0; row < countY; row += 1) {
     for (let col = 0; col < countX; col += 1) {
       const sourceBaseX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
@@ -787,6 +816,8 @@ export function buildMotionVectors({
         runProgram,
         createEnv,
         scratch: geometryState.pointScratch,
+        aspectX,
+        aspectY,
       });
       const pointEntry: MotionVectorHistoryPoint = nextHistoryPoints[index] ?? {
         sourceX: 0,

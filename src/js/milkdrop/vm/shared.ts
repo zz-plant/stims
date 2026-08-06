@@ -155,6 +155,16 @@ export function sampleFrequencyData(
   return (signals.frequencyData[sampleIndex] ?? 0) / 255;
 }
 
+function sampleWaveformData(data: Uint8Array, sample: number): number {
+  const scaledIndex = clamp(sample, 0, 1) * Math.max(0, data.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const amount = scaledIndex - lowerIndex;
+  const lower = ((data[lowerIndex] ?? 128) - 128) / 128;
+  const upper = ((data[upperIndex] ?? 128) - 128) / 128;
+  return lower + (upper - lower) * amount;
+}
+
 export function sampleCustomWaveChannels(
   signals: MilkdropRuntimeSignals,
   sample: number,
@@ -165,17 +175,7 @@ export function sampleCustomWaveChannels(
     mode === 'waveform' &&
     signals.waveformData &&
     signals.waveformData.length > 0
-      ? (() => {
-          const waveformData = signals.waveformData;
-          const scaledIndex =
-            clamp(sample, 0, 1) * Math.max(0, waveformData.length - 1);
-          const lowerIndex = Math.floor(scaledIndex);
-          const upperIndex = Math.min(waveformData.length - 1, lowerIndex + 1);
-          const amount = scaledIndex - lowerIndex;
-          const lower = ((waveformData[lowerIndex] ?? 128) - 128) / 128;
-          const upper = ((waveformData[upperIndex] ?? 128) - 128) / 128;
-          return lower + (upper - lower) * amount;
-        })()
+      ? sampleWaveformData(signals.waveformData, sample)
       : sampleFrequencyData(signals, sample);
   const next = target ?? {
     sample,
