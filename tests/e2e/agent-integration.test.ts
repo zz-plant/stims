@@ -219,10 +219,18 @@ integrationTest(
   'agents can detect failing toy',
   async () => {
     await ensureDevServer();
+    // audioMode: 'none' — this only checks failure detection, but the
+    // default 'demo' mode drives playToy into requestDemoAudio(), whose
+    // stimState.enableDemoAudio() agent-API call hits the same untrusted-
+    // gesture AudioContext.resume() hang documented above (line 12) for
+    // 'window.stimState.enableDemoAudio() activates audio for direct
+    // callers'. That test is skipped on CI for exactly this reason; this
+    // one wasn't, and it isn't testing audio, so route around it instead.
     const result = await playToy({
       slug: 'non-existent-toy-slug',
       duration: 1000,
       port: TEST_PORT,
+      audioMode: 'none',
     });
 
     expect(result.success).toBe(false);
