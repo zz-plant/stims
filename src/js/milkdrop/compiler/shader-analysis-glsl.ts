@@ -463,18 +463,11 @@ function emitTextureSample(
     return `texture2D(noiseTex, sampleUv(${coordArg}, textureWrap)).rgba`;
   }
 
-  const normalizedName = normalizeShaderSamplerName(samplerName);
-
-  if (normalizedName === null) {
-    // Unknown sampler — if it starts with `sampler_`, emit a named texture
-    // binding (<name>Tex) so the texture can be wired later. Otherwise fall
-    // back to the main texture.
-    if (samplerName.startsWith('sampler_')) {
-      const texName = `${samplerName}Tex`;
-      return `texture2D(${texName}, sampleUv(${coordArg}, textureWrap)).rgb`;
-    }
-    return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
-  }
+  // Unknown samplers have no texture wired at runtime — emitting a
+  // `<name>Tex` binding would reference an undeclared uniform and fail to
+  // compile. Fall back to noise (MilkDrop's own behavior for unrecognized
+  // sampler names) so the sample routes through the aux texture path.
+  const normalizedName = normalizeShaderSamplerName(samplerName) ?? 'noise';
 
   if (normalizedName === 'pw_main' || normalizedName === 'pc_main') {
     return `texture2D(previousTex, sampleUv(${coordArg}, textureWrap)).rgb`;
@@ -504,11 +497,6 @@ function emitTextureSample(
     return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${dimension === '3d' && isVolume ? zSlice : '0.0'}).rgb`;
   }
 
-  // Unknown sampler — same fallback logic as above
-  if (samplerName.startsWith('sampler_')) {
-    const texName = `${samplerName}Tex`;
-    return `texture2D(${texName}, sampleUv(${coordArg}, textureWrap)).rgb`;
-  }
   return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
 }
 

@@ -76,9 +76,9 @@ describe('milkdrop compiler shader GLSL emitter — logical operators', () => {
     expect(glsl).toBe('x = (1.0 * 0.5000000000);');
   });
 
-  test('! emits subtraction from 1.0', () => {
+  test('! emits boolean NOT via abs-epsilon ternary', () => {
     const glsl = emitShaderExpression('x = !bass');
-    expect(glsl).toContain('(1.0 - (signalBass))');
+    expect(glsl).toContain('(abs(signalBass) > 0.000001 ? 0.0 : 1.0)');
   });
 });
 
@@ -195,9 +195,9 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     expect(glsl).toContain('sampleAuxTexture(');
   });
 
-  test('unknown sampler emits custom texture binding', () => {
+  test('unknown sampler routes through the aux texture fallback', () => {
     const glsl = emitShaderExpression('ret = tex2d(sampler_gizmo, uv).rgb');
-    expect(glsl).toContain('texture2D(sampler_gizmoTex, sampleUv(');
+    expect(glsl).toContain('sampleAuxTexture(');
   });
 });
 
@@ -366,24 +366,24 @@ describe('milkdrop compiler shader GLSL emitter — & and | bitwise operators', 
 // ─── bassAtt / midAtt / trebleAtt CamelCase Signal Mappings ─────────
 
 describe('milkdrop compiler shader GLSL emitter — camelCase signal aliases', () => {
-  test('bassAtt maps to signalBass', () => {
+  test('bassAtt maps to signalBassAtt', () => {
     const glsl = emitShaderExpression('x = bassAtt');
-    expect(glsl).toBe('x = signalBass;');
+    expect(glsl).toBe('x = signalBassAtt;');
   });
 
-  test('midAtt maps to signalMid', () => {
+  test('midAtt maps to signalMidAtt', () => {
     const glsl = emitShaderExpression('x = midAtt');
-    expect(glsl).toBe('x = signalMid;');
+    expect(glsl).toBe('x = signalMidAtt;');
   });
 
-  test('trebleAtt maps to signalTreb', () => {
+  test('trebleAtt maps to signalTrebAtt', () => {
     const glsl = emitShaderExpression('x = trebleAtt');
-    expect(glsl).toBe('x = signalTreb;');
+    expect(glsl).toBe('x = signalTrebAtt;');
   });
 
   test('bassAtt used in expression compiles correctly', () => {
     const glsl = emitShaderExpression('x = bassAtt * 2.0');
-    expect(glsl).toBe('x = (signalBass * 2.0);');
+    expect(glsl).toBe('x = (signalBassAtt * 2.0);');
   });
 });
 
@@ -578,8 +578,8 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
   test('negated texture sample', () => {
     const source = 'ret = !tex2d(sampler_main, uv).rgb';
     const glsl = emitShaderExpression(source);
-    expect(glsl).toContain('1.0 - (texture2D(');
-    expect(glsl).toContain('.rgb))');
+    expect(glsl).toContain('abs(');
+    expect(glsl).toContain('> 0.000001 ? 0.0 : 1.0)');
   });
 
   test('no-op identity sample', () => {

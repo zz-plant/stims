@@ -97,7 +97,7 @@ export function normalizeMilkdropShaderSamplerName(
   const canonicalSampler = SHADER_TEXTURE_SAMPLER_ALIASES[sampler] ?? sampler;
   return MILKDROP_SHADER_TEXTURE_SAMPLERS.has(canonicalSampler)
     ? canonicalSampler
-    : 'noise';
+    : null;
 }
 
 export function isMilkdropShaderSamplerName(

@@ -162,7 +162,7 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
       // with the invalid ".3" tail dropped and no diagnostic at all.
       // Requiring the captured span to be a clean single-dot literal turns
       // that into a reported error instead of a silent wrong value.
-      const isWellFormedLiteral = /^\d+(\.\d+)?$|^\.\d+$/.test(rawValue);
+      const isWellFormedLiteral = /^\d+(\.\d*)?$|^\.\d+$/.test(rawValue);
       if (!Number.isFinite(parsedValue) || !isWellFormedLiteral) {
         diagnostics.push(
           createDiagnostic(
