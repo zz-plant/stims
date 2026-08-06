@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import * as rendererCapabilities from '../../src/js/core/renderer-capabilities.ts';
 import { importFresh } from '../test-helpers.ts';
 
 describe('render-service prewarm', () => {
@@ -23,6 +24,7 @@ describe('render-service prewarm', () => {
     }));
 
     mock.module('../../src/js/core/renderer-capabilities.ts', () => ({
+      ...rendererCapabilities,
       getRendererCapabilities,
       getRenderingSupport: () => ({
         hasWebGPU: true,
