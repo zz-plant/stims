@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import * as rendererCapabilities from '../../src/js/core/renderer-capabilities.ts';
 import { importFresh, replaceProperty } from '../test-helpers.ts';
 
 describe('renderer setup WebGPU fallback safety', () => {
@@ -63,6 +64,7 @@ describe('renderer setup WebGPU fallback safety', () => {
     );
 
     mock.module('../../src/js/core/renderer-capabilities.ts', () => ({
+      ...rendererCapabilities,
       getRendererCapabilities,
       rememberRendererFallback,
     }));
@@ -144,6 +146,7 @@ describe('renderer setup WebGPU fallback safety', () => {
       createWebGLRenderer,
     }));
     mock.module('../../src/js/core/renderer-capabilities.ts', () => ({
+      ...rendererCapabilities,
       getRendererCapabilities: async () => ({
         adapter: {
           requestDevice: async () =>
