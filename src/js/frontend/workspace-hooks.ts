@@ -225,12 +225,34 @@ export function useWorkspaceSessionState({
 
     return () => {
       sessionDisposedRef.current = true;
-      engineUnsubscribeRef.current?.();
-      engineUnsubscribeRef.current = null;
-      engineRef.current?.dispose();
-      engineRef.current = null;
-      engineAdapterPromiseRef.current = null;
-      ensureEngineMountPromiseRef.current = null;
+      // React StrictMode's dev-only double-invoke runs this cleanup and the
+      // next mount back to back, synchronously, in the same commit. The
+      // engine adapter is created by an async factory (see
+      // ensureEngineAdapter below) that can't be cancelled mid-flight, so
+      // disposing eagerly here raced it: the remount saw empty refs, kicked
+      // off a *second* adapter + mount() + preset-selection fan-out, and
+      // the first adapter's factory eventually resolved into an orphan
+      // nothing ever disposed — still mounted, still running its own
+      // preset load, doubling every preset's compile/render work.
+      //
+      // Deferring the actual teardown by a tick lets a same-tick remount's
+      // effect body flip `sessionDisposedRef` back to `false` before this
+      // timer fires, so it no-ops and the refs stay untouched — the second
+      // mount effect invocation's ensureEngineMounted() then finds the
+      // existing adapter already in place and reuses it instead of
+      // creating a new one. A genuine unmount (no remount follows) still
+      // tears down correctly, just one tick later.
+      setTimeout(() => {
+        if (!sessionDisposedRef.current) {
+          return;
+        }
+        engineUnsubscribeRef.current?.();
+        engineUnsubscribeRef.current = null;
+        engineRef.current?.dispose();
+        engineRef.current = null;
+        engineAdapterPromiseRef.current = null;
+        ensureEngineMountPromiseRef.current = null;
+      }, 0);
     };
   }, []);
 
