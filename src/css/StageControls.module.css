@@ -233,7 +233,7 @@
 .handle {
   position: fixed;
   bottom: max(10px, env(safe-area-inset-bottom));
-  left: 50%;
+  left: calc(50% - var(--stage-tool-inset, 0) / 2);
   transform: translateX(-50%);
   z-index: var(--z-dock);
   display: inline-flex;
@@ -358,11 +358,16 @@
   z-index: var(--z-dock);
   display: flex;
   justify-content: center;
+  /* Shift the dock clear of a stage-anchored side panel so the transport
+     stays fully clickable while the editor is open. Mobile uses a bottom
+     sheet, so the inset only applies on the sidebar breakpoint. */
+  padding-right: var(--stage-tool-inset, 0);
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   pointer-events: none;
   transition:
     opacity 0.3s ease,
-    transform 0.3s ease;
+    transform 0.3s ease,
+    padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* visibility keeps the faded-out bar from catching taps and tab focus —
@@ -516,7 +521,10 @@
 .menu {
   position: fixed;
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + 48px);
-  right: max(12px, env(safe-area-inset-right));
+  right: calc(
+    max(12px, env(safe-area-inset-right)) +
+    var(--stage-tool-inset, 0)
+  );
   z-index: var(--z-dock);
   display: flex;
   flex-direction: column;

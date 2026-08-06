@@ -40,7 +40,10 @@ export function createMilkdropPresentationController({
   const DEBUG_SNAPSHOT_INTERVAL_MS = 60;
   let lastDebugSnapshotAt = 0;
 
-  const updateAgentDebugSnapshot = (force = false) => {
+  const updateAgentDebugSnapshot = (
+    force = false,
+    renderFrameStateOverride?: MilkdropFrameState | null,
+  ) => {
     if (!isAgentMode()) {
       return;
     }
@@ -57,7 +60,7 @@ export function createMilkdropPresentationController({
       buildAgentMilkdropDebugSnapshot({
         activePresetId: state.activePresetId,
         compiledPreset: state.compiledPreset,
-        frameState: state.frameState,
+        frameState: renderFrameStateOverride ?? state.frameState,
         status: state.status,
         adaptiveQuality: state.adaptiveQuality,
         performance: getPerformanceMetrics(),

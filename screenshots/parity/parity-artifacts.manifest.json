@@ -5302,6 +5302,138 @@
         "audioMode": "demo",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260805231206",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-08-05T23:12:06.700Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1785971525887.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1785971525887.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260805231206",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-08-05T23:12:06.759Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1785971525894.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1785971525894.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--dbleja-hovering-over-pluto--20260805231304",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "dbleja-hovering-over-pluto",
+      "title": null,
+      "createdAt": "2026-08-05T23:13:04.852Z",
+      "files": {
+        "image": "milkdrop--preset-dbleja-hovering-over-pluto-1785971581188.png",
+        "debugSnapshot": "milkdrop--preset-dbleja-hovering-over-pluto-1785971581188.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=dbleja-hovering-over-pluto&renderer=webgl&corpus=certification",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260805231432",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": null,
+      "createdAt": "2026-08-05T23:14:32.928Z",
+      "files": {
+        "image": "milkdrop--preset-eos-glowsticks-v2-03-music-1785971671771.png",
+        "debugSnapshot": "milkdrop--preset-eos-glowsticks-v2-03-music-1785971671771.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=eos-glowsticks-v2-03-music&renderer=webgpu&corpus=certification",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-cat-scan-nirvana--20260805231523",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-cat-scan-nirvana",
+      "title": null,
+      "createdAt": "2026-08-05T23:15:23.510Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-cat-scan-nirvana-1785971720997.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-cat-scan-nirvana-1785971720997.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=eos-phat-cat-scan-nirvana&renderer=webgl&corpus=certification",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260805231713",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": null,
+      "createdAt": "2026-08-05T23:17:13.842Z",
+      "files": {
+        "image": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1785971833477.png",
+        "debugSnapshot": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1785971833477.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=krash-rovastar-cerebral-demons-stars&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
     }
   ]
 }

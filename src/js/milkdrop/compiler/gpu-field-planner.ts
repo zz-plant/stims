@@ -1,10 +1,12 @@
 import type {
   MilkdropExpressionNode,
+  MilkdropProgramBlock,
+} from '../common-types.ts';
+import type {
   MilkdropGpuFieldExpression,
   MilkdropGpuFieldProgramDescriptor,
   MilkdropGpuFieldStatement,
-  MilkdropProgramBlock,
-} from '../types.ts';
+} from '../compiler-types.ts';
 
 const GPU_FIELD_STATE_IDENTIFIERS = new Set([
   'x',
@@ -139,18 +141,21 @@ function lowerGpuFieldExpression(
         : null;
     }
     case 'binary': {
+      if (expression.operator === '=') {
+        return null;
+      }
       const left = lowerGpuFieldExpression(expression.left, allowedIdentifiers);
       const right = lowerGpuFieldExpression(
         expression.right,
         allowedIdentifiers,
       );
       return left && right
-        ? {
+        ? ({
             type: 'binary',
             operator: expression.operator,
             left,
             right,
-          }
+          } as MilkdropGpuFieldExpression)
         : null;
     }
     case 'call': {

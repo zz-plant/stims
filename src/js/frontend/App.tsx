@@ -591,6 +591,7 @@ function StimsWorkspaceAppShell() {
       data-sheet-open={
         ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
       }
+      data-stage-tool-open={stageAnchoredToolOpen ? 'true' : undefined}
       data-thumb-mode={thumbMode ? 'true' : undefined}
       data-offline={offline ? 'true' : undefined}
     >
@@ -608,6 +609,7 @@ function StimsWorkspaceAppShell() {
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
+        stageAnchored={stageAnchoredToolOpen}
         onOpen={() => {
           if (ui.routeState.panel === 'browse') {
             const el = document.querySelector<HTMLElement>(

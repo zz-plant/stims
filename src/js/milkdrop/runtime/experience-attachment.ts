@@ -3,7 +3,7 @@ import { createAdaptiveQualityController } from '../../core/services/adaptive-qu
 import type { ToyRuntimeInstance } from '../../core/toy-runtime';
 import { createMilkdropRendererAdapter } from '../renderer-adapter-factory.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types';
-import type { MilkdropCompiledPreset } from '../types';
+import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types';
 import {
   getDisabledMilkdropWebGpuOptimizationFlags,
   type MilkdropWebGpuOptimizationFlags,
@@ -64,7 +64,10 @@ export function createMilkdropExperienceAttachmentController({
   ) => void;
   setAdaptiveQualityUnsubscribe: (unsubscribe: (() => void) | null) => void;
   setAdaptiveQualityState: (state: unknown) => void;
-  updateAgentDebugSnapshot: (force?: boolean) => void;
+  updateAgentDebugSnapshot: (
+    force?: boolean,
+    renderFrameStateOverride?: MilkdropFrameState | null,
+  ) => void;
   shouldFallbackToWebgl: (
     compiled: MilkdropCompiledPreset,
     backend: 'webgl' | 'webgpu',
