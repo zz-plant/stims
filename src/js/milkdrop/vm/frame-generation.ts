@@ -39,7 +39,7 @@ function brightenWaveColorTo(target: MilkdropColor, source: MilkdropColor) {
 function catmullRomInterpolateTo(
   source: ArrayLike<number>,
   sourceLen: number,
-  target: { [key: number]: number },
+  target: Float32Array | number[],
 ) {
   const ptCount = sourceLen / 3;
   if (ptCount < 2) {
@@ -689,7 +689,7 @@ export function buildMainWaveFrame({
       catmullRomInterpolateTo(
         tempPositionsBuffer,
         rawLength,
-        positions as { [key: number]: number },
+        positions as Float32Array,
       );
     }
   }

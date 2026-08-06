@@ -70,6 +70,15 @@ export function buildMainWave({
   };
 }
 
+function pushTrailInPlace<T>(trails: T[], item: T) {
+  const len = Math.min(trails.length + 1, MAX_TRAILS);
+  trails.length = len;
+  for (let i = len - 1; i > 0; i--) {
+    trails[i] = trails[i - 1];
+  }
+  trails[0] = item;
+}
+
 export function commitMainWaveFrame({
   waveState,
   mainWave,
@@ -80,16 +89,13 @@ export function commitMainWaveFrame({
   proceduralMainWave: import('../types').MilkdropProceduralWaveVisual | null;
 }) {
   if (waveState.lastWaveform) {
-    waveState.trails.unshift(waveState.lastWaveform);
-    if (waveState.trails.length > MAX_TRAILS) {
-      waveState.trails.length = MAX_TRAILS;
-    }
+    pushTrailInPlace(waveState.trails, waveState.lastWaveform);
   }
   if (waveState.lastProceduralWave) {
-    waveState.proceduralTrailWaves.unshift(waveState.lastProceduralWave);
-    if (waveState.proceduralTrailWaves.length > MAX_TRAILS) {
-      waveState.proceduralTrailWaves.length = MAX_TRAILS;
-    }
+    pushTrailInPlace(
+      waveState.proceduralTrailWaves,
+      waveState.lastProceduralWave,
+    );
   }
   waveState.lastWaveform = mainWave;
   waveState.lastProceduralWave = proceduralMainWave;
