@@ -298,7 +298,11 @@ export function getConservativeBundledCatalogProjectionDefaults(
   };
 }
 
-export function createCatalogAnalysis() {
+export function createCatalogAnalysis({
+  compilePresetImpl = compileMilkdropPresetSource,
+}: {
+  compilePresetImpl?: typeof compileMilkdropPresetSource;
+} = {}) {
   const analysisCache = new Map<string, MilkdropCompiledPreset>();
   const analysisById = new Map<string, MilkdropCompiledPreset>();
   const analysisOptionsKey = 'compat';
@@ -309,7 +313,7 @@ export function createCatalogAnalysis() {
     if (cached) {
       return cached;
     }
-    const compiled = compileMilkdropPresetSource(source.raw, source);
+    const compiled = compilePresetImpl(source.raw, source);
     analysisCache.set(cacheKey, compiled);
     analysisById.set(source.id, compiled);
     return compiled;

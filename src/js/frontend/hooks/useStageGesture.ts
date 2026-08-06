@@ -43,6 +43,7 @@ export function useStageGesture({
   handleToggleFullscreen,
   setStatusMessage,
   hapticsEnabled = true,
+  longPressMs = LONG_PRESS_MS,
 }: {
   enabled: boolean;
   stageRef?: RefObject<HTMLElement | null>;
@@ -54,6 +55,7 @@ export function useStageGesture({
   handleToggleFullscreen?: () => void;
   setStatusMessage?: (message: string) => void;
   hapticsEnabled?: boolean;
+  longPressMs?: number;
 }) {
   const shuffleRef = useRef(handleShufflePreset);
   shuffleRef.current = handleShufflePreset;
@@ -141,7 +143,7 @@ export function useStageGesture({
         longPressFired = true;
         pulseHaptic(24, hapticsEnabled);
         toggleFavoriteRef.current?.();
-      }, LONG_PRESS_MS);
+      }, longPressMs);
     };
 
     const handlePointerMove = (event: PointerEvent) => {
@@ -255,5 +257,5 @@ export function useStageGesture({
       stage.removeEventListener('pointerup', handlePointerEnd);
       stage.removeEventListener('pointercancel', handlePointerCancel);
     };
-  }, [enabled, stageRef, hapticsEnabled]);
+  }, [enabled, stageRef, hapticsEnabled, longPressMs]);
 }

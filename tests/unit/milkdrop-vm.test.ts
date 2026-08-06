@@ -197,9 +197,15 @@ per_frame_1=q1=q1+1;
     const frameState = vm.step(makeSignals({ frame: 1 }));
     expect(snapshotCalls).toBe(0);
 
+    // Single-variable reads resolve lazily without building a snapshot.
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
+    expect(snapshotCalls).toBe(0);
+
+    // Enumeration is what forces the full snapshot, and only once.
+    expect(Object.keys(frameState.variables)).toContain('q1');
     expect(snapshotCalls).toBe(1);
 
+    expect(Object.keys(frameState.variables)).toContain('q1');
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
     expect(snapshotCalls).toBe(1);
   });

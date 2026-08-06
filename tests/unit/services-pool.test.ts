@@ -390,7 +390,15 @@ describe('render-service pooling', () => {
       expect(initRendererImpl).toHaveBeenCalledTimes(1);
       const triggerLost = resolveLost;
       triggerLost?.({ message: 'mock device loss' });
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Recovery waits out a ~100ms retry cooldown; poll for the re-init
+      // instead of sleeping a fixed padded interval.
+      const recoveryStart = performance.now();
+      while (
+        initRendererImpl.mock.calls.length < 2 &&
+        performance.now() - recoveryStart < 2000
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
       await flushTasks(4);
 
       handle.renderer.render({} as never, {} as never);
@@ -418,6 +426,9 @@ describe('audio-service pooling', () => {
   test('shares pooled microphone while active and keeps it warm between toys', async () => {
     const fakeStream = {
       getTracks: () => [{ stop: trackStop }],
+      getAudioTracks: () => [
+        { readyState: 'live', addEventListener: () => {} },
+      ],
     } as unknown as MediaStream;
 
     const mediaDevices = { getUserMedia: mock(async () => fakeStream) };

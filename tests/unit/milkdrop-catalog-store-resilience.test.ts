@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { importFresh } from '../test-helpers.ts';
+import { createMilkdropCatalogStore } from '../../src/js/milkdrop/catalog-store.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 // Regression coverage for a corrupt/unparseable stored preset permanently
 // wedging the whole catalog. `listPresets()` used to run an unguarded
@@ -7,6 +8,11 @@ import { importFresh } from '../test-helpers.ts';
 // if that threw for *any single* preset, the whole call rejected and no
 // presets (not even the healthy ones) were returned. See
 // `src/js/milkdrop/catalog-store.ts`.
+//
+// The compile failure is injected through the store's `compilePresetImpl`
+// seam rather than `mock.module` — mocking the compiler module and
+// re-importing the store graph with a cache-busting query re-transpiles the
+// whole compiler under bun test and could deadlock the process at 100% CPU.
 describe('milkdrop catalog store resilience to a single corrupt preset', () => {
   const originalFetch = globalThis.fetch;
   const originalIndexedDb = globalThis.indexedDB;
@@ -20,30 +26,9 @@ describe('milkdrop catalog store resilience to a single corrupt preset', () => {
     globalThis.fetch = originalFetch;
     (globalThis as { indexedDB?: IDBFactory }).indexedDB = originalIndexedDb;
     console.warn = originalWarn;
-    mock.restore();
   });
 
   test('skips a stored preset that fails to compile instead of failing listPresets() entirely', async () => {
-    const realCompiler = await import('../../src/js/milkdrop/compiler.ts');
-
-    mock.module('../../src/js/milkdrop/compiler.ts', () => ({
-      ...realCompiler,
-      compileMilkdropPresetSource: (
-        raw: string,
-        source: { id?: string } = {},
-        options?: unknown,
-      ) => {
-        if (source.id === 'corrupt-preset') {
-          throw new Error('Simulated corrupt preset compile failure');
-        }
-        return realCompiler.compileMilkdropPresetSource(
-          raw,
-          source,
-          options as never,
-        );
-      },
-    }));
-
     const warnMock = mock((..._args: unknown[]) => {});
     console.warn = warnMock as unknown as typeof console.warn;
 
@@ -52,13 +37,15 @@ describe('milkdrop catalog store resilience to a single corrupt preset', () => {
       json: async () => ({ presets: [] }),
     })) as unknown as typeof fetch;
 
-    const { createMilkdropCatalogStore } = await importFresh<
-      typeof import('../../src/js/milkdrop/catalog-store.ts')
-    >('../../src/js/milkdrop/catalog-store.ts');
-
     const store = createMilkdropCatalogStore({
       dbName: 'milkdrop-catalog-store-resilience-test',
       catalogUrl: '/milkdrop-presets/catalog.json',
+      compilePresetImpl: (raw, source = {}, options) => {
+        if ((source as { id?: string }).id === 'corrupt-preset') {
+          throw new Error('Simulated corrupt preset compile failure');
+        }
+        return compileMilkdropPresetSource(raw, source, options as never);
+      },
     });
 
     await store.savePreset({

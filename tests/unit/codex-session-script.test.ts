@@ -108,7 +108,7 @@ function requirePid(pid: number | undefined) {
 
 async function waitForExit(child: ReturnType<typeof spawn>) {
   const pid = requirePid(child.pid);
-  for (let attempts = 0; attempts < 30; attempts += 1) {
+  for (let attempts = 0; attempts < 120; attempts += 1) {
     if (child.exitCode !== null) {
       return;
     }
@@ -117,7 +117,7 @@ async function waitForExit(child: ReturnType<typeof spawn>) {
     } catch {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 25));
   }
 
   throw new Error('Timed out waiting for child process to exit.');

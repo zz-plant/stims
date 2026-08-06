@@ -13,6 +13,7 @@ import {
   toBundledCatalogEntryFromManifest,
   toCatalogEntry,
 } from './catalog-store-projection';
+import type { compileMilkdropPresetSource } from './compiler';
 import { resolvePresetCatalogEntry } from './preset-id-resolution';
 import type {
   MilkdropCatalogEntry,
@@ -36,17 +37,19 @@ export function createMilkdropCatalogStore({
   dbName = 'stims-milkdrop',
   catalogUrl = '/milkdrop-presets/catalog.json',
   libraryManifestUrls,
+  compilePresetImpl,
 }: {
   dbName?: string;
   catalogUrl?: string;
   libraryManifestUrls?: string[];
+  compilePresetImpl?: typeof compileMilkdropPresetSource;
 } = {}): MilkdropCatalogStore {
   const persistence = createCatalogPersistence({ dbName });
   const bundledCatalog = createBundledCatalogLoader({
     catalogUrl,
     libraryManifestUrls,
   });
-  const analysis = createCatalogAnalysis();
+  const analysis = createCatalogAnalysis({ compilePresetImpl });
 
   const getHistoryRecord = async () =>
     (await persistence.readMeta(HISTORY_RECORD_ID)) ?? {
