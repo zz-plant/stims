@@ -128,6 +128,9 @@ function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
       : signals.frequencyData;
+  if (!waveformData || waveformData.length === 0) {
+    return 0;
+  }
   return sampleByteData(waveformData, t);
 }
 
@@ -144,7 +147,11 @@ function sampleFrequencyDataOffset(
   t: number,
   offset: number,
 ): number {
-  return sampleByteData(signals.frequencyData, clamp(t + offset, 0, 1));
+  const data = signals.frequencyData;
+  if (!data || data.length === 0) {
+    return 0;
+  }
+  return sampleByteData(data, clamp(t + offset, 0, 1));
 }
 
 function sampleStereoWaveformData(

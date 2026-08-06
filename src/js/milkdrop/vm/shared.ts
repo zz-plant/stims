@@ -168,11 +168,15 @@ export function sampleFrequencyData(
   signals: MilkdropRuntimeSignals,
   t: number,
 ) {
+  const data = signals.frequencyData;
+  if (!data || data.length === 0) {
+    return 0;
+  }
   const sampleIndex = Math.min(
-    signals.frequencyData.length - 1,
-    Math.max(0, Math.round(t * Math.max(0, signals.frequencyData.length - 1))),
+    data.length - 1,
+    Math.max(0, Math.round(t * Math.max(0, data.length - 1))),
   );
-  return (signals.frequencyData[sampleIndex] ?? 0) / 255;
+  return (data[sampleIndex] ?? 0) / 255;
 }
 
 function sampleWaveformData(data: Uint8Array, sample: number): number {
@@ -335,36 +339,120 @@ export function syncSignalEnvironment(
   }
 }
 
-export function seedCustomWaveFields(
-  wave: MilkdropWaveDefinition,
-  state: MutableState,
-): MutableState {
-  const index = wave.index;
-  return {
-    enabled: wave.fields.enabled ?? state[`custom_wave_${index}_enabled`] ?? 0,
-    samples: wave.fields.samples ?? state[`custom_wave_${index}_samples`] ?? 64,
-    spectrum:
-      wave.fields.spectrum ?? state[`custom_wave_${index}_spectrum`] ?? 0,
-    additive:
-      wave.fields.additive ?? state[`custom_wave_${index}_additive`] ?? 0,
-    usedots: wave.fields.usedots ?? state[`custom_wave_${index}_usedots`] ?? 0,
-    scaling: wave.fields.scaling ?? state[`custom_wave_${index}_scaling`] ?? 1,
-    smoothing:
-      wave.fields.smoothing ?? state[`custom_wave_${index}_smoothing`] ?? 0.5,
-    mystery: wave.fields.mystery ?? state[`custom_wave_${index}_mystery`] ?? 0,
-    thick: wave.fields.thick ?? state[`custom_wave_${index}_thick`] ?? 1,
-    x: wave.fields.x ?? state[`custom_wave_${index}_x`] ?? 0.5,
-    y: wave.fields.y ?? state[`custom_wave_${index}_y`] ?? 0.5,
-    r: wave.fields.r ?? state[`custom_wave_${index}_r`] ?? 1,
-    g: wave.fields.g ?? state[`custom_wave_${index}_g`] ?? 1,
-    b: wave.fields.b ?? state[`custom_wave_${index}_b`] ?? 1,
-    a: wave.fields.a ?? state[`custom_wave_${index}_a`] ?? 0.4,
-    ...Object.fromEntries(
+const DEFAULT_CUSTOM_WAVE_T_REGISTERS: Readonly<Record<string, number>> =
+  Object.freeze(
+    Object.fromEntries(
       Array.from({ length: MAX_CUSTOM_WAVE_SLOTS }, (_, idx) => [
         `t${idx + 1}`,
         0,
       ]),
     ),
+  );
+
+export const CUSTOM_WAVE_PROPERTY_KEYS = Array.from(
+  { length: 32 },
+  (_, index) => ({
+    enabled: `custom_wave_${index}_enabled`,
+    samples: `custom_wave_${index}_samples`,
+    spectrum: `custom_wave_${index}_spectrum`,
+    additive: `custom_wave_${index}_additive`,
+    usedots: `custom_wave_${index}_usedots`,
+    scaling: `custom_wave_${index}_scaling`,
+    smoothing: `custom_wave_${index}_smoothing`,
+    mystery: `custom_wave_${index}_mystery`,
+    thick: `custom_wave_${index}_thick`,
+    x: `custom_wave_${index}_x`,
+    y: `custom_wave_${index}_y`,
+    r: `custom_wave_${index}_r`,
+    g: `custom_wave_${index}_g`,
+    b: `custom_wave_${index}_b`,
+    a: `custom_wave_${index}_a`,
+  }),
+);
+
+export const CUSTOM_SHAPE_PROPERTY_KEYS = Array.from(
+  { length: 32 },
+  (_, index) => ({
+    enabled: `shape_${index}_enabled`,
+    sides: `shape_${index}_sides`,
+    x: `shape_${index}_x`,
+    y: `shape_${index}_y`,
+    rad: `shape_${index}_rad`,
+    ang: `shape_${index}_ang`,
+    num_inst: `shape_${index}_num_inst`,
+    textured: `shape_${index}_textured`,
+    tex_zoom: `shape_${index}_tex_zoom`,
+    tex_ang: `shape_${index}_tex_ang`,
+    r: `shape_${index}_r`,
+    g: `shape_${index}_g`,
+    b: `shape_${index}_b`,
+    a: `shape_${index}_a`,
+    r2: `shape_${index}_r2`,
+    g2: `shape_${index}_g2`,
+    b2: `shape_${index}_b2`,
+    a2: `shape_${index}_a2`,
+    border_r: `shape_${index}_border_r`,
+    border_g: `shape_${index}_border_g`,
+    border_b: `shape_${index}_border_b`,
+    border_a: `shape_${index}_border_a`,
+    additive: `shape_${index}_additive`,
+    thickoutline: `shape_${index}_thickoutline`,
+  }),
+);
+
+export const SHAPECODE_PROPERTY_KEYS = Array.from(
+  { length: 32 },
+  (_, index) => ({
+    enabled: `shapecode_${index}_enabled`,
+    sides: `shapecode_${index}_sides`,
+    x: `shapecode_${index}_x`,
+    y: `shapecode_${index}_y`,
+    rad: `shapecode_${index}_rad`,
+    ang: `shapecode_${index}_ang`,
+    textured: `shapecode_${index}_textured`,
+    tex_zoom: `shapecode_${index}_tex_zoom`,
+    tex_ang: `shapecode_${index}_tex_ang`,
+    r: `shapecode_${index}_r`,
+    g: `shapecode_${index}_g`,
+    b: `shapecode_${index}_b`,
+    a: `shapecode_${index}_a`,
+    r2: `shapecode_${index}_r2`,
+    g2: `shapecode_${index}_g2`,
+    b2: `shapecode_${index}_b2`,
+    a2: `shapecode_${index}_a2`,
+    border_r: `shapecode_${index}_border_r`,
+    border_g: `shapecode_${index}_border_g`,
+    border_b: `shapecode_${index}_border_b`,
+    border_a: `shapecode_${index}_border_a`,
+    additive: `shapecode_${index}_additive`,
+    thickoutline: `shapecode_${index}_thickoutline`,
+  }),
+);
+
+export function seedCustomWaveFields(
+  wave: MilkdropWaveDefinition,
+  state: MutableState,
+): MutableState {
+  const index = wave.index;
+  const keys = CUSTOM_WAVE_PROPERTY_KEYS[index];
+  return {
+    enabled: wave.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0,
+    samples: wave.fields.samples ?? (keys ? state[keys.samples] : 64) ?? 64,
+    spectrum: wave.fields.spectrum ?? (keys ? state[keys.spectrum] : 0) ?? 0,
+    additive: wave.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0,
+    usedots: wave.fields.usedots ?? (keys ? state[keys.usedots] : 0) ?? 0,
+    scaling: wave.fields.scaling ?? (keys ? state[keys.scaling] : 1) ?? 1,
+    smoothing:
+      wave.fields.smoothing ?? (keys ? state[keys.smoothing] : 0.5) ?? 0.5,
+    mystery: wave.fields.mystery ?? (keys ? state[keys.mystery] : 0) ?? 0,
+    thick: wave.fields.thick ?? (keys ? state[keys.thick] : 1) ?? 1,
+    x: wave.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5,
+    y: wave.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5,
+    r: wave.fields.r ?? (keys ? state[keys.r] : 1) ?? 1,
+    g: wave.fields.g ?? (keys ? state[keys.g] : 1) ?? 1,
+    b: wave.fields.b ?? (keys ? state[keys.b] : 1) ?? 1,
+    a: wave.fields.a ?? (keys ? state[keys.a] : 0.4) ?? 0.4,
+    ...DEFAULT_CUSTOM_WAVE_T_REGISTERS,
   };
 }
 
@@ -372,33 +460,35 @@ export function seedCustomShapeFields(
   shape: MilkdropShapeDefinition,
   state: MutableState,
 ): MutableState {
-  const prefix = `shape_${shape.index}`;
+  const index = shape.index;
+  const keys = CUSTOM_SHAPE_PROPERTY_KEYS[index];
   return {
-    enabled: shape.fields.enabled ?? state[`${prefix}_enabled`] ?? 0,
-    sides: shape.fields.sides ?? state[`${prefix}_sides`] ?? 6,
-    x: shape.fields.x ?? state[`${prefix}_x`] ?? 0.5,
-    y: shape.fields.y ?? state[`${prefix}_y`] ?? 0.5,
-    rad: shape.fields.rad ?? state[`${prefix}_rad`] ?? 0.15,
-    ang: shape.fields.ang ?? state[`${prefix}_ang`] ?? 0,
+    enabled: shape.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0,
+    sides: shape.fields.sides ?? (keys ? state[keys.sides] : 6) ?? 6,
+    x: shape.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5,
+    y: shape.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5,
+    rad: shape.fields.rad ?? (keys ? state[keys.rad] : 0.15) ?? 0.15,
+    ang: shape.fields.ang ?? (keys ? state[keys.ang] : 0) ?? 0,
     instance: 0,
-    num_inst: shape.fields.num_inst ?? state[`${prefix}_num_inst`] ?? 1,
-    textured: shape.fields.textured ?? state[`${prefix}_textured`] ?? 0,
-    tex_zoom: shape.fields.tex_zoom ?? state[`${prefix}_tex_zoom`] ?? 1,
-    tex_ang: shape.fields.tex_ang ?? state[`${prefix}_tex_ang`] ?? 0,
-    r: shape.fields.r ?? state[`${prefix}_r`] ?? 1,
-    g: shape.fields.g ?? state[`${prefix}_g`] ?? 1,
-    b: shape.fields.b ?? state[`${prefix}_b`] ?? 1,
-    a: shape.fields.a ?? state[`${prefix}_a`] ?? 0.2,
-    r2: shape.fields.r2 ?? state[`${prefix}_r2`] ?? 0,
-    g2: shape.fields.g2 ?? state[`${prefix}_g2`] ?? 0,
-    b2: shape.fields.b2 ?? state[`${prefix}_b2`] ?? 0,
-    a2: shape.fields.a2 ?? state[`${prefix}_a2`] ?? 0,
-    border_r: shape.fields.border_r ?? state[`${prefix}_border_r`] ?? 1,
-    border_g: shape.fields.border_g ?? state[`${prefix}_border_g`] ?? 1,
-    border_b: shape.fields.border_b ?? state[`${prefix}_border_b`] ?? 1,
-    border_a: shape.fields.border_a ?? state[`${prefix}_border_a`] ?? 0.8,
-    additive: shape.fields.additive ?? state[`${prefix}_additive`] ?? 0,
+    num_inst: shape.fields.num_inst ?? (keys ? state[keys.num_inst] : 1) ?? 1,
+    textured: shape.fields.textured ?? (keys ? state[keys.textured] : 0) ?? 0,
+    tex_zoom: shape.fields.tex_zoom ?? (keys ? state[keys.tex_zoom] : 1) ?? 1,
+    tex_ang: shape.fields.tex_ang ?? (keys ? state[keys.tex_ang] : 0) ?? 0,
+    r: shape.fields.r ?? (keys ? state[keys.r] : 1) ?? 1,
+    g: shape.fields.g ?? (keys ? state[keys.g] : 1) ?? 1,
+    b: shape.fields.b ?? (keys ? state[keys.b] : 1) ?? 1,
+    a: shape.fields.a ?? (keys ? state[keys.a] : 0.2) ?? 0.2,
+    r2: shape.fields.r2 ?? (keys ? state[keys.r2] : 0) ?? 0,
+    g2: shape.fields.g2 ?? (keys ? state[keys.g2] : 0) ?? 0,
+    b2: shape.fields.b2 ?? (keys ? state[keys.b2] : 0) ?? 0,
+    a2: shape.fields.a2 ?? (keys ? state[keys.a2] : 0) ?? 0,
+    border_r: shape.fields.border_r ?? (keys ? state[keys.border_r] : 1) ?? 1,
+    border_g: shape.fields.border_g ?? (keys ? state[keys.border_g] : 1) ?? 1,
+    border_b: shape.fields.border_b ?? (keys ? state[keys.border_b] : 1) ?? 1,
+    border_a:
+      shape.fields.border_a ?? (keys ? state[keys.border_a] : 0.8) ?? 0.8,
+    additive: shape.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0,
     thickoutline:
-      shape.fields.thickoutline ?? state[`${prefix}_thickoutline`] ?? 0,
+      shape.fields.thickoutline ?? (keys ? state[keys.thickoutline] : 0) ?? 0,
   };
 }

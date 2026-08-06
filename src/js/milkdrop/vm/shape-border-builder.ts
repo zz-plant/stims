@@ -10,6 +10,7 @@ import {
   color,
   MAX_CUSTOM_SHAPE_SLOTS,
   type MutableState,
+  SHAPECODE_PROPERTY_KEYS,
   type ShapeBuilderState,
 } from './shared';
 
@@ -58,32 +59,83 @@ export function shapeVisualFromLocals(
 
 function fallbackShapeLocals(
   state: MutableState,
-  prefix: string,
+  prefixOrIndex: string | number,
 ): MutableState {
+  const keys =
+    typeof prefixOrIndex === 'number'
+      ? SHAPECODE_PROPERTY_KEYS[prefixOrIndex]
+      : null;
+  const prefix = typeof prefixOrIndex === 'string' ? prefixOrIndex : null;
   return {
-    enabled: state[`${prefix}_enabled`] ?? 0,
-    sides: state[`${prefix}_sides`] ?? 6,
-    x: state[`${prefix}_x`] ?? 0.5,
-    y: state[`${prefix}_y`] ?? 0.5,
-    rad: state[`${prefix}_rad`] ?? 0.15,
-    ang: state[`${prefix}_ang`] ?? 0,
-    textured: state[`${prefix}_textured`] ?? 0,
-    tex_zoom: state[`${prefix}_tex_zoom`] ?? 1,
-    tex_ang: state[`${prefix}_tex_ang`] ?? 0,
-    r: state[`${prefix}_r`] ?? 1,
-    g: state[`${prefix}_g`] ?? 1,
-    b: state[`${prefix}_b`] ?? 1,
-    a: state[`${prefix}_a`] ?? 0.2,
-    r2: state[`${prefix}_r2`] ?? 0,
-    g2: state[`${prefix}_g2`] ?? 0,
-    b2: state[`${prefix}_b2`] ?? 0,
-    a2: state[`${prefix}_a2`] ?? 0,
-    border_r: state[`${prefix}_border_r`] ?? 1,
-    border_g: state[`${prefix}_border_g`] ?? 1,
-    border_b: state[`${prefix}_border_b`] ?? 1,
-    border_a: state[`${prefix}_border_a`] ?? 0.8,
-    additive: state[`${prefix}_additive`] ?? 0,
-    thickoutline: state[`${prefix}_thickoutline`] ?? 0,
+    enabled:
+      (keys ? state[keys.enabled] : prefix ? state[`${prefix}_enabled`] : 0) ??
+      0,
+    sides:
+      (keys ? state[keys.sides] : prefix ? state[`${prefix}_sides`] : 6) ?? 6,
+    x: (keys ? state[keys.x] : prefix ? state[`${prefix}_x`] : 0.5) ?? 0.5,
+    y: (keys ? state[keys.y] : prefix ? state[`${prefix}_y`] : 0.5) ?? 0.5,
+    rad:
+      (keys ? state[keys.rad] : prefix ? state[`${prefix}_rad`] : 0.15) ?? 0.15,
+    ang: (keys ? state[keys.ang] : prefix ? state[`${prefix}_ang`] : 0) ?? 0,
+    textured:
+      (keys
+        ? state[keys.textured]
+        : prefix
+          ? state[`${prefix}_textured`]
+          : 0) ?? 0,
+    tex_zoom:
+      (keys
+        ? state[keys.tex_zoom]
+        : prefix
+          ? state[`${prefix}_tex_zoom`]
+          : 1) ?? 1,
+    tex_ang:
+      (keys ? state[keys.tex_ang] : prefix ? state[`${prefix}_tex_ang`] : 0) ??
+      0,
+    r: (keys ? state[keys.r] : prefix ? state[`${prefix}_r`] : 1) ?? 1,
+    g: (keys ? state[keys.g] : prefix ? state[`${prefix}_g`] : 1) ?? 1,
+    b: (keys ? state[keys.b] : prefix ? state[`${prefix}_b`] : 1) ?? 1,
+    a: (keys ? state[keys.a] : prefix ? state[`${prefix}_a`] : 0.2) ?? 0.2,
+    r2: (keys ? state[keys.r2] : prefix ? state[`${prefix}_r2`] : 0) ?? 0,
+    g2: (keys ? state[keys.g2] : prefix ? state[`${prefix}_g2`] : 0) ?? 0,
+    b2: (keys ? state[keys.b2] : prefix ? state[`${prefix}_b2`] : 0) ?? 0,
+    a2: (keys ? state[keys.a2] : prefix ? state[`${prefix}_a2`] : 0) ?? 0,
+    border_r:
+      (keys
+        ? state[keys.border_r]
+        : prefix
+          ? state[`${prefix}_border_r`]
+          : 1) ?? 1,
+    border_g:
+      (keys
+        ? state[keys.border_g]
+        : prefix
+          ? state[`${prefix}_border_g`]
+          : 1) ?? 1,
+    border_b:
+      (keys
+        ? state[keys.border_b]
+        : prefix
+          ? state[`${prefix}_border_b`]
+          : 1) ?? 1,
+    border_a:
+      (keys
+        ? state[keys.border_a]
+        : prefix
+          ? state[`${prefix}_border_a`]
+          : 0.8) ?? 0.8,
+    additive:
+      (keys
+        ? state[keys.additive]
+        : prefix
+          ? state[`${prefix}_additive`]
+          : 0) ?? 0,
+    thickoutline:
+      (keys
+        ? state[keys.thickoutline]
+        : prefix
+          ? state[`${prefix}_thickoutline`]
+          : 0) ?? 0,
   };
 }
 
