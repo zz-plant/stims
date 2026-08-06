@@ -120,6 +120,9 @@ class MilkdropPresetVM implements MilkdropVM {
     meshy: 48,
     pi: Math.PI,
     e: Math.E,
+    ...Object.fromEntries(
+      Array.from({ length: 32 }, (_, i) => [`spec_${i}`, 0]),
+    ),
   };
   private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
   private lastPreparedSignalFrame = Number.NaN;
@@ -579,6 +582,28 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.music = signals.music;
     this.signalEnv.weighted_energy = signals.weightedEnergy;
     this.signalEnv.progress = signals.frame;
+
+    const freqData = signals.frequencyData;
+    if (freqData && freqData.length > 0) {
+      const binCount = freqData.length;
+      const maxBin = Math.max(1, Math.floor(binCount / 2));
+      for (let i = 0; i < 32; i += 1) {
+        const lowBin = Math.floor(maxBin ** (i / 32));
+        const highBin = Math.min(maxBin, Math.floor(maxBin ** ((i + 1) / 32)));
+        const end = Math.max(lowBin + 1, highBin);
+        let sum = 0;
+        let count = 0;
+        for (let b = lowBin; b < end && b < binCount; b += 1) {
+          sum += freqData[b] ?? 0;
+          count += 1;
+        }
+        this.signalEnv[`spec_${i}`] = count > 0 ? sum / count / 255 : 0;
+      }
+    } else {
+      for (let i = 0; i < 32; i += 1) {
+        this.signalEnv[`spec_${i}`] = 0;
+      }
+    }
   }
 
   private createEnv(

@@ -92,6 +92,7 @@ function createWaveLayerObject(
       new BufferGeometry(),
       new PointsMaterial({
         size: wave.pointSize,
+        sizeAttenuation: false,
         transparent: true,
         depthWrite: false,
         opacity: wave.alpha * alphaMultiplier,
@@ -184,6 +185,7 @@ function syncWaveLayerObject(
   if (existing instanceof ThreePoints) {
     const material = existing.material as PointsMaterial;
     material.size = wave.pointSize;
+    material.sizeAttenuation = false;
     material.blending = wave.additive ? AdditiveBlending : NormalBlending;
     helpers.setMaterialColor(
       material,
