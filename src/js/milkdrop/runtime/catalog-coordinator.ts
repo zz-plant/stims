@@ -191,8 +191,14 @@ export function createMilkdropCatalogCoordinator({
       selectionHistory.push(id);
       selectionCursor = selectionHistory.length - 1;
     }
-    await catalogStore.recordRecent(id);
-    await catalogStore.pushHistory(id);
+    // recordRecent and pushHistory touch different stored records (the
+    // preset's own meta vs. the shared history stack) with no read/write
+    // dependency between them, so awaiting them sequentially only doubles
+    // this step's IndexedDB round-trip latency for no benefit.
+    await Promise.all([
+      catalogStore.recordRecent(id),
+      catalogStore.pushHistory(id),
+    ]);
   };
 
   const consumePreviousSelection = async (activePresetId?: string) => {
