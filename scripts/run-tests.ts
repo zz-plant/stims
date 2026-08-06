@@ -354,9 +354,20 @@ async function main() {
     const files = await listCategoryFiles(category);
     if (files.length === 0) continue;
 
-    const exitCode = await runBunTest({ files, watch, maxConcurrency: 1 });
-    if (exitCode !== 0) {
-      process.exit(exitCode);
+    // Run each serial file in its own `bun test` process. Browser-backed e2e
+    // suites hold WebGL/SwiftShader contexts and dev-server connections that
+    // the runner does not release until the process exits; accumulating them
+    // across files in one process starves the 2-core CI runner and hangs
+    // later tests. A fresh process per file resets that pressure.
+    for (const file of files) {
+      const exitCode = await runBunTest({
+        files: [file],
+        watch,
+        maxConcurrency: 1,
+      });
+      if (exitCode !== 0) {
+        process.exit(exitCode);
+      }
     }
   }
 
