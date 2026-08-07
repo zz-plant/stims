@@ -132,8 +132,9 @@ export function normalizeShaderSyntax(value: string) {
     .replace(/texture2d/giu, 'tex2d')
     .replace(/texture3d/giu, 'tex3d')
     .replace(/\btexture(?=\()/giu, 'tex2d')
-    .replace(/\bfloat2(?=\()/giu, 'vec2')
-    .replace(/\bfloat3(?=\()/giu, 'vec3');
+    .replace(/\bfloat2\b/giu, 'vec2')
+    .replace(/\bfloat3\b/giu, 'vec3')
+    .replace(/\bfloat4\b/giu, 'vec4');
 }
 
 export function resolveShaderExpressionIdentifiers(

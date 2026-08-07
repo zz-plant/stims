@@ -96,6 +96,10 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
       'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
     )
+    .replace(
+      /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
+      'vec4(1.0 / texelSize, texelSize)',
+    )
     .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
     .replace(/\buv_orig\b/giu, 'vUv')
     .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
@@ -124,21 +128,19 @@ export function normalizeHlslToGlsl(shaderText: string): string {
 }
 
 export function extractNativeShaderBody(shaderText: string) {
-  const marker = shaderText.toLowerCase().indexOf('shader_body');
-  if (marker < 0) {
+  const markerMatch = shaderText.match(/\bshader_body\s*\{/iu);
+  if (!markerMatch || markerMatch.index === undefined) {
     return null;
   }
-  const openBrace = shaderText.indexOf('{', marker);
-  if (openBrace < 0) {
-    return null;
-  }
+  const marker = markerMatch.index;
+  const openBrace = marker + markerMatch[0].length - 1;
   const prefix = shaderText.slice(0, marker);
   const declarations = prefix
     .split(/[\r\n;]+/u)
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('uniform '))
     .filter((line) =>
-      /^(?:float|int|bool|vec[234]|mat[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
+      /^(?:const\s+)?(?:float|int|uint|bool|vec[234]|mat[234]|float[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
         line,
       ),
     )
@@ -163,6 +165,46 @@ export function extractNativeShaderBody(shaderText: string) {
   }
 
   return [...declarations, normalizedBody].join('\n');
+}
+
+export function splitShaderGlobalsAndBody(glsl: string): {
+  globals: string;
+  body: string;
+} {
+  const funcRegex =
+    /\b(?:float|vec[234]|mat[234]|void|int|bool)\s+\w+\s*\([^)]*\)\s*\{/gu;
+  const ranges: Array<[number, number]> = [];
+  let match: RegExpExecArray | null = funcRegex.exec(glsl);
+  while (match !== null) {
+    const start = match.index;
+    let depth = 1;
+    let end = start + match[0].length;
+    while (depth > 0 && end < glsl.length) {
+      if (glsl[end] === '{') depth++;
+      else if (glsl[end] === '}') depth--;
+      end++;
+    }
+    ranges.push([start, end]);
+    match = funcRegex.exec(glsl);
+  }
+  if (ranges.length === 0) {
+    return { globals: '', body: glsl };
+  }
+  const globals = ranges.map(([s, e]) => glsl.slice(s, e).trim()).join('\n');
+  const bodyParts: string[] = [];
+  let lastEnd = 0;
+  for (const [s, e] of ranges) {
+    bodyParts.push(glsl.slice(lastEnd, s));
+    lastEnd = e;
+  }
+  bodyParts.push(glsl.slice(lastEnd));
+  const body = bodyParts
+    .join('')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join('\n');
+  return { globals, body };
 }
 
 function applyShaderAstStatement({
