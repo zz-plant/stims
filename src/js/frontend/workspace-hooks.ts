@@ -113,6 +113,7 @@ export function useWorkspaceSessionState({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    fullCatalogReady,
     hydrateFullCatalogNow,
     refreshCatalogActivity,
   } = useCatalogLoading();
@@ -427,6 +428,7 @@ export function useWorkspaceSessionState({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    fullCatalogReady,
     handleYoutubeUrlKeyDown,
     activityCatalog,
     importPresetFiles: async (files: FileList | null) => {

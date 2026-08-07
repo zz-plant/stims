@@ -68,34 +68,16 @@ export {
 } from './shader-analysis-evaluation';
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
-function extractNativeShaderBody(shaderText: string) {
-  const marker = shaderText.toLowerCase().indexOf('shader_body');
-  if (marker < 0) {
-    return null;
-  }
-  const openBrace = shaderText.indexOf('{', marker);
-  if (openBrace < 0) {
-    return null;
-  }
-  const prefix = shaderText.slice(0, marker);
-  const declarations = prefix
-    .split(/[\r\n;]+/u)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('uniform '))
-    .filter((line) =>
-      /^(?:float|int|bool|vec[234]|mat[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
-        line,
-      ),
-    )
-    .map((line) => `  ${line};`);
-  const body = shaderText
-    .slice(openBrace + 1)
-    .replace(/;\s*}\s*;?\s*$/, '')
-    .replace(/}\s*;?\s*$/, '')
+export function normalizeHlslToGlsl(shaderText: string): string {
+  return shaderText
     .replace(/\btexture\s*\(/giu, 'texture2D(')
     .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
     .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bfloat2\b/giu, 'vec2')
+    .replace(/\bfloat3\b/giu, 'vec3')
+    .replace(/\bfloat4\b/giu, 'vec4')
     .replace(/\bsampler_main\b/giu, 'currentTex')
+    .replace(/\bsampler_fw_main\b/giu, 'currentTex')
     .replace(/\bsampler_pc_main\b/giu, 'previousTex')
     .replace(/\bsampler_pw_main\b/giu, 'previousTex')
     .replace(/\bsampler_fc_main\b/giu, 'warpTex')
@@ -116,6 +98,9 @@ function extractNativeShaderBody(shaderText: string) {
     )
     .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
     .replace(/\buv_orig\b/giu, 'vUv')
+    .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
+    .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
+    .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
     .replace(/\btime\b/giu, 'signalTime')
     .replace(/\bbass_att\b/giu, 'signalBassAtt')
     .replace(/\bbass\b/giu, 'signalBass')
@@ -136,6 +121,33 @@ function extractNativeShaderBody(shaderText: string) {
       /\brand_frame\b/giu,
       'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
     );
+}
+
+export function extractNativeShaderBody(shaderText: string) {
+  const marker = shaderText.toLowerCase().indexOf('shader_body');
+  if (marker < 0) {
+    return null;
+  }
+  const openBrace = shaderText.indexOf('{', marker);
+  if (openBrace < 0) {
+    return null;
+  }
+  const prefix = shaderText.slice(0, marker);
+  const declarations = prefix
+    .split(/[\r\n;]+/u)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('uniform '))
+    .filter((line) =>
+      /^(?:float|int|bool|vec[234]|mat[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
+        line,
+      ),
+    )
+    .map((line) => `  ${line};`);
+  const rawBody = shaderText
+    .slice(openBrace + 1)
+    .replace(/;\s*}\s*;?\s*$/, '')
+    .replace(/}\s*;?\s*$/, '');
+  const body = normalizeHlslToGlsl(rawBody);
 
   // Collapse whitespace/empty statements introduced when multiple raw
   // shader chunks are concatenated by the parser.

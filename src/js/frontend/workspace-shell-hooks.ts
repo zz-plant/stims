@@ -31,6 +31,7 @@ type WorkspaceShellOrchestrationArgs = {
   fallbackCatalog: PresetCatalogEntry[];
   fallbackCatalogError: string | null;
   fallbackCatalogReady: boolean;
+  fullCatalogReady?: boolean;
   activityCatalog: PresetCatalogEntry[];
   goBackPreset: () => Promise<void>;
   importPresetFiles: (files: FileList | null) => Promise<void>;
@@ -55,6 +56,7 @@ export function useWorkspaceShellOrchestration({
   fallbackCatalog,
   fallbackCatalogError,
   fallbackCatalogReady,
+  fullCatalogReady,
   activityCatalog,
   goBackPreset,
   importPresetFiles,
@@ -159,6 +161,7 @@ export function useWorkspaceShellOrchestration({
   const missingRequestedPreset = Boolean(
     routeState.presetId &&
       catalogReady &&
+      (fullCatalogReady ?? true) &&
       !resolvedRequestedPreset &&
       pendingPresetIdRef.current !== routeState.presetId,
   );

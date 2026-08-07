@@ -301,8 +301,8 @@ export function syncSignalEnvironment(
   targetEnv.midsAtt = signals.midsAtt;
   targetEnv.trebleAtt = signals.trebleAtt;
   targetEnv.beat = signals.beat;
-  targetEnv.beat_pulse = signals.beat_pulse;
-  targetEnv.beatPulse = signals.beatPulse;
+  targetEnv.beat_pulse = signals.beat_pulse ?? signals.beatPulse ?? 0;
+  targetEnv.beatPulse = signals.beatPulse ?? signals.beat_pulse ?? 0;
   targetEnv.beatBass = signals.beatBass;
   targetEnv.beatMid = signals.beatMid;
   targetEnv.beatTreble = signals.beatTreble;
@@ -315,6 +315,39 @@ export function syncSignalEnvironment(
   targetEnv.music = signals.music;
   targetEnv.weighted_energy = signals.weightedEnergy;
   targetEnv.progress = signals.frame;
+  targetEnv.signalTime = signals.time;
+  targetEnv.signalFrame = signals.frame;
+  targetEnv.signalFps = signals.fps;
+  targetEnv.signalBass = signals.bass;
+  targetEnv.signalMid = signals.mid;
+  targetEnv.signalTreb = signals.treb;
+  targetEnv.signalBassAtt = signals.bassAtt ?? signals.bass_att ?? 0;
+  targetEnv.signalMidAtt = signals.midAtt ?? signals.mid_att ?? 0;
+  targetEnv.signalTrebAtt =
+    (signals as { trebAtt?: number }).trebAtt ??
+    signals.trebleAtt ??
+    signals.treb_att ??
+    0;
+  targetEnv.signalBeat = signals.beat;
+  targetEnv.signalBeatPulse = signals.beatPulse ?? signals.beat_pulse ?? 0;
+  targetEnv.signalEnergy = signals.vol ?? signals.rms ?? 0;
+  // Lowercase aliases — expression AST stores identifiers lowercased.
+  targetEnv.signaltime = signals.time;
+  targetEnv.signalframe = signals.frame;
+  targetEnv.signalfps = signals.fps;
+  targetEnv.signalbass = signals.bass;
+  targetEnv.signalmid = signals.mid;
+  targetEnv.signaltreb = signals.treb;
+  targetEnv.signalbassatt = signals.bassAtt ?? signals.bass_att ?? 0;
+  targetEnv.signalmidatt = signals.midAtt ?? signals.mid_att ?? 0;
+  targetEnv.signaltrebatt =
+    (signals as { trebAtt?: number }).trebAtt ??
+    signals.trebleAtt ??
+    signals.treb_att ??
+    0;
+  targetEnv.signalbeat = signals.beat;
+  targetEnv.signalbeatpulse = signals.beatPulse ?? signals.beat_pulse ?? 0;
+  targetEnv.signalenergy = signals.vol ?? signals.rms ?? 0;
 
   const freqData = signals.frequencyData;
   if (freqData && freqData.length > 0) {

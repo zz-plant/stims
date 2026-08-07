@@ -24,6 +24,7 @@ import type {
   HardUnsupportedFieldSpec,
 } from './parity';
 import { flattenProgramStatements } from './program-assembly';
+import { extractNativeShaderBody } from './shader-analysis';
 import { isMilkdropShaderProgramBackendExecutable } from './shader-execution-classification';
 
 export type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
@@ -593,7 +594,14 @@ export function createMilkdropIr({
             : [],
         rawGlsl:
           shaderWarpAnalysis.hasNativeBody || !warpHasTranslatedDirectStatements
-            ? shaderWarpAnalysis.directProgramLines.join('\n')
+            ? shaderWarpAnalysis.hasNativeBody
+              ? (extractNativeShaderBody(warpShaderText ?? '') ??
+                shaderWarpAnalysis.directProgramLines
+                  .map((line) => (line.endsWith(';') ? line : `${line};`))
+                  .join('\n'))
+              : shaderWarpAnalysis.directProgramLines
+                  .map((line) => (line.endsWith(';') ? line : `${line};`))
+                  .join('\n')
             : undefined,
       })
     : null;
@@ -617,7 +625,14 @@ export function createMilkdropIr({
             : [],
         rawGlsl:
           shaderCompAnalysis.hasNativeBody || !compHasTranslatedDirectStatements
-            ? shaderCompAnalysis.directProgramLines.join('\n')
+            ? shaderCompAnalysis.hasNativeBody
+              ? (extractNativeShaderBody(compShaderText ?? '') ??
+                shaderCompAnalysis.directProgramLines
+                  .map((line) => (line.endsWith(';') ? line : `${line};`))
+                  .join('\n'))
+              : shaderCompAnalysis.directProgramLines
+                  .map((line) => (line.endsWith(';') ? line : `${line};`))
+                  .join('\n')
             : undefined,
       })
     : null;
