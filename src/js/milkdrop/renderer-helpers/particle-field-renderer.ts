@@ -4,12 +4,14 @@ import {
   Color,
   DoubleSide,
   DynamicDrawUsage,
-  Float32BufferAttribute,
+  InstancedBufferAttribute,
   InstancedBufferGeometry,
   PlaneGeometry,
   ShaderMaterial,
   Mesh as ThreeMesh,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   disposeObject,
   getMilkdropPassRenderOrder,
@@ -26,6 +28,7 @@ import type {
 type ParticleFieldObject = Mesh<InstancedBufferGeometry, ShaderMaterial>;
 
 type ParticleFieldSyncContext = {
+  backend: 'webgl' | 'webgpu';
   particleField: MilkdropParticleFieldVisual | null | undefined;
   mesh: MilkdropRenderPayload['frameState']['mesh'];
   meshPositions: ArrayLike<number>;
@@ -93,7 +96,112 @@ function makeParticleFieldUniforms(
   };
 }
 
-function createParticleFieldMaterial(
+// The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder does
+// not recognize plain ShaderMaterial and silently swaps in a blank default
+// material), while the WebGL path keeps the original GLSL ShaderMaterial —
+// this helper runs on both backends, unlike the procedural descriptor
+// materials in webgpu-procedural-materials.ts.
+const {
+  attribute,
+  cameraProjectionMatrix,
+  modelViewMatrix,
+  positionGeometry,
+  smoothstep,
+  uniform,
+  uv,
+  varying,
+  vec3,
+  vec4,
+} = TSL;
+
+function createParticleFieldNodeMaterial(
+  particleField: MilkdropParticleFieldVisual,
+  mesh: MilkdropRenderPayload['frameState']['mesh'],
+  signals: MilkdropRenderPayload['frameState']['signals'] | null,
+  alphaMultiplier: number,
+) {
+  const state = makeParticleFieldUniforms(
+    particleField,
+    mesh,
+    signals,
+    alphaMultiplier,
+  );
+  const uniforms = Object.fromEntries(
+    Object.entries(state).map(([key, entry]) => [key, uniform(entry.value)]),
+  );
+
+  const instanceAnchor = attribute('instanceAnchor', 'vec3');
+  const instanceSeed = attribute('instanceSeed', 'float');
+  const instanceId = attribute('instanceId', 'float');
+
+  const phase = instanceSeed
+    .mul(6.2831853)
+    .add(instanceId.mul(0.071))
+    .add(uniforms.time.mul(uniforms.motionScale.mul(24.0).add(1.25)));
+  const orbit = phase
+    .mul(1.13)
+    .add(uniforms.seed.mul(0.01))
+    .sin()
+    .mul(uniforms.motionScale)
+    .mul(0.85);
+  const flutter = phase
+    .mul(1.67)
+    .add(uniforms.seed.mul(0.02))
+    .cos()
+    .mul(uniforms.motionScale)
+    .mul(0.6);
+  const audioLift = uniforms.beatPulse
+    .mul(0.5)
+    .add(uniforms.music.mul(0.2))
+    .add(uniforms.bassAtt.mul(0.1))
+    .sub(uniforms.trebleAtt.mul(0.06))
+    .mul(uniforms.motionScale)
+    .mul(1.8);
+  const audioShift = uniforms.midAtt
+    .sub(uniforms.trebleAtt)
+    .mul(uniforms.motionScale)
+    .mul(1.4);
+  const animatedAnchor = instanceAnchor.add(
+    vec3(orbit.add(audioShift), flutter.add(audioLift), 0.0),
+  );
+  const scale = uniforms.size.mul(instanceSeed.mul(0.7).add(0.65));
+  const localPosition = vec3(positionGeometry.xy.mul(scale), 0.0);
+
+  const vColor = varying(
+    uniforms.baseColor.mul(
+      phase.mul(0.5).add(instanceId).sin().mul(0.35).add(0.75),
+    ),
+  );
+  const vAlpha = uniforms.opacity.mul(
+    uniforms.beatPulse.mul(0.55).add(uniforms.music.mul(0.12)).add(0.7),
+  );
+
+  const centered = uv().mul(2.0).sub(1.0);
+  const radius = centered.length();
+  // smoothstep with descending edges is a WGSL const-eval error, so the
+  // original glsl smoothstep(1.0, 0.2, r) is expressed via the identity
+  // smoothstep(hi, lo, x) === 1 - smoothstep(lo, hi, x).
+  const glow = smoothstep(0.2, 1.0, radius).oneMinus();
+  const core = smoothstep(0.0, 0.75, radius).oneMinus();
+
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.depthTest = false;
+  material.depthWrite = false;
+  material.side = DoubleSide;
+  material.blending = AdditiveBlending;
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(animatedAnchor.add(localPosition), 1.0));
+  material.colorNode = vec4(
+    vColor.add(vec3(core.mul(0.25))),
+    vAlpha.mul(glow).mul(glow),
+  );
+  material.userData.particleFieldSeed = particleField.seed;
+  return Object.assign(material, { uniforms }) as unknown as ShaderMaterial;
+}
+
+function createParticleFieldShaderMaterial(
   particleField: MilkdropParticleFieldVisual,
   mesh: MilkdropRenderPayload['frameState']['mesh'],
   signals: MilkdropRenderPayload['frameState']['signals'] | null,
@@ -182,6 +290,37 @@ function createParticleFieldMaterial(
   return material;
 }
 
+function createParticleFieldMaterial(
+  backend: 'webgl' | 'webgpu',
+  particleField: MilkdropParticleFieldVisual,
+  mesh: MilkdropRenderPayload['frameState']['mesh'],
+  signals: MilkdropRenderPayload['frameState']['signals'] | null,
+  alphaMultiplier: number,
+) {
+  return backend === 'webgpu'
+    ? createParticleFieldNodeMaterial(
+        particleField,
+        mesh,
+        signals,
+        alphaMultiplier,
+      )
+    : createParticleFieldShaderMaterial(
+        particleField,
+        mesh,
+        signals,
+        alphaMultiplier,
+      );
+}
+
+function isParticleFieldMaterialForBackend(
+  material: unknown,
+  backend: 'webgl' | 'webgpu',
+) {
+  return backend === 'webgpu'
+    ? material instanceof NodeMaterial
+    : material instanceof ShaderMaterial;
+}
+
 function getParticleFieldInstanceAnchors(
   particleField: MilkdropParticleFieldVisual,
   meshPositions: ArrayLike<number>,
@@ -250,46 +389,40 @@ function updateParticleFieldAttributes(
     meshPositions,
   );
 
-  const anchorAttribute = geometry.getAttribute(
-    'instanceAnchor',
-  ) as Float32BufferAttribute | null;
-  if (anchorAttribute && anchorAttribute.array.length === anchors.length) {
-    anchorAttribute.array.set(anchors);
-    anchorAttribute.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(anchors, 3);
+  // Per-instance data must be InstancedBufferAttribute so both backends set
+  // an instance step mode for it; a plain attribute would be consumed
+  // per-vertex (only the plane's four vertices ever read) and every
+  // instance would render identically.
+  const setInstancedAttribute = (
+    name: string,
+    values: Float32Array,
+    itemSize: number,
+  ) => {
+    const existing = geometry.getAttribute(
+      name,
+    ) as InstancedBufferAttribute | null;
+    if (
+      existing instanceof InstancedBufferAttribute &&
+      existing.array.length === values.length
+    ) {
+      (existing.array as Float32Array).set(values);
+      existing.needsUpdate = true;
+      return;
+    }
+    const attribute = new InstancedBufferAttribute(values, itemSize);
     attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('instanceAnchor', attribute);
-  }
+    geometry.setAttribute(name, attribute);
+  };
 
-  const seedAttribute = geometry.getAttribute(
-    'instanceSeed',
-  ) as Float32BufferAttribute | null;
-  if (seedAttribute && seedAttribute.array.length === seeds.length) {
-    seedAttribute.array.set(seeds);
-    seedAttribute.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(seeds, 1);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('instanceSeed', attribute);
-  }
-
-  const idAttribute = geometry.getAttribute(
-    'instanceId',
-  ) as Float32BufferAttribute | null;
-  if (idAttribute && idAttribute.array.length === ids.length) {
-    idAttribute.array.set(ids);
-    idAttribute.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(ids, 1);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('instanceId', attribute);
-  }
+  setInstancedAttribute('instanceAnchor', anchors, 3);
+  setInstancedAttribute('instanceSeed', seeds, 1);
+  setInstancedAttribute('instanceId', ids, 1);
 
   geometry.instanceCount = particleField.instanceCount;
 }
 
 export function createParticleFieldObject({
+  backend,
   particleField,
   mesh,
   meshPositions,
@@ -311,6 +444,7 @@ export function createParticleFieldObject({
       new ThreeMesh(
         geometry,
         createParticleFieldMaterial(
+          backend,
           particleField,
           mesh,
           signals,
@@ -328,6 +462,7 @@ export function createParticleFieldObject({
 export function syncParticleFieldObject(
   existing: ParticleFieldObject | undefined,
   {
+    backend,
     particleField,
     mesh,
     meshPositions,
@@ -350,7 +485,7 @@ export function syncParticleFieldObject(
     !!existing &&
     existing.geometry instanceof InstancedBufferGeometry &&
     existing.geometry.instanceCount === particleField.instanceCount &&
-    existing.material instanceof ShaderMaterial &&
+    isParticleFieldMaterialForBackend(existing.material, backend) &&
     existing.userData.particleFieldSeed === particleField.seed;
 
   if (!matches) {
@@ -358,6 +493,7 @@ export function syncParticleFieldObject(
       disposeObject(existing);
     }
     return createParticleFieldObject({
+      backend,
       particleField,
       mesh,
       meshPositions,
@@ -402,13 +538,18 @@ export function syncParticleFieldObject(
   material.depthWrite = false;
   material.blending = AdditiveBlending;
   material.side = DoubleSide;
-  material.needsUpdate = true;
+  if (backend === 'webgl') {
+    // Bumping material.version on a NodeMaterial forces a full pipeline
+    // rebuild every frame on WebGPU; only the WebGL ShaderMaterial needs it.
+    material.needsUpdate = true;
+  }
   existing.renderOrder = getMilkdropPassRenderOrder('particle-field');
   existing.position.z = 0.18;
   return existing;
 }
 
 export function renderParticleFieldGroup({
+  backend,
   target,
   group,
   particleField,
@@ -418,6 +559,7 @@ export function renderParticleFieldGroup({
   alphaMultiplier = 1,
   trimGroupChildren: trimChildren,
 }: {
+  backend: 'webgl' | 'webgpu';
   target: 'particle-field' | 'blend-particle-field';
   group: Group;
   particleField: MilkdropParticleFieldVisual | null | undefined;
@@ -429,6 +571,7 @@ export function renderParticleFieldGroup({
 }) {
   const existing = group.children[0] as ParticleFieldObject | undefined;
   const synced = syncParticleFieldObject(existing, {
+    backend,
     particleField,
     mesh,
     meshPositions,

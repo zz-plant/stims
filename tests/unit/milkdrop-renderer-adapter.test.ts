@@ -21,7 +21,13 @@ import {
   WebGLRenderer,
   ZeroFactor,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial } from 'three/webgpu';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import {
+  MILKDROP_FIELD_WGSL_HELPERS_SOURCE,
+  buildMilkdropTransformWgslCode,
+} from '../../src/js/milkdrop/renderer-backends/webgpu-procedural-materials.ts';
 import {
   __milkdropRendererAdapterTestUtils,
   createMilkdropRendererAdapterCore,
@@ -1601,7 +1607,7 @@ warpanimspeed=1.4
       geometry?: unknown;
     };
 
-    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material).toBeInstanceOf(NodeMaterial);
     expect(meshLines.geometry).toBeDefined();
   });
 
@@ -1645,7 +1651,7 @@ per_pixel_3=zoom=zoom+abs(y)*0.08;
       material?: ShaderMaterial;
     };
 
-    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material).toBeInstanceOf(NodeMaterial);
     expect(meshLines.material?.userData.fieldProgramSignature).toBe(
       frameState.gpuGeometry.meshField?.program?.signature,
     );
@@ -1691,29 +1697,36 @@ per_pixel_3=sx=2;
       material?: ShaderMaterial;
     };
 
-    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
-    expect(meshLines.material?.vertexShader).toContain(
-      'float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);',
+    expect(meshLines.material).toBeInstanceOf(NodeMaterial);
+
+    // The NodeMaterial's shader text lives in wgslFn nodes rather than a
+    // vertexShader string, so the center-normalization behavior is asserted
+    // against the generated WGSL transform source directly.
+    const transformWgsl = buildMilkdropTransformWgslCode(
+      frameState.gpuGeometry.meshField?.program ?? null,
     );
-    expect(meshLines.material?.vertexShader).toContain(
-      'float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);',
+    expect(transformWgsl).toContain(
+      'var fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);',
     );
-    expect(meshLines.material?.vertexShader).toContain(
-      'float normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);',
+    expect(transformWgsl).toContain(
+      'var fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);',
     );
-    expect(meshLines.material?.vertexShader).toContain(
-      'float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);',
+    expect(transformWgsl).toContain(
+      'let normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);',
     );
-    expect(meshLines.material?.vertexShader).toContain(
-      'return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;',
+    expect(transformWgsl).toContain(
+      'let normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);',
     );
-    expect(meshLines.material?.vertexShader).toContain(
-      'return value >= 0.0 && value <= 1.0 ? (0.5 - value) * 2.0 : value;',
+    expect(MILKDROP_FIELD_WGSL_HELPERS_SOURCE).toContain(
+      'return select(value, (value - 0.5) * 2.0, value >= 0.0 && value <= 1.0);',
     );
-    expect(meshLines.material?.vertexShader).toContain(
+    expect(MILKDROP_FIELD_WGSL_HELPERS_SOURCE).toContain(
+      'return select(value, (0.5 - value) * 2.0, value >= 0.0 && value <= 1.0);',
+    );
+    expect(transformWgsl).toContain(
       '(field_x - normalizedCenterX) * fieldScaleX',
     );
-    expect(meshLines.material?.vertexShader).toContain(
+    expect(transformWgsl).toContain(
       '(field_y - normalizedCenterY) * fieldScaleY',
     );
   });
@@ -3203,7 +3216,7 @@ wavecode_0_a=0.8
     const extraBlendedWave = blendCustomWaveGroup.children[1];
 
     expect(blendCustomWaveGroup.children).toHaveLength(2);
-    expect(extraBlendedWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(extraBlendedWave?.material).toBeInstanceOf(NodeMaterial);
     expect(
       (extraBlendedWave?.material as ShaderMaterial | undefined)?.uniforms.alpha
         .value,

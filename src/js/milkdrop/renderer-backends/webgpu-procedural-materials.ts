@@ -1,4 +1,4 @@
-import { Color, ShaderMaterial } from 'three';
+import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
 import {
@@ -16,10 +16,10 @@ import type {
 
 // NOTE: The WebGPU path loads a true Data3DTexture for simplex noise (see
 // feedback-manager-webgpu-composite.ts) but samples it via 2D atlas slicing
-// in the GLSL shaders because Three.js WebGPU/TSL does not expose
-// texture3D() natively. The 2D atlas sampling approximates the GLSL path's
-// atlas slicing approach. True 3D texture sampling would require TSL nodes
-// or a custom WGSL shader once the API supports it.
+// because Three.js WebGPU/TSL does not expose texture3D() natively. The 2D
+// atlas sampling approximates the GLSL path's atlas slicing approach. True
+// 3D texture sampling would require TSL nodes or a custom WGSL shader once
+// the API supports it.
 
 // three.js's WebGPURenderer only recognizes materials registered in its
 // StandardNodeLibrary (MeshBasicMaterial, MeshStandardMaterial, etc). A
@@ -29,109 +29,140 @@ import type {
 // no custom color/position logic at all. wgslFn wraps hand-written WGSL as
 // a callable node function so it can drive a real NodeMaterial's
 // vertexNode/colorNode without rewriting the math into TSL's JS node DSL.
+// Everything must be WGSL (not GLSL): three.js's WebGPU backend runs wgslFn
+// bodies through its native WGSL pipeline, and these material paths only
+// ever run on the native WebGPU backend (see renderMesh /
+// renderMotionVectors / the procedural wave sync helpers, all gated on
+// backend === 'webgpu').
 const {
+  Discard,
+  Fn,
   attribute,
   cameraProjectionMatrix,
   modelViewMatrix,
   uniform,
+  varying,
   vec4,
+  wgsl,
   wgslFn,
 } = TSL;
 
-const PROCEDURAL_INTERACTION_SHADER_CHUNK = `
-  vec2 applyMilkdropInteraction(vec2 point) {
-    vec2 scaled = point * interactionScale;
-    float cosRot = cos(interactionRotation);
-    float sinRot = sin(interactionRotation);
-    return vec2(
-      scaled.x * cosRot - scaled.y * sinRot + interactionOffsetX,
-      scaled.x * sinRot + scaled.y * cosRot + interactionOffsetY
-    );
-  }
-`;
+type TslNode = {
+  value: number & Color;
+  x: TslNode;
+  y: TslNode;
+  z: TslNode;
+  w: TslNode;
+  mul: (other: unknown) => TslNode;
+  lessThanEqual: (other: unknown) => TslNode;
+  [key: string]: unknown;
+};
 
-const PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS = `
-  float signalTimeValue,
-  float signalFrameValue,
-  float signalFpsValue,
-  float signalAspectValue,
-  float signalBassValue,
-  float signalMidValue,
-  float signalMidsValue,
-  float signalTrebleValue,
-  float signalBassAttValue,
-  float signalMidAttValue,
-  float signalMidsAttValue,
-  float signalTrebleAttValue,
-  float signalBeatValue,
-  float signalBeatPulseValue,
-  float signalRmsValue,
-  float signalVolValue,
-  float signalMusicValue,
-  float signalWeightedEnergyValue
-`;
+type TslVertexFn = (inputs: object) => TslNode;
 
-const PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS = `
-  float milkdropBool(float value) {
-    return abs(value) > 0.000001 ? 1.0 : 0.0;
+type TslUniformNodes<T> = { [K in keyof T]: TslNode };
+
+// The per-preset field programs arrive as expression ASTs and historically
+// compiled to GLSL. On WebGPU they must compile to WGSL instead; the
+// dialect differences that matter here are: no ternary operator (select()),
+// no mod() builtin (milkdropMod helper, which also guards divide-by-zero
+// like the GLSL version did), two-argument atan spelled atan2, and
+// float(int(...)) casts spelled f32(i32(...)).
+export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
+  fn milkdropBool(value: f32) -> f32 {
+    return select(0.0, 1.0, abs(value) > 0.000001);
   }
 
-  float milkdropSelect(bool condition, float whenTrue, float whenFalse) {
-    return condition ? whenTrue : whenFalse;
+  fn milkdropBitOr(left: f32, right: f32) -> f32 {
+    return f32(i32(left) | i32(right));
   }
 
-  float milkdropBitOr(float left, float right) {
-    return float(int(left) | int(right));
+  fn milkdropBitAnd(left: f32, right: f32) -> f32 {
+    return f32(i32(left) & i32(right));
   }
 
-  float milkdropBitAnd(float left, float right) {
-    return float(int(left) & int(right));
-  }
-
-  float milkdropFrac(float value) {
+  fn milkdropFrac(value: f32) -> f32 {
     return value - floor(value);
   }
 
-  float milkdropSigmoid(float value, float slope) {
+  fn milkdropSigmoid(value: f32, slope: f32) -> f32 {
     return 1.0 / (1.0 + exp(-value * slope));
   }
 
-  float milkdropIf(float condition, float whenTrue, float whenFalse) {
-    return abs(condition) > 0.000001 ? whenTrue : whenFalse;
+  fn milkdropIf(condition: f32, whenTrue: f32, whenFalse: f32) -> f32 {
+    return select(whenFalse, whenTrue, abs(condition) > 0.000001);
   }
 
-  float milkdropAbove(float left, float right) {
-    return left > right ? 1.0 : 0.0;
+  fn milkdropAbove(left: f32, right: f32) -> f32 {
+    return select(0.0, 1.0, left > right);
   }
 
-  float milkdropBelow(float left, float right) {
-    return left < right ? 1.0 : 0.0;
+  fn milkdropBelow(left: f32, right: f32) -> f32 {
+    return select(0.0, 1.0, left < right);
   }
 
-  float milkdropEqual(float left, float right) {
-    return abs(left - right) <= 0.000001 ? 1.0 : 0.0;
+  fn milkdropEqual(left: f32, right: f32) -> f32 {
+    return select(0.0, 1.0, abs(left - right) <= 0.000001);
   }
 
-  float milkdropRand(float seed) {
-    return fract(sin(dot(vec2(seed, signalTimeValue), vec2(12.9898, 78.233))) * 43758.5453);
+  fn milkdropMod(left: f32, right: f32) -> f32 {
+    return select(left - right * floor(left / right), 0.0, abs(right) <= 0.000001);
   }
 
-  float milkdropNormalizeTransformCenterX(float value) {
-    return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;
+  fn milkdropRand(seed: f32, time: f32) -> f32 {
+    return milkdropFrac(sin(dot(vec2<f32>(seed, time), vec2<f32>(12.9898, 78.233))) * 43758.5453);
   }
 
-  float milkdropNormalizeTransformCenterY(float value) {
-    return value >= 0.0 && value <= 1.0 ? (0.5 - value) * 2.0 : value;
+  fn milkdropNormalizeTransformCenterX(value: f32) -> f32 {
+    return select(value, (value - 0.5) * 2.0, value >= 0.0 && value <= 1.0);
   }
 
-  float milkdropDenormalizeTransformCenterX(float value) {
+  fn milkdropNormalizeTransformCenterY(value: f32) -> f32 {
+    return select(value, (0.5 - value) * 2.0, value >= 0.0 && value <= 1.0);
+  }
+
+  fn milkdropDenormalizeTransformCenterX(value: f32) -> f32 {
     return value * 0.5 + 0.5;
   }
 
-  float milkdropDenormalizeTransformCenterY(float value) {
+  fn milkdropDenormalizeTransformCenterY(value: f32) -> f32 {
     return 0.5 - value * 0.5;
   }
 `;
+
+const MILKDROP_FIELD_WGSL_HELPERS = wgsl(MILKDROP_FIELD_WGSL_HELPERS_SOURCE);
+
+// Runtime signal values reach the generated WGSL packed into five vec4
+// parameters (signalsA..signalsE) to keep wgslFn parameter lists sane; this
+// preamble unpacks them under the same local names the expression compiler
+// emits for signal identifiers.
+const WGSL_SIGNAL_UNPACK = `
+    let signalTimeValue = signalsA.x;
+    let signalFrameValue = signalsA.y;
+    let signalFpsValue = signalsA.z;
+    let signalAspectValue = signalsA.w;
+    let signalBassValue = signalsB.x;
+    let signalMidValue = signalsB.y;
+    let signalMidsValue = signalsB.z;
+    let signalTrebleValue = signalsB.w;
+    let signalBassAttValue = signalsC.x;
+    let signalMidAttValue = signalsC.y;
+    let signalMidsAttValue = signalsC.z;
+    let signalTrebleAttValue = signalsC.w;
+    let signalBeatValue = signalsD.x;
+    let signalBeatPulseValue = signalsD.y;
+    let signalRmsValue = signalsD.z;
+    let signalVolValue = signalsD.w;
+    let signalMusicValue = signalsE.x;
+    let signalWeightedEnergyValue = signalsE.y;
+`;
+
+const WGSL_SIGNAL_PARAMETERS = `
+    signalsA: vec4<f32>,
+    signalsB: vec4<f32>,
+    signalsC: vec4<f32>,
+    signalsD: vec4<f32>,
+    signalsE: vec4<f32>`;
 
 function gpuFieldVarName(name: string) {
   switch (name) {
@@ -209,31 +240,37 @@ function gpuFieldIdentifierToShaderSource(name: string) {
   }
 }
 
-function buildGpuFieldExpressionShaderSource(
+function formatWgslFloat(value: number) {
+  if (!Number.isFinite(value)) {
+    return '0.0';
+  }
+  const text = value.toString();
+  return /[.e]/i.test(text) ? text : `${text}.0`;
+}
+
+function buildGpuFieldExpressionWgslSource(
   expression: MilkdropGpuFieldExpression,
 ): string {
   switch (expression.type) {
     case 'literal':
-      return Number.isFinite(expression.value)
-        ? expression.value.toString()
-        : '0.0';
+      return formatWgslFloat(expression.value);
     case 'identifier':
       return gpuFieldIdentifierToShaderSource(expression.name);
     case 'unary': {
-      const operand = buildGpuFieldExpressionShaderSource(expression.operand);
+      const operand = buildGpuFieldExpressionWgslSource(expression.operand);
       if (expression.operator === '!') {
-        return `(milkdropBool(${operand}) > 0.5 ? 0.0 : 1.0)`;
+        return `select(1.0, 0.0, milkdropBool(${operand}) > 0.5)`;
       }
       return `(${expression.operator}${operand})`;
     }
     case 'binary': {
-      const left = buildGpuFieldExpressionShaderSource(expression.left);
-      const right = buildGpuFieldExpressionShaderSource(expression.right);
+      const left = buildGpuFieldExpressionWgslSource(expression.left);
+      const right = buildGpuFieldExpressionWgslSource(expression.right);
       switch (expression.operator) {
         case '^':
           return `pow(${left}, ${right})`;
         case '%':
-          return `(abs(${right}) <= 0.000001 ? 0.0 : mod(${left}, ${right}))`;
+          return `milkdropMod(${left}, ${right})`;
         case '|':
           return `milkdropBitOr(${left}, ${right})`;
         case '&':
@@ -244,21 +281,21 @@ function buildGpuFieldExpressionShaderSource(
         case '>=':
         case '==':
         case '!=':
-          return `(${left} ${expression.operator} ${right} ? 1.0 : 0.0)`;
+          return `select(0.0, 1.0, ${left} ${expression.operator} ${right})`;
         case '&&':
-          return `((milkdropBool(${left}) > 0.5 && milkdropBool(${right}) > 0.5) ? 1.0 : 0.0)`;
+          return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 && milkdropBool(${right}) > 0.5)`;
         case '||':
-          return `((milkdropBool(${left}) > 0.5 || milkdropBool(${right}) > 0.5) ? 1.0 : 0.0)`;
+          return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 || milkdropBool(${right}) > 0.5)`;
         default:
           return `(${left} ${expression.operator} ${right})`;
       }
     }
     case 'call': {
-      const args = expression.args.map(buildGpuFieldExpressionShaderSource);
+      const args = expression.args.map(buildGpuFieldExpressionWgslSource);
       switch (expression.name) {
         case 'mod':
         case 'fmod':
-          return `(abs(${args[1]}) <= 0.000001 ? 0.0 : mod(${args[0]}, ${args[1]}))`;
+          return `milkdropMod(${args[0]}, ${args[1]})`;
         case 'mix':
         case 'lerp':
           return `mix(${args[0]}, ${args[1]}, ${args[2]})`;
@@ -271,13 +308,17 @@ function buildGpuFieldExpressionShaderSource(
         case 'sign':
           return `sign(${args[0]})`;
         case 'bor':
-          return `((milkdropBool(${args[0]}) > 0.5 || milkdropBool(${args[1]}) > 0.5) ? 1.0 : 0.0)`;
+          return `select(0.0, 1.0, milkdropBool(${args[0]}) > 0.5 || milkdropBool(${args[1]}) > 0.5)`;
         case 'band':
-          return `((milkdropBool(${args[0]}) > 0.5 && milkdropBool(${args[1]}) > 0.5) ? 1.0 : 0.0)`;
+          return `select(0.0, 1.0, milkdropBool(${args[0]}) > 0.5 && milkdropBool(${args[1]}) > 0.5)`;
         case 'bnot':
-          return `(milkdropBool(${args[0]}) > 0.5 ? 0.0 : 1.0)`;
+          return `select(1.0, 0.0, milkdropBool(${args[0]}) > 0.5)`;
         case 'atan2':
-          return `atan(${args[0]}, ${args[1]})`;
+          return `atan2(${args[0]}, ${args[1]})`;
+        case 'atan':
+          return args.length === 2
+            ? `atan2(${args[0]}, ${args[1]})`
+            : `atan(${args[0]})`;
         case 'frac':
           return `milkdropFrac(${args[0]})`;
         case 'if':
@@ -289,7 +330,7 @@ function buildGpuFieldExpressionShaderSource(
         case 'equal':
           return `milkdropEqual(${args[0]}, ${args[1]})`;
         case 'rand':
-          return `milkdropRand(${args[0]})`;
+          return `milkdropRand(${args[0]}, signalTimeValue)`;
         case 'exec2':
         case 'exec3':
           return args[args.length - 1] ?? '0.0';
@@ -300,142 +341,12 @@ function buildGpuFieldExpressionShaderSource(
   }
 }
 
-function buildProceduralFieldProgramShaderChunk(
-  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
-) {
-  if (!program) {
-    return `
-      ${PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS}
-
-      vec2 milkdropTransformPointWithParams(
-        vec2 source,
-        float paramZoom,
-        float paramZoomExponent,
-        float paramRotation,
-        float paramWarp,
-        float paramWarpAnimSpeed,
-        float paramCenterX,
-        float paramCenterY,
-        float paramScaleX,
-        float paramScaleY,
-        float paramTranslateX,
-        float paramTranslateY,
-        ${PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS}
-      ) {
-        float radius = length(source);
-        float angle = atan(source.y, source.x) + paramRotation;
-        float transformedX =
-          (source.x - paramCenterX) * paramScaleX + paramCenterX + paramTranslateX;
-        float transformedY =
-          (source.y - paramCenterY) * paramScaleY + paramCenterY + paramTranslateY;
-        float ripple = sin(
-          radius * 12.0 +
-          signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + paramWarpAnimSpeed)
-        ) * paramWarp * 0.08;
-        float radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
-        float zoomScale = pow(
-          max(paramZoom, 0.0001),
-          pow(max(paramZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-        );
-        vec2 warped = vec2(
-          (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
-          (transformedY + sin(angle * 4.0) * ripple) * zoomScale
-        );
-        float cosRot = cos(paramRotation);
-        float sinRot = sin(paramRotation);
-        return vec2(
-          warped.x * cosRot - warped.y * sinRot,
-          warped.x * sinRot + warped.y * cosRot
-        );
-      }
-    `;
-  }
-
-  const temporaryDeclarations = program.temporaries
-    .map((temporary) => `float ${gpuFieldVarName(temporary)} = 0.0;`)
-    .join('\n        ');
-  const statementCode = program.statements
-    .map(
-      (statement) =>
-        `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionShaderSource(
-          statement.expression,
-        )};`,
-    )
-    .join('\n        ');
-  return `
-    ${PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS}
-
-    vec2 milkdropTransformPointWithParams(
-      vec2 source,
-      float paramZoom,
-      float paramZoomExponent,
-      float paramRotation,
-      float paramWarp,
-      float paramWarpAnimSpeed,
-      float paramCenterX,
-      float paramCenterY,
-      float paramScaleX,
-      float paramScaleY,
-      float paramTranslateX,
-      float paramTranslateY,
-      ${PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS}
-    ) {
-      float field_x = source.x;
-      float field_y = source.y;
-      float field_rad = length(source);
-      float field_ang = atan(source.y, source.x);
-      float fieldZoom = paramZoom;
-      float fieldZoomExponent = paramZoomExponent;
-      float fieldRotation = paramRotation;
-      float fieldWarp = paramWarp;
-      float fieldWarpScale = paramWarpAnimSpeed;
-      float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);
-      float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);
-      float fieldScaleX = paramScaleX;
-      float fieldScaleY = paramScaleY;
-      float fieldTranslateX = paramTranslateX * 0.5;
-      float fieldTranslateY = paramTranslateY * 0.5;
-      ${temporaryDeclarations}
-      ${statementCode}
-
-      float normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);
-      float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);
-      float angle = field_ang + fieldRotation;
-      float translatedX =
-        (field_x - normalizedCenterX) * fieldScaleX +
-        normalizedCenterX +
-        fieldTranslateX * 2.0;
-      float translatedY =
-        (field_y - normalizedCenterY) * fieldScaleY +
-        normalizedCenterY +
-        fieldTranslateY * 2.0;
-      float ripple = sin(
-        field_rad * 12.0 +
-        signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
-      ) * fieldWarp * 0.08;
-      float radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
-      float zoomScale = pow(
-        max(fieldZoom, 0.0001),
-        pow(max(fieldZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-      );
-      float px = (translatedX + cos(angle * 3.0) * ripple) * zoomScale;
-      float py = (translatedY + sin(angle * 4.0) * ripple) * zoomScale;
-      float cosRot = cos(fieldRotation);
-      float sinRot = sin(fieldRotation);
-      return vec2(
-        px * cosRot - py * sinRot,
-        px * sinRot + py * cosRot
-      );
-    }
-  `;
-}
-
 function buildGpuFieldTemporaryDeclarations(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
   return (program?.temporaries ?? [])
-    .map((temporary) => `float ${gpuFieldVarName(temporary)} = 0.0;`)
-    .join('\n        ');
+    .map((temporary) => `var ${gpuFieldVarName(temporary)}: f32 = 0.0;`)
+    .join('\n    ');
 }
 
 function buildGpuFieldStatementCode(
@@ -444,173 +355,387 @@ function buildGpuFieldStatementCode(
   return (program?.statements ?? [])
     .map(
       (statement) =>
-        `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionShaderSource(
+        `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionWgslSource(
           statement.expression,
         )};`,
     )
-    .join('\n        ');
+    .join('\n    ');
 }
 
-function buildProceduralCustomWaveProgramShaderChunk(
+// Field transform parameters are packed like the signals: fieldParamsA =
+// (zoom, zoomExponent, rotation, warp), fieldParamsB = (warpAnimSpeed,
+// centerX, centerY, scaleX), fieldParamsC = (scaleY, translateX,
+// translateY, unused).
+const WGSL_TRANSFORM_HEADER = `fn milkdropTransformPointWithParams(
+    source: vec2<f32>,
+    fieldParamsA: vec4<f32>,
+    fieldParamsB: vec4<f32>,
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS}
+  ) -> vec2<f32> {
+    let paramZoom = fieldParamsA.x;
+    let paramZoomExponent = fieldParamsA.y;
+    let paramRotation = fieldParamsA.z;
+    let paramWarp = fieldParamsA.w;
+    let paramWarpAnimSpeed = fieldParamsB.x;
+    let paramCenterX = fieldParamsB.y;
+    let paramCenterY = fieldParamsB.z;
+    let paramScaleX = fieldParamsB.w;
+    let paramScaleY = fieldParamsC.x;
+    let paramTranslateX = fieldParamsC.y;
+    let paramTranslateY = fieldParamsC.z;
+${WGSL_SIGNAL_UNPACK}`;
+
+export function buildMilkdropTransformWgslCode(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
   if (!program) {
-    return '';
+    return `${WGSL_TRANSFORM_HEADER}
+    let radius = length(source);
+    let angle = atan2(source.y, source.x) + paramRotation;
+    let transformedX =
+      (source.x - paramCenterX) * paramScaleX + paramCenterX + paramTranslateX;
+    let transformedY =
+      (source.y - paramCenterY) * paramScaleY + paramCenterY + paramTranslateY;
+    let ripple = sin(
+      radius * 12.0 +
+      signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + paramWarpAnimSpeed)
+    ) * paramWarp * 0.08;
+    let radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
+    let zoomScale = pow(
+      max(paramZoom, 0.0001),
+      pow(max(paramZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
+    );
+    let warped = vec2<f32>(
+      (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
+      (transformedY + sin(angle * 4.0) * ripple) * zoomScale
+    );
+    let cosRot = cos(paramRotation);
+    let sinRot = sin(paramRotation);
+    return vec2<f32>(
+      warped.x * cosRot - warped.y * sinRot,
+      warped.x * sinRot + warped.y * cosRot
+    );
+  }`;
   }
 
-  const temporaryDeclarations = buildGpuFieldTemporaryDeclarations(program);
-  const statementCode = buildGpuFieldStatementCode(program);
-  return `
-    ${PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS}
+  return `${WGSL_TRANSFORM_HEADER}
+    var field_x = source.x;
+    var field_y = source.y;
+    var field_rad = length(source);
+    var field_ang = atan2(source.y, source.x);
+    var fieldZoom = paramZoom;
+    var fieldZoomExponent = paramZoomExponent;
+    var fieldRotation = paramRotation;
+    var fieldWarp = paramWarp;
+    var fieldWarpScale = paramWarpAnimSpeed;
+    var fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);
+    var fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);
+    var fieldScaleX = paramScaleX;
+    var fieldScaleY = paramScaleY;
+    var fieldTranslateX = paramTranslateX * 0.5;
+    var fieldTranslateY = paramTranslateY * 0.5;
+    ${buildGpuFieldTemporaryDeclarations(program)}
+    ${buildGpuFieldStatementCode(program)}
 
-    vec2 milkdropCustomWavePointWithProgram(
-      float sampleTValue,
-      float sampleValue1,
-      float sampleValue2,
-      float paramCenterX,
-      float paramCenterY,
-      float paramScaling,
-      float paramMystery,
-      float paramSpectrum,
-      float paramSamples,
-      ${PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS}
-    ) {
-      float field_sample = sampleTValue;
-      float field_value = sampleValue1;
-      float field_value1 = sampleValue1;
-      float field_value2 = sampleValue2;
-      float field_samples = paramSamples;
-      float field_spectrum = paramSpectrum;
-      float field_scaling = paramScaling;
-      float field_mystery = paramMystery;
-      float baseY =
-        paramCenterY +
-        (sampleValue1 - 0.5) * 0.55 * paramScaling * (1.0 + paramMystery * 0.25);
-      float orbitalY =
-        paramCenterY +
-        sin(
-          sampleTValue * 3.141592653589793 * 2.0 * (1.0 + paramMystery) +
-            signalTimeValue
-        ) *
-          0.18 *
-          paramScaling;
-      float field_x = paramCenterX + (-1.0 + sampleTValue * 2.0) * 0.85;
-      float field_y = mix(orbitalY, baseY, paramSpectrum);
-      float field_rad = length(vec2(field_x, field_y));
-      float field_ang = atan(field_y, field_x);
-      ${temporaryDeclarations}
-      ${statementCode}
-      return vec2(field_x, field_y);
-    }
-  `;
+    let normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);
+    let normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);
+    let angle = field_ang + fieldRotation;
+    let translatedX =
+      (field_x - normalizedCenterX) * fieldScaleX +
+      normalizedCenterX +
+      fieldTranslateX * 2.0;
+    let translatedY =
+      (field_y - normalizedCenterY) * fieldScaleY +
+      normalizedCenterY +
+      fieldTranslateY * 2.0;
+    let ripple = sin(
+      field_rad * 12.0 +
+      signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
+    ) * fieldWarp * 0.08;
+    let radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
+    let zoomScale = pow(
+      max(fieldZoom, 0.0001),
+      pow(max(fieldZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
+    );
+    let px = (translatedX + cos(angle * 3.0) * ripple) * zoomScale;
+    let py = (translatedY + sin(angle * 4.0) * ripple) * zoomScale;
+    let cosRot = cos(fieldRotation);
+    let sinRot = sin(fieldRotation);
+    return vec2<f32>(
+      px * cosRot - py * sinRot,
+      px * sinRot + py * cosRot
+    );
+  }`;
+}
+
+const WGSL_APPLY_INTERACTION = `
+    let scaled = point * interactionTransform.w;
+    let cosRotInteraction = cos(interactionTransform.z);
+    let sinRotInteraction = sin(interactionTransform.z);
+    let interacted = vec2<f32>(
+      scaled.x * cosRotInteraction - scaled.y * sinRotInteraction + interactionTransform.x,
+      scaled.x * sinRotInteraction + scaled.y * cosRotInteraction + interactionTransform.y
+    );
+`;
+
+const transformIncludeCache = new Map<string, unknown>();
+
+function getTransformInclude(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const key = program?.signature ?? 'default';
+  let include = transformIncludeCache.get(key);
+  if (!include) {
+    include = wgsl(buildMilkdropTransformWgslCode(program));
+    transformIncludeCache.set(key, include);
+  }
+  return include;
+}
+
+function toUniformNodes<T extends Record<string, { value: unknown }>>(
+  state: T,
+): TslUniformNodes<T> {
+  const nodes: Record<string, TslNode> = {};
+  for (const [key, entry] of Object.entries(state)) {
+    nodes[key] = uniform(entry.value);
+  }
+  return nodes as TslUniformNodes<T>;
+}
+
+function packSignalUniformVectors(
+  uniforms: Record<string, TslNode>,
+  prefix: 'signal' | 'previousSignal',
+) {
+  const get = (name: string) => uniforms[`${prefix}${name}`];
+  return {
+    a: vec4(get('Time'), get('Frame'), get('Fps'), get('Aspect')),
+    b: vec4(get('Bass'), get('Mid'), get('Mids'), get('Treble')),
+    c: vec4(get('BassAtt'), get('MidAtt'), get('MidsAtt'), get('TrebleAtt')),
+    d: vec4(get('Beat'), get('BeatPulse'), get('Rms'), get('Vol')),
+    e: vec4(get('Music'), get('WeightedEnergy'), 0, 0),
+  };
+}
+
+function packFieldParamVectors(uniforms: Record<string, TslNode>, prefix = '') {
+  const get = (name: string) =>
+    uniforms[
+      prefix === ''
+        ? name
+        : `${prefix}${name.charAt(0).toUpperCase()}${name.slice(1)}`
+    ];
+  return {
+    a: vec4(get('zoom'), get('zoomExponent'), get('rotation'), get('warp')),
+    b: vec4(
+      get('warpAnimSpeed'),
+      get('centerX'),
+      get('centerY'),
+      get('scaleX'),
+    ),
+    c: vec4(get('scaleY'), get('translateX'), get('translateY'), 0),
+  };
+}
+
+function packInteractionVector(uniforms: Record<string, TslNode>) {
+  return vec4(
+    uniforms.interactionOffsetX,
+    uniforms.interactionOffsetY,
+    uniforms.interactionRotation,
+    uniforms.interactionScale,
+  );
+}
+
+const PROCEDURAL_MESH_VERTEX_WGSL = `
+  fn computeProceduralMeshVertex(
+    sourcePosition: vec3<f32>,
+    fieldParamsA: vec4<f32>,
+    fieldParamsB: vec4<f32>,
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    interactionTransform: vec4<f32>
+  ) -> vec3<f32> {
+    let point = milkdropTransformPointWithParams(
+      sourcePosition.xy,
+      fieldParamsA,
+      fieldParamsB,
+      fieldParamsC,
+      signalsA,
+      signalsB,
+      signalsC,
+      signalsD,
+      signalsE
+    );
+${WGSL_APPLY_INTERACTION}
+    return vec3<f32>(
+      interacted.x,
+      interacted.y,
+      clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)})
+    );
+  }
+`;
+
+const meshVertexFnCache = new Map<string, TslVertexFn>();
+
+function getProceduralMeshVertexFn(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const key = program?.signature ?? 'default';
+  const cached = meshVertexFnCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const fn = wgslFn(PROCEDURAL_MESH_VERTEX_WGSL, [
+    MILKDROP_FIELD_WGSL_HELPERS,
+    getTransformInclude(program),
+  ]) as TslVertexFn;
+  meshVertexFnCache.set(key, fn);
+  return fn;
 }
 
 export function createProceduralMeshMaterial(
   program?: MilkdropGpuFieldProgramDescriptor | null,
 ) {
-  const uniforms = {
+  const uniforms = toUniformNodes({
     ...createProceduralFieldUniformState(),
     ...createProceduralInteractionUniformState(),
-  };
-  const fieldProgramShader = buildProceduralFieldProgramShaderChunk(program);
-  return new ShaderMaterial({
-    uniforms,
-    userData: {
-      fieldProgramSignature: program?.signature ?? 'default',
-    },
-    transparent: true,
-    vertexShader: `
-      attribute vec3 sourcePosition;
-      uniform float zoom;
-      uniform float zoomExponent;
-      uniform float rotation;
-      uniform float warp;
-      uniform float warpAnimSpeed;
-      uniform float time;
-      uniform float trebleAtt;
-      uniform float interactionOffsetX;
-      uniform float interactionOffsetY;
-      uniform float interactionRotation;
-      uniform float interactionScale;
-      uniform float signalTime;
-      uniform float signalFrame;
-      uniform float signalFps;
-      uniform float signalAspect;
-      uniform float signalBass;
-      uniform float signalMid;
-      uniform float signalMids;
-      uniform float signalTreble;
-      uniform float signalBassAtt;
-      uniform float signalMidAtt;
-      uniform float signalMidsAtt;
-      uniform float signalTrebleAtt;
-      uniform float signalBeat;
-      uniform float signalBeatPulse;
-      uniform float signalRms;
-      uniform float signalVol;
-      uniform float signalMusic;
-      uniform float signalWeightedEnergy;
-      ${fieldProgramShader}
-      ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
-
-      void main() {
-        vec2 transformed = applyMilkdropInteraction(
-          milkdropTransformPointWithParams(
-            sourcePosition.xy,
-            zoom,
-            zoomExponent,
-            rotation,
-            warp,
-            warpAnimSpeed,
-            centerX,
-            centerY,
-            scaleX,
-            scaleY,
-            translateX,
-            translateY,
-            signalTime,
-            signalFrame,
-            signalFps,
-            signalAspect,
-            signalBass,
-            signalMid,
-            signalMids,
-            signalTreble,
-            signalBassAtt,
-            signalMidAtt,
-            signalMidsAtt,
-            signalTrebleAtt,
-            signalBeat,
-            signalBeatPulse,
-            signalRms,
-            signalVol,
-            signalMusic,
-            signalWeightedEnergy
-          )
-        );
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(
-          transformed.xy,
-          clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)}),
-          1.0
-        );
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 tint;
-      uniform float alpha;
-      uniform float interactionAlpha;
-
-      void main() {
-        gl_FragColor = vec4(tint, alpha * interactionAlpha);
-      }
-    `,
   });
+  const signals = packSignalUniformVectors(uniforms, 'signal');
+  const fieldParams = packFieldParamVectors(uniforms);
+  const vertex = getProceduralMeshVertexFn(program)({
+    sourcePosition: attribute('sourcePosition', 'vec3'),
+    fieldParamsA: fieldParams.a,
+    fieldParamsB: fieldParams.b,
+    fieldParamsC: fieldParams.c,
+    signalsA: signals.a,
+    signalsB: signals.b,
+    signalsC: signals.c,
+    signalsD: signals.d,
+    signalsE: signals.e,
+    interactionTransform: packInteractionVector(uniforms),
+  });
+
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.userData.fieldProgramSignature = program?.signature ?? 'default';
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(vertex, 1.0));
+  material.colorNode = vec4(
+    uniforms.tint,
+    uniforms.alpha.mul(uniforms.interactionAlpha),
+  );
+
+  return Object.assign(material, { uniforms });
 }
 
-export function createProceduralMotionVectorMaterial(
-  program?: MilkdropGpuFieldProgramDescriptor | null,
+// Returns vec4(x, y, alpha, z): the transformed endpoint, its fade alpha,
+// and the depth the caller feeds into gl_Position.
+const PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL = `
+  fn computeProceduralMotionVectorVertex(
+    sourcePosition: vec3<f32>,
+    endpointWeight: f32,
+    fieldParamsA: vec4<f32>,
+    fieldParamsB: vec4<f32>,
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    previousFieldParamsA: vec4<f32>,
+    previousFieldParamsB: vec4<f32>,
+    previousFieldParamsC: vec4<f32>,
+    previousSignalsA: vec4<f32>,
+    previousSignalsB: vec4<f32>,
+    previousSignalsC: vec4<f32>,
+    previousSignalsD: vec4<f32>,
+    previousSignalsE: vec4<f32>,
+    offsets: vec4<f32>,
+    lengthBlendAlpha: vec4<f32>,
+    interactionTransform: vec4<f32>
+  ) -> vec4<f32> {
+    let blendMix = lengthBlendAlpha.z;
+    let currentSource = clamp(
+      sourcePosition.xy + offsets.xy,
+      vec2<f32>(-1.0),
+      vec2<f32>(1.0)
+    );
+    let previousSource = clamp(
+      sourcePosition.xy + offsets.zw,
+      vec2<f32>(-1.0),
+      vec2<f32>(1.0)
+    );
+    let current = milkdropTransformPointWithParams(
+      currentSource,
+      fieldParamsA,
+      fieldParamsB,
+      fieldParamsC,
+      signalsA,
+      signalsB,
+      signalsC,
+      signalsD,
+      signalsE
+    );
+    let previous = milkdropTransformPointWithParams(
+      previousSource,
+      previousFieldParamsA,
+      previousFieldParamsB,
+      previousFieldParamsC,
+      previousSignalsA,
+      previousSignalsB,
+      previousSignalsC,
+      previousSignalsD,
+      previousSignalsE
+    );
+    let blendedCurrent = mix(previous, current, blendMix);
+    let blendedSource = mix(previousSource, currentSource, blendMix);
+    var delta = clamp(
+      (blendedCurrent - blendedSource) * 1.35,
+      vec2<f32>(-0.24),
+      vec2<f32>(0.24)
+    );
+    let explicitLengthMixed = mix(
+      lengthBlendAlpha.y,
+      lengthBlendAlpha.x,
+      blendMix
+    );
+    var magnitude = length(delta);
+    if (explicitLengthMixed > 0.0001 && magnitude > 0.0001) {
+      delta = delta / magnitude * explicitLengthMixed;
+      magnitude = length(delta);
+    }
+    let point = mix(
+      blendedCurrent - delta * 0.45,
+      blendedCurrent + delta,
+      vec2<f32>(endpointWeight)
+    );
+${WGSL_APPLY_INTERACTION}
+    let alpha =
+      lengthBlendAlpha.w *
+      clamp(0.75 + magnitude * 2.2, 0.0, 1.0) *
+      step(0.002, magnitude);
+    return vec4<f32>(
+      interacted.x,
+      interacted.y,
+      alpha,
+      clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)})
+    );
+  }
+`;
+
+const motionVectorVertexFnCache = new Map<string, TslVertexFn>();
+
+function getProceduralMotionVectorVertexFn(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
-  const uniforms = {
+  const key = program?.signature ?? 'default';
+  const cached = motionVectorVertexFnCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const fn = wgslFn(PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL, [
+    MILKDROP_FIELD_WGSL_HELPERS,
+    getTransformInclude(program),
+  ]) as TslVertexFn;
+  motionVectorVertexFnCache.set(key, fn);
+  return fn;
+}
+
+function createMotionVectorUniformState() {
+  return {
     ...createProceduralFieldUniformState(),
     ...createProceduralInteractionUniformState(),
     sourceOffsetX: { value: 0 },
@@ -651,225 +776,333 @@ export function createProceduralMotionVectorMaterial(
     previousSignalMusic: { value: 0 },
     previousSignalWeightedEnergy: { value: 0 },
   };
-  const fieldProgramShader = buildProceduralFieldProgramShaderChunk(program);
-  return new ShaderMaterial({
-    uniforms,
-    userData: {
-      fieldProgramSignature: program?.signature ?? 'default',
-    },
-    transparent: true,
-    vertexShader: `
-      attribute vec3 sourcePosition;
-      attribute float endpointWeight;
-      uniform float zoom;
-      uniform float zoomExponent;
-      uniform float rotation;
-      uniform float warp;
-      uniform float warpAnimSpeed;
-      uniform float centerX;
-      uniform float centerY;
-      uniform float scaleX;
-      uniform float scaleY;
-      uniform float translateX;
-      uniform float translateY;
-      uniform float time;
-      uniform float trebleAtt;
-      uniform float sourceOffsetX;
-      uniform float sourceOffsetY;
-      uniform float explicitLength;
-      uniform float interactionOffsetX;
-      uniform float interactionOffsetY;
-      uniform float interactionRotation;
-      uniform float interactionScale;
-      uniform float interactionAlpha;
-      uniform float previousZoom;
-      uniform float previousZoomExponent;
-      uniform float previousRotation;
-      uniform float previousWarp;
-      uniform float previousWarpAnimSpeed;
-      uniform float previousCenterX;
-      uniform float previousCenterY;
-      uniform float previousScaleX;
-      uniform float previousScaleY;
-      uniform float previousTranslateX;
-      uniform float previousTranslateY;
-      uniform float previousSourceOffsetX;
-      uniform float previousSourceOffsetY;
-      uniform float previousExplicitLength;
-      uniform float blendMix;
-      varying float vAlpha;
-      uniform float signalTime;
-      uniform float signalFrame;
-      uniform float signalFps;
-      uniform float signalAspect;
-      uniform float signalBass;
-      uniform float signalMid;
-      uniform float signalMids;
-      uniform float signalTreble;
-      uniform float signalBassAtt;
-      uniform float signalMidAtt;
-      uniform float signalMidsAtt;
-      uniform float signalTrebleAtt;
-      uniform float signalBeat;
-      uniform float signalBeatPulse;
-      uniform float signalRms;
-      uniform float signalVol;
-      uniform float signalMusic;
-      uniform float signalWeightedEnergy;
-      uniform float previousSignalTime;
-      uniform float previousSignalFrame;
-      uniform float previousSignalFps;
-      uniform float previousSignalAspect;
-      uniform float previousSignalBass;
-      uniform float previousSignalMid;
-      uniform float previousSignalMids;
-      uniform float previousSignalTreble;
-      uniform float previousSignalBassAtt;
-      uniform float previousSignalMidAtt;
-      uniform float previousSignalMidsAtt;
-      uniform float previousSignalTrebleAtt;
-      uniform float previousSignalBeat;
-      uniform float previousSignalBeatPulse;
-      uniform float previousSignalRms;
-      uniform float previousSignalVol;
-      uniform float previousSignalMusic;
-      uniform float previousSignalWeightedEnergy;
-      ${fieldProgramShader}
-      ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
+}
 
-      void main() {
-        vec2 currentSource = clamp(
-          sourcePosition.xy + vec2(sourceOffsetX, sourceOffsetY),
-          vec2(-1.0),
-          vec2(1.0)
-        );
-        vec2 previousSource = clamp(
-          sourcePosition.xy + vec2(previousSourceOffsetX, previousSourceOffsetY),
-          vec2(-1.0),
-          vec2(1.0)
-        );
-        vec2 current = milkdropTransformPointWithParams(
-          currentSource,
-          zoom,
-          zoomExponent,
-          rotation,
-          warp,
-          warpAnimSpeed,
-          centerX,
-          centerY,
-          scaleX,
-          scaleY,
-          translateX,
-          translateY,
-          signalTime,
-          signalFrame,
-          signalFps,
-          signalAspect,
-          signalBass,
-          signalMid,
-          signalMids,
-          signalTreble,
-          signalBassAtt,
-          signalMidAtt,
-          signalMidsAtt,
-          signalTrebleAtt,
-          signalBeat,
-          signalBeatPulse,
-          signalRms,
-          signalVol,
-          signalMusic,
-          signalWeightedEnergy
-        );
-        vec2 previous = milkdropTransformPointWithParams(
-          previousSource,
-          previousZoom,
-          previousZoomExponent,
-          previousRotation,
-          previousWarp,
-          previousWarpAnimSpeed,
-          previousCenterX,
-          previousCenterY,
-          previousScaleX,
-          previousScaleY,
-          previousTranslateX,
-          previousTranslateY,
-          previousSignalTime,
-          previousSignalFrame,
-          previousSignalFps,
-          previousSignalAspect,
-          previousSignalBass,
-          previousSignalMid,
-          previousSignalMids,
-          previousSignalTreble,
-          previousSignalBassAtt,
-          previousSignalMidAtt,
-          previousSignalMidsAtt,
-          previousSignalTrebleAtt,
-          previousSignalBeat,
-          previousSignalBeatPulse,
-          previousSignalRms,
-          previousSignalVol,
-          previousSignalMusic,
-          previousSignalWeightedEnergy
-        );
-        vec2 blendedCurrent = mix(previous, current, blendMix);
-        vec2 blendedSource = mix(previousSource, currentSource, blendMix);
-        vec2 delta = clamp(
-          (blendedCurrent - blendedSource) * 1.35,
-          vec2(-0.24),
-          vec2(0.24)
-        );
-        float explicitLengthMixed = mix(
-          previousExplicitLength,
-          explicitLength,
-          blendMix
-        );
-        float magnitude = length(delta);
-        if (explicitLengthMixed > 0.0001 && magnitude > 0.0001) {
-          delta = delta / magnitude * explicitLengthMixed;
-          magnitude = length(delta);
-        }
-        vec2 renderPoint = mix(
-          blendedCurrent - delta * 0.45,
-          blendedCurrent + delta,
-          endpointWeight
-        );
-        renderPoint = applyMilkdropInteraction(renderPoint);
-        vAlpha =
-          alpha *
-          interactionAlpha *
-          clamp(0.75 + magnitude * 2.2, 0.0, 1.0) *
-          step(0.002, magnitude);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(
-          renderPoint.xy,
-          clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)}),
-          1.0
-        );
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 tint;
-      varying float vAlpha;
+export function createProceduralMotionVectorMaterial(
+  program?: MilkdropGpuFieldProgramDescriptor | null,
+) {
+  const uniforms = toUniformNodes(createMotionVectorUniformState());
+  const signals = packSignalUniformVectors(uniforms, 'signal');
+  const previousSignals = packSignalUniformVectors(uniforms, 'previousSignal');
+  const fieldParams = packFieldParamVectors(uniforms);
+  const previousFieldParams = packFieldParamVectors(uniforms, 'previous');
+  const result = varying(
+    getProceduralMotionVectorVertexFn(program)({
+      sourcePosition: attribute('sourcePosition', 'vec3'),
+      endpointWeight: attribute('endpointWeight', 'float'),
+      fieldParamsA: fieldParams.a,
+      fieldParamsB: fieldParams.b,
+      fieldParamsC: fieldParams.c,
+      signalsA: signals.a,
+      signalsB: signals.b,
+      signalsC: signals.c,
+      signalsD: signals.d,
+      signalsE: signals.e,
+      previousFieldParamsA: previousFieldParams.a,
+      previousFieldParamsB: previousFieldParams.b,
+      previousFieldParamsC: previousFieldParams.c,
+      previousSignalsA: previousSignals.a,
+      previousSignalsB: previousSignals.b,
+      previousSignalsC: previousSignals.c,
+      previousSignalsD: previousSignals.d,
+      previousSignalsE: previousSignals.e,
+      offsets: vec4(
+        uniforms.sourceOffsetX,
+        uniforms.sourceOffsetY,
+        uniforms.previousSourceOffsetX,
+        uniforms.previousSourceOffsetY,
+      ),
+      lengthBlendAlpha: vec4(
+        uniforms.explicitLength,
+        uniforms.previousExplicitLength,
+        uniforms.blendMix,
+        uniforms.alpha.mul(uniforms.interactionAlpha),
+      ),
+      interactionTransform: packInteractionVector(uniforms),
+    }),
+  ) as TslNode;
 
-      void main() {
-        if (vAlpha <= 0.0) {
-          discard;
-        }
-        gl_FragColor = vec4(tint, vAlpha);
-      }
-    `,
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.userData.fieldProgramSignature = program?.signature ?? 'default';
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(result.x, result.y, result.w, 1.0));
+  material.colorNode = Fn(() => {
+    Discard(result.z.lessThanEqual(0.0));
+    return vec4(uniforms.tint, result.z);
+  })();
+
+  return Object.assign(material, { uniforms });
+}
+
+function buildCustomWaveProgramWgslCode(
+  program: MilkdropGpuFieldProgramDescriptor,
+) {
+  return `fn milkdropCustomWavePointWithProgram(
+    sampleTValue: f32,
+    sampleValue1: f32,
+    sampleValue2: f32,
+    paramCenterX: f32,
+    paramCenterY: f32,
+    paramScaling: f32,
+    paramMystery: f32,
+    paramSpectrum: f32,
+    paramSamples: f32,${WGSL_SIGNAL_PARAMETERS}
+  ) -> vec2<f32> {
+${WGSL_SIGNAL_UNPACK}
+    var field_sample = sampleTValue;
+    var field_value = sampleValue1;
+    var field_value1 = sampleValue1;
+    var field_value2 = sampleValue2;
+    var field_samples = paramSamples;
+    var field_spectrum = paramSpectrum;
+    var field_scaling = paramScaling;
+    var field_mystery = paramMystery;
+    let baseY =
+      paramCenterY +
+      (sampleValue1 - 0.5) * 0.55 * paramScaling * (1.0 + paramMystery * 0.25);
+    let orbitalY =
+      paramCenterY +
+      sin(
+        sampleTValue * 3.141592653589793 * 2.0 * (1.0 + paramMystery) +
+          signalTimeValue
+      ) *
+        0.18 *
+        paramScaling;
+    var field_x = paramCenterX + (-1.0 + sampleTValue * 2.0) * 0.85;
+    var field_y = mix(orbitalY, baseY, paramSpectrum);
+    var field_rad = length(vec2<f32>(field_x, field_y));
+    var field_ang = atan2(field_y, field_x);
+    ${buildGpuFieldTemporaryDeclarations(program)}
+    ${buildGpuFieldStatementCode(program)}
+    return vec2<f32>(field_x, field_y);
+  }`;
+}
+
+function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
+  const pointCode = hasProgram
+    ? `point = milkdropCustomWavePointWithProgram(
+      sampleT,
+      blendedSampleValue,
+      blendedSampleValue2,
+      blendedCenterX,
+      blendedCenterY,
+      blendedScaling,
+      blendedMystery,
+      blendedSpectrum,
+      blendedSampleCount,
+      blendedSignalsA,
+      blendedSignalsB,
+      blendedSignalsC,
+      blendedSignalsD,
+      blendedSignalsE
+    );`
+    : `let x = blendedCenterX + (-1.0 + sampleT * 2.0) * 0.85;
+    let baseY =
+      blendedCenterY +
+      (blendedSampleValue - 0.5) *
+        0.55 *
+        blendedScaling *
+        (1.0 + blendedMystery * 0.25);
+    let orbitalY =
+      blendedCenterY +
+      sin(
+        sampleT * 3.141592653589793 * 2.0 * (1.0 + blendedMystery) +
+          blendedSignalTime
+      ) *
+        0.18 *
+        blendedScaling;
+    point = vec2<f32>(x, mix(orbitalY, baseY, blendedSpectrum));`;
+
+  return `fn computeProceduralCustomWaveVertex(
+    sampleT: f32,
+    sampleValue: f32,
+    sampleValue2: f32,
+    previousSampleValue: f32,
+    previousSampleValue2: f32,
+    waveParams: vec4<f32>,
+    previousWaveParams: vec4<f32>,
+    waveExtras: vec4<f32>,
+    previousWaveExtras: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    previousSignalsA: vec4<f32>,
+    previousSignalsB: vec4<f32>,
+    previousSignalsC: vec4<f32>,
+    previousSignalsD: vec4<f32>,
+    previousSignalsE: vec4<f32>,
+    interactionTransform: vec4<f32>
+  ) -> vec2<f32> {
+    let blendMix = waveExtras.z;
+    let blendedSampleValue = mix(previousSampleValue, sampleValue, blendMix);
+    let blendedSampleValue2 = mix(previousSampleValue2, sampleValue2, blendMix);
+    let blendedParams = mix(previousWaveParams, waveParams, blendMix);
+    let blendedCenterX = blendedParams.x;
+    let blendedCenterY = blendedParams.y;
+    let blendedScaling = blendedParams.z;
+    let blendedMystery = blendedParams.w;
+    let blendedSpectrum = mix(previousWaveExtras.x, waveExtras.x, blendMix);
+    let blendedSampleCount = mix(previousWaveExtras.y, waveExtras.y, blendMix);
+    let blendedSignalsA = mix(previousSignalsA, signalsA, blendMix);
+    let blendedSignalsB = mix(previousSignalsB, signalsB, blendMix);
+    let blendedSignalsC = mix(previousSignalsC, signalsC, blendMix);
+    let blendedSignalsD = mix(previousSignalsD, signalsD, blendMix);
+    let blendedSignalsE = mix(previousSignalsE, signalsE, blendMix);
+    let blendedSignalTime = blendedSignalsA.x;
+    var point = vec2<f32>(0.0, 0.0);
+    ${pointCode}
+${WGSL_APPLY_INTERACTION}
+    return interacted;
+  }`;
+}
+
+const customWaveVertexFnCache = new Map<string, TslVertexFn>();
+
+function getProceduralCustomWaveVertexFn(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const key = program?.signature ?? 'default';
+  const cached = customWaveVertexFnCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const includes: unknown[] = [MILKDROP_FIELD_WGSL_HELPERS];
+  if (program) {
+    includes.push(wgsl(buildCustomWaveProgramWgslCode(program)));
+  }
+  const fn = wgslFn(
+    buildCustomWaveVertexWgslCode(Boolean(program)),
+    includes,
+  ) as TslVertexFn;
+  customWaveVertexFnCache.set(key, fn);
+  return fn;
+}
+
+function createCustomWaveUniformState() {
+  return {
+    centerX: { value: 0 },
+    centerY: { value: 0 },
+    scaling: { value: 1 },
+    mystery: { value: 0 },
+    signalTime: { value: 0 },
+    signalFrame: { value: 0 },
+    signalFps: { value: 60 },
+    signalAspect: { value: 1 },
+    signalBass: { value: 0 },
+    signalMid: { value: 0 },
+    signalMids: { value: 0 },
+    signalTreble: { value: 0 },
+    signalBassAtt: { value: 0 },
+    signalMidAtt: { value: 0 },
+    signalMidsAtt: { value: 0 },
+    signalTrebleAtt: { value: 0 },
+    signalBeat: { value: 0 },
+    signalBeatPulse: { value: 0 },
+    signalRms: { value: 0 },
+    signalVol: { value: 0 },
+    signalMusic: { value: 0 },
+    signalWeightedEnergy: { value: 0 },
+    spectrum: { value: 0 },
+    sampleCount: { value: 64 },
+    tint: { value: new Color(1, 1, 1) },
+    alpha: { value: 1 },
+    previousCenterX: { value: 0 },
+    previousCenterY: { value: 0 },
+    previousScaling: { value: 1 },
+    previousMystery: { value: 0 },
+    previousSignalTime: { value: 0 },
+    previousSignalFrame: { value: 0 },
+    previousSignalFps: { value: 60 },
+    previousSignalAspect: { value: 1 },
+    previousSignalBass: { value: 0 },
+    previousSignalMid: { value: 0 },
+    previousSignalMids: { value: 0 },
+    previousSignalTreble: { value: 0 },
+    previousSignalBassAtt: { value: 0 },
+    previousSignalMidAtt: { value: 0 },
+    previousSignalMidsAtt: { value: 0 },
+    previousSignalTrebleAtt: { value: 0 },
+    previousSignalBeat: { value: 0 },
+    previousSignalBeatPulse: { value: 0 },
+    previousSignalRms: { value: 0 },
+    previousSignalVol: { value: 0 },
+    previousSignalMusic: { value: 0 },
+    previousSignalWeightedEnergy: { value: 0 },
+    previousSpectrum: { value: 0 },
+    previousSampleCount: { value: 64 },
+    blendMix: { value: 1 },
+    ...createProceduralInteractionUniformState(),
+  };
+}
+
+export function createProceduralCustomWaveMaterial(
+  program?: MilkdropGpuFieldProgramDescriptor | null,
+) {
+  const uniforms = toUniformNodes(createCustomWaveUniformState());
+  const signals = packSignalUniformVectors(uniforms, 'signal');
+  const previousSignals = packSignalUniformVectors(uniforms, 'previousSignal');
+  const point = getProceduralCustomWaveVertexFn(program)({
+    sampleT: attribute('sampleT', 'float'),
+    sampleValue: attribute('sampleValue', 'float'),
+    sampleValue2: attribute('sampleValue2', 'float'),
+    previousSampleValue: attribute('previousSampleValue', 'float'),
+    previousSampleValue2: attribute('previousSampleValue2', 'float'),
+    waveParams: vec4(
+      uniforms.centerX,
+      uniforms.centerY,
+      uniforms.scaling,
+      uniforms.mystery,
+    ),
+    previousWaveParams: vec4(
+      uniforms.previousCenterX,
+      uniforms.previousCenterY,
+      uniforms.previousScaling,
+      uniforms.previousMystery,
+    ),
+    waveExtras: vec4(
+      uniforms.spectrum,
+      uniforms.sampleCount,
+      uniforms.blendMix,
+      0,
+    ),
+    previousWaveExtras: vec4(
+      uniforms.previousSpectrum,
+      uniforms.previousSampleCount,
+      0,
+      0,
+    ),
+    signalsA: signals.a,
+    signalsB: signals.b,
+    signalsC: signals.c,
+    signalsD: signals.d,
+    signalsE: signals.e,
+    previousSignalsA: previousSignals.a,
+    previousSignalsB: previousSignals.b,
+    previousSignalsC: previousSignals.c,
+    previousSignalsD: previousSignals.d,
+    previousSignalsE: previousSignals.e,
+    interactionTransform: packInteractionVector(uniforms),
   });
+
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.userData.fieldProgramSignature = program?.signature ?? 'default';
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(point.x, point.y, 0.28, 1.0));
+  material.colorNode = vec4(
+    uniforms.tint,
+    uniforms.alpha.mul(uniforms.interactionAlpha),
+  );
+
+  return Object.assign(material, { uniforms });
 }
 
 // Same math as the legacy milkdropWavePoint() + applyMilkdropInteraction()
-// GLSL functions above, merged into one function and with the per-frame
+// GLSL functions, merged into one function and with the per-frame
 // blending inlined, so it can be wrapped once via wgslFn(). `mode` and every
 // other value read from a `uniform`/`varying` in the original shader becomes
 // an explicit parameter here, since a wgslFn body only sees what's passed
-// in. This must be WGSL (not GLSL): three.js's WebGPU backend runs wgslFn
-// bodies through its native WGSL pipeline, and only falls back to GLSL when
-// the renderer itself is running in WebGL-compatibility mode, which this
-// WebGPU-only material path never does.
+// in.
 // WebGPU's baseline maxVertexBuffers limit is 8. The 12 scalar attributes
 // this shader needs (sample + previous-sample, each with value/offset32/
 // offset64/offset96, plus parity/velocity/previousVelocity) would each
@@ -1056,223 +1289,4 @@ export function createProceduralWaveMaterial() {
   );
 
   return Object.assign(material, { uniforms });
-}
-
-export function createProceduralCustomWaveMaterial(
-  program?: MilkdropGpuFieldProgramDescriptor | null,
-) {
-  const customWaveProgramShader =
-    buildProceduralCustomWaveProgramShaderChunk(program);
-  return new ShaderMaterial({
-    uniforms: {
-      centerX: { value: 0 },
-      centerY: { value: 0 },
-      scaling: { value: 1 },
-      mystery: { value: 0 },
-      signalTime: { value: 0 },
-      signalFrame: { value: 0 },
-      signalFps: { value: 60 },
-      signalAspect: { value: 1 },
-      signalBass: { value: 0 },
-      signalMid: { value: 0 },
-      signalMids: { value: 0 },
-      signalTreble: { value: 0 },
-      signalBassAtt: { value: 0 },
-      signalMidAtt: { value: 0 },
-      signalMidsAtt: { value: 0 },
-      signalTrebleAtt: { value: 0 },
-      signalBeat: { value: 0 },
-      signalBeatPulse: { value: 0 },
-      signalRms: { value: 0 },
-      signalVol: { value: 0 },
-      signalMusic: { value: 0 },
-      signalWeightedEnergy: { value: 0 },
-      spectrum: { value: 0 },
-      sampleCount: { value: 64 },
-      tint: { value: new Color(1, 1, 1) },
-      alpha: { value: 1 },
-      previousCenterX: { value: 0 },
-      previousCenterY: { value: 0 },
-      previousScaling: { value: 1 },
-      previousMystery: { value: 0 },
-      previousSignalTime: { value: 0 },
-      previousSignalFrame: { value: 0 },
-      previousSignalFps: { value: 60 },
-      previousSignalAspect: { value: 1 },
-      previousSignalBass: { value: 0 },
-      previousSignalMid: { value: 0 },
-      previousSignalMids: { value: 0 },
-      previousSignalTreble: { value: 0 },
-      previousSignalBassAtt: { value: 0 },
-      previousSignalMidAtt: { value: 0 },
-      previousSignalMidsAtt: { value: 0 },
-      previousSignalTrebleAtt: { value: 0 },
-      previousSignalBeat: { value: 0 },
-      previousSignalBeatPulse: { value: 0 },
-      previousSignalRms: { value: 0 },
-      previousSignalVol: { value: 0 },
-      previousSignalMusic: { value: 0 },
-      previousSignalWeightedEnergy: { value: 0 },
-      previousSpectrum: { value: 0 },
-      previousSampleCount: { value: 64 },
-      blendMix: { value: 1 },
-      ...createProceduralInteractionUniformState(),
-    },
-    userData: {
-      fieldProgramSignature: program?.signature ?? 'default',
-    },
-    transparent: true,
-    vertexShader: `
-      attribute float sampleT;
-      attribute float sampleValue;
-      attribute float sampleValue2;
-      attribute float previousSampleValue;
-      attribute float previousSampleValue2;
-      uniform float centerX;
-      uniform float centerY;
-      uniform float scaling;
-      uniform float mystery;
-      uniform float signalTime;
-      uniform float signalFrame;
-      uniform float signalFps;
-      uniform float signalAspect;
-      uniform float signalBass;
-      uniform float signalMid;
-      uniform float signalMids;
-      uniform float signalTreble;
-      uniform float signalBassAtt;
-      uniform float signalMidAtt;
-      uniform float signalMidsAtt;
-      uniform float signalTrebleAtt;
-      uniform float signalBeat;
-      uniform float signalBeatPulse;
-      uniform float signalRms;
-      uniform float signalVol;
-      uniform float signalMusic;
-      uniform float signalWeightedEnergy;
-      uniform float spectrum;
-      uniform float sampleCount;
-      uniform float previousCenterX;
-      uniform float previousCenterY;
-      uniform float previousScaling;
-      uniform float previousMystery;
-      uniform float previousSignalTime;
-      uniform float previousSignalFrame;
-      uniform float previousSignalFps;
-      uniform float previousSignalAspect;
-      uniform float previousSignalBass;
-      uniform float previousSignalMid;
-      uniform float previousSignalMids;
-      uniform float previousSignalTreble;
-      uniform float previousSignalBassAtt;
-      uniform float previousSignalMidAtt;
-      uniform float previousSignalMidsAtt;
-      uniform float previousSignalTrebleAtt;
-      uniform float previousSignalBeat;
-      uniform float previousSignalBeatPulse;
-      uniform float previousSignalRms;
-      uniform float previousSignalVol;
-      uniform float previousSignalMusic;
-      uniform float previousSignalWeightedEnergy;
-      uniform float previousSpectrum;
-      uniform float previousSampleCount;
-      uniform float blendMix;
-      uniform float interactionOffsetX;
-      uniform float interactionOffsetY;
-      uniform float interactionRotation;
-      uniform float interactionScale;
-      ${customWaveProgramShader}
-      ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
-
-      void main() {
-        float blendedSampleValue = mix(
-          previousSampleValue,
-          sampleValue,
-          blendMix
-        );
-        float blendedSampleValue2 = mix(
-          previousSampleValue2,
-          sampleValue2,
-          blendMix
-        );
-        float blendedCenterX = mix(previousCenterX, centerX, blendMix);
-        float blendedCenterY = mix(previousCenterY, centerY, blendMix);
-        float blendedScaling = mix(previousScaling, scaling, blendMix);
-        float blendedMystery = mix(previousMystery, mystery, blendMix);
-        float blendedSignalTime = mix(previousSignalTime, signalTime, blendMix);
-        float blendedSpectrum = mix(previousSpectrum, spectrum, blendMix);
-        float blendedSampleCount = mix(
-          previousSampleCount,
-          sampleCount,
-          blendMix
-        );
-        vec2 point = vec2(0.0);
-        ${
-          /* This branch is compile-time constant because the helper chunk only exists when a program is present. */
-          ''
-        }
-        ${
-          program
-            ? `
-        point = milkdropCustomWavePointWithProgram(
-          sampleT,
-          blendedSampleValue,
-          blendedSampleValue2,
-          blendedCenterX,
-          blendedCenterY,
-          blendedScaling,
-          blendedMystery,
-          blendedSpectrum,
-          blendedSampleCount,
-          blendedSignalTime,
-          mix(previousSignalFrame, signalFrame, blendMix),
-          mix(previousSignalFps, signalFps, blendMix),
-          mix(previousSignalAspect, signalAspect, blendMix),
-          mix(previousSignalBass, signalBass, blendMix),
-          mix(previousSignalMid, signalMid, blendMix),
-          mix(previousSignalMids, signalMids, blendMix),
-          mix(previousSignalTreble, signalTreble, blendMix),
-          mix(previousSignalBassAtt, signalBassAtt, blendMix),
-          mix(previousSignalMidAtt, signalMidAtt, blendMix),
-          mix(previousSignalMidsAtt, signalMidsAtt, blendMix),
-          mix(previousSignalTrebleAtt, signalTrebleAtt, blendMix),
-          mix(previousSignalBeat, signalBeat, blendMix),
-          mix(previousSignalBeatPulse, signalBeatPulse, blendMix),
-          mix(previousSignalRms, signalRms, blendMix),
-          mix(previousSignalVol, signalVol, blendMix),
-          mix(previousSignalMusic, signalMusic, blendMix),
-          mix(previousSignalWeightedEnergy, signalWeightedEnergy, blendMix)
-        );`
-            : `
-        float x = blendedCenterX + (-1.0 + sampleT * 2.0) * 0.85;
-        float baseY =
-          blendedCenterY +
-          (blendedSampleValue - 0.5) *
-            0.55 *
-            blendedScaling *
-            (1.0 + blendedMystery * 0.25);
-        float orbitalY =
-          blendedCenterY +
-          sin(
-            sampleT * 3.141592653589793 * 2.0 * (1.0 + blendedMystery) +
-              blendedSignalTime
-          ) *
-            0.18 *
-            blendedScaling;
-        point = vec2(x, mix(orbitalY, baseY, blendedSpectrum));`
-        }
-        point = applyMilkdropInteraction(point);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(point, 0.28, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 tint;
-      uniform float alpha;
-      uniform float interactionAlpha;
-
-      void main() {
-        gl_FragColor = vec4(tint, alpha * interactionAlpha);
-      }
-    `,
-  });
 }

@@ -287,6 +287,7 @@ describe('milkdrop particle field', () => {
     };
     const group = new Group();
     const object = createParticleFieldObject({
+      backend: 'webgl',
       particleField: descriptor,
       mesh,
       meshPositions: positions,
@@ -310,6 +311,7 @@ describe('milkdrop particle field', () => {
     group.add(object);
 
     renderParticleFieldGroup({
+      backend: 'webgl',
       target: 'particle-field',
       group,
       particleField: {

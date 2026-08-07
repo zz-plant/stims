@@ -5,7 +5,7 @@ import {
   Float32BufferAttribute,
   Line,
   NormalBlending,
-  ShaderMaterial,
+  type ShaderMaterial,
   Sphere,
   Vector3,
 } from 'three';
@@ -354,7 +354,7 @@ export function syncProceduralCustomWaveObject(
     );
   const fieldProgramSignature = wave.fieldProgram?.signature ?? 'default';
   if (
-    !(next.material instanceof ShaderMaterial) ||
+    !(next.material instanceof NodeMaterial) ||
     next.material.userData.fieldProgramSignature !== fieldProgramSignature
   ) {
     disposeMaterial(next.material);

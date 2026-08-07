@@ -1,12 +1,13 @@
-import type { Line, Material } from 'three';
+import type { Line, Material, ShaderMaterial } from 'three';
 import {
   BufferGeometry,
   Float32BufferAttribute,
   LineBasicMaterial,
-  ShaderMaterial,
   Sphere,
   Vector3,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial } from 'three/webgpu';
 import { disposeGeometry } from '../../utils/three/three-dispose';
 import { createProceduralMeshMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type {
@@ -135,7 +136,7 @@ export function renderMesh({
     const fieldProgramSignature =
       proceduralMesh.program?.signature ?? 'default';
     if (
-      !(meshLines.material instanceof ShaderMaterial) ||
+      !(meshLines.material instanceof NodeMaterial) ||
       meshLines.material.userData.fieldProgramSignature !==
         fieldProgramSignature
     ) {
