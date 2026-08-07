@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { AudioContext as ThreeAudioContext } from 'three';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
@@ -377,6 +376,7 @@ export function useWorkspaceShellOrchestration({
     // (AudioContext.getContext()), so resuming it here ensures the
     // AudioListener created later reuses an already-running context.
     try {
+      const { AudioContext: ThreeAudioContext } = await import('three');
       const ctx = ThreeAudioContext.getContext() as unknown as AudioContext;
       if (ctx.state === 'suspended') {
         void ctx.resume();
