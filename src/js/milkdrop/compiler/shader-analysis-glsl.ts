@@ -354,7 +354,8 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'vec3') {
         const x = args[0] ?? '0.0';
         if (args.length === 2) {
-          return `vec3(${x}, ${args[1] ?? x})`;
+          const y = args[1] ?? x;
+          return `vec3(${x}, ${y}, 0.0)`;
         }
         const y = args[1] ?? x;
         const z = args[2] ?? x;
@@ -592,8 +593,27 @@ export function injectDirectShaderGlsl(
   source: string,
   warpGlsl: string | null,
   compGlsl: string | null,
+  warpGlobalsGlsl: string | null = null,
 ): string {
   let modified = source;
+
+  if (warpGlobalsGlsl) {
+    const globalsStartMarker = '// --- DIRECT_WARP_GLOBALS_START ---';
+    const globalsEndMarker = '// --- DIRECT_WARP_GLOBALS_END ---';
+    const globalsStartIndex = modified.indexOf(globalsStartMarker);
+    const globalsEndIndex = modified.indexOf(
+      globalsEndMarker,
+      globalsStartIndex,
+    );
+    if (globalsStartIndex >= 0 && globalsEndIndex > globalsStartIndex) {
+      const before = modified.substring(
+        0,
+        globalsStartIndex + globalsStartMarker.length,
+      );
+      const after = modified.substring(globalsEndIndex);
+      modified = `${before}\n${warpGlobalsGlsl}\n${after}`;
+    }
+  }
 
   if (warpGlsl) {
     // Replace the warp section between markers
