@@ -474,7 +474,14 @@ describe('wgsl edge cases', () => {
     expect(result.wgslCode).toContain('struct VmState');
     expect(result.wgslCode).toContain('struct VmSignals');
     expect(result.wgslCode).toContain('fn main()');
-    expect(result.fieldKeys).toEqual([]);
+    // fieldKeys sizes the GPU state buffer, so it must match every field
+    // the VmState struct declares (defaults + 'pi'/'e'), even when the
+    // program itself references none of them — an empty list here would
+    // allocate a zero-byte buffer that WebGPU rejects at bind-group time.
+    expect(result.fieldKeys.length).toBeGreaterThan(0);
+    for (const field of result.fieldKeys) {
+      expect(result.wgslCode).toContain(`${field}: f32,`);
+    }
     expect(result.registerKeys).toEqual([]);
   });
 

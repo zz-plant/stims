@@ -460,6 +460,17 @@ export function compileProgramToWgsl(
     usesRandom,
   });
 
+  // buildWgslProgram's VmState struct always includes 'pi' and 'e' in
+  // addition to the requested fields, so the returned fieldKeys (which
+  // sizes the GPU state buffer in vm-gpu.ts) must include them too. A
+  // buffer sized from the narrower `fieldKeys` set can under-allocate
+  // relative to the actual struct — down to a zero-byte buffer for
+  // programs with no state fields — which WebGPU rejects when the
+  // bind group is created.
+  const structFieldKeys = [
+    ...new Set([...allFieldKeysForStruct, 'pi', 'e']),
+  ].sort();
+
   return {
     wgslCode,
     entryPoint: 'main',
@@ -477,7 +488,7 @@ export function compileProgramToWgsl(
     usesRandom,
     usesMegabuf,
     usesGmegabuf,
-    fieldKeys: fieldKeys,
+    fieldKeys: structFieldKeys,
     registerKeys,
   };
 }
