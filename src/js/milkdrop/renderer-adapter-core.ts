@@ -1048,6 +1048,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.renderLineVisualGroup('trails', trailGroup, trails, alphaMultiplier);
     }
     renderParticleFieldGroupHelper({
+      backend: this.backend,
       target: 'particle-field',
       group: particleFieldGroup,
       particleField:
@@ -1166,6 +1167,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         );
       }
       renderParticleFieldGroupHelper({
+        backend: this.backend,
         target: 'blend-particle-field',
         group: this.blendParticleFieldGroup,
         particleField:
@@ -1222,6 +1224,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alpha,
       );
       renderParticleFieldGroupHelper({
+        backend: this.backend,
         target: 'blend-particle-field',
         group: this.blendParticleFieldGroup,
         particleField: null,

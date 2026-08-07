@@ -3,10 +3,12 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
   type LineBasicMaterial,
-  ShaderMaterial,
+  type ShaderMaterial,
   Sphere,
   Vector3,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial } from 'three/webgpu';
 import { disposeGeometry } from '../../utils/three/three-dispose';
 import { createProceduralMotionVectorMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type { MilkdropRenderPayload } from '../types';
@@ -140,7 +142,7 @@ export function renderMotionVectors({
     const fieldProgramSignature =
       proceduralField.program?.signature ?? 'default';
     if (
-      !(proceduralObject.material instanceof ShaderMaterial) ||
+      !(proceduralObject.material instanceof NodeMaterial) ||
       proceduralObject.material.userData.fieldProgramSignature !==
         fieldProgramSignature
     ) {
