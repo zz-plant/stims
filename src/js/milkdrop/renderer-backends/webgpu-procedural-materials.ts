@@ -1,4 +1,6 @@
 import { Color, ShaderMaterial } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   MILKDROP_CUSTOM_WAVE_Z,
   MILKDROP_WAVE_Z,
@@ -18,6 +20,23 @@ import type {
 // texture3D() natively. The 2D atlas sampling approximates the GLSL path's
 // atlas slicing approach. True 3D texture sampling would require TSL nodes
 // or a custom WGSL shader once the API supports it.
+
+// three.js's WebGPURenderer only recognizes materials registered in its
+// StandardNodeLibrary (MeshBasicMaterial, MeshStandardMaterial, etc). A
+// plain THREE.ShaderMaterial is not in that library, so NodeBuilder logs
+// "Material is not compatible" and silently swaps in a blank default
+// NodeMaterial instead of the intended shader — the geometry renders with
+// no custom color/position logic at all. wgslFn wraps hand-written WGSL as
+// a callable node function so it can drive a real NodeMaterial's
+// vertexNode/colorNode without rewriting the math into TSL's JS node DSL.
+const {
+  attribute,
+  cameraProjectionMatrix,
+  modelViewMatrix,
+  uniform,
+  vec4,
+  wgslFn,
+} = TSL;
 
 const PROCEDURAL_INTERACTION_SHADER_CHUNK = `
   vec2 applyMilkdropInteraction(vec2 point) {
@@ -842,195 +861,201 @@ export function createProceduralMotionVectorMaterial(
   });
 }
 
+// Same math as the legacy milkdropWavePoint() + applyMilkdropInteraction()
+// GLSL functions above, merged into one function and with the per-frame
+// blending inlined, so it can be wrapped once via wgslFn(). `mode` and every
+// other value read from a `uniform`/`varying` in the original shader becomes
+// an explicit parameter here, since a wgslFn body only sees what's passed
+// in. This must be WGSL (not GLSL): three.js's WebGPU backend runs wgslFn
+// bodies through its native WGSL pipeline, and only falls back to GLSL when
+// the renderer itself is running in WebGL-compatibility mode, which this
+// WebGPU-only material path never does.
+// WebGPU's baseline maxVertexBuffers limit is 8. The 12 scalar attributes
+// this shader needs (sample + previous-sample, each with value/offset32/
+// offset64/offset96, plus parity/velocity/previousVelocity) would each
+// claim a separate vertex buffer as individual attribute() nodes, so they
+// are packed into two vec4s and one vec3 on the geometry side instead
+// (see packProceduralWaveVertexAttributes in procedural-wave-renderer.ts)
+// and unpacked here by component.
+const PROCEDURAL_WAVE_POINT_WGSL = `
+  fn computeProceduralWavePoint(
+    mode: f32,
+    t: f32,
+    sampleData: vec4<f32>,
+    previousSampleData: vec4<f32>,
+    sampleMisc: vec3<f32>,
+    centerX: f32,
+    centerY: f32,
+    scale: f32,
+    mystery: f32,
+    signalTime: f32,
+    beatPulse: f32,
+    trebleAtt: f32,
+    previousCenterX: f32,
+    previousCenterY: f32,
+    previousScale: f32,
+    previousMystery: f32,
+    previousSignalTime: f32,
+    previousBeatPulse: f32,
+    previousTrebleAtt: f32,
+    blendMix: f32,
+    interactionOffsetX: f32,
+    interactionOffsetY: f32,
+    interactionRotation: f32,
+    interactionScale: f32
+  ) -> vec2<f32> {
+    let blendedSample = mix(previousSampleData, sampleData, blendMix);
+    let blendedSampleValue = blendedSample.x;
+    let blendedSampleOffset32 = blendedSample.y;
+    let blendedSampleOffset64 = blendedSample.z;
+    let blendedSampleOffset96 = blendedSample.w;
+    let parity = sampleMisc.x;
+
+    let pointCenterX = mix(previousCenterX, centerX, blendMix);
+    let pointCenterY = mix(previousCenterY, centerY, blendMix);
+    let pointScale = mix(previousScale, scale, blendMix);
+    let pointMystery = mix(previousMystery, mystery, blendMix);
+    let pointSignalTime = mix(previousSignalTime, signalTime, blendMix);
+    let pointBeatPulse = mix(previousBeatPulse, beatPulse, blendMix);
+    let pointTrebleAtt = mix(previousTrebleAtt, trebleAtt, blendMix);
+
+    // sampleValue is in [-1, 1] (from sampleByteData: ((data[i] - 128) / 128)).
+    // Do NOT recenter with sampleValue - 0.5.
+    var x: f32 = 0.0;
+    var y: f32 = 0.0;
+
+    if (mode < 0.5) {
+      // Circle — matches CPU path (frame-generation.ts mode 0).
+      let angle = t * 6.28318 + pointSignalTime * 0.2;
+      let radius = 0.5 + 0.4 * blendedSampleValue + pointMystery;
+      x = pointCenterX + cos(angle) * radius;
+      y = pointCenterY + sin(angle) * radius;
+    } else if (mode < 1.5) {
+      // XYOscillationSpiral — matches CPU path (frame-generation.ts mode 1).
+      let sampleR = blendedSampleValue;
+      let sampleL = blendedSampleOffset32;
+      let radius = 0.53 + 0.43 * sampleR + pointMystery;
+      let angle = sampleL * 1.5708 + pointSignalTime * 2.3;
+      x = pointCenterX + cos(angle) * radius;
+      y = pointCenterY + sin(angle) * radius;
+    } else if (mode < 2.5) {
+      x = pointCenterX + blendedSampleValue * pointScale;
+      y = pointCenterY + blendedSampleOffset32 * pointScale;
+    } else if (mode < 3.5) {
+      x = pointCenterX + blendedSampleValue * pointScale;
+      y = pointCenterY + blendedSampleOffset32 * pointScale;
+    } else if (mode < 4.5) {
+      // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
+      let w1 = 0.45 + 0.5 * (pointMystery * 0.5 + 0.5);
+      let w2 = 1.0 - w1;
+      x = -1.0 + 2.0 * t + pointCenterX + blendedSampleValue * 0.44 * pointScale;
+      y = pointCenterY + blendedSampleOffset32 * 0.47 * pointScale;
+      // Intra-frame momentum (simplified for GPU).
+      x = x * w2 + w1 * blendedSampleOffset64 * pointScale;
+      y = y * w2 + w1 * blendedSampleOffset96 * pointScale;
+    } else if (mode < 5.5) {
+      let x0 = blendedSampleValue * blendedSampleOffset64 + blendedSampleOffset32 * blendedSampleOffset96;
+      let y0 = blendedSampleValue * blendedSampleValue - blendedSampleOffset32 * blendedSampleOffset64;
+      let rot = pointSignalTime * 0.3;
+      let cosR = cos(rot);
+      let sinR = sin(rot);
+      x = pointCenterX + (x0 * cosR - y0 * sinR) * pointScale;
+      y = pointCenterY + (x0 * sinR + y0 * cosR) * pointScale;
+    } else if (mode < 6.5) {
+      // Line — matches CPU path (frame-generation.ts mode 6).
+      x = -1.0 + 2.0 * t;
+      y = pointCenterY + blendedSampleValue * 0.25 * pointScale;
+    } else {
+      let separation = 0.1 + pointMystery * 0.2;
+      x = -1.0 + 2.0 * t;
+      // select(falseValue, trueValue, condition) — WGSL has no ?: operator.
+      y = pointCenterY + select(
+        blendedSampleOffset32 * pointScale * 0.5 - separation,
+        blendedSampleValue * pointScale * 0.5 + separation,
+        parity < 0.5
+      );
+    }
+
+    let point = vec2<f32>(x, y);
+
+    // applyMilkdropInteraction, inlined.
+    let scaled = point * interactionScale;
+    let cosRot = cos(interactionRotation);
+    let sinRot = sin(interactionRotation);
+    return vec2<f32>(
+      scaled.x * cosRot - scaled.y * sinRot + interactionOffsetX,
+      scaled.x * sinRot + scaled.y * cosRot + interactionOffsetY
+    );
+  }
+`;
+
+const computeProceduralWavePoint = wgslFn(PROCEDURAL_WAVE_POINT_WGSL);
+
 export function createProceduralWaveMaterial() {
-  return new ShaderMaterial({
-    uniforms: {
-      mode: { value: 0 },
-      centerX: { value: 0 },
-      centerY: { value: 0 },
-      scale: { value: 0.34 },
-      mystery: { value: 0 },
-      signalTime: { value: 0 },
-      beatPulse: { value: 0 },
-      trebleAtt: { value: 0 },
-      tint: { value: new Color(1, 1, 1) },
-      alpha: { value: 1 },
-      previousCenterX: { value: 0 },
-      previousCenterY: { value: 0 },
-      previousScale: { value: 0.34 },
-      previousMystery: { value: 0 },
-      previousSignalTime: { value: 0 },
-      previousBeatPulse: { value: 0 },
-      previousTrebleAtt: { value: 0 },
-      blendMix: { value: 1 },
-      ...createProceduralInteractionUniformState(),
-    },
-    transparent: true,
-    vertexShader: `
-      attribute float sampleT;
-      attribute float sampleValue;
-      attribute float sampleOffset32;
-      attribute float sampleOffset64;
-      attribute float sampleOffset96;
-      attribute float sampleParity;
-      attribute float sampleVelocity;
-      attribute float previousSampleValue;
-      attribute float previousSampleOffset32;
-      attribute float previousSampleOffset64;
-      attribute float previousSampleOffset96;
-      attribute float previousSampleVelocity;
-      uniform float mode;
-      uniform float centerX;
-      uniform float centerY;
-      uniform float scale;
-      uniform float mystery;
-      uniform float signalTime;
-      uniform float beatPulse;
-      uniform float trebleAtt;
-      uniform float previousCenterX;
-      uniform float previousCenterY;
-      uniform float previousScale;
-      uniform float previousMystery;
-      uniform float previousSignalTime;
-      uniform float previousBeatPulse;
-      uniform float previousTrebleAtt;
-      uniform float blendMix;
-      uniform float interactionOffsetX;
-      uniform float interactionOffsetY;
-      uniform float interactionRotation;
-      uniform float interactionScale;
-      ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
+  const uniforms = {
+    mode: uniform(0),
+    centerX: uniform(0),
+    centerY: uniform(0),
+    scale: uniform(0.34),
+    mystery: uniform(0),
+    signalTime: uniform(0),
+    beatPulse: uniform(0),
+    trebleAtt: uniform(0),
+    tint: uniform(new Color(1, 1, 1)),
+    alpha: uniform(1),
+    previousCenterX: uniform(0),
+    previousCenterY: uniform(0),
+    previousScale: uniform(0.34),
+    previousMystery: uniform(0),
+    previousSignalTime: uniform(0),
+    previousBeatPulse: uniform(0),
+    previousTrebleAtt: uniform(0),
+    blendMix: uniform(1),
+    interactionOffsetX: uniform(0),
+    interactionOffsetY: uniform(0),
+    interactionRotation: uniform(0),
+    interactionScale: uniform(1),
+    interactionAlpha: uniform(1),
+  };
 
-      vec2 milkdropWavePoint(
-        float t,
-        float sampleValue,
-        float sampleOffset32,
-        float sampleOffset64,
-        float sampleOffset96,
-        float parity,
-        float velocity,
-        float pointCenterX,
-        float pointCenterY,
-        float pointScale,
-        float pointMystery,
-        float pointSignalTime,
-        float pointBeatPulse,
-        float pointTrebleAtt
-      ) {
-        // sampleValue is in [-1, 1] (from sampleByteData: ((data[i] - 128) / 128)).
-        // Do NOT recenter with sampleValue - 0.5.
-        float x = 0.0;
-        float y = 0.0;
-
-        if (mode < 0.5) {
-          // Circle — matches CPU path (frame-generation.ts mode 0).
-          float angle = t * 6.28318 + pointSignalTime * 0.2;
-          float radius = 0.5 + 0.4 * sampleValue + pointMystery;
-          x = pointCenterX + cos(angle) * radius;
-          y = pointCenterY + sin(angle) * radius;
-        } else if (mode < 1.5) {
-          // XYOscillationSpiral — matches CPU path (frame-generation.ts mode 1).
-          float sampleR = sampleValue;
-          float sampleL = sampleOffset32;
-          float radius = 0.53 + 0.43 * sampleR + pointMystery;
-          float angle = sampleL * 1.5708 + pointSignalTime * 2.3;
-          x = pointCenterX + cos(angle) * radius;
-          y = pointCenterY + sin(angle) * radius;
-        } else if (mode < 2.5) {
-          x = pointCenterX + sampleValue * pointScale;
-          y = pointCenterY + sampleOffset32 * pointScale;
-        } else if (mode < 3.5) {
-          x = pointCenterX + sampleValue * pointScale;
-          y = pointCenterY + sampleOffset32 * pointScale;
-        } else if (mode < 4.5) {
-          // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
-          float w1 = 0.45 + 0.5 * (pointMystery * 0.5 + 0.5);
-          float w2 = 1.0 - w1;
-          x = -1.0 + 2.0 * t + pointCenterX + sampleValue * 0.44 * pointScale;
-          y = pointCenterY + sampleOffset32 * 0.47 * pointScale;
-          // Intra-frame momentum (simplified for GPU).
-          x = x * w2 + w1 * sampleOffset64 * pointScale;
-          y = y * w2 + w1 * sampleOffset96 * pointScale;
-        } else if (mode < 5.5) {
-          float x0 = sampleValue * sampleOffset64 + sampleOffset32 * sampleOffset96;
-          float y0 = sampleValue * sampleValue - sampleOffset32 * sampleOffset64;
-          float rot = pointSignalTime * 0.3;
-          float cosR = cos(rot);
-          float sinR = sin(rot);
-          x = pointCenterX + (x0 * cosR - y0 * sinR) * pointScale;
-          y = pointCenterY + (x0 * sinR + y0 * cosR) * pointScale;
-        } else if (mode < 6.5) {
-          // Line — matches CPU path (frame-generation.ts mode 6).
-          x = -1.0 + 2.0 * t;
-          y = pointCenterY + sampleValue * 0.25 * pointScale;
-        } else {
-          float separation = 0.1 + pointMystery * 0.2;
-          x = -1.0 + 2.0 * t;
-          y = pointCenterY +
-            (parity < 0.5
-              ? sampleValue * pointScale * 0.5 + separation
-              : sampleOffset32 * pointScale * 0.5 - separation);
-        }
-
-        return vec2(x, y);
-      }
-
-      void main() {
-        float blendedSampleValue = mix(
-          previousSampleValue,
-          sampleValue,
-          blendMix
-        );
-        float blendedSampleOffset32 = mix(
-          previousSampleOffset32,
-          sampleOffset32,
-          blendMix
-        );
-        float blendedSampleOffset64 = mix(
-          previousSampleOffset64,
-          sampleOffset64,
-          blendMix
-        );
-        float blendedSampleOffset96 = mix(
-          previousSampleOffset96,
-          sampleOffset96,
-          blendMix
-        );
-        float blendedVelocity = mix(
-          previousSampleVelocity,
-          sampleVelocity,
-          blendMix
-        );
-        vec2 point = milkdropWavePoint(
-          sampleT,
-          blendedSampleValue,
-          blendedSampleOffset32,
-          blendedSampleOffset64,
-          blendedSampleOffset96,
-          sampleParity,
-          blendedVelocity,
-          mix(previousCenterX, centerX, blendMix),
-          mix(previousCenterY, centerY, blendMix),
-          mix(previousScale, scale, blendMix),
-          mix(previousMystery, mystery, blendMix),
-          mix(previousSignalTime, signalTime, blendMix),
-          mix(previousBeatPulse, beatPulse, blendMix),
-          mix(previousTrebleAtt, trebleAtt, blendMix)
-        );
-        point = applyMilkdropInteraction(point);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(point, 0.24, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 tint;
-      uniform float alpha;
-      uniform float interactionAlpha;
-
-      void main() {
-        gl_FragColor = vec4(tint, alpha * interactionAlpha);
-      }
-    `,
+  const point = computeProceduralWavePoint({
+    mode: uniforms.mode,
+    t: attribute('sampleT', 'float'),
+    sampleData: attribute('sampleData', 'vec4'),
+    previousSampleData: attribute('previousSampleData', 'vec4'),
+    sampleMisc: attribute('sampleMisc', 'vec3'),
+    centerX: uniforms.centerX,
+    centerY: uniforms.centerY,
+    scale: uniforms.scale,
+    mystery: uniforms.mystery,
+    signalTime: uniforms.signalTime,
+    beatPulse: uniforms.beatPulse,
+    trebleAtt: uniforms.trebleAtt,
+    previousCenterX: uniforms.previousCenterX,
+    previousCenterY: uniforms.previousCenterY,
+    previousScale: uniforms.previousScale,
+    previousMystery: uniforms.previousMystery,
+    previousSignalTime: uniforms.previousSignalTime,
+    previousBeatPulse: uniforms.previousBeatPulse,
+    previousTrebleAtt: uniforms.previousTrebleAtt,
+    blendMix: uniforms.blendMix,
+    interactionOffsetX: uniforms.interactionOffsetX,
+    interactionOffsetY: uniforms.interactionOffsetY,
+    interactionRotation: uniforms.interactionRotation,
+    interactionScale: uniforms.interactionScale,
   });
+
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(point.x, point.y, 0.24, 1.0));
+  material.colorNode = vec4(
+    uniforms.tint,
+    uniforms.alpha.mul(uniforms.interactionAlpha),
+  );
+
+  return Object.assign(material, { uniforms });
 }
 
 export function createProceduralCustomWaveMaterial(

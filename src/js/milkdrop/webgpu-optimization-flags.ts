@@ -52,6 +52,22 @@ export type MilkdropWebGpuOptimizationFlags = {
 export type MilkdropWebGpuOptimizationFlagName =
   keyof MilkdropWebGpuOptimizationFlags;
 
+// descriptorFallbackToWebgl defaults to true (route feedback/post-effect
+// presets to plain WebGL) as a conservative rollout switch. Flipping it
+// requires every ShaderMaterial-based WebGPU rendering path it would newly
+// exercise to be ported to three.js's NodeMaterial/TSL system first —
+// WebGPURenderer's NodeBuilder does not recognize plain ShaderMaterial and
+// silently swaps in a blank default material for it. The plain wave
+// material (proceduralMainWave/proceduralTrailWaves, in
+// webgpu-procedural-materials.ts) has been ported and verified against
+// reference renders. proceduralMesh, proceduralMotionVectors, and
+// proceduralCustomWaves have not, and — subtly — disabling just those three
+// isn't a safe partial flip either: for presets with none of those features
+// enabled, the renderer falls through to the generic-frame-payload path's
+// particle-field-renderer.ts, which *also* builds a plain ShaderMaterial
+// unconditionally on both backends. descriptorFallbackToWebgl can only move
+// to false once mesh, motion-vectors, custom-wave, and particle-field are
+// all ported.
 export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   proceduralMainWave: true,
   proceduralTrailWaves: true,

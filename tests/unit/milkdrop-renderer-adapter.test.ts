@@ -2828,23 +2828,22 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
         null,
       );
 
-    const mainPreviousSampleValues = interpolatedMainWave.geometry.getAttribute(
-      'previousSampleValue',
-    );
-    const mainPreviousSampleVelocities =
-      interpolatedMainWave.geometry.getAttribute('previousSampleVelocity');
+    // The plain wave material packs its 12 scalar attributes into two vec4s
+    // and one vec3 (previousSampleData / sampleMisc) to stay under WebGPU's
+    // 8 vertex-buffer limit — compare vertex counts (.count), not raw
+    // .array.length, since itemSize differs from sampleT's.
+    const mainPreviousSampleData =
+      interpolatedMainWave.geometry.getAttribute('previousSampleData');
+    const mainSampleMisc =
+      interpolatedMainWave.geometry.getAttribute('sampleMisc');
     const mainSampleT = interpolatedMainWave.geometry.getAttribute('sampleT');
     const customPreviousSampleValues =
       interpolatedCustomWave.geometry.getAttribute('previousSampleValue');
     const customSampleT =
       interpolatedCustomWave.geometry.getAttribute('sampleT');
 
-    expect(mainPreviousSampleValues.array.length).toBe(
-      mainSampleT.array.length,
-    );
-    expect(mainPreviousSampleVelocities.array.length).toBe(
-      mainSampleT.array.length,
-    );
+    expect(mainPreviousSampleData.count).toBe(mainSampleT.count);
+    expect(mainSampleMisc.count).toBe(mainSampleT.count);
     expect(customPreviousSampleValues.array.length).toBe(
       customSampleT.array.length,
     );
