@@ -115,6 +115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     fallbackCatalog: sessionState.fallbackCatalog,
     fallbackCatalogError: sessionState.fallbackCatalogError,
     fallbackCatalogReady: sessionState.fallbackCatalogReady,
+    fullCatalogReady: sessionState.fullCatalogReady,
     activityCatalog: sessionState.activityCatalog,
     goBackPreset: sessionState.goBackPreset,
     importPresetFiles: sessionState.importPresetFiles,

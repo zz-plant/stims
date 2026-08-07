@@ -39,6 +39,7 @@ export function useCatalogLoading() {
     string | null
   >(null);
   const [fallbackCatalogReady, setFallbackCatalogReady] = useState(false);
+  const [fullCatalogReady, setFullCatalogReady] = useState(false);
   const [activityCatalog, setActivityCatalog] = useState<PresetCatalogEntry[]>(
     [],
   );
@@ -103,6 +104,7 @@ export function useCatalogLoading() {
     let cancelled = false;
     setFallbackCatalogError(null);
     setFallbackCatalogReady(false);
+    setFullCatalogReady(false);
 
     void loadStarterCatalog()
       .then((presets) => {
@@ -129,6 +131,7 @@ export function useCatalogLoading() {
           setFallbackCatalog(mapped);
           setFallbackCatalogError(null);
           setFallbackCatalogReady(true);
+          setFullCatalogReady(true);
           setActivityCatalog(mapped);
           reportLoadStatus('full-catalog');
         })
@@ -153,6 +156,7 @@ export function useCatalogLoading() {
       setFallbackCatalog(mapped);
       setFallbackCatalogError(null);
       setFallbackCatalogReady(true);
+      setFullCatalogReady(true);
       setActivityCatalog(mapped);
       reportLoadStatus('full-catalog');
     } catch (error) {
@@ -170,6 +174,7 @@ export function useCatalogLoading() {
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    fullCatalogReady,
     hydrateFullCatalogNow,
     refreshCatalogActivity,
     setActivityCatalog,

@@ -27,6 +27,7 @@ import {
   extractCustomSamplerDeclarations,
   type MilkdropCustomSamplerDeclaration,
 } from './compiler/custom-samplers.ts';
+import { extractNativeShaderBody } from './compiler/shader-analysis.ts';
 import {
   generateGlslFromShaderStatements,
   injectDirectShaderGlsl,
@@ -514,6 +515,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           color *= tint;
 
           vec2 uv = vUv;
+          vec2 uv_orig = vUv;
           vec3 ret = color;
 
           // --- DIRECT_COMP_START ---
@@ -721,8 +723,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
           );
         }
 
-        // --- DIRECT_WARP_START ---
-        // --- DIRECT_WARP_END ---
+        // --- DIRECT_WARP_GLOBALS_START ---
+        // --- DIRECT_WARP_GLOBALS_END ---
 
         void main() {
           vec2 centeredUv = vUv - 0.5;
@@ -730,6 +732,10 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
           vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          vec2 uv = transformedUv + 0.5;
+          vec2 uv_orig = vUv;
+          vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;
 
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
@@ -1249,25 +1255,29 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     // The raw warp shader body assumes MilkDrop globals (`uv`, `uv_orig`,
     // `ret`) are in scope. Provide local equivalents so the injected GLSL
     // compiles in our fullscreen fragment template.
-    const warpGlslWithContext = warpGlsl
-      ? `vec2 uv = vUv;\nvec2 uv_orig = vUv;\nvec3 ret;\n${warpGlsl}`
+    const cleanWarpBody = warpGlsl
+      ? (extractNativeShaderBody(warpGlsl) ?? warpGlsl)
       : null;
 
     // Rebuild warp shader with warp GLSL injected (or pass-through when null)
     const injectedWarp = injectDirectShaderGlsl(
       MILKDROP_WARP_FRAGMENT_SHADER,
-      warpGlslWithContext,
+      cleanWarpBody,
       null,
     );
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
+    const cleanCompBody = compGlsl
+      ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
+      : null;
+
     // Build composite shader: warp section kept empty since warp runs separate
     const injectedShader = injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
       null,
-      compGlsl,
+      cleanCompBody,
     );
 
     // Preserve current uniform values before disposing old material

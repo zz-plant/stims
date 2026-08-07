@@ -3,6 +3,7 @@ import {
   evaluateMilkdropShaderControlProgram,
 } from '../compiler';
 import { walkMilkdropExpression } from '../expression';
+import { resolveMilkdropIdentifier } from '../field-normalization';
 import type {
   MilkdropCompiledPreset,
   MilkdropExpressionNode,
@@ -110,7 +111,10 @@ function hasUnknownIdentifier(
   walkMilkdropExpression(expression, (node) => {
     if (node.type === 'identifier') {
       const normalized = node.name.toLowerCase();
-      if (!ALLOWED_GLOBAL_IDENTIFIERS.has(normalized) && !(normalized in env)) {
+      if (
+        !ALLOWED_GLOBAL_IDENTIFIERS.has(normalized) &&
+        resolveMilkdropIdentifier(env, node.name) === undefined
+      ) {
         unknown = true;
       }
     }
