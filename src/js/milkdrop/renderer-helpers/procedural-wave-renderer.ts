@@ -9,6 +9,8 @@ import {
   Sphere,
   Vector3,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial } from 'three/webgpu';
 import {
   disposeGeometry,
   disposeMaterial,
@@ -167,6 +169,40 @@ function setOrUpdateScalarAttribute(
   geometry.setAttribute(name, attribute);
 }
 
+// WebGPU's baseline maxVertexBuffers limit is 8, and the WebGPU procedural
+// wave material (webgpu-procedural-materials.ts) needs 12 distinct scalar
+// values per vertex. Each attribute() node claims its own vertex buffer, so
+// the columns are interleaved into one vec-sized buffer instead of 12
+// separate scalar buffers — matching the vec4/vec4/vec3 layout the WGSL
+// shader unpacks by component.
+function setOrUpdateVectorAttribute(
+  geometry: BufferGeometry,
+  name: string,
+  columns: ArrayLike<number>[],
+) {
+  const itemSize = columns.length;
+  const length = columns[0]?.length ?? 0;
+  const interleaved = new Float32Array(length * itemSize);
+  for (let i = 0; i < length; i += 1) {
+    for (let c = 0; c < itemSize; c += 1) {
+      interleaved[i * itemSize + c] = columns[c]?.[i] ?? 0;
+    }
+  }
+  const existing = geometry.getAttribute(name);
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length === interleaved.length
+  ) {
+    existing.array.set(interleaved);
+    existing.needsUpdate = true;
+    return;
+  }
+  const attribute = new Float32BufferAttribute(interleaved, itemSize);
+  attribute.setUsage(DynamicDrawUsage);
+  geometry.setAttribute(name, attribute);
+}
+
 function lerpNumber(previous: number, current: number, mix: number) {
   return previous + (current - previous) * mix;
 }
@@ -211,7 +247,7 @@ export function syncProceduralWaveObject(
       createProceduralWaveObjectGeometry(getProceduralWaveRenderCount(wave)),
       createProceduralWaveMaterial(),
     );
-  if (!(next.material instanceof ShaderMaterial)) {
+  if (!(next.material instanceof NodeMaterial)) {
     disposeMaterial(next.material);
     next.material = createProceduralWaveMaterial();
   }
@@ -235,85 +271,51 @@ export function syncProceduralWaveObject(
     'sampleT',
     buildProceduralWaveSampleT(wave.samples.length, wave.closed),
   );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleValue',
+  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
     buildProceduralWaveAttributeValues(wave.samples, wave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset32',
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset64',
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 2,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset96',
     buildProceduralWaveAttributeValues(
       wave.samples,
       wave.closed,
       PROJECTM_STEREO_OFFSET * 3,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleParity',
+  ]);
+  // "previous" is the same snapshot as "current" here — this sync path
+  // always drives blendMix to 1 below, so mix(previous, current, 1) reduces
+  // to current regardless. syncInterpolatedProceduralWaveObject overwrites
+  // this with a genuine previous-frame snapshot and a real blendMix.
+  setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
+    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET,
+    ),
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 2,
+    ),
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 3,
+    ),
+  ]);
+  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
     buildProceduralWaveParity(wave.samples.length, wave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleValue',
-    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset32',
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET,
-    ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset64',
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 2,
-    ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset96',
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 3,
-    ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleVelocity',
     buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleVelocity',
     buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-  );
+  ]);
 
   const material = next.material as ShaderMaterial;
   material.uniforms.mode.value = wave.mode;
@@ -468,83 +470,50 @@ export function syncInterpolatedProceduralWaveObject(
     previousWave.velocities,
     currentWave.velocities.length,
   );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleValue',
+  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
     buildProceduralWaveAttributeValues(currentWave.samples, currentWave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset32',
     buildProceduralWaveAttributeValues(
       currentWave.samples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset64',
     buildProceduralWaveAttributeValues(
       currentWave.samples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET * 2,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleOffset96',
     buildProceduralWaveAttributeValues(
       currentWave.samples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET * 3,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleValue',
+  ]);
+  setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
     buildProceduralWaveAttributeValues(previousSamples, currentWave.closed),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset32',
     buildProceduralWaveAttributeValues(
       previousSamples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset64',
     buildProceduralWaveAttributeValues(
       previousSamples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET * 2,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleOffset96',
     buildProceduralWaveAttributeValues(
       previousSamples,
       currentWave.closed,
       PROJECTM_STEREO_OFFSET * 3,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'sampleVelocity',
+  ]);
+  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
+    buildProceduralWaveParity(currentWave.samples.length, currentWave.closed),
     buildProceduralWaveAttributeValues(
       currentWave.velocities,
       currentWave.closed,
     ),
-  );
-  setOrUpdateScalarAttribute(
-    next.geometry,
-    'previousSampleVelocity',
     buildProceduralWaveAttributeValues(previousVelocities, currentWave.closed),
-  );
+  ]);
   const material = next.material as ShaderMaterial;
   material.uniforms.previousCenterX.value = previousWave.centerX;
   material.uniforms.previousCenterY.value = previousWave.centerY;
