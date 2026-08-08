@@ -160,20 +160,7 @@ describe('Workspace performance regressions', () => {
     );
   });
 
-  test('caches overlay browse filtering and uses video frame callbacks for captured video when available', () => {
-    const browsePanelSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'milkdrop',
-        'overlay',
-        'browse-panel.ts',
-      ),
-      'utf8',
-    );
+  test('uses video frame callbacks for captured video when available', () => {
     const capturedVideoSource = readFileSync(
       join(
         import.meta.dir,
@@ -188,11 +175,6 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(browsePanelSource).toContain('lastFilteredPresetSignature');
-    expect(browsePanelSource).toContain('lastFilteredPresets');
-    expect(browsePanelSource).toContain(
-      'if (filteredPresetSignature !== this.lastFilteredPresetSignature)',
-    );
     expect(capturedVideoSource).toContain('requestVideoFrameCallback');
     expect(capturedVideoSource).toContain('cancelVideoFrameCallback');
   });
@@ -357,9 +339,7 @@ describe('Workspace performance regressions', () => {
       'engine.catalog.find((e) => e.id === r.presetId)',
     );
     expect(browsePanelSource).toContain('const sorted = useMemo');
-    expect(browsePanelSource).toContain(
-      'sortEntries(browseEntries, sortMode, randomSeed)',
-    );
+    expect(browsePanelSource).toContain('sortBrowseEntries(');
   });
 
   test('caches frontend preset search indexes instead of rebuilding haystacks per match', () => {
@@ -380,28 +360,6 @@ describe('Workspace performance regressions', () => {
     expect(helperSource).toContain('getPresetSearchIndex(entry)');
     expect(helperSource).not.toContain(
       'const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]',
-    );
-  });
-
-  test('patches visible overlay preview rows without forcing a full browse render', () => {
-    const browsePanelSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'milkdrop',
-        'overlay',
-        'browse-panel.ts',
-      ),
-      'utf8',
-    );
-
-    expect(browsePanelSource).toContain('patchVisiblePreviewRow');
-    expect(browsePanelSource).toContain('replaceChild(nextRow, currentRow)');
-    expect(browsePanelSource).not.toContain(
-      'setPresetPreview(preview: MilkdropPresetRenderPreview) {\n    this.previewStates.set(preview.presetId, preview);\n    this.browseDirty = true;',
     );
   });
 

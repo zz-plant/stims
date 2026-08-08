@@ -202,6 +202,59 @@ export function matchesPreset(entry: PresetCatalogEntry, query: string) {
   return queryTokens.every((token) => searchIndex.includes(token));
 }
 
+export type BrowseSortMode =
+  | 'relevance'
+  | 'title'
+  | 'author'
+  | 'recent'
+  | 'favorites-first'
+  | 'webgpu-supported'
+  | 'random';
+
+/**
+ * Order browse results for a given sort mode. Lives here beside
+ * `matchesPreset` so the browse filter and sort stay testable as plain
+ * functions rather than only through a rendered sheet.
+ *
+ * `seed` only affects 'random': it keeps the shuffle stable across re-renders
+ * so rows don't jump while the user scrolls.
+ */
+export function sortBrowseEntries(
+  entries: PresetCatalogEntry[],
+  sort: BrowseSortMode,
+  seed: number,
+): PresetCatalogEntry[] {
+  const sorted = [...entries];
+  switch (sort) {
+    case 'title':
+      return sorted.sort((a, b) => a.title.localeCompare(b.title));
+    case 'author':
+      return sorted.sort((a, b) =>
+        (a.author ?? 'Unknown').localeCompare(b.author ?? 'Unknown'),
+      );
+    case 'recent':
+      return sorted.sort(
+        (a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0),
+      );
+    case 'favorites-first':
+      return sorted.sort(
+        (a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)),
+      );
+    case 'webgpu-supported':
+      return sorted.sort(
+        (a, b) =>
+          Number(Boolean(b.supports?.webgpu)) -
+          Number(Boolean(a.supports?.webgpu)),
+      );
+    case 'random':
+      return sorted.sort((a, b) =>
+        `${a.id}:${seed}`.localeCompare(`${b.id}:${seed}`),
+      );
+    default:
+      return sorted;
+  }
+}
+
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
   const collectionTags = new Set<string>();
   entries.forEach((entry) => {

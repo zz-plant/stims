@@ -1,26 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
+  type BrowseSortMode,
   buildAppliedFilterSummary,
   describePresetMood,
   getFeaturedCollectionTags,
   prettifyCollectionTag,
   resolveAuthorUrl,
+  sortBrowseEntries,
 } from './workspace-helpers.ts';
 
 const BATCH_SIZE = 30;
-type SortMode =
-  | 'relevance'
-  | 'title'
-  | 'author'
-  | 'recent'
-  | 'favorites-first'
-  | 'webgpu-supported'
-  | 'random';
+type SortMode = BrowseSortMode;
 
 type ImageToPresetResponse = {
   description?: string;
@@ -76,42 +70,6 @@ function readSortMode(): SortMode {
   }
 }
 
-function sortEntries(
-  entries: PresetCatalogEntry[],
-  sort: SortMode,
-  seed: number,
-) {
-  const sorted = [...entries];
-  switch (sort) {
-    case 'title':
-      return sorted.sort((a, b) => a.title.localeCompare(b.title));
-    case 'author':
-      return sorted.sort((a, b) =>
-        (a.author ?? 'Unknown').localeCompare(b.author ?? 'Unknown'),
-      );
-    case 'recent':
-      return sorted.sort(
-        (a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0),
-      );
-    case 'favorites-first':
-      return sorted.sort(
-        (a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)),
-      );
-    case 'webgpu-supported':
-      return sorted.sort(
-        (a, b) =>
-          Number(Boolean(b.supports?.webgpu)) -
-          Number(Boolean(a.supports?.webgpu)),
-      );
-    case 'random':
-      return sorted.sort((a, b) =>
-        `${a.id}:${seed}`.localeCompare(`${b.id}:${seed}`),
-      );
-    default:
-      return sorted;
-  }
-}
-
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport: _onImport,
@@ -164,7 +122,7 @@ export function BrowseSheetPanel({
       ? engine.filteredCatalog
       : filteredCatalog;
   const sorted = useMemo(
-    () => sortEntries(browseEntries, sortMode, randomSeed),
+    () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
   );
   const visible = sorted.slice(0, limit);
