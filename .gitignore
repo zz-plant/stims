@@ -37,3 +37,50 @@ opencode.json
 
 scratch/
 thumbnails/
+
+# Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
+# Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
+# captures cited by src/data/milkdrop-parity/webgpu-certification-report.json.
+/screenshots/parity/*.png
+/screenshots/parity/*.debug.json
+/screenshots/parity/parity-artifacts.manifest.json
+/screenshots/parity/*.debug*.json
+
+!/screenshots/parity/milkdrop--preset-100-square-1774988643151.png
+!/screenshots/parity/milkdrop--preset-100-square-1784479034053.png
+!/screenshots/parity/milkdrop--preset-250-wavecode-1784432200752.png
+!/screenshots/parity/milkdrop--preset-250-wavecode-1784432278669.png
+!/screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784434938184.png
+!/screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784478865022.png
+!/screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784432915380.png
+!/screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784478833673.png
+!/screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432231202.png
+!/screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432283880.png
+!/screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784431956160.png
+!/screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784479055652.png
+!/screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784431978324.png
+!/screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784479078292.png
+!/screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784431989553.png
+!/screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784479089963.png
+!/screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784431967123.png
+!/screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784479069093.png
+!/screenshots/parity/milkdrop--preset-100-square-1774988643151.debug.json
+!/screenshots/parity/milkdrop--preset-100-square-1784479034053.debug.json
+!/screenshots/parity/milkdrop--preset-250-wavecode-1784432200752.debug.json
+!/screenshots/parity/milkdrop--preset-250-wavecode-1784432278669.debug.json
+!/screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784434938184.debug.json
+!/screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784478865022.debug.json
+!/screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784432915380.debug.json
+!/screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784478833673.debug.json
+!/screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432231202.debug.json
+!/screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432283880.debug.json
+!/screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784431956160.debug.json
+!/screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784479055652.debug.json
+!/screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784431978324.debug.json
+!/screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784479078292.debug.json
+!/screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784431989553.debug.json
+!/screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784479089963.debug.json
+!/screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784431967123.debug.json
+!/screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784479069093.debug.json
+!/screenshots/parity/debug-canvas-*.png
+!/screenshots/parity/debug-page-*.png
