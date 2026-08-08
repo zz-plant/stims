@@ -51,6 +51,7 @@ import { resetPerformancePanelState } from '../src/js/core/performance-panel.ts'
 import { resetRenderPreferencesState } from '../src/js/core/render-preferences.ts';
 import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
 import { resetThemePreferenceState } from '../src/js/core/theme-preferences.ts';
+import { resetDeviceDetectCache } from '../src/js/utils/browser/device-detect.ts';
 
 beforeEach(() => {
   resetRenderPreferencesState();
@@ -58,6 +59,11 @@ beforeEach(() => {
   resetSettingsPanelState();
   resetPerformancePanelState();
   resetThemePreferenceState();
+  // isMobileDevice() memoises its answer (397e4545), so a test that swaps in a
+  // mobile navigator gets the previous test's verdict unless the memo is
+  // cleared. Tests that carefully build a fake navigator in their own
+  // beforeEach were silently reading stale values.
+  resetDeviceDetectCache();
 });
 
 afterEach(() => {
@@ -66,6 +72,11 @@ afterEach(() => {
   resetSettingsPanelState();
   resetPerformancePanelState();
   resetThemePreferenceState();
+  // isMobileDevice() memoises its answer (397e4545), so a test that swaps in a
+  // mobile navigator gets the previous test's verdict unless the memo is
+  // cleared. Tests that carefully build a fake navigator in their own
+  // beforeEach were silently reading stale values.
+  resetDeviceDetectCache();
 });
 
 export {
