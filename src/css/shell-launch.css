@@ -24,71 +24,6 @@
     box-shadow: none;
   }
 
-  .stims-shell__launch-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.06fr) minmax(320px, 0.94fr);
-    gap: clamp(28px, 5vw, 72px);
-    align-items: start;
-  }
-
-  .stims-shell__launch-rail {
-    display: grid;
-    gap: 16px;
-  }
-
-  .stims-shell__launch-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .stims-shell__launch-copy h1 {
-    font-size: clamp(2.8rem, 5vw, 4.8rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 0.94;
-  }
-
-  .stims-shell__launch-subhead {
-    max-width: 40ch;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: var(--stims-ink-muted, rgba(255, 255, 255, 0.65));
-    letter-spacing: -0.01em;
-  }
-
-  .stims-shell__recommendation-badge {
-    display: inline-block;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--stims-accent, #6366f1);
-    opacity: 0.9;
-  }
-
-  .stims-shell__launch-recommendation {
-    position: relative;
-    display: grid;
-    grid-template-columns: 104px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: center;
-    max-width: 38rem;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: var(--stims-panel-strong);
-    box-shadow: none;
-    transition:
-      border-color 180ms ease,
-      background-color 180ms ease;
-  }
-
-  .stims-shell__launch-recommendation:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.045);
-  }
-
   .stims-shell__launch-recommendation .stims-shell__preset-art {
     width: 104px;
     min-width: 104px;
@@ -97,52 +32,11 @@
     border-radius: 6px;
   }
 
-  .stims-shell__launch-recommendation-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
   .stims-shell__launch-recommendation strong,
   .stims-shell__launch-recommendation .stims-shell__meta-copy {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .stims-shell__launch-recommendation strong {
-    font-size: 1.02rem;
-    font-weight: 600;
-  }
-
-  .stims-shell__launch-recommendation-arrow {
-    display: inline-grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    color: var(--stims-ink-strong);
-    font-size: 1.1rem;
-    transition:
-      transform 160ms ease,
-      color 160ms ease;
-  }
-
-  .stims-shell__launch-recommendation:hover
-    .stims-shell__launch-recommendation-arrow {
-    transform: translateX(3px);
-    color: #ffffff;
-  }
-
-  .stims-shell__launch-layout > .stims-shell__launch-source-dock {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: start;
-    padding: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    background: var(--stims-panel-strong);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-panel {
@@ -262,52 +156,10 @@
       padding: 8px 0 0;
     }
 
-    .stims-shell__launch-layout {
-      display: block;
-    }
-
-    .stims-shell__launch-rail {
-      display: grid;
-      gap: 16px;
-    }
-
-    .stims-shell__launch-copy h1 {
-      font-size: clamp(2.55rem, 15vw, 3.6rem);
-      line-height: 0.94;
-    }
-
-    .stims-shell__launch-copy p {
-      max-width: 34ch;
-      font-size: 0.92rem;
-    }
-
-    .stims-shell__launch-recommendation {
-      display: grid;
-      grid-template-columns: 96px minmax(0, 1fr) auto;
-      max-width: none;
-      padding: 10px;
-    }
-
     .stims-shell__launch-recommendation .stims-shell__preset-art {
       width: 96px;
       min-width: 96px;
       min-height: 62px;
-    }
-
-    .stims-shell__launch-actions {
-      display: flex;
-      width: 100%;
-    }
-
-    .stims-shell__launch-actions > * {
-      min-height: 42px;
-    }
-
-    .stims-shell__launch-source-dock {
-      display: block;
-      margin-top: 18px;
-      padding: 12px;
-      border-radius: 8px;
     }
 
     .stims-shell__launch-source-dock .stims-shell__youtube-row {
@@ -348,12 +200,6 @@
 
     .stims-shell__sheet-panel--browse .stims-shell__sheet-surface--sticky {
       gap: 8px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .stims-shell__launch-recommendation-arrow {
-      transition: none;
     }
   }
 }
