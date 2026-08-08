@@ -38,6 +38,14 @@ opencode.json
 scratch/
 thumbnails/
 
+# Regenerable capture-script output. Each of these is the --output target of a
+# script (run-milkdrop-loop-visual-sweep.ts, run-certification-corpus-perf-suite.ts),
+# so the captures are reproducible and don't belong in history. Iteration rounds
+# used to be preserved as sibling directories (-after, -final, -pilot, …); use
+# --output outside the repo instead.
+/screenshots/loop-preset-sweep*/
+/screenshots/certification-perf/
+
 # Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
 # Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
 # captures cited by src/data/milkdrop-parity/webgpu-certification-report.json.

@@ -99,6 +99,7 @@
     "parity:capture:bundled": "bun run scripts/capture-certification-corpus.ts --group bundled-shipped",
     "parity:promote-reference": "bun run scripts/promote-projectm-reference.ts",
     "parity:promote-result": "bun run scripts/promote-parity-suite-result.ts",
+    "parity:prune": "bun run scripts/prune-parity-artifacts.ts",
     "parity:sync-catalog": "bun run scripts/sync-bundled-catalog-fidelity.ts",
     "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
     "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",

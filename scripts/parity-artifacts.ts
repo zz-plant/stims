@@ -158,9 +158,182 @@ export function saveParityArtifactManifest(
   return manifestPath;
 }
 
+/**
+ * How many captures to retain per (kind, slug, preset) group. Captures are
+ * regenerable via scripts/capture-*.ts, so the manifest only needs enough
+ * history to compare a change against its immediate predecessor. Override with
+ * STIMS_PARITY_KEEP_PER_PRESET=n.
+ */
+export const DEFAULT_KEEP_PER_PRESET = 3;
+
+function resolveKeepPerPreset(explicit?: number) {
+  if (typeof explicit === 'number' && Number.isFinite(explicit)) {
+    return Math.max(1, Math.floor(explicit));
+  }
+  const fromEnv = Number.parseInt(
+    process.env.STIMS_PARITY_KEEP_PER_PRESET ?? '',
+    10,
+  );
+  return Number.isFinite(fromEnv) && fromEnv > 0
+    ? fromEnv
+    : DEFAULT_KEEP_PER_PRESET;
+}
+
+function artifactGroupKey(entry: ParityArtifactEntry) {
+  return `${entry.kind}|${entry.slug}|${entry.presetId ?? ''}`;
+}
+
+function entryFilePaths(outputDir: string, entry: ParityArtifactEntry) {
+  return [entry.files.image, entry.files.debugSnapshot, entry.files.metadata]
+    .filter((value): value is string => Boolean(value))
+    .map((value) =>
+      path.isAbsolute(value) ? value : path.join(outputDir, value),
+    );
+}
+
+/**
+ * Drop manifest entries whose files no longer exist on disk. Captures get
+ * cleaned up outside this script (git, manual deletion), which otherwise
+ * leaves the manifest pointing at nothing.
+ */
+export function reconcileParityArtifactManifest(
+  outputDir: string,
+  manifest: ParityArtifactManifest,
+): { manifest: ParityArtifactManifest; dropped: ParityArtifactEntry[] } {
+  const kept: ParityArtifactEntry[] = [];
+  const dropped: ParityArtifactEntry[] = [];
+  for (const entry of manifest.artifacts) {
+    const files = entryFilePaths(outputDir, entry);
+    // An entry with no files at all is metadata-only; keep it. Otherwise it
+    // survives only while at least one of its files is still on disk.
+    if (files.length === 0 || files.some((file) => fs.existsSync(file))) {
+      kept.push(entry);
+    } else {
+      dropped.push(entry);
+    }
+  }
+  return { manifest: { version: 1, artifacts: kept }, dropped };
+}
+
+/**
+ * Absolute paths of captures cited as evidence by shipped data files. These are
+ * load-bearing (the certification report links to them), so prune must never
+ * delete them regardless of age.
+ */
+export function readProtectedCapturePaths(
+  repoRoot: string = path.resolve(import.meta.dir, '..'),
+): Set<string> {
+  const protectedPaths = new Set<string>();
+  const evidenceFiles = [
+    'src/data/milkdrop-parity/webgpu-certification-report.json',
+    'src/data/milkdrop-parity/measured-results.json',
+  ];
+  for (const relative of evidenceFiles) {
+    const file = path.join(repoRoot, relative);
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    const raw = fs.readFileSync(file, 'utf8');
+    for (const match of raw.matchAll(
+      /"(?:capturePath|referencePath|imagePath)"\s*:\s*"([^"]+)"/g,
+    )) {
+      const captured = match[1];
+      if (!captured) {
+        continue;
+      }
+      protectedPaths.add(
+        path.isAbsolute(captured) ? captured : path.join(repoRoot, captured),
+      );
+    }
+  }
+  return protectedPaths;
+}
+
+/**
+ * Retain only the newest `keepPerPreset` captures per (kind, slug, preset),
+ * deleting the superseded files from disk. Without this the manifest and the
+ * capture directory grow without bound across every sweep. Captures cited as
+ * evidence are always retained — see `readProtectedCapturePaths`.
+ */
+export function pruneParityArtifacts(
+  outputDir: string,
+  manifest: ParityArtifactManifest,
+  options: {
+    keepPerPreset?: number;
+    dryRun?: boolean;
+    keepFiles?: Set<string>;
+  } = {},
+): {
+  manifest: ParityArtifactManifest;
+  pruned: ParityArtifactEntry[];
+  removedFiles: string[];
+} {
+  const keepPerPreset = resolveKeepPerPreset(options.keepPerPreset);
+  const groups = new Map<string, ParityArtifactEntry[]>();
+  for (const entry of manifest.artifacts) {
+    const key = artifactGroupKey(entry);
+    const group = groups.get(key);
+    if (group) {
+      group.push(entry);
+    } else {
+      groups.set(key, [entry]);
+    }
+  }
+
+  const protectedFiles = options.keepFiles ?? readProtectedCapturePaths();
+
+  const keepIds = new Set<string>();
+  const pruned: ParityArtifactEntry[] = [];
+  for (const group of groups.values()) {
+    const ordered = [...group].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+    for (const [index, entry] of ordered.entries()) {
+      const isCitedEvidence = entryFilePaths(outputDir, entry).some((file) =>
+        protectedFiles.has(path.resolve(file)),
+      );
+      if (index < keepPerPreset || isCitedEvidence) {
+        keepIds.add(entry.id);
+      } else {
+        pruned.push(entry);
+      }
+    }
+  }
+
+  // Never delete a file another retained entry still references.
+  const retainedFiles = new Set(
+    manifest.artifacts
+      .filter((entry) => keepIds.has(entry.id))
+      .flatMap((entry) => entryFilePaths(outputDir, entry)),
+  );
+
+  const removedFiles: string[] = [];
+  for (const entry of pruned) {
+    for (const file of entryFilePaths(outputDir, entry)) {
+      if (retainedFiles.has(file) || !fs.existsSync(file)) {
+        continue;
+      }
+      if (!options.dryRun) {
+        fs.rmSync(file, { force: true });
+      }
+      removedFiles.push(file);
+    }
+  }
+
+  return {
+    manifest: {
+      version: 1,
+      artifacts: manifest.artifacts.filter((entry) => keepIds.has(entry.id)),
+    },
+    pruned,
+    removedFiles,
+  };
+}
+
 export function appendParityArtifactEntry(
   outputDir: string,
   entryInput: ParityArtifactEntryInput,
+  options: { keepPerPreset?: number } = {},
 ) {
   const createdAt = entryInput.createdAt ?? new Date().toISOString();
   const entry: ParityArtifactEntry = {
@@ -186,10 +359,23 @@ export function appendParityArtifactEntry(
     provenance: entryInput.provenance,
   };
 
-  const manifest = loadParityArtifactManifest(outputDir);
-  manifest.artifacts.push(entry);
+  const loaded = loadParityArtifactManifest(outputDir);
+  loaded.artifacts.push(entry);
+
+  // Reconcile before pruning so entries whose files were already removed
+  // elsewhere don't count against this preset's retention budget.
+  const { manifest: reconciled } = reconcileParityArtifactManifest(
+    outputDir,
+    loaded,
+  );
+  const { manifest, pruned, removedFiles } = pruneParityArtifacts(
+    outputDir,
+    reconciled,
+    { keepPerPreset: options.keepPerPreset },
+  );
+
   const manifestPath = saveParityArtifactManifest(outputDir, manifest);
-  return { entry, manifestPath };
+  return { entry, manifestPath, pruned, removedFiles };
 }
 
 export function hashFileSha256(filePath: string) {
