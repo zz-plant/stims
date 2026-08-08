@@ -111,6 +111,44 @@ jobs:
       - name: Run quality gate
         run: bun run check
 
+  parity:
+    name: Parity corpus
+    runs-on: ubuntu-latest
+    # `bun run check` runs the `fast` profile (unit + compat), so everything in
+    # tests/corpus/ — the MilkDrop/projectM parity certification corpus, the
+    # compiler/IR/codegen goldens and the pixel-diff suite — ran nowhere in CI.
+    # The dual-backend boundary those tests cover is the repo's densest source
+    # of regressions, so it was the least-guarded thing in the build.
+    #
+    # This is deliberately not the e2e visual-regression test, which stays
+    # local-only: that one renders through SwiftShader on a 2-core runner, and
+    # its timing assertions produced a long run of budget-widening commits
+    # without ever catching a rendering bug. The corpus is CPU-only and
+    # deterministic — same input, same shader text, same pixels — so it fails
+    # for real reasons. It takes about 10s.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Cache bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run compat + parity corpus
+        run: bun run test:compat
+
   build:
     name: Production build
     runs-on: ubuntu-latest
@@ -206,6 +244,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - check
+      - parity
       - build
       - integration
     if: >-
@@ -258,6 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - check
+      - parity
       - build
       - integration
     if: >-

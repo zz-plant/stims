@@ -97,6 +97,67 @@ if (prepare && !existsSync(join(ROOT, '.husky'))) {
   errors.push("package.json 'prepare' references husky but .husky/ is missing");
 }
 
+/*
+ * 6: every test category reaches CI.
+ *
+ * `bun run check` only runs the `fast` profile, so for a long time nothing in
+ * tests/corpus/ ran in CI at all — the parity certification corpus, the
+ * compiler/codegen goldens and the pixel-diff suite were dead weight in the
+ * build. That is invisible drift: the tests keep passing locally, so nobody
+ * notices CI stopped looking at them. Assert the coverage instead of trusting
+ * it, so dropping a category from CI has to be a deliberate edit here.
+ */
+const ciWorkflow = readText(join(ROOT, '.github/workflows/ci.yml'));
+if (ciWorkflow) {
+  const profileFor = (script: string) =>
+    pkg.scripts?.[script]?.match(/--profile\s+([a-z]+)/)?.[1] ?? null;
+
+  // Which npm scripts does ci.yml actually invoke?
+  const invoked = new Set(
+    [...ciWorkflow.matchAll(/\bbun run (?!--)([A-Za-z0-9:_-]+)/g)].map(
+      (match) => match[1] as string,
+    ),
+  );
+
+  // `check` runs the quality gate, which runs the `fast` profile.
+  const coveredProfiles = new Set<string>();
+  if (invoked.has('check')) coveredProfiles.add('fast');
+  if (invoked.has('check:all')) coveredProfiles.add('all');
+  for (const script of invoked) {
+    const profile = profileFor(script);
+    if (profile) coveredProfiles.add(profile);
+  }
+
+  // profile -> categories, mirroring PROFILES in scripts/run-tests.ts.
+  const PROFILE_CATEGORIES: Record<string, string[]> = {
+    all: ['unit', 'compat', 'corpus', 'e2e'],
+    fast: ['unit', 'compat'],
+    unit: ['unit'],
+    compat: ['compat', 'corpus'],
+    e2e: ['e2e'],
+  };
+
+  const coveredCategories = new Set(
+    [...coveredProfiles].flatMap(
+      (profile) => PROFILE_CATEGORIES[profile] ?? [],
+    ),
+  );
+
+  // e2e is covered by the integration matrix, which names files directly
+  // rather than going through a profile.
+  if (/tests\/e2e\//.test(ciWorkflow)) coveredCategories.add('e2e');
+
+  for (const category of ['unit', 'compat', 'corpus', 'e2e']) {
+    if (!coveredCategories.has(category)) {
+      errors.push(
+        `.github/workflows/ci.yml: no job runs the '${category}' test ` +
+          `category — add a step invoking a profile that includes it ` +
+          `(see PROFILES in scripts/run-tests.ts)`,
+      );
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`✖ CI config drift detected (${errors.length}):\n`);
   for (const e of errors) console.error(`  ${e}`);
