@@ -628,8 +628,8 @@ export function buildMainWaveFrame({
           64 / 512,
         );
         const sampleL2 = sampleStereoWaveformData(signals, 'left', t, 96 / 512);
-        const x0 = sampleR * sampleR2 + sampleL * sampleL2;
-        const y0 = sampleR * sampleR - sampleL * sampleR2;
+        const x0 = sampleR * sampleR2 - sampleL * sampleL2;
+        const y0 = sampleR * sampleL2 + sampleL * sampleR2;
         const rot = signals.time * 0.3;
         const cosR = Math.cos(rot);
         const sinR = Math.sin(rot);
