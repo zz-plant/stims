@@ -68,25 +68,30 @@ describe('mobile viewport edge-case matrix', () => {
     ).toBe(true);
   });
 
-  test('control dock stays visible when a panel is open (23fa6efa)', () => {
-    const css = readAppShellCss();
-    // The dock wrap must have a visible state selector so interactions do
-    // not collapse it off-screen.
-    expect(css).toMatch(
-      /\.stims-shell__stage-dock-wrap\[data-visible="true"\]/u,
-    );
-  });
+  // Removed with the surfaces they guarded, both of which are applied by
+  // nothing and whose rules were therefore deleted as dead CSS:
+  //
+  //  - 'control dock stays visible when a panel is open (23fa6efa)' pinned
+  //    `.stims-shell__stage-dock-wrap[data-visible="true"]`. The dock is now
+  //    StageControls.module.css, so its class names are build-time hashed and
+  //    a global-stylesheet regex cannot see them.
+  //  - 'mobile control offset expands with the action bar (3ca90ef8)' pinned
+  //    `.mc-bar[data-expanded="true"]` raising --mobile-control-offset. There is
+  //    no expanding action bar any more: StageControls renders an absolutely
+  //    positioned menu that does not displace the controls, so nothing needs to
+  //    raise the offset. The orphaned --mobile-bar-height-expanded and
+  //    --mobile-bar-height-mood-open declarations went with them.
 
-  test('mobile control offset expands with the action bar (3ca90ef8)', () => {
+  test('reserves room for the mobile control bar above the safe area', () => {
     const css = readAppShellCss();
-    // The expanded bar must raise the control offset so controls stay
-    // visible above the expanded sheet, not under it.
+    // What survives from the two tests above: the control offset still has to
+    // clear the bar and the device safe area, or the controls sit under the
+    // home indicator.
     expect(css).toMatch(
-      /:scope\[data-mode="live"\]:has\(\.mc-bar\[data-expanded="true"\]\)/u,
+      /--mobile-bar-height:\s*calc\(\s*86px\s*\+\s*env\(safe-area-inset-bottom/u,
     );
-    expect(css).toMatch(/--mobile-bar-height-expanded:/u);
     expect(css).toMatch(
-      /--mobile-control-offset:\s*var\(--mobile-bar-height-expanded\)/u,
+      /--mobile-control-offset:\s*var\(--mobile-bar-height\)/u,
     );
   });
 

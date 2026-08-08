@@ -68,43 +68,24 @@ describe('Workspace shell mobile layout regression', () => {
     );
   });
 
-  test('collapses the launch layout to a single column on narrow viewports', () => {
+  test('keeps the launch column inside the viewport at any width', () => {
     const css = readAppShellCss();
 
-    expect(
-      hasRuleInQuery(
-        css,
-        '@media (max-width: 1120px)',
-        '.stims-shell__launch-layout',
-        'flex-direction: column',
-      ),
-    ).toBe(true);
-    // The rail dissolves into the parent flow rather than becoming a column.
-    expect(
-      hasRuleInQuery(
-        css,
-        '@media (max-width: 1120px)',
-        '.stims-shell__launch-rail',
-        'display: contents',
-      ),
-    ).toBe(true);
-    expect(
-      hasRuleInQuery(
-        css,
-        '@media (max-width: 1120px)',
-        '.stims-shell__launch-hero',
-        'grid-template-columns: 1fr',
-      ),
-    ).toBe(true);
-    // The recommendation card is optional chrome; it goes on the smallest screens.
-    expect(
-      hasRuleInQuery(
-        css,
-        '@media (max-width: 480px)',
-        '.stims-shell__launch-recommendation',
-        'display: none',
-      ),
-    ).toBe(true);
+    // This used to assert that `.stims-shell__launch-layout` flipped to
+    // `flex-direction: column` under a max-width query, alongside a rail and
+    // hero that dissolved with it. That two-column layout is gone — none of
+    // those classes are applied by any component — so the collapse it guarded
+    // cannot regress. The launch surface is now single-column by construction,
+    // and the property worth pinning is that its width is viewport-bounded,
+    // which is what keeps narrow screens from scrolling sideways.
+    expect(css).toMatch(
+      /\.stims-shell__launch-center\s*\{[\s\S]*?display:\s*grid;[\s\S]*?width:\s*min\([^)]*100%\);/u,
+    );
+    // The title scales with the viewport rather than sitting at a fixed size
+    // that would overflow a 320px screen.
+    expect(css).toMatch(
+      /\.stims-shell__launch-title\s*\{[\s\S]*?font-size:\s*clamp\(/u,
+    );
   });
 
   test('keeps the stage usable on short landscape viewports', () => {

@@ -158,14 +158,16 @@ export function useWorkspaceSessionState({
       name: 'EngineAdapter',
       factory: () =>
         import('./engine/milkdrop-engine-adapter.ts').then(
-          ({ createMilkdropEngineAdapter }) => {
-            const adapter = createMilkdropEngineAdapter();
-            engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-              setEngineSnapshot(snapshot);
-            });
-            return adapter;
-          },
+          ({ createMilkdropEngineAdapter }) => createMilkdropEngineAdapter(),
         ),
+      // Subscribing here rather than in `factory` keeps a superseded adapter
+      // from overwriting the live session's unsubscribe: `install` runs only
+      // after createLazyFactory has confirmed this call still owns the slot.
+      install: (adapter) => {
+        engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
+          setEngineSnapshot(snapshot);
+        });
+      },
       getRef: () => engineRef.current,
       setRef: (adapter) => {
         engineRef.current = adapter;
@@ -226,23 +228,20 @@ export function useWorkspaceSessionState({
 
     return () => {
       sessionDisposedRef.current = true;
-      // React StrictMode's dev-only double-invoke runs this cleanup and the
-      // next mount back to back, synchronously, in the same commit. The
-      // engine adapter is created by an async factory (see
-      // ensureEngineAdapter below) that can't be cancelled mid-flight, so
-      // disposing eagerly here raced it: the remount saw empty refs, kicked
-      // off a *second* adapter + mount() + preset-selection fan-out, and
-      // the first adapter's factory eventually resolved into an orphan
-      // nothing ever disposed — still mounted, still running its own
-      // preset load, doubling every preset's compile/render work.
+      // React gives no signal distinguishing "unmounted for good" from
+      // StrictMode's dev-only unmount-then-remount, which runs this cleanup and
+      // the next mount body back to back in the same commit. Deferring by a
+      // tick is what tells them apart: a same-tick remount flips
+      // `sessionDisposedRef` back to `false` before the timer fires, so this
+      // no-ops and the refs survive. The remount's ensureEngineMounted() then
+      // joins the in-flight adapter promise still parked in
+      // `engineAdapterPromiseRef` instead of building a second adapter — which
+      // is what used to double every preset's compile/render work.
       //
-      // Deferring the actual teardown by a tick lets a same-tick remount's
-      // effect body flip `sessionDisposedRef` back to `false` before this
-      // timer fires, so it no-ops and the refs stay untouched — the second
-      // mount effect invocation's ensureEngineMounted() then finds the
-      // existing adapter already in place and reuses it instead of
-      // creating a new one. A genuine unmount (no remount follows) still
-      // tears down correctly, just one tick later.
+      // The timer decides *whether to tear down*, not whether teardown is safe.
+      // Safety comes from createLazyFactory comparing promise identity, so an
+      // adapter that resolves after this ran disposes itself rather than
+      // installing over a live session (see use-lazy-factory.ts).
       setTimeout(() => {
         if (!sessionDisposedRef.current) {
           return;

@@ -57,16 +57,11 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(audioSourceSource).toContain('Audio from this browser tab');
     expect(audioSourceSource).not.toContain('Advanced audio setup');
     expect(appShellCss).toContain('.stims-shell__youtube-primary');
-    expect(appShellCss).toContain('.stims-shell__launch-layout');
-    expect(appShellCss).toContain(
-      'grid-template-columns: minmax(18rem, 0.78fr) minmax(26rem, 1fr);',
-    );
-    expect(appShellCss).toContain(
-      '@media (min-width: 1121px) and (max-width: 1280px)',
-    );
-    expect(appShellCss).toMatch(
-      /\.stims-shell__launch-layout\s*>\s*\.stims-shell__launch-source-dock\s*\{[\s\S]*?align-self:\s*start;/u,
-    );
+    // The two-column `.stims-shell__launch-layout` grid this used to pin is
+    // gone: that class is applied by nothing, so its rules were removed as dead
+    // CSS. The launch surface renders through these instead.
+    expect(appShellCss).toContain('.stims-shell__launch-center');
+    expect(appShellCss).toContain('.stims-shell__launch-actions-minimal');
     expect(appShellCss).toContain('align-content: start;');
     expect(appShellCss).toContain('align-items: start;');
   });
