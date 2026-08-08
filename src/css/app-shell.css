@@ -1920,14 +1920,6 @@ body[data-page="workspace"][data-live="true"] {
 
     :scope[data-mode="live"] {
       --mobile-bar-height: calc(86px + env(safe-area-inset-bottom, 0px));
-      --mobile-bar-height-expanded: calc(
-        206px +
-        env(safe-area-inset-bottom, 0px)
-      );
-      --mobile-bar-height-mood-open: calc(
-        150px +
-        env(safe-area-inset-bottom, 0px)
-      );
       --mobile-control-offset: var(--mobile-bar-height);
     }
 
@@ -2174,8 +2166,6 @@ body[data-page="workspace"][data-live="true"] {
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
       --mobile-bar-height: 132px;
-      --mobile-bar-height-expanded: 252px;
-      --mobile-bar-height-mood-open: 200px;
     }
   }
   @media (max-width: 640px) {

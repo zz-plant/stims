@@ -2,45 +2,79 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-function extractZIndex(css: string, selector: string) {
-  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const blockPattern = new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, 'm');
-  const blockMatch = css.match(blockPattern);
-  expect(blockMatch).not.toBeNull();
-
-  const zIndexMatch = blockMatch?.[1].match(/z-index:\s*([^;]+)\s*;/);
-  expect(zIndexMatch).not.toBeNull();
-
-  const rawValue = zIndexMatch?.[1].trim() ?? '0';
-  const tokenMatch = rawValue.match(/^var\((--[-\w]+)\)$/);
-  if (tokenMatch) {
-    const tokenPattern = new RegExp(`${tokenMatch[1]}:\\s*(\\d+)\\s*;`);
-    const tokenValueMatch = css.match(tokenPattern);
-    expect(tokenValueMatch).not.toBeNull();
-    return Number.parseInt(tokenValueMatch?.[1] ?? '0', 10);
+/**
+ * Guards the layering contract expressed by the --z-* tokens.
+ *
+ * This used to compare z-index literals inside `.milkdrop-overlay`,
+ * `.active-toy-nav` and `.control-panel` blocks in base.css. Two of those
+ * classes are no longer applied by anything — the overlay UI was folded into
+ * the React shell (c1f46145, 97ebda7a) — so the test was asserting the stacking
+ * order of surfaces that never render. The shell now layers through the token
+ * scale, so that is what is worth pinning: relative order, not literal values.
+ */
+function readTokenScale() {
+  const tokens = readFileSync(
+    join(import.meta.dir, '..', '..', 'src', 'css', 'tokens.css'),
+    'utf8',
+  );
+  const scale = new Map<string, number>();
+  for (const match of tokens.matchAll(/(--z-[\w-]+):\s*(-?\d+)\s*;/g)) {
+    scale.set(match[1] as string, Number.parseInt(match[2] as string, 10));
   }
-
-  return Number.parseInt(rawValue, 10);
+  return scale;
 }
 
-describe('MilkDrop overlay stacking', () => {
-  test('keeps the preset overlay above the toy nav and floating control panels', () => {
-    const css = [
-      readFileSync(
-        join(import.meta.dir, '..', '..', 'src', 'css', 'tokens.css'),
-        'utf8',
-      ),
-      readFileSync(
-        join(import.meta.dir, '..', '..', 'src', 'css', 'base.css'),
-        'utf8',
-      ),
-    ].join('\n');
+function z(scale: Map<string, number>, name: string) {
+  const value = scale.get(name);
+  if (value === undefined) {
+    throw new Error(`Missing z-index token ${name} in tokens.css`);
+  }
+  return value;
+}
 
-    const overlayZIndex = extractZIndex(css, '.milkdrop-overlay');
-    const toyNavZIndex = extractZIndex(css, '.active-toy-nav');
-    const controlPanelZIndex = extractZIndex(css, '.control-panel');
+describe('shell stacking order', () => {
+  const scale = readTokenScale();
 
-    expect(overlayZIndex).toBeGreaterThan(toyNavZIndex);
-    expect(overlayZIndex).toBeGreaterThan(controlPanelZIndex);
+  test('defines the z-index scale as plain integers', () => {
+    expect(scale.size).toBeGreaterThan(10);
+    for (const [name, value] of scale) {
+      expect(Number.isInteger(value)).toBe(true);
+      expect(name.startsWith('--z-')).toBe(true);
+    }
+  });
+
+  test('stacks stage below chrome, chrome below transient surfaces', () => {
+    // The stage is the backdrop; everything interactive sits above it.
+    expect(z(scale, '--z-stage-root')).toBeGreaterThan(z(scale, '--z-ambient'));
+    expect(z(scale, '--z-stage-hero')).toBeGreaterThan(
+      z(scale, '--z-stage-root'),
+    );
+    expect(z(scale, '--z-nav')).toBeGreaterThan(z(scale, '--z-frame-chrome'));
+    expect(z(scale, '--z-dock')).toBeGreaterThan(z(scale, '--z-nav'));
+  });
+
+  test('keeps notifications and modals above the dock they interrupt', () => {
+    expect(z(scale, '--z-toast')).toBeGreaterThan(z(scale, '--z-dock'));
+    expect(z(scale, '--z-alert')).toBeGreaterThan(z(scale, '--z-toast'));
+    expect(z(scale, '--z-modal')).toBeGreaterThan(
+      z(scale, '--z-modal-backdrop'),
+    );
+    expect(z(scale, '--z-modal-backdrop')).toBeGreaterThan(
+      z(scale, '--z-alert'),
+    );
+  });
+
+  test('puts sheets above the panels and docks they cover', () => {
+    expect(z(scale, '--z-sheet')).toBeGreaterThan(z(scale, '--z-panel'));
+    expect(z(scale, '--z-sheet')).toBeGreaterThan(z(scale, '--z-dock'));
+    expect(z(scale, '--z-sheet-active')).toBeGreaterThan(z(scale, '--z-sheet'));
+  });
+
+  test('reserves the top of the scale for the shortcuts overlay', () => {
+    // The shortcuts overlay explains the UI, so nothing in the normal chrome
+    // may cover it.
+    for (const name of ['--z-dock', '--z-toast', '--z-alert', '--z-modal']) {
+      expect(z(scale, '--z-shortcut-overlay')).toBeGreaterThan(z(scale, name));
+    }
   });
 });
