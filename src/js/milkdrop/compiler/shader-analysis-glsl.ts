@@ -355,6 +355,15 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const x = args[0] ?? '0.0';
         if (args.length === 2) {
           const y = args[1] ?? x;
+          // HLSL's float3(scalar, scalar) needs a padded third component to
+          // become valid GLSL vec3(...). But when the first arg is already a
+          // 2-component expression (e.g. the `uv`/`vUv` texture coordinate,
+          // as in `float3(uv, time / 10.0)` for a tex3D() call), it already
+          // supplies 2 of the 3 components — padding a third on top produces
+          // 4 total components, which GLSL rejects as "too many arguments".
+          if (isKnownVec2Expression(x)) {
+            return `vec3(${x}, ${y})`;
+          }
           return `vec3(${x}, ${y}, 0.0)`;
         }
         const y = args[1] ?? x;
@@ -418,6 +427,17 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       return `${object}_${lowerProp}`;
     },
   };
+}
+
+// The GLSL emitter works on already-stringified expressions with no type
+// information attached, so detecting a 2-component argument (to decide
+// whether a vec3(...) 2-arg call needs 0.0-padding) is necessarily a
+// heuristic. `vUv` is the one 2-component symbol this shader DSL's
+// identifier resolution ever produces for a bare coordinate reference, and
+// `vec2(...)` calls are unambiguous by construction.
+function isKnownVec2Expression(expression: string): boolean {
+  const trimmed = expression.trim();
+  return trimmed === 'vUv' || /^vec2\s*\(/iu.test(trimmed);
 }
 
 /**

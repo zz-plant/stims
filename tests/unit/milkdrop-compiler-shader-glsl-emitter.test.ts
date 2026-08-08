@@ -195,6 +195,23 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     expect(glsl).toContain('sampleAuxTexture(');
   });
 
+  test('tex3D(sampler, float3(uv, z)) does not over-pad the coordinate to 4 components', () => {
+    // Regression test: float3(uv, z) has a 2-component first argument (the
+    // uv coordinate), so it already supplies all 3 vec3 components once
+    // combined with z. The generic HLSL float3(x, y) → GLSL vec3(x, y, 0.0)
+    // padding (needed for genuine 2-scalar-arg calls) must not also apply
+    // here, or the emitted vec3(uv, z, 0.0) has 4 total components and GLSL
+    // rejects it as "too many arguments" to the constructor — this broke
+    // 261-compshader-noisevol_lq's `tex3D(sampler_fw_noisevol_lq,
+    // float3(uv, time / 10.0))`.
+    const glsl = emitShaderExpression(
+      'ret = tex3D(sampler_simplex, float3(uv, time / 10.0)).xyz',
+    );
+    expect(glsl).not.toContain('vUv, (signalTime / 10.0), 0.0');
+    expect(glsl).toContain('sampleUv(vUv, textureWrap)');
+    expect(glsl).toContain('sampleAuxTexture(');
+  });
+
   test('unknown sampler routes through the aux texture fallback', () => {
     const glsl = emitShaderExpression('ret = tex2d(sampler_gizmo, uv).rgb');
     expect(glsl).toContain('sampleAuxTexture(');
