@@ -34,11 +34,12 @@ describe('Accessibility regression guards', () => {
     expect(shortcuts).toContain('useFocusTrap');
   });
 
-  test('milkdrop overlay controls have accessible names', () => {
-    const overlay = readSource('milkdrop', 'overlay', 'browse-panel.ts');
+  test('browse sheet controls have accessible names', () => {
+    const browse = readSource('frontend', 'BrowseSheetPanel.tsx');
 
-    expect(overlay).toContain("'aria-label'");
-    expect(overlay).toContain('Search titles, authors, or classic names');
+    expect(browse).toContain('aria-label="Search presets"');
+    expect(browse).toContain('aria-label="Sort presets"');
+    expect(browse).toContain('aria-label="Preset collections"');
   });
 
   test('milkdrop preset rows expose current and load labels', () => {

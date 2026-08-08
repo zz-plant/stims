@@ -7,6 +7,7 @@ import {
   getPresetCardSupportLabel,
   matchesPreset,
   prettifyCollectionTag,
+  sortBrowseEntries,
 } from '../../src/js/frontend/workspace-helpers.ts';
 
 function makePreset(
@@ -150,5 +151,63 @@ describe('matchesPreset and collection tags', () => {
     expect(getFeaturedCollectionTags(tags)).toContain(
       'collection:cream-of-the-crop',
     );
+  });
+});
+
+describe('sortBrowseEntries', () => {
+  const alpha = makePreset({ id: 'alpha', title: 'Alpha', author: 'Zeta' });
+  const beta = makePreset({
+    id: 'beta',
+    title: 'Beta',
+    author: 'Alpha',
+    isFavorite: true,
+    lastOpenedAt: 200,
+  });
+  const gamma = makePreset({
+    id: 'gamma',
+    title: 'Gamma',
+    author: 'Mid',
+    lastOpenedAt: 500,
+    supports: { webgpu: true },
+  });
+  const entries = [alpha, beta, gamma];
+
+  const ids = (sort: Parameters<typeof sortBrowseEntries>[1]) =>
+    sortBrowseEntries(entries, sort, 0).map((entry) => entry.id);
+
+  test('relevance preserves the incoming catalog order', () => {
+    expect(ids('relevance')).toEqual(['alpha', 'beta', 'gamma']);
+  });
+
+  test('title and author sort alphabetically on their own field', () => {
+    expect(ids('title')).toEqual(['alpha', 'beta', 'gamma']);
+    expect(ids('author')).toEqual(['beta', 'gamma', 'alpha']);
+  });
+
+  test('recent orders by lastOpenedAt descending and sinks never-opened presets', () => {
+    expect(ids('recent')).toEqual(['gamma', 'beta', 'alpha']);
+  });
+
+  test('favorites-first lifts favorites without reordering the rest', () => {
+    expect(ids('favorites-first')[0]).toBe('beta');
+  });
+
+  test('webgpu-supported lifts presets that support webgpu', () => {
+    expect(ids('webgpu-supported')[0]).toBe('gamma');
+  });
+
+  test('random is deterministic for a given seed and varies across seeds', () => {
+    const seedA = sortBrowseEntries(entries, 'random', 1).map((e) => e.id);
+    expect(sortBrowseEntries(entries, 'random', 1).map((e) => e.id)).toEqual(
+      seedA,
+    );
+    expect(seedA).toHaveLength(3);
+    expect([...seedA].sort()).toEqual(['alpha', 'beta', 'gamma']);
+  });
+
+  test('does not mutate the input array', () => {
+    const original = [...entries];
+    sortBrowseEntries(entries, 'title', 0);
+    expect(entries).toEqual(original);
   });
 });
