@@ -78,7 +78,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '/':
           return `select(0.0f, (${left}) / (${right}), abs(${right}) > 0.000001f)`;
         case '%':
-          return `select(0.0f, (${left}) - (${right}) * floor((${left}) / (${right})), abs(${right}) > 0.000001f)`;
+          return `select(0.0f, (${left}) - (${right}) * sign((${left}) / (${right})) * floor(abs((${left}) / (${right}))), abs(${right}) > 0.000001f)`;
         case '^':
           return `pow(${left}, ${right})`;
         case '|':
@@ -132,7 +132,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'fmod': {
           const a = args[0] ?? '0.0f';
           const b = args[1] ?? '1.0f';
-          return `select(0.0f, (${a}) - (${b}) * floor((${a}) / (${b})), abs(${b}) > 0.000001f)`;
+          return `select(0.0f, (${a}) - (${b}) * sign((${a}) / (${b})) * floor(abs((${a}) / (${b}))), abs(${b}) > 0.000001f)`;
         }
         case 'min':
           return args.length >= 2
@@ -148,7 +148,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'floor':
           return `floor(${args[0] ?? '0.0f'})`;
         case 'int':
-          return `floor(${args[0] ?? '0.0f'})`;
+          return `sign(${args[0] ?? '0.0f'}) * floor(abs(${args[0] ?? '0.0f'}))`;
         case 'ceil':
           return `ceil(${args[0] ?? '0.0f'})`;
         case 'sqr': {
