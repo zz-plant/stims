@@ -110,8 +110,9 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(binary('^', literal(2), literal(3)))).toBe(
       'pow(2, 3)',
     );
+    // `%` is integer modulo in EEL: both operands truncate before dividing.
     expect(buildWgslExpressionString(binary('%', literal(7), literal(3)))).toBe(
-      'select(0.0f, (7) - (3) * floor((7) / (3)), abs(3) > 0.000001f)',
+      'milkdropIntMod(7, 3)',
     );
   });
 
@@ -179,9 +180,10 @@ describe('wgsl expression generation', () => {
     expect(
       buildWgslExpressionString(call('pow', [literal(2), literal(3)])),
     ).toBe('pow(2, 3)');
+    // mod()/fmod() are float remainders, unlike the `%` operator above.
     expect(
       buildWgslExpressionString(call('mod', [literal(7), literal(3)])),
-    ).toBe('select(0.0f, (7) - (3) * floor((7) / (3)), abs(3) > 0.000001f)');
+    ).toBe('milkdropFmod(7, 3)');
     expect(buildWgslExpressionString(call('floor', [literal(3.7)]))).toBe(
       'floor(3.7)',
     );

@@ -78,7 +78,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '/':
           return `select(0.0f, (${left}) / (${right}), abs(${right}) > 0.000001f)`;
         case '%':
-          return `select(0.0f, (${left}) - (${right}) * sign((${left}) / (${right})) * floor(abs((${left}) / (${right}))), abs(${right}) > 0.000001f)`;
+          return `milkdropIntMod(${left}, ${right})`;
         case '^':
           return `pow(${left}, ${right})`;
         case '|':
@@ -132,7 +132,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'fmod': {
           const a = args[0] ?? '0.0f';
           const b = args[1] ?? '1.0f';
-          return `select(0.0f, (${a}) - (${b}) * sign((${a}) / (${b})) * floor(abs((${a}) / (${b}))), abs(${b}) > 0.000001f)`;
+          return `milkdropFmod(${a}, ${b})`;
         }
         case 'min':
           return args.length >= 2
@@ -227,6 +227,42 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
 const WGSL_SIGNAL_STRUCT = /* wgsl */ `
 struct VmSignals {
 ${MILKDROP_WGSL_SIGNAL_FIELDS.map((field) => `  ${field}: f32,`).join('\n')}
+}
+`;
+
+/**
+ * EEL has two different modulo semantics and they are easy to conflate, so both
+ * are spelled out here rather than inlined at each call site.
+ *
+ * The `%` *operator* truncates both operands to integers before dividing —
+ * see toMilkdropInt in expression.ts and Math.trunc in expression-jit.ts. The
+ * `mod()`/`fmod()` *functions* do not; they are float remainders that truncate
+ * the quotient only. Emitting the float form for `%` diverged from the CPU for
+ * any fractional operand (7.5 % 0.7 gave 0.5 on GPU against 0 on CPU).
+ */
+const WGSL_MOD_FNS = /* wgsl */ `
+fn milkdropTruncInt(value: f32) -> i32 {
+  // Non-finite collapses to 0, matching toMilkdropInt. Clamp before the i32
+  // cast: out-of-range float-to-int conversion is undefined in WGSL.
+  let finite = value == value && abs(value) < 3.4028235e38;
+  let truncated = trunc(select(0.0f, value, finite));
+  return i32(clamp(truncated, -2147483520.0f, 2147483520.0f));
+}
+
+fn milkdropIntMod(left: f32, right: f32) -> f32 {
+  let l = milkdropTruncInt(left);
+  let r = milkdropTruncInt(right);
+  // select() evaluates both arms, so keep the divisor non-zero even when the
+  // result is discarded — integer remainder by zero is undefined in WGSL.
+  let safeRight = select(r, 1, r == 0);
+  return select(f32(l % safeRight), 0.0f, r == 0);
+}
+
+fn milkdropFmod(left: f32, right: f32) -> f32 {
+  // Float remainder with the quotient truncated toward zero, matching JS %.
+  let quotient = left / right;
+  let truncated = sign(quotient) * floor(abs(quotient));
+  return select(left - right * truncated, 0.0f, abs(right) <= 0.000001f);
 }
 `;
 
@@ -428,6 +464,7 @@ function buildWgslProgram(
   const body = [
     `@group(0) @binding(0) var<storage, read_write> state: VmState;`,
     `@group(0) @binding(1) var<storage, read> signals: VmSignals;`,
+    WGSL_MOD_FNS,
     randomFn,
     `@compute @workgroup_size(1)`,
     `fn main() {`,

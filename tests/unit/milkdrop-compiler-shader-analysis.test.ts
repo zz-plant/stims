@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -35,8 +35,16 @@ const projectmNoiseVolumeFixture = readFileSync(
 );
 
 describe('milkdrop compiler shader analysis', () => {
-  test('reuses parsed statements for immutable shader source', () => {
+  // shaderSourcePrepCache and shaderStatementCache are module-level, so a test
+  // that leaves entries behind changes what later tests compile. Two tests
+  // cleared them inline, which left every other test in the file dependent on
+  // execution order — the tex3D lowering assertions below passed alone and
+  // failed after the fixture-heavy tests ran first. Reset for all of them.
+  beforeEach(() => {
     clearShaderAnalysisCaches();
+  });
+
+  test('reuses parsed statements for immutable shader source', () => {
     const source = 'rot = bass * 0.25; zoom = 1.1';
 
     const first = extractShaderControls(source, { bass: 0.4 });
@@ -50,7 +58,6 @@ describe('milkdrop compiler shader analysis', () => {
   });
 
   test('does not let consumers corrupt a cached shader statement', () => {
-    clearShaderAnalysisCaches();
     const source = 'rot = bass * 0.25';
 
     const first = extractShaderControls(source, { bass: 0.4 });
