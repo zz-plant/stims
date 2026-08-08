@@ -25,15 +25,15 @@ import {
 import { NodeMaterial } from 'three/webgpu';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
-  MILKDROP_FIELD_WGSL_HELPERS_SOURCE,
-  buildMilkdropTransformWgslCode,
-} from '../../src/js/milkdrop/renderer-backends/webgpu-procedural-materials.ts';
-import {
   __milkdropRendererAdapterTestUtils,
   createMilkdropRendererAdapterCore,
 } from '../../src/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
 import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
+import {
+  buildMilkdropTransformWgslCode,
+  MILKDROP_FIELD_WGSL_HELPERS_SOURCE,
+} from '../../src/js/milkdrop/renderer-backends/webgpu-procedural-materials.ts';
 import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
 import { createMilkdropSegmentBatchingLayer } from '../../src/js/milkdrop/renderer-segment-batching.ts';
 import type {
