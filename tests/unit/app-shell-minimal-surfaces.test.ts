@@ -95,9 +95,9 @@ describe('minimal workspace surfaces', () => {
     expect(cssSource('chrome.css')).toMatch(
       /\.ctl-preset \{[\s\S]*?border-radius: var\(--ctl-radius\);/u,
     );
-    expect(css).toMatch(
-      /\.stims-shell__launch-source-dock\s*\{[\s\S]*?padding:\s*0;[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/u,
-    );
+    // No assertion on `.stims-shell__launch-source-dock` itself: that class is
+    // not applied by any component, so its rules were removed as dead CSS.
+    // Asserting on them guarded stylesheet text rather than rendered chrome.
     expect(css).toMatch(
       /\.stims-shell__launch-source-dock\s+\.stims-shell__source-card\s+\+\s+\.stims-shell__source-card\s*\{[\s\S]*?border-left:/u,
     );
