@@ -138,11 +138,14 @@ describe('milkdrop runtime signals', () => {
       waveformData: waveformData(),
     });
 
-    expect(update.bass).toBeCloseTo(0.75, 6);
+    // Bands are exposed on MilkDrop's relative scale, so a steady level reads
+    // as 1.0 ("as loud as this track usually is") rather than its raw 0..1
+    // magnitude. The first frame seeds the long average, so it reads exactly 1.
+    expect(update.bass).toBeCloseTo(1, 6);
     expect(update.mid).toBeCloseTo(update.mids, 6);
     expect(update.treb).toBeCloseTo(update.treble, 6);
-    expect(update.mids).toBeCloseTo(0.4, 6);
-    expect(update.treble).toBeCloseTo(0.25, 6);
+    expect(update.mids).toBeCloseTo(1, 6);
+    expect(update.treble).toBeCloseTo(1, 6);
     expect(update.bass_att).toBeCloseTo(update.bassAtt, 6);
     expect(update.mid_att).toBeCloseTo(update.midsAtt, 6);
     expect(update.treb_att).toBeCloseTo(update.trebleAtt, 6);
@@ -150,31 +153,72 @@ describe('milkdrop runtime signals', () => {
     expect(update.rms).toBeLessThan(0.4);
   });
 
-  test('keeps attenuation followers energized after a bass transient', () => {
+  test('scales bands relative to their own long-term average so above(bass, 1) can fire', () => {
     const tracker = createMilkdropSignalTracker();
+    const quiet = pulseData({ bass: 0.3, mid: 0.2, treble: 0.12 });
+    const loud = pulseData({ bass: 1, mid: 0.7, treble: 0.5 });
 
-    tracker.update({
+    // Settle the long average against a steady quiet passage.
+    let steady = tracker.update({
       time: 0,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: filledData(16),
+      frequencyData: quiet,
       waveformData: waveformData(),
     });
+    for (let frame = 1; frame < 240; frame += 1) {
+      steady = tracker.update({
+        time: frame * 0.0167,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: quiet,
+        waveformData: waveformData(),
+      });
+    }
+    expect(steady.bass).toBeCloseTo(1, 1);
 
-    const pulse = tracker.update({
-      time: 0.18,
+    const hit = tracker.update({
+      time: 240 * 0.0167,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: pulseData({ bass: 1, mid: 0.22, treble: 0.1 }),
+      frequencyData: loud,
       waveformData: waveformData(),
     });
-    const release = tracker.update({
-      time: 0.24,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 0.16, mid: 0.12, treble: 0.08 }),
-      waveformData: waveformData(),
-    });
+    expect(hit.bass).toBeGreaterThan(1);
+  });
+
+  test('keeps attenuation followers energized after a bass transient', () => {
+    const tracker = createMilkdropSignalTracker();
+    const ambient = pulseData({ bass: 0.16, mid: 0.12, treble: 0.08 });
+    const transient = pulseData({ bass: 1, mid: 0.22, treble: 0.1 });
+    let time = 0;
+    const advance = (frequencyData: Uint8Array) => {
+      time += 0.0167;
+      return tracker.update({
+        time,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData,
+        waveformData: waveformData(),
+      });
+    };
+
+    // Settle the long-term average on the ambient level so the transient is
+    // measured against the passage it actually sits in.
+    for (let frame = 0; frame < 240; frame += 1) {
+      advance(ambient);
+    }
+
+    let pulse = advance(transient);
+    for (let frame = 1; frame < 8; frame += 1) {
+      pulse = advance(transient);
+    }
+    // Hold the tail long enough for the attenuation follower to be measured
+    // against it — a single frame only shows the follower still climbing.
+    let release = pulse;
+    for (let frame = 0; frame < 8; frame += 1) {
+      release = advance(ambient);
+    }
 
     expect(pulse.bassAtt).toBeGreaterThan(0.25);
     expect(release.bassAtt).toBeGreaterThan(release.bass);
