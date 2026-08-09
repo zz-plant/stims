@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { resolveCustomSamplerTextureFile } from '../../src/js/milkdrop/compiler/custom-samplers.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { resolveDirectShaderSamplerBinding } from '../../src/js/milkdrop/feedback-manager-webgpu-bindings.ts';
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
@@ -372,5 +374,39 @@ comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
     );
     expect(compiled.diagnostics).toEqual([]);
     expect(compiled.ir.compatibility.warnings).toEqual([]);
+  });
+
+  test('resolves custom sampler declarations through normalized aliases to bundled texture assets', () => {
+    expect(resolveCustomSamplerTextureFile('sampler_cells')).toBe(
+      'voronoi_cellular.png',
+    );
+    expect(resolveCustomSamplerTextureFile('sampler_rand00')).toBe(
+      'seamless_perlin_noise.png',
+    );
+    expect(resolveCustomSamplerTextureFile('sampler_seaweed')).toBe(
+      'crystal_fractal.png',
+    );
+    expect(resolveCustomSamplerTextureFile('sampler_prayerwheel')).toBe(
+      'circuit_board_pattern.png',
+    );
+
+    const compiled = compileMilkdropPresetSource(
+      `title=Custom Sampler Alias
+warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`,
+      { id: 'custom-sampler-alias' },
+    );
+    expect(
+      compiled.diagnostics.some(
+        (d) => d.code === 'preset_missing_custom_sampler_texture',
+      ),
+    ).toBe(false);
+  });
+
+  test('resolves sampler_fc_main binding with sourceId 11 for direct shader execution', () => {
+    const binding = resolveDirectShaderSamplerBinding('sampler_fc_main', '2d');
+    expect(binding).toEqual({
+      canonicalSource: 'fc_main',
+      sourceId: 11,
+    });
   });
 });
