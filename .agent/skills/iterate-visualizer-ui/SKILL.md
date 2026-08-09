@@ -23,7 +23,7 @@ bun run dev:ui
 ```
 
 This launches a secondary Vite server at `http://localhost:5174/` with:
-- HMR for `src/js/frontend/*` and `assets/css/*`
+- HMR for `src/js/frontend/*` and `src/css/*`
 - Component isolation harness
 - Responsive preview grid
 
@@ -102,7 +102,7 @@ Open `http://localhost:5173/?agent=true` and verify the same component in contex
 
 1. `bun run dev:ui`
 2. Open `http://localhost:5174/?component=WorkspaceStagePanel&grid=375,768`
-3. Edit `src/js/frontend/workspace-ui.tsx` and `assets/css/app-shell.css`
+3. Edit `src/js/frontend/workspace-ui.tsx` and `src/css/app-shell.css`
 4. See mobile vs desktop behavior side by side
 5. Commit with confidence
 
@@ -125,7 +125,7 @@ Requires the UI harness server to be running on `http://localhost:5174`.
 |---------|----------|
 | Port 5174 in use | Kill other process or edit `vite.config.ui.js` |
 | Components don't update | Check browser console for HMR errors; restart `bun run dev:ui` |
-| Styles missing | Confirm `assets/css/app-shell.css` is imported in `ui-harness.html` |
+| Styles missing | Confirm `src/css/app-shell.css` is imported in `ui-harness.html` |
 | Full app looks different | The harness uses mocks; always verify in `bun run dev` before committing |
 
 ## Related skills

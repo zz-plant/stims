@@ -18,9 +18,9 @@ those workflows change.
 | Layer | Primary command | When to use |
 | --- | --- | --- |
 | Unit / logic | `bun run test` or `bun run test tests/path/to/spec.test.ts` | Pure function coverage, state transitions, and non-browser behavior. |
-| DOM-sim / environment | `bun run test` | Loader, shell, and environment behavior that can run in `happy-dom` or similar simulated DOM tests. |
+| DOM-sim / environment | `bun run test` | Shell and environment behavior that can run in `happy-dom` or similar simulated DOM tests. |
 | Browser integration | `bun run test:integration` | Real page, router, audio, and renderer behavior that needs a browser. |
-| Compatibility / preset parity | `bun run test:compat` or `bun run test:legacy-frontend` | Legacy shell coverage, preset compatibility, and renderer parity paths. |
+| Compatibility / preset parity | `bun run test:compat` | Preset compatibility, corpus, and renderer parity paths. |
 | Visual/parity proof | `bun run dev` plus the parity capture commands in `DEVELOPMENT.md` | Manual browser confirmation and reference capture for visual regressions. |
 
 ## Default rule

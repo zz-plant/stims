@@ -20,23 +20,22 @@ This skill is a **mandatory pre-flight checklist** that runs automatically befor
 
 ## Auto-detect: what are you about to change?
 
-Run this to classify your session:
+List your touched files, then map them to the guards below:
 
 ```bash
-bun run agent:guard --detect
+git status --short && git diff --name-only HEAD
 ```
 
-It reads `git status`, `git diff --name-only`, or your stated intent and tells you which guardrails apply:
+| Touched paths | Guard to apply |
+| --- | --- |
+| `src/js/milkdrop/feedback-*`, `renderer-adapter*`, `compiler/*` | parity guard |
+| `src/js/core/renderer-*`, `core/audio-handler.ts`, `milkdrop/runtime/backend-fallback.ts` | fallback guard |
+| `src/js/frontend/*`, `src/css/*` | UI guard |
+| `tests/*`, fixture-generating `scripts/*` | test guard |
+| `.agent/skills/*`, `.agent/workflows/*` | MCP guard |
+| `docs/*`, `AGENTS.md` | docs guard |
 
-```
-Detected surfaces:
-- milkdrop/parity        → apply parity-guard
-- core/renderer          → apply fallback-guard
-- frontend/ui            → apply ui-guard
-- tests/*                → apply test-guard
-- .agent/skills/*        → apply mcp-guard
-- docs/*                 → apply docs-guard
-```
+Note: this repo often has 2–3 agent sessions running at once, so `git status` may show files you did not touch. Diff before assuming a change is yours.
 
 ## Universal hard stops (always apply)
 
@@ -66,12 +65,12 @@ If you touch `.agent/skills/*` or `.agent/workflows/*`, you must update:
 Before saving any file in this surface:
 
 - [ ] Run `bun run test:compat` — does it pass?
-- [ ] Run `bun run test tests/milkdrop-renderer-adapter.test.ts` — does it pass?
+- [ ] Run `bun run test tests/unit/milkdrop-renderer-adapter.test.ts` — does it pass?
 - [ ] Did you add a comment explaining any new WebGPU vs. WebGL semantic difference?
 - [ ] Did you verify against at least one reference preset in the browser?
 - [ ] If you changed blend alpha order, did you add a regression test?
 
-**One-liner:** `bun run agent:guard --surface parity`
+**Verify:** `bun run test:compat && bun run test tests/unit/milkdrop-renderer-adapter.test.ts`
 
 ### Fallback guard (`core/renderer-*`, `core/audio-handler.ts`, `milkdrop/runtime/backend-fallback.ts`)
 
@@ -83,9 +82,9 @@ Before saving any file in this surface:
 - [ ] Did you test audio worklet init on the fallback path?
 - [ ] Does every new timeout have a matching cleanup?
 
-**One-liner:** `bun run agent:guard --surface fallback`
+**Verify:** `bun run test tests/unit/renderer-setup.test.ts tests/unit/milkdrop-runtime-seams.test.ts`
 
-### UI guard (`frontend/*`, `assets/css/app-shell.css`)
+### UI guard (`frontend/*`, `src/css/app-shell.css`)
 
 Before saving any file in this surface:
 
@@ -95,7 +94,7 @@ Before saving any file in this surface:
 - [ ] If you touched adapter interactions, did you check for stale closure / racing unmount?
 - [ ] Did you avoid hardcoded colors/spacing without tokens?
 
-**One-liner:** `bun run agent:guard --surface ui`
+**Verify:** `bun run check:quick && bun run check:css-tokens`
 
 ### Test guard (`tests/*`, `scripts/*` that generate fixtures)
 
@@ -107,7 +106,7 @@ Before saving any file in this surface:
 - [ ] Did you add a regression test for any bug you fixed?
 - [ ] Does `bun run test tests/your-file.test.ts` pass in isolation?
 
-**One-liner:** `bun run agent:guard --surface test`
+**Verify:** `bun run test:fast`
 
 ### MCP guard (`.agent/skills/*`, `.agent/workflows/*`)
 
@@ -120,7 +119,7 @@ Before saving any file in this surface:
 - [ ] Did you update `docs/agents/visualizer-workflows.md`?
 - [ ] Did you run `bun run check:quick` to verify the build still compiles?
 
-**One-liner:** `bun run agent:guard --surface mcp`
+**Verify:** `bun run mcp:check && bun run check:quick`
 
 ### Docs guard (`docs/*`, `AGENTS.md`)
 
@@ -131,11 +130,11 @@ Before saving any file in this surface:
 - [ ] Did you align with `docs/README.md` if routing/discoverability changed?
 - [ ] Are code snippets copy-pasteable and use `bun run ...` not raw `bun test`?
 
-**One-liner:** `bun run agent:guard --surface docs`
+**Verify:** `bun run check:stale-paths && bun run check:seo`
 
 ## The "what could go wrong?" prompt
 
-Before any significant change, ask yourself (or the guard tool):
+Before any significant change, ask yourself:
 
 ```
 Given the files I'm about to change, what is the most likely way
@@ -157,12 +156,12 @@ If you genuinely need to bypass a guard (e.g., emergency hotfix):
 Add to your `.zshrc` or agent bootstrap:
 
 ```bash
-alias codex='bun run agent:guard --detect && bun run session:codex'
+alias codex='bun run agent:status && bun run session:codex'
 ```
 
 Or add to `AGENTS.md` quick-start:
 
-> Before editing, run `bun run agent:guard --detect` to surface the relevant guardrails.
+> Before editing, run `git diff --name-only HEAD` and apply the guard that matches the touched surface.
 
 ## Related skills
 

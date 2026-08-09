@@ -275,7 +275,7 @@ The changes below are ordered by dependency; each builds on the previous.
 |-------|------|--------|
 | 11 | `src/js/core/audio-handler.ts` | Add `AudioPipelineMode` enum (`worklet` | `analyser-node`). Expose on `FrequencyAnalyser`. Add `AudioInitEvent` union for FSM integration. |
 | 12 | `src/js/core/animation-loop.ts` | Guard `initAudio` call with FSM state check: only proceed if state is `renderer-ready` or `renderer-degraded`. |
-| 13 | `src/js/core/renderer-fsm.ts` | Expand FSM to include audio states and cross-cutting transitions (audio failure while rendering, device loss during audio playback). |
+| 13 | `src/js/core/renderer-fsm.ts` (NEW) | Expand FSM to include audio states and cross-cutting transitions (audio failure while rendering, device loss during audio playback). |
 
 ### Files NOT Changed
 

@@ -34,7 +34,7 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
   3. Pooled renderer initialization
   4. Runtime frame update
 
-- [ ] Add or update a test in `tests/renderer-setup.test.ts` or `tests/milkdrop-runtime-seams.test.ts` that asserts the propagated value matches the expected chain.
+- [ ] Add or update a test in `tests/unit/renderer-setup.test.ts` or `tests/unit/milkdrop-runtime-seams.test.ts` that asserts the propagated value matches the expected chain.
 
 ### 3. Audio worklet validated on fallback path
 

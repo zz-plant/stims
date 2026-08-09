@@ -44,13 +44,15 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/review-webgpu-parity/SKILL.md` | Reviewing PRs that touch WebGPU/WebGL dual-backend parity (feedback, shaders, renderer adapters). | `bun run test:compat`, targeted parity tests, reference preset visual check |
 | `.agent/skills/review-renderer-fallback/SKILL.md` | Reviewing PRs that touch renderer capability probing, fallback chains, timeout logic, or audio worklet init. | `bun run test:integration`, trace renderScale end-to-end, validate fallback paths |
 | `.agent/skills/review-test-harness/SKILL.md` | Reviewing PRs that add, modify, or remove tests, fixtures, or integration harness code. | `bun run test`, behavior-based assertion review, fixture determinism check |
-| `.agent/skills/review-workspace-ui-state/SKILL.md` | Reviewing PRs that touch React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary. | `bun run test tests/frontend-url-state.test.ts`, adapter boundary inspection |
+| `.agent/skills/review-workspace-ui-state/SKILL.md` | Reviewing PRs that touch React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary. | `bun run test tests/unit/frontend-url-state.test.ts`, adapter boundary inspection |
 | `.agent/skills/review-deploy-tooling/SKILL.md` | Reviewing PRs that touch CI, wrangler config, build scripts, Cloudflare deploy, or package.json tooling. | `bun run build`, `bun run preview`, verify wrangler.toml and CI workflow integrity |
 | `.agent/skills/review-module-loading/SKILL.md` | Reviewing PRs that touch module loading, bootstrap, toy manifest, library resolution, or gamepad polling. | `bun run check:toys`, validate manifest regeneration, gamepad lifecycle |
 | `.agent/skills/audit-recurring-fixes/SKILL.md` | Auditing commit history to find recurring fix patterns and updating prevention skills. | `git log` analysis, cross-reference with `docs/RECURRING_FIX_PATTERNS_AUDIT_*.md` |
 | `.agent/skills/iterate-visualizer-ui/SKILL.md` | Iterating on workspace UI, shell chrome, and CSS with fast feedback loops and component isolation. | `bun run dev:ui`, isolated component playground, screenshot diff, responsive grid |
 | `.agent/skills/quick-start/SKILL.md` | First entry into the repo or after a long gap; fastest safe path to productive work. | `bun run agent:status`, `bun run setup:codex` |
 | `.agent/skills/agent-ergonomics/SKILL.md` | Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure. | Read-only, then apply changes |
+| `.agent/skills/guard-agent-work/SKILL.md` | Starting any coding session; surfaces the guardrails for the surface you are about to touch. | `git diff --name-only HEAD` to classify, then the per-surface verify command |
+| `.agent/skills/qa/SKILL.md` | Running the quality gate itself and knowing which profile to run at which stage. | `bun run check:quick` → `bun run check` → `bun run check:all` |
 
 ### Review skills are data-driven
 
@@ -76,6 +78,8 @@ Apply the matching skill whenever a PR touches that category — reviewing with 
 | `.agent/workflows/play-visualizer.md` | You need a real-browser visualizer verification runbook. | Prefer `?agent=true` URLs for stateful checks |
 | `.agent/workflows/test-visualizer.md` | You need a deterministic testing checklist. | Prefer `bun run test`, not raw `bun test` |
 | `.agent/workflows/ship-visualizer-change.md` | You need the full “implement, verify, finalize” sequence. | Best fit for PR-ready product work |
+| `.agent/workflows/qa.md` | You need the full QA suite run and summarized. | Pairs with the `qa` skill |
+| `.agent/workflows/deploy.md` | You are deploying to Cloudflare Pages. | Confirm the target environment before running deploy scripts |
 
 ## Related docs
 

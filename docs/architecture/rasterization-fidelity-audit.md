@@ -223,7 +223,7 @@ Tests that verify correctness solely via object/existence counts without visual 
 
 ### Mitigation
 
-All of the above tests would benefit from pixel-level comparison or at minimum a golden-image snapshot stored in the visual reference manifest. Until visual comparison exists, these tests can pass while producing visually wrong output. The certification corpus (`tests/certification-corpus.test.ts`) has tolerance profiles but the individual renderer tests do not hook into them.
+All of the above tests would benefit from pixel-level comparison or at minimum a golden-image snapshot stored in the visual reference manifest. Until visual comparison exists, these tests can pass while producing visually wrong output. The certification corpus (`tests/corpus/certification-corpus.test.ts`) has tolerance profiles but the individual renderer tests do not hook into them.
 
 ---
 

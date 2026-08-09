@@ -64,6 +64,7 @@
     "check:seo": "bun run scripts/check-seo.ts",
     "check:css-tokens": "bun run scripts/check-css-tokens.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
+    "check:doc-references": "bun run scripts/check-doc-references.ts",
     "check:ci-config": "bun run scripts/check-ci-config.ts",
     "check:commit-msg": "bun run scripts/check-commit-msg.ts",
     "check:duplicate-css": "bun run scripts/check-duplicate-css.ts",

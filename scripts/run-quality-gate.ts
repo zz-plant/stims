@@ -97,6 +97,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:stale-paths'],
       },
       {
+        label: 'Doc reference check',
+        cmd: ['bun', 'run', 'check:doc-references'],
+      },
+      {
         label: 'Duplicate CSS check',
         cmd: ['bun', 'run', 'check:duplicate-css'],
       },

@@ -53,13 +53,14 @@ Use `.agent/skills/*/SKILL.md` for repeatable work classes:
 
 | If the task is mainly about… | Skill |
 | --- | --- |
-| runtime, loader, renderer, shell, controls, audio, routing | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
+| runtime, renderer, shell, controls, audio, URL state | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
 | presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
 | preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
 | browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
 | quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
 | end-to-end product change → PR | `.agent/skills/ship-visualizer-change/SKILL.md` |
 | UI iteration, shell chrome, CSS | `.agent/skills/iterate-visualizer-ui/SKILL.md` |
+| knowing which guardrails apply before editing | `.agent/skills/guard-agent-work/SKILL.md` |
 
 Use `.agent/workflows/*.md` when you need a step-by-step runbook with explicit phase order.
 
@@ -82,6 +83,7 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 | Agent essentials | `AGENTS.md` | Non-negotiable defaults |
 | Bootstrap + handoffs | `docs/agents/agent-handoffs.md` | Delegating work |
 | Capability index | `docs/agents/custom-capabilities.md` | Choosing skills/workflows |
+| System map | `docs/ARCHITECTURE.md` | Boot path, engine seam, per-frame data flow |
 | Tooling reference | `docs/agents/tooling-and-quality.md` | Command details |
 | Visual testing | `docs/agents/visual-testing.md` | Browser QA procedures |
 | Deep reference | `docs/agents/reference-docs.md` | Unfamiliar code areas |

@@ -104,6 +104,6 @@ The adapter frequently uses `group.children.slice(...)` and similar array-copy p
 
 - `src/js/milkdrop/runtime.ts`
 - `src/js/milkdrop/vm.ts`
-- `src/js/milkdrop/overlay.ts`
+- `src/js/milkdrop/overlay/`
 - `src/js/milkdrop/renderer-adapter.ts`
 - `src/js/core/web-toy.ts`
