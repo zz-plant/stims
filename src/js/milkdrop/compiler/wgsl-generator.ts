@@ -43,7 +43,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         return 'rand()';
       }
       if (isRegisterIdentifier(name)) {
-        return `reg_${name}`;
+        return `state.${name}`;
       }
       const signalField = MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(name);
       if (signalField !== undefined) {
@@ -207,13 +207,15 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'equal':
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) == (${args[1] ?? '0.0f'}))`;
         case 'megabuf':
-          return `megabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
         case 'gmegabuf':
-          return `gmegabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
+          // Megabuffer programs are classified for CPU fallback. Returning a
+          // scalar placeholder keeps diagnostic WGSL valid and prevents an
+          // undeclared storage array from reaching pipeline creation.
+          return '0.0f';
         case 'rand':
           return 'rand()';
         case 'randint':
-          return `floor(rand() * (${args[0] ?? '1.0f'}))`;
+          return `floor(rand() * max(0.0f, ${args[0] ?? '1.0f'}))`;
         case 'exec2':
         case 'exec3':
           return args[args.length - 1] ?? '0.0f';
@@ -244,7 +246,7 @@ const WGSL_MOD_FNS = /* wgsl */ `
 fn milkdropTruncInt(value: f32) -> i32 {
   // Non-finite collapses to 0, matching toMilkdropInt. Clamp before the i32
   // cast: out-of-range float-to-int conversion is undefined in WGSL.
-  let finite = value == value && abs(value) < 3.4028235e38;
+  let finite = value == value && abs(value) < 3.402823e38f;
   let truncated = trunc(select(0.0f, value, finite));
   return i32(clamp(truncated, -2147483520.0f, 2147483520.0f));
 }
@@ -285,6 +287,8 @@ export type WgslProgramCompilation = {
   usesRandom: boolean;
   usesMegabuf: boolean;
   usesGmegabuf: boolean;
+  gpuExecutable: boolean;
+  unsupportedFeatures: Array<'megabuf' | 'gmegabuf'>;
   fieldKeys: string[];
   registerKeys: string[];
 };
@@ -315,6 +319,7 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
         }
         if (isRegisterIdentifier(name)) {
           registerKeys.add(name);
+          fieldKeys.add(name);
         } else {
           fieldKeys.add(name);
         }
@@ -328,7 +333,12 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
         collectFromExpression(expression.right);
         return;
       case 'call':
-        if (expression.name.toLowerCase() === 'megabuf') {
+        if (
+          expression.name.toLowerCase() === 'rand' ||
+          expression.name.toLowerCase() === 'randint'
+        ) {
+          usesRandom = true;
+        } else if (expression.name.toLowerCase() === 'megabuf') {
           usesMegabuf = true;
         } else if (expression.name.toLowerCase() === 'gmegabuf') {
           usesGmegabuf = true;
@@ -349,6 +359,7 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
       usesGmegabuf = true;
     } else if (isRegisterIdentifier(target)) {
       registerKeys.add(target);
+      fieldKeys.add(target);
     } else {
       fieldKeys.add(target);
     }
@@ -427,7 +438,7 @@ function buildWgslProgram(
     usesRandom: boolean;
   } = { fieldKeys: [], registerKeys: [], usesRandom: false },
 ): string {
-  const { fieldKeys, registerKeys, usesRandom } = options;
+  const { fieldKeys, usesRandom } = options;
   const seenFields = new Set<string>([...fieldKeys, 'pi', 'e']);
 
   if (usesRandom) {
@@ -452,14 +463,10 @@ function buildWgslProgram(
     const target = statement.target.toLowerCase();
     const expression = buildWgslExpression(statement.expression);
     if (isRegisterIdentifier(target)) {
-      return `  reg_${target} = ${expression};`;
+      return `  state.${target} = ${expression};`;
     }
     return `  state.${target} = ${expression};`;
   });
-
-  const registerDeclarationLines = registerKeys.length
-    ? ['', ...registerKeys.map((key) => `  var reg_${key}: f32 = 0.0;`)]
-    : [];
 
   const body = [
     `@group(0) @binding(0) var<storage, read_write> state: VmState;`,
@@ -468,7 +475,6 @@ function buildWgslProgram(
     randomFn,
     `@compute @workgroup_size(1)`,
     `fn main() {`,
-    ...registerDeclarationLines,
     ...statementLines,
     `}`,
   ].join('\n');
@@ -507,6 +513,9 @@ export function compileProgramToWgsl(
   const structFieldKeys = [
     ...new Set([...allFieldKeysForStruct, 'pi', 'e']),
   ].sort();
+  const unsupportedFeatures: Array<'megabuf' | 'gmegabuf'> = [];
+  if (usesMegabuf) unsupportedFeatures.push('megabuf');
+  if (usesGmegabuf) unsupportedFeatures.push('gmegabuf');
 
   return {
     wgslCode,
@@ -525,6 +534,8 @@ export function compileProgramToWgsl(
     usesRandom,
     usesMegabuf,
     usesGmegabuf,
+    gpuExecutable: unsupportedFeatures.length === 0,
+    unsupportedFeatures,
     fieldKeys: structFieldKeys,
     registerKeys,
   };

@@ -353,7 +353,25 @@ describe('wgsl program compilation', () => {
     expect(result.wgslCode).toContain('rand_state: u32');
   });
 
-  test('register identifiers (q/t)', () => {
+  test('rand() call usage includes the random helper and state', () => {
+    const result = compileProgramToWgsl(
+      block([statement('myvar', call('rand', []))]),
+    );
+    expect(result.usesRandom).toBe(true);
+    expect(result.wgslCode).toContain('fn rand()');
+    expect(result.wgslCode).toContain('rand_state: u32');
+  });
+
+  test('randint() call usage includes the random helper and clamps negative bounds', () => {
+    const result = compileProgramToWgsl(
+      block([statement('myvar', call('randint', [literal(-4)]))]),
+    );
+    expect(result.usesRandom).toBe(true);
+    expect(result.wgslCode).toContain('fn rand()');
+    expect(result.wgslCode).toContain('floor(rand() * max(0.0f, -4))');
+  });
+
+  test('register identifiers (q/t) persist in storage across dispatches', () => {
     const result = compileProgramToWgsl(
       block([
         statement('q1', binary('+', ident('bass'), literal(1))),
@@ -363,12 +381,31 @@ describe('wgsl program compilation', () => {
     );
     expect(result.registerKeys).toContain('q1');
     expect(result.registerKeys).toContain('t5');
-    expect(result.wgslCode).toContain('reg_q1 = (signals.bass + 1)');
-    expect(result.wgslCode).toContain('reg_t5 = (signals.mid * 2)');
-    expect(result.wgslCode).toContain('state.result = reg_q1');
-    expect(result.wgslCode).not.toContain('state.q1');
-    expect(result.wgslCode).toContain('reg_q1:');
-    expect(result.wgslCode).toContain('reg_t5:');
+    expect(result.fieldKeys).toContain('q1');
+    expect(result.fieldKeys).toContain('t5');
+    expect(result.wgslCode).toContain('state.q1 = (signals.bass + 1)');
+    expect(result.wgslCode).toContain('state.t5 = (signals.mid * 2)');
+    expect(result.wgslCode).toContain('state.result = state.q1');
+    expect(result.wgslCode).not.toContain('var reg_q1');
+    expect(result.wgslCode).not.toContain('var reg_t5');
+  });
+
+  test('megabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+    const result = compileProgramToWgsl(
+      block([statement('q1', call('megabuf', [literal(4)]))]),
+    );
+    expect(result.gpuExecutable).toBe(false);
+    expect(result.unsupportedFeatures).toContain('megabuf');
+    expect(result.wgslCode).not.toContain('megabuf[');
+  });
+
+  test('gmegabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+    const result = compileProgramToWgsl(
+      block([statement('q1', call('gmegabuf', [literal(4)]))]),
+    );
+    expect(result.gpuExecutable).toBe(false);
+    expect(result.unsupportedFeatures).toContain('gmegabuf');
+    expect(result.wgslCode).not.toContain('gmegabuf[');
   });
 
   test('default state fields always included', () => {
@@ -493,6 +530,15 @@ describe('wgsl edge cases', () => {
     );
     expect(result).toContain('select');
     expect(result).toContain('abs');
+  });
+
+  test('integer helpers use a representable f32 finite-value threshold', () => {
+    const result = compileProgramToWgsl(
+      block([statement('x', binary('%', literal(7), literal(3)))]),
+    );
+
+    expect(result.wgslCode).not.toContain('3.4028235e38');
+    expect(result.wgslCode).toContain('abs(value) < 3.402823e38f');
   });
 
   test('nested rand()', () => {

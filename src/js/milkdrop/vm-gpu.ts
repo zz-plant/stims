@@ -14,6 +14,7 @@ import {
 
 export type GpuVmResult = {
   state: Record<string, number>;
+  registers: Record<string, number>;
   randomState: number;
 };
 
@@ -139,10 +140,15 @@ export function createGpuVmRunner() {
     block: MilkdropProgramBlock,
     initialState: Record<string, number>,
     initialRandomState: number,
+    initialRegisters: Record<string, number> = {},
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
     const compilation = getOrCompileProgram(block);
+    if (!compilation.gpuExecutable) {
+      dispose();
+      return false;
+    }
     activeCompilation = compilation;
 
     bufferManager.dispose();
@@ -154,7 +160,11 @@ export function createGpuVmRunner() {
     );
     stateBuffer = layout.buffer;
 
-    bufferManager.writeState(gpuDevice, initialState, initialRandomState);
+    bufferManager.writeState(
+      gpuDevice,
+      { ...initialState, ...initialRegisters },
+      initialRandomState,
+    );
 
     pipeline = getOrCreatePipeline(gpuDevice, compilation);
 
@@ -206,6 +216,7 @@ export function createGpuVmRunner() {
         },
       ],
     });
+    return true;
   }
 
   async function dispatch(signals: MilkdropGpuVmSignals): Promise<GpuVmResult> {
@@ -236,7 +247,12 @@ export function createGpuVmRunner() {
 
     await device.queue.onSubmittedWorkDone();
 
-    const state = await bufferManager.readState();
+    const storedValues = await bufferManager.readState();
+    const registers: Record<string, number> = {};
+    for (const key of activeCompilation.registerKeys) {
+      registers[key] = storedValues[key] ?? 0;
+      delete storedValues[key];
+    }
     const randOffset = bufferManager.getLayout()?.fieldOffsets?.rand_state;
 
     let randomState = 1;
@@ -264,7 +280,8 @@ export function createGpuVmRunner() {
     }
 
     return {
-      state,
+      state: storedValues,
+      registers,
       randomState,
     };
   }
