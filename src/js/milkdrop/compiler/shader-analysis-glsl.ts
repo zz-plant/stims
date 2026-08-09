@@ -170,10 +170,14 @@ export function createCompositeGlslEmitter(): GlslEmitter {
     },
 
     emitBinary(left: string, op: string, right: string): string {
-      const glslOp = op === '&&' ? '*' : op === '||' ? '+' : op;
-      // Emit saturating OR via a+b-a*b to keep values in [0,1] when both operands are truthy.
-      if (op === '||') {
-        return `(${left} + ${right} - ${left} * ${right})`;
+      if (op === '&&' || op === '||') {
+        return `((abs(${left}) > 0.000001 ${op} abs(${right}) > 0.000001) ? 1.0 : 0.0)`;
+      }
+      if (['<', '<=', '>', '>=', '==', '!='].includes(op)) {
+        return `((${left} ${op} ${right}) ? 1.0 : 0.0)`;
+      }
+      if (op === '%') {
+        return `milkdropIntMod(${left}, ${right})`;
       }
       if (op === '^') {
         // MilkDrop treats ^ as scalar exponentiation; GLSL reserves ^ for
@@ -189,7 +193,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         // See '&' above: avoid passing a float bitwise expression through.
         return `float(int(${left}) | int(${right}))`;
       }
-      return `(${left} ${glslOp} ${right})`;
+      return `(${left} ${op} ${right})`;
     },
 
     emitUnary(op: string, operand: string): string {
@@ -312,15 +316,24 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `sign(${args[0] ?? '0.0'})`;
       }
       if (lower === 'log') {
-        return `log(${args[0] ?? '1.0'})`;
+        return `log(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
+      if (lower === 'log10') {
+        return `(log(max(${args[0] ?? '1.0'}, 0.000001)) * 0.4342944819)`;
       }
       if (lower === 'exp') {
         return `exp(${args[0] ?? '0.0'})`;
       }
-      if (lower === 'atan' || lower === 'atan2') {
+      if (lower === 'atan') {
         const y = args[0] ?? '0.0';
-        const x = args[1] ?? '1.0';
-        return `atan(${y}, ${x})`;
+        return args.length >= 2 ? `atan(${y}, ${args[1]})` : `atan(${y})`;
+      }
+      if (lower === 'atan2') {
+        return `atan(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'})`;
+      }
+      if (lower === 'sqr') {
+        const value = args[0] ?? '0.0';
+        return `(${value} * ${value})`;
       }
       if (lower === 'sigmoid') {
         const val = args[0] ?? '0.0';
@@ -370,7 +383,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const z = args[2] ?? x;
         return `vec3(${x}, ${y}, ${z})`;
       }
-      if (lower === 'vec4') {
+      if (lower === 'vec4' || lower === 'float4') {
         const x = args[0] ?? '0.0';
         const y = args[1] ?? x;
         const z = args[2] ?? x;
@@ -396,32 +409,11 @@ export function createCompositeGlslEmitter(): GlslEmitter {
     emitMember(object: string, property: string): string {
       const lowerProp = property.toLowerCase();
       // Map swizzle components and common member accessors
-      const validSwizzles = new Set([
-        'x',
-        'y',
-        'z',
-        'w',
-        'r',
-        'g',
-        'b',
-        'a',
-        'xy',
-        'xz',
-        'yz',
-        'xw',
-        'yw',
-        'zw',
-        'rg',
-        'rb',
-        'gb',
-        'xyz',
-        'xyw',
-        'xzw',
-        'yzw',
-        'rgb',
-        'rgba',
-      ]);
-      if (validSwizzles.has(lowerProp)) {
+      if (
+        lowerProp.length >= 1 &&
+        lowerProp.length <= 4 &&
+        (/^[xyzw]+$/u.test(lowerProp) || /^[rgba]+$/u.test(lowerProp))
+      ) {
         return `${object}.${lowerProp}`;
       }
       return `${object}_${lowerProp}`;
