@@ -109,4 +109,59 @@ describe('milkdrop expression', () => {
     expect(read.diagnostics).toEqual([]);
     expect(read.value?.type).toBe('call');
   });
+
+  describe('numeric literals', () => {
+    function evaluate(source: string) {
+      const parsed = parseMilkdropExpression(source, 1);
+      expect(parsed.diagnostics).toEqual([]);
+      if (!parsed.value) {
+        throw new Error(`Expected "${source}" to parse.`);
+      }
+      return evaluateMilkdropExpression(parsed.value, {});
+    }
+
+    // Exponent and hex forms are part of the EEL literal grammar that
+    // `scripts/butterchurn-eel-transpiler.ts` accepts, so a preset that tool
+    // can emit — or any preset imported from the wild — must parse here too.
+    // Both were previously rejected outright as trailing tokens.
+    test.each([
+      ['1e3', 1000],
+      ['1E3', 1000],
+      ['1e-08', 1e-8],
+      ['1E+3', 1000],
+      ['1.5e-3', 0.0015],
+      ['2.5E+2', 250],
+      ['0x10', 16],
+      ['0X1F', 31],
+      ['0xff', 255],
+    ])('parses %s', (source, expected) => {
+      expect(evaluate(source)).toBeCloseTo(expected, 12);
+    });
+
+    test('reads exponent literals inside larger expressions', () => {
+      expect(evaluate('1.5e-3*2')).toBeCloseTo(0.003, 12);
+      expect(evaluate('max(1e-2, 1e-3)')).toBeCloseTo(0.01, 12);
+    });
+
+    test('keeps the plain decimal forms it already accepted', () => {
+      expect(evaluate('.5+.25')).toBeCloseTo(0.75, 12);
+      expect(evaluate('5.+1')).toBeCloseTo(6, 12);
+      expect(evaluate('1_000')).toBeCloseTo(1000, 12);
+    });
+
+    test('still reports a malformed literal instead of silently truncating', () => {
+      // `Number.parseFloat("1.2.3")` is 1.2, so without the grammar check this
+      // would evaluate to a plausible wrong number with no diagnostic.
+      const parsed = parseMilkdropExpression('1.2.3', 1);
+      expect(parsed.diagnostics[0]?.code).toBe('expr_invalid_number');
+    });
+
+    test('leaves a trailing `e` as Euler rather than swallowing it', () => {
+      // `e` is an intrinsic constant, so consuming an exponent suffix has to
+      // require a digit after the optional sign — otherwise `e-1` and `2*e`
+      // would tokenize as broken numbers.
+      expect(evaluate('e-1')).toBeCloseTo(Math.E - 1, 12);
+      expect(evaluate('2*e')).toBeCloseTo(2 * Math.E, 12);
+    });
+  });
 });

@@ -113,6 +113,34 @@ function isIdentifierPart(char: string) {
   return /[A-Za-z0-9_]/.test(char);
 }
 
+/**
+ * The numeric literals EEL accepts: hex (`0x1f`), and decimals with an
+ * optional exponent (`1e-8`, `2.5E+3`). Mirrors `NUMBER_PATTERN` in
+ * `scripts/butterchurn-eel-transpiler.ts`, which is the grammar the bundled
+ * corpus was generated against — the two must stay in agreement, or presets
+ * that tool emits will not parse here. The trailing-dot form (`5.`) is an
+ * extra this parser has always accepted; digit separators (`1_000`) are
+ * stripped before the test.
+ */
+const NUMBER_LITERAL_PATTERN =
+  /^(?:0[xX][0-9a-fA-F]+|(?:[0-9]*\.)?[0-9]+(?:[eE][+-]?[0-9]+)?|[0-9]+\.)$/u;
+
+/**
+ * Length of an exponent suffix (`e-8`, `E+12`) at `position`, or 0 when what
+ * follows is not one. Requiring a digit after the optional sign is what keeps
+ * `2e-x` tokenizing as `2`, `e`, `-`, `x` — where `e` is Euler's constant —
+ * rather than being swallowed into a malformed number.
+ */
+function exponentSuffixLength(source: string, position: number) {
+  if (!/[eE]/.test(source[position] ?? '')) {
+    return 0;
+  }
+  const signLength = /[+-]/.test(source[position + 1] ?? '') ? 1 : 0;
+  return /[0-9]/.test(source[position + 1 + signLength] ?? '')
+    ? 1 + signLength
+    : 0;
+}
+
 function tokenize(source: string, line: number): ParseResult<Token[]> {
   const diagnostics: MilkdropDiagnostic[] = [];
   const tokens: Token[] = [];
@@ -151,18 +179,35 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
     }
 
     if (/[0-9.]/.test(current)) {
+      const isHex = /^0[xX][0-9a-fA-F]/.test(source.slice(index));
       let end = index + 1;
-      while (end < source.length && /[0-9._]/.test(source[end])) {
-        end += 1;
+      while (end < source.length) {
+        if (
+          isHex
+            ? /[0-9a-fA-FxX]/.test(source[end])
+            : /[0-9._]/.test(source[end])
+        ) {
+          end += 1;
+          continue;
+        }
+        // Consume `e-8`-style suffixes as part of the literal rather than
+        // letting them tokenize as the constant `e` followed by a subtraction.
+        const exponentLength = isHex ? 0 : exponentSuffixLength(source, end);
+        if (exponentLength === 0) {
+          break;
+        }
+        end += exponentLength;
       }
       const rawValue = source.slice(index, end).split('_').join('');
-      const parsedValue = Number.parseFloat(rawValue);
+      const parsedValue = isHex
+        ? Number.parseInt(rawValue, 16)
+        : Number.parseFloat(rawValue);
       // Number.parseFloat parses a leading numeric prefix rather than the
       // whole string, so a typo like "1.2.3" would silently become 1.2
       // with the invalid ".3" tail dropped and no diagnostic at all.
-      // Requiring the captured span to be a clean single-dot literal turns
+      // Requiring the captured span to match the literal grammar turns
       // that into a reported error instead of a silent wrong value.
-      const isWellFormedLiteral = /^\d+(\.\d*)?$|^\.\d+$/.test(rawValue);
+      const isWellFormedLiteral = NUMBER_LITERAL_PATTERN.test(rawValue);
       if (!Number.isFinite(parsedValue) || !isWellFormedLiteral) {
         diagnostics.push(
           createDiagnostic(
