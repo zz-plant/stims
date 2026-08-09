@@ -40,6 +40,8 @@ function getDirectShaderSamplerSourceId(
       return 9;
     case 'pc_main':
       return 10;
+    case 'fc_main':
+      return 11;
     default:
       return 0;
   }

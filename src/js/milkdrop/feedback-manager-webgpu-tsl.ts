@@ -788,7 +788,8 @@ function compileShaderExpressionNode(
         }
         if (
           resolvedBinding.canonicalSource === 'pw_main' ||
-          resolvedBinding.canonicalSource === 'pc_main'
+          resolvedBinding.canonicalSource === 'pc_main' ||
+          resolvedBinding.canonicalSource === 'fc_main'
         ) {
           return makeShaderValue(
             'vec3',
