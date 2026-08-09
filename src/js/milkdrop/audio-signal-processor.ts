@@ -16,6 +16,14 @@ type MilkdropAudioSignalUpdate = {
   frequencyData: Uint8Array;
   bands: BandLevels;
   attenuatedBands: BandLevels;
+  /**
+   * MilkDrop-relative band levels: each band divided by its own long-term
+   * average, so 1.0 means "as loud as this track usually is" rather than
+   * "full scale". Presets are written against these semantics — idioms like
+   * `above(bass, 1)` or `bass_thresh = 1.3` only fire on this scale.
+   */
+  relativeBands: BandLevels;
+  relativeAttenuatedBands: BandLevels;
   rawWeightedEnergy: number;
   weightedEnergy: number;
 };
@@ -51,6 +59,20 @@ const BAND_FLOOR: Record<BandKey, number> = {
   mid: 0.042,
   treble: 0.036,
 };
+
+/**
+ * Time constants for the MilkDrop-relative band normalization. The long
+ * average tracks the track's overall loudness (so quiet passages still reach
+ * 1.0), the short average is what `*_att` is measured against.
+ */
+const RELATIVE_LONG_AVG_MS = 3400;
+const RELATIVE_SHORT_AVG_MS = 340;
+/** MilkDrop leaves these unbounded; clamp so a near-silent long average can't
+ * hand presets an effectively infinite multiplier. */
+const RELATIVE_MAX = 5;
+/** Below this the long average is treated as silence and the relative level
+ * reads neutral (1.0), matching MilkDrop's own guard. */
+const RELATIVE_SILENCE_EPSILON = 0.001;
 
 const INV_LOG1P_6_2 = 1 / Math.log1p(6.2);
 const FALLBACK_SYNTHETIC_BUFFER = new Uint8Array(128);
@@ -121,6 +143,11 @@ export function createMilkdropAudioSignalProcessor() {
   let bandBaseline = createBandState();
   let bandPeak = createBandState();
   let bandAttenuation = createBandState();
+  let bandLongAverage = createBandState();
+  let bandShortAverage = createBandState();
+  let relativeAveragesSeeded = false;
+  const relativeBands = createBandState();
+  const relativeAttenuatedBands = createBandState();
   let energyPeak = 0.12;
   let smoothedSpectrum = new Float32Array(0);
   let spectrumNoiseFloor = new Float32Array(0);
@@ -130,6 +157,8 @@ export function createMilkdropAudioSignalProcessor() {
     frequencyData: shapedSpectrum,
     bands: createBandState(),
     attenuatedBands: bandAttenuation,
+    relativeBands,
+    relativeAttenuatedBands,
     rawWeightedEnergy: 0,
     weightedEnergy: 0,
   };
@@ -239,11 +268,63 @@ export function createMilkdropAudioSignalProcessor() {
     return bandAttenuation;
   };
 
+  const updateRelativeBands = (bands: BandLevels, deltaMs: number) => {
+    if (!relativeAveragesSeeded) {
+      // Seeding both averages from the first frame keeps the opening second
+      // from reading as a huge transient while the long average climbs off 0.
+      for (let i = 0; i < BAND_KEYS.length; i += 1) {
+        const key = BAND_KEYS[i];
+        bandLongAverage[key] = bands[key];
+        bandShortAverage[key] = bands[key];
+      }
+      relativeAveragesSeeded = true;
+    }
+
+    for (let i = 0; i < BAND_KEYS.length; i += 1) {
+      const key = BAND_KEYS[i];
+      const current = bands[key];
+      bandLongAverage[key] = smoothLevel(
+        bandLongAverage[key],
+        current,
+        deltaMs,
+        RELATIVE_LONG_AVG_MS,
+        RELATIVE_LONG_AVG_MS,
+      );
+      bandShortAverage[key] = smoothLevel(
+        bandShortAverage[key],
+        current,
+        deltaMs,
+        RELATIVE_SHORT_AVG_MS,
+        RELATIVE_SHORT_AVG_MS,
+      );
+
+      const longAverage = bandLongAverage[key];
+      if (longAverage < RELATIVE_SILENCE_EPSILON) {
+        relativeBands[key] = 1;
+        relativeAttenuatedBands[key] = 1;
+        continue;
+      }
+      relativeBands[key] = clamp(current / longAverage, 0, RELATIVE_MAX);
+      relativeAttenuatedBands[key] = clamp(
+        bandShortAverage[key] / longAverage,
+        0,
+        RELATIVE_MAX,
+      );
+    }
+  };
+
   return {
     reset() {
       bandBaseline = createBandState();
       bandPeak = createBandState();
       bandAttenuation = createBandState();
+      bandLongAverage = createBandState();
+      bandShortAverage = createBandState();
+      relativeAveragesSeeded = false;
+      for (let i = 0; i < BAND_KEYS.length; i += 1) {
+        relativeBands[BAND_KEYS[i]] = 1;
+        relativeAttenuatedBands[BAND_KEYS[i]] = 1;
+      }
       energyPeak = 0.12;
       smoothedSpectrum = new Float32Array(0);
       spectrumNoiseFloor = new Float32Array(0);
@@ -268,6 +349,7 @@ export function createMilkdropAudioSignalProcessor() {
         sampleRate,
       });
       const attenuatedBands = updateBandAttenuation(bands, deltaMs);
+      updateRelativeBands(bands, deltaMs);
       const rawWeightedEnergy = getWeightedEnergy(bands, {
         weights: { bass: 0.58, mid: 0.27, treble: 0.15 },
         boost: 1.08,
@@ -306,6 +388,8 @@ export function createMilkdropAudioSignalProcessor() {
       updateResult.frequencyData = buildSpectrumFrame(rawSpectrum, deltaMs);
       updateResult.bands = bands;
       updateResult.attenuatedBands = attenuatedBands;
+      updateResult.relativeBands = relativeBands;
+      updateResult.relativeAttenuatedBands = relativeAttenuatedBands;
       updateResult.rawWeightedEnergy = rawWeightedEnergy;
       updateResult.weightedEnergy = weightedEnergy;
       return updateResult;

@@ -228,8 +228,13 @@ export function createMilkdropSignalTracker(options?: {
         frequencyData,
         deltaMs,
       });
-      const { bands, attenuatedBands, rawWeightedEnergy, weightedEnergy } =
-        processedSignals;
+      const {
+        bands,
+        relativeBands,
+        relativeAttenuatedBands,
+        rawWeightedEnergy,
+        weightedEnergy,
+      } = processedSignals;
 
       // Meyda performs a full FFT over the time-domain buffer. Sampling it
       // every fourth frame keeps the small spectral energy boost responsive
@@ -308,20 +313,25 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.deltaMs = deltaMs;
       signalCache.frame = frame;
       signalCache.fps = deltaMs > 0 ? 1000 / deltaMs : 60;
-      signalCache.bass = bands.bass;
-      signalCache.mid = bands.mid;
-      signalCache.mids = bands.mid;
-      signalCache.treb = bands.treble;
-      signalCache.treble = bands.treble;
-      signalCache.bassAtt = attenuatedBands.bass;
-      signalCache.midAtt = attenuatedBands.mid;
-      signalCache.midsAtt = attenuatedBands.mid;
-      signalCache.trebleAtt = attenuatedBands.treble;
-      signalCache.bass_att = attenuatedBands.bass;
-      signalCache.mid_att = attenuatedBands.mid;
-      signalCache.mids_att = attenuatedBands.mid;
-      signalCache.treb_att = attenuatedBands.treble;
-      signalCache.treble_att = attenuatedBands.treble;
+      // Preset-facing registers use MilkDrop's relative scale (1.0 = the
+      // track's own average for that band), not the 0..1 spectrum average.
+      // Preset code is written against that scale — `above(bass, 1)` and
+      // `bass_thresh = 1.3` are the two most common idioms in the catalog and
+      // never fire on a 0..1 signal.
+      signalCache.bass = relativeBands.bass;
+      signalCache.mid = relativeBands.mid;
+      signalCache.mids = relativeBands.mid;
+      signalCache.treb = relativeBands.treble;
+      signalCache.treble = relativeBands.treble;
+      signalCache.bassAtt = relativeAttenuatedBands.bass;
+      signalCache.midAtt = relativeAttenuatedBands.mid;
+      signalCache.midsAtt = relativeAttenuatedBands.mid;
+      signalCache.trebleAtt = relativeAttenuatedBands.treble;
+      signalCache.bass_att = relativeAttenuatedBands.bass;
+      signalCache.mid_att = relativeAttenuatedBands.mid;
+      signalCache.mids_att = relativeAttenuatedBands.mid;
+      signalCache.treb_att = relativeAttenuatedBands.treble;
+      signalCache.treble_att = relativeAttenuatedBands.treble;
       signalCache.rms = rms;
       signalCache.vol = rms;
       signalCache.music = finalWeightedEnergy;
