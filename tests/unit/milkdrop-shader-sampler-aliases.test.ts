@@ -135,6 +135,37 @@ describe('milkdrop shader sampler aliases', () => {
     );
   });
 
+  test('resolves every main-texture filter/address variant', () => {
+    // MilkDrop exposes the main texture as f/p (filtered/point) x c/w
+    // (clamp/wrap). `fw_main` was the one variant missing from the alias
+    // table, so `resolveDirectShaderSamplerBinding` returned null for the 107
+    // bundled presets that sample it and they lost the direct WebGPU path.
+    expect(normalizeMilkdropShaderSamplerName('sampler_main')).toBe('main');
+    expect(normalizeMilkdropShaderSamplerName('sampler_fw_main')).toBe('main');
+    expect(normalizeMilkdropShaderSamplerName('fw_main')).toBe('main');
+    expect(normalizeMilkdropShaderSamplerName('sampler_fc_main')).toBe(
+      'fc_main',
+    );
+    expect(normalizeMilkdropShaderSamplerName('sampler_pw_main')).toBe(
+      'pw_main',
+    );
+    expect(normalizeMilkdropShaderSamplerName('sampler_pc_main')).toBe(
+      'pc_main',
+    );
+  });
+
+  test('resolves alias keys regardless of the casing a preset writes', () => {
+    // Lookups happen after the name is lowercased, so a camelCased key in the
+    // alias table is unreachable. `anandamideCTFree00` was exactly that.
+    expect(
+      normalizeMilkdropShaderSamplerName('sampler_anandamideCTFree00'),
+    ).toBe('noise');
+    expect(normalizeMilkdropShaderSamplerName('SAMPLER_FW_MAIN')).toBe('main');
+    expect(normalizeMilkdropShaderSamplerName('Sampler_Noise_LQ')).toBe(
+      'noise',
+    );
+  });
+
   test('normalizes canonical sampler names through the shared helper', () => {
     for (const { alias, canonical } of SAMPLER_CANONICAL_CASES) {
       expect(normalizeMilkdropShaderSamplerName(alias)).toBe(canonical);
