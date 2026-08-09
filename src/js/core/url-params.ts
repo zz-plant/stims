@@ -16,6 +16,12 @@ export interface PerformanceURLParams {
   maxPixelRatio: number | null;
   particleBudget: number | null;
   shaderQuality: string | null;
+  /**
+   * Pins the adaptive quality controller to a fixed step so performance runs
+   * measure frame time at constant quality. Without this the controller trades
+   * frame time for visual quality, which hides both wins and regressions.
+   */
+  lockedQualityStep: number | null;
 }
 
 export interface MockAudioURLParams {
@@ -253,6 +259,7 @@ export function parseURLParams(
       maxPixelRatio: parseNumberParam(get('maxPixelRatio')),
       particleBudget: parseNumberParam(get('particleBudget')),
       shaderQuality: get('shaderQuality')?.trim() || null,
+      lockedQualityStep: parseNumberParam(get('lockQualityStep')),
     },
     audioMock: {
       type: get('mockAudio')?.trim() || null,

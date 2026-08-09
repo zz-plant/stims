@@ -43,6 +43,22 @@ export type PlayToyPerformanceMetrics = {
   p95FrameMs: number | null;
   averageSimulationMs: number | null;
   averageRenderMs: number | null;
+  averageCadenceMs: number | null;
+  medianCadenceMs: number | null;
+  p95CadenceMs: number | null;
+  averageFps: number | null;
+  /**
+   * FPS from the median frame period. Preferred over `averageFps`: a handful of
+   * multi-second stalls (preset compile, first paint) drag the mean cadence far
+   * above steady state, which understates FPS by ~2x on slow profiles.
+   */
+  medianFps: number | null;
+  /**
+   * Which measurement produced these numbers. `sampler` counts presented frames
+   * directly; `debug-snapshot` is a fallback that reports the adaptive quality
+   * controller's own averages and must not be compared against sampler runs.
+   */
+  metricsSource: 'sampler' | 'debug-snapshot';
   actualBackend: 'webgl' | 'webgpu' | null;
   fallbackOccurred: boolean;
   terminalAdaptiveQuality: unknown | null;
@@ -72,6 +88,13 @@ export type PlayToyOptions = {
   catalogMode?: PlayToyCatalogMode;
   screenshotSurface?: PlayToyScreenshotSurface;
   perfCapture?: PlayToyPerformanceCaptureOptions;
+  /**
+   * CDP CPU throttle multiplier applied to the page. 1 disables throttling; 4
+   * approximates the CPU budget of a constrained low-resource test machine.
+   */
+  cpuThrottleRate?: number;
+  /** Pins adaptive quality to a fixed step so timings stay comparable. */
+  lockedQualityStep?: number | null;
   recordParityArtifact?: boolean;
   browserSession?: PlayToyBrowserSession;
 };
@@ -89,6 +112,8 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   catalogMode: PlayToyCatalogMode;
   screenshotSurface: PlayToyScreenshotSurface;
   perfCapture?: PlayToyPerformanceCaptureOptions;
+  cpuThrottleRate: number;
+  lockedQualityStep: number | null;
   recordParityArtifact: boolean;
 };
 
@@ -141,6 +166,13 @@ type PlayToyPerformanceSample = {
   frameMs: number;
   renderMs: number;
   simulationMs: number;
+  /**
+   * Wall-clock interval since the previous sampled frame. `frameMs` only covers
+   * work inside the rAF callback, so it understates cost whenever the browser
+   * stalls between frames (common under SwiftShader). Cadence is what actually
+   * corresponds to delivered FPS.
+   */
+  cadenceMs: number | null;
 };
 
 type PlayToyPerformanceSampleSummary = {
@@ -149,6 +181,11 @@ type PlayToyPerformanceSampleSummary = {
   p95FrameMs: number | null;
   averageSimulationMs: number | null;
   averageRenderMs: number | null;
+  averageCadenceMs: number | null;
+  medianCadenceMs: number | null;
+  p95CadenceMs: number | null;
+  averageFps: number | null;
+  medianFps: number | null;
 };
 
 type PlayToyRuntimePerformanceSnapshotLike = Partial<
@@ -166,6 +203,7 @@ type PlayToyAdaptiveQualitySnapshotLike = Partial<{
   sampleCount: number;
   averageFrameMs: number | null;
   averageRenderMs: number | null;
+  averageCadenceMs: number | null;
 }>;
 
 function average(values: readonly number[]) {
@@ -200,6 +238,28 @@ export function summarizePlayToyPerformanceSamples(
     ),
     averageSimulationMs: average(samples.map((sample) => sample.simulationMs)),
     averageRenderMs: average(samples.map((sample) => sample.renderMs)),
+    ...summarizeCadence(samples),
+  };
+}
+
+function summarizeCadence(samples: readonly PlayToyPerformanceSample[]) {
+  const cadences = samples
+    .map((sample) => sample.cadenceMs)
+    .filter((value): value is number => typeof value === 'number' && value > 0);
+  const averageCadenceMs = average(cadences);
+  const medianCadenceMs = percentile(cadences, 0.5);
+  return {
+    averageCadenceMs,
+    medianCadenceMs,
+    p95CadenceMs: percentile(cadences, 0.95),
+    averageFps:
+      averageCadenceMs !== null && averageCadenceMs > 0
+        ? 1000 / averageCadenceMs
+        : null,
+    medianFps:
+      medianCadenceMs !== null && medianCadenceMs > 0
+        ? 1000 / medianCadenceMs
+        : null,
   };
 }
 
@@ -220,6 +280,7 @@ export function buildPlayToyPerformanceMetrics({
 }): PlayToyPerformanceMetrics {
   return {
     ...summarizePlayToyPerformanceSamples(samples),
+    metricsSource: 'sampler' as const,
     durationMs,
     warmupMs,
     actualBackend,
@@ -245,6 +306,11 @@ export function normalizePlayToyOptions(
     catalogMode: options.catalogMode ?? 'bundled',
     screenshotSurface: options.screenshotSurface ?? 'canvas',
     perfCapture: options.perfCapture,
+    cpuThrottleRate:
+      options.cpuThrottleRate && options.cpuThrottleRate > 1
+        ? options.cpuThrottleRate
+        : 1,
+    lockedQualityStep: options.lockedQualityStep ?? null,
     recordParityArtifact: options.recordParityArtifact !== false,
   };
 }
@@ -327,6 +393,7 @@ export function buildPlayToyUrl({
   demoAudio = true,
   rendererProfile = 'compatibility',
   catalogMode = 'bundled',
+  lockedQualityStep,
 }: {
   port: number;
   slug: string;
@@ -334,6 +401,7 @@ export function buildPlayToyUrl({
   demoAudio?: boolean;
   rendererProfile?: PlayToyRendererProfile;
   catalogMode?: PlayToyCatalogMode;
+  lockedQualityStep?: number | null;
 }) {
   const params = new URLSearchParams({
     agent: 'true',
@@ -351,6 +419,9 @@ export function buildPlayToyUrl({
   params.set('renderer', rendererProfile === 'webgpu' ? 'webgpu' : 'webgl');
   if (catalogMode === 'certification') {
     params.set('corpus', 'certification');
+  }
+  if (typeof lockedQualityStep === 'number') {
+    params.set('lockQualityStep', String(lockedQualityStep));
   }
   return `http://127.0.0.1:${port}${routePath}?${params.toString()}`;
 }
@@ -752,6 +823,10 @@ async function installPerformanceSampler(page: Page, warmupMs: number) {
         fallbackOccurred: boolean;
         samples: PlayToyPerformanceSample[];
         currentFrameRenderMs: number;
+        pendingTimestamp: number | null;
+        pendingWorkMs: number;
+        pendingRenderMs: number;
+        lastFlushedTimestamp: number | null;
         requestAnimationFramePatched: boolean;
         adapterRenderPatched: boolean;
         toyRenderPatched: boolean;
@@ -761,6 +836,10 @@ async function installPerformanceSampler(page: Page, warmupMs: number) {
         fallbackOccurred: false,
         samples: [],
         currentFrameRenderMs: 0,
+        pendingTimestamp: null,
+        pendingWorkMs: 0,
+        pendingRenderMs: 0,
+        lastFlushedTimestamp: null,
         requestAnimationFramePatched: false,
         adapterRenderPatched: false,
         toyRenderPatched: false,
@@ -768,24 +847,56 @@ async function installPerformanceSampler(page: Page, warmupMs: number) {
 
       const originalRequestAnimationFrame =
         window.requestAnimationFrame.bind(window);
+      // Several rAF loops run per presented frame (render loop plus agent
+      // telemetry), and all callbacks for one frame share a `timestamp`. Work
+      // is accumulated across every callback of a frame and flushed as a single
+      // sample when the timestamp advances, so `frameMs` is the frame's total
+      // main-thread cost rather than whichever callback happened to run first.
+      const flushPendingFrame = () => {
+        if (sampler.pendingTimestamp === null) {
+          return;
+        }
+        const cadenceMs =
+          sampler.lastFlushedTimestamp === null
+            ? null
+            : sampler.pendingTimestamp - sampler.lastFlushedTimestamp;
+        sampler.samples.push({
+          frameMs: sampler.pendingWorkMs,
+          renderMs: sampler.pendingRenderMs,
+          simulationMs: Math.max(
+            0,
+            sampler.pendingWorkMs - sampler.pendingRenderMs,
+          ),
+          cadenceMs,
+        });
+        sampler.lastFlushedTimestamp = sampler.pendingTimestamp;
+        sampler.pendingTimestamp = null;
+        sampler.pendingWorkMs = 0;
+        sampler.pendingRenderMs = 0;
+      };
+
       window.requestAnimationFrame = ((callback) =>
         originalRequestAnimationFrame((timestamp) => {
           const frameStartMs = performance.now();
+          const pastWarmup =
+            frameStartMs - sampler.startedAtMs >= sampler.warmupMs;
+          if (timestamp !== sampler.pendingTimestamp) {
+            if (pastWarmup) {
+              flushPendingFrame();
+            } else {
+              sampler.pendingTimestamp = null;
+              sampler.pendingWorkMs = 0;
+              sampler.pendingRenderMs = 0;
+              sampler.lastFlushedTimestamp = null;
+            }
+            sampler.pendingTimestamp = timestamp;
+          }
           sampler.currentFrameRenderMs = 0;
           try {
             callback(timestamp);
           } finally {
-            const frameMs = performance.now() - frameStartMs;
-            if (frameStartMs - sampler.startedAtMs >= sampler.warmupMs) {
-              sampler.samples.push({
-                frameMs,
-                renderMs: sampler.currentFrameRenderMs,
-                simulationMs: Math.max(
-                  0,
-                  frameMs - sampler.currentFrameRenderMs,
-                ),
-              });
-            }
+            sampler.pendingWorkMs += performance.now() - frameStartMs;
+            sampler.pendingRenderMs += sampler.currentFrameRenderMs;
           }
         })) as typeof window.requestAnimationFrame;
       sampler.requestAnimationFramePatched = true;
@@ -865,6 +976,7 @@ export function buildPlayToyPerformanceMetricsFromDebugSnapshot({
           sampleCount?: number;
           averageFrameMs?: number | null;
           averageRenderMs?: number | null;
+          averageCadenceMs?: number | null;
         })
       : null);
   if (!(performance && typeof performance === 'object') && !adaptiveQuality) {
@@ -891,6 +1003,19 @@ export function buildPlayToyPerformanceMetricsFromDebugSnapshot({
         : null),
     averageRenderMs:
       performance?.averageRenderMs ?? adaptiveQuality?.averageRenderMs ?? null,
+    // The debug snapshot has no per-sample cadence series; the adaptive quality
+    // controller's own cadence average is the only wall-clock pacing available
+    // on this fallback path.
+    averageCadenceMs: adaptiveQuality?.averageCadenceMs ?? null,
+    medianCadenceMs: null,
+    p95CadenceMs: null,
+    averageFps:
+      typeof adaptiveQuality?.averageCadenceMs === 'number' &&
+      adaptiveQuality.averageCadenceMs > 0
+        ? 1000 / adaptiveQuality.averageCadenceMs
+        : null,
+    medianFps: null,
+    metricsSource: 'debug-snapshot' as const,
     actualBackend,
     fallbackOccurred,
     terminalAdaptiveQuality: adaptiveQuality ?? null,
@@ -1160,6 +1285,16 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     page = await context.newPage();
 
+    if (normalizedOptions.cpuThrottleRate > 1) {
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', {
+        rate: normalizedOptions.cpuThrottleRate,
+      });
+      console.log(
+        `CPU throttled to 1/${normalizedOptions.cpuThrottleRate} for low-resource profiling.`,
+      );
+    }
+
     page.on('console', (msg: ConsoleMessage) => {
       if (msg.type() === 'error') {
         console.error(`[Browser Console error] ${msg.text()}`);
@@ -1180,6 +1315,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       demoAudio: demoRequestedByRoute,
       rendererProfile: normalizedOptions.rendererProfile,
       catalogMode: normalizedOptions.catalogMode,
+      lockedQualityStep: normalizedOptions.lockedQualityStep,
     });
     console.log(`Navigating to ${url}...`);
 
