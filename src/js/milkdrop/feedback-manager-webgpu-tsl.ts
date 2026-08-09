@@ -1,13 +1,6 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
-import {
-  Mesh,
-  OrthographicCamera,
-  PlaneGeometry,
-  Scene,
-  ShaderMaterial,
-  Vector2,
-} from 'three';
+import { Mesh, OrthographicCamera, PlaneGeometry, Scene, Vector2 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three/three-dispose';
@@ -132,6 +125,26 @@ function createGaussianBlurOutputNode(
 
     return weightedColor.div(max(weightSum, 0.0001));
   })();
+}
+
+function createPresentUniforms(initialSource: Texture) {
+  return {
+    currentTex: texture(initialSource),
+    savedTex: texture(initialSource),
+    transitionAlpha: uniform(0),
+  };
+}
+
+function createPresentOutputNode(
+  uniforms: ReturnType<typeof createPresentUniforms>,
+) {
+  return Fn(() =>
+    mix(
+      uniforms.currentTex.sample(uv()),
+      uniforms.savedTex.sample(uv()),
+      clamp(uniforms.transitionAlpha, 0, 1),
+    ),
+  )();
 }
 
 type ShaderNodeValue = {
@@ -693,6 +706,42 @@ function compileShaderExpressionNode(
       if (constructorPattern === 'vec3-splat') {
         const scalar = coerceShaderValue(args[0], 'scalar').node;
         return shaderVec3(scalar, scalar, scalar);
+      }
+      if (constructorPattern === 'vec4-quad') {
+        return shaderVec4(
+          coerceShaderValue(args[0], 'scalar').node,
+          coerceShaderValue(args[1], 'scalar').node,
+          coerceShaderValue(args[2], 'scalar').node,
+          coerceShaderValue(args[3], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'vec4-vec3-scalar') {
+        return shaderVec4(
+          args[0].node.x,
+          args[0].node.y,
+          args[0].node.z,
+          coerceShaderValue(args[1], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'vec4-scalar-vec3') {
+        return shaderVec4(
+          coerceShaderValue(args[0], 'scalar').node,
+          args[1].node.x,
+          args[1].node.y,
+          args[1].node.z,
+        );
+      }
+      if (constructorPattern === 'vec4-vec2-vec2') {
+        return shaderVec4(
+          args[0].node.x,
+          args[0].node.y,
+          args[1].node.x,
+          args[1].node.y,
+        );
+      }
+      if (constructorPattern === 'vec4-splat') {
+        const scalar = coerceShaderValue(args[0], 'scalar').node;
+        return shaderVec4(scalar, scalar, scalar, scalar);
       }
       if (
         (name === 'tex2d' ||
@@ -1470,7 +1519,9 @@ class WebGPUMilkdropFeedbackManager {
   readonly presentScene = new Scene();
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   readonly compositeMaterial: NodeMaterial & { uniforms: CompositeUniformBag };
-  readonly presentMaterial: ShaderMaterial;
+  readonly presentMaterial: NodeMaterial & {
+    uniforms: ReturnType<typeof createPresentUniforms>;
+  };
   readonly blurMaterial: NodeMaterial & {
     uniforms: ReturnType<typeof createGaussianBlurUniforms>;
   };
@@ -1552,34 +1603,12 @@ class WebGPUMilkdropFeedbackManager {
     blurMaterial.needsUpdate = true;
     this.blurMaterial = Object.assign(blurMaterial, { uniforms: blurUniforms });
 
-    this.presentMaterial = new ShaderMaterial({
-      uniforms: {
-        currentTex: { value: this.targets[0].texture },
-        savedTex: { value: null },
-        transitionAlpha: { value: 0 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = vec4(position.xy, 0.0, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D currentTex;
-        uniform sampler2D savedTex;
-        uniform float transitionAlpha;
-        varying vec2 vUv;
-        void main() {
-          vec4 current = texture2D(currentTex, vUv);
-          if (transitionAlpha < 0.001) {
-            gl_FragColor = current;
-            return;
-          }
-          vec4 saved = texture2D(savedTex, vUv);
-          gl_FragColor = mix(current, saved, transitionAlpha);
-        }
-      `,
+    const presentUniforms = createPresentUniforms(this.targets[0].texture);
+    const presentMaterial = new NodeMaterial();
+    presentMaterial.outputNode = createPresentOutputNode(presentUniforms);
+    presentMaterial.needsUpdate = true;
+    this.presentMaterial = Object.assign(presentMaterial, {
+      uniforms: presentUniforms,
     });
 
     const compositeQuad = new Mesh(

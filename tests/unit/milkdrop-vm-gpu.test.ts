@@ -102,12 +102,13 @@ describe('GPU VM Runner', () => {
     const initialBindGroupCount = bindGroupCreations;
 
     // First frame dispatch
-    await runner.dispatch({
+    const firstResult = await runner.dispatch({
       time: 1.0,
       frame: 60,
       fps: 60,
       bass: 0.8,
     });
+    expect(firstResult.registers).toHaveProperty('q1');
 
     // Second frame dispatch
     await runner.dispatch({
@@ -124,5 +125,40 @@ describe('GPU VM Runner', () => {
     runner.dispose();
     expect(runner.isInitialized()).toBe(false);
     expect(destroyedBuffers).toBeGreaterThan(0);
+  });
+
+  test('leaves megabuf programs on the CPU path', () => {
+    let shaderModuleCreations = 0;
+    const mockDevice = {
+      createShaderModule() {
+        shaderModuleCreations += 1;
+        return {};
+      },
+    };
+    const runner = createGpuVmRunner();
+    const initialized = runner.init(
+      mockDevice as unknown as GPUDevice,
+      {
+        statements: [
+          {
+            target: 'q1',
+            expression: {
+              type: 'call',
+              name: 'megabuf',
+              args: [{ type: 'literal', value: 4 }],
+            },
+            source: 'q1=megabuf(4);',
+            line: 1,
+          },
+        ],
+        sourceLines: ['q1=megabuf(4);'],
+      },
+      { q1: 0 },
+      1,
+    );
+
+    expect(initialized).toBe(false);
+    expect(runner.isInitialized()).toBe(false);
+    expect(shaderModuleCreations).toBe(0);
   });
 });

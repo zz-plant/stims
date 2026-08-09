@@ -1,4 +1,4 @@
-export type MilkdropShaderValueKind = 'scalar' | 'vec2' | 'vec3';
+export type MilkdropShaderValueKind = 'scalar' | 'vec2' | 'vec3' | 'vec4';
 
 export type MilkdropShaderConstructorPattern =
   | 'vec2-pair'
@@ -6,7 +6,12 @@ export type MilkdropShaderConstructorPattern =
   | 'vec3-triple'
   | 'vec3-splat'
   | 'vec3-vec2-scalar'
-  | 'vec3-scalar-vec2';
+  | 'vec3-scalar-vec2'
+  | 'vec4-quad'
+  | 'vec4-splat'
+  | 'vec4-vec3-scalar'
+  | 'vec4-scalar-vec3'
+  | 'vec4-vec2-vec2';
 
 /**
  * Fast case-insensitive check that avoids creating a new string when the
@@ -37,6 +42,7 @@ export function normalizeMilkdropShaderCallName(value: string) {
   // Fast path: most calls are already lowercase
   if (isLowerAlphaEquals(value, 'float2')) return 'vec2';
   if (isLowerAlphaEquals(value, 'float3')) return 'vec3';
+  if (isLowerAlphaEquals(value, 'float4')) return 'vec4';
   if (
     isLowerAlphaEquals(value, 'texture') ||
     isLowerAlphaEquals(value, 'texture2d') ||
@@ -60,6 +66,8 @@ export function resolveMilkdropShaderConstructorPattern(
     normalizedName = 'vec2';
   } else if (isLowerAlphaEquals(name, 'float3')) {
     normalizedName = 'vec3';
+  } else if (isLowerAlphaEquals(name, 'float4')) {
+    normalizedName = 'vec4';
   } else {
     normalizedName = name;
   }
@@ -90,6 +98,29 @@ export function resolveMilkdropShaderConstructorPattern(
     }
     if (argKinds[0] === 'scalar') {
       return 'vec3-splat';
+    }
+  }
+
+  if (isLowerAlphaEquals(normalizedName, 'vec4')) {
+    if (
+      argKinds[0] === 'scalar' &&
+      argKinds[1] === 'scalar' &&
+      argKinds[2] === 'scalar' &&
+      argKinds[3] === 'scalar'
+    ) {
+      return 'vec4-quad';
+    }
+    if (argKinds[0] === 'vec3' && argKinds[1] === 'scalar') {
+      return 'vec4-vec3-scalar';
+    }
+    if (argKinds[0] === 'scalar' && argKinds[1] === 'vec3') {
+      return 'vec4-scalar-vec3';
+    }
+    if (argKinds[0] === 'vec2' && argKinds[1] === 'vec2') {
+      return 'vec4-vec2-vec2';
+    }
+    if (argKinds[0] === 'scalar') {
+      return 'vec4-splat';
     }
   }
 
