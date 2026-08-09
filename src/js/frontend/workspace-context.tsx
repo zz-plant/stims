@@ -103,6 +103,32 @@ export function useWorkspace(): {
   return { ui, engine };
 }
 
+/**
+ * Supplies workspace/engine context values directly, without booting the
+ * session hooks that `WorkspaceProvider` owns. This is the seam tests render
+ * panels through, so behavioral assertions can query real DOM output instead
+ * of grepping component source text.
+ */
+export function WorkspaceValueProvider({
+  ui,
+  engine,
+  snapshot,
+  children,
+}: {
+  ui: WorkspaceContextValue;
+  engine: EngineContextValue;
+  snapshot: EngineSnapshotValue;
+  children: ReactNode;
+}) {
+  return (
+    <WorkspaceContext.Provider value={ui}>
+      <EngineProvider snapshot={snapshot} data={engine}>
+        {children}
+      </EngineProvider>
+    </WorkspaceContext.Provider>
+  );
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
 
