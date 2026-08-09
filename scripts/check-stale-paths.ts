@@ -16,7 +16,19 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOTS = ['.agent', 'docs', '.github', 'src', 'scripts', 'tests'];
-const EXTRA_FILES = ['AGENTS.md', 'README.md'];
+/**
+ * Root-level entry HTML is included because it is outside every ROOT above,
+ * so nothing else notices when it keeps pointing at the old tree. That is
+ * exactly how `ui-harness.html` ended up loading four stylesheets and its
+ * entry module from a directory that no longer existed.
+ */
+const EXTRA_FILES = [
+  'AGENTS.md',
+  'README.md',
+  'index.html',
+  'ui-harness.html',
+  'milkdrop/index.html',
+];
 const SKIP_DIRS = new Set([
   'archive',
   'node_modules',
@@ -24,7 +36,7 @@ const SKIP_DIRS = new Set([
   'dist',
   'screenshots',
 ]);
-const STALE = /\bassets\/(js|data)\b/;
+const STALE = /(?<!dist\/|public\/)\bassets\/(js|data|css|shaders)\b/;
 
 /**
  * Point-in-time findings rather than live instruction. These get archived

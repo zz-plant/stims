@@ -9,19 +9,30 @@ Welcome to the **Stims** developer documentation portal. This hub provides guide
 Choose a track below based on what you are looking to accomplish:
 
 ```mermaid
-flowchart TD
-  Start["Stims Developer Hub"]
+flowchart LR
+  Start(["Stims Developer Hub"])
+
   Start --> GS["🚀 Getting Started"]
   Start --> Arch["🏛️ Architecture & Engine"]
   Start --> Preset["🎨 Preset Authoring"]
   Start --> API["🔌 Optional APIs"]
   Start --> Strat["📊 Strategy & QA"]
 
-  GS --> Dev["Development & Testing Setup"]
-  Arch --> JIT["JIT VM & WebGPU Engine"]
-  Preset --> EEL["EEL2/MilkDrop Math & Shader Guide"]
-  API --> Edge["Cloudflare Worker Endpoints"]
-  Strat --> Road["Roadmap & Quality Gates"]
+  GS --> GS1["DEVELOPMENT.md · TESTING.md"]
+  GS --> GS2["DEPLOYMENT.md · COMMIT_CONVENTIONS.md"]
+
+  Arch --> A1["ARCHITECTURE.md<br/>boot path, URL state, engine seam"]
+  Arch --> A2["MILKDROP_PRESET_RUNTIME.md<br/>compiler + VM lifecycle"]
+  Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
+
+  Preset --> P1["MILKDROP_CODING_GUIDE.md"]
+  Preset --> P2["parity plan + backlog"]
+
+  API --> E1["api.md<br/>Cloudflare Worker endpoints"]
+  API --> E2["MCP_SERVER.md"]
+
+  Strat --> S1["ROADMAP.md · IMPLEMENTATION_STATUS.md"]
+  Strat --> S2["QA_PLAN.md · LINEAGE_AND_CREDITS.md"]
 ```
 
 ---
@@ -104,14 +115,19 @@ bun run build         # Production web bundle build
 
 ```
 stims/
+├── index.html          # Single app shell (milkdrop/index.html is a redirect alias)
 ├── functions/api/      # Cloudflare Workers serverless API routes (AI generation, visual search)
 ├── src/
 │   ├── js/
 │   │   ├── app.ts      # Application entrypoint & React mounting
-│   │   ├── core/       # Shared renderer capabilities, audio handlers, agent API
+│   │   ├── core/       # Renderer capabilities, audio, quality, state stores, services
 │   │   ├── frontend/   # React workspace UI, URL state synchronization, engine adapter
-│   │   └── milkdrop/   # Imperative MilkDrop engine, JIT VM, compiler, TSL/WGSL generators
-│   └── data/           # Preset manifests and schemas
-├── tests/              # Unit, integration, and agent verification test suites
+│   │   ├── milkdrop/   # Imperative MilkDrop engine, JIT VM, compiler, TSL/WGSL generators
+│   │   ├── ui/         # Framework-free UI helpers (audio controls, identicons, YouTube)
+│   │   └── utils/      # Audio, browser, and media utilities
+│   ├── css/            # tokens.css, chrome.css, app-shell.css, component modules
+│   └── data/           # Preset manifests, toy manifest, parity fixtures
+├── scripts/            # Quality gates, parity capture, perf and reactivity labs
+├── tests/              # unit · compat · corpus · e2e · accessibility suites
 └── docs/               # Technical documentation portal
 ```

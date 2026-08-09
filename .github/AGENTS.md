@@ -26,11 +26,13 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 
 | If the task is mainly about... | Start here |
 | --- | --- |
-| shared runtime, loader, renderer, shell, controls, audio, or routing | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| shared runtime, renderer, shell, controls, audio, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
 | bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](./.agent/skills/modify-preset-workflow/SKILL.md) |
 | browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](./.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) |
 | quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
 | end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](./.agent/skills/ship-visualizer-change/SKILL.md) |
+| workspace UI, shell chrome, or CSS iteration | [`.agent/skills/iterate-visualizer-ui/SKILL.md`](./.agent/skills/iterate-visualizer-ui/SKILL.md) |
+| knowing which guardrails apply before you start editing | [`.agent/skills/guard-agent-work/SKILL.md`](./.agent/skills/guard-agent-work/SKILL.md) |
 
 ## Essentials
 
@@ -47,7 +49,10 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
-- `check:stale-paths` — references to the removed `assets/` tree.
+- `check:stale-paths` — references to the removed `assets/` tree, including the root entry HTML files.
+- `check:architecture` — the `frontend/*` → engine boundary; only the engine adapter may cross it.
+- `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
+- `check:css-tokens` — CSS custom properties resolve to a defined token.
 - `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
 - `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
 - `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).

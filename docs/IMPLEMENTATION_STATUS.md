@@ -24,7 +24,7 @@ This document is the consolidated source for implementation progress across road
   - [x] Added unit tests in `tests/unit/editor-panel.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Off-main-thread AudioWorklet DSP analysis** (2026-07-29):
-  - [x] Enhanced `FrequencyAnalyserProcessor` in `src/js/utils/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
+  - [x] Enhanced `FrequencyAnalyserProcessor` in `src/js/utils/audio/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
   - [x] Updated `FrequencyAnalyser` in `src/js/core/audio-handler.ts` to consume worklet energy payloads with fallback to standard `AnalyserNode`.
   - [x] Added unit test suite in `tests/unit/audio-worklet.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
@@ -32,7 +32,7 @@ This document is the consolidated source for implementation progress across road
   - [x] Expanded `CapturePanel.tsx` video format options to include Ultra HD 4K (`4k-landscape`, 3840×2160) alongside Full HD 1080p and Spotify Canvas (9:16 vertical).
   - [x] Added a native renderer-resize path for the 4K target and active-audio track composition.
   - [ ] Verify encoded resolution, audio synchronization, frame pacing, and sustained recording in supported browsers before describing it as creator-grade export.
-  - [x] Updated unit tests in `tests/unit/canvas-video-exporter.test.ts` for export options coverage.
+  - [x] Updated unit tests in `tests/unit/utils/canvas-video-exporter.test.ts` for export options coverage.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Q4 Roadmap feature: EEL `loop`/`while` Transpiler Support** (2026-07-30):
   - [x] Extended `scripts/butterchurn-eel-transpiler.ts` AST parser to transpile JS `for`/`while` loops, `++`/`--` increment operators, and `exec2` sequence expressions into EEL statements.

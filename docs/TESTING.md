@@ -12,7 +12,7 @@ For the visual smoke checklist and manual QA baseline, see [`QA_PLAN.md`](./QA_P
 |---|---|
 | **Bun test runner** (`bun test`) | All unit, integration, and contract tests |
 | **happy-dom** | DOM/browser-API simulation for tests that need `window`, `document`, `navigator`, `localStorage` |
-| **Playwright** | Real browser automation — agent integration harness (`tests/agent-integration.test.ts`) |
+| **Playwright** | Real browser automation — agent integration harness (`tests/e2e/agent-integration.test.ts`) |
 
 Every test run uses:
 - `--preload=./tests/setup.ts` — installs happy-dom globals, fake `requestAnimationFrame`, fake WebGPU constants
@@ -35,17 +35,17 @@ Tests excluded from this tier:
 
 | File | Why excluded |
 |---|---|
-| `tests/agent-integration.test.ts` | Requires Playwright + a running Vite server |
-| `tests/capture-certification-corpus.test.ts` | Requires a built dist |
-| `tests/capture-visual-reference-suite.test.ts` | Requires a built dist |
-| `tests/certification-corpus.test.ts` | Loads ~120 corpus presets |
-| `tests/certification-corpus-perf-suite.test.ts` | Perf benchmarks, not correctness |
-| `tests/certification-corpus-runtime.test.ts` | Full corpus runtime exercise |
-| `tests/milkdrop-corpus-compat.test.ts` | 120+ preset compatibility matrix |
-| `tests/milkdrop-parity.test.ts` | Pixel-level WebGPU/WebGL comparison |
-| `tests/milkdrop-projectm-compat.test.ts` | ProjectM reference comparison |
-| `tests/run-certification-corpus-perf-suite.test.ts` | Corpus perf runner |
-| `tests/run-parity-diff-suite.test.ts` | Parity visual diff runner |
+| `tests/e2e/agent-integration.test.ts` | Requires Playwright + a running Vite server |
+| `tests/corpus/capture-certification-corpus.test.ts` | Requires a built dist |
+| `tests/corpus/capture-visual-reference-suite.test.ts` | Requires a built dist |
+| `tests/corpus/certification-corpus.test.ts` | Loads ~120 corpus presets |
+| `tests/corpus/certification-corpus-perf-suite.test.ts` | Perf benchmarks, not correctness |
+| `tests/corpus/certification-corpus-runtime.test.ts` | Full corpus runtime exercise |
+| `tests/corpus/milkdrop-corpus-compat.test.ts` | 120+ preset compatibility matrix |
+| `tests/corpus/milkdrop-parity.test.ts` | Pixel-level WebGPU/WebGL comparison |
+| `tests/corpus/milkdrop-projectm-compat.test.ts` | ProjectM reference comparison |
+| `tests/corpus/run-certification-corpus-perf-suite.test.ts` | Corpus perf runner |
+| `tests/corpus/run-parity-diff-suite.test.ts` | Parity visual diff runner |
 
 ### Tier 2 — Full (all Bun tests, ~5 min+)
 
@@ -56,7 +56,7 @@ Tests excluded from this tier:
 ### Tier 3 — Integration (Playwright, ~3 min)
 
 **Command:** `bun run test:integration`  
-**What it includes:** `tests/agent-integration.test.ts` only — real Chromium browser.  
+**What it includes:** `tests/e2e/agent-integration.test.ts` only — real Chromium browser.  
 **When to use:** Automatically in CI on every PR and push. Run locally when touching shell bootstrap, audio initialization, or the MilkDrop engine seam.
 
 ---
@@ -81,15 +81,16 @@ Each gate runs in this sequence:
 
 These profiles are passed to `scripts/run-tests.ts` via `--profile`:
 
-| Profile | Command | Contents |
+Each profile maps to a set of `tests/` subdirectories (`unit`, `compat`, `corpus`, `e2e`). Every test file must live in one of those categories — `run-tests.ts` fails the run if a file sits uncategorized in `tests/`, because no profile would ever execute it.
+
+| Profile | Command | Categories |
 |---|---|---|
-| `fast` | `bun run test:fast` | All tests minus slow/Playwright tests |
-| `unit` | `bun run test:unit` | All tests except `agent-integration.test.ts` |
-| `all` (default) | `bun run test` | Every test file in `tests/` |
-| `integration` | `bun run test:integration` | `agent-integration.test.ts` only |
-| `compat` | `bun run test:compat` | Parity/compat matrix + render preferences |
-| `compat-full` | `bun run test:compat:full` | Compat + legacy frontend |
-| `legacy-frontend` | `bun run test:legacy-frontend` | Old loader/bootstrap/view stack |
+| `all` (default) | `bun run test` | `unit` + `compat` + `corpus` + `e2e` |
+| `fast` | `bun run test:fast` | `unit` + `compat` — what `bun run check` runs |
+| `unit` | `bun run test:unit` | `unit` |
+| `compat` | `bun run test:compat` | `compat` + `corpus` (the slow parity corpus lives here) |
+| `e2e` | `bun run test:e2e` | `e2e` |
+| `integration` | `bun run test:integration` | `tests/e2e/agent-integration.test.ts` only, run serially as its own CI job |
 
 ---
 
@@ -110,13 +111,13 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 ### Touching `src/js/milkdrop/feedback-manager-*` or `renderer-adapter*`
 
 - [ ] `bun run test:compat` passes against the reference preset set
-- [ ] WebGL and WebGPU paths both exercised (check `tests/milkdrop-renderer-adapter.test.ts`)
+- [ ] WebGL and WebGPU paths both exercised (check `tests/unit/milkdrop-renderer-adapter.test.ts`)
 - [ ] No hardcoded resolution scales or target sizes without a comment explaining the reason
 - [ ] Blend alpha order verified against projectM baseline
 
 ### Touching `src/js/core/renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts`
 
-- [ ] Fallback chain tested with WebGPU disabled (see `tests/renderer-capabilities.test.js`)
+- [ ] Fallback chain tested with WebGPU disabled (see `tests/unit/renderer-capabilities.test.js`)
 - [ ] `renderScale` propagation verified end-to-end (capability probe → renderer plan → query override → pooled renderers)
 - [ ] Audio worklet initialization validated on the fallback path
 - [ ] `bun run test:integration` passes locally if the shell or audio bridge was touched
@@ -124,18 +125,18 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 ### Touching `src/js/milkdrop/compiler/**`
 
 - [ ] `bun run test:compat` passes
-- [ ] Any new compiler behavior has a focused test in `tests/milkdrop-compiler-seams.test.ts` or `tests/milkdrop-compiler-shader-analysis.test.ts`
+- [ ] Any new compiler behavior has a focused test in `tests/unit/milkdrop-compiler-seams.test.ts` or `tests/unit/milkdrop-compiler-shader-analysis.test.ts`
 - [ ] No new source-text string assertions — assert on AST/IR structure or numeric output instead
 
 ### Touching `tests/**`
 
 - [ ] No new path-string or formatting assertions (these break on unrelated refactors)
 - [ ] No new uses of `importFresh()` — prefer factory functions with injected dependencies
-- [ ] Integration harness startup contract in `tests/agent-integration.test.ts` unchanged unless intentionally versioned
+- [ ] Integration harness startup contract in `tests/e2e/agent-integration.test.ts` unchanged unless intentionally versioned
 
 ### Touching shell or routing (`src/js/frontend/App.tsx`, `url-state.ts`, `workspace-hooks.ts`)
 
-- [ ] `tests/app-shell.test.js` and `tests/frontend-url-state.test.ts` pass
+- [ ] `tests/unit/app-shell.test.js` and `tests/unit/frontend-url-state.test.ts` pass
 - [ ] `bun run test:integration` passes (integration harness exercises the full boot sequence)
 - [ ] URL state normalization tested for both legacy params (`experience`, `panel`) and canonical params (`tool`, `collection`)
 

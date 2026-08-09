@@ -95,8 +95,8 @@ Files to add or change:
 - `tests/fixtures/milkdrop/projectm-reference/`
 - `scripts/visual-reference-manifest.ts`
 - `scripts/promote-projectm-reference.ts`
-- [`tests/milkdrop-parity.test.ts`](../tests/milkdrop-parity.test.ts)
-- [`tests/milkdrop-projectm-compat.test.ts`](../tests/milkdrop-projectm-compat.test.ts)
+- [`tests/corpus/milkdrop-parity.test.ts`](../tests/corpus/milkdrop-parity.test.ts)
+- [`tests/corpus/milkdrop-projectm-compat.test.ts`](../tests/corpus/milkdrop-projectm-compat.test.ts)
 
 Implementation tasks:
 1. Define a manifest schema for reference renders.
@@ -132,7 +132,7 @@ Goal:
 Files to add or change:
 - `scripts/run-parity-diff-suite.ts`
 - [`scripts/run-tests.ts`](../scripts/run-tests.ts)
-- `tests/milkdrop-visual-parity.test.ts`
+- `tests/corpus/milkdrop-visual-parity.test.ts` (NEW)
 - [`package.json`](../package.json)
 
 Implementation tasks:
@@ -189,7 +189,7 @@ Primary files to change:
 - [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
 - [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
 - [`src/js/milkdrop/compiler/gpu-descriptor-plan.ts`](../src/js/milkdrop/compiler/gpu-descriptor-plan.ts)
-- [`tests/milkdrop-renderer-adapter.test.ts`](../tests/milkdrop-renderer-adapter.test.ts)
+- [`tests/unit/milkdrop-renderer-adapter.test.ts`](../tests/unit/milkdrop-renderer-adapter.test.ts)
 
 Implementation tasks:
 1. Remove heuristic state fusion where projectM has distinct passes.
@@ -219,8 +219,8 @@ Primary files to change:
 - [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
 - [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts)
 - [`src/js/milkdrop/compiler/parity.ts`](../src/js/milkdrop/compiler/parity.ts)
-- [`tests/milkdrop-compiler-shader-analysis.test.ts`](../tests/milkdrop-compiler-shader-analysis.test.ts)
-- [`tests/milkdrop-projectm-compat.test.ts`](../tests/milkdrop-projectm-compat.test.ts)
+- [`tests/unit/milkdrop-compiler-shader-analysis.test.ts`](../tests/unit/milkdrop-compiler-shader-analysis.test.ts)
+- [`tests/corpus/milkdrop-projectm-compat.test.ts`](../tests/corpus/milkdrop-projectm-compat.test.ts)
 
 Implementation tasks:
 1. Expand direct warp/comp shader subset support.
@@ -249,7 +249,7 @@ Primary files to change:
 - [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
 - [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
 - [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
-- [`tests/milkdrop-shader-sampler-aliases.test.ts`](../tests/milkdrop-shader-sampler-aliases.test.ts)
+- [`tests/unit/milkdrop-shader-sampler-aliases.test.ts`](../tests/unit/milkdrop-shader-sampler-aliases.test.ts)
 
 Implementation tasks:
 1. Expand aux-texture coverage.
@@ -279,7 +279,7 @@ Primary files to change:
 - [`src/js/milkdrop/renderer-helpers/shape-renderer.ts`](../src/js/milkdrop/renderer-helpers/shape-renderer.ts)
 - [`src/js/milkdrop/renderer-helpers/border-renderer.ts`](../src/js/milkdrop/renderer-helpers/border-renderer.ts)
 - [`src/js/milkdrop/renderer-helpers/mesh-renderer.ts`](../src/js/milkdrop/renderer-helpers/mesh-renderer.ts)
-- [`tests/milkdrop-renderer-adapter.test.ts`](../tests/milkdrop-renderer-adapter.test.ts)
+- [`tests/unit/milkdrop-renderer-adapter.test.ts`](../tests/unit/milkdrop-renderer-adapter.test.ts)
 
 Implementation tasks:
 1. Validate draw ordering, blend semantics, smoothing, borders, and thickness.
@@ -318,7 +318,7 @@ Primary files to change:
 - [`src/js/milkdrop/renderer-adapter-webgpu.ts`](../src/js/milkdrop/renderer-adapter-webgpu.ts)
 - [`src/js/milkdrop/renderer-adapter-webgl.ts`](../src/js/milkdrop/renderer-adapter-webgl.ts)
 - [`src/js/milkdrop/webgpu-optimization-flags.ts`](../src/js/milkdrop/webgpu-optimization-flags.ts)
-- [`tests/milkdrop-webgpu-rollout.test.ts`](../tests/milkdrop-webgpu-rollout.test.ts)
+- [`tests/compat/milkdrop-webgpu-rollout.test.ts`](../tests/compat/milkdrop-webgpu-rollout.test.ts)
 
 Implementation tasks:
 1. Compare WebGPU output against both:
@@ -345,9 +345,8 @@ Goal:
 - Make the product surface tell the truth about what is measured and what is inferred.
 
 Primary files to change:
-- [`src/js/milkdrop/overlay.ts`](../src/js/milkdrop/overlay.ts)
-- [`src/js/milkdrop/overlay/inspector-panel.ts`](../src/js/milkdrop/overlay/inspector-panel.ts)
 - [`src/js/milkdrop/overlay/preset-row.ts`](../src/js/milkdrop/overlay/preset-row.ts)
+- [`src/js/frontend/BrowseSheetPanel.tsx`](../src/js/frontend/BrowseSheetPanel.tsx)
 - [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
 - [`src/js/milkdrop/common-types.ts`](../src/js/milkdrop/common-types.ts)
 - [`docs/MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)

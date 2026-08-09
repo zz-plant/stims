@@ -81,13 +81,15 @@ These components are useful engineering foundations, but they are not presented 
 
 ```mermaid
 flowchart LR
-  Audio["Audio source\n(demo, mic, tab, file, YouTube)"] --> Worklet["AudioWorklet analysis\nwaveform · bands · transients · envelope"]
-  Worklet --> VM["Preset compiler & VM\nEEL2 per-frame / per-pixel / megabuf"]
-  Milk[".milk preset\n(import / editor)"] --> VM
-  VM --> Render{"WebGL2 baseline\nor guarded WebGPU"}
+  Audio["Audio source<br/>demo · mic · tab · file · YouTube"] --> Worklet["AudioWorklet analysis<br/>waveform · bands · transients · envelope"]
+  Milk[".milk preset<br/>bundled · import · editor"] --> Compiler["Preset compiler<br/>EEL2 → IR → JIT + GLSL/WGSL"]
+  Worklet --> VM["Per-frame VM<br/>per-frame / per-pixel / megabuf"]
+  Compiler --> VM
+  VM --> Render{"WebGL2 baseline<br/>or guarded WebGPU"}
+  Render -.-> Fallback["Backend failover<br/>+ adaptive quality"] -.-> Render
   Render --> Canvas["Live canvas"]
-  Canvas --> Record["Recording beta\n(MediaRecorder)"]
-  Canvas --> Capture["Deterministic capture\n→ image diff → measured manifest"]
+  Canvas --> Record["Recording beta<br/>(MediaRecorder)"]
+  Canvas --> Capture["Deterministic capture<br/>→ image diff → measured manifest"]
 ```
 
 See [Technical Foundations](./docs/TECHNICAL_ACHIEVEMENTS.md) for the implementation map.

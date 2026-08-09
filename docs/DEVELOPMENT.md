@@ -15,7 +15,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 5. For specific test coverage during iteration, run `bun run test tests/path/to/spec.test.ts`.
 6. Run `bun run check` before finalizing changes (includes asset checks, concurrent guards, and fast sharded test suite).
 
-`bun run check` includes parallel asset validation (`assets:check`), the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The quality gate runner executes checks concurrently and fails fast on the first error to provide sub-second feedback. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+`bun run check` includes parallel asset validation (`assets:check`), the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The quality gate runner executes checks concurrently and fails fast on the first error to provide sub-second feedback. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions.
 
 For high-core machines, tune test worker sharding with `STIMS_TEST_SHARDS=<count>` (e.g. `STIMS_TEST_SHARDS=8 bun run test:fast`).
 
@@ -45,7 +45,6 @@ For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFI
 | Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
 | Run browser integration tests | `bun run test:integration` |
 | Run compatibility/preset tests | `bun run test:compat` |
-| Run legacy shell compatibility tests | `bun run test:legacy-frontend` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
 
@@ -223,8 +222,8 @@ Keep the bundled shipped presets in evidence order:
 - `src/js/milkdrop/*` remains the visual engine behind the adapter seam.
 - `src/js/frontend/` avoids adding a secondary React renderer for Three.js scenes; decorative visuals use imperative Three.js directly.
 - `src/js/frontend/workspace-router.tsx` is a thin pass-through that renders `App.tsx` directly — the old `@tanstack/react-router` was removed in favor of the native History API (see `url-state.ts` + `workspace-hooks.ts` for URL sync).
-- `src/js/loader.ts`, `src/js/router.ts`, `src/js/toy-view.ts`, `src/js/library-view.js`, `src/js/library-view/*`, and `src/js/bootstrap/*` are legacy compatibility modules.
-- New product work should not add fresh route ownership or UI flows to those legacy modules.
+- The pre-React DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) has been deleted. `milkdrop/index.html` is the only remaining compatibility surface, and it redirects to `/`.
+- New product work must not reintroduce a second shell that boots the engine outside the adapter seam.
 
 ## Testing layers
 
@@ -234,7 +233,6 @@ Use the narrowest command that fits the change:
 - `bun run test` for the full non-browser suite, including DOM-sim coverage.
 - `bun run test:integration` for browser-backed routing, renderer, audio, or shell behavior.
 - `bun run test:compat` for preset and renderer compatibility coverage.
-- `bun run test:legacy-frontend` when you touch the legacy shell modules listed above.
 - `bun run dev` and `http://localhost:5173/?agent=true` for manual visual verification when the UI, runtime, or renderer changes.
 
 ## Docs to keep aligned

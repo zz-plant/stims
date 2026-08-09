@@ -88,5 +88,5 @@ Direct shader payloads keep a separate execution classification in `src/js/milkd
 Use both layers:
 
 - Fast logic coverage in unit tests for compiler/runtime helpers, rollout-flag gating, and representative descriptor fixtures.
-- Browser-backed interaction coverage in `tests/agent-integration.test.ts` for the shipped visualizer flow.
+- Browser-backed interaction coverage in `tests/e2e/agent-integration.test.ts` for the shipped visualizer flow.
 - For compatibility-specific sweeps, run `bun run test -- --profile compat` so the descriptor rollout fixtures and guard tests execute with the broader corpus checks.

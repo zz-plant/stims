@@ -21,8 +21,8 @@ Primary files:
 - `src/js/milkdrop/vm/*`
 - `src/js/milkdrop/renderer-helpers/*`
 - `src/data/milkdrop-parity/*`
-- `tests/milkdrop-parity.test.ts`
-- `tests/milkdrop-projectm-compat.test.ts`
+- `tests/corpus/milkdrop-parity.test.ts`
+- `tests/corpus/milkdrop-projectm-compat.test.ts`
 
 Exit signal:
 
@@ -80,8 +80,8 @@ Primary files:
 - `scripts/run-quality-gate.ts`
 - `scripts/run-parity-diff-suite.ts`
 - `scripts/promote-parity-suite-result.ts`
-- `tests/visual-reference-manifest.test.ts`
-- `tests/measured-visual-results.test.ts`
+- `tests/unit/visual-reference-manifest.test.ts`
+- `tests/unit/measured-visual-results.test.ts`
 - `docs/DEVELOPMENT.md`
 - `docs/LINEAGE_AND_CREDITS.md`
 

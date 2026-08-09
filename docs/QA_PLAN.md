@@ -10,11 +10,11 @@ For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMO
 
 - **Flagship launch and discovery**
   - What to verify: `/` renders the workspace shell, launch controls remain stable, preset browsing works, and canonical route state stays on `/` after boot.
-  - Automation: `tests/app-shell.test.js`, `tests/frontend-url-state.test.ts`, and `tests/agent-integration.test.ts`.
+  - Automation: `tests/unit/app-shell.test.js`, `tests/unit/frontend-url-state.test.ts`, and `tests/e2e/agent-integration.test.ts`.
   - Supporting checks: `bun run dev:check` confirms the Vite dev server wiring without opening a browser.
 - **Shared quality preset persistence**
   - What to verify: the reusable settings state remembers the user-selected quality preset across workspace reloads and live-session reuse and notifies subscribers exactly when the user changes presets.
-  - Automation: `tests/settings-panel.test.ts` covers subscription notifications plus panel reuse without losing the selected preset.
+  - Automation: `tests/unit/settings-panel.test.ts` covers subscription notifications plus panel reuse without losing the selected preset.
 - **Microphone readiness and fallbacks**
   - What to verify: microphone setup resolves permissions, falls back to demo audio when blocked, and emits state changes that toys can react to.
 
@@ -46,22 +46,17 @@ Use Bun to match the repository tooling:
 
 - Run the happy-dom suites for the app shell, route contract, settings panel, and microphone flows:
   ```bash
-  bun run test tests/app-shell.test.js tests/frontend-url-state.test.ts tests/settings-panel.test.ts
+  bun run test tests/unit/app-shell.test.js tests/unit/frontend-url-state.test.ts tests/unit/settings-panel.test.ts
   ```
 
 - Run the focused workspace/session regression suites:
   ```bash
-  bun run test tests/frontend-url-state.test.ts tests/agent-integration.test.ts tests/audio-controls.test.ts
+  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/audio-controls.test.ts
   ```
 
 - Run the integration harness (real Chromium — also runs in CI on every PR):
   ```bash
   bun run test:integration
-  ```
-
-- Run the legacy compatibility shell suites only when you touch the old loader/bootstrap/view stack:
-  ```bash
-  bun run test:legacy-frontend
   ```
 
 - For a quick server wiring check before pushing UI changes:
@@ -76,5 +71,5 @@ quality gate and then the focused QA suite:
 
 ```bash
 bun run check
-bun run test tests/frontend-url-state.test.ts tests/agent-integration.test.ts
+bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts
 ```

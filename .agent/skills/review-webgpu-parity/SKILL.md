@@ -19,16 +19,16 @@ The most frequent source of fixes in this repo (~22% of fix commits) is parity d
 - [ ] If the change touches shader generation or feedback sampling, run the parity reference suite:
 
   ```bash
-  bun run test tests/milkdrop-renderer-adapter.test.ts
-  bun run test tests/milkdrop-feedback-composite-profile.test.ts
-  bun run test tests/milkdrop-shader-sampler-aliases.test.ts
+  bun run test tests/unit/milkdrop-renderer-adapter.test.ts
+  bun run test tests/unit/milkdrop-feedback-composite-profile.test.ts
+  bun run test tests/unit/milkdrop-shader-sampler-aliases.test.ts
   ```
 
 - [ ] If the change touches compiler IR or GPU descriptor plans, run:
 
   ```bash
-  bun run test tests/milkdrop-compiler.test.ts
-  bun run test tests/milkdrop-compiler-seams.test.ts
+  bun run test tests/unit/milkdrop-compiler.test.ts
+  bun run test tests/unit/milkdrop-compiler-seams.test.ts
   ```
 
 ### 2. No hardcoded backend-specific values without comment
@@ -40,7 +40,7 @@ The most frequent source of fixes in this repo (~22% of fix commits) is parity d
 ### 3. Blend alpha order verified
 
 - [ ] If changing wave, shape, or custom-wave blend behavior, confirm the additive/multiplicative/alpha order matches the projectM baseline.
-- [ ] Prefer adding a regression test (see `tests/milkdrop-renderer-adapter.test.ts` for patterns).
+- [ ] Prefer adding a regression test (see `tests/unit/milkdrop-renderer-adapter.test.ts` for patterns).
 
 ### 4. Reference presets must not shift
 

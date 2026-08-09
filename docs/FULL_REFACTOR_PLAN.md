@@ -121,7 +121,7 @@ Exit criteria:
 Tasks:
 
 - Update architecture and toy development docs with final patterns.
-- Refresh contributor workflows and agent overlays where scripts/patterns changed.
+- Refresh contributor workflows and agent overlays where scripts or patterns changed.
 - Publish migration notes and examples for future contributors.
 
 Exit criteria:

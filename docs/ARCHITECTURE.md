@@ -10,30 +10,77 @@ This document describes the current shipped frontend architecture for Stims afte
 - `src/js/milkdrop/*` remains the imperative visualizer engine, overlay, compiler, and catalog runtime.
 - Workspace-scene decorative layers are rendered with imperative Three.js, not a secondary React renderer.
 - `src/js/core/*` owns shared renderer, audio, quality, persistence, and input systems.
-- `src/js/loader.ts`, `src/js/router.ts`, `src/js/toy-view.ts`, `src/js/library-view.js`, `src/js/library-view/*`, and `src/js/bootstrap/*` are legacy compatibility/test-support internals for older non-root shell flows. They are not the production root app surface anymore.
+- The old DOM shell modules (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) have been deleted. Nothing outside the React workspace boots the engine anymore.
 
 ## Runtime map
 
+Boot path and module ownership. The adapter is the only edge crossing from React into the engine.
+
 ```mermaid
-flowchart LR
-  Entry["index.html<br/>root app shell"]
-  Alias["milkdrop/index.html<br/>redirect alias"]
-  App["src/js/app.ts<br/>React boot + globals"]
-  Frontend["src/js/frontend/*<br/>workspace UI + URL state"]
-  Adapter["milkdrop-engine-adapter.ts<br/>strict engine seam"]
-  Core["src/js/core/*<br/>renderer + audio + settings"]
-  Milkdrop["src/js/milkdrop/*<br/>runtime + overlay + compiler"]
-  Legacy["loader.ts / router.ts / toy-view.ts / library-view.* / bootstrap/*<br/>compatibility internals"]
+flowchart TB
+  subgraph shell["Entry"]
+    Entry["index.html"]
+    Alias["milkdrop/index.html<br/>redirect alias → /"]
+    Harness["ui-harness.html<br/>component harness"]
+  end
+
+  subgraph react["React workspace — src/js/frontend/"]
+    App["app.ts<br/>React root · agent API · telemetry · gamepad"]
+    Router["workspace-router.tsx + url-state.ts<br/>History API, no router lib"]
+    UI["App.tsx + panels<br/>stage · browse · editor · settings · capture"]
+  end
+
+  Adapter["engine/milkdrop-engine-adapter.ts<br/>→ milkdrop-engine-session.ts<br/><b>the only engine seam</b>"]
+
+  subgraph engine["MilkDrop engine — src/js/milkdrop/"]
+    Runtime["runtime.ts + runtime/*<br/>session · lifecycle · frame loop · failover"]
+    Catalog["catalog-store*.ts<br/>presets, collections, persistence"]
+    Compile["preset-parser → compiler/* → vm/*<br/>EEL2 IR · JIT · GLSL/WGSL/TSL codegen"]
+    RAdapter["renderer-adapter*.ts<br/>WebGL2 / WebGPU backends + feedback managers"]
+    Overlay["overlay/*<br/>editor language + preset rows"]
+  end
+
+  subgraph core["Shared systems — src/js/core/"]
+    Audio["audio-handler.ts · services/audio-service.ts<br/>AudioWorklet analysis"]
+    Render["renderer-capabilities · renderer-plan · renderer-setup<br/>webgl-renderer / webgpu-renderer / renderer-worker"]
+    State["state/* · services/*<br/>quality, prefs, telemetry, optional APIs"]
+  end
 
   Entry --> App
-  Alias --> App
-  App --> Frontend
-  Frontend --> Adapter
-  Frontend --> Core
-  Adapter --> Core
-  Adapter --> Milkdrop
-  Legacy --> Core
-  Legacy --> Milkdrop
+  Alias -.-> Entry
+  Harness --> UI
+  App --> Router --> UI
+  UI --> Adapter
+  UI --> State
+  Adapter --> Runtime
+  Runtime --> Catalog
+  Runtime --> Compile
+  Runtime --> RAdapter
+  Runtime --> Overlay
+  Runtime --> Audio
+  RAdapter --> Render
+  Runtime --> State
+```
+
+## Frame data flow
+
+What moves per frame, once a session is running.
+
+```mermaid
+flowchart LR
+  Src["Audio source<br/>demo · mic · tab · file · YouTube"] --> Worklet["frequency-analyser-processor<br/>(AudioWorklet)"]
+  Worklet --> Signals["audio-signal-processor<br/>bands · transients · envelope"]
+  Milk[".milk source<br/>bundled · import · editor"] --> Parser["preset-parser → compiler/*"]
+  Parser --> IR["compiled program<br/>per-frame · per-vertex · per-pixel · shaders"]
+  Signals --> VM["vm.ts / expression-jit<br/>evaluate per frame"]
+  IR --> VM
+  VM --> Draw["renderer-adapter<br/>warp · waves · shapes · feedback"]
+  Draw --> Backend{"WebGL2 baseline<br/>or guarded WebGPU"}
+  Backend --> Canvas["Live canvas"]
+  Backend -.->|init failure or<br/>frame-budget breach| Fallback["runtime/backend-fallback<br/>+ adaptive-quality-controller"]
+  Fallback -.-> Backend
+  Canvas --> Rec["Recording (beta)"]
+  Canvas --> Cap["Deterministic capture<br/>→ parity image diff"]
 ```
 
 ## URL state (no router)
@@ -83,7 +130,7 @@ Primary implementation:
   - settings surface
   - canonical URL synchronization
   - focused-session state
-- [`assets/css/app-shell.css`](../assets/css/app-shell.css) owns the new workspace presentation layer.
+- [`src/css/app-shell.css`](../src/css/app-shell.css) owns the workspace presentation layer, scoped with `@scope (.stims-shell)`.
 
 ### Engine seam
 
@@ -101,9 +148,10 @@ Primary implementation:
 
 ## MilkDrop engine ownership
 
-- [`src/js/milkdrop/runtime.ts`](../src/js/milkdrop/runtime.ts) remains the long-lived imperative session runtime.
-- [`src/js/milkdrop/overlay.ts`](../src/js/milkdrop/overlay.ts) and `overlay/*` still provide the editor, inspector, browse, and shortcut HUD surfaces.
-- [`src/js/milkdrop/compiler.ts`](../src/js/milkdrop/compiler.ts), `compiler/*`, and [`src/js/milkdrop/vm.ts`](../src/js/milkdrop/vm.ts) remain the preset compilation and execution path.
+- [`src/js/milkdrop/runtime.ts`](../src/js/milkdrop/runtime.ts) is the long-lived imperative session runtime; it composes the collaborators in [`runtime/`](../src/js/milkdrop/runtime) (lifecycle, frame loop, catalog coordinator, backend failover, persistence, presentation).
+- [`src/js/milkdrop/overlay/`](../src/js/milkdrop/overlay) provides editor language support and preset-row rendering. The browse, editor, settings, and capture surfaces themselves are React panels in `src/js/frontend/`.
+- [`src/js/milkdrop/compiler.ts`](../src/js/milkdrop/compiler.ts), [`compiler/`](../src/js/milkdrop/compiler), [`vm.ts`](../src/js/milkdrop/vm.ts), and [`vm/`](../src/js/milkdrop/vm) are the preset compilation and execution path (EEL2 → IR → JIT/GLSL/WGSL/TSL).
+- [`src/js/milkdrop/renderer-adapter.ts`](../src/js/milkdrop/renderer-adapter.ts) and its WebGL/WebGPU siblings own draw submission and the feedback-buffer chain.
 
 Important boundary rule:
 - The React shell may drive engine capabilities through the adapter.
@@ -112,31 +160,17 @@ Important boundary rule:
 ## Shared systems
 
 - [`src/js/core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts) probes WebGPU/WebGL support.
-- [`src/js/core/settings-panel.ts`](../src/js/core/settings-panel.ts) owns shared quality preset state.
+- [`src/js/core/settings-panel.ts`](../src/js/core/settings-panel.ts) owns shared quality preset state, alongside [`state/quality-preset-store.ts`](../src/js/core/state/quality-preset-store.ts) and [`services/adaptive-quality-controller.ts`](../src/js/core/services/adaptive-quality-controller.ts).
+- [`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts) and [`services/audio-service.ts`](../src/js/core/services/audio-service.ts) own source selection and the AudioWorklet analysis chain.
 - [`src/js/core/state/render-preference-store.ts`](../src/js/core/state/render-preference-store.ts) owns renderer preferences.
 - [`src/js/core/motion-preferences.ts`](../src/js/core/motion-preferences.ts) owns motion-state persistence.
 - [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes automation-friendly session state and control hooks.
 - For an implementation map that separates shipped systems, partial certification, beta behavior, optional APIs, and scaffolding, see [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md).
 - The renderer support rule is: WebGL is the baseline compatibility path, and WebGPU is an additive path that should not regress WebGL behavior. See [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md) for the short verification matrix.
 
-## Legacy compatibility modules
+## Retired compatibility layer
 
-These modules still exist and are tested, but they are not the production root app surface:
-
-- [`src/js/loader.ts`](../src/js/loader.ts)
-- [`src/js/router.ts`](../src/js/router.ts)
-- [`src/js/toy-view.ts`](../src/js/toy-view.ts)
-- [`src/js/library-view.js`](../src/js/library-view.js)
-- [`src/js/library-view/*`](../src/js/library-view)
-- [`src/js/bootstrap/*`](../src/js/bootstrap)
-
-Treat them as compatibility-support code for:
-- older route assumptions
-- non-root loader flows
-- lower-level lifecycle tests
-- historical/manual workflows that have not been fully retired
-
-Do not route new product work through them when the feature belongs to the root workspace.
+The old DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) is gone. The only surviving compatibility surface is `milkdrop/index.html`, which preserves search and hash while redirecting to `/`. Route new work through the React workspace and the engine adapter.
 
 ## Verification anchors
 
@@ -144,17 +178,20 @@ Use these checks when changing architecture-sensitive areas:
 
 ```bash
 bun run check
-bun run test tests/frontend-url-state.test.ts tests/app-shell.test.js tests/agent-integration.test.ts
 ```
 
-The architecture boundary gate remains:
+```bash
+bun run test tests/unit/frontend-url-state.test.ts tests/unit/app-shell-route-sync.test.ts tests/unit/agent-api.test.ts
+```
+
+The architecture boundary gate:
 
 ```bash
 bun run check:architecture
 ```
 
-When changing compatibility-only shell code, also run:
+Stale documentation paths are themselves gated:
 
 ```bash
-bun run test:legacy-frontend
+bun run check:stale-paths
 ```

@@ -42,8 +42,8 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
   - no engine crashes
 
   ```bash
-  bun run test tests/frontend-url-state.test.ts
-  bun run test tests/app-shell.test.js
+  bun run test tests/unit/frontend-url-state.test.ts
+  bun run test tests/unit/app-shell.test.js
   ```
 
 ## What to reject in review

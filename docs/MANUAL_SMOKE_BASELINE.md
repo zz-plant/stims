@@ -18,16 +18,10 @@ Milestone A baseline evidence is the combination of:
 
   ```bash
   bun run test \
-    tests/app-shell.test.js \
-    tests/frontend-url-state.test.ts \
-    tests/agent-integration.test.ts \
-    tests/settings-panel.test.ts
-  ```
-
-  - compatibility-only shell coverage when legacy modules change:
-
-  ```bash
-  bun run test:legacy-frontend
+    tests/unit/app-shell.test.js \
+    tests/unit/frontend-url-state.test.ts \
+    tests/e2e/agent-integration.test.ts \
+    tests/unit/settings-panel.test.ts
   ```
 
 - The checked-in behavior snapshot sources:
@@ -45,13 +39,6 @@ Run the full baseline when a change touches any of these areas:
 - `src/js/core/*` startup, renderer, or audio wiring
 - `src/js/milkdrop/runtime.ts`
 - preset boot, overlay, or renderer-fallback behavior
-
-Run the compatibility-only legacy suite instead when a change is limited to:
-
-- `src/js/loader.ts`, `src/js/router.ts`, or `src/js/loader/*`
-- `src/js/toy-view.ts`
-- `src/js/library-view.js` or `src/js/library-view/*`
-- `src/js/bootstrap/*`
 
 For narrowly scoped docs-only changes, this baseline is not required.
 
