@@ -30,50 +30,54 @@ function emitShaderExpression(source: string): string {
 // ─── Logical Operator Emission ──────────────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — logical operators', () => {
-  test('|| emits saturating OR via a+b-ab', () => {
-    // bass || treb → (signalBass + signalTreb - signalBass * signalTreb)
+  test('|| emits a numeric truth predicate', () => {
     const glsl = emitShaderExpression('x = bass || treb');
-    expect(glsl).toContain('signalBass + signalTreb - signalBass * signalTreb');
-    expect(glsl).not.toMatch(/signalBass\s*\+\s*signalTreb\s*\)\s*$/);
+    expect(glsl).toBe(
+      'x = ((abs(signalBass) > 0.000001 || abs(signalTreb) > 0.000001) ? 1.0 : 0.0);',
+    );
   });
 
   test('|| with nested operands emits correct saturating pattern', () => {
     // (a == 1) || (b > 0.5) should emit nested saturating structure
     const glsl = emitShaderExpression('x = (bass == beat) || (mid > 0.5)');
-    expect(glsl).toContain(' - ');
-    expect(glsl).toContain(' * ');
+    expect(glsl).toContain('||');
+    expect(glsl).toContain('? 1.0 : 0.0');
   });
 
   test('|| nested with && inside mixes correctly', () => {
     const glsl = emitShaderExpression(
       'x = (bass > 0.5 && mid > 0.3) || (treb > 0.7)',
     );
-    expect(glsl).toContain(' - ');
-    expect(glsl).toContain(' * ');
-    // Inner && should use * for AND
-    expect(glsl).toContain('*');
+    expect(glsl).toContain('||');
+    expect(glsl).toContain('&&');
   });
 
   test('|| with literal 0 and 1 stays in range', () => {
-    // 1 || 1 → 1 + 1 - 1*1 = 1 (correctly saturated)
     const glsl = emitShaderExpression('x = 1 || 1');
-    expect(glsl).toBe('x = (1.0 + 1.0 - 1.0 * 1.0);');
+    expect(glsl).toBe(
+      'x = ((abs(1.0) > 0.000001 || abs(1.0) > 0.000001) ? 1.0 : 0.0);',
+    );
   });
 
   test('|| with literal 0 and 0 stays at 0', () => {
     const glsl = emitShaderExpression('x = 0 || 0');
-    expect(glsl).toBe('x = (0.0 + 0.0 - 0.0 * 0.0);');
+    expect(glsl).toBe(
+      'x = ((abs(0.0) > 0.000001 || abs(0.0) > 0.000001) ? 1.0 : 0.0);',
+    );
   });
 
-  test('&& emits multiplication-based AND', () => {
+  test('&& emits a numeric truth predicate', () => {
     const glsl = emitShaderExpression('x = bass && treb');
-    expect(glsl).toContain('signalBass * signalTreb');
-    expect(glsl).not.toContain(' + ');
+    expect(glsl).toBe(
+      'x = ((abs(signalBass) > 0.000001 && abs(signalTreb) > 0.000001) ? 1.0 : 0.0);',
+    );
   });
 
   test('&& with literals produces correct product', () => {
     const glsl = emitShaderExpression('x = 1 && 0.5');
-    expect(glsl).toBe('x = (1.0 * 0.5000000000);');
+    expect(glsl).toBe(
+      'x = ((abs(1.0) > 0.000001 && abs(0.5000000000) > 0.000001) ? 1.0 : 0.0);',
+    );
   });
 
   test('! emits boolean NOT via abs-epsilon ternary', () => {
@@ -105,24 +109,41 @@ describe('milkdrop compiler shader GLSL emitter — binary operators', () => {
     expect(glsl).toBe('x = (signalBass / 2.0);');
   });
 
+  test('% emits MilkDrop integer modulo without GLSL float modulo', () => {
+    const glsl = emitShaderExpression('x = 7.5 % 0.7');
+    expect(glsl).toBe('x = milkdropIntMod(7.5000000000, 0.7000000000);');
+  });
+
   test('< emits comparison', () => {
     const glsl = emitShaderExpression('x = bass < 0.5');
-    expect(glsl).toBe('x = (signalBass < 0.5000000000);');
+    expect(glsl).toBe('x = ((signalBass < 0.5000000000) ? 1.0 : 0.0);');
+  });
+
+  test('<= emits a numeric comparison', () => {
+    expect(emitShaderExpression('x = bass <= 0.5')).toBe(
+      'x = ((signalBass <= 0.5000000000) ? 1.0 : 0.0);',
+    );
+  });
+
+  test('> emits a numeric comparison', () => {
+    expect(emitShaderExpression('x = bass > 0.5')).toBe(
+      'x = ((signalBass > 0.5000000000) ? 1.0 : 0.0);',
+    );
   });
 
   test('>= emits comparison', () => {
     const glsl = emitShaderExpression('x = mid >= 0.3');
-    expect(glsl).toBe('x = (signalMid >= 0.3000000000);');
+    expect(glsl).toBe('x = ((signalMid >= 0.3000000000) ? 1.0 : 0.0);');
   });
 
   test('== emits equality', () => {
     const glsl = emitShaderExpression('x = bass == beat');
-    expect(glsl).toBe('x = (signalBass == signalBeat);');
+    expect(glsl).toBe('x = ((signalBass == signalBeat) ? 1.0 : 0.0);');
   });
 
   test('!= emits inequality', () => {
     const glsl = emitShaderExpression('x = bass != treb');
-    expect(glsl).toBe('x = (signalBass != signalTreb);');
+    expect(glsl).toBe('x = ((signalBass != signalTreb) ? 1.0 : 0.0);');
   });
 });
 
@@ -246,6 +267,15 @@ describe('milkdrop compiler shader GLSL emitter — member access', () => {
     expect(glsl).toContain('.rg');
     expect(glsl).toContain('texture2D(currentTex, sampleUv(');
   });
+
+  test('accepts repeated and reordered GLSL swizzles', () => {
+    expect(emitShaderExpression('x = uv.yx')).toContain('vUv.yx');
+    expect(emitShaderExpression('x = vec3(1, 2, 3).zxy')).toContain('.zxy');
+    expect(emitShaderExpression('x = vec3(1, 2, 3).xxx')).toContain('.xxx');
+    expect(emitShaderExpression('x = vec4(1, 2, 3, 4).bgra')).toContain(
+      '.bgra',
+    );
+  });
 });
 
 // ─── Math Function Calls ───────────────────────────────────────────
@@ -320,6 +350,20 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
     expect(glsl).toContain(',');
   });
 
+  test('single-argument atan stays single-argument', () => {
+    expect(emitShaderExpression('x = atan(y)')).toBe('x = atan(y);');
+  });
+
+  test('log10 lowers to a base-10 logarithm', () => {
+    expect(emitShaderExpression('x = log10(y)')).toBe(
+      'x = (log(max(y, 0.000001)) * 0.4342944819);',
+    );
+  });
+
+  test('sqr lowers without leaving an undefined helper', () => {
+    expect(emitShaderExpression('x = sqr(y)')).toBe('x = (y * y);');
+  });
+
   test('sigmoid emits exp-based formula', () => {
     const glsl = emitShaderExpression('x = sigmoid(val, slope)');
     expect(glsl).toContain('1.0 / (1.0 + exp(');
@@ -342,6 +386,12 @@ describe('milkdrop compiler shader GLSL emitter — vector constructors', () => 
   test('vec4 with four scalars', () => {
     const glsl = emitShaderExpression('x = vec4(1, 2, 3, 4)');
     expect(glsl).toBe('x = vec4(1.0, 2.0, 3.0, 4.0);');
+  });
+
+  test('float4 aliases to a GLSL vec4 constructor', () => {
+    expect(emitShaderExpression('x = float4(1, 2, 3, 4)')).toBe(
+      'x = vec4(1.0, 2.0, 3.0, 4.0);',
+    );
   });
 
   test('float constructor emits GLSL float()', () => {
@@ -586,10 +636,9 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
   test('chained || and && mixed precedence', () => {
     const source = 'x = (a && b) || (c && d)';
     const glsl = emitShaderExpression(source);
-    // Outer || → saturating a+b-ab where each term is a product
-    expect(glsl).toContain(' + ');
-    expect(glsl).toContain(' - ');
-    expect(glsl).toContain(' * ');
+    expect(glsl).toContain(' || ');
+    expect(glsl).toContain(' && ');
+    expect(glsl).toContain('? 1.0 : 0.0');
   });
 
   test('negated texture sample', () => {

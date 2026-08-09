@@ -342,6 +342,17 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
         }
 
+        float milkdropTrunc(float value) {
+          return sign(value) * floor(abs(value));
+        }
+
+        float milkdropIntMod(float left, float right) {
+          float l = milkdropTrunc(left);
+          float r = milkdropTrunc(right);
+          if (abs(r) <= 0.000001) return 0.0;
+          return l - r * milkdropTrunc(l / r);
+        }
+
         float hash(vec2 p) {
           return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
         }
@@ -659,6 +670,13 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         float above(float val, float threshold) { return step(threshold, val); }
         float below(float val, float threshold) { return 1.0 - step(threshold, val); }
         float equalF(float a, float b) { return 1.0 - step(0.0001, abs(a - b)); }
+        float milkdropTrunc(float value) { return sign(value) * floor(abs(value)); }
+        float milkdropIntMod(float left, float right) {
+          float l = milkdropTrunc(left);
+          float r = milkdropTrunc(right);
+          if (abs(r) <= 0.000001) return 0.0;
+          return l - r * milkdropTrunc(l / r);
+        }
         float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
         float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
 

@@ -277,6 +277,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.preset.ir.programs.perFrame,
       this.state,
       this.randomState,
+      this.registers,
     );
   }
 
@@ -531,6 +532,7 @@ class MilkdropPresetVM implements MilkdropVM {
     ) {
       const result = await this.gpuRunner.dispatch(signals);
       Object.assign(this.state, result.state);
+      Object.assign(this.registers, result.registers);
       this.randomState = result.randomState;
       this.prepareSignalEnv(signals);
     } else {

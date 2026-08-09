@@ -171,6 +171,26 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(resolveDirectShaderConstructorPattern('vec3', ['scalar'])).toBe(
       'vec3-splat',
     );
+    expect(
+      resolveDirectShaderConstructorPattern('float4', [
+        'scalar',
+        'scalar',
+        'scalar',
+        'scalar',
+      ]),
+    ).toBe('vec4-quad');
+    expect(
+      resolveDirectShaderConstructorPattern('vec4', ['vec3', 'scalar']),
+    ).toBe('vec4-vec3-scalar');
+    expect(
+      resolveDirectShaderConstructorPattern('vec4', ['scalar', 'vec3']),
+    ).toBe('vec4-scalar-vec3');
+    expect(
+      resolveDirectShaderConstructorPattern('vec4', ['vec2', 'vec2']),
+    ).toBe('vec4-vec2-vec2');
+    expect(resolveDirectShaderConstructorPattern('vec4', ['scalar'])).toBe(
+      'vec4-splat',
+    );
   });
 
   test('keeps direct WebGPU feedback ownership explicit when direct programs are present', () => {
