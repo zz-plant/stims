@@ -54,6 +54,13 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   noisevol_lq: 'simplex',
   noisevol_hq: 'simplex',
   fc_main: 'fc_main',
+  // MilkDrop names the main-texture samplers by filter and address mode:
+  // f/p (filtered/point) x c/w (clamp/wrap). `fw_main` is the plain filtered
+  // read of the current frame, which is what `sampler_main` resolves to as
+  // well — `shader-analysis.ts` already rewrites both to `currentTex`. Without
+  // this entry `resolveDirectShaderSamplerBinding` returned null for the 107
+  // bundled presets that sample it, pushing them off the direct WebGPU path.
+  fw_main: 'main',
   pw_main: 'pw_main',
   pc_main: 'pc_main',
   sampler_pc_main: 'pc_main',
@@ -78,7 +85,9 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   prayerwheel: 'pattern',
   sunrise: 'pattern',
   paper: 'pattern',
-  anandamideCTFree00: 'noise',
+  // Keys are looked up after `normalizeMilkdropShaderSamplerName` lowercases
+  // the name, so a camelCased key here would never match.
+  anandamidectfree00: 'noise',
   cartunemask1: 'pattern',
   manyfish: 'fractal',
   onefish: 'fractal',
