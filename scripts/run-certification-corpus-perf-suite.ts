@@ -11,6 +11,7 @@ import {
   createPlayToyBrowserSession,
   type PlayToyOptions,
   type PlayToyPerformanceMetrics,
+  type PlayToyRendererProfile,
   type PlayToyResult,
   playToy,
 } from './play-toy.ts';
@@ -35,6 +36,23 @@ export type CertificationCorpusPerfSuiteOptions = {
   strict?: boolean;
   presetIds?: string[];
   corpusGroup?: CertificationCorpusGroup;
+  /** CDP CPU throttle multiplier; 1 (default) profiles at full host speed. */
+  cpuThrottleRate?: number;
+  /** Pins adaptive quality so frame-time deltas are attributable to code. */
+  lockedQualityStep?: number | null;
+  /**
+   * Warmup before sampling starts. The 1s default is too short once the CPU is
+   * throttled: preset compilation still lands inside the sample window and
+   * skews cadence.
+   */
+  warmupMs?: number;
+  /** Sampling duration. Must exceed `warmupMs` or no samples are collected. */
+  durationMs?: number;
+  /** Renderer profile to certify. Low-resource runs use `compatibility`. */
+  rendererProfile?: PlayToyRendererProfile;
+  /** Viewport override; low-resource runs use a smaller stage. */
+  viewportWidth?: number;
+  viewportHeight?: number;
 };
 
 type CertificationCorpusPerfRequest = CertificationCorpusEntry & {
@@ -52,6 +70,8 @@ type CertificationCorpusPerfRequest = CertificationCorpusEntry & {
       | 'rendererProfile'
       | 'catalogMode'
       | 'perfCapture'
+      | 'cpuThrottleRate'
+      | 'lockedQualityStep'
     >
   >;
 };
@@ -67,6 +87,8 @@ export type CertificationCorpusPerfReport = {
   actualBackend: 'webgl' | 'webgpu' | null;
   status: 'pass' | 'fail' | 'error';
   targetFrameMs: number;
+  cpuThrottleRate: number;
+  rendererProfile: PlayToyRendererProfile;
   overBudgetMs: number | null;
   consoleErrors: string[] | null;
   error: string | null;
@@ -223,7 +245,26 @@ export function buildCertificationCorpusPerfRequests({
   headless,
   presetIds,
   corpusGroup,
+  cpuThrottleRate = 1,
+  lockedQualityStep = null,
+  warmupMs,
+  durationMs,
+  rendererProfile = 'webgpu',
+  viewportWidth = DEFAULT_VIEWPORT.width,
+  viewportHeight = DEFAULT_VIEWPORT.height,
 }: CertificationCorpusPerfSuiteOptions): CertificationCorpusPerfRequest[] {
+  const resolvedWarmupMs = warmupMs ?? PERF_WARMUP_MS;
+  const resolvedDurationMs = durationMs ?? PERF_DURATION_MS;
+  // A warmup that swallows the whole capture yields zero samples, and playToy
+  // then silently falls back to debug-snapshot metrics whose cadence comes from
+  // the adaptive controller rather than presented frames. That fallback reads
+  // as a normal result, so refuse the configuration instead of reporting it.
+  if (resolvedWarmupMs >= resolvedDurationMs) {
+    throw new Error(
+      `Perf warmup (${resolvedWarmupMs}ms) must be shorter than the capture duration (${resolvedDurationMs}ms); otherwise no frames are sampled.`,
+    );
+  }
+
   return selectCertificationCorpusEntries({
     repoRoot,
     presetIds,
@@ -234,17 +275,19 @@ export function buildCertificationCorpusPerfRequests({
       slug: 'milkdrop',
       presetId: preset.id,
       port,
-      duration: PERF_DURATION_MS,
-      viewportWidth: DEFAULT_VIEWPORT.width,
-      viewportHeight: DEFAULT_VIEWPORT.height,
+      duration: resolvedDurationMs,
+      viewportWidth,
+      viewportHeight,
       headless,
       vibeMode: false,
-      rendererProfile: 'webgpu',
+      rendererProfile,
+      cpuThrottleRate,
+      lockedQualityStep,
       catalogMode: 'certification',
       recordParityArtifact: false,
       outputDir,
       perfCapture: {
-        warmupMs: PERF_WARMUP_MS,
+        warmupMs: resolvedWarmupMs,
       },
     },
   }));
@@ -263,21 +306,22 @@ function buildPerfReport({
   const actualBackend = performance?.actualBackend ?? null;
   const fallbackOccurred =
     result.fallbackOccurred ?? performance?.fallbackOccurred ?? false;
-  const perfStatus =
+  // A compatibility (SwiftShader) run legitimately certifies on WebGL, so the
+  // expected backend follows the requested renderer profile rather than always
+  // demanding WebGPU.
+  const expectedBackend =
+    request.playToy.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl';
+  const measured =
     result.success &&
     performance &&
-    actualBackend === 'webgpu' &&
+    actualBackend === expectedBackend &&
     !fallbackOccurred &&
-    typeof performance.averageFrameMs === 'number' &&
-    performance.averageFrameMs <= PERF_TARGET_FRAME_MS
+    typeof performance.averageFrameMs === 'number';
+  const perfStatus = measured
+    ? (performance.averageFrameMs as number) <= PERF_TARGET_FRAME_MS
       ? 'pass'
-      : result.success &&
-          performance &&
-          actualBackend === 'webgpu' &&
-          !fallbackOccurred &&
-          typeof performance.averageFrameMs === 'number'
-        ? 'fail'
-        : 'error';
+      : 'fail'
+    : 'error';
 
   const overBudgetMs =
     performance?.averageFrameMs !== null &&
@@ -297,6 +341,8 @@ function buildPerfReport({
     actualBackend,
     status: perfStatus,
     targetFrameMs: PERF_TARGET_FRAME_MS,
+    cpuThrottleRate: request.playToy.cpuThrottleRate,
+    rendererProfile: request.playToy.rendererProfile,
     overBudgetMs:
       perfStatus === 'pass' || perfStatus === 'fail' ? overBudgetMs : null,
     consoleErrors: result.consoleErrors ?? null,
@@ -322,6 +368,13 @@ export async function runCertificationCorpusPerfSuite({
   strict = false,
   presetIds,
   corpusGroup,
+  cpuThrottleRate = 1,
+  lockedQualityStep = null,
+  warmupMs,
+  durationMs,
+  rendererProfile = 'webgpu',
+  viewportWidth,
+  viewportHeight,
 }: CertificationCorpusPerfSuiteOptions) {
   const requests = buildCertificationCorpusPerfRequests({
     repoRoot,
@@ -330,6 +383,13 @@ export async function runCertificationCorpusPerfSuite({
     headless,
     presetIds,
     corpusGroup,
+    cpuThrottleRate,
+    lockedQualityStep,
+    warmupMs,
+    durationMs,
+    rendererProfile,
+    viewportWidth,
+    viewportHeight,
   });
 
   if (requests.length === 0) {
@@ -342,7 +402,7 @@ export async function runCertificationCorpusPerfSuite({
   fs.mkdirSync(reportDir, { recursive: true });
   const browserSession = await createPlayToyBrowserSession({
     headless,
-    rendererProfile: 'webgpu',
+    rendererProfile,
   });
 
   try {
@@ -401,7 +461,7 @@ export async function runCertificationCorpusPerfSuite({
 
 function usage() {
   console.error(
-    'Usage: bun scripts/run-certification-corpus-perf-suite.ts [--output <dir>] [--port <number>] [--group <group>] [--preset <id>]...',
+    'Usage: bun scripts/run-certification-corpus-perf-suite.ts [--output <dir>] [--port <number>] [--group <group>] [--preset <id>]... [--cpu-throttle <rate>] [--renderer compatibility|webgpu] [--viewport-width <px>] [--viewport-height <px>]',
   );
 }
 
@@ -435,6 +495,18 @@ function parseArgs(argv: string[]): CertificationCorpusPerfSuiteOptions {
     strict: argv.includes('--strict'),
     presetIds: parsePresetIds(argv),
     corpusGroup,
+    cpuThrottleRate: getNumberArg('--cpu-throttle', 1),
+    warmupMs: getNumberArg('--warmup', PERF_WARMUP_MS),
+    durationMs: getNumberArg('--duration', PERF_DURATION_MS),
+    lockedQualityStep: argv.includes('--lock-quality-step')
+      ? getNumberArg('--lock-quality-step', 0)
+      : null,
+    rendererProfile:
+      getStringArg('--renderer', 'webgpu') === 'compatibility'
+        ? 'compatibility'
+        : 'webgpu',
+    viewportWidth: getNumberArg('--viewport-width', DEFAULT_VIEWPORT.width),
+    viewportHeight: getNumberArg('--viewport-height', DEFAULT_VIEWPORT.height),
   };
 }
 

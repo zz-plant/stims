@@ -1,6 +1,7 @@
 import { getCachedRendererCapabilities } from '../../core/renderer-capabilities.ts';
 import { createAdaptiveQualityController } from '../../core/services/adaptive-quality-controller.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime';
+import { getPerformanceOverrideParams } from '../../core/url-params.ts';
 import { createMilkdropRendererAdapter } from '../renderer-adapter-factory.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types';
 import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types';
@@ -169,6 +170,8 @@ export function createMilkdropExperienceAttachmentController({
             nextBackend === 'webgpu'
               ? (getCachedRendererCapabilities()?.webgpu ?? null)
               : null,
+          lockedQualityStep:
+            getPerformanceOverrideParams().lockedQualityStep ?? null,
         });
         setAdaptiveQualityController(adaptiveQualityController);
         const disabledWebGpuOptimizationFlags =

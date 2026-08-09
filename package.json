@@ -116,7 +116,8 @@
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh",
     "check:production-edge": "bash scripts/check_production_edge.sh",
     "assets:check": "bun run scripts/check-assets.ts",
-    "assets:generate": "bun run scripts/generate-scenes.ts"
+    "assets:generate": "bun run scripts/generate-scenes.ts",
+    "perf:low-resource": "bun run scripts/run-certification-corpus-perf-suite.ts --cpu-throttle 4 --renderer compatibility --viewport-width 1280 --viewport-height 720 --output ./screenshots/low-resource-perf"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

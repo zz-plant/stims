@@ -332,10 +332,12 @@ test('captureActiveToyCanvas uses compositor pixels for native WebGPU canvases',
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {
   expect(
     summarizePlayToyPerformanceSamples([
-      { frameMs: 10, renderMs: 4, simulationMs: 6 },
-      { frameMs: 20, renderMs: 7, simulationMs: 13 },
-      { frameMs: 15, renderMs: 5, simulationMs: 10 },
-      { frameMs: 30, renderMs: 12, simulationMs: 18 },
+      // The first sample has no predecessor, so it carries no cadence and must
+      // be excluded from the cadence average rather than counted as zero.
+      { frameMs: 10, renderMs: 4, simulationMs: 6, cadenceMs: null },
+      { frameMs: 20, renderMs: 7, simulationMs: 13, cadenceMs: 40 },
+      { frameMs: 15, renderMs: 5, simulationMs: 10, cadenceMs: 60 },
+      { frameMs: 30, renderMs: 12, simulationMs: 18, cadenceMs: 50 },
     ]),
   ).toEqual({
     sampleCount: 4,
@@ -343,6 +345,11 @@ test('summarizePlayToyPerformanceSamples computes average and p95 frame timings'
     p95FrameMs: 30,
     averageSimulationMs: 11.75,
     averageRenderMs: 7,
+    averageCadenceMs: 50,
+    medianCadenceMs: 50,
+    p95CadenceMs: 60,
+    averageFps: 20,
+    medianFps: 20,
   });
 });
 
@@ -350,8 +357,8 @@ test('buildPlayToyPerformanceMetrics preserves terminal state alongside summariz
   expect(
     buildPlayToyPerformanceMetrics({
       samples: [
-        { frameMs: 10, renderMs: 4, simulationMs: 6 },
-        { frameMs: 14, renderMs: 5, simulationMs: 9 },
+        { frameMs: 10, renderMs: 4, simulationMs: 6, cadenceMs: null },
+        { frameMs: 14, renderMs: 5, simulationMs: 9, cadenceMs: 25 },
       ],
       durationMs: 4500,
       warmupMs: 1000,
@@ -365,6 +372,12 @@ test('buildPlayToyPerformanceMetrics preserves terminal state alongside summariz
     p95FrameMs: 14,
     averageSimulationMs: 7.5,
     averageRenderMs: 4.5,
+    averageCadenceMs: 25,
+    medianCadenceMs: 25,
+    p95CadenceMs: 25,
+    averageFps: 40,
+    medianFps: 40,
+    metricsSource: 'sampler',
     durationMs: 4500,
     warmupMs: 1000,
     actualBackend: 'webgpu',
@@ -400,6 +413,7 @@ test('debug snapshot perf fallback prefers live runtime metrics when available',
         sampleCount: 120,
         averageFrameMs: 10,
         averageRenderMs: 8,
+        averageCadenceMs: 50,
       },
     }),
   ).toEqual({
@@ -408,6 +422,14 @@ test('debug snapshot perf fallback prefers live runtime metrics when available',
     p95FrameMs: 14,
     averageSimulationMs: 2,
     averageRenderMs: 7.5,
+    // Cadence, not in-callback frame time, is what the fallback path reports as
+    // delivered FPS.
+    averageCadenceMs: 50,
+    medianCadenceMs: null,
+    p95CadenceMs: null,
+    averageFps: 20,
+    medianFps: null,
+    metricsSource: 'debug-snapshot',
     durationMs: 4500,
     warmupMs: 1000,
     actualBackend: 'webgpu',
@@ -416,6 +438,7 @@ test('debug snapshot perf fallback prefers live runtime metrics when available',
       sampleCount: 120,
       averageFrameMs: 10,
       averageRenderMs: 8,
+      averageCadenceMs: 50,
     },
   });
 });

@@ -60,6 +60,12 @@ export type AdaptiveQualityController = {
 type AdaptiveQualityControllerOptions = {
   backend: RendererBackend;
   capabilities: WebGPUCapabilitySummary | null;
+  /**
+   * When set, the controller keeps measuring frame timings but never changes
+   * quality step. Performance runs use this so a frame-time delta reflects the
+   * change under test instead of the controller re-balancing quality.
+   */
+  lockedQualityStep?: number | null;
 };
 
 type QualityStep = AdaptiveQualityMultipliers & {
@@ -295,6 +301,7 @@ function buildState({
 export function createAdaptiveQualityController({
   backend,
   capabilities,
+  lockedQualityStep = null,
 }: AdaptiveQualityControllerOptions): AdaptiveQualityController {
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
   const supportsGpuTimestamps =
@@ -304,7 +311,14 @@ export function createAdaptiveQualityController({
     : 'coarse-frame';
   const heuristic = buildHeuristicProfile(backend, capabilities);
 
-  let qualityStep = heuristic.initialStep;
+  const stepLock =
+    typeof lockedQualityStep === 'number' && Number.isFinite(lockedQualityStep)
+      ? Math.min(
+          Math.max(Math.round(lockedQualityStep), 0),
+          QUALITY_STEPS.length - 1,
+        )
+      : null;
+  let qualityStep = stepLock ?? heuristic.initialStep;
   let averageFrameMs: number | null = null;
   let averageCadenceMs: number | null = null;
   let averageRenderMs: number | null = null;
@@ -476,6 +490,7 @@ export function createAdaptiveQualityController({
         consecutiveRollingOverBudget >=
         ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES;
       if (
+        stepLock === null &&
         (consecutiveOverBudget >= DEGRADE_THRESHOLD_SAMPLES ||
           triggeredByRollingWindow) &&
         qualityStep < QUALITY_STEPS.length - 1
@@ -502,6 +517,7 @@ export function createAdaptiveQualityController({
       }
 
       if (
+        stepLock === null &&
         consecutiveUnderBudget >= RECOVER_THRESHOLD_SAMPLES &&
         qualityStep > heuristic.initialStep
       ) {
@@ -520,6 +536,7 @@ export function createAdaptiveQualityController({
       }
 
       if (
+        stepLock === null &&
         consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
         qualityStep > 0 &&
         heuristic.profile === 'high-end'
