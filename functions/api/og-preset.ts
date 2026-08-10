@@ -322,7 +322,7 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
   try {
     const assets = await resolveRenderAssets(context, url.origin);
     const png = await renderPresetOgPng(svg, assets);
-    const response = new Response(png, {
+    const response = new Response(new Uint8Array(png).buffer, {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': PNG_CACHE_CONTROL,

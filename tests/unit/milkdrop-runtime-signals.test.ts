@@ -122,6 +122,51 @@ describe('milkdrop runtime signals', () => {
     expect(pulse.waveformData?.length).toBe(128);
   });
 
+  test('exposes analyser float PCM buffers on the signal cache', () => {
+    const tracker = createMilkdropSignalTracker();
+    const floatMono = new Float32Array(128).fill(0.25);
+    const floatL = new Float32Array(128).fill(-0.5);
+    const floatR = new Float32Array(128).fill(0.5);
+    const analyserStub = {
+      getMultiBandEnergy: () => ({ bass: 0.5, mid: 0.3, treble: 0.2 }),
+      getRmsLevel: () => 0.4,
+      getSampleRate: () => 48_000,
+      getWaveformFloatData: () => floatMono,
+      getWaveformFloatDataL: () => floatL,
+      getWaveformFloatDataR: () => floatR,
+    } as unknown as FrequencyAnalyser;
+
+    const signals = tracker.update({
+      time: 0,
+      deltaMs: 16.7,
+      analyser: analyserStub,
+      frequencyData: filledData(96),
+      waveformData: waveformData(),
+    });
+
+    expect(signals.waveformFloatData).toBe(floatMono);
+    expect(signals.waveformFloatDataL).toBe(floatL);
+    expect(signals.waveformFloatDataR).toBe(floatR);
+
+    // An analyser without the float getters must leave the fields null,
+    // so the wave sampler falls back to the byte path.
+    const legacy = tracker.update({
+      time: 0.02,
+      deltaMs: 16.7,
+      analyser: {
+        getMultiBandEnergy: () => ({ bass: 0.5, mid: 0.3, treble: 0.2 }),
+        getRmsLevel: () => 0.4,
+        getSampleRate: () => 48_000,
+      } as unknown as FrequencyAnalyser,
+      frequencyData: filledData(96),
+      waveformData: waveformData(),
+    });
+
+    expect(legacy.waveformFloatData).toBeNull();
+    expect(legacy.waveformFloatDataL).toBeNull();
+    expect(legacy.waveformFloatDataR).toBeNull();
+  });
+
   test('uses analyser-provided bands and smoothed RMS when available', () => {
     const tracker = createMilkdropSignalTracker();
     const analyserStub = {

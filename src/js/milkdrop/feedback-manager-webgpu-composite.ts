@@ -72,6 +72,17 @@ export const MILKDROP_TEXTURE_FILES = {
   fractal: 'crystal_fractal.png',
 } as const;
 
+// Canonical sampler names that exist only for custom-sampler aliasing (no
+// real MilkDrop built-in warp/overlay texture slot, unlike the names in
+// MILKDROP_TEXTURE_FILES above). Kept separate so they don't force the
+// legacy warp/overlay texture-selector plumbing (AUX_TEXTURE_SPECS et al.,
+// exhaustively keyed off MILKDROP_TEXTURE_FILES) to grow a slot it has no
+// real numeric ID for.
+export const CUSTOM_TEXTURE_FILES = {
+  glyph: 'glyph_matrix_tile.png',
+  organic: 'organic_mottle.png',
+} as const;
+
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
   perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
@@ -626,6 +637,8 @@ export function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
   videoTexNode: ReturnType<typeof texture>,
+  glyphTexNode: ReturnType<typeof texture>,
+  organicTexNode: ReturnType<typeof texture>,
   tex3DNodes: {
     noise: ReturnType<typeof texture3D>;
     simplex: ReturnType<typeof texture3D>;
@@ -669,7 +682,15 @@ export function createSampleAuxTextureNode(
                       select(
                         source.lessThan(9.5),
                         perlinTexNode.sample(sampleUv),
-                        flat,
+                        select(
+                          source.lessThan(12.5),
+                          glyphTexNode.sample(sampleUv),
+                          select(
+                            source.lessThan(13.5),
+                            organicTexNode.sample(sampleUv),
+                            flat,
+                          ),
+                        ),
                       ),
                     ),
                   ),

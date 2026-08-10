@@ -174,6 +174,8 @@ export type MilkdropShaderTextureSampler =
   | 'caustics'
   | 'pattern'
   | 'fractal'
+  | 'glyph'
+  | 'organic'
   | 'video'
   | 'pw_main'
   | 'pc_main'

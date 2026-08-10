@@ -85,6 +85,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
   private randomState = 1;
+  private qAfterInit: MutableState = {};
   private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
   private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
@@ -343,6 +344,13 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
+
+    // Snapshot q values after init — these are restored before each per-frame run
+    this.qAfterInit = {};
+    for (let index = 1; index <= 32; index += 1) {
+      this.qAfterInit[`q${index}`] = this.registers[`q${index}`] ?? 0;
+    }
+
     this.preset.ir.customWaves.forEach((wave, index) => {
       this.runProgram(
         wave.programs.init,
@@ -550,6 +558,12 @@ class MilkdropPresetVM implements MilkdropVM {
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     resetFrameTransformCache(this.geometryState);
+
+    // Restore q values from post-init snapshot before per-frame runs
+    for (let index = 1; index <= 32; index += 1) {
+      this.registers[`q${index}`] = this.qAfterInit[`q${index}`] ?? 0;
+    }
+
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
     return this.buildFrame(signals);

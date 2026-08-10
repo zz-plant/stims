@@ -13,6 +13,8 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'caustics',
   'pattern',
   'fractal',
+  'glyph',
+  'organic',
   'video',
   'pw_main',
   'pc_main',
@@ -68,20 +70,27 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   sampler_fc_main: 'fc_main',
   pw_noise_lq: 'noise',
   sampler_pw_noise_lq: 'noise',
-  pw_mcode1: 'noise',
+  // MilkDrop's pw_mcode1 is a matrix-code glyph sheet; the smalltiled_*
+  // names are small tileable detail textures. Both map onto the bundled
+  // glyph mosaic rather than plain noise/pattern/voronoi stand-ins.
+  pw_mcode1: 'glyph',
+  smalltiled_electric_nebula: 'glyph',
+  smalltiled_colors3: 'glyph',
+  smalltiled_ensign_meat: 'glyph',
+  smalltiled_lizard_scales: 'glyph',
   fw_clouds: 'perlin',
   clouds2: 'perlin',
   cells: 'voronoi',
   rand00: 'noise',
   rand01: 'noise',
   rand00_smalltiled: 'noise',
-  seaweed: 'fractal',
-  lichen: 'pattern',
-  moss1: 'pattern',
-  smalltiled_electric_nebula: 'fractal',
-  smalltiled_colors3: 'pattern',
-  smalltiled_ensign_meat: 'pattern',
-  smalltiled_lizard_scales: 'voronoi',
+  // onefish/manyfish/seaweed/moss1/lichen are photographic organic
+  // textures in the original preset packs; the crystal fractal/pattern
+  // stand-ins read as crystalline/technical, so route them to the bundled
+  // organic mottle texture instead.
+  seaweed: 'organic',
+  lichen: 'organic',
+  moss1: 'organic',
   prayerwheel: 'pattern',
   sunrise: 'pattern',
   paper: 'pattern',
@@ -89,8 +98,8 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   // the name, so a camelCased key here would never match.
   anandamidectfree00: 'noise',
   cartunemask1: 'pattern',
-  manyfish: 'fractal',
-  onefish: 'fractal',
+  manyfish: 'organic',
+  onefish: 'organic',
   sampler_blur1: 'blur1',
   sampler_blur2: 'blur2',
   sampler_blur3: 'blur3',

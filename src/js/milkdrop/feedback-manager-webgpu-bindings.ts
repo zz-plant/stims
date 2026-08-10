@@ -42,6 +42,10 @@ function getDirectShaderSamplerSourceId(
       return 10;
     case 'fc_main':
       return 11;
+    case 'glyph':
+      return 12;
+    case 'organic':
+      return 13;
     default:
       return 0;
   }

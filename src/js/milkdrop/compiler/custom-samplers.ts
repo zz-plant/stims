@@ -1,4 +1,7 @@
-import { MILKDROP_TEXTURE_FILES } from '../feedback-manager-webgpu-composite';
+import {
+  CUSTOM_TEXTURE_FILES,
+  MILKDROP_TEXTURE_FILES,
+} from '../feedback-manager-webgpu-composite';
 import { normalizeMilkdropShaderSamplerName } from '../shader-samplers.ts';
 
 export type MilkdropCustomSamplerFilter = 'linear' | 'nearest';
@@ -13,6 +16,7 @@ export type MilkdropCustomSamplerDeclaration = {
 
 const BUNDLED_TEXTURE_FILES = new Set<string>([
   ...Object.values(MILKDROP_TEXTURE_FILES),
+  ...Object.values(CUSTOM_TEXTURE_FILES),
   'radial_rainbow_gradient.png',
 ]);
 
@@ -78,7 +82,10 @@ export function resolveCustomSamplerTextureFile(name: string): string | null {
   const normalized = normalizeMilkdropShaderSamplerName(name);
   if (normalized && normalized !== 'main' && normalized !== 'none') {
     const fileName =
-      MILKDROP_TEXTURE_FILES[normalized as keyof typeof MILKDROP_TEXTURE_FILES];
+      MILKDROP_TEXTURE_FILES[
+        normalized as keyof typeof MILKDROP_TEXTURE_FILES
+      ] ??
+      CUSTOM_TEXTURE_FILES[normalized as keyof typeof CUSTOM_TEXTURE_FILES];
     if (fileName && BUNDLED_TEXTURE_FILES.has(fileName)) {
       return fileName;
     }
