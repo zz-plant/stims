@@ -292,6 +292,22 @@ const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         #define slow_roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
 `;
 
+/**
+ * Emulated 3D noise sampling for preset bodies transpiled from
+ * tex3D(sampler_noisevol*, ...): routes through the simplex atlas
+ * (source 2.0) with slice blending. The vec2 overload covers bodies
+ * that sample the volume texture with a flat coordinate.
+ */
+const MILKDROP_NOISE_VOLUME_HELPERS = `
+        vec4 sampleNoiseVolume(vec3 p) {
+          return sampleAuxTexture(2.0, 1.0, p.xy, p.z);
+        }
+
+        vec4 sampleNoiseVolume(vec2 p) {
+          return sampleAuxTexture2d(2.0, p);
+        }
+`;
+
 const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
@@ -507,7 +523,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
-
+${MILKDROP_NOISE_VOLUME_HELPERS}
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           vec2 centered = uv - 0.5;
           float radius = length(centered);
@@ -782,7 +798,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
-
+${MILKDROP_NOISE_VOLUME_HELPERS}
         vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
           vec2 centered = uv - 0.5;
           float cosR = cos(rot);
