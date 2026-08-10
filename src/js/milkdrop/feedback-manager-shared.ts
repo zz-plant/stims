@@ -15,6 +15,7 @@ import {
   TextureLoader,
   UnsignedByteType,
   Vector2,
+  Vector4,
   type WebGLRenderTarget,
 } from 'three';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
@@ -235,6 +236,62 @@ function resolveAuxTextureName(source: number) {
   return null;
 }
 
+/**
+ * MilkDrop shader-input surface referenced by transpiled preset bodies:
+ * q1..q32 (packed into vec4 uniforms _qa.._qh, matching butterchurn),
+ * vec4 aspect (.xy = aspect multipliers, .zw = inverses), rand_preset,
+ * and the roam oscillators (derived from time on the GPU with the same
+ * frequencies butterchurn computes on the CPU).
+ */
+const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
+        uniform vec4 aspect;
+        uniform vec4 _qa;
+        uniform vec4 _qb;
+        uniform vec4 _qc;
+        uniform vec4 _qd;
+        uniform vec4 _qe;
+        uniform vec4 _qf;
+        uniform vec4 _qg;
+        uniform vec4 _qh;
+        uniform vec4 rand_preset;
+        #define q1 _qa.x
+        #define q2 _qa.y
+        #define q3 _qa.z
+        #define q4 _qa.w
+        #define q5 _qb.x
+        #define q6 _qb.y
+        #define q7 _qb.z
+        #define q8 _qb.w
+        #define q9 _qc.x
+        #define q10 _qc.y
+        #define q11 _qc.z
+        #define q12 _qc.w
+        #define q13 _qd.x
+        #define q14 _qd.y
+        #define q15 _qd.z
+        #define q16 _qd.w
+        #define q17 _qe.x
+        #define q18 _qe.y
+        #define q19 _qe.z
+        #define q20 _qe.w
+        #define q21 _qf.x
+        #define q22 _qf.y
+        #define q23 _qf.z
+        #define q24 _qf.w
+        #define q25 _qg.x
+        #define q26 _qg.y
+        #define q27 _qg.z
+        #define q28 _qg.w
+        #define q29 _qh.x
+        #define q30 _qh.y
+        #define q31 _qh.z
+        #define q32 _qh.w
+        #define roam_cos (0.5 + 0.5 * cos(signalTime * vec4(0.3, 1.3, 5.0, 20.0)))
+        #define roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.3, 1.3, 5.0, 20.0)))
+        #define slow_roam_cos (0.5 + 0.5 * cos(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
+        #define slow_roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
+`;
+
 const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
@@ -310,8 +367,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalTime;
         uniform float signalFrame;
         uniform float signalFps;
-        uniform float aspect;
         uniform float decay;
+${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
         uniform float hasDirectWarp;
         uniform vec2 texelSize;
         varying vec2 vUv;
@@ -531,6 +588,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           vec2 uv = vUv;
           vec2 uv_orig = vUv;
           vec3 ret = color;
+          float rad = length(uv - 0.5);
+          float ang = atan(uv.x - 0.5, uv.y - 0.5);
 
           // --- DIRECT_COMP_START ---
           // --- DIRECT_COMP_END ---
@@ -659,8 +718,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float signalTime;
         uniform float signalFrame;
         uniform float signalFps;
-        uniform float aspect;
         uniform float videoEchoOrientation;
+${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
         varying vec2 vUv;
 
         float sq(float x) { return x * x; }
@@ -761,6 +820,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
           vec2 uv = transformedUv + 0.5;
           vec2 uv_orig = vUv;
           vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;
+          float rad = length(uv - 0.5);
+          float ang = atan(uv.x - 0.5, uv.y - 0.5);
 
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
@@ -790,6 +851,51 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
           gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
         }
       `;
+
+/**
+ * Builds the final WebGL fragment shaders for a preset's direct warp/comp
+ * GLSL, exactly as they are handed to the ShaderMaterials at runtime. The
+ * raw shader bodies assume MilkDrop globals (`uv`, `uv_orig`, `ret`, `rad`,
+ * `ang`, q vars, `aspect`) are in scope; the templates provide them.
+ */
+export function assembleMilkdropDirectFragmentShaders(
+  warpGlsl: string | null,
+  compGlsl: string | null,
+): { warp: string; composite: string } {
+  const cleanWarpBody = warpGlsl
+    ? (extractNativeShaderBody(warpGlsl) ?? warpGlsl)
+    : null;
+
+  // Split function declarations (which must live at global scope) from
+  // body statements (which run inside main()).
+  let warpGlobals: string | null = null;
+  let warpBody = cleanWarpBody;
+  if (cleanWarpBody) {
+    const split = splitShaderGlobalsAndBody(cleanWarpBody);
+    warpGlobals = split.globals || null;
+    warpBody = split.body || null;
+  }
+
+  const warp = injectDirectShaderGlsl(
+    MILKDROP_WARP_FRAGMENT_SHADER,
+    warpBody,
+    null,
+    warpGlobals,
+  );
+
+  const cleanCompBody = compGlsl
+    ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
+    : null;
+
+  // Build composite shader: warp section kept empty since warp runs separate
+  const composite = injectDirectShaderGlsl(
+    MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+    null,
+    cleanCompBody,
+  );
+
+  return { warp, composite };
+}
 
 class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly compositeScene = new Scene();
@@ -1292,44 +1398,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
 
-    // The raw warp shader body assumes MilkDrop globals (`uv`, `uv_orig`,
-    // `ret`) are in scope. Provide local equivalents so the injected GLSL
-    // compiles in our fullscreen fragment template.
-    const cleanWarpBody = warpGlsl
-      ? (extractNativeShaderBody(warpGlsl) ?? warpGlsl)
-      : null;
-
-    // Split function declarations (which must live at global scope) from
-    // body statements (which run inside main()).
-    let warpGlobals: string | null = null;
-    let warpBody = cleanWarpBody;
-    if (cleanWarpBody) {
-      const split = splitShaderGlobalsAndBody(cleanWarpBody);
-      warpGlobals = split.globals || null;
-      warpBody = split.body || null;
-    }
-
-    // Rebuild warp shader with warp GLSL injected (or pass-through when null)
-    const injectedWarp = injectDirectShaderGlsl(
-      MILKDROP_WARP_FRAGMENT_SHADER,
-      warpBody,
-      null,
-      warpGlobals,
-    );
+    // Rebuild both shaders with preset GLSL injected (pass-through when null)
+    const { warp: injectedWarp, composite: injectedShader } =
+      assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
-
-    const cleanCompBody = compGlsl
-      ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
-      : null;
-
-    // Build composite shader: warp section kept empty since warp runs separate
-    const injectedShader = injectDirectShaderGlsl(
-      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
-      null,
-      cleanCompBody,
-    );
 
     // Preserve current uniform values before disposing old material
     const oldUniforms = this.compositeMaterial.uniforms;
