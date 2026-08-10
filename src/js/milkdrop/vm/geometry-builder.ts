@@ -258,6 +258,13 @@ function transformMeshPoint({
   local.sy = state.sy ?? 1;
   local.dx = state.dx ?? 0;
   local.dy = state.dy ?? 0;
+  // Seed per-pixel locals with q1-q32 so writes don't leak to registers
+  for (let i = 1; i <= 32; i += 1) {
+    const key = `q${i}`;
+    if (!(key in local)) {
+      local[key] = (createEnv(signals, {}, { reuseExtraAsEnv: true }) as Record<string, number>)[key] ?? 0;
+    }
+  }
   runProgram(
     preset.ir.programs.perPixel,
     createEnv(signals, local, { reuseExtraAsEnv: true }),
