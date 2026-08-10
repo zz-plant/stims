@@ -71,6 +71,7 @@ export type WaveBuilderState = {
   mainWaveVisualFrames: MilkdropWaveVisual[];
   proceduralMainWaveFrames: MilkdropProceduralWaveVisual[];
   customWaveLocals: MutableState[];
+  customWaveTAfterInit: MutableState[];
   customWaveFrameIndex: 0 | 1;
   customWaveVisualFrames: [MilkdropWaveVisual[], MilkdropWaveVisual[]];
   proceduralCustomWaveFrames: [
@@ -118,6 +119,7 @@ export type GeometryBuilderState = {
 
 export type ShapeBuilderState = {
   customShapeLocals: MutableState[];
+  customShapeTAfterInit: MutableState[];
 };
 
 export function clamp(value: number, min: number, max: number) {
