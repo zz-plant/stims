@@ -361,7 +361,7 @@ describe('milkdrop runtime lifecycle seams', () => {
 });
 
 describe('milkdrop backend failover seams', () => {
-  test('falls back orientation-only echo presets while keeping native custom-shape descriptor plans', () => {
+  test('keeps echo presets native by default and falls them back only on explicit opt-in', () => {
     const videoEchoPreset = compileMilkdropPresetSource(
       `
 title=Video Echo Orientation Gap
@@ -387,11 +387,25 @@ warp=0.08
       { id: 'stable-webgpu-preset' },
     );
 
+    // Video echo (including orientation flips) is implemented by the native
+    // TSL feedback manager, so echo presets no longer reload into WebGL by
+    // default…
     expect(
       shouldPresetFallbackToWebgl({
         compiled: videoEchoPreset,
         activeBackend: 'webgpu',
         webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      }),
+    ).toBe(false);
+    // …but the explicit rollout opt-in still routes them to WebGL.
+    expect(
+      shouldPresetFallbackToWebgl({
+        compiled: videoEchoPreset,
+        activeBackend: 'webgpu',
+        webgpuOptimizationFlags: {
+          ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+          descriptorFallbackToWebgl: true,
+        },
       }),
     ).toBe(true);
     expect(

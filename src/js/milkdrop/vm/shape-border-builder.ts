@@ -175,16 +175,8 @@ export function buildShapes({
       continue;
     }
 
-    // Reload base values from shape definition each frame
-    const baseLocals = seedCustomShapeState(shape);
     const locals =
-      shapeState.customShapeLocals[index] ?? baseLocals;
-
-    // Merge base values into shape locals (preserves per-frame user vars)
-    for (const key in baseLocals) {
-      locals[key] = baseLocals[key];
-    }
-
+      shapeState.customShapeLocals[index] ?? seedCustomShapeState(shape);
     shapeState.customShapeLocals[index] = locals;
 
     // MilkDrop runs the per-frame shape code once per instance, exposing the

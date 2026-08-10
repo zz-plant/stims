@@ -160,7 +160,7 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
       continue;
     }
 
-    if ('+-*/%^<>!|&'.includes(current)) {
+    if ('+-*/%^<>!|&='.includes(current)) {
       tokens.push({ type: 'operator', value: current });
       index += 1;
       continue;
@@ -259,7 +259,7 @@ class ExpressionParser {
   }
 
   parse(): ParseResult<MilkdropExpressionNode> {
-    const value = this.parseLogicalOr();
+    const value = this.parseAssignment();
     if (this.peek().type !== 'eof') {
       this.diagnostics.push(
         createDiagnostic(
@@ -273,6 +273,23 @@ class ExpressionParser {
     return {
       value: this.diagnostics.length ? null : value,
       diagnostics: this.diagnostics,
+    };
+  }
+
+  /** Assignment has the lowest precedence and is right-associative, so a=b=c
+   * parses as a=(b=c). */
+  private parseAssignment(): MilkdropExpressionNode {
+    const left = this.parseLogicalOr();
+    const operator = this.matchOperator('=');
+    if (!operator) {
+      return left;
+    }
+    const right = this.parseAssignment();
+    return {
+      type: 'binary',
+      operator: '=',
+      left,
+      right,
     };
   }
 
@@ -451,7 +468,7 @@ class ExpressionParser {
         this.advance();
         const args: MilkdropExpressionNode[] = [];
         while (!this.isParen(')')) {
-          args.push(this.parseLogicalOr());
+          args.push(this.parseAssignment());
           if (this.peek().type === 'comma') {
             this.advance();
             continue;
@@ -490,7 +507,7 @@ class ExpressionParser {
     }
 
     if (token.type === 'paren' && token.value === '(') {
-      const expression = this.parseLogicalOr();
+      const expression = this.parseAssignment();
       if (!this.isParen(')')) {
         this.diagnostics.push(
           createDiagnostic(
@@ -554,6 +571,34 @@ export function evaluateMilkdropExpression(
       return 0;
     }
     case 'binary': {
+      // Assignment is handled specially to allow side effects on LHS
+      if (node.operator === '=') {
+        const rvalue = evaluateMilkdropExpression(node.right, env, helpers);
+        // Perform assignment to the left side
+        if (node.left.type === 'identifier') {
+          const key = node.left.name.toLowerCase();
+          env[key] = rvalue;
+        } else if (
+          node.left.type === 'call' &&
+          (node.left.name.toLowerCase() === 'megabuf' ||
+            node.left.name.toLowerCase() === 'gmegabuf')
+        ) {
+          const buffer =
+            node.left.name.toLowerCase() === 'megabuf'
+              ? helpers.megabuf
+              : helpers.gmegabuf;
+          const index = toMilkdropInt(
+            evaluateMilkdropExpression(node.left.args[0] ?? { type: 'literal', value: 0 }, env, helpers),
+          );
+          const maxSize =
+            node.left.name.toLowerCase() === 'megabuf' ? 65_536 : 1_048_576;
+          if (index >= 0 && index < maxSize) {
+            buffer[index] = rvalue;
+          }
+        }
+        return rvalue;
+      }
+
       const left = evaluateMilkdropExpression(node.left, env, helpers);
       const right = evaluateMilkdropExpression(node.right, env, helpers);
       switch (node.operator) {
@@ -952,7 +997,30 @@ export function parseMilkdropStatement(
 
   // Skip empty or missing assignments — common in .milk preset files with
   // blank per-frame/per-pixel lines used as visual spacing between blocks
-  if (index < 0 || !source.slice(index + 1).trim()) {
+  if (index < 0) {
+    // Try parsing as an expression statement (handles `if(cond, a=1, b=2)`)
+    // where there's no top-level `=` but assignments are nested inside
+    const trimmed = source.trim().replace(/;+\s*$/u, '');
+    if (trimmed.length === 0) {
+      return { value: null, diagnostics: [] };
+    }
+    const exprResult = parseMilkdropExpression(trimmed, line);
+    if (!exprResult.value) {
+      return { value: null, diagnostics: [] };
+    }
+    // Accept any valid expression as an expression statement
+    return {
+      value: {
+        target: CONTROL_TARGET_SENTINEL,
+        expression: exprResult.value,
+        line,
+        source,
+      },
+      diagnostics: exprResult.diagnostics,
+    };
+  }
+
+  if (!source.slice(index + 1).trim()) {
     return { value: null, diagnostics: [] };
   }
 
