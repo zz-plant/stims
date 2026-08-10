@@ -423,20 +423,20 @@ warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`
 
     const picks = new Set<string>();
     for (let i = 0; i < 64; i++) {
-      const file = resolveCustomSamplerTextureFile('sampler_rand00');
+      const file = resolveCustomSamplerTextureFile('sampler_rand00') ?? 'null';
       expect(BUNDLED_2D_TEXTURE_FILES).toContain(file);
-      if (file) picks.add(file);
+      picks.add(file);
     }
     // 64 draws from a 7-texture pool collapsing to one file would mean the
     // randomization regressed to a static mapping.
     expect(picks.size).toBeGreaterThan(1);
 
     expect(BUNDLED_2D_TEXTURE_FILES).toContain(
-      resolveCustomSamplerTextureFile('sampler_rand01'),
+      resolveCustomSamplerTextureFile('sampler_rand01') ?? 'null',
     );
     for (let i = 0; i < 16; i++) {
       expect(SMALLTILED_TEXTURE_FILES).toContain(
-        resolveCustomSamplerTextureFile('sampler_rand00_smalltiled'),
+        resolveCustomSamplerTextureFile('sampler_rand00_smalltiled') ?? 'null',
       );
     }
   });

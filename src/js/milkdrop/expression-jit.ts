@@ -7,8 +7,10 @@ import { aliasMap } from './field-normalization.ts';
 
 /**
  * Per-preset scratch buffer, matching MilkDrop's `megabuf`.
+ * Set to 1M to match butterchurn and improve compatibility with presets
+ * using large ring buffers and history tables.
  */
-export const MILKDROP_MEGABUF_SIZE = 65_536;
+export const MILKDROP_MEGABUF_SIZE = 1_048_576;
 
 /**
  * Buffer shared across presets, matching MilkDrop's `gmegabuf`.

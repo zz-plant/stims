@@ -350,20 +350,33 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
     }
   };
 
-  for (const statement of statements) {
-    collectFromExpression(statement.expression);
-    const target = statement.target.toLowerCase();
-    if (target.startsWith('megabuf')) {
-      usesMegabuf = true;
-    } else if (target.startsWith('gmegabuf')) {
-      usesGmegabuf = true;
-    } else if (isRegisterIdentifier(target)) {
-      registerKeys.add(target);
-      fieldKeys.add(target);
-    } else {
-      fieldKeys.add(target);
+  const collectFromStatements = (stmts: MilkdropCompiledStatement[]) => {
+    for (const statement of stmts) {
+      collectFromExpression(statement.expression);
+      const target = statement.target.toLowerCase();
+      if (target.startsWith('megabuf')) {
+        usesMegabuf = true;
+      } else if (target.startsWith('gmegabuf')) {
+        usesGmegabuf = true;
+      } else if (isRegisterIdentifier(target)) {
+        registerKeys.add(target);
+        fieldKeys.add(target);
+      } else {
+        fieldKeys.add(target);
+      }
+      if (statement.control) {
+        collectFromStatements(statement.control.body);
+        if (statement.control.condition) {
+          collectFromExpression(statement.control.condition);
+        }
+        if (statement.control.count) {
+          collectFromExpression(statement.control.count);
+        }
+      }
     }
-  }
+  };
+
+  collectFromStatements(statements);
 
   return {
     fieldKeys: [...fieldKeys].sort(),
