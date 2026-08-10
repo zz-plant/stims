@@ -5,6 +5,7 @@ import catalogJson from '../../public/milkdrop-presets/catalog.json' with {
   type: 'json',
 };
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { assembleMilkdropDirectFragmentShaders } from '../../src/js/milkdrop/feedback-manager-shared.ts';
 import type { MilkdropBundledCatalogEntry } from '../../src/js/milkdrop/types.ts';
 
 type BundledCatalogDocument = {
