@@ -1130,6 +1130,8 @@ function createCompositeOutputNode(
     uniforms.patternTex,
     uniforms.fractalTex,
     uniforms.videoTex,
+    uniforms.glyphTex,
+    uniforms.organicTex,
     {
       noise: uniforms.noiseTex3D,
       simplex: uniforms.simplexTex3D,

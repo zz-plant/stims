@@ -149,8 +149,24 @@ export function buildCustomWaves({
       continue;
     }
 
+    // Reload base values from wave definition each frame
+    const baseLocals = seedCustomWaveState(wave);
     const frameLocals =
-      waveState.customWaveLocals[index] ?? seedCustomWaveState(wave);
+      waveState.customWaveLocals[index] ?? baseLocals;
+
+    // Merge base values into frame locals (preserves per-frame user vars)
+    for (const key in baseLocals) {
+      frameLocals[key] = baseLocals[key];
+    }
+
+    // Restore t1-t8 from post-init snapshot
+    const tAfterInit = waveState.customWaveTAfterInit[index];
+    if (tAfterInit) {
+      for (let t = 1; t <= 8; t += 1) {
+        frameLocals[`t${t}`] = tAfterInit[`t${t}`] ?? 0;
+      }
+    }
+
     runProgram(
       wave.programs.perFrame,
       createEnv(signals, frameLocals, { reuseExtraAsEnv: true }),

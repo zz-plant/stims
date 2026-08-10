@@ -104,6 +104,7 @@ class MilkdropPresetVM implements MilkdropVM {
     mainWaveVisualFrames: [],
     proceduralMainWaveFrames: [],
     customWaveLocals: [],
+    customWaveTAfterInit: [],
     customWaveFrameIndex: 0,
     customWaveVisualFrames: [[], []],
     proceduralCustomWaveFrames: [[], []],
@@ -138,6 +139,7 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private readonly shapeState: ShapeBuilderState = {
     customShapeLocals: [],
+    customShapeTAfterInit: [],
   };
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
@@ -351,6 +353,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.qAfterInit[`q${index}`] = this.registers[`q${index}`] ?? 0;
     }
 
+    this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
       this.runProgram(
         wave.programs.init,
@@ -360,7 +363,16 @@ class MilkdropPresetVM implements MilkdropVM {
         ),
         this.waveState.customWaveLocals[index],
       );
+      // Capture t1-t8 values after each wave init
+      const waveLocals = this.waveState.customWaveLocals[index];
+      const tSnapshot: MutableState = {};
+      for (let t = 1; t <= 8; t += 1) {
+        tSnapshot[`t${t}`] = waveLocals?.[`t${t}`] ?? 0;
+      }
+      this.waveState.customWaveTAfterInit[index] = tSnapshot;
     });
+
+    this.shapeState.customShapeTAfterInit = [];
     this.preset.ir.customShapes.forEach((shape, index) => {
       this.runProgram(
         shape.programs.init,
@@ -370,6 +382,13 @@ class MilkdropPresetVM implements MilkdropVM {
         ),
         this.shapeState.customShapeLocals[index],
       );
+      // Capture t1-t8 values after each shape init
+      const shapeLocals = this.shapeState.customShapeLocals[index];
+      const tSnapshot: MutableState = {};
+      for (let t = 1; t <= 8; t += 1) {
+        tSnapshot[`t${t}`] = shapeLocals?.[`t${t}`] ?? 0;
+      }
+      this.shapeState.customShapeTAfterInit[index] = tSnapshot;
     });
   }
 
