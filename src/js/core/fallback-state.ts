@@ -34,14 +34,17 @@ export const STATE_TRANSITIONS: Record<
 > = {
   [FallbackState.Initial]: {
     [FallbackEvent.CHECK_WEBGL]: FallbackState.ProbingWebgl,
+    [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
     [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
   },
   [FallbackState.ProbingWebgl]: {
     [FallbackEvent.START_PROBE_WEBGPU]: FallbackState.ProbingWebgpu,
+    [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
     [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
   },
   [FallbackState.ProbingWebgpu]: {
     [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
     [FallbackEvent.TIMEOUT_WEBGPU]: FallbackState.RendererTimeout,
     [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
   },
@@ -112,16 +115,6 @@ export function transition(
 const KNOWN_INVALID_TRANSITIONS: ReadonlyArray<
   readonly [FallbackState, FallbackState, string]
 > = [
-  [
-    FallbackState.Initial,
-    FallbackState.AudioInitializing,
-    'Audio requires a renderer for the Three.js AudioListener',
-  ],
-  [
-    FallbackState.ProbingWebgpu,
-    FallbackState.AudioInitializing,
-    'Audio must not begin before the backend is resolved',
-  ],
   [
     FallbackState.RendererReady,
     FallbackState.AudioReady,

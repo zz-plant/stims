@@ -1209,31 +1209,69 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
       ownsStream = true;
       permissionState = 'granted';
+    } else if (options.preferSynthetic) {
+      const synth = createSyntheticAudioStream({
+        frequency: 220,
+        type: 'sawtooth',
+      });
+      resolvedStream = synth.stream;
+      mockCleanup = synth.cleanup;
+      await synth.resume();
+      ownsStream = true;
+      permissionState = 'granted';
     } else {
       permissionState = await queryMicrophonePermissionState();
 
       if (permissionState === 'denied') {
-        throw new AudioAccessError(
-          'denied',
-          'Microphone access is blocked. Allow microphone access in site settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
-        );
+        if (options.fallbackToSynthetic) {
+          const synth = createSyntheticAudioStream({
+            frequency: 220,
+            type: 'sawtooth',
+          });
+          resolvedStream = synth.stream;
+          mockCleanup = synth.cleanup;
+          await synth.resume();
+          ownsStream = true;
+          permissionState = 'granted';
+        } else {
+          throw new AudioAccessError(
+            'denied',
+            'Microphone access is blocked. Allow microphone access in site settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
+          );
+        }
+      } else {
+        const effectiveConstraints: MediaStreamConstraints = constraints ?? {
+          audio: {
+            ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
+              ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
+              : {}),
+            ...(options.deviceId
+              ? { deviceId: { exact: options.deviceId } }
+              : {}),
+          },
+        };
+
+        try {
+          resolvedStream =
+            await navigator.mediaDevices.getUserMedia(effectiveConstraints);
+          ownsStream = true;
+          permissionState = permissionState ?? 'granted';
+        } catch (error) {
+          if (options.fallbackToSynthetic) {
+            const synth = createSyntheticAudioStream({
+              frequency: 220,
+              type: 'sawtooth',
+            });
+            resolvedStream = synth.stream;
+            mockCleanup = synth.cleanup;
+            await synth.resume();
+            ownsStream = true;
+            permissionState = 'granted';
+          } else {
+            throw error;
+          }
+        }
       }
-
-      const effectiveConstraints: MediaStreamConstraints = constraints ?? {
-        audio: {
-          ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
-            ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
-            : {}),
-          ...(options.deviceId
-            ? { deviceId: { exact: options.deviceId } }
-            : {}),
-        },
-      };
-
-      resolvedStream =
-        await navigator.mediaDevices.getUserMedia(effectiveConstraints);
-      ownsStream = true;
-      permissionState = permissionState ?? 'granted';
     }
 
     const streamSource = resolvedStream;

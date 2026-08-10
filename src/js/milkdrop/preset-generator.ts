@@ -25,6 +25,7 @@ export type GeneratePresetOptions = {
   apiEndpoint?: string;
   model?: string;
   provider?: PresetGenerationProvider;
+  fallbackToTemplate?: boolean;
 };
 
 type HostedGenerationResponse = {
@@ -174,10 +175,22 @@ export async function generatePreset(
     endpoint: options.apiEndpoint,
     model: options.model,
   };
-  const milkSource =
-    provider.kind === 'openai-compatible'
-      ? await requestOpenAiCompatiblePreset(description, options, provider)
-      : await requestHostedPreset(description, options, provider);
+  let milkSource: string;
+  try {
+    milkSource =
+      provider.kind === 'openai-compatible'
+        ? await requestOpenAiCompatiblePreset(description, options, provider)
+        : await requestHostedPreset(description, options, provider);
+  } catch (error) {
+    if (options.fallbackToTemplate) {
+      const { synthesizeEELPreset, synthesizedPresetToMilkSource } =
+        await import('./ai-preset-synthesizer.ts');
+      const synthesized = synthesizeEELPreset({ prompt: description });
+      milkSource = synthesizedPresetToMilkSource(synthesized);
+    } else {
+      throw error;
+    }
+  }
 
   const compiled = compileMilkdropPresetSource(milkSource, {
     id: `ai-${Date.now()}`,
@@ -186,6 +199,17 @@ export async function generatePreset(
   });
 
   if (compiled.diagnostics.filter((d) => d.severity === 'error').length > 0) {
+    if (options.fallbackToTemplate) {
+      const { synthesizeEELPreset, synthesizedPresetToMilkSource } =
+        await import('./ai-preset-synthesizer.ts');
+      const synthesized = synthesizeEELPreset({ prompt: description });
+      const fallbackSource = synthesizedPresetToMilkSource(synthesized);
+      return compileMilkdropPresetSource(fallbackSource, {
+        id: `ai-fallback-${Date.now()}`,
+        title: `AI: ${description}`,
+        origin: 'generated',
+      });
+    }
     throw new Error(
       `Generated preset has compilation errors: ${compiled.diagnostics.map((d) => d.message).join('; ')}`,
     );

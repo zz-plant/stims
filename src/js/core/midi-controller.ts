@@ -72,8 +72,12 @@ export class MidiControllerManager {
 
   private bindInputs(): void {
     if (!this.midiAccess) return;
-    for (const input of this.midiAccess.inputs.values()) {
-      input.onmidimessage = this.handleMidiMessage.bind(this);
+    try {
+      for (const input of this.midiAccess.inputs.values()) {
+        input.onmidimessage = this.handleMidiMessage.bind(this);
+      }
+    } catch {
+      // Security/permissions policy restriction
     }
   }
 
