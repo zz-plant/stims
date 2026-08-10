@@ -166,6 +166,14 @@ export function CapturePanel() {
         {recording ? `${status} ${elapsedSeconds}s elapsed.` : status}
       </p>
 
+      {!recording ? (
+        <p className={engine.audioActive ? styles.status : styles.unsupported}>
+          {engine.audioActive
+            ? 'Audio source is active — this recording will include sound.'
+            : 'No audio source is active — this recording will be silent.'}
+        </p>
+      ) : null}
+
       {recording ? (
         <button
           type="button"

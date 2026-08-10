@@ -4,6 +4,7 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from '../engine/milkdrop-engine-adapter.ts';
+import { formatAudioSourceLabel } from '../workspace-helpers.ts';
 
 const GESTURE_EVENTS = ['pointerdown', 'touchstart', 'keydown'] as const;
 
@@ -63,6 +64,39 @@ export function useAudioSourceSync({
   }, []);
 
   useEffect(() => () => detachGestureRetryRef.current?.(), []);
+
+  // A shared permalink can encode a mic/tab/YouTube audio source
+  // (`buildLaunchIntent` round-trips `routeState.audioSource` through the
+  // URL). Those sources need a permission gesture the recipient hasn't made,
+  // so — unlike demo audio above — we don't auto-attempt them; we just tell
+  // the visitor the visuals are waiting on a source they haven't granted yet,
+  // instead of leaving them looking at silent motion with no explanation.
+  // Captured once at mount (not tracked live) so this only reacts to what the
+  // page loaded with, never to a source the visitor just picked themselves —
+  // that flow already requests the permission directly and sets `audioSource`
+  // only once it succeeds.
+  const [initialAudioSource] = useState(() => routeState.audioSource);
+  const hasNotifiedPendingSourceRef = useRef(false);
+  useEffect(() => {
+    if (
+      hasNotifiedPendingSourceRef.current ||
+      !initialAudioSource ||
+      initialAudioSource === 'demo' ||
+      !engineSnapshot?.runtimeReady ||
+      engineSnapshot?.audioActive
+    ) {
+      return;
+    }
+    hasNotifiedPendingSourceRef.current = true;
+    setStatusMessage(
+      `This link wants to use ${formatAudioSourceLabel(initialAudioSource)}. Open Audio Source and tap it to allow.`,
+    );
+  }, [
+    initialAudioSource,
+    engineSnapshot?.audioActive,
+    engineSnapshot?.runtimeReady,
+    setStatusMessage,
+  ]);
 
   useEffect(() => {
     if (

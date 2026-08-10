@@ -23,15 +23,18 @@ type ProviderKind = 'hosted' | 'local';
 const viteEnv = (import.meta as unknown as { env?: { DEV?: boolean } }).env;
 const DEFAULT_PROVIDER: ProviderKind = viteEnv?.DEV ? 'local' : 'hosted';
 const DEFAULT_LOCAL_ENDPOINT = 'http://127.0.0.1:11434/v1';
-const DEFAULT_LOCAL_MODEL = 'gemma4:e4b';
+const DEFAULT_LOCAL_MODEL = 'gemma4:e4b-32k';
 
-function providerStatus(provider: ProviderKind) {
+function providerStatus(provider: ProviderKind, offline: boolean) {
+  if (provider === 'hosted' && offline) {
+    return 'AI imports are paused while offline. Reconnect, or switch to local mode if Ollama is running on this device.';
+  }
   return provider === 'local'
     ? 'Local mode sends this prompt directly to Ollama on your computer.'
     : 'Hosted mode uses the model service on the deployed Stims site.';
 }
 
-export function SynthesizePanel() {
+export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const { engine, ui } = useWorkspace();
   const [prompt, setPrompt] = useState('');
   const [palette, setPalette] = useState<Palette>('auto');
@@ -41,15 +44,24 @@ export function SynthesizePanel() {
   const [localEndpoint, setLocalEndpoint] = useState(DEFAULT_LOCAL_ENDPOINT);
   const [localModel, setLocalModel] = useState(DEFAULT_LOCAL_MODEL);
   const [generating, setGenerating] = useState(false);
-  const [status, setStatus] = useState(() => providerStatus(DEFAULT_PROVIDER));
+  const [status, setStatus] = useState(() =>
+    providerStatus(DEFAULT_PROVIDER, offline),
+  );
 
-  const handleProviderChange = useCallback((next: ProviderKind) => {
-    setProvider(next);
-    setStatus(providerStatus(next));
-  }, []);
+  const handleProviderChange = useCallback(
+    (next: ProviderKind) => {
+      setProvider(next);
+      setStatus(providerStatus(next, offline));
+    },
+    [offline],
+  );
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
+    if (provider === 'hosted' && offline) {
+      setStatus(providerStatus(provider, offline));
+      return;
+    }
     setGenerating(true);
     setStatus(
       provider === 'local'
@@ -86,6 +98,7 @@ export function SynthesizePanel() {
     reactivity,
     palette,
     provider,
+    offline,
     localEndpoint,
     localModel,
     engine,
@@ -241,6 +254,7 @@ export function SynthesizePanel() {
         disabled={
           generating ||
           !prompt.trim() ||
+          (provider === 'hosted' && offline) ||
           (provider === 'local' &&
             (!localEndpoint.trim() || !localModel.trim()))
         }
