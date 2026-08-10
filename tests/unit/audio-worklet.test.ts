@@ -232,4 +232,49 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
     expect(transients.subBassEnv).toBeGreaterThanOrEqual(0);
     expect(transients.kickTransient).toBeGreaterThanOrEqual(0);
   });
+
+  test('frequency bytes use the AnalyserNode decibel scale, not linear magnitude', () => {
+    // Regression: linear magnitude→byte mapping left realistic music
+    // (−20…−40 dBFS) at byte values 0–12, flatlining every downstream band
+    // level while the AnalyserNode fallback path produced 100–200 for the
+    // same signal. The worklet must match AnalyserNode's [−100, −30] dB
+    // byte window so both paths feed the pipeline the same scale.
+    const ProcessorClass = registeredProcessors.get('frequency-analyser');
+    expect(ProcessorClass).toBeDefined();
+    if (!ProcessorClass) return;
+
+    const fftSize = 512;
+    const sampleRate = 44100;
+    const processor = new ProcessorClass({
+      processorOptions: { fftSize, sampleRate, messageEvery: 1 },
+    });
+
+    // −20 dBFS sine centred on a bin (bin 8 → ~689 Hz).
+    const amplitude = 0.1;
+    const binIndex = 8;
+    const frequency = (binIndex * sampleRate) / fftSize;
+    const samples = new Float32Array(fftSize);
+    for (let i = 0; i < fftSize; i += 1) {
+      samples[i] =
+        amplitude * Math.sin((2 * Math.PI * frequency * i) / sampleRate);
+    }
+    // Feed in render quanta of 128 frames until the FFT buffer fills.
+    for (let offset = 0; offset < fftSize; offset += 128) {
+      processor.process(
+        [[samples.subarray(offset, offset + 128)]],
+        [[new Float32Array(128)]],
+      );
+    }
+
+    const calls = processor.port.postMessage.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const spectrum = new Uint8Array(
+      calls[calls.length - 1][0].frequencyData as ArrayBuffer,
+    );
+    const peak = Math.max(...spectrum);
+    // −20 dBFS sits well inside the [−100, −30] window: linear mapping gave
+    // a peak of ~13 here; the dB mapping must land far above that.
+    expect(peak).toBeGreaterThan(100);
+    expect(peak).toBeLessThanOrEqual(255);
+  });
 });

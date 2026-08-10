@@ -1210,13 +1210,13 @@ export async function initAudio(options: AudioInitOptions = {}) {
       ownsStream = true;
       permissionState = 'granted';
     } else if (options.preferSynthetic) {
-      const synth = createSyntheticAudioStream({
-        frequency: 220,
-        type: 'sawtooth',
-      });
-      resolvedStream = synth.stream;
-      mockCleanup = synth.cleanup;
-      await synth.resume();
+      // Use the procedural demo track (arpeggio + kick + sub drone), not a
+      // bare oscillator: a constant sawtooth has a frozen spectrum, so every
+      // band level and beat detector flatlines and presets stop reacting.
+      const demo = getCachedDemoAudioStream();
+      resolvedStream = demo.stream;
+      mockCleanup = demo.cleanup;
+      await demo.resume();
       ownsStream = true;
       permissionState = 'granted';
     } else {
@@ -1224,13 +1224,10 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
       if (permissionState === 'denied') {
         if (options.fallbackToSynthetic) {
-          const synth = createSyntheticAudioStream({
-            frequency: 220,
-            type: 'sawtooth',
-          });
-          resolvedStream = synth.stream;
-          mockCleanup = synth.cleanup;
-          await synth.resume();
+          const demo = getCachedDemoAudioStream();
+          resolvedStream = demo.stream;
+          mockCleanup = demo.cleanup;
+          await demo.resume();
           ownsStream = true;
           permissionState = 'granted';
         } else {
@@ -1258,13 +1255,10 @@ export async function initAudio(options: AudioInitOptions = {}) {
           permissionState = permissionState ?? 'granted';
         } catch (error) {
           if (options.fallbackToSynthetic) {
-            const synth = createSyntheticAudioStream({
-              frequency: 220,
-              type: 'sawtooth',
-            });
-            resolvedStream = synth.stream;
-            mockCleanup = synth.cleanup;
-            await synth.resume();
+            const demo = getCachedDemoAudioStream();
+            resolvedStream = demo.stream;
+            mockCleanup = demo.cleanup;
+            await demo.resume();
             ownsStream = true;
             permissionState = 'granted';
           } else {
