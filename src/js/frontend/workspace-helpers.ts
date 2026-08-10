@@ -99,6 +99,7 @@ export function getToolDescription(tool: Exclude<PanelState, null>) {
 }
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
+  'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
   'collection:rovastar-and-collaborators': 'Rovastar & Collaborators',
@@ -255,6 +256,40 @@ export function sortBrowseEntries(
   }
 }
 
+function isNicerAuthorCasing(candidate: string, current: string) {
+  if (candidate.length !== current.length) {
+    return candidate.length < current.length;
+  }
+  return /^[A-Z]/.test(candidate) && !/^[A-Z]/.test(current);
+}
+
+/**
+ * Distinct author names for the "Browse by author" filter, folding
+ * case/underscore variants of the same name (e.g. "Geiss" / "_Geiss") down
+ * to one canonical display string per author.
+ */
+export function getAuthorOptions(entries: PresetCatalogEntry[]): string[] {
+  const byKey = new Map<string, string>();
+  for (const entry of entries) {
+    const raw = entry.author?.trim();
+    if (!raw || raw.toLowerCase() === 'unknown') continue;
+    const key = raw.toLowerCase();
+    const current = byKey.get(key);
+    if (!current || isNicerAuthorCasing(raw, current)) {
+      byKey.set(key, raw);
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+}
+
+export function matchesAuthor(
+  entry: PresetCatalogEntry,
+  author: string | null,
+) {
+  if (!author) return true;
+  return (entry.author ?? '').trim().toLowerCase() === author.toLowerCase();
+}
+
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
   const collectionTags = new Set<string>();
   entries.forEach((entry) => {
@@ -290,6 +325,9 @@ export function getFeaturedCollectionTags(collectionTags: string[]) {
     'collection:mood-ambient',
     'collection:rovastar-and-collaborators',
     'collection:touch-friendly',
+    // Catch-all import (97.6% of the catalog) — listed last so the smaller,
+    // curated collections above stay easy to spot for discovery.
+    'collection:butterchurn',
   ];
   const featured = featuredHints.filter((tag) => collectionTags.includes(tag));
   if (featured.length > 0) {
@@ -301,15 +339,18 @@ export function getFeaturedCollectionTags(collectionTags: string[]) {
 export function buildAppliedFilterSummary({
   searchQuery,
   collectionTag,
+  authorFilter,
 }: {
   searchQuery: string;
   collectionTag: string | null;
+  authorFilter?: string | null;
 }) {
   const appliedFilters = [
     searchQuery.trim().length > 0 ? `Search: "${searchQuery.trim()}"` : null,
     collectionTag
       ? `Collection: ${prettifyCollectionTag(collectionTag)}`
       : null,
+    authorFilter ? `Author: ${authorFilter}` : null,
   ].filter(Boolean);
 
   if (appliedFilters.length === 0) {

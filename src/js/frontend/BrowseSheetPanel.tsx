@@ -7,7 +7,9 @@ import {
   type BrowseSortMode,
   buildAppliedFilterSummary,
   describePresetMood,
+  getAuthorOptions,
   getFeaturedCollectionTags,
+  matchesAuthor,
   prettifyCollectionTag,
   resolveAuthorUrl,
   sortBrowseEntries,
@@ -97,7 +99,10 @@ export function BrowseSheetPanel({
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
   const [limit, setLimit] = useState(BATCH_SIZE);
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [authorFilter, setAuthorFilter] = useState<string | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
+
+  const authorOptions = useMemo(() => getAuthorOptions(catalog), [catalog]);
 
   // Synchronize local search state when global searchQuery is modified externally (e.g. clear filters)
   useEffect(() => {
@@ -115,12 +120,19 @@ export function BrowseSheetPanel({
 
   const featuredTags = getFeaturedCollectionTags(collectionTags);
   const hasFilter =
-    localSearch.trim().length > 0 || routeState.collectionTag !== null;
+    localSearch.trim().length > 0 ||
+    routeState.collectionTag !== null ||
+    authorFilter !== null;
 
-  const browseEntries =
+  const collectionFiltered =
     routeState.collectionTag === 'collection:community'
       ? engine.filteredCatalog
       : filteredCatalog;
+  const browseEntries = useMemo(
+    () =>
+      collectionFiltered.filter((entry) => matchesAuthor(entry, authorFilter)),
+    [collectionFiltered, authorFilter],
+  );
   const sorted = useMemo(
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
@@ -132,7 +144,7 @@ export function BrowseSheetPanel({
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset limit on filter changes
   useEffect(() => {
     setLimit(BATCH_SIZE);
-  }, [searchQuery, routeState.collectionTag]);
+  }, [searchQuery, routeState.collectionTag, authorFilter]);
 
   return (
     <div
@@ -210,6 +222,22 @@ export function BrowseSheetPanel({
           </button>
         </nav>
 
+        {authorOptions.length > 0 ? (
+          <select
+            className="ctl-select"
+            aria-label="Filter by author"
+            value={authorFilter ?? ''}
+            onChange={(e) => setAuthorFilter(e.target.value || null)}
+          >
+            <option value="">All authors</option>
+            {authorOptions.map((author) => (
+              <option key={author} value={author}>
+                {author}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
         {hasFilter ? (
           <p
             className="ctl-browse-applied"
@@ -220,6 +248,7 @@ export function BrowseSheetPanel({
               {buildAppliedFilterSummary({
                 searchQuery: localSearch,
                 collectionTag: routeState.collectionTag,
+                authorFilter,
               })}
             </span>
             <button
@@ -229,6 +258,7 @@ export function BrowseSheetPanel({
                 setLocalSearch('');
                 ui.setSearchQuery('');
                 onCollectionTagChange(null);
+                setAuthorFilter(null);
               }}
             >
               Clear
@@ -301,6 +331,7 @@ export function BrowseSheetPanel({
                 setLocalSearch('');
                 ui.setSearchQuery('');
                 onCollectionTagChange(null);
+                setAuthorFilter(null);
               }}
             >
               Clear filters
