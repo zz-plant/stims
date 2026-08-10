@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from '../../css/StrudelLabPanel.module.css';
+import { StrudelScopeStrip } from './StrudelScopeStrip.tsx';
 import {
   loadStrudelBridge,
   type StrudelBridge,
@@ -52,6 +53,7 @@ export function StrudelLabPanel() {
   const [code, setCode] = useState(EXAMPLES[0]?.code ?? '');
   const [status, setStatus] = useState<LabStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [scopeStream, setScopeStream] = useState<MediaStream | null>(null);
   const bridgeRef = useRef<StrudelBridge | null>(null);
   const visualizerStartedRef = useRef(false);
 
@@ -67,6 +69,7 @@ export function StrudelLabPanel() {
       if (!bridgeRef.current) {
         setStatus('loading');
         bridgeRef.current = await loadStrudelBridge();
+        setScopeStream(bridgeRef.current.stream);
       }
       const bridge = bridgeRef.current;
       await bridge.evaluate(code);
@@ -95,76 +98,86 @@ export function StrudelLabPanel() {
     setStatus('stopped');
   };
 
+  const scopeStrip = scopeStream ? (
+    <StrudelScopeStrip stream={scopeStream} />
+  ) : null;
+
   if (!open) {
     return (
-      <button
-        type="button"
-        className={styles.reopenButton}
-        onClick={() => setOpen(true)}
-      >
-        Strudel
-      </button>
+      <>
+        {scopeStrip}
+        <button
+          type="button"
+          className={styles.reopenButton}
+          onClick={() => setOpen(true)}
+        >
+          Strudel
+        </button>
+      </>
     );
   }
 
   return (
-    <aside className={styles.panel} aria-label="Strudel pattern lab">
-      <header className={styles.header}>
-        <h2 className={styles.title}>Strudel × Stims</h2>
-        <button
-          type="button"
-          className={styles.closeButton}
-          onClick={() => setOpen(false)}
-          aria-label="Collapse Strudel lab"
-        >
-          ×
-        </button>
-      </header>
-
-      <div className={styles.examples}>
-        {EXAMPLES.map((example) => (
+    <>
+      {scopeStrip}
+      <aside className={styles.panel} aria-label="Strudel pattern lab">
+        <header className={styles.header}>
+          <h2 className={styles.title}>Strudel × Stims</h2>
           <button
-            key={example.label}
             type="button"
-            className={styles.exampleChip}
-            onClick={() => setCode(example.code)}
+            className={styles.closeButton}
+            onClick={() => setOpen(false)}
+            aria-label="Collapse Strudel lab"
           >
-            {example.label}
+            ×
           </button>
-        ))}
-      </div>
+        </header>
 
-      <textarea
-        className={styles.editor}
-        value={code}
-        onChange={(event) => setCode(event.target.value)}
-        rows={9}
-        spellCheck={false}
-        aria-label="Strudel pattern code"
-      />
+        <div className={styles.examples}>
+          {EXAMPLES.map((example) => (
+            <button
+              key={example.label}
+              type="button"
+              className={styles.exampleChip}
+              onClick={() => setCode(example.code)}
+            >
+              {example.label}
+            </button>
+          ))}
+        </div>
 
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.playButton}
-          onClick={() => void handlePlay()}
-          disabled={status === 'loading'}
-        >
-          {status === 'playing' ? 'Update' : 'Play'}
-        </button>
-        <button
-          type="button"
-          className={styles.stopButton}
-          onClick={handleStop}
-          disabled={status !== 'playing'}
-        >
-          Stop
-        </button>
-      </div>
+        <textarea
+          className={styles.editor}
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          rows={9}
+          spellCheck={false}
+          aria-label="Strudel pattern code"
+        />
 
-      <p className={styles.status} data-tone={status}>
-        {errorMessage ?? STATUS_TEXT[status]}
-      </p>
-    </aside>
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.playButton}
+            onClick={() => void handlePlay()}
+            disabled={status === 'loading'}
+          >
+            {status === 'playing' ? 'Update' : 'Play'}
+          </button>
+          <button
+            type="button"
+            className={styles.stopButton}
+            onClick={handleStop}
+            disabled={status !== 'playing'}
+          >
+            Stop
+          </button>
+        </div>
+
+        <p className={styles.status} data-tone={status}>
+          {errorMessage ?? STATUS_TEXT[status]}
+        </p>
+      </aside>
+    </>
   );
 }

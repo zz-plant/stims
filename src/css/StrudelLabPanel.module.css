@@ -126,6 +126,25 @@
   color: var(--stims-good, #7de0a2);
 }
 
+.scopeStrip {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 40;
+  height: 112px;
+  padding: 6px;
+  border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
+  border-radius: 12px;
+  background: #14100c;
+}
+
+.scopeCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .reopenButton {
   position: absolute;
   top: calc(var(--stims-header-top, 62px) + 12px);
