@@ -190,6 +190,19 @@ export function getActivePerformanceSettings({
   storageKey?: string;
 } = {}): PerformanceSettings {
   if (activeSettings && activeStorageKey === storageKey) {
+    // Re-derive a preset-following maxPixelRatio on every read: the push-based
+    // subscription above can be severed (test resets clear the quality store's
+    // subscriber set), and reads must never return a stale derived value.
+    if (!maxPixelRatioIsUserSet) {
+      const derived = clampPerformanceValue(
+        resolveDefaultMaxPixelRatio(),
+        MIN_PIXEL_RATIO,
+        MAX_PIXEL_RATIO,
+      );
+      if (derived !== activeSettings.maxPixelRatio) {
+        activeSettings = { ...activeSettings, maxPixelRatio: derived };
+      }
+    }
     return activeSettings;
   }
 
