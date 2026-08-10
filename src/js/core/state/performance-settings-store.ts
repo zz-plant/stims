@@ -123,44 +123,48 @@ function getStoredSettings(storageKey = PERFORMANCE_SETTINGS_STORAGE_KEY) {
   const overrides = parseUrlSettings();
   const storage = getBrowserStorage();
 
-  if (!storage) {
-    return { ...DEFAULT_PERFORMANCE_SETTINGS, ...overrides };
+  let parsed: Partial<PerformanceSettings> = {};
+  const raw = storage?.getItem(storageKey) ?? null;
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw) as Partial<PerformanceSettings>;
+    } catch (error) {
+      console.debug('Unable to parse stored performance settings', error);
+      parsed = {};
+    }
   }
 
-  const raw = storage.getItem(storageKey);
-  if (!raw) {
-    return { ...DEFAULT_PERFORMANCE_SETTINGS, ...overrides };
-  }
+  const storedMaxPixelRatio =
+    typeof parsed.maxPixelRatio === 'number' &&
+    Number.isFinite(parsed.maxPixelRatio)
+      ? parsed.maxPixelRatio
+      : undefined;
+  maxPixelRatioIsUserSet =
+    overrides.maxPixelRatio !== undefined || storedMaxPixelRatio !== undefined;
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<PerformanceSettings>;
-    return {
-      ...DEFAULT_PERFORMANCE_SETTINGS,
-      ...parsed,
-      ...overrides,
-      maxPixelRatio: clampPerformanceValue(
-        overrides.maxPixelRatio ??
-          parsed.maxPixelRatio ??
-          DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio,
-        MIN_PIXEL_RATIO,
-        MAX_PIXEL_RATIO,
-      ),
-      particleBudget: clampPerformanceValue(
-        overrides.particleBudget ??
-          parsed.particleBudget ??
-          DEFAULT_PERFORMANCE_SETTINGS.particleBudget,
-        MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET,
-      ),
-      shaderQuality:
-        overrides.shaderQuality ||
-        parseShaderQuality(parsed.shaderQuality ?? '') ||
-        DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
-    };
-  } catch (error) {
-    console.debug('Unable to parse stored performance settings', error);
-    return { ...DEFAULT_PERFORMANCE_SETTINGS, ...overrides };
-  }
+  return {
+    ...DEFAULT_PERFORMANCE_SETTINGS,
+    ...parsed,
+    ...overrides,
+    maxPixelRatio: clampPerformanceValue(
+      overrides.maxPixelRatio ??
+        storedMaxPixelRatio ??
+        resolveDefaultMaxPixelRatio(),
+      MIN_PIXEL_RATIO,
+      MAX_PIXEL_RATIO,
+    ),
+    particleBudget: clampPerformanceValue(
+      overrides.particleBudget ??
+        parsed.particleBudget ??
+        DEFAULT_PERFORMANCE_SETTINGS.particleBudget,
+      MIN_PARTICLE_BUDGET,
+      MAX_PARTICLE_BUDGET,
+    ),
+    shaderQuality:
+      overrides.shaderQuality ||
+      parseShaderQuality(parsed.shaderQuality ?? '') ||
+      DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
+  };
 }
 
 function persistSettings(
@@ -171,7 +175,13 @@ function persistSettings(
   if (!storage) {
     return;
   }
-  storage.setItem(storageKey, JSON.stringify(settings));
+  // A preset-derived maxPixelRatio is never persisted: writing it would freeze
+  // a derived default into a user choice and stop it tracking preset changes.
+  const payload: Partial<PerformanceSettings> = { ...settings };
+  if (!maxPixelRatioIsUserSet) {
+    delete payload.maxPixelRatio;
+  }
+  storage.setItem(storageKey, JSON.stringify(payload));
 }
 
 export function getActivePerformanceSettings({
@@ -215,6 +225,12 @@ export function setPerformanceSettings(
   const current =
     activeSettings ??
     getActivePerformanceSettings({ storageKey: activeStorageKey });
+  if (
+    typeof settings.maxPixelRatio === 'number' &&
+    Number.isFinite(settings.maxPixelRatio)
+  ) {
+    maxPixelRatioIsUserSet = true;
+  }
   const merged: PerformanceSettings = {
     ...current,
     ...settings,
@@ -248,5 +264,6 @@ export function setPerformanceOption<K extends keyof PerformanceSettings>(
 export function resetPerformanceSettingsStore() {
   activeSettings = null;
   activeStorageKey = PERFORMANCE_SETTINGS_STORAGE_KEY;
+  maxPixelRatioIsUserSet = false;
   subscribers.clear();
 }
