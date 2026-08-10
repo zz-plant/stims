@@ -80,60 +80,69 @@ export function normalizeHlslToGlsl(shaderText: string): string {
         'sampleNoiseVolume(',
       )
       .replace(/\btexture\s*\(/giu, 'texture2D(')
-    .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
-    .replace(/\b(\d+)u\b/giu, '$1')
-    .replace(/\bfloat2\b/giu, 'vec2')
-    .replace(/\bfloat3\b/giu, 'vec3')
-    .replace(/\bfloat4\b/giu, 'vec4')
-    .replace(/\bsampler_main\b/giu, 'currentTex')
-    .replace(/\bsampler_fw_main\b/giu, 'currentTex')
-    .replace(/\bsampler_pc_main\b/giu, 'previousTex')
-    .replace(/\bsampler_pw_main\b/giu, 'previousTex')
-    .replace(/\bsampler_fc_main\b/giu, 'warpTex')
-    .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
-    .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
-    .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
-    .replace(
-      /\bsampler_noise\b|\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_fw_noise_lq\b|\bsampler_fw_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
-      'noiseTex',
-    )
-    .replace(
-      /\bsampler_noisevol\b|\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b|\bsampler_fw_noisevol\b|\bsampler_fw_noisevol_hq\b|\bsampler_fw_noisevol_lq\b/giu,
-      'simplexTex',
-    )
-    .replace(
-      /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
-      'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
-    )
-    .replace(
-      /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
-      'vec4(1.0 / texelSize, texelSize)',
-    )
-    .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
-    .replace(/\buv_orig\b/giu, 'vUv')
-    .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
-    .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
-    .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
-    .replace(/\btime\b/giu, 'signalTime')
-    .replace(/\bbass_att\b/giu, 'signalBassAtt')
-    .replace(/\bbass\b/giu, 'signalBass')
-    .replace(/\bmid_att\b/giu, 'signalMidAtt')
-    .replace(/\bmids_att\b/giu, 'signalMidAtt')
-    .replace(/\bmid\b/giu, 'signalMid')
-    .replace(/\bmids\b/giu, 'signalMid')
-    .replace(/\btreb_att\b/giu, 'signalTrebAtt')
-    .replace(/\btreb\b/giu, 'signalTreb')
-    .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
-    .replace(/\brms\b/giu, 'signalEnergy')
-    .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
-    .replace(/\bbeat\b/giu, 'signalBeat')
-    .replace(/\bprogress\b/giu, 'signalFrame')
-    .replace(/\bframe\b/giu, 'signalFrame')
-    .replace(/\bfps\b/giu, 'signalFps')
-    .replace(
-      /\brand_frame\b/giu,
-      'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-    )
+      .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
+      .replace(/\b(\d+)u\b/giu, '$1')
+      .replace(/\bfloat2\b/giu, 'vec2')
+      .replace(/\bfloat3\b/giu, 'vec3')
+      .replace(/\bfloat4\b/giu, 'vec4')
+      .replace(/\bsampler_main\b/giu, 'currentTex')
+      .replace(/\bsampler_fw_main\b/giu, 'currentTex')
+      .replace(/\bsampler_pc_main\b/giu, 'previousTex')
+      .replace(/\bsampler_pw_main\b/giu, 'previousTex')
+      .replace(/\bsampler_fc_main\b/giu, 'warpTex')
+      .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
+      .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
+      .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
+      .replace(
+        /\bsampler_noise\b|\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_fw_noise_lq\b|\bsampler_fw_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
+        'noiseTex',
+      )
+      .replace(
+        /\bsampler_noisevol\b|\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b|\bsampler_fw_noisevol\b|\bsampler_fw_noisevol_hq\b|\bsampler_fw_noisevol_lq\b/giu,
+        'simplexTex',
+      )
+      .replace(
+        /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
+        'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
+      )
+      .replace(
+        /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
+        'vec4(1.0 / texelSize, texelSize)',
+      )
+      // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
+      // uniform behind them — MilkDrop injects them at runtime, this pipeline
+      // does not — so any identifier left after the specific rewrites above
+      // would reach the GLSL undeclared and fail to compile. Every bundled
+      // substitute texture is 640x640 (xy = size, zw = 1/size).
+      .replace(
+        /\btexsize_[A-Za-z0-9_]+\b/giu,
+        'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
+      )
+      .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+      .replace(/\buv_orig\b/giu, 'vUv')
+      .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
+      .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
+      .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
+      .replace(/\btime\b/giu, 'signalTime')
+      .replace(/\bbass_att\b/giu, 'signalBassAtt')
+      .replace(/\bbass\b/giu, 'signalBass')
+      .replace(/\bmid_att\b/giu, 'signalMidAtt')
+      .replace(/\bmids_att\b/giu, 'signalMidAtt')
+      .replace(/\bmid\b/giu, 'signalMid')
+      .replace(/\bmids\b/giu, 'signalMid')
+      .replace(/\btreb_att\b/giu, 'signalTrebAtt')
+      .replace(/\btreb\b/giu, 'signalTreb')
+      .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
+      .replace(/\brms\b/giu, 'signalEnergy')
+      .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
+      .replace(/\bbeat\b/giu, 'signalBeat')
+      .replace(/\bprogress\b/giu, 'signalFrame')
+      .replace(/\bframe\b/giu, 'signalFrame')
+      .replace(/\bfps\b/giu, 'signalFps')
+      .replace(
+        /\brand_frame\b/giu,
+        'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
+      )
   );
 }
 

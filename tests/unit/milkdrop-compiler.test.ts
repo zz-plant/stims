@@ -2425,6 +2425,8 @@ comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
     expect(compiled.ir.shaderText.customSamplers).toContainEqual({
       name: 'sampler_anandamideCTFree00',
       textureFile: 'seamless_perlin_noise.png',
+      filter: 'linear',
+      wrap: 'repeat',
     });
     expect(compiled.diagnostics).not.toContainEqual(
       expect.objectContaining({
@@ -2446,6 +2448,8 @@ comp_shader=uniform sampler2D sampler_definitely_not_bundled; ret = texture(samp
     expect(compiled.ir.shaderText.customSamplers).toContainEqual({
       name: 'sampler_definitely_not_bundled',
       textureFile: null,
+      filter: 'linear',
+      wrap: 'repeat',
     });
     expect(compiled.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -2468,6 +2472,8 @@ comp_shader=uniform sampler2D sampler_water_caustics; ret = texture(sampler_wate
       {
         name: 'sampler_water_caustics',
         textureFile: 'water_caustics.png',
+        filter: 'linear',
+        wrap: 'repeat',
       },
     ]);
     expect(

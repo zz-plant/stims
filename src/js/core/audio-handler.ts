@@ -56,6 +56,22 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+// Float analog of createWaveformAutoGain().apply(): scale around 0 and clamp
+// to [-1, 1], writing into a reusable output buffer.
+function applyFloatWaveformGain(
+  input: Float32Array,
+  output: Float32Array | null,
+  gain: number,
+): Float32Array {
+  const target =
+    output?.length === input.length ? output : new Float32Array(input.length);
+  const effectiveGain = gain > 1 ? gain : 1;
+  for (let i = 0; i < input.length; i += 1) {
+    target[i] = clamp(input[i] * effectiveGain, -1, 1);
+  }
+  return target;
+}
+
 export function resolveAdaptiveFftSize(
   sampleRate: number,
   requestedFftSize?: number,
@@ -115,6 +131,11 @@ export class FrequencyAnalyser {
   private normalizedWaveform: Uint8Array | null = null;
   private normalizedWaveformL: Uint8Array | null = null;
   private normalizedWaveformR: Uint8Array | null = null;
+  private waveformFloat: Float32Array | null = null;
+  private waveformFloatL: Float32Array | null = null;
+  private waveformFloatR: Float32Array | null = null;
+  private timeDomainDataL: Float32Array | null = null;
+  private timeDomainDataR: Float32Array | null = null;
 
   private constructor({
     sourceNode,
@@ -543,6 +564,62 @@ export class FrequencyAnalyser {
     return this.normalizedWaveformR;
   }
 
+  // Float PCM for the wave renderer: same signal as getWaveformData() but
+  // without the byte quantization (visible as staircase steps once waves
+  // draw at full fWaveScale amplitude). Applies the same AGC gain as the
+  // byte getters, so callers must read this after getWaveformData() in a
+  // frame — the runtime signal tracker already resolves in that order.
+  getWaveformFloatData(): Float32Array | null {
+    this.updateTimeDomainData();
+    if (this.timeDomainData.length === 0) {
+      return null;
+    }
+    this.waveformFloat = applyFloatWaveformGain(
+      this.timeDomainData,
+      this.waveformFloat,
+      this.waveformGain,
+    );
+    return this.waveformFloat;
+  }
+
+  getWaveformFloatDataL(): Float32Array | null {
+    const analyser = this.analyserNodeL;
+    if (!analyser || typeof analyser.getFloatTimeDomainData !== 'function') {
+      return null;
+    }
+    if (this.timeDomainDataL?.length !== analyser.fftSize) {
+      this.timeDomainDataL = new Float32Array(analyser.fftSize);
+    }
+    analyser.getFloatTimeDomainData(
+      this.timeDomainDataL as Float32Array<ArrayBuffer>,
+    );
+    this.waveformFloatL = applyFloatWaveformGain(
+      this.timeDomainDataL,
+      this.waveformFloatL,
+      this.waveformGain,
+    );
+    return this.waveformFloatL;
+  }
+
+  getWaveformFloatDataR(): Float32Array | null {
+    const analyser = this.analyserNodeR;
+    if (!analyser || typeof analyser.getFloatTimeDomainData !== 'function') {
+      return null;
+    }
+    if (this.timeDomainDataR?.length !== analyser.fftSize) {
+      this.timeDomainDataR = new Float32Array(analyser.fftSize);
+    }
+    analyser.getFloatTimeDomainData(
+      this.timeDomainDataR as Float32Array<ArrayBuffer>,
+    );
+    this.waveformFloatR = applyFloatWaveformGain(
+      this.timeDomainDataR,
+      this.waveformFloatR,
+      this.waveformGain,
+    );
+    return this.waveformFloatR;
+  }
+
   getSpectralFeatures() {
     this.updateTimeDomainData();
     this.updateSpectralFeatures();
@@ -556,6 +633,10 @@ export class FrequencyAnalyser {
   private updateTimeDomainData() {
     if (!this.analyserNode) {
       return;
+    }
+
+    if (this.timeDomainData.length !== this.analyserNode.fftSize) {
+      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
     }
 
     if (typeof this.analyserNode.getFloatTimeDomainData === 'function') {

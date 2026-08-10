@@ -277,6 +277,38 @@ describe('milkdrop vm frame generation', () => {
     expect(frame.visual.positions[0]).toBeCloseTo(expected, 2);
   });
 
+  test('prefers float PCM over byte waveform data when both are present', () => {
+    const signals = defaultSignalEnv();
+    // Byte data says full positive amplitude; float data says a value no
+    // byte buffer can represent (between two byte steps). The float value
+    // must win, in both mono and stereo paths.
+    signals.waveformData = new Uint8Array(64).fill(255);
+    signals.waveformDataL = new Uint8Array(64).fill(255);
+    signals.waveformDataR = new Uint8Array(64).fill(255);
+    signals.waveformFloatData = new Float32Array(64).fill(0.3005);
+    signals.waveformFloatDataL = new Float32Array(64).fill(0.3005);
+    signals.waveformFloatDataR = new Float32Array(64).fill(0.3005);
+
+    const frame = buildMainWaveFrame({
+      state: {
+        wave_mode: 2,
+        wave_x: 0.5,
+        wave_y: 0.5,
+        wave_scale: 1,
+        wave_smoothing: 0,
+        wave_a: 0.9,
+      },
+      signals,
+      detailScale: 1,
+      previousSamples: new Float32Array(64),
+      previousMomentum: new Float32Array(64),
+      useProcedural: false,
+    });
+
+    expect(frame.visual.positions[0]).toBeCloseTo(0.3005, 4);
+    expect(frame.visual.positions[1]).toBeCloseTo(0.3005, 4);
+  });
+
   test('mode 3 matches mode 2 geometry with treble-modulated alpha', () => {
     const signals = defaultSignalEnv();
     signals.waveformData = new Uint8Array(64).fill(128);

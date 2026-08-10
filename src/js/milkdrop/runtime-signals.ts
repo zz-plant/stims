@@ -169,6 +169,9 @@ export function createMilkdropSignalTracker(options?: {
     frequencyDataR: null as Uint8Array | null,
     waveformDataL: null as Uint8Array | null,
     waveformDataR: null as Uint8Array | null,
+    waveformFloatData: null as Float32Array | null,
+    waveformFloatDataL: null as Float32Array | null,
+    waveformFloatDataR: null as Float32Array | null,
   } as unknown as MilkdropRuntimeSignals;
 
   let latestWeightedEnergy = 0;
@@ -217,6 +220,13 @@ export function createMilkdropSignalTracker(options?: {
         waveformDataL ?? analyser?.getWaveformDataL?.() ?? null;
       const resolvedWaveformDataR =
         waveformDataR ?? analyser?.getWaveformDataR?.() ?? null;
+      // After getWaveformData() above, so the AGC gain these getters apply
+      // matches the byte buffers resolved this frame.
+      const resolvedWaveformFloat = analyser?.getWaveformFloatData?.() ?? null;
+      const resolvedWaveformFloatL =
+        analyser?.getWaveformFloatDataL?.() ?? null;
+      const resolvedWaveformFloatR =
+        analyser?.getWaveformFloatDataR?.() ?? null;
       const sampleRate =
         typeof analyser?.getSampleRate === 'function'
           ? analyser.getSampleRate()
@@ -354,6 +364,9 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.frequencyDataR = resolvedFrequencyDataR;
       signalCache.waveformDataL = resolvedWaveformDataL;
       signalCache.waveformDataR = resolvedWaveformDataR;
+      signalCache.waveformFloatData = resolvedWaveformFloat;
+      signalCache.waveformFloatDataL = resolvedWaveformFloatL;
+      signalCache.waveformFloatDataR = resolvedWaveformFloatR;
       latestWeightedEnergy = finalWeightedEnergy;
 
       return signalCache;

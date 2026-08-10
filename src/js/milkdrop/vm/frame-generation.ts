@@ -123,7 +123,24 @@ function sampleByteData(data: Uint8Array, t: number) {
   return mix(lower, upper, amount);
 }
 
+function sampleFloatData(data: Float32Array, t: number) {
+  if (data.length === 0) {
+    return 0;
+  }
+  const scaledIndex = clamp(t, 0, 1) * Math.max(0, data.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const amount = scaledIndex - lowerIndex;
+  return mix(data[lowerIndex] ?? 0, data[upperIndex] ?? 0, amount);
+}
+
 function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
+  // Float PCM avoids the 1/128 byte staircase, which reads as blocky wave
+  // outlines now that waves draw at full fWaveScale amplitude.
+  const floatData = signals.waveformFloatData;
+  if (floatData && floatData.length > 0) {
+    return sampleFloatData(floatData, t);
+  }
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
@@ -156,6 +173,19 @@ function sampleStereoWaveformData(
   t: number,
   offset: number,
 ): number {
+  const floatLeft = signals.waveformFloatDataL;
+  const floatRight = signals.waveformFloatDataR;
+  if (
+    floatLeft &&
+    floatLeft.length > 0 &&
+    floatRight &&
+    floatRight.length > 0
+  ) {
+    return sampleFloatData(
+      channel === 'left' ? floatLeft : floatRight,
+      wrapUnit(t + offset),
+    );
+  }
   const left = signals.waveformDataL;
   const right = signals.waveformDataR;
   if (left && left.length > 0 && right && right.length > 0) {
@@ -353,6 +383,9 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     frequencyDataR: null,
     waveformDataL: null,
     waveformDataR: null,
+    waveformFloatData: null,
+    waveformFloatDataL: null,
+    waveformFloatDataR: null,
   };
 }
 

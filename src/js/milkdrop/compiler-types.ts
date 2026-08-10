@@ -410,6 +410,8 @@ export type MilkdropPostEffects = {
 export type MilkdropCustomSamplerDeclaration = {
   name: string;
   textureFile: string | null;
+  filter: 'linear' | 'nearest';
+  wrap: 'repeat' | 'clamp';
 };
 
 export type MilkdropPresetIR = {
