@@ -3,6 +3,7 @@ import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
 import {
+  createWaveformAutoGain,
   type FourBandTransientMetrics,
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
@@ -109,6 +110,11 @@ export class FrequencyAnalyser {
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
+  private readonly waveformAgc = createWaveformAutoGain();
+  private waveformGain = 1;
+  private normalizedWaveform: Uint8Array | null = null;
+  private normalizedWaveformL: Uint8Array | null = null;
+  private normalizedWaveformR: Uint8Array | null = null;
 
   private constructor({
     sourceNode,
@@ -413,7 +419,23 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformData;
+    // Quiet sources (the demo track, soft microphones) park every byte near
+    // 128, and presets draw that as a flat line. Normalize toward full scale
+    // for the visualizer; the raw buffer stays untouched so the gain never
+    // compounds across calls.
+    this.waveformGain = this.waveformAgc.measure(this.waveformData);
+    if (this.waveformGain <= 1) {
+      return this.waveformData;
+    }
+    if (this.normalizedWaveform?.length !== this.waveformData.length) {
+      this.normalizedWaveform = new Uint8Array(this.waveformData.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformData,
+      this.normalizedWaveform,
+      this.waveformGain,
+    );
+    return this.normalizedWaveform;
   }
 
   getZeroCrossingRate() {
@@ -481,7 +503,19 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformDataL;
+    if (!this.waveformDataL || this.waveformGain <= 1) {
+      return this.waveformDataL;
+    }
+    // Reuse the mono AGC gain so both channels scale identically.
+    if (this.normalizedWaveformL?.length !== this.waveformDataL.length) {
+      this.normalizedWaveformL = new Uint8Array(this.waveformDataL.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformDataL,
+      this.normalizedWaveformL,
+      this.waveformGain,
+    );
+    return this.normalizedWaveformL;
   }
 
   getWaveformDataR() {
@@ -495,7 +529,18 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformDataR;
+    if (!this.waveformDataR || this.waveformGain <= 1) {
+      return this.waveformDataR;
+    }
+    if (this.normalizedWaveformR?.length !== this.waveformDataR.length) {
+      this.normalizedWaveformR = new Uint8Array(this.waveformDataR.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformDataR,
+      this.normalizedWaveformR,
+      this.waveformGain,
+    );
+    return this.normalizedWaveformR;
   }
 
   getSpectralFeatures() {
