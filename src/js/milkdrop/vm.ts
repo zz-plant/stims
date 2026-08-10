@@ -69,7 +69,7 @@ let sharedGlobalBuffer: Float32Array | null = null;
 const EMPTY_BUFFER = new Float32Array(0);
 
 function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
-  if (!preset.source.raw.includes('gmegabuf')) {
+  if (!/gmegabuf/iu.test(preset.source.raw)) {
     return sharedGlobalBuffer ?? EMPTY_BUFFER;
   }
   sharedGlobalBuffer ??= new Float32Array(MILKDROP_GMEGABUF_SIZE);
@@ -295,6 +295,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   reset() {
     this.gmegabuf = resolveGlobalBuffer(this.preset);
+    this.megabuf.fill(0);
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
     this.registers = Object.create(this.state) as MutableState;
     for (let index = 1; index <= 32; index += 1) {

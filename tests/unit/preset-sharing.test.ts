@@ -1,6 +1,6 @@
+import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, test } from 'bun:test';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
 import {
   buildPresetOgSvg,
@@ -105,7 +105,9 @@ describe('preset social sharing', () => {
         'SpaceMono-Bold.ttf',
       ].map(
         (name) =>
-          new Uint8Array(readFileSync(join(repoRoot, 'public', 'og', 'fonts', name))),
+          new Uint8Array(
+            readFileSync(join(repoRoot, 'public', 'og', 'fonts', name)),
+          ),
       ),
     };
 
