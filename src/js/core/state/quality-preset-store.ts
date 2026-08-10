@@ -46,7 +46,9 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'balanced',
     label: 'Balanced',
     description: 'Default quality target for most laptops and desktops.',
-    maxPixelRatio: 1.0,
+    // 1.75 preserves the long-standing effective desktop cap now that preset
+    // caps actually apply (the performance store used to override them all).
+    maxPixelRatio: 1.75,
     renderScale: 0.85,
     particleScale: 1,
   },
@@ -54,7 +56,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'hi-fi',
     label: 'Hi-fi visuals',
     description: 'Sharper output and denser effects for stronger GPUs.',
-    maxPixelRatio: 1.5,
+    maxPixelRatio: 2,
     renderScale: 1,
     particleScale: 1.2,
   },
