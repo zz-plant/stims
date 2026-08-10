@@ -401,10 +401,12 @@ export function buildMilkdropTransformWgslCode(
       signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + paramWarpAnimSpeed)
     ) * paramWarp * 0.08;
     let radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
-    let zoomScale = pow(
+    // Bounded like the CPU path: extreme authored zoom/zoomexp pairs
+    // (e.g. orbasonic's 100/100) overflow f32 and NaN the warp otherwise.
+    let zoomScale = clamp(pow(
       max(paramZoom, 0.0001),
       pow(max(paramZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    );
+    ), 0.02, 50.0);
     let warped = vec2<f32>(
       (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
       (transformedY + sin(angle * 4.0) * ripple) * zoomScale
@@ -453,10 +455,10 @@ export function buildMilkdropTransformWgslCode(
       signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
     ) * fieldWarp * 0.08;
     let radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
-    let zoomScale = pow(
+    let zoomScale = clamp(pow(
       max(fieldZoom, 0.0001),
       pow(max(fieldZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    );
+    ), 0.02, 50.0);
     let px = (translatedX + cos(angle * 3.0) * ripple) * zoomScale;
     let py = (translatedY + sin(angle * 4.0) * ripple) * zoomScale;
     let cosRot = cos(fieldRotation);

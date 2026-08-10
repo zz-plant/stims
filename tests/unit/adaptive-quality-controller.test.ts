@@ -181,7 +181,7 @@ describe('createAdaptiveQualityController', () => {
 
     const recovered = controller.getState();
     expect(recovered.qualityStep).toBe(0);
-    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.1, 6);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.25, 6);
     expect(recovered.supportsGpuTimestamps).toBe(true);
     expect(['steady', 'recovering', 'enhanced']).toContain(
       recovered.adaptation,

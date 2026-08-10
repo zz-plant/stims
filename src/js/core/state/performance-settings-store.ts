@@ -254,6 +254,28 @@ export function getActivePerformanceStorageKey() {
   return activeStorageKey;
 }
 
+/**
+ * Restore defaults, returning maxPixelRatio to preset-following mode instead
+ * of freezing the static default as a user choice.
+ */
+export function resetPerformanceSettingsToDefaults({
+  storageKey = activeStorageKey,
+}: {
+  storageKey?: string;
+} = {}): PerformanceSettings {
+  maxPixelRatioIsUserSet = false;
+  const next: PerformanceSettings = {
+    ...DEFAULT_PERFORMANCE_SETTINGS,
+    maxPixelRatio: clampPerformanceValue(
+      resolveDefaultMaxPixelRatio(),
+      MIN_PIXEL_RATIO,
+      MAX_PIXEL_RATIO,
+    ),
+  };
+  applyPerformanceSettings(next, storageKey);
+  return next;
+}
+
 export function setPerformanceOption<K extends keyof PerformanceSettings>(
   key: K,
   value: PerformanceSettings[K],
