@@ -134,7 +134,12 @@ function buildProceduralWaveAttributeValues(
   offset = 0,
 ) {
   const sampleT = buildProceduralWaveSampleT(values.length, closed);
-  return sampleT.map((t) => sampleScalarValueAt(values, t + offset));
+  // MilkDrop wraps offset reads modulo the buffer (waveL[(i + 32) % len]),
+  // so shifted lookups wrap instead of clamping onto the last sample.
+  return sampleT.map((t) => {
+    const shifted = t + offset;
+    return sampleScalarValueAt(values, shifted - Math.floor(shifted));
+  });
 }
 
 function buildProceduralWaveParity(sourceLength: number, closed: boolean) {
