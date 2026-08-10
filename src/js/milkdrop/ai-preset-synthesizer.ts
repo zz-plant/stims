@@ -173,3 +173,36 @@ export function synthesizeEELPreset(
     wavecode_0_per_point: 'x = sample; y = 0.5 + value1 * 0.2;',
   };
 }
+
+export function synthesizedPresetToMilkSource(
+  preset: SynthesizedMilkdropPreset,
+): string {
+  const perFrameLines = preset.per_frame
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const perPixelLines = preset.per_pixel
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const formattedPerFrame = perFrameLines
+    .map((line, idx) => `per_frame_${idx + 1}=${line}`)
+    .join('\n');
+  const formattedPerPixel = perPixelLines
+    .map((line, idx) => `per_pixel_${idx + 1}=${line}`)
+    .join('\n');
+
+  return `[preset00]
+fRating=5.0
+fDecay=${preset.decay}
+fZoom=${preset.zoom}
+fRot=${preset.rot}
+fWarp=${preset.warp}
+fWaveR=${preset.wave_r}
+fWaveG=${preset.wave_g}
+fWaveB=${preset.wave_b}
+${formattedPerFrame}
+${formattedPerPixel}
+`;
+}

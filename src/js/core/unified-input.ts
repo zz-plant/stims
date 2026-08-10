@@ -136,8 +136,12 @@ const pointerFromNormalized = (
 };
 
 const getPrimaryGamepad = () => {
-  const pads = navigator.getGamepads?.() ?? [];
-  return Array.from(pads).find((pad) => pad?.connected) ?? null;
+  try {
+    const pads = navigator.getGamepads?.() ?? [];
+    return Array.from(pads).find((pad) => pad?.connected) ?? null;
+  } catch {
+    return null;
+  }
 };
 
 const isTextInput = (element: Element | null) =>
