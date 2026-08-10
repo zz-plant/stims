@@ -27,7 +27,7 @@ import type {
   MilkdropBackendBehavior,
 } from './backend-behavior';
 import {
-  extractCustomSamplerDeclarations,
+  extractReferencedCustomSamplers,
   type MilkdropCustomSamplerDeclaration,
 } from './compiler/custom-samplers.ts';
 import {
@@ -926,6 +926,26 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
  * raw shader bodies assume MilkDrop globals (`uv`, `uv_orig`, `ret`, `rad`,
  * `ang`, q vars, `aspect`) are in scope; the templates provide them.
  */
+/**
+ * Texture-pack samplers referenced by the injected GLSL have no uniform in
+ * the fragment templates; each needs a `uniform sampler2D` declaration or
+ * the shader fails to compile. Bindings come from the customSamplers loop
+ * in setDirectShaderPrograms, which resolves the same names.
+ */
+function buildCustomSamplerUniformDeclarations(
+  fragments: Array<string | null>,
+): string {
+  const names = new Set<string>();
+  for (const fragment of fragments) {
+    for (const sampler of extractReferencedCustomSamplers(fragment)) {
+      names.add(sampler.name);
+    }
+  }
+  return [...names]
+    .map((name) => `uniform sampler2D ${name};\n`)
+    .join('');
+}
+
 export function assembleMilkdropDirectFragmentShaders(
   warpGlsl: string | null,
   compGlsl: string | null,
@@ -944,23 +964,27 @@ export function assembleMilkdropDirectFragmentShaders(
     warpBody = split.body || null;
   }
 
-  const warp = injectDirectShaderGlsl(
-    MILKDROP_WARP_FRAGMENT_SHADER,
-    warpBody,
-    null,
-    warpGlobals,
-  );
+  const warp =
+    buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
+    injectDirectShaderGlsl(
+      MILKDROP_WARP_FRAGMENT_SHADER,
+      warpBody,
+      null,
+      warpGlobals,
+    );
 
   const cleanCompBody = compGlsl
     ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
     : null;
 
   // Build composite shader: warp section kept empty since warp runs separate
-  const composite = injectDirectShaderGlsl(
-    MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
-    null,
-    cleanCompBody,
-  );
+  const composite =
+    buildCustomSamplerUniformDeclarations([cleanCompBody]) +
+    injectDirectShaderGlsl(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+      null,
+      cleanCompBody,
+    );
 
   return { warp, composite };
 }
@@ -1482,9 +1506,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
 
+    // Every `sampler_*` still referenced after the built-in rewrites is a
+    // texture-pack sampler (MilkDrop auto-binds them without declarations);
+    // each resolves to a bundled texture or a deterministic fallback so the
+    // assembled shaders always compile.
     this.customSamplers = [
-      ...(warpGlsl ? extractCustomSamplerDeclarations(warpGlsl) : []),
-      ...(compGlsl ? extractCustomSamplerDeclarations(compGlsl) : []),
+      ...(warpGlsl ? extractReferencedCustomSamplers(warpGlsl) : []),
+      ...(compGlsl ? extractReferencedCustomSamplers(compGlsl) : []),
     ].filter((s, _i, arr) => arr.findIndex((c) => c.name === s.name) === _i);
 
     // Add warp-specific custom samplers to the warp material

@@ -54,13 +54,13 @@ const DECLARATION_PATTERN =
 
 const REFERENCE_PATTERN = /\bsampler_[A-Za-z_][A-Za-z0-9_]*\b/gu;
 
-// MilkDrop convention auto-binds any `sampler_xxx` reference to texture
-// `xxx` from the user's texture pack — presets rarely declare them. Names
-// the alias table can't resolve to a bundled texture still need to compile,
-// so they fall back to a bundled substitute picked by a stable name hash
-// (same preset always renders the same way).
-const FALLBACK_TEXTURE_POOL = [...new Set(Object.values(MILKDROP_TEXTURE_FILES))];
-
+/**
+ * MilkDrop convention auto-binds any `sampler_xxx` reference to texture
+ * `xxx` from the user's texture pack — presets rarely declare them. Names
+ * the alias table can't resolve to a bundled texture still need to compile,
+ * so they fall back to a bundled tileable substitute picked by a stable
+ * name hash (same name always gets the same texture).
+ */
 export function resolveFallbackSamplerTextureFile(name: string): string {
   const resolved = resolveCustomSamplerTextureFile(name);
   if (resolved) return resolved;
@@ -68,14 +68,18 @@ export function resolveFallbackSamplerTextureFile(name: string): string {
   for (let i = 0; i < name.length; i++) {
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   }
-  return FALLBACK_TEXTURE_POOL[hash % FALLBACK_TEXTURE_POOL.length]!;
+  return (
+    RAND_SMALLTILED_TEXTURE_POOL[hash % RAND_SMALLTILED_TEXTURE_POOL.length] ??
+    MILKDROP_TEXTURE_FILES.noise
+  );
 }
 
 /**
  * Collects every `sampler_*` identifier still referenced in a shader after
  * the built-in rewrites (`sampler_main` → `currentTex`, noise/blur variants,
  * …) have run. These are the texture-pack samplers that would otherwise
- * reach the GLSL compiler undeclared.
+ * reach the GLSL compiler undeclared; each resolves to a bundled texture so
+ * the caller can declare and bind them all.
  */
 export function extractReferencedCustomSamplers(
   shaderText: string | null,
@@ -88,6 +92,7 @@ export function extractReferencedCustomSamplers(
     declarations.set(name, {
       name,
       textureFile: resolveFallbackSamplerTextureFile(name),
+      ...resolveCustomSamplerSampleMode(name),
     });
   }
   return [...declarations.values()];

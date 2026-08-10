@@ -504,9 +504,7 @@ export function createCompositeUniforms(
     fractalTex: texture(auxTextures.fractal),
     videoTex: texture(auxTextures.video),
     glyphTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.glyph)),
-    organicTex: texture(
-      getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.organic),
-    ),
+    organicTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.organic)),
     audioTex: texture(shared2DPlaceholderRGBA),
     noiseTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex3D: texture3D(shared3DPlaceholderRGBA),

@@ -99,6 +99,42 @@ function compileNode(
       const l = compileNode(node.left, context);
       const r = compileNode(node.right, context);
       switch (node.operator) {
+        case '=': {
+          // Assignment: lvalue = rvalue; returns rvalue
+          const rvalue = r;
+          let assignment = '';
+          if (node.left.type === 'identifier') {
+            const target = node.left.name;
+            const statement: MilkdropCompiledStatement = {
+              target,
+              expression: node.right,
+              line: 0,
+              source: '',
+            };
+            assignment = compileStore(statement, context);
+          } else if (
+            node.left.type === 'call' &&
+            (node.left.name.toLowerCase() === 'megabuf' ||
+              node.left.name.toLowerCase() === 'gmegabuf')
+          ) {
+            const buffer = node.left.name.toLowerCase();
+            const size =
+              buffer === 'megabuf'
+                ? MILKDROP_MEGABUF_SIZE
+                : MILKDROP_GMEGABUF_SIZE;
+            const index = nextTemporary(context);
+            const indexSource = node.left.args[0]
+              ? compileNode(node.left.args[0], context)
+              : '0';
+            assignment = `${index} = Math.trunc(${indexSource}); if (${index} >= 0 && ${index} < ${size}) { ${buffer === 'megabuf' ? 'mb' : 'gb'}[${index}] = ${rvalue}; }`;
+          }
+          if (assignment) {
+            const tempVar = nextTemporary(context);
+            return `(${tempVar} = ${rvalue}, ${assignment}, ${tempVar})`;
+          }
+          // Invalid assignment target, just return rvalue
+          return `(${rvalue})`;
+        }
         case '+':
           return `((${l}) + (${r}))`;
         case '-':
