@@ -72,6 +72,8 @@ const RESOLUTION_LIMIT_STEPS: Array<{ value: number; label: string }> = [
   { value: 1.75, label: '1.75x' },
   { value: 2, label: '2x' },
   { value: 2.5, label: '2.5x' },
+  { value: 3, label: '3x' },
+  { value: 4, label: '4x' },
 ];
 
 /** UI text scale steps for low-vision users. */
@@ -206,8 +208,11 @@ function PerformanceSection() {
   const { engineSnapshot } = useEngineSnapshot();
 
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
     import('../core/state/performance-settings-store.ts').then(
-      ({ getActivePerformanceSettings }) => {
+      ({ getActivePerformanceSettings, subscribeToPerformanceSettings }) => {
+        if (disposed) return;
         const s = getActivePerformanceSettings();
         setPerf({
           shaderQuality: s.shaderQuality,
@@ -215,8 +220,23 @@ function PerformanceSection() {
           maxPixelRatio: s.maxPixelRatio,
           loaded: true,
         });
+        // Quality-preset changes can move maxPixelRatio while this panel is
+        // open (a preset-derived resolution follows the preset), so stay
+        // subscribed rather than reading once.
+        unsubscribe = subscribeToPerformanceSettings((next) => {
+          setPerf({
+            shaderQuality: next.shaderQuality,
+            particleBudget: next.particleBudget,
+            maxPixelRatio: next.maxPixelRatio,
+            loaded: true,
+          });
+        });
       },
     );
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const setOption = <
@@ -235,9 +255,9 @@ function PerformanceSection() {
 
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
-      ({ setPerformanceSettings }) => {
-        setPerformanceSettings(DEFAULT_PERFORMANCE_SETTINGS);
-        setPerf({ ...DEFAULT_PERFORMANCE_SETTINGS, loaded: true });
+      ({ resetPerformanceSettingsToDefaults }) => {
+        const next = resetPerformanceSettingsToDefaults();
+        setPerf({ ...next, loaded: true });
       },
     );
   };

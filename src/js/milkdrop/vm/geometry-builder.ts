@@ -283,8 +283,15 @@ function transformMeshPoint({
   const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
   const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
   const zoom = Math.max(local.zoom ?? 1, 0);
-  const zoomScale =
-    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1));
+  // Authored presets legitimately use extreme pairs (orbasonic ships
+  // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
+  // float32 at the edges and NaN-poisons the warp into a black frame.
+  // MilkDrop's own math saturates instead of exploding, so bound the scale.
+  const zoomScale = clamp(
+    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1)),
+    0.02,
+    50,
+  );
   const zx = centerX + (rx - centerX) * zoomScale;
   const zy = centerY + (ry - centerY) * zoomScale;
 
