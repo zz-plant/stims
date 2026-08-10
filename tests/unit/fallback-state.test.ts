@@ -59,16 +59,6 @@ describe('fallback state machine - valid transitions', () => {
 describe('fallback state machine - invalid transitions', () => {
   const invalidTransitions: Array<[FallbackState, FallbackState, string]> = [
     [
-      FallbackState.Initial,
-      FallbackState.AudioInitializing,
-      'Audio requires a renderer for the Three.js AudioListener',
-    ],
-    [
-      FallbackState.ProbingWebgpu,
-      FallbackState.AudioInitializing,
-      'Audio must not begin before the backend is resolved',
-    ],
-    [
       FallbackState.RendererReady,
       FallbackState.AudioReady,
       'Audio setup is async; no synchronous path from no-audio to audio-ready',
@@ -185,10 +175,12 @@ describe('fallback state machine - complete flow paths', () => {
 });
 
 describe('fallback state machine - unreachable flows', () => {
-  test('cannot go from initial to audio-initializing directly', () => {
+  test('can go from initial to audio-initializing (audio may start before the renderer probe)', () => {
+    // Synthetic/demo audio has no renderer dependency, so INIT_AUDIO became
+    // legal from the probe states when the synthetic fallback landed.
     expect(
       isValidTransition(FallbackState.Initial, FallbackState.AudioInitializing),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test('cannot go from error-no-backend to renderer-ready', () => {
@@ -294,10 +286,10 @@ describe('FallbackStateMachine class', () => {
     expect(fsm.getState()).toBe(FallbackState.ProbingWebgl);
   });
 
-  test('invalid transition throws error with reason', () => {
-    const fsm = new FallbackStateMachine();
-    expect(() => fsm.transition(FallbackEvent.INIT_AUDIO)).toThrow(
-      /Invalid fallback state transition from initial via event INIT_AUDIO: Audio requires a renderer for the Three.js AudioListener/,
+  test('invalid transition throws error', () => {
+    const fsm = new FallbackStateMachine(FallbackState.Ready);
+    expect(() => fsm.transition(FallbackEvent.CHECK_WEBGL)).toThrow(
+      /Invalid fallback state transition from ready via event CHECK_WEBGL/,
     );
   });
 
