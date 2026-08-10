@@ -61,10 +61,13 @@ export function useWorkspaceToast({
     (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {
       setToast({ message, tone });
       clearToastTimer();
+      // Warn/error toasts carry more important, often longer copy (e.g. an
+      // audio source substitution) — give visitors more time to read them.
+      const duration = tone === 'info' ? 4200 : 7000;
       toastTimerRef.current = window.setTimeout(() => {
         setToast(null);
         toastTimerRef.current = null;
-      }, 4200);
+      }, duration);
     },
   );
 
@@ -95,7 +98,10 @@ export function useWorkspaceToast({
       statusMessage &&
       /^(Unable to|error|failed|denied|blocked)/i.test(statusMessage)
         ? 'error'
-        : 'info';
+        : statusMessage &&
+            /limit live mic access|Started with Demo Audio/i.test(statusMessage)
+          ? 'warn'
+          : 'info';
     const key = `${resolvedTone}:${runtimeMessage}`;
     if (shownToastKeysRef.current.has(key)) {
       return;

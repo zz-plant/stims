@@ -291,8 +291,8 @@ export function BrowseSheetPanel({
           <div className="ctl-empty">
             <span className="ctl-empty__title">Nothing matches that</span>
             <p className="ctl-empty__body">
-              Widen the search, or clear the filters to see all
-              {catalog.length} presets.
+              Widen the search, or clear the filters to see all {catalog.length}{' '}
+              presets.
             </p>
             <button
               type="button"

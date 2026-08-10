@@ -14,7 +14,8 @@ export function RendererFallbackBadge() {
         type="button"
         className="renderer-fallback-badge__label"
         onClick={() => ui.updatePanel('settings')}
-        aria-label="WebGL fallback active — open settings"
+        title="Your browser doesn't support WebGPU, so Stims is rendering with WebGL instead. Some effects may look or perform differently. Tap for settings."
+        aria-label="Running on WebGL because WebGPU isn't available — open settings for details"
       >
         <span className="renderer-fallback-badge__dot" aria-hidden="true" />
         <span className="renderer-fallback-badge__text">WebGL</span>
