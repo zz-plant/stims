@@ -704,6 +704,18 @@ export function buildMainWaveFrame({
 
   const additive = (state.wave_additive ?? 0) >= 0.5;
   let alpha = state.wave_a ?? 0.9;
+  if (mode === 1) {
+    alpha *= 1.25;
+  } else if (mode === 3) {
+    // MilkDrop scales mode-3 alpha by treb_imm^2, where treb hovers
+    // around 1 (instantaneous energy over its running average). Our
+    // treble/trebleAtt pair is the closest analog of that ratio.
+    const trebleRatio =
+      signals.trebleAtt > 0.001
+        ? clamp(signals.treble / signals.trebleAtt, 0, 2)
+        : 1;
+    alpha *= 1.3 * trebleRatio * trebleRatio;
+  }
   if (alphaByVolume) {
     if (Math.abs(modWaveAlphaEnd - modWaveAlphaStart) < 0.0001) {
       alpha *= signals.vol >= modWaveAlphaEnd ? 1 : 0;
