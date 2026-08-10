@@ -286,6 +286,12 @@ const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         #define q30 _qh.y
         #define q31 _qh.z
         #define q32 _qh.w
+        #define blur1_min bias1
+        #define blur1_max (bias1 + scale1)
+        #define blur2_min bias2
+        #define blur2_max (bias2 + scale2)
+        #define blur3_min bias3
+        #define blur3_max (bias3 + scale3)
         #define roam_cos (0.5 + 0.5 * cos(signalTime * vec4(0.3, 1.3, 5.0, 20.0)))
         #define roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.3, 1.3, 5.0, 20.0)))
         #define slow_roam_cos (0.5 + 0.5 * cos(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
