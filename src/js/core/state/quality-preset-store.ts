@@ -62,7 +62,9 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     id: 'ultra',
     label: 'Ultra visuals',
     description: 'Maximum supersampling and particle density for SOTA GPUs.',
-    maxPixelRatio: 2,
+    // 2.5 leaves room for the adaptive controller's 1.25x supersampling step
+    // on 2x-DPR displays; the per-backend pixel-ratio cap still bounds it.
+    maxPixelRatio: 2.5,
     renderScale: 1,
     particleScale: 1.5,
   },
