@@ -464,6 +464,10 @@ export function buildMeshField({
   proceduralMeshPlan: MilkdropProceduralMeshDescriptorPlan | null;
 }): MeshField {
   const density = getMeshDensity(state, detailScale);
+
+  // Clear per-pixel scratch each frame to prevent accumulation across frames
+  geometryState.pointScratch = {};
+
   if (proceduralMeshPlan) {
     geometryState.meshPoints.length = 0;
     return {

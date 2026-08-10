@@ -32,6 +32,8 @@ const RAND_TEXTURE_POOL = [
   MILKDROP_TEXTURE_FILES.caustics,
   MILKDROP_TEXTURE_FILES.pattern,
   MILKDROP_TEXTURE_FILES.fractal,
+  CUSTOM_TEXTURE_FILES.glyph,
+  CUSTOM_TEXTURE_FILES.organic,
   'radial_rainbow_gradient.png',
 ] as const;
 
@@ -41,12 +43,55 @@ const RAND_SMALLTILED_TEXTURE_POOL = [
   MILKDROP_TEXTURE_FILES.caustics,
   MILKDROP_TEXTURE_FILES.pattern,
   MILKDROP_TEXTURE_FILES.fractal,
+  CUSTOM_TEXTURE_FILES.glyph,
+  CUSTOM_TEXTURE_FILES.organic,
 ] as const;
 
 const RAND_TEXTURE_PATTERN = /^rand\d{2}(?<smalltiled>_smalltiled)?$/u;
 
 const DECLARATION_PATTERN =
   /\b(?:uniform\s+)?(?:sampler2D|sampler3D|Texture2D|Texture3D)\s+(sampler_[A-Za-z_][A-Za-z0-9_]*)\s*;/gu;
+
+const REFERENCE_PATTERN = /\bsampler_[A-Za-z_][A-Za-z0-9_]*\b/gu;
+
+// MilkDrop convention auto-binds any `sampler_xxx` reference to texture
+// `xxx` from the user's texture pack — presets rarely declare them. Names
+// the alias table can't resolve to a bundled texture still need to compile,
+// so they fall back to a bundled substitute picked by a stable name hash
+// (same preset always renders the same way).
+const FALLBACK_TEXTURE_POOL = [...new Set(Object.values(MILKDROP_TEXTURE_FILES))];
+
+export function resolveFallbackSamplerTextureFile(name: string): string {
+  const resolved = resolveCustomSamplerTextureFile(name);
+  if (resolved) return resolved;
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return FALLBACK_TEXTURE_POOL[hash % FALLBACK_TEXTURE_POOL.length]!;
+}
+
+/**
+ * Collects every `sampler_*` identifier still referenced in a shader after
+ * the built-in rewrites (`sampler_main` → `currentTex`, noise/blur variants,
+ * …) have run. These are the texture-pack samplers that would otherwise
+ * reach the GLSL compiler undeclared.
+ */
+export function extractReferencedCustomSamplers(
+  shaderText: string | null,
+): MilkdropCustomSamplerDeclaration[] {
+  if (!shaderText) return [];
+  const declarations = new Map<string, MilkdropCustomSamplerDeclaration>();
+  for (const match of shaderText.matchAll(REFERENCE_PATTERN)) {
+    const name = match[0];
+    if (declarations.has(name)) continue;
+    declarations.set(name, {
+      name,
+      textureFile: resolveFallbackSamplerTextureFile(name),
+    });
+  }
+  return [...declarations.values()];
+}
 
 // MilkDrop sampler names may carry a filter/address prefix: f/p (filtered vs
 // point) x w/c (wrap vs clamp), e.g. `sampler_pw_mcode1`. Unprefixed names

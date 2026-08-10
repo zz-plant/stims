@@ -385,7 +385,7 @@ comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
       'voronoi_cellular.png',
     );
     expect(resolveCustomSamplerTextureFile('sampler_seaweed')).toBe(
-      'crystal_fractal.png',
+      'organic_mottle.png',
     );
     expect(resolveCustomSamplerTextureFile('sampler_prayerwheel')).toBe(
       'circuit_board_pattern.png',
@@ -411,6 +411,8 @@ warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`
       'water_caustics.png',
       'circuit_board_pattern.png',
       'crystal_fractal.png',
+      'glyph_matrix_tile.png',
+      'organic_mottle.png',
       'radial_rainbow_gradient.png',
     ];
     const SMALLTILED_TEXTURE_FILES = [
@@ -419,6 +421,8 @@ warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`
       'water_caustics.png',
       'circuit_board_pattern.png',
       'crystal_fractal.png',
+      'glyph_matrix_tile.png',
+      'organic_mottle.png',
     ];
 
     const picks = new Set<string>();
@@ -465,7 +469,7 @@ warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`
     expect(declarations).toEqual([
       {
         name: 'sampler_pw_mcode1',
-        textureFile: 'seamless_perlin_noise.png',
+        textureFile: 'glyph_matrix_tile.png',
         filter: 'nearest',
         wrap: 'repeat',
       },
