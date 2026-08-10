@@ -63,10 +63,18 @@ const BAND_FLOOR: Record<BandKey, number> = {
 /**
  * Time constants for the MilkDrop-relative band normalization. The long
  * average tracks the track's overall loudness (so quiet passages still reach
- * 1.0), the short average is what `*_att` is measured against.
+ * 1.0).
  */
 const RELATIVE_LONG_AVG_MS = 3400;
-const RELATIVE_SHORT_AVG_MS = 340;
+/**
+ * `*_att` smoothing. MilkDrop's bass_att/mid_att/treb_att are damped copies of
+ * the relative band — they chase it with a fast attack and slower release, so
+ * they cross 1.0 on every real beat. A windowed-average ratio can't do that
+ * (it hugs <=1 by construction), which left `max(bass_att-1,0)`-style preset
+ * gates permanently shut.
+ */
+const RELATIVE_ATT_ATTACK_MS = 70;
+const RELATIVE_ATT_RELEASE_MS = 260;
 /** MilkDrop leaves these unbounded; clamp so a near-silent long average can't
  * hand presets an effectively infinite multiplier. */
 const RELATIVE_MAX = 5;
@@ -144,7 +152,6 @@ export function createMilkdropAudioSignalProcessor() {
   let bandPeak = createBandState();
   let bandAttenuation = createBandState();
   let bandLongAverage = createBandState();
-  let bandShortAverage = createBandState();
   let relativeAveragesSeeded = false;
   const relativeBands = createBandState();
   const relativeAttenuatedBands = createBandState();
@@ -270,12 +277,11 @@ export function createMilkdropAudioSignalProcessor() {
 
   const updateRelativeBands = (bands: BandLevels, deltaMs: number) => {
     if (!relativeAveragesSeeded) {
-      // Seeding both averages from the first frame keeps the opening second
+      // Seeding the average from the first frame keeps the opening second
       // from reading as a huge transient while the long average climbs off 0.
       for (let i = 0; i < BAND_KEYS.length; i += 1) {
         const key = BAND_KEYS[i];
         bandLongAverage[key] = bands[key];
-        bandShortAverage[key] = bands[key];
       }
       relativeAveragesSeeded = true;
     }
@@ -290,13 +296,6 @@ export function createMilkdropAudioSignalProcessor() {
         RELATIVE_LONG_AVG_MS,
         RELATIVE_LONG_AVG_MS,
       );
-      bandShortAverage[key] = smoothLevel(
-        bandShortAverage[key],
-        current,
-        deltaMs,
-        RELATIVE_SHORT_AVG_MS,
-        RELATIVE_SHORT_AVG_MS,
-      );
 
       const longAverage = bandLongAverage[key];
       if (longAverage < RELATIVE_SILENCE_EPSILON) {
@@ -306,7 +305,13 @@ export function createMilkdropAudioSignalProcessor() {
       }
       relativeBands[key] = clamp(current / longAverage, 0, RELATIVE_MAX);
       relativeAttenuatedBands[key] = clamp(
-        bandShortAverage[key] / longAverage,
+        smoothLevel(
+          relativeAttenuatedBands[key],
+          relativeBands[key],
+          deltaMs,
+          RELATIVE_ATT_ATTACK_MS,
+          RELATIVE_ATT_RELEASE_MS,
+        ),
         0,
         RELATIVE_MAX,
       );
@@ -319,7 +324,6 @@ export function createMilkdropAudioSignalProcessor() {
       bandPeak = createBandState();
       bandAttenuation = createBandState();
       bandLongAverage = createBandState();
-      bandShortAverage = createBandState();
       relativeAveragesSeeded = false;
       for (let i = 0; i < BAND_KEYS.length; i += 1) {
         relativeBands[BAND_KEYS[i]] = 1;
