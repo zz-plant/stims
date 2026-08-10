@@ -1452,6 +1452,18 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     Object.assign(newMaterial.uniforms, oldUniforms);
     newMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
+    // New preset shaders → fresh rand_preset draw (MilkDrop rolls these
+    // per-preset random constants once per preset load).
+    (this.warpMaterial.uniforms.rand_preset.value as Vector4).set(
+      Math.random(),
+      Math.random(),
+      Math.random(),
+      Math.random(),
+    );
+    (newMaterial.uniforms.rand_preset.value as Vector4).copy(
+      this.warpMaterial.uniforms.rand_preset.value as Vector4,
+    );
+
     (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
       newMaterial;
     const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
@@ -1571,7 +1583,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalTime.value = state.signalTime;
     uniforms.signalFrame.value = state.signalFrame ?? 0;
     uniforms.signalFps.value = state.signalFps ?? 60;
-    uniforms.aspect.value = state.aspect;
+    this.syncMilkdropShaderBuiltinUniforms(uniforms, state);
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
@@ -1623,8 +1635,44 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     wu.signalTime.value = state.signalTime;
     wu.signalFrame.value = state.signalFrame ?? 0;
     wu.signalFps.value = state.signalFps ?? 60;
-    wu.aspect.value = state.aspect;
+    this.syncMilkdropShaderBuiltinUniforms(wu, state);
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
+  }
+
+  /**
+   * Feeds the MilkDrop shader-input uniforms (vec4 aspect, q1..q32 packed
+   * into _qa.._qh) shared by the warp and composite materials. Aspect uses
+   * MilkDrop's convention: .xy shrink the minor axis (values <= 1), .zw are
+   * the inverses.
+   */
+  private syncMilkdropShaderBuiltinUniforms(
+    uniforms: ShaderMaterial['uniforms'],
+    state: MilkdropFeedbackCompositeState,
+  ) {
+    const aspect =
+      Number.isFinite(state.aspect) && state.aspect > 0 ? state.aspect : 1;
+    const aspectX = aspect < 1 ? aspect : 1;
+    const aspectY = aspect > 1 ? 1 / aspect : 1;
+    (uniforms.aspect.value as Vector4).set(
+      aspectX,
+      aspectY,
+      1 / aspectX,
+      1 / aspectY,
+    );
+    const vars = state.perPixelVariables;
+    for (let group = 0; group < 8; group++) {
+      const target = uniforms[`_q${'abcdefgh'[group]}`]?.value as
+        | Vector4
+        | undefined;
+      if (!target) continue;
+      const base = group * 4;
+      target.set(
+        vars?.[`q${base + 1}`] ?? 0,
+        vars?.[`q${base + 2}`] ?? 0,
+        vars?.[`q${base + 3}`] ?? 0,
+        vars?.[`q${base + 4}`] ?? 0,
+      );
+    }
   }
 
   render(
