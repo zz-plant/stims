@@ -1,0 +1,141 @@
+.panel {
+  position: absolute;
+  top: calc(var(--stims-header-top, 62px) + 12px);
+  right: 16px;
+  z-index: 40;
+  display: grid;
+  gap: 12px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px 16px;
+  border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
+  border-radius: 12px;
+  background: #14100c;
+  color: var(--stims-ink-strong, #fff8ef);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.closeButton {
+  border: 0;
+  background: none;
+  color: var(--stims-muted, rgba(246, 239, 228, 0.74));
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: var(--stims-ink-strong, #fff8ef);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.exampleChip {
+  padding: 4px 10px;
+  border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  background: none;
+  color: var(--stims-cool, #77c9ff);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.exampleChip:hover {
+  border-color: var(--stims-cool, #77c9ff);
+}
+
+.editor {
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  color: inherit;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.editor:focus {
+  outline: none;
+  border-color: var(--stims-accent, #f47a54);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.playButton,
+.stopButton {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.playButton {
+  border: 1px solid var(--stims-accent, #f47a54);
+  background: var(--stims-accent, #f47a54);
+  color: var(--stims-on-accent, #14100c);
+}
+
+.playButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.stopButton {
+  border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
+  background: none;
+  color: var(--stims-ink-strong, #fff8ef);
+}
+
+.stopButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.status {
+  margin: 0;
+  color: var(--stims-muted, rgba(246, 239, 228, 0.74));
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.status[data-tone="error"] {
+  color: var(--stims-bad, #ff7b72);
+}
+
+.status[data-tone="playing"] {
+  color: var(--stims-good, #7de0a2);
+}
+
+.reopenButton {
+  position: absolute;
+  top: calc(var(--stims-header-top, 62px) + 12px);
+  right: 16px;
+  z-index: 40;
+  padding: 6px 14px;
+  border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
+  border-radius: 999px;
+  background: #14100c;
+  color: var(--stims-cool, #77c9ff);
+  font-size: 0.8rem;
+  cursor: pointer;
+}

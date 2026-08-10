@@ -24,12 +24,7 @@ export function getDeviceTier(): DeviceTier {
       (environment.isMobile
         ? hardwareConcurrency >= 12
         : hardwareConcurrency >= 10)) ||
-    (typeof window !== 'undefined' &&
-      (
-        window as unknown as {
-          __stims_webgpu_performance_tier?: string;
-        }
-      ).__stims_webgpu_performance_tier === 'high-end');
+    readVerifiedWebGpuTier() === 'high-end';
 
   if (isUltra) return 'ultra';
 
@@ -150,18 +145,38 @@ export const DEVICE_TIER_QUALITY_PRESET_IDS: Record<DeviceTier, string> = {
 };
 
 /**
+ * The tier the WebGPU capability probe stamped for this tab, or null when the
+ * probe has not run. Reads the window global first, then the sessionStorage
+ * copy — the preset WebGL-fallback flow reloads the page, which wipes the
+ * global mid-session.
+ */
+function readVerifiedWebGpuTier(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const fromWindow = (
+    window as unknown as {
+      __stims_webgpu_performance_tier?: string;
+    }
+  ).__stims_webgpu_performance_tier;
+  if (typeof fromWindow === 'string') {
+    return fromWindow;
+  }
+  try {
+    return (
+      window.sessionStorage?.getItem('stims:webgpu-performance-tier') ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
  * True only when the WebGPU capability probe ran and verified a high-end GPU.
  * Distinct from the ultra device tier, which core count alone can reach.
  */
 function hasVerifiedHighEndGpu(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    (
-      window as unknown as {
-        __stims_webgpu_performance_tier?: string;
-      }
-    ).__stims_webgpu_performance_tier === 'high-end'
-  );
+  return readVerifiedWebGpuTier() === 'high-end';
 }
 
 /** Used whenever tier detection is unavailable or maps to an unknown preset. */

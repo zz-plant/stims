@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StageControls } from './StageControls.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
+import { StrudelLabPanel } from './StrudelLabPanel.tsx';
 import { WorkspaceToast } from './WorkspaceToast.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
@@ -14,6 +15,12 @@ export { WorkspaceToast } from './WorkspaceToast.tsx';
 
 export const BROWSE_PANEL_FOCUS_SELECTOR =
   '#preset-search, .milkdrop-overlay__search';
+
+// Prototype flag: `?strudel=1` mounts the Strudel live-coding lab, which
+// drives the visualizer's analyser with Strudel's audio output.
+const strudelLabEnabled =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('strudel');
 
 export function WorkspaceStagePanel({
   isFullscreen,
@@ -68,6 +75,7 @@ export function WorkspaceStagePanel({
           </div>
         ) : null}
         <WorkspaceToast toast={ui.toast} />
+        {strudelLabEnabled ? <StrudelLabPanel /> : null}
       </StimsStageFrame>
     </section>
   );

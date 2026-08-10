@@ -43,6 +43,9 @@ describe('render-service pooling', () => {
     resetSettingsPanelState();
     delete (window as unknown as { __stims_webgpu_performance_tier?: string })
       .__stims_webgpu_performance_tier;
+    try {
+      window.sessionStorage?.removeItem('stims:webgpu-performance-tier');
+    } catch {}
 
     originalConcurrency = navigator.hardwareConcurrency;
     Object.defineProperty(navigator, 'hardwareConcurrency', {
@@ -85,6 +88,9 @@ describe('render-service pooling', () => {
     }
     delete (window as unknown as { __stims_webgpu_performance_tier?: string })
       .__stims_webgpu_performance_tier;
+    try {
+      window.sessionStorage?.removeItem('stims:webgpu-performance-tier');
+    } catch {}
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
       value: 1,

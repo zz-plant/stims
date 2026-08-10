@@ -34,6 +34,7 @@ function makeShape(
 
 function makeShapeHelpers() {
   return {
+    backend: 'webgl' as const,
     getShapeFillFallbackColor: (shape: MilkdropShapeVisual) => shape.color,
     getShapeTexture: () => null,
     getUnitPolygonFillGeometry: () => new BufferGeometry(),

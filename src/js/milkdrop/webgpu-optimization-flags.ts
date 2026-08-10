@@ -52,22 +52,17 @@ export type MilkdropWebGpuOptimizationFlags = {
 export type MilkdropWebGpuOptimizationFlagName =
   keyof MilkdropWebGpuOptimizationFlags;
 
-// descriptorFallbackToWebgl defaults to true (route feedback/post-effect
-// presets to plain WebGL) as a conservative rollout switch. Flipping it
-// requires every ShaderMaterial-based WebGPU rendering path it would newly
-// exercise to be ported to three.js's NodeMaterial/TSL system first —
-// WebGPURenderer's NodeBuilder does not recognize plain ShaderMaterial and
-// silently swaps in a blank default material for it. The plain wave
-// material (proceduralMainWave/proceduralTrailWaves, in
-// webgpu-procedural-materials.ts) has been ported and verified against
-// reference renders. proceduralMesh, proceduralMotionVectors, and
-// proceduralCustomWaves have not, and — subtly — disabling just those three
-// isn't a safe partial flip either: for presets with none of those features
-// enabled, the renderer falls through to the generic-frame-payload path's
-// particle-field-renderer.ts, which *also* builds a plain ShaderMaterial
-// unconditionally on both backends. descriptorFallbackToWebgl can only move
-// to false once mesh, motion-vectors, custom-wave, and particle-field are
-// all ported.
+// descriptorFallbackToWebgl now defaults to false: every ShaderMaterial-based
+// rendering path a WebGPU session can reach has been ported to three.js's
+// NodeMaterial/TSL system (WebGPURenderer's NodeBuilder rejects plain
+// ShaderMaterial) — wave, mesh, motion-vector, and custom-wave procedural
+// materials in webgpu-procedural-materials.ts, the particle field in
+// particle-field-renderer.ts, and the shape fill in shape-renderer.ts.
+// Feedback/post-effect presets therefore stay on WebGPU and run through the
+// native TSL feedback manager instead of reloading into WebGL. Presets whose
+// plan carries genuine `unsupported` markers are the one exception: WebGL
+// still renders those features, so resolveRouting keeps them on the WebGL
+// fallback regardless of this flag.
 export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   proceduralMainWave: true,
   proceduralTrailWaves: true,
@@ -75,7 +70,7 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   proceduralMesh: true,
   proceduralMotionVectors: true,
   directFeedbackShaders: true,
-  descriptorFallbackToWebgl: true,
+  descriptorFallbackToWebgl: false,
   gpuComputeVM: true,
   renderBundles: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
@@ -226,11 +221,16 @@ function resolveRouting({
   enabledDescriptors: boolean;
 }): MilkdropGpuDescriptorRouting {
   if (plan.routing === 'fallback-webgl') {
-    return flags.descriptorFallbackToWebgl
-      ? 'fallback-webgl'
-      : enabledDescriptors
-        ? 'descriptor-plan'
-        : 'generic-frame-payload';
+    if (flags.descriptorFallbackToWebgl) {
+      return 'fallback-webgl';
+    }
+    // With the fallback disabled, feedback-compatibility presets run natively
+    // (the TSL feedback manager covers them), but genuinely unsupported
+    // features still render more faithfully on WebGL — keep those there.
+    if (plan.unsupported.length > 0) {
+      return 'fallback-webgl';
+    }
+    return enabledDescriptors ? 'descriptor-plan' : 'generic-frame-payload';
   }
 
   return enabledDescriptors ? 'descriptor-plan' : 'generic-frame-payload';

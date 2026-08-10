@@ -141,6 +141,11 @@ export type MilkdropRuntimeSignals = {
   frequencyDataR?: Uint8Array | null;
   waveformDataL?: Uint8Array | null;
   waveformDataR?: Uint8Array | null;
+  // Float PCM in [-1, 1] with the same AGC gain as the byte waveform
+  // buffers; preferred by the wave renderer to avoid byte quantization.
+  waveformFloatData?: Float32Array | null;
+  waveformFloatDataL?: Float32Array | null;
+  waveformFloatDataR?: Float32Array | null;
 };
 
 export type MilkdropCapturedVideoReactiveState = {

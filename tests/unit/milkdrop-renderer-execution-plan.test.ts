@@ -121,12 +121,12 @@ describe('milkdrop renderer execution plan', () => {
     expect(plan.shouldFallbackToWebgl).toBe(false);
   });
 
-  test('routes descriptor fallback plans to webgl outside compatibility mode', () => {
+  test('routes descriptor fallback plans to webgl when fallback gating is opted in', () => {
     const plan = resolveMilkdropRendererExecutionPlan({
       backend: 'webgpu',
       safeWebGpuPath: false,
       descriptorPlan: createDescriptorPlan({ routing: 'fallback-webgl' }),
-      flags: flags(),
+      flags: flags({ descriptorFallbackToWebgl: true }),
       compatibilityMode: false,
     });
 

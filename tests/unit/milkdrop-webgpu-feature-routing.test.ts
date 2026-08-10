@@ -74,7 +74,7 @@ describe('MilkDrop WebGPU feature routing', () => {
     ).toBe(false);
   });
 
-  test('keeps certification captures from being preemptively routed to WebGL', () => {
+  test('keeps WebGPU sessions off the preemptive WebGL fallback by default', () => {
     expect(
       resolveMilkdropWebGpuOptimizationFlags({
         location: { search: '?renderer=webgpu&corpus=certification' },
@@ -84,6 +84,13 @@ describe('MilkDrop WebGPU feature routing', () => {
     expect(
       resolveMilkdropWebGpuOptimizationFlags({
         location: { search: '?renderer=webgpu' },
+        storage: { getItem: () => null },
+      }).descriptorFallbackToWebgl,
+    ).toBe(false);
+    // An explicit opt-in still routes feedback presets to WebGL.
+    expect(
+      resolveMilkdropWebGpuOptimizationFlags({
+        location: { search: '?milkdrop-webgpu-fallback=1' },
         storage: { getItem: () => null },
       }).descriptorFallbackToWebgl,
     ).toBe(true);

@@ -37,6 +37,11 @@ beforeEach(() => {
       __stims_webgpu_performance_tier?: string;
     }
   ).__stims_webgpu_performance_tier;
+  try {
+    globalThis.window.sessionStorage?.removeItem(
+      'stims:webgpu-performance-tier',
+    );
+  } catch {}
 });
 
 afterEach(() => {

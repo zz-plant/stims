@@ -1,8 +1,10 @@
 import {
   type Camera,
+  ClampToEdgeWrapping,
   Color,
   DataTexture,
   Mesh,
+  NearestFilter,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
@@ -138,6 +140,18 @@ type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
 
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
+type MilkdropTextureSampleMode = {
+  filter: 'linear' | 'nearest';
+  wrap: 'repeat' | 'clamp';
+};
+
+// Must be initialized before the placeholder-texture IIFE below runs at
+// module load — configureMilkdropTexture reads it as a default parameter.
+const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
+  filter: 'linear',
+  wrap: 'repeat',
+};
+
 const milkdropTextureLoader = new TextureLoader();
 const sharedMilkdropTextureCache = new Map<string, Texture>();
 const sharedMilkdropTexturePlaceholder = (() => {
@@ -162,22 +176,37 @@ function resolveTextureUrl(fileName: string) {
   return `${normalizedBaseUrl}textures/${fileName}`;
 }
 
-function configureMilkdropTexture(texture: Texture, colorTexture = false) {
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
+function configureMilkdropTexture(
+  texture: Texture,
+  colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
+) {
+  const wrapMode =
+    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
+  texture.wrapS = wrapMode;
+  texture.wrapT = wrapMode;
+  if (sampleMode.filter === 'nearest') {
+    texture.minFilter = NearestFilter;
+    texture.magFilter = NearestFilter;
+  }
   if (colorTexture) {
     texture.colorSpace = SRGBColorSpace;
   }
   return texture;
 }
 
-function getSharedMilkdropTexture(fileName: string, colorTexture = false) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+function getSharedMilkdropTexture(
+  fileName: string,
+  colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
+) {
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
   let texture = sharedMilkdropTextureCache.get(cacheKey);
   if (!texture) {
     texture = configureMilkdropTexture(
       milkdropTextureLoader.load(resolveTextureUrl(fileName)),
       colorTexture,
+      sampleMode,
     );
     sharedMilkdropTextureCache.set(cacheKey, texture);
   }
@@ -573,7 +602,10 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
               ).rg - 0.5;
             currentUv += warpVector * warpTextureAmount * 0.12;
           }
-          vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
+          // Direct-warp presets draw fresh geometry over the already-warped
+          // previous frame, so the scene must not be re-warped here.
+          vec2 sceneUv = hasDirectWarp > 0.5 ? vUv : currentUv;
+          vec4 current = texture2D(currentTex, sampleUv(sceneUv, textureWrap));
           vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
           vec3 previousColor = previous.rgb;
           if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
@@ -595,12 +627,19 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
               clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
-          previousColor *= decay;
-          vec3 color = mix(
-            current.rgb,
-            previousColor,
-            clamp(videoEchoAlpha, 0.0, 1.0)
-          );
+          // MilkDrop applies decay only in the default warp path; a preset's
+          // own warp shader implements its fade (e.g. this frame minus 0.004).
+          previousColor *= mix(decay, 1.0, hasDirectWarp);
+          // With a direct warp shader, feedback is the warped previous frame
+          // under this frame's geometry (MilkDrop clears to the warp output);
+          // the legacy echo blend stays for control-driven presets.
+          vec3 color = hasDirectWarp > 0.5
+            ? previousColor + current.rgb
+            : mix(
+                current.rgb,
+                previousColor,
+                clamp(videoEchoAlpha, 0.0, 1.0)
+              );
           color = hueRotate(color, hueShift);
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
@@ -847,6 +886,13 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
 
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
+
+          if (hasDirectWarp > 0.5) {
+            // The injected warp body computed this fragment's warped feedback
+            // sample into ret; it IS this pass's output.
+            gl_FragColor = vec4(ret, 1.0);
+            return;
+          }
 
           vec2 currentUv = hasDirectWarp > 0.5
             ? transformedUv + 0.5
@@ -1341,7 +1387,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     for (const sampler of this.customSamplers) {
       if (sampler.textureFile) {
         material.uniforms[sampler.name] = {
-          value: getSharedMilkdropTexture(sampler.textureFile, true),
+          value: getSharedMilkdropTexture(sampler.textureFile, true, sampler),
         };
       }
     }
@@ -1445,7 +1491,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     for (const sampler of this.customSamplers) {
       if (sampler.textureFile && !this.warpMaterial.uniforms[sampler.name]) {
         this.warpMaterial.uniforms[sampler.name] = {
-          value: getSharedMilkdropTexture(sampler.textureFile, true),
+          value: getSharedMilkdropTexture(sampler.textureFile, true, sampler),
         };
       }
     }

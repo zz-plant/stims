@@ -27,6 +27,12 @@ const hasBun = (() => {
   }
 })();
 
+run(
+  hasBun
+    ? 'bun scripts/sync-resvg-wasm.mjs'
+    : 'node scripts/sync-resvg-wasm.mjs',
+);
+
 if (isCloudflarePages) {
   if (skipCloudflareBuild) {
     console.log(

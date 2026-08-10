@@ -7,6 +7,7 @@ import {
   DataTexture,
   HalfFloatType,
   LinearFilter,
+  NearestFilter,
   RedFormat,
   RepeatWrapping,
   RGBAFormat,
@@ -102,12 +103,29 @@ export function resolveTextureUrl(fileName: string) {
   return `${normalizedBaseUrl}textures/${fileName}`;
 }
 
+export type MilkdropTextureSampleMode = {
+  filter: 'linear' | 'nearest';
+  wrap: 'repeat' | 'clamp';
+};
+
+const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
+  filter: 'linear',
+  wrap: 'repeat',
+};
+
 export function configureMilkdropTexture(
   textureValue: Texture,
   colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ) {
-  textureValue.wrapS = RepeatWrapping;
-  textureValue.wrapT = RepeatWrapping;
+  const wrapMode =
+    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
+  textureValue.wrapS = wrapMode;
+  textureValue.wrapT = wrapMode;
+  if (sampleMode.filter === 'nearest') {
+    textureValue.minFilter = NearestFilter;
+    textureValue.magFilter = NearestFilter;
+  }
   if (colorTexture) {
     textureValue.colorSpace = SRGBColorSpace;
   }
@@ -124,19 +142,24 @@ const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
 );
 const sharedMilkdropTexturePlaceholder = sharedMilkdropNativeNoiseTexture;
 
-export function loadMilkdropTexture(fileName: string, colorTexture = false) {
+export function loadMilkdropTexture(
+  fileName: string,
+  colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
+) {
   const loaded = milkdropTextureLoader.load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(loaded, colorTexture);
+  return configureMilkdropTexture(loaded, colorTexture, sampleMode);
 }
 
 export function getSharedMilkdropTexture(
   fileName: string,
   colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
   let textureValue = sharedMilkdropTextureCache.get(cacheKey);
   if (!textureValue) {
-    textureValue = loadMilkdropTexture(fileName, colorTexture);
+    textureValue = loadMilkdropTexture(fileName, colorTexture, sampleMode);
     sharedMilkdropTextureCache.set(cacheKey, textureValue);
   }
   return textureValue;
@@ -230,12 +253,13 @@ export const MILKDROP_NOISE_VOLUME_SIZE = AUX_TEXTURE_ATLAS_SLICE_COUNT;
 export function bindCustomMilkdropSamplerTexture(
   name: string,
   textureFile: string | null,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ): MilkdropCustomSamplerTextureBinding | null {
   if (!textureFile) return null;
   return {
     name,
     textureFile,
-    texture: getSharedMilkdropTexture(textureFile, true),
+    texture: getSharedMilkdropTexture(textureFile, true, sampleMode),
   };
 }
 

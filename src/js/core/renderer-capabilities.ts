@@ -423,6 +423,17 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
         __stims_webgpu_performance_tier?: string;
       }
     ).__stims_webgpu_performance_tier = performanceTier;
+    // Also persist per-tab: the preset WebGL-fallback flow reloads the page,
+    // which wipes the window global — and with it the high-end verification
+    // that first-run quality election depends on.
+    try {
+      window.sessionStorage?.setItem(
+        'stims:webgpu-performance-tier',
+        performanceTier,
+      );
+    } catch {
+      // Storage unavailable (private mode, quota): window global still works.
+    }
   }
 
   return {
