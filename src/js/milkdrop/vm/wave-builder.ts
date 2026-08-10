@@ -151,8 +151,7 @@ export function buildCustomWaves({
 
     // Reload base values from wave definition each frame
     const baseLocals = seedCustomWaveState(wave);
-    const frameLocals =
-      waveState.customWaveLocals[index] ?? baseLocals;
+    const frameLocals = waveState.customWaveLocals[index] ?? baseLocals;
 
     // Merge base values into frame locals (preserves per-frame user vars)
     for (const key in baseLocals) {

@@ -50,6 +50,16 @@ function ensureConnectTee() {
 }
 
 let bridgePromise: Promise<StrudelBridge> | null = null;
+let resolvedBridge: StrudelBridge | null = null;
+
+/**
+ * Returns the bridge if one has already finished loading, without triggering
+ * a load. Lets a remounted panel (the stage remounts on the home→live
+ * transition) rehydrate its state instead of losing the scope stream.
+ */
+export function peekStrudelBridge(): StrudelBridge | null {
+  return resolvedBridge;
+}
 
 /**
  * Loads Strudel on first call (heavy: pulls the pattern engine plus the
@@ -84,7 +94,7 @@ async function createBridge(): Promise<StrudelBridge> {
     prebake: () => strudel.samples('github:tidalcycles/dirt-samples'),
   });
 
-  return {
+  resolvedBridge = {
     stream: tap.stream,
     evaluate: async (code: string) => {
       if (context.state === 'suspended') {
@@ -94,4 +104,5 @@ async function createBridge(): Promise<StrudelBridge> {
     },
     hush: () => strudel.hush(),
   };
+  return resolvedBridge;
 }

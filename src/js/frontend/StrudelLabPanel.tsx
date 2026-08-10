@@ -3,6 +3,7 @@ import styles from '../../css/StrudelLabPanel.module.css';
 import { StrudelScopeStrip } from './StrudelScopeStrip.tsx';
 import {
   loadStrudelBridge,
+  peekStrudelBridge,
   type StrudelBridge,
 } from './strudel-audio-bridge.ts';
 import { useWorkspace } from './workspace-context.tsx';
@@ -57,11 +58,19 @@ export function StrudelLabPanel() {
   const bridgeRef = useRef<StrudelBridge | null>(null);
   const visualizerStartedRef = useRef(false);
 
+  // The stage subtree remounts on the home→live transition; rehydrate from
+  // the module-level bridge so the scope strip and started-state survive.
   useEffect(() => {
-    return () => {
-      bridgeRef.current?.hush();
-    };
-  }, []);
+    const existing = peekStrudelBridge();
+    if (existing) {
+      bridgeRef.current = existing;
+      setScopeStream(existing.stream);
+      if (engine.audioActive) {
+        visualizerStartedRef.current = true;
+        setStatus('playing');
+      }
+    }
+  }, [engine.audioActive]);
 
   const handlePlay = async () => {
     setErrorMessage(null);
