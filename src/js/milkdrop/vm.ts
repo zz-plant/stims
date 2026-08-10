@@ -256,7 +256,10 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   setDetailScale(scale: number) {
-    this.detailScale = clamp(scale, 0.5, 2);
+    // Ceiling must admit the full ultra-pipeline product (preset particle
+    // scale x budget x backend boost x shader quality can reach ~4.5);
+    // downstream consumers apply their own per-feature caps.
+    this.detailScale = clamp(scale, 0.5, 4);
   }
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {

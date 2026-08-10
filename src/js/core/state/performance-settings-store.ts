@@ -1,5 +1,9 @@
 import { getPerformanceOverrideParams } from '../url-params.ts';
 import { getBrowserStorage } from './browser-storage.ts';
+import {
+  getActiveQualityPreset,
+  subscribeToQualityPreset,
+} from './quality-preset-store.ts';
 
 export type ShaderQuality = 'low' | 'balanced' | 'high';
 
@@ -17,7 +21,8 @@ export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
 
 export const PERFORMANCE_SETTINGS_STORAGE_KEY = 'stims:performance-settings';
 export const MIN_PIXEL_RATIO = 1;
-export const MAX_PIXEL_RATIO = 2.5;
+// The WebGPU desktop backend cap; applyRendererSettings clamps WebGL lower.
+export const MAX_PIXEL_RATIO = 4;
 export const MIN_PARTICLE_BUDGET = 0.4;
 export const MAX_PARTICLE_BUDGET = 1.6;
 
@@ -26,6 +31,49 @@ type PerformanceSubscriber = (settings: PerformanceSettings) => void;
 const subscribers = new Set<PerformanceSubscriber>();
 let activeSettings: PerformanceSettings | null = null;
 let activeStorageKey = PERFORMANCE_SETTINGS_STORAGE_KEY;
+// Whether maxPixelRatio was chosen by the user (slider, URL, or persisted
+// value) rather than derived from the active quality preset. A derived value
+// keeps following the preset and is never written to storage.
+let maxPixelRatioIsUserSet = false;
+
+/**
+ * Default resolution cap when the user has not set one: the active quality
+ * preset's value. This is what makes selecting "Ultra" actually raise
+ * resolution — the store's value is pushed to the renderer as an explicit
+ * option, so a fixed default here would permanently override every preset.
+ */
+function resolveDefaultMaxPixelRatio(): number {
+  try {
+    const preset = getActiveQualityPreset();
+    if (preset.id !== 'custom') {
+      return preset.maxPixelRatio;
+    }
+  } catch {
+    // DOM-less environments fall through to the static default.
+  }
+  return DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio;
+}
+
+subscribeToQualityPreset((preset) => {
+  if (
+    !activeSettings ||
+    maxPixelRatioIsUserSet ||
+    preset.id === 'custom' ||
+    activeSettings.maxPixelRatio === preset.maxPixelRatio
+  ) {
+    return;
+  }
+  activeSettings = {
+    ...activeSettings,
+    maxPixelRatio: clampPerformanceValue(
+      preset.maxPixelRatio,
+      MIN_PIXEL_RATIO,
+      MAX_PIXEL_RATIO,
+    ),
+  };
+  const next = activeSettings;
+  subscribers.forEach((subscriber) => subscriber(next));
+});
 
 export function clampPerformanceValue(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);

@@ -1596,7 +1596,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     feedbackResolutionMultiplier: number;
   }>) {
     const nextMultiplier = Math.min(
-      1,
+      1.5,
       Math.max(0.45, feedbackResolutionMultiplier ?? 1),
     );
     if (

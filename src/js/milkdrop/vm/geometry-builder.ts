@@ -82,11 +82,11 @@ function getParticleFieldInstanceCount({
   detailScale: number;
   pointCount: number;
 }) {
-  const densityInfluence = clamp(detailScale, 0.5, 1.65);
+  const densityInfluence = clamp(detailScale, 0.5, 2.4);
   const rawCount = Math.round(
     Math.sqrt(pointCount) * (4.5 + meshDensity * 0.22) * densityInfluence,
   );
-  return clamp(rawCount, 24, 1200);
+  return clamp(rawCount, 24, 2400);
 }
 
 const STATIC_DISABLED_PARTICLE_FIELD: MilkdropParticleFieldVisual = {
@@ -307,7 +307,9 @@ function transformMeshPoint({
 }
 
 export function getMeshDensity(state: MutableState, detailScale: number) {
-  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 48);
+  // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
+  // detail scale (gated on backend + quality tier) climbs past ~3x.
+  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 96);
 }
 
 export function getMotionVectorDescriptorContext({
