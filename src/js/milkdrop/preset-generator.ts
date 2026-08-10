@@ -104,8 +104,18 @@ async function requestHostedPreset(
 
   if (!response.ok) {
     const detail = await responseError(response);
+    // 404/501/503 usually mean this deployment's preset-generation endpoint
+    // or AI binding was never set up, not that the model is temporarily
+    // down — self-hosters get a generic "unavailable" otherwise and have no
+    // way to tell a deploy-time config gap from a real outage.
+    const configHint =
+      response.status === 404
+        ? ' This deployment may not have the preset-generation endpoint configured.'
+        : response.status === 501 || response.status === 503
+          ? ' This deployment may be missing its AI model configuration.'
+          : '';
     throw new Error(
-      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}`,
+      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}${configHint}`,
     );
   }
 

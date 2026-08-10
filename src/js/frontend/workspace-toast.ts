@@ -71,6 +71,33 @@ export function useWorkspaceToast({
     },
   );
 
+  // The renderer service (core/services/render-service.ts) has no direct
+  // dependency on the frontend layer, so it reports WebGL context loss via a
+  // DOM event rather than a callback/prop — same pattern as
+  // `stims:load-status`. Without this, a lost context just freezes the
+  // canvas with no on-screen explanation.
+  useEffect(() => {
+    const handleRendererStatus = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      if (status === 'context-lost') {
+        showToast(
+          'Visuals paused — the graphics connection was lost. Reconnecting…',
+          'warn',
+        );
+      } else if (status === 'context-restored') {
+        showToast('Visuals reconnected.', 'info');
+      } else if (status === 'context-restore-failed') {
+        showToast(
+          'Could not reconnect the graphics context. Reload the page if visuals stay frozen.',
+          'error',
+        );
+      }
+    };
+    window.addEventListener('stims:renderer-status', handleRendererStatus);
+    return () =>
+      window.removeEventListener('stims:renderer-status', handleRendererStatus);
+  }, []);
+
   useEffect(() => {
     const runtimeMessage = statusMessage ?? engineSnapshot?.status;
     if (

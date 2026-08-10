@@ -671,7 +671,9 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'visualsearch' ? (
             <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
           ) : null}
-          {ui.routeState.panel === 'synthesize' ? <SynthesizePanel /> : null}
+          {ui.routeState.panel === 'synthesize' ? (
+            <SynthesizePanel offline={offline} />
+          ) : null}
         </Suspense>
       </SidePanel>
 

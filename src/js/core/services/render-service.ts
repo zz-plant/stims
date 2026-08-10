@@ -626,6 +626,15 @@ async function createRendererHandle(
       rememberRendererFallback('WebGL context lost — waiting for restore.', {
         backend: 'webgl',
       });
+      // A DOM event (rather than a return value or callback param) so this
+      // low-level service can notify the UI without a direct dependency on
+      // the frontend layer — same pattern as the existing `stims:load-status`
+      // event.
+      window.dispatchEvent(
+        new CustomEvent('stims:renderer-status', {
+          detail: { status: 'context-lost' },
+        }),
+      );
     };
 
     const handleContextRestored = () => {
@@ -641,10 +650,22 @@ async function createRendererHandle(
       webglContextRecoveryInFlight = true;
       console.info('WebGL context restored; rebuilding the renderer.', canvas);
       void recreateRenderer()
+        .then(() => {
+          window.dispatchEvent(
+            new CustomEvent('stims:renderer-status', {
+              detail: { status: 'context-restored' },
+            }),
+          );
+        })
         .catch((error) => {
           console.warn(
             'WebGL renderer recovery after context restore failed.',
             error,
+          );
+          window.dispatchEvent(
+            new CustomEvent('stims:renderer-status', {
+              detail: { status: 'context-restore-failed' },
+            }),
           );
         })
         .finally(() => {
