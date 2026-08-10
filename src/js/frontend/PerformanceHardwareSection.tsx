@@ -66,8 +66,9 @@ export function PerformanceHardwareSection() {
         <span className="ctl-row__text">
           <span className="ctl-row__label">MIDI controller</span>
           <span className="ctl-row__hint">
-            CC 1–4 control zoom, warp, rotation, and decay. CC 7–10 control
-            q1–q4 on the live preset.
+            Connect a class-compliant MIDI controller to drive the visuals live:
+            the first four knobs control zoom, warp, rotation, and decay, and
+            the next four control the current preset's custom variables.
           </span>
         </span>
         <button

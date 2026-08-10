@@ -176,6 +176,7 @@ export async function generatePreset(
     model: options.model,
   };
   let milkSource: string;
+  let usedFallback = false;
   try {
     milkSource =
       provider.kind === 'openai-compatible'
@@ -187,14 +188,17 @@ export async function generatePreset(
         await import('./ai-preset-synthesizer.ts');
       const synthesized = synthesizeEELPreset({ prompt: description });
       milkSource = synthesizedPresetToMilkSource(synthesized);
+      usedFallback = true;
     } else {
       throw error;
     }
   }
 
   const compiled = compileMilkdropPresetSource(milkSource, {
-    id: `ai-${Date.now()}`,
-    title: `AI: ${description}`,
+    id: usedFallback ? `ai-fallback-${Date.now()}` : `ai-${Date.now()}`,
+    title: usedFallback
+      ? `AI (fallback): ${description}`
+      : `AI: ${description}`,
     origin: 'generated',
   });
 
@@ -206,7 +210,7 @@ export async function generatePreset(
       const fallbackSource = synthesizedPresetToMilkSource(synthesized);
       return compileMilkdropPresetSource(fallbackSource, {
         id: `ai-fallback-${Date.now()}`,
-        title: `AI: ${description}`,
+        title: `AI (fallback): ${description}`,
         origin: 'generated',
       });
     }
