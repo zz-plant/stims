@@ -39,6 +39,7 @@ const SAMPLE_FRAMES = 660;
 
 type Band = 'bass' | 'mid' | 'treb';
 type BandPeaks = Record<Band, number>;
+type AttPeaks = Record<'bass_att' | 'mid_att' | 'treb_att', number>;
 
 /**
  * `above(bass, 1.3)` and friends — the literal thresholds preset authors
@@ -76,11 +77,18 @@ function collectCatalogThresholds(): ThresholdDemand[] {
 }
 
 /** Peak band level the runtime delivers under one synthetic scenario. */
-function measureBandPeaks(scenario: PresetLabScenario): BandPeaks {
+function measureBandPeaks(scenario: PresetLabScenario): BandPeaks & AttPeaks {
   const tracker = createMilkdropSignalTracker();
   const spectrum = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveform = new Uint8Array(128);
-  const peaks: BandPeaks = { bass: 0, mid: 0, treb: 0 };
+  const peaks: BandPeaks & AttPeaks = {
+    bass: 0,
+    mid: 0,
+    treb: 0,
+    bass_att: 0,
+    mid_att: 0,
+    treb_att: 0,
+  };
 
   for (let frame = 0; frame < WARMUP_FRAMES + SAMPLE_FRAMES; frame += 1) {
     const timeMs = frame * FRAME_MS;
@@ -97,6 +105,9 @@ function measureBandPeaks(scenario: PresetLabScenario): BandPeaks {
     peaks.bass = Math.max(peaks.bass, signals.bass);
     peaks.mid = Math.max(peaks.mid, signals.mid);
     peaks.treb = Math.max(peaks.treb, signals.treb);
+    peaks.bass_att = Math.max(peaks.bass_att, signals.bass_att);
+    peaks.mid_att = Math.max(peaks.mid_att, signals.mid_att);
+    peaks.treb_att = Math.max(peaks.treb_att, signals.treb_att);
   }
   return peaks;
 }
@@ -137,6 +148,18 @@ describe('milkdrop audio signal contract', () => {
     // audio comparison. A bass pulse that cannot cross it means no preset
     // using the idiom will ever fire.
     expect(peaks.bass).toBeGreaterThan(1);
+  });
+
+  test('attenuated bands also cross 1.0 on a beat', () => {
+    // `bass_att` is the damped band, not a windowed average: classic presets
+    // (Geiss - Happy Drops among the bundled ones) warp on `max(bass_att-1,0)`,
+    // which is dead code unless the damped signal still tops 1.0 on pulses.
+    const peaks = measureBandPeaks('bass-pulse');
+    expect(peaks.bass_att).toBeGreaterThan(1);
+
+    const fullMix = measureBandPeaks('full-mix');
+    expect(fullMix.mid_att).toBeGreaterThan(1);
+    expect(fullMix.treb_att).toBeGreaterThan(1);
   });
 
   test('settles near 1.0 through a steady passage rather than pinning high or low', () => {
