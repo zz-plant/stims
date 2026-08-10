@@ -69,8 +69,17 @@ export {
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
 export function normalizeHlslToGlsl(shaderText: string): string {
-  return shaderText
-    .replace(/\btexture\s*\(/giu, 'texture2D(')
+  return (
+    shaderText
+      // Volume-noise samples take a vec3 coordinate; route them to the
+      // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
+      // texture2D, which has no vec3 overload. Must run before the generic
+      // texture( → texture2D( rewrite below.
+      .replace(
+        /\b(?:texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
+        'sampleNoiseVolume(',
+      )
+      .replace(/\btexture\s*\(/giu, 'texture2D(')
     .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
     .replace(/\b(\d+)u\b/giu, '$1')
     .replace(/\bfloat2\b/giu, 'vec2')
@@ -124,7 +133,8 @@ export function normalizeHlslToGlsl(shaderText: string): string {
     .replace(
       /\brand_frame\b/giu,
       'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-    );
+    )
+  );
 }
 
 export function extractNativeShaderBody(shaderText: string) {
