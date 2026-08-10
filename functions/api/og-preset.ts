@@ -4,7 +4,7 @@
 // Default output is PNG rasterized with resvg-wasm — X, Facebook, Slack,
 // Discord, and iMessage all refuse SVG in link previews. `?format=svg`
 // returns the source SVG for debugging the template.
-import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import resvgWasm from './resvg.wasm';
 
 const escapeXml = (value: string) =>
@@ -257,9 +257,8 @@ const PNG_CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
 
 function edgeCache(): Cache | null {
-  const store = (
-    globalThis as { caches?: { default?: Cache } & CacheStorage }
-  ).caches;
+  const store = (globalThis as { caches?: { default?: Cache } & CacheStorage })
+    .caches;
   return store?.default ?? null;
 }
 

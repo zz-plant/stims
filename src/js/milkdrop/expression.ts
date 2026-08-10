@@ -588,7 +588,11 @@ export function evaluateMilkdropExpression(
               ? helpers.megabuf
               : helpers.gmegabuf;
           const index = toMilkdropInt(
-            evaluateMilkdropExpression(node.left.args[0] ?? { type: 'literal', value: 0 }, env, helpers),
+            evaluateMilkdropExpression(
+              node.left.args[0] ?? { type: 'literal', value: 0 },
+              env,
+              helpers,
+            ),
           );
           const maxSize =
             node.left.name.toLowerCase() === 'megabuf' ? 65_536 : 1_048_576;

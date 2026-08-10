@@ -941,9 +941,7 @@ function buildCustomSamplerUniformDeclarations(
       names.add(sampler.name);
     }
   }
-  return [...names]
-    .map((name) => `uniform sampler2D ${name};\n`)
-    .join('');
+  return [...names].map((name) => `uniform sampler2D ${name};\n`).join('');
 }
 
 export function assembleMilkdropDirectFragmentShaders(

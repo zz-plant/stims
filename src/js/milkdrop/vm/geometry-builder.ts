@@ -269,11 +269,7 @@ function transformMeshPoint({
     }
   }
 
-  runProgram(
-    preset.ir.programs.perPixel,
-    env,
-    local,
-  );
+  runProgram(preset.ir.programs.perPixel, env, local);
 
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const centerX = normalizeTransformCenter(local.cx ?? 0.5);
