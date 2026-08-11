@@ -2,7 +2,10 @@ import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { onRequest as generatePresetRequest } from '../../functions/api/generate-preset.ts';
-import { generatePreset } from '../../src/js/milkdrop/preset-generator.ts';
+import {
+  generatePreset,
+  generatePresetFromImage,
+} from '../../src/js/milkdrop/preset-generator.ts';
 
 const validMilkSource = `[preset00]
 fRating=5.0
@@ -101,5 +104,49 @@ describe('model-backed preset generation', () => {
     expect(panelSource).not.toContain('synthesizeEELPreset');
     expect(panelSource).toContain('Hosted model');
     expect(panelSource).toContain('Local Ollama');
+  });
+
+  test('generates a compiled preset from an image via the hosted route', async () => {
+    const fetchMock = mock(async () =>
+      Response.json({
+        description: 'a violet nebula over dark water',
+        milkSource: validMilkSource,
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const compiled = await generatePresetFromImage('aGVsbG8=');
+
+    expect(compiled.source.raw).toBe(validMilkSource.trim());
+    expect(compiled.source.title).toBe(
+      'AI (image): a violet nebula over dark water',
+    );
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe('/api/image-to-preset');
+    expect(JSON.parse(String(init.body))).toEqual({ image: 'aGVsbG8=' });
+  });
+
+  test('surfaces hosted image-route failures with a configuration hint', async () => {
+    const fetchMock = mock(
+      async () => new Response('not found', { status: 404 }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(generatePresetFromImage('aGVsbG8=')).rejects.toThrow(
+      /404.*image-to-preset endpoint/,
+    );
+  });
+
+  test('surfaces the image field in the panel for the hosted provider', () => {
+    const panelSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'src/js/frontend/SynthesizePanel.tsx'),
+      'utf8',
+    );
+
+    expect(panelSource).toContain('generatePresetFromImage');
+    expect(panelSource).toContain('Reference image');
   });
 });

@@ -232,6 +232,69 @@ export async function generatePreset(
   return compiled;
 }
 
+type ImageGenerationResponse = {
+  description?: string;
+  milkSource?: string;
+  cached?: boolean;
+  cachedPresetId?: string;
+};
+
+export async function generatePresetFromImage(
+  imageBase64: string,
+  options: { apiEndpoint?: string } = {},
+): Promise<MilkdropCompiledPreset> {
+  const endpoint = options.apiEndpoint || '/api/image-to-preset';
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageBase64 }),
+    });
+  } catch {
+    throw new Error(
+      'The hosted model could not be reached. Try again later or generate from a text description.',
+    );
+  }
+
+  if (!response.ok) {
+    const detail = await responseError(response);
+    const configHint =
+      response.status === 404
+        ? ' This deployment may not have the image-to-preset endpoint configured.'
+        : response.status === 501 || response.status === 503
+          ? ' This deployment may be missing its AI model configuration.'
+          : '';
+    throw new Error(
+      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}${configHint}`,
+    );
+  }
+
+  const data = (await response.json()) as ImageGenerationResponse;
+  if (!data.milkSource) {
+    throw new Error('The hosted model returned no preset source.');
+  }
+  const milkSource = extractMilkSource(data.milkSource);
+  const summary = data.description?.trim().slice(0, 80);
+
+  const compiled = compileMilkdropPresetSource(milkSource, {
+    id: `ai-image-${Date.now()}`,
+    title: summary ? `AI (image): ${summary}` : 'AI (image)',
+    origin: 'generated',
+  });
+
+  const compileErrors = compiled.diagnostics.filter(
+    (d) => d.severity === 'error',
+  );
+  if (compileErrors.length > 0) {
+    throw new Error(
+      `Generated preset has compilation errors: ${compileErrors.map((d) => d.message).join('; ')}`,
+    );
+  }
+
+  return compiled;
+}
+
 export async function generatePresetQuick(
   description: string,
 ): Promise<MilkdropCompiledPreset> {
