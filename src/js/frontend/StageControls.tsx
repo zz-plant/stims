@@ -304,7 +304,12 @@ export function StageControls({
               {item.separatorBefore ? <div className={styles.menuSep} /> : null}
               <button
                 type="button"
-                role="menuitem"
+                {...(item.active === undefined
+                  ? { role: 'menuitem' as const }
+                  : {
+                      role: 'menuitemcheckbox' as const,
+                      'aria-checked': item.active,
+                    })}
                 className={styles.menuItem}
                 data-active={String(item.active ?? false)}
                 onClick={item.action}

@@ -33,7 +33,7 @@
   gap: 10px;
   padding: 4px 14px;
   min-height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: rgba(6, 10, 18, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(16px);
@@ -65,15 +65,20 @@
   max-width: 120px;
 }
 
+/* Audio level reads as length (a meter), not just glow — and it wears
+   the cool "playing" accent, keeping green reserved for status. */
 .nowPlayingBar {
   flex-shrink: 0;
   width: 4px;
   height: 18px;
   border-radius: 2px;
-  background: rgba(125, 224, 162, 0.95);
-  opacity: calc(0.35 + var(--stims-energy, 0) * 0.65);
-  box-shadow: 0 0 12px rgba(125, 224, 162, calc(var(--stims-energy, 0) * 0.95));
+  background: var(--stims-cool, #77c9ff);
+  transform-origin: 50% 100%;
+  transform: scaleY(calc(0.3 + var(--stims-energy, 0) * 0.7));
+  opacity: calc(0.55 + var(--stims-energy, 0) * 0.45);
+  box-shadow: 0 0 12px rgba(119, 201, 255, calc(var(--stims-energy, 0) * 0.95));
   transition:
+    transform 0.1s ease,
     opacity 0.1s ease,
     box-shadow 0.1s ease;
 }
@@ -397,7 +402,7 @@
   align-items: center;
   gap: 0;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: rgba(6, 10, 18, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
@@ -417,7 +422,7 @@
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: transparent;
   color: rgba(229, 241, 255, 0.6);
   cursor: pointer;
@@ -443,7 +448,7 @@
   padding: 0 10px;
   height: 32px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: transparent;
   color: rgba(229, 241, 255, 0.85);
   font: inherit;
@@ -463,8 +468,10 @@
   color: #fff;
 }
 
+/* Cool = playing/selected (the fallback already said so); the warm
+   --stims-accent token is reserved for focus. */
 .titleBtn[data-active="true"] {
-  color: var(--stims-accent, #77c9ff);
+  color: var(--stims-cool, #77c9ff);
 }
 
 .titleText {
@@ -491,7 +498,7 @@
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: transparent;
   color: rgba(229, 241, 255, 0.6);
   cursor: pointer;
@@ -507,7 +514,7 @@
 }
 
 .menuBtn[aria-expanded="true"] {
-  color: var(--stims-accent, #77c9ff);
+  color: var(--stims-cool, #77c9ff);
   background: rgba(119, 201, 255, 0.14);
 }
 
@@ -576,9 +583,19 @@
   color: #fff;
 }
 
+/* Open-panel state is triple-encoded — cool accent, the same inset lit
+   edge the dock and preset rows use, and a trailing check glyph — so it
+   never rests on a 10%-alpha tint alone. */
 .menuItem[data-active="true"] {
-  color: var(--stims-accent, #77c9ff);
+  color: var(--stims-cool, #77c9ff);
   background: rgba(119, 201, 255, 0.1);
+  box-shadow: inset 2px 0 0 var(--stims-cool, #77c9ff);
+}
+
+.menuItem[data-active="true"]::after {
+  content: "✓" / "";
+  margin-left: auto;
+  font-weight: 700;
 }
 
 .menuSep {

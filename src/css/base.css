@@ -1770,19 +1770,34 @@ body.tv-mode .control-panel input {
   text-transform: uppercase;
 }
 
+/* Each tag state pairs its hue (drawn from the status tokens rather
+   than one-off hexes) with a distinct glyph, so active vs verified vs
+   drift stays readable without color vision. */
 .milkdrop-overlay__preset-tag--active {
-  background: rgba(56, 189, 248, 0.2);
-  color: #e0f2fe;
+  background: color-mix(in srgb, var(--stims-cool, #77c9ff) 20%, transparent);
+  color: color-mix(in srgb, var(--stims-cool, #77c9ff) 45%, #f8fafc);
+}
+
+.milkdrop-overlay__preset-tag--active::before {
+  content: "▶ " / "";
 }
 
 .milkdrop-overlay__preset-tag--verified {
-  background: rgba(34, 197, 94, 0.2);
-  color: #bbf7d0;
+  background: color-mix(in srgb, var(--stims-good, #7de0a2) 20%, transparent);
+  color: color-mix(in srgb, var(--stims-good, #7de0a2) 45%, #f8fafc);
+}
+
+.milkdrop-overlay__preset-tag--verified::before {
+  content: "✓ " / "";
 }
 
 .milkdrop-overlay__preset-tag--drift {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fed7aa;
+  background: color-mix(in srgb, var(--stims-warn, #ffd166) 20%, transparent);
+  color: color-mix(in srgb, var(--stims-warn, #ffd166) 45%, #f8fafc);
+}
+
+.milkdrop-overlay__preset-tag--drift::before {
+  content: "△ " / "";
 }
 
 .milkdrop-overlay__preset-warning {
