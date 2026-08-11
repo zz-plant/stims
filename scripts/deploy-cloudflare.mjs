@@ -105,6 +105,12 @@ if (!usesDefaultPagesConfig) {
   process.exit(1);
 }
 
+// Wrangler's upload cache dedupes unchanged files (the ~2k static preset
+// assets) across deploys. Only bypass it when the Pages asset-cache API
+// itself misbehaves.
+const skipUploadCache =
+  hasFlag('--skip-caching') || process.env.STIMS_WRANGLER_SKIP_CACHING === '1';
+
 const wranglerArgs = [
   'wrangler',
   'pages',
@@ -112,8 +118,11 @@ const wranglerArgs = [
   directory,
   '--project-name',
   projectName,
-  '--skip-caching',
 ];
+
+if (skipUploadCache) {
+  wranglerArgs.push('--skip-caching');
+}
 
 if (preview) {
   wranglerArgs.push('--branch', branch);
@@ -138,6 +147,7 @@ console.log(
     preview ? `[deploy-cloudflare] Branch: ${branch}` : null,
     commitHash ? `[deploy-cloudflare] Commit: ${commitHash}` : null,
     `[deploy-cloudflare] Dirty workspace: ${dirtyWorkspace ? 'yes' : 'no'}`,
+    `[deploy-cloudflare] Upload cache: ${skipUploadCache ? 'off (--skip-caching)' : 'on'}`,
   ]
     .filter(Boolean)
     .join('\n'),
