@@ -1,4 +1,5 @@
 import type { Completion, CompletionSource } from '@codemirror/autocomplete';
+import { computeSourceDiff } from './source-diff.ts';
 import {
   autocompletion,
   clearSnippet,
@@ -897,6 +898,7 @@ export class EditorPanel {
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
   private snapshots: Array<{ source: string; timestamp: number }> = [];
+  private assistedEditContainer: HTMLElement | null = null;
   private disposeDiagnosticsListener: (() => void) | null = null;
   private sliderInputs: Map<
     string,
@@ -1197,26 +1199,8 @@ export class EditorPanel {
         }
 
         if (json.milkSource) {
-          const preAiSource = this.editor.state.doc.toString();
-          callbacks.onEditorSourceChange(json.milkSource);
+          this.proposeAssistedEdit(json.milkSource, 'Refine');
           refineInput.value = '';
-
-          if (preAiSource !== json.milkSource) {
-            const revertBtn = document.createElement('button');
-            revertBtn.textContent = 'Revert AI';
-            revertBtn.type = 'button';
-            revertBtn.className = 'milkdrop-overlay__refine-btn';
-            revertBtn.style.marginLeft = '6px';
-            revertBtn.addEventListener(
-              'click',
-              () => {
-                callbacks.onEditorSourceChange(preAiSource);
-                revertBtn.remove();
-              },
-              { once: true },
-            );
-            refineBtn.insertAdjacentElement('afterend', revertBtn);
-          }
         }
         refining = false;
         refineBtn.textContent = 'Refine';
@@ -1708,6 +1692,68 @@ export class EditorPanel {
     }
   }
 
+  // Every AI-assisted edit lands here instead of replacing the buffer:
+  // the user reviews a line diff and explicitly applies or discards it
+  // (the Remix-studio "inspectable as source diffs" roadmap bullet).
+  private proposeAssistedEdit(nextSource: string, label: string) {
+    const currentSource = this.editor.state.doc.toString();
+    if (nextSource === currentSource) {
+      return;
+    }
+    this.assistedEditContainer?.remove();
+
+    const container = document.createElement('div');
+    container.className = 'editor-assisted-diff';
+    const heading = document.createElement('div');
+    heading.className = 'editor-assisted-diff__head';
+    heading.textContent = `${label}: review the proposed change`;
+    const lines = document.createElement('pre');
+    lines.className = 'editor-assisted-diff__lines';
+    for (const line of computeSourceDiff(currentSource, nextSource)) {
+      const row = document.createElement('span');
+      row.className = `editor-assisted-diff__line editor-assisted-diff__line--${line.kind}`;
+      const prefix =
+        line.kind === 'add'
+          ? '+ '
+          : line.kind === 'del'
+            ? '- '
+            : line.kind === 'gap'
+              ? '\u22EF '
+              : '  ';
+      row.textContent = `${prefix}${line.text}`;
+      lines.append(row, document.createTextNode('\n'));
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'editor-assisted-diff__actions';
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'milkdrop-overlay__refine-btn';
+    applyBtn.textContent = 'Apply';
+    applyBtn.addEventListener('click', () => {
+      const sourceNow = this.editor.state.doc.toString();
+      this.snapshots.push({ source: sourceNow, timestamp: Date.now() });
+      this.editor.dispatch({
+        changes: { from: 0, to: sourceNow.length, insert: nextSource },
+      });
+      this.callbacks.onEditorSourceChange(nextSource);
+      container.remove();
+      this.assistedEditContainer = null;
+    });
+    const discardBtn = document.createElement('button');
+    discardBtn.type = 'button';
+    discardBtn.className = 'milkdrop-overlay__refine-btn';
+    discardBtn.textContent = 'Discard';
+    discardBtn.addEventListener('click', () => {
+      container.remove();
+      this.assistedEditContainer = null;
+    });
+    actions.append(applyBtn, discardBtn);
+    container.append(heading, lines, actions);
+    this.editor.dom.insertAdjacentElement('beforebegin', container);
+    this.assistedEditContainer = container;
+  }
+
   private renderQuickFix(): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -1737,16 +1783,7 @@ export class EditorPanel {
       .then((r) => r.json())
       .then((data) => {
         if (data.milkSource) {
-          const currentSource = this.editor.state.doc.toString();
-          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
-          this.editor.dispatch({
-            changes: {
-              from: 0,
-              to: currentSource.length,
-              insert: data.milkSource,
-            },
-          });
-          this.callbacks.onEditorSourceChange(data.milkSource);
+          this.proposeAssistedEdit(data.milkSource, 'AI fix');
         }
         this.setRefinePending(false);
       })
@@ -1764,16 +1801,7 @@ export class EditorPanel {
       .then((r) => r.json())
       .then((data) => {
         if (data.presets && data.presets.length > 0) {
-          const currentSource = this.editor.state.doc.toString();
-          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
-          this.editor.dispatch({
-            changes: {
-              from: 0,
-              to: currentSource.length,
-              insert: data.presets[0],
-            },
-          });
-          this.callbacks.onEditorSourceChange(data.presets[0]);
+          this.proposeAssistedEdit(data.presets[0], 'Variation');
           document.dispatchEvent(
             new CustomEvent('stims:batch-results', {
               detail: { presets: data.presets.slice(1) },
@@ -1806,16 +1834,7 @@ export class EditorPanel {
       .then((r) => r.json())
       .then((data) => {
         if (data.milkSource) {
-          const currentSource = this.editor.state.doc.toString();
-          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
-          this.editor.dispatch({
-            changes: {
-              from: 0,
-              to: currentSource.length,
-              insert: data.milkSource,
-            },
-          });
-          this.callbacks.onEditorSourceChange(data.milkSource);
+          this.proposeAssistedEdit(data.milkSource, 'Blend');
         }
         this.setRefinePending(false);
       })
