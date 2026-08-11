@@ -223,6 +223,16 @@ export function normalizeTransformCenter(value: number) {
   return value;
 }
 
+// MilkDrop's cy is y-down ([0,1], 0=top); the renderer is y-up, so the
+// center used for rotate/zoom/ripple math needs the opposite flip from cx.
+// Mirrors milkdropNormalizeTransformCenterY in webgpu-procedural-materials.ts.
+export function normalizeTransformCenterY(value: number) {
+  if (value >= 0 && value <= 1) {
+    return (0.5 - value) * 2;
+  }
+  return value;
+}
+
 export function createDefaultSignalEnv(): MutableState {
   return {
     time: 0,

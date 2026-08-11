@@ -29,6 +29,8 @@ export function getCustomWaveSampleLimit(detailScale: number) {
 
 const toRendererWaveX = (value: number) => (value - 0.5) * 2;
 const toRendererWaveY = (value: number) => (0.5 - value) * 2;
+const toMilkdropWaveX = (value: number) => value / 2 + 0.5;
+const toMilkdropWaveY = (value: number) => 0.5 - value / 2;
 
 export function buildMainWave({
   state,
@@ -214,12 +216,6 @@ export function buildCustomWaves({
       drawMode,
     );
     const useProcedural = proceduralDescriptor !== null;
-    const perPointWritesX = wave.programs.perPoint.statements.some(
-      (statement) => statement.target === 'x',
-    );
-    const perPointWritesY = wave.programs.perPoint.statements.some(
-      (statement) => statement.target === 'y',
-    );
     const pointLocals = { ...frameLocals };
     waveState.pointLocalsScratch = pointLocals;
     const pointEnv = useProcedural
@@ -390,27 +386,28 @@ export function buildCustomWaves({
       pointLocals.value = waveChannels.value;
       pointLocals.value1 = waveChannels.value1;
       pointLocals.value2 = waveChannels.value2;
-      pointLocals.x = centerX + (-1 + sample * 2);
-      pointLocals.y =
+      const rendererPointX = centerX + (-1 + sample * 2);
+      const rendererPointY =
         (frameLocals.spectrum ?? 0) >= 0.5
           ? baseY
           : centerY + waveChannels.value * scaling;
+      // Per-point code reads (and may write) x/y in MilkDrop [0,1] space
+      // (y-down), matching the mesh per-pixel convention; rad/ang measure
+      // distance from screen center in renderer (zero-centered) space.
+      pointLocals.x = toMilkdropWaveX(rendererPointX);
+      pointLocals.y = toMilkdropWaveY(rendererPointY);
       pointLocals.a = waveAlpha;
       pointLocals.rad = Math.sqrt(
-        pointLocals.x * pointLocals.x + pointLocals.y * pointLocals.y,
+        rendererPointX * rendererPointX + rendererPointY * rendererPointY,
       );
-      pointLocals.ang = Math.atan2(pointLocals.y, pointLocals.x);
+      pointLocals.ang = Math.atan2(rendererPointY, rendererPointX);
       if (pointEnv) {
         runProgram(wave.programs.perPoint, pointEnv, pointLocals);
       }
       const writeIndex = point * 3;
       if (positions) {
-        positions[writeIndex] = perPointWritesX
-          ? toRendererWaveX(pointLocals.x)
-          : pointLocals.x;
-        positions[writeIndex + 1] = perPointWritesY
-          ? toRendererWaveY(pointLocals.y)
-          : pointLocals.y;
+        positions[writeIndex] = toRendererWaveX(pointLocals.x);
+        positions[writeIndex + 1] = toRendererWaveY(pointLocals.y);
         positions[writeIndex + 2] = 0.28;
       }
       if (pointColors) {

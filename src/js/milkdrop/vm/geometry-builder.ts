@@ -26,6 +26,7 @@ import {
   type MotionVectorHistoryPoint,
   type MutableState,
   normalizeTransformCenter,
+  normalizeTransformCenterY,
 } from './shared';
 
 type ParticleFieldDeviceProfile = {
@@ -234,14 +235,10 @@ function transformMeshPoint({
 
   const local = scratch;
   const aspectRatio = signals.aspect ?? 1;
-  const resolvedAspectX =
-    aspectX ??
-    (signals as unknown as Record<string, number | undefined>).aspectx ??
-    (aspectRatio > 1 ? 1 / aspectRatio : 1);
-  const resolvedAspectY =
-    aspectY ??
-    (signals as unknown as Record<string, number | undefined>).aspecty ??
-    (aspectRatio > 1 ? 1 : aspectRatio);
+  // MilkDrop shrinks the minor axis (values <= 1); mirrors the shader-uniform
+  // convention in feedback-manager-shared.ts's syncMilkdropShaderBuiltinUniforms.
+  const resolvedAspectX = aspectX ?? (aspectRatio < 1 ? aspectRatio : 1);
+  const resolvedAspectY = aspectY ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
 
   // Convert from renderer space [-1,1] to MilkDrop space [0,1]
   // x = 0 is left, x = 1 is right (with aspect correction)
@@ -283,7 +280,7 @@ function transformMeshPoint({
 
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const centerX = normalizeTransformCenter(local.cx ?? 0.5);
-  const centerY = normalizeTransformCenter(local.cy ?? 0.5);
+  const centerY = normalizeTransformCenterY(local.cy ?? 0.5);
   const scaleX = local.sx ?? 1;
   const scaleY = local.sy ?? 1;
   const translateX = local.dx ?? 0;
@@ -398,7 +395,7 @@ export function buildProceduralFieldTransform(state: MutableState) {
   reusableFieldTransform.warp = state.warp ?? 0;
   reusableFieldTransform.warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   reusableFieldTransform.centerX = normalizeTransformCenter(state.cx ?? 0.5);
-  reusableFieldTransform.centerY = normalizeTransformCenter(state.cy ?? 0.5);
+  reusableFieldTransform.centerY = normalizeTransformCenterY(state.cy ?? 0.5);
   reusableFieldTransform.scaleX = state.sx ?? 1;
   reusableFieldTransform.scaleY = state.sy ?? 1;
   reusableFieldTransform.translateX = state.dx ?? 0;
@@ -499,12 +496,8 @@ export function buildMeshField({
   points.length = density * density;
 
   const aspectRatio = signals.aspect ?? 1;
-  const aspectX =
-    (signals as unknown as Record<string, number | undefined>).aspectx ??
-    (aspectRatio > 1 ? 1 / aspectRatio : 1);
-  const aspectY =
-    (signals as unknown as Record<string, number | undefined>).aspecty ??
-    (aspectRatio > 1 ? 1 : aspectRatio);
+  const aspectX = aspectRatio < 1 ? aspectRatio : 1;
+  const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
@@ -818,12 +811,8 @@ export function buildMotionVectors({
   let vectorCount = 0;
 
   const aspectRatio = signals.aspect ?? 1;
-  const aspectX =
-    (signals as unknown as Record<string, number | undefined>).aspectx ??
-    (aspectRatio > 1 ? 1 / aspectRatio : 1);
-  const aspectY =
-    (signals as unknown as Record<string, number | undefined>).aspecty ??
-    (aspectRatio > 1 ? 1 : aspectRatio);
+  const aspectX = aspectRatio < 1 ? aspectRatio : 1;
+  const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
   for (let row = 0; row < countY; row += 1) {
     for (let col = 0; col < countX; col += 1) {

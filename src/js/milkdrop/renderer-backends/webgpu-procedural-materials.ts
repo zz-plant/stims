@@ -421,10 +421,16 @@ export function buildMilkdropTransformWgslCode(
   }
 
   return `${WGSL_TRANSFORM_HEADER}
-    var field_x = source.x;
-    var field_y = source.y;
-    var field_rad = length(source);
-    var field_ang = atan2(source.y, source.x);
+    // Present x/y/rad/ang to the preset's per-pixel program in MilkDrop
+    // [0,1] y-down aspect-weighted space, matching the CPU mesh path
+    // (geometry-builder.ts transformMeshPoint) instead of raw renderer
+    // [-1,1] y-up clip space.
+    let fieldAspectX = select(1.0, signalAspectValue, signalAspectValue < 1.0);
+    let fieldAspectY = select(1.0, 1.0 / signalAspectValue, signalAspectValue > 1.0);
+    var field_x = source.x * 0.5 * fieldAspectX + 0.5;
+    var field_y = -source.y * 0.5 * fieldAspectY + 0.5;
+    var field_rad = length(vec2<f32>(source.x * fieldAspectX, source.y * fieldAspectY));
+    var field_ang = atan2(source.y * fieldAspectY, source.x * fieldAspectX);
     var fieldZoom = paramZoom;
     var fieldZoomExponent = paramZoomExponent;
     var fieldRotation = paramRotation;
@@ -439,15 +445,19 @@ export function buildMilkdropTransformWgslCode(
     ${buildGpuFieldTemporaryDeclarations(program)}
     ${buildGpuFieldStatementCode(program)}
 
+    // Invert back to renderer space now that the preset program has had its
+    // chance to read/write x and y (mirrors the CPU path's rendererX/rendererY).
+    let rendererFieldX = (field_x - 0.5) * 2.0 / fieldAspectX;
+    let rendererFieldY = -((field_y - 0.5) * 2.0 / fieldAspectY);
     let normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);
     let normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);
     let angle = field_ang + fieldRotation;
     let translatedX =
-      (field_x - normalizedCenterX) * fieldScaleX +
+      (rendererFieldX - normalizedCenterX) * fieldScaleX +
       normalizedCenterX +
       fieldTranslateX * 2.0;
     let translatedY =
-      (field_y - normalizedCenterY) * fieldScaleY +
+      (rendererFieldY - normalizedCenterY) * fieldScaleY +
       normalizedCenterY +
       fieldTranslateY * 2.0;
     let ripple = sin(
@@ -872,13 +882,18 @@ ${WGSL_SIGNAL_UNPACK}
       ) *
         0.18 *
         paramScaling;
-    var field_x = paramCenterX + (-1.0 + sampleTValue * 2.0) * 0.85;
-    var field_y = mix(orbitalY, baseY, paramSpectrum);
-    var field_rad = length(vec2<f32>(field_x, field_y));
-    var field_ang = atan2(field_y, field_x);
+    let rendererPointX = paramCenterX + (-1.0 + sampleTValue * 2.0);
+    let rendererPointY = mix(orbitalY, baseY, paramSpectrum);
+    // Per-point code reads/writes x,y in MilkDrop [0,1] space (y-down),
+    // matching the CPU wave-builder path; rad/ang measure distance from
+    // screen center in renderer (zero-centered) space.
+    var field_x = rendererPointX / 2.0 + 0.5;
+    var field_y = 0.5 - rendererPointY / 2.0;
+    var field_rad = length(vec2<f32>(rendererPointX, rendererPointY));
+    var field_ang = atan2(rendererPointY, rendererPointX);
     ${buildGpuFieldTemporaryDeclarations(program)}
     ${buildGpuFieldStatementCode(program)}
-    return vec2<f32>(field_x, field_y);
+    return vec2<f32>((field_x - 0.5) * 2.0, (0.5 - field_y) * 2.0);
   }`;
 }
 
@@ -900,7 +915,7 @@ function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
       blendedSignalsD,
       blendedSignalsE
     );`
-    : `let x = blendedCenterX + (-1.0 + sampleT * 2.0) * 0.85;
+    : `let x = blendedCenterX + (-1.0 + sampleT * 2.0);
     let baseY =
       blendedCenterY +
       (blendedSampleValue - 0.5) *
