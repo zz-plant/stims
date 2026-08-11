@@ -23,7 +23,6 @@
         "react-dom": "19.2.8",
         "stats-gl": "4.2.3",
         "three": "0.185.1",
-        "yaml": "^2.8.2",
         "zod": "4.4.3",
       },
       "devDependencies": {
