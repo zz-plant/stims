@@ -41,7 +41,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 
 Before adding surfaces, make the existing text → preset path trustworthy.
 
-- Chain compile diagnostics (already run by `preset-generator.ts`) with a headless reactivity check derived from [`scripts/preset-lab-reactivity.ts`](../scripts/preset-lab-reactivity.ts): a generated preset that compiles but is `autonomous` (ignores audio) or renders near-black should be regenerated or labeled before the user sees it.
+- Done in part: the Generate panel now chains compile diagnostics with an in-browser reactivity probe ([`src/js/milkdrop/reactivity-probe.ts`](../src/js/milkdrop/reactivity-probe.ts)) that steps the VM silent-vs-audio and labels presets whose equations ignore audio. Near-black detection still needs a render-based check.
 - Wire the hosted [`validate-preset`](../functions/api/validate-preset.ts) route to the real compiler (or route validation through client-side compilation) before anything treats it as a quality gate — today it is a line-level syntax check that passes invalid expressions and shader programs.
 - Reuse the deterministic synthesizer as a control: generation should measurably beat the template fallback on reactivity and visual-variance metrics, or the model call was not worth it.
 - Complete the end-to-end verification the achievements doc calls out: hosted availability, loopback/local configuration, and the full browser flow.
@@ -56,7 +56,7 @@ Exit criteria:
 
 Refine, blend, and batch variations already have editor-panel actions ([`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts)); the work is upgrading them from fire-and-replace to trustworthy, not wiring them from scratch.
 
-- **Inspectable diffs for assisted edits.** The editor's refine/blend/variations actions replace the buffer directly (with a snapshot). Present assisted edits as source diffs before application — the named Remix-studio bullet in [`ROADMAP.md`](./ROADMAP.md).
+- **Inspectable diffs for assisted edits.** Done: the editor's refine, blend, variation, and quick-fix actions now propose a reviewable line diff ([`src/js/milkdrop/overlay/source-diff.ts`](../src/js/milkdrop/overlay/source-diff.ts)) with explicit Apply/Discard instead of replacing the buffer — the named Remix-studio bullet in [`ROADMAP.md`](./ROADMAP.md).
 - **Blend from the catalog.** Blend today requires pasting source into the editor flow; add two-preset selection from the catalog feeding [`blend-presets`](../functions/api/blend-presets.ts), loaded through the same compile-before-load path the Generate panel uses.
 - **Image to preset.** Wired: the Generate panel's hosted mode accepts a reference image feeding [`image-to-preset`](../functions/api/image-to-preset.ts) through the same compile-before-load path. Remaining work is end-to-end verification on a configured deployment.
 - **Semantic search as an optional enhancer.** [`visual-search`](../functions/api/visual-search.ts) already backs the optional embedding services; surface it in catalog search as an optional layer, never a blocker for local search (roadmap principle).
