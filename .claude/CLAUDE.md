@@ -17,6 +17,7 @@ bun run setup:codex             # install + quick-check if not
 | Fast syntax/lint/type check | `bun run check:quick` | < 30s |
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
+| Run only tests affected by uncommitted changes | `bun run test:changed` | seconds |
 | Integration tests | `bun run test:integration` | 1–2 min |
 | Compatibility tests | `bun run test:compat` | 1–2 min |
 | Warm long-lived session | `bun run session:codex -- --profile review` | — |

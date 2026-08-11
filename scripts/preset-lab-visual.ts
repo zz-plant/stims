@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
-import sharp from 'sharp';
+import sharp, { type OverlayOptions } from 'sharp';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import { ensureDevServer } from './dev-server.ts';
 import {
@@ -439,7 +439,7 @@ export async function writeContactSheet({
   const columns = Math.max(1, ...rows.map((row) => row.frames.length));
   const width = SHEET_ROW_LABEL_WIDTH + columns * TILE_WIDTH;
   const height = SHEET_LABEL_HEIGHT + rows.length * TILE_HEIGHT;
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
 
   for (const [rowIndex, row] of rows.entries()) {
     for (const [columnIndex, framePath] of row.frames.entries()) {
