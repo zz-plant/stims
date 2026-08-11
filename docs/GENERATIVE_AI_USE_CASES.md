@@ -10,13 +10,13 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 
 | Piece | Where | What it does |
 | --- | --- | --- |
-| Text → preset | [`functions/api/generate-preset.ts`](../functions/api/generate-preset.ts) | Complexity-classified model routing, embedding cache, auto-titling |
+| Text → preset | [`functions/api/generate-preset.ts`](../functions/api/generate-preset.ts) | Complexity-classified model routing, auto-titling (no cache — every request generates) |
 | Conversational refine | [`functions/api/refine-preset.ts`](../functions/api/refine-preset.ts) | Instruction + history over existing `.milk` source |
-| Image → preset | [`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts) | Vision description → generated preset, embedding cache |
+| Image → preset | [`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts) | Vision description → generated preset; embedding cache serves a matched gallery preset's source when resolvable |
 | Blend two presets | [`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts) | Waves/motion from A, palette/atmosphere from B |
 | Batch variations | [`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts) | Up to 5 parallel seeded variations |
 | Semantic search | [`functions/api/visual-search.ts`](../functions/api/visual-search.ts) | Embedding search over preset descriptions |
-| Validation dry-run | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → compiler diagnostics |
+| Syntax pre-check | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → line-level diagnostics (assignments, parentheses); a lightweight check that does not run the preset compiler |
 | Audio → preset match | [`functions/api/audio-select.ts`](../functions/api/audio-select.ts) | Micro model + embeddings pick presets for audio character |
 | Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route or loopback OpenAI-compatible (local) provider |
 | Client generation core | [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts), [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) | Provider abstraction; prompt scaffolding shared by client and Worker; compiles returned source before loading |
@@ -31,9 +31,9 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 ### Gaps this document targets
 
 1. Only Generate is wired into the shipped UI. Refine, blend, image-to-preset, and visual search exist as routes with no bundled surface.
-2. Nothing gates generated presets on quality. [`validate-preset`](../functions/api/validate-preset.ts), `lab:reactivity`, and `lab:visual` exist, but no chain runs generate → diagnose → measure → regenerate, and nothing checks reactivity before a generated preset reaches the user.
+2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route is syntax-only (it never runs the real compiler), `lab:reactivity` and `lab:visual` run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
 3. There is no eval corpus or benchmark for generation quality, in contrast to the mature parity/certification corpus for rendering.
-4. Prompt scaffolding targets EEL-era equations only. The GLSL-era `warp=`/`comp=` shader path — where the visually strongest presets live per the coding guide — is untouched by generation.
+4. Shader generation is unverified. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) already documents the GLSL `[warp_shader]`/`[comp_shader]` blocks but tells models to avoid them unless asked, ships no worked examples, and nothing verifies that emitted GLSL actually compiles — the static compiler only classifies shader text; the GPU compiles it at render time.
 5. Provenance and attribution for generated or remixed presets is unspecified, though [`src/js/milkdrop/preset-credit.ts`](../src/js/milkdrop/preset-credit.ts) and the roadmap's "record remix provenance" bullet point at where it belongs.
 
 ## Now: verify and gate what already generates
@@ -43,6 +43,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 Before adding surfaces, make the existing text → preset path trustworthy.
 
 - Chain compile diagnostics (already run by `preset-generator.ts`) with a headless reactivity check derived from [`scripts/preset-lab-reactivity.ts`](../scripts/preset-lab-reactivity.ts): a generated preset that compiles but is `autonomous` (ignores audio) or renders near-black should be regenerated or labeled before the user sees it.
+- Wire the hosted [`validate-preset`](../functions/api/validate-preset.ts) route to the real compiler (or route validation through client-side compilation) before anything treats it as a quality gate — today it is a line-level syntax check that passes invalid expressions and shader programs.
 - Reuse the deterministic synthesizer as a control: generation should measurably beat the template fallback on reactivity and visual-variance metrics, or the model call was not worth it.
 - Complete the end-to-end verification the achievements doc calls out: hosted availability, loopback/local configuration, and the full browser flow.
 
@@ -79,14 +80,14 @@ Exit criteria:
 - an agent (or CI job) can run the full loop headlessly from one command; and
 - prompt or model-routing changes land with before/after benchmark numbers.
 
-### Shader-era generation
+### Verified shader generation
 
-- Extend [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) scaffolding to the `warp=`/`comp=` shader blocks, using the coding guide's AI-generation guidance, anti-patterns, and engine-limitation notes as the spec corpus.
-- Gate through the same compile-diagnose-measure chain; shader compilation failures already surface through the compiler's diagnostics.
+- The prompt scaffolding for GLSL `[warp_shader]`/`[comp_shader]` blocks already exists in [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) but is defensive: models are told to avoid shader blocks unless asked, and there are no worked examples. Raise quality with examples drawn from the coding guide's AI-generation guidance, anti-patterns, and engine-limitation notes.
+- Static compiler diagnostics cannot prove a shader works — the GPU compiles the GLSL at render time. The gate for shader-bearing presets therefore needs a browser or headless render-compile check (the `lab:visual` path already renders in Chromium) on top of the compile-diagnose-measure chain.
 
 Exit criteria:
 
-- generated presets can include working shader blocks, verified by the benchmark corpus rather than by inspection.
+- generated presets can include working shader blocks, verified by a render-compile check in the benchmark corpus rather than by static diagnostics or inspection.
 
 ## Later: identity and ambient intelligence
 
