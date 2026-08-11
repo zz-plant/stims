@@ -65,7 +65,8 @@ export function parseHostMessage(
     if (!presetId) return null;
     return {
       presetId,
-      title: typeof parsed.title === 'string' ? parsed.title.slice(0, 256) : null,
+      title:
+        typeof parsed.title === 'string' ? parsed.title.slice(0, 256) : null,
     };
   } catch {
     return null;
@@ -144,9 +145,7 @@ export class SyncRoom {
   }
 
   async webSocketMessage(ws: WebSocket, raw: unknown): Promise<void> {
-    const attachment = (
-      ws as HibernatableWebSocket
-    ).deserializeAttachment();
+    const attachment = (ws as HibernatableWebSocket).deserializeAttachment();
     if (attachment?.role !== 'host') return;
 
     const message = parseHostMessage(raw);

@@ -730,6 +730,18 @@ export function buildGpuGeometryHints({
   };
 }
 
+// Above this cell count, motion vectors sample the per-pixel program on a
+// coarse grid and bilinear-interpolate the rest. The warp mapping is smooth
+// (zoom/rot/warp fields), so interpolation is visually indistinguishable for
+// indicator vectors, while a dense authored grid (64x48 = 3072 cells) drops
+// to at most 17x13 = 221 program runs per frame.
+const MOTION_VECTOR_INTERPOLATION_THRESHOLD = 288;
+const MOTION_VECTOR_EVAL_COLUMNS = 17;
+const MOTION_VECTOR_EVAL_ROWS = 13;
+// Reused across frames; the VM is single-threaded and buildMotionVectors is
+// not reentrant. Layout: [x0, y0, x1, y1, ...] row-major over the eval grid.
+let motionVectorEvalScratch = new Float32Array(0);
+
 export function buildMotionVectors({
   state,
   preset,
@@ -790,6 +802,15 @@ export function buildMotionVectors({
     hasLegacyMotionVectorControls ? 0 : 0.02,
     1,
   );
+  // Classic presets park a dense grid (mv_x=64;mv_y=48) with mv_a=0 to hide
+  // motion vectors; every cell still costs a per-pixel program run. Fully
+  // transparent vectors can never be seen, so skip the whole grid. mv_a is a
+  // frame variable — if a preset later raises it, vectors resume next frame
+  // (history restarts, matching the from-scratch case).
+  if (alpha <= 0.003) {
+    geometryState.lastMotionVectorField = null;
+    return [];
+  }
   const nextVisualFrameIndex = (geometryState.motionVectorFrameIndex ^ 1) as
     | 0
     | 1;
@@ -814,6 +835,39 @@ export function buildMotionVectors({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  const interpolated = countX * countY > MOTION_VECTOR_INTERPOLATION_THRESHOLD;
+  const evalColumns = interpolated
+    ? Math.min(countX, MOTION_VECTOR_EVAL_COLUMNS)
+    : 0;
+  const evalRows = interpolated ? Math.min(countY, MOTION_VECTOR_EVAL_ROWS) : 0;
+  if (interpolated) {
+    if (motionVectorEvalScratch.length < evalColumns * evalRows * 2) {
+      motionVectorEvalScratch = new Float32Array(evalColumns * evalRows * 2);
+    }
+    for (let row = 0; row < evalRows; row += 1) {
+      for (let col = 0; col < evalColumns; col += 1) {
+        const point = transformMeshPoint({
+          signals,
+          gridX: (col / (evalColumns - 1)) * 2 - 1,
+          gridY: (row / (evalRows - 1)) * 2 - 1,
+          state,
+          preset,
+          geometryState,
+          runProgram,
+          createEnv,
+          scratch: geometryState.pointScratch,
+          aspectX,
+          aspectY,
+        });
+        const offset = (row * evalColumns + col) * 2;
+        motionVectorEvalScratch[offset] = point.x;
+        motionVectorEvalScratch[offset + 1] = point.y;
+      }
+    }
+  }
+
+  let currentPointX = 0;
+  let currentPointY = 0;
   for (let row = 0; row < countY; row += 1) {
     for (let col = 0; col < countX; col += 1) {
       const sourceBaseX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
@@ -825,19 +879,53 @@ export function buildMotionVectors({
         ? clamp(sourceBaseY + legacyOffsetY, -1, 1)
         : sourceBaseY;
       const index = row * countX + col;
-      const currentPoint = transformMeshPoint({
-        signals,
-        gridX: sourceX,
-        gridY: sourceY,
-        state,
-        preset,
-        geometryState,
-        runProgram,
-        createEnv,
-        scratch: geometryState.pointScratch,
-        aspectX,
-        aspectY,
-      });
+      if (interpolated) {
+        // Bilinear sample of the coarse transformed grid at (sourceX, sourceY).
+        const u = clamp(
+          ((sourceX + 1) / 2) * (evalColumns - 1),
+          0,
+          evalColumns - 1,
+        );
+        const v = clamp(((sourceY + 1) / 2) * (evalRows - 1), 0, evalRows - 1);
+        const col0 = Math.min(Math.floor(u), evalColumns - 2);
+        const row0 = Math.min(Math.floor(v), evalRows - 2);
+        const fu = u - col0;
+        const fv = v - row0;
+        const i00 = (row0 * evalColumns + col0) * 2;
+        const i10 = i00 + 2;
+        const i01 = i00 + evalColumns * 2;
+        const i11 = i01 + 2;
+        const top =
+          motionVectorEvalScratch[i00] * (1 - fu) +
+          motionVectorEvalScratch[i10] * fu;
+        const bottom =
+          motionVectorEvalScratch[i01] * (1 - fu) +
+          motionVectorEvalScratch[i11] * fu;
+        currentPointX = top * (1 - fv) + bottom * fv;
+        const topY =
+          motionVectorEvalScratch[i00 + 1] * (1 - fu) +
+          motionVectorEvalScratch[i10 + 1] * fu;
+        const bottomY =
+          motionVectorEvalScratch[i01 + 1] * (1 - fu) +
+          motionVectorEvalScratch[i11 + 1] * fu;
+        currentPointY = topY * (1 - fv) + bottomY * fv;
+      } else {
+        const currentPoint = transformMeshPoint({
+          signals,
+          gridX: sourceX,
+          gridY: sourceY,
+          state,
+          preset,
+          geometryState,
+          runProgram,
+          createEnv,
+          scratch: geometryState.pointScratch,
+          aspectX,
+          aspectY,
+        });
+        currentPointX = currentPoint.x;
+        currentPointY = currentPoint.y;
+      }
       const pointEntry: MotionVectorHistoryPoint = nextHistoryPoints[index] ?? {
         sourceX: 0,
         sourceY: 0,
@@ -846,8 +934,8 @@ export function buildMotionVectors({
       };
       pointEntry.sourceX = sourceX;
       pointEntry.sourceY = sourceY;
-      pointEntry.x = currentPoint.x;
-      pointEntry.y = currentPoint.y;
+      pointEntry.x = currentPointX;
+      pointEntry.y = currentPointY;
       nextHistoryPoints[index] = pointEntry;
       const previous = previousField?.points[index] ?? {
         sourceX,
@@ -855,13 +943,13 @@ export function buildMotionVectors({
         x: sourceX,
         y: sourceY,
       };
-      const sourceDx = currentPoint.x - sourceX;
-      const sourceDy = currentPoint.y - sourceY;
+      const sourceDx = currentPointX - sourceX;
+      const sourceDy = currentPointY - sourceY;
       const historyDx = hasPerPixelPrograms
-        ? (currentPoint.x - previous.x) * 1.1
+        ? (currentPointX - previous.x) * 1.1
         : 0;
       const historyDy = hasPerPixelPrograms
-        ? (currentPoint.y - previous.y) * 1.1
+        ? (currentPointY - previous.y) * 1.1
         : 0;
       const baseDx = sourceDx + historyDx;
       const baseDy = sourceDy + historyDy;
@@ -891,11 +979,11 @@ export function buildMotionVectors({
         additive: false,
       };
       const positions = vector.positions;
-      positions[0] = currentPoint.x - dx * 0.45;
-      positions[1] = currentPoint.y - dy * 0.45;
+      positions[0] = currentPointX - dx * 0.45;
+      positions[1] = currentPointY - dy * 0.45;
       positions[2] = 0.18;
-      positions[3] = currentPoint.x + dx;
-      positions[4] = currentPoint.y + dy;
+      positions[3] = currentPointX + dx;
+      positions[4] = currentPointY + dy;
       positions[5] = 0.18;
       vector.color = colorValue;
       vector.alpha = alpha;

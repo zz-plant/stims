@@ -54,6 +54,7 @@ export type PresetCatalogEntry = {
   derivedFrom?: MilkdropPresetLineageRef[];
   file?: string;
   tags?: string[];
+  searchTerms?: string[];
   preview?: boolean;
   isFavorite?: boolean;
   rating?: number;

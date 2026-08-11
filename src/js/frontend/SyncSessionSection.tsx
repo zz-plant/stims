@@ -74,8 +74,8 @@ export function SyncSessionSection() {
           <span className="ctl-row__text">
             <span className="ctl-row__label">Shared session</span>
             <span className="ctl-row__hint">
-              Start a session and share the link. Everyone who opens it sees
-              the presets you play, live.
+              Start a session and share the link. Everyone who opens it sees the
+              presets you play, live.
             </span>
           </span>
           <button

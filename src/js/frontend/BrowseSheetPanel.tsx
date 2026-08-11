@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
+import { runPresetPromoteTransition } from './promote-transition.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -356,7 +357,12 @@ export function BrowseSheetPanel({
                   aria-current={
                     entry.id === currentPresetId ? 'true' : undefined
                   }
-                  onClick={() => engine.handlePresetSelection(entry.id)}
+                  onClick={(event) => {
+                    runPresetPromoteTransition({
+                      sourceElement: event.currentTarget,
+                    });
+                    engine.handlePresetSelection(entry.id);
+                  }}
                 >
                   <span className="ctl-preset__art">
                     <PresetArtwork

@@ -19,6 +19,7 @@ import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
+import { encodePresetPreviewImage } from './preset-preview.ts';
 import type { MilkdropRendererAdapter } from './renderer-types';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
@@ -485,7 +486,7 @@ export function createMilkdropExperience({
       }
 
       return {
-        imageUrl: canvas.toDataURL('image/webp', 0.82),
+        imageUrl: encodePresetPreviewImage(canvas),
         actualBackend: backend,
         updatedAt: Date.now(),
         error: null,

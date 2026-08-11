@@ -20,6 +20,9 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
   - `guides/audio-setup`
   - `guides/accessibility`
   - `guides/performance`
+- **Create Presets** *(planned public surface — content lives in `docs/authoring/` today)*
+  - `create/learn` — the authoring curriculum (Tracks 0–8, live examples)
+  - `create/reference` — the generated language reference
 - **Browse**
   - `browse/overview`
   - `browse/featured`
@@ -31,7 +34,7 @@ Repository documentation is hubbed in [`docs/README.md`](./README.md) across 5 c
 
 1. **🚀 Getting Started**: `DEVELOPMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, `COMMIT_CONVENTIONS.md`
 2. **🏛️ Architecture & Engine**: `ARCHITECTURE.md`, `TECHNICAL_ACHIEVEMENTS.md`, `MILKDROP_PRESET_RUNTIME.md`, `WEBGPU_ARCHITECTURAL_REVAMP.md`
-3. **🎨 Preset Authoring**: `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
+3. **🎨 Preset Authoring**: `authoring/README.md` (curriculum), `authoring/reference.md` (generated language reference), `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
 4. **🤖 AI & Infrastructure**: `api.md`, `MCP_SERVER.md`
 5. **📊 Strategy & QA**: `ROADMAP.md`, `IMPLEMENTATION_STATUS.md`, `QA_PLAN.md`, `LINEAGE_AND_CREDITS.md`
 

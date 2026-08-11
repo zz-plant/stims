@@ -1,3 +1,7 @@
+import {
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+} from './builtin-docs';
 import { resolveMilkdropIdentifier } from './field-normalization';
 import type {
   MilkdropCompiledStatement,
@@ -43,52 +47,17 @@ type ParseResult<T> = {
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 
-export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(['pi', 'e']);
+// The names live in `builtin-docs.ts` (the single source of truth shared with
+// the editor's highlighter, autocomplete, and hover docs); these sets remain
+// the authoritative interface for what the compiler accepts. Every name must
+// have a case in `evaluateMilkdropExpression`'s call switch below.
+export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+);
 
-export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
-  'sin',
-  'cos',
-  'tan',
-  'asin',
-  'acos',
-  'atan',
-  'abs',
-  'sqrt',
-  'pow',
-  'mod',
-  'fmod',
-  'min',
-  'max',
-  'mix',
-  'lerp',
-  'floor',
-  'int',
-  'ceil',
-  'sqr',
-  'clamp',
-  'step',
-  'smoothstep',
-  'log',
-  'exp',
-  'sigmoid',
-  'sign',
-  'bor',
-  'band',
-  'bnot',
-  'atan2',
-  'frac',
-  'if',
-  'above',
-  'below',
-  'equal',
-  'rand',
-  'randint',
-  'log10',
-  'megabuf',
-  'gmegabuf',
-  'exec2',
-  'exec3',
-]);
+export const MILKDROP_INTRINSIC_FUNCTIONS = new Set(
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+);
 
 /** NS-EEL treats values within this distance of zero as false. */
 export const MILKDROP_EEL_CLOSE_FACTOR = 0.00001;

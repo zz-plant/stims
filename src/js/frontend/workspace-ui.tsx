@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { StageControls } from './StageControls.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
 import { StrudelLabPanel } from './StrudelLabPanel.tsx';
@@ -35,6 +36,7 @@ export function WorkspaceStagePanel({
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
+  const presetTransition = usePresetTransition();
   const missingRequestedPreset = engine.missingRequestedPreset;
   const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -51,6 +53,7 @@ export function WorkspaceStagePanel({
         activePresetTitle={engine.selectedPreset?.title ?? null}
         stageRef={ui.stageRef}
         liveMode={liveMode}
+        transitionPhase={presetTransition.phase}
       >
         {liveMode && !missingRequestedPreset ? (
           <StageControls

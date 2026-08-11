@@ -2,6 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import {
+  upsertMilkdropField,
+  upsertMilkdropFields,
+} from '../../src/js/milkdrop/formatter.ts';
 import type { MilkdropVideoEchoOrientation } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop compiler', () => {
@@ -341,6 +345,125 @@ bDarkenCenter=1
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'post-effects',
     );
+  });
+
+  test('formatted source keeps warp/comp shader sections and title for shader-bearing presets', () => {
+    const fixturePath = join(
+      process.cwd(),
+      'public',
+      'milkdrop-presets',
+      'butterchurn',
+      '11.milk',
+    );
+    const compiled = compileMilkdropPresetSource(
+      readFileSync(fixturePath, 'utf8'),
+      {
+        id: 'butterchurn-11',
+        title: 'Butterchurn 11',
+        origin: 'bundled',
+        fileName: '11.milk',
+      },
+    );
+
+    expect(compiled.ir.shaderText.warp).toBeTruthy();
+    expect(compiled.ir.shaderText.comp).toBeTruthy();
+    expect(compiled.formattedSource).toContain('[warp_shader]');
+    expect(compiled.formattedSource).toContain('[comp_shader]');
+    expect(compiled.formattedSource).toContain('title="Butterchurn 11"');
+    expect(compiled.formattedSource).not.toContain('MilkDrop Session');
+
+    const recompiled = compileMilkdropPresetSource(compiled.formattedSource, {
+      id: 'butterchurn-11-roundtrip',
+    });
+
+    expect(recompiled.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(recompiled.ir.shaderText.comp).toBe(
+      compiled.ir.shaderText.comp as string,
+    );
+    expect(recompiled.ir.shaderText.warpProgram).not.toBeNull();
+    expect(recompiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(recompiled.ir.shaderText.supported).toBe(
+      compiled.ir.shaderText.supported,
+    );
+    expect(recompiled.ir.title).toBe('Butterchurn 11');
+
+    // A second format→compile generation must be stable.
+    const thirdGeneration = compileMilkdropPresetSource(
+      recompiled.formattedSource,
+      { id: 'butterchurn-11-gen3' },
+    );
+    expect(thirdGeneration.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(thirdGeneration.formattedSource).toBe(recompiled.formattedSource);
+  });
+
+  test('formatted source round-trips legacy backtick warp/comp shader lines', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Shader Lines
+fDecay=0.97
+warp_1=\`shader_body
+warp_2=\`{
+warp_3=\`ret = tex2D(sampler_main, uv).xyz * 0.98;
+warp_4=\`}
+comp_1=\`shader_body
+comp_2=\`{
+comp_3=\`ret = tex2D(sampler_main, uv).xyz + float3(0.01, 0.0, 0.0);
+comp_4=\`}
+      `.trim(),
+      { id: 'legacy-shader-lines' },
+    );
+
+    expect(compiled.ir.shaderText.warp).toBeTruthy();
+    expect(compiled.ir.shaderText.comp).toBeTruthy();
+    expect(compiled.formattedSource).toContain('[warp_shader]');
+    expect(compiled.formattedSource).toContain('[comp_shader]');
+
+    const recompiled = compileMilkdropPresetSource(compiled.formattedSource, {
+      id: 'legacy-shader-lines-roundtrip',
+    });
+
+    expect(recompiled.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(recompiled.ir.shaderText.comp).toBe(
+      compiled.ir.shaderText.comp as string,
+    );
+    expect(recompiled.ir.title).toBe('Legacy Shader Lines');
+  });
+
+  test('upserted fields land before shader sections instead of inside them', () => {
+    const source = [
+      'title=Upsert Guard',
+      'fDecay=0.97',
+      '',
+      '[warp_shader]',
+      'shader_body { ret = tex2D(sampler_main, uv).xyz; }',
+      '',
+      '[comp_shader]',
+      'shader_body { ret = tex2D(sampler_main, uv).xyz; }',
+      '',
+    ].join('\n');
+
+    const single = upsertMilkdropField(source, 'zoom', 1.02);
+    const singleCompiled = compileMilkdropPresetSource(single, {
+      id: 'upsert-single',
+    });
+    expect(singleCompiled.ir.numericFields.zoom).toBeCloseTo(1.02, 6);
+    expect(singleCompiled.ir.shaderText.warp).toContain('shader_body');
+    expect(singleCompiled.ir.shaderText.warp).not.toContain('zoom=1.02');
+    expect(singleCompiled.ir.shaderText.comp).not.toContain('zoom=1.02');
+
+    const multi = upsertMilkdropFields(source, { rot: 0.1, warp: 0.5 });
+    const multiCompiled = compileMilkdropPresetSource(multi, {
+      id: 'upsert-multi',
+    });
+    expect(multiCompiled.ir.numericFields.rot).toBeCloseTo(0.1, 6);
+    expect(multiCompiled.ir.numericFields.warp).toBeCloseTo(0.5, 6);
+    expect(multiCompiled.ir.shaderText.comp).not.toContain('rot=0.1');
   });
 
   test('accepts motion vector fields as supported preset inputs', () => {

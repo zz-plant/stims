@@ -52,6 +52,10 @@ import {
   subscribeToThemePreference,
 } from '../../core/theme-preferences';
 import { renderIconSvg } from '../../ui/icon-library.ts';
+import {
+  MILKDROP_BUILTIN_DOCS,
+  MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
+} from '../builtin-docs';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
@@ -461,93 +465,25 @@ function toLintDiagnostics(
 
 // Multi-argument functions get a snippet template so accepting the
 // completion drops in placeholder args the user can Tab through, instead of
-// leaving them to hand-type parens and commas.
-const FUNCTION_SNIPPET_TEMPLATES: Record<string, string> = {
-  atan2: 'atan2(#{y}, #{x})',
-  pow: 'pow(#{x}, #{y})',
-  mod: 'mod(#{x}, #{y})',
-  clamp: 'clamp(#{x}, #{min}, #{max})',
-  step: 'step(#{threshold}, #{x})',
-  smoothstep: 'smoothstep(#{min}, #{max}, #{x})',
-  sigmoid: 'sigmoid(#{x}, #{k})',
-  if: 'if(#{cond}, #{then}, #{else})',
-  above: 'above(#{a}, #{b})',
-  below: 'below(#{a}, #{b})',
-  equal: 'equal(#{a}, #{b})',
-  min: 'min(#{a}, #{b})',
-  max: 'max(#{a}, #{b})',
-  mix: 'mix(#{a}, #{b}, #{t})',
-  lerp: 'lerp(#{a}, #{b}, #{t})',
-};
+// leaving them to hand-type parens and commas. Derived from the params
+// declared in the shared builtin table.
+const FUNCTION_SNIPPET_TEMPLATES: Readonly<Record<string, string>> =
+  MILKDROP_FUNCTION_SNIPPET_TEMPLATES;
 
-const MILKDROP_BUILTIN_OPTIONS: Array<{
+// Autocomplete options and hover docs derive from the shared builtin table in
+// builtin-docs.ts, so the editor always offers exactly what the compiler and
+// VM accept (all intrinsic functions, runtime signals, q1..q32/t1..t32,
+// per-frame state, constants). Exported for the derivation test in
+// tests/unit/milkdrop-builtin-docs.test.ts.
+export const MILKDROP_BUILTIN_OPTIONS: Array<{
   label: string;
   type: string;
   detail?: string;
-}> = [
-  { label: 'sin', type: 'function', detail: 'sine' },
-  { label: 'cos', type: 'function', detail: 'cosine' },
-  { label: 'tan', type: 'function' },
-  { label: 'asin', type: 'function' },
-  { label: 'acos', type: 'function' },
-  { label: 'atan', type: 'function' },
-  { label: 'atan2', type: 'function' },
-  { label: 'abs', type: 'function' },
-  { label: 'sqrt', type: 'function' },
-  { label: 'pow', type: 'function' },
-  { label: 'mod', type: 'function' },
-  { label: 'floor', type: 'function', detail: 'round down' },
-  { label: 'ceil', type: 'function', detail: 'round up' },
-  { label: 'sqr', type: 'function', detail: 'x*x' },
-  { label: 'clamp', type: 'function', detail: 'clamp(x, min, max)' },
-  { label: 'step', type: 'function' },
-  { label: 'smoothstep', type: 'function' },
-  { label: 'log', type: 'function' },
-  { label: 'exp', type: 'function' },
-  { label: 'sigmoid', type: 'function' },
-  { label: 'sign', type: 'function' },
-  { label: 'frac', type: 'function', detail: 'fractional part' },
-  { label: 'rand', type: 'function', detail: 'random 0-scale' },
-  { label: 'if', type: 'function', detail: 'if(cond, then, else)' },
-  { label: 'above', type: 'function' },
-  { label: 'below', type: 'function' },
-  { label: 'equal', type: 'function' },
-  { label: 'min', type: 'function' },
-  { label: 'max', type: 'function' },
-  { label: 'mix', type: 'function' },
-  { label: 'lerp', type: 'function' },
-  { label: 'bass', type: 'variable', detail: 'bass energy' },
-  { label: 'mid', type: 'variable', detail: 'mid energy' },
-  { label: 'treb', type: 'variable', detail: 'treble energy' },
-  { label: 'bass_att', type: 'variable', detail: 'bass with envelope' },
-  { label: 'mid_att', type: 'variable', detail: 'mid with envelope' },
-  { label: 'treb_att', type: 'variable', detail: 'treble with envelope' },
-  { label: 'beat', type: 'variable' },
-  { label: 'time', type: 'variable', detail: 'seconds' },
-  { label: 'frame', type: 'variable', detail: 'frame count' },
-  { label: 'fps', type: 'variable' },
-  { label: 'rms', type: 'variable' },
-  { label: 'vol', type: 'variable' },
-  { label: 'q1', type: 'variable', detail: 'persistent state' },
-  { label: 'q2', type: 'variable' },
-  { label: 'q3', type: 'variable' },
-  { label: 'q4', type: 'variable' },
-  { label: 'q5', type: 'variable' },
-  { label: 'q6', type: 'variable' },
-  { label: 'q7', type: 'variable' },
-  { label: 'q8', type: 'variable' },
-  { label: 'zoom', type: 'variable' },
-  { label: 'rot', type: 'variable' },
-  { label: 'warp', type: 'variable' },
-  { label: 'sx', type: 'variable' },
-  { label: 'sy', type: 'variable' },
-  { label: 'dx', type: 'variable' },
-  { label: 'dy', type: 'variable' },
-  { label: 'cx', type: 'variable' },
-  { label: 'cy', type: 'variable' },
-  { label: 'pi', type: 'constant' },
-  { label: 'e', type: 'constant' },
-];
+}> = MILKDROP_BUILTIN_DOCS.map((entry) => ({
+  label: entry.name,
+  type: entry.kind,
+  detail: entry.doc,
+}));
 
 // Keeps the dropdown grouped by kind (functions, then variables, then
 // constants) instead of letting fuzzy-match score interleave them; doc-derived

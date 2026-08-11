@@ -55,6 +55,7 @@ declare global {
     __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
       frames?: number;
       deltaMs?: number;
+      beatPulse?: boolean;
     }) => { rendered: number } | null;
   }
 }

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
-  generatePreset,
+  type generatePreset,
   generatePresetFromImage,
+  generatePresetTournament,
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
@@ -128,7 +129,11 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           { guidance: description },
         );
       } else {
-        compiled = await generatePreset(description, {
+        // Tournament, not single-shot: several candidates are generated,
+        // broken ones are salvaged or eliminated, and the most
+        // audio-reactive survivor loads. One malformed model response no
+        // longer surfaces as an error.
+        const outcome = await generatePresetTournament(description, {
           provider:
             provider === 'local'
               ? {
@@ -138,6 +143,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 }
               : { kind: 'hosted' },
         });
+        compiled = outcome.winner;
       }
       // Quality gate: a generated preset that compiles but whose equations
       // ignore audio still loads, but with a visible label so the user can

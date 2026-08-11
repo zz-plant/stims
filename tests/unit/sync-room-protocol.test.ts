@@ -5,7 +5,11 @@ import { toVectorizeId } from '../../src/js/milkdrop/vectorize-id.ts';
 describe('sync room host message parsing', () => {
   test('accepts a preset message and clamps field lengths', () => {
     const parsed = parseHostMessage(
-      JSON.stringify({ type: 'preset', presetId: 'geiss-casino', title: 'Casino' }),
+      JSON.stringify({
+        type: 'preset',
+        presetId: 'geiss-casino',
+        title: 'Casino',
+      }),
     );
     expect(parsed).toEqual({ presetId: 'geiss-casino', title: 'Casino' });
 
@@ -17,11 +21,15 @@ describe('sync room host message parsing', () => {
   });
 
   test('rejects non-preset, malformed, and oversized frames', () => {
-    expect(parseHostMessage(JSON.stringify({ type: 'peers', count: 3 }))).toBeNull();
+    expect(
+      parseHostMessage(JSON.stringify({ type: 'peers', count: 3 })),
+    ).toBeNull();
     expect(parseHostMessage('not json')).toBeNull();
     expect(parseHostMessage(12)).toBeNull();
     expect(parseHostMessage(JSON.stringify({ type: 'preset' }))).toBeNull();
-    expect(parseHostMessage(`{"type":"preset","presetId":"${'y'.repeat(3000)}"}`)).toBeNull();
+    expect(
+      parseHostMessage(`{"type":"preset","presetId":"${'y'.repeat(3000)}"}`),
+    ).toBeNull();
   });
 });
 

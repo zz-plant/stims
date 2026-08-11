@@ -7,6 +7,7 @@ import {
 } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
+import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
@@ -37,6 +38,7 @@ export function StageControls({
     engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? '';
 
   const { visible, signalActivity } = useAutoHideActivity(3000, true);
+  const transition = usePresetTransition();
   const [showMenu, setShowMenu] = useState(false);
   const energyRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -93,6 +95,15 @@ export function StageControls({
       window.removeEventListener('orientationchange', handleResize);
     };
   }, [showMenu]);
+
+  // A transition is exactly the moment the user is wondering what's
+  // happening, so surface the dock even if it had auto-hidden — the pill is
+  // where the loading/blending state is narrated.
+  useEffect(() => {
+    if (transition.phase !== 'idle') {
+      signalActivity();
+    }
+  }, [transition.phase, signalActivity]);
 
   useEffect(() => {
     const handleActivity = () => signalActivity();
@@ -234,7 +245,25 @@ export function StageControls({
         data-visible={String(visible)}
         onPointerEnter={() => signalActivity()}
       >
-        <div ref={energyRef} className={styles.pill}>
+        <div
+          ref={energyRef}
+          className={styles.pill}
+          data-transition={
+            transition.phase !== 'idle' ? transition.phase : undefined
+          }
+        >
+          {transition.phase === 'blending' ? (
+            <span
+              key={transition.blendNonce}
+              className={styles.blendSweep}
+              aria-hidden="true"
+              style={
+                {
+                  '--blend-ms': `${transition.blendDurationMs}ms`,
+                } as React.CSSProperties
+              }
+            />
+          ) : null}
           <span className={styles.energyBar} aria-hidden="true" />
           <button
             type="button"
@@ -269,7 +298,11 @@ export function StageControls({
             onClick={handleBrowse}
           >
             <span className={styles.titleText}>{presetTitle}</span>
-            {presetAuthor ? (
+            {transition.phase === 'loading' ? (
+              <span className={styles.statusText}>Loading…</span>
+            ) : transition.phase === 'blending' ? (
+              <span className={styles.statusText}>Blending…</span>
+            ) : presetAuthor ? (
               <span className={styles.authorText}>{presetAuthor}</span>
             ) : null}
           </button>

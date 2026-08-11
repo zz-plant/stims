@@ -32,9 +32,8 @@ describe('passive first-use guidance', () => {
     );
   });
 
-  test('keeps optional install, rotate, and renderer notices non-blocking', () => {
+  test('keeps optional install and rotate notices non-blocking', () => {
     const app = frontendSource('App.tsx');
-    const rendererBadge = frontendSource('RendererFallbackBadge.tsx');
 
     expect(app).not.toContain('Not now');
     expect(app).not.toContain('Got it');
@@ -44,9 +43,6 @@ describe('passive first-use guidance', () => {
     expect(app).toContain(
       'window.setTimeout(() => setShowRotateHint(false), 4200)',
     );
-
-    expect(rendererBadge).not.toContain('renderer-fallback-badge__dismiss');
-    expect(rendererBadge).not.toContain('Dismiss WebGL fallback notice');
   });
 
   test('does not promote internal renderer diagnostics into user toasts', () => {

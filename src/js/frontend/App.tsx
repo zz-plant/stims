@@ -258,12 +258,36 @@ function StimsWorkspaceAppShell() {
     });
   }, [engineSnapshot, ui.routeState.presetId, ui.routeState.agentMode]);
 
+  // A #code= hash carries a full .milk source (see buildPresetCodeHash).
+  // Opening the editor happens immediately so the visitor sees where the
+  // code will land; applying the source has to wait until the session is
+  // live and its initial preset has landed, otherwise the boot-time
+  // fallback/featured preset would overwrite the deep-linked draft.
+  const [pendingCode, setPendingCode] = useState<string | null>(() =>
+    decodePresetCodeFromHash(),
+  );
+  const openedEditorForCodeRef = useRef(false);
+
   useEffect(() => {
-    const decodedCode = decodePresetCodeFromHash();
-    if (decodedCode) {
-      ui.updatePanel('editor');
+    if (!pendingCode || openedEditorForCodeRef.current) return;
+    openedEditorForCodeRef.current = true;
+    ui.updatePanel('editor');
+  }, [pendingCode, ui]);
+
+  useEffect(() => {
+    // Boot-time preset loads (fallback, featured, ?preset=) land as async
+    // editor-session commits, so a single apply can be overwritten by a
+    // load that was already in flight. Re-assert the deep-linked source
+    // every time the session settles on something else, and stop once the
+    // snapshot reflects it — later loads are then real user actions and
+    // must win.
+    if (!pendingCode || !engine.engineReady) return;
+    if (engineSnapshot?.currentSource === pendingCode) {
+      setPendingCode(null);
+      return;
     }
-  }, [ui]);
+    engine.updateEditorSource(pendingCode);
+  }, [pendingCode, engine.engineReady, engineSnapshot?.currentSource, engine]);
 
   useEffect(() => {
     if (

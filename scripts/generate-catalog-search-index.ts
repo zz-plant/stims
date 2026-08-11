@@ -22,6 +22,7 @@ type CatalogPresetEntry = {
   title: string;
   author?: string;
   tags: string[];
+  searchTerms?: string[];
 };
 
 type CatalogDocument = {
@@ -63,6 +64,7 @@ function getBrowseSearchTerms(preset: CatalogPresetEntry) {
     preset.title,
     preset.author ?? '',
     ...preset.tags,
+    ...(preset.searchTerms ?? []),
     ...preset.tags
       .filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX))
       .map((tag) => collectionLabel(tag)),

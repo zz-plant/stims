@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { PresetTransitionPhase } from './hooks/usePresetTransition.ts';
 
 export function StimsStageFrame({
   activePresetId,
@@ -6,12 +7,14 @@ export function StimsStageFrame({
   children,
   liveMode,
   stageRef,
+  transitionPhase = 'idle',
 }: {
   activePresetId?: string | null;
   activePresetTitle?: string | null;
   children: ReactNode;
   liveMode: boolean;
   stageRef: React.RefObject<HTMLDivElement | null>;
+  transitionPhase?: PresetTransitionPhase;
 }) {
   return (
     <section
@@ -32,7 +35,14 @@ export function StimsStageFrame({
           tabIndex={-1}
         />
         <div className="stims-shell__sr-only" role="status" aria-live="polite">
-          {activePresetTitle ? `Now playing: ${activePresetTitle}` : ''}
+          {/* The title flips at request time, before the canvas catches up —
+              announce the load so the transition is perceivable non-visually
+              too. Blending is skipped: it would only add announcement noise. */}
+          {activePresetTitle
+            ? transitionPhase === 'loading'
+              ? `Loading ${activePresetTitle}`
+              : `Now playing: ${activePresetTitle}`
+            : ''}
         </div>
         {children}
       </div>
