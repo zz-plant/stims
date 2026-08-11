@@ -428,6 +428,9 @@ export function RefinePanel() {
 
   return (
     <div className="stims-shell__refine-panel">
+      <p className="stims-shell__meta-copy">
+        Describe a change and AI rewrites the current preset to match.
+      </p>
       <div className="stims-shell__refine-input">
         <label htmlFor="refine-instruction" className="stims-shell__sr-only">
           Describe how to change the preset
@@ -482,6 +485,14 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
   const { engine } = useWorkspace();
   const [audioEnergy, setEnergy] = useState(getAudioEnergy);
 
+  const presetTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const entry of engine.catalog) {
+      map.set(entry.id, entry.title);
+    }
+    return map;
+  }, [engine.catalog]);
+
   useEffect(() => {
     return subscribeAudioEnergy(() => setEnergy(getAudioEnergy()));
   }, []);
@@ -520,7 +531,7 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
         />
         <h3>Match my music</h3>
         <p className="stims-shell__audiomatch-desc">
-          Finding presets that fit the current audio energy…
+          Suggests presets that fit the sound playing right now.
         </p>
       </div>
       {loading ? (
@@ -542,7 +553,7 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
                 >
                   <span className="stims-shell__audiomatch-rank">{i + 1}</span>
                   <span className="stims-shell__audiomatch-id">
-                    {match.presetId}
+                    {presetTitleById.get(match.presetId) ?? match.presetId}
                   </span>
                   <span className="stims-shell__audiomatch-score">
                     {(match.score * 100).toFixed(0)}% match

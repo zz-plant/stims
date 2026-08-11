@@ -1005,6 +1005,14 @@ body[data-page="workspace"][data-live="true"] {
     width: min(16rem, 100%);
   }
 
+  .stims-shell__launch-explainer {
+    margin: 0;
+    max-width: 38rem;
+    color: var(--stims-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
   .stims-shell__launch-actions-minimal {
     display: flex;
     flex-wrap: wrap;

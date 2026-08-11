@@ -69,17 +69,17 @@ export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
 export function getToolLabel(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Browse';
+      return 'Browse presets';
     case 'editor':
-      return 'Edit';
+      return 'Edit preset code';
     case 'refine':
-      return 'Refine';
+      return 'Refine with AI';
     case 'audiomatch':
       return 'Match my music';
     case 'visualsearch':
       return 'More like this';
     case 'synthesize':
-      return 'Generate';
+      return 'Generate with AI';
     case 'capture':
       return 'Record video';
     case 'settings':
