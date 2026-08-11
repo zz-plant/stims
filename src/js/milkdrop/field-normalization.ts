@@ -100,14 +100,6 @@ const aliasMap: Record<string, string | null> = {
   nwrapmode_x: null,
   nwrapmode_y: null,
   tex_capture: 'textured',
-  stembass: 'stem_bass',
-  stem_bass: 'stem_bass',
-  stemdrums: 'stem_drums',
-  stem_drums: 'stem_drums',
-  stemvocals: 'stem_vocals',
-  stem_vocals: 'stem_vocals',
-  stemsynths: 'stem_synths',
-  stem_synths: 'stem_synths',
 };
 
 export function normalizeFieldSuffix(value: string) {

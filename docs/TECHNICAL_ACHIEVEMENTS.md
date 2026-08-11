@@ -43,7 +43,7 @@ Optional edge-assisted fixes and blending are separate from the local editor con
 - [`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts) coordinates demo, microphone, tab, YouTube, and local-file paths subject to browser support and permissions.
 - [`src/js/core/audio-gpu-texture.ts`](../src/js/core/audio-gpu-texture.ts) packs frequency and waveform data into a shared GPU texture allocation for renderer consumption.
 
-Stem-oriented runtime identifiers are reserved for future use. The repository does not currently perform client-side vocal, drum, bass, or instrument separation.
+Stem-oriented runtime identifiers were retired: the reserved zero-filled fields and a disconnected band-derived pseudo-stem calculation were removed rather than shipped as fake signals. Stem-aware reactivity returns only with real on-device separation (see the roadmap's platform-expansion prerequisites).
 
 ## 6. Browser audio-video recording — beta, browser proof pending
 
@@ -73,7 +73,7 @@ See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for
 | Foundation | Current status |
 | --- | --- |
 | WebMIDI workflow | Workspace settings connect mapped CC values to live parameters; persistent mappings, recovery behavior, and device-backed verification remain open. |
-| WebXR stage | Workspace settings can attach an immersive session to the active renderer; headset rendering, spatial audio, and recovery lack device-backed proof. |
-| Stem-oriented signals | Runtime fields exist; separation and real signal population do not. |
+| WebXR stage | Retired. The session-attachment scaffolding and settings toggle were removed after staying unverified with no device-backed proof; the idea remains research-bucket only. |
+| Stem-oriented signals | Retired. Zero-filled runtime fields and an unwired pseudo-stem calculation were removed; reintroduction requires real separation with measured budgets. |
 | Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification. |
 | Model-backed Generate panel | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof. |

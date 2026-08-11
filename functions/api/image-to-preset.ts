@@ -8,6 +8,10 @@ interface D1PreparedStatement {
   all<T = unknown>(): Promise<{ results: T[] }>;
 }
 
+interface R2Bucket {
+  get(key: string): Promise<{ text(): Promise<string> } | null>;
+}
+
 interface Env {
   AI: {
     run: (
@@ -20,6 +24,7 @@ interface Env {
     ) => Promise<{ response?: string; data?: number[][] }>;
   };
   DB: D1Database;
+  GALLERY_R2?: R2Bucket;
 }
 
 const VISION_MODEL = '@cf/google/gemma-4-26b-a4b-it';
@@ -113,19 +118,35 @@ export async function onRequest(context: { request: Request; env: Env }) {
             const stored = JSON.parse(row.embedding) as number[];
             const score = cosineSimilarity(queryEmbedding, stored);
             if (score > 0.88) {
-              return new Response(
-                JSON.stringify({
-                  description,
-                  milkSource: `/* cached from: ${row.preset_id} */`,
-                  cached: true,
-                }),
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
+              // A cache hit is only reusable when the matched preset's real
+              // source can be served. Community preset source lives in R2;
+              // bundled-catalog embeddings have no server-side source, so an
+              // unresolvable hit falls through to generation instead of
+              // returning a placeholder that cannot compile.
+              const r2Key = `presets/${row.preset_id.replace(/^community:/, '')}.milk`;
+              const cachedObject = env.GALLERY_R2
+                ? await env.GALLERY_R2.get(r2Key)
+                : null;
+              const cachedSource = cachedObject
+                ? await cachedObject.text()
+                : '';
+              if (cachedSource) {
+                return new Response(
+                  JSON.stringify({
+                    description,
+                    milkSource: cachedSource,
+                    cached: true,
+                    cachedPresetId: row.preset_id,
+                  }),
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Access-Control-Allow-Origin': '*',
+                    },
                   },
-                },
-              );
+                );
+              }
+              break;
             }
           }
         }
@@ -148,11 +169,12 @@ export async function onRequest(context: { request: Request; env: Env }) {
       });
 
       const response = genResult.response || '';
-      const startIdx = response.indexOf('[preset00]');
+      const marker = '[preset00]';
+      const startIdx = response.indexOf(marker);
       if (startIdx >= 0) {
-        milkSource = `[preset00]\n${response.slice(startIdx + 9).trim()}`;
+        milkSource = `${marker}\n${response.slice(startIdx + marker.length).trim()}`;
       } else {
-        milkSource = `[preset00]\n${response.trim()}`;
+        milkSource = `${marker}\n${response.trim()}`;
       }
     } else {
       milkSource =

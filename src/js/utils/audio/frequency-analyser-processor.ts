@@ -495,12 +495,6 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
           vocalMidEnv,
           snareSnap,
         },
-        stemMetrics: {
-          stemBass: subBassEnv,
-          stemDrums: Math.min(1, kickTransient * 0.7 + snareSnap * 0.3),
-          stemVocals: vocalMidEnv,
-          stemSynths: Math.min(1, mid * 0.6 + treble * 0.4),
-        },
       };
       const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];
       if (this.hasStereoInput) {

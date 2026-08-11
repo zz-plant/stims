@@ -80,8 +80,6 @@ export interface EngineContextValue {
   updateEditorSource: (source: string) => void;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;
-  startXrStage: (mode: 'immersive-vr' | 'immersive-ar') => Promise<boolean>;
-  endXrStage: () => Promise<void>;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

@@ -1,9 +1,5 @@
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
 import {
-  type WebXrRendererLike,
-  webXrStageService,
-} from '../../core/services/webxr-stage-session.ts';
-import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
 } from '../../core/settings-panel.ts';
@@ -439,21 +435,6 @@ export function createMilkdropEngineAdapter() {
 
     updateInspectorField(key: string, value: number) {
       experience?.updateInspectorField?.(key, value);
-    },
-
-    async startXrStage(mode: 'immersive-vr' | 'immersive-ar') {
-      if (!runtime) {
-        throw new Error('Start a visual before entering the immersive stage.');
-      }
-      const session = await webXrStageService.startStage(
-        runtime.toy.renderer as unknown as WebXrRendererLike,
-        mode,
-      );
-      return session !== null;
-    },
-
-    async endXrStage() {
-      await webXrStageService.endSession();
     },
 
     async importPreset(target: FileList | File[] | string) {
