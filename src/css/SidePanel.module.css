@@ -145,7 +145,7 @@
     transform: translateX(-50%);
     width: 36px;
     height: 4px;
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: rgba(255, 255, 255, 0.22);
   }
 }

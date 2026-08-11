@@ -163,7 +163,7 @@ html.light .stims-shell {
     margin: 0;
     padding: 0;
     border: 1px solid var(--ctl-line-strong);
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: var(--ctl-fill-sunk);
     cursor: pointer;
     transition:
@@ -186,8 +186,10 @@ html.light .stims-shell {
       background var(--ctl-ease);
   }
 
+  /* Keep the border when checked — same hue as the fill, so it is
+     invisible normally but preserves the outline in forced-colors mode. */
   .ctl-switch:checked {
-    border-color: transparent;
+    border-color: var(--ctl-accent);
     background: var(--ctl-accent);
   }
 
@@ -330,8 +332,11 @@ html.light .stims-shell {
     border-color: var(--ctl-line-strong);
   }
 
+  /* A 1px border tint alone is too subtle a focus cue; give text fields
+     the same 2px ring every other control gets. */
   .ctl-field:focus-visible {
-    outline: none;
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 1px;
     border-color: var(--ctl-accent);
     background: var(--ctl-fill-hover);
   }
@@ -447,7 +452,7 @@ html.light .stims-shell {
     min-height: 32px;
     padding: 6px 12px;
     border: 1px solid var(--ctl-line);
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: transparent;
     color: var(--ctl-ink-2);
     font: inherit;
@@ -467,8 +472,10 @@ html.light .stims-shell {
     color: var(--ctl-ink);
   }
 
+  /* Border matches the fill rather than vanishing: in forced-colors the
+     selected chip stays the outlined one instead of losing its shape. */
   .ctl-chip[data-active="true"] {
-    border-color: transparent;
+    border-color: var(--ctl-accent);
     background: var(--ctl-accent);
     color: var(--ctl-on-accent);
     font-weight: 500;
@@ -774,7 +781,8 @@ html.light .stims-shell {
   }
 
   .ctl-section .stims-shell__input:focus-visible {
-    outline: none;
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 1px;
     border-color: var(--ctl-accent);
     background: var(--ctl-fill-hover);
   }
@@ -811,8 +819,12 @@ html.light .stims-shell {
     line-height: 1.45;
   }
 
+  /* Errors are not hue-only: the glyph (added at the shell level) plus
+     the weight bump keep the state legible for color-blind users, and
+     the token flips correctly in light theme. */
   .ctl-section .stims-shell__youtube-feedback[data-state="invalid"] {
-    color: #ff9d8a;
+    color: var(--stims-bad, #ff9d8a);
+    font-weight: 500;
   }
 
   .ctl-section .stims-shell__meta-copy {
@@ -910,7 +922,7 @@ html.light .stims-shell {
     min-height: 30px;
     padding: 5px 10px;
     border: 1px solid var(--ctl-line);
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: transparent;
     box-shadow: none;
     color: var(--ctl-ink-2);

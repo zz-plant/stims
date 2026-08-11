@@ -47,7 +47,7 @@
 .exampleChip {
   padding: 4px 10px;
   border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: none;
   color: var(--stims-cool, #77c9ff);
   font-size: 0.75rem;
@@ -70,8 +70,9 @@
   line-height: 1.5;
 }
 
-.editor:focus {
-  outline: none;
+.editor:focus-visible {
+  outline: 2px solid var(--stims-accent, #f47a54);
+  outline-offset: 1px;
   border-color: var(--stims-accent, #f47a54);
 }
 
@@ -118,12 +119,24 @@
   line-height: 1.45;
 }
 
+/* Tone is never carried by hue alone: each state also gets its own
+   leading glyph, so error vs playing survives color-blindness and
+   forced-colors mode. */
 .status[data-tone="error"] {
   color: var(--stims-bad, #ff7b72);
+  font-weight: 600;
+}
+
+.status[data-tone="error"]::before {
+  content: "⚠ " / "";
 }
 
 .status[data-tone="playing"] {
   color: var(--stims-good, #7de0a2);
+}
+
+.status[data-tone="playing"]::before {
+  content: "▶ " / "";
 }
 
 .scopeStrip {
@@ -152,7 +165,7 @@
   z-index: 40;
   padding: 6px 14px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: #14100c;
   color: var(--stims-cool, #77c9ff);
   font-size: 0.8rem;

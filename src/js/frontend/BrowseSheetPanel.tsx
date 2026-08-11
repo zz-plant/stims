@@ -184,6 +184,7 @@ export function BrowseSheetPanel({
             type="button"
             className="ctl-chip"
             data-active={String(routeState.collectionTag === null)}
+            aria-pressed={routeState.collectionTag === null}
             onClick={() => onCollectionTagChange(null)}
           >
             All
@@ -194,6 +195,7 @@ export function BrowseSheetPanel({
               type="button"
               className="ctl-chip"
               data-active={String(routeState.collectionTag === tag)}
+              aria-pressed={routeState.collectionTag === tag}
               onClick={() =>
                 onCollectionTagChange(
                   routeState.collectionTag === tag ? null : tag,
@@ -209,6 +211,7 @@ export function BrowseSheetPanel({
             data-active={String(
               routeState.collectionTag === 'collection:community',
             )}
+            aria-pressed={routeState.collectionTag === 'collection:community'}
             disabled={offline}
             onClick={() =>
               onCollectionTagChange(

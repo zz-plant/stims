@@ -162,7 +162,11 @@
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
   --radius-lg: 0.375rem;
+  /* Sharp-cornered tag/badge geometry (intentionally squared, not a
+     capsule). For fully-rounded switches, chips, and dock pills use
+     --radius-round below. */
   --radius-pill: 2px;
+  --radius-round: 999px;
   --stims-radius: 4px;
   --stims-radius-panel: 4px;
   --stims-radius-card: 4px;
