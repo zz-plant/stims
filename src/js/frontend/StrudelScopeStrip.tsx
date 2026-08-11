@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 import styles from '../../css/StrudelLabPanel.module.css';
+import type { useOverlayAnchor } from './hooks/use-overlay-anchor.ts';
+
+type ScopeDock = ReturnType<typeof useOverlayAnchor<'top' | 'bottom'>>;
 
 /**
  * Live signal scopes for the Strudel lab: waveform, spectrum, and band-energy
@@ -39,7 +42,19 @@ function createHistory(): Record<BandKey, BandHistory> {
   };
 }
 
-export function StrudelScopeStrip({ stream }: { stream: MediaStream }) {
+export function StrudelScopeStrip({
+  stream,
+  anchor,
+  targetProps,
+  surfaceProps,
+  onToggleAnchor,
+}: {
+  stream: MediaStream;
+  anchor: 'top' | 'bottom';
+  targetProps: ScopeDock['targetProps'];
+  surfaceProps: ScopeDock['surfaceProps'];
+  onToggleAnchor: () => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -151,12 +166,22 @@ export function StrudelScopeStrip({ stream }: { stream: MediaStream }) {
   }, [stream]);
 
   return (
-    <div
-      className={styles.scopeStrip}
-      role="img"
-      aria-label="Audio signal scopes"
-    >
-      <canvas ref={canvasRef} className={styles.scopeCanvas} />
+    <div className={styles.scopeStrip} {...targetProps} {...surfaceProps}>
+      <canvas
+        ref={canvasRef}
+        className={styles.scopeCanvas}
+        role="img"
+        aria-label="Audio signal scopes"
+      />
+      <button
+        type="button"
+        className={styles.scopeMoveButton}
+        onClick={onToggleAnchor}
+        aria-label={`Move scopes to ${anchor === 'bottom' ? 'top' : 'bottom'} edge`}
+        title="Move to the other edge (or drag the strip)"
+      >
+        ⇅
+      </button>
     </div>
   );
 }
