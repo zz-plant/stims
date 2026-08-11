@@ -35,6 +35,7 @@ export async function onRequest(context: {
   request: Request;
   env: Env;
   params?: { id?: string };
+  waitUntil?: (promise: Promise<unknown>) => void;
 }) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -48,6 +49,23 @@ export async function onRequest(context: {
   if (method === 'OPTIONS') {
     return cors();
   }
+
+  // Cache-Control alone never populates Cloudflare's cache for
+  // Worker-generated responses, so GETs go through the Cache API explicitly.
+  const cache = edgeCache();
+  const cacheKey = new Request(url.toString(), { method: 'GET' });
+  if (method === 'GET' && cache) {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+  }
+
+  const storeInCache = (response: Response): Response => {
+    if (cache && response.status === 200) {
+      const put = cache.put(cacheKey, response.clone());
+      context.waitUntil?.(put);
+    }
+    return response;
+  };
 
   try {
     // GET /api/presets — list
@@ -109,19 +127,21 @@ export async function onRequest(context: {
           .all<{ count: number }>(),
       ]);
 
-      return json(
-        {
-          presets: results.map((r) => ({
-            ...r,
-            tags: r.tags ? r.tags.split(',') : [],
-            id: `community:${r.id}`,
-          })),
-          total: countResult[0]?.count || 0,
-          page,
-          limit,
-        },
-        200,
-        60,
+      return storeInCache(
+        json(
+          {
+            presets: results.map((r) => ({
+              ...r,
+              tags: r.tags ? r.tags.split(',') : [],
+              id: `community:${r.id}`,
+            })),
+            total: countResult[0]?.count || 0,
+            page,
+            limit,
+          },
+          200,
+          60,
+        ),
       );
     }
 
@@ -174,6 +194,16 @@ export async function onRequest(context: {
     ) {
       const id = pathParts[0].replace('community:', '');
       const sessionId = getSessionId(request);
+
+      // The rating is about to change; drop the cached detail response (the
+      // favorite URL minus /favorite is exactly the client's detail URL).
+      if (cache) {
+        const detailUrl = new URL(url.toString());
+        detailUrl.pathname = detailUrl.pathname.replace(/\/favorite$/, '');
+        context.waitUntil?.(
+          cache.delete(new Request(detailUrl.toString(), { method: 'GET' })),
+        );
+      }
 
       const existing = await env.DB.prepare(
         'SELECT id FROM favorites WHERE preset_id = ? AND session_id = ?',
@@ -234,15 +264,17 @@ export async function onRequest(context: {
       const obj = await env.GALLERY_R2.get(`presets/${id}.milk`);
       const milkSource = obj ? await obj.text() : '';
 
-      return json(
-        {
-          ...preset,
-          tags: preset.tags ? preset.tags.split(',') : [],
-          milkSource,
-          id: `community:${id}`,
-        },
-        200,
-        300,
+      return storeInCache(
+        json(
+          {
+            ...preset,
+            tags: preset.tags ? preset.tags.split(',') : [],
+            milkSource,
+            id: `community:${id}`,
+          },
+          200,
+          300,
+        ),
       );
     }
 
@@ -253,6 +285,12 @@ export async function onRequest(context: {
       500,
     );
   }
+}
+
+function edgeCache(): Cache | null {
+  const store = (globalThis as { caches?: { default?: Cache } & CacheStorage })
+    .caches;
+  return store?.default ?? null;
 }
 
 function slugify(text: string): string {
