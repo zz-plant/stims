@@ -59,7 +59,7 @@ This document is the consolidated source for implementation progress across road
 - [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
 - [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
 - [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
-- [ ] **WebXR spatial stage experiment** (workspace and renderer session attachment exist; headset rendering, spatial audio, and recovery remain unverified).
+- [ ] **WebXR spatial stage experiment** (retired: the unverified session-attachment scaffolding and settings toggle were removed; the concept stays in the roadmap's research bucket only).
 
 ## Refactor milestone tracking
 

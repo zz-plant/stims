@@ -11,11 +11,11 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 | Piece | Where | What it does |
 | --- | --- | --- |
 | Text → preset | [`functions/api/generate-preset.ts`](../functions/api/generate-preset.ts) | Complexity-classified model routing, auto-titling (no cache — every request generates) |
-| Conversational refine | [`functions/api/refine-preset.ts`](../functions/api/refine-preset.ts) | Instruction + history over existing `.milk` source |
+| Conversational refine | [`functions/api/refine-preset.ts`](../functions/api/refine-preset.ts) | Instruction + history over existing `.milk` source; called from the editor panel and side panel |
 | Image → preset | [`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts) | Vision description → generated preset; embedding cache serves a matched gallery preset's source when resolvable |
-| Blend two presets | [`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts) | Waves/motion from A, palette/atmosphere from B |
-| Batch variations | [`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts) | Up to 5 parallel seeded variations |
-| Semantic search | [`functions/api/visual-search.ts`](../functions/api/visual-search.ts) | Embedding search over preset descriptions |
+| Blend two presets | [`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts) | Waves/motion from A, palette/atmosphere from B; called from the editor panel |
+| Batch variations | [`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts) | Up to 5 parallel seeded variations; called from the editor panel |
+| Semantic search | [`functions/api/visual-search.ts`](../functions/api/visual-search.ts) | Embedding search over preset descriptions; called from the visual-embedding and audio-matcher services |
 | Syntax pre-check | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → line-level diagnostics (assignments, parentheses); a lightweight check that does not run the preset compiler |
 | Audio → preset match | [`functions/api/audio-select.ts`](../functions/api/audio-select.ts) | Micro model + embeddings pick presets for audio character |
 | Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route or loopback OpenAI-compatible (local) provider |
@@ -30,7 +30,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 
 ### Gaps this document targets
 
-1. Only Generate is wired into the shipped UI. Refine, blend, image-to-preset, and visual search exist as routes with no bundled surface.
+1. The endpoint surfaces are wired but unverified. Refine, blend, and batch variations have editor-panel actions, and visual search backs the optional embedding/audio-matcher services — but none of these flows has end-to-end proof or quality gating, and [`image-to-preset`](../functions/api/image-to-preset.ts) is the one route with no client surface at all.
 2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route is syntax-only (it never runs the real compiler), `lab:reactivity` and `lab:visual` run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
 3. There is no eval corpus or benchmark for generation quality, in contrast to the mature parity/certification corpus for rendering.
 4. Shader generation is unverified. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) already documents the GLSL `[warp_shader]`/`[comp_shader]` blocks but tells models to avoid them unless asked, ships no worked examples, and nothing verifies that emitted GLSL actually compiles — the static compiler only classifies shader text; the GPU compiles it at render time.
@@ -53,19 +53,19 @@ Exit criteria:
 - the generated-preset flow has browser-backed end-to-end proof for both hosted and local providers; and
 - generation quality is measured against the deterministic-synthesizer control, not asserted.
 
-### Surface the shipped endpoints in the workspace
+### Finish and verify the endpoint surfaces
 
-Each of these reuses an existing route and existing UI seams; none introduces a new model dependency.
+Refine, blend, and batch variations already have editor-panel actions ([`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts)); the work is upgrading them from fire-and-replace to trustworthy, not wiring them from scratch.
 
-- **Refine in the editor.** Wire [`refine-preset`](../functions/api/refine-preset.ts) into the CodeMirror editor session ([`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts)) with assisted edits presented as inspectable source diffs before application — this is already a named Remix-studio bullet in [`ROADMAP.md`](./ROADMAP.md).
-- **Blend from the catalog.** Two-preset selection → [`blend-presets`](../functions/api/blend-presets.ts) → result loaded through the same compile-before-load path the Generate panel uses.
-- **Image to preset.** Add image input to the Generate panel, feeding [`image-to-preset`](../functions/api/image-to-preset.ts); the panel's existing offline/provider handling applies.
-- **Semantic search as an optional enhancer.** Surface [`visual-search`](../functions/api/visual-search.ts) in catalog search as an optional layer, never a blocker for local search (roadmap principle).
+- **Inspectable diffs for assisted edits.** The editor's refine/blend/variations actions replace the buffer directly (with a snapshot). Present assisted edits as source diffs before application — the named Remix-studio bullet in [`ROADMAP.md`](./ROADMAP.md).
+- **Blend from the catalog.** Blend today requires pasting source into the editor flow; add two-preset selection from the catalog feeding [`blend-presets`](../functions/api/blend-presets.ts), loaded through the same compile-before-load path the Generate panel uses.
+- **Image to preset.** The one unwired route. Add image input to the Generate panel, feeding [`image-to-preset`](../functions/api/image-to-preset.ts); the panel's existing offline/provider handling applies.
+- **Semantic search as an optional enhancer.** [`visual-search`](../functions/api/visual-search.ts) already backs the optional embedding services; surface it in catalog search as an optional layer, never a blocker for local search (roadmap principle).
 
 Exit criteria:
 
-- refine, blend, and image-guided generation are reachable from the running session without leaving it;
-- every AI-assisted edit is inspectable as a source diff before it applies; and
+- every AI-assisted edit is inspectable as a source diff before it applies;
+- image-guided generation is reachable from the running session; and
 - all surfaces degrade cleanly when the optional services are unreachable.
 
 ## Next: close the loop and raise the ceiling
