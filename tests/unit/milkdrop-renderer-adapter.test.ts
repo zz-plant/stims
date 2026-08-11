@@ -1724,10 +1724,10 @@ per_pixel_3=sx=2;
       'return select(value, (0.5 - value) * 2.0, value >= 0.0 && value <= 1.0);',
     );
     expect(transformWgsl).toContain(
-      '(field_x - normalizedCenterX) * fieldScaleX',
+      '(rendererFieldX - normalizedCenterX) * fieldScaleX',
     );
     expect(transformWgsl).toContain(
-      '(field_y - normalizedCenterY) * fieldScaleY',
+      '(rendererFieldY - normalizedCenterY) * fieldScaleY',
     );
   });
 

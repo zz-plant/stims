@@ -188,9 +188,11 @@ test('assembled WebGL fragment shaders declare every MilkDrop builtin the preset
       expect(shader, label).toContain('uniform vec4 aspect;');
       expect(shader, label).not.toContain('uniform float aspect;');
       // Per-pixel rad/ang are in scope for injected bodies.
-      expect(shader, label).toContain('float rad = length(uv - 0.5);');
       expect(shader, label).toContain(
-        'float ang = atan(uv.x - 0.5, uv.y - 0.5);',
+        'float rad = length(vec2((uv.x - 0.5) * aspect.x, (uv.y - 0.5) * aspect.y)) * 2.0;',
+      );
+      expect(shader, label).toContain(
+        'float ang = atan(uv.y - 0.5, uv.x - 0.5);',
       );
       // Roam oscillators and per-preset randoms.
       expect(shader, label).toContain('#define roam_cos');

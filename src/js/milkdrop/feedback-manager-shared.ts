@@ -577,7 +577,11 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
 
         void main() {
           vec2 centeredUv = vUv - 0.5;
-          float rotSin = sin(rotation);
+          // Sampling coordinates must invert the intended image transform
+          // (rotate backward to find where displayed content came from), so
+          // this uses -rotation to make the image visually rotate by +rot,
+          // matching the CPU/GPU mesh and motion-vector transform direction.
+          float rotSin = -sin(rotation);
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(
             centeredUv.x * rotCos - centeredUv.y * rotSin,
@@ -649,8 +653,8 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           vec2 uv = vUv;
           vec2 uv_orig = vUv;
           vec3 ret = color;
-          float rad = length(uv - 0.5);
-          float ang = atan(uv.x - 0.5, uv.y - 0.5);
+          float rad = length(vec2((uv.x - 0.5) * aspect.x, (uv.y - 0.5) * aspect.y)) * 2.0;
+          float ang = atan(uv.y - 0.5, uv.x - 0.5);
 
           // --- DIRECT_COMP_START ---
           // --- DIRECT_COMP_END ---
@@ -873,7 +877,9 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
 
         void main() {
           vec2 centeredUv = vUv - 0.5;
-          float rotSin = sin(rotation);
+          // See the composite pass's identical comment: sampling coords
+          // invert the rotation direction relative to point transforms.
+          float rotSin = -sin(rotation);
           float rotCos = cos(rotation);
           vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
           vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
@@ -881,8 +887,8 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           vec2 uv = transformedUv + 0.5;
           vec2 uv_orig = vUv;
           vec3 ret = texture2D(currentTex, sampleUv(uv, textureWrap)).rgb;
-          float rad = length(uv - 0.5);
-          float ang = atan(uv.x - 0.5, uv.y - 0.5);
+          float rad = length(vec2((uv.x - 0.5) * aspect.x, (uv.y - 0.5) * aspect.y)) * 2.0;
+          float ang = atan(uv.y - 0.5, uv.x - 0.5);
 
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
