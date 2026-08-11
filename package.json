@@ -77,7 +77,7 @@
     "generate:seo": "bun run scripts/generate-seo.ts",
     "generate:search-index": "bun run scripts/generate-catalog-search-index.ts",
     "generate:previews": "bun run scripts/generate-thumbnails.ts",
-    "generate:all": "bun run generate:search-index && bun run generate:previews",
+    "generate:all": "bun run --parallel generate:search-index generate:previews",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js preview --host",
     "cf:whoami": "bunx wrangler whoami",
@@ -164,7 +164,6 @@
     "react-dom": "19.2.8",
     "stats-gl": "4.2.3",
     "three": "0.185.1",
-    "yaml": "^2.8.2",
     "zod": "4.4.3"
   },
   "overrides": {
