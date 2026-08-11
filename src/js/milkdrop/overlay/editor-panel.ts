@@ -1,5 +1,4 @@
 import type { Completion, CompletionSource } from '@codemirror/autocomplete';
-import { computeSourceDiff } from './source-diff.ts';
 import {
   autocompletion,
   clearSnippet,
@@ -61,6 +60,7 @@ import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
+import { computeSourceDiff } from './source-diff.ts';
 
 export type SliderConfig = {
   label: string;
@@ -1336,6 +1336,9 @@ export class EditorPanel {
 
     this.lastSessionState = state;
     if (nextSource !== currentDoc) {
+      // A pending AI proposal was reviewed against the outgoing document;
+      // it must not survive a preset switch.
+      this.discardAssistedEdit();
       this.suppressEditorChange = true;
       this.editor.dispatch({
         changes: {
@@ -1695,12 +1698,21 @@ export class EditorPanel {
   // Every AI-assisted edit lands here instead of replacing the buffer:
   // the user reviews a line diff and explicitly applies or discards it
   // (the Remix-studio "inspectable as source diffs" roadmap bullet).
+  private discardAssistedEdit() {
+    this.assistedEditContainer?.remove();
+    this.assistedEditContainer = null;
+  }
+
   private proposeAssistedEdit(nextSource: string, label: string) {
     const currentSource = this.editor.state.doc.toString();
     if (nextSource === currentSource) {
       return;
     }
-    this.assistedEditContainer?.remove();
+    // The diff below is only valid against this exact source; Apply
+    // re-checks it so a stale proposal can never clobber newer edits or a
+    // different preset.
+    const baseSource = currentSource;
+    this.discardAssistedEdit();
 
     const container = document.createElement('div');
     container.className = 'editor-assisted-diff';
@@ -1732,6 +1744,17 @@ export class EditorPanel {
     applyBtn.textContent = 'Apply';
     applyBtn.addEventListener('click', () => {
       const sourceNow = this.editor.state.doc.toString();
+      if (sourceNow !== baseSource) {
+        lines.remove();
+        actions.remove();
+        heading.textContent = `${label}: the source changed while this diff was open, so the proposal was discarded. Re-run the action against the current source.`;
+        window.setTimeout(() => {
+          if (this.assistedEditContainer === container) {
+            this.discardAssistedEdit();
+          }
+        }, 6000);
+        return;
+      }
       this.snapshots.push({ source: sourceNow, timestamp: Date.now() });
       this.editor.dispatch({
         changes: { from: 0, to: sourceNow.length, insert: nextSource },

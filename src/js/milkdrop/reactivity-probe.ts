@@ -2,16 +2,26 @@
 //
 // The measurement labs (`bun run lab:reactivity`) give per-variable verdicts
 // offline; this probe answers one question cheaply enough to run right after
-// generation: do the preset's per-frame equations respond to audio at all?
-// It steps the VM twice over identical frame timelines — once silent, once
-// with a strongly beat-pulsed synthetic spectrum — and compares tracked
-// per-frame variables between the passes. Any divergence can only come from
-// the audio inputs. The main and custom waves are deliberately not tracked:
-// they follow the raw waveform no matter what the equations do, so they
-// would mark every preset reactive.
+// generation: do the preset's equations respond to audio at all?
+//
+// The verdict comes from a static scan of the equation and shader lines for
+// audio identifiers (bass/mid/treb/vol/beat and their _att variants). A
+// preset whose equations never mention audio cannot react to it, and the
+// scan covers every program type — per_pixel, shaders, custom waves and
+// shapes — that a VM-variable comparison would miss. It also costs
+// microseconds, so the Generate panel can run it on the main thread.
+//
+// `verify: true` additionally steps the VM twice over identical frame
+// timelines — once silent, once with a strongly beat-pulsed synthetic
+// spectrum — and reports which per-frame variables actually diverged. Any
+// divergence can only come from the audio inputs. This pass is for tests
+// and tooling; it never downgrades the scan's verdict, because audio used
+// only by per-pixel or shader programs is invisible to frame variables. The
+// main and custom waves are deliberately not tracked: they follow the raw
+// waveform no matter what the equations do.
 
-import type { MilkdropCompiledPreset } from './types.ts';
 import { createMilkdropSignalTracker } from './runtime-signals.ts';
+import type { MilkdropCompiledPreset } from './types.ts';
 import { createMilkdropVM } from './vm.ts';
 
 export type ReactivityProbeVerdict = 'reactive' | 'static' | 'unknown';
@@ -25,6 +35,35 @@ export type ReactivityProbeResult = {
 };
 
 const SPECTRUM_BINS = 128;
+
+// Equation-carrying keys: per-frame/per-pixel programs, init blocks, custom
+// wave/shape code, and shader lines.
+const EQUATION_KEY_PATTERN =
+  /^(?:per_frame|per_pixel|init|wavecode|shapecode|warp|comp)/iu;
+const AUDIO_IDENTIFIER_PATTERN =
+  /\b(?:bass|mid|treb|vol)(?:_att)?\b|\bbeat\w*\b/iu;
+
+export function presetEquationsReferenceAudio(raw: string): boolean {
+  for (const rawLine of raw.split(/\r?\n/u)) {
+    const commentIndex = rawLine.indexOf('//');
+    const line = (
+      commentIndex >= 0 ? rawLine.slice(0, commentIndex) : rawLine
+    ).trim();
+    const equalsIndex = line.indexOf('=');
+    if (equalsIndex <= 0) {
+      continue;
+    }
+    const key = line.slice(0, equalsIndex).trim();
+    if (!EQUATION_KEY_PATTERN.test(key)) {
+      continue;
+    }
+    if (AUDIO_IDENTIFIER_PATTERN.test(line.slice(equalsIndex + 1))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const WARMUP_FRAMES = 30;
 const SAMPLE_FRAMES = 120;
 const FPS = 60;
@@ -129,8 +168,16 @@ function relativeDivergence(silent: number[], audio: number[]): number {
 
 export function probePresetReactivity(
   preset: MilkdropCompiledPreset,
+  options: { verify?: boolean } = {},
 ): ReactivityProbeResult {
   try {
+    if (!presetEquationsReferenceAudio(preset.source.raw)) {
+      return { verdict: 'static', score: 0, respondingVariables: [] };
+    }
+    if (!options.verify) {
+      return { verdict: 'reactive', score: 0, respondingVariables: [] };
+    }
+
     const silentSeries = runPass(preset, false);
     const audioSeries = runPass(preset, true);
 
@@ -147,11 +194,7 @@ export function probePresetReactivity(
       score = Math.max(score, divergence);
     }
 
-    return {
-      verdict: respondingVariables.length > 0 ? 'reactive' : 'static',
-      score,
-      respondingVariables,
-    };
+    return { verdict: 'reactive', score, respondingVariables };
   } catch {
     // The probe is advisory; a VM failure must never block generation.
     return { verdict: 'unknown', score: 0, respondingVariables: [] };

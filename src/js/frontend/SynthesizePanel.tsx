@@ -142,9 +142,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       // Quality gate: a generated preset that compiles but whose equations
       // ignore audio still loads, but with a visible label so the user can
       // regenerate instead of wondering why nothing moves to the beat.
-      const reactivity = probePresetReactivity(compiled);
+      const probeResult = probePresetReactivity(compiled);
       await engine.importPresetFiles(toFileList(compiled.source.raw));
-      if (reactivity.verdict === 'static') {
+      if (probeResult.verdict === 'static') {
         setStatus(
           'Loaded, but the equations barely respond to audio. Consider regenerating with stronger beat-reactivity wording.',
         );

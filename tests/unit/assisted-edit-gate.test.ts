@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { probePresetReactivity } from '../../src/js/milkdrop/reactivity-probe.ts';
 import { computeSourceDiff } from '../../src/js/milkdrop/overlay/source-diff.ts';
+import { probePresetReactivity } from '../../src/js/milkdrop/reactivity-probe.ts';
 
 const root = path.resolve(import.meta.dir, '../..');
 
@@ -43,6 +43,11 @@ describe('source diff for assisted edits', () => {
     expect(panelSource.split('proposeAssistedEdit').length - 1).toBe(5);
     // No AI response applies straight to the buffer anymore.
     expect(panelSource).not.toContain('Revert AI');
+    // Stale proposals are rejected on Apply and cleared on preset switch.
+    expect(panelSource).toContain('sourceNow !== baseSource');
+    expect(
+      panelSource.split('discardAssistedEdit(').length - 1,
+    ).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -58,9 +63,25 @@ describe('generated-preset reactivity probe', () => {
       { id: 'probe-reactive' },
     );
 
-    const result = probePresetReactivity(compiled);
-    expect(result.verdict).toBe('reactive');
-    expect(result.respondingVariables).toContain('zoom');
+    const fast = probePresetReactivity(compiled);
+    expect(fast.verdict).toBe('reactive');
+
+    const verified = probePresetReactivity(compiled, { verify: true });
+    expect(verified.verdict).toBe('reactive');
+    expect(verified.respondingVariables).toContain('zoom');
+  });
+
+  test('flags per_pixel-only audio use as reactive (invisible to frame variables)', () => {
+    const compiled = compileMilkdropPresetSource(
+      [
+        '[preset00]',
+        'fDecay=0.98',
+        'per_pixel_1=zoom=1+bass_att*0.1*rad;',
+      ].join('\n'),
+      { id: 'probe-per-pixel' },
+    );
+
+    expect(probePresetReactivity(compiled).verdict).toBe('reactive');
   });
 
   test('flags a preset whose equations ignore audio as static', () => {

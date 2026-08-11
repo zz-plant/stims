@@ -22,7 +22,10 @@ export function computeSourceDiff(
   const b = after.split('\n');
   if (a.length > MAX_DIFF_LINES || b.length > MAX_DIFF_LINES) {
     return [
-      { kind: 'gap', text: `Replaces all ${a.length} lines with ${b.length} new lines` },
+      {
+        kind: 'gap',
+        text: `Replaces all ${a.length} lines with ${b.length} new lines`,
+      },
     ];
   }
 
