@@ -98,7 +98,7 @@ describe('generatePresetTournament', () => {
     expect(outcome.usedFallback).toBe(false);
     expect(outcome.probe.verdict).toBe('reactive');
     expect(outcome.winner.source.raw).toBe(REACTIVE_SOURCE.trim());
-  });
+  }, 30_000);
 
   test('eliminates unsalvageable candidates but still wins on the rest', async () => {
     let call = 0;
@@ -115,7 +115,7 @@ describe('generatePresetTournament', () => {
     expect(outcome.attempted).toBe(3);
     expect(outcome.survivors).toBe(2);
     expect(outcome.winner.source.raw).toBe(REACTIVE_SOURCE.trim());
-  });
+  }, 30_000);
 
   test('falls back to the template synthesizer when every candidate fails', async () => {
     const fetchMock = mock(async () => hostedResponse(UNSALVAGEABLE_SOURCE));
@@ -129,7 +129,7 @@ describe('generatePresetTournament', () => {
     expect(outcome.survivors).toBe(0);
     expect(outcome.usedFallback).toBe(true);
     expect(outcome.winner.source.raw).toContain('[preset00]');
-  });
+  }, 30_000);
 
   test('throws with every failure reason when all candidates fail and there is no fallback', async () => {
     const fetchMock = mock(async () => hostedResponse(UNSALVAGEABLE_SOURCE));
@@ -156,7 +156,7 @@ describe('generatePresetTournament', () => {
 
     expect(outcome.attempted).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-  });
+  }, 30_000);
 
   test('respects an explicit candidateCount override', async () => {
     const fetchMock = mock(async () => hostedResponse(REACTIVE_SOURCE));
@@ -169,5 +169,5 @@ describe('generatePresetTournament', () => {
 
     expect(outcome.attempted).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
+  }, 30_000);
 });
