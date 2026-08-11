@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { isAgentMode } from '../../core/url-params.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -135,15 +136,21 @@ export function useCatalogLoading() {
           setActivityCatalog(mapped);
           reportLoadStatus('full-catalog');
 
-          void ensureCatalogStore().then((store) => {
-            void store
-              .prefetchCompiledPresets()
-              .then(() => {
-                if (cancelled) return;
-                void refreshCatalogActivity();
-              })
-              .catch(() => {});
-          });
+          // Agent sessions load one preset and never browse the warm cache,
+          // and even the idle-paced prefetch competes with SwiftShader
+          // rendering on starved CI runners — skip the warm-up entirely so
+          // automation stays deterministic.
+          if (!isAgentMode()) {
+            void ensureCatalogStore().then((store) => {
+              void store
+                .prefetchCompiledPresets()
+                .then(() => {
+                  if (cancelled) return;
+                  void refreshCatalogActivity();
+                })
+                .catch(() => {});
+            });
+          }
         })
         .catch((error) => {
           if (cancelled) return;
