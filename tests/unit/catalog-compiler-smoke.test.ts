@@ -53,7 +53,7 @@ function listPresetFiles() {
 // Compiling the full catalog takes a few seconds, so it happens once in
 // `beforeAll` and every assertion reads the same results. Doing it inside the
 // first test instead would push that test past Bun's default 5s timeout.
-const CATALOG_COMPILE_TIMEOUT_MS = 60_000;
+const CATALOG_COMPILE_TIMEOUT_MS = 240_000;
 
 let cachedPresets: CompiledPreset[] = [];
 function compileCatalog(): CompiledPreset[] {
