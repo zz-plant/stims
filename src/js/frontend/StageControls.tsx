@@ -232,6 +232,7 @@ export function StageControls({
         onPointerEnter={() => signalActivity()}
       >
         <div ref={energyRef} className={styles.pill}>
+          <span className={styles.energyBar} aria-hidden="true" />
           <button
             type="button"
             className={styles.navBtn}

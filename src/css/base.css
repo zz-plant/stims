@@ -2381,7 +2381,13 @@ body {
   align-items: center;
 }
 
-.milkdrop-overlay__preset-tag:not(.milkdrop-overlay__preset-tag--active) {
+/* Neutral quieting applies only to un-stated tags — active, verified,
+   and drift keep their token-driven state colors. */
+.milkdrop-overlay__preset-tag:not(
+  .milkdrop-overlay__preset-tag--active,
+  .milkdrop-overlay__preset-tag--verified,
+  .milkdrop-overlay__preset-tag--drift
+) {
   background: rgba(148, 163, 184, 0.1);
   color: rgba(226, 232, 240, 0.72);
 }

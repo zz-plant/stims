@@ -26,57 +26,20 @@
   pointer-events: auto;
 }
 
-/* Now-playing strip */
-.nowPlaying {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 14px;
-  min-height: 28px;
-  border-radius: var(--radius-round);
-  background: rgba(6, 10, 18, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  color: rgba(229, 241, 255, 0.92);
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
-  margin-bottom: 6px;
-  pointer-events: auto;
-  max-width: min(32rem, calc(100vw - 32px));
-}
-
-.nowPlayingTitle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
-
-.nowPlayingAuthor {
-  color: rgba(191, 219, 254, 0.65);
-  font-weight: 400;
-  font-size: 0.7rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-}
-
 /* Audio level reads as length (a meter), not just glow — and it wears
-   the cool "playing" accent, keeping green reserved for status. */
-.nowPlayingBar {
+   the cool "playing" accent, keeping green reserved for status. Lives
+   inside .pill, which receives the live --energy variable. */
+.energyBar {
   flex-shrink: 0;
   width: 4px;
   height: 18px;
+  margin: 0 5px 0 10px;
   border-radius: 2px;
   background: var(--stims-cool, #77c9ff);
   transform-origin: 50% 100%;
-  transform: scaleY(calc(0.3 + var(--stims-energy, 0) * 0.7));
-  opacity: calc(0.55 + var(--stims-energy, 0) * 0.45);
-  box-shadow: 0 0 12px rgba(119, 201, 255, calc(var(--stims-energy, 0) * 0.95));
+  transform: scaleY(calc(0.3 + var(--energy, 0) * 0.7));
+  opacity: calc(0.55 + var(--energy, 0) * 0.45);
+  box-shadow: 0 0 12px rgba(119, 201, 255, calc(var(--energy, 0) * 0.95));
   transition:
     transform 0.1s ease,
     opacity 0.1s ease,
@@ -282,12 +245,6 @@
   background: rgba(8, 14, 22, 0.92);
   color: #f7f4eb;
   border-color: rgba(255, 255, 255, 0.22);
-}
-
-@media (min-width: 641px) {
-  .nowPlaying {
-    display: none;
-  }
 }
 
 @media (min-width: 768px) and (min-height: 500px) {

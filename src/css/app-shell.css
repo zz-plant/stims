@@ -2191,7 +2191,7 @@ body[data-page="workspace"][data-live="true"] {
   /* High contrast mode support — applies at every viewport width, not
      just mobile: the outline is the only non-color cue selected chips,
      preset rows, and radio options get in this mode. */
-  @media (prefers-contrast: high) {
+  @media (prefers-contrast: more) {
     :scope {
       --stims-ink: #ffffff;
       --stims-ink-strong: #ffffff;
