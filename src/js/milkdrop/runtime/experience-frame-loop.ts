@@ -167,7 +167,14 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      if (typeof document !== 'undefined' && document.hidden) {
+      // Hidden tabs skip frames to spare the GPU — except in agent mode,
+      // where automation (headless capture, browser-pane QA) drives frames
+      // deliberately and a silent skip reads as a frozen/black canvas.
+      if (
+        typeof document !== 'undefined' &&
+        document.hidden &&
+        document.documentElement.dataset.agentMode !== 'true'
+      ) {
         setCurrentFrameState(null);
         return;
       }

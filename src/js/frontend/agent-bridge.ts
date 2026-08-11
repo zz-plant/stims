@@ -44,6 +44,18 @@ declare global {
       updateTelemetry: (data: Partial<AgentTelemetry>) => void;
       getTelemetry: () => AgentTelemetry;
     };
+    /**
+     * Agent-mode only: synchronously render N frames with synthetic
+     * time/audio, decoupled from wall-clock and RAF. Installed by the
+     * milkdrop engine session so capture harnesses (preview generation)
+     * can warm up feedback-heavy presets in GPU time instead of waiting
+     * real seconds, immune to hidden-tab RAF pauses. Returns null while
+     * audio is active or before the runtime is mounted.
+     */
+    __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
+      frames?: number;
+      deltaMs?: number;
+    }) => { rendered: number } | null;
   }
 }
 

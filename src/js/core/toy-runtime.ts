@@ -79,6 +79,19 @@ export type ToyRuntimeInstance = ToyInstance & {
   pausePreview?: () => void;
   /** Resume the idle preview loop. */
   resumePreview?: () => void;
+  /**
+   * Synchronously pump N frames through the plugin pipeline with synthetic
+   * time and audio data, decoupling simulation time from wall-clock time.
+   * Built for headless capture harnesses: presets that need seconds of
+   * feedback accumulation render in however long the GPU takes, and the
+   * synthetic signal is a pure function of frame time so captures are
+   * reproducible. Only valid while audio is inactive (the audio loop would
+   * double-drive the pipeline); returns null in that case.
+   */
+  renderFrames?: (options?: {
+    frames?: number;
+    deltaMs?: number;
+  }) => { rendered: number } | null;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
   getPerformanceSettings: () => PerformanceSettings;
@@ -484,6 +497,29 @@ export function createToyRuntime({
     },
     pausePreview: stopPreviewLoop,
     resumePreview: startPreviewLoop,
+    renderFrames: (options) => {
+      if (analyser) {
+        return null;
+      }
+      const frames = Math.max(1, Math.floor(options?.frames ?? 1));
+      const deltaMs = options?.deltaMs ?? 1000 / 60;
+      stopPreviewLoop();
+      let rendered = 0;
+      for (let i = 0; i < frames; i += 1) {
+        frameState.time += deltaMs / 1000;
+        frameState.deltaMs = deltaMs;
+        frameState.realTimeMs += deltaMs;
+        frameState.analyser = null;
+        updatePreviewFrequencyData(frameState.time);
+        frameState.frequencyData = previewFrequencyData;
+        frameState.waveformData = previewWaveformData;
+        frameState.input = inputController.getState();
+        frameState.performance = performanceController.getSettings();
+        pluginManager.update(frameState);
+        rendered += 1;
+      }
+      return { rendered };
+    },
     addPlugin: (plugin) => {
       pluginManager.add(plugin);
       plugin.setup?.(runtime as ToyRuntimeInstance);
