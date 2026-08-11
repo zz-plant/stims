@@ -116,7 +116,8 @@ describe('milkdrop runtime signals', () => {
     expect(sustain.beat).toBe(0);
     expect(sustain.beatPulse).toBeLessThan(pulse.beatPulse);
     expect(pulse.beat_pulse).toBe(pulse.beatPulse);
-    expect(pulse.vol).toBeCloseTo(pulse.rms, 6);
+    // vol is MilkDrop-scale: the mean of the relative bands, not raw rms.
+    expect(pulse.vol).toBeCloseTo((pulse.bass + pulse.mid + pulse.treb) / 3, 6);
     expect(pulse.music).toBeCloseTo(pulse.weightedEnergy, 6);
     expect(pulse.waveformData).toBeInstanceOf(Uint8Array);
     expect(pulse.waveformData?.length).toBe(128);

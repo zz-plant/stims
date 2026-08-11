@@ -494,6 +494,9 @@ export function createCompositeUniforms(
   return {
     currentTex: texture(sceneTexture),
     previousTex: texture(previousTexture),
+    // This frame's internal image written by the feedback-blend pass; the
+    // display-only composite pass reads it (rebound per frame by the manager).
+    internalTex: texture(previousTexture),
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),

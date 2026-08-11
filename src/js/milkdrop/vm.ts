@@ -142,6 +142,7 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
+  private perFrameBaseValues: MutableState = {};
 
   /** Resolves `wave${slot}_${key}` / `shape${slot}_${key}` composite keys that
    * exist only in the synthesized snapshot, returning the owning locals object
@@ -346,6 +347,23 @@ class MilkdropPresetVM implements MilkdropVM {
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
 
+    // MilkDrop reloads every built-in per-frame variable before running
+    // per_frame code, so `cx = cx + sin(time)` oscillates around its base
+    // instead of integrating into a random walk. The base is the preset's
+    // numeric fields as amended by the init program (init writes to built-ins
+    // become the new defaults, matching MilkDrop's post-init state capture).
+    // User variables (and q/t/reg/megabuf) persist across frames, and
+    // `basstime` is conventionally a user accumulator despite having a
+    // default, so it persists too.
+    this.perFrameBaseValues = {};
+    for (const key in DEFAULT_MILKDROP_STATE) {
+      this.perFrameBaseValues[key] = this.state[key] ?? 0;
+    }
+    for (const key in this.preset.ir.numericFields) {
+      this.perFrameBaseValues[key] = this.state[key] ?? 0;
+    }
+    delete this.perFrameBaseValues.basstime;
+
     this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
       this.runProgram(
@@ -546,16 +564,31 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
+  /** Restores built-in per-frame variables to the preset's base values before
+   * a per-frame run (MilkDrop reload semantics). Mutates `this.state` in place
+   * so the `registers` prototype chain stays intact. */
+  private restorePerFrameBaseValues() {
+    const base = this.perFrameBaseValues;
+    const state = this.state;
+    for (const key in base) {
+      state[key] = base[key];
+    }
+  }
+
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
     resetFrameTransformCache(this.geometryState);
+    this.restorePerFrameBaseValues();
 
     if (
       this.renderBackend === 'webgpu' &&
       this.webgpuOptimizationFlags.gpuComputeVM &&
       this.gpuRunner.isInitialized()
     ) {
+      // GPU-resident state accumulated last frame's per-frame writes; upload
+      // the restored CPU mirror so the reset applies there too.
+      this.gpuRunner.syncState(this.state, this.registers, this.randomState);
       const result = await this.gpuRunner.dispatch(signals);
       Object.assign(this.state, result.state);
       Object.assign(this.registers, result.registers);
@@ -572,6 +605,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     resetFrameTransformCache(this.geometryState);
+    this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
     return this.buildFrame(signals);

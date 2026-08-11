@@ -335,7 +335,12 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.treb_att = relativeAttenuatedBands.treble;
       signalCache.treble_att = relativeAttenuatedBands.treble;
       signalCache.rms = rms;
-      signalCache.vol = rms;
+      // MilkDrop's vol is the mean of the relative bands (~1 during steady
+      // music, <0.75 in quiet passages), not an absolute 0..1 level. The
+      // bModWaveAlphaByVolume gate and preset code like `above(vol, 1.2)`
+      // are written against that scale; raw rms never reaches it.
+      signalCache.vol =
+        (relativeBands.bass + relativeBands.mid + relativeBands.treble) / 3;
       signalCache.music = finalWeightedEnergy;
       signalCache.beat = update.isBeat ? 1 : 0;
       signalCache.beatPulse = update.beatIntensity;

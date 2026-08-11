@@ -343,7 +343,201 @@ const MILKDROP_NOISE_VOLUME_HELPERS = `
         }
 `;
 
+// Aux-texture sampling and the control-driven feedback warp are needed by
+// both the feedback-blend pass (warp-texture displacement, legacy warp) and
+// the composite pass (overlay/comp-body sampling), so they live in one
+// shared chunk instead of drifting apart as duplicates.
+const MILKDROP_AUX_SAMPLING_HELPERS = `
+        vec2 sampleUv(vec2 uv, float wrapMode) {
+          return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
+          if (source < 0.5) {
+            return vec4(0.5, 0.5, 0.5, 1.0);
+          }
+          if (source < 1.5) {
+            return texture2D(noiseTex, uv);
+          }
+          if (source < 2.5) {
+            return texture2D(simplexTex, uv);
+          }
+          if (source < 3.5) {
+            return texture2D(voronoiTex, uv);
+          }
+          if (source < 4.5) {
+            return texture2D(auraTex, uv);
+          }
+          if (source < 5.5) {
+            return texture2D(causticsTex, uv);
+          }
+          if (source < 6.5) {
+            return texture2D(patternTex, uv);
+          }
+          if (source < 7.5) {
+            return texture2D(fractalTex, uv);
+          }
+          if (source < 8.5) {
+            return texture2D(videoTex, uv);
+          }
+          if (source < 9.5) {
+            return texture2D(perlinTex, uv);
+          }
+          return vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) {
+            return sampleAuxTexture2d(source, wrappedUv);
+          }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
+          float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          }
+          if (sliceBlend > 1.0 - edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          }
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
+          vec2 centered = uv - 0.5;
+          float radius = length(centered);
+          float angle = atan(centered.y, centered.x);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * amount * 0.08;
+          angle += spiral + rotationAmount * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * amount * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+`;
+
+/**
+ * Builds this frame's internal image — the warped previous frame with fresh
+ * geometry on top — which is what feeds the next frame's warp pass. MilkDrop
+ * never feeds the comp shader's output back into the loop; keeping this
+ * blend in its own pass lets the composite pass stay display-only.
+ */
+const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
+        uniform sampler2D currentTex;
+        uniform sampler2D warpTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
+        uniform float videoEchoAlpha;
+        uniform float textureWrap;
+        uniform float warpScale;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float rotation;
+        uniform float zoomMul;
+        uniform float feedbackSoftness;
+        uniform float decay;
+        uniform float hasDirectWarp;
+        uniform vec2 texelSize;
+        uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
+        varying vec2 vUv;
+${MILKDROP_AUX_SAMPLING_HELPERS}
+        void main() {
+          vec2 centeredUv = vUv - 0.5;
+          // Sampling coordinates must invert the intended image transform
+          // (rotate backward to find where displayed content came from), so
+          // this uses -rotation to make the image visually rotate by +rot,
+          // matching the CPU/GPU mesh and motion-vector transform direction.
+          float rotSin = -sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(
+            centeredUv.x * rotCos - centeredUv.y * rotSin,
+            centeredUv.x * rotSin + centeredUv.y * rotCos
+          );
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          vec2 currentUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
+            currentUv += warpVector * warpTextureAmount * 0.12;
+          }
+          // Direct-warp presets draw fresh geometry over the already-warped
+          // previous frame, so the scene must not be re-warped here.
+          vec2 sceneUv = hasDirectWarp > 0.5 ? vUv : currentUv;
+          vec4 current = texture2D(currentTex, sampleUv(sceneUv, textureWrap));
+          vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
+          vec3 previousColor = previous.rgb;
+          if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 off = texelSize * (0.75 + feedbackSoftness * 0.5);
+            vec3 softened = (
+              previous.rgb * 4.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, -off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, -off.y), textureWrap)).rgb
+            ) / 16.0;
+            previousColor = mix(
+              previousColor,
+              softened,
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
+            );
+          }
+          // MilkDrop applies decay only in the default warp path; a preset's
+          // own warp shader implements its fade (e.g. this frame minus 0.004).
+          previousColor *= mix(decay, 1.0, hasDirectWarp);
+          // With a direct warp shader, feedback is the warped previous frame
+          // under this frame's geometry (MilkDrop clears to the warp output);
+          // the legacy echo blend stays for control-driven presets.
+          vec3 color = hasDirectWarp > 0.5
+            ? previousColor + current.rgb
+            : mix(
+                current.rgb,
+                previousColor,
+                clamp(videoEchoAlpha, 0.0, 1.0)
+              );
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `;
+
 const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
+        uniform sampler2D internalTex;
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
         uniform sampler2D noiseTex;
@@ -489,84 +683,14 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
           return value;
         }
 
-        vec2 sampleUv(vec2 uv, float wrapMode) {
-          return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
-        }
-
-        vec4 sampleAuxTexture2d(float source, vec2 uv) {
-          if (source < 0.5) {
-            return vec4(0.5, 0.5, 0.5, 1.0);
-          }
-          if (source < 1.5) {
-            return texture2D(noiseTex, uv);
-          }
-          if (source < 2.5) {
-            return texture2D(simplexTex, uv);
-          }
-          if (source < 3.5) {
-            return texture2D(voronoiTex, uv);
-          }
-          if (source < 4.5) {
-            return texture2D(auraTex, uv);
-          }
-          if (source < 5.5) {
-            return texture2D(causticsTex, uv);
-          }
-          if (source < 6.5) {
-            return texture2D(patternTex, uv);
-          }
-          if (source < 7.5) {
-            return texture2D(fractalTex, uv);
-          }
-          if (source < 8.5) {
-            return texture2D(videoTex, uv);
-          }
-          if (source < 9.5) {
-            return texture2D(perlinTex, uv);
-          }
-          return vec4(0.5, 0.5, 0.5, 1.0);
-        }
-
-        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
-          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
-          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
-          vec2 tileSize = vec2(1.0 / gridSize);
-          float column = mod(sliceIndex, gridSize);
-          float row = floor(sliceIndex / gridSize);
-          return (vec2(column, row) + localUv) * tileSize;
-        }
-
-        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
-          vec2 wrappedUv = fract(uv);
-          if (sampleDimension < 0.5) {
-            return sampleAuxTexture2d(source, wrappedUv);
-          }
-          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          float wrappedSliceZ = fract(sliceZ);
-          float scaledSlice = wrappedSliceZ * sliceCount;
-          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
-          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
-          float sliceBlend = fract(scaledSlice);
-          float edgeMargin = 0.02;
-          if (sliceBlend < edgeMargin) {
-            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          }
-          if (sliceBlend > 1.0 - edgeMargin) {
-            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          }
-          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          return mix(sliceA, sliceB, sliceBlend);
-        }
+${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
-        vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
-          vec2 centered = uv - 0.5;
-          float radius = length(centered);
-          float angle = atan(centered.y, centered.x);
-          float spiral = sin(radius * 18.0 - angle * 4.0) * amount * 0.08;
-          angle += spiral + rotationAmount * 0.22;
-          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * amount * 0.05;
-          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        // MilkDrop's comp shader reads sampler_main as the current
+        // *composited* frame — the internal image the feedback-blend pass
+        // wrote this frame (warped feedback + geometry). Injected comp
+        // bodies have their sampler_main samples rewritten to this helper.
+        vec4 sampleCompFrame(vec2 sampleCoord) {
+          return texture2D(internalTex, sampleUv(sampleCoord, textureWrap));
         }
 
         // --- DIRECT_WARP_START ---
@@ -576,74 +700,10 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
         // --- DIRECT_COMP_END ---
 
         void main() {
-          vec2 centeredUv = vUv - 0.5;
-          // Sampling coordinates must invert the intended image transform
-          // (rotate backward to find where displayed content came from), so
-          // this uses -rotation to make the image visually rotate by +rot,
-          // matching the CPU/GPU mesh and motion-vector transform direction.
-          float rotSin = -sin(rotation);
-          float rotCos = cos(rotation);
-          vec2 rotatedUv = vec2(
-            centeredUv.x * rotCos - centeredUv.y * rotSin,
-            centeredUv.x * rotSin + centeredUv.y * rotCos
-          );
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
-
-          // --- DIRECT_WARP_START ---
-          // --- DIRECT_WARP_END ---
-
-          vec2 currentUv = hasDirectWarp > 0.5
-            ? transformedUv + 0.5
-            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
-          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector =
-              sampleAuxTexture(
-                warpTextureSource,
-                warpTextureSampleDimension,
-                warpUv,
-                warpTextureVolumeSliceZ
-              ).rg - 0.5;
-            currentUv += warpVector * warpTextureAmount * 0.12;
-          }
-          // Direct-warp presets draw fresh geometry over the already-warped
-          // previous frame, so the scene must not be re-warped here.
-          vec2 sceneUv = hasDirectWarp > 0.5 ? vUv : currentUv;
-          vec4 current = texture2D(currentTex, sampleUv(sceneUv, textureWrap));
-          vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
-          vec3 previousColor = previous.rgb;
-          if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
-            vec2 off = texelSize * (0.75 + feedbackSoftness * 0.5);
-            vec3 softened = (
-              previous.rgb * 4.0 +
-              texture2D(warpTex, sampleUv(vUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
-              texture2D(warpTex, sampleUv(vUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
-              texture2D(warpTex, sampleUv(vUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
-              texture2D(warpTex, sampleUv(vUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
-              texture2D(warpTex, sampleUv(vUv + vec2(off.x, off.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(off.x, off.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv + vec2(off.x, -off.y), textureWrap)).rgb +
-              texture2D(warpTex, sampleUv(vUv - vec2(off.x, -off.y), textureWrap)).rgb
-            ) / 16.0;
-            previousColor = mix(
-              previousColor,
-              softened,
-              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
-            );
-          }
-          // MilkDrop applies decay only in the default warp path; a preset's
-          // own warp shader implements its fade (e.g. this frame minus 0.004).
-          previousColor *= mix(decay, 1.0, hasDirectWarp);
-          // With a direct warp shader, feedback is the warped previous frame
-          // under this frame's geometry (MilkDrop clears to the warp output);
-          // the legacy echo blend stays for control-driven presets.
-          vec3 color = hasDirectWarp > 0.5
-            ? previousColor + current.rgb
-            : mix(
-                current.rgb,
-                previousColor,
-                clamp(videoEchoAlpha, 0.0, 1.0)
-              );
+          // The feedback-blend pass already built this frame's internal
+          // image (warped feedback + geometry). This pass is display-only,
+          // matching MilkDrop: nothing computed here feeds the next frame.
+          vec3 color = texture2D(internalTex, sampleUv(vUv, textureWrap)).rgb;
           color = hueRotate(color, hueShift);
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
@@ -717,15 +777,15 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           if (chromaticAberration > 0.01) {
             float amount = clamp(chromaticAberration, 0.0, 1.0);
             vec2 dir = (vUv - vec2(0.5)) * amount * 0.02;
-            float r = texture2D(currentTex, sampleUv(vUv + dir, textureWrap)).r;
-            float b = texture2D(currentTex, sampleUv(vUv - dir, textureWrap)).b;
+            float r = texture2D(internalTex, sampleUv(vUv + dir, textureWrap)).r;
+            float b = texture2D(internalTex, sampleUv(vUv - dir, textureWrap)).b;
             color = vec3(r, color.g, b);
           }
           if (redBlueStereo > 0.5) {
             float stereoOffset = 0.003 + signalEnergy * 0.003;
             vec2 stereoShift = vec2(stereoOffset, 0.0);
-            vec3 leftColor = texture2D(warpTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
-            vec3 rightColor = texture2D(warpTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
+            vec3 leftColor = texture2D(internalTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
+            vec3 rightColor = texture2D(internalTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
@@ -977,8 +1037,21 @@ export function assembleMilkdropDirectFragmentShaders(
       warpGlobals,
     );
 
-  const cleanCompBody = compGlsl
+  const rawCompBody = compGlsl
     ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
+    : null;
+
+  // In the comp stage sampler_main means the current *composited* frame, but
+  // the sampler rewrite mapped it to currentTex, which the composite pass
+  // binds to the geometry-only scene texture. Retarget those samples to the
+  // sampleCompFrame reconstruction (warped feedback + geometry) so comp
+  // bodies stop discarding the feedback trail. Only the call head changes;
+  // the coordinate argument and closing paren carry over untouched.
+  const cleanCompBody = rawCompBody
+    ? rawCompBody.replace(
+        /\btexture2D\s*\(\s*currentTex\s*,/gu,
+        'sampleCompFrame(',
+      )
     : null;
 
   // Build composite shader: warp section kept empty since warp runs separate
@@ -1002,6 +1075,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly sceneTarget: WebGLRenderTarget;
   readonly warpTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
+  readonly displayTarget: WebGLRenderTarget;
+  readonly feedbackBlendMaterial: ShaderMaterial;
+  readonly feedbackBlendScene: Scene;
   readonly blurTargets: [
     WebGLRenderTarget,
     WebGLRenderTarget,
@@ -1075,6 +1151,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         samples: this.profile.samples,
       }),
     ];
+    this.displayTarget = createWebGLFeedbackRenderTarget(width, height, {
+      resolutionScale: this.currentFeedbackResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: this.profile.samples,
+    });
     this.blurTargets = [
       createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale,
@@ -1250,12 +1331,61 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     });
     this.warpScene = new Scene();
     this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
+    this.feedbackBlendMaterial = new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.sceneTarget.texture },
+        warpTex: { value: this.warpTarget.texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
+        perlinTex: { value: this.auxTextures.perlin },
+        videoEchoAlpha: { value: 0 },
+        textureWrap: { value: 0 },
+        warpScale: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        rotation: { value: 0 },
+        zoomMul: { value: 1 },
+        feedbackSoftness: { value: this.profile.feedbackSoftness },
+        decay: { value: 0.98 },
+        hasDirectWarp: { value: 0 },
+        texelSize: {
+          value: new Vector2(
+            1 / Math.max(1, this.targets[0].width),
+            1 / Math.max(1, this.targets[0].height),
+          ),
+        },
+        warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: new Vector2(1, 1) },
+        warpTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureVolumeSliceZ: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER,
+    });
+    this.feedbackBlendScene = new Scene();
+    this.feedbackBlendScene.add(
+      new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.feedbackBlendMaterial),
+    );
     this.compositeMaterial = this.createCompositeMaterial(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
     );
     this.presentMaterial = new ShaderMaterial({
       uniforms: {
-        currentTex: { value: this.targets[0].texture },
+        currentTex: { value: this.displayTarget.texture },
         savedTex: { value: null },
         transitionAlpha: { value: 0 },
       },
@@ -1303,6 +1433,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   private createCompositeMaterial(fragmentShader: string): ShaderMaterial {
     const material = new ShaderMaterial({
       uniforms: {
+        internalTex: { value: this.targets[0].texture },
         currentTex: { value: this.sceneTarget.texture },
         previousTex: { value: this.targets[0].texture },
         noiseTex: { value: this.auxTextures.noise },
@@ -1436,7 +1567,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
   swap() {
     this.index = (this.index + 1) % 2;
-    this.presentMaterial.uniforms.currentTex.value = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.previousTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.warpTex.value = this.readTarget.texture;
@@ -1536,6 +1666,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
+    this.feedbackBlendMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
     // Preserve current uniform values before disposing old material
     const oldUniforms = this.compositeMaterial.uniforms;
@@ -1606,11 +1737,41 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       warpTextureName &&
       !['noise', 'perlin', 'simplex'].includes(warpTextureName)
     ) {
-      uniforms[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
+      const warpTexture = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[warpTextureName].fileName,
         AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
       );
+      uniforms[`${warpTextureName}Tex`].value = warpTexture;
+      this.feedbackBlendMaterial.uniforms[`${warpTextureName}Tex`].value =
+        warpTexture;
     }
+    // The feedback-blend pass owns the frame construction, so it receives
+    // the loop-facing subset of the state (transform, decay, echo, warp
+    // texture displacement); the composite keeps its copies for comp bodies
+    // that reference the same names.
+    const feedbackUniforms = this.feedbackBlendMaterial.uniforms;
+    feedbackUniforms.videoEchoAlpha.value = state.videoEchoAlpha;
+    feedbackUniforms.textureWrap.value = state.textureWrap;
+    feedbackUniforms.decay.value = state.decay;
+    feedbackUniforms.warpScale.value = state.warpScale;
+    feedbackUniforms.offsetX.value = state.offsetX;
+    feedbackUniforms.offsetY.value = state.offsetY;
+    feedbackUniforms.rotation.value = state.rotation;
+    feedbackUniforms.zoomMul.value = state.zoomMul;
+    feedbackUniforms.warpTextureSource.value = state.warpTextureSource;
+    feedbackUniforms.warpTextureSampleDimension.value =
+      state.warpTextureSampleDimension;
+    feedbackUniforms.warpTextureAmount.value = state.warpTextureAmount;
+    feedbackUniforms.warpTextureScale.value.set(
+      state.warpTextureScale.x,
+      state.warpTextureScale.y,
+    );
+    feedbackUniforms.warpTextureOffset.value.set(
+      state.warpTextureOffset.x,
+      state.warpTextureOffset.y,
+    );
+    feedbackUniforms.warpTextureVolumeSliceZ.value =
+      state.warpTextureVolumeSliceZ;
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
     uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
@@ -1796,7 +1957,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     renderer.setRenderTarget(this.warpTarget);
     renderer.render(this.warpScene, this.camera);
 
+    // Internal frame (feedback loop): warped previous + fresh geometry.
     renderer.setRenderTarget(this.writeTarget);
+    renderer.render(this.feedbackBlendScene, this.camera);
+
+    // Display frame: comp shader + post effects over the internal frame.
+    // Never fed back — MilkDrop's comp output is display-only.
+    this.compositeMaterial.uniforms.internalTex.value =
+      this.writeTarget.texture;
+    renderer.setRenderTarget(this.displayTarget);
     renderer.render(this.compositeScene, this.camera);
 
     if (
@@ -1908,6 +2077,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
+    this.displayTarget.setSize(feedbackWidth, feedbackHeight);
     this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
     this.blurHTargets[0].setSize(feedbackWidth, feedbackHeight);
     if (this.savedFrameTarget) {
@@ -1933,6 +2103,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
     );
+    this.feedbackBlendMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
+    );
   }
 
   dispose() {
@@ -1946,6 +2120,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.sceneTarget.dispose();
     this.warpTarget.dispose();
     this.targets.forEach((target) => target.dispose());
+    this.displayTarget.dispose();
     this.blurTargets.forEach((target) => target.dispose());
     this.blurHTargets.forEach((target) => target.dispose());
     this.savedFrameTarget?.dispose();
@@ -1955,10 +2130,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     disposeMaterial(this.blurHMaterial);
     disposeMaterial(this.blurVMaterial);
     disposeMaterial(this.warpMaterial);
+    disposeMaterial(this.feedbackBlendMaterial);
     this.compositeScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();
     this.warpScene.clear();
+    this.feedbackBlendScene.clear();
   }
 }
 
