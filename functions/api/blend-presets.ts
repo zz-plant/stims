@@ -1,3 +1,5 @@
+import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
+
 interface Env {
   AI: {
     run: (
@@ -5,6 +7,7 @@ interface Env {
       opts: { messages: Array<{ role: string; content: string }> },
     ) => Promise<{ response: string }>;
   };
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
@@ -13,6 +16,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
 
   try {
     const { sourceA, sourceB, instruction } = (await request.json()) as {

@@ -11,7 +11,7 @@ interface D1PreparedStatement {
   run(): Promise<void>;
 }
 interface VectorizeIndex {
-  insert(vectors: Array<{ id: string; values: number[] }>): Promise<void>;
+  upsert(vectors: Array<{ id: string; values: number[] }>): Promise<void>;
   query(
     vector: number[],
     options?: { topK?: number },
@@ -28,6 +28,7 @@ interface Env {
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
   ASSET_URL?: string;
+  BACKFILL_TOKEN?: string;
 }
 
 // Cloudflare Workers runtime types
@@ -42,7 +43,13 @@ interface ExecutionContext {
 
 const CATALOG_URL = 'https://toil.fyi/milkdrop-presets/catalog.json';
 const EMBED_MODEL = '@cf/baai/bge-base-en-v1.5';
-const BATCH_SIZE = 25;
+// Per-run cap. Each preset costs ~3 subrequests (AI + D1 + Vectorize), so 100
+// stays well inside the 1000-subrequest budget while clearing a multi-thousand
+// preset catalog within a day at the 15-minute cron cadence.
+const BATCH_SIZE = 100;
+// Rows per invocation when mirroring existing D1 embeddings into Vectorize.
+const SYNC_PAGE_SIZE = 500;
+const VECTORIZE_UPSERT_CHUNK = 100;
 
 interface CatalogEntry {
   id: string;
@@ -114,8 +121,42 @@ async function storeEmbedding(
     .run();
 
   if (env.VECTOR_INDEX) {
-    await env.VECTOR_INDEX.insert([{ id: presetId, values: embedding }]);
+    await env.VECTOR_INDEX.upsert([{ id: presetId, values: embedding }]);
   }
+}
+
+// One-time/idempotent migration: mirror embeddings already stored in D1 into
+// Vectorize. Pages through `preset_embeddings`; callers re-POST with the
+// returned nextOffset until done=true.
+async function syncVectorize(
+  env: Env,
+  offset: number,
+): Promise<{ synced: number; nextOffset: number; done: boolean }> {
+  if (!env.VECTOR_INDEX) {
+    throw new Error('VECTOR_INDEX binding is not configured');
+  }
+
+  const { results } = await env.DB.prepare(
+    'SELECT preset_id, embedding FROM preset_embeddings ORDER BY preset_id LIMIT ?1 OFFSET ?2',
+  )
+    .bind(SYNC_PAGE_SIZE, offset)
+    .all<{ preset_id: string; embedding: string }>();
+
+  let synced = 0;
+  for (let i = 0; i < results.length; i += VECTORIZE_UPSERT_CHUNK) {
+    const chunk = results.slice(i, i + VECTORIZE_UPSERT_CHUNK).map((row) => ({
+      id: row.preset_id,
+      values: JSON.parse(row.embedding) as number[],
+    }));
+    await env.VECTOR_INDEX.upsert(chunk);
+    synced += chunk.length;
+  }
+
+  return {
+    synced,
+    nextOffset: offset + results.length,
+    done: results.length < SYNC_PAGE_SIZE,
+  };
 }
 
 async function backfill(env: Env): Promise<{
@@ -177,28 +218,35 @@ export default {
     );
   },
 
+  // Manual trigger. Requires `Authorization: Bearer <BACKFILL_TOKEN>` so the
+  // public workers.dev URL can't be used to burn AI neurons; the cron path
+  // above does the routine work.
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
-      });
-    }
-
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
 
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!env.BACKFILL_TOKEN || token !== env.BACKFILL_TOKEN) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     try {
+      const url = new URL(request.url);
+      if (url.searchParams.get('mode') === 'sync-vectorize') {
+        const offset = Number.parseInt(
+          url.searchParams.get('offset') || '0',
+          10,
+        );
+        const result = await syncVectorize(env, offset);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const result = await backfill(env);
       return new Response(JSON.stringify(result), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
       return new Response(
