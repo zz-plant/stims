@@ -157,12 +157,28 @@ describe('MilkDrop loop preset visual sweep', () => {
     }
   });
 
-  test('uses native WebGL for the headed browser sweep', () => {
+  test('uses native WebGL for browser sweeps, headed and headless', () => {
+    // Headless no longer implies SwiftShader: sweeps launch full Chromium
+    // via the 'chromium' channel, which renders on the real GPU headless.
     expect(resolveLoopSweepChromiumArgs('webgl', false)).not.toContain(
       '--use-angle=swiftshader',
     );
-    expect(resolveLoopSweepChromiumArgs('webgl', true)).toContain(
+    expect(resolveLoopSweepChromiumArgs('webgl', true)).not.toContain(
       '--use-angle=swiftshader',
     );
+  });
+
+  test('STIMS_SOFTWARE_RENDER=1 restores the deterministic SwiftShader path', () => {
+    process.env.STIMS_SOFTWARE_RENDER = '1';
+    try {
+      expect(resolveLoopSweepChromiumArgs('webgl', true)).toContain(
+        '--use-angle=swiftshader',
+      );
+      expect(resolveLoopSweepChromiumArgs('webgl', false)).toContain(
+        '--use-angle=swiftshader',
+      );
+    } finally {
+      delete process.env.STIMS_SOFTWARE_RENDER;
+    }
   });
 });

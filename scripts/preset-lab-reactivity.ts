@@ -16,6 +16,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
@@ -688,6 +689,62 @@ function parseArgs(argv: string[]): CliOptions {
   };
 }
 
+async function runTargetsInChildProcesses(
+  options: CliOptions,
+): Promise<number> {
+  const cpuCount = os.availableParallelism?.() ?? os.cpus()?.length ?? 4;
+  const concurrency = Math.min(
+    options.presetIds.length,
+    Math.max(1, cpuCount - 2),
+  );
+  const forwarded = [
+    '--frames',
+    String(options.sampleFrames),
+    '--warmup',
+    String(options.warmupFrames),
+    '--fps',
+    String(options.fps),
+    '--out',
+    options.outputDir,
+    ...(options.variables ? ['--vars', options.variables.join(',')] : []),
+    ...(options.writeBaseline ? ['--baseline'] : []),
+    ...(options.compare ? ['--compare'] : []),
+    ...(options.json ? ['--json'] : []),
+  ];
+
+  const queue = [...options.presetIds];
+  let worstExitCode = 0;
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      for (;;) {
+        const presetId = queue.shift();
+        if (!presetId) return;
+        const proc = Bun.spawn({
+          cmd: [
+            process.execPath,
+            fileURLToPath(import.meta.url),
+            '--preset',
+            presetId,
+            ...forwarded,
+          ],
+          stdin: 'ignore',
+          stdout: 'pipe',
+          stderr: 'pipe',
+        });
+        const [exitCode, stdout, stderr] = await Promise.all([
+          proc.exited,
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+        ]);
+        if (stdout.trim()) console.log(stdout.trim());
+        if (stderr.trim()) console.error(stderr.trim());
+        if (exitCode !== 0) worstExitCode = worstExitCode || exitCode;
+      }
+    }),
+  );
+  return worstExitCode;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const repoRoot = repoRootFromScript();
@@ -702,6 +759,15 @@ async function main() {
         '  [--out scratch/preset-lab] [--baseline] [--compare] [--json]',
     );
     process.exit(2);
+  }
+
+  // Measuring one preset is ~15s of synchronous, single-threaded VM
+  // execution, so a multi-preset batch fans out to one child process per
+  // preset instead of serializing on one core. Each preset owns its output
+  // directory, so parallel writes don't collide. Output is buffered per
+  // child and printed whole, in completion order.
+  if (targets.length > 1) {
+    process.exit(await runTargetsInChildProcesses(options));
   }
 
   for (const target of targets) {
