@@ -2471,6 +2471,52 @@ body[data-page="workspace"][data-live="true"] {
   filter: brightness(1.1);
 }
 
+/* ===== AI-assisted edit diff preview ===== */
+.editor-assisted-diff {
+  border: 1px solid var(--stims-border);
+  border-radius: var(--stims-radius);
+  background: var(--stims-surface);
+  padding: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-assisted-diff__head {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+}
+
+.editor-assisted-diff__lines {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.editor-assisted-diff__line--add {
+  color: var(--stims-good);
+}
+
+.editor-assisted-diff__line--del {
+  color: var(--stims-danger);
+  text-decoration: line-through;
+}
+
+.editor-assisted-diff__line--gap {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.editor-assisted-diff__actions {
+  display: flex;
+  gap: 6px;
+}
+
 /* ===== Ghost loading ===== */
 .preset-artwork-ghost {
   position: relative;
