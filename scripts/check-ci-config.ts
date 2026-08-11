@@ -77,7 +77,7 @@ const MARKER_FILES = [
   'scripts/postinstall.mjs',
   'vite.config.js',
   'biome.json',
-  'wrangler.toml',
+  'wrangler.site.jsonc',
   'wrangler.cron.jsonc',
   'wrangler.mcp.jsonc',
   'package.json',
