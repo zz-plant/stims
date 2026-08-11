@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "stims",
+  // "stims" is the site Worker (wrangler.site.jsonc); this one must not
+  // share the name or deploying it would overwrite the site.
+  "name": "stims-mcp",
   "main": "scripts/mcp-worker.ts",
   "compatibility_date": "2024-10-20",
   "compatibility_flags": ["nodejs_compat"],

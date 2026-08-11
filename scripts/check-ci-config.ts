@@ -134,6 +134,7 @@ if (ciWorkflow) {
     fast: ['unit', 'compat'],
     unit: ['unit'],
     compat: ['compat', 'corpus'],
+    corpus: ['corpus'],
     e2e: ['e2e'],
   };
 

@@ -12,9 +12,9 @@ import {
 } from './webgl-launch.ts';
 
 /**
- * Not every workflow installs Playwright browsers — upgrade-guardrails runs
- * `bun run test` without them, where chromium.launch() fails in milliseconds
- * and reads as a product regression. Skip instead, matching agent-integration.
+ * Not every environment installs Playwright browsers — a bare `bun run test`
+ * without them makes chromium.launch() fail in milliseconds and read as a
+ * product regression. Skip instead, matching agent-integration.
  */
 const hasChromium = fs.existsSync(chromium.executablePath());
 const browserTest = hasChromium ? test : test.skip;
