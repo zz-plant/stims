@@ -148,6 +148,9 @@ export function createMilkdropEngineAdapter() {
   };
 
   const disposeRuntime = () => {
+    if (typeof window !== 'undefined') {
+      delete window.__STIMS_AGENT_RENDER_FRAMES__;
+    }
     unsubscribeExperience?.();
     unsubscribeExperience = null;
     runtime?.dispose();
@@ -240,6 +243,11 @@ export function createMilkdropEngineAdapter() {
 
       runtime = startRuntime({ container: nextContainer });
       setCurrentToy('milkdrop');
+
+      if (intent.agentMode && typeof window !== 'undefined') {
+        window.__STIMS_AGENT_RENDER_FRAMES__ = (options) =>
+          runtime?.renderFrames?.(options) ?? null;
+      }
 
       if (intent.collectionTag) {
         experience.setActiveCollectionTag(intent.collectionTag);
