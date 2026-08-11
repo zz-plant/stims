@@ -99,7 +99,7 @@ Each profile maps to a set of `tests/` subdirectories (`unit`, `compat`, `corpus
 | Event | Jobs that run |
 |---|---|
 | Pull request | `quality` (lint + typecheck + `test:fast`) + `integration` (Playwright) |
-| Push to `main` | `quality` + `integration` + `deploy_production` |
+| Push to `main` | `quality` + `integration` (deploys run on Cloudflare Workers Builds, not Actions) |
 | Merge group | `quality` + `integration` |
 
 Integration tests run on **every PR** — not just on push to main. This is intentional: the integration harness catches shell bootstrap, audio lifecycle, and engine seam regressions that no unit test covers.

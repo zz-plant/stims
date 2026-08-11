@@ -35,6 +35,7 @@ const PROFILES: Record<string, Category[]> = {
   fast: ['unit', 'compat'],
   unit: ['unit'],
   compat: ['compat', 'corpus'],
+  corpus: ['corpus'],
   e2e: ['e2e'],
 };
 

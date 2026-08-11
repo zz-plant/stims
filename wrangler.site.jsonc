@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // The site Worker — replaces the Cloudflare Pages project of the same name.
+  // Built and deployed by Cloudflare Workers Builds on push (see
+  // docs/DEPLOYMENT.md). `main` is the Pages Functions bundle compiled by
+  // `bun run site:build`; static assets come from the same dist/ directory.
+  "name": "stims",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2026-02-24",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Mirrors public/_routes.json: the OG-rewrite middleware must see HTML
+    // navigations first; pure static asset paths skip the Worker invocation.
+    "run_worker_first": [
+      "/*",
+      "!/assets/*",
+      "!/vendor/*",
+      "!/icons/*",
+      "!/screenshots/*",
+      "!/og/*",
+      "!/textures/*",
+      "!/milkdrop-presets/*",
+      "!/robots.txt",
+      "!/sitemap*.xml",
+      "!/manifest.json",
+      "!/favicon.ico",
+      "!/llms.txt",
+      "!/llms-full.txt",
+      "!/openapi.json",
+      "!/toys.json"
+    ]
+  },
+  "placement": { "mode": "smart" },
+  "ai": { "binding": "AI" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "stims-gallery",
+      "database_id": "89718825-6d36-4578-b97e-9eba1d60d75d"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "GALLERY_R2",
+      "bucket_name": "stims-gallery"
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": { "enabled": true }
+}
