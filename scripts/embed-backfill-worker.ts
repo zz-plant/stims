@@ -1,6 +1,7 @@
 // Cron-triggered Worker: backfills preset embeddings into D1 + Vectorize.
-// Replaces the manual `scripts/embed-preset-catalog.ts` run.
 // Deploy: wrangler deploy --config wrangler.cron.jsonc
+
+import { toVectorizeId } from '../src/js/milkdrop/vectorize-id.ts';
 
 interface D1Database {
   prepare(sql: string): D1PreparedStatement;
@@ -10,8 +11,15 @@ interface D1PreparedStatement {
   all<T = unknown>(): Promise<{ results: T[] }>;
   run(): Promise<void>;
 }
+
 interface VectorizeIndex {
-  upsert(vectors: Array<{ id: string; values: number[] }>): Promise<void>;
+  upsert(
+    vectors: Array<{
+      id: string;
+      values: number[];
+      metadata?: Record<string, string>;
+    }>,
+  ): Promise<void>;
   query(
     vector: number[],
     options?: { topK?: number },
@@ -121,7 +129,13 @@ async function storeEmbedding(
     .run();
 
   if (env.VECTOR_INDEX) {
-    await env.VECTOR_INDEX.upsert([{ id: presetId, values: embedding }]);
+    await env.VECTOR_INDEX.upsert([
+      {
+        id: toVectorizeId(presetId),
+        values: embedding,
+        metadata: { presetId },
+      },
+    ]);
   }
 }
 
@@ -145,8 +159,9 @@ async function syncVectorize(
   let synced = 0;
   for (let i = 0; i < results.length; i += VECTORIZE_UPSERT_CHUNK) {
     const chunk = results.slice(i, i + VECTORIZE_UPSERT_CHUNK).map((row) => ({
-      id: row.preset_id,
+      id: toVectorizeId(row.preset_id),
       values: JSON.parse(row.embedding) as number[],
+      metadata: { presetId: row.preset_id },
     }));
     await env.VECTOR_INDEX.upsert(chunk);
     synced += chunk.length;
