@@ -551,11 +551,6 @@ class MilkdropPresetVM implements MilkdropVM {
   ): Promise<MilkdropFrameState> {
     resetFrameTransformCache(this.geometryState);
 
-    // Restore q values from post-init snapshot before per-frame runs
-    for (let index = 1; index <= 32; index += 1) {
-      this.registers[`q${index}`] = this.qAfterInit[`q${index}`] ?? 0;
-    }
-
     if (
       this.renderBackend === 'webgpu' &&
       this.webgpuOptimizationFlags.gpuComputeVM &&

@@ -276,6 +276,11 @@ function transformMeshPoint({
 
   runProgram(preset.ir.programs.perPixel, env, local);
 
+  // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
+  // transform math below runs in renderer [-1,1] space, so invert the mapping.
+  const rendererX = (((local.x ?? 0.5) - 0.5) * 2) / resolvedAspectX;
+  const rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / resolvedAspectY);
+
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const centerX = normalizeTransformCenter(local.cx ?? 0.5);
   const centerY = normalizeTransformCenter(local.cy ?? 0.5);
@@ -286,8 +291,8 @@ function transformMeshPoint({
 
   const cosRot = Math.cos(local.rot);
   const sinRot = Math.sin(local.rot);
-  const relX = local.x - centerX;
-  const relY = local.y - centerY;
+  const relX = rendererX - centerX;
+  const relY = rendererY - centerY;
   const rx = relX * cosRot - relY * sinRot + centerX;
   const ry = relX * sinRot + relY * cosRot + centerY;
 

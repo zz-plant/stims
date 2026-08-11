@@ -542,6 +542,8 @@ type EvalHelpers = {
   nextRandom?: () => number;
   megabuf?: (index: number) => number;
   gmegabuf?: (index: number) => number;
+  megabufWrite?: (index: number, value: number) => void;
+  gmegabufWrite?: (index: number, value: number) => void;
 };
 
 export function evaluateMilkdropExpression(
@@ -583,10 +585,10 @@ export function evaluateMilkdropExpression(
           (node.left.name.toLowerCase() === 'megabuf' ||
             node.left.name.toLowerCase() === 'gmegabuf')
         ) {
-          const buffer =
+          const write =
             node.left.name.toLowerCase() === 'megabuf'
-              ? helpers.megabuf
-              : helpers.gmegabuf;
+              ? helpers.megabufWrite
+              : helpers.gmegabufWrite;
           const index = toMilkdropInt(
             evaluateMilkdropExpression(
               node.left.args[0] ?? { type: 'literal', value: 0 },
@@ -594,11 +596,9 @@ export function evaluateMilkdropExpression(
               helpers,
             ),
           );
-          const maxSize =
-            node.left.name.toLowerCase() === 'megabuf' ? 65_536 : 1_048_576;
-          if (index >= 0 && index < maxSize) {
-            buffer[index] = rvalue;
-          }
+          // Bounds checking is owned by the helper provider, matching the
+          // read side where out-of-range access resolves to 0.
+          write?.(index, rvalue);
         }
         return rvalue;
       }
