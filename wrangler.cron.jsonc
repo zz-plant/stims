@@ -21,5 +21,13 @@
     }
   ],
   "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "stims-presets" }],
+  // Static-asset store (preset previews); populated via the authenticated
+  // upload route on this worker, served by the site worker.
+  "r2_buckets": [
+    {
+      "binding": "STATIC_R2",
+      "bucket_name": "stims-static"
+    }
+  ],
   "observability": { "enabled": true }
 }

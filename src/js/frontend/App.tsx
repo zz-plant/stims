@@ -43,6 +43,7 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -690,6 +691,8 @@ function StimsWorkspaceAppShell() {
       ) : null}
 
       {ui.routeState.panel ? null : <ContextualHelp hint={visibleHint} />}
+
+      <SyncSessionBridge />
 
       <AudioMatchToast
         match={audioMatch}

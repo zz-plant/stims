@@ -18,6 +18,7 @@ import {
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
+import { SyncSessionSection } from './SyncSessionSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   getQualityImpactSummary,
@@ -511,6 +512,8 @@ export function SettingsSheetPanel({
         onOpenShortcuts={onOpenShortcuts}
         onOpenCredits={onOpenCredits}
       />
+
+      <SyncSessionSection />
 
       <PerformanceSection />
 

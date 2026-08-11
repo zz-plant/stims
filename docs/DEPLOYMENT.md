@@ -125,6 +125,16 @@ Any static host should point its document root to the `dist/` directory and pres
 If your platform supports immutable caching, enable it for `dist/assets/**`; keep HTML un-cached or lightly cached so updates propagate.
 Cloudflare Workers static assets read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
 
+### Preset previews live in R2, not the bundle
+
+`/milkdrop-presets/previews/*` is served by the site Worker from the `stims-static` R2 bucket (`functions/milkdrop-presets/previews/[[path]].ts`). The PNG files are generated artifacts: they are gitignored, excluded from the deploy bundle via `.assetsignore`, and published with:
+
+```bash
+BACKFILL_TOKEN=<token> bun run previews:sync
+```
+
+Run that after `scripts/generate-thumbnails.ts` regenerates previews; pass specific filenames to sync only what changed. The token is the `stims-embed-backfill` Worker secret. A non-Cloudflare static host would need the previews directory copied into its document root instead.
+
 ## Legacy Cloudflare Pages path (removed)
 
 The site previously deployed as a Cloudflare Pages project with its own Wrangler TOML config, deploy helper script, and `pages:*` package scripts. That path was removed after the `toil.fyi` custom domain moved to the `stims` Worker; the manual fallback is now `bun run site:deploy` (see the Track A quick path above).
