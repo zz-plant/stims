@@ -74,6 +74,13 @@ export function NewHomePage() {
           isEngineReady={engine.engineReady}
           onBrowsePresets={handleBrowsePresets}
         />
+        {resume ? null : (
+          <p className="stims-shell__launch-explainer">
+            Every scene is a preset — a small visual program from the MilkDrop
+            community. Switch presets while the music plays, or generate your
+            own.
+          </p>
+        )}
         <AudioSources />
       </div>
     </section>
@@ -107,7 +114,9 @@ function Header({ resume }: { resume: ResumeState }) {
       <h1 id="stims-launch-title" className="stims-shell__launch-title">
         Stims
       </h1>
-      <p className="stims-shell__launch-tagline">Audio-reactive visualizer</p>
+      <p className="stims-shell__launch-tagline">
+        Full-screen visuals that move to whatever you&rsquo;re listening to.
+      </p>
     </>
   );
 }

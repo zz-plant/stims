@@ -107,7 +107,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
-    expect(toastHookSource).toContain("'Using lighter visual mode.'");
+    expect(toastHookSource).toContain(
+      "'Using a lighter graphics mode so playback stays smooth.'",
+    );
     expect(appSource).toContain("? 'Now playing'");
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');

@@ -295,7 +295,7 @@ export function BrowseSheetPanel({
             <option value="author">Author</option>
             <option value="recent">Recently opened</option>
             <option value="favorites-first">Saved first</option>
-            <option value="webgpu-supported">WebGPU first</option>
+            <option value="webgpu-supported">High fidelity first</option>
             <option value="random">Random</option>
           </select>
         </div>

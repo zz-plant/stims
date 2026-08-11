@@ -19,18 +19,19 @@ const HINTS: HelpHintDef[] = [
     id: 'first-play',
     message: () =>
       isMobileDevice()
-        ? 'Swipe for presets, long-press to favorite, double-tap to fill screen'
-        : 'ArrowRight to switch presets, E to edit shaders',
+        ? 'Swipe to change the visuals — double-tap to fill the screen'
+        : 'Press → for a different visual. Move the mouse for controls.',
     autoHideMs: 6000,
   },
   {
     id: 'browse-open',
-    message: 'Tap a card to play',
+    message: 'Tap a card to play it',
     autoHideMs: 5000,
   },
   {
     id: 'editor-open',
-    message: 'Edit .milk code directly — changes apply in real time',
+    message:
+      'This is the preset’s source code. Edits show up in the visuals live.',
     autoHideMs: 6000,
   },
 ];

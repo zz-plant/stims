@@ -16,6 +16,8 @@ type MenuItem = {
   action: () => void;
   active?: boolean;
   separatorBefore?: boolean;
+  // Short group header rendered above the item (implies a separator).
+  sectionLabel?: string;
 };
 
 export function StageControls({
@@ -165,26 +167,27 @@ export function StageControls({
         ]
       : []),
     {
-      icon: 'pencil' as const,
-      label: 'Edit preset',
+      icon: 'sparkles' as const,
+      label: 'Generate with AI',
       action: () =>
-        run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
-      active: panel === 'editor',
+        run(() => ui.updatePanel(panel === 'synthesize' ? null : 'synthesize')),
+      active: panel === 'synthesize',
       separatorBefore: true,
+      sectionLabel: 'Make your own',
     },
     {
       icon: 'wand' as const,
-      label: 'Refine',
+      label: 'Refine with AI',
       action: () =>
         run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
       active: panel === 'refine',
     },
     {
-      icon: 'sparkles' as const,
-      label: 'Generate',
+      icon: 'pencil' as const,
+      label: 'Edit preset code',
       action: () =>
-        run(() => ui.updatePanel(panel === 'synthesize' ? null : 'synthesize')),
-      active: panel === 'synthesize',
+        run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
+      active: panel === 'editor',
     },
     {
       icon: 'video' as const,
@@ -303,6 +306,11 @@ export function StageControls({
           {menuItems.map((item) => (
             <div key={item.label}>
               {item.separatorBefore ? <div className={styles.menuSep} /> : null}
+              {item.sectionLabel ? (
+                <div className={styles.menuLabel} aria-hidden="true">
+                  {item.sectionLabel}
+                </div>
+              ) : null}
               <button
                 type="button"
                 {...(item.active === undefined
