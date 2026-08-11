@@ -93,6 +93,7 @@ Roadmap priorities, QA verification suites, and historical context.
 | Document | Description |
 | --- | --- |
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
+| 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
 | 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |
 | 📜 [**Lineage & Credits**](./LINEAGE_AND_CREDITS.md) | Project history, homage to Ryan Geiss's MilkDrop, Butterchurn, and projectM |
