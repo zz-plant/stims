@@ -33,6 +33,12 @@ function logInfo(msg: string) {
 }
 
 export function checkCatalogIntegrity(): boolean {
+  const previewsAvailable = fs.existsSync(PREVIEWS_DIR);
+  if (!previewsAvailable) {
+    logInfo(
+      'Previews directory absent (generated artifacts live in R2); skipping preview-file validation.',
+    );
+  }
   const catalogFile = Bun.file(CATALOG_PATH);
   if (catalogFile.size === 0) {
     logError(`Catalog file not found at: ${CATALOG_PATH}`);
@@ -124,8 +130,14 @@ export function checkCatalogIntegrity(): boolean {
       errorsCount += 1;
     }
 
-    // Verify preview file exists (only for core/bundled presets, not butterchurn ones)
-    if (preset.preview === true && !preset.file.includes('/butterchurn/')) {
+    // Verify preview file exists (only for core/bundled presets, not
+    // butterchurn ones). Previews live in R2, not git, so a checkout without
+    // the generated directory (CI, fresh clone) skips this validation.
+    if (
+      previewsAvailable &&
+      preset.preview === true &&
+      !preset.file.includes('/butterchurn/')
+    ) {
       const previewFile = path.join(PREVIEWS_DIR, `${preset.id}.png`);
       if (Bun.file(previewFile).size === 0) {
         logError(

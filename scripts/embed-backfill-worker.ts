@@ -26,6 +26,14 @@ interface VectorizeIndex {
   ): Promise<{ matches: Array<{ id: string; score: number }> }>;
 }
 
+interface R2Bucket {
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | null,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<unknown>;
+}
+
 interface Env {
   AI: {
     run: (
@@ -35,6 +43,7 @@ interface Env {
   };
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
+  STATIC_R2?: R2Bucket;
   ASSET_URL?: string;
   BACKFILL_TOKEN?: string;
 }
@@ -237,13 +246,40 @@ export default {
   // public workers.dev URL can't be used to burn AI neurons; the cron path
   // above does the routine work.
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method !== 'POST') {
+    if (request.method !== 'POST' && request.method !== 'PUT') {
       return new Response('Method not allowed', { status: 405 });
     }
 
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     if (!env.BACKFILL_TOKEN || token !== env.BACKFILL_TOKEN) {
       return new Response('Unauthorized', { status: 401 });
+    }
+
+    // PUT /static/<key> — streams the body into the static-assets bucket.
+    // Used by scripts/sync-previews-r2.ts to publish preset previews.
+    if (request.method === 'PUT') {
+      const url = new URL(request.url);
+      if (!url.pathname.startsWith('/static/')) {
+        return new Response('Not found', { status: 404 });
+      }
+      if (!env.STATIC_R2) {
+        return new Response('STATIC_R2 binding is not configured', {
+          status: 500,
+        });
+      }
+      const key = decodeURIComponent(url.pathname.slice('/static/'.length));
+      if (!key || key.includes('..')) {
+        return new Response('Invalid key', { status: 400 });
+      }
+      await env.STATIC_R2.put(key, request.body, {
+        httpMetadata: {
+          contentType:
+            request.headers.get('content-type') || 'application/octet-stream',
+        },
+      });
+      return new Response(JSON.stringify({ ok: true, key }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     try {

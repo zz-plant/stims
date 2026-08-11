@@ -20,7 +20,12 @@
       "!/screenshots/*",
       "!/og/*",
       "!/textures/*",
-      "!/milkdrop-presets/*",
+      // Previews are served from R2 by the Worker; the rest of the preset
+      // corpus (.milk sources, catalogs, engine libraries) stays on assets.
+      "!/milkdrop-presets/*.milk",
+      "!/milkdrop-presets/*.json",
+      "!/milkdrop-presets/butterchurn/*",
+      "!/milkdrop-presets/libraries/*",
       "!/robots.txt",
       "!/sitemap*.xml",
       "!/manifest.json",
@@ -63,6 +68,10 @@
     {
       "binding": "GALLERY_R2",
       "bucket_name": "stims-gallery"
+    },
+    {
+      "binding": "STATIC_R2",
+      "bucket_name": "stims-static"
     }
   ],
   "workers_dev": true,
