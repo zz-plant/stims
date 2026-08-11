@@ -91,6 +91,13 @@ export type ToyRuntimeInstance = ToyInstance & {
   renderFrames?: (options?: {
     frames?: number;
     deltaMs?: number;
+    /**
+     * Overlay a deterministic 2Hz beat envelope on the synthetic signal.
+     * The idle preview signal is smooth sines with no transients, so
+     * beat-gated visuals never fire under it; captures that want them
+     * lit opt into pulsed energy.
+     */
+    beatPulse?: boolean;
   }) => { rendered: number } | null;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
@@ -503,6 +510,7 @@ export function createToyRuntime({
       }
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;
+      const beatPulse = options?.beatPulse ?? false;
       stopPreviewLoop();
       let rendered = 0;
       for (let i = 0; i < frames; i += 1) {
@@ -511,6 +519,20 @@ export function createToyRuntime({
         frameState.realTimeMs += deltaMs;
         frameState.analyser = null;
         updatePreviewFrequencyData(frameState.time);
+        if (beatPulse) {
+          // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a
+          // kick drum is — enough contrast for onset detectors to fire.
+          const phase = Math.sin(Math.PI * 2 * frameState.time * 2);
+          const spike = Math.max(0, phase) ** 8;
+          for (let bin = 0; bin < previewFrequencyData.length; bin += 1) {
+            const bassWeight = 1 - (bin / previewFrequencyData.length) * 0.6;
+            const gain = 0.35 + 1.4 * spike * bassWeight;
+            previewFrequencyData[bin] = Math.min(
+              255,
+              Math.round(previewFrequencyData[bin] * gain),
+            );
+          }
+        }
         frameState.frequencyData = previewFrequencyData;
         frameState.waveformData = previewWaveformData;
         frameState.input = inputController.getState();

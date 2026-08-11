@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { runPresetPromoteTransition } from './promote-transition.ts';
 
 export type { PresetArtwork as PresetArtworkType } from './PresetArtwork.tsx';
 
@@ -136,6 +137,9 @@ export function PresetShelfSection({
                 event.preventDefault();
                 return;
               }
+              runPresetPromoteTransition({
+                sourceElement: event.currentTarget,
+              });
               onSelect(entry.id);
             }}
           >

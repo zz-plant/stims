@@ -355,6 +355,8 @@
 }
 
 .pill {
+  /* Anchors the blend sweep hairline. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0;
@@ -445,6 +447,79 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 1;
+}
+
+/* ── Preset transition feedback ──────────────────────────────────────
+   A switch takes seconds (fetch+compile, then a crossfade) while the
+   title flips instantly — these states name that gap so it doesn't read
+   as "the title changed but nothing happened". Cool accent throughout:
+   this is playback state, and warm stays reserved for focus. */
+
+/* Replaces the author line while a phase is active, so the pill's width
+   and baseline don't jump. Text carries the meaning; the pulse is only
+   reinforcement and is disabled under reduced motion. */
+.statusText {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--stims-cool, #77c9ff);
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: transition-pulse 1.2s ease-in-out infinite;
+}
+
+/* The incoming title recedes until the canvas actually shows it. */
+.pill[data-transition="loading"] .titleText {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+/* Hairline tracking the crossfade window: full sweep = blend complete.
+   Runs once per blend (element is keyed per transition). */
+.blendSweep {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--stims-cool, #77c9ff);
+  opacity: 0.8;
+  transform-origin: 0 50%;
+  animation: blend-sweep var(--blend-ms, 2500ms) linear both;
+  pointer-events: none;
+}
+
+@keyframes transition-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes blend-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusText {
+    animation: none;
+  }
+
+  /* Without the sweep animation the hairline reads as a steady underline
+     for the blend window — state still visible, nothing moves. */
+  .blendSweep {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.5;
+  }
 }
 
 .menuBtn {

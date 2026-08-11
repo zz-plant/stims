@@ -25,6 +25,7 @@ flowchart LR
   Arch --> A2["MILKDROP_PRESET_RUNTIME.md<br/>compiler + VM lifecycle"]
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
 
+  Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
   Preset --> P2["parity plan + backlog"]
 
@@ -69,7 +70,10 @@ Guides for writing MilkDrop equations, shader math, and projectM compatibility s
 
 | Document | Description |
 | --- | --- |
+| 🎓 [**Preset Authoring Curriculum**](./authoring/README.md) | Learn-by-doing course with live runnable examples — start here if you're new to writing presets |
+| 📖 [**Language Reference**](./authoring/reference.md) | Generated from the compiler's builtin table: every function, signal, state variable, and register |
 | ✒️ [**MilkDrop Coding Guide**](./MILKDROP_CODING_GUIDE.md) | Authoring visualizer presets, MilkDrop math functions, per-frame/per-pixel equations, and top 1% patterns |
+| 🗺️ [**Authoring Docs Master Plan**](./PRESET_AUTHORING_DOCS_PLAN.md) | Landscape assessment and the roadmap for the full curriculum, cookbook, and compatibility matrix |
 | 🎯 [**ProjectM Parity Plan**](./MILKDROP_PROJECTM_PARITY_PLAN.md) | Parity milestone objectives, feature coverage targets, and test suites |
 | 📋 [**ProjectM Parity Backlog**](./MILKDROP_PROJECTM_PARITY_BACKLOG.md) | Detailed feature audit and parity item checklist against original Winamp MilkDrop / projectM |
 

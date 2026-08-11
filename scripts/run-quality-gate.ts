@@ -101,6 +101,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:doc-references'],
       },
       {
+        label: 'Authoring examples and reference',
+        cmd: ['bun', 'run', 'check:authoring-docs'],
+      },
+      {
         label: 'Duplicate CSS check',
         cmd: ['bun', 'run', 'check:duplicate-css'],
       },

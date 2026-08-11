@@ -1,5 +1,6 @@
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
 import { describePresetMood } from './workspace-helpers.ts';
 
 type PresetArtworkTone =
@@ -42,6 +43,7 @@ export function PresetArtwork({
   preview?: MilkdropPresetRenderPreview | null;
 }) {
   const mood = describePresetMood(entry);
+  const liveTile = useLivePresetTile(entry);
   const staticThumbUrl = entry.preview
     ? `/milkdrop-presets/previews/${entry.id}.png`
     : null;
@@ -82,6 +84,18 @@ export function PresetArtwork({
         </div>
       ) : preview?.status === 'failed' ? (
         <span className="stims-shell__preset-art-fallback">{mood}</span>
+      ) : null}
+      {liveTile.enabled ? (
+        <div
+          ref={liveTile.hostRef}
+          data-live-tile={entry.id}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            borderRadius: 'inherit',
+          }}
+        />
       ) : null}
     </div>
   );

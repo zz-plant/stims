@@ -1,0 +1,114 @@
+// React seam for the live tile pool: catalog tiles render the actual preset,
+// animated, when the `?liveTiles` prototype flag is set (same flag style as
+// `?strudel`, see workspace-ui.tsx). Falls back to static artwork otherwise.
+//
+// The pool module pulls in the full imperative engine (compiler, renderer
+// adapter, VM), so it is imported dynamically on first use — a static import
+// here would drag the engine into the initial React graph and stall first
+// paint.
+
+import { useEffect, useRef } from 'react';
+import type {
+  MilkdropLiveTileHandle,
+  MilkdropLiveTilePool,
+} from '../../milkdrop/live-tile-pool.ts';
+import type { PresetCatalogEntry } from '../contracts.ts';
+import { getAudioEnergy } from '../engine-audio-energy-store.ts';
+
+export const livePresetTilesEnabled =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('liveTiles');
+
+// Agent-mode QA runs in panes where document.hidden stays true and rAF never
+// fires (see the browser-pane telemetry-bridge notes); a timer scheduler
+// keeps tiles stepping there. Production keeps rAF so background tabs pause.
+const agentModeScheduler =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('agent') === 'true';
+
+const presetFileById = new Map<string, string>();
+let poolPromise: Promise<MilkdropLiveTilePool> | null = null;
+
+function ensurePool(): Promise<MilkdropLiveTilePool> {
+  poolPromise ??= import('../../milkdrop/live-tile-pool.ts').then(
+    ({ createMilkdropLiveTilePool }) =>
+      createMilkdropLiveTilePool({
+        loadPresetRaw: async (presetId) => {
+          const file = presetFileById.get(presetId);
+          if (!file) {
+            return null;
+          }
+          const response = await fetch(file);
+          return response.ok ? response.text() : null;
+        },
+        // The engine snapshot's audio energy scalar shapes the synthetic
+        // pulse so tiles follow the room even before raw analyser data is
+        // exposed to this side of the engine seam.
+        energyProvider: () => 0.35 + getAudioEnergy() * 0.9,
+        ...(agentModeScheduler
+          ? {
+              scheduleFrame: (cb: () => void) =>
+                window.setTimeout(cb, 33) as unknown as number,
+              cancelFrame: (handle: number) => window.clearTimeout(handle),
+            }
+          : {}),
+      }),
+  );
+  if (agentModeScheduler) {
+    // Agent-mode QA introspection (same spirit as the agent debug snapshot).
+    void poolPromise.then((pool) => {
+      (
+        window as unknown as { __stimsLiveTilePool?: MilkdropLiveTilePool }
+      ).__stimsLiveTilePool = pool;
+    });
+  }
+  return poolPromise;
+}
+
+export function canRenderLiveTile(entry: PresetCatalogEntry): boolean {
+  return livePresetTilesEnabled && typeof entry.file === 'string';
+}
+
+/**
+ * Mounts a live tile canvas for the preset into the returned host element.
+ * The canvas is owned by the pool (it survives unmounts for LRU revival), so
+ * the hook only ever appends/removes it, never destroys it.
+ */
+export function useLivePresetTile(entry: PresetCatalogEntry) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const enabled = canRenderLiveTile(entry);
+
+  useEffect(() => {
+    if (!enabled || !entry.file) {
+      return;
+    }
+    presetFileById.set(entry.id, entry.file);
+    let cancelled = false;
+    let handle: MilkdropLiveTileHandle | null = null;
+    let canvas: HTMLCanvasElement | null = null;
+    const host = hostRef.current;
+    void ensurePool().then((pool) => {
+      if (cancelled) {
+        return;
+      }
+      handle = pool.acquire(entry.id);
+      canvas = handle.canvas;
+      if (host && canvas.parentElement !== host) {
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.objectFit = 'cover';
+        canvas.style.display = 'block';
+        host.append(canvas);
+      }
+    });
+    return () => {
+      cancelled = true;
+      handle?.release();
+      if (canvas && canvas.parentElement === host) {
+        canvas.remove();
+      }
+    };
+  }, [enabled, entry.id, entry.file]);
+
+  return { enabled, hostRef };
+}

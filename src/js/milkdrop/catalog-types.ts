@@ -20,6 +20,7 @@ export type MilkdropBundledCatalogEntry = {
   authorUrl?: string;
   file: string;
   tags?: string[];
+  searchTerms?: string[];
   curatedRank?: number;
   corpusTier?: 'bundled' | 'certified' | 'exploratory';
   certification?: 'bundled' | 'certified' | 'exploratory';

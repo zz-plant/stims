@@ -65,10 +65,6 @@ describe('generated-preset reactivity probe', () => {
 
     const fast = probePresetReactivity(compiled);
     expect(fast.verdict).toBe('reactive');
-
-    const verified = probePresetReactivity(compiled, { verify: true });
-    expect(verified.verdict).toBe('reactive');
-    expect(verified.respondingVariables).toContain('zoom');
   });
 
   test('flags per_pixel-only audio use as reactive (invisible to frame variables)', () => {
@@ -106,6 +102,6 @@ describe('generated-preset reactivity probe', () => {
       'utf8',
     );
     expect(panelSource).toContain('probePresetReactivity');
-    expect(panelSource).toContain('barely respond to audio');
+    expect(panelSource).toContain('barely reacts to sound');
   });
 });

@@ -214,11 +214,44 @@ function emitShapeDefinition(lines: string[], shape: MilkdropShapeDefinition) {
   );
 }
 
+const FALLBACK_TITLE = 'MilkDrop Session';
+
+function resolveFormattedTitle(compiled: MilkdropCompiledPreset) {
+  const { ir } = compiled;
+  if (ir.title && ir.title !== FALLBACK_TITLE) {
+    return ir.title;
+  }
+  // Presets without a `title=` field (most bundled .milk files) compile with
+  // the generic fallback title; prefer the catalog/import title carried on
+  // the preset source so round-tripping does not degrade it.
+  return (
+    compiled.source?.title?.trim() ||
+    compiled.title?.trim() ||
+    ir.title ||
+    FALLBACK_TITLE
+  );
+}
+
+function emitShaderSection(
+  lines: string[],
+  section: 'warp_shader' | 'comp_shader',
+  shaderText: string | null,
+) {
+  if (!shaderText?.trim()) {
+    return;
+  }
+  lines.push('');
+  lines.push(`[${section}]`);
+  shaderText.split(/\r?\n/u).forEach((shaderLine) => {
+    lines.push(shaderLine);
+  });
+}
+
 export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
   const lines: string[] = [];
   const { ir } = compiled;
 
-  lines.push(`title=${serializeString(ir.title)}`);
+  lines.push(`title=${serializeString(resolveFormattedTitle(compiled))}`);
   if (ir.author) {
     lines.push(`author=${serializeString(ir.author)}`);
   }
@@ -277,10 +310,41 @@ export function formatMilkdropPreset(compiled: MilkdropCompiledPreset) {
     });
   }
 
+  // Shader sections must come last: the parser treats every line after a
+  // [warp_shader]/[comp_shader] header as shader text until the next header.
+  emitShaderSection(lines, 'warp_shader', ir.shaderText.warp);
+  emitShaderSection(lines, 'comp_shader', ir.shaderText.comp);
+
   return `${lines
     .join('\n')
     .replace(/\n{3,}/gu, '\n\n')
     .trim()}\n`;
+}
+
+const shaderSectionHeaderPattern = /^\[\s*(?:warp_shader|comp_shader)\s*\]$/iu;
+
+/**
+ * Inserts new `key=value` lines before the first shader section header (if
+ * any) so they stay in the scalar portion of the preset. Appending at the
+ * end would place them inside [warp_shader]/[comp_shader], where the parser
+ * would swallow them as shader text.
+ */
+function insertFieldLines(lines: string[], fieldLines: string[]) {
+  if (fieldLines.length === 0) {
+    return lines;
+  }
+  const shaderStart = lines.findIndex((line) =>
+    shaderSectionHeaderPattern.test(line.trim()),
+  );
+  if (shaderStart < 0) {
+    return [...lines, ...fieldLines];
+  }
+  return [
+    ...lines.slice(0, shaderStart),
+    ...fieldLines,
+    '',
+    ...lines.slice(shaderStart),
+  ];
 }
 
 export function upsertMilkdropField(
@@ -294,20 +358,24 @@ export function upsertMilkdropField(
     typeof value === 'number' ? formatNumber(value) : serializeString(value);
   const targetPrefix = `${normalizedKey}=`;
   let found = false;
+  let inShaderSection = false;
 
   const nextLines = lines.map((line) => {
-    if (line.trim().startsWith(targetPrefix)) {
+    if (shaderSectionHeaderPattern.test(line.trim())) {
+      inShaderSection = true;
+    }
+    if (!inShaderSection && line.trim().startsWith(targetPrefix)) {
       found = true;
       return `${normalizedKey}=${serializedValue}`;
     }
     return line;
   });
 
-  if (!found) {
-    nextLines.push(`${normalizedKey}=${serializedValue}`);
-  }
+  const finalLines = found
+    ? nextLines
+    : insertFieldLines(nextLines, [`${normalizedKey}=${serializedValue}`]);
 
-  return `${nextLines
+  return `${finalLines
     .join('\n')
     .replace(/\n{3,}/gu, '\n\n')
     .trim()}\n`;
@@ -325,8 +393,15 @@ export function upsertMilkdropFields(
     ]),
   );
 
+  let inShaderSection = false;
   const nextLines = lines.map((line) => {
     const trimmed = line.trim();
+    if (shaderSectionHeaderPattern.test(trimmed)) {
+      inShaderSection = true;
+    }
+    if (inShaderSection) {
+      return line;
+    }
     const separatorIndex = trimmed.indexOf('=');
     if (separatorIndex <= 0) {
       return line;
@@ -342,11 +417,13 @@ export function upsertMilkdropFields(
     return `${key}=${value}`;
   });
 
+  const pendingLines: string[] = [];
   pending.forEach((value, key) => {
-    nextLines.push(`${key}=${value}`);
+    pendingLines.push(`${key}=${value}`);
   });
+  const finalLines = insertFieldLines(nextLines, pendingLines);
 
-  return `${nextLines
+  return `${finalLines
     .join('\n')
     .replace(/\n{3,}/gu, '\n\n')
     .trim()}\n`;

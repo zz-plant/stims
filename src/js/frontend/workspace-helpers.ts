@@ -383,7 +383,13 @@ function getPresetSearchIndex(entry: PresetCatalogEntry) {
   if (cached !== undefined) {
     return cached;
   }
-  const searchIndex = buildPresetSearchIndex(entry);
+  // searchTerms are appended here (the query-matching path) and deliberately
+  // kept out of buildPresetSearchIndex: describePresetMood reads that index,
+  // and semantic terms like "dark" or "fire" would re-bucket preset moods.
+  const semanticTerms = entry.searchTerms?.length
+    ? ` ${normalizeSearchText(entry.searchTerms.join(' '))}`
+    : '';
+  const searchIndex = buildPresetSearchIndex(entry) + semanticTerms;
   presetSearchIndexCache.set(entry, searchIndex);
   return searchIndex;
 }

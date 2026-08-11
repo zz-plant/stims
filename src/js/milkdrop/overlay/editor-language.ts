@@ -1,69 +1,29 @@
 import type { StreamParser } from '@codemirror/language';
 import { StreamLanguage } from '@codemirror/language';
+import {
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+  MILKDROP_REGISTER_WORD_PATTERN,
+  milkdropVariableNames,
+} from '../builtin-docs';
 
-const KEYWORD_WORDS = new Set([
-  'sin',
-  'cos',
-  'tan',
-  'asin',
-  'acos',
-  'atan',
-  'atan2',
-  'abs',
-  'sqrt',
-  'pow',
-  'mod',
-  'fmod',
-  'min',
-  'max',
-  'mix',
-  'lerp',
-  'floor',
-  'int',
-  'ceil',
-  'sqr',
-  'clamp',
-  'step',
-  'smoothstep',
-  'log',
-  'exp',
-  'sigmoid',
-  'sign',
-  'frac',
-  'rand',
-  'if',
-  'above',
-  'below',
-  'equal',
-  'bor',
-  'band',
-  'bnot',
-  'exec2',
-  'exec3',
-]);
+// All four word classes derive from the shared builtin table so the
+// highlighter can never drift from what the compiler accepts. Exported for
+// the derivation test in tests/unit/milkdrop-builtin-docs.test.ts.
+export const KEYWORD_WORDS: ReadonlySet<string> = new Set(
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+);
 
-const ATOM_WORDS = new Set([
-  'bass_att',
-  'bass',
-  'mid_att',
-  'mid',
-  'treb_att',
-  'treb',
-  'treble',
-  'beat_pulse',
-  'beat',
-  'rms',
-  'vol',
-  'time',
-  'frame',
-  'fps',
-  'progress',
-]);
+export const ATOM_WORDS: ReadonlySet<string> = new Set(
+  milkdropVariableNames('signal'),
+);
 
-const BUILTIN_WORDS = new Set(['pi', 'e']);
+export const BUILTIN_WORDS: ReadonlySet<string> = new Set(
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+);
 
-// q1-q8 persistent globals and t1-t32 registers.
-const VARIABLE_WORD = /^(?:q[1-8]|t(?:[1-9]|[12]\d|3[0-2]))$/;
+// q1-q32 persistent globals and t1-t32 registers, matching what the VM seeds.
+const VARIABLE_WORD = MILKDROP_REGISTER_WORD_PATTERN;
 
 const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
   name: 'milkdrop-preset',

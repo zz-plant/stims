@@ -47,17 +47,24 @@ const PREVIEW_H = 270;
 const DEFAULT_LIMIT = 50;
 const DEFAULT_WORKERS = 8;
 const DEFAULT_PORT = 5173;
-// 5 simulated seconds at 60fps — enough for feedback-heavy presets to build
-// structure. Retries pump additional frames on top of accumulated state.
-const WARMUP_FRAMES = 300;
-const RETRY_FRAMES = 360;
-const MAX_RETRIES = 2;
-const BOOT_TIMEOUT_MS = 30000;
-const SWAP_TIMEOUT_MS = 30000;
-const PER_PRESET_TIMEOUT_MS = 60000;
-// Render at output size — toDataURL reads the framebuffer, so there is no
-// compositing quality to buy back with supersampling.
-const CAPTURE_VIEWPORT = { width: PREVIEW_W, height: PREVIEW_H };
+// Simulated-frame budget per capture attempt (60fps sim time). Feedback
+// presets need seconds of accumulation to show structure, but too much
+// accumulation saturates additive presets to solid white — so the page
+// checkpoints every CHECK_EVERY frames and captures the first good frame.
+// Fast-saturating presets blow out to white within a second of sim time,
+// so checkpoints start at 15 frames and sample finely early on.
+const MIN_FRAMES = 15;
+const MAX_FRAMES = 600;
+const MAX_RETRIES = 1;
+// Generous under load: 8 workers can stampede compiles + Vite transforms,
+// especially while every page boots at once.
+const BOOT_TIMEOUT_MS = 45000;
+const SWAP_TIMEOUT_MS = 45000;
+const PER_PRESET_TIMEOUT_MS = 120000;
+// The stage is inset in home-mode layout (~65% of viewport), so the
+// viewport must be larger than the target size for the stage framebuffer
+// to exceed 480px; the readback is downscaled to the output size.
+const CAPTURE_VIEWPORT = { width: 960, height: 540 };
 // Recycle the long-lived page periodically so leaked GL resources from
 // hundreds of preset compiles can't degrade later captures.
 const PAGE_RECYCLE_EVERY = 100;
@@ -82,6 +89,7 @@ function parseArgs() {
     headless?: boolean;
     workers?: number;
     port?: number;
+    beatPulse?: boolean;
     // Headless by default: launched via the 'chromium' channel
     // (--headless=new), captures still render on the real GPU, and the
     // whole window-occlusion problem class disappears. --no-headless
@@ -103,6 +111,9 @@ function parseArgs() {
     if (arg === '--headless' || arg === '--headless=true') args.headless = true;
     if (arg === '--headless=false' || arg === '--no-headless')
       args.headless = false;
+    // Overlay deterministic 2Hz beats on the synthetic audio — lights up
+    // beat-gated presets that stay dark under the smooth idle signal.
+    if (arg === '--beat-pulse') args.beatPulse = true;
   }
   return args;
 }
@@ -148,6 +159,7 @@ type FrameStats = {
   hash: string;
   meanLuma: number;
   maxLuma: number;
+  stdLuma: number;
 };
 
 async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
@@ -156,24 +168,39 @@ async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
     .raw()
     .toBuffer({ resolveWithObject: true });
   let sum = 0;
+  let sumSq = 0;
   let max = 0;
   const pixels = info.width * info.height;
   for (let i = 0; i < data.length; i += info.channels) {
     const luma =
       0.299 * data[i] + 0.587 * (data[i + 1] ?? 0) + 0.114 * (data[i + 2] ?? 0);
     sum += luma;
+    sumSq += luma * luma;
     if (luma > max) max = luma;
   }
+  const mean = sum / pixels;
   return {
     hash: createHash('sha256').update(data).digest('hex'),
-    meanLuma: sum / pixels,
+    meanLuma: mean,
     maxLuma: max,
+    stdLuma: Math.sqrt(Math.max(0, sumSq / pixels - mean * mean)),
   };
 }
 
-/** Near-black noise as well as pure black: both are useless as previews. */
-function isBlackFrame(stats: FrameStats): boolean {
-  return stats.maxLuma < 16 || stats.meanLuma < 2;
+/**
+ * Useless as a preview: pure black, near-black noise, or a flat solid
+ * color (including feedback loops blown out to solid white). Sparse-bright
+ * presets (a few glowing shapes on black) are legitimate, so a low mean is
+ * only fatal when nothing bright exists either.
+ */
+function badFrameReason(stats: FrameStats): string | null {
+  if (stats.maxLuma < 32 || stats.meanLuma < 0.4) {
+    return `black frame (mean=${stats.meanLuma.toFixed(1)}, max=${stats.maxLuma.toFixed(0)})`;
+  }
+  if (stats.stdLuma < 2.5) {
+    return `flat frame (mean=${stats.meanLuma.toFixed(1)}, std=${stats.stdLuma.toFixed(1)})`;
+  }
+  return null;
 }
 
 async function writePreview(buffer: Buffer, filePath: string): Promise<void> {
@@ -203,13 +230,26 @@ class RenderSession {
      * presets must never produce byte-identical captures.
      */
     private seenHashes: Map<string, string>,
+    /** All catalog ids, used to pick a sacrificial boot preset. */
+    private catalogIds: string[],
+    private beatPulse: boolean,
   ) {}
 
-  private async boot(firstPresetId: string) {
+  private async boot(firstTargetId: string) {
     const page = await this.ctx.newPage();
-    await page.goto(`${this.devServer}/?preset=${firstPresetId}&agent=true`, {
-      waitUntil: 'domcontentloaded',
-    });
+    // The engine only mounts when the route carries a preset (or an audio
+    // source), so the boot URL needs ?preset=. But it must NOT be the
+    // preset we're about to capture: the stage mounts on a route *change*,
+    // and load_preset for the id already in the route is a no-op commit.
+    // Boot with any other catalog preset, then swap to the real target.
+    const bootId =
+      this.catalogIds.find((id) => id !== firstTargetId) ?? firstTargetId;
+    // lockQualityStep pins the adaptive-quality controller to the sharpest
+    // step — boot cost otherwise degrades it, shrinking the framebuffer.
+    await page.goto(
+      `${this.devServer}/?preset=${bootId}&agent=true&renderer=webgl&lockQualityStep=0`,
+      { waitUntil: 'domcontentloaded' },
+    );
     // The engine session installs the render hook once the runtime mounts.
     await page.waitForFunction(
       () => typeof window.__STIMS_AGENT_RENDER_FRAMES__ === 'function',
@@ -226,45 +266,159 @@ class RenderSession {
   }
 
   async render(preset: PresetEntry): Promise<void> {
-    const alreadyBooted = Boolean(this.page);
     const page = this.page ?? (await this.boot(preset.id));
 
-    if (alreadyBooted) {
-      await page.evaluate((presetId) => {
-        window.postMessage({ type: 'toil:load_preset', presetId }, '*');
-      }, preset.id);
-      // Telemetry can briefly echo the routed id before the engine actually
-      // swaps, so this wait is necessary but not sufficient — the duplicate
-      // check below is what proves the canvas really changed.
-      await page.waitForFunction(
-        (presetId) =>
-          window.__STIMS_AGENT_TELEMETRY__?.currentPresetId === presetId,
-        preset.id,
-        { timeout: SWAP_TIMEOUT_MS },
-      );
-    }
+    await page.evaluate((presetId) => {
+      window.postMessage({ type: 'toil:load_preset', presetId }, '*');
+    }, preset.id);
+    // Telemetry's currentPresetId falls back to the *route* id before the
+    // engine finishes compiling, so it lies under load. data-active-preset-id
+    // is stamped from the engine snapshot and only flips once the preset is
+    // actually applied. The stage canvas only sizes once the stage mounts
+    // (identicon canvases are 56×56; the stage is viewport-sized).
+    await page.waitForFunction(
+      (presetId) => {
+        const main = document.querySelector('#stims-main');
+        if (main?.getAttribute('data-active-preset-id') !== presetId) {
+          return false;
+        }
+        return [...document.querySelectorAll('canvas')].some(
+          (c) => c.width >= 400,
+        );
+      },
+      preset.id,
+      { timeout: SWAP_TIMEOUT_MS },
+    );
 
-    let frames = WARMUP_FRAMES;
     let failure = 'unknown';
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const capture = await page.evaluate((frameCount) => {
-        const step = window.__STIMS_AGENT_RENDER_FRAMES__;
-        if (typeof step !== 'function') {
-          return { error: 'render hook missing' };
-        }
-        const result = step({ frames: frameCount });
-        if (!result) {
-          return { error: 'render hook returned null (audio active?)' };
-        }
-        const canvas = document.querySelector('canvas');
-        if (!canvas) {
-          return { error: 'no canvas' };
-        }
-        return {
-          dataUrl: canvas.toDataURL('image/png'),
-          rendered: result.rendered,
-        };
-      }, frames);
+      const capture = await page.evaluate(
+        ({ minFrames, maxFrames, beatPulse }) => {
+          const step = window.__STIMS_AGENT_RENDER_FRAMES__;
+          if (typeof step !== 'function') {
+            return { error: 'render hook missing' };
+          }
+          // The stage canvas is the largest one — small canvases are
+          // identicons and HUD widgets.
+          const canvas = [...document.querySelectorAll('canvas')].sort(
+            (a, b) => b.width * b.height - a.width * a.height,
+          )[0];
+          if (!canvas || canvas.width < 400) {
+            return { error: 'stage canvas not available' };
+          }
+          // Read the GL drawing buffer directly instead of toDataURL on the
+          // stage canvas: the composite pass leaves alpha at 0, which
+          // toDataURL encodes as a fully transparent (black) PNG. Same JS
+          // task as the render, so the buffer is still valid.
+          const gl =
+            (canvas.getContext('webgl2') as WebGL2RenderingContext | null) ??
+            (canvas.getContext('webgl') as WebGLRenderingContext | null);
+          if (!gl) {
+            return { error: 'stage canvas has no WebGL context' };
+          }
+          const w = gl.drawingBufferWidth;
+          const h = gl.drawingBufferHeight;
+          const px = new Uint8Array(w * h * 4);
+          const full = document.createElement('canvas');
+          full.width = w;
+          full.height = h;
+          const fullCtx = full.getContext('2d');
+          const small = document.createElement('canvas');
+          small.width = 96;
+          small.height = 54;
+          const smallCtx = small.getContext('2d');
+          if (!fullCtx || !smallCtx) {
+            return { error: '2d context unavailable' };
+          }
+
+          const snapshot = () => {
+            gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+            const image = fullCtx.createImageData(w, h);
+            // GL rows are bottom-up; ImageData is top-down. Opaque alpha —
+            // the renderer's alpha channel is an internal scratch value.
+            for (let y = 0; y < h; y++) {
+              image.data.set(
+                px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4),
+                y * w * 4,
+              );
+            }
+            for (let i = 3; i < image.data.length; i += 4) {
+              image.data[i] = 255;
+            }
+            fullCtx.putImageData(image, 0, 0);
+            smallCtx.drawImage(full, 0, 0, 96, 54);
+            const d = smallCtx.getImageData(0, 0, 96, 54).data;
+            let sum = 0;
+            let sumSq = 0;
+            let max = 0;
+            for (let i = 0; i < d.length; i += 4) {
+              const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+              sum += l;
+              sumSq += l * l;
+              if (l > max) max = l;
+            }
+            const mean = sum / (96 * 54);
+            const std = Math.sqrt(Math.max(0, sumSq / (96 * 54) - mean * mean));
+            return { mean, max, std };
+          };
+
+          // A good preview frame has visible structure and isn't blown out.
+          // Feedback presets go black → structured → saturated white as sim
+          // time accumulates, so capture the first good checkpoint and keep
+          // the best-scoring frame as a fallback. Thresholds mirror the
+          // authoritative badFrameReason() checks on the Node side.
+          const isGood = (s: { mean: number; max: number; std: number }) =>
+            s.max >= 32 && s.mean >= 0.4 && s.mean <= 240 && s.std >= 2.5;
+          const score = (s: { mean: number; max: number; std: number }) =>
+            (s.max >= 32 && s.mean >= 0.4 ? 2 : 0) +
+            (s.mean <= 240 ? 1 : 0) +
+            (s.std >= 2.5 ? 2 : 0) +
+            Math.min(s.std, 50) / 100;
+
+          let rendered = 0;
+          const pump = (n: number) => {
+            const result = step({ frames: n, beatPulse });
+            if (!result) return false;
+            rendered += result.rendered;
+            return true;
+          };
+          if (!pump(minFrames)) {
+            return { error: 'render hook returned null (audio active?)' };
+          }
+          let best: {
+            score: number;
+            dataUrl: string;
+            framesUsed: number;
+          } | null = null;
+          for (;;) {
+            const s = snapshot();
+            const sc = score(s);
+            if (!best || sc > best.score) {
+              best = {
+                score: sc,
+                dataUrl: full.toDataURL('image/png'),
+                framesUsed: rendered,
+              };
+            }
+            if (isGood(s) || rendered >= maxFrames) break;
+            // Sample finely while saturation risk is highest, then coarsen.
+            const stride = rendered < 60 ? 15 : rendered < 120 ? 30 : 60;
+            if (!pump(stride)) {
+              return { error: 'render hook returned null (audio active?)' };
+            }
+          }
+          return {
+            dataUrl: best.dataUrl,
+            rendered,
+            framesUsed: best.framesUsed,
+          };
+        },
+        {
+          minFrames: MIN_FRAMES,
+          maxFrames: MAX_FRAMES,
+          beatPulse: this.beatPulse,
+        },
+      );
 
       if ('error' in capture) {
         throw new Error(capture.error);
@@ -276,8 +430,15 @@ class RenderSession {
       );
       const stats = await analyzeFrame(buffer);
 
-      if (isBlackFrame(stats)) {
-        failure = `black frame (mean=${stats.meanLuma.toFixed(1)}, max=${stats.maxLuma.toFixed(0)})`;
+      const badReason = badFrameReason(stats);
+      if (badReason) {
+        // No retry for black/flat: the page already checkpointed the full
+        // frame budget and kept its best frame — more of the same signal
+        // yields the same verdict, and retries dominate wall-clock on
+        // dark-preset-heavy stretches. Duplicates DO retry (below): they
+        // signal a swap race, which more sim time can resolve.
+        failure = badReason;
+        break;
       } else {
         const collidesWith = this.seenHashes.get(stats.hash);
         if (collidesWith && collidesWith !== preset.id) {
@@ -291,8 +452,6 @@ class RenderSession {
           return;
         }
       }
-
-      frames = RETRY_FRAMES;
     }
 
     this.rendered++;
@@ -309,6 +468,8 @@ async function worker(
   total: number,
   devServer: string,
   seenHashes: Map<string, string>,
+  catalogIds: string[],
+  beatPulse: boolean,
 ) {
   let ctx: BrowserContext | null = null;
   let session: RenderSession | null = null;
@@ -326,9 +487,9 @@ async function worker(
         });
         await ctx.addInitScript(() => {
           localStorage.setItem('stims:quality-preset', 'high');
-          localStorage.setItem('stims:renderer-preference', 'webgl');
           // Instant preset cuts — a blend crossfade would contaminate
-          // captures with the previous preset.
+          // captures with the previous preset. (The WebGL backend itself is
+          // forced via ?renderer=webgl in the boot URL.)
           localStorage.setItem(
             'stims:milkdrop:ui',
             JSON.stringify({ transitionMode: 'cut', autoplay: false }),
@@ -339,7 +500,14 @@ async function worker(
         await session.close();
         session = null;
       }
-      if (!session) session = new RenderSession(ctx, devServer, seenHashes);
+      if (!session)
+        session = new RenderSession(
+          ctx,
+          devServer,
+          seenHashes,
+          catalogIds,
+          beatPulse,
+        );
 
       await Promise.race([
         session.render(preset),
@@ -425,6 +593,14 @@ async function main() {
   const seenHashes = new Map<string, string>();
 
   const queue = [...presets];
+  // Full catalog, not just the queue: the sacrificial boot preset must
+  // differ from the target even when rendering a single id.
+  const catalogData = await Bun.file(
+    new URL('../public/milkdrop-presets/catalog.json', import.meta.url),
+  ).json();
+  const catalogIds = (
+    Array.isArray(catalogData.presets) ? catalogData.presets : []
+  ).map((p: PresetEntry) => p.id);
   const workers = Array.from({ length: concurrency }, (_, i) =>
     worker(
       browser,
@@ -435,6 +611,8 @@ async function main() {
       presets.length,
       devServer,
       seenHashes,
+      catalogIds,
+      args.beatPulse ?? false,
     ),
   );
   await Promise.all(workers);

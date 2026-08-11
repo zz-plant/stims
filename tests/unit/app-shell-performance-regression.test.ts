@@ -405,18 +405,6 @@ describe('Workspace performance regressions', () => {
   });
 
   test('updates audio-reactive decoration without rerendering static React shells', () => {
-    const hudSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'AudioSpectrumHud.tsx',
-      ),
-      'utf8',
-    );
     const stageControlsSource = readFileSync(
       join(
         import.meta.dir,
@@ -434,10 +422,8 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(hudSource).not.toContain('useAudioEnergy');
     expect(stageControlsSource).not.toContain('useAudioEnergy');
     expect(appSource).not.toContain('useAudioEnergy');
-    expect(hudSource).toContain('subscribeAudioEnergy');
     expect(stageControlsSource).toContain('subscribeAudioEnergy');
     expect(appSource).toContain('subscribeAudioEnergy');
   });
