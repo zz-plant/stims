@@ -192,12 +192,10 @@ function createRendererFacade({
   onDispose?: () => void;
   // WebGPU recovery drives its own requestAnimationFrame loop so it can
   // pause frames while `getRendererRecovery()` is pending (see
-  // `scheduleNextFrame` below). WebGL's native setAnimationLoop already
-  // integrates with three.js's WebXR frame pump; reimplementing that
-  // scheduling for WebGL would silently break WebXR stage sessions
-  // (webxr-stage-session.ts), so WebGL just gets a thin pass-through that
-  // delegates setAnimationLoop directly to the live renderer while still
-  // tracking the callback so it can be reattached after a recreate.
+  // `scheduleNextFrame` below). WebGL keeps three.js's native
+  // setAnimationLoop scheduling: a thin pass-through that delegates
+  // directly to the live renderer while still tracking the callback so it
+  // can be reattached after a recreate.
   driveAnimationLoop?: boolean;
 }) {
   let animationLoop: (() => void) | null = null;
@@ -626,6 +624,15 @@ async function createRendererHandle(
       rememberRendererFallback('WebGL context lost — waiting for restore.', {
         backend: 'webgl',
       });
+      // A DOM event (rather than a return value or callback param) so this
+      // low-level service can notify the UI without a direct dependency on
+      // the frontend layer — same pattern as the existing `stims:load-status`
+      // event.
+      window.dispatchEvent(
+        new CustomEvent('stims:renderer-status', {
+          detail: { status: 'context-lost' },
+        }),
+      );
     };
 
     const handleContextRestored = () => {
@@ -641,10 +648,22 @@ async function createRendererHandle(
       webglContextRecoveryInFlight = true;
       console.info('WebGL context restored; rebuilding the renderer.', canvas);
       void recreateRenderer()
+        .then(() => {
+          window.dispatchEvent(
+            new CustomEvent('stims:renderer-status', {
+              detail: { status: 'context-restored' },
+            }),
+          );
+        })
         .catch((error) => {
           console.warn(
             'WebGL renderer recovery after context restore failed.',
             error,
+          );
+          window.dispatchEvent(
+            new CustomEvent('stims:renderer-status', {
+              detail: { status: 'context-restore-failed' },
+            }),
           );
         })
         .finally(() => {

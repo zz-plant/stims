@@ -25,6 +25,7 @@ export type GeneratePresetOptions = {
   apiEndpoint?: string;
   model?: string;
   provider?: PresetGenerationProvider;
+  fallbackToTemplate?: boolean;
 };
 
 type HostedGenerationResponse = {
@@ -103,8 +104,18 @@ async function requestHostedPreset(
 
   if (!response.ok) {
     const detail = await responseError(response);
+    // 404/501/503 usually mean this deployment's preset-generation endpoint
+    // or AI binding was never set up, not that the model is temporarily
+    // down — self-hosters get a generic "unavailable" otherwise and have no
+    // way to tell a deploy-time config gap from a real outage.
+    const configHint =
+      response.status === 404
+        ? ' This deployment may not have the preset-generation endpoint configured.'
+        : response.status === 501 || response.status === 503
+          ? ' This deployment may be missing its AI model configuration.'
+          : '';
     throw new Error(
-      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}`,
+      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}${configHint}`,
     );
   }
 
@@ -174,20 +185,113 @@ export async function generatePreset(
     endpoint: options.apiEndpoint,
     model: options.model,
   };
-  const milkSource =
-    provider.kind === 'openai-compatible'
-      ? await requestOpenAiCompatiblePreset(description, options, provider)
-      : await requestHostedPreset(description, options, provider);
+  let milkSource: string;
+  let usedFallback = false;
+  try {
+    milkSource =
+      provider.kind === 'openai-compatible'
+        ? await requestOpenAiCompatiblePreset(description, options, provider)
+        : await requestHostedPreset(description, options, provider);
+  } catch (error) {
+    if (options.fallbackToTemplate) {
+      const { synthesizeEELPreset, synthesizedPresetToMilkSource } =
+        await import('./ai-preset-synthesizer.ts');
+      const synthesized = synthesizeEELPreset({ prompt: description });
+      milkSource = synthesizedPresetToMilkSource(synthesized);
+      usedFallback = true;
+    } else {
+      throw error;
+    }
+  }
 
   const compiled = compileMilkdropPresetSource(milkSource, {
-    id: `ai-${Date.now()}`,
-    title: `AI: ${description}`,
+    id: usedFallback ? `ai-fallback-${Date.now()}` : `ai-${Date.now()}`,
+    title: usedFallback
+      ? `AI (fallback): ${description}`
+      : `AI: ${description}`,
     origin: 'generated',
   });
 
   if (compiled.diagnostics.filter((d) => d.severity === 'error').length > 0) {
+    if (options.fallbackToTemplate) {
+      const { synthesizeEELPreset, synthesizedPresetToMilkSource } =
+        await import('./ai-preset-synthesizer.ts');
+      const synthesized = synthesizeEELPreset({ prompt: description });
+      const fallbackSource = synthesizedPresetToMilkSource(synthesized);
+      return compileMilkdropPresetSource(fallbackSource, {
+        id: `ai-fallback-${Date.now()}`,
+        title: `AI (fallback): ${description}`,
+        origin: 'generated',
+      });
+    }
     throw new Error(
       `Generated preset has compilation errors: ${compiled.diagnostics.map((d) => d.message).join('; ')}`,
+    );
+  }
+
+  return compiled;
+}
+
+type ImageGenerationResponse = {
+  description?: string;
+  milkSource?: string;
+  cached?: boolean;
+  cachedPresetId?: string;
+};
+
+export async function generatePresetFromImage(
+  imageBase64: string,
+  options: { apiEndpoint?: string; guidance?: string } = {},
+): Promise<MilkdropCompiledPreset> {
+  const endpoint = options.apiEndpoint || '/api/image-to-preset';
+  const guidance = options.guidance?.trim();
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        guidance ? { image: imageBase64, guidance } : { image: imageBase64 },
+      ),
+    });
+  } catch {
+    throw new Error(
+      'The hosted model could not be reached. Try again later or generate from a text description.',
+    );
+  }
+
+  if (!response.ok) {
+    const detail = await responseError(response);
+    const configHint =
+      response.status === 404
+        ? ' This deployment may not have the image-to-preset endpoint configured.'
+        : response.status === 501 || response.status === 503
+          ? ' This deployment may be missing its AI model configuration.'
+          : '';
+    throw new Error(
+      `Hosted model unavailable (${response.status})${detail ? `: ${detail}` : '.'}${configHint}`,
+    );
+  }
+
+  const data = (await response.json()) as ImageGenerationResponse;
+  if (!data.milkSource) {
+    throw new Error('The hosted model returned no preset source.');
+  }
+  const milkSource = extractMilkSource(data.milkSource);
+  const summary = data.description?.trim().slice(0, 80);
+
+  const compiled = compileMilkdropPresetSource(milkSource, {
+    id: `ai-image-${Date.now()}`,
+    title: summary ? `AI (image): ${summary}` : 'AI (image)',
+    origin: 'generated',
+  });
+
+  const compileErrors = compiled.diagnostics.filter(
+    (d) => d.severity === 'error',
+  );
+  if (compileErrors.length > 0) {
+    throw new Error(
+      `Generated preset has compilation errors: ${compileErrors.map((d) => d.message).join('; ')}`,
     );
   }
 

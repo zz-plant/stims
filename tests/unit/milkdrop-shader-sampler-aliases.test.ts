@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { resolveCustomSamplerTextureFile } from '../../src/js/milkdrop/compiler/custom-samplers.ts';
+import {
+  extractCustomSamplerDeclarations,
+  resolveCustomSamplerSampleMode,
+  resolveCustomSamplerTextureFile,
+} from '../../src/js/milkdrop/compiler/custom-samplers.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { resolveDirectShaderSamplerBinding } from '../../src/js/milkdrop/feedback-manager-webgpu-bindings.ts';
 import {
@@ -380,11 +384,8 @@ comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
     expect(resolveCustomSamplerTextureFile('sampler_cells')).toBe(
       'voronoi_cellular.png',
     );
-    expect(resolveCustomSamplerTextureFile('sampler_rand00')).toBe(
-      'seamless_perlin_noise.png',
-    );
     expect(resolveCustomSamplerTextureFile('sampler_seaweed')).toBe(
-      'crystal_fractal.png',
+      'organic_mottle.png',
     );
     expect(resolveCustomSamplerTextureFile('sampler_prayerwheel')).toBe(
       'circuit_board_pattern.png',
@@ -400,6 +401,85 @@ warp_shader=uniform sampler2D sampler_cells; ret = tex2d(sampler_cells, uv).rgb`
         (d) => d.code === 'preset_missing_custom_sampler_texture',
       ),
     ).toBe(false);
+  });
+
+  test('resolves rand samplers to a random bundled texture per call', () => {
+    const BUNDLED_2D_TEXTURE_FILES = [
+      'seamless_perlin_noise.png',
+      'voronoi_cellular.png',
+      'colorful_aura_gradient.png',
+      'water_caustics.png',
+      'circuit_board_pattern.png',
+      'crystal_fractal.png',
+      'glyph_matrix_tile.png',
+      'organic_mottle.png',
+      'radial_rainbow_gradient.png',
+    ];
+    const SMALLTILED_TEXTURE_FILES = [
+      'seamless_perlin_noise.png',
+      'voronoi_cellular.png',
+      'water_caustics.png',
+      'circuit_board_pattern.png',
+      'crystal_fractal.png',
+      'glyph_matrix_tile.png',
+      'organic_mottle.png',
+    ];
+
+    const picks = new Set<string>();
+    for (let i = 0; i < 64; i++) {
+      const file = resolveCustomSamplerTextureFile('sampler_rand00') ?? 'null';
+      expect(BUNDLED_2D_TEXTURE_FILES).toContain(file);
+      picks.add(file);
+    }
+    // 64 draws from a 7-texture pool collapsing to one file would mean the
+    // randomization regressed to a static mapping.
+    expect(picks.size).toBeGreaterThan(1);
+
+    expect(BUNDLED_2D_TEXTURE_FILES).toContain(
+      resolveCustomSamplerTextureFile('sampler_rand01') ?? 'null',
+    );
+    for (let i = 0; i < 16; i++) {
+      expect(SMALLTILED_TEXTURE_FILES).toContain(
+        resolveCustomSamplerTextureFile('sampler_rand00_smalltiled') ?? 'null',
+      );
+    }
+  });
+
+  test('parses filter/address prefixes into custom sampler declarations', () => {
+    expect(resolveCustomSamplerSampleMode('sampler_pw_mcode1')).toEqual({
+      filter: 'nearest',
+      wrap: 'repeat',
+    });
+    expect(resolveCustomSamplerSampleMode('sampler_fc_burn')).toEqual({
+      filter: 'linear',
+      wrap: 'clamp',
+    });
+    expect(resolveCustomSamplerSampleMode('sampler_pc_glyphs')).toEqual({
+      filter: 'nearest',
+      wrap: 'clamp',
+    });
+    expect(resolveCustomSamplerSampleMode('sampler_cells')).toEqual({
+      filter: 'linear',
+      wrap: 'repeat',
+    });
+
+    const declarations = extractCustomSamplerDeclarations(
+      'uniform sampler2D sampler_pw_mcode1; uniform sampler2D sampler_cells;',
+    );
+    expect(declarations).toEqual([
+      {
+        name: 'sampler_pw_mcode1',
+        textureFile: 'glyph_matrix_tile.png',
+        filter: 'nearest',
+        wrap: 'repeat',
+      },
+      {
+        name: 'sampler_cells',
+        textureFile: 'voronoi_cellular.png',
+        filter: 'linear',
+        wrap: 'repeat',
+      },
+    ]);
   });
 
   test('resolves sampler_fc_main binding with sourceId 11 for direct shader execution', () => {

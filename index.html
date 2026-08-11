@@ -178,8 +178,8 @@
           const phase = event?.detail?.phase;
           const label = phaseLabels[phase];
           const target = text();
-          if (!target || !label) return;
-          target.textContent = label;
+          if (target && label) target.textContent = label;
+          if (phase === 'shell-rendered') clearTimeout(timer);
         });
         const timer = setTimeout(() => {
           const loading = document.getElementById('stims-loading');
@@ -190,7 +190,6 @@
             '<p><a href="." class="stims-loading__retry">Reload page</a></p>' +
             '</div>';
         }, TIMEOUT_MS);
-        window.addEventListener('load', () => clearTimeout(timer), { once: true });
       })();
     </script>
 

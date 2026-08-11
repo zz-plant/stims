@@ -61,12 +61,42 @@ export function useWorkspaceToast({
     (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {
       setToast({ message, tone });
       clearToastTimer();
+      // Warn/error toasts carry more important, often longer copy (e.g. an
+      // audio source substitution) — give visitors more time to read them.
+      const duration = tone === 'info' ? 4200 : 7000;
       toastTimerRef.current = window.setTimeout(() => {
         setToast(null);
         toastTimerRef.current = null;
-      }, 4200);
+      }, duration);
     },
   );
+
+  // The renderer service (core/services/render-service.ts) has no direct
+  // dependency on the frontend layer, so it reports WebGL context loss via a
+  // DOM event rather than a callback/prop — same pattern as
+  // `stims:load-status`. Without this, a lost context just freezes the
+  // canvas with no on-screen explanation.
+  useEffect(() => {
+    const handleRendererStatus = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      if (status === 'context-lost') {
+        showToast(
+          'Visuals paused — the graphics connection was lost. Reconnecting…',
+          'warn',
+        );
+      } else if (status === 'context-restored') {
+        showToast('Visuals reconnected.', 'info');
+      } else if (status === 'context-restore-failed') {
+        showToast(
+          'Could not reconnect the graphics context. Reload the page if visuals stay frozen.',
+          'error',
+        );
+      }
+    };
+    window.addEventListener('stims:renderer-status', handleRendererStatus);
+    return () =>
+      window.removeEventListener('stims:renderer-status', handleRendererStatus);
+  }, []);
 
   useEffect(() => {
     const runtimeMessage = statusMessage ?? engineSnapshot?.status;
@@ -95,7 +125,10 @@ export function useWorkspaceToast({
       statusMessage &&
       /^(Unable to|error|failed|denied|blocked)/i.test(statusMessage)
         ? 'error'
-        : 'info';
+        : statusMessage &&
+            /limit live mic access|Started with Demo Audio/i.test(statusMessage)
+          ? 'warn'
+          : 'info';
     const key = `${resolvedTone}:${runtimeMessage}`;
     if (shownToastKeysRef.current.has(key)) {
       return;

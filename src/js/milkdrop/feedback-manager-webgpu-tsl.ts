@@ -1130,6 +1130,8 @@ function createCompositeOutputNode(
     uniforms.patternTex,
     uniforms.fractalTex,
     uniforms.videoTex,
+    uniforms.glyphTex,
+    uniforms.organicTex,
     {
       noise: uniforms.noiseTex3D,
       simplex: uniforms.simplexTex3D,
@@ -1871,7 +1873,7 @@ class WebGPUMilkdropFeedbackManager {
     feedbackResolutionMultiplier: number;
   }>) {
     const nextMultiplier = Math.min(
-      1,
+      1.5,
       Math.max(0.45, feedbackResolutionMultiplier ?? 1),
     );
     if (

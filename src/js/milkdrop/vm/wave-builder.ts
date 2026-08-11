@@ -149,8 +149,23 @@ export function buildCustomWaves({
       continue;
     }
 
-    const frameLocals =
-      waveState.customWaveLocals[index] ?? seedCustomWaveState(wave);
+    // Reload base values from wave definition each frame
+    const baseLocals = seedCustomWaveState(wave);
+    const frameLocals = waveState.customWaveLocals[index] ?? baseLocals;
+
+    // Merge base values into frame locals (preserves per-frame user vars)
+    for (const key in baseLocals) {
+      frameLocals[key] = baseLocals[key];
+    }
+
+    // Restore t1-t8 from post-init snapshot
+    const tAfterInit = waveState.customWaveTAfterInit[index];
+    if (tAfterInit) {
+      for (let t = 1; t <= 8; t += 1) {
+        frameLocals[`t${t}`] = tAfterInit[`t${t}`] ?? 0;
+      }
+    }
+
     runProgram(
       wave.programs.perFrame,
       createEnv(signals, frameLocals, { reuseExtraAsEnv: true }),
@@ -327,6 +342,24 @@ export function buildCustomWaves({
     channelSample.value1 = 0;
     channelSample.value2 = 0;
 
+    // Initialize per-point locals from frame locals (t/v carry point-to-point)
+    pointLocals.t1 = frameLocals.t1 ?? 0;
+    pointLocals.t2 = frameLocals.t2 ?? 0;
+    pointLocals.t3 = frameLocals.t3 ?? 0;
+    pointLocals.t4 = frameLocals.t4 ?? 0;
+    pointLocals.t5 = frameLocals.t5 ?? 0;
+    pointLocals.t6 = frameLocals.t6 ?? 0;
+    pointLocals.t7 = frameLocals.t7 ?? 0;
+    pointLocals.t8 = frameLocals.t8 ?? 0;
+    pointLocals.v1 = frameLocals.v1 ?? 0;
+    pointLocals.v2 = frameLocals.v2 ?? 0;
+    pointLocals.v3 = frameLocals.v3 ?? 0;
+    pointLocals.v4 = frameLocals.v4 ?? 0;
+    pointLocals.v5 = frameLocals.v5 ?? 0;
+    pointLocals.v6 = frameLocals.v6 ?? 0;
+    pointLocals.v7 = frameLocals.v7 ?? 0;
+    pointLocals.v8 = frameLocals.v8 ?? 0;
+
     for (let point = 0; point < sampleCount; point += 1) {
       const sample = point / Math.max(1, sampleCount - 1);
       const waveChannels = sampleCustomWaveChannels(
@@ -351,22 +384,8 @@ export function buildCustomWaves({
         continue;
       }
 
-      pointLocals.t1 = frameLocals.t1 ?? 0;
-      pointLocals.t2 = frameLocals.t2 ?? 0;
-      pointLocals.t3 = frameLocals.t3 ?? 0;
-      pointLocals.t4 = frameLocals.t4 ?? 0;
-      pointLocals.t5 = frameLocals.t5 ?? 0;
-      pointLocals.t6 = frameLocals.t6 ?? 0;
-      pointLocals.t7 = frameLocals.t7 ?? 0;
-      pointLocals.t8 = frameLocals.t8 ?? 0;
-      pointLocals.v1 = frameLocals.v1 ?? 0;
-      pointLocals.v2 = frameLocals.v2 ?? 0;
-      pointLocals.v3 = frameLocals.v3 ?? 0;
-      pointLocals.v4 = frameLocals.v4 ?? 0;
-      pointLocals.v5 = frameLocals.v5 ?? 0;
-      pointLocals.v6 = frameLocals.v6 ?? 0;
-      pointLocals.v7 = frameLocals.v7 ?? 0;
-      pointLocals.v8 = frameLocals.v8 ?? 0;
+      // Update audio-sample-driven and geometry values per point
+      // (t/v already initialized above and carry between points)
       pointLocals.sample = waveChannels.sample;
       pointLocals.value = waveChannels.value;
       pointLocals.value1 = waveChannels.value1;

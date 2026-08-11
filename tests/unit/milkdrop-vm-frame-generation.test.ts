@@ -247,4 +247,101 @@ describe('milkdrop vm frame generation', () => {
     expect(frame.visual.positions[0]).toBeGreaterThan(0.4);
     expect(Math.abs(frame.visual.positions[1] ?? 1)).toBeLessThan(0.01);
   });
+
+  test('applies full fWaveScale amplitude to spiro modes like MilkDrop', () => {
+    // MilkDrop plots mode-2 samples at wave_scale strength (pcm * fWaveScale
+    // / 128); a max-amplitude right channel must land at ~wave_scale, not a
+    // damped fraction of it.
+    const signals = defaultSignalEnv();
+    signals.waveformData = new Uint8Array(64).fill(128);
+    signals.waveformDataL = new Uint8Array(64).fill(128);
+    signals.waveformDataR = new Uint8Array(64).fill(255);
+
+    const frame = buildMainWaveFrame({
+      state: {
+        wave_mode: 2,
+        wave_x: 0.5,
+        wave_y: 0.5,
+        wave_scale: 0.7,
+        wave_smoothing: 0,
+        wave_a: 0.9,
+      },
+      signals,
+      detailScale: 1,
+      previousSamples: new Float32Array(64),
+      previousMomentum: new Float32Array(64),
+      useProcedural: false,
+    });
+
+    const expected = 0.7 * ((255 - 128) / 128);
+    expect(frame.visual.positions[0]).toBeCloseTo(expected, 2);
+  });
+
+  test('prefers float PCM over byte waveform data when both are present', () => {
+    const signals = defaultSignalEnv();
+    // Byte data says full positive amplitude; float data says a value no
+    // byte buffer can represent (between two byte steps). The float value
+    // must win, in both mono and stereo paths.
+    signals.waveformData = new Uint8Array(64).fill(255);
+    signals.waveformDataL = new Uint8Array(64).fill(255);
+    signals.waveformDataR = new Uint8Array(64).fill(255);
+    signals.waveformFloatData = new Float32Array(64).fill(0.3005);
+    signals.waveformFloatDataL = new Float32Array(64).fill(0.3005);
+    signals.waveformFloatDataR = new Float32Array(64).fill(0.3005);
+
+    const frame = buildMainWaveFrame({
+      state: {
+        wave_mode: 2,
+        wave_x: 0.5,
+        wave_y: 0.5,
+        wave_scale: 1,
+        wave_smoothing: 0,
+        wave_a: 0.9,
+      },
+      signals,
+      detailScale: 1,
+      previousSamples: new Float32Array(64),
+      previousMomentum: new Float32Array(64),
+      useProcedural: false,
+    });
+
+    expect(frame.visual.positions[0]).toBeCloseTo(0.3005, 4);
+    expect(frame.visual.positions[1]).toBeCloseTo(0.3005, 4);
+  });
+
+  test('mode 3 matches mode 2 geometry with treble-modulated alpha', () => {
+    const signals = defaultSignalEnv();
+    signals.waveformData = new Uint8Array(64).fill(128);
+    signals.waveformDataL = new Uint8Array(64).fill(128);
+    signals.waveformDataR = new Uint8Array(64).fill(255);
+    signals.treble = 0.6;
+    signals.trebleAtt = 0.3;
+
+    const build = (mode: number) =>
+      buildMainWaveFrame({
+        state: {
+          wave_mode: mode,
+          wave_x: 0.5,
+          wave_y: 0.5,
+          wave_scale: 1,
+          wave_smoothing: 0,
+          wave_a: 0.4,
+        },
+        signals,
+        detailScale: 1,
+        previousSamples: new Float32Array(64),
+        previousMomentum: new Float32Array(64),
+        useProcedural: false,
+      });
+
+    const mode2 = build(2);
+    const mode2Positions = Array.from(mode2.visual.positions);
+    const mode2Alpha = mode2.visual.alpha;
+    const mode3 = build(3);
+
+    expect(Array.from(mode3.visual.positions)).toEqual(mode2Positions);
+    // treble/trebleAtt = 2 (clamped), so alpha = 0.4 * 1.3 * 4, clamped to 1.
+    expect(mode2Alpha).toBeCloseTo(0.4, 5);
+    expect(mode3.visual.alpha).toBeCloseTo(1, 5);
+  });
 });

@@ -1594,8 +1594,9 @@ per_frame_2=t1=t1+1;
     );
   });
 
-  test('renders distinct geometry across all eight main wave modes', () => {
-    const signatures = new Set<string>();
+  test('renders distinct geometry across the main wave modes', () => {
+    const signatures = new Map<string, number[]>();
+    const alphas: number[] = [];
 
     for (let mode = 0; mode < 8; mode += 1) {
       const preset = compileMilkdropPresetSource(
@@ -1603,6 +1604,7 @@ per_frame_2=t1=t1+1;
 title=Wave Mode ${mode}
 wave_mode=${mode}
 wave_mystery=0.42
+wave_a=0.3
         `.trim(),
         { id: `wave-mode-${mode}` },
       );
@@ -1612,14 +1614,22 @@ wave_mystery=0.42
       );
 
       expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
-      signatures.add(
-        Array.from(frameState.mainWave.positions.slice(0, 18))
-          .map((value) => value.toFixed(3))
-          .join(','),
-      );
+      const signature = Array.from(frameState.mainWave.positions.slice(0, 18))
+        .map((value) => value.toFixed(3))
+        .join(',');
+      signatures.set(signature, [...(signatures.get(signature) ?? []), mode]);
+      alphas.push(frameState.mainWave.alpha);
     }
 
-    expect(signatures.size).toBe(8);
+    // MilkDrop draws modes 2 and 3 (CenteredSpiro / CenteredSpiroVolume)
+    // with identical vertex positions; mode 3 differs only in
+    // treble-modulated alpha. Every other mode has unique geometry.
+    expect(signatures.size).toBe(7);
+    const collisions = [...signatures.values()].filter(
+      (modes) => modes.length > 1,
+    );
+    expect(collisions).toEqual([[2, 3]]);
+    expect(alphas[3]).not.toBeCloseTo(alphas[2] ?? 0, 6);
   });
 
   test('keeps the main wave stateful across successive frames', () => {

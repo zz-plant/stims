@@ -315,3 +315,58 @@ export function updateEnergyPeak(
 ): number {
   return Math.max(currentPeak * decay, weightedEnergy, floor);
 }
+
+/**
+ * Boost-only auto-gain for byte waveforms headed to the visualizer.
+ *
+ * MilkDrop presets draw the raw time-domain wave and are written against
+ * music that sits near full scale; a quiet source (the 0.12-gain demo track,
+ * a soft microphone) parks every byte at 128 +/- a few counts and the drawn
+ * wave collapses to a flat line while the spectrum path — which is dB-scaled
+ * and band-normalized — keeps reacting. This is the waveform-side analogue of
+ * that normalization: track the recent peak deviation from center and scale
+ * up toward a target amplitude. Never attenuates (gain floor 1), so sources
+ * that are already healthy pass through untouched, and a noise floor keeps
+ * true silence from being amplified into garbage.
+ */
+export function createWaveformAutoGain({
+  targetAmplitude = 96,
+  maxGain = 8,
+  noiseFloor = 3,
+  peakDecay = 0.985,
+}: {
+  /** Desired peak deviation from the 128 center, in byte counts. */
+  targetAmplitude?: number;
+  /** Upper bound on amplification, so hiss cannot be blown up to full scale. */
+  maxGain?: number;
+  /** Peak deviations below this (byte counts) are treated as silence. */
+  noiseFloor?: number;
+  /** Per-call decay of the tracked peak; attack is instantaneous. */
+  peakDecay?: number;
+} = {}) {
+  let trackedPeak = 0;
+
+  return {
+    /** Update the tracked peak from one frame of data and return the gain. */
+    measure(waveform: Uint8Array): number {
+      let peak = 0;
+      for (let i = 0; i < waveform.length; i += 1) {
+        const deviation = Math.abs(waveform[i] - 128);
+        if (deviation > peak) peak = deviation;
+      }
+      trackedPeak = Math.max(peak, trackedPeak * peakDecay);
+      if (trackedPeak < noiseFloor) return 1;
+      return Math.min(maxGain, Math.max(1, targetAmplitude / trackedPeak));
+    },
+    /** Scale `input` around the 128 center into `output` (may be `input`). */
+    apply(input: Uint8Array, output: Uint8Array, gain: number): void {
+      for (let i = 0; i < input.length; i += 1) {
+        const scaled = 128 + (input[i] - 128) * gain;
+        output[i] = scaled < 0 ? 0 : scaled > 255 ? 255 : scaled;
+      }
+    },
+    reset(): void {
+      trackedPeak = 0;
+    },
+  };
+}

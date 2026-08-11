@@ -189,15 +189,17 @@ export function buildShapes({
     );
     const env = createEnv(signals, locals, { reuseExtraAsEnv: true });
 
+    // Restore t/v from post-init snapshot before instance loop
+    const tAfterInit = shapeState.customShapeTAfterInit[index];
     const baseTLocals = {
-      t1: locals.t1 ?? 0,
-      t2: locals.t2 ?? 0,
-      t3: locals.t3 ?? 0,
-      t4: locals.t4 ?? 0,
-      t5: locals.t5 ?? 0,
-      t6: locals.t6 ?? 0,
-      t7: locals.t7 ?? 0,
-      t8: locals.t8 ?? 0,
+      t1: tAfterInit?.t1 ?? locals.t1 ?? 0,
+      t2: tAfterInit?.t2 ?? locals.t2 ?? 0,
+      t3: tAfterInit?.t3 ?? locals.t3 ?? 0,
+      t4: tAfterInit?.t4 ?? locals.t4 ?? 0,
+      t5: tAfterInit?.t5 ?? locals.t5 ?? 0,
+      t6: tAfterInit?.t6 ?? locals.t6 ?? 0,
+      t7: tAfterInit?.t7 ?? locals.t7 ?? 0,
+      t8: tAfterInit?.t8 ?? locals.t8 ?? 0,
       v1: locals.v1 ?? 0,
       v2: locals.v2 ?? 0,
       v3: locals.v3 ?? 0,

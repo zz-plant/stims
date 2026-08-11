@@ -463,10 +463,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   setPreset(preset: MilkdropCompiledPreset) {
+    // The adapter factory already folded native-feedback availability into
+    // directFeedbackShaders; mirror it here so the per-preset plan doesn't
+    // re-strip the feedback descriptor by assuming native feedback is off.
     this.webgpuDescriptorPlan = resolveMilkdropRendererExecutionPlan({
       backend: this.backend,
       descriptorPlan: preset.ir.compatibility.gpuDescriptorPlans.webgpu,
       flags: this.webgpuOptimizationFlags,
+      nativeWebGpuFeedbackEnabled:
+        this.webgpuOptimizationFlags.directFeedbackShaders,
     }).effectiveWebGpuDescriptorPlan;
   }
 
@@ -703,6 +708,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 nextShape,
                 this.behavior,
                 {
+                  backend: this.backend,
                   getShapeFillFallbackColor,
                   getShapeTexture: () =>
                     (this.feedback?.getShapeTexture?.() as Texture | null) ??
@@ -719,6 +725,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 nextShape,
                 this.behavior,
                 {
+                  backend: this.backend,
                   disposeMaterial,
                   getShapeFillFallbackColor,
                   getShapeTexture: () =>

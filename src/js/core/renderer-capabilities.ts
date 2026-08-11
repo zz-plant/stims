@@ -358,11 +358,16 @@ function getWebGPUPerformanceTier({
     (limits.maxComputeInvocationsPerWorkgroup ?? 0) >= 512;
   const hasMultiPassHeadroom = (limits.maxColorAttachments ?? 0) >= 8;
 
+  // `subgroups` is deliberately not required: Metal-backed browsers (Apple
+  // Silicon Safari, and Chrome on some macOS versions) do not expose it, yet
+  // those GPUs are exactly the high-end hardware this tier exists for. Any one
+  // advanced feature alongside the core set is enough.
+  const hasAdvancedFeature =
+    features.subgroups || features.timestampQuery || features.float32Filterable;
   if (
     features.shaderF16 &&
-    features.subgroups &&
-    features.timestampQuery &&
     features.float32Blendable &&
+    hasAdvancedFeature &&
     hasLargeStorageBuffer &&
     hasStrongComputeBudget &&
     hasMultiPassHeadroom
@@ -418,6 +423,17 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
         __stims_webgpu_performance_tier?: string;
       }
     ).__stims_webgpu_performance_tier = performanceTier;
+    // Also persist per-tab: the preset WebGL-fallback flow reloads the page,
+    // which wipes the window global — and with it the high-end verification
+    // that first-run quality election depends on.
+    try {
+      window.sessionStorage?.setItem(
+        'stims:webgpu-performance-tier',
+        performanceTier,
+      );
+    } catch {
+      // Storage unavailable (private mode, quota): window global still works.
+    }
   }
 
   return {

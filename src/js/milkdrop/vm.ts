@@ -69,7 +69,7 @@ let sharedGlobalBuffer: Float32Array | null = null;
 const EMPTY_BUFFER = new Float32Array(0);
 
 function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
-  if (!preset.source.raw.includes('gmegabuf')) {
+  if (!/gmegabuf/iu.test(preset.source.raw)) {
     return sharedGlobalBuffer ?? EMPTY_BUFFER;
   }
   sharedGlobalBuffer ??= new Float32Array(MILKDROP_GMEGABUF_SIZE);
@@ -103,6 +103,7 @@ class MilkdropPresetVM implements MilkdropVM {
     mainWaveVisualFrames: [],
     proceduralMainWaveFrames: [],
     customWaveLocals: [],
+    customWaveTAfterInit: [],
     customWaveFrameIndex: 0,
     customWaveVisualFrames: [[], []],
     proceduralCustomWaveFrames: [[], []],
@@ -137,6 +138,7 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private readonly shapeState: ShapeBuilderState = {
     customShapeLocals: [],
+    customShapeTAfterInit: [],
   };
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
@@ -256,7 +258,10 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   setDetailScale(scale: number) {
-    this.detailScale = clamp(scale, 0.5, 2);
+    // Ceiling must admit the full ultra-pipeline product (preset particle
+    // scale x budget x backend boost x shader quality can reach ~4.5);
+    // downstream consumers apply their own per-feature caps.
+    this.detailScale = clamp(scale, 0.5, 4);
   }
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {
@@ -292,6 +297,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   reset() {
     this.gmegabuf = resolveGlobalBuffer(this.preset);
+    this.megabuf.fill(0);
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
     this.registers = Object.create(this.state) as MutableState;
     for (let index = 1; index <= 32; index += 1) {
@@ -339,6 +345,8 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
+
+    this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
       this.runProgram(
         wave.programs.init,
@@ -348,7 +356,16 @@ class MilkdropPresetVM implements MilkdropVM {
         ),
         this.waveState.customWaveLocals[index],
       );
+      // Capture t1-t8 values after each wave init
+      const waveLocals = this.waveState.customWaveLocals[index];
+      const tSnapshot: MutableState = {};
+      for (let t = 1; t <= 8; t += 1) {
+        tSnapshot[`t${t}`] = waveLocals?.[`t${t}`] ?? 0;
+      }
+      this.waveState.customWaveTAfterInit[index] = tSnapshot;
     });
+
+    this.shapeState.customShapeTAfterInit = [];
     this.preset.ir.customShapes.forEach((shape, index) => {
       this.runProgram(
         shape.programs.init,
@@ -358,6 +375,13 @@ class MilkdropPresetVM implements MilkdropVM {
         ),
         this.shapeState.customShapeLocals[index],
       );
+      // Capture t1-t8 values after each shape init
+      const shapeLocals = this.shapeState.customShapeLocals[index];
+      const tSnapshot: MutableState = {};
+      for (let t = 1; t <= 8; t += 1) {
+        tSnapshot[`t${t}`] = shapeLocals?.[`t${t}`] ?? 0;
+      }
+      this.shapeState.customShapeTAfterInit[index] = tSnapshot;
     });
   }
 
@@ -525,6 +549,8 @@ class MilkdropPresetVM implements MilkdropVM {
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
+    resetFrameTransformCache(this.geometryState);
+
     if (
       this.renderBackend === 'webgpu' &&
       this.webgpuOptimizationFlags.gpuComputeVM &&

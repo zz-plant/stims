@@ -7,6 +7,7 @@ import {
   DataTexture,
   HalfFloatType,
   LinearFilter,
+  NearestFilter,
   RedFormat,
   RepeatWrapping,
   RGBAFormat,
@@ -71,6 +72,17 @@ export const MILKDROP_TEXTURE_FILES = {
   fractal: 'crystal_fractal.png',
 } as const;
 
+// Canonical sampler names that exist only for custom-sampler aliasing (no
+// real MilkDrop built-in warp/overlay texture slot, unlike the names in
+// MILKDROP_TEXTURE_FILES above). Kept separate so they don't force the
+// legacy warp/overlay texture-selector plumbing (AUX_TEXTURE_SPECS et al.,
+// exhaustively keyed off MILKDROP_TEXTURE_FILES) to grow a slot it has no
+// real numeric ID for.
+export const CUSTOM_TEXTURE_FILES = {
+  glyph: 'glyph_matrix_tile.png',
+  organic: 'organic_mottle.png',
+} as const;
+
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
   perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
@@ -102,12 +114,29 @@ export function resolveTextureUrl(fileName: string) {
   return `${normalizedBaseUrl}textures/${fileName}`;
 }
 
+export type MilkdropTextureSampleMode = {
+  filter: 'linear' | 'nearest';
+  wrap: 'repeat' | 'clamp';
+};
+
+const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
+  filter: 'linear',
+  wrap: 'repeat',
+};
+
 export function configureMilkdropTexture(
   textureValue: Texture,
   colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ) {
-  textureValue.wrapS = RepeatWrapping;
-  textureValue.wrapT = RepeatWrapping;
+  const wrapMode =
+    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
+  textureValue.wrapS = wrapMode;
+  textureValue.wrapT = wrapMode;
+  if (sampleMode.filter === 'nearest') {
+    textureValue.minFilter = NearestFilter;
+    textureValue.magFilter = NearestFilter;
+  }
   if (colorTexture) {
     textureValue.colorSpace = SRGBColorSpace;
   }
@@ -124,19 +153,24 @@ const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
 );
 const sharedMilkdropTexturePlaceholder = sharedMilkdropNativeNoiseTexture;
 
-export function loadMilkdropTexture(fileName: string, colorTexture = false) {
+export function loadMilkdropTexture(
+  fileName: string,
+  colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
+) {
   const loaded = milkdropTextureLoader.load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(loaded, colorTexture);
+  return configureMilkdropTexture(loaded, colorTexture, sampleMode);
 }
 
 export function getSharedMilkdropTexture(
   fileName: string,
   colorTexture = false,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
   let textureValue = sharedMilkdropTextureCache.get(cacheKey);
   if (!textureValue) {
-    textureValue = loadMilkdropTexture(fileName, colorTexture);
+    textureValue = loadMilkdropTexture(fileName, colorTexture, sampleMode);
     sharedMilkdropTextureCache.set(cacheKey, textureValue);
   }
   return textureValue;
@@ -230,12 +264,13 @@ export const MILKDROP_NOISE_VOLUME_SIZE = AUX_TEXTURE_ATLAS_SLICE_COUNT;
 export function bindCustomMilkdropSamplerTexture(
   name: string,
   textureFile: string | null,
+  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
 ): MilkdropCustomSamplerTextureBinding | null {
   if (!textureFile) return null;
   return {
     name,
     textureFile,
-    texture: getSharedMilkdropTexture(textureFile, true),
+    texture: getSharedMilkdropTexture(textureFile, true, sampleMode),
   };
 }
 
@@ -468,6 +503,8 @@ export function createCompositeUniforms(
     patternTex: texture(auxTextures.pattern),
     fractalTex: texture(auxTextures.fractal),
     videoTex: texture(auxTextures.video),
+    glyphTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.glyph)),
+    organicTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.organic)),
     audioTex: texture(shared2DPlaceholderRGBA),
     noiseTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex3D: texture3D(shared3DPlaceholderRGBA),
@@ -602,6 +639,8 @@ export function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
   videoTexNode: ReturnType<typeof texture>,
+  glyphTexNode: ReturnType<typeof texture>,
+  organicTexNode: ReturnType<typeof texture>,
   tex3DNodes: {
     noise: ReturnType<typeof texture3D>;
     simplex: ReturnType<typeof texture3D>;
@@ -645,7 +684,15 @@ export function createSampleAuxTextureNode(
                       select(
                         source.lessThan(9.5),
                         perlinTexNode.sample(sampleUv),
-                        flat,
+                        select(
+                          source.lessThan(12.5),
+                          glyphTexNode.sample(sampleUv),
+                          select(
+                            source.lessThan(13.5),
+                            organicTexNode.sample(sampleUv),
+                            flat,
+                          ),
+                        ),
                       ),
                     ),
                   ),

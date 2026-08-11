@@ -15,23 +15,16 @@ export function getDeviceTier(): DeviceTier {
       ? (navigator.hardwareConcurrency ?? null)
       : null;
 
-  // Mobile: 12+ cores. 8-core chips like the Snapdragon 8 Gen 1 (S22)
+  // Mobile stays at 12+ cores: 8-core chips like the Snapdragon 8 Gen 1 (S22)
   // look capable by core count but have a fraction of the sustained GPU
-  // throughput. Classifying them as "ultra" selects hi-fi quality, which
-  // over-paints the canvas and starves the renderer on frame budget.
-  // The 8-core threshold  originally admitted MacBook Pros  and flagship
-  // phones, but phones thermal-throttle within seconds.
+  // throughput and thermal-throttle within seconds. Desktop uses 10+ so
+  // sustained-clock parts like the 10-core M1 Pro qualify.
   const isUltra =
     (hardwareConcurrency !== null &&
       (environment.isMobile
         ? hardwareConcurrency >= 12
-        : hardwareConcurrency >= 12)) ||
-    (typeof window !== 'undefined' &&
-      (
-        window as unknown as {
-          __stims_webgpu_performance_tier?: string;
-        }
-      ).__stims_webgpu_performance_tier === 'high-end');
+        : hardwareConcurrency >= 10)) ||
+    readVerifiedWebGpuTier() === 'high-end';
 
   if (isUltra) return 'ultra';
 
@@ -139,8 +132,10 @@ export function getAdaptiveMaxPixelRatio(maxPixelRatio: number) {
  *
  * Deliberately conservative: a default that melts a handheld is far worse than
  * one that is slightly too soft, and every tier here is a starting point the
- * user can raise by hand. `ultra` (2.8x pixel ratio, 1.8x particles) is never
- * auto-selected — it stays opt-in.
+ * user can raise by hand. The `ultra` preset is auto-selected only when the
+ * WebGPU probe has verified the GPU as high-end (see
+ * getRecommendedQualityPresetId); core count alone never selects it, since a
+ * 12-core CPU says nothing about GPU throughput.
  */
 export const DEVICE_TIER_QUALITY_PRESET_IDS: Record<DeviceTier, string> = {
   low: 'performance',
@@ -148,6 +143,41 @@ export const DEVICE_TIER_QUALITY_PRESET_IDS: Record<DeviceTier, string> = {
   high: 'balanced',
   ultra: 'hi-fi',
 };
+
+/**
+ * The tier the WebGPU capability probe stamped for this tab, or null when the
+ * probe has not run. Reads the window global first, then the sessionStorage
+ * copy — the preset WebGL-fallback flow reloads the page, which wipes the
+ * global mid-session.
+ */
+function readVerifiedWebGpuTier(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const fromWindow = (
+    window as unknown as {
+      __stims_webgpu_performance_tier?: string;
+    }
+  ).__stims_webgpu_performance_tier;
+  if (typeof fromWindow === 'string') {
+    return fromWindow;
+  }
+  try {
+    return (
+      window.sessionStorage?.getItem('stims:webgpu-performance-tier') ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True only when the WebGPU capability probe ran and verified a high-end GPU.
+ * Distinct from the ultra device tier, which core count alone can reach.
+ */
+function hasVerifiedHighEndGpu(): boolean {
+  return readVerifiedWebGpuTier() === 'high-end';
+}
 
 /** Used whenever tier detection is unavailable or maps to an unknown preset. */
 export const FALLBACK_QUALITY_PRESET_ID = 'balanced';
@@ -159,6 +189,14 @@ export const FALLBACK_QUALITY_PRESET_ID = 'balanced';
 export function getRecommendedQualityPresetId(tier?: DeviceTier): string {
   try {
     const resolvedTier = tier ?? getDeviceTier();
+    if (
+      resolvedTier === 'ultra' &&
+      hasVerifiedHighEndGpu() &&
+      !getDeviceEnvironmentProfile().isMobile &&
+      !getDevicePerformanceProfile().lowPower
+    ) {
+      return 'ultra';
+    }
     return (
       DEVICE_TIER_QUALITY_PRESET_IDS[resolvedTier] ?? FALLBACK_QUALITY_PRESET_ID
     );

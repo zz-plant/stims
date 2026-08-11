@@ -174,6 +174,8 @@ export type MilkdropShaderTextureSampler =
   | 'caustics'
   | 'pattern'
   | 'fractal'
+  | 'glyph'
+  | 'organic'
   | 'video'
   | 'pw_main'
   | 'pc_main'
@@ -410,6 +412,8 @@ export type MilkdropPostEffects = {
 export type MilkdropCustomSamplerDeclaration = {
   name: string;
   textureFile: string | null;
+  filter: 'linear' | 'nearest';
+  wrap: 'repeat' | 'clamp';
 };
 
 export type MilkdropPresetIR = {

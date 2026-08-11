@@ -16,6 +16,7 @@ import {
   type ShaderQuality,
 } from '../core/state/performance-settings-store.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
+import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -71,6 +72,8 @@ const RESOLUTION_LIMIT_STEPS: Array<{ value: number; label: string }> = [
   { value: 1.75, label: '1.75x' },
   { value: 2, label: '2x' },
   { value: 2.5, label: '2.5x' },
+  { value: 3, label: '3x' },
+  { value: 4, label: '4x' },
 ];
 
 /** UI text scale steps for low-vision users. */
@@ -177,6 +180,24 @@ function AccessibilitySection({
   );
 }
 
+function describeAdaptiveQualityStatus(
+  adaptiveQuality: EngineSnapshot['adaptiveQuality'],
+) {
+  if (!adaptiveQuality) {
+    return 'Adaptive quality keeps frame rate steady once playback starts — no need to babysit it.';
+  }
+  switch (adaptiveQuality.adaptation) {
+    case 'degraded':
+      return 'Frames were dropping, so detail is currently reduced below your settings to keep motion smooth.';
+    case 'recovering':
+      return 'Detail is easing back up toward your settings now that frames have room again.';
+    case 'enhanced':
+      return 'Frames have headroom, so detail is currently a step above your settings.';
+    default:
+      return 'Running at your selected detail level — frame rate has been steady.';
+  }
+}
+
 function PerformanceSection() {
   const [perf, setPerf] = useState(() => ({
     shaderQuality: DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
@@ -184,18 +205,14 @@ function PerformanceSection() {
     maxPixelRatio: DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio,
     loaded: false,
   }));
-  const [autoTune, setAutoTune] = useState(() => {
-    try {
-      return localStorage.getItem('stims:performance-auto-tune') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const { engineSnapshot } = useEngineSnapshot();
 
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
     import('../core/state/performance-settings-store.ts').then(
-      ({ getActivePerformanceSettings }) => {
+      ({ getActivePerformanceSettings, subscribeToPerformanceSettings }) => {
+        if (disposed) return;
         const s = getActivePerformanceSettings();
         setPerf({
           shaderQuality: s.shaderQuality,
@@ -203,8 +220,23 @@ function PerformanceSection() {
           maxPixelRatio: s.maxPixelRatio,
           loaded: true,
         });
+        // Quality-preset changes can move maxPixelRatio while this panel is
+        // open (a preset-derived resolution follows the preset), so stay
+        // subscribed rather than reading once.
+        unsubscribe = subscribeToPerformanceSettings((next) => {
+          setPerf({
+            shaderQuality: next.shaderQuality,
+            particleBudget: next.particleBudget,
+            maxPixelRatio: next.maxPixelRatio,
+            loaded: true,
+          });
+        });
       },
     );
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const setOption = <
@@ -223,33 +255,12 @@ function PerformanceSection() {
 
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
-      ({ setPerformanceSettings }) => {
-        setPerformanceSettings(DEFAULT_PERFORMANCE_SETTINGS);
-        setPerf({ ...DEFAULT_PERFORMANCE_SETTINGS, loaded: true });
+      ({ resetPerformanceSettingsToDefaults }) => {
+        const next = resetPerformanceSettingsToDefaults();
+        setPerf({ ...next, loaded: true });
       },
     );
   };
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('stims:performance-auto-tune', String(autoTune));
-    } catch {}
-    if (!autoTune) {
-      setRecommendation(null);
-      return;
-    }
-    if (perf.maxPixelRatio > 1.5) {
-      setRecommendation(
-        'If frames drop, auto-tune can hold the resolution limit at 1.5x.',
-      );
-    } else if (perf.shaderQuality === 'high') {
-      setRecommendation('If frames drop, auto-tune can move detail down.');
-    } else {
-      setRecommendation(
-        'Auto-tune is watching. These settings already run light.',
-      );
-    }
-  }, [autoTune, perf.maxPixelRatio, perf.shaderQuality]);
 
   return (
     <section className="ctl-section">
@@ -341,35 +352,16 @@ function PerformanceSection() {
         </select>
       </div>
 
-      <SwitchRow
-        label="Auto-tune"
-        hint="Watches for slow frames and suggests safer settings before applying them."
-        checked={autoTune}
-        onChange={setAutoTune}
-      />
-
-      {recommendation ? (
-        <div className="ctl-empty" role="status">
-          <p className="ctl-empty__body">{recommendation}</p>
-          {perf.maxPixelRatio > 1.5 ? (
-            <button
-              type="button"
-              className="ctl-btn"
-              onClick={() => setOption('maxPixelRatio', 1.5)}
-            >
-              Limit to 1.5x
-            </button>
-          ) : perf.shaderQuality === 'high' ? (
-            <button
-              type="button"
-              className="ctl-btn"
-              onClick={() => setOption('shaderQuality', 'balanced')}
-            >
-              Use balanced detail
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <span className="ctl-row__label">Adaptive quality</span>
+          <span className="ctl-row__hint" role="status">
+            {describeAdaptiveQualityStatus(
+              engineSnapshot?.adaptiveQuality ?? null,
+            )}
+          </span>
+        </span>
+      </div>
     </section>
   );
 }

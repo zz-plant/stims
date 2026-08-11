@@ -231,8 +231,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
       updateInspectorField: sessionState.updateInspectorField,
-      startXrStage: sessionState.startXrStage,
-      endXrStage: sessionState.endXrStage,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -279,8 +277,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
       sessionState.updateInspectorField,
-      sessionState.startXrStage,
-      sessionState.endXrStage,
       shellOrchestration.handleVisualSearch,
     ],
   );

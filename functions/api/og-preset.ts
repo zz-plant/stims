@@ -1,5 +1,11 @@
 // Cloudflare Pages Function: Dynamic 1200x630 Social Card Generator for Presets
-// Serves GET /api/og-preset?id=<preset-id> or GET /og/preset.svg?id=<preset-id>
+// Serves GET /api/og-preset?id=<preset-id>
+//
+// Default output is PNG rasterized with resvg-wasm — X, Facebook, Slack,
+// Discord, and iMessage all refuse SVG in link previews. `?format=svg`
+// returns the source SVG for debugging the template.
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import resvgWasm from './resvg.wasm';
 
 const escapeXml = (value: string) =>
   value
@@ -38,6 +44,8 @@ function buildVuMeter(x: number, y: number): string {
 const SCOPE_TRACE_PATH =
   'M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500';
 
+// Font weights are limited to the static TTFs vendored in /og/fonts
+// (Grotesk 400/500/700, Mono 400/700) so the rasterizer never substitutes.
 export function buildPresetOgSvg({
   title,
   author,
@@ -89,7 +97,7 @@ export function buildPresetOgSvg({
   <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">STIMS • AUDIO VISUALIZER</text>
 
   <!-- Preset Title -->
-  <text x="88" y="${safeAuthor ? '230' : '250'}" font-size="${titleFontSize}" font-weight="800" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
+  <text x="88" y="${safeAuthor ? '230' : '250'}" font-size="${titleFontSize}" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
 
   <!-- Author Byline -->
   ${safeAuthor ? `<text x="88" y="286" font-size="26" font-weight="500" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#f7f4eb" font-weight="700">${safeAuthor}</tspan></text>` : ''}
@@ -97,10 +105,10 @@ export function buildPresetOgSvg({
   <!-- Badges -->
   <g transform="translate(88, ${safeAuthor ? 336 : 306})">
     <rect x="0" y="0" width="180" height="36" rx="4" fill="rgba(119, 201, 255, 0.12)" stroke="rgba(119, 201, 255, 0.35)"/>
-    <text x="16" y="24" font-size="14" font-weight="600" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">${escapeXml(badgeLabel)}</text>
+    <text x="16" y="24" font-size="14" font-weight="500" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">${escapeXml(badgeLabel)}</text>
 
     <rect x="196" y="0" width="176" height="36" rx="4" fill="rgba(244, 122, 84, 0.16)" stroke="rgba(244, 122, 84, 0.4)"/>
-    <text x="212" y="24" font-size="14" font-weight="600" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">WebGPU • 60 FPS</text>
+    <text x="212" y="24" font-size="14" font-weight="500" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">WebGPU • 60 FPS</text>
   </g>
 
   ${buildVuMeter(996, 560)}
@@ -111,39 +119,220 @@ export function buildPresetOgSvg({
 </svg>`;
 }
 
-export async function onRequest(context: {
-  request: Request;
-}): Promise<Response> {
-  const url = new URL(context.request.url);
-  const presetId =
-    url.searchParams.get('id') ||
-    url.searchParams.get('preset') ||
-    'rovastar-parallel-universe';
+export const DEFAULT_PRESET_ID = 'rovastar-parallel-universe';
 
-  const title = presetId
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-  let author: string | undefined;
+// Ids feed the SVG, cache keys, and font shaping — reject anything that is
+// not a plain slug rather than trying to escape it everywhere downstream.
+const PRESET_ID_PATTERN = /^[a-z0-9][a-z0-9_.-]{0,127}$/i;
 
-  // Split author if title has format Author - Title
-  if (title.includes(' ')) {
-    const parts = title.split(' ');
-    if (parts.length > 2) {
-      author = parts[0];
-    }
+export function normalizePresetId(raw: string | null): string {
+  if (!raw) return DEFAULT_PRESET_ID;
+  const candidate = raw.trim().toLowerCase();
+  return PRESET_ID_PATTERN.test(candidate) ? candidate : DEFAULT_PRESET_ID;
+}
+
+// Mirrors the middleware's humanization: first slug segment reads as the
+// author, the rest as the title (rovastar-parallel-universe -> Rovastar,
+// "Parallel Universe").
+export function humanizePresetId(presetId: string): {
+  title: string;
+  author?: string;
+} {
+  const parts = presetId.split('-').filter(Boolean);
+  const titleCase = (word: string) =>
+    word.charAt(0).toUpperCase() + word.slice(1);
+  if (parts.length >= 2) {
+    return {
+      title: parts.slice(1).map(titleCase).join(' '),
+      author: titleCase(parts[0]),
+    };
   }
+  return { title: parts.map(titleCase).join(' ') || presetId };
+}
 
-  const svg = buildPresetOgSvg({
-    id: presetId,
-    title,
-    author,
-  });
+export type RenderAssets = {
+  // wrangler resolves the .wasm import to a WebAssembly.Module; bun's asset
+  // loader resolves it to a file-path string, which is unusable — tests
+  // inject real bytes through this seam instead.
+  wasm: WebAssembly.Module | BufferSource;
+  fonts: Uint8Array[];
+};
 
-  return new Response(svg, {
-    headers: {
-      'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=86400, s-maxage=604800',
+let wasmReady: Promise<void> | null = null;
+async function ensureWasm(wasm: RenderAssets['wasm']): Promise<void> {
+  if (!wasmReady) {
+    wasmReady = initWasm(wasm).catch((error: unknown) => {
+      wasmReady = null;
+      throw error;
+    });
+  }
+  return wasmReady;
+}
+
+export async function renderPresetOgPng(
+  svg: string,
+  assets: RenderAssets,
+): Promise<Uint8Array> {
+  await ensureWasm(assets.wasm);
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: 1200 },
+    background: '#0b1014',
+    font: {
+      fontBuffers: assets.fonts,
+      defaultFontFamily: 'Space Grotesk',
+      sansSerifFamily: 'Space Grotesk',
+      monospaceFamily: 'Space Mono',
     },
   });
+  try {
+    return resvg.render().asPng();
+  } finally {
+    resvg.free();
+  }
+}
+
+const FONT_PATHS = [
+  '/og/fonts/SpaceGrotesk-Regular.ttf',
+  '/og/fonts/SpaceGrotesk-Medium.ttf',
+  '/og/fonts/SpaceGrotesk-Bold.ttf',
+  '/og/fonts/SpaceMono-Regular.ttf',
+  '/og/fonts/SpaceMono-Bold.ttf',
+];
+
+type StaticAssetFetcher = {
+  fetch: (input: Request | URL | string) => Promise<Response>;
+};
+
+type OgPresetContext = {
+  request: Request;
+  env?: { ASSETS?: StaticAssetFetcher };
+  waitUntil?: (promise: Promise<unknown>) => void;
+  // Test seam: bypasses the .wasm module import and ASSETS font loading.
+  renderAssets?: RenderAssets;
+};
+
+let fontsReady: Promise<Uint8Array[]> | null = null;
+function loadFonts(
+  assetsBinding: StaticAssetFetcher,
+  origin: string,
+): Promise<Uint8Array[]> {
+  if (!fontsReady) {
+    fontsReady = Promise.all(
+      FONT_PATHS.map(async (path) => {
+        const response = await assetsBinding.fetch(new URL(path, origin));
+        if (!response.ok) {
+          throw new Error(`Font asset ${path} returned ${response.status}`);
+        }
+        return new Uint8Array(await response.arrayBuffer());
+      }),
+    ).catch((error: unknown) => {
+      fontsReady = null;
+      throw error;
+    });
+  }
+  return fontsReady;
+}
+
+async function resolveRenderAssets(
+  context: OgPresetContext,
+  origin: string,
+): Promise<RenderAssets> {
+  if (context.renderAssets) return context.renderAssets;
+  if (typeof resvgWasm === 'string') {
+    throw new Error(
+      'resvg.wasm resolved to a path string; PNG rendering requires the Workers runtime or injected renderAssets',
+    );
+  }
+  const assetsBinding = context.env?.ASSETS;
+  if (!assetsBinding) {
+    throw new Error('ASSETS binding unavailable; cannot load font buffers');
+  }
+  return {
+    wasm: resvgWasm,
+    fonts: await loadFonts(assetsBinding, origin),
+  };
+}
+
+const PNG_CACHE_CONTROL =
+  'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
+
+function edgeCache(): Cache | null {
+  const store = (globalThis as { caches?: { default?: Cache } & CacheStorage })
+    .caches;
+  return store?.default ?? null;
+}
+
+// The generic static card ships in every deploy; serving it on render
+// failure keeps unfurls working when rasterization breaks.
+async function fallbackPngResponse(
+  context: OgPresetContext,
+  origin: string,
+): Promise<Response> {
+  const assetsBinding = context.env?.ASSETS;
+  if (assetsBinding) {
+    try {
+      const fallback = await assetsBinding.fetch(
+        new URL('/og/milkdrop.png', origin),
+      );
+      if (fallback.ok) {
+        return new Response(fallback.body, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=300',
+          },
+        });
+      }
+    } catch {
+      // fall through to the redirect below
+    }
+  }
+  return Response.redirect(new URL('/og/milkdrop.png', origin), 302);
+}
+
+export async function onRequest(context: OgPresetContext): Promise<Response> {
+  const url = new URL(context.request.url);
+  const presetId = normalizePresetId(
+    url.searchParams.get('id') || url.searchParams.get('preset'),
+  );
+  const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
+
+  const { title, author } = humanizePresetId(presetId);
+  const svg = buildPresetOgSvg({ id: presetId, title, author });
+
+  if (format === 'svg') {
+    return new Response(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': PNG_CACHE_CONTROL,
+      },
+    });
+  }
+
+  const cache = edgeCache();
+  const cacheKey = new Request(
+    new URL(`/api/og-preset?id=${presetId}`, url.origin).toString(),
+    { method: 'GET' },
+  );
+  if (cache) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  }
+
+  try {
+    const assets = await resolveRenderAssets(context, url.origin);
+    const png = await renderPresetOgPng(svg, assets);
+    const response = new Response(new Uint8Array(png).buffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': PNG_CACHE_CONTROL,
+      },
+    });
+    if (cache) {
+      const store = cache.put(cacheKey, response.clone());
+      context.waitUntil?.(store);
+    }
+    return response;
+  } catch {
+    return fallbackPngResponse(context, url.origin);
+  }
 }

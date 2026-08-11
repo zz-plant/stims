@@ -44,14 +44,6 @@ export type MilkdropRuntimeSignals = {
   beat_mid: number;
   beat_treb?: number;
   beat_treble?: number;
-  stemDrums?: number;
-  stemBass?: number;
-  stemVocals?: number;
-  stemOther?: number;
-  stem_drums?: number;
-  stem_bass?: number;
-  stem_vocals?: number;
-  stem_other?: number;
   weightedEnergy: number;
   inputX: number;
   inputY: number;
@@ -141,6 +133,11 @@ export type MilkdropRuntimeSignals = {
   frequencyDataR?: Uint8Array | null;
   waveformDataL?: Uint8Array | null;
   waveformDataR?: Uint8Array | null;
+  // Float PCM in [-1, 1] with the same AGC gain as the byte waveform
+  // buffers; preferred by the wave renderer to avoid byte quantization.
+  waveformFloatData?: Float32Array | null;
+  waveformFloatDataL?: Float32Array | null;
+  waveformFloatDataR?: Float32Array | null;
 };
 
 export type MilkdropCapturedVideoReactiveState = {

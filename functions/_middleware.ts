@@ -65,7 +65,14 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const authorCredit = author ? `by ${author}` : null;
   const fullTitle = `${title}${authorCredit ? ` ${authorCredit}` : ''} — Stims Music Visualizer`;
   const description = `Experience "${title}"${authorCredit ? ` by ${author}` : ''} live on Stims music visualizer. High-fidelity audio-reactive visuals in your browser, WebGPU accelerated.`;
-  const ogImageUrl = `https://toil.fyi/api/og-preset?id=${encodeURIComponent(presetId)}`;
+  // Crawlers require absolute image URLs; /api/og-preset rasterizes the
+  // per-preset card to PNG via resvg-wasm (SVG is refused by every major
+  // unfurler) and falls back to the static card if rendering fails.
+  const imageUrl = new URL(
+    `/api/og-preset?id=${encodeURIComponent(presetId)}`,
+    url.origin,
+  ).toString();
+  const imageAlt = `Social card for the ${title} preset on Stims`;
 
   // Use Cloudflare HTMLRewriter to substitute Open Graph / Twitter tags dynamically
   // HTMLRewriter is provided natively by Cloudflare Workers runtime
@@ -88,12 +95,22 @@ export async function onRequest(context: EventContext): Promise<Response> {
       })
       .on('meta[property="og:image"]', {
         element(el) {
-          el.setAttribute('content', ogImageUrl);
+          el.setAttribute('content', imageUrl);
         },
       })
-      .on('meta[property="og:image:type"]', {
+      .on('meta[property="og:image:alt"]', {
         element(el) {
-          el.setAttribute('content', 'image/svg+xml');
+          el.setAttribute('content', imageAlt);
+        },
+      })
+      .on('meta[name="twitter:image"]', {
+        element(el) {
+          el.setAttribute('content', imageUrl);
+        },
+      })
+      .on('meta[name="twitter:image:alt"]', {
+        element(el) {
+          el.setAttribute('content', imageAlt);
         },
       })
       .on('meta[name="twitter:title"]', {
@@ -104,11 +121,6 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .on('meta[name="twitter:description"]', {
         element(el) {
           el.setAttribute('content', description);
-        },
-      })
-      .on('meta[name="twitter:image"]', {
-        element(el) {
-          el.setAttribute('content', ogImageUrl);
         },
       })
       .transform(response);

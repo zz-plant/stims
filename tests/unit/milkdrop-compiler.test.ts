@@ -2405,7 +2405,11 @@ comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
       ]),
     );
   });
-  test('detects custom shader sampler declarations and reports missing bundled textures', () => {
+  test('resolves aliased custom shader sampler declarations case-insensitively', () => {
+    // `anandamideCTFree00` is aliased to the noise texture in
+    // shader-samplers.ts; the lookup happens after lowercasing, so this also
+    // guards the case-folded alias table (a camelCased key there would never
+    // match and silently regress to "missing texture").
     const source = readFileSync(
       join(
         process.cwd(),
@@ -2420,7 +2424,32 @@ comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
 
     expect(compiled.ir.shaderText.customSamplers).toContainEqual({
       name: 'sampler_anandamideCTFree00',
+      textureFile: 'seamless_perlin_noise.png',
+      filter: 'linear',
+      wrap: 'repeat',
+    });
+    expect(compiled.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: 'preset_missing_custom_sampler_texture',
+        severity: 'warning',
+      }),
+    );
+  });
+
+  test('reports missing bundled textures for unknown custom samplers', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+shader=1
+comp_shader=uniform sampler2D sampler_definitely_not_bundled; ret = texture(sampler_definitely_not_bundled, uv).rgb
+    `.trim(),
+      { id: 'unknown-custom-sampler', origin: 'bundled' },
+    );
+
+    expect(compiled.ir.shaderText.customSamplers).toContainEqual({
+      name: 'sampler_definitely_not_bundled',
       textureFile: null,
+      filter: 'linear',
+      wrap: 'repeat',
     });
     expect(compiled.diagnostics).toContainEqual(
       expect.objectContaining({
@@ -2443,6 +2472,8 @@ comp_shader=uniform sampler2D sampler_water_caustics; ret = texture(sampler_wate
       {
         name: 'sampler_water_caustics',
         textureFile: 'water_caustics.png',
+        filter: 'linear',
+        wrap: 'repeat',
       },
     ]);
     expect(

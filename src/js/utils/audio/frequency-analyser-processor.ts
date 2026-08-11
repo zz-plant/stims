@@ -2,6 +2,24 @@
 
 const TWO_PI = Math.PI * 2;
 
+// Match AnalyserNode.getByteFrequencyData's decibel window (minDecibels /
+// maxDecibels defaults). The rest of the audio pipeline — band levels, beat
+// thresholds, the milkdrop signal processor — was tuned against AnalyserNode
+// byte spectra, and the non-worklet fallback path still produces them. A
+// linear magnitude→byte mapping here left realistic music (−20…−40 dBFS) at
+// byte values of 0–12, flatlining every downstream band level.
+const DB_MIN = -100;
+const DB_MAX = -30;
+const DB_RANGE = DB_MAX - DB_MIN;
+
+function byteFromMagnitude(magnitude: number): number {
+  const db = 20 * Math.log10(magnitude + 1e-12);
+  return Math.min(
+    255,
+    Math.max(0, Math.round(((db - DB_MIN) / DB_RANGE) * 255)),
+  );
+}
+
 function buildHannWindow(length: number): Float32Array {
   const window = new Float32Array(length);
   for (let i = 0; i < length; i += 1) {
@@ -261,20 +279,14 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         if (magnitude > maxMag) maxMag = magnitude;
         sumMag += magnitude;
 
-        this.freqBuf[i] = Math.min(
-          255,
-          Math.max(0, Math.round(magnitude * 255)),
-        );
+        this.freqBuf[i] = byteFromMagnitude(magnitude);
         if (this.hasStereoInput) {
           const magnitudeR =
             Math.sqrt(
               this.outputRealR[i] * this.outputRealR[i] +
                 this.outputImagR[i] * this.outputImagR[i],
             ) / this.frequencyBinCount;
-          this.freqBufR[i] = Math.min(
-            255,
-            Math.max(0, Math.round(magnitudeR * 255)),
-          );
+          this.freqBufR[i] = byteFromMagnitude(magnitudeR);
         }
       }
 
@@ -482,12 +494,6 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
           kickTransient,
           vocalMidEnv,
           snareSnap,
-        },
-        stemMetrics: {
-          stemBass: subBassEnv,
-          stemDrums: Math.min(1, kickTransient * 0.7 + snareSnap * 0.3),
-          stemVocals: vocalMidEnv,
-          stemSynths: Math.min(1, mid * 0.6 + treble * 0.4),
         },
       };
       const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];

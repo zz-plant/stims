@@ -31,7 +31,7 @@ jobs:
       - name: Check commit messages
         run: |
           base="${{ github.event.pull_request.base.sha }}"
-          git log --format='%s' "$base..HEAD" | while IFS= read -r subject; do
+          git log --no-merges --format='%s' "$base..HEAD" | while IFS= read -r subject; do
             echo "$subject" > /tmp/msg.txt
             bun run check:commit-msg /tmp/msg.txt || exit 1
           done
@@ -146,6 +146,28 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      # The loop-preset visual sweep in tests/corpus/ launches headless
+      # Chromium, so the corpus is no longer browser-free. On an exact cache
+      # hit only the apt-installed system libraries are missing (the runner
+      # image doesn't guarantee them and they can't be cached), so skip the
+      # ~150 MB browser download and install just the deps.
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
+
       - name: Run compat + parity corpus
         run: bun run test:compat
 
@@ -225,13 +247,25 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Cache Playwright browsers
+        id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
+      # On an exact cache hit only the apt-installed system libraries are
+      # missing (the runner image doesn't guarantee them and they can't be
+      # cached), so skip the ~150 MB browser download and install just the
+      # deps.
       - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: bunx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
 
       # engine-mount launches a headed browser for real canvas rendering, so
       # it needs a virtual display; xvfb ships with Playwright's --with-deps
@@ -242,11 +276,12 @@ jobs:
   deploy_preview:
     name: Deploy Pages preview
     runs-on: ubuntu-latest
+    # Previews only need the built artifact — they exist for humans to look
+    # at, and the test jobs still report (and gate merging) independently.
+    # Gating on `build` alone shaves the whole Playwright/e2e tail off
+    # time-to-preview-URL. Production deploys below keep the full gate.
     needs:
-      - check
-      - parity
       - build
-      - integration
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -273,8 +308,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
+      # The install only exists to provide wrangler — the build step reuses
+      # the downloaded artifact, and the committed functions/api/resvg.wasm
+      # already matches what postinstall would sync — so skip scripts.
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Download Pages artifact
         uses: actions/download-artifact@v4
@@ -326,8 +364,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
+      # The install only exists to provide wrangler — the build step reuses
+      # the downloaded artifact, and the committed functions/api/resvg.wasm
+      # already matches what postinstall would sync — so skip scripts.
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Download Pages artifact
         uses: actions/download-artifact@v4

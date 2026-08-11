@@ -1315,8 +1315,14 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-muted);
   }
 
+  /* State is double-encoded (glyph + hue) so invalid vs ready does not
+     rest on a red/green distinction alone. */
   .stims-shell__youtube-feedback[data-state="invalid"] {
-    color: color-mix(in srgb, #ff8e96 78%, var(--stims-ink));
+    color: color-mix(in srgb, var(--stims-bad) 78%, var(--stims-ink));
+  }
+
+  .stims-shell__youtube-feedback[data-state="invalid"]::before {
+    content: "⚠ " / "";
   }
 
   .stims-shell__youtube-recent-header {
@@ -1337,7 +1343,11 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__youtube-feedback[data-state="ready"] {
-    color: color-mix(in srgb, #89f3b3 68%, var(--stims-ink));
+    color: color-mix(in srgb, var(--stims-good) 68%, var(--stims-ink));
+  }
+
+  .stims-shell__youtube-feedback[data-state="ready"]::before {
+    content: "✓ " / "";
   }
 
   .stims-shell__chip-list {
@@ -2178,37 +2188,37 @@ body[data-page="workspace"][data-live="true"] {
       display: none;
     }
   }
-  @media (max-width: 640px) {
-    /* High contrast mode support */
-    @media (prefers-contrast: high) {
-      :scope {
-        --stims-ink: #ffffff;
-        --stims-ink-strong: #ffffff;
-        --stims-muted: #e0e0e0;
-        --stims-line: #ffffff;
-        --stims-line-strong: #ffffff;
-        --stims-line-soft: #cccccc;
-        --stims-accent: #ffcc00;
-        --stims-cool: #00ccff;
-        --stims-good: #00ff00;
-        --stims-warn: #ffff00;
-        --stims-bad: #ff0000;
-        background: black;
-      }
+  /* High contrast mode support — applies at every viewport width, not
+     just mobile: the outline is the only non-color cue selected chips,
+     preset rows, and radio options get in this mode. */
+  @media (prefers-contrast: more) {
+    :scope {
+      --stims-ink: #ffffff;
+      --stims-ink-strong: #ffffff;
+      --stims-muted: #e0e0e0;
+      --stims-line: #ffffff;
+      --stims-line-strong: #ffffff;
+      --stims-line-soft: #cccccc;
+      --stims-accent: #ffcc00;
+      --stims-cool: #00ccff;
+      --stims-good: #00ff00;
+      --stims-warn: #ffff00;
+      --stims-bad: #ff0000;
+      background: black;
+    }
 
-      .stims-shell__starter-card,
-      .ctl-chip,
-      .ctl-btn,
-      .ctl-preset {
-        border: 2px solid currentColor;
-      }
+    .stims-shell__starter-card,
+    .ctl-chip,
+    .ctl-btn,
+    .ctl-preset {
+      border: 2px solid currentColor;
+    }
 
-      .ctl-chip[data-active="true"],
-      .ctl-preset[data-active="true"],
-      .ctl-option:has(.ctl-option__input:checked) {
-        outline: 2px solid var(--stims-accent);
-        outline-offset: 2px;
-      }
+    .ctl-chip[data-active="true"],
+    .ctl-preset[data-active="true"],
+    .ctl-option:has(.ctl-option__input:checked) {
+      outline: 2px solid var(--stims-accent);
+      outline-offset: 2px;
     }
   }
   @media (max-width: 480px) {
@@ -2461,6 +2471,52 @@ body[data-page="workspace"][data-live="true"] {
   filter: brightness(1.1);
 }
 
+/* ===== AI-assisted edit diff preview ===== */
+.editor-assisted-diff {
+  border: 1px solid var(--stims-border);
+  border-radius: var(--stims-radius);
+  background: var(--stims-surface);
+  padding: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-assisted-diff__head {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+}
+
+.editor-assisted-diff__lines {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.editor-assisted-diff__line--add {
+  color: var(--stims-good);
+}
+
+.editor-assisted-diff__line--del {
+  color: var(--stims-danger);
+  text-decoration: line-through;
+}
+
+.editor-assisted-diff__line--gap {
+  opacity: 0.55;
+  font-style: italic;
+}
+
+.editor-assisted-diff__actions {
+  display: flex;
+  gap: 6px;
+}
+
 /* ===== Ghost loading ===== */
 .preset-artwork-ghost {
   position: relative;
@@ -2708,7 +2764,7 @@ body[data-page="workspace"][data-live="true"] {
   align-items: center;
   padding: 3px 10px;
   border: 1px solid rgba(255, 184, 77, 0.35);
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: rgba(12, 16, 26, 0.97);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.35),

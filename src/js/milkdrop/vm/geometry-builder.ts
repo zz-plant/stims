@@ -82,11 +82,11 @@ function getParticleFieldInstanceCount({
   detailScale: number;
   pointCount: number;
 }) {
-  const densityInfluence = clamp(detailScale, 0.5, 1.65);
+  const densityInfluence = clamp(detailScale, 0.5, 2.4);
   const rawCount = Math.round(
     Math.sqrt(pointCount) * (4.5 + meshDensity * 0.22) * densityInfluence,
   );
-  return clamp(rawCount, 24, 1200);
+  return clamp(rawCount, 24, 2400);
 }
 
 const STATIC_DISABLED_PARTICLE_FIELD: MilkdropParticleFieldVisual = {
@@ -233,8 +233,6 @@ function transformMeshPoint({
   }
 
   const local = scratch;
-  local.x = gridX;
-  local.y = gridY;
   const aspectRatio = signals.aspect ?? 1;
   const resolvedAspectX =
     aspectX ??
@@ -244,6 +242,13 @@ function transformMeshPoint({
     aspectY ??
     (signals as unknown as Record<string, number | undefined>).aspecty ??
     (aspectRatio > 1 ? 1 : aspectRatio);
+
+  // Convert from renderer space [-1,1] to MilkDrop space [0,1]
+  // x = 0 is left, x = 1 is right (with aspect correction)
+  // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
+  local.x = gridX * 0.5 * resolvedAspectX + 0.5;
+  local.y = -gridY * 0.5 * resolvedAspectY + 0.5;
+
   const aspectGridX = gridX * resolvedAspectX;
   const aspectGridY = gridY * resolvedAspectY;
   local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
@@ -258,11 +263,23 @@ function transformMeshPoint({
   local.sy = state.sy ?? 1;
   local.dx = state.dx ?? 0;
   local.dy = state.dy ?? 0;
-  runProgram(
-    preset.ir.programs.perPixel,
-    createEnv(signals, local, { reuseExtraAsEnv: true }),
-    local,
-  );
+
+  // Seed per-pixel locals with q1-q32 so per-pixel writes don't leak to
+  // the shared register bank and corrupt the next frame's per-frame pool
+  const env = createEnv(signals, local, { reuseExtraAsEnv: true });
+  for (let i = 1; i <= 32; i += 1) {
+    const key = `q${i}`;
+    if (!(key in local)) {
+      local[key] = (env as Record<string, number>)[key] ?? 0;
+    }
+  }
+
+  runProgram(preset.ir.programs.perPixel, env, local);
+
+  // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
+  // transform math below runs in renderer [-1,1] space, so invert the mapping.
+  const rendererX = (((local.x ?? 0.5) - 0.5) * 2) / resolvedAspectX;
+  const rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / resolvedAspectY);
 
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const centerX = normalizeTransformCenter(local.cx ?? 0.5);
@@ -274,8 +291,8 @@ function transformMeshPoint({
 
   const cosRot = Math.cos(local.rot);
   const sinRot = Math.sin(local.rot);
-  const relX = local.x - centerX;
-  const relY = local.y - centerY;
+  const relX = rendererX - centerX;
+  const relY = rendererY - centerY;
   const rx = relX * cosRot - relY * sinRot + centerX;
   const ry = relX * sinRot + relY * cosRot + centerY;
 
@@ -283,8 +300,15 @@ function transformMeshPoint({
   const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
   const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
   const zoom = Math.max(local.zoom ?? 1, 0);
-  const zoomScale =
-    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1));
+  // Authored presets legitimately use extreme pairs (orbasonic ships
+  // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
+  // float32 at the edges and NaN-poisons the warp into a black frame.
+  // MilkDrop's own math saturates instead of exploding, so bound the scale.
+  const zoomScale = clamp(
+    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1)),
+    0.02,
+    50,
+  );
   const zx = centerX + (rx - centerX) * zoomScale;
   const zy = centerY + (ry - centerY) * zoomScale;
 
@@ -307,7 +331,9 @@ function transformMeshPoint({
 }
 
 export function getMeshDensity(state: MutableState, detailScale: number) {
-  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 48);
+  // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
+  // detail scale (gated on backend + quality tier) climbs past ~3x.
+  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 96);
 }
 
 export function getMotionVectorDescriptorContext({
@@ -455,6 +481,10 @@ export function buildMeshField({
   proceduralMeshPlan: MilkdropProceduralMeshDescriptorPlan | null;
 }): MeshField {
   const density = getMeshDensity(state, detailScale);
+
+  // Clear per-pixel scratch each frame to prevent accumulation across frames
+  geometryState.pointScratch = {};
+
   if (proceduralMeshPlan) {
     geometryState.meshPoints.length = 0;
     return {

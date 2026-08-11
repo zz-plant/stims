@@ -75,10 +75,10 @@ type QualityStep = AdaptiveQualityMultipliers & {
 const QUALITY_STEPS: readonly QualityStep[] = [
   {
     id: 'ultra',
-    renderScaleMultiplier: 1.15,
-    maxPixelRatioMultiplier: 1.15,
-    densityMultiplier: 1.2,
-    feedbackResolutionMultiplier: 1.1,
+    renderScaleMultiplier: 1.25,
+    maxPixelRatioMultiplier: 1.25,
+    densityMultiplier: 1.35,
+    feedbackResolutionMultiplier: 1.25,
   },
   {
     id: 'full',
@@ -145,7 +145,10 @@ export function getAdaptiveQualityDisplayRefreshRate(): number {
 }
 
 function estimateFrameBudgetMs(): number {
-  const hz = getAdaptiveQualityDisplayRefreshRate();
+  // Budget against at most a 120Hz cadence: a 144-240Hz panel that presents at
+  // panel rate would otherwise get a 4-7ms budget, read every frame as
+  // over-budget, and pin the controller into permanent degradation.
+  const hz = Math.min(getAdaptiveQualityDisplayRefreshRate(), 120);
   return 1000 / hz;
 }
 
@@ -184,7 +187,13 @@ function buildHeuristicProfile(
         ? 1
         : 2;
 
-  if (capabilities.recommendedQualityPreset !== 'hi-fi') {
+  // 'ultra' and 'hi-fi' are both top-tier recommendations; production code
+  // emits 'ultra' for high-end desktops, so treating only 'hi-fi' as top-tier
+  // silently demoted every real high-end machine one step.
+  const topTierRecommendation =
+    capabilities.recommendedQualityPreset === 'ultra' ||
+    capabilities.recommendedQualityPreset === 'hi-fi';
+  if (!topTierRecommendation) {
     initialStep = Math.max(initialStep, 1);
   }
 
@@ -208,10 +217,7 @@ function buildHeuristicProfile(
     reasons.push('color-attachment headroom is limited.');
     initialStep += 1;
   }
-  if (
-    capabilities.performanceTier === 'high-end' &&
-    capabilities.recommendedQualityPreset !== 'hi-fi'
-  ) {
+  if (capabilities.performanceTier === 'high-end' && !topTierRecommendation) {
     reasons.push(
       'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
     );
@@ -539,7 +545,7 @@ export function createAdaptiveQualityController({
         stepLock === null &&
         consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
         qualityStep > 0 &&
-        heuristic.profile === 'high-end'
+        (heuristic.profile === 'high-end' || heuristic.profile === 'enhanced')
       ) {
         qualityStep -= 1;
         adaptation = 'enhanced';

@@ -88,6 +88,15 @@ const VisualSearchPanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
 );
 
+function prefersThumbModeByDefault() {
+  try {
+    return window.matchMedia('(pointer: coarse) and (max-width: 767px)')
+      .matches;
+  } catch {
+    return false;
+  }
+}
+
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -107,7 +116,9 @@ function StimsWorkspaceAppShell() {
   } | null>(null);
   const [thumbMode, setThumbMode] = useState(() => {
     try {
-      return localStorage.getItem('stims:mobile-thumb-mode') === 'true';
+      const stored = localStorage.getItem('stims:mobile-thumb-mode');
+      if (stored !== null) return stored === 'true';
+      return prefersThumbModeByDefault();
     } catch {
       return false;
     }
@@ -660,7 +671,9 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'visualsearch' ? (
             <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
           ) : null}
-          {ui.routeState.panel === 'synthesize' ? <SynthesizePanel /> : null}
+          {ui.routeState.panel === 'synthesize' ? (
+            <SynthesizePanel offline={offline} />
+          ) : null}
         </Suspense>
       </SidePanel>
 

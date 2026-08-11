@@ -122,17 +122,29 @@ export function shouldFallbackMilkdropPresetToWebgl({
   compatibilityMode,
   descriptorPlan,
   flags,
+  nativeWebGpuFeedbackEnabled = false,
+  safeWebGpuPath = false,
 }: {
   backend: MilkdropRenderBackend;
   compatibilityMode: boolean;
   descriptorPlan: MilkdropWebGpuDescriptorPlan;
   flags: MilkdropWebGpuOptimizationFlags;
+  /**
+   * Must mirror what the live adapter passes to
+   * resolveMilkdropRendererExecutionPlan: deciding fallback with native
+   * feedback assumed unavailable declares fallback for feedback presets the
+   * adapter would render natively.
+   */
+  nativeWebGpuFeedbackEnabled?: boolean;
+  safeWebGpuPath?: boolean;
 }) {
   const plan = resolveMilkdropRendererExecutionPlan({
     backend,
     compatibilityMode,
     descriptorPlan,
     flags,
+    nativeWebGpuFeedbackEnabled,
+    safeWebGpuPath,
   });
 
   if (plan.shouldFallbackToWebgl) {

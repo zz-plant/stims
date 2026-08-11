@@ -3,6 +3,7 @@ import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
 import {
+  createWaveformAutoGain,
   type FourBandTransientMetrics,
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
@@ -53,6 +54,22 @@ function clamp(value: number, min: number, max: number): number {
 
 function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
+}
+
+// Float analog of createWaveformAutoGain().apply(): scale around 0 and clamp
+// to [-1, 1], writing into a reusable output buffer.
+function applyFloatWaveformGain(
+  input: Float32Array,
+  output: Float32Array | null,
+  gain: number,
+): Float32Array {
+  const target =
+    output?.length === input.length ? output : new Float32Array(input.length);
+  const effectiveGain = gain > 1 ? gain : 1;
+  for (let i = 0; i < input.length; i += 1) {
+    target[i] = clamp(input[i] * effectiveGain, -1, 1);
+  }
+  return target;
 }
 
 export function resolveAdaptiveFftSize(
@@ -109,6 +126,16 @@ export class FrequencyAnalyser {
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
+  private readonly waveformAgc = createWaveformAutoGain();
+  private waveformGain = 1;
+  private normalizedWaveform: Uint8Array | null = null;
+  private normalizedWaveformL: Uint8Array | null = null;
+  private normalizedWaveformR: Uint8Array | null = null;
+  private waveformFloat: Float32Array | null = null;
+  private waveformFloatL: Float32Array | null = null;
+  private waveformFloatR: Float32Array | null = null;
+  private timeDomainDataL: Float32Array | null = null;
+  private timeDomainDataR: Float32Array | null = null;
 
   private constructor({
     sourceNode,
@@ -413,7 +440,23 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformData;
+    // Quiet sources (the demo track, soft microphones) park every byte near
+    // 128, and presets draw that as a flat line. Normalize toward full scale
+    // for the visualizer; the raw buffer stays untouched so the gain never
+    // compounds across calls.
+    this.waveformGain = this.waveformAgc.measure(this.waveformData);
+    if (this.waveformGain <= 1) {
+      return this.waveformData;
+    }
+    if (this.normalizedWaveform?.length !== this.waveformData.length) {
+      this.normalizedWaveform = new Uint8Array(this.waveformData.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformData,
+      this.normalizedWaveform,
+      this.waveformGain,
+    );
+    return this.normalizedWaveform;
   }
 
   getZeroCrossingRate() {
@@ -481,7 +524,19 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformDataL;
+    if (!this.waveformDataL || this.waveformGain <= 1) {
+      return this.waveformDataL;
+    }
+    // Reuse the mono AGC gain so both channels scale identically.
+    if (this.normalizedWaveformL?.length !== this.waveformDataL.length) {
+      this.normalizedWaveformL = new Uint8Array(this.waveformDataL.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformDataL,
+      this.normalizedWaveformL,
+      this.waveformGain,
+    );
+    return this.normalizedWaveformL;
   }
 
   getWaveformDataR() {
@@ -495,7 +550,74 @@ export class FrequencyAnalyser {
       );
     }
 
-    return this.waveformDataR;
+    if (!this.waveformDataR || this.waveformGain <= 1) {
+      return this.waveformDataR;
+    }
+    if (this.normalizedWaveformR?.length !== this.waveformDataR.length) {
+      this.normalizedWaveformR = new Uint8Array(this.waveformDataR.length);
+    }
+    this.waveformAgc.apply(
+      this.waveformDataR,
+      this.normalizedWaveformR,
+      this.waveformGain,
+    );
+    return this.normalizedWaveformR;
+  }
+
+  // Float PCM for the wave renderer: same signal as getWaveformData() but
+  // without the byte quantization (visible as staircase steps once waves
+  // draw at full fWaveScale amplitude). Applies the same AGC gain as the
+  // byte getters, so callers must read this after getWaveformData() in a
+  // frame — the runtime signal tracker already resolves in that order.
+  getWaveformFloatData(): Float32Array | null {
+    this.updateTimeDomainData();
+    if (this.timeDomainData.length === 0) {
+      return null;
+    }
+    this.waveformFloat = applyFloatWaveformGain(
+      this.timeDomainData,
+      this.waveformFloat,
+      this.waveformGain,
+    );
+    return this.waveformFloat;
+  }
+
+  getWaveformFloatDataL(): Float32Array | null {
+    const analyser = this.analyserNodeL;
+    if (!analyser || typeof analyser.getFloatTimeDomainData !== 'function') {
+      return null;
+    }
+    if (this.timeDomainDataL?.length !== analyser.fftSize) {
+      this.timeDomainDataL = new Float32Array(analyser.fftSize);
+    }
+    analyser.getFloatTimeDomainData(
+      this.timeDomainDataL as Float32Array<ArrayBuffer>,
+    );
+    this.waveformFloatL = applyFloatWaveformGain(
+      this.timeDomainDataL,
+      this.waveformFloatL,
+      this.waveformGain,
+    );
+    return this.waveformFloatL;
+  }
+
+  getWaveformFloatDataR(): Float32Array | null {
+    const analyser = this.analyserNodeR;
+    if (!analyser || typeof analyser.getFloatTimeDomainData !== 'function') {
+      return null;
+    }
+    if (this.timeDomainDataR?.length !== analyser.fftSize) {
+      this.timeDomainDataR = new Float32Array(analyser.fftSize);
+    }
+    analyser.getFloatTimeDomainData(
+      this.timeDomainDataR as Float32Array<ArrayBuffer>,
+    );
+    this.waveformFloatR = applyFloatWaveformGain(
+      this.timeDomainDataR,
+      this.waveformFloatR,
+      this.waveformGain,
+    );
+    return this.waveformFloatR;
   }
 
   getSpectralFeatures() {
@@ -511,6 +633,10 @@ export class FrequencyAnalyser {
   private updateTimeDomainData() {
     if (!this.analyserNode) {
       return;
+    }
+
+    if (this.timeDomainData.length !== this.analyserNode.fftSize) {
+      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
     }
 
     if (typeof this.analyserNode.getFloatTimeDomainData === 'function') {
@@ -1209,31 +1335,63 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
       ownsStream = true;
       permissionState = 'granted';
+    } else if (options.preferSynthetic) {
+      // Use the procedural demo track (arpeggio + kick + sub drone), not a
+      // bare oscillator: a constant sawtooth has a frozen spectrum, so every
+      // band level and beat detector flatlines and presets stop reacting.
+      const demo = getCachedDemoAudioStream();
+      resolvedStream = demo.stream;
+      mockCleanup = demo.cleanup;
+      await demo.resume();
+      ownsStream = true;
+      permissionState = 'granted';
     } else {
       permissionState = await queryMicrophonePermissionState();
 
       if (permissionState === 'denied') {
-        throw new AudioAccessError(
-          'denied',
-          'Microphone access is blocked. Allow microphone access in site settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
-        );
+        if (options.fallbackToSynthetic) {
+          const demo = getCachedDemoAudioStream();
+          resolvedStream = demo.stream;
+          mockCleanup = demo.cleanup;
+          await demo.resume();
+          ownsStream = true;
+          permissionState = 'granted';
+        } else {
+          throw new AudioAccessError(
+            'denied',
+            'Microphone access is blocked. Allow microphone access in site settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
+          );
+        }
+      } else {
+        const effectiveConstraints: MediaStreamConstraints = constraints ?? {
+          audio: {
+            ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
+              ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
+              : {}),
+            ...(options.deviceId
+              ? { deviceId: { exact: options.deviceId } }
+              : {}),
+          },
+        };
+
+        try {
+          resolvedStream =
+            await navigator.mediaDevices.getUserMedia(effectiveConstraints);
+          ownsStream = true;
+          permissionState = permissionState ?? 'granted';
+        } catch (error) {
+          if (options.fallbackToSynthetic) {
+            const demo = getCachedDemoAudioStream();
+            resolvedStream = demo.stream;
+            mockCleanup = demo.cleanup;
+            await demo.resume();
+            ownsStream = true;
+            permissionState = 'granted';
+          } else {
+            throw error;
+          }
+        }
       }
-
-      const effectiveConstraints: MediaStreamConstraints = constraints ?? {
-        audio: {
-          ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
-            ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
-            : {}),
-          ...(options.deviceId
-            ? { deviceId: { exact: options.deviceId } }
-            : {}),
-        },
-      };
-
-      resolvedStream =
-        await navigator.mediaDevices.getUserMedia(effectiveConstraints);
-      ownsStream = true;
-      permissionState = permissionState ?? 'granted';
     }
 
     const streamSource = resolvedStream;

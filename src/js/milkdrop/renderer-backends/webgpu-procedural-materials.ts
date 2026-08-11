@@ -401,10 +401,12 @@ export function buildMilkdropTransformWgslCode(
       signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + paramWarpAnimSpeed)
     ) * paramWarp * 0.08;
     let radiusNormalized = clamp(radius / 1.41421356237, 0.0, 1.0);
-    let zoomScale = pow(
+    // Bounded like the CPU path: extreme authored zoom/zoomexp pairs
+    // (e.g. orbasonic's 100/100) overflow f32 and NaN the warp otherwise.
+    let zoomScale = clamp(pow(
       max(paramZoom, 0.0001),
       pow(max(paramZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    );
+    ), 0.02, 50.0);
     let warped = vec2<f32>(
       (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
       (transformedY + sin(angle * 4.0) * ripple) * zoomScale
@@ -453,10 +455,10 @@ export function buildMilkdropTransformWgslCode(
       signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
     ) * fieldWarp * 0.08;
     let radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
-    let zoomScale = pow(
+    let zoomScale = clamp(pow(
       max(fieldZoom, 0.0001),
       pow(max(fieldZoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
-    );
+    ), 0.02, 50.0);
     let px = (translatedX + cos(angle * 3.0) * ripple) * zoomScale;
     let py = (translatedY + sin(angle * 4.0) * ripple) * zoomScale;
     let cosRot = cos(fieldRotation);
@@ -1160,15 +1162,15 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
     if (mode < 0.5) {
       // Circle — matches CPU path (frame-generation.ts mode 0).
       let angle = t * 6.28318 + pointSignalTime * 0.2;
-      let radius = 0.5 + 0.4 * blendedSampleValue + pointMystery;
+      let radius = 0.5 + 0.4 * blendedSampleValue * pointScale + pointMystery;
       x = pointCenterX + cos(angle) * radius;
       y = pointCenterY + sin(angle) * radius;
     } else if (mode < 1.5) {
       // XYOscillationSpiral — matches CPU path (frame-generation.ts mode 1).
       let sampleR = blendedSampleValue;
       let sampleL = blendedSampleOffset32;
-      let radius = 0.53 + 0.43 * sampleR + pointMystery;
-      let angle = sampleL * 1.5708 + pointSignalTime * 2.3;
+      let radius = 0.53 + 0.43 * sampleR * pointScale + pointMystery;
+      let angle = sampleL * pointScale * 1.5708 + pointSignalTime * 2.3;
       x = pointCenterX + cos(angle) * radius;
       y = pointCenterY + sin(angle) * radius;
     } else if (mode < 2.5) {
@@ -1181,19 +1183,23 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
       // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
       let w1 = 0.45 + 0.5 * (pointMystery * 0.5 + 0.5);
       let w2 = 1.0 - w1;
-      x = -1.0 + 2.0 * t + pointCenterX + blendedSampleValue * 0.44 * pointScale;
-      y = pointCenterY + blendedSampleOffset32 * 0.47 * pointScale;
+      x = -1.0 + 2.0 * t + pointCenterX + blendedSampleOffset32 * 0.44 * pointScale;
+      y = pointCenterY + blendedSampleValue * 0.47 * pointScale;
       // Intra-frame momentum (simplified for GPU).
       x = x * w2 + w1 * blendedSampleOffset64 * pointScale;
       y = y * w2 + w1 * blendedSampleOffset96 * pointScale;
     } else if (mode < 5.5) {
-      let x0 = blendedSampleValue * blendedSampleOffset64 + blendedSampleOffset32 * blendedSampleOffset96;
-      let y0 = blendedSampleValue * blendedSampleValue - blendedSampleOffset32 * blendedSampleOffset64;
+      // ExplosiveHash — mono collapse of MilkDrop's
+      // x0 = R[i]*L[i+32] + L[i]*R[i+32], y0 = R[i]^2 - L[i+32]^2,
+      // with fWaveScale applied to each factor (pointScale squared).
+      let scale2 = pointScale * pointScale;
+      let x0 = 2.0 * blendedSampleValue * blendedSampleOffset32 * scale2;
+      let y0 = (blendedSampleValue * blendedSampleValue - blendedSampleOffset32 * blendedSampleOffset32) * scale2;
       let rot = pointSignalTime * 0.3;
       let cosR = cos(rot);
       let sinR = sin(rot);
-      x = pointCenterX + (x0 * cosR - y0 * sinR) * pointScale;
-      y = pointCenterY + (x0 * sinR + y0 * cosR) * pointScale;
+      x = pointCenterX + (x0 * cosR - y0 * sinR);
+      y = pointCenterY + (x0 * sinR + y0 * cosR);
     } else if (mode < 6.5) {
       // Line — matches CPU path (frame-generation.ts mode 6).
       x = -1.0 + 2.0 * t;
@@ -1203,8 +1209,8 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
       x = -1.0 + 2.0 * t;
       // select(falseValue, trueValue, condition) — WGSL has no ?: operator.
       y = pointCenterY + select(
-        blendedSampleOffset32 * pointScale * 0.5 - separation,
-        blendedSampleValue * pointScale * 0.5 + separation,
+        blendedSampleOffset32 * pointScale * 0.25 - separation,
+        blendedSampleValue * pointScale * 0.25 + separation,
         parity < 0.5
       );
     }

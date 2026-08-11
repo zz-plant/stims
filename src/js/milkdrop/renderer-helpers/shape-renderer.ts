@@ -2,16 +2,20 @@ import type { Group, Line, LineLoop, Material, Mesh, Texture } from 'three';
 import {
   AdditiveBlending,
   Color,
+  DataTexture,
   DoubleSide,
   LineBasicMaterial,
   MeshBasicMaterial,
   NormalBlending,
+  RGBAFormat,
   ShaderMaterial,
   Group as ThreeGroup,
   Line as ThreeLine,
   LineLoop as ThreeLineLoop,
   Mesh as ThreeMesh,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
+import { NodeMaterial, TSL } from 'three/webgpu';
 import type {
   MilkdropBackendBehavior,
   MilkdropRendererBatcher,
@@ -19,7 +23,10 @@ import type {
 import type { MilkdropShapeVisual } from '../types';
 import { MILKDROP_THICK_SHAPE_PASS_OFFSET } from './primitive-rasterization-metrics';
 
+type MilkdropRenderBackend = 'webgl' | 'webgpu';
+
 type ShapeFillHelpers = {
+  backend: MilkdropRenderBackend;
   getShapeFillFallbackColor: (
     shape: MilkdropShapeVisual,
   ) => MilkdropShapeVisual['color'];
@@ -69,6 +76,26 @@ function getShapeOutlineOffsets(shape: MilkdropShapeVisual) {
   return REUSABLE_THICK_OUTLINE_OFFSETS;
 }
 
+// A texture node must always hold a real texture on the WebGPU path (WGSL
+// bindings cannot be null), so an untextured shape samples this 1x1 white
+// placeholder with the `textured` uniform at 0. Also assigned on the WebGL
+// path for symmetry — sampling white with textured=0 is a no-op there too.
+let shapeFillPlaceholderTexture: Texture | null = null;
+
+function getShapeFillPlaceholderTexture(): Texture {
+  if (!shapeFillPlaceholderTexture) {
+    const placeholder = new DataTexture(
+      new Uint8Array([255, 255, 255, 255]),
+      1,
+      1,
+      RGBAFormat,
+    );
+    placeholder.needsUpdate = true;
+    shapeFillPlaceholderTexture = placeholder;
+  }
+  return shapeFillPlaceholderTexture;
+}
+
 function syncShapeShaderUniforms(
   material: ShaderMaterial,
   shape: MilkdropShapeVisual,
@@ -89,7 +116,8 @@ function syncShapeShaderUniforms(
     (shape.color.a ?? 0.4) * alphaMultiplier;
   material.uniforms.secondaryAlpha.value =
     (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
-  material.uniforms.shapeTexture.value = texture;
+  material.uniforms.shapeTexture.value =
+    texture ?? getShapeFillPlaceholderTexture();
   material.uniforms.useGradient.value = shape.secondaryColor ? 1 : 0;
   material.uniforms.textured.value = shape.textured && texture ? 1 : 0;
   material.uniforms.textureZoom.value = Math.max(
@@ -97,6 +125,93 @@ function syncShapeShaderUniforms(
     shape.textureZoom ?? 1,
   );
   material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
+}
+
+// The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder throws
+// on plain ShaderMaterial), while the WebGL path keeps the original GLSL
+// ShaderMaterial — this helper runs on both backends, mirroring the pattern
+// in particle-field-renderer.ts.
+const {
+  cameraProjectionMatrix,
+  clamp: tslClamp,
+  float,
+  fract,
+  mix,
+  modelViewMatrix,
+  positionGeometry,
+  texture: tslTexture,
+  uniform,
+  vec2,
+  vec4,
+} = TSL;
+
+function createShapeFillNodeMaterial(
+  shape: MilkdropShapeVisual,
+  texture: Texture | null,
+  alphaMultiplier: number,
+) {
+  const uniforms = {
+    primaryColor: uniform(
+      new Color(shape.color.r, shape.color.g, shape.color.b),
+    ),
+    secondaryColor: uniform(
+      new Color(
+        shape.secondaryColor?.r ?? 0,
+        shape.secondaryColor?.g ?? 0,
+        shape.secondaryColor?.b ?? 0,
+      ),
+    ),
+    primaryAlpha: uniform((shape.color.a ?? 0.4) * alphaMultiplier),
+    secondaryAlpha: uniform((shape.secondaryColor?.a ?? 0) * alphaMultiplier),
+    shapeTexture: tslTexture(texture ?? getShapeFillPlaceholderTexture()),
+    useGradient: uniform(shape.secondaryColor ? 1 : 0),
+    textured: uniform(shape.textured && texture ? 1 : 0),
+    textureZoom: uniform(Math.max(0.0001, shape.textureZoom ?? 1)),
+    textureAngle: uniform(shape.textureAngle ?? 0),
+  };
+
+  const vLocal = positionGeometry.xy;
+  const blend = tslClamp(vLocal.length(), 0.0, 1.0).mul(uniforms.useGradient);
+  const tint = mix(uniforms.primaryColor, uniforms.secondaryColor, blend);
+  const baseAlpha = mix(uniforms.primaryAlpha, uniforms.secondaryAlpha, blend);
+
+  const zoom = uniforms.textureZoom.max(0.0001);
+  const scaled = vLocal.div(zoom);
+  const angleSin = uniforms.textureAngle.sin();
+  const angleCos = uniforms.textureAngle.cos();
+  const rotated = vec2(
+    scaled.x.mul(angleCos).sub(scaled.y.mul(angleSin)),
+    scaled.x.mul(angleSin).add(scaled.y.mul(angleCos)),
+  );
+  const sampleUv = fract(rotated.mul(0.5).add(0.5));
+  const sampled = uniforms.shapeTexture.sample(sampleUv);
+
+  // Branchless equivalent of the GLSL `if (textured > 0.5)` block: the
+  // placeholder texture keeps the sample well-defined when untextured.
+  const color = mix(tint, sampled.rgb.mul(tint), uniforms.textured);
+  const alpha = baseAlpha.mul(mix(float(1.0), sampled.a, uniforms.textured));
+
+  const material = new NodeMaterial();
+  material.transparent = true;
+  material.depthWrite = false;
+  material.side = DoubleSide;
+  if (shape.additive) {
+    material.blending = AdditiveBlending;
+  }
+  material.vertexNode = cameraProjectionMatrix
+    .mul(modelViewMatrix)
+    .mul(vec4(positionGeometry, 1.0));
+  material.colorNode = vec4(color, alpha);
+  return Object.assign(material, { uniforms }) as unknown as ShaderMaterial;
+}
+
+function isShapeFillShaderMaterialForBackend(
+  material: unknown,
+  backend: MilkdropRenderBackend,
+) {
+  return backend === 'webgpu'
+    ? material instanceof NodeMaterial
+    : material instanceof ShaderMaterial;
 }
 
 function createShapeFillShaderMaterial(
@@ -123,7 +238,7 @@ function createShapeFillShaderMaterial(
         value: (shape.secondaryColor?.a ?? 0) * alphaMultiplier,
       },
       shapeTexture: {
-        value: texture,
+        value: texture ?? getShapeFillPlaceholderTexture(),
       },
       useGradient: {
         value: shape.secondaryColor ? 1 : 0,
@@ -206,7 +321,9 @@ function createShapeFillMaterial(
 ) {
   const texture = helpers.getShapeTexture();
   if (shouldUseShapeShaderFill(shape, behavior, texture)) {
-    return createShapeFillShaderMaterial(shape, texture, alphaMultiplier);
+    return helpers.backend === 'webgpu'
+      ? createShapeFillNodeMaterial(shape, texture, alphaMultiplier)
+      : createShapeFillShaderMaterial(shape, texture, alphaMultiplier);
   }
 
   const fillColor = helpers.getShapeFillFallbackColor(shape);
@@ -445,13 +562,14 @@ export function syncShapeFillMaterial(
   const existingMaterial = mesh.material;
 
   if (wantsShaderFill) {
-    if (!(existingMaterial instanceof ShaderMaterial)) {
+    if (
+      !isShapeFillShaderMaterialForBackend(existingMaterial, helpers.backend)
+    ) {
       helpers.disposeMaterial(existingMaterial);
-      mesh.material = createShapeFillShaderMaterial(
-        shape,
-        texture,
-        alphaMultiplier,
-      );
+      mesh.material =
+        helpers.backend === 'webgpu'
+          ? createShapeFillNodeMaterial(shape, texture, alphaMultiplier)
+          : createShapeFillShaderMaterial(shape, texture, alphaMultiplier);
     }
 
     const material = mesh.material as ShaderMaterial;

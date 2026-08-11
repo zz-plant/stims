@@ -8,6 +8,10 @@ interface D1PreparedStatement {
   all<T = unknown>(): Promise<{ results: T[] }>;
 }
 
+interface R2Bucket {
+  get(key: string): Promise<{ text(): Promise<string> } | null>;
+}
+
 interface Env {
   AI: {
     run: (
@@ -20,6 +24,7 @@ interface Env {
     ) => Promise<{ response?: string; data?: number[][] }>;
   };
   DB: D1Database;
+  GALLERY_R2?: R2Bucket;
 }
 
 const VISION_MODEL = '@cf/google/gemma-4-26b-a4b-it';
@@ -58,6 +63,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
   try {
     let imageBase64: string | undefined;
+    let guidance = '';
 
     const contentType = request.headers.get('Content-Type') || '';
 
@@ -68,10 +74,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
         const buffer = await file.arrayBuffer();
         imageBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       }
+      const guidanceField = formData.get('guidance');
+      if (typeof guidanceField === 'string') {
+        guidance = guidanceField;
+      }
     } else {
-      const body = (await request.json()) as { image: string };
+      const body = (await request.json()) as {
+        image: string;
+        guidance?: string;
+      };
       imageBase64 = body.image;
+      guidance = typeof body.guidance === 'string' ? body.guidance : '';
     }
+    guidance = guidance.trim().slice(0, 500);
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'No image provided' }), {
@@ -98,7 +113,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
       description = 'abstract geometric patterns with vibrant colors';
     }
 
-    if (env.DB && env.AI && description) {
+    // User guidance individualizes the request, so a description-only cache
+    // match would ignore it — only consult the cache for guidance-free calls.
+    if (env.DB && env.AI && description && !guidance) {
       try {
         const embResult = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
           text: [description],
@@ -113,19 +130,35 @@ export async function onRequest(context: { request: Request; env: Env }) {
             const stored = JSON.parse(row.embedding) as number[];
             const score = cosineSimilarity(queryEmbedding, stored);
             if (score > 0.88) {
-              return new Response(
-                JSON.stringify({
-                  description,
-                  milkSource: `/* cached from: ${row.preset_id} */`,
-                  cached: true,
-                }),
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
+              // A cache hit is only reusable when the matched preset's real
+              // source can be served. Community preset source lives in R2;
+              // bundled-catalog embeddings have no server-side source, so an
+              // unresolvable hit falls through to generation instead of
+              // returning a placeholder that cannot compile.
+              const r2Key = `presets/${row.preset_id.replace(/^community:/, '')}.milk`;
+              const cachedObject = env.GALLERY_R2
+                ? await env.GALLERY_R2.get(r2Key)
+                : null;
+              const cachedSource = cachedObject
+                ? await cachedObject.text()
+                : '';
+              if (cachedSource) {
+                return new Response(
+                  JSON.stringify({
+                    description,
+                    milkSource: cachedSource,
+                    cached: true,
+                    cachedPresetId: row.preset_id,
+                  }),
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Access-Control-Allow-Origin': '*',
+                    },
                   },
-                },
-              );
+                );
+              }
+              break;
             }
           }
         }
@@ -137,8 +170,11 @@ export async function onRequest(context: { request: Request; env: Env }) {
     let milkSource = '';
 
     if (env.AI) {
-      const systemPrompt = buildGeneratePrompt(description, 'moderate');
-      const userPrompt = `Generate a MilkDrop preset that: ${description}`;
+      const combinedDescription = guidance
+        ? `${description}\n\nAdditional user guidance: ${guidance}`
+        : description;
+      const systemPrompt = buildGeneratePrompt(combinedDescription, 'moderate');
+      const userPrompt = `Generate a MilkDrop preset that: ${combinedDescription}`;
 
       const genResult = await env.AI.run(GENERATION_MODEL, {
         messages: [
@@ -148,11 +184,12 @@ export async function onRequest(context: { request: Request; env: Env }) {
       });
 
       const response = genResult.response || '';
-      const startIdx = response.indexOf('[preset00]');
+      const marker = '[preset00]';
+      const startIdx = response.indexOf(marker);
       if (startIdx >= 0) {
-        milkSource = `[preset00]\n${response.slice(startIdx + 9).trim()}`;
+        milkSource = `${marker}\n${response.slice(startIdx + marker.length).trim()}`;
       } else {
-        milkSource = `[preset00]\n${response.trim()}`;
+        milkSource = `${marker}\n${response.trim()}`;
       }
     } else {
       milkSource =

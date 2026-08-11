@@ -51,6 +51,8 @@ export function createMilkdropCatalogStore({
   });
   const analysis = createCatalogAnalysis({ compilePresetImpl });
 
+  let prefetched = false;
+
   const getHistoryRecord = async () =>
     (await persistence.readMeta(HISTORY_RECORD_ID)) ?? {
       id: HISTORY_RECORD_ID,
@@ -196,6 +198,57 @@ export function createMilkdropCatalogStore({
       const source = await bundledCatalog.loadBundledSource(entry);
       analysis.getCompiled(source);
       return source;
+    },
+
+    async prefetchCompiledPresets() {
+      if (prefetched) return;
+      prefetched = true;
+
+      // Each compile runs synchronously on this thread and can take tens of
+      // milliseconds, so pacing matters: yielding only a macrotask between
+      // ~1800 compiles kept the main thread saturated for minutes and froze
+      // rendering and automation after catalog load. Compile only inside
+      // idle budget, falling back to a coarse delay where
+      // requestIdleCallback is unavailable.
+      type IdleBudget = { timeRemaining(): number };
+      const waitForIdle = (): Promise<IdleBudget | null> =>
+        new Promise((resolve) => {
+          const ric = (
+            globalThis as {
+              requestIdleCallback?: (
+                callback: (deadline: IdleBudget) => void,
+                options?: { timeout: number },
+              ) => number;
+            }
+          ).requestIdleCallback;
+          if (typeof ric === 'function') {
+            ric((deadline) => resolve(deadline), { timeout: 1000 });
+          } else {
+            setTimeout(() => resolve(null), 32);
+          }
+        });
+
+      try {
+        const bundled = await bundledCatalog.getBundledCatalog();
+        let budget = await waitForIdle();
+        for (const entry of bundled) {
+          if (analysis.getCachedCompiled(entry.id)) continue;
+          if (budget && budget.timeRemaining() < 10) {
+            budget = await waitForIdle();
+          }
+          try {
+            const source = await bundledCatalog.loadBundledSource(entry);
+            analysis.getCompiled(source);
+          } catch {
+            // Skip presets that fail to load or compile
+          }
+          if (!budget) {
+            budget = await waitForIdle();
+          }
+        }
+      } catch {
+        // If the bundled catalog itself fails, there is nothing to prefetch
+      }
     },
 
     async savePreset(source) {

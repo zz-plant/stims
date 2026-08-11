@@ -123,7 +123,24 @@ function sampleByteData(data: Uint8Array, t: number) {
   return mix(lower, upper, amount);
 }
 
+function sampleFloatData(data: Float32Array, t: number) {
+  if (data.length === 0) {
+    return 0;
+  }
+  const scaledIndex = clamp(t, 0, 1) * Math.max(0, data.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const amount = scaledIndex - lowerIndex;
+  return mix(data[lowerIndex] ?? 0, data[upperIndex] ?? 0, amount);
+}
+
 function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
+  // Float PCM avoids the 1/128 byte staircase, which reads as blocky wave
+  // outlines now that waves draw at full fWaveScale amplitude.
+  const floatData = signals.waveformFloatData;
+  if (floatData && floatData.length > 0) {
+    return sampleFloatData(floatData, t);
+  }
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
@@ -134,24 +151,20 @@ function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
   return sampleByteData(waveformData, t);
 }
 
+// MilkDrop indexes offset samples modulo the buffer length (e.g. the
+// mode-2 spiro reads waveL[(i + 32) % 512]); wrapping keeps the tail of
+// the wave live instead of collapsing it onto the final sample.
+function wrapUnit(t: number) {
+  const wrapped = t - Math.floor(t);
+  return wrapped < 0 ? wrapped + 1 : wrapped;
+}
+
 function sampleWaveformDataOffset(
   signals: MilkdropRuntimeSignals,
   t: number,
   offset: number,
 ): number {
-  return sampleWaveformData(signals, clamp(t + offset, 0, 1));
-}
-
-function sampleFrequencyDataOffset(
-  signals: MilkdropRuntimeSignals,
-  t: number,
-  offset: number,
-): number {
-  const data = signals.frequencyData;
-  if (!data || data.length === 0) {
-    return 0;
-  }
-  return sampleByteData(data, clamp(t + offset, 0, 1));
+  return sampleWaveformData(signals, wrapUnit(t + offset));
 }
 
 function sampleStereoWaveformData(
@@ -160,34 +173,29 @@ function sampleStereoWaveformData(
   t: number,
   offset: number,
 ): number {
+  const floatLeft = signals.waveformFloatDataL;
+  const floatRight = signals.waveformFloatDataR;
+  if (
+    floatLeft &&
+    floatLeft.length > 0 &&
+    floatRight &&
+    floatRight.length > 0
+  ) {
+    return sampleFloatData(
+      channel === 'left' ? floatLeft : floatRight,
+      wrapUnit(t + offset),
+    );
+  }
   const left = signals.waveformDataL;
   const right = signals.waveformDataR;
   if (left && left.length > 0 && right && right.length > 0) {
     return sampleByteData(
       channel === 'left' ? left : right,
-      clamp(t + offset, 0, 1),
+      wrapUnit(t + offset),
     );
   }
 
   return sampleWaveformDataOffset(signals, t, offset);
-}
-
-function sampleStereoFrequencyData(
-  signals: MilkdropRuntimeSignals,
-  channel: 'left' | 'right',
-  t: number,
-  offset: number,
-): number {
-  const left = signals.frequencyDataL;
-  const right = signals.frequencyDataR;
-  if (left && left.length > 0 && right && right.length > 0) {
-    return sampleByteData(
-      channel === 'left' ? left : right,
-      clamp(t + offset, 0, 1),
-    );
-  }
-
-  return sampleFrequencyDataOffset(signals, t, offset);
 }
 
 function normalizeWaveMode(value: number) {
@@ -228,7 +236,9 @@ function getMainWaveSampleCount(
   detailScale: number,
   sourceLength: number,
 ) {
-  const baseCountByMode = [176, 168, 160, 152, 192, 176, 192, 160];
+  // Modes 2 and 3 share identical geometry in MilkDrop (same 512-sample
+  // Lissajous); keep their sample counts equal so mode blending stays 1:1.
+  const baseCountByMode = [176, 168, 160, 160, 192, 176, 192, 160];
   const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 1024) : 64;
   return clamp(
     Math.round(
@@ -373,6 +383,9 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     frequencyDataR: null,
     waveformDataL: null,
     waveformDataR: null,
+    waveformFloatData: null,
+    waveformFloatDataL: null,
+    waveformFloatDataR: null,
   };
 }
 
@@ -424,7 +437,10 @@ export function buildMainWaveFrame({
   );
   const centerX = ((state.wave_x ?? 0.5) - 0.5) * 2;
   const centerY = (0.5 - (state.wave_y ?? 0.5)) * 2;
-  const scale = clamp((state.wave_scale ?? 1) * 0.45, 0.08, 1.4);
+  // MilkDrop multiplies PCM samples by fWaveScale at full strength before
+  // any mode math (processWaveform: pcm * wave_scale / 128). Samples here
+  // are already normalized to [-1, 1], so `scale` is the whole factor.
+  const scale = clamp(state.wave_scale ?? 1, 0.01, 4);
   const smoothing = clamp(state.wave_smoothing ?? 0.72, 0, 0.98);
   const mystery = normalizeProjectMMystery(state.wave_mystery ?? 0);
   const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
@@ -573,7 +589,7 @@ export function buildMainWaveFrame({
     switch (mode) {
       case 0: {
         const angle = t * TWO_PI + signals.time * 0.2;
-        const radius = 0.5 + 0.4 * sampleValue + mystery;
+        const radius = 0.5 + 0.4 * sampleValue * scale + mystery;
         x = centerX + Math.cos(angle) * radius;
         y = centerY + Math.sin(angle) * radius;
         break;
@@ -581,35 +597,36 @@ export function buildMainWaveFrame({
       case 1: {
         const sampleR = sampleValue;
         const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
-        const radius = 0.53 + 0.43 * sampleR + mystery;
-        const angle = sampleL * 1.5708 + signals.time * 2.3;
+        const radius = 0.53 + 0.43 * sampleR * scale + mystery;
+        const angle = sampleL * scale * 1.5708 + signals.time * 2.3;
         x = centerX + Math.cos(angle) * radius;
         y = centerY + Math.sin(angle) * radius;
         break;
       }
-      case 2: {
-        // CenteredSpiro: ProjectM plots R->X, L[i+32]->Y (stereo Lissajous).
+      case 2:
+      case 3: {
+        // CenteredSpiro / CenteredSpiroVolume: MilkDrop plots R->X,
+        // L[(i+32) % len]->Y (stereo Lissajous) at full fWaveScale for
+        // both modes; mode 3 differs only in treble-modulated alpha.
         const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
         const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
         x = centerX + sampleR * scale;
         y = centerY + sampleL * scale;
         break;
       }
-      case 3: {
-        // CenteredSpiroVolume: same XY mapping but from spectrum data.
-        const sampleR = sampleStereoFrequencyData(signals, 'right', t, 0);
-        const sampleL = sampleStereoFrequencyData(signals, 'left', t, 32 / 512);
-        x = centerX + sampleR * scale;
-        y = centerY + sampleL * scale;
-        break;
-      }
       case 4: {
+        // DerivativeLine: MilkDrop reads R[(i+25) % len] for X displacement
+        // and unshifted L for Y.
         const w1 = 0.45 + 0.5 * (mystery * 0.5 + 0.5);
         const w2 = 1 - w1;
-        x = -1 + 2 * t + centerX + sampleValue * 0.44 * scale;
-        y =
-          centerY +
-          sampleWaveformDataOffset(signals, t, 25 / 512) * 0.47 * scale;
+        x =
+          -1 +
+          2 * t +
+          centerX +
+          sampleStereoWaveformData(signals, 'right', t, 25 / 512) *
+            0.44 *
+            scale;
+        y = centerY + sampleValue * 0.47 * scale;
         if (index > 1) {
           x = x * w2 + w1 * (prevX * 2 - prevPrevX);
           y = y * w2 + w1 * (prevY * 2 - prevPrevY);
@@ -617,24 +634,26 @@ export function buildMainWaveFrame({
         break;
       }
       case 5: {
-        // ExplosiveHash: ProjectM computes complex multiplication of L/R
-        // channels and rotates by time.
+        // ExplosiveHash: complex product of the wave with its offset self,
+        // rotated by time. MilkDrop: x0 = R[i]*L[i+32] + L[i]*R[i+32],
+        // y0 = R[i]^2 - L[i+32]^2, with fWaveScale on each factor (scale^2).
         const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
-        const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
+        const sampleL = sampleStereoWaveformData(signals, 'left', t, 0);
         const sampleR2 = sampleStereoWaveformData(
           signals,
           'right',
           t,
-          64 / 512,
+          32 / 512,
         );
-        const sampleL2 = sampleStereoWaveformData(signals, 'left', t, 96 / 512);
-        const x0 = sampleR * sampleR2 - sampleL * sampleL2;
-        const y0 = sampleR * sampleL2 + sampleL * sampleR2;
+        const sampleL2 = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
+        const scale2 = scale * scale;
+        const x0 = (sampleR * sampleL2 + sampleL * sampleR2) * scale2;
+        const y0 = (sampleR * sampleR - sampleL2 * sampleL2) * scale2;
         const rot = signals.time * 0.3;
         const cosR = Math.cos(rot);
         const sinR = Math.sin(rot);
-        x = centerX + (x0 * cosR - y0 * sinR) * scale;
-        y = centerY + (x0 * sinR + y0 * cosR) * scale;
+        x = centerX + (x0 * cosR - y0 * sinR);
+        y = centerY + (x0 * sinR + y0 * cosR);
         break;
       }
       case 6: {
@@ -646,16 +665,17 @@ export function buildMainWaveFrame({
         break;
       }
       case 7: {
-        // DoubleLine: ProjectM shows two parallel lines from L and R channels.
+        // DoubleLine: MilkDrop shows two parallel lines from L and R
+        // channels displaced 0.25 * fWaveScale from the separation axis.
         const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
         const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
         const separation = 0.1 + mystery * 0.2;
         if (index % 2 === 0) {
           x = -1 + 2 * t;
-          y = centerY + sampleR * scale * 0.5 + separation;
+          y = centerY + sampleR * scale * 0.25 + separation;
         } else {
           x = -1 + 2 * t;
-          y = centerY + sampleL * scale * 0.5 - separation;
+          y = centerY + sampleL * scale * 0.25 - separation;
         }
         break;
       }
@@ -719,6 +739,18 @@ export function buildMainWaveFrame({
 
   const additive = (state.wave_additive ?? 0) >= 0.5;
   let alpha = state.wave_a ?? 0.9;
+  if (mode === 1) {
+    alpha *= 1.25;
+  } else if (mode === 3) {
+    // MilkDrop scales mode-3 alpha by treb_imm^2, where treb hovers
+    // around 1 (instantaneous energy over its running average). Our
+    // treble/trebleAtt pair is the closest analog of that ratio.
+    const trebleRatio =
+      signals.trebleAtt > 0.001
+        ? clamp(signals.treble / signals.trebleAtt, 0, 2)
+        : 1;
+    alpha *= 1.3 * trebleRatio * trebleRatio;
+  }
   if (alphaByVolume) {
     if (Math.abs(modWaveAlphaEnd - modWaveAlphaStart) < 0.0001) {
       alpha *= signals.vol >= modWaveAlphaEnd ? 1 : 0;

@@ -2,6 +2,10 @@ import { isCompatibilityModeEnabled } from '../../core/render-preferences.ts';
 import { markPresetNeedsWebgl } from '../../core/state/preset-webgl-fallback.ts';
 import { shouldFallbackMilkdropPresetToWebgl } from '../renderer-execution-plan.ts';
 import type { MilkdropCompiledPreset } from '../types.ts';
+import {
+  shouldEnableNativeMilkdropWebGpuFeedback,
+  shouldUseSafeMilkdropWebGpuPath,
+} from '../webgpu-query-override.ts';
 
 export function shouldPresetFallbackToWebgl({
   compiled,
@@ -14,11 +18,17 @@ export function shouldPresetFallbackToWebgl({
     typeof import('../webgpu-optimization-flags.ts').resolveMilkdropWebGpuOptimizationFlags
   >;
 }) {
+  // The fallback decision must see the same feedback capability the adapter
+  // will actually run with — deciding with native feedback assumed off used
+  // to reload every feedback preset into WebGL even though the TSL feedback
+  // manager renders it natively.
   return shouldFallbackMilkdropPresetToWebgl({
     backend: activeBackend,
     compatibilityMode: isCompatibilityModeEnabled(),
     descriptorPlan: compiled.ir.compatibility.gpuDescriptorPlans.webgpu,
     flags: webgpuOptimizationFlags,
+    nativeWebGpuFeedbackEnabled: shouldEnableNativeMilkdropWebGpuFeedback(),
+    safeWebGpuPath: shouldUseSafeMilkdropWebGpuPath(),
   });
 }
 
