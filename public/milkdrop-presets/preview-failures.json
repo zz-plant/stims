@@ -1,0 +1,42 @@
+[
+  {
+    "presetId": "dbleja-hovering-over-pluto",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "aderrasi-kevlar-ore-deposit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "geiss-game-of-life-3",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "flexi-alien-fish-pond",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "goody-lsd-zoomtunnel",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "geiss-rose-4",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "fishbrain-jade-nicotine",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "flexi-alien-canvas",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "martin-crystal-palace",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "martin-butterflies",
+    "reason": "black frame (mean=2.9, max=16)"
+  }
+]
