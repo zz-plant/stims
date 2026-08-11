@@ -1,5 +1,5 @@
 ---
-description: Deploy to Cloudflare Pages
+description: Deploy the site Worker to Cloudflare
 ---
 
 # Deploy Workflow
@@ -10,14 +10,14 @@ description: Deploy to Cloudflare Pages
    bun run check
    ```
 
-2. Build production assets:
+2. Validate the Worker build and config:
 
    ```bash
-   bun run build
+   bun run site:check
    ```
 
-3. Deploy via CI (preferred) or manually:
+3. Deploy via Cloudflare Workers Builds (preferred — push to `main` and it builds and deploys automatically) or manually:
 
    ```bash
-   bun run pages:deploy
+   bun run site:deploy
    ```

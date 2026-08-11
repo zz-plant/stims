@@ -48,7 +48,7 @@ bun run site:dev
 
 ### How the Worker build works
 
-`bun run site:build` runs the Vite build, then `wrangler pages functions build --outdir=dist/_worker.js` to compile the `functions/` directory (middleware + `/api/*` routes) into a single Worker module, then writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and mirrors `public/_routes.json` in `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
+`bun run site:build` runs the Vite build, then `wrangler pages functions build --outdir=dist/_worker.js` to compile the `functions/` directory (middleware + `/api/*` routes) into a single Worker module, then writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
 
 ### One-time Workers Builds setup
 
@@ -57,7 +57,8 @@ Done in the Cloudflare dashboard (Workers & Pages → the `stims` Worker → Set
 1. Connect the `zz-plant/stims` GitHub repository.
 2. Build command: `bun run site:build`. Deploy command: `bunx wrangler deploy --config wrangler.site.jsonc`. Non-production branch command: `bunx wrangler versions upload --config wrangler.site.jsonc`.
 3. Production branch: `main`.
-4. After the first successful production deploy, move the `toil.fyi` custom domain from the Pages project to the Worker, then disable the Pages project's deployments.
+
+This setup is complete: the `toil.fyi` custom domain is attached to the `stims` Worker and the old Pages project is retired.
 
 ## Build the Site
 
@@ -122,43 +123,20 @@ Any static host should point its document root to the `dist/` directory and pres
 - `dist/.vite/manifest.json` for asset lookups.
 
 If your platform supports immutable caching, enable it for `dist/assets/**`; keep HTML un-cached or lightly cached so updates propagate.
-Cloudflare Pages can read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
+Cloudflare Workers static assets read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
 
-## Legacy Cloudflare Pages path (until cutover completes)
+## Legacy Cloudflare Pages path (removed)
 
-The `stims` Pages project still exists and `toil.fyi` points at it until the Workers Builds cutover in Track A finishes. Its Wrangler config stays checked in at [`wrangler.toml`](../wrangler.toml); do not delete that file or the `pages:*` scripts until the custom domain has moved to the Worker.
-
-The checked-in Pages config intentionally omits the optional `$schema` header because Cloudflare Pages builders can lag the latest local Wrangler parser and reject otherwise valid config when they encounter it.
-
-### Manual Pages CLI fallback flows
-
-Use these only to hotfix production while it still runs on Pages:
-
-```bash
-# Build and serve locally with Wrangler Pages dev
-bun run pages:dev
-
-# Build and deploy a preview branch to Cloudflare Pages
-bun run pages:deploy:preview
-
-# Build and deploy production assets to Cloudflare Pages
-bun run pages:deploy:production
-```
+The site previously deployed as a Cloudflare Pages project with its own Wrangler TOML config, deploy helper script, and `pages:*` package scripts. That path was removed after the `toil.fyi` custom domain moved to the `stims` Worker; the manual fallback is now `bun run site:deploy` (see the Track A quick path above).
 
 Manual deploy authentication notes:
 
 - Local interactive deploys can use `bun run cf:whoami` plus Wrangler login state.
 - Non-interactive deploys require `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
-Expected artifacts for the deploy commands:
-
-- `dist/` with the HTML entry points and hashed assets under `dist/assets/`.
-- `dist/.vite/manifest.json` co-located with the assets (required for debugging and any server-side asset lookups).
-- A Wrangler-generated preview URL during `pages:dev`, a branch preview URL during `pages:deploy:preview`, and a production deployment URL during `pages:deploy:production` (visible in the command output and the Cloudflare dashboard).
-
 ## Track B (optional): Cloudflare Worker (MCP) deployment
 
-The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). It now has its own Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc), separate from the Pages config in [`wrangler.toml`](../wrangler.toml).
+The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). It has its own Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc), separate from the site config in [`wrangler.site.jsonc`](../wrangler.site.jsonc).
 
 Common commands (Bun-first):
 

@@ -11,7 +11,7 @@
 /scripts/postinstall.mjs @zz-plant
 /vite.config.js @zz-plant
 /biome.json @zz-plant
-/wrangler.toml @zz-plant
+/wrangler.site.jsonc @zz-plant
 /wrangler.cron.jsonc @zz-plant
 /wrangler.mcp.jsonc @zz-plant
 /.husky/ @zz-plant

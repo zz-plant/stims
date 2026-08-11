@@ -36,7 +36,7 @@ Look for these recurring themes:
 | **Fallback fragility** | `fallback`, `timeout`, `renderScale`, `capability`, `probe` | `renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts` |
 | **Test harness drift** | `test`, `expect`, `fixture`, `harness` | `tests/unit/milkdrop-renderer-adapter.test.ts`, `tests/environment/*` |
 | **UI/state races** | `toast`, `toggle`, `url`, `workspace`, `panel` | `frontend/App.tsx`, `frontend/workspace-hooks.ts`, `frontend/url-state.ts` |
-| **Deploy/tooling** | `deploy`, `config`, `wrangler`, `ci` | `scripts/deploy-cloudflare.mjs`, `wrangler.toml` |
+| **Deploy/tooling** | `deploy`, `config`, `wrangler`, `ci` | `wrangler.site.jsonc`, `scripts/build.mjs` |
 
 ### 3. Find the hottest files
 

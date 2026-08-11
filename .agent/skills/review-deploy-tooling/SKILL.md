@@ -1,11 +1,11 @@
 ---
 name: review-deploy-tooling
-description: "Review changes to CI, wrangler config, build scripts, Cloudflare deploy, or tooling. Use when a PR touches .github/workflows/ci.yml, wrangler.toml, scripts/build.mjs, scripts/deploy-cloudflare.mjs, or package.json scripts."
+description: "Review changes to CI, wrangler config, build scripts, Cloudflare deploy, or tooling. Use when a PR touches .github/workflows/ci.yml, wrangler.site.jsonc, scripts/build.mjs, or package.json scripts."
 ---
 
 # Review Deploy and Tooling Changes
 
-Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`, `wrangler.toml`, `scripts/build.mjs`, `scripts/deploy-cloudflare.mjs`, `package.json` scripts, or any CI/deploy setup.
+Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`, `wrangler.site.jsonc`, `scripts/build.mjs`, `package.json` scripts, or any CI/deploy setup.
 
 ## Why this exists
 
@@ -17,7 +17,7 @@ Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`
 
 - [ ] `bun run build` passes
 - [ ] `bun run preview` serves the built output without errors
-- [ ] If changing wrangler config, verify `wrangler.toml` is still valid
+- [ ] If changing wrangler config, verify it is still valid (`bun run site:check` for `wrangler.site.jsonc`)
 
 ### 2. CI workflow integrity
 
@@ -32,12 +32,12 @@ Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`
 ### 4. Deploy path verified
 
 - [ ] If touching deploy scripts, trace the full path from build → upload → publish
-- [ ] Cloudflare Pages project name and branch config unchanged unless intentional
+- [ ] Cloudflare Worker name (`stims`) and Workers Builds branch config unchanged unless intentional
 
 ## What to reject in review
 
 - Direct edits to CI workflow that skip lint/test/build steps
-- Removal of `wrangler.toml` without replacement
+- Removal of `wrangler.site.jsonc` without replacement
 - Hardcoded API tokens or secrets in any file
 - `package.json` script changes that break `bun run check`
 
