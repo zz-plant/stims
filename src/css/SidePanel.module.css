@@ -214,3 +214,50 @@
     animation-duration: 0.01ms;
   }
 }
+
+/* Stage-anchored (editor) seam: the panel/stage split is resizable on
+   desktop. Width comes from --stage-tool-width, set inline on the shell root
+   by the seam handlers; the transport dock derives its inset from the same
+   variable so it re-centers over the visible stage. */
+.seam {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .panel[data-stage-anchored="true"] {
+    width: min(var(--stage-tool-width, 560px), calc(100vw - 32px));
+  }
+
+  .panel[data-stage-anchored="true"] .seam {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -6px;
+    z-index: 1;
+    width: 12px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .seam::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: transparent;
+    transition: background 0.15s ease;
+  }
+
+  .seam:hover::after,
+  .seam:focus-visible::after,
+  .seam[data-resizing="true"]::after {
+    background: var(--stims-accent, #f47a54);
+  }
+
+  .seam:focus-visible {
+    outline: none;
+  }
+}

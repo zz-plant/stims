@@ -28,6 +28,32 @@ const isMobileSheet = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(max-width: 767px)').matches;
 
+/* Stage-anchored seam: the editor/stage split is user-resizable on desktop.
+   The chosen width feeds --stage-tool-width on the shell root, which sizes
+   both this panel and the transport dock's inset, and persists across
+   sessions. */
+const SEAM_STORAGE_KEY = 'stims:stage-tool-width';
+const SEAM_DEFAULT_WIDTH = 560;
+const SEAM_MIN_WIDTH = 380;
+/** Keep at least this much stage visible beside the editor. */
+const SEAM_STAGE_RESERVE = 480;
+const SEAM_KEY_STEP = 24;
+
+const seamMaxWidth = () =>
+  Math.max(SEAM_MIN_WIDTH, window.innerWidth - SEAM_STAGE_RESERVE);
+
+const clampSeamWidth = (width: number) =>
+  Math.round(Math.min(seamMaxWidth(), Math.max(SEAM_MIN_WIDTH, width)));
+
+const readStoredSeamWidth = (): number | null => {
+  if (typeof localStorage === 'undefined') return null;
+  const raw = Number(localStorage.getItem(SEAM_STORAGE_KEY));
+  return Number.isFinite(raw) && raw > 0 ? raw : null;
+};
+
+const shellRootStyle = () =>
+  document.getElementById('stims-main')?.style ?? null;
+
 type SidePanelProps = {
   open: boolean;
   onClose: () => void;
@@ -155,6 +181,90 @@ export function SidePanel({
     [],
   );
 
+  // Resizable editor/stage seam (desktop, stage-anchored only).
+  const [seamWidth, setSeamWidth] = useState<number | null>(
+    readStoredSeamWidth,
+  );
+  const seamDragRef = useRef<{ pointerId: number; width: number } | null>(null);
+
+  const commitSeamWidth = useCallback((width: number | null) => {
+    setSeamWidth(width);
+    try {
+      if (width === null) {
+        localStorage.removeItem(SEAM_STORAGE_KEY);
+      } else {
+        localStorage.setItem(SEAM_STORAGE_KEY, String(width));
+      }
+    } catch {
+      // private mode / quota — the width still applies for this session
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!stageAnchored) return;
+    const style = shellRootStyle();
+    if (!style) return;
+    if (seamWidth === null) {
+      style.removeProperty('--stage-tool-width');
+    } else {
+      style.setProperty('--stage-tool-width', `${clampSeamWidth(seamWidth)}px`);
+    }
+  }, [stageAnchored, seamWidth]);
+
+  const handleSeamPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!e.isPrimary) return;
+      seamDragRef.current = {
+        pointerId: e.pointerId,
+        width: seamWidth ?? SEAM_DEFAULT_WIDTH,
+      };
+      e.currentTarget.setAttribute('data-resizing', 'true');
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // synthetic pointer — move events still arrive via the seam itself
+      }
+    },
+    [seamWidth],
+  );
+
+  const handleSeamPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = seamDragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      const width = clampSeamWidth(window.innerWidth - e.clientX);
+      drag.width = width;
+      // Applied imperatively so the editor subtree doesn't re-render per move.
+      shellRootStyle()?.setProperty('--stage-tool-width', `${width}px`);
+    },
+    [],
+  );
+
+  const handleSeamPointerEnd = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = seamDragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      seamDragRef.current = null;
+      e.currentTarget.removeAttribute('data-resizing');
+      commitSeamWidth(drag.width);
+    },
+    [commitSeamWidth],
+  );
+
+  const handleSeamKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const current = clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH);
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        commitSeamWidth(clampSeamWidth(current + SEAM_KEY_STEP));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        commitSeamWidth(clampSeamWidth(current - SEAM_KEY_STEP));
+      }
+    },
+    [seamWidth, commitSeamWidth],
+  );
+
   useEffect(() => {
     if (open) {
       setExiting(false);
@@ -190,12 +300,37 @@ export function SidePanel({
         ref={panelRef}
         className={styles.panel}
         data-exiting={String(exiting)}
+        data-stage-anchored={stageAnchored ? 'true' : undefined}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         data-shell-dialog="true"
         tabIndex={-1}
       >
+        {stageAnchored ? (
+          // biome-ignore lint/a11y/useSemanticElements: focusable window-splitter (WAI-ARIA APG pattern); <hr> cannot take focus or a value
+          <div
+            className={styles.seam}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize editor panel"
+            aria-valuemin={SEAM_MIN_WIDTH}
+            aria-valuemax={
+              typeof window !== 'undefined'
+                ? seamMaxWidth()
+                : SEAM_DEFAULT_WIDTH
+            }
+            aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
+            tabIndex={0}
+            title="Drag to resize (double-click to reset)"
+            onPointerDown={handleSeamPointerDown}
+            onPointerMove={handleSeamPointerMove}
+            onPointerUp={handleSeamPointerEnd}
+            onPointerCancel={handleSeamPointerEnd}
+            onKeyDown={handleSeamKeyDown}
+            onDoubleClick={() => commitSeamWidth(null)}
+          />
+        ) : null}
         <div
           className={styles.header}
           onPointerDown={handleDragStart}
