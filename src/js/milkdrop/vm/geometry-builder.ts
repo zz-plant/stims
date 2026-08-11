@@ -233,8 +233,6 @@ function transformMeshPoint({
   }
 
   const local = scratch;
-  local.x = gridX;
-  local.y = gridY;
   const aspectRatio = signals.aspect ?? 1;
   const resolvedAspectX =
     aspectX ??
@@ -244,6 +242,13 @@ function transformMeshPoint({
     aspectY ??
     (signals as unknown as Record<string, number | undefined>).aspecty ??
     (aspectRatio > 1 ? 1 : aspectRatio);
+
+  // Convert from renderer space [-1,1] to MilkDrop space [0,1]
+  // x = 0 is left, x = 1 is right (with aspect correction)
+  // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
+  local.x = gridX * 0.5 * resolvedAspectX + 0.5;
+  local.y = -gridY * 0.5 * resolvedAspectY + 0.5;
+
   const aspectGridX = gridX * resolvedAspectX;
   const aspectGridY = gridY * resolvedAspectY;
   local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);

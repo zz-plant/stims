@@ -151,7 +151,11 @@ export function StrudelScopeStrip({ stream }: { stream: MediaStream }) {
   }, [stream]);
 
   return (
-    <div className={styles.scopeStrip} aria-label="Audio signal scopes">
+    <div
+      className={styles.scopeStrip}
+      role="img"
+      aria-label="Audio signal scopes"
+    >
       <canvas ref={canvasRef} className={styles.scopeCanvas} />
     </div>
   );
