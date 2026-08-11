@@ -12,9 +12,15 @@ interface VectorizeIndex {
     options?: {
       topK?: number;
       returnVectors?: boolean;
-      returnMetadata?: boolean;
+      returnMetadata?: boolean | string;
     },
-  ): Promise<{ matches: Array<{ id: string; score: number }> }>;
+  ): Promise<{
+    matches: Array<{
+      id: string;
+      score: number;
+      metadata?: Record<string, unknown>;
+    }>;
+  }>;
 }
 
 import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
@@ -142,9 +148,15 @@ export async function onRequest(context: { request: Request; env: Env }) {
       try {
         const vResult = await env.VECTOR_INDEX.query(queryEmbedding, {
           topK: 5,
+          // Long preset slugs are stored under hashed vector ids; the real
+          // preset id lives in metadata (see src/js/milkdrop/vectorize-id.ts).
+          returnMetadata: 'all',
         });
         const matches = vResult.matches.map((m) => ({
-          presetId: m.id,
+          presetId:
+            typeof m.metadata?.presetId === 'string'
+              ? m.metadata.presetId
+              : m.id,
           score: m.score,
         }));
         return new Response(
