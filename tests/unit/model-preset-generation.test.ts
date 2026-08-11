@@ -129,6 +129,26 @@ describe('model-backed preset generation', () => {
     expect(JSON.parse(String(init.body))).toEqual({ image: 'aGVsbG8=' });
   });
 
+  test('passes prompt guidance through to the image route', async () => {
+    const fetchMock = mock(async () =>
+      Response.json({ milkSource: validMilkSource }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await generatePresetFromImage('aGVsbG8=', {
+      guidance: 'neon rings\nColor palette: cyberpunk.',
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(String(init.body))).toEqual({
+      image: 'aGVsbG8=',
+      guidance: 'neon rings\nColor palette: cyberpunk.',
+    });
+  });
+
   test('surfaces hosted image-route failures with a configuration hint', async () => {
     const fetchMock = mock(
       async () => new Response('not found', { status: 404 }),

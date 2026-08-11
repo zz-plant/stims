@@ -241,15 +241,18 @@ type ImageGenerationResponse = {
 
 export async function generatePresetFromImage(
   imageBase64: string,
-  options: { apiEndpoint?: string } = {},
+  options: { apiEndpoint?: string; guidance?: string } = {},
 ): Promise<MilkdropCompiledPreset> {
   const endpoint = options.apiEndpoint || '/api/image-to-preset';
+  const guidance = options.guidance?.trim();
   let response: Response;
   try {
     response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageBase64 }),
+      body: JSON.stringify(
+        guidance ? { image: imageBase64, guidance } : { image: imageBase64 },
+      ),
     });
   } catch {
     throw new Error(

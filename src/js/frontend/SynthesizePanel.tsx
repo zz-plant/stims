@@ -110,16 +110,23 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           : 'Generating with the hosted model…',
     );
     try {
+      // The prompt and control sliders steer both paths: as the generation
+      // description for text mode, and as guidance layered onto the vision
+      // model's description in image mode — attaching an image must not turn
+      // the other inputs into no-ops.
+      const description = [
+        prompt.trim(),
+        `Color palette: ${palette === 'auto' ? 'choose from the description' : palette}.`,
+        `Visual intensity: ${intensity.toFixed(1)} on a 0 to 2 scale.`,
+        `Beat reactivity: ${reactivity.toFixed(1)} on a 0 to 2 scale.`,
+      ].join('\n');
       let compiled: Awaited<ReturnType<typeof generatePreset>>;
       if (useImage && imageFile) {
-        compiled = await generatePresetFromImage(await fileToBase64(imageFile));
+        compiled = await generatePresetFromImage(
+          await fileToBase64(imageFile),
+          { guidance: description },
+        );
       } else {
-        const description = [
-          prompt.trim(),
-          `Color palette: ${palette === 'auto' ? 'choose from the description' : palette}.`,
-          `Visual intensity: ${intensity.toFixed(1)} on a 0 to 2 scale.`,
-          `Beat reactivity: ${reactivity.toFixed(1)} on a 0 to 2 scale.`,
-        ].join('\n');
         compiled = await generatePreset(description, {
           provider:
             provider === 'local'
