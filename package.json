@@ -137,7 +137,7 @@
     "husky": "^9.1.7",
     "playwright": "1.62.1",
     "sharp": "^0.35.2",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "8.0.16",
     "wrangler": "4.120.1"
   },
