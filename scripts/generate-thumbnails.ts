@@ -9,6 +9,7 @@
  *   bun run scripts/generate-thumbnails.ts --all         # all presets
  *   bun run scripts/generate-thumbnails.ts --force       # overwrite existing
  *   bun run scripts/generate-thumbnails.ts --workers=8   # concurrency
+ *   bun run scripts/generate-thumbnails.ts --no-headless # visible windows (debugging)
  *
  * Requires: Playwright Chromium installed. Dev server is started automatically.
  * Outputs: public/milkdrop-presets/previews/{presetId}.png (480×270)
@@ -18,7 +19,6 @@ import { existsSync, mkdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { type BrowserContext, chromium } from 'playwright';
 import sharp from 'sharp';
-import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 const DEV_SERVER = 'http://localhost:5173';
@@ -32,6 +32,13 @@ const MIN_RENDER_MS = 1500;
 const RETRY_WAIT_MS = 1500;
 const MAX_RETRIES = 2;
 const PER_PRESET_TIMEOUT_MS = 45000;
+const SWAP_TIMEOUT_MS = 30000;
+// 2× the output size is plenty for a 480×270 preview; rendering at the
+// full 720p default just burns GPU across concurrent workers.
+const CAPTURE_VIEWPORT = { width: 960, height: 540 };
+// Recycle the long-lived page periodically so leaked GL resources from
+// hundreds of preset compiles can't degrade later captures.
+const PAGE_RECYCLE_EVERY = 100;
 
 interface PresetEntry {
   id: string;
@@ -47,7 +54,11 @@ function parseArgs() {
     force?: boolean;
     headless?: boolean;
     workers?: number;
-  } = { headless: false };
+    // Headless by default: launched via the 'chromium' channel
+    // (--headless=new), captures still render on the real GPU, and the
+    // whole window-occlusion problem class disappears. --no-headless
+    // restores visible windows for debugging a capture.
+  } = { headless: true };
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith('--count=')) args.count = parseInt(arg.slice(8), 10);
     if (arg.startsWith('--ids=')) args.ids = arg.slice(6).split(',');
@@ -123,19 +134,31 @@ async function downscaleToPreview(
   renameSync(tmpPath, filePath);
 }
 
-async function renderPreset(
-  ctx: BrowserContext,
-  preset: PresetEntry,
-): Promise<{ black: boolean }> {
-  const page = await ctx.newPage();
-  try {
+/**
+ * A long-lived page that boots the app once, then hot-swaps presets via
+ * the agent bridge (toil:load_preset). Transition mode is forced to 'cut'
+ * so swaps are instant instead of a multi-second crossfade.
+ */
+class RenderSession {
+  private page: Awaited<ReturnType<BrowserContext['newPage']>> | null = null;
+  rendered = 0;
+
+  constructor(private ctx: BrowserContext) {}
+
+  private async boot(firstPresetId: string) {
+    const page = await this.ctx.newPage();
     await page.goto(
-      `${DEV_SERVER}/?preset=${preset.id}&audio=demo&agent=true`,
-      {
-        waitUntil: 'domcontentloaded',
-      },
+      `${DEV_SERVER}/?preset=${firstPresetId}&audio=demo&agent=true`,
+      { waitUntil: 'domcontentloaded' },
     );
     await page.waitForSelector('#stims-main', { timeout: 10000 });
+
+    // Overlay scrollbars float above the canvas and get baked into
+    // element screenshots; hide them for the capture.
+    await page.addStyleTag({
+      content:
+        '* { scrollbar-width: none !important; } ::-webkit-scrollbar { display: none !important; }',
+    });
 
     await page.evaluate(() => {
       const btns = [...document.querySelectorAll('button')];
@@ -156,26 +179,74 @@ async function renderPreset(
         a.volume = 0;
       });
     });
+
+    this.page = page;
+    return page;
+  }
+
+  async close() {
+    if (this.page) await this.page.close().catch(() => {});
+    this.page = null;
+  }
+
+  async render(preset: PresetEntry): Promise<{ black: boolean }> {
+    const booted = !this.page;
+    const page = this.page ?? (await this.boot(preset.id));
+
+    if (!booted) {
+      await page.evaluate((presetId) => {
+        window.postMessage({ type: 'toil:load_preset', presetId }, '*');
+      }, preset.id);
+      await page.waitForFunction(
+        (presetId) =>
+          window.__STIMS_AGENT_TELEMETRY__?.currentPresetId === presetId,
+        preset.id,
+        { timeout: SWAP_TIMEOUT_MS },
+      );
+    }
     await page.waitForTimeout(MIN_RENDER_MS);
 
     const canvas = await page.$('canvas');
     if (!canvas) throw new Error('No canvas');
 
+    // Toasts, docks, and HUDs overlap the canvas and get baked into the
+    // element screenshot; hide anything positioned over it. Re-run before
+    // each attempt since toasts can appear late.
+    const hideOverlays = () =>
+      page.evaluate(() => {
+        const target = document.querySelector('canvas');
+        if (!target) return;
+        const r = target.getBoundingClientRect();
+        for (const el of document.body.querySelectorAll<HTMLElement>('*')) {
+          if (el === target || el.contains(target)) continue;
+          const s = getComputedStyle(el);
+          if (s.position !== 'fixed' && s.position !== 'absolute') continue;
+          const b = el.getBoundingClientRect();
+          const overlaps =
+            b.left < r.right &&
+            b.right > r.left &&
+            b.top < r.bottom &&
+            b.bottom > r.top;
+          if (overlaps) el.style.visibility = 'hidden';
+        }
+      });
+
     let black = false;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      await hideOverlays();
       const buffer = (await canvas.screenshot({ type: 'png' })) as Buffer;
       black = await isBlackFrame(buffer);
       if (!black || attempt === MAX_RETRIES) {
         const filePath = join(OUTPUT_DIR, `${preset.id}.png`);
         await downscaleToPreview(buffer, filePath);
+        this.rendered++;
         return { black };
       }
       await page.waitForTimeout(RETRY_WAIT_MS);
     }
 
+    this.rendered++;
     return { black: true };
-  } finally {
-    await page.close();
   }
 }
 
@@ -187,6 +258,7 @@ async function worker(
   total: number,
 ) {
   let ctx: BrowserContext | null = null;
+  let session: RenderSession | null = null;
 
   while (queue.length > 0) {
     const preset = queue.shift();
@@ -196,16 +268,28 @@ async function worker(
     try {
       if (!ctx) {
         ctx = await browser.newContext({
-          viewport: { ...DEFAULT_VIEWPORT },
+          viewport: { ...CAPTURE_VIEWPORT },
+          deviceScaleFactor: 1,
         });
         await ctx.addInitScript(() => {
-          localStorage.setItem('stims:quality-preset', 'ultra');
+          localStorage.setItem('stims:quality-preset', 'high');
           localStorage.setItem('stims:renderer-preference', 'webgl');
+          // Instant preset cuts — a blend crossfade would contaminate
+          // captures with the previous preset.
+          localStorage.setItem(
+            'stims:milkdrop:ui',
+            JSON.stringify({ transitionMode: 'cut', autoplay: false }),
+          );
         });
       }
+      if (session && session.rendered >= PAGE_RECYCLE_EVERY) {
+        await session.close();
+        session = null;
+      }
+      if (!session) session = new RenderSession(ctx);
 
       const result = await Promise.race([
-        renderPreset(ctx, preset),
+        session.render(preset),
         new Promise<{ black: boolean }>((_, reject) =>
           setTimeout(
             () => reject(new Error('Per-preset timeout')),
@@ -231,6 +315,10 @@ async function worker(
       console.log(
         `  [w${id}][${pct}%] FAIL ${preset.id} — ${elapsed.toFixed(1)}s: ${err instanceof Error ? err.message : err}`,
       );
+      if (session) {
+        await session.close();
+        session = null;
+      }
       if (ctx) {
         await ctx.close().catch(() => {});
         ctx = null;
@@ -238,6 +326,7 @@ async function worker(
     }
   }
 
+  if (session) await session.close();
   if (ctx) await ctx.close().catch(() => {});
 }
 
@@ -259,11 +348,22 @@ async function main() {
 
   const browser = await chromium.launch({
     headless: args.headless,
+    // Full Chromium (--headless=new), not the headless shell: the shell can
+    // only rasterize through SwiftShader, while this renders on the real GPU
+    // even headless.
+    channel: 'chromium',
     args: [
       '--autoplay-policy=no-user-gesture-required',
       '--mute-audio',
       '--ignore-gpu-blocklist',
       '--enable-gpu-rasterization',
+      // Headed mode (--no-headless) only: persistent pages stack their
+      // windows; without these flags macOS occlusion marks covered windows
+      // hidden, Stims pauses rendering, and swaps stall / capture black.
+      // Harmless when headless.
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-background-timer-throttling',
     ],
   });
   const startTime = Date.now();

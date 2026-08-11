@@ -36,7 +36,9 @@ import {
 } from './preset-lab-metrics.ts';
 import {
   captureIsolatedVisualizerCanvas,
+  probeCaptureBackend,
   resolveLoopSweepChromiumArgs,
+  SWEEP_CHROMIUM_CHANNEL,
   waitForPreset,
 } from './run-milkdrop-loop-visual-sweep.ts';
 
@@ -77,6 +79,12 @@ export type PresetVisualReport = {
   version: 1;
   presetId: string;
   renderer: 'webgl' | 'webgpu';
+  /**
+   * WebGL renderer string of the capturing browser ("ANGLE Metal Renderer…"
+   * vs "SwiftShader…"). Absent in reports written before 2026-08-11.
+   * Metrics from different backends must not be compared against each other.
+   */
+  captureBackend?: string | null;
   samples: number;
   intervalMs: number;
   scenarios: Record<
@@ -662,15 +670,18 @@ export async function runPresetVisualLab({
   const server = await ensureDevServer(port, repoRoot);
   const browser = await chromium.launch({
     headless,
+    channel: SWEEP_CHROMIUM_CHANNEL,
     args: resolveLoopSweepChromiumArgs(renderer, headless),
   });
   const captures = {} as Record<VisualScenario, ScenarioCapture>;
+  let captureBackend: string | null = null;
 
   try {
     const context = await browser.newContext({ viewport: DEFAULT_VIEWPORT });
     await context.addInitScript(() => {
       window.localStorage.setItem('stims:onboarding-complete', 'true');
     });
+    captureBackend = await probeCaptureBackend(context);
 
     for (const scenario of ['silence', 'demo'] as const) {
       const page = await context.newPage();
@@ -726,6 +737,7 @@ export async function runPresetVisualLab({
     version: 1,
     presetId,
     renderer,
+    captureBackend,
     samples,
     intervalMs,
     scenarios: {
@@ -849,6 +861,17 @@ async function main() {
       const baseline = JSON.parse(
         fs.readFileSync(baselinePath, 'utf8'),
       ) as PresetVisualReport;
+      if (
+        (baseline.captureBackend ?? null) !== (report.captureBackend ?? null)
+      ) {
+        console.warn(
+          `⚠ capture backend mismatch — baseline: ${
+            baseline.captureBackend ?? 'unknown (captured before 2026-08-11)'
+          }, current: ${report.captureBackend ?? 'unknown'}. ` +
+            'Deltas below are not trustworthy. Re-run --baseline on this ' +
+            'backend, or set STIMS_SOFTWARE_RENDER=1 to match an old baseline.',
+        );
+      }
       const deltas = compareMetricRecords(
         VISUAL_COMPARISON_SPECS,
         comparisonMetrics(baseline),

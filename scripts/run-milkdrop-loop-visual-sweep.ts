@@ -257,9 +257,28 @@ export function rankLoopPresetSweepSamples<
   );
 }
 
+/**
+ * Launch channel for lab/sweep captures. Playwright's default headless build
+ * is the old headless shell, which can only rasterize through SwiftShader;
+ * the 'chromium' channel runs full Chromium (--headless=new), which renders
+ * on the real GPU even headless (ANGLE Metal on macOS). Captures stay
+ * windowless without burning CPU cores on software rasterization.
+ */
+export const SWEEP_CHROMIUM_CHANNEL = 'chromium' as const;
+
+/**
+ * Escape hatch: STIMS_SOFTWARE_RENDER=1 restores the deterministic
+ * SwiftShader pipeline. Needed when comparing against artifacts captured
+ * before hardware rendering landed — hardware and software captures are not
+ * comparable, so check `captureBackend` in the artifact JSON first.
+ */
+export function softwareRenderRequested(): boolean {
+  return process.env.STIMS_SOFTWARE_RENDER === '1';
+}
+
 export function resolveLoopSweepChromiumArgs(
   renderer: SweepOptions['renderer'],
-  headless: boolean,
+  _headless: boolean,
 ) {
   if (renderer === 'webgpu') {
     return [
@@ -268,16 +287,41 @@ export function resolveLoopSweepChromiumArgs(
       '--enable-features=WebGPU,SharedArrayBuffer',
     ];
   }
-  if (!headless) {
-    return ['--ignore-gpu-blocklist'];
+  if (softwareRenderRequested()) {
+    return [
+      '--use-angle=swiftshader',
+      '--use-gl=angle',
+      '--enable-webgl',
+      '--enable-unsafe-swiftshader',
+      '--ignore-gpu-blocklist',
+    ];
   }
-  return [
-    '--use-angle=swiftshader',
-    '--use-gl=angle',
-    '--enable-webgl',
-    '--enable-unsafe-swiftshader',
-    '--ignore-gpu-blocklist',
-  ];
+  return ['--ignore-gpu-blocklist'];
+}
+
+/**
+ * Reads the actual WebGL renderer string ("ANGLE Metal Renderer: Apple M1
+ * Max…" vs "SwiftShader…") so every artifact records which pipeline captured
+ * it. Metrics measured on different backends must never be compared.
+ */
+export async function probeCaptureBackend(
+  context: import('playwright').BrowserContext,
+): Promise<string | null> {
+  const page = await context.newPage();
+  try {
+    return await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+      if (!gl) return null;
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+      return String(gl.getParameter(param));
+    });
+  } catch {
+    return null;
+  } finally {
+    await page.close();
+  }
 }
 
 async function inspectPng(buffer: Buffer) {
@@ -604,12 +648,14 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
   const server = await ensureDevServer(options.port, options.repoRoot);
   const browser = await chromium.launch({
     headless: options.headless,
+    channel: SWEEP_CHROMIUM_CHANNEL,
     args: resolveLoopSweepChromiumArgs(options.renderer, options.headless),
   });
   const context = await browser.newContext({ viewport: DEFAULT_VIEWPORT });
   await context.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
+  const captureBackend = await probeCaptureBackend(context);
 
   const results: LoopPresetSweepResult[] = new Array(presets.length);
   const concurrency = options.concurrency;
@@ -689,6 +735,7 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
     generatedAt: new Date().toISOString(),
     canonicalRoute: '/?agent=true',
     renderer: options.renderer,
+    captureBackend,
     presetCount: ranked.length,
     counts,
     results: ranked,

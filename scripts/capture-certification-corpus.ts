@@ -8,8 +8,11 @@ import {
 import { ensureDevServer } from './dev-server.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 
+// Corpus captures render through SwiftShader (CPU) for determinism, so the
+// worker count is CPU-bound. CI's small runner keeps the old cap of 4;
+// locally the cap is 8 so a many-core machine actually gets used.
 const DEFAULT_CONCURRENCY = Math.min(
-  4,
+  process.env.CI ? 4 : 8,
   Math.max(1, (os.availableParallelism?.() ?? os.cpus()?.length ?? 4) - 1),
 );
 
