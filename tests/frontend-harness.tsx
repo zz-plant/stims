@@ -146,8 +146,6 @@ export function makeEngineValue(
     updateEditorSource: noop,
     handleVisualSearch: asyncNoop,
     updateInspectorField: noop,
-    startXrStage: async () => false,
-    endXrStage: asyncNoop,
     ...overrides,
   };
 }
