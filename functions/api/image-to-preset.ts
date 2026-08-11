@@ -63,6 +63,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
   try {
     let imageBase64: string | undefined;
+    let guidance = '';
 
     const contentType = request.headers.get('Content-Type') || '';
 
@@ -73,10 +74,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
         const buffer = await file.arrayBuffer();
         imageBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       }
+      const guidanceField = formData.get('guidance');
+      if (typeof guidanceField === 'string') {
+        guidance = guidanceField;
+      }
     } else {
-      const body = (await request.json()) as { image: string };
+      const body = (await request.json()) as {
+        image: string;
+        guidance?: string;
+      };
       imageBase64 = body.image;
+      guidance = typeof body.guidance === 'string' ? body.guidance : '';
     }
+    guidance = guidance.trim().slice(0, 500);
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'No image provided' }), {
@@ -103,7 +113,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
       description = 'abstract geometric patterns with vibrant colors';
     }
 
-    if (env.DB && env.AI && description) {
+    // User guidance individualizes the request, so a description-only cache
+    // match would ignore it — only consult the cache for guidance-free calls.
+    if (env.DB && env.AI && description && !guidance) {
       try {
         const embResult = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
           text: [description],
@@ -158,8 +170,11 @@ export async function onRequest(context: { request: Request; env: Env }) {
     let milkSource = '';
 
     if (env.AI) {
-      const systemPrompt = buildGeneratePrompt(description, 'moderate');
-      const userPrompt = `Generate a MilkDrop preset that: ${description}`;
+      const combinedDescription = guidance
+        ? `${description}\n\nAdditional user guidance: ${guidance}`
+        : description;
+      const systemPrompt = buildGeneratePrompt(combinedDescription, 'moderate');
+      const userPrompt = `Generate a MilkDrop preset that: ${combinedDescription}`;
 
       const genResult = await env.AI.run(GENERATION_MODEL, {
         messages: [
