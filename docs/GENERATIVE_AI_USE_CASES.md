@@ -12,12 +12,11 @@ Companion docs: [`api.md`](./api.md) (endpoint reference), [`MCP_SERVER.md`](./M
 | --- | --- | --- |
 | Text → preset | [`functions/api/generate-preset.ts`](../functions/api/generate-preset.ts) | Complexity-classified model routing, auto-titling (no cache — every request generates) |
 | Conversational refine | [`functions/api/refine-preset.ts`](../functions/api/refine-preset.ts) | Instruction + history over existing `.milk` source; called from the editor panel and side panel |
-| Image → preset | [`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts) | Vision description → generated preset; embedding cache serves a matched gallery preset's source when resolvable |
+| Image → preset | [`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts) | Vision description → generated preset; embedding cache serves a matched gallery preset's source when resolvable; wired to the Generate panel's reference-image input |
 | Blend two presets | [`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts) | Waves/motion from A, palette/atmosphere from B; called from the editor panel |
 | Batch variations | [`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts) | Up to 5 parallel seeded variations; called from the editor panel |
 | Semantic search | [`functions/api/visual-search.ts`](../functions/api/visual-search.ts) | Embedding search over preset descriptions; called from the visual-embedding and audio-matcher services |
 | Syntax pre-check | [`functions/api/validate-preset.ts`](../functions/api/validate-preset.ts) | POST source → line-level diagnostics (assignments, parentheses); a lightweight check that does not run the preset compiler |
-| Audio → preset match | [`functions/api/audio-select.ts`](../functions/api/audio-select.ts) | Micro model + embeddings pick presets for audio character |
 | Generate panel | [`src/js/frontend/SynthesizePanel.tsx`](../src/js/frontend/SynthesizePanel.tsx) | Bundled UI; hosted route or loopback OpenAI-compatible (local) provider |
 | Client generation core | [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts), [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) | Provider abstraction; prompt scaffolding shared by client and Worker; compiles returned source before loading |
 | Deterministic fallback | [`src/js/milkdrop/ai-preset-synthesizer.ts`](../src/js/milkdrop/ai-preset-synthesizer.ts) | Non-LLM themed template synthesizer; offline fallback and eval control |
@@ -30,7 +29,7 @@ Per [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md), the Generate pan
 
 ### Gaps this document targets
 
-1. The endpoint surfaces are wired but unverified. Refine, blend, and batch variations have editor-panel actions, and visual search backs the optional embedding/audio-matcher services — but none of these flows has end-to-end proof or quality gating, and [`image-to-preset`](../functions/api/image-to-preset.ts) is the one route with no client surface at all.
+1. The endpoint surfaces are wired but unverified. Generate and image-guided generation live in the Generate panel, refine, blend, and batch variations have editor-panel actions, and visual search backs the optional embedding/audio-matcher services — but none of these flows has end-to-end proof or quality gating.
 2. Nothing gates generated presets on quality. The hosted [`validate-preset`](../functions/api/validate-preset.ts) route is syntax-only (it never runs the real compiler), `lab:reactivity` and `lab:visual` run nowhere in the generation path, and no chain runs generate → diagnose → measure → regenerate before a generated preset reaches the user.
 3. There is no eval corpus or benchmark for generation quality, in contrast to the mature parity/certification corpus for rendering.
 4. Shader generation is unverified. [`preset-prompt.ts`](../src/js/milkdrop/preset-prompt.ts) already documents the GLSL `[warp_shader]`/`[comp_shader]` blocks but tells models to avoid them unless asked, ships no worked examples, and nothing verifies that emitted GLSL actually compiles — the static compiler only classifies shader text; the GPU compiles it at render time.
@@ -59,7 +58,7 @@ Refine, blend, and batch variations already have editor-panel actions ([`src/js/
 
 - **Inspectable diffs for assisted edits.** The editor's refine/blend/variations actions replace the buffer directly (with a snapshot). Present assisted edits as source diffs before application — the named Remix-studio bullet in [`ROADMAP.md`](./ROADMAP.md).
 - **Blend from the catalog.** Blend today requires pasting source into the editor flow; add two-preset selection from the catalog feeding [`blend-presets`](../functions/api/blend-presets.ts), loaded through the same compile-before-load path the Generate panel uses.
-- **Image to preset.** The one unwired route. Add image input to the Generate panel, feeding [`image-to-preset`](../functions/api/image-to-preset.ts); the panel's existing offline/provider handling applies.
+- **Image to preset.** Wired: the Generate panel's hosted mode accepts a reference image feeding [`image-to-preset`](../functions/api/image-to-preset.ts) through the same compile-before-load path. Remaining work is end-to-end verification on a configured deployment.
 - **Semantic search as an optional enhancer.** [`visual-search`](../functions/api/visual-search.ts) already backs the optional embedding services; surface it in catalog search as an optional layer, never a blocker for local search (roadmap principle).
 
 Exit criteria:
@@ -92,7 +91,7 @@ Exit criteria:
 ## Later: identity and ambient intelligence
 
 - **Provenance and attribution.** Record generation/remix provenance (prompt, source presets, model) in exported `.milk` files or companion metadata, extending [`preset-credit.ts`](../src/js/milkdrop/preset-credit.ts). Prerequisite for any community-gallery promotion of generated work.
-- **Audio-aware auto-DJ.** Grow [`audio-select`](../functions/api/audio-select.ts) into a session mode that re-ranks or transitions presets as the audio character changes, treated as an optional enhancement over local playback.
+- **Audio-aware auto-DJ.** Grow the client's [`audio-matcher`](../src/js/core/services/audio-matcher.ts) service (which matches audio character against preset embeddings via `visual-search`) into a session mode that re-ranks or transitions presets as the audio changes, treated as an optional enhancement over local playback. The redundant server-side `audio-select` route was retired in favor of this client path.
 
 ## Research, not roadmap commitments
 

@@ -1,11 +1,16 @@
 import { getDeviceEnvironmentProfile } from '../../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from '../device-profile.ts';
 import { createLogger } from '../logger.ts';
+import { resolveOptionalApiUrl } from './optional-api.ts';
 
 const logger = createLogger('CrashTelemetry');
 
 const STORAGE_KEY = 'stims:crash-telemetry';
 const MAX_ENTRIES = 200;
+// Crash loops can record entries every frame; cap what one session sends so
+// a broken deployment never turns clients into a telemetry firehose.
+const MAX_TRANSMITS_PER_SESSION = 10;
+let transmittedCount = 0;
 
 export type CrashTelemetryEntry = {
   type:
@@ -84,6 +89,53 @@ function pushEntry(entry: CrashTelemetryEntry) {
     entries.shift();
   }
   persistReport();
+  transmitEntry(entry);
+}
+
+export function buildCrashTelemetryTransmitPayload(entry: CrashTelemetryEntry) {
+  return {
+    event: `crash:${entry.type}`,
+    error: entry.message.slice(0, 256),
+    userAgent:
+      typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+  };
+}
+
+function transmitEntry(entry: CrashTelemetryEntry) {
+  if (transmittedCount >= MAX_TRANSMITS_PER_SESSION) {
+    return;
+  }
+  // Optional service: resolves to null in dev, on localhost, and in tests,
+  // so crash reporting only leaves the device on configured deployments.
+  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  if (!endpoint) {
+    return;
+  }
+  transmittedCount += 1;
+  const body = JSON.stringify(buildCrashTelemetryTransmitPayload(entry));
+  try {
+    // sendBeacon survives page teardown — the common case when reporting a
+    // crash; fall back to keepalive fetch when it is unavailable or refuses
+    // the payload.
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.sendBeacon === 'function' &&
+      navigator.sendBeacon(
+        endpoint,
+        new Blob([body], { type: 'application/json' }),
+      )
+    ) {
+      return;
+    }
+    void fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // Reporting must never break the app it is reporting on.
+  }
 }
 
 function parseErrorEventDetail(event: ErrorEvent): Record<string, unknown> {
@@ -249,6 +301,7 @@ function restoreReport() {
 export function resetCrashTelemetryForTests() {
   installed = false;
   entries.length = 0;
+  transmittedCount = 0;
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {

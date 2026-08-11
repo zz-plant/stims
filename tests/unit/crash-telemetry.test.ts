@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
+  buildCrashTelemetryTransmitPayload,
   flushCrashTelemetryReport,
   getCrashTelemetryReport,
   installCrashTelemetry,
@@ -65,5 +66,31 @@ describe('crash telemetry', () => {
     expect(report.summary.total).toBe(1);
     expect(report.environment.isMobile).toBe(false);
     expect(report.environment.isLowPower).toBeDefined();
+  });
+
+  test('builds the /api/telemetry payload from a crash entry', () => {
+    const payload = buildCrashTelemetryTransmitPayload({
+      type: 'webgl-context-lost',
+      timestamp: 1,
+      iso: '1970-01-01T00:00:00.001Z',
+      message: 'WebGL context lost: power saving',
+    });
+
+    expect(payload.event).toBe('crash:webgl-context-lost');
+    expect(payload.error).toBe('WebGL context lost: power saving');
+  });
+
+  test('does not transmit when no optional API endpoint is configured', () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = mock();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      // Test env resolves the optional API to null (localhost), so recording
+      // must stay local instead of attempting a network call.
+      recordCrashTelemetryError('local-only crash');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
