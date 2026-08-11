@@ -1,2 +1,7 @@
+[install]
+# pnpm-style isolated installs (Bun 1.3.13+): strict, non-hoisted node_modules
+# backed by a global store — warm installs are ~1 symlink per package.
+linker = "isolated"
+
 [test]
 preload = ["./tests/setup.ts"]

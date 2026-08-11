@@ -81,12 +81,14 @@ async function assertNoUncategorizedTests(): Promise<void> {
 type ParsedArgs = {
   profile: string;
   watch: boolean;
+  changed: boolean;
   explicitFiles: string[];
 };
 
 function parseArgs(argv: string[]): ParsedArgs {
-  let profile = 'all';
+  let profile: string | undefined;
   let watch = false;
+  let changed = false;
   const explicitFiles: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -95,6 +97,11 @@ function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg === '--watch') {
       watch = true;
+      continue;
+    }
+
+    if (arg === '--changed') {
+      changed = true;
       continue;
     }
 
@@ -107,7 +114,15 @@ function parseArgs(argv: string[]): ParsedArgs {
     explicitFiles.push(arg);
   }
 
-  return { profile, watch, explicitFiles };
+  // `--changed` is an inner-loop filter, so it defaults to the fast profile
+  // rather than `all`: affected e2e files need their own serial browser pass,
+  // which defeats the point of a sub-second feedback loop.
+  return {
+    profile: profile ?? (changed ? 'fast' : 'all'),
+    watch,
+    changed,
+    explicitFiles,
+  };
 }
 
 function resolveProfileCategories(profile: string): Category[] {
@@ -126,10 +141,12 @@ function resolveProfileCategories(profile: string): Category[] {
 function buildBunTestCmd({
   files,
   watch,
+  changed,
   maxConcurrency,
 }: {
   files: string[];
   watch: boolean;
+  changed?: boolean;
   maxConcurrency?: number;
 }): string[] {
   return [
@@ -137,6 +154,7 @@ function buildBunTestCmd({
     'test',
     '--preload=./tests/setup.ts',
     ...(watch ? ['--watch'] : []),
+    ...(changed ? ['--changed'] : []),
     ...(typeof maxConcurrency === 'number'
       ? [`--max-concurrency=${maxConcurrency}`]
       : []),
@@ -147,6 +165,7 @@ function buildBunTestCmd({
 async function runBunTest(options: {
   files: string[];
   watch: boolean;
+  changed?: boolean;
   maxConcurrency?: number;
 }) {
   const proc = Bun.spawn({
@@ -310,13 +329,26 @@ async function runShardedBunTest(files: string[]): Promise<number> {
 }
 
 async function main() {
-  const { profile, watch, explicitFiles } = parseArgs(process.argv.slice(2));
+  const { profile, watch, changed, explicitFiles } = parseArgs(
+    process.argv.slice(2),
+  );
 
   if (explicitFiles.length > 0) {
-    process.exit(await runBunTest({ files: explicitFiles, watch }));
+    process.exit(await runBunTest({ files: explicitFiles, watch, changed }));
   }
 
   await assertNoUncategorizedTests();
+
+  // `--changed` hands the profile's file list to a single `bun test --changed`
+  // pass, which builds the import graph and keeps only files transitively
+  // affected by uncommitted git changes. Sharding is skipped: the affected
+  // subset is expected to be small, and pre-splitting the list would defeat
+  // bun's own filtering.
+  if (changed) {
+    const categories = resolveProfileCategories(profile);
+    const files = (await Promise.all(categories.map(listCategoryFiles))).flat();
+    process.exit(await runBunTest({ files, watch, changed }));
+  }
 
   // `integration` stays a single-file profile: CI runs it as its own job.
   if (profile === 'integration') {

@@ -4,7 +4,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 
 ## Quick start
 
-1. Install **Bun 1.3+** (the repo declares `bun@1.3.8` in `package.json`).
+1. Install **Bun 1.3+** (the repo declares `bun@1.3.14` in `package.json`).
 2. Bootstrap the local workspace:
 
    ```bash
