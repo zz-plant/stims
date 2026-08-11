@@ -33,7 +33,10 @@ import {
   VISUAL_REGRESSION_PRESET_IDS,
 } from '../../scripts/preset-visual-regression-capture.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
-import { HEADLESS, WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
+// SOFTWARE_RENDERER_ARGS, not WEBGL_RENDERER_ARGS: the dhash baselines were
+// captured under SwiftShader, so the runner must render with the same
+// software pipeline or the comparison drifts with the local GPU.
+import { HEADLESS, SOFTWARE_RENDERER_ARGS } from './webgl-launch.ts';
 
 const hasChromium = fs.existsSync(chromium.executablePath());
 // CI runs the eight-preset burst under SwiftShader on a 2-core runner; the
@@ -79,7 +82,7 @@ for (const presetId of VISUAL_REGRESSION_PRESET_IDS) {
 
       const browser = await chromium.launch({
         headless: HEADLESS,
-        args: WEBGL_RENDERER_ARGS,
+        args: SOFTWARE_RENDERER_ARGS,
       });
       const ctx = await browser.newContext({
         viewport: CAPTURE_VIEWPORT,

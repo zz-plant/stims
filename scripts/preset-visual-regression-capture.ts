@@ -252,6 +252,9 @@ if (import.meta.main) {
   const serverUrl = `http://127.0.0.1:${port}`;
   const browser = await chromium.launch({
     headless: true,
+    // Baselines must stay SwiftShader-rendered: the regression suite compares
+    // dhashes under the same software pipeline (SOFTWARE_RENDERER_ARGS in
+    // tests/e2e/webgl-launch.ts), so a real-GPU capture would poison them.
     args: [
       '--use-angle=swiftshader',
       '--use-gl=angle',
