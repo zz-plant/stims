@@ -77,19 +77,27 @@ export function runPresetPromoteTransition({
     `transition:left ${MOVE_MS}ms cubic-bezier(0.32,0.72,0.28,1),top ${MOVE_MS}ms cubic-bezier(0.32,0.72,0.28,1),width ${MOVE_MS}ms cubic-bezier(0.32,0.72,0.28,1),height ${MOVE_MS}ms cubic-bezier(0.32,0.72,0.28,1),border-radius ${MOVE_MS}ms ease,opacity ${FADE_MS}ms ease`,
   ].join(';');
 
-  // Prefer the tile's live engine canvas so the visual keeps animating
-  // mid-flight. Reparenting it into the overlay detaches it from the tile
-  // before the browse panel unmounts; the pool keeps the engine warm (the
-  // tile's release only drops a refcount) and keeps stepping it while the
-  // canvas stays on screen.
+  // Snapshot the live tile canvas onto a 2D canvas clone for the transition.
+  // Reparenting WebGL canvas DOM nodes directly across containers can trigger
+  // WebGL context loss in Chromium/WebKit browsers and leaks the element when
+  // overlay.remove() runs.
   const liveCanvas = art.querySelector<HTMLCanvasElement>(
     '[data-live-tile] canvas',
   );
-  if (liveCanvas) {
-    liveCanvas.style.width = '100%';
-    liveCanvas.style.height = '100%';
-    liveCanvas.style.objectFit = 'cover';
-    overlay.append(liveCanvas);
+  if (liveCanvas && liveCanvas.width > 0 && liveCanvas.height > 0) {
+    const clone = document.createElement('canvas');
+    clone.width = liveCanvas.width;
+    clone.height = liveCanvas.height;
+    clone.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    const ctx = clone.getContext('2d');
+    if (ctx) {
+      try {
+        ctx.drawImage(liveCanvas, 0, 0);
+      } catch {
+        // Fall back to image clone if readback is blocked
+      }
+    }
+    overlay.append(clone);
   } else {
     const image = art.querySelector<HTMLImageElement>('img');
     if (!image?.src) {
