@@ -175,6 +175,10 @@ type ShaderNodeEnv = {
   uniforms: CompositeUniformBag;
   sampleUvNode: ReturnType<typeof createSampleUvNode>;
   sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
+  /** Stage-specific meaning of sampler_main. The comp stage sets this to the
+   * reconstructed composited frame (feedback + geometry); without it, main
+   * samples fall back to the geometry-only scene texture. */
+  sampleMainNode?: (uvNode: any) => any;
 };
 
 type DirectShaderSwizzleComponent = 'x' | 'y' | 'z' | 'w';
@@ -779,6 +783,9 @@ function compileShaderExpressionNode(
         const sampleZ =
           coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
         if (resolvedBinding.canonicalSource === 'main') {
+          if (env.sampleMainNode) {
+            return makeShaderValue('vec3', env.sampleMainNode(sampleUv));
+          }
           return makeShaderValue(
             'vec3',
             env.uniforms.currentTex.sample(
@@ -1068,30 +1075,65 @@ function applyDirectWarpProgram(
 function applyDirectCompProgram(
   program: MilkdropShaderProgramPayload | null,
   env: ShaderNodeEnv,
-  currentUv: any,
-  currentColor: any,
+  compUv: any,
+  initialColor: any,
+  sampleMainNode?: (uvNode: any) => any,
 ) {
   if (!program) {
-    return currentColor;
+    return initialColor;
   }
   const stageEnv: ShaderNodeEnv = {
     ...env,
     values: new Map(env.values),
+    sampleMainNode,
   };
-  setShaderEnvValue(stageEnv, 'uv', makeShaderValue('vec2', currentUv));
+  setShaderEnvValue(stageEnv, 'uv', makeShaderValue('vec2', compUv));
   setShaderEnvValue(
     stageEnv,
     'ret',
-    makeShaderValue('vec3', currentColor.toVar()),
+    makeShaderValue('vec3', initialColor.toVar()),
   );
   runShaderProgram(program.statements, stageEnv);
   return coerceShaderValue(
-    getShaderEnvValue(stageEnv, 'ret') ?? makeShaderValue('vec3', currentColor),
+    getShaderEnvValue(stageEnv, 'ret') ?? makeShaderValue('vec3', initialColor),
     'vec3',
   ).node;
 }
 
-function createCompositeOutputNode(
+function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
+  return createSampleAuxTextureNode(
+    uniforms.noiseTex,
+    uniforms.perlinTex,
+    uniforms.simplexTex,
+    uniforms.voronoiTex,
+    uniforms.auraTex,
+    uniforms.causticsTex,
+    uniforms.patternTex,
+    uniforms.fractalTex,
+    uniforms.videoTex,
+    uniforms.glyphTex,
+    uniforms.organicTex,
+    {
+      noise: uniforms.noiseTex3D,
+      simplex: uniforms.simplexTex3D,
+      voronoi: uniforms.voronoiTex3D,
+      aura: uniforms.auraTex3D,
+      caustics: uniforms.causticsTex3D,
+      pattern: uniforms.patternTex3D,
+      fractal: uniforms.fractalTex3D,
+      perlin: uniforms.perlinTex3D,
+    },
+  );
+}
+
+/**
+ * Builds this frame's internal image — the warped previous frame with fresh
+ * geometry blended on top — which is what feeds the next frame's warp.
+ * MilkDrop never feeds the comp stage's output back into the loop, so the
+ * comp program, color adjustments, and post chain all live in the
+ * display-only composite node instead.
+ */
+function createFeedbackBlendOutputNode(
   uniforms: CompositeUniformBag,
   shaderPrograms: {
     warp: MilkdropShaderProgramPayload | null;
@@ -1120,33 +1162,10 @@ function createCompositeOutputNode(
       );
     },
   );
-  const sampleAuxTextureNode = createSampleAuxTextureNode(
-    uniforms.noiseTex,
-    uniforms.perlinTex,
-    uniforms.simplexTex,
-    uniforms.voronoiTex,
-    uniforms.auraTex,
-    uniforms.causticsTex,
-    uniforms.patternTex,
-    uniforms.fractalTex,
-    uniforms.videoTex,
-    uniforms.glyphTex,
-    uniforms.organicTex,
-    {
-      noise: uniforms.noiseTex3D,
-      simplex: uniforms.simplexTex3D,
-      voronoi: uniforms.voronoiTex3D,
-      aura: uniforms.auraTex3D,
-      caustics: uniforms.causticsTex3D,
-      pattern: uniforms.patternTex3D,
-      fractal: uniforms.fractalTex3D,
-      perlin: uniforms.perlinTex3D,
-    },
-  );
+  const sampleAuxTextureNode = createCompositeAuxSampler(uniforms);
 
   return Fn(() => {
     const hasDirectWarpProgram = shaderPrograms.warp !== null;
-    const hasDirectCompProgram = shaderPrograms.comp !== null;
     const shaderEnv: ShaderNodeEnv = {
       values: new Map<string, ShaderNodeValue>(),
       uniforms,
@@ -1238,26 +1257,80 @@ function createCompositeOutputNode(
     const previous = uniforms.previousTex.sample(
       sampleUvNode(previousUv, uniforms.textureWrap),
     );
-    const rawPreviousColor = previous.rgb.toVar();
-    const previousColor = rawPreviousColor.mul(uniforms.decay).toVar();
+    const previousColor = previous.rgb.mul(uniforms.decay);
 
-    const color = (
-      hasDirectCompProgram
-        ? applyDirectCompProgram(
-            shaderPrograms.comp,
-            shaderEnv,
-            currentUv,
-            current.rgb,
-          )
-        : mix(current.rgb, previousColor, clamp(uniforms.videoEchoAlpha, 0, 1))
-    ).toVar();
+    // Internal frame: warped decayed feedback under this frame's geometry —
+    // additive when the preset warps via its own shader, legacy echo blend
+    // otherwise.
+    const color = hasDirectWarpProgram
+      ? previousColor.add(current.rgb)
+      : mix(current.rgb, previousColor, clamp(uniforms.videoEchoAlpha, 0, 1));
 
-    // Apply post-processing in MilkDrop order
+    return vec4(color, 1);
+  })();
+}
+
+/**
+ * Display-only composite: renders the comp program, color adjustments,
+ * overlay, and the post chain over the internal frame into the display
+ * target. Mirrors the WebGL split — nothing computed here feeds the next
+ * frame.
+ */
+function createCompositeOutputNode(
+  uniforms: CompositeUniformBag,
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  } = {
+    warp: null,
+    comp: null,
+  },
+) {
+  const sampleUvNode = createSampleUvNode();
+  const sampleAuxTextureNode = createCompositeAuxSampler(uniforms);
+
+  return Fn(() => {
+    const hasDirectCompProgram = shaderPrograms.comp !== null;
+    const shaderEnv: ShaderNodeEnv = {
+      values: new Map<string, ShaderNodeValue>(),
+      uniforms,
+      sampleUvNode,
+      sampleAuxTextureNode,
+    };
+    const baseUv = uv();
+
+    // MilkDrop's comp stage reads sampler_main as this frame's composited
+    // internal image, written by the feedback-blend pass.
+    const sampleMainNode = (sampleCoord: any) =>
+      uniforms.internalTex.sample(
+        sampleUvNode(sampleCoord, uniforms.textureWrap),
+      ).rgb;
+
+    const rawPreviousColor = uniforms.previousTex
+      .sample(sampleUvNode(baseUv, uniforms.textureWrap))
+      .rgb.toVar();
+    const color = sampleMainNode(baseUv).toVar();
+
+    // Apply color adjustments in MilkDrop order — before the comp program,
+    // matching the WebGL composite pass
     color.assign(hueRotateNode(color, uniforms.hueShift));
     color.assign(applySaturationNode(color, uniforms.saturation));
     color.assign(applyContrastNode(color, uniforms.contrast));
     color.assign(color.mul(uniforms.colorScale));
     color.assign(color.mul(uniforms.tint));
+
+    if (hasDirectCompProgram) {
+      color.assign(
+        applyDirectCompProgram(
+          shaderPrograms.comp,
+          shaderEnv,
+          // Comp equations address the un-warped screen uv in MilkDrop.
+          baseUv,
+          color,
+          sampleMainNode,
+        ),
+      );
+    }
 
     // Overlay texture
     const overlaySourceMask = step(0.5, uniforms.overlayTextureSource);
@@ -1361,8 +1434,8 @@ function createCompositeOutputNode(
     const chromaDir = baseUv
       .sub(0.5)
       .mul(uniforms.chromaticAberration.mul(0.02));
-    const chromaR = uniforms.currentTex.sample(baseUv.add(chromaDir)).r;
-    const chromaB = uniforms.currentTex.sample(baseUv.sub(chromaDir)).b;
+    const chromaR = uniforms.internalTex.sample(baseUv.add(chromaDir)).r;
+    const chromaB = uniforms.internalTex.sample(baseUv.sub(chromaDir)).b;
     color.assign(mix(color, vec3(chromaR, color.g, chromaB), chromaEnabled));
 
     // Solarize
@@ -1386,11 +1459,11 @@ function createCompositeOutputNode(
     // Red-blue stereo
     const stereoEnabled = step(0.5, uniforms.redBlueStereo);
     const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
-    const leftStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
+    const leftStereo = uniforms.internalTex.sample(
+      sampleUvNode(baseUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
     ).rgb;
-    const rightStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
+    const rightStereo = uniforms.internalTex.sample(
+      sampleUvNode(baseUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
     ).rgb;
     const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
     color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
@@ -1424,16 +1497,16 @@ function applyPostBloomNode(uniforms: CompositeUniformBag) {
       const texel = uniforms.texelSize.mul(radius);
       const threshold = uniforms.postBloomThreshold;
 
-      const top = uniforms.currentTex.sample(
+      const top = uniforms.internalTex.sample(
         clamp(sampleUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
       ).rgb;
-      const bottom = uniforms.currentTex.sample(
+      const bottom = uniforms.internalTex.sample(
         clamp(sampleUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
       ).rgb;
-      const left = uniforms.currentTex.sample(
+      const left = uniforms.internalTex.sample(
         clamp(sampleUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
       ).rgb;
-      const right = uniforms.currentTex.sample(
+      const right = uniforms.internalTex.sample(
         clamp(sampleUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
       ).rgb;
 
@@ -1465,8 +1538,8 @@ function applyPostChromaticAberrationNode(uniforms: CompositeUniformBag) {
         .mul(vec2(uniforms.texsize.z, uniforms.texsize.w));
       const clampedPlus = clamp(sampleUv.add(offset), vec2(0), vec2(1));
       const clampedMinus = clamp(sampleUv.sub(offset), vec2(0), vec2(1));
-      const red = uniforms.currentTex.sample(clampedPlus).r;
-      const blue = uniforms.currentTex.sample(clampedMinus).b;
+      const red = uniforms.internalTex.sample(clampedPlus).r;
+      const blue = uniforms.internalTex.sample(clampedMinus).b;
       outColor.assign(vec3(red, baseColor.g, blue));
     });
 
@@ -1519,9 +1592,13 @@ function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
 
 class WebGPUMilkdropFeedbackManager {
   readonly compositeScene = new Scene();
+  readonly feedbackBlendScene = new Scene();
   readonly presentScene = new Scene();
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   readonly compositeMaterial: NodeMaterial & { uniforms: CompositeUniformBag };
+  readonly feedbackBlendMaterial: NodeMaterial & {
+    uniforms: CompositeUniformBag;
+  };
   readonly presentMaterial: NodeMaterial & {
     uniforms: ReturnType<typeof createPresentUniforms>;
   };
@@ -1530,8 +1607,10 @@ class WebGPUMilkdropFeedbackManager {
   };
   readonly sceneTarget: RenderTarget;
   readonly targets: [RenderTarget, RenderTarget];
+  readonly displayTarget: RenderTarget;
   readonly blurTarget: RenderTarget;
   readonly blurScene = new Scene();
+  private index = 0;
   readonly profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
   readonly sceneResolutionScale = this.profile.sceneResolutionScale;
   readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
@@ -1571,6 +1650,11 @@ class WebGPUMilkdropFeedbackManager {
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
     ];
+    this.displayTarget = createFeedbackRenderTarget(
+      width,
+      height,
+      this.feedbackResolutionScale,
+    );
     this.blurTarget = createFeedbackRenderTarget(
       width,
       height,
@@ -1582,6 +1666,7 @@ class WebGPUMilkdropFeedbackManager {
       this.targets[0].texture,
       this.auxTextures,
     );
+    uniforms.internalTex.value = this.targets[1].texture;
     uniforms.texelSize.value.set(
       1 / Math.max(1, this.targets[0].width),
       1 / Math.max(1, this.targets[0].height),
@@ -1592,6 +1677,15 @@ class WebGPUMilkdropFeedbackManager {
       1 / Math.max(1, width),
       1 / Math.max(1, height),
     );
+
+    // The feedback-blend and composite materials share one uniform bag, so
+    // applyCompositeState feeds both passes.
+    const feedbackBlendMaterial = new NodeMaterial();
+    feedbackBlendMaterial.outputNode = createFeedbackBlendOutputNode(uniforms);
+    feedbackBlendMaterial.needsUpdate = true;
+    this.feedbackBlendMaterial = Object.assign(feedbackBlendMaterial, {
+      uniforms,
+    });
 
     const compositeMaterial = new NodeMaterial();
     compositeMaterial.outputNode = createCompositeOutputNode(uniforms);
@@ -1606,7 +1700,7 @@ class WebGPUMilkdropFeedbackManager {
     blurMaterial.needsUpdate = true;
     this.blurMaterial = Object.assign(blurMaterial, { uniforms: blurUniforms });
 
-    const presentUniforms = createPresentUniforms(this.targets[0].texture);
+    const presentUniforms = createPresentUniforms(this.displayTarget.texture);
     const presentMaterial = new NodeMaterial();
     presentMaterial.outputNode = createPresentOutputNode(presentUniforms);
     presentMaterial.needsUpdate = true;
@@ -1614,6 +1708,10 @@ class WebGPUMilkdropFeedbackManager {
       uniforms: presentUniforms,
     });
 
+    const feedbackBlendQuad = new Mesh(
+      FULLSCREEN_QUAD_GEOMETRY,
+      this.feedbackBlendMaterial,
+    );
     const compositeQuad = new Mesh(
       FULLSCREEN_QUAD_GEOMETRY,
       this.compositeMaterial,
@@ -1623,17 +1721,18 @@ class WebGPUMilkdropFeedbackManager {
       this.presentMaterial,
     );
     const blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurMaterial);
+    this.feedbackBlendScene.add(feedbackBlendQuad);
     this.compositeScene.add(compositeQuad);
     this.presentScene.add(presentQuad);
     this.blurScene.add(blurQuad);
   }
 
   get readTarget() {
-    return this.targets[0];
+    return this.targets[this.index];
   }
 
   get writeTarget() {
-    return this.targets[1];
+    return this.targets[(this.index + 1) % 2];
   }
 
   getShapeTexture() {
@@ -1647,7 +1746,7 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   swap() {
-    this.presentMaterial.uniforms.currentTex.value = this.readTarget.texture;
+    this.index = (this.index + 1) % 2;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
   }
 
@@ -1699,10 +1798,15 @@ class WebGPUMilkdropFeedbackManager {
     const nextCompositeKey = buildCompositeStateKey(state);
     if (nextCompositeKey !== this.currentCompositeKey) {
       this.currentCompositeKey = nextCompositeKey;
+      this.feedbackBlendMaterial.outputNode = createFeedbackBlendOutputNode(
+        this.feedbackBlendMaterial.uniforms,
+        state.shaderPrograms,
+        state.perPixelPrograms,
+      );
+      this.feedbackBlendMaterial.needsUpdate = true;
       this.compositeMaterial.outputNode = createCompositeOutputNode(
         this.compositeMaterial.uniforms,
         state.shaderPrograms,
-        state.perPixelPrograms,
       );
       this.compositeMaterial.needsUpdate = true;
     }
@@ -1932,28 +2036,36 @@ class WebGPUMilkdropFeedbackManager {
       renderer.setRenderTarget(this.blurTarget);
       renderer.render(this.blurScene, this.camera);
 
+      // Vertical pass writes the softened previous frame back over the read
+      // target; the blend pass consumes it and the swap retires it.
       this.blurMaterial.uniforms.sourceTex.value = this.blurTarget.texture;
       this.blurMaterial.uniforms.blurDirection.value.set(0, 1);
-      renderer.setRenderTarget(this.writeTarget);
+      renderer.setRenderTarget(this.readTarget);
       renderer.render(this.blurScene, this.camera);
 
-      this.compositeMaterial.uniforms.previousTex.value =
-        this.writeTarget.texture;
       this.compositeMaterial.uniforms.texelSize.value.copy(blurTexelSize);
     } else {
-      this.compositeMaterial.uniforms.previousTex.value =
-        this.readTarget.texture;
       this.compositeMaterial.uniforms.texelSize.value.set(
         1 / Math.max(1, this.readTarget.width),
         1 / Math.max(1, this.readTarget.height),
       );
     }
+    this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
 
-    renderer.setRenderTarget(this.readTarget);
+    // Internal frame (feedback loop): warped previous + fresh geometry.
+    renderer.setRenderTarget(this.writeTarget);
+    renderer.render(this.feedbackBlendScene, this.camera);
+
+    // Display frame: comp program + post effects over the internal frame.
+    // Never fed back — MilkDrop's comp output is display-only.
+    this.compositeMaterial.uniforms.internalTex.value =
+      this.writeTarget.texture;
+    renderer.setRenderTarget(this.displayTarget);
     renderer.render(this.compositeScene, this.camera);
-    this.swap();
+
     renderer.setRenderTarget(null);
     renderer.render(this.presentScene, this.camera);
+    this.swap();
     return true;
   }
 
@@ -1980,6 +2092,7 @@ class WebGPUMilkdropFeedbackManager {
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
+    this.displayTarget.setSize(feedbackWidth, feedbackHeight);
     this.blurTarget.setSize(feedbackWidth, feedbackHeight);
     if (this.savedFrameTarget) {
       this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
@@ -2010,13 +2123,16 @@ class WebGPUMilkdropFeedbackManager {
     }
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
+    this.displayTarget.dispose();
     this.blurTarget.dispose();
     this.savedFrameTarget?.dispose();
     this.savedFrameTarget = null;
     disposeMaterial(this.compositeMaterial);
+    disposeMaterial(this.feedbackBlendMaterial);
     disposeMaterial(this.presentMaterial);
     disposeMaterial(this.blurMaterial);
     this.compositeScene.clear();
+    this.feedbackBlendScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();
   }

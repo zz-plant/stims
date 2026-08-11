@@ -443,8 +443,8 @@ export function buildMainWaveFrame({
   const scale = clamp(state.wave_scale ?? 1, 0.01, 4);
   const smoothing = clamp(state.wave_smoothing ?? 0.72, 0, 0.98);
   const mystery = normalizeProjectMMystery(state.wave_mystery ?? 0);
-  const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
-  const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 1, 0, 2);
+  const modWaveAlphaStart = clamp(state.modwavealphastart ?? 0.75, 0, 2);
+  const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 0.95, 0, 2);
   const alphaByVolume = (state.bmodwavealphabyvolume ?? 0) >= 0.5;
   // Reuse Float32Arrays when size matches; allocate fresh only when needed
   let liveSamples: Float32Array;

@@ -87,8 +87,11 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   dy: 0,
   warpanimspeed: 1,
   shader: 0,
-  modwavealphastart: 0,
-  modwavealphaend: 0,
+  // MilkDrop builtin defaults: presets with bModWaveAlphaByVolume=1 that omit
+  // these expect the wave to fade in below vol≈0.75 and reach full alpha at
+  // vol≈0.95 (vol is the mean of the relative bands, ~1 during music).
+  modwavealphastart: 0.75,
+  modwavealphaend: 0.95,
   bmodwavealphabyvolume: 0,
   wave_mode: 0,
   wave_scale: 1,
@@ -97,8 +100,11 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   wave_r: 0,
   wave_g: 0,
   wave_b: 0,
-  wave_x: 0,
-  wave_y: 0,
+  // MilkDrop centers the main wave by default (0.5/0.5); 0 would park it at
+  // a screen corner, leaving only a clipped sliver visible for every preset
+  // that doesn't set fWaveX/fWaveY explicitly.
+  wave_x: 0.5,
+  wave_y: 0.5,
   wave_mystery: 0,
   wave_thick: 0,
   wave_additive: 0,

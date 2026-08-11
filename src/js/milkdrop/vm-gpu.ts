@@ -286,6 +286,20 @@ export function createGpuVmRunner() {
     };
   }
 
+  /** Re-uploads the CPU state mirror into the GPU-resident state buffer.
+   * Used before each dispatch so the per-frame base-value reset (MilkDrop
+   * reload semantics) applies to GPU-accumulated state as well. */
+  function syncState(
+    state: Record<string, number>,
+    registers: Record<string, number>,
+    randomState: number,
+  ) {
+    if (!device || !stateBuffer) {
+      return;
+    }
+    bufferManager.writeState(device, { ...state, ...registers }, randomState);
+  }
+
   function dispose() {
     clearGpuVmCaches();
     if (currentSignalBuffer) {
@@ -311,6 +325,7 @@ export function createGpuVmRunner() {
   return {
     init,
     dispatch,
+    syncState,
     dispose,
     isInitialized,
   };
