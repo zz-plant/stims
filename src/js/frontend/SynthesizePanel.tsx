@@ -4,6 +4,7 @@ import {
   generatePreset,
   generatePresetFromImage,
 } from '../milkdrop/preset-generator.ts';
+import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -138,8 +139,18 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
               : { kind: 'hosted' },
         });
       }
+      // Quality gate: a generated preset that compiles but whose equations
+      // ignore audio still loads, but with a visible label so the user can
+      // regenerate instead of wondering why nothing moves to the beat.
+      const reactivity = probePresetReactivity(compiled);
       await engine.importPresetFiles(toFileList(compiled.source.raw));
-      ui.updatePanel(null);
+      if (reactivity.verdict === 'static') {
+        setStatus(
+          'Loaded, but the equations barely respond to audio. Consider regenerating with stronger beat-reactivity wording.',
+        );
+      } else {
+        ui.updatePanel(null);
+      }
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
     } finally {
