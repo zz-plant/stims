@@ -109,8 +109,13 @@ browserTest(
 
     try {
       // agent=true keeps the drawing buffer readable for readPixels below.
+      // renderer=webgl pins the path this suite has always tested: under
+      // SwiftShader there is no WebGPU so auto-selection always chose WebGL,
+      // but on a real local GPU the app auto-selects WebGPU, whose canvas
+      // cannot be pixel-probed with drawImage (presented frames are not
+      // retained), so the non-zero-pixel waits below would never resolve.
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true&renderer=webgl`,
         { waitUntil: 'domcontentloaded' },
       );
 
@@ -213,9 +218,10 @@ browserTest(
       // Load first preset. agent=true turns on preserveDrawingBuffer —
       // without it, toDataURL() outside the frame callback reads the
       // cleared (opaque black) buffer, and both captures hash identically
-      // no matter what the preset draws.
+      // no matter what the preset draws. renderer=webgl: see the first test —
+      // toDataURL/drawImage cannot read a WebGPU canvas.
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true&renderer=webgl`,
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('#stims-main', { timeout: 30000 });
@@ -414,7 +420,7 @@ async function verifySmartphoneMicrophoneAccess({
   const page = await ctx.newPage();
 
   try {
-    await page.goto(`${SERVER_URL}/?audio=none`, {
+    await page.goto(`${SERVER_URL}/?audio=none&renderer=webgl`, {
       waitUntil: 'domcontentloaded',
     });
     await page.locator('#start-audio-btn').click();

@@ -28,7 +28,7 @@ Tests are grouped into three speed tiers. Use the right tier for your workflow.
 
 **Command:** `bun run test:fast`  
 **What it includes:** All unit and compatibility tests **except** the slow corpus/certification/integration list below.  
-**Concurrency & Sharding:** Parallel test execution is sharded automatically across CPU cores (`STIMS_TEST_SHARDS=n` overrides core count).  
+**Concurrency & Sharding:** The fast suite runs under `bun test --parallel`, which distributes test files across worker processes with work stealing (`STIMS_TEST_SHARDS=n` overrides the worker count; `n=1` forces a single in-process run).  
 **When to use:** Pre-commit, `bun run check`, any time you want confident signal without waiting.
 
 Tests excluded from this tier:

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import { WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
 
 const chromiumPath = chromium.executablePath();
 const hasChromium = fs.existsSync(chromiumPath);
@@ -16,13 +17,6 @@ const integrationTest = hasChromium ? test : test.skip;
 // browser, so run this case locally and skip it on CI.
 const gestureGatedTest = hasChromium && !process.env.CI ? test : test.skip;
 const TEST_PORT = 5180;
-const PLAYWRIGHT_RENDERER_ARGS = [
-  '--use-angle=swiftshader',
-  '--use-gl=angle',
-  '--enable-webgl',
-  '--enable-unsafe-swiftshader',
-  '--ignore-gpu-blocklist',
-];
 // 180s, not 90s: this job runs after several other SwiftShader-rendered e2e
 // suites in the same CI job, and accumulated GPU/CPU pressure has pushed
 // this test past a 90s budget in CI even though it completes in ~10s
@@ -56,7 +50,7 @@ async function ensureDevServer() {
 
 async function createMobilePage() {
   const browser = await chromium.launch({
-    args: PLAYWRIGHT_RENDERER_ARGS,
+    args: WEBGL_RENDERER_ARGS,
   });
   const context = await browser.newContext({
     viewport: { width: 430, height: 932 },

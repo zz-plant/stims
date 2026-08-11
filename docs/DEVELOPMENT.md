@@ -17,7 +17,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 
 `bun run check` includes parallel asset validation (`assets:check`), the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The quality gate runner executes checks concurrently and fails fast on the first error to provide sub-second feedback. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions.
 
-For high-core machines, tune test worker sharding with `STIMS_TEST_SHARDS=<count>` (e.g. `STIMS_TEST_SHARDS=8 bun run test:fast`).
+Test files fan out across `bun test --parallel` workers sized to your CPU count; override with `STIMS_TEST_SHARDS=<count>` (e.g. `STIMS_TEST_SHARDS=8 bun run test:fast`, `STIMS_TEST_SHARDS=1` for a single-process run).
 
 For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
 
