@@ -16,9 +16,9 @@ When `embedOnly: true`, returns `{ embedding: number[] }` instead.
 Generate MilkDrop preset equations from a text description.
 
 **Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex', model?: string }`
-**Response:** `{ milkSource: string, title?: string, cached?: true }`
+**Response:** `{ milkSource: string, title?: string }`
 
-The `model` param overrides automatic classification-based model selection. If the description matches a cached embedding (cosine > 0.88), returns cached result without generating. Includes an auto-generated preset title from the micro model.
+The `model` param overrides automatic classification-based model selection. Every request invokes the generation model — this route has no embedding cache. Includes an auto-generated preset title from the micro model.
 
 ## POST /api/batch-generate
 
@@ -52,9 +52,9 @@ The `model` param overrides the default refine model (Llama 4 Scout). Explain/de
 Generate a MilkDrop preset from an uploaded image.
 
 **Body:** FormData with `image` file OR JSON `{ image: string }` (base64)
-**Response:** `{ description: string, milkSource: string, cached?: true }`
+**Response:** `{ description: string, milkSource: string, cached?: true, cachedPresetId?: string }`
 
-Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Checks embedding cache to avoid redundant generation.
+Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. When the description's embedding closely matches a stored preset embedding (cosine > 0.88) and that preset's source is resolvable from the gallery, returns the cached preset's real source with its id; otherwise generates fresh source.
 
 ## POST /api/store-embedding
 
