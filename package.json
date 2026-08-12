@@ -80,6 +80,7 @@
     "generate:seo": "bun run scripts/generate-seo.ts",
     "generate:search-index": "bun run scripts/generate-catalog-search-index.ts",
     "generate:previews": "bun run scripts/generate-thumbnails.ts",
+    "generate:clips": "bun run scripts/generate-readme-clips.ts",
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
     "generate:all": "bun run --parallel generate:search-index generate:previews",
     "serve:dist": "bun run scripts/serve-dist.ts",
