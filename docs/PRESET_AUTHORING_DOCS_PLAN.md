@@ -167,11 +167,15 @@ Licensing note: rescue means *link + attribute + teach the technique in our own 
 
 **Phase 1 — Foundation. SHIPPED 2026-08-11** (pending deploy). E1 + E2 fixed. Generated reference: `docs/authoring/reference.md` via `bun run docs:authoring-reference` (freshness-gated in `check:quick`). Tracks 1–2 live at `docs/authoring/` with 13 compiled examples and `#code=` run links, all guarded by `bun run check:authoring-examples`. The `#code=` deep link — previously advertised but only half-implemented (it opened the editor without loading the source) — now applies the decoded preset through the editor session. Public docs IA and CONTRIBUTING.md updated. *Exit criterion met locally; run links go live with the next production deploy.*
 
-**Phase 2 — The full ladder.** Tracks 0, 3, 4, 5. E3 (reactivity meter) + E5 (technique tags). First 15 cookbook pages. *Exit: the M-menu-to-equations cliff is bridged; "see it in the wild" works.*
+**Phases 2–4 — SHIPPED 2026-08-12** (pending deploy). All eight tracks are live at `docs/authoring/`: 36 compiled example presets across 11 lesson files, all guarded by `bun run check:authoring-docs`.
 
-**Phase 3 — The cliff and the matrix.** Track 6 (shaders) + Track 8 including the cross-engine compatibility matrix. E6/E7. *Exit: the two things no resource on earth currently provides — a shader tutorial and a compat matrix — exist and are linkable.*
+- **Track 0 (Play)** covers the remix-first no-code path through the existing UI (browse → sliders → Remix with preserved credit lineage → share via `#code=`).
+- **Tracks 3–5** (Listening, Warp fields, Waves and shapes) bridge the M-menu-to-equations cliff: audio smoothing (`_att` vs raw, RC filters, the volume-clock idiom), adaptive beat-threshold detection, per-pixel `rad`/`ang` fields, and the full custom-wave/custom-shape equation syntax (`wave_N_per_point`, `shape_N_per_frame`) — none of which any prior MilkDrop resource taught end-to-end.
+- **Track 6 (Shaders)** is the tutorial that didn't exist anywhere: five progressively-built `warp_shader`/`comp_shader` examples, each verified to compile via the full AST path (not a silent heuristic fallback) before publishing.
+- **Track 7 (Taste)** dissects five real catalog presets — Geiss's reaction-diffusion warp shader, Pieturp's parametric shape gradients, Rovastar's dual-threshold tempo tracker, Shifter's hand-rolled HSL→RGB, and a three-author mashup — chosen to each demonstrate a technique untouched by Tracks 1–6, credited and linked live.
+- **Track 8 (Shipping)** ships the compatibility matrix — the first one anywhere covering Winamp MilkDrop 2, projectM, Butterchurn, and Stims's own WebGL/WebGPU backends, built from the compiler's own compatibility/parity code and clearly separating verified-from-source claims from inferred ones — plus grounded performance guidance and the publishing path.
 
-**Phase 4 — Taste and community.** Track 7 essays + dissections + interviews. Archive rescue sweep. Cookbook grown from catalog mining. Outreach: offer the reference + matrix upstream (milkdrop.org, projectM wiki, Butterchurn README) so the ecosystem's dead links finally have a live destination.
+*Exit criteria met locally: a newcomer can go from "never seen a preset" through shaders and cross-engine compatibility without leaving the browser, and the shader tutorial + compat matrix — the two things no MilkDrop resource on earth previously provided — exist and are linkable.* E3–E7 (in-editor reactivity meter, `learn` panel, technique taxonomy, explain-this-line, lesson deep links) and the archive-rescue sweep remain open follow-on work — see Part 5/6 above.
 
 ## Success criteria
 

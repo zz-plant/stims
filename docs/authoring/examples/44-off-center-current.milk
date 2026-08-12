@@ -1,0 +1,35 @@
+[preset00]
+// A per-pixel current that isn't centered on cx/cy: it reads the raw
+// mesh coordinates x,y directly instead of rad/ang, so the "center" of
+// the swirl is wherever this line puts it, independent of the rotation
+// pivot.
+fRating=5
+fDecay=0.97
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_pixel_1=nx=x-0.75;
+per_pixel_2=ny=y-0.3;
+per_pixel_3=nrad=sqrt(nx*nx+ny*ny)+0.001;
+per_pixel_4=dx=dx-0.02*ny/nrad;
+per_pixel_5=dy=dy+0.02*nx/nrad;
