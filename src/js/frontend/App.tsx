@@ -277,12 +277,17 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     // Boot-time preset loads (fallback, featured, ?preset=) land as async
     // editor-session commits, so a single apply can be overwritten by a
-    // load that was already in flight. Assert the deep-linked source once
-    // and clear pendingCode so subsequent user navigation is not overridden.
+    // load that was already in flight. Re-assert the deep-linked source
+    // every time the session settles on something else, and stop once the
+    // snapshot reflects it — later loads are then real user actions and
+    // must win.
     if (!pendingCode || !engine.engineReady) return;
+    if (engineSnapshot?.currentSource === pendingCode) {
+      setPendingCode(null);
+      return;
+    }
     engine.updateEditorSource(pendingCode);
-    setPendingCode(null);
-  }, [pendingCode, engine.engineReady, engine]);
+  }, [pendingCode, engine.engineReady, engineSnapshot?.currentSource, engine]);
 
   useEffect(() => {
     if (
