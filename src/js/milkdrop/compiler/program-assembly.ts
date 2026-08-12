@@ -228,10 +228,16 @@ export function hasLegacyMotionVectorControls(
   numericFields: Record<string, number>,
   programs?: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
 ) {
+  // Compare against the MilkDrop defaults, not against 0: mv_l defaults to
+  // 0.9, so a plain `> 0` test reports every preset in the catalog as using
+  // legacy motion-vector controls.
   const hasLegacyFieldValues =
-    Math.abs(numericFields.mv_dx ?? 0) > 0.0001 ||
-    Math.abs(numericFields.mv_dy ?? 0) > 0.0001 ||
-    Math.abs(numericFields.mv_l ?? 0) > 0.0001;
+    Math.abs((numericFields.mv_dx ?? 0) - (DEFAULT_MILKDROP_STATE.mv_dx ?? 0)) >
+      0.0001 ||
+    Math.abs((numericFields.mv_dy ?? 0) - (DEFAULT_MILKDROP_STATE.mv_dy ?? 0)) >
+      0.0001 ||
+    Math.abs((numericFields.mv_l ?? 0) - (DEFAULT_MILKDROP_STATE.mv_l ?? 0)) >
+      0.0001;
   if (hasLegacyFieldValues) {
     return true;
   }

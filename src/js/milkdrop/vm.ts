@@ -6,6 +6,7 @@ import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
 } from './expression-jit.ts';
+import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -78,6 +79,12 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
 
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
+  /**
+   * Which borders the preset explicitly sized. Borders default to a non-zero
+   * size, so this is what separates "wants a border" from "never mentioned
+   * one" — see buildBorders.
+   */
+  private declaredBorderKeys: ReadonlySet<'outer' | 'inner'> = new Set();
   private state: MutableState = {};
   private registers: MutableState = {};
   private readonly signalEnv: MutableState = createDefaultSignalEnv();
@@ -297,6 +304,13 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   reset() {
+    const declaredBorders = new Set<'outer' | 'inner'>();
+    for (const field of this.preset.ast.fields) {
+      const key = normalizeProgramAssignmentTarget(field.key);
+      if (key === 'ob_size') declaredBorders.add('outer');
+      else if (key === 'ib_size') declaredBorders.add('inner');
+    }
+    this.declaredBorderKeys = declaredBorders;
     this.gmegabuf = resolveGlobalBuffer(this.preset);
     this.megabuf.fill(0);
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
@@ -684,7 +698,7 @@ class MilkdropPresetVM implements MilkdropVM {
       createEnv: this.frameCallbacks.createEnv,
       seedCustomShapeState: this.frameCallbacks.seedCustomShapeState,
     });
-    const borders = buildBorders(this.state);
+    const borders = buildBorders(this.state, this.declaredBorderKeys);
     const post = buildPost({
       preset: this.preset,
       state: this.state,
