@@ -6,19 +6,19 @@ If you want the reference instead of the course, see [the language reference](re
 
 ## The path
 
-| Track | Status | What you learn |
-|---|---|---|
-| 0 · Play | planned | Remix an existing preset and share it — no code |
-| [1 · How MilkDrop thinks](01-how-milkdrop-thinks.md) | **available** | The feedback loop, the pipeline, `decay`, `time` |
-| [2 · Motion](02-motion.md) | **available** | `zoom`, `rot`, `dx/dy`, `sx/sy`, `warp` — and a line-by-line dissection of a Geiss classic |
-| 3 · Listening | planned | Audio bands, smoothing, beats, measured reactivity |
-| 4 · Warp fields | planned | Per-pixel equations: `rad`, `ang`, tunnels and ripples |
-| 5 · Waves and shapes | planned | Custom waves, custom shapes, q-vars |
-| 6 · Shaders | planned | Warp and composite GLSL |
-| 7 · Taste | planned | Palette, pacing, restraint — dissections of masterworks |
-| 8 · Shipping | planned | Compatibility across engines, performance, publishing |
+| Track | What you learn |
+|---|---|
+| [0 · Play](00-play.md) | Remix an existing preset and share it — no code |
+| [1 · How MilkDrop thinks](01-how-milkdrop-thinks.md) | The feedback loop, the pipeline, `decay`, `time` |
+| [2 · Motion](02-motion.md) | `zoom`, `rot`, `dx/dy`, `sx/sy`, `warp` — and a line-by-line dissection of a Geiss classic |
+| [3 · Listening](03-listening.md) | Audio bands, smoothing, beat detection, measured reactivity |
+| [4 · Warp fields](04-warp-fields.md) | Per-pixel equations: `rad`, `ang`, tunnels and ripples |
+| [5 · Waves and shapes](05-waves-and-shapes.md) | Custom waves, custom shapes, the q-var bridge |
+| [6 · Shaders](06-shaders.md) | Warp and composite GLSL — the pair 64% of the catalog uses |
+| [7 · Taste](07-taste.md) | Five masterwork dissections: reaction-diffusion, tempo tracking, hand-rolled HSL, and more |
+| [8 · Shipping](08-shipping.md) | The first cross-engine compatibility matrix, performance, publishing |
 
-The full roadmap for the remaining tracks is in [PRESET_AUTHORING_DOCS_PLAN.md](../PRESET_AUTHORING_DOCS_PLAN.md).
+All eight tracks are live. The plan that scoped them, plus ideas for what comes next (a technique cookbook, an in-editor reactivity meter, archive rescue), is in [PRESET_AUTHORING_DOCS_PLAN.md](../PRESET_AUTHORING_DOCS_PLAN.md).
 
 ## How the examples work
 

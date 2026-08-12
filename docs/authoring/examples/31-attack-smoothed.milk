@@ -1,0 +1,29 @@
+[preset00]
+// Same as 30-raw-jitter.milk but reading bass_att instead of bass — the
+// attack-smoothed register, not a hand-rolled filter.
+fRating=5
+fDecay=0.96
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1.01
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_frame_1=zoom = 1.01 + bass_att*0.15;

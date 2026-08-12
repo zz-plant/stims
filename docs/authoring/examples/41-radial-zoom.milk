@@ -1,0 +1,31 @@
+[preset00]
+// Pattern 3 from the coding guide: per_pixel radial zoom. rad is a
+// built-in — each mesh point's distance from center (0 at the middle,
+// ~1 at the edge). At rad=0 this line reduces to zoom=1 (untouched);
+// at rad=1 it's the full per_frame zoom. One line, organic depth.
+fRating=5
+fDecay=0.97
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1.05
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_pixel_1=zoom=(zoom-1)*rad+1;

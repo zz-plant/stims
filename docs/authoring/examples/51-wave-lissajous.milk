@@ -1,0 +1,41 @@
+[preset00]
+// Same custom wave, now shaped by a per-point equation instead of the
+// audio sample directly. wave_0_per_point1 runs once per sample point
+// (sample runs 0..1 across the wave); x,y are what it must set.
+fRating=5
+fDecay=0.97
+fWaveAlpha=0.6
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.1
+wave_g=0.2
+wave_b=0.3
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+wavecode_0_enabled=1
+wavecode_0_samples=200
+wavecode_0_sep=0
+wavecode_0_scaling=1
+wavecode_0_smoothing=0.5
+wavecode_0_r=1
+wavecode_0_g=0.7
+wavecode_0_b=0.2
+wavecode_0_a=1
+wave_0_per_point1=t=sample*6.283185+time*0.3;
+wave_0_per_point2=x=0.5+0.3*sin(t*3)*(1+0.3*value);
+wave_0_per_point3=y=0.5+0.3*cos(t*2)*(1+0.3*value);

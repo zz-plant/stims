@@ -1,0 +1,38 @@
+[preset00]
+// The ripple, now driven by audio: per_frame smooths bass into q1, and
+// the warp shader reads q1 as a uniform float — the same q-var bridge
+// from Track 4, crossing from EEL into GLSL this time.
+fRating=5
+fDecay=0.98
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_frame_1=ra=1/fps*0.1;
+per_frame_2=bass_avg=bass_avg*(1-ra)+ra*bass;
+per_frame_3=q1=bass_avg;
+[warp_shader]
+vec2 center = uv - vec2(0.5, 0.5);
+float dist = length(center);
+float ripple = (0.005 + 0.02 * q1) * sin(dist * 40.0 - time * 2.0);
+vec2 dir = center / (dist + 0.0001);
+ret = uv + dir * ripple;
