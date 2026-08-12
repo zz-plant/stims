@@ -527,6 +527,14 @@ html.light .stims-shell {
     font: inherit;
     text-align: left;
     cursor: pointer;
+    transition:
+      opacity 0.1s ease,
+      transform 0.1s ease;
+  }
+
+  .ctl-preset__open:active {
+    opacity: 0.85;
+    transform: scale(0.995);
   }
 
   .ctl-preset__open:focus-visible {
@@ -624,6 +632,10 @@ html.light .stims-shell {
   .ctl-preset__fav:hover {
     background: var(--ctl-fill-hover);
     color: var(--ctl-saved);
+  }
+
+  .ctl-preset__fav:active {
+    transform: scale(0.9);
   }
 
   .ctl-preset__fav[data-saved="true"] {

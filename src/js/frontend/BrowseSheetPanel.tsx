@@ -12,7 +12,6 @@ import {
   getFeaturedCollectionTags,
   matchesAuthor,
   prettifyCollectionTag,
-  resolveAuthorUrl,
   sortBrowseEntries,
 } from './workspace-helpers.ts';
 
@@ -104,6 +103,7 @@ export function BrowseSheetPanel({
   const resultsRef = useRef<HTMLElement | null>(null);
 
   const authorOptions = useMemo(() => getAuthorOptions(catalog), [catalog]);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
   // Synchronize local search state when global searchQuery is modified externally (e.g. clear filters)
   useEffect(() => {
@@ -147,6 +147,23 @@ export function BrowseSheetPanel({
     setLimit(BATCH_SIZE);
   }, [searchQuery, routeState.collectionTag, authorFilter]);
 
+  // Infinite scroll observer: automatically append the next batch when approaching the bottom
+  useEffect(() => {
+    if (hiddenCount <= 0 || !moreRef.current) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+    const target = moreRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setLimit((l) => l + BATCH_SIZE);
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hiddenCount]);
+
   return (
     <div
       className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
@@ -163,6 +180,15 @@ export function BrowseSheetPanel({
             spellCheck={false}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                ui.setSearchQuery(localSearch);
+                (e.target as HTMLInputElement).blur();
+              } else if (e.key === 'Escape') {
+                setLocalSearch('');
+                ui.setSearchQuery('');
+              }
+            }}
           />
           <button
             type="button"
@@ -375,28 +401,7 @@ export function BrowseSheetPanel({
                     <span className="ctl-preset__title">{entry.title}</span>
                     <span className="ctl-preset__meta">
                       {describePresetMood(entry)}
-                      {entry.author ? (
-                        <>
-                          {' · '}
-                          {resolveAuthorUrl(entry.author, entry.authorUrl) ? (
-                            <a
-                              href={resolveAuthorUrl(
-                                entry.author,
-                                entry.authorUrl,
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ctl-preset__author-link"
-                              title={`View ${entry.author}'s profile or resource`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {entry.author}
-                            </a>
-                          ) : (
-                            entry.author
-                          )}
-                        </>
-                      ) : null}
+                      {entry.author ? ` · ${entry.author}` : null}
                     </span>
                   </span>
                 </button>
@@ -426,7 +431,7 @@ export function BrowseSheetPanel({
         ) : null}
 
         {hiddenCount > 0 ? (
-          <div className="ctl-browse-more">
+          <div ref={moreRef} className="ctl-browse-more">
             <button
               type="button"
               className="ctl-btn"
