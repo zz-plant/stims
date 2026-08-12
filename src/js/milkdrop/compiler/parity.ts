@@ -115,7 +115,10 @@ export function buildFeatureAnalysis({
     features.add('shape-texture-controls');
   }
 
-  if ((numericFields.ob_size ?? 0) > 0 || (numericFields.ib_size ?? 0) > 0) {
+  // Gate on alpha, not size: both border sizes default to 0.01 (MilkDrop's
+  // own default), so a size test marks every preset as using borders. A border
+  // is only drawn when its alpha is non-zero, and both alphas default to 0.
+  if ((numericFields.ob_a ?? 0) > 0 || (numericFields.ib_a ?? 0) > 0) {
     features.add('borders');
   }
 

@@ -1,5 +1,6 @@
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
+import { normalizeProgramAssignmentTarget } from '../field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,
@@ -340,10 +341,19 @@ export function getMotionVectorDescriptorContext({
   state: MutableState;
   preset: MilkdropCompiledPreset;
 }): MotionVectorDescriptorContext | null {
+  // "Legacy" means the preset steers motion vectors through the mv_* fields
+  // instead of the modern `motion_vectors` toggle. That has to be decided from
+  // what the preset DECLARED, not from runtime values: mv_l defaults to 0.9
+  // and mv_r/g/b to 1 (MilkDrop's real defaults), so a value-based test reads
+  // every preset as legacy.
+  // ast.fields keys are raw preset text (`fMotionVectorsL`), so normalize
+  // before comparing — MilkDrop-authored files never spell them `mv_l`.
+  const declaresLegacyField = preset.ast.fields.some((field) => {
+    const key = normalizeProgramAssignmentTarget(field.key);
+    return key === 'mv_dx' || key === 'mv_dy' || key === 'mv_l';
+  });
   const legacyControls =
-    Math.abs(state.mv_dx ?? 0) > 0.0001 ||
-    Math.abs(state.mv_dy ?? 0) > 0.0001 ||
-    Math.abs(state.mv_l ?? 0) > 0.0001 ||
+    declaresLegacyField ||
     preset.ir.programs.init.statements.some(
       (statement) =>
         statement.target === 'motion_vectors_x' ||

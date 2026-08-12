@@ -95,11 +95,17 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   bmodwavealphabyvolume: 0,
   wave_mode: 0,
   wave_scale: 1,
-  wave_smoothing: 0,
-  wave_a: 1,
-  wave_r: 0,
-  wave_g: 0,
-  wave_b: 0,
+  // Defaults below match projectM's PresetState.hpp, which implements
+  // MilkDrop's own initial state. Every field a preset omits used to fall back
+  // to 0 here; the Butterchurn-derived import omits ~84 declared fields per
+  // preset (it only serializes non-defaults), so those zeros were what the
+  // renderer actually used for most of the catalog — a white wave became
+  // black, smoothing vanished, motion vectors drew invisible grids.
+  wave_smoothing: 0.75,
+  wave_a: 0.8,
+  wave_r: 1,
+  wave_g: 1,
+  wave_b: 1,
   // MilkDrop centers the main wave by default (0.5/0.5); 0 would park it at
   // a screen corner, leaving only a clipped sliver visible for every preset
   // that doesn't set fWaveX/fWaveY explicitly.
@@ -109,7 +115,8 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   wave_thick: 0,
   wave_additive: 0,
   wave_usedots: 0,
-  wave_brighten: 0,
+  // bMaximizeWaveColor; projectM's maximizeWaveColor defaults to true.
+  wave_brighten: 1,
   mesh_density: 32,
   mesh_x: 32,
   mesh_y: 24,
@@ -129,31 +136,38 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   gammaadj: 2,
   video_echo_enabled: 0,
   video_echo_alpha: 0,
-  video_echo_zoom: 1,
+  video_echo_zoom: 2,
   video_echo_orientation: 0,
-  ob_size: 0,
+  ob_size: 0.01,
   ob_r: 0,
   ob_g: 0,
   ob_b: 0,
+  // Both borders default to alpha 0: sized and colored, but not drawn until a
+  // preset asks for them.
   ob_a: 0,
-  ib_size: 0,
-  ib_r: 0,
-  ib_g: 0,
-  ib_b: 0,
+  ib_size: 0.01,
+  ib_r: 0.25,
+  ib_g: 0.25,
+  ib_b: 0.25,
   ib_a: 0,
   texture_wrap: 1,
   feedback_texture: 0,
   ob_border: 0,
   ib_border: 0,
   motion_vectors: 0,
-  motion_vectors_x: 0,
-  motion_vectors_y: 0,
+  motion_vectors_x: 12,
+  motion_vectors_y: 9,
+  // Genuinely per-preset — projectM starts both at 0 and so do the originals.
   mv_dx: 0,
   mv_dy: 0,
-  mv_l: 0,
-  mv_r: 0,
-  mv_g: 0,
-  mv_b: 0,
+  mv_l: 0.9,
+  mv_r: 1,
+  mv_g: 1,
+  mv_b: 1,
+  // mv_a stays 0: projectM's mvA defaults to 0, so a preset that omits it
+  // draws no motion vectors at all. (Sampling the originals suggested 1, but
+  // that sample only contained presets which *declared* mv_a — the ones that
+  // declared 0 matched our old default and never showed up as a divergence.)
   mv_a: 0,
   ...Object.fromEntries(
     Array.from({ length: MAX_CUSTOM_SHAPES }, (_, index) =>
