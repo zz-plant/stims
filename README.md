@@ -16,9 +16,34 @@
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 
+<table>
+  <tr>
+    <td width="33%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Krash &amp; Rovastar — Cerebral Demons</sub></td>
+    <td align="center"><sub>Zylot — Crosshair Dimension</sub></td>
+    <td align="center"><sub>Martin — Neon Space PS3</sub></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
+    <td><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
+    <td><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Eo.S. — Starburst 05 Phasing</sub></td>
+    <td align="center"><sub>Aderrasi — Potion of Spirits</sub></td>
+    <td align="center"><sub>Orb — Radiation</sub></td>
+  </tr>
+</table>
+
+<sub>Recorded from the WebGL2 build with <a href="./scripts/generate-readme-clips.ts"><code>scripts/generate-readme-clips.ts</code></a>. Colors are reduced by GIF quantization; the live renderer is smoother and higher-contrast.</sub>
+
 </div>
 
-[Why Stims](#why-stims) · [What works today](#what-works-today) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
+[Why Stims](#why-stims) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
 
 ## Why Stims
 
@@ -43,6 +68,36 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 | **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`. See the limitations below. |
 | **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters. |
 | **Automation and proof tooling** | Headless session controls, deterministic capture scripts, projectM reference provenance, and image-diff reports support repeatable QA. |
+
+## How Stims differs from other MilkDrop-lineage projects
+
+Butterchurn and projectM are the projects most people arrive from, and both are
+good at what they were built for. Stims occupies a different slot: they are
+renderers you embed or run, while Stims is the workflow around one.
+
+| | Stims | Butterchurn | projectM |
+| --- | --- | --- | --- |
+| **Primary form** | A hosted browser app you use directly | An embeddable JS renderer | A native library and desktop/plugin player |
+| **Preset input** | `.milk` source, imported and exported as-is | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
+| **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
+| **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
+| **Rendering** | WebGL2 baseline with an additive, guarded WebGPU path | WebGL2 | Native OpenGL / OpenGL ES |
+| **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation this repo diffs against |
+
+What that buys you in practice:
+
+- **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
+- **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
+- **Fidelity is a measurement, not an assertion.** A catalog entry says whether it has been compared against a provenance-checked projectM capture, or only that it compiles and runs. Most entries are currently the latter, and they say so.
+
+What this comparison does **not** include is a fidelity benchmark. Stims has
+never been image-diffed against Butterchurn: the only external reference target
+in this repo is projectM, and most catalog entries have not been measured
+against that either. The Butterchurn-derived corpus is checked for whether
+Stims compiles and runs it ([`scripts/sweep-butterchurn-support.ts`](./scripts/sweep-butterchurn-support.ts),
+[`tests/corpus/butterchurn-corpus-support.test.ts`](./tests/corpus/butterchurn-corpus-support.test.ts)),
+which is a compatibility signal, not a visual one. Butterchurn also remains the
+more established choice for embedding a visualizer inside another app.
 
 ## Compatibility and evidence
 
