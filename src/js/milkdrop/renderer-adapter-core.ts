@@ -21,7 +21,6 @@ import {
   applyBlendModeToGroup,
   BACKGROUND_GEOMETRY,
   clearGroup,
-  clearSharedMilkdropGeometries,
   disposeObject,
   ensureGeometryPositions,
   getBorderLinePositions,
@@ -57,17 +56,10 @@ import {
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
 import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
-import {
-  clearProceduralMeshGeometryCache,
-  renderMesh as renderMeshHelper,
-} from './renderer-helpers/mesh-renderer';
-import {
-  clearProceduralMotionVectorGeometryCache,
-  renderMotionVectors as renderMotionVectorsHelper,
-} from './renderer-helpers/motion-vector-renderer';
+import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
+import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
 import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
 import {
-  clearProceduralWaveGeometryCache,
   syncInterpolatedProceduralCustomWaveObject,
   syncInterpolatedProceduralWaveObject,
   syncProceduralCustomWaveObject,
@@ -544,6 +536,32 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  // A preset switch can flip whether a wave target uses the GPU-procedural
+  // path (a bare Line) or the CPU path (a Group wrapping 1-4 Line/Points
+  // layers) between one frame and the next, while the same `group.children`
+  // slot is reused across the switch for performance. Blindly casting that
+  // slot to `Line` and reusing it crashes on `.geometry.getAttribute(...)`
+  // once it turns out to be a CPU-path Group, which has no `.geometry`.
+  // Treat a shape mismatch as "nothing there yet" so it gets disposed and
+  // rebuilt instead of reused.
+  private readExistingProceduralLine(
+    group: Group,
+    index: number,
+  ): Line | undefined {
+    const existing = group.children[index];
+    if (!existing) {
+      return undefined;
+    }
+    if (
+      !((existing as { geometry?: unknown }).geometry instanceof BufferGeometry)
+    ) {
+      disposeObject(existing as { children?: unknown[] });
+      group.remove(existing);
+      return undefined;
+    }
+    return existing as Line;
+  }
+
   private renderProceduralWaveGroup(
     target: 'main-wave' | 'trail-waves',
     group: Group,
@@ -556,7 +574,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncProceduralWaveObject(existing, wave, interaction);
       synced.renderOrder = getMilkdropPassRenderOrder(
         target === 'trail-waves' ? 'trails' : 'main-wave',
@@ -583,7 +601,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralCustomWaveVisual;
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncProceduralCustomWaveObject(
         existing,
         wave,
@@ -618,7 +636,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         previous: MilkdropProceduralWaveVisual;
         current: MilkdropProceduralWaveVisual;
       };
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncInterpolatedProceduralWaveObject(
         existing,
         wave.previous,
@@ -656,7 +674,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         previous: MilkdropProceduralCustomWaveVisual;
         current: MilkdropProceduralCustomWaveVisual;
       };
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncInterpolatedProceduralCustomWaveObject(
         existing,
         wave.previous,
@@ -1360,13 +1378,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       disposeGeometry(this.meshLines.geometry);
     }
     disposeMaterial(this.meshLines.material);
-    this.batcher?.disposeWithCaches
-      ? this.batcher.disposeWithCaches()
-      : this.batcher?.dispose();
-    clearSharedMilkdropGeometries();
-    clearProceduralMeshGeometryCache();
-    clearProceduralWaveGeometryCache();
-    clearProceduralMotionVectorGeometryCache();
+    // Deliberately NOT this.batcher?.disposeWithCaches() and NOT
+    // clear*GeometryCache()/clearSharedMilkdropGeometries() here: those
+    // caches (proceduralMeshGeometryCache, proceduralWaveGeometryCache,
+    // proceduralMotionVectorGeometryCache, BACKGROUND_GEOMETRY, the polygon
+    // caches, the batching layer's static geometry/buffer pool) are
+    // module-level singletons shared by every ThreeMilkdropAdapter instance
+    // on the page — including pooled live browse-tile renderers and preview
+    // renderers that come and go independently of the main stage. Wiping
+    // them here disposes GPU buffers a still-alive sibling instance is
+    // actively drawing from (e.g. a browse tile scrolling out of view was
+    // observed nuking the main stage's shared background/mesh geometry mid
+    // render), producing "buffer too small" WebGPU validation errors and,
+    // in the worst case, a stuck-black canvas. Only release what this
+    // instance exclusively owns.
+    this.batcher?.dispose();
     this.feedback?.dispose();
     this.audioTexture.dispose();
     this.scene.remove(this.root);

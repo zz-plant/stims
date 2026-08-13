@@ -14,6 +14,9 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 
+/** Stims' own repository — surfaced on the launch screen and in credits. */
+export const STIMS_REPO_URL = 'https://github.com/zz-plant/stims';
+
 export type StarterPreset = {
   key: string;
   label: string;

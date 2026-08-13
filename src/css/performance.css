@@ -21,7 +21,7 @@ body[data-page="performance"] {
       transparent 24%
     ),
     linear-gradient(180deg, #05070d 0%, #08111b 48%, #03050a 100%);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-family-base);
 }
 
 .stims-performance {

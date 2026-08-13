@@ -56,6 +56,14 @@ export function getRendererBackendMaxPixelRatioCap({
   return backend === 'webgpu' ? 4 : isLowPower ? 1.75 : 2.5;
 }
 
+export function getConstrainedTextureDimensionCap(): number {
+  const profile = getDevicePerformanceProfile();
+  if (profile.lowPower) {
+    return 2048;
+  }
+  return 8192;
+}
+
 export type RendererViewport = {
   width: number;
   height: number;

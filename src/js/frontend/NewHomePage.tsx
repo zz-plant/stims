@@ -5,7 +5,9 @@ import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
+import { STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
@@ -82,6 +84,7 @@ export function NewHomePage() {
           </p>
         )}
         <AudioSources />
+        <ProjectMeta />
       </div>
     </section>
   );
@@ -180,5 +183,25 @@ function AudioSources() {
     <div className="stims-shell__launch-source-minimal">
       <AudioSourcePanel showHelp={false} />
     </div>
+  );
+}
+
+/**
+ * Closes the launch column with the project's provenance. Deliberately muted —
+ * the repository is a fact about Stims, not a competing call to action.
+ */
+function ProjectMeta() {
+  return (
+    <p className="stims-shell__launch-meta">
+      <a
+        className="stims-shell__launch-meta-link"
+        href={STIMS_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <UiIcon name="github" className="stims-shell__launch-meta-icon" />
+        Open source on GitHub
+      </a>
+    </p>
   );
 }

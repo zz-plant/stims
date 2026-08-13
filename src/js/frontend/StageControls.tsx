@@ -6,6 +6,7 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
+import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -43,6 +44,23 @@ export function StageControls({
   const energyRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+
+  // ARIA already promises menu semantics (role="menu"/"menuitem"); this
+  // backs that up with the arrow-key traversal a screen reader user would
+  // reasonably expect from it, instead of leaving Tab as the only path.
+  useListKeyboardNav(menuRef, {
+    itemSelector: '[role="menuitem"], [role="menuitemcheckbox"]',
+    orientation: 'vertical',
+    deps: [showMenu],
+  });
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const firstItem = menuRef.current?.querySelector<HTMLElement>(
+      '[role="menuitem"], [role="menuitemcheckbox"]',
+    );
+    firstItem?.focus();
+  }, [showMenu]);
 
   useEffect(() => {
     const updateEnergy = () => {

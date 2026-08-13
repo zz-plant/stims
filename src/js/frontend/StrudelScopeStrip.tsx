@@ -178,7 +178,7 @@ export function StrudelScopeStrip({
         className={styles.scopeMoveButton}
         onClick={onToggleAnchor}
         aria-label={`Move scopes to ${anchor === 'bottom' ? 'top' : 'bottom'} edge`}
-        title="Move to the other edge (or drag the strip)"
+        title="Move to the other edge"
       >
         ⇅
       </button>

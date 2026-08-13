@@ -921,6 +921,125 @@ server.registerTool(
   },
 );
 
+// ── MIDI performance tools ───────────────────────────────────────────
+// The app models Claude as a virtual MIDI device ("Claude (MCP)") that
+// goes through the exact same per-device binding pipeline a physical
+// controller uses (src/js/core/services/webmidi-controller.ts). These
+// tools post window messages the app already listens for
+// (src/js/frontend/agent-bridge.ts) — same mechanism session_apply_source
+// uses for the editor, just a different event name.
+
+server.registerTool(
+  'session_midi_set',
+  {
+    description:
+      'Set a MilkDrop target (zoom, warp, rot, decay, q1-q4, or any preset variable) to a specific value, as the virtual "Claude (MCP)" MIDI device. Value is in the target\'s own units (e.g. zoom=1.2), not a raw 0-127 MIDI value — use session_midi_cc for that.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      target: z
+        .string()
+        .describe('Field name to set, e.g. "zoom", "warp", "q1".'),
+      value: z.number().describe("Value to apply, in the target's own units."),
+    }),
+  },
+  async ({ sessionId, target, value }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      await session.page.evaluate(
+        ({ target: t, value: v }) => {
+          window.postMessage(
+            { type: 'toil:midi_set', target: t, value: v },
+            '*',
+          );
+        },
+        { target, value },
+      );
+      return asTextResponse(`Set ${target} = ${value}.`);
+    } catch (e) {
+      return asTextResponse(`Error setting ${target}: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_cc',
+  {
+    description:
+      'Send a raw MIDI Control Change value (0-127) as the virtual "Claude (MCP)" device. Resolved through whatever mapping that device currently has for the CC number — use session_midi_bindings to see current mappings, or session_midi_set to target a field by name directly.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      cc: z.number().int().min(0).max(127).describe('MIDI CC number.'),
+      value: z.number().int().min(0).max(127).describe('Raw value, 0-127.'),
+    }),
+  },
+  async ({ sessionId, cc, value }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      await session.page.evaluate(
+        ({ cc: c, value: v }) => {
+          window.postMessage({ type: 'toil:midi_cc', cc: c, value: v }, '*');
+        },
+        { cc, value },
+      );
+      return asTextResponse(`Sent CC${cc} = ${value}.`);
+    } catch (e) {
+      return asTextResponse(`Error sending CC${cc}: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_bindings',
+  {
+    description:
+      'List current MIDI CC bindings for every known device (physical controllers plus the virtual "Claude (MCP)" channel), keyed by device id.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const bindings = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getMidiBindings?.() ?? {},
+      );
+      return asTextResponse(JSON.stringify(bindings, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading MIDI bindings: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_devices',
+  {
+    description:
+      'List known MIDI devices for the session — physical controllers (with connect state) and the virtual "Claude (MCP)" channel.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const devices = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getMidiDevices?.() ?? [],
+      );
+      return asTextResponse(JSON.stringify(devices, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading MIDI devices: ${e}`);
+    }
+  },
+);
+
 // ── Vibe coding tools ───────────────────────────────────────────────
 
 server.registerTool(

@@ -132,7 +132,7 @@ function HarnessDashboard() {
       >
         <h1
           style={{
-            fontFamily: 'Cormorant Garamond, serif',
+            fontFamily: 'var(--font-family-base)',
             fontSize: '1.5rem',
             margin: 0,
           }}

@@ -40,9 +40,16 @@ This document is the consolidated source for implementation progress across road
   - [x] Added unit test suite in `tests/unit/butterchurn-eel-transpiler.test.ts` (4/4 tests passing).
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **WebMIDI controller-service foundation** (2026-07-30):
-  - [x] Implemented `MidiControllerManager` in `src/js/core/midi-controller.ts` with WebMIDI access, mapping, and learn-mode logic.
+  - [x] Implemented WebMIDI access, mapping, and learn-mode logic in `src/js/core/services/webmidi-controller.ts`.
   - [x] Connected the shared controller service to live workspace parameters and Settings UI.
-  - [ ] Add persistent mappings, recovery behavior, and device-backed verification.
+  - [x] Add persistent mappings, recovery behavior, and device-backed verification (2026-08-13, below).
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **MIDI/VJ hardware workflow: persistent mappings, device QA, recovery, MCP performance** (2026-08-13):
+  - [x] Rewrote `src/js/core/services/webmidi-controller.ts`: per-device bindings persisted to localStorage, MIDI-learn mode, `onstatechange` hot-plug recovery, per-device enable toggle. Deleted the unused parallel `MidiControllerManager` class it superseded.
+  - [x] Opened `performance-hardware-controls.ts`'s live-target allowlist — any field name is now bindable, matching what the inspector panel already accepts.
+  - [x] Moved the live MIDI→engine binding from `PerformanceHardwareSection` (mounted only while Settings was open) to `App.tsx`, so a controller keeps driving the visuals with Settings closed.
+  - [x] Modeled Claude as a virtual "Claude (MCP)" MIDI device sharing the same binding pipeline as hardware; added `toil:midi_set`/`toil:midi_cc` commands to the agent bridge (`src/js/frontend/agent-bridge.ts`) and `session_midi_set`/`session_midi_cc`/`session_midi_bindings`/`session_midi_devices` MCP tools (`scripts/mcp-server.ts`).
+  - [x] Rebuilt `PerformanceHardwareSection.tsx`: device list with connect state, per-device enable switch, bindings table with remove, MIDI-learn UI.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
   - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)

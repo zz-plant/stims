@@ -86,7 +86,15 @@ export function ShortcutsDialog({
         className="stims-shell__shortcut-card"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
-          e.stopPropagation();
+          // Suppress everything else from reaching the global shortcut
+          // listener (typing a new binding while editing shouldn't also
+          // trigger it), but let Escape bubble to the backdrop's close
+          // handler above — otherwise the dialog that documents "Esc
+          // closes" is the one dialog Esc can't close, since focus is
+          // trapped inside this card the entire time it's open.
+          if (e.key !== 'Escape') {
+            e.stopPropagation();
+          }
         }}
         role="presentation"
       >

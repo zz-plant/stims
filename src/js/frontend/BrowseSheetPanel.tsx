@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PresetCatalogEntry } from './contracts.ts';
+import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
@@ -74,9 +76,9 @@ function readSortMode(): SortMode {
 
 export function BrowseSheetPanel({
   onCollectionTagChange,
-  onImport: _onImport,
+  onImport,
   offline = false,
-  sessionHistory: _sessionHistory = [],
+  sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
   onImport: (files: FileList | null) => void;
@@ -101,6 +103,10 @@ export function BrowseSheetPanel({
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
+  const presetListRef = useRef<HTMLUListElement | null>(null);
+  const recentRailRef = useRef<HTMLUListElement | null>(null);
+  const collectionChipsRef = useRef<HTMLElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const authorOptions = useMemo(() => getAuthorOptions(catalog), [catalog]);
   const moreRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +146,49 @@ export function BrowseSheetPanel({
   );
   const visible = sorted.slice(0, limit);
   const hiddenCount = sorted.length - visible.length;
+
+  // Arrow-key roving nav: Tab into the list costs one stop (lands on the
+  // active item), Up/Down/Home/End move within it. Without this, reaching
+  // the Nth preset by keyboard costs 2N Tab presses (open + favorite button
+  // per row) — thousands at the catalog's full size.
+  useListKeyboardNav(presetListRef, {
+    itemSelector: '.ctl-preset__open',
+    orientation: 'vertical',
+    deps: [visible.length],
+  });
+  useListKeyboardNav(recentRailRef, {
+    itemSelector: '.ctl-recent-rail__item',
+    orientation: 'horizontal',
+  });
+  useListKeyboardNav(collectionChipsRef, {
+    itemSelector: '.ctl-chip',
+    orientation: 'horizontal',
+    deps: [featuredTags.length],
+  });
+
+  // This-session rail: distinct from the "Recently opened" sort mode, which
+  // reads persisted lastOpenedAt across sessions. sessionHistory is in-memory
+  // only, so this is "what you just looked at", good for flicking back a
+  // couple of steps without losing your place in the filtered list below.
+  const recentEntries = useMemo(() => {
+    const seen = new Set<string>();
+    const entries: PresetCatalogEntry[] = [];
+    for (const record of sessionHistory) {
+      if (record.presetId === currentPresetId || seen.has(record.presetId)) {
+        continue;
+      }
+      const entry = catalog.find((item) => item.id === record.presetId);
+      if (!entry) {
+        continue;
+      }
+      seen.add(record.presetId);
+      entries.push(entry);
+      if (entries.length >= 8) {
+        break;
+      }
+    }
+    return entries;
+  }, [sessionHistory, catalog, currentPresetId]);
 
   // Reset pagination when filters change
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset limit on filter changes
@@ -184,7 +233,14 @@ export function BrowseSheetPanel({
               if (e.key === 'Enter') {
                 ui.setSearchQuery(localSearch);
                 (e.target as HTMLInputElement).blur();
-              } else if (e.key === 'Escape') {
+              } else if (e.key === 'Escape' && localSearch !== '') {
+                // First Escape clears the query; a second press (now that
+                // the field is already empty) falls through to bubble up
+                // to SidePanel's own Escape handler and close the panel.
+                // Without stopping propagation here, one Escape press would
+                // both wipe what you typed AND close the panel in the same
+                // keystroke.
+                e.stopPropagation();
                 setLocalSearch('');
                 ui.setSearchQuery('');
               }
@@ -204,9 +260,42 @@ export function BrowseSheetPanel({
               aria-hidden="true"
             />
           </button>
+          {/* A drop zone alone would have been mouse/touch-only — this
+              button (and the native file picker behind it) is the
+              keyboard/click-operable path, not an afterthought bolted onto
+              a drag target. */}
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            onClick={() => importInputRef.current?.click()}
+            aria-label="Import preset file"
+            title="Import preset file"
+          >
+            <UiIcon
+              name="upload"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".milk,text/plain"
+            multiple
+            hidden
+            aria-label="Import preset file"
+            onChange={(e) => {
+              onImport(e.target.files);
+              e.target.value = '';
+            }}
+          />
         </div>
 
-        <nav className="ctl-scroller" aria-label="Preset collections">
+        <nav
+          ref={collectionChipsRef}
+          className="ctl-scroller"
+          aria-label="Preset collections"
+        >
           <button
             type="button"
             className="ctl-chip"
@@ -297,6 +386,43 @@ export function BrowseSheetPanel({
         ) : null}
       </section>
 
+      {!hasFilter && recentEntries.length > 0 ? (
+        <section
+          className="ctl-recent-rail"
+          aria-label="Recently played this session"
+        >
+          <p className="ctl-recent-rail__label">Recently played</p>
+          <ul
+            ref={recentRailRef}
+            className="ctl-scroller ctl-recent-rail__list"
+          >
+            {recentEntries.map((entry) => (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  className="ctl-recent-rail__item"
+                  title={entry.title}
+                  onClick={(event) => {
+                    runPresetPromoteTransition({
+                      sourceElement: event.currentTarget,
+                      presetId: entry.id,
+                    });
+                    engine.handlePresetSelection(entry.id);
+                  }}
+                >
+                  <PresetArtwork
+                    entry={entry}
+                    compact
+                    preview={presetPreviews[entry.id] ?? null}
+                  />
+                  <span className="ctl-recent-rail__title">{entry.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section ref={resultsRef} className="ctl-browse-results">
         <div className="ctl-resultbar">
           <p className="ctl-readout" aria-live="polite">
@@ -326,6 +452,12 @@ export function BrowseSheetPanel({
             <option value="random">Random</option>
           </select>
         </div>
+
+        <p className="ctl-keyboard-hint">
+          <kbd>↑</kbd>
+          <kbd>↓</kbd> browse · <kbd>Home</kbd>
+          <kbd>End</kbd> jump
+        </p>
 
         {!catalogReady && !catalogError ? (
           <ul className="stims-shell__preset-list" aria-busy={true}>
@@ -370,7 +502,7 @@ export function BrowseSheetPanel({
         ) : null}
 
         {catalogReady && sorted.length > 0 ? (
-          <ul className="ctl-presets">
+          <ul ref={presetListRef} className="ctl-presets">
             {visible.map((entry) => (
               <li
                 key={entry.id}
@@ -386,6 +518,7 @@ export function BrowseSheetPanel({
                   onClick={(event) => {
                     runPresetPromoteTransition({
                       sourceElement: event.currentTarget,
+                      presetId: entry.id,
                     });
                     engine.handlePresetSelection(entry.id);
                   }}

@@ -20,6 +20,10 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { useTemporalMemory } from '../core/services/temporal-memory.ts';
+import {
+  VIRTUAL_CLAUDE_DEVICE_ID,
+  webMidiService,
+} from '../core/services/webmidi-controller.ts';
 import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
@@ -42,6 +46,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
+import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { decodePresetCodeFromHash } from './url-state.ts';
@@ -160,6 +165,21 @@ function StimsWorkspaceAppShell() {
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
+  // Stable identity matters here: SidePanel's open-effect keys off this
+  // callback's reference (`[open, onOpen]`), so an inline arrow function
+  // would re-fire on every App re-render — including the frequent ones
+  // driven by engine snapshot churn while audio is playing — and yank focus
+  // back into the search field out from under whatever the user just
+  // focused (Tab-navigating the preset list, for instance).
+  const handleSidePanelOpen = useCallback(() => {
+    if (ui.routeState.panel === 'browse') {
+      const el = document.querySelector<HTMLElement>(
+        BROWSE_PANEL_FOCUS_SELECTOR,
+      );
+      el?.focus();
+    }
+  }, [ui.routeState.panel]);
+
   useAgentFrameRate(ui.routeState.agentMode);
 
   useDocumentTitle({
@@ -169,6 +189,26 @@ function StimsWorkspaceAppShell() {
     liveMode,
     engineReady: engine.engineReady,
   });
+
+  // Shared between the touch long-press gesture and the "L" keyboard
+  // shortcut — one definition of "favorite whatever's currently playing"
+  // rather than two copies that could drift.
+  const toggleFavoriteCurrentPreset = () => {
+    const activePresetId = engineSnapshot?.activePresetId;
+    const activePreset = activePresetId
+      ? engine.catalog.find((preset) => preset.id === activePresetId)
+      : null;
+    if (!activePresetId) {
+      ui.setStatusMessage('Load a preset before saving it.');
+      return;
+    }
+    void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
+    ui.setStatusMessage(
+      activePreset?.isFavorite
+        ? 'Removed from saved presets.'
+        : 'Saved preset.',
+    );
+  };
 
   useKeyboardShortcuts({
     liveMode,
@@ -182,6 +222,8 @@ function StimsWorkspaceAppShell() {
     handleAudioStop: engine.handleAudioStop,
     handleVisualSearch: engine.handleVisualSearch,
     handleToggleFullscreen,
+    toggleFavoritePreset: toggleFavoriteCurrentPreset,
+    setStatusMessage: ui.setStatusMessage,
     setShowShortcuts,
   });
 
@@ -192,25 +234,7 @@ function StimsWorkspaceAppShell() {
     handlePreviousPreset: engine.handlePreviousPreset,
     openBrowse: () => ui.updatePanel('browse'),
     closePanel: () => ui.updatePanel(null),
-    toggleFavoritePreset: () => {
-      const activePresetId = engineSnapshot?.activePresetId;
-      const activePreset = activePresetId
-        ? engine.catalog.find((preset) => preset.id === activePresetId)
-        : null;
-      if (!activePresetId) {
-        ui.setStatusMessage('Load a preset before saving it.');
-        return;
-      }
-      void engine.toggleFavoritePreset(
-        activePresetId,
-        !activePreset?.isFavorite,
-      );
-      ui.setStatusMessage(
-        activePreset?.isFavorite
-          ? 'Removed from saved presets.'
-          : 'Saved preset.',
-      );
-    },
+    toggleFavoritePreset: toggleFavoriteCurrentPreset,
     handleToggleFullscreen,
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
@@ -228,8 +252,35 @@ function StimsWorkspaceAppShell() {
           void engine.handlePlayPreset(engineSnapshot.activePresetId);
         }
       },
+      // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
+      // live stage through the exact same virtual-device pipeline a
+      // physical controller uses — see webmidi-controller.ts.
+      onMidiSet: (target, value) => {
+        webMidiService.injectTargetValue(
+          VIRTUAL_CLAUDE_DEVICE_ID,
+          target,
+          value,
+        );
+      },
+      onMidiCc: (cc, value) => {
+        webMidiService.injectControlChange(VIRTUAL_CLAUDE_DEVICE_ID, cc, value);
+      },
+      getMidiBindings: () => webMidiService.getAllBindings(),
+      getMidiDevices: () => webMidiService.getDevices(),
     });
   }, [engine, engineSnapshot?.activePresetId]);
+
+  // Physical and virtual (MCP) MIDI both drive the engine through this one
+  // binding. It used to live inside PerformanceHardwareSection, which only
+  // stayed mounted while Settings was open — closing Settings silently cut
+  // the live wire between a controller and the visuals.
+  useEffect(
+    () =>
+      bindMidiToMilkdropControls(webMidiService, (target, value) => {
+        engine.updateInspectorField(target, value);
+      }),
+    [engine],
+  );
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
@@ -646,14 +697,7 @@ function StimsWorkspaceAppShell() {
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
-        onOpen={() => {
-          if (ui.routeState.panel === 'browse') {
-            const el = document.querySelector<HTMLElement>(
-              BROWSE_PANEL_FOCUS_SELECTOR,
-            );
-            el?.focus();
-          }
-        }}
+        onOpen={handleSidePanelOpen}
       >
         <Suspense fallback={null}>
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}

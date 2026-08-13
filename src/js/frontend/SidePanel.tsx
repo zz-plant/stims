@@ -308,28 +308,38 @@ export function SidePanel({
         tabIndex={-1}
       >
         {stageAnchored ? (
-          // biome-ignore lint/a11y/useSemanticElements: focusable window-splitter (WAI-ARIA APG pattern); <hr> cannot take focus or a value
-          <div
-            className={styles.seam}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize editor panel"
-            aria-valuemin={SEAM_MIN_WIDTH}
-            aria-valuemax={
-              typeof window !== 'undefined'
-                ? seamMaxWidth()
-                : SEAM_DEFAULT_WIDTH
-            }
-            aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
-            tabIndex={0}
-            title="Drag to resize (double-click to reset)"
-            onPointerDown={handleSeamPointerDown}
-            onPointerMove={handleSeamPointerMove}
-            onPointerUp={handleSeamPointerEnd}
-            onPointerCancel={handleSeamPointerEnd}
-            onKeyDown={handleSeamKeyDown}
-            onDoubleClick={() => commitSeamWidth(null)}
-          />
+          <>
+            {/* biome-ignore lint/a11y/useSemanticElements: focusable window-splitter (WAI-ARIA APG pattern); <hr> cannot take focus or a value */}
+            <div
+              className={styles.seam}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize editor panel"
+              aria-keyshortcuts="ArrowLeft ArrowRight"
+              aria-valuemin={SEAM_MIN_WIDTH}
+              aria-valuemax={
+                typeof window !== 'undefined'
+                  ? seamMaxWidth()
+                  : SEAM_DEFAULT_WIDTH
+              }
+              aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
+              tabIndex={0}
+              title="← → to resize · double-click to reset"
+              onPointerDown={handleSeamPointerDown}
+              onPointerMove={handleSeamPointerMove}
+              onPointerUp={handleSeamPointerEnd}
+              onPointerCancel={handleSeamPointerEnd}
+              onKeyDown={handleSeamKeyDown}
+              onDoubleClick={() => commitSeamWidth(null)}
+            />
+            {/* Silent until the seam itself has focus — a persistent hint on
+                a 12px-wide sliver almost nobody touches would be pure
+                clutter; this only needs to confirm the arrow-key path right
+                when someone's actually found their way to it. */}
+            <span className={styles.seamHint} aria-hidden="true">
+              ← →
+            </span>
+          </>
         ) : null}
         <div
           className={styles.header}

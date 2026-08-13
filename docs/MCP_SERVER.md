@@ -51,6 +51,10 @@ These tools manage a persistent headless browser session so you can interact wit
 | `session_apply_source` | `sessionId`, `source` (.milk code) | Applies modified preset source to the running visualizer |
 | `session_get_preset_source` | `presetId` or `sessionId` | Raw .milk source code from disk |
 | `session_get_inspector_values` | `sessionId` | All visible field names and current values from the inspector panel |
+| `session_midi_set` | `sessionId`, `target`, `value` | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device |
+| `session_midi_cc` | `sessionId`, `cc` (0-127), `value` (0-127) | Sends a raw CC value, resolved through the Claude device's current mapping |
+| `session_midi_bindings` | `sessionId` | CC→target mappings for every known device, keyed by device id |
+| `session_midi_devices` | `sessionId` | Known MIDI devices (physical + the virtual Claude channel) with connect state |
 | `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
 | `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
 | `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches all 43 presets by keyword relevance, returns screenshots of top 3 matches |
@@ -106,6 +110,16 @@ start_agent_session → session_get_state
 → session_compare
 → session_close
 ```
+
+### Perform live as a virtual MIDI device:
+```
+start_agent_session(headless=false) → session_midi_bindings (see what's mapped)
+→ session_midi_set("warp", 1.4) → session_midi_set("zoom", 1.05)
+→ session_midi_cc(1, 90) → session_capture_frame → session_close
+```
+`headless=false` opens a real, visible browser window — plug a physical
+controller into that same window's tab to co-perform alongside Claude, since
+both drive the engine through the same live-binding pipeline.
 
 ## Starting the Server
 

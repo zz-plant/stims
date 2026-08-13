@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { STIMS_REPO_URL } from './workspace-helpers.ts';
 
 function CreditsSection({
   title,
@@ -158,9 +159,21 @@ export function CreditsPanel() {
           through code comments, test fixtures, and this credit page.
         </p>
         <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+          The full source lives at{' '}
+          <a
+            href={STIMS_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', textDecoration: 'underline' }}
+          >
+            github.com/zz-plant/stims
+          </a>
+          .
+        </p>
+        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
           See{' '}
           <a
-            href="https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md"
+            href={`${STIMS_REPO_URL}/blob/main/docs/LINEAGE_AND_CREDITS.md`}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: 'inherit', textDecoration: 'underline' }}
