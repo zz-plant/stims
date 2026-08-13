@@ -18,7 +18,7 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
   - `guides/milkdrop-visualizer`
   - `guides/playing-toys`
   - `guides/audio-setup`
-  - `guides/accessibility` *(planned public surface — content should be sourced from [`docs/SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md): plain-language, no clinical framing, no efficacy claims)*
+  - `guides/accessibility` *(planned public surface — content lives in [`docs/guides/accessibility.md`](./guides/accessibility.md) today, sourced from [`docs/SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md))*
   - `guides/performance`
 - **Create Presets** *(planned public surface — content lives in `docs/authoring/` today)*
   - `create/learn` — the authoring curriculum (Tracks 0–8, live examples)

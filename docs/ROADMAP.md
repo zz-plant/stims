@@ -51,11 +51,11 @@ Exit criteria:
 
 ### Flash-safety measurement
 
-The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md) for the full specification and the broader sensory-control research program this is the first step of.
+The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). First sample run (50 presets, 34 measured, 16 timed out): zero exceeded threshold. Encouraging, not yet conclusive — see [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete) for the full result and the tool-reliability gap to close first.
 
 Exit criteria:
 
-- the corpus has actually been run through the real-threshold tool and the resulting distribution reviewed (the tool exists; the audit result doesn't yet);
+- the audit tool's apparent resource-exhaustion pattern (timeouts clustering late in a long run) is fixed and a full-corpus run completes without a large unmeasured tail;
 - a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
 - a default-on flash-rate cap ships as a visible safety control, not a buried setting.
 
