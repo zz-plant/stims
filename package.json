@@ -113,6 +113,7 @@
     "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",
     "lab:reactivity": "bun run scripts/preset-lab-reactivity.ts",
     "lab:visual": "bun run scripts/preset-lab-visual.ts",
+    "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
     "sweep:milkdrop-loops": "bun run scripts/run-milkdrop-loop-visual-sweep.ts",
     "sweep:butterchurn": "bun run scripts/sweep-butterchurn-support.ts",
     "test:agent": "bun run test:integration",

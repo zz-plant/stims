@@ -861,7 +861,14 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+await main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
+// Exit explicitly rather than waiting for the event loop to drain. A run that
+// had to abandon a timed-out Playwright promise, or that spawned the dev
+// server itself, leaves handles alive: one completed run sat at 0% CPU for 72
+// minutes after writing its JSON, which reads exactly like the hang this
+// script was fixed to avoid.
+process.exit(process.exitCode ?? 0);

@@ -17,6 +17,7 @@ flowchart LR
   Start --> Preset["🎨 Preset Authoring"]
   Start --> API["🔌 Optional APIs"]
   Start --> Strat["📊 Strategy & QA"]
+  Start --> Access["♿ Accessibility & Sensory Research"]
 
   GS --> GS1["DEVELOPMENT.md · TESTING.md"]
   GS --> GS2["DEPLOYMENT.md · COMMIT_CONVENTIONS.md"]
@@ -31,6 +32,9 @@ flowchart LR
 
   API --> E1["api.md<br/>Cloudflare Worker endpoints"]
   API --> E2["MCP_SERVER.md"]
+
+  Access --> AC1["SENSORY_ACCESSIBILITY.md<br/>research program + flash-safety spec"]
+  Access --> AC2["LITERATURE.md<br/>citation reference"]
 
   Strat --> S1["ROADMAP.md · IMPLEMENTATION_STATUS.md"]
   Strat --> S2["QA_PLAN.md · LINEAGE_AND_CREDITS.md"]
@@ -101,6 +105,17 @@ Roadmap priorities, QA verification suites, and historical context.
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
 | 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |
 | 📜 [**Lineage & Credits**](./LINEAGE_AND_CREDITS.md) | Project history, homage to Ryan Geiss's MilkDrop, Butterchurn, and projectM |
+
+---
+
+### ♿ 6. Accessibility & Sensory Research
+
+Research grounding for Stims' sensory-control claims, open research questions, and the flash-safety specification — no therapeutic claims.
+
+| Document | Description |
+| --- | --- |
+| 🧠 [**Sensory Accessibility & Control Research**](./SENSORY_ACCESSIBILITY.md) | The distinctive-control claim, layered research program, literature status table, and flash-safety spec |
+| 📚 [**Literature Reference Map**](./LITERATURE.md) | Citation list grouped by theme, for UI-copy grounding and the research program above |
 
 ---
 
