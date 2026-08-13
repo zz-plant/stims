@@ -1,5 +1,9 @@
 import type { FrequencyAnalyser } from '../core/audio-handler';
 import {
+  createHarmonicPercussiveAnalyser,
+  type HarmonicPercussiveLevels,
+} from '../utils/audio/harmonic-percussive';
+import {
   type BandLevels,
   getBandLevels,
   getWeightedEnergy,
@@ -26,6 +30,14 @@ type MilkdropAudioSignalUpdate = {
   relativeAttenuatedBands: BandLevels;
   rawWeightedEnergy: number;
   weightedEnergy: number;
+  /**
+   * Harmonic/percussive decomposition of the spectrum (see
+   * `utils/audio/harmonic-percussive`). Energies are on the same
+   * MilkDrop-relative scale as `relativeBands` — 1.0 means "as much
+   * percussive/harmonic energy as this track usually carries" — except
+   * `percussiveRatio`, which stays an absolute 0..1 fraction.
+   */
+  harmonicPercussive: HarmonicPercussiveLevels;
 };
 
 const BAND_KEYS: readonly BandKey[] = ['bass', 'mid', 'treble'];
@@ -147,6 +159,28 @@ function spectralCompensationForRatio(ratio: number) {
   return 1.02 + bassBody + trebleAir;
 }
 
+/** Keys of the HPSS output that get relative normalization; the ratio is left
+ * on its own absolute 0..1 scale. */
+const HP_ENERGY_KEYS = [
+  'percussive',
+  'harmonic',
+  'percussiveLow',
+  'percussiveMid',
+  'percussiveHigh',
+] as const;
+
+type HpEnergyKey = (typeof HP_ENERGY_KEYS)[number];
+
+function createHpState(): Record<HpEnergyKey, number> {
+  return {
+    percussive: 0,
+    harmonic: 0,
+    percussiveLow: 0,
+    percussiveMid: 0,
+    percussiveHigh: 0,
+  };
+}
+
 export function createMilkdropAudioSignalProcessor() {
   let bandBaseline = createBandState();
   let bandPeak = createBandState();
@@ -155,6 +189,17 @@ export function createMilkdropAudioSignalProcessor() {
   let relativeAveragesSeeded = false;
   const relativeBands = createBandState();
   const relativeAttenuatedBands = createBandState();
+  const harmonicPercussiveAnalyser = createHarmonicPercussiveAnalyser();
+  let hpLongAverage = createHpState();
+  let hpAveragesSeeded = false;
+  const relativeHarmonicPercussive: HarmonicPercussiveLevels = {
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+  };
   let energyPeak = 0.12;
   let smoothedSpectrum = new Float32Array(0);
   let spectrumNoiseFloor = new Float32Array(0);
@@ -168,6 +213,7 @@ export function createMilkdropAudioSignalProcessor() {
     relativeAttenuatedBands,
     rawWeightedEnergy: 0,
     weightedEnergy: 0,
+    harmonicPercussive: relativeHarmonicPercussive,
   };
 
   const ensureSpectrumBuffers = (length: number) => {
@@ -318,6 +364,46 @@ export function createMilkdropAudioSignalProcessor() {
     }
   };
 
+  const updateHarmonicPercussive = (
+    spectrum: Uint8Array,
+    sampleRate: number | undefined,
+    deltaMs: number,
+  ) => {
+    const raw = harmonicPercussiveAnalyser.analyse(spectrum, sampleRate);
+    if (!hpAveragesSeeded) {
+      // Same seeding rule as the bands: start the long average at the first
+      // frame so the opening second doesn't read as one huge transient.
+      for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+        const key = HP_ENERGY_KEYS[i];
+        hpLongAverage[key] = raw[key];
+      }
+      hpAveragesSeeded = true;
+    }
+
+    for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+      const key = HP_ENERGY_KEYS[i];
+      const current = raw[key];
+      hpLongAverage[key] = smoothLevel(
+        hpLongAverage[key],
+        current,
+        deltaMs,
+        RELATIVE_LONG_AVG_MS,
+        RELATIVE_LONG_AVG_MS,
+      );
+      const longAverage = hpLongAverage[key];
+      relativeHarmonicPercussive[key] =
+        longAverage < RELATIVE_SILENCE_EPSILON
+          ? 1
+          : clamp(current / longAverage, 0, RELATIVE_MAX);
+    }
+    relativeHarmonicPercussive.percussiveRatio = clamp(
+      raw.percussiveRatio,
+      0,
+      1,
+    );
+    return relativeHarmonicPercussive;
+  };
+
   return {
     reset() {
       bandBaseline = createBandState();
@@ -329,6 +415,13 @@ export function createMilkdropAudioSignalProcessor() {
         relativeBands[BAND_KEYS[i]] = 1;
         relativeAttenuatedBands[BAND_KEYS[i]] = 1;
       }
+      harmonicPercussiveAnalyser.reset();
+      hpLongAverage = createHpState();
+      hpAveragesSeeded = false;
+      for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+        relativeHarmonicPercussive[HP_ENERGY_KEYS[i]] = 1;
+      }
+      relativeHarmonicPercussive.percussiveRatio = 0.5;
       energyPeak = 0.12;
       smoothedSpectrum = new Float32Array(0);
       spectrumNoiseFloor = new Float32Array(0);
@@ -394,6 +487,11 @@ export function createMilkdropAudioSignalProcessor() {
       updateResult.attenuatedBands = attenuatedBands;
       updateResult.relativeBands = relativeBands;
       updateResult.relativeAttenuatedBands = relativeAttenuatedBands;
+      updateResult.harmonicPercussive = updateHarmonicPercussive(
+        rawSpectrum,
+        sampleRate,
+        deltaMs,
+      );
       updateResult.rawWeightedEnergy = rawWeightedEnergy;
       updateResult.weightedEnergy = weightedEnergy;
       return updateResult;

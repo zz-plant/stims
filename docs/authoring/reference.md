@@ -95,6 +95,12 @@ see Track 3 of the curriculum for how to use them well.
 | `treb_att` | treble with envelope |
 | `beat` | beat detector output |
 | `beat_pulse` | beat intensity pulse (Stims runtime signal) |
+| `percussive` | transient/broadband spectral energy (HPSS), relative scale like bass |
+| `harmonic` | sustained/tonal spectral energy (HPSS), relative scale like bass |
+| `percussive_low` | percussive energy in 20-250 Hz (not a kick detector) |
+| `percussive_mid` | percussive energy in 250-4000 Hz (not a snare detector) |
+| `percussive_high` | percussive energy above 4 kHz |
+| `percussive_ratio` | percussive share of total energy, 0..1 (0.5 in silence) |
 | `rms` | overall signal level |
 | `vol` | mean of the relative bands |
 | `time` | seconds |

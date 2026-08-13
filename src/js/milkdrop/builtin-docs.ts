@@ -254,6 +254,42 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
     doc: 'beat intensity pulse (Stims runtime signal)',
   },
   {
+    name: 'percussive',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'transient/broadband spectral energy (HPSS), relative scale like bass',
+  },
+  {
+    name: 'harmonic',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'sustained/tonal spectral energy (HPSS), relative scale like bass',
+  },
+  {
+    name: 'percussive_low',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'percussive energy in 20-250 Hz (not a kick detector)',
+  },
+  {
+    name: 'percussive_mid',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'percussive energy in 250-4000 Hz (not a snare detector)',
+  },
+  {
+    name: 'percussive_high',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'percussive energy above 4 kHz',
+  },
+  {
+    name: 'percussive_ratio',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'percussive share of total energy, 0..1 (0.5 in silence)',
+  },
+  {
     name: 'rms',
     kind: 'variable',
     group: 'signal',

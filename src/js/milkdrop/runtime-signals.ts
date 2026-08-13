@@ -73,6 +73,16 @@ export function createMilkdropSignalTracker(options?: {
     beat_treb: 0,
     beat_treble: 0,
     weightedEnergy: 0,
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+    percussive_low: 1,
+    percussive_mid: 1,
+    percussive_high: 1,
+    percussive_ratio: 0.5,
     inputX: 0,
     inputY: 0,
     input_x: 0,
@@ -355,6 +365,17 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.beat_mid = update.beatMid ? 1 : 0;
       signalCache.beat_treb = update.beatTreble ? 1 : 0;
       signalCache.weightedEnergy = finalWeightedEnergy;
+      const hp = processedSignals.harmonicPercussive;
+      signalCache.percussive = hp.percussive;
+      signalCache.harmonic = hp.harmonic;
+      signalCache.percussiveLow = hp.percussiveLow;
+      signalCache.percussiveMid = hp.percussiveMid;
+      signalCache.percussiveHigh = hp.percussiveHigh;
+      signalCache.percussiveRatio = hp.percussiveRatio;
+      signalCache.percussive_low = hp.percussiveLow;
+      signalCache.percussive_mid = hp.percussiveMid;
+      signalCache.percussive_high = hp.percussiveHigh;
+      signalCache.percussive_ratio = hp.percussiveRatio;
       signalCache.frequencyData = processedSignals.frequencyData;
       signalCache.waveformData = resolvedWaveformData;
       signalCache.frequencyDataL = resolvedFrequencyDataL;
