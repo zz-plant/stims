@@ -33,6 +33,8 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 
 ### Fixed
 
+- Mesh transform cache removed: it quantized coordinates to 1/2048, so distinct points collided onto one key and a motion-vector point could receive a mesh vertex's transform from the opposite edge of the screen — four vectors per frame drawn ~2.0 NDC out of place. It served ~86 of ~24,320 transform calls per frame while every per-pixel preset paid a key computation, pool bump and `Map.set` on all ~1764 vertices (`fix(milkdrop)`).
+- **Correction to `0eb14b23`:** that commit's message claims its per-vertex hoist was bit-exact. Later verification with fixtures that genuinely emit motion vectors found one branch — no per-pixel program, legacy `mv_dx`/`mv_dy`, direct path (≤288 cells) — where four vectors per frame differed. The change was in fact a partial *fix* for the cache-collision bug above rather than a no-op, and no shipped preset reached that branch (all 1,782 swept). The cache removal supersedes it.
 - Enhanced microphone permission error guidance and fallback device error handling (`fix(audio)`).
 - Microphone capture behavior repaired on mobile browsers (`fix(audio)`).
 
