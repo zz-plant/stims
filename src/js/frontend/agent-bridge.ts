@@ -62,6 +62,11 @@ declare global {
       frames?: number;
       deltaMs?: number;
       beatPulse?: boolean;
+      stimulus?: {
+        spec: import('../core/testing/synthetic-stimulus.ts').StimulusSpec;
+        frameOffset?: number;
+        totalFrames?: number;
+      };
     }) => { rendered: number } | null;
   }
 }

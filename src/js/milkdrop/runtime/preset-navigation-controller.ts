@@ -8,6 +8,7 @@ import type {
   MilkdropRenderBackend,
 } from '../types';
 import type { MilkdropCatalogCoordinator } from './catalog-coordinator';
+import { FIRST_RUN_PRESET_ID } from './first-run-preset';
 import { createPresetLoadTrace } from './preset-load-trace';
 import { cloneBlendState, estimateFrameBlendWorkload } from './session';
 
@@ -64,10 +65,21 @@ export function createMilkdropPresetNavigationController({
     return entry.supports[backend].status !== 'unsupported';
   };
 
-  const getFirstSelectablePresetId = (backend = getActiveBackend()) =>
-    catalogCoordinator.getCatalogEntries().find((entry) => {
-      return entry.supports[backend].status !== 'unsupported';
-    })?.id ?? null;
+  // Prefers the deliberate first-run pick over the head of the sort order. See
+  // first-run-preset.ts for the measurements behind it. Falls back to sort
+  // order when that preset is missing from the catalog or unsupported here, so
+  // a bad id degrades to the previous behaviour rather than to no preset.
+  const getFirstSelectablePresetId = (backend = getActiveBackend()) => {
+    const entries = catalogCoordinator.getCatalogEntries();
+    const selectable = (entry: (typeof entries)[number]) =>
+      entry.supports[backend].status !== 'unsupported';
+
+    const firstRunEntry = entries.find(
+      (entry) => entry.id === FIRST_RUN_PRESET_ID && selectable(entry),
+    );
+
+    return (firstRunEntry ?? entries.find(selectable))?.id ?? null;
+  };
 
   let currentLoadRequestRevision = 0;
 

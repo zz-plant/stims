@@ -30,6 +30,13 @@ export function NewHomePage() {
   const { ui, engine } = useWorkspace();
   const [lastSession] = useState(() => getLastSession());
   const appliedResumeRef = useRef(false);
+  const autoStartedRef = useRef(false);
+
+  // Captured at mount so it reflects the URL the visitor actually arrived on.
+  // The resume effect below writes `presetId` into the route a tick later, and
+  // a resumed session must keep its explicit "Resume" button rather than
+  // start on its own.
+  const [deepLinkPresetId] = useState(() => ui.routeState.presetId ?? null);
 
   const resumeEntry = lastSession
     ? resolvePresetCatalogEntry(engine.catalog, lastSession.presetId)
@@ -48,6 +55,24 @@ export function NewHomePage() {
     appliedResumeRef.current = true;
     ui.commitRoute({ ...ui.routeState, presetId: resumeEntry.id });
   }, [resumeEntry, lastSession]);
+
+  // A `?preset=` link is a request to watch that preset, not to configure an
+  // audio source. Social cards advertise one specific preset by name, so
+  // landing those clicks on the setup form threw the arrival away. Start demo
+  // audio directly instead.
+  //
+  // Autoplay policy may leave the AudioContext suspended because this runs
+  // outside a user gesture. That is handled: `core/audio-handler.ts` installs
+  // capture-phase pointerdown/touchstart/keydown listeners that resume every
+  // registered context, so the visitor's first interaction unblocks sound
+  // while the visuals have been running from the start.
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    if (!deepLinkPresetId) return;
+    if (!engine.engineReady) return;
+    autoStartedRef.current = true;
+    void engine.handleAudioStart('demo');
+  }, [deepLinkPresetId, engine.engineReady, engine.handleAudioStart]);
 
   const handlePlayDemo = () => engine.handleAudioStart('demo');
   const handleResume = () => {

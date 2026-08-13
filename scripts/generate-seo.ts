@@ -1,5 +1,12 @@
 import { execFile } from 'node:child_process';
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -10,6 +17,18 @@ const execFileAsync = promisify(execFile);
 export const DEFAULT_BASE_URL = 'https://toil.fyi';
 export const GENERATED_SITEMAP_CHUNK_PATH = 'public/sitemap-1.xml';
 export const GENERATED_SITEMAP_INDEX_PATH = 'public/sitemap.xml';
+export const PRESET_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
+// A 177KB id -> [title, author] map carved out of the 1.6MB catalog so the
+// edge middleware can put real preset titles in <title>/OG tags without
+// parsing the full catalog on every cold isolate.
+export const GENERATED_PRESET_META_PATH = 'public/preset-meta.json';
+export const PRESET_PREVIEW_DIR = 'public/milkdrop-presets/previews';
+// Presets start at chunk 2; chunk 1 stays reserved for the hand-written app
+// routes so their priorities and lastmods are not buried under 1,791 entries.
+export const PRESET_SITEMAP_FIRST_CHUNK = 2;
+// Well under the 50,000-URL / 50MB per-file sitemap limit, and small enough
+// that a single preset regeneration does not rewrite one enormous file.
+export const PRESET_SITEMAP_CHUNK_SIZE = 1000;
 export const GENERATED_ROBOTS_PATH = 'public/robots.txt';
 export const GENERATED_OG_DEFAULT_PATH = 'public/og/default.svg';
 export const GENERATED_OG_MILKDROP_PATH = 'public/og/milkdrop.svg';
@@ -433,25 +452,136 @@ ${entries
 `;
 }
 
+const latestLastmod = (entries: SitemapEntry[]) =>
+  entries.reduce(
+    (latest, entry) => (entry.lastmod > latest ? entry.lastmod : latest),
+    entries[0]?.lastmod ?? formatDate(new Date()),
+  ) ?? formatDate(new Date());
+
 export function buildSitemapIndex(
   entries: SitemapEntry[],
   baseUrl = DEFAULT_BASE_URL,
+  presetChunks: SitemapEntry[][] = [],
 ) {
-  const lastmod =
-    entries.reduce(
-      (latest, entry) => (entry.lastmod > latest ? entry.lastmod : latest),
-      entries[0]?.lastmod ?? formatDate(new Date()),
-    ) ?? formatDate(new Date());
+  const chunks = [
+    { name: 'sitemap-1.xml', lastmod: latestLastmod(entries) },
+    ...presetChunks.map((chunk, index) => ({
+      name: `sitemap-${PRESET_SITEMAP_FIRST_CHUNK + index}.xml`,
+      lastmod: latestLastmod(chunk),
+    })),
+  ];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${baseUrl}/sitemap-1.xml</loc>
-    <lastmod>${lastmod}</lastmod>
-  </sitemap>
+${chunks
+  .map(
+    (chunk) => `  <sitemap>
+    <loc>${baseUrl}/${chunk.name}</loc>
+    <lastmod>${chunk.lastmod}</lastmod>
+  </sitemap>`,
+  )
+  .join('\n')}
 </sitemapindex>
 `;
 }
+
+type PresetCatalogEntry = {
+  id: string;
+  title: string;
+  author?: string;
+};
+
+// 121 catalog entries carry the literal author "Unknown". Crediting a preset
+// "by Unknown" reads worse than not crediting it at all.
+const isNamedAuthor = (author?: string) =>
+  Boolean(author) && author !== 'Unknown';
+
+/**
+ * One sitemap entry per catalog preset.
+ *
+ * These pages already exist and already serve per-preset titles, descriptions,
+ * and OG cards — they were simply never advertised to a crawler, so a
+ * 1,791-preset catalog was represented in search by two URLs. The `?preset=`
+ * query form is used rather than a `/preset/<id>` path because the query form
+ * is what the app actually serves; the path form is a redirect.
+ */
+export async function buildPresetSitemapEntries(
+  rootDir = repoRoot,
+  {
+    baseUrl = DEFAULT_BASE_URL,
+    lastmod,
+  }: { baseUrl?: string; lastmod?: string } = {},
+): Promise<SitemapEntry[]> {
+  const catalogRaw = await readFile(
+    path.join(rootDir, PRESET_CATALOG_PATH),
+    'utf8',
+  );
+  const catalog = JSON.parse(catalogRaw) as {
+    generatedAt?: string;
+    presets?: PresetCatalogEntry[];
+  };
+
+  const generatedAt =
+    lastmod ??
+    (catalog.generatedAt && ISO_DATE_PATTERN.test(catalog.generatedAt)
+      ? catalog.generatedAt
+      : await resolveLastmodDate(rootDir, [PRESET_CATALOG_PATH]));
+
+  // Only advertise an image when the preview actually shipped; a sitemap that
+  // points at missing images is worse than one with no image block at all.
+  const previews = new Set(
+    await readdir(path.join(rootDir, PRESET_PREVIEW_DIR)).catch(() => []),
+  );
+
+  // The catalog currently ships 15 ids twice. Emitting each twice would put
+  // duplicate <loc> entries in the sitemap, so collapse on id here.
+  const seen = new Set<string>();
+  const uniquePresets = (catalog.presets ?? []).filter((preset) => {
+    if (seen.has(preset.id)) {
+      return false;
+    }
+    seen.add(preset.id);
+    return true;
+  });
+
+  return uniquePresets.map((preset) => {
+    const credit = isNamedAuthor(preset.author) ? ` by ${preset.author}` : '';
+    return {
+      loc: `${baseUrl}/?preset=${encodeURIComponent(preset.id)}`,
+      lastmod: generatedAt,
+      changefreq: 'monthly' as const,
+      priority: '0.6',
+      imageLoc: previews.has(`${preset.id}.png`)
+        ? `${baseUrl}/milkdrop-presets/previews/${preset.id}.png`
+        : `${baseUrl}/api/og-preset?id=${encodeURIComponent(preset.id)}`,
+      imageTitle: `${preset.title} | Stims`,
+      imageCaption: `${preset.title}${credit}, a MilkDrop preset running live in the browser on Stims.`,
+    };
+  });
+}
+
+export async function buildPresetMetaMap(rootDir = repoRoot) {
+  const catalogRaw = await readFile(
+    path.join(rootDir, PRESET_CATALOG_PATH),
+    'utf8',
+  );
+  const catalog = JSON.parse(catalogRaw) as { presets?: PresetCatalogEntry[] };
+
+  return Object.fromEntries(
+    (catalog.presets ?? []).map((preset) => [
+      preset.id,
+      [preset.title, isNamedAuthor(preset.author) ? preset.author : ''],
+    ]),
+  );
+}
+
+export const chunkSitemapEntries = (
+  entries: SitemapEntry[],
+  size = PRESET_SITEMAP_CHUNK_SIZE,
+) =>
+  Array.from({ length: Math.ceil(entries.length / size) }, (_, index) =>
+    entries.slice(index * size, (index + 1) * size),
+  );
 
 export function buildRobotsTxt(baseUrl = DEFAULT_BASE_URL) {
   return `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`;
@@ -467,6 +597,9 @@ export async function buildSeoArtifacts(
     baseUrl,
     milkdrop,
   });
+  const presetChunks = chunkSitemapEntries(
+    await buildPresetSitemapEntries(rootDir, { baseUrl }),
+  );
   const defaultOgSvg = buildOgSvg({
     title: 'Stims',
     subtitle: 'MilkDrop-inspired visuals for your music',
@@ -571,9 +704,17 @@ export async function buildSeoArtifacts(
         relativePath: GENERATED_SITEMAP_CHUNK_PATH,
         contents: buildSitemapChunk(sitemapEntries),
       },
+      ...presetChunks.map((chunk, index) => ({
+        relativePath: `public/sitemap-${PRESET_SITEMAP_FIRST_CHUNK + index}.xml`,
+        contents: buildSitemapChunk(chunk),
+      })),
       {
         relativePath: GENERATED_SITEMAP_INDEX_PATH,
-        contents: buildSitemapIndex(sitemapEntries, baseUrl),
+        contents: buildSitemapIndex(sitemapEntries, baseUrl, presetChunks),
+      },
+      {
+        relativePath: GENERATED_PRESET_META_PATH,
+        contents: JSON.stringify(await buildPresetMetaMap(rootDir)),
       },
       {
         relativePath: GENERATED_ROBOTS_PATH,
@@ -591,6 +732,15 @@ export async function generateSeo(
 
   for (const dir of generatedDirs) {
     await rm(path.join(publicDir, dir), { recursive: true, force: true });
+  }
+
+  // Drop stale preset chunks so a shrinking catalog cannot leave orphaned
+  // sitemap files that the index no longer references but the host still serves.
+  for (const name of await readdir(publicDir).catch(() => [])) {
+    const chunkIndex = /^sitemap-(\d+)\.xml$/u.exec(name)?.[1];
+    if (chunkIndex && Number(chunkIndex) >= PRESET_SITEMAP_FIRST_CHUNK) {
+      await rm(path.join(publicDir, name), { force: true });
+    }
   }
 
   const { files } = await buildSeoArtifacts(rootDir, { baseUrl });
