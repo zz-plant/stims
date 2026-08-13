@@ -167,32 +167,6 @@ export function buildParticleFieldVisual({
   };
 }
 
-function getTransformCacheKey(x: number, y: number) {
-  const quantizedX = Math.round((x + 1) * 2048);
-  const quantizedY = Math.round((y + 1) * 2048);
-  return quantizedX * 4096 + quantizedY;
-}
-
-export function resetFrameTransformCache(geometryState: GeometryBuilderState) {
-  geometryState.frameTransformCache.clear();
-  geometryState.transformCachePoolIndex = 0;
-}
-
-function getTransformCacheEntry(geometryState: GeometryBuilderState): {
-  x: number;
-  y: number;
-} {
-  const pool = geometryState.transformCachePool;
-  const index = geometryState.transformCachePoolIndex;
-  let entry = pool[index];
-  if (!entry) {
-    entry = { x: 0, y: 0 };
-    pool[index] = entry;
-  }
-  geometryState.transformCachePoolIndex = index + 1;
-  return entry;
-}
-
 type MilkdropProgramBlock = MilkdropCompiledPreset['ir']['programs']['init'];
 
 type RunProgramFn = (
@@ -234,7 +208,6 @@ type CreateEnvFn = (
 type MeshTransformFrame = {
   signals: MilkdropRuntimeSignals;
   state: MutableState;
-  geometryState: GeometryBuilderState;
   runProgram: RunProgramFn;
   scratch: MutableState;
   /**
@@ -251,10 +224,6 @@ type MeshTransformFrame = {
   aspectY: number;
   /** null when the preset ships no per-pixel code (compiles to NO_OP). */
   perPixelProgram: MilkdropProgramBlock | null;
-  /** Write results into frameTransformCache. */
-  writeCache: boolean;
-  /** Consult frameTransformCache before computing. */
-  readCache: boolean;
   /** signals.time * (0.35 + warpanimspeed); per-frame constant. */
   rippleTime: number;
   // Fast-path per-frame transform constants. Only valid (and only read) when
@@ -298,7 +267,6 @@ function createMeshTransformFrame({
   createEnv,
   aspectX,
   aspectY,
-  readCache,
 }: {
   signals: MilkdropRuntimeSignals;
   state: MutableState;
@@ -308,7 +276,6 @@ function createMeshTransformFrame({
   createEnv: CreateEnvFn;
   aspectX?: number;
   aspectY?: number;
-  readCache: boolean;
 }): MeshTransformFrame {
   const aspectRatio = signals.aspect ?? 1;
   // MilkDrop shrinks the minor axis (values <= 1); mirrors the shader-uniform
@@ -329,23 +296,12 @@ function createMeshTransformFrame({
   return {
     signals,
     state,
-    geometryState,
     runProgram,
     scratch,
     perPixelEnv,
     aspectX: resolvedAspectX,
     aspectY: resolvedAspectY,
     perPixelProgram: hasPerPixel ? perPixel : null,
-    // frameTransformCache measured a 0% hit rate on the mesh pass (1764
-    // transform calls, 1764 misses on a 42x42 lattice — a fixed grid never
-    // quantises two distinct points to the same key). It is kept ONLY for the
-    // per-pixel case, where the transform is impure: the per-pixel program can
-    // read locals left behind by the previous vertex, so recomputing a repeated
-    // point is not guaranteed to reproduce the memoised value. Without a
-    // per-pixel program the transform is a pure function of (gridX, gridY,
-    // state, signals), so caching it can only ever cost Map traffic.
-    writeCache: hasPerPixel,
-    readCache: readCache && hasPerPixel,
     rippleTime: signals.time * (0.35 + warpAnimSpeed),
     zoom: Math.max(state.zoom ?? 1, 0),
     zoomExponent: Math.max(state.zoomexp ?? 1, 0.0001),
@@ -371,9 +327,7 @@ function createMeshTransformFrame({
   };
 }
 
-// Returned by the uncached (no per-pixel program) path. Callers copy x/y out
-// before the next call, exactly as they already did with the pooled cache
-// entries.
+// Every transform is recomputed; callers copy x/y out before the next call.
 const transientTransformResult = { x: 0, y: 0 };
 
 function transformMeshPoint(
@@ -384,17 +338,6 @@ function transformMeshPoint(
   const aspectX = frame.aspectX;
   const aspectY = frame.aspectY;
   const perPixel = frame.perPixelProgram;
-
-  let cacheKey = 0;
-  if (frame.writeCache) {
-    cacheKey = getTransformCacheKey(gridX, gridY);
-    if (frame.readCache) {
-      const cached = frame.geometryState.frameTransformCache.get(cacheKey);
-      if (cached) {
-        return cached;
-      }
-    }
-  }
 
   const aspectGridX = gridX * aspectX;
   const aspectGridY = gridY * aspectY;
@@ -511,14 +454,9 @@ function transformMeshPoint(
   const tx = wx + translateX;
   const ty = wy + translateY;
 
-  const transformed = frame.writeCache
-    ? getTransformCacheEntry(frame.geometryState)
-    : transientTransformResult;
+  const transformed = transientTransformResult;
   transformed.x = (tx - centerX) * scaleX + centerX;
   transformed.y = (ty - centerY) * scaleY + centerY;
-  if (frame.writeCache) {
-    frame.geometryState.frameTransformCache.set(cacheKey, transformed);
-  }
   return transformed;
 }
 
@@ -712,12 +650,6 @@ export function buildMeshField({
     createEnv,
     aspectX,
     aspectY,
-    // The mesh lattice is strictly monotonic in both axes, so no two of its own
-    // points can share a quantised cache key — a lookup can only ever hit an
-    // entry left by an earlier pass. buildFrame resets the cache before this
-    // runs, so in practice this is always false (measured: 1764 lookups, 1764
-    // misses); the size probe keeps it correct if the call order ever changes.
-    readCache: geometryState.frameTransformCache.size > 0,
   });
 
   for (let row = 0; row < density; row += 1) {
@@ -1045,8 +977,12 @@ export function buildMotionVectors({
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
   // Motion-vector sample points CAN repeat (legacy mv_dx/mv_dy offsets clamp
-  // several columns onto +/-1) and can coincide with mesh-lattice points, so
-  // this pass keeps the cache lookup.
+  // several columns onto +/-1) and can coincide with mesh-lattice points. They
+  // are still recomputed each time, matching MilkDrop, which evaluates every
+  // vector independently. A memo keyed on quantised coordinates used to sit
+  // here; it returned a NEIGHBOUR's transform for points closer together than
+  // the quantisation step (~4.9e-4), misplacing ~4 vectors per frame for a
+  // 0.35% hit rate.
   const transformFrame = createMeshTransformFrame({
     signals,
     state,
@@ -1056,7 +992,6 @@ export function buildMotionVectors({
     createEnv,
     aspectX,
     aspectY,
-    readCache: true,
   });
 
   const interpolated = countX * countY > MOTION_VECTOR_INTERPOLATION_THRESHOLD;

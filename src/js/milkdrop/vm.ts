@@ -26,7 +26,6 @@ import {
   buildMeshField,
   buildMotionVectors,
   getMeshDensity,
-  resetFrameTransformCache,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
 import { buildBorders, buildShapes } from './vm/shape-border-builder';
@@ -133,9 +132,6 @@ class MilkdropPresetVM implements MilkdropVM {
   };
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
-    frameTransformCache: new Map<number, { x: number; y: number }>(),
-    transformCachePool: [],
-    transformCachePoolIndex: 0,
     pointScratch: {},
     meshPoints: [],
     motionVectorFrameIndex: 0,
@@ -352,7 +348,6 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
-    resetFrameTransformCache(this.geometryState);
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
     this.lastPreparedSignalFrame = Number.NaN;
@@ -592,7 +587,6 @@ class MilkdropPresetVM implements MilkdropVM {
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
-    resetFrameTransformCache(this.geometryState);
     this.restorePerFrameBaseValues();
 
     if (
@@ -618,7 +612,6 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
-    resetFrameTransformCache(this.geometryState);
     this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
@@ -735,7 +728,6 @@ class MilkdropPresetVM implements MilkdropVM {
       gpuGeometry,
     });
     gpuGeometry.customWaves = customWaves.procedural;
-    resetFrameTransformCache(this.geometryState);
 
     return frameState;
   }
