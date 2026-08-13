@@ -244,6 +244,14 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     return initAgentBridge({
       onLoadPreset: (payload) => {
+        // milkSource is how an agent hands over preset *code* rather than a
+        // catalog id (MCP's session_apply_source). The bridge has always
+        // forwarded it and this handler always dropped it, so that tool
+        // silently did nothing.
+        if (payload.milkSource) {
+          engine.updateEditorSource(payload.milkSource);
+          return;
+        }
         if (payload.presetId) {
           void engine.handlePlayPreset(payload.presetId);
         }
