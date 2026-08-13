@@ -236,8 +236,17 @@ type MeshTransformFrame = {
   state: MutableState;
   geometryState: GeometryBuilderState;
   runProgram: RunProgramFn;
-  createEnv: CreateEnvFn;
   scratch: MutableState;
+  /**
+   * `scratch` with its prototype already wired to the VM signal env (what
+   * createEnv(..., { reuseExtraAsEnv: true }) returns — it returns the very
+   * object it was handed). Built ONCE per pass: Object.setPrototypeOf on the
+   * same object with the same prototype is semantically a no-op after the
+   * first call, but V8 treats prototype mutation as a deopt trigger, so doing
+   * it per vertex (~1764x/frame) poisoned every later property access. Null
+   * when the preset has no per-pixel program (scratch is never used then).
+   */
+  perPixelEnv: MutableState | null;
   aspectX: number;
   aspectY: number;
   /** null when the preset ships no per-pixel code (compiles to NO_OP). */
@@ -262,6 +271,22 @@ type MeshTransformFrame = {
   scaleY: number;
   translateX: number;
   translateY: number;
+  // Per-frame BASE values of the built-in per-pixel variables, read raw off
+  // `state` once per pass. Only used by the per-pixel path, which must reset
+  // every one of them on EVERY vertex (per-pixel code may overwrite them and
+  // the next vertex has to start from the frame base, not the neighbour's
+  // leftovers). Hoisting removes only the repeated prototype-chain lookup and
+  // nullish check, not the reset.
+  baseZoom: number;
+  baseZoomExp: number;
+  baseRot: number;
+  baseWarp: number;
+  baseCx: number;
+  baseCy: number;
+  baseSx: number;
+  baseSy: number;
+  baseDx: number;
+  baseDy: number;
 };
 
 function createMeshTransformFrame({
@@ -294,14 +319,20 @@ function createMeshTransformFrame({
   const hasPerPixel = perPixel.statements.length > 0;
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const rot = state.rot ?? 0;
+  const scratch = geometryState.pointScratch;
+  // Wire the scratch prototype (and refresh the VM signal env, which
+  // prepareSignalEnv memoises per signals/frame/time) exactly once per pass.
+  const perPixelEnv = hasPerPixel
+    ? createEnv(signals, scratch, { reuseExtraAsEnv: true })
+    : null;
 
   return {
     signals,
     state,
     geometryState,
     runProgram,
-    createEnv,
-    scratch: geometryState.pointScratch,
+    scratch,
+    perPixelEnv,
     aspectX: resolvedAspectX,
     aspectY: resolvedAspectY,
     perPixelProgram: hasPerPixel ? perPixel : null,
@@ -327,6 +358,16 @@ function createMeshTransformFrame({
     scaleY: state.sy ?? 1,
     translateX: state.dx ?? 0,
     translateY: state.dy ?? 0,
+    baseZoom: state.zoom ?? 1,
+    baseZoomExp: state.zoomexp ?? 1,
+    baseRot: rot,
+    baseWarp: state.warp ?? 0,
+    baseCx: state.cx ?? 0.5,
+    baseCy: state.cy ?? 0.5,
+    baseSx: state.sx ?? 1,
+    baseSy: state.sy ?? 1,
+    baseDx: state.dx ?? 0,
+    baseDy: state.dy ?? 0,
   };
 }
 
@@ -375,7 +416,6 @@ function transformMeshPoint(
 
   if (perPixel) {
     const local = frame.scratch;
-    const state = frame.state;
 
     // Convert from renderer space [-1,1] to MilkDrop space [0,1]
     // x = 0 is left, x = 1 is right (with aspect correction)
@@ -386,21 +426,22 @@ function transformMeshPoint(
       aspectGridX * aspectGridX + aspectGridY * aspectGridY,
     );
     local.ang = Math.atan2(aspectGridY, aspectGridX);
-    local.zoom = state.zoom ?? 1;
-    local.zoomexp = state.zoomexp ?? 1;
-    local.rot = state.rot ?? 0;
-    local.warp = state.warp ?? 0;
-    local.cx = state.cx ?? 0.5;
-    local.cy = state.cy ?? 0.5;
-    local.sx = state.sx ?? 1;
-    local.sy = state.sy ?? 1;
-    local.dx = state.dx ?? 0;
-    local.dy = state.dy ?? 0;
+    // Reset every built-in per-pixel variable from the frame bases: per-pixel
+    // code may have overwritten them on the previous vertex.
+    local.zoom = frame.baseZoom;
+    local.zoomexp = frame.baseZoomExp;
+    local.rot = frame.baseRot;
+    local.warp = frame.baseWarp;
+    local.cx = frame.baseCx;
+    local.cy = frame.baseCy;
+    local.sx = frame.baseSx;
+    local.sy = frame.baseSy;
+    local.dx = frame.baseDx;
+    local.dy = frame.baseDy;
 
-    const env = frame.createEnv(frame.signals, local, {
-      reuseExtraAsEnv: true,
-    });
-    frame.runProgram(perPixel, env, local);
+    // frame.perPixelEnv is `local` itself, prototype already wired at pass
+    // setup, so no per-vertex createEnv / setPrototypeOf.
+    frame.runProgram(perPixel, frame.perPixelEnv ?? local, local);
 
     // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
     // transform math below runs in renderer [-1,1] space, so invert the mapping.
