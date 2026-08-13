@@ -27,7 +27,7 @@
 import { writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
-import { analyzeFlashTimeline, type FlashAnalysis } from './flash-analysis.ts';
+import { analyzeFlashEvents, type FlashAnalysis } from './flash-analysis.ts';
 
 const DEFAULT_COUNT = 50;
 const DEFAULT_PORT = 5199;
@@ -46,7 +46,7 @@ const TILE_ROWS = 18;
 // without making a 300-frame capture quadratically expensive.
 const SAMPLE_STRIDE = 3;
 const BOOT_TIMEOUT_MS = 45000;
-const SWAP_TIMEOUT_MS = 45000;
+const SWAP_TIMEOUT_MS = 90000;
 const VIEWPORT = { width: 960, height: 540 };
 // Each preset compiles shaders and allocates feedback targets; hundreds of
 // swaps in one context eventually exhausts GPU resources and kills the
@@ -222,47 +222,94 @@ async function main() {
             const tileW = Math.max(1, Math.floor(w / cols));
             const tileH = Math.max(1, Math.floor(h / rows));
 
+            // Sampled-pixel grid, fixed across frames so pixel N in one
+            // frame is the same screen location in the next.
+            const sampleXs: number[] = [];
+            const sampleYs: number[] = [];
+            const sampleTile: number[] = [];
+            for (let ty = 0; ty < rows; ty += 1) {
+              for (let tx = 0; tx < cols; tx += 1) {
+                const x1 = Math.min(w, tx * tileW + tileW);
+                const y1 = Math.min(h, ty * tileH + tileH);
+                for (let y = ty * tileH; y < y1; y += SAMPLE_STRIDE) {
+                  for (let x = tx * tileW; x < x1; x += SAMPLE_STRIDE) {
+                    sampleXs.push(x);
+                    sampleYs.push(y);
+                    sampleTile.push(ty * cols + tx);
+                  }
+                }
+              }
+            }
+            const sampleCount = sampleXs.length;
+            const tileCount = cols * rows;
+            // Even sampling means every tile gets the same denominator.
+            const tilePixels = Math.max(1, Math.floor(sampleCount / tileCount));
+
             // Warm up so feedback presets are measured at steady state.
             step({ frames: warmup, deltaMs, beatPulse });
 
-            const timeline: number[][] = [];
+            let prevLum: Float64Array | null = null;
+            const curLum = new Float64Array(sampleCount);
+            const rising: number[][] = [];
+            const falling: number[][] = [];
+            const frameMeanLuminance: number[] = [];
+            const frameMeanDelta: number[] = [];
+
             for (let f = 0; f < frames; f += 1) {
               step({ frames: 1, deltaMs, beatPulse });
               gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-              const tiles: number[] = [];
-              for (let ty = 0; ty < rows; ty += 1) {
-                for (let tx = 0; tx < cols; tx += 1) {
-                  // Mean over the tile, not its centre pixel. Typical
-                  // MilkDrop presets are sparse bright structures on a
-                  // near-black field — one measured frame lit only 2.3% of
-                  // pixels — so a centre sample lands on background almost
-                  // every time and reports "nothing moved" for a preset
-                  // that is visibly strobing. WCAG's area test asks whether
-                  // a patch of visual field changed luminance, which is a
-                  // mean over the patch. Strided to keep 300 frames x 576
-                  // tiles tractable while still covering the whole tile.
-                  const x0 = tx * tileW;
-                  const y0 = ty * tileH;
-                  const x1 = Math.min(w, x0 + tileW);
-                  const y1 = Math.min(h, y0 + tileH);
-                  let acc = 0;
-                  let n = 0;
-                  for (let y = y0; y < y1; y += SAMPLE_STRIDE) {
-                    for (let x = x0; x < x1; x += SAMPLE_STRIDE) {
-                      const o = (y * w + x) * 4;
-                      acc +=
-                        0.2126 * LUT[px[o]] +
-                        0.7152 * LUT[px[o + 1]] +
-                        0.0722 * LUT[px[o + 2]];
-                      n += 1;
-                    }
-                  }
-                  tiles.push(n > 0 ? acc / n : 0);
-                }
+
+              let lumSum = 0;
+              for (let i = 0; i < sampleCount; i += 1) {
+                const o = (sampleYs[i] * w + sampleXs[i]) * 4;
+                const l =
+                  0.2126 * LUT[px[o]] +
+                  0.7152 * LUT[px[o + 1]] +
+                  0.0722 * LUT[px[o + 2]];
+                curLum[i] = l;
+                lumSum += l;
               }
-              timeline.push(tiles);
+              frameMeanLuminance.push(lumSum / sampleCount);
+
+              if (prevLum) {
+                // Magnitude is decided per pixel, against the full-scale
+                // WCAG threshold, BEFORE any spatial aggregation. Averaging
+                // luminance over a tile first would scale each swing down
+                // by the flashing region's coverage — on sparse
+                // bright-on-black presets that pushed genuine flashes two
+                // orders of magnitude under the threshold and reported
+                // zero flashes corpus-wide.
+                const up = new Array(tileCount).fill(0);
+                const down = new Array(tileCount).fill(0);
+                let deltaSum = 0;
+                for (let i = 0; i < sampleCount; i += 1) {
+                  const before = prevLum[i];
+                  const after = curLum[i];
+                  deltaSum += Math.abs(after - before);
+                  if (
+                    Math.abs(after - before) < 0.1 ||
+                    Math.min(before, after) >= 0.8
+                  ) {
+                    continue;
+                  }
+                  if (after > before) up[sampleTile[i]] += 1;
+                  else down[sampleTile[i]] += 1;
+                }
+                rising.push(up);
+                falling.push(down);
+                frameMeanDelta.push(deltaSum / sampleCount);
+              }
+              prevLum = prevLum ? prevLum : new Float64Array(sampleCount);
+              prevLum.set(curLum);
             }
-            return { timeline };
+
+            return {
+              rising,
+              falling,
+              tilePixels,
+              frameMeanLuminance,
+              frameMeanDelta,
+            };
           },
           {
             frames: CAPTURE_FRAMES,
@@ -293,14 +340,25 @@ async function main() {
           continue;
         }
 
-        const analysis = analyzeFlashTimeline({
-          frames: (captured as { timeline: number[][] }).timeline,
-          deltaMs: DELTA_MS,
+        const cap = captured as {
+          rising: number[][];
+          falling: number[][];
+          tilePixels: number;
+          frameMeanLuminance: number[];
+          frameMeanDelta: number[];
+        };
+        const analysis = analyzeFlashEvents({
+          rising: cap.rising,
+          falling: cap.falling,
+          tilePixels: cap.tilePixels,
           // Grid shape drives WCAG's "25% of any 10 degree visual field"
           // window; without it the area test degrades to whole-screen and
           // silently misses flashes confined to one region.
           cols: TILE_COLS,
           rows: TILE_ROWS,
+          deltaMs: DELTA_MS,
+          frameMeanLuminance: cap.frameMeanLuminance,
+          frameMeanDelta: cap.frameMeanDelta,
         });
         reports.push({
           presetId: preset.id,

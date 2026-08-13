@@ -113,10 +113,138 @@ function stdDev(values: readonly number[]): number {
   return Math.sqrt(acc / values.length);
 }
 
+export interface FlashCountInput {
+  /**
+   * Per-transition, per-tile counts of sampled pixels that qualified as a
+   * brightening flash step. `rising[i]` describes the transition between
+   * source frames `i` and `i + 1`, laid out row-major as `rows` x `cols`.
+   */
+  rising: ReadonlyArray<ReadonlyArray<number>>;
+  /** Same shape as `rising`, for darkening steps. */
+  falling: ReadonlyArray<ReadonlyArray<number>>;
+  /** Sampled pixels per tile — the denominator for the area test. */
+  tilePixels: number;
+  cols: number;
+  rows: number;
+  deltaMs: number;
+  /** Mean relative luminance per source frame, for reporting only. */
+  frameMeanLuminance?: readonly number[];
+  /** Mean abs luminance delta per transition, for reporting only. */
+  frameMeanDelta?: readonly number[];
+}
+
 /**
- * Largest fraction of any single 10-degree-field window that flashed in
- * the given direction — the worst local case, not the screen average.
+ * Largest fraction of any single 10-degree-field window that flashed —
+ * the worst local case, not the screen average.
+ *
+ * `counts` holds qualifying *pixels* per tile, and `tilePixels` how many
+ * were sampled per tile, so the window fraction is a true pixel-area
+ * ratio. Magnitude was already decided per pixel by the caller: averaging
+ * luminance before applying the threshold would scale every swing down by
+ * the flashing region's coverage, and on sparse bright-on-black content
+ * that shrinks real flashes below the threshold entirely.
  */
+function peakWindowFraction(
+  counts: readonly number[],
+  tilePixels: number,
+  cols: number,
+  rows: number,
+): number {
+  const winW = Math.max(1, Math.round(cols * VISUAL_FIELD_FRACTION));
+  const winH = Math.max(1, Math.round(rows * VISUAL_FIELD_FRACTION));
+  const winPixels = winW * winH * tilePixels;
+  if (winPixels <= 0) return 0;
+
+  const sat = new Float64Array((rows + 1) * (cols + 1));
+  for (let y = 0; y < rows; y += 1) {
+    let rowRun = 0;
+    for (let x = 0; x < cols; x += 1) {
+      rowRun += counts[y * cols + x] ?? 0;
+      sat[(y + 1) * (cols + 1) + (x + 1)] =
+        sat[y * (cols + 1) + (x + 1)] + rowRun;
+    }
+  }
+
+  let best = 0;
+  for (let y = 0; y + winH <= rows; y += 1) {
+    for (let x = 0; x + winW <= cols; x += 1) {
+      const total =
+        sat[(y + winH) * (cols + 1) + (x + winW)] -
+        sat[y * (cols + 1) + (x + winW)] -
+        sat[(y + winH) * (cols + 1) + x] +
+        sat[y * (cols + 1) + x];
+      const fraction = total / winPixels;
+      if (fraction > best) best = fraction;
+    }
+  }
+  return best;
+}
+
+/**
+ * Core analysis: qualifying-pixel counts in, flash rate out. Both the
+ * per-pixel harness path and the luminance-grid path below funnel through
+ * this so the flash-pairing and 1-second-window logic exist once.
+ */
+export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
+  const { rising, falling, tilePixels, cols, rows, deltaMs } = input;
+  const transitionCount = Math.min(rising.length, falling.length);
+  const empty: FlashAnalysis = {
+    peakFlashesPerSecond: 0,
+    totalFlashes: 0,
+    exceedsThreshold: false,
+    motionEnergy: mean(input.frameMeanDelta ?? []),
+    luminanceVolatility: stdDev(input.frameMeanDelta ?? []),
+    meanLuminance: mean(input.frameMeanLuminance ?? []),
+    frameCount: transitionCount + 1,
+  };
+  if (transitionCount === 0 || deltaMs <= 0 || tilePixels <= 0) return empty;
+
+  // A "flash" in WCAG terms is a *pair* of opposing changes, so directions
+  // are paired below rather than counted individually — a monotonic fade
+  // to white is not a flash.
+  const transitions: Array<{ frame: number; rising: boolean }> = [];
+  for (let f = 0; f < transitionCount; f += 1) {
+    const up = peakWindowFraction(rising[f], tilePixels, cols, rows);
+    const down = peakWindowFraction(falling[f], tilePixels, cols, rows);
+    if (up >= FLASH_AREA_FRACTION && up >= down) {
+      transitions.push({ frame: f + 1, rising: true });
+    } else if (down >= FLASH_AREA_FRACTION) {
+      transitions.push({ frame: f + 1, rising: false });
+    }
+  }
+
+  const flashFrames: number[] = [];
+  let lastDirection: boolean | null = null;
+  for (const t of transitions) {
+    if (lastDirection === null) {
+      lastDirection = t.rising;
+      continue;
+    }
+    if (t.rising !== lastDirection) {
+      flashFrames.push(t.frame);
+      lastDirection = t.rising;
+    }
+  }
+
+  const framesPerSecond = 1000 / deltaMs;
+  let peak = 0;
+  for (let i = 0; i < flashFrames.length; i += 1) {
+    let count = 1;
+    for (let j = i + 1; j < flashFrames.length; j += 1) {
+      if (flashFrames[j] - flashFrames[i] < framesPerSecond) count += 1;
+      else break;
+    }
+    if (count > peak) peak = count;
+  }
+
+  return {
+    ...empty,
+    peakFlashesPerSecond: peak,
+    totalFlashes: flashFrames.length,
+    exceedsThreshold: peak > FLASHES_PER_SECOND_LIMIT,
+  };
+}
+
 function peakLocalFraction(
   flags: Int8Array,
   cols: number,
