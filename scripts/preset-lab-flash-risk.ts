@@ -36,6 +36,29 @@
  * compliance with any named standard. Treat its report as "relative flash
  * activity, comparable preset-to-preset" until someone with real domain
  * expertise sets thresholds against actual guidance.
+ *
+ * FOR WCAG EVALUATION, USE `scripts/analyze-preset-flash.ts` INSTEAD
+ * (`bun run lab:flash-audit`). That tool implements WCAG 2.3.1 directly and
+ * has been validated stage-by-stage against rendered output. This one
+ * cannot be promoted to that role by retuning its threshold, because its
+ * *reducer* is the problem, not its constant:
+ *
+ *   - It reduces each frame to one whole-frame mean luminance. Measurement
+ *     on real presets found ~14% of a 10-degree field brightening while
+ *     ~13% darkens *in the same frame* — so a whole-frame mean barely moves
+ *     while a quarter of the field is changing hard. Directional
+ *     cancellation makes this reducer blind to exactly the events it is
+ *     trying to count.
+ *   - A single scalar per frame also has no spatial extent, so WCAG's
+ *     "25% of any 10 degree visual field" area criterion cannot be
+ *     evaluated from it at all.
+ *   - Its luminance is REC709 weights applied to gamma-encoded sRGB bytes,
+ *     i.e. luma (Y'), where WCAG is defined on linearized relative
+ *     luminance (Y).
+ *
+ * Kept because the single-preset, real-frame-rate, lab-report-convention
+ * shape is genuinely useful for eyeballing one preset's relative activity,
+ * which is what its numbers honestly are.
  */
 
 import fs from 'node:fs';
