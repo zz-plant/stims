@@ -66,7 +66,7 @@ This document is the consolidated source for implementation progress across road
 - [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
 - [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
 - [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
-- [ ] **WebXR spatial stage experiment** (retired: the unverified session-attachment scaffolding and settings toggle were removed; the concept stays in the roadmap's research bucket only).
+- [ ] **WebXR spatial stage experiment** — shipped and unit-tested (`webxr-service.ts`, `useWebXr.ts`, an "Enter VR" item in the stage overflow menu on `immersive-vr`-capable browsers, WebGL only), but **never run on physical VR hardware** — that a session actually presents correctly there is unproven. See README.md's "Experimental foundations" for the full caveat list (no controller input, hand tracking, spatial audio, or AR; no stereo-specific preset tuning).
 
 ## Refactor milestone tracking
 

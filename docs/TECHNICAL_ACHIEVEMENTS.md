@@ -68,12 +68,18 @@ The bundled Generate panel now calls [`src/js/milkdrop/preset-generator.ts`](../
 
 See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the complete capture and promotion workflow.
 
+## 9. MIDI/VJ hardware workflow — implemented
+
+- [`src/js/core/services/webmidi-controller.ts`](../src/js/core/services/webmidi-controller.ts) tracks connected devices, persists per-device CC mappings to `localStorage`, supports a learn mode (arm a target, move a control, it binds), and recovers from hot-plug via `navigator.requestMIDIAccess().onstatechange`.
+- The live binding from MIDI/MCP input to engine parameters is mounted at the app-shell level in `App.tsx`, so it stays active independent of which settings panel is open.
+- A virtual "Claude (MCP)" device participates in the same per-device binding and learn-mode pipeline as physical hardware, driven by four MCP tools — `session_midi_set`, `session_midi_cc`, `session_midi_bindings`, `session_midi_devices` — registered in [`scripts/mcp-server.ts`](../scripts/mcp-server.ts).
+- The editor's Tune sliders and the CodeMirror gutter both surface live/shadowed status per bound target — whether the active preset's own `per_frame`/`per_pixel` equations would immediately overwrite a MIDI-driven value — computed in [`src/js/milkdrop/formatter.ts`](../src/js/milkdrop/formatter.ts) and covered by unit tests.
+
 ## Foundations that are not shipped workflows
 
 | Foundation | Current status |
 | --- | --- |
-| WebMIDI workflow | Workspace settings connect mapped CC values to live parameters; persistent mappings, recovery behavior, and device-backed verification remain open. |
-| WebXR stage | Retired. The session-attachment scaffolding and settings toggle were removed after staying unverified with no device-backed proof; the idea remains research-bucket only. |
+| WebXR stage | Shipped and unit-tested (`webxr-service.ts`, `useWebXr.ts`), guarded to `immersive-vr`-capable WebGL browsers, but never run on physical VR hardware — that a session actually presents correctly there is unproven. |
 | Stem-oriented signals | Retired. Zero-filled runtime fields and an unwired pseudo-stem calculation were removed; reintroduction requires real separation with measured budgets. |
 | Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification. |
 | Model-backed Generate panel | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof. |

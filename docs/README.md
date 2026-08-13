@@ -140,9 +140,12 @@ stims/
 ├── src/
 │   ├── js/
 │   │   ├── app.ts      # Application entrypoint & React mounting
-│   │   ├── core/       # Renderer capabilities, audio, quality, state stores, services
+│   │   ├── core/       # Renderer capabilities, audio, quality, state stores, services (incl. MIDI)
+│   │   ├── data/       # Toy manifest and schema
 │   │   ├── frontend/   # React workspace UI, URL state synchronization, engine adapter
+│   │   ├── lighting/   # Lighting-rig toy setup
 │   │   ├── milkdrop/   # Imperative MilkDrop engine, JIT VM, compiler, TSL/WGSL generators
+│   │   ├── toys/       # Standalone toy entry points
 │   │   ├── ui/         # Framework-free UI helpers (audio controls, identicons, YouTube)
 │   │   └── utils/      # Audio, browser, and media utilities
 │   ├── css/            # tokens.css, chrome.css, app-shell.css, component modules
