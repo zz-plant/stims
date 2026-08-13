@@ -62,6 +62,23 @@ export function checkCatalogIntegrity(): boolean {
   logInfo(`Checking integrity of ${catalog.presets.length} catalog presets...`);
 
   let errorsCount = 0;
+
+  // Ids key React lists, Object.fromEntries maps, and the SEO preset map; a
+  // duplicate silently drops one of the pair instead of failing loudly.
+  const idFirstSeen = new Map<string, string>();
+  for (const preset of catalog.presets) {
+    if (!preset.id) continue;
+    const previousTitle = idFirstSeen.get(preset.id);
+    if (previousTitle !== undefined) {
+      logError(
+        `Duplicate preset id "${preset.id}" (first used by "${previousTitle}", reused by "${preset.title}"). Ids must be unique across the catalog.`,
+      );
+      errorsCount += 1;
+      continue;
+    }
+    idFirstSeen.set(preset.id, preset.title);
+  }
+
   const validFidelityClasses = new Set([
     'exact',
     'near-exact',

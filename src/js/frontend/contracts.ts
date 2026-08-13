@@ -34,6 +34,9 @@ export type SessionRouteState = {
   agentMode: boolean;
   previewMode?: boolean;
   invalidExperienceSlug?: string | null;
+  /** Video carried by a shared link, so the recipient lands on the same track. */
+  youtubeVideoId?: string | null;
+  youtubeStartSeconds?: number | null;
 };
 
 export type EngineAudioRequest =

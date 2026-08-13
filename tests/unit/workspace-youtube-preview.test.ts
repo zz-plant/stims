@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import {
   describeWorkspaceYouTubeInputState,
   readStoredWorkspaceYouTubeUrl,
+  resolveInitialWorkspaceYouTubeUrl,
   writeStoredWorkspaceYouTubeUrl,
 } from '../../src/js/frontend/workspace-youtube-preview.ts';
 import {
@@ -100,6 +101,22 @@ describe('workspace YouTube preview helpers', () => {
       invalid: false,
       reference,
     });
+  });
+
+  test('a shared video wins over this browser stored url', () => {
+    writeStoredWorkspaceYouTubeUrl(
+      'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+    );
+
+    expect(resolveInitialWorkspaceYouTubeUrl('dQw4w9WgXcQ', 42)).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s',
+    );
+    expect(resolveInitialWorkspaceYouTubeUrl('dQw4w9WgXcQ', null)).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+    expect(resolveInitialWorkspaceYouTubeUrl(null, null)).toBe(
+      'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+    );
   });
 
   test('reads stored recent YouTube videos without the player controller', () => {

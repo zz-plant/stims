@@ -65,6 +65,12 @@ function ensureViewportCacheListener() {
   window.addEventListener('resize', updateViewportCache, { passive: true });
 }
 let captureCropTarget: Element | null = null;
+/**
+ * True once the browser is cropping to the player element for us. The track
+ * then delivers only those pixels, so the manual rect math must be skipped —
+ * applying it again would crop a crop.
+ */
+let regionCaptureActive = false;
 let captureFrameId: number | null = null;
 let captureVideoFrameId: number | null = null;
 let activeTrackCleanup: (() => void) | null = null;
@@ -179,7 +185,9 @@ function resolveViewportRect(target: Element | null) {
 }
 
 function resolveSourceRect(video: HTMLVideoElement) {
-  const viewportRect = resolveViewportRect(captureCropTarget);
+  const viewportRect = regionCaptureActive
+    ? null
+    : resolveViewportRect(captureCropTarget);
   const sourceWidth = Math.max(1, video.videoWidth || 1);
   const sourceHeight = Math.max(1, video.videoHeight || 1);
 
@@ -358,11 +366,51 @@ export function setMilkdropCapturedVideoCropTarget(target: Element | null) {
   captureCropTarget = target;
 }
 
+type CropCapableTrack = MediaStreamTrack & {
+  cropTo?: (target: unknown) => Promise<void>;
+};
+
+/**
+ * Ask the browser to deliver only the player element's pixels (Region
+ * Capture). This is exact where the manual rect math is an approximation —
+ * it survives browser zoom and devicePixelRatio drift, and the compositor
+ * never copies the pixels we would have thrown away.
+ *
+ * Only Chromium implements it, and only for same-tab captures, so a false
+ * return is the normal path elsewhere and the caller keeps the rect crop.
+ */
+async function tryRegionCapture(
+  stream: MediaStream,
+  cropTarget: Element | null,
+): Promise<boolean> {
+  const cropTargetFactory = (
+    globalThis as {
+      CropTarget?: { fromElement?: (element: Element) => Promise<unknown> };
+    }
+  ).CropTarget;
+  const track = stream.getVideoTracks()[0] as CropCapableTrack | undefined;
+
+  if (!cropTarget || !track?.cropTo || !cropTargetFactory?.fromElement) {
+    return false;
+  }
+
+  try {
+    const token = await cropTargetFactory.fromElement(cropTarget);
+    await track.cropTo(token);
+    return true;
+  } catch {
+    // Cropping is rejected when the user shared a different tab or screen.
+    // The rect crop still produces a usable (if approximate) region.
+    return false;
+  }
+}
+
 export async function setMilkdropCapturedVideoStream(
   stream: MediaStream | null,
   { cropTarget = null }: { cropTarget?: Element | null } = {},
 ) {
   captureCropTarget = cropTarget;
+  regionCaptureActive = false;
   activeStream = stream;
   captureReady = false;
 
@@ -380,6 +428,7 @@ export async function setMilkdropCapturedVideoStream(
   }
 
   bindTrackCleanup(stream);
+  regionCaptureActive = await tryRegionCapture(stream, cropTarget);
   video.srcObject = stream;
 
   try {
@@ -402,6 +451,7 @@ export function clearMilkdropCapturedVideoStream() {
   activeStream = null;
   captureReady = false;
   captureCropTarget = null;
+  regionCaptureActive = false;
   resetTrackCleanup();
   stopCaptureLoop();
 

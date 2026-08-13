@@ -125,7 +125,7 @@ export function CreditsPanel() {
 
       <CreditsSection title="Preset Authors & Curators">
         <p>
-          The 1,791 presets in Stims' catalog are created and maintained by
+          The 1,787 presets in Stims' catalog are created and maintained by
           hundreds of artists in the demoscene and audio-visual community. Key
           contributors include:
         </p>
