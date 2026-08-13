@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { createLogger } from '../core/logger.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -112,6 +113,24 @@ export function useWorkspaceSessionState({
   const failedPresetIdsRef = useRef<Set<string>>(new Set());
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
 
+  // The landing page is the pitch for a visuals product and contained no
+  // visuals: a full-viewport canvas sat behind the launch form with nothing
+  // drawn on it, because the engine only mounted once a preset or an audio
+  // source was in the route. Mount it for the bare landing view too, so an
+  // arrival sees the thing they came for while reading the form.
+  //
+  // Audio is silent until they choose a source, so this leans on the first-run
+  // preset's autonomous motion (see runtime/first-run-preset.ts) rather than on
+  // audio reactivity.
+  //
+  // Gated on the device profile: `lowPower` already folds in
+  // prefers-reduced-motion, limited memory or cores, handhelds and smart TVs,
+  // so anyone who asked for less motion — or whose device should not spend a
+  // GPU context on decoration — still gets the static form.
+  const [attractModeEnabled] = useState(
+    () => !routeState.previewMode && !getDevicePerformanceProfile().lowPower,
+  );
+
   const {
     activityCatalog,
     ensureCatalogStore,
@@ -147,10 +166,28 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     setYoutubeUrl,
   } = useWorkspaceYouTubePreview({
     setStatusMessage,
+    initialVideoId: routeState.youtubeVideoId ?? null,
+    initialStartSeconds: routeState.youtubeStartSeconds ?? null,
+    onVideoLoaded: ({ id, startSeconds }) => {
+      // Keep the address bar shareable: whatever is playing is what a copied
+      // link will reopen.
+      setRouteState((previous) =>
+        previous.youtubeVideoId === id &&
+        (previous.youtubeStartSeconds ?? 0) === startSeconds
+          ? previous
+          : {
+              ...previous,
+              youtubeVideoId: id,
+              youtubeStartSeconds: startSeconds > 0 ? startSeconds : null,
+            },
+      );
+    },
   });
   const { toast, dismissToast } = useWorkspaceToast({
     engineSnapshot,
@@ -271,7 +308,11 @@ export function useWorkspaceSessionState({
     if (engineSnapshot?.runtimeReady) {
       return;
     }
-    if (!routeState.presetId && !routeState.audioSource) {
+    if (
+      !routeState.presetId &&
+      !routeState.audioSource &&
+      !attractModeEnabled
+    ) {
       return;
     }
 
@@ -286,6 +327,7 @@ export function useWorkspaceSessionState({
     engineSnapshot?.runtimeReady,
     routeState.presetId,
     routeState.audioSource,
+    attractModeEnabled,
   ]);
 
   usePresetRouteSync({
@@ -548,6 +590,8 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     clearRecentYouTubeVideos,
     pausePreview: () => {

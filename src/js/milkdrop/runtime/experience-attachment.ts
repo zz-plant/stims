@@ -10,6 +10,7 @@ import {
   type MilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlagsForBackend,
 } from '../webgpu-optimization-flags.ts';
+import { describeWebglFallback } from './backend-fallback.ts';
 
 export function createMilkdropExperienceAttachmentController({
   lifetime,
@@ -120,7 +121,7 @@ export function createMilkdropExperienceAttachmentController({
         ) {
           triggerWebglFallback({
             presetId: compiled.source.id,
-            reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            reason: describeWebglFallback(compiled),
             backend: nextBackend,
           });
           return;
@@ -210,7 +211,7 @@ export function createMilkdropExperienceAttachmentController({
           const compiled = activeCompiled();
           triggerWebglFallback({
             presetId: compiled.source.id,
-            reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            reason: describeWebglFallback(compiled),
             backend: nextBackend,
           });
           return;

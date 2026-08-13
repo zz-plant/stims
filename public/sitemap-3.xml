@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
+    <loc>https://toil.fyi/?preset=stahlregen-geiss-old-school-baby-flower-v2-1</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-geiss-old-school-baby-flower-v2-1.png</image:loc>
+      <image:title>Stahlregen + Geiss - Old school, baby (Flower V2)_1 | Stims</image:title>
+      <image:caption>Stahlregen + Geiss - Old school, baby (Flower V2)_1 by Stahlregen + Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=stahlregen-unchained-psychedelic-flower-kung-fu-corrupt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/milkdrop-presets/previews/stahlregen-unchained-psychedelic-flower-kung-fu-corrupt.png</image:loc>
+      <image:title>Stahlregen + Unchained - Psychedelic Flower Kung Fu (Corrupt) | Stims</image:title>
+      <image:caption>Stahlregen + Unchained - Psychedelic Flower Kung Fu (Corrupt) by Stahlregen + Unchained, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://toil.fyi/?preset=stahlregen-martin-others-psychedelic-metal-flower</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1310,6 +1332,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://toil.fyi/?preset=eo-s-zylot-skylight-stained-glass-majesty-mix-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=eo-s-zylot-skylight-stained-glass-majesty-mix-alt</image:loc>
+      <image:title>_Eo.S. + Zylot - skylight (Stained Glass Majesty mix) | Stims</image:title>
+      <image:caption>_Eo.S. + Zylot - skylight (Stained Glass Majesty mix) by _Eo.S. + Zylot, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://toil.fyi/?preset=eo-s-glowsticks-v2-02-geiss-hpf</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1585,6 +1618,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://toil.fyi/?preset=geiss-confetti-kaleidoscope-mix-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-confetti-kaleidoscope-mix-alt</image:loc>
+      <image:title>_Geiss - Confetti (Kaleidoscope Mix) | Stims</image:title>
+      <image:caption>_Geiss - Confetti (Kaleidoscope Mix) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://toil.fyi/?preset=geiss-cosmic-dust-2-trails-5z</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1593,6 +1637,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-cosmic-dust-2-trails-5z.png</image:loc>
       <image:title>_Geiss - Cosmic Dust 2 - Trails 5z | Stims</image:title>
       <image:caption>_Geiss - Cosmic Dust 2 - Trails 5z by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-desert-rose-2-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-desert-rose-2-alt</image:loc>
+      <image:title>_Geiss - Desert Rose 2 | Stims</image:title>
+      <image:caption>_Geiss - Desert Rose 2 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1626,6 +1681,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-explosion-mod-2b.png</image:loc>
       <image:title>_Geiss - Explosion Mod 2b | Stims</image:title>
       <image:caption>_Geiss - Explosion Mod 2b by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-kaleidoscope-1-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-kaleidoscope-1-alt</image:loc>
+      <image:title>_Geiss - Kaleidoscope 1 | Stims</image:title>
+      <image:caption>_Geiss - Kaleidoscope 1 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1673,6 +1739,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://toil.fyi/?preset=geiss-reaction-diffusion-relief-mix-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-reaction-diffusion-relief-mix-alt</image:loc>
+      <image:title>_Geiss - Reaction Diffusion (Relief Mix) | Stims</image:title>
+      <image:caption>_Geiss - Reaction Diffusion (Relief Mix) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://toil.fyi/?preset=geiss-reaction-diffusion-3-lichen-relief-mix</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
@@ -1681,6 +1758,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-reaction-diffusion-3-lichen-relief-mix.png</image:loc>
       <image:title>_Geiss - Reaction Diffusion 3 (Lichen Relief Mix) | Stims</image:title>
       <image:caption>_Geiss - Reaction Diffusion 3 (Lichen Relief Mix) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-reducto-absurdum-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-reducto-absurdum-alt</image:loc>
+      <image:title>_Geiss - Reducto Absurdum | Stims</image:title>
+      <image:caption>_Geiss - Reducto Absurdum by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1703,6 +1791,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-skin-dots-multi-layer-3-mashup-2.png</image:loc>
       <image:title>_Geiss - Skin Dots Multi-layer 3 (mashup 2) | Stims</image:title>
       <image:caption>_Geiss - Skin Dots Multi-layer 3 (mashup 2) by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=geiss-skin-dots-multi-layer-3-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=geiss-skin-dots-multi-layer-3-alt</image:loc>
+      <image:title>_Geiss - Skin Dots Multi-layer 3 | Stims</image:title>
+      <image:caption>_Geiss - Skin Dots Multi-layer 3 by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -1758,6 +1857,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/geiss-untitled.png</image:loc>
       <image:title>_Geiss - untitled | Stims</image:title>
       <image:caption>_Geiss - untitled by _Geiss, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=krash-eo-s-photographic-sentinel-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=krash-eo-s-photographic-sentinel-alt</image:loc>
+      <image:title>_Krash + Eo.S. - Photographic Sentinel | Stims</image:title>
+      <image:caption>_Krash + Eo.S. - Photographic Sentinel by _Krash + Eo.S., a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>
@@ -3881,6 +3991,17 @@
       <image:loc>https://toil.fyi/milkdrop-presets/previews/flexi-amandio-c-organic.png</image:loc>
       <image:title>flexi + amandio c - organic | Stims</image:title>
       <image:caption>flexi + amandio c - organic by flexi + amandio c, a MilkDrop preset running live in the browser on Stims.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/?preset=flexi-amandio-c-organic12-3d-2-alt</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/api/og-preset?id=flexi-amandio-c-organic12-3d-2-alt</image:loc>
+      <image:title>flexi + amandio c - organic12-3d-2 | Stims</image:title>
+      <image:caption>flexi + amandio c - organic12-3d-2 by flexi + amandio c, a MilkDrop preset running live in the browser on Stims.</image:caption>
     </image:image>
   </url>
   <url>

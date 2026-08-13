@@ -32,6 +32,26 @@ export function shouldPresetFallbackToWebgl({
   });
 }
 
+/**
+ * The sentence shown when a preset is moved off WebGPU.
+ *
+ * Three call sites reach the failover — preset navigation, engine attachment
+ * and the editor-session subscriber — and each used to inline its own copy of
+ * this string. They had already drifted: only navigation appended the
+ * descriptor reasons, so the same downgrade explained itself differently
+ * depending on which path noticed it.
+ */
+export function describeWebglFallback(compiled: MilkdropCompiledPreset) {
+  const unsupported =
+    compiled.ir?.compatibility?.gpuDescriptorPlans?.webgpu?.unsupported ?? [];
+  const detail =
+    unsupported.length > 0
+      ? `: ${unsupported.map((item) => item.reason).join('; ')}`
+      : '';
+
+  return `${compiled.title} uses preset features the WebGPU runtime does not support yet${detail}, so Stims switched to WebGL compatibility mode.`;
+}
+
 export function createMilkdropBackendFailover({
   preferences,
   reload,

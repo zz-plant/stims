@@ -55,8 +55,24 @@ export interface WorkspaceContextValue {
   youtubeLoading: boolean;
   youtubePreviewRef: React.RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
+  youtubeTransport: {
+    currentSeconds: number;
+    durationSeconds: number;
+    paused: boolean;
+  } | null;
+  youtubeTransportControls: {
+    play: () => void;
+    pause: () => void;
+    seekTo: (seconds: number) => void;
+    nudge: (deltaSeconds: number) => void;
+  };
   youtubeUrl: string;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
+  recentYouTubeVideos: Array<{
+    id: string;
+    title: string;
+    thumbnail?: string;
+    author?: string;
+  }>;
   renderPreferences: RenderPreferences;
   fallbackCatalog: PresetCatalogEntry[];
   fallbackCatalogError: string | null;
@@ -305,6 +321,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       youtubeLoading: sessionState.youtubeLoading,
       youtubePreviewRef: sessionState.youtubePreviewRef,
       youtubeReady: sessionState.youtubeReady,
+      youtubeTransport: sessionState.youtubeTransport,
+      youtubeTransportControls: sessionState.youtubeTransportControls,
       youtubeUrl: sessionState.youtubeUrl,
       recentYouTubeVideos: sessionState.recentYouTubeVideos,
       renderPreferences: sessionState.renderPreferences,
@@ -343,6 +361,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.youtubeLoading,
       sessionState.youtubePreviewRef,
       sessionState.youtubeReady,
+      sessionState.youtubeTransport,
+      sessionState.youtubeTransportControls,
       sessionState.youtubeUrl,
       sessionState.recentYouTubeVideos,
       sessionState.renderPreferences,

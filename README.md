@@ -60,7 +60,7 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 
 | Capability | Current behavior |
 | --- | --- |
-| **1,791-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
+| **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
 | **Direct preset workflow** | Import and export `.milk` files without converting them into a Butterchurn-specific JSON format. |
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
