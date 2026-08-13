@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  analyzeFlashEvents,
   analyzeFlashTimeline,
   isFlashTransition,
   linearizeChannel,
@@ -221,5 +222,137 @@ describe('analyzeFlashTimeline', () => {
     expect(
       analyzeFlashTimeline({ frames: strobe(60, 1), deltaMs: 0 }).totalFlashes,
     ).toBe(0);
+  });
+});
+
+describe('analyzeFlashEvents (per-pixel magnitude, area aggregated after)', () => {
+  const COLS = 30;
+  const ROWS = 18;
+  const TILES = COLS * ROWS;
+  const TILE_PIXELS = 100;
+
+  /** Alternating rising/falling transitions, `perTile` pixels per tile. */
+  function alternating(transitions: number, perTile: number, tilesLit = TILES) {
+    const rising: number[][] = [];
+    const falling: number[][] = [];
+    for (let f = 0; f < transitions; f += 1) {
+      const up = new Array(TILES).fill(0);
+      const down = new Array(TILES).fill(0);
+      const target = f % 2 === 0 ? up : down;
+      for (let t = 0; t < tilesLit; t += 1) target[t] = perTile;
+      rising.push(up);
+      falling.push(down);
+    }
+    return { rising, falling };
+  }
+
+  it('flags a full-field strobe', () => {
+    const { rising, falling } = alternating(120, TILE_PIXELS);
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsThreshold).toBe(true);
+    expect(r.peakFlashesPerSecond).toBeGreaterThan(3);
+  });
+
+  it('detects a flash whose pixels are sparse within each tile', () => {
+    // The v3 regression, reproduced: a genuine full-amplitude flash that
+    // covers 30% of the pixels inside its tiles. Averaging luminance per
+    // tile first would scale a 1.0 swing down to 0.3 and then to ~0.003
+    // on a dark preset, sinking it far below the 0.1 threshold and
+    // reporting zero flashes. Qualifying per pixel and aggregating area
+    // afterwards keeps the swing intact, so 30% area still reads as 30%.
+    const perTile = Math.round(TILE_PIXELS * 0.3);
+    const { rising, falling } = alternating(120, perTile);
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsThreshold).toBe(true);
+  });
+
+  it('still respects the 25% area floor', () => {
+    // 20% of pixels flashing is below the threshold and must not flag,
+    // however fast it alternates.
+    const perTile = Math.round(TILE_PIXELS * 0.2);
+    const { rising, falling } = alternating(120, perTile);
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsThreshold).toBe(false);
+    expect(r.totalFlashes).toBe(0);
+  });
+
+  it('catches a flash filling one 10-degree field but little of the screen', () => {
+    // Full-amplitude across a 10x6 tile block only — 11% of the screen.
+    const rising: number[][] = [];
+    const falling: number[][] = [];
+    for (let f = 0; f < 120; f += 1) {
+      const up = new Array(TILES).fill(0);
+      const down = new Array(TILES).fill(0);
+      const target = f % 2 === 0 ? up : down;
+      for (let y = 0; y < 6; y += 1) {
+        for (let x = 0; x < 10; x += 1) target[y * COLS + x] = TILE_PIXELS;
+      }
+      rising.push(up);
+      falling.push(down);
+    }
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsThreshold).toBe(true);
+  });
+
+  it('does not treat a monotonic ramp as flashing', () => {
+    // Only ever brightens — no opposing pair, so no flash.
+    const rising = Array.from({ length: 120 }, () =>
+      new Array(TILES).fill(TILE_PIXELS),
+    );
+    const falling = Array.from({ length: 120 }, () => new Array(TILES).fill(0));
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.totalFlashes).toBe(0);
+    expect(r.exceedsThreshold).toBe(false);
+  });
+
+  it('passes through reporting stats and handles empty input', () => {
+    const r = analyzeFlashEvents({
+      rising: [],
+      falling: [],
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+      frameMeanLuminance: [0.2, 0.4],
+      frameMeanDelta: [0.1, 0.3],
+    });
+    expect(r.totalFlashes).toBe(0);
+    expect(r.meanLuminance).toBeCloseTo(0.3, 6);
+    expect(r.motionEnergy).toBeCloseTo(0.2, 6);
   });
 });
