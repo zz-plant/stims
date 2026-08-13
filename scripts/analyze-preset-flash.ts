@@ -41,6 +41,10 @@ const DELTA_MS = 1000 / 60;
 const WARMUP_FRAMES = 90;
 const TILE_COLS = 32;
 const TILE_ROWS = 18;
+// Pixel stride when averaging within a tile. 3 keeps ~1/9 of pixels —
+// enough to catch sparse bright structures a centre sample misses,
+// without making a 300-frame capture quadratically expensive.
+const SAMPLE_STRIDE = 3;
 const BOOT_TIMEOUT_MS = 45000;
 const SWAP_TIMEOUT_MS = 45000;
 const VIEWPORT = { width: 960, height: 540 };
@@ -177,7 +181,15 @@ async function main() {
         );
 
         const captured = await page.evaluate(
-          ({ frames, deltaMs, warmup, cols, rows, beatPulse }) => {
+          ({
+            frames,
+            deltaMs,
+            warmup,
+            cols,
+            rows,
+            beatPulse,
+            SAMPLE_STRIDE,
+          }) => {
             const step = window.__STIMS_AGENT_RENDER_FRAMES__;
             if (typeof step !== 'function') {
               return { error: 'render hook missing' };
@@ -193,11 +205,16 @@ async function main() {
               (canvas.getContext('webgl') as WebGLRenderingContext | null);
             if (!gl) return { error: 'no WebGL context' };
 
-            // sRGB -> linear, WCAG relative luminance weights.
-            const lin = (byte: number) => {
-              const c = byte / 255;
-              return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-            };
+            // sRGB -> linear, WCAG relative luminance weights. Only 256
+            // possible byte values, so the transfer function is tabulated
+            // once instead of running ~72M pow() calls per preset — that
+            // cost, not the GPU readback, is what made per-tile averaging
+            // slow enough to be unusable.
+            const LUT = new Float64Array(256);
+            for (let i = 0; i < 256; i += 1) {
+              const c = i / 255;
+              LUT[i] = c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            }
 
             const w = gl.drawingBufferWidth;
             const h = gl.drawingBufferHeight;
@@ -215,18 +232,32 @@ async function main() {
               const tiles: number[] = [];
               for (let ty = 0; ty < rows; ty += 1) {
                 for (let tx = 0; tx < cols; tx += 1) {
-                  // Sample the tile centre rather than averaging every
-                  // pixel: 300 frames x full-res averaging is far slower,
-                  // and a centre sample preserves the flash signal that
-                  // area-averaging would partly smooth away.
-                  const sx = Math.min(w - 1, tx * tileW + (tileW >> 1));
-                  const sy = Math.min(h - 1, ty * tileH + (tileH >> 1));
-                  const o = (sy * w + sx) * 4;
-                  tiles.push(
-                    0.2126 * lin(px[o]) +
-                      0.7152 * lin(px[o + 1]) +
-                      0.0722 * lin(px[o + 2]),
-                  );
+                  // Mean over the tile, not its centre pixel. Typical
+                  // MilkDrop presets are sparse bright structures on a
+                  // near-black field — one measured frame lit only 2.3% of
+                  // pixels — so a centre sample lands on background almost
+                  // every time and reports "nothing moved" for a preset
+                  // that is visibly strobing. WCAG's area test asks whether
+                  // a patch of visual field changed luminance, which is a
+                  // mean over the patch. Strided to keep 300 frames x 576
+                  // tiles tractable while still covering the whole tile.
+                  const x0 = tx * tileW;
+                  const y0 = ty * tileH;
+                  const x1 = Math.min(w, x0 + tileW);
+                  const y1 = Math.min(h, y0 + tileH);
+                  let acc = 0;
+                  let n = 0;
+                  for (let y = y0; y < y1; y += SAMPLE_STRIDE) {
+                    for (let x = x0; x < x1; x += SAMPLE_STRIDE) {
+                      const o = (y * w + x) * 4;
+                      acc +=
+                        0.2126 * LUT[px[o]] +
+                        0.7152 * LUT[px[o + 1]] +
+                        0.0722 * LUT[px[o + 2]];
+                      n += 1;
+                    }
+                  }
+                  tiles.push(n > 0 ? acc / n : 0);
                 }
               }
               timeline.push(tiles);
@@ -240,6 +271,7 @@ async function main() {
             cols: TILE_COLS,
             rows: TILE_ROWS,
             beatPulse: args.beatPulse,
+            SAMPLE_STRIDE,
           },
         );
 

@@ -8,6 +8,7 @@ import {
 import { pulseHaptic } from './haptics.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
+import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { useWebXr } from './hooks/useWebXr.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -42,6 +43,7 @@ export function StageControls({
   const { visible, signalActivity } = useAutoHideActivity(3000, true);
   const transition = usePresetTransition();
   const webXr = useWebXr();
+  const pip = usePictureInPicture(ui.stageRef);
   const [showMenu, setShowMenu] = useState(false);
   const energyRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -246,6 +248,22 @@ export function StageControls({
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
       action: () => run(() => onToggleFullscreen()),
     },
+    // Absent on browsers without the Picture-in-Picture API (support is a
+    // synchronous check, unlike WebXR's async device probe below).
+    ...(pip.supported
+      ? [
+          {
+            icon: 'picture-in-picture' as const,
+            label: pip.active
+              ? 'Exit picture in picture'
+              : 'Picture in picture',
+            // `run` invokes this synchronously inside the click handler, so
+            // the PiP request still carries transient user activation.
+            action: () => run(() => pip.toggle()),
+            active: pip.active,
+          },
+        ]
+      : []),
     // Only rendered once navigator.xr has confirmed an immersive-vr device;
     // absent entirely on every browser and machine without a headset.
     ...(webXr.supported
