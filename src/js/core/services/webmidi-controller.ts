@@ -320,8 +320,14 @@ export class WebMidiControllerService {
     raw: number,
   ): { cc: number; raw: number; target?: string; normalized?: number } {
     if (this.learnTarget !== null) {
-      this.bindCc(deviceId, cc, this.learnTarget, 0, 1);
+      // Clear before bindCc, not after: bindCc synchronously fires
+      // onDevicesChanged, and a listener asking "did learn just finish"
+      // via getLearnTarget() === null during that notification must see
+      // the already-cleared state, not the target that's about to be
+      // cleared a line later.
+      const target = this.learnTarget;
       this.learnTarget = null;
+      this.bindCc(deviceId, cc, target, 0, 1);
     }
 
     const rec = this.ensureDeviceRecord(deviceId, {

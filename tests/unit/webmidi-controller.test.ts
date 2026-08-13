@@ -106,6 +106,26 @@ describe('WebMIDI Hardware Controller Service', () => {
     expect(service.getBindings('device-a')[43]).toBeUndefined();
   });
 
+  it('clears the learn target before notifying devicesChanged, not after', () => {
+    // Regression: bindCc synchronously fires onDevicesChanged. A listener
+    // that reads getLearnTarget() === null inside that callback (this is
+    // how the editor's slider "listening" state and the Performance
+    // hardware panel's "Mapped a knob" message both detect completion)
+    // must see the already-cleared value, not the target that's about to
+    // be cleared on the next line.
+    const service = new WebMidiControllerService();
+    service.beginLearn('rot');
+
+    let observedDuringNotify: string | null = 'not called';
+    service.onDevicesChanged(() => {
+      observedDuringNotify = service.getLearnTarget();
+    });
+
+    service.handleMidiMessage('device-a', new Uint8Array([0xb0, 7, 90]));
+
+    expect(observedDuringNotify).toBeNull();
+  });
+
   it('cancelLearn aborts an in-progress learn without binding', () => {
     const service = new WebMidiControllerService();
     service.beginLearn('q1');
