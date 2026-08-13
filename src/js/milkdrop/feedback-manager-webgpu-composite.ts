@@ -573,6 +573,13 @@ export function createCompositeUniforms(
     signalMidAtt: uniform(0),
     signalTreb: uniform(0),
     signalTrebAtt: uniform(0),
+    // Neutral defaults mirror the CPU VM (vm/shared.ts).
+    signalPercussive: uniform(1),
+    signalHarmonic: uniform(1),
+    signalPercussiveLow: uniform(1),
+    signalPercussiveMid: uniform(1),
+    signalPercussiveHigh: uniform(1),
+    signalPercussiveRatio: uniform(0.5),
     signalBeat: uniform(0),
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),

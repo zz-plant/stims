@@ -37,6 +37,7 @@ import {
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
+import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import {
   type MilkdropShaderValueKind,
   resolveMilkdropShaderConstructorPattern,
@@ -522,6 +523,16 @@ function getShaderEnvValue(
     treble: () => shaderFloat(env.uniforms.signalTreb),
     treble_att: () => shaderFloat(env.uniforms.signalTrebAtt),
     trebleatt: () => shaderFloat(env.uniforms.signalTrebAtt),
+    percussive: () => shaderFloat(env.uniforms.signalPercussive),
+    harmonic: () => shaderFloat(env.uniforms.signalHarmonic),
+    percussive_low: () => shaderFloat(env.uniforms.signalPercussiveLow),
+    percussivelow: () => shaderFloat(env.uniforms.signalPercussiveLow),
+    percussive_mid: () => shaderFloat(env.uniforms.signalPercussiveMid),
+    percussivemid: () => shaderFloat(env.uniforms.signalPercussiveMid),
+    percussive_high: () => shaderFloat(env.uniforms.signalPercussiveHigh),
+    percussivehigh: () => shaderFloat(env.uniforms.signalPercussiveHigh),
+    percussive_ratio: () => shaderFloat(env.uniforms.signalPercussiveRatio),
+    percussiveratio: () => shaderFloat(env.uniforms.signalPercussiveRatio),
     beat: () => shaderFloat(env.uniforms.signalBeat),
     beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
     progress: () => shaderFloat(env.uniforms.signalFrame),
@@ -1955,6 +1966,7 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;
     this.compositeMaterial.uniforms.signalTrebAtt.value =
       state.signalTrebAtt ?? state.signalTreb;
+    applyHarmonicPercussiveUniforms(this.compositeMaterial.uniforms, state);
     this.compositeMaterial.uniforms.signalBeat.value = state.signalBeat;
     this.compositeMaterial.uniforms.signalBeatPulse.value =
       state.signalBeatPulse;
