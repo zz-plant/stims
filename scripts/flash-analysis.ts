@@ -11,9 +11,11 @@
  *     or more of maximum relative luminance, where the relative luminance
  *     of the darker image is below 0.80.
  *   - The threshold applies when the flashing area occupies more than 25%
- *     of the visual field. Frames are tiled and the fraction of tiles that
- *     changed together stands in for that area test — a whole-frame mean
- *     would average away a bright flash in one corner.
+ *     of *any 10 degree visual field*, not 25% of the screen. Frames are
+ *     tiled and a field-sized window is slid across the grid, because a
+ *     region that strobes at full contrast while covering a tenth of the
+ *     display still fails the standard — and both a whole-frame mean and a
+ *     screen-wide fraction score it as safe.
  *   - More than 3 flashes within any 1-second window fails.
  *
  * These are screen-content heuristics, not a medical device. They flag
@@ -112,8 +114,8 @@ function stdDev(values: readonly number[]): number {
 }
 
 /**
- * Largest fraction of any 10-degree-field window that flashed in one
- * direction. Returns the whole-grid fraction when no grid shape is given.
+ * Largest fraction of any single 10-degree-field window that flashed in
+ * the given direction — the worst local case, not the screen average.
  */
 function peakLocalFraction(
   flags: Int8Array,
@@ -176,8 +178,7 @@ export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
   const frameDeltas: number[] = [];
   const frameMeans: number[] = [mean(frames[0])];
 
-  // Grid shape drives the 10-degree-field window. Without one the whole
-  // grid is treated as a single window, i.e. the old screen-wide test.
+  // Grid shape drives the 10-degree-field window.
   const cols = input.cols ?? tileCount;
   const rows = input.rows ?? 1;
   // Only window when the caller actually described a 2D grid. Without a
