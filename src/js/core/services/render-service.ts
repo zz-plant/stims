@@ -71,6 +71,50 @@ type RendererPoolLifecycle = {
 
 const rendererPool: RendererPoolEntry[] = [];
 const rendererLifecycles = new WeakMap<RendererHandle, RendererPoolLifecycle>();
+
+/**
+ * Emitted whenever a pooled renderer stops being the same live GPU renderer
+ * it was a moment ago: recreated after a WebGL context loss or a WebGPU
+ * device loss, disposed, or released back to the pool. Consumers that hold
+ * external state bound to the *specific* renderer instance (currently only
+ * the WebXR session controller) need to know, because the facade keeps its
+ * identity across a swap while the underlying renderer does not.
+ */
+export type RendererLifecycleEvent = {
+  type: 'recreated' | 'disposed' | 'released';
+  handle: RendererHandle;
+};
+
+const rendererLifecycleSubscribers = new Set<
+  (event: RendererLifecycleEvent) => void
+>();
+
+export function subscribeToRendererLifecycle(
+  subscriber: (event: RendererLifecycleEvent) => void,
+) {
+  rendererLifecycleSubscribers.add(subscriber);
+  return () => rendererLifecycleSubscribers.delete(subscriber);
+}
+
+function notifyRendererLifecycle(event: RendererLifecycleEvent) {
+  rendererLifecycleSubscribers.forEach((subscriber) => {
+    try {
+      subscriber(event);
+    } catch (error) {
+      console.warn('Renderer lifecycle subscriber failed.', error);
+    }
+  });
+}
+
+/**
+ * The stage renderer: the first pooled renderer still checked out. Pool
+ * entries are appended in creation order and the workspace stage is the
+ * first renderer the app requests, so this is the one attached to the
+ * visible canvas even when preview tiles have checked out extra renderers.
+ */
+export function getActiveRendererHandle(): RendererHandle | null {
+  return rendererPool.find((entry) => entry.inUse)?.handle ?? null;
+}
 let activeQuality: QualityPreset = getActiveQualityPreset();
 let _activeRenderPreferences = getActiveRenderPreferences();
 let activeRuntimeControls: RendererRuntimeControls =
@@ -433,6 +477,7 @@ async function createRendererHandle(
     observeActiveWebGpuDevice();
     observeActiveWebGLContext();
     reattachAnimationLoop?.();
+    notifyRendererLifecycle({ type: 'recreated', handle });
   };
 
   const WEBGPU_RECOVERY_MAX_ATTEMPTS = 3;
@@ -694,6 +739,7 @@ async function createRendererHandle(
       onDispose: () => {
         clearObservedWebGpuDevice();
         clearObservedWebGLContext();
+        notifyRendererLifecycle({ type: 'disposed', handle });
       },
       driveAnimationLoop: initResult.backend === 'webgpu',
     });
@@ -732,6 +778,7 @@ async function createRendererHandle(
       activeOptions = {};
       activeViewport = undefined;
       stopRendererAnimationLoop?.();
+      notifyRendererLifecycle({ type: 'released', handle });
     },
   };
 
