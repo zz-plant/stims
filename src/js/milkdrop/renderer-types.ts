@@ -381,6 +381,15 @@ export type MilkdropFeedbackCompositeState = {
   signalMidAtt?: number;
   signalTreb: number;
   signalTrebAtt?: number;
+  /** Harmonic/percussive decomposition; see
+   * `harmonic-percussive-shader-signals.ts` for the neutral defaults applied
+   * when the host has not supplied them. */
+  signalPercussive?: number;
+  signalHarmonic?: number;
+  signalPercussiveLow?: number;
+  signalPercussiveMid?: number;
+  signalPercussiveHigh?: number;
+  signalPercussiveRatio?: number;
   signalBeat: number;
   signalBeatPulse: number;
   signalEnergy: number;

@@ -124,6 +124,16 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
       .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
       .replace(/\btime\b/giu, 'signalTime')
+      // Harmonic/percussive signals are rewritten before the plain band names
+      // so the longer identifiers win; `percussive_mid` cannot be caught by
+      // the `\bmid\b` rule below (underscore is a word character), but the
+      // longest-first ordering is kept explicit to stay robust to edits.
+      .replace(/\bpercussive_?ratio\b/giu, 'signalPercussiveRatio')
+      .replace(/\bpercussive_?low\b/giu, 'signalPercussiveLow')
+      .replace(/\bpercussive_?mid\b/giu, 'signalPercussiveMid')
+      .replace(/\bpercussive_?high\b/giu, 'signalPercussiveHigh')
+      .replace(/\bpercussive\b/giu, 'signalPercussive')
+      .replace(/\bharmonic\b/giu, 'signalHarmonic')
       .replace(/\bbass_att\b/giu, 'signalBassAtt')
       .replace(/\bbass\b/giu, 'signalBass')
       .replace(/\bmid_att\b/giu, 'signalMidAtt')

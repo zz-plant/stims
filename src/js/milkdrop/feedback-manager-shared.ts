@@ -49,6 +49,7 @@ import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
+import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
 import type {
   MilkdropFeedbackCompositeState,
@@ -606,6 +607,12 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalBassAtt;
         uniform float signalMidAtt;
         uniform float signalTrebAtt;
+        uniform float signalPercussive;
+        uniform float signalHarmonic;
+        uniform float signalPercussiveLow;
+        uniform float signalPercussiveMid;
+        uniform float signalPercussiveHigh;
+        uniform float signalPercussiveRatio;
         uniform float signalBeat;
         uniform float signalBeatPulse;
         uniform float signalEnergy;
@@ -837,6 +844,12 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float signalBassAtt;
         uniform float signalMidAtt;
         uniform float signalTrebAtt;
+        uniform float signalPercussive;
+        uniform float signalHarmonic;
+        uniform float signalPercussiveLow;
+        uniform float signalPercussiveMid;
+        uniform float signalPercussiveHigh;
+        uniform float signalPercussiveRatio;
         uniform float signalBeat;
         uniform float signalBeatPulse;
         uniform float signalEnergy;
@@ -1295,6 +1308,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalBassAtt: { value: 0 },
         signalMidAtt: { value: 0 },
         signalTrebAtt: { value: 0 },
+        // Neutral defaults mirror the CPU VM (vm/shared.ts): the relative
+        // energies sit at 1 and the ratio at 0.5 before any audio arrives.
+        signalPercussive: { value: 1 },
+        signalHarmonic: { value: 1 },
+        signalPercussiveLow: { value: 1 },
+        signalPercussiveMid: { value: 1 },
+        signalPercussiveHigh: { value: 1 },
+        signalPercussiveRatio: { value: 0.5 },
         signalBeat: { value: 0 },
         signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
@@ -1502,6 +1523,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalBassAtt: { value: 0 },
         signalMidAtt: { value: 0 },
         signalTrebAtt: { value: 0 },
+        // Neutral defaults mirror the CPU VM (vm/shared.ts): the relative
+        // energies sit at 1 and the ratio at 0.5 before any audio arrives.
+        signalPercussive: { value: 1 },
+        signalHarmonic: { value: 1 },
+        signalPercussiveLow: { value: 1 },
+        signalPercussiveMid: { value: 1 },
+        signalPercussiveHigh: { value: 1 },
+        signalPercussiveRatio: { value: 0.5 },
         signalBeat: { value: 0 },
         signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
@@ -1838,6 +1867,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
     uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
     uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+    applyHarmonicPercussiveUniforms(uniforms, state);
     uniforms.signalBeat.value = state.signalBeat;
     uniforms.signalBeatPulse.value = state.signalBeatPulse;
     uniforms.signalEnergy.value = state.signalEnergy;
@@ -1890,6 +1920,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     wu.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
     wu.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
     wu.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+    applyHarmonicPercussiveUniforms(wu, state);
     wu.signalBeat.value = state.signalBeat;
     wu.signalBeatPulse.value = state.signalBeatPulse;
     wu.signalEnergy.value = state.signalEnergy;

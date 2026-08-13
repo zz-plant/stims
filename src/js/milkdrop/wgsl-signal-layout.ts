@@ -33,6 +33,12 @@ export const MILKDROP_WGSL_SIGNAL_FIELDS = [
   'vol',
   'music',
   'weighted_energy',
+  'percussive',
+  'harmonic',
+  'percussive_low',
+  'percussive_mid',
+  'percussive_high',
+  'percussive_ratio',
   'progress',
   'aspectx',
   'aspecty',
@@ -105,6 +111,10 @@ export const MILKDROP_WGSL_SIGNAL_ALIAS_MAP = new Map<
     (field) => [field.toLowerCase(), field] as const,
   ),
   ['weightedenergy', 'weighted_energy'],
+  ['percussivelow', 'percussive_low'],
+  ['percussivemid', 'percussive_mid'],
+  ['percussivehigh', 'percussive_high'],
+  ['percussiveratio', 'percussive_ratio'],
 ]);
 
 export type MilkdropGpuVmSignals = Pick<
