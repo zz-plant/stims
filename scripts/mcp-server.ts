@@ -853,10 +853,11 @@ server.registerTool(
 
     try {
       await session.page.evaluate((src) => {
-        // Dispatch a custom event that the overlay's editor listens for
-        window.dispatchEvent(
-          new CustomEvent('applyPresetSource', { detail: src }),
-        );
+        // Goes through the same agent-bridge command the other session
+        // tools use. This previously dispatched an `applyPresetSource`
+        // CustomEvent that nothing in the app ever listened for, so the
+        // tool reported success while changing nothing.
+        window.postMessage({ type: 'toil:load_preset', milkSource: src }, '*');
       }, source);
       await session.page.waitForTimeout(1500);
 
