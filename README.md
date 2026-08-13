@@ -83,14 +83,42 @@ renderers you embed or run, while Stims is the workflow around one.
 | **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
 | **Rendering** | WebGL2 baseline with an additive, guarded WebGPU path | WebGL2 | Native OpenGL / OpenGL ES |
 | **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation this repo diffs against |
+| **Frame cost** (measured, see below) | 1.00 ms median · 1.40 ms p95 | 1.00 ms median · 6.60 ms p95 | Not measured here |
 
 What that buys you in practice:
 
 - **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 - **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
 - **Fidelity is a measurement, not an assertion.** A catalog entry says whether it has been compared against a provenance-checked projectM capture, or only that it compiles and runs. Most entries are currently the latter, and they say so.
+- **Frame cost is steady rather than lowest.** Butterchurn renders the average frame faster; Stims renders the *worst* frame faster, and it is the worst frames a viewer perceives as stutter.
 
-What this comparison does **not** include is a fidelity benchmark. Stims has
+### Frame-cost benchmark
+
+`bun run bench:butterchurn` renders the same presets through both engines and
+reports the numbers in the table above. Both engines are measured alone in their
+own browser process, at an identical drawing buffer, with `gl.finish()` inside
+the timed region; medians and p95 are reported rather than means, because a
+single shader-compile hitch dominates a mean. The script documents the rest of
+its fairness controls, and every one of them exists because leaving it out
+produced a wrong number first.
+
+The run behind the table: all 12 sampled presets compared, none skipped, WebGL,
+1521×865, on one machine. Read it as a shape, not a score — absolute numbers
+move with hardware, a different preset sample would shift the medians, and
+repeat runs of the same code have varied by roughly 10%. The shape is the
+durable part: **Stims sits between 0.90 and 1.00 ms on every preset measured,
+while Butterchurn ranges from 0.40 to 5.30 ms.** Butterchurn is faster on simple
+presets and slower on complex ones; Stims costs about the same either way.
+On the heaviest preset in the sample Stims renders at 0.19× Butterchurn's frame
+cost.
+
+Treat the medians as parity rather than a win: they are equal here, and 10% run
+variance is larger than any gap between them. The p95 difference is the one
+wide enough to survive that noise.
+
+What this comparison does **not** include is a *fidelity* benchmark. The numbers
+above are frame cost only — they say nothing about whether the two engines draw
+the same thing. Stims has
 never been image-diffed against Butterchurn: the only external reference target
 in this repo is projectM, and most catalog entries have not been measured
 against that either. The Butterchurn-derived corpus is checked for whether
