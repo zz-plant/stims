@@ -49,6 +49,16 @@ Exit criteria:
 - a first-time user can find a strong preset without understanding MilkDrop naming conventions; and
 - low-confidence or expensive presets do not dominate default recommendations.
 
+### Flash-safety measurement
+
+The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md) for the full specification and the broader sensory-control research program this is the first step of.
+
+Exit criteria:
+
+- the corpus has actually been run through the real-threshold tool and the resulting distribution reviewed (the tool exists; the audit result doesn't yet);
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
+- a default-on flash-rate cap ships as a visible safety control, not a buried setting.
+
 ## Next: authoring and creator workflow
 
 ### Remix studio

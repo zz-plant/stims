@@ -18,7 +18,7 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
   - `guides/milkdrop-visualizer`
   - `guides/playing-toys`
   - `guides/audio-setup`
-  - `guides/accessibility`
+  - `guides/accessibility` *(planned public surface — content should be sourced from [`docs/SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md): plain-language, no clinical framing, no efficacy claims)*
   - `guides/performance`
 - **Create Presets** *(planned public surface — content lives in `docs/authoring/` today)*
   - `create/learn` — the authoring curriculum (Tracks 0–8, live examples)
@@ -30,13 +30,14 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
 
 ### Development tab
 
-Repository documentation is hubbed in [`docs/README.md`](./README.md) across 5 core developer tracks:
+Repository documentation is hubbed in [`docs/README.md`](./README.md) across 6 core developer tracks:
 
 1. **🚀 Getting Started**: `DEVELOPMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, `COMMIT_CONVENTIONS.md`
 2. **🏛️ Architecture & Engine**: `ARCHITECTURE.md`, `TECHNICAL_ACHIEVEMENTS.md`, `MILKDROP_PRESET_RUNTIME.md`, `WEBGPU_ARCHITECTURAL_REVAMP.md`
 3. **🎨 Preset Authoring**: `authoring/README.md` (curriculum), `authoring/reference.md` (generated language reference), `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
 4. **🤖 AI & Infrastructure**: `api.md`, `MCP_SERVER.md`
 5. **📊 Strategy & QA**: `ROADMAP.md`, `IMPLEMENTATION_STATUS.md`, `QA_PLAN.md`, `LINEAGE_AND_CREDITS.md`
+6. **♿ Accessibility & Sensory Research**: `SENSORY_ACCESSIBILITY.md`, `LITERATURE.md`
 
 - **Contributing**
   - `contributing/getting-started`
