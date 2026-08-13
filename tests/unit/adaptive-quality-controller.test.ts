@@ -306,6 +306,42 @@ describe('createAdaptiveQualityController', () => {
     expect(state.averageCadenceMs).toBeCloseTo(28, 6);
   });
 
+  test('recovers when presenting exactly at the display cadence', () => {
+    // Regression: hasHeadroom used to require averageCadenceMs to be
+    // *faster* than the frame budget (`< budget * 0.9`). A session
+    // presenting perfectly at vsync has cadenceMs === frameBudgetMs, which
+    // never satisfies "faster than budget" — so once degraded, a session
+    // that was rendering fine could never recover, on any 60Hz/120Hz
+    // display. This pins that cadence exactly at budget still counts as
+    // headroom.
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+
+    for (let index = 0; index < 24; index += 1) {
+      controller.recordFrame({
+        frameMs: 5,
+        cadenceMs: 28,
+        phases: { renderMs: 2 },
+      });
+    }
+    const degraded = controller.getState();
+    expect(degraded.qualityStep).toBeGreaterThan(0);
+
+    const frameBudgetMs = degraded.frameBudgetMs;
+    for (let index = 0; index < 160; index += 1) {
+      controller.recordFrame({
+        frameMs: frameBudgetMs * 0.5,
+        cadenceMs: frameBudgetMs,
+        phases: { renderMs: frameBudgetMs * 0.3 },
+      });
+    }
+
+    const recovered = controller.getState();
+    expect(recovered.qualityStep).toBeLessThan(degraded.qualityStep);
+  });
+
   test('uses supplied GPU duration to detect render pressure', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',
