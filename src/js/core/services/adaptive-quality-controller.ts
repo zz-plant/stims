@@ -126,6 +126,18 @@ const ENHANCE_THRESHOLD_SAMPLES = 60;
 const RESET_THRESHOLD_SAMPLES = 3;
 const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 3;
 const ROLLING_WINDOW_MS = 5000;
+/**
+ * Cadence that still counts as "presenting on target" when looking for
+ * headroom. This must be >= 1: a session presenting perfectly at vsync has
+ * `cadenceMs === frameBudgetMs`, so requiring cadence to be *faster* than
+ * the budget (the old `* 0.9`) made headroom unreachable on exactly the
+ * displays most people use — 16.67ms measured against a 15.0ms bar on
+ * 60Hz, 8.33 against 7.5 on 120Hz. Quality could then only ever ratchet
+ * down, and one transient spike stranded the session at reduced quality
+ * for good. The degrade side treats > 1.08 as pressure, so 1.05 leaves a
+ * small dead band between "recovering" and "degrading".
+ */
+const CADENCE_AT_TARGET_RATIO = 1.05;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -366,6 +378,40 @@ export function createAdaptiveQualityController({
   let rollingFrameTimesIndex = 0;
   let rollingFrameTimesFilled = false;
 
+  /**
+   * Drops the pre-change evidence a quality change invalidates. The ~5s
+   * rolling window is the one that matters: without this it still holds
+   * frames rendered at the *old* step, so `rollingFramePressure` stays true
+   * and re-degrades three samples later purely because the average hasn't
+   * caught up yet — not because the new step is actually too slow. After
+   * the reset, a re-degrade only fires on frames measured *after* the
+   * change, which is a real signal even at a small sample count, not a
+   * stale one. Deliberately fast: sustained genuine pressure should still
+   * walk down multiple steps in quick succession.
+   *
+   * The EMAs are left alone. `consecutiveOverBudget`/`consecutiveUnderBudget`
+   * are reset by each branch already, and nulling the EMAs would blank
+   * `averageFrameMs`/`averageRenderMs` in the published state that the perf
+   * HUD and telemetry read.
+   *
+   * `rollingAverageFrameMs` is also left as-is here rather than nulled: the
+   * sum/count bookkeeping below only ever covers samples at or after
+   * `rollingFrameTimesIndex`, so the stale array contents this clears are
+   * already excluded from the next average regardless. Nulling it here would
+   * only wipe the number that just justified this decision — this function
+   * runs before the degrade branch builds its "rolling average exceeded
+   * budget" reason string, so that message would report `undefined`. The
+   * next recorded frame naturally overwrites it with a fresh, small-sample
+   * average.
+   */
+  function resetRollingWindowAfterStepChange() {
+    rollingFrameTimes.fill(0);
+    rollingFrameTimesSum = 0;
+    rollingFrameTimesIndex = 0;
+    rollingFrameTimesFilled = false;
+    consecutiveRollingOverBudget = 0;
+  }
+
   function pushRollingFrameTime(frameMs: number) {
     if (rollingFrameTimesFilled) {
       rollingFrameTimesSum -= rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
@@ -489,7 +535,8 @@ export function createAdaptiveQualityController({
         averageFrameMs !== null &&
         averageFrameMs < heuristic.frameBudgetMs * 0.72 &&
         (averageCadenceMs === null ||
-          averageCadenceMs < heuristic.frameBudgetMs * 0.9) &&
+          averageCadenceMs <=
+            heuristic.frameBudgetMs * CADENCE_AT_TARGET_RATIO) &&
         (averageRenderMs === null ||
           averageRenderMs < heuristic.frameBudgetMs * 0.55) &&
         (averageGpuMs === null ||
@@ -527,7 +574,7 @@ export function createAdaptiveQualityController({
         adaptation = 'degraded';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
-        consecutiveRollingOverBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
@@ -553,6 +600,7 @@ export function createAdaptiveQualityController({
         adaptation = 'recovering';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
@@ -573,6 +621,7 @@ export function createAdaptiveQualityController({
         adaptation = 'enhanced';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
