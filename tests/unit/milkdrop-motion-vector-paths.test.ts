@@ -3,7 +3,7 @@
  * src/js/milkdrop/vm/geometry-builder.ts.
  *
  * WHY SYNTHETIC PRESETS: the shipped catalog cannot exercise these branches.
- * Not one of the 1,791 bundled presets declares `fMotionVectorsL`, so the
+ * Not one of the 1,787 bundled presets declares `fMotionVectorsL`, so the
  * legacy `mv_dx`/`mv_dy` source-offset path has zero catalog coverage, and two
  * separate optimization passes have already shipped motion-vector "coverage"
  * that silently emitted ZERO vectors and therefore asserted nothing. Every test

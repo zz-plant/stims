@@ -515,8 +515,16 @@ export function useWorkspaceShellOrchestration({
           'Tab and YouTube capture need a desktop browser. Use the microphone instead.',
         missingAudioMessage:
           source === 'youtube'
-            ? 'No YouTube audio track was captured. Re-share and enable Share audio.'
-            : 'No tab audio track was captured. Re-share and enable Share audio.',
+            ? 'No YouTube audio track was captured. Re-share and enable Share tab audio.'
+            : 'No tab audio track was captured. Re-share and enable Share tab audio.',
+        // For YouTube the player lives in this tab, so pre-select it. For a
+        // plain tab capture the user is reaching for a different tab.
+        preferCurrentTab: source === 'youtube',
+        onEnded: () => {
+          setStatusMessage(
+            'Screen sharing stopped, so the audio feed ended. Start capture again to keep going.',
+          );
+        },
       });
       commitRoute(nextRouteState);
       await startAudioSource({

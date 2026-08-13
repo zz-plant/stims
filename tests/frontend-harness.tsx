@@ -71,6 +71,13 @@ export function makeUiValue(
     youtubeLoading: false,
     youtubePreviewRef: { current: null },
     youtubeReady: false,
+    youtubeTransport: null,
+    youtubeTransportControls: {
+      play: noop,
+      pause: noop,
+      seekTo: noop,
+      nudge: noop,
+    },
     youtubeUrl: '',
     recentYouTubeVideos: [],
     renderPreferences: { compatibilityMode: false },

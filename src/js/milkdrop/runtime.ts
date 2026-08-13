@@ -21,7 +21,10 @@ import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import { encodePresetPreviewImage } from './preset-preview.ts';
 import type { MilkdropRendererAdapter } from './renderer-types';
-import { createMilkdropBackendFailover } from './runtime/backend-fallback';
+import {
+  createMilkdropBackendFailover,
+  describeWebglFallback,
+} from './runtime/backend-fallback';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
@@ -30,6 +33,12 @@ import { DEFAULT_MILKDROP_PRESET_SOURCE } from './runtime/default-preset';
 import { createMilkdropEditorActions } from './runtime/editor-actions';
 import { createMilkdropExperienceAttachmentController } from './runtime/experience-attachment.ts';
 import { createMilkdropExperienceFrameLoop } from './runtime/experience-frame-loop.ts';
+import {
+  DEFAULT_BLEND_DURATION_SECONDS,
+  FIRST_RUN_PRESET_AUTHOR,
+  FIRST_RUN_PRESET_ID,
+  FIRST_RUN_PRESET_TITLE,
+} from './runtime/first-run-preset';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
 import {
   applyMilkdropInteractionResponse as applyMilkdropInteractionResponseImpl,
@@ -99,10 +108,10 @@ export function createMilkdropExperience({
   const defaultPreset = compileMilkdropPresetSource(
     DEFAULT_MILKDROP_PRESET_SOURCE,
     {
-      id: 'signal-bloom',
-      title: 'Signal Bloom',
+      id: FIRST_RUN_PRESET_ID,
+      title: FIRST_RUN_PRESET_TITLE,
       origin: 'bundled',
-      author: 'Stims',
+      author: FIRST_RUN_PRESET_AUTHOR,
     },
   );
   const preferences = createMilkdropRuntimePreferences();
@@ -129,9 +138,8 @@ export function createMilkdropExperience({
   let blendEndAtMs = 0;
   let autoplay = preferences.getAutoplay();
   let lockedPreset = false;
-  const presetBlend = activeCompiled.ir.numericFields.blend_duration;
   let blendDuration = preferences.getBlendDuration(
-    presetBlend && presetBlend > 0 ? presetBlend : 0.3,
+    DEFAULT_BLEND_DURATION_SECONDS,
   );
   let preferredTransitionMode = preferences.getTransitionMode();
   let transitionMode = preferredTransitionMode;
@@ -497,17 +505,40 @@ export function createMilkdropExperience({
     }
   };
 
+  /**
+   * Starts the crossfade into a preset that is about to be applied.
+   *
+   * Preset switches arrive on two paths — the navigation controller and the
+   * editor-session subscriber below — and both need the same blend-vs-cut
+   * decision over the same frame state. Each used to derive it separately,
+   * down to a second copy of `MAX_BLEND_WORKLOAD` in the controller.
+   */
+  const beginPresetTransition = () => {
+    const canBlend =
+      transitionMode === 'blend' &&
+      blendDuration > 0 &&
+      estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+    blendState = canBlend ? cloneBlendState(currentFrameState) : null;
+    blendEndAtMs = blendState ? performance.now() + blendDuration * 1000 : 0;
+    if (blendState) {
+      adapter?.saveFeedbackFrame?.();
+    }
+    lastPresetSwitchAt = performance.now();
+    return {
+      mode: canBlend ? ('blend' as const) : ('cut' as const),
+      durationSeconds: blendDuration,
+    };
+  };
+
   const navigation = createMilkdropPresetNavigationController({
     catalogStore,
     catalogCoordinator,
     session,
     getActivePresetId: () => activePresetId,
     getActiveBackend: () => activeBackend,
-    getCurrentFrameState: () => currentFrameState,
-    getBlendDuration: () => blendDuration,
-    getTransitionMode: () => transitionMode,
     applyCompiledPreset,
     applyPresetPerformanceOverride,
+    beginPresetTransition,
     setOverlayStatus,
     shouldFallbackToWebgl,
     triggerWebglFallback,
@@ -515,19 +546,6 @@ export function createMilkdropExperience({
       if (!previewMode) {
         preferences.rememberLastPreset(id);
       }
-    },
-    preparePresetTransition(nextBlendState) {
-      blendState = nextBlendState;
-      blendEndAtMs =
-        nextBlendState && blendDuration > 0
-          ? performance.now() + blendDuration * 1000
-          : 0;
-      if (nextBlendState) {
-        adapter?.saveFeedbackFrame?.();
-      }
-    },
-    markPresetSwitched() {
-      lastPresetSwitchAt = performance.now();
     },
   });
 
@@ -695,7 +713,7 @@ export function createMilkdropExperience({
       );
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
-        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+        reason: describeWebglFallback(nextCompiled),
       });
       return;
     }
@@ -708,19 +726,7 @@ export function createMilkdropExperience({
         `${nextCompiled.source.id}: subscriber: preset ID change, applying`,
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
-      const canBlend =
-        transitionMode === 'blend' &&
-        blendDuration > 0 &&
-        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
-      blendState = canBlend ? cloneBlendState(currentFrameState) : null;
-      blendEndAtMs =
-        blendState && blendDuration > 0
-          ? performance.now() + blendDuration * 1000
-          : 0;
-      if (blendState) {
-        adapter?.saveFeedbackFrame?.();
-      }
-      lastPresetSwitchAt = performance.now();
+      beginPresetTransition();
       if (!previewMode) {
         void catalogCoordinator.rememberSelection(nextCompiled.source.id);
         preferences.rememberLastPreset(nextCompiled.source.id);
@@ -771,6 +777,7 @@ export function createMilkdropExperience({
     if (startupPresetId) {
       await navigation.selectPreset(startupPresetId, {
         recordHistory: false,
+        skipIfAlreadyActive: true,
       });
       pendingStartupPresetId = null;
       if (!lifetime.isActive()) {

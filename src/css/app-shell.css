@@ -43,6 +43,18 @@ body[data-page="workspace"][data-live="true"] {
   min-height: 100dvh;
 }
 @scope (.stims-shell) {
+  /* The `hidden` attribute must beat any component's own `display` rule.
+     Without this, `.stims-shell__youtube { display: flex }` overrode the UA
+     stylesheet and the YouTube field — which AudioSourcePanel explicitly marks
+     `hidden` on mobile, because YouTube and tab capture are desktop-only —
+     stayed on screen as the largest element of the mobile landing page, right
+     above its own caption saying it needs a desktop browser. Any author rule
+     with a class selector wins over the UA `[hidden]` rule, so this needs the
+     `!important` the HTML spec recommends for exactly this case. */
+  [hidden] {
+    display: none !important;
+  }
+
   :scope {
     min-height: 100vh;
     min-height: 100dvh;
@@ -590,6 +602,26 @@ body[data-page="workspace"][data-live="true"] {
     border: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  /* Scrim between the live attract-mode render and the launch copy.
+     The landing page now runs a real preset behind this text, and presets go
+     bright and light without warning, so the copy needs a floor it can rely on
+     rather than whatever frame happens to be on screen. Flat ink rather than a
+     blur: it keeps body text at full contrast against any preset, and the
+     visuals still read clearly through the lighter lower half. */
+  .stims-shell__stage-frame[data-mode="home"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-stage-hero) - 1);
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(3, 5, 11, 0.9) 0%,
+      rgba(3, 5, 11, 0.82) 55%,
+      rgba(3, 5, 11, 0.6) 100%
+    );
   }
 
   .stims-shell__stage-frame[data-mode="live"] {
@@ -1376,6 +1408,68 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__chip-copy span {
     color: var(--stims-muted);
     font-size: 0.8rem;
+  }
+
+  /* Recents carry an oEmbed thumbnail when one was fetched; the chip has to
+     stay usable when it is missing, so the image is a sibling, not a
+     background. */
+  .stims-shell__chip--media {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 260px;
+  }
+
+  .stims-shell__chip-thumb {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--stims-white-04);
+  }
+
+  .stims-shell__chip--media .stims-shell__chip-copy strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Once the visuals are fullscreen the embedded player is a cropped texture
+     with no controls of its own, so this is the only transport the user has. */
+  .stims-shell__youtube-transport {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .stims-shell__transport-button {
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 10px;
+    background: var(--stims-white-04);
+    color: inherit;
+    font: inherit;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    min-width: 56px;
+  }
+
+  .stims-shell__transport-scrubber {
+    flex: 1 1 140px;
+    min-width: 120px;
+    accent-color: var(--stims-accent-warm, currentColor);
+  }
+
+  .stims-shell__transport-time {
+    color: var(--stims-muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .stims-shell__youtube-preview {

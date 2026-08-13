@@ -84,7 +84,11 @@ describe('milkdrop runtime startup seams', () => {
     ).toBe(false);
   });
 
-  test('does not auto-select a preset when nothing was explicitly requested', () => {
+  test('falls back to the first selectable preset when nothing was explicitly requested', () => {
+    // This used to return null, which is why a first-time visitor with no
+    // deep link, history or collection got a mounted engine drawing nothing.
+    // "Nothing was requested" is the most common arrival, not an edge case, so
+    // it resolves to the deliberate first-run pick.
     const startupId = resolveStartupPresetId({
       requestedPresetId: null,
       preferredStartupPresetId: null,
@@ -94,7 +98,7 @@ describe('milkdrop runtime startup seams', () => {
       activeBackend: 'webgpu',
     });
 
-    expect(startupId).toBeNull();
+    expect(startupId).toBe('fallback');
   });
 
   test('prefers an explicitly requested preset when the backend can run it', () => {

@@ -17,6 +17,8 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'agent',
   'embedded',
   'preview',
+  'yt',
+  't',
 ] as const;
 
 export function readSessionRouteStateFromSearch(
@@ -31,6 +33,8 @@ export function readSessionRouteStateFromSearch(
     agentMode: parsed.routing.agentMode,
     previewMode: parsed.routing.previewMode,
     invalidExperienceSlug: parsed.routing.invalidExperienceSlug,
+    youtubeVideoId: parsed.routing.youtubeVideoId,
+    youtubeStartSeconds: parsed.routing.youtubeStartSeconds,
   };
 }
 
@@ -109,6 +113,13 @@ export function buildSessionRouteSearch(
   }
   if (state.invalidExperienceSlug) {
     nextSearch.experience = state.invalidExperienceSlug;
+  }
+  if (state.youtubeVideoId) {
+    nextSearch.yt = state.youtubeVideoId;
+    // Only carry an offset alongside a video — a bare `t` means nothing.
+    if (state.youtubeStartSeconds && state.youtubeStartSeconds > 0) {
+      nextSearch.t = String(Math.floor(state.youtubeStartSeconds));
+    }
   }
 
   return nextSearch;

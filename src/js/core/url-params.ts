@@ -10,6 +10,13 @@ export interface RoutingURLParams {
   agentMode: boolean;
   previewMode: boolean;
   invalidExperienceSlug: string | null;
+  /**
+   * YouTube video the link was shared with. Without this, `audio=youtube`
+   * restores the source mode but leaves the user staring at an empty input.
+   */
+  youtubeVideoId: string | null;
+  /** Start offset in seconds for {@link youtubeVideoId}. */
+  youtubeStartSeconds: number | null;
 }
 
 export interface PerformanceURLParams {
@@ -192,6 +199,14 @@ function resolveSearchParams(
   return new URLSearchParams();
 }
 
+/** YouTube ids are exactly 11 URL-safe base64 characters. */
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+
+function normalizeYouTubeVideoId(value: unknown): string | null {
+  const str = readParamValue(value)?.trim() ?? '';
+  return YOUTUBE_ID_PATTERN.test(str) ? str : null;
+}
+
 function parseNumberParam(val: string | null): number | null {
   if (!val) return null;
   const num = Number(val);
@@ -252,6 +267,11 @@ export function parseURLParams(
         legacyExperience && legacyExperience !== 'milkdrop'
           ? legacyExperience
           : null,
+      youtubeVideoId: normalizeYouTubeVideoId(params.get('yt')),
+      youtubeStartSeconds: (() => {
+        const seconds = parseNumberParam(get('t'));
+        return seconds != null && seconds > 0 ? Math.floor(seconds) : null;
+      })(),
     },
     renderer,
     corpus: get('corpus')?.trim() || null,

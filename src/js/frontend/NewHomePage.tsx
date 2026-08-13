@@ -66,13 +66,24 @@ export function NewHomePage() {
   // capture-phase pointerdown/touchstart/keydown listeners that resume every
   // registered context, so the visitor's first interaction unblocks sound
   // while the visuals have been running from the start.
+  // Waiting for the catalog to actually contain the requested preset is the
+  // point of `deepLinkEntry`, not just a readiness nicety. `handleAudioStart`
+  // "heals" a request it believes is missing by substituting the featured
+  // preset — and until the catalog lands, every id looks missing. Starting on
+  // `engineReady` alone therefore raced the catalog and silently played a
+  // different preset than the link named, which is the exact failure this
+  // whole path exists to prevent.
+  const deepLinkEntry = deepLinkPresetId
+    ? resolvePresetCatalogEntry(engine.catalog, deepLinkPresetId)
+    : null;
+
   useEffect(() => {
     if (autoStartedRef.current) return;
-    if (!deepLinkPresetId) return;
+    if (!deepLinkEntry) return;
     if (!engine.engineReady) return;
     autoStartedRef.current = true;
     void engine.handleAudioStart('demo');
-  }, [deepLinkPresetId, engine.engineReady, engine.handleAudioStart]);
+  }, [deepLinkEntry, engine.engineReady, engine.handleAudioStart]);
 
   const handlePlayDemo = () => engine.handleAudioStart('demo');
   const handleResume = () => {

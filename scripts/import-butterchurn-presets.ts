@@ -255,6 +255,55 @@ function presetToMilkContent(preset: ButterchurnPreset): {
   return { content: `${parts.join('\n').trim()}\n`, equations };
 }
 
+type IdAssignment =
+  | { kind: 'import'; id: string }
+  | { kind: 'duplicate-of'; id: string };
+
+/**
+ * The corpus ships several presets whose filenames differ only in characters
+ * `slugify` collapses (`_Geiss - …` vs `Geiss - …`, `A & B - …` vs `A + B - …`),
+ * so the naive slug collides. Assign ids up front, over the whole sorted file
+ * list, so the result does not depend on which files happen to be new:
+ *
+ * - first filename (ASCII sort) for a slug keeps the bare slug;
+ * - a later filename with byte-identical content is a true duplicate and is not
+ *   imported at all;
+ * - a later filename with different content is a genuinely distinct preset and
+ *   gets a `-alt`/`-alt-2`/… suffix.
+ */
+function assignPresetIds(
+  files: string[],
+  readFile: (file: string) => string,
+): Map<string, IdAssignment> {
+  const assignments = new Map<string, IdAssignment>();
+  const bySlug = new Map<string, { id: string; content: string }[]>();
+
+  for (const file of files) {
+    const title = file.replace(/\.json$/, '');
+    const slug = slugify(title);
+    const claimed = bySlug.get(slug) ?? [];
+    const content = readFile(file);
+
+    const identical = claimed.find((claim) => claim.content === content);
+    if (identical) {
+      assignments.set(file, { kind: 'duplicate-of', id: identical.id });
+      continue;
+    }
+
+    const id =
+      claimed.length === 0
+        ? slug
+        : claimed.length === 1
+          ? `${slug}-alt`
+          : `${slug}-alt-${claimed.length}`;
+    claimed.push({ id, content });
+    bySlug.set(slug, claimed);
+    assignments.set(file, { kind: 'import', id });
+  }
+
+  return assignments;
+}
+
 function loadExistingCatalog(): {
   presets: Record<string, number>;
 } {
@@ -335,8 +384,19 @@ async function main() {
   // skips ids it has already seen.
   const rewriteExisting = process.argv.includes('--rewrite');
 
+  const fileContents = new Map<string, string>();
+  const readPresetFile = (file: string): string => {
+    const cached = fileContents.get(file);
+    if (cached !== undefined) return cached;
+    const raw = fs.readFileSync(path.join(PRESETS_DIR, file), 'utf-8');
+    fileContents.set(file, raw);
+    return raw;
+  };
+  const idAssignments = assignPresetIds(files, readPresetFile);
+
   let importedCount = 0;
   let skippedCount = 0;
+  let duplicateCount = 0;
   let rewrittenCount = 0;
   let equationStatements = 0;
   const unsupportedBlocks: { preset: string; scope: string; reason: string }[] =
@@ -352,8 +412,14 @@ async function main() {
   }
 
   for (const file of files) {
-    const filePath = path.join(PRESETS_DIR, file);
-    const raw = fs.readFileSync(filePath, 'utf-8');
+    const assignment = idAssignments.get(file);
+    if (!assignment) continue;
+    if (assignment.kind === 'duplicate-of') {
+      duplicateCount++;
+      continue;
+    }
+
+    const raw = readPresetFile(file);
 
     let preset: ButterchurnPreset;
     try {
@@ -364,7 +430,7 @@ async function main() {
     }
 
     const title = file.replace(/\.json$/, '');
-    const id = slugify(title);
+    const id = assignment.id;
     const alreadyImported = existingIds.has(id);
 
     if (alreadyImported && !rewriteExisting) {
@@ -466,7 +532,7 @@ async function main() {
   }
 
   console.log(
-    `\nImported ${importedCount} presets (${rewrittenCount} rewritten, ${skippedCount} skipped, ${newEntries.length} new to catalog)`,
+    `\nImported ${importedCount} presets (${rewrittenCount} rewritten, ${skippedCount} skipped, ${duplicateCount} byte-identical duplicates, ${newEntries.length} new to catalog)`,
   );
   console.log(`  equations   → ${equationStatements} EEL statements emitted`);
   if (unsupportedBlocks.length > 0) {

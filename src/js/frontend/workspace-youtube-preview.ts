@@ -1,9 +1,10 @@
 import type { KeyboardEvent } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   parseYouTubeVideoReference,
   readStoredRecentYouTubeVideos,
   YouTubeController,
+  type YouTubeTransportState,
   type YouTubeVideo,
 } from '../ui/youtube-controller.ts';
 
@@ -92,13 +93,37 @@ export function describeWorkspaceYouTubeInputState({
   };
 }
 
+/**
+ * A shared `?yt=` link wins over whatever this browser had in sessionStorage:
+ * the recipient followed the link to see that video, not their own last one.
+ */
+export function resolveInitialWorkspaceYouTubeUrl(
+  videoId: string | null | undefined,
+  startSeconds: number | null | undefined,
+) {
+  if (!videoId) {
+    return readStoredWorkspaceYouTubeUrl();
+  }
+  const offset = startSeconds && startSeconds > 0 ? `&t=${startSeconds}s` : '';
+  return `https://www.youtube.com/watch?v=${videoId}${offset}`;
+}
+
 export function useWorkspaceYouTubePreview({
   setStatusMessage,
+  initialVideoId = null,
+  initialStartSeconds = null,
+  onVideoLoaded,
 }: {
   setStatusMessage: (message: string | null) => void;
+  /** From `?yt=` on the incoming URL. */
+  initialVideoId?: string | null;
+  /** From `?t=` on the incoming URL. */
+  initialStartSeconds?: number | null;
+  /** Lets the route pick up the video so the address bar stays shareable. */
+  onVideoLoaded?: (video: { id: string; startSeconds: number }) => void;
 }) {
   const [youtubeUrl, setYoutubeUrlState] = useState(() =>
-    readStoredWorkspaceYouTubeUrl(),
+    resolveInitialWorkspaceYouTubeUrl(initialVideoId, initialStartSeconds),
   );
   const [youtubeReady, setYoutubeReady] = useState(false);
   const [youtubeLoading, setYoutubeLoading] = useState(false);
@@ -108,6 +133,70 @@ export function useWorkspaceYouTubePreview({
   >(() => readStoredRecentYouTubeVideos());
   const youtubeControllerRef = useRef<YouTubeController | null>(null);
   const youtubePreviewRef = useRef<HTMLDivElement | null>(null);
+  const [youtubeTransport, setYoutubeTransport] =
+    useState<YouTubeTransportState | null>(null);
+
+  // Once the visuals go fullscreen the video is a cropped texture with no
+  // controls of its own, so Stims has to own the transport. The IFrame API
+  // has no time-update event — polling once a second is the only option, and
+  // it costs nothing while no video is loaded.
+  useEffect(() => {
+    if (!youtubeReady) {
+      setYoutubeTransport(null);
+      return;
+    }
+
+    const readTransport = () => {
+      setYoutubeTransport(
+        youtubeControllerRef.current?.getTransportState() ?? null,
+      );
+    };
+
+    readTransport();
+    const timer = setInterval(readTransport, 1000);
+    return () => clearInterval(timer);
+  }, [youtubeReady]);
+
+  // The IFrame API applies commands asynchronously, so reading the player
+  // straight back after a command returns the *previous* state — the Pause
+  // button would keep saying "Pause" until the next poll. Apply the intended
+  // change optimistically instead and let the poll reconcile it.
+  const applyOptimisticTransport = (
+    change: (previous: YouTubeTransportState) => YouTubeTransportState,
+  ) => {
+    setYoutubeTransport((previous) => (previous ? change(previous) : previous));
+  };
+
+  const youtubeTransportControls = {
+    play: () => {
+      youtubeControllerRef.current?.play();
+      applyOptimisticTransport((previous) => ({ ...previous, paused: false }));
+    },
+    pause: () => {
+      youtubeControllerRef.current?.pause();
+      applyOptimisticTransport((previous) => ({ ...previous, paused: true }));
+    },
+    seekTo: (seconds: number) => {
+      youtubeControllerRef.current?.seekTo(seconds);
+      applyOptimisticTransport((previous) => ({
+        ...previous,
+        currentSeconds: Math.min(
+          previous.durationSeconds,
+          Math.max(0, seconds),
+        ),
+      }));
+    },
+    nudge: (deltaSeconds: number) => {
+      youtubeControllerRef.current?.nudge(deltaSeconds);
+      applyOptimisticTransport((previous) => ({
+        ...previous,
+        currentSeconds: Math.min(
+          previous.durationSeconds,
+          Math.max(0, previous.currentSeconds + deltaSeconds),
+        ),
+      }));
+    },
+  };
 
   const youtubeInputState = describeWorkspaceYouTubeInputState({
     loadedVideoKey,
@@ -161,6 +250,10 @@ export function useWorkspaceYouTubePreview({
       );
       setLoadedVideoKey(reference.canonicalUrl);
       setRecentYouTubeVideos(readStoredRecentYouTubeVideos());
+      onVideoLoaded?.({
+        id: reference.id,
+        startSeconds: reference.startSeconds,
+      });
       setStatusMessage(
         'YouTube preview is ready. Capture this tab audio next.',
       );
@@ -218,6 +311,8 @@ export function useWorkspaceYouTubePreview({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     setYoutubeUrl,
   };

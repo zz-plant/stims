@@ -21,6 +21,8 @@ Use this skill when the request is primarily about preset content or the systems
 - import/export flows and compatibility expectations
 - parity fixtures, metadata, and corpus-backed validation
 
+Catalog `id`s must stay unique — see the catalog id contract in `docs/MILKDROP_PRESET_RUNTIME.md` before touching `scripts/import-butterchurn-presets.ts` or hand-editing `public/milkdrop-presets/catalog.json`.
+
 Prefer changing shared preset infrastructure over treating individual presets as isolated product surfaces.
 
 ## Validation

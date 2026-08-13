@@ -62,7 +62,7 @@ Nobody else can build these docs, because the required infrastructure already ex
 | Full-source live editor with autocomplete, hover docs, lint, sliders, AI fix/refine/explain, safety-net rendering | `src/js/milkdrop/overlay/editor-panel.ts` |
 | Serverless "check my preset" | `POST /api/validate-preset` |
 | Measured feedback: per-variable audio→motion verdicts, pixel-level reactivity verdicts | `scripts/preset-lab-reactivity.ts`, `scripts/preset-lab-visual.ts`, `src/js/milkdrop/reactivity-probe.ts` |
-| 1,791-preset catalog, 388 authors, thumbnails, semantic search ("find a preset that does X") | `public/milkdrop-presets/`, `/api/visual-search` |
+| 1,787-preset catalog, 388 authors, thumbnails, semantic search ("find a preset that does X") | `public/milkdrop-presets/`, `/api/visual-search` |
 | A complete machine-readable language spec | `MILKDROP_DSL_SPEC` in `src/js/milkdrop/preset-prompt.ts` (currently read only by LLMs) |
 | A pattern language of 13 named techniques | `docs/MILKDROP_CODING_GUIDE.md` |
 | Per-preset OG images so every tutorial page unfurls with the preset it teaches | `functions/api/og-preset.ts` |

@@ -113,7 +113,18 @@ describe('home shell user journeys', () => {
       globalThis.__stimsAppDispose();
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      expect(warnMock).not.toHaveBeenCalled();
+      // The guard here is that disposing the shell cancels the deferred
+      // hydration instead of letting it fire into a torn-down shell. Attract
+      // mode now mounts the engine on the bare landing view, so the catalog
+      // fetch starts during this test and warns that the fixture is absent —
+      // this environment serves no catalog. That warning says nothing about
+      // cancellation, so assert on the warnings that would.
+      const leakWarnings = warnMock.mock.calls.filter(
+        ([first]) =>
+          typeof first !== 'string' ||
+          !first.startsWith('Optional catalog not found'),
+      );
+      expect(leakWarnings).toEqual([]);
     } finally {
       console.warn = originalWarn;
       if (originalRequestIdleCallback) {
