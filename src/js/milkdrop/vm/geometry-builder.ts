@@ -193,102 +193,256 @@ function getTransformCacheEntry(geometryState: GeometryBuilderState): {
   return entry;
 }
 
-function transformMeshPoint({
+type MilkdropProgramBlock = MilkdropCompiledPreset['ir']['programs']['init'];
+
+type RunProgramFn = (
+  block: MilkdropProgramBlock,
+  env: MutableState,
+  locals?: MutableState | null,
+) => void;
+
+type CreateEnvFn = (
+  signals: MilkdropRuntimeSignals,
+  extra?: Record<string, number>,
+  options?: {
+    reuseExtraAsEnv?: boolean;
+  },
+) => MutableState;
+
+/**
+ * Everything a mesh-point transform needs that is CONSTANT for every vertex in
+ * a frame. Built once per pass by createMeshTransformFrame, then reused by
+ * transformMeshPoint for each of the ~1.7k vertices.
+ *
+ * WHY this exists (do not fold it back into the per-vertex path): a CPU profile
+ * (CDP, 200 stepped frames) put transformMeshPoint at 2.5ms of a 4.0ms frame —
+ * 44% — even on a preset with ZERO equations, and frame cost was flat across a
+ * 746x range of preset complexity. The cost was not the geometry math, it was
+ * per-vertex environment wiring:
+ *   - Object.setPrototypeOf(scratch, signalEnv) on every vertex (createEnv with
+ *     reuseExtraAsEnv), which deoptimises every later property access;
+ *   - a 32-iteration loop that built `q${i}` strings and did prototype-chain
+ *     `in` checks — 56,448 `in` checks per frame on a 42x42 mesh;
+ *   - a memoised compileMilkdropProgram WeakMap lookup per vertex which, for a
+ *     preset with no per-pixel code, resolved to NO_OP.
+ *
+ * The q1..q32 seeding loop was additionally DEAD code: `scratch`'s prototype
+ * chain reaches the VM register bank, which always defines q1..q32 (vm.ts seeds
+ * them in setPreset before any frame runs), so `key in local` was always true
+ * and the loop body never executed. Removing it is behaviour-preserving.
+ */
+type MeshTransformFrame = {
+  signals: MilkdropRuntimeSignals;
+  state: MutableState;
+  geometryState: GeometryBuilderState;
+  runProgram: RunProgramFn;
+  createEnv: CreateEnvFn;
+  scratch: MutableState;
+  aspectX: number;
+  aspectY: number;
+  /** null when the preset ships no per-pixel code (compiles to NO_OP). */
+  perPixelProgram: MilkdropProgramBlock | null;
+  /** Write results into frameTransformCache. */
+  writeCache: boolean;
+  /** Consult frameTransformCache before computing. */
+  readCache: boolean;
+  /** signals.time * (0.35 + warpanimspeed); per-frame constant. */
+  rippleTime: number;
+  // Fast-path per-frame transform constants. Only valid (and only read) when
+  // perPixelProgram is null — with per-pixel code every one of these may be
+  // rewritten per vertex, so that path re-reads them from the scratch locals.
+  zoom: number;
+  zoomExponent: number;
+  cosRot: number;
+  sinRot: number;
+  warp: number;
+  centerX: number;
+  centerY: number;
+  scaleX: number;
+  scaleY: number;
+  translateX: number;
+  translateY: number;
+};
+
+function createMeshTransformFrame({
   signals,
-  gridX,
-  gridY,
   state,
   preset,
   geometryState,
   runProgram,
   createEnv,
-  scratch,
   aspectX,
   aspectY,
+  readCache,
 }: {
   signals: MilkdropRuntimeSignals;
-  gridX: number;
-  gridY: number;
   state: MutableState;
   preset: MilkdropCompiledPreset;
   geometryState: GeometryBuilderState;
-  runProgram: (
-    block: MilkdropCompiledPreset['ir']['programs']['init'],
-    env: MutableState,
-    locals?: MutableState | null,
-  ) => void;
-  createEnv: (
-    signals: MilkdropRuntimeSignals,
-    extra?: Record<string, number>,
-    options?: {
-      reuseExtraAsEnv?: boolean;
-    },
-  ) => MutableState;
-  scratch: MutableState;
+  runProgram: RunProgramFn;
+  createEnv: CreateEnvFn;
   aspectX?: number;
   aspectY?: number;
-}) {
-  const cacheKey = getTransformCacheKey(gridX, gridY);
-  const cached = geometryState.frameTransformCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  const local = scratch;
+  readCache: boolean;
+}): MeshTransformFrame {
   const aspectRatio = signals.aspect ?? 1;
   // MilkDrop shrinks the minor axis (values <= 1); mirrors the shader-uniform
   // convention in feedback-manager-shared.ts's syncMilkdropShaderBuiltinUniforms.
   const resolvedAspectX = aspectX ?? (aspectRatio < 1 ? aspectRatio : 1);
   const resolvedAspectY = aspectY ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const perPixel = preset.ir.programs.perPixel;
+  const hasPerPixel = perPixel.statements.length > 0;
+  const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
+  const rot = state.rot ?? 0;
 
-  // Convert from renderer space [-1,1] to MilkDrop space [0,1]
-  // x = 0 is left, x = 1 is right (with aspect correction)
-  // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
-  local.x = gridX * 0.5 * resolvedAspectX + 0.5;
-  local.y = -gridY * 0.5 * resolvedAspectY + 0.5;
+  return {
+    signals,
+    state,
+    geometryState,
+    runProgram,
+    createEnv,
+    scratch: geometryState.pointScratch,
+    aspectX: resolvedAspectX,
+    aspectY: resolvedAspectY,
+    perPixelProgram: hasPerPixel ? perPixel : null,
+    // frameTransformCache measured a 0% hit rate on the mesh pass (1764
+    // transform calls, 1764 misses on a 42x42 lattice — a fixed grid never
+    // quantises two distinct points to the same key). It is kept ONLY for the
+    // per-pixel case, where the transform is impure: the per-pixel program can
+    // read locals left behind by the previous vertex, so recomputing a repeated
+    // point is not guaranteed to reproduce the memoised value. Without a
+    // per-pixel program the transform is a pure function of (gridX, gridY,
+    // state, signals), so caching it can only ever cost Map traffic.
+    writeCache: hasPerPixel,
+    readCache: readCache && hasPerPixel,
+    rippleTime: signals.time * (0.35 + warpAnimSpeed),
+    zoom: Math.max(state.zoom ?? 1, 0),
+    zoomExponent: Math.max(state.zoomexp ?? 1, 0.0001),
+    cosRot: Math.cos(rot),
+    sinRot: Math.sin(rot),
+    warp: state.warp ?? 0,
+    centerX: normalizeTransformCenter(state.cx ?? 0.5),
+    centerY: normalizeTransformCenterY(state.cy ?? 0.5),
+    scaleX: state.sx ?? 1,
+    scaleY: state.sy ?? 1,
+    translateX: state.dx ?? 0,
+    translateY: state.dy ?? 0,
+  };
+}
 
-  const aspectGridX = gridX * resolvedAspectX;
-  const aspectGridY = gridY * resolvedAspectY;
-  local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
-  local.ang = Math.atan2(aspectGridY, aspectGridX);
-  local.zoom = state.zoom ?? 1;
-  local.zoomexp = state.zoomexp ?? 1;
-  local.rot = state.rot ?? 0;
-  local.warp = state.warp ?? 0;
-  local.cx = state.cx ?? 0.5;
-  local.cy = state.cy ?? 0.5;
-  local.sx = state.sx ?? 1;
-  local.sy = state.sy ?? 1;
-  local.dx = state.dx ?? 0;
-  local.dy = state.dy ?? 0;
+// Returned by the uncached (no per-pixel program) path. Callers copy x/y out
+// before the next call, exactly as they already did with the pooled cache
+// entries.
+const transientTransformResult = { x: 0, y: 0 };
 
-  // Seed per-pixel locals with q1-q32 so per-pixel writes don't leak to
-  // the shared register bank and corrupt the next frame's per-frame pool
-  const env = createEnv(signals, local, { reuseExtraAsEnv: true });
-  for (let i = 1; i <= 32; i += 1) {
-    const key = `q${i}`;
-    if (!(key in local)) {
-      local[key] = (env as Record<string, number>)[key] ?? 0;
+function transformMeshPoint(
+  frame: MeshTransformFrame,
+  gridX: number,
+  gridY: number,
+): { x: number; y: number } {
+  const aspectX = frame.aspectX;
+  const aspectY = frame.aspectY;
+  const perPixel = frame.perPixelProgram;
+
+  let cacheKey = 0;
+  if (frame.writeCache) {
+    cacheKey = getTransformCacheKey(gridX, gridY);
+    if (frame.readCache) {
+      const cached = frame.geometryState.frameTransformCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
     }
   }
 
-  runProgram(preset.ir.programs.perPixel, env, local);
+  const aspectGridX = gridX * aspectX;
+  const aspectGridY = gridY * aspectY;
 
-  // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
-  // transform math below runs in renderer [-1,1] space, so invert the mapping.
-  const rendererX = (((local.x ?? 0.5) - 0.5) * 2) / resolvedAspectX;
-  const rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / resolvedAspectY);
+  let rendererX: number;
+  let rendererY: number;
+  let rad: number;
+  let zoom: number;
+  let zoomExponent: number;
+  let cosRot: number;
+  let sinRot: number;
+  let warp: number;
+  let centerX: number;
+  let centerY: number;
+  let scaleX: number;
+  let scaleY: number;
+  let translateX: number;
+  let translateY: number;
 
-  const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
-  const centerX = normalizeTransformCenter(local.cx ?? 0.5);
-  const centerY = normalizeTransformCenterY(local.cy ?? 0.5);
-  const scaleX = local.sx ?? 1;
-  const scaleY = local.sy ?? 1;
-  const translateX = local.dx ?? 0;
-  const translateY = local.dy ?? 0;
+  if (perPixel) {
+    const local = frame.scratch;
+    const state = frame.state;
 
-  const cosRot = Math.cos(local.rot);
-  const sinRot = Math.sin(local.rot);
+    // Convert from renderer space [-1,1] to MilkDrop space [0,1]
+    // x = 0 is left, x = 1 is right (with aspect correction)
+    // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
+    local.x = gridX * 0.5 * aspectX + 0.5;
+    local.y = -gridY * 0.5 * aspectY + 0.5;
+    local.rad = Math.sqrt(
+      aspectGridX * aspectGridX + aspectGridY * aspectGridY,
+    );
+    local.ang = Math.atan2(aspectGridY, aspectGridX);
+    local.zoom = state.zoom ?? 1;
+    local.zoomexp = state.zoomexp ?? 1;
+    local.rot = state.rot ?? 0;
+    local.warp = state.warp ?? 0;
+    local.cx = state.cx ?? 0.5;
+    local.cy = state.cy ?? 0.5;
+    local.sx = state.sx ?? 1;
+    local.sy = state.sy ?? 1;
+    local.dx = state.dx ?? 0;
+    local.dy = state.dy ?? 0;
+
+    const env = frame.createEnv(frame.signals, local, {
+      reuseExtraAsEnv: true,
+    });
+    frame.runProgram(perPixel, env, local);
+
+    // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
+    // transform math below runs in renderer [-1,1] space, so invert the mapping.
+    rendererX = (((local.x ?? 0.5) - 0.5) * 2) / aspectX;
+    rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / aspectY);
+    rad = local.rad;
+    warp = local.warp;
+    centerX = normalizeTransformCenter(local.cx ?? 0.5);
+    centerY = normalizeTransformCenterY(local.cy ?? 0.5);
+    scaleX = local.sx ?? 1;
+    scaleY = local.sy ?? 1;
+    translateX = local.dx ?? 0;
+    translateY = local.dy ?? 0;
+    cosRot = Math.cos(local.rot);
+    sinRot = Math.sin(local.rot);
+    zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
+    zoom = Math.max(local.zoom ?? 1, 0);
+  } else {
+    // No per-pixel program: nothing can rewrite x/y/rad/zoom/rot/... per vertex,
+    // so skip the env wiring and the NO_OP program call entirely. The geometric
+    // transform below still runs unchanged. The round trip through MilkDrop
+    // [0,1] space is reproduced literally rather than simplified to `gridX`,
+    // because (gridX * 0.5 * aspectX) * 2 / aspectX is not bit-identical to
+    // gridX when aspectX is not a power of two.
+    const localX = gridX * 0.5 * aspectX + 0.5;
+    const localY = -gridY * 0.5 * aspectY + 0.5;
+    rendererX = ((localX - 0.5) * 2) / aspectX;
+    rendererY = -(((localY - 0.5) * 2) / aspectY);
+    rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
+    warp = frame.warp;
+    centerX = frame.centerX;
+    centerY = frame.centerY;
+    scaleX = frame.scaleX;
+    scaleY = frame.scaleY;
+    translateX = frame.translateX;
+    translateY = frame.translateY;
+    cosRot = frame.cosRot;
+    sinRot = frame.sinRot;
+    zoomExponent = frame.zoomExponent;
+    zoom = frame.zoom;
+  }
+
   const relX = rendererX - centerX;
   const relY = rendererY - centerY;
   const rx = relX * cosRot - relY * sinRot + centerX;
@@ -296,8 +450,6 @@ function transformMeshPoint({
 
   const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
   const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
-  const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
-  const zoom = Math.max(local.zoom ?? 1, 0);
   // Authored presets legitimately use extreme pairs (orbasonic ships
   // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
   // float32 at the edges and NaN-poisons the warp into a black frame.
@@ -310,10 +462,7 @@ function transformMeshPoint({
   const zx = centerX + (rx - centerX) * zoomScale;
   const zy = centerY + (ry - centerY) * zoomScale;
 
-  const ripple =
-    Math.sin(local.rad * 8.0 + signals.time * (0.35 + warpAnimSpeed)) *
-    local.warp *
-    0.1;
+  const ripple = Math.sin(rad * 8.0 + frame.rippleTime) * warp * 0.1;
   const rippleAngle = Math.atan2(zy - centerY, zx - centerX);
   const wx = zx + Math.cos(rippleAngle) * ripple;
   const wy = zy + Math.sin(rippleAngle) * ripple;
@@ -321,10 +470,14 @@ function transformMeshPoint({
   const tx = wx + translateX;
   const ty = wy + translateY;
 
-  const transformed = getTransformCacheEntry(geometryState);
+  const transformed = frame.writeCache
+    ? getTransformCacheEntry(frame.geometryState)
+    : transientTransformResult;
   transformed.x = (tx - centerX) * scaleX + centerX;
   transformed.y = (ty - centerY) * scaleY + centerY;
-  geometryState.frameTransformCache.set(cacheKey, transformed);
+  if (frame.writeCache) {
+    frame.geometryState.frameTransformCache.set(cacheKey, transformed);
+  }
   return transformed;
 }
 
@@ -509,23 +662,28 @@ export function buildMeshField({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  const transformFrame = createMeshTransformFrame({
+    signals,
+    state,
+    preset,
+    geometryState,
+    runProgram,
+    createEnv,
+    aspectX,
+    aspectY,
+    // The mesh lattice is strictly monotonic in both axes, so no two of its own
+    // points can share a quantised cache key — a lookup can only ever hit an
+    // entry left by an earlier pass. buildFrame resets the cache before this
+    // runs, so in practice this is always false (measured: 1764 lookups, 1764
+    // misses); the size probe keeps it correct if the call order ever changes.
+    readCache: geometryState.frameTransformCache.size > 0,
+  });
+
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
       const x = (col / Math.max(1, density - 1)) * 2 - 1;
       const y = (row / Math.max(1, density - 1)) * 2 - 1;
-      const point = transformMeshPoint({
-        signals,
-        gridX: x,
-        gridY: y,
-        state,
-        preset,
-        geometryState,
-        runProgram,
-        createEnv,
-        scratch: geometryState.pointScratch,
-        aspectX,
-        aspectY,
-      });
+      const point = transformMeshPoint(transformFrame, x, y);
       const pointIndex = row * density + col;
       const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
         sourceX: 0,
@@ -845,6 +1003,21 @@ export function buildMotionVectors({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  // Motion-vector sample points CAN repeat (legacy mv_dx/mv_dy offsets clamp
+  // several columns onto +/-1) and can coincide with mesh-lattice points, so
+  // this pass keeps the cache lookup.
+  const transformFrame = createMeshTransformFrame({
+    signals,
+    state,
+    preset,
+    geometryState,
+    runProgram,
+    createEnv,
+    aspectX,
+    aspectY,
+    readCache: true,
+  });
+
   const interpolated = countX * countY > MOTION_VECTOR_INTERPOLATION_THRESHOLD;
   const evalColumns = interpolated
     ? Math.min(countX, MOTION_VECTOR_EVAL_COLUMNS)
@@ -856,19 +1029,11 @@ export function buildMotionVectors({
     }
     for (let row = 0; row < evalRows; row += 1) {
       for (let col = 0; col < evalColumns; col += 1) {
-        const point = transformMeshPoint({
-          signals,
-          gridX: (col / (evalColumns - 1)) * 2 - 1,
-          gridY: (row / (evalRows - 1)) * 2 - 1,
-          state,
-          preset,
-          geometryState,
-          runProgram,
-          createEnv,
-          scratch: geometryState.pointScratch,
-          aspectX,
-          aspectY,
-        });
+        const point = transformMeshPoint(
+          transformFrame,
+          (col / (evalColumns - 1)) * 2 - 1,
+          (row / (evalRows - 1)) * 2 - 1,
+        );
         const offset = (row * evalColumns + col) * 2;
         motionVectorEvalScratch[offset] = point.x;
         motionVectorEvalScratch[offset + 1] = point.y;
@@ -920,19 +1085,11 @@ export function buildMotionVectors({
           motionVectorEvalScratch[i11 + 1] * fu;
         currentPointY = topY * (1 - fv) + bottomY * fv;
       } else {
-        const currentPoint = transformMeshPoint({
-          signals,
-          gridX: sourceX,
-          gridY: sourceY,
-          state,
-          preset,
-          geometryState,
-          runProgram,
-          createEnv,
-          scratch: geometryState.pointScratch,
-          aspectX,
-          aspectY,
-        });
+        const currentPoint = transformMeshPoint(
+          transformFrame,
+          sourceX,
+          sourceY,
+        );
         currentPointX = currentPoint.x;
         currentPointY = currentPoint.y;
       }
