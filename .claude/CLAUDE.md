@@ -33,7 +33,7 @@ bun run setup:codex             # install + quick-check if not
 | Area | Path | Use when changing… |
 |------|------|-------------------|
 | Workspace UI | `src/js/frontend/` | React UI, URL state, engine adapter |
-| Shared runtime | `src/js/core/` | Renderer, shell, audio, capabilities |
+| Shared runtime | `src/js/core/` | Renderer, shell, audio, capabilities, MIDI/VJ hardware (`services/webmidi-controller.ts`) |
 | Preset system | `src/js/milkdrop/` | Presets, editor, catalog, VM |
 | Stylesheets | `src/css/` | `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` + `base.css` (older page-level styles), `*.module.css` (component-scoped) |
 | Entry points | `index.html`, `milkdrop/index.html` | Shell loading, redirects |

@@ -19,6 +19,7 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 - Browser canvas recording beta.
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
 - MIDI/VJ hardware workflow with per-device persistent mappings, learn mode, hot-plug recovery, and an MCP-controllable virtual device.
+- WebXR immersive-stage experiment, guarded to `immersive-vr`-capable WebGL browsers and unit-tested, but never run on physical VR hardware — that a session actually presents correctly there is unproven.
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
@@ -99,7 +100,6 @@ These workstreams begin only after their prerequisite user flows and proof contr
 
 ## Research, not roadmap commitments
 
-- WebXR immersive stages;
 - neural audio-to-visual generation;
 - Gaussian-splat or latent rendering;
 - DMX, Art-Net, NDI, or Syphon bridges; and
