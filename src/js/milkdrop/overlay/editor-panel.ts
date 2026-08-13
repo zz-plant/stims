@@ -57,6 +57,7 @@ import {
   rectangularSelection,
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
+import { webMidiService } from '../../core/services/webmidi-controller.ts';
 import {
   getActiveThemePreference,
   subscribeToThemePreference,
@@ -67,7 +68,11 @@ import {
   MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
 } from '../builtin-docs';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
-import { computeMidiGutterInfo, type MidiGutterEntry } from '../formatter';
+import {
+  computeMidiGutterInfo,
+  isFieldShadowedByEquations,
+  type MidiGutterEntry,
+} from '../formatter';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
@@ -942,11 +947,23 @@ export class EditorPanel {
   private batchButton: HTMLButtonElement | null = null;
   private blendSubmitButton: HTMLButtonElement | null = null;
   private disposeDiagnosticsListener: (() => void) | null = null;
+  private disposeMidiListener: (() => void) | null = null;
   private sliderInputs: Map<
     string,
-    { input: HTMLInputElement; display: HTMLSpanElement; defaultValue: number }
+    {
+      input: HTMLInputElement;
+      display: HTMLSpanElement;
+      defaultValue: number;
+      midiDot: HTMLSpanElement;
+      learnButton: HTMLButtonElement;
+    }
   > = new Map();
   private midiTargets: Set<string> = new Set();
+  // The slider whose "learn" button is currently armed, waiting for the
+  // next CC from any device — mirrors webMidiService.getLearnTarget() but
+  // scoped to "was it *this* editor's UI that armed it", so a learn
+  // started from the Performance hardware panel doesn't light up a slider.
+  private learningSliderKey: string | null = null;
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
@@ -1380,6 +1397,17 @@ export class EditorPanel {
         diagnosticsListener,
       );
     };
+
+    this.midiTargets = webMidiService.getEnabledTargets();
+    this.disposeMidiListener = webMidiService.onDevicesChanged(() => {
+      this.midiTargets = webMidiService.getEnabledTargets();
+      if (this.learningSliderKey && webMidiService.getLearnTarget() === null) {
+        this.learningSliderKey = null;
+      }
+      this.refreshMidiGutter();
+      this.refreshSliderMidiState();
+    });
+    this.refreshSliderMidiState();
   }
 
   setVisible(visible: boolean) {
@@ -1606,15 +1634,7 @@ export class EditorPanel {
 
     this.updateSlidersFromDoc();
     this.refreshMidiGutter();
-  }
-
-  /** Called whenever the set of MIDI/MCP-bound targets changes (a knob is
-   * learned or unbound, a device is enabled/disabled). The gutter itself
-   * re-renders on the next renderSessionState pass, which already fires on
-   * every doc change. */
-  public setMidiTargets(targets: Iterable<string>): void {
-    this.midiTargets = new Set(targets);
-    this.refreshMidiGutter();
+    this.refreshSliderMidiState();
   }
 
   private refreshMidiGutter(): void {
@@ -1628,9 +1648,45 @@ export class EditorPanel {
     this.editor.dispatch({ effects: setMidiGutterInfo.of(entries) });
   }
 
+  /** Keeps each Tune slider's status dot and "listening" learn-button state
+   * in sync with webMidiService. Cheap enough to call on every doc change —
+   * there are only 12 sliders. */
+  private refreshSliderMidiState(): void {
+    const doc = this.editor.state.doc.toString();
+    this.sliderInputs.forEach((item, key) => {
+      const bound = this.midiTargets.has(key);
+      item.midiDot.hidden = !bound;
+      if (bound) {
+        const shadowed = isFieldShadowedByEquations(doc, key);
+        item.midiDot.className = `editor-slider-row__midi-dot editor-slider-row__midi-dot--${shadowed ? 'shadowed' : 'live'}`;
+        item.midiDot.title = shadowed
+          ? `MIDI/MCP is bound to ${key}, but this preset's own equations reassign it every frame — no visible effect.`
+          : `MIDI/MCP is driving ${key}.`;
+      }
+      const armed = this.learningSliderKey === key;
+      item.learnButton.dataset.armed = armed ? 'true' : 'false';
+      item.learnButton.title = armed
+        ? `Listening… move a knob or fader to map it to ${key}.`
+        : `MIDI-learn ${key}: click, then move a knob or fader.`;
+    });
+  }
+
+  private toggleSliderLearn(key: string): void {
+    if (this.learningSliderKey === key) {
+      webMidiService.cancelLearn();
+      this.learningSliderKey = null;
+    } else {
+      webMidiService.beginLearn(key);
+      this.learningSliderKey = key;
+    }
+    this.refreshSliderMidiState();
+  }
+
   dispose() {
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
+    this.disposeMidiListener?.();
+    this.disposeMidiListener = null;
     this.clearEditorDebounce();
     this.unsubscribeTheme();
     this.editor.destroy();
@@ -1711,6 +1767,30 @@ export class EditorPanel {
 
       label.addEventListener('dblclick', resetToDefault);
 
+      const controls = document.createElement('div');
+      controls.className = 'editor-slider-row__controls';
+
+      // Passive status: is a MIDI/MCP device currently bound to this
+      // slider's target, and if so does the preset's own equations
+      // silently overwrite whatever it writes? Hidden until bound.
+      const midiDot = document.createElement('span');
+      midiDot.className = 'editor-slider-row__midi-dot';
+      midiDot.hidden = true;
+
+      // Active control: arm MIDI-learn for this exact slider without
+      // typing its name into a text field elsewhere — move a knob and
+      // it's bound. Click again (or the Performance hardware panel's
+      // Cancel) to back out.
+      const learnButton = document.createElement('button');
+      learnButton.type = 'button';
+      learnButton.className = 'editor-slider-row__midi-learn';
+      learnButton.textContent = '⏺';
+      learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
+      learnButton.addEventListener('click', () =>
+        this.toggleSliderLearn(s.key),
+      );
+      controls.append(midiDot, learnButton);
+
       // Double-click on the label was the only way to reset a slider — a
       // real button gives keyboard/click-only users the same path a mouse
       // user already had.
@@ -1721,9 +1801,10 @@ export class EditorPanel {
       resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
       resetButton.title = `Reset to ${s.defaultValue}`;
       resetButton.addEventListener('click', resetToDefault);
+      controls.appendChild(resetButton);
 
       labelRow.appendChild(label);
-      labelRow.appendChild(resetButton);
+      labelRow.appendChild(controls);
 
       const input = document.createElement('input');
       input.type = 'range';
@@ -1750,6 +1831,8 @@ export class EditorPanel {
         input,
         display: valDisplay,
         defaultValue: s.defaultValue,
+        midiDot,
+        learnButton,
       });
 
       row.appendChild(labelRow);

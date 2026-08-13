@@ -45,6 +45,7 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
+import { MidiPerformanceHud } from './MidiPerformanceHud.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
@@ -766,6 +767,7 @@ function StimsWorkspaceAppShell() {
         match={audioMatch}
         onSelect={engine.handlePresetSelection}
       />
+      <MidiPerformanceHud />
       <ShortcutsDialog
         open={showShortcuts}
         onClose={() => setShowShortcuts(false)}
