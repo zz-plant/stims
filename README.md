@@ -149,9 +149,9 @@ These components are useful engineering foundations, but they are not presented 
 
 - **Model-assisted generation beta:** the Generate panel can use a configured hosted model or a loopback OpenAI-compatible endpoint such as Ollama, then validates the returned MilkDrop source before loading it. Hosted availability, local browser configuration, and generated-result quality still need end-to-end proof; blending remains an optional edge API.
 - **Semantic and audio-profile search:** optional API-backed experiments supplement the local catalog search path.
-- **Stem signals:** the runtime reserves stem-oriented fields, but client-side stem separation is not implemented.
-- **MIDI beta:** workspace settings can connect the controller service to live preset parameters. Persistent mappings, recovery behavior, and device-backed verification remain open.
-- **XR experiment:** workspace settings can request an immersive session and attach it to the active renderer. Physical-headset visual behavior, spatial audio, and recovery are not yet certified.
+- **Stem signals:** not implemented. Neither stem separation nor stem-oriented runtime fields exist yet; the runtime exposes broad frequency bands only.
+- **MIDI beta:** workspace settings connect the controller service to live preset parameters. Bindings persist to `localStorage` scoped per device, so two controllers do not collide on the same CC number, and device connect/disconnect is tracked. Parameters can also be driven through a virtual-device path for automation. Verification against physical hardware is still open.
+- **XR:** not implemented. There is no WebXR session handling in the runtime.
 - **High-resolution recording beta:** the current implementation can request a native 4K render surface and compose an active audio track when the browser and renderer support them. Output codec, frame pacing, synchronization, and device coverage still require browser-backed proof.
 
 ## Technical foundations
