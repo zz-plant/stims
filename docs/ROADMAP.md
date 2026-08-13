@@ -18,6 +18,7 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 - Multi-source browser audio with off-main-thread analysis.
 - Browser canvas recording beta.
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
+- MIDI/VJ hardware workflow with per-device persistent mappings, learn mode, hot-plug recovery, and an MCP-controllable virtual device.
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
@@ -82,7 +83,6 @@ These workstreams begin only after their prerequisite user flows and proof contr
 | --- | --- |
 | Stims-native WebGPU preset lane | Stable backend contract, performance telemetry, and a format that produces visuals unavailable to the classic compatibility lane. |
 | Embeddable package or Web Component | Lifecycle, audio, preset, resize, and cleanup APIs proven inside the product and integration tests. |
-| MIDI/VJ hardware workflow | The current beta wiring gains persistent mappings, device QA, and recovery behavior. |
 | Real stem-aware reactivity | On-device separation with measured latency, resource budgets, privacy posture, and populated runtime signals. |
 | Community catalog and sync | Stable preset identity, provenance, moderation, versioning, and local-first failure behavior. |
 | Multi-display or venue output | Deterministic timing, remote recovery, and a supported transport contract. |

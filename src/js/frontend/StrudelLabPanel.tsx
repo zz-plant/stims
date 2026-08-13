@@ -178,7 +178,7 @@ export function StrudelLabPanel() {
                 )
               }
               aria-label={`Move lab to ${panelDock.anchor === 'right' ? 'left' : 'right'} edge`}
-              title="Move to the other edge (or drag the header)"
+              title="Move to the other edge"
             >
               ⇄
             </button>

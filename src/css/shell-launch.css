@@ -12,6 +12,7 @@
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+    inset: 0;
     padding: clamp(64px, 8vh, 96px) clamp(20px, 6vw, 72px) 42px;
   }
 

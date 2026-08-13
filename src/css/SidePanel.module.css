@@ -252,9 +252,45 @@
   }
 
   .seam:hover::after,
-  .seam:focus-visible::after,
   .seam[data-resizing="true"]::after {
     background: var(--stims-accent, #f47a54);
+  }
+
+  /* Keyboard focus gets a louder cue than hover: a plain outline box would
+     look stray on a 12px-wide invisible hit area spanning the full panel
+     height, so this widens and glows the accent line instead, rather than
+     reusing the hover treatment at the same weight for both. */
+  .seam:focus-visible::after {
+    width: 4px;
+    left: 4px;
+    background: var(--stims-accent, #f47a54);
+    box-shadow: 0 0 6px 1px var(--stims-accent, #f47a54);
+  }
+
+  .seamHint {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    z-index: 2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(10, 14, 22, 0.9);
+    color: var(--stims-ink-dim, rgba(255, 255, 255, 0.6));
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.68rem;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease;
+    pointer-events: none;
+  }
+
+  .seam:focus-visible ~ .seamHint {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
   }
 
   .seam:focus-visible {

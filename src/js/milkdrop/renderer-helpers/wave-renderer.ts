@@ -161,11 +161,22 @@ function syncWaveLayerObject(
   const needsPoints = wave.drawMode === 'dots';
   const expectsLoop =
     wave.closed && !needsPoints && behavior.useLineLoopPrimitives;
+  const wantsColors = !!(wave.colors && wave.colors.length > 0);
+  const hasColors = !!existing?.geometry.getAttribute('color');
   const matches =
     !!existing &&
     ((needsPoints && existing instanceof ThreePoints) ||
       (expectsLoop && existing instanceof ThreeLineLoop) ||
-      (!needsPoints && !expectsLoop && existing instanceof ThreeLine));
+      (!needsPoints && !expectsLoop && existing instanceof ThreeLine)) &&
+    // Adding/removing the vertex-color attribute on a geometry that a WebGPU
+    // pipeline was already built for leaves the pipeline's vertex buffer
+    // layout stale (it still expects the old buffer count) — surfaces as a
+    // "vertex buffer slot N was not set" device error and, once the geometry
+    // is stuck in that state, every subsequent frame fails the same way.
+    // Recreating the object instead of mutating attributes in place avoids
+    // reusing a geometry whose attribute layout no longer matches the
+    // pipeline that was compiled for it.
+    wantsColors === hasColors;
 
   if (!matches) {
     return createWaveLayerObject(

@@ -207,6 +207,88 @@ html.light .stims-shell {
     cursor: pointer;
   }
 
+  /* ── MIDI devices & bindings ──────────────────────────────────── */
+  .ctl-midi-devices {
+    display: grid;
+    gap: 10px;
+  }
+
+  .ctl-midi-device {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill-sunk);
+  }
+
+  .ctl-midi-bindings {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ctl-midi-binding-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ctl-midi-binding-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ctl-ink-3);
+  }
+
+  .ctl-midi-binding-dot--live {
+    background: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  }
+
+  .ctl-midi-binding-badge {
+    flex-shrink: 0;
+    font-family: var(--font-family-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ctl-ink-3);
+    background: var(--ctl-fill-sunk);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .ctl-midi-binding-row .ctl-row__hint {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ctl-midi-learn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ctl-midi-learn-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill);
+    color: var(--ctl-ink);
+    font: inherit;
+    font-size: 0.8125rem;
+  }
+
+  .ctl-midi-learn-input:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 2px;
+  }
+
   /* ── Option list: radio rows carrying the lit edge ─────────────── */
   .ctl-options {
     display: grid;
@@ -670,6 +752,75 @@ html.light .stims-shell {
     }
   }
 
+  /* ── Recent rail: this-session history, not persisted lastOpenedAt ─ */
+  .ctl-recent-rail {
+    padding: 12px 16px 4px;
+    border-bottom: 1px solid var(--ctl-line);
+  }
+
+  .ctl-recent-rail__label {
+    margin: 0 0 8px;
+    color: var(--ctl-ink-3);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .ctl-recent-rail__list {
+    /* Scroll/fade mechanics come from .ctl-scroller; this only resets the
+       list semantics it's combined with. */
+    list-style: none;
+  }
+
+  .ctl-recent-rail__list > li {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  .ctl-recent-rail__item {
+    display: grid;
+    gap: 6px;
+    width: 84px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ctl-recent-rail__item:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 2px;
+    border-radius: var(--ctl-radius);
+  }
+
+  .ctl-recent-rail__item .stims-shell__preset-art {
+    width: 84px;
+    height: 64px;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    border-radius: 8px;
+    aspect-ratio: auto;
+    transition: transform var(--ctl-ease);
+  }
+
+  .ctl-recent-rail__item:hover .stims-shell__preset-art,
+  .ctl-recent-rail__item:active .stims-shell__preset-art {
+    transform: scale(1.03);
+  }
+
+  .ctl-recent-rail__title {
+    overflow: hidden;
+    color: var(--ctl-ink-2);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* ── Empty / status states ─────────────────────────────────────── */
   .ctl-empty {
     display: grid;
@@ -700,6 +851,41 @@ html.light .stims-shell {
     justify-content: space-between;
     gap: 10px;
     padding: 2px 0 6px;
+  }
+
+  /* A hint only the keyboard user who already found the feature would ever
+     see isn't a discovery mechanism, so this stays visible by default —
+     same treatment as the "Long-press to queue" hint on shelf cards. It
+     just brightens slightly once the list actually has focus, closing the
+     loop for whoever's using it right now. */
+  .ctl-keyboard-hint {
+    margin: 0 0 6px;
+    color: var(--ctl-ink-3);
+    font-size: 0.75rem;
+    transition: color var(--ctl-ease);
+  }
+
+  .ctl-browse-results:has(.ctl-presets:focus-within) .ctl-keyboard-hint {
+    color: var(--ctl-ink-2);
+  }
+
+  .ctl-keyboard-hint kbd {
+    display: inline-block;
+    margin-right: 1px;
+    padding: 1px 5px;
+    border: 1px solid var(--ctl-line-strong);
+    border-radius: 4px;
+    background: var(--ctl-fill);
+    color: var(--ctl-ink-2);
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.7rem;
+  }
+
+  @media (any-hover: none) and (any-pointer: coarse) {
+    /* Touch-primary devices have no arrow keys to hint at. */
+    .ctl-keyboard-hint {
+      display: none;
+    }
   }
 
   /* ── Browse panel layout ───────────────────────────────────────── */

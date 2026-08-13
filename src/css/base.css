@@ -2078,6 +2078,39 @@ body.tv-mode .control-panel input {
   gap: 6px;
 }
 
+.milkdrop-overlay__editor-history {
+  display: grid;
+  gap: 6px;
+}
+
+.milkdrop-overlay__editor-history-empty {
+  color: rgba(191, 219, 254, 0.65);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.milkdrop-overlay__editor-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(30, 64, 175, 0.12);
+}
+
+.milkdrop-overlay__editor-history-meta {
+  font-size: 0.78rem;
+  color: rgba(191, 219, 254, 0.82);
+}
+
+.milkdrop-overlay__editor-history-restore {
+  min-height: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+}
+
 .milkdrop-overlay__diagnostic {
   border-radius: 10px;
   padding: 8px 10px;

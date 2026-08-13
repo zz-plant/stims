@@ -80,7 +80,7 @@ canvas {
 body,
 html {
   padding: 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-family-base);
   font-size: calc(16px * var(--tv-scale-multiplier));
   background:
     radial-gradient(

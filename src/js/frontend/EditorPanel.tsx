@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { webMidiService } from '../core/services/webmidi-controller.ts';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -8,6 +9,7 @@ export function EditorPanel() {
   const panelRef = useRef<{
     dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
+    setMidiTargets: (targets: Iterable<string>) => void;
     element: HTMLElement;
   } | null>(null);
   const { engine } = useWorkspace();
@@ -44,6 +46,7 @@ export function EditorPanel() {
         onRequestImport: () => {},
       });
       panelRef.current = panel;
+      panel.setMidiTargets(webMidiService.getEnabledTargets());
       host.appendChild(panel.element);
     });
 
@@ -61,6 +64,14 @@ export function EditorPanel() {
       panelRef.current.setSessionState(sessionState);
     }
   }, [sessionState]);
+
+  useEffect(
+    () =>
+      webMidiService.onDevicesChanged(() => {
+        panelRef.current?.setMidiTargets(webMidiService.getEnabledTargets());
+      }),
+    [],
+  );
 
   return <div ref={hostRef} className="stims-shell__editor-host" />;
 }

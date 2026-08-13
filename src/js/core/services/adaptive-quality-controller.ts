@@ -1,6 +1,7 @@
 import {
   isInAppBrowser,
   isMobileDevice,
+  isSmartTvDevice,
 } from '../../utils/browser/device-detect.ts';
 import { getDisplayRefreshRate } from '../device-profile.ts';
 import type {
@@ -145,6 +146,12 @@ export function getAdaptiveQualityDisplayRefreshRate(): number {
 }
 
 function estimateFrameBudgetMs(): number {
+  // Mobile displays (especially high-refresh 120Hz/144Hz panels) target 60Hz
+  // (16.67ms) to preserve battery life and prevent rapid thermal throttling.
+  if (isMobileDevice()) {
+    return 1000 / 60;
+  }
+
   // Budget against at most a 120Hz cadence: a 144-240Hz panel that presents at
   // panel rate would otherwise get a 4-7ms budget, read every frame as
   // over-budget, and pin the controller into permanent degradation.
@@ -159,14 +166,22 @@ function buildHeuristicProfile(
   const frameBudgetMs = estimateFrameBudgetMs();
 
   if (backend === 'webgl') {
+    const reasons = [
+      'WebGL fallback sessions start from a conservative adaptive quality step.',
+      'Coarse CPU frame timing is used because GPU timing is unavailable.',
+    ];
+    let initialStep = 2;
+    if (isSmartTvDevice()) {
+      reasons.push(
+        'Smart TV hardware operates from a conservative initial quality step.',
+      );
+      initialStep = Math.max(initialStep, 3);
+    }
     return {
       frameBudgetMs,
-      initialStep: 2,
+      initialStep,
       profile: 'fallback-webgl',
-      reasons: [
-        'WebGL fallback sessions start from a conservative adaptive quality step.',
-        'Coarse CPU frame timing is used because GPU timing is unavailable.',
-      ],
+      reasons,
     };
   }
 
@@ -186,6 +201,13 @@ function buildHeuristicProfile(
       : capabilities.performanceTier === 'enhanced'
         ? 1
         : 2;
+
+  if (isSmartTvDevice()) {
+    reasons.push(
+      'Smart TV hardware operates from a conservative initial quality step.',
+    );
+    initialStep = Math.max(initialStep, 2);
+  }
 
   // 'ultra' and 'hi-fi' are both top-tier recommendations; production code
   // emits 'ultra' for high-end desktops, so treating only 'hi-fi' as top-tier

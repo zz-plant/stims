@@ -381,6 +381,128 @@ export function upsertMilkdropField(
     .trim()}\n`;
 }
 
+const EQUATION_KEY_PREFIXES = [
+  'per_frame',
+  'per_pixel',
+  'wave_',
+  'shape_',
+] as const;
+const EQUATION_KEY_EXACT = new Set(['warp', 'comp']);
+
+function isEquationKey(key: string): boolean {
+  const lowered = key.toLowerCase();
+  return (
+    EQUATION_KEY_PREFIXES.some((prefix) => lowered.startsWith(prefix)) ||
+    EQUATION_KEY_EXACT.has(lowered)
+  );
+}
+
+function escapeRegExpLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+/**
+ * True when a per_frame/per_pixel/wave_/shape_ equation reassigns `target`
+ * somewhere in the preset. upsertMilkdropField (used by MIDI, the Tune
+ * sliders, and session_midi_set) only ever writes the literal top-level
+ * default line — never the equation itself — so a preset that already
+ * computes this field every frame will silently overwrite that default on
+ * the very next frame. A knob bound to a shadowed target looks broken with
+ * no error anywhere.
+ */
+export function isFieldShadowedByEquations(
+  source: string,
+  target: string,
+): boolean {
+  const normalizedTarget = target.trim();
+  if (!normalizedTarget) return false;
+  const assignPattern = new RegExp(
+    `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+    'u',
+  );
+
+  const lines = source.split(/\r?\n/u);
+  let inShaderSection = false;
+  for (const lineText of lines) {
+    const trimmed = lineText.trim();
+    if (shaderSectionHeaderPattern.test(trimmed)) {
+      inShaderSection = true;
+    }
+    if (inShaderSection) continue;
+
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx <= 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    if (!isEquationKey(key)) continue;
+
+    if (assignPattern.test(trimmed.slice(eqIdx + 1))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 1-based line number of the literal top-level `target=value` line, or null
+ * if there isn't one yet. Mirrors upsertMilkdropField's own search so both
+ * agree on what counts as "the" line for a given field.
+ */
+export function findMilkdropFieldLine(
+  source: string,
+  target: string,
+): number | null {
+  const normalizedTarget = target.trim();
+  if (!normalizedTarget) return null;
+  const targetPrefix = `${normalizedTarget}=`;
+
+  const lines = source.split(/\r?\n/u);
+  let inShaderSection = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    const trimmed = lines[i].trim();
+    if (shaderSectionHeaderPattern.test(trimmed)) {
+      inShaderSection = true;
+    }
+    if (!inShaderSection && trimmed.startsWith(targetPrefix)) {
+      return i + 1;
+    }
+  }
+  return null;
+}
+
+export interface MidiGutterEntry {
+  line: number;
+  target: string;
+  status: 'live' | 'shadowed';
+}
+
+/**
+ * Per-line gutter info for every currently MIDI-bound target that has a
+ * literal default line in this preset. Targets with no default line yet
+ * (nothing has written to them) have nothing to mark and are skipped.
+ */
+export function computeMidiGutterInfo(
+  source: string,
+  targets: Iterable<string>,
+): MidiGutterEntry[] {
+  const entries: MidiGutterEntry[] = [];
+  const seen = new Set<string>();
+  for (const rawTarget of targets) {
+    const target = rawTarget.trim();
+    if (!target || seen.has(target)) continue;
+    seen.add(target);
+
+    const line = findMilkdropFieldLine(source, target);
+    if (line === null) continue;
+
+    entries.push({
+      line,
+      target,
+      status: isFieldShadowedByEquations(source, target) ? 'shadowed' : 'live',
+    });
+  }
+  return entries;
+}
+
 export function upsertMilkdropFields(
   source: string,
   updates: Record<string, string | number>,

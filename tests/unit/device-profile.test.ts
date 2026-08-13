@@ -4,7 +4,10 @@ import {
   getDevicePerformanceProfile,
   getDeviceTier,
 } from '../../src/js/core/device-profile.ts';
-import { getRendererBackendMaxPixelRatioCap } from '../../src/js/core/renderer-settings.ts';
+import {
+  getConstrainedTextureDimensionCap,
+  getRendererBackendMaxPixelRatioCap,
+} from '../../src/js/core/renderer-settings.ts';
 
 const originalNavigator = globalThis.navigator;
 const originalMatchMedia = globalThis.window?.matchMedia;
@@ -92,5 +95,38 @@ describe('device-profile flagship mobile optimizations', () => {
 
     const adaptiveCap = getAdaptiveMaxPixelRatio(2.0);
     expect(adaptiveCap).toBe(2.0);
+  });
+
+  test('categorizes Smart TV hardware as mid tier and lowPower', () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        userAgent:
+          'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 WebAppManager',
+        hardwareConcurrency: 4,
+        deviceMemory: 2,
+      },
+    });
+
+    const profile = getDevicePerformanceProfile();
+    expect(profile.lowPower).toBe(true);
+    expect(profile.reason).toContain('Smart TV');
+    expect(getDeviceTier()).toBe('mid');
+  });
+
+  test('returns 2048 texture cap for lowPower devices and 8192 for high-end', () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+        hardwareConcurrency: 2,
+        deviceMemory: 2,
+      },
+    });
+
+    expect(getConstrainedTextureDimensionCap()).toBe(2048);
   });
 });

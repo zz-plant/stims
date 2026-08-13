@@ -6,7 +6,11 @@
 // mid-morph, so the canvas keeps rendering while it travels.
 
 const MOVE_MS = 340;
-const HOLD_MS = 260;
+// Fallback hold if the readiness poll never confirms the swap (e.g. the load
+// fails and the toast/error path takes over) — the overlay must not hang
+// forever, but this is a ceiling, not the expected wait.
+const MAX_HOLD_MS = 4000;
+const READY_POLL_MS = 60;
 const FADE_MS = 360;
 
 let activeCleanup: (() => void) | null = null;
@@ -26,18 +30,45 @@ function findStageElement(): HTMLElement | null {
   );
 }
 
+function findStageFrame(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('.stims-shell__stage-frame');
+}
+
+/**
+ * True once the stage has actually switched to `presetId` — its frame's
+ * `data-active-preset-id` (set from the live engine snapshot) matches, and a
+ * canvas is present. Compile+load for a fresh preset can take anywhere from
+ * tens of ms to multiple seconds (worker unavailable falls back to
+ * main-thread compile), so this is polled rather than assumed from a fixed
+ * timer — a guessed constant either reveals a stale frame too early or holds
+ * the overlay open needlessly long after the real swap already happened.
+ */
+function stageShowsPreset(presetId: string): boolean {
+  const frame = findStageFrame();
+  if (!frame || frame.dataset.activePresetId !== presetId) {
+    return false;
+  }
+  return !!frame.querySelector('canvas');
+}
+
 /**
  * Starts the promote animation for a preset selected from `sourceElement`
  * (any element containing the tile's `.stims-shell__preset-art`). Call it
  * BEFORE committing the route change: selection closes the browse panel, so
  * the source rect must be captured while the tile is still laid out.
  *
+ * `presetId` is the preset being promoted — the overlay holds at the stage
+ * rect until the real engine actually shows it (or a max wait elapses),
+ * instead of guessing how long compile+load will take.
+ *
  * Fire-and-forget; cleans itself up and never blocks selection.
  */
 export function runPresetPromoteTransition({
   sourceElement,
+  presetId,
 }: {
   sourceElement: HTMLElement;
+  presetId: string;
 }) {
   if (typeof document === 'undefined' || prefersReducedMotion()) {
     return;
@@ -59,6 +90,7 @@ export function runPresetPromoteTransition({
   activeCleanup?.();
 
   const overlay = document.createElement('div');
+  overlay.setAttribute('aria-hidden', 'true');
   overlay.style.cssText = [
     'position:fixed',
     `left:${from.left}px`,
@@ -81,8 +113,14 @@ export function runPresetPromoteTransition({
   // Reparenting WebGL canvas DOM nodes directly across containers can trigger
   // WebGL context loss in Chromium/WebKit browsers and leaks the element when
   // overlay.remove() runs.
+  //
+  // data-live-tile-ready gates this on the pool's real engine status, not
+  // just canvas presence: the canvas element exists (with its full tile
+  // size already set) the instant it's acquired, well before the engine has
+  // compiled or painted a first frame — clicking a tile that just scrolled
+  // into view would otherwise snapshot a blank/black frame into the overlay.
   const liveCanvas = art.querySelector<HTMLCanvasElement>(
-    '[data-live-tile] canvas',
+    '[data-live-tile][data-live-tile-ready="true"] canvas',
   );
   if (liveCanvas && liveCanvas.width > 0 && liveCanvas.height > 0) {
     const clone = document.createElement('canvas');
@@ -111,11 +149,19 @@ export function runPresetPromoteTransition({
   document.body.append(overlay);
 
   let done = false;
+  let pollHandle: number | null = null;
+  let maxWaitHandle: number | null = null;
   const cleanup = () => {
     if (done) {
       return;
     }
     done = true;
+    if (pollHandle !== null) {
+      window.clearInterval(pollHandle);
+    }
+    if (maxWaitHandle !== null) {
+      window.clearTimeout(maxWaitHandle);
+    }
     overlay.remove();
     if (activeCleanup === cleanup) {
       activeCleanup = null;
@@ -131,8 +177,32 @@ export function runPresetPromoteTransition({
   overlay.style.height = `${to.height}px`;
   overlay.style.borderRadius = '0px';
 
-  window.setTimeout(() => {
+  const beginFade = () => {
+    if (pollHandle !== null) {
+      window.clearInterval(pollHandle);
+      pollHandle = null;
+    }
+    if (maxWaitHandle !== null) {
+      window.clearTimeout(maxWaitHandle);
+      maxWaitHandle = null;
+    }
     overlay.style.opacity = '0';
-  }, MOVE_MS + HOLD_MS);
-  window.setTimeout(cleanup, MOVE_MS + HOLD_MS + FADE_MS + 60);
+    window.setTimeout(cleanup, FADE_MS + 60);
+  };
+
+  window.setTimeout(() => {
+    if (done) {
+      return;
+    }
+    if (stageShowsPreset(presetId)) {
+      beginFade();
+      return;
+    }
+    pollHandle = window.setInterval(() => {
+      if (stageShowsPreset(presetId)) {
+        beginFade();
+      }
+    }, READY_POLL_MS);
+    maxWaitHandle = window.setTimeout(beginFade, MAX_HOLD_MS);
+  }, MOVE_MS);
 }

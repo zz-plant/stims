@@ -8,6 +8,7 @@ export type ShortcutActionId =
   | 'visualsearch'
   | 'shuffle'
   | 'previous'
+  | 'favorite'
   | 'quick-select'
   | 'help'
   | 'close'
@@ -40,6 +41,15 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultKeys: ['N', 'ArrowRight'],
   },
   { id: 'previous', label: 'Previous preset', defaultKeys: ['P', 'ArrowLeft'] },
+  {
+    id: 'favorite',
+    label: 'Save current preset',
+    // Not L: the standalone MilkDrop overlay's own keybinding layer
+    // (src/js/milkdrop/runtime/ui-bridge.ts) already owns L for preset-lock,
+    // among a wide set of single-letter nudges (I/O/J/Q, H, W, R) it deals
+    // with independently of this registry. Confirmed unused there and here.
+    defaultKeys: ['A'],
+  },
   {
     id: 'quick-select',
     label: 'Quick-select preset',

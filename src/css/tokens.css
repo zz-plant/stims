@@ -171,14 +171,16 @@
   --stims-radius-panel: 4px;
   --stims-radius-card: 4px;
   --stims-radius-control: 4px;
-  --stims-radius-stage: 6px;
 
   /* ── Typography ────────────────────────────────────────────── */
   --font-family-base:
-    "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-family-mono: "Space Mono", monospace;
-  --stims-display:
-    "Outfit", "Space Grotesk", "Inter", "Segoe UI", system-ui, sans-serif;
+    "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-family-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Display is the same face as base, set tighter at large sizes rather than a
+     separate family. A third typeface was declared here for a long time but was
+     never actually loaded, so it silently rendered as base anyway. */
+  --stims-display: var(--font-family-base);
   /* Type scale shared across all pages */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;

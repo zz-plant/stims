@@ -35,7 +35,9 @@ export type AgentBridgeCommand =
   | { type: 'toil:load_preset'; presetId?: string; milkSource?: string }
   | { type: 'toil:apply_tweak'; tweak: string }
   | { type: 'toil:set_audio'; source: 'demo' | 'microphone' | 'file' }
-  | { type: 'toil:request_telemetry' };
+  | { type: 'toil:request_telemetry' }
+  | { type: 'toil:midi_set'; target: string; value: number }
+  | { type: 'toil:midi_cc'; cc: number; value: number };
 
 declare global {
   interface Window {
@@ -43,6 +45,10 @@ declare global {
     __STIMS_AGENT_BRIDGE__?: {
       updateTelemetry: (data: Partial<AgentTelemetry>) => void;
       getTelemetry: () => AgentTelemetry;
+      /** Bindings for every known MIDI device (physical + the virtual
+       * "Claude (MCP)" channel), keyed by device id. */
+      getMidiBindings: () => Record<string, unknown>;
+      getMidiDevices: () => unknown[];
     };
     /**
      * Agent-mode only: synchronously render N frames with synthetic
@@ -96,6 +102,14 @@ export function initAgentBridge(callbacks?: {
   onLoadPreset?: (payload: { presetId?: string; milkSource?: string }) => void;
   onApplyTweak?: (tweak: string) => void;
   onSetAudio?: (source: 'demo' | 'microphone' | 'file') => void;
+  /** Claude (via an MCP session_midi_set call) asking for a target by
+   * name — e.g. "warp" — with a value already in that target's range. */
+  onMidiSet?: (target: string, value: number) => void;
+  /** Claude sending a raw CC-shaped control change, resolved through
+   * whatever mapping the "Claude (MCP)" virtual device currently has. */
+  onMidiCc?: (cc: number, value: number) => void;
+  getMidiBindings?: () => Record<string, unknown>;
+  getMidiDevices?: () => unknown[];
 }): () => void {
   if (typeof window === 'undefined') {
     return () => {};
@@ -105,6 +119,8 @@ export function initAgentBridge(callbacks?: {
   window.__STIMS_AGENT_BRIDGE__ = {
     updateTelemetry: updateAgentTelemetry,
     getTelemetry: getAgentTelemetry,
+    getMidiBindings: () => callbacks?.getMidiBindings?.() ?? {},
+    getMidiDevices: () => callbacks?.getMidiDevices?.() ?? [],
   };
 
   const handleMessage = (event: MessageEvent) => {
@@ -160,6 +176,20 @@ export function initAgentBridge(callbacks?: {
           type: 'toil:telemetry',
           ...getAgentTelemetry(),
         });
+        break;
+      }
+
+      case 'toil:midi_set': {
+        if (data.target && Number.isFinite(data.value)) {
+          callbacks?.onMidiSet?.(data.target, data.value);
+        }
+        break;
+      }
+
+      case 'toil:midi_cc': {
+        if (Number.isFinite(data.cc) && Number.isFinite(data.value)) {
+          callbacks?.onMidiCc?.(data.cc, data.value);
+        }
         break;
       }
 

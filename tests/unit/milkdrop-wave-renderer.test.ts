@@ -141,8 +141,15 @@ describe('milkdrop wave renderer', () => {
       1,
     );
 
-    expect(material.vertexColors).toBe(false);
-    expect(line.geometry.getAttribute('color')).toBeUndefined();
+    // Toggling color-attribute presence recreates the layer object rather
+    // than mutating the live geometry in place (see wave-renderer.ts) — a
+    // WebGPU pipeline already built for the old vertex-buffer layout would
+    // otherwise go stale. The old object is replaced, not reused.
+    const nextLine = group.children[0] as Line;
+    expect(nextLine).not.toBe(line);
+    const nextMaterial = nextLine.material as LineBasicMaterial;
+    expect(nextMaterial.vertexColors).toBe(false);
+    expect(nextLine.geometry.getAttribute('color')).toBeUndefined();
   });
 
   test('enables vertex colors on dotted custom waves with per-point color buffers', () => {

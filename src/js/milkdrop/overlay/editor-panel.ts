@@ -13,7 +13,9 @@ import {
   history,
   historyKeymap,
   indentWithTab,
+  redo,
   toggleComment,
+  undo,
 } from '@codemirror/commands';
 import {
   bracketMatching,
@@ -29,7 +31,13 @@ import {
   search,
   searchKeymap,
 } from '@codemirror/search';
-import { Compartment, EditorState, Prec } from '@codemirror/state';
+import {
+  Compartment,
+  EditorState,
+  Prec,
+  StateEffect,
+  StateField,
+} from '@codemirror/state';
 import {
   oneDarkHighlightStyle,
   oneDarkTheme,
@@ -38,6 +46,8 @@ import type { KeyBinding } from '@codemirror/view';
 import {
   crosshairCursor,
   EditorView,
+  GutterMarker,
+  gutter,
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
@@ -57,6 +67,7 @@ import {
   MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
 } from '../builtin-docs';
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
+import { computeMidiGutterInfo, type MidiGutterEntry } from '../formatter';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
@@ -463,6 +474,68 @@ function toLintDiagnostics(
     });
 }
 
+// ── MIDI gutter markers ───────────────────────────────────────────
+// A filled diamond marks a line MIDI/MCP is actively driving; a hollow
+// one marks a binding the preset's own per_frame/per_pixel equations
+// reassign every frame, so the knob has no visible effect. See
+// isFieldShadowedByEquations in formatter.ts for why that happens.
+const setMidiGutterInfo = StateEffect.define<MidiGutterEntry[]>();
+
+const midiGutterField = StateField.define<MidiGutterEntry[]>({
+  create: () => [],
+  update(value, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(setMidiGutterInfo)) {
+        return effect.value;
+      }
+    }
+    return value;
+  },
+});
+
+class MidiGutterMarker extends GutterMarker {
+  constructor(
+    private readonly status: MidiGutterEntry['status'],
+    private readonly target: string,
+  ) {
+    super();
+  }
+
+  eq(other: MidiGutterMarker): boolean {
+    return other.status === this.status && other.target === this.target;
+  }
+
+  toDOM(): Node {
+    const span = document.createElement('span');
+    span.className = `cm-midi-gutter-marker cm-midi-gutter-marker--${this.status}`;
+    span.textContent = this.status === 'live' ? '◆' : '◇';
+    span.title =
+      this.status === 'live'
+        ? `MIDI/MCP is driving ${this.target}.`
+        : `MIDI/MCP is bound to ${this.target}, but this preset's own equations reassign it every frame — the binding has no visible effect.`;
+    return span;
+  }
+}
+
+function midiGutterExtension() {
+  return [
+    midiGutterField,
+    gutter({
+      class: 'cm-midi-gutter',
+      lineMarker(view, line) {
+        const entries = view.state.field(midiGutterField);
+        if (entries.length === 0) return null;
+        const lineNumber = view.state.doc.lineAt(line.from).number;
+        const entry = entries.find((e) => e.line === lineNumber);
+        return entry ? new MidiGutterMarker(entry.status, entry.target) : null;
+      },
+      lineMarkerChange: (update) =>
+        update.startState.field(midiGutterField) !==
+        update.state.field(midiGutterField),
+    }),
+  ];
+}
+
 // Multi-argument functions get a snippet template so accepting the
 // completion drops in placeholder args the user can Tab through, instead of
 // leaving them to hand-type parens and commas. Derived from the params
@@ -673,6 +746,23 @@ function createEditorTheme() {
       letterSpacing: '0.04em',
       opacity: 0.65,
     },
+    '.cm-midi-gutter': {
+      width: '14px',
+    },
+    '.cm-midi-gutter-marker': {
+      display: 'inline-block',
+      width: '100%',
+      textAlign: 'center',
+      fontSize: '0.72rem',
+      lineHeight: '1',
+      cursor: 'default',
+    },
+    '.cm-midi-gutter-marker--live': {
+      color: '#4ade80',
+    },
+    '.cm-midi-gutter-marker--shadowed': {
+      color: 'rgba(148, 163, 184, 0.55)',
+    },
   });
 }
 
@@ -736,6 +826,7 @@ function createEditorView({
         foldGutter(),
         indentOnInput(),
         lintGutter(),
+        midiGutterExtension(),
         // Editing MilkDrop presets means repeatedly touching aligned
         // per-channel triples (wave_r/g/b, shapecode_N_border_r/g/b, ...);
         // multi-cursor + column selection make that a single edit instead
@@ -833,13 +924,29 @@ export class EditorPanel {
   private lastSessionState: MilkdropEditorSessionState | null = null;
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
-  private snapshots: Array<{ source: string; timestamp: number }> = [];
+  private snapshots: Array<{
+    source: string;
+    timestamp: number;
+    label: string;
+  }> = [];
+  private historyList: HTMLElement | null = null;
   private assistedEditContainer: HTMLElement | null = null;
+  // True while any AI-backed action (Refine, Explain, Quick-fix, Batch,
+  // Blend) has a request in flight. All of those share one /api endpoint
+  // family and one proposed-diff slot, so letting two run at once let a
+  // second response clobber the first proposal with no indication anything
+  // was lost.
+  private aiPending = false;
+  private refineBtn: HTMLButtonElement | null = null;
+  private explainBtn: HTMLButtonElement | null = null;
+  private batchButton: HTMLButtonElement | null = null;
+  private blendSubmitButton: HTMLButtonElement | null = null;
   private disposeDiagnosticsListener: (() => void) | null = null;
   private sliderInputs: Map<
     string,
     { input: HTMLInputElement; display: HTMLSpanElement; defaultValue: number }
   > = new Map();
+  private midiTargets: Set<string> = new Set();
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
@@ -914,6 +1021,31 @@ export class EditorPanel {
     );
     editorActions.appendChild(revertButton);
 
+    // CodeMirror's history() extension already answers to Cmd/Ctrl+Z, but
+    // that was invisible outside the editor — no button, no way to tell
+    // undo is even possible without trying it.
+    const undoButton = document.createElement('button');
+    undoButton.type = 'button';
+    undoButton.textContent = '↶ Undo';
+    undoButton.title = 'Undo (Cmd/Ctrl+Z)';
+    undoButton.setAttribute('aria-label', 'Undo last edit');
+    undoButton.addEventListener('click', () => {
+      undo(this.editor);
+      this.editor.focus();
+    });
+    editorActions.appendChild(undoButton);
+
+    const redoButton = document.createElement('button');
+    redoButton.type = 'button';
+    redoButton.textContent = '↷ Redo';
+    redoButton.title = 'Redo (Cmd/Ctrl+Shift+Z)';
+    redoButton.setAttribute('aria-label', 'Redo last undone edit');
+    redoButton.addEventListener('click', () => {
+      redo(this.editor);
+      this.editor.focus();
+    });
+    editorActions.appendChild(redoButton);
+
     const duplicateButton = document.createElement('button');
     duplicateButton.type = 'button';
     duplicateButton.textContent = 'Remix';
@@ -949,6 +1081,7 @@ export class EditorPanel {
     importButton2.setAttribute('aria-label', 'Generate preset variations');
     importButton2.addEventListener('click', () => this.handleBatchGenerate());
     editorActions.appendChild(importButton2);
+    this.batchButton = importButton2;
 
     const blendButton = document.createElement('button');
     blendButton.type = 'button';
@@ -1105,13 +1238,11 @@ export class EditorPanel {
     refineBtn.type = 'button';
     refineBtn.textContent = 'Refine';
     refineBtn.className = 'milkdrop-overlay__refine-btn';
-    let refining = false;
     refineBtn.addEventListener('click', async () => {
       const instruction = refineInput.value.trim();
-      if (!instruction || refining) return;
-      refining = true;
+      if (!instruction || this.aiPending) return;
+      this.setRefinePending(true);
       refineBtn.textContent = '…';
-      refineBtn.disabled = true;
       try {
         const currentSource = this.editor.state.doc.toString();
         const res = await fetch('/api/refine-preset', {
@@ -1138,18 +1269,18 @@ export class EditorPanel {
           this.proposeAssistedEdit(json.milkSource, 'Refine');
           refineInput.value = '';
         }
-        refining = false;
         refineBtn.textContent = 'Refine';
-        refineBtn.disabled = false;
+        this.setRefinePending(false);
       } catch (err) {
         console.error('Refinement failed:', err);
+        this.setRefinePending(false);
         refineBtn.textContent = 'Error';
+        refineBtn.disabled = true;
         refineBtn.classList.add('milkdrop-overlay__refine-btn--error');
         setTimeout(() => {
           refineBtn.classList.remove('milkdrop-overlay__refine-btn--error');
           refineBtn.textContent = 'Refine';
           refineBtn.disabled = false;
-          refining = false;
         }, 2000);
       }
     });
@@ -1163,12 +1294,10 @@ export class EditorPanel {
     explainBtn.textContent = 'Explain';
     explainBtn.className = 'milkdrop-overlay__refine-btn';
     explainBtn.title = 'Explain what this preset does visually';
-    let explaining = false;
     explainBtn.addEventListener('click', async () => {
-      if (explaining) return;
-      explaining = true;
+      if (this.aiPending) return;
+      this.setRefinePending(true);
       explainBtn.textContent = '…';
-      explainBtn.disabled = true;
       try {
         const currentSource = this.editor.state.doc.toString();
         const res = await fetch('/api/refine-preset', {
@@ -1193,31 +1322,44 @@ export class EditorPanel {
           explanationMsg.appendChild(closeBtn);
           refineForm.appendChild(explanationMsg);
         }
-        explaining = false;
         explainBtn.textContent = 'Explain';
-        explainBtn.disabled = false;
+        this.setRefinePending(false);
       } catch (err) {
         console.error('Explanation failed:', err);
+        this.setRefinePending(false);
         explainBtn.textContent = 'Error';
+        explainBtn.disabled = true;
         explainBtn.classList.add('milkdrop-overlay__refine-btn--error');
         setTimeout(() => {
           explainBtn.classList.remove('milkdrop-overlay__refine-btn--error');
           explainBtn.textContent = 'Explain';
           explainBtn.disabled = false;
-          explaining = false;
         }, 2000);
       }
     });
     refineForm.appendChild(explainBtn);
     refineSection.append(refineLabel, refineForm);
 
+    const historySection = document.createElement('section');
+    historySection.className = 'milkdrop-overlay__editor-section';
+    const historyLabel = document.createElement('span');
+    historyLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
+    historyLabel.textContent = 'History';
+    this.historyList = document.createElement('div');
+    this.historyList.className = 'milkdrop-overlay__editor-history';
+    historySection.append(historyLabel, this.historyList);
+    this.renderHistorySnapshots();
+
     editorRail.append(
       editorCueSection,
       editorQuickIdeas,
       editorTips,
       editorConsole,
+      historySection,
       refineSection,
     );
+    this.refineBtn = refineBtn;
+    this.explainBtn = explainBtn;
     editorWorkbench.append(editorMain, editorRail);
     this.element.append(
       editorTransport,
@@ -1463,6 +1605,27 @@ export class EditorPanel {
     }
 
     this.updateSlidersFromDoc();
+    this.refreshMidiGutter();
+  }
+
+  /** Called whenever the set of MIDI/MCP-bound targets changes (a knob is
+   * learned or unbound, a device is enabled/disabled). The gutter itself
+   * re-renders on the next renderSessionState pass, which already fires on
+   * every doc change. */
+  public setMidiTargets(targets: Iterable<string>): void {
+    this.midiTargets = new Set(targets);
+    this.refreshMidiGutter();
+  }
+
+  private refreshMidiGutter(): void {
+    const entries =
+      this.midiTargets.size === 0
+        ? []
+        : computeMidiGutterInfo(
+            this.editor.state.doc.toString(),
+            this.midiTargets,
+          );
+    this.editor.dispatch({ effects: setMidiGutterInfo.of(entries) });
   }
 
   dispose() {
@@ -1520,7 +1683,6 @@ export class EditorPanel {
     const title = document.createElement('h4');
     title.textContent = 'Tune';
     title.className = 'editor-sliders__title';
-    title.title = 'Double-click any label to reset parameter to default';
     panel.appendChild(title);
 
     this.sliderInputs.clear();
@@ -1529,20 +1691,39 @@ export class EditorPanel {
       const row = document.createElement('div');
       row.className = 'editor-slider-row';
 
+      const labelRow = document.createElement('div');
+      labelRow.className = 'editor-slider-row__label-row';
+
       const label = document.createElement('label');
       label.className = 'editor-slider-row__label';
       label.textContent = s.label;
       label.title = `Double-click to reset ${s.label} to ${s.defaultValue}`;
       label.style.cursor = 'pointer';
 
-      label.addEventListener('dblclick', () => {
+      const resetToDefault = () => {
         this.writeVariableToEditor(s.key, s.defaultValue);
         const item = this.sliderInputs.get(s.key);
         if (item) {
           item.input.value = String(s.defaultValue);
           item.display.textContent = s.defaultValue.toFixed(2);
         }
-      });
+      };
+
+      label.addEventListener('dblclick', resetToDefault);
+
+      // Double-click on the label was the only way to reset a slider — a
+      // real button gives keyboard/click-only users the same path a mouse
+      // user already had.
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'editor-slider-row__reset';
+      resetButton.textContent = '↺';
+      resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
+      resetButton.title = `Reset to ${s.defaultValue}`;
+      resetButton.addEventListener('click', resetToDefault);
+
+      labelRow.appendChild(label);
+      labelRow.appendChild(resetButton);
 
       const input = document.createElement('input');
       input.type = 'range';
@@ -1571,7 +1752,7 @@ export class EditorPanel {
         defaultValue: s.defaultValue,
       });
 
-      row.appendChild(label);
+      row.appendChild(labelRow);
       row.appendChild(input);
       row.appendChild(valDisplay);
       panel.appendChild(row);
@@ -1691,7 +1872,7 @@ export class EditorPanel {
         }, 6000);
         return;
       }
-      this.snapshots.push({ source: sourceNow, timestamp: Date.now() });
+      this.pushSnapshot(sourceNow, `Before ${label.toLowerCase()}`);
       this.editor.dispatch({
         changes: { from: 0, to: sourceNow.length, insert: nextSource },
       });
@@ -1730,6 +1911,7 @@ export class EditorPanel {
   }
 
   private applyQuickFixForDiagnostic(diag: MilkdropDiagnostic) {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     const instruction = `Fix this compiler error: "${diag.message}" at line ${diag.line}. Keep the preset style but fix the syntax or math.`;
 
@@ -1750,6 +1932,7 @@ export class EditorPanel {
   }
 
   private handleBatchGenerate() {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
     fetch('/api/batch-generate', {
@@ -1783,6 +1966,7 @@ export class EditorPanel {
   }
 
   private doBlend(sourceB: string) {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
     fetch('/api/blend-presets', {
@@ -1819,11 +2003,12 @@ export class EditorPanel {
     submitBtn.textContent = 'Blend';
     submitBtn.addEventListener('click', () => {
       const sourceB = textarea.value.trim();
-      if (!sourceB) return;
+      if (!sourceB || this.aiPending) return;
       this.doBlend(sourceB);
       container.style.display = 'none';
       textarea.value = '';
     });
+    this.blendSubmitButton = submitBtn;
 
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'editor-blend-cancel';
@@ -1840,7 +2025,83 @@ export class EditorPanel {
     return container;
   }
 
-  private setRefinePending(_pending: boolean) {
-    // noop: pending state tracked locally in the refine section
+  private setRefinePending(pending: boolean) {
+    this.aiPending = pending;
+    // Refine/Explain manage their own button text ("…", "Error") locally,
+    // but every AI-backed action shares one proposed-diff slot, so a second
+    // request finishing while the first is still pending would silently
+    // clobber it. Disabling every AI trigger while one is in flight makes
+    // that impossible instead of racy.
+    [
+      this.refineBtn,
+      this.explainBtn,
+      this.quickFixBtn,
+      this.batchButton,
+      this.blendSubmitButton,
+    ].forEach((btn) => {
+      if (btn) btn.disabled = pending;
+    });
   }
+
+  private pushSnapshot(source: string, label: string) {
+    this.snapshots.push({ source, timestamp: Date.now(), label });
+    // Cap history so a long editing session doesn't grow this unbounded;
+    // only the most recent checkpoints are ever useful to restore.
+    if (this.snapshots.length > 8) {
+      this.snapshots.splice(0, this.snapshots.length - 8);
+    }
+    this.renderHistorySnapshots();
+  }
+
+  private renderHistorySnapshots() {
+    if (!this.historyList) return;
+    this.historyList.replaceChildren();
+    if (this.snapshots.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'milkdrop-overlay__editor-history-empty';
+      empty.textContent =
+        'Checkpoints appear here before each applied AI edit, so you can step back.';
+      this.historyList.appendChild(empty);
+      return;
+    }
+    [...this.snapshots].reverse().forEach((snapshot) => {
+      const row = document.createElement('div');
+      row.className = 'milkdrop-overlay__editor-history-row';
+
+      const meta = document.createElement('span');
+      meta.className = 'milkdrop-overlay__editor-history-meta';
+      meta.textContent = `${snapshot.label} · ${formatRelativeTime(snapshot.timestamp)}`;
+
+      const restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'milkdrop-overlay__editor-history-restore';
+      restoreBtn.textContent = 'Restore';
+      restoreBtn.addEventListener('click', () => {
+        const currentSource = this.editor.state.doc.toString();
+        if (currentSource === snapshot.source) return;
+        this.pushSnapshot(currentSource, 'Before restore');
+        this.editor.dispatch({
+          changes: {
+            from: 0,
+            to: this.editor.state.doc.length,
+            insert: snapshot.source,
+          },
+        });
+        this.callbacks.onEditorSourceChange(snapshot.source);
+        this.editor.focus();
+      });
+
+      row.append(meta, restoreBtn);
+      this.historyList?.appendChild(row);
+    });
+  }
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return 'just now';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}h ago`;
 }

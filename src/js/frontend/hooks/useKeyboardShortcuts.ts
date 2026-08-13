@@ -17,6 +17,8 @@ export function useKeyboardShortcuts({
   handleAudioStop,
   handleVisualSearch,
   handleToggleFullscreen,
+  toggleFavoritePreset,
+  setStatusMessage,
   setShowShortcuts,
 }: {
   liveMode: boolean;
@@ -30,6 +32,8 @@ export function useKeyboardShortcuts({
   handleAudioStop: () => void;
   handleVisualSearch: () => Promise<void>;
   handleToggleFullscreen: () => void;
+  toggleFavoritePreset?: () => void;
+  setStatusMessage?: (message: string | null) => void;
   setShowShortcuts: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const filteredCatalogRef = useRef(filteredCatalog);
@@ -48,6 +52,10 @@ export function useKeyboardShortcuts({
   handleToggleFullscreenRef.current = handleToggleFullscreen;
   const handleVisualSearchRef = useRef(handleVisualSearch);
   handleVisualSearchRef.current = handleVisualSearch;
+  const toggleFavoritePresetRef = useRef(toggleFavoritePreset);
+  toggleFavoritePresetRef.current = toggleFavoritePreset;
+  const setStatusMessageRef = useRef(setStatusMessage);
+  setStatusMessageRef.current = setStatusMessage;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -55,6 +63,12 @@ export function useKeyboardShortcuts({
       if (
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement ||
+        // A focused <select> has its own arrow-key (change value) and
+        // letter-key (typeahead-jump to an option) behavior. Without this,
+        // e.g. typing "b" to jump to an author starting with B also toggles
+        // the browse panel (its shortcut is "B"), and every other
+        // single-letter/arrow shortcut collides the same way.
+        event.target instanceof HTMLSelectElement ||
         (event.target instanceof HTMLElement &&
           event.target.isContentEditable) ||
         (event.target instanceof HTMLElement &&
@@ -91,18 +105,41 @@ export function useKeyboardShortcuts({
       ) {
         event.preventDefault();
         void handleVisualSearchRef.current();
-      } else if (eventMatchesShortcut(event, 'shuffle', shortcutOverrides)) {
+      } else if (
+        eventMatchesShortcut(event, 'shuffle', shortcutOverrides) &&
+        liveMode
+      ) {
         event.preventDefault();
         void handleShufflePresetRef.current();
-      } else if (eventMatchesShortcut(event, 'previous', shortcutOverrides)) {
+      } else if (
+        eventMatchesShortcut(event, 'previous', shortcutOverrides) &&
+        liveMode
+      ) {
+        // goBackPreset() calls the engine session directly (unlike preset
+        // selection, which routes through routeState and the load effect's
+        // own rejection handling) — it throws if the engine isn't mounted
+        // yet, so this must stay gated on liveMode the same way quick-select
+        // below is, or a press before playback starts becomes an unhandled
+        // promise rejection.
         event.preventDefault();
         void handlePreviousPresetRef.current();
+      } else if (eventMatchesShortcut(event, 'favorite', shortcutOverrides)) {
+        event.preventDefault();
+        toggleFavoritePresetRef.current?.();
       } else if (/^[1-9]$/.test(key) && liveMode) {
         event.preventDefault();
         const index = Number.parseInt(key, 10) - 1;
         const preset = filteredCatalogRef.current[index];
         if (preset) {
           handlePresetSelectionRef.current(preset.id);
+        } else {
+          // Silent no-op otherwise reads as a dead keyboard, not "there's no
+          // 7th preset right now" — the two are indistinguishable without this.
+          setStatusMessageRef.current?.(
+            filteredCatalogRef.current.length === 0
+              ? `No presets loaded yet.`
+              : `No preset ${key} — only ${filteredCatalogRef.current.length} in view.`,
+          );
         }
       } else if (eventMatchesShortcut(event, 'help', shortcutOverrides)) {
         event.preventDefault();

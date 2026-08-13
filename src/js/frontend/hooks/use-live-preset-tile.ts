@@ -86,6 +86,7 @@ export function useLivePresetTile(entry: PresetCatalogEntry) {
     let cancelled = false;
     let handle: MilkdropLiveTileHandle | null = null;
     let canvas: HTMLCanvasElement | null = null;
+    let readyPoll: number | null = null;
     const host = hostRef.current;
     void ensurePool().then((pool) => {
       if (cancelled) {
@@ -100,9 +101,33 @@ export function useLivePresetTile(entry: PresetCatalogEntry) {
         canvas.style.display = 'block';
         host.append(canvas);
       }
+      // The canvas element exists (and reports a nonzero size) the instant
+      // it's acquired, well before the engine has compiled or painted a
+      // frame — a consumer (the promote transition's snapshot) that only
+      // checks canvas dimensions can grab a blank frame. Mirror the pool's
+      // real status onto the DOM so consumers can gate on it.
+      const syncStatus = () => {
+        if (!host || !handle) {
+          return false;
+        }
+        const status = handle.getStatus();
+        host.dataset.liveTileReady = String(status === 'live');
+        return status === 'live' || status === 'failed';
+      };
+      if (!syncStatus()) {
+        readyPoll = window.setInterval(() => {
+          if (syncStatus() && readyPoll !== null) {
+            window.clearInterval(readyPoll);
+            readyPoll = null;
+          }
+        }, 120) as unknown as number;
+      }
     });
     return () => {
       cancelled = true;
+      if (readyPoll !== null) {
+        window.clearInterval(readyPoll);
+      }
       handle?.release();
       if (canvas && canvas.parentElement === host) {
         canvas.remove();

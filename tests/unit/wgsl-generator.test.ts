@@ -560,3 +560,95 @@ describe('wgsl edge cases', () => {
     expect(result.wgslCode).toContain('rand_state: u32');
   });
 });
+
+// ─── WGSL Reserved Word Escaping ───────────────────────────────────
+// `mod` is a legal MilkDrop variable and appears in stock presets, but it is a
+// reserved word in WGSL. Emitting it raw made the whole module fail to parse,
+// which invalidated the compute pipeline and killed the WebGPU path entirely.
+describe('WGSL reserved word escaping', () => {
+  test('escapes `mod` in both the struct and its accesses', () => {
+    const result = compileProgramToWgsl(
+      block([
+        statement('mod', binary('*', ident('bass'), literal(2))),
+        statement('zoom', binary('+', literal(1), ident('mod'))),
+      ]),
+    );
+
+    // Nothing may declare or reference a bare `mod`.
+    expect(result.wgslCode).not.toMatch(/^\s*mod\s*:/mu);
+    expect(result.wgslCode).not.toMatch(/\bstate\.mod\b/u);
+
+    // It is present, under the escaped name, on both sides.
+    expect(result.wgslCode).toContain('mv_mod: f32,');
+    expect(result.wgslCode).toContain('state.mv_mod =');
+    expect(result.wgslCode).toContain('state.mv_mod)');
+  });
+
+  test('escaping does not change the buffer layout keys', () => {
+    const result = compileProgramToWgsl(block([statement('mod', literal(1))]));
+    // fieldKeys drive the GPU buffer offsets and the host-side writes, which
+    // are keyed by the preset's own variable names — they must stay unescaped.
+    expect(result.fieldKeys).toContain('mod');
+    expect(result.fieldKeys).not.toContain('mv_mod');
+  });
+
+  test('leaves non-reserved names untouched', () => {
+    const result = compileProgramToWgsl(
+      block([statement('myvar', ident('zoom'))]),
+    );
+    expect(result.wgslCode).toContain('state.myvar =');
+    expect(result.wgslCode).toContain('state.zoom');
+    expect(result.wgslCode).not.toContain('mv_myvar');
+    expect(result.wgslCode).not.toContain('mv_zoom');
+  });
+
+  test('escaping stays injective for names shaped like the escape', () => {
+    // A preset variable literally named `mv_mod` must not collide with the
+    // escaped form of `mod`.
+    const result = compileProgramToWgsl(
+      block([statement('mod', literal(1)), statement('mv_mod', literal(2))]),
+    );
+    expect(result.wgslCode).toContain('mv_mod: f32,');
+    expect(result.wgslCode).toContain('mv_mv_mod: f32,');
+    const declarations = result.wgslCode.match(/^\s*mv_\w+: f32,$/gmu) ?? [];
+    expect(new Set(declarations).size).toBe(declarations.length);
+  });
+
+  test('no emitted struct field is a bare WGSL reserved word', () => {
+    // Guards the default state fields plus anything a preset can introduce.
+    const reserved = new Set([
+      'mod',
+      'const',
+      'var',
+      'let',
+      'fn',
+      'loop',
+      'if',
+      'else',
+      'return',
+      'struct',
+      'switch',
+      'case',
+      'default',
+      'break',
+      'continue',
+      'discard',
+      'true',
+      'false',
+      'while',
+      'for',
+      'type',
+      'filter',
+      'sizeof',
+      'do',
+    ]);
+    const result = compileProgramToWgsl(block([statement('mod', literal(1))]));
+    const fields = [
+      ...result.wgslCode.matchAll(/^\s*(\w+):\s*(?:f32|u32),$/gmu),
+    ].map((m) => m[1]);
+    expect(fields.length).toBeGreaterThan(0);
+    for (const field of fields) {
+      expect(reserved.has(field)).toBe(false);
+    }
+  });
+});

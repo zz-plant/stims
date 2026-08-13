@@ -93,6 +93,18 @@ export type CustomWaveChannelSample = {
   value2: number;
 };
 
+export type StaticMeshLattice = {
+  density: number;
+  aspectX: number;
+  aspectY: number;
+  gridX: Float32Array;
+  gridY: Float32Array;
+  milkdropX: Float32Array;
+  milkdropY: Float32Array;
+  rad: Float32Array;
+  ang: Float32Array;
+};
+
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
   frameTransformCache: Map<number, { x: number; y: number }>;
@@ -115,6 +127,7 @@ export type GeometryBuilderState = {
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
   meshPositions?: Float32Array;
+  lattice?: StaticMeshLattice;
 };
 
 export type ShapeBuilderState = {
