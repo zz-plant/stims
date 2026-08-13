@@ -7,6 +7,10 @@ import {
   subscribeToPerformanceSettings,
 } from './performance-panel';
 import {
+  generateStimulusFrame,
+  type StimulusSpec,
+} from './testing/synthetic-stimulus.ts';
+import {
   resolveToyAudioOptions,
   startToyAudio,
   type ToyAudioRequest,
@@ -95,9 +99,36 @@ export type ToyRuntimeInstance = ToyInstance & {
      * Overlay a deterministic 2Hz beat envelope on the synthetic signal.
      * The idle preview signal is smooth sines with no transients, so
      * beat-gated visuals never fire under it; captures that want them
-     * lit opt into pulsed energy.
+     * lit opt into pulsed energy. Ignored when `stimulus` is set.
      */
     beatPulse?: boolean;
+    /**
+     * Replace the synthetic signal entirely with a controlled, known
+     * profile (flat/ramp/transient/band) for audio->visual transfer
+     * characterization — see `testing/synthetic-stimulus.ts` and
+     * `scripts/analyze-preset-audio-response.ts`. When set, the decorative
+     * idle-preview wave and `beatPulse` are both bypassed for every frame
+     * of this call, so the driving signal is exactly what the spec
+     * describes and nothing else.
+     */
+    stimulus?: {
+      spec: StimulusSpec;
+      /**
+       * Frame index within the *full* stimulus timeline that this call's
+       * first frame represents. A caller driving the stimulus one frame at
+       * a time (to read pixels back between frames) must pass its own
+       * running counter here — without it, every single-frame call would
+       * see itself as frame 0 of a 1-frame timeline, collapsing a ramp or
+       * transient to a single fixed value. Defaults to 0.
+       */
+      frameOffset?: number;
+      /**
+       * Length of the full stimulus timeline, which may exceed this call's
+       * own `frames` when driving it incrementally. Defaults to this
+       * call's `frames` — correct when one call renders one whole trial.
+       */
+      totalFrames?: number;
+    };
   }) => { rendered: number } | null;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
@@ -511,6 +542,7 @@ export function createToyRuntime({
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
+      const stimulus = options?.stimulus;
       stopPreviewLoop();
       let rendered = 0;
       for (let i = 0; i < frames; i += 1) {
@@ -518,19 +550,34 @@ export function createToyRuntime({
         frameState.deltaMs = deltaMs;
         frameState.realTimeMs += deltaMs;
         frameState.analyser = null;
-        updatePreviewFrequencyData(frameState.time);
-        if (beatPulse) {
-          // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a
-          // kick drum is — enough contrast for onset detectors to fire.
-          const phase = Math.sin(Math.PI * 2 * frameState.time * 2);
-          const spike = Math.max(0, phase) ** 8;
-          for (let bin = 0; bin < previewFrequencyData.length; bin += 1) {
-            const bassWeight = 1 - (bin / previewFrequencyData.length) * 0.6;
-            const gain = 0.35 + 1.4 * spike * bassWeight;
-            previewFrequencyData[bin] = Math.min(
-              255,
-              Math.round(previewFrequencyData[bin] * gain),
-            );
+        if (stimulus) {
+          // A controlled, known signal replaces the decorative wave
+          // entirely — transfer-characterization needs the driving input
+          // to be exactly what the spec describes, with no unaccounted
+          // component riding along underneath it.
+          previewFrequencyData.set(
+            generateStimulusFrame(
+              stimulus.spec,
+              (stimulus.frameOffset ?? 0) + i,
+              stimulus.totalFrames ?? frames,
+              previewFrequencyData.length,
+            ),
+          );
+        } else {
+          updatePreviewFrequencyData(frameState.time);
+          if (beatPulse) {
+            // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a
+            // kick drum is — enough contrast for onset detectors to fire.
+            const phase = Math.sin(Math.PI * 2 * frameState.time * 2);
+            const spike = Math.max(0, phase) ** 8;
+            for (let bin = 0; bin < previewFrequencyData.length; bin += 1) {
+              const bassWeight = 1 - (bin / previewFrequencyData.length) * 0.6;
+              const gain = 0.35 + 1.4 * spike * bassWeight;
+              previewFrequencyData[bin] = Math.min(
+                255,
+                Math.round(previewFrequencyData[bin] * gain),
+              );
+            }
           }
         }
         frameState.frequencyData = previewFrequencyData;

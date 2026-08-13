@@ -30,6 +30,9 @@
       "!/sitemap*.xml",
       "!/manifest.json",
       "!/favicon.ico",
+      // Read by the OG middleware through the ASSETS binding; direct hits do
+      // not need the Worker.
+      "!/preset-meta.json",
       "!/llms.txt",
       "!/llms-full.txt",
       "!/openapi.json",

@@ -14,6 +14,7 @@ import {
   setQualityPresetById,
 } from '../core/settings-panel.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
+import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
@@ -105,6 +106,10 @@ export function useWorkspaceSessionState({
   const ensureEngineMountPromiseRef =
     useRef<Promise<MilkdropEngineAdapter> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(routeState.presetId);
+  // Preset ids that already timed out or failed. Loading the fallback changes
+  // `activePresetId`, which re-runs the load effect; without this the effect
+  // would keep re-requesting the preset that just failed, forever.
+  const failedPresetIdsRef = useRef<Set<string>>(new Set());
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
 
   const {
@@ -331,6 +336,12 @@ export function useWorkspaceSessionState({
       return;
     }
 
+    // Already tried this one and it timed out or failed; the fallback is on
+    // screen. Re-requesting it would loop.
+    if (failedPresetIdsRef.current.has(requestedPresetId)) {
+      return;
+    }
+
     if (requestedPresetId === engineSnapshot?.activePresetId) {
       pendingPresetIdRef.current = null;
       return;
@@ -351,14 +362,30 @@ export function useWorkspaceSessionState({
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
+    // A slow or unavailable preset used to leave a black canvas and a "Try
+    // again" toast with nothing to try again with. Fall back to the known-good
+    // first-run preset so the visitor still ends up watching something.
+    const fallBackToFirstRunPreset = (message: string) => {
+      failedPresetIdsRef.current.add(requestedPresetId);
+      pendingPresetIdRef.current = null;
+
+      const engine = engineRef.current;
+      if (!engine || requestedPresetId === FIRST_RUN_PRESET_ID) {
+        setStatusMessage(message);
+        return;
+      }
+
+      setStatusMessage(`${message} Showing another preset instead.`);
+      void engine.loadPreset(FIRST_RUN_PRESET_ID).catch(() => {
+        log.log(`fallback preset ${FIRST_RUN_PRESET_ID} also failed`);
+      });
+    };
+
     let timedOut = false;
     const timeoutId = setTimeout(() => {
       timedOut = true;
       if (pendingPresetIdRef.current === requestedPresetId) {
-        pendingPresetIdRef.current = null;
-        setStatusMessage(
-          `Preset "${requestedPresetId}" took too long to load. Try again.`,
-        );
+        fallBackToFirstRunPreset(`Preset "${requestedPresetId}" timed out.`);
       }
     }, 10_000);
 
@@ -375,9 +402,8 @@ export function useWorkspaceSessionState({
         clearTimeout(timeoutId);
         if (timedOut) return;
         if (pendingPresetIdRef.current === requestedPresetId) {
-          pendingPresetIdRef.current = null;
-          setStatusMessage(
-            `Failed to load preset. "${requestedPresetId}" may be unavailable.`,
+          fallBackToFirstRunPreset(
+            `"${requestedPresetId}" could not be loaded.`,
           );
         }
       },
