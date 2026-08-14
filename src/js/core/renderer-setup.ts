@@ -205,7 +205,7 @@ export async function initRenderer(
       canvas: resolveFallbackCanvas(),
       antialias,
       alpha,
-      powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
+      powerPreference: 'high-performance',
       failIfMajorPerformanceCaveat: false,
       stencil: true,
       preserveDrawingBuffer:

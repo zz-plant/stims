@@ -276,7 +276,7 @@ function buildHeuristicProfile(
       capabilities.performanceTier === 'high-end' &&
       typeof navigator !== 'undefined' &&
       (navigator.hardwareConcurrency ?? 0) >= 6;
-    const mobileFloor = isFlagshipMobile ? 1 : 2;
+    const mobileFloor = isFlagshipMobile ? 0 : 2;
     initialStep = Math.max(initialStep, mobileFloor);
     reasons.push(
       isFlagshipMobile
