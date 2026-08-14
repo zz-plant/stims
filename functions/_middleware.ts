@@ -280,6 +280,18 @@ export async function onRequest(context: EventContext): Promise<Response> {
   playerUrl.searchParams.set('embedded', 'true');
   const embedPlayerUrl = playerUrl.toString();
 
+  const speculationRulesJson = JSON.stringify({
+    prefetch: [
+      {
+        source: 'list',
+        urls: [
+          '/milkdrop-presets/catalog.json',
+          `/milkdrop-presets/previews/${encodeURIComponent(presetId)}.png`,
+        ],
+      },
+    ],
+  });
+
   return (
     new HTMLRewriter()
       .on('title', {
@@ -306,7 +318,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .on('head', {
         element(el) {
           el.append(
-            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script>`,
+            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
             {
               html: true,
             },

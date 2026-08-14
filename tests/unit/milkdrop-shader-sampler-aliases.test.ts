@@ -359,7 +359,7 @@ comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2
       'semantic-supported',
     );
     expect(classifyTex3dSamplerEquivalence('3d', 'main')).toBe(
-      'semantic-supported',
+      'not-equivalent',
     );
     expect(classifyTex3dSamplerEquivalence(null, 'simplex')).toBe(
       'semantic-supported',

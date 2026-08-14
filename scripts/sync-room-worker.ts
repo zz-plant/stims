@@ -102,16 +102,20 @@ export class SyncRoom {
     await this.state.storage.setAlarm(Date.now() + ROOM_TTL_MS);
   }
 
+  async initRoom(hostKey: string): Promise<void> {
+    await this.state.storage.put({
+      hostKey,
+      room: { presetId: null, title: null, updatedAt: Date.now() },
+    });
+    await this.touch();
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === '/init' && request.method === 'POST') {
       const { hostKey } = (await request.json()) as { hostKey: string };
-      await this.state.storage.put({
-        hostKey,
-        room: { presetId: null, title: null, updatedAt: Date.now() },
-      });
-      await this.touch();
+      await this.initRoom(hostKey);
       return json({ ok: true });
     }
 
@@ -199,10 +203,15 @@ export class SyncRoom {
   }
 }
 
+interface SyncRoomStub {
+  fetch(request: Request): Promise<Response>;
+  initRoom(hostKey: string): Promise<void>;
+}
+
 interface Env {
   SYNC_ROOM: {
     idFromName(name: string): unknown;
-    get(id: unknown): { fetch(request: Request): Promise<Response> };
+    get(id: unknown): SyncRoomStub;
   };
 }
 
@@ -218,12 +227,7 @@ export default {
       const room = randomCode(ROOM_CODE_LENGTH);
       const hostKey = randomCode(24);
       const stub = env.SYNC_ROOM.get(env.SYNC_ROOM.idFromName(room));
-      await stub.fetch(
-        new Request('https://sync/init', {
-          method: 'POST',
-          body: JSON.stringify({ hostKey }),
-        }),
-      );
+      await stub.initRoom(hostKey);
       return json({ room, hostKey });
     }
 

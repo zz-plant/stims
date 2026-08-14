@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "presetId": "parity-registers-05",
+  "title": "Parity Registers 05",
+  "corpusGroup": "parity-corpus",
+  "strata": [
+    "registers",
+    "per-frame"
+  ],
+  "sourceFamily": "parity-corpus",
+  "requiredBackend": "webgpu",
+  "actualBackend": null,
+  "status": "error",
+  "targetFrameMs": 16.7,
+  "cpuThrottleRate": 4,
+  "rendererProfile": "compatibility",
+  "overBudgetMs": null,
+  "consoleErrors": [
+    "Failed to read the 'localStorage' property from 'Window': Access is denied for this document."
+  ],
+  "error": "goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/?agent=true&audio=demo&preset=parity-registers-05&renderer=webgl&corpus=certification\nCall log:\n  - navigating to \"http://127.0.0.1:5173/?agent=true&audio=demo&preset=parity-registers-05&renderer=webgl&corpus=certification\", waiting until \"load\"\n",
+  "fallbackOccurred": false,
+  "performance": null,
+  "playToySuccess": false,
+  "reportPath": "screenshots/low-resource-perf/reports/parity-registers-05.json"
+}

@@ -145,9 +145,9 @@ export function classifyTex3dSamplerEquivalence(
 ): Tex3dSamplerEquivalence {
   // Bundled volume samplers are backed by native Data3DTexture on WebGPU and
   // an interpolated atlas path on WebGL. They are semantically supported;
-  // only unknown/custom sources should remain a compatibility gap.
-  if (dimension === '3d' && isMilkdropVolumeShaderSamplerName(source)) {
-    return 'semantic-supported';
+  // non-volume 2D textures sampled via tex3D are not equivalent to native volume textures.
+  if (dimension === '3d' && !isMilkdropVolumeShaderSamplerName(source)) {
+    return 'not-equivalent';
   }
   return 'semantic-supported';
 }

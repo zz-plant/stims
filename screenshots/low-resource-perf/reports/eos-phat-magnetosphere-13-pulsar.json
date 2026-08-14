@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "presetId": "eos-phat-magnetosphere-13-pulsar",
+  "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+  "corpusGroup": "bundled-shipped",
+  "strata": [
+    "shader-heavy",
+    "classic-milkdrop",
+    "cream-of-the-crop"
+  ],
+  "sourceFamily": "stims-bundled",
+  "requiredBackend": "webgpu",
+  "actualBackend": null,
+  "status": "error",
+  "targetFrameMs": 16.7,
+  "cpuThrottleRate": 4,
+  "rendererProfile": "compatibility",
+  "overBudgetMs": null,
+  "consoleErrors": [
+    "Failed to read the 'localStorage' property from 'Window': Access is denied for this document."
+  ],
+  "error": "goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-phat-magnetosphere-13-pulsar&renderer=webgl&corpus=certification\nCall log:\n  - navigating to \"http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-phat-magnetosphere-13-pulsar&renderer=webgl&corpus=certification\", waiting until \"load\"\n",
+  "fallbackOccurred": false,
+  "performance": null,
+  "playToySuccess": false,
+  "reportPath": "screenshots/low-resource-perf/reports/eos-phat-magnetosphere-13-pulsar.json"
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "presetId": "shape-legacy-max-slot-orbit",
+  "title": "Shape Legacy Max Slot Orbit",
+  "corpusGroup": "local-custom-shape",
+  "strata": [
+    "custom-shape",
+    "legacy-slot",
+    "shape-texture"
+  ],
+  "sourceFamily": "local-custom-shape",
+  "requiredBackend": "webgpu",
+  "actualBackend": null,
+  "status": "error",
+  "targetFrameMs": 16.7,
+  "cpuThrottleRate": 4,
+  "rendererProfile": "compatibility",
+  "overBudgetMs": null,
+  "consoleErrors": [
+    "Failed to read the 'localStorage' property from 'Window': Access is denied for this document."
+  ],
+  "error": "goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:5173/?agent=true&audio=demo&preset=shape-legacy-max-slot-orbit&renderer=webgl&corpus=certification\nCall log:\n  - navigating to \"http://127.0.0.1:5173/?agent=true&audio=demo&preset=shape-legacy-max-slot-orbit&renderer=webgl&corpus=certification\", waiting until \"load\"\n",
+  "fallbackOccurred": false,
+  "performance": null,
+  "playToySuccess": false,
+  "reportPath": "screenshots/low-resource-perf/reports/shape-legacy-max-slot-orbit.json"
+}
