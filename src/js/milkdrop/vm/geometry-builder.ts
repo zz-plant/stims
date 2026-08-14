@@ -393,10 +393,11 @@ function transformMeshPoint(
     // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
     local.x = gridX * 0.5 * aspectX + 0.5;
     local.y = -gridY * 0.5 * aspectY + 0.5;
-    local.rad = Math.sqrt(
-      aspectGridX * aspectGridX + aspectGridY * aspectGridY,
-    );
-    local.ang = Math.atan2(aspectGridY, aspectGridX);
+    const dxFromCenter = (local.x - frame.baseCx) * aspectX;
+    const dyFromCenter = (local.y - frame.baseCy) * aspectY;
+    local.rad =
+      Math.sqrt(dxFromCenter * dxFromCenter + dyFromCenter * dyFromCenter) * 2;
+    local.ang = Math.atan2(dyFromCenter, dxFromCenter);
     // Reset every built-in per-pixel variable from the frame bases: per-pixel
     // code may have overwritten them on the previous vertex.
     local.zoom = frame.baseZoom;
