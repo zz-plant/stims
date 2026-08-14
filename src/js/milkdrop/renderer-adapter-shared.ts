@@ -482,23 +482,76 @@ export function applyBlendModeToGroup(
   }
 }
 
+/**
+ * Writes `data` into a dynamic float attribute, growing the underlying buffer
+ * but never shrinking it, and returns the vertex count `data` occupies.
+ *
+ * The no-shrink rule is not a micro-optimisation — it is what keeps WebGPU
+ * valid. Replacing the attribute changes `position.count`, which is what
+ * `RenderObject.getDrawParameters()` derives the draw count from, but the
+ * backend's uploaded GPUBuffer for that geometry is only refreshed on its own
+ * schedule. For one frame the draw is issued with the new count against the
+ * old, smaller buffer:
+ *
+ *   Vertex range (first: 0, count: 1555) requires a larger buffer (18660)
+ *   than the bound buffer size (10932) of the vertex buffer at slot 0
+ *
+ * which invalidates the whole command buffer, so the frame is dropped too.
+ * Keeping one monotonically-growing buffer per geometry makes the bound size
+ * an upper bound on every draw range that can follow, so the mismatch cannot
+ * occur regardless of upload timing.
+ *
+ * Preset transitions are where this bit: a blend renders the outgoing and
+ * incoming preset into the same pooled geometries, so a wave whose sample
+ * count differs between the two would reallocate on *every* frame of the
+ * blend, alternating between the two lengths.
+ */
+export function ensureDynamicFloatAttribute(
+  geometry: BufferGeometry,
+  name: string,
+  data: ArrayLike<number>,
+  itemSize: number,
+): number {
+  const existing = geometry.getAttribute(name);
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length >= data.length
+  ) {
+    (existing.array as Float32Array).set(data);
+    existing.needsUpdate = true;
+  } else {
+    // Grow to exactly what is needed rather than doubling: these buffers reach
+    // ~40k floats for a dense mesh, and the callers' lengths come from a small
+    // set of preset-driven sizes, so they settle after the first few frames.
+    const array = new Float32Array(Math.max(itemSize, data.length));
+    array.set(data);
+    const attribute = new Float32BufferAttribute(array, itemSize);
+    attribute.setUsage(DynamicDrawUsage);
+    geometry.setAttribute(name, attribute);
+  }
+  return Math.floor(data.length / itemSize);
+}
+
 export function ensureGeometryPositions(
   geometry: BufferGeometry,
   positions: ArrayLike<number>,
 ) {
-  const existing = geometry.getAttribute('position');
-  if (
-    existing instanceof Float32BufferAttribute &&
-    existing.itemSize === 3 &&
-    existing.array.length === positions.length
-  ) {
-    existing.array.set(positions);
-    existing.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(positions, 3);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('position', attribute);
+  const vertexCount = ensureDynamicFloatAttribute(
+    geometry,
+    'position',
+    positions,
+    3,
+  );
+  // The buffer may now be larger than this frame's data, so the draw range —
+  // not the attribute length — is what bounds the draw. On an indexed geometry
+  // the draw range counts indices rather than vertices, so a vertex count
+  // would be the wrong unit; no current caller indexes, and this keeps a
+  // future one from silently drawing the wrong range.
+  if (geometry.getIndex() === null) {
+    geometry.setDrawRange(0, vertexCount);
   }
+
   if (geometry.userData.skipDynamicBounds === true) {
     setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), Math.SQRT2 * 2.4);
     return;
