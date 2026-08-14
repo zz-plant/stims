@@ -53,13 +53,9 @@
   gap: 2px;
   padding: 4px;
   border-radius: 16px;
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.85));
-  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.22));
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--ctl-panel-bg, #0a0e16);
+  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.16));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
   pointer-events: auto;
 }
 
@@ -91,36 +87,30 @@
     background 0.18s ease,
     border-color 0.18s ease,
     box-shadow 0.18s ease,
-    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
 .btn:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(119, 201, 255, 0.35);
-  transform: translateY(-2px) scale(1.05);
-  box-shadow:
-    0 4px 16px rgba(119, 201, 255, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btn:active {
-  transform: scale(0.94);
+  transform: scale(0.95);
   transition-duration: 60ms;
 }
 
 /* The lit edge, matching the active state used inside the panels. */
 .btn[data-active="true"] {
   color: #77c9ff;
-  background: radial-gradient(
-    circle at center,
-    rgba(119, 201, 255, 0.32) 0%,
-    rgba(119, 201, 255, 0.16) 100%
-  );
-  border-color: rgba(119, 201, 255, 0.55);
+  background: rgba(119, 201, 255, 0.15);
+  border-color: rgba(119, 201, 255, 0.45);
   box-shadow:
-    0 0 24px rgba(119, 201, 255, 0.4),
+    0 0 16px rgba(119, 201, 255, 0.25),
     inset 0 -2px 0 #77c9ff;
 }
 
@@ -139,13 +129,9 @@
   gap: 4px;
   padding: 6px;
   border-radius: 14px;
-  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.88));
-  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.18));
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, 0.55),
-    0 0 1px rgba(119, 201, 255, 0.3);
+  background: var(--ctl-panel-bg, #0a0e16);
+  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.16));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65);
   animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
