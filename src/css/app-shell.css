@@ -2533,13 +2533,17 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-shell__shortcut-card,
 .stims-shell__credits-card {
-  background: #0b1017;
-  border: 1px solid #1e293b;
-  border-radius: 18px;
+  background: rgba(12, 17, 24, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(119, 201, 255, 0.25);
+  border-radius: 20px;
   padding: 32px;
-  max-width: 480px;
-  width: 90%;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9);
+  max-width: 520px;
+  width: 92%;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.85),
+    0 0 32px rgba(119, 201, 255, 0.08);
   animation: stims-modal-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   -webkit-font-smoothing: antialiased;
 }
@@ -2588,17 +2592,22 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-grid kbd,
 .stims-shell__shortcut-row kbd {
   font-family: var(--font-family-mono);
-  font-size: 0.76rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  padding: 3px 9px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: linear-gradient(
+    180deg,
+    rgba(119, 201, 255, 0.14),
+    rgba(255, 255, 255, 0.04)
+  );
+  border: 1px solid rgba(119, 201, 255, 0.38);
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+    0 3px 0 rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  color: #77c9ff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
