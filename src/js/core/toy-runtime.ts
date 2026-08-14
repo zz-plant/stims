@@ -536,9 +536,6 @@ export function createToyRuntime({
     pausePreview: stopPreviewLoop,
     resumePreview: startPreviewLoop,
     renderFrames: (options) => {
-      if (analyser) {
-        return null;
-      }
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
