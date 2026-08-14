@@ -152,6 +152,49 @@ export async function onRequest(context: EventContext): Promise<Response> {
     },
   });
 
+  // Inject preset-specific JSON-LD structured data for search engine rich snippets
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'VisualArtwork',
+        name: title,
+        description,
+        ...(author ? { artist: { '@type': 'Person', name: author } } : {}),
+        image: imageUrl,
+        url: canonical,
+        isPartOf: {
+          '@type': 'SoftwareApplication',
+          name: 'Stims',
+          url: url.origin,
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: url.origin,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Presets',
+            item: canonical,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: title,
+            item: canonical,
+          },
+        ],
+      },
+    ],
+  });
+
   return (
     new HTMLRewriter()
       .on('title', {
@@ -174,6 +217,13 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .on('meta[name="twitter:description"]', setContent(description))
       .on('meta[name="twitter:image"]', setContent(imageUrl))
       .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
+      .on('head', {
+        element(el) {
+          el.append(`<script type="application/ld+json">${jsonLd}</script>`, {
+            html: true,
+          });
+        },
+      })
       // A crawler that renders no JavaScript otherwise sees 212 characters of
       // "JavaScript is required". This gives the preset page a real indexable
       // sentence naming the preset and its author.
@@ -190,3 +240,4 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .transform(response)
   );
 }
+
