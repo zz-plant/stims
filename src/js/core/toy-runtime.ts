@@ -424,10 +424,12 @@ export function createToyRuntime({
 
     const tick = (now: number) => {
       if (!previewActive) return;
-      const time = (now - previewStart) / 1000;
-      frameState.deltaMs = now - previewLastFrame;
+      const rawDeltaMs = previewLastFrame
+        ? Math.min(100, Math.max(0, now - previewLastFrame))
+        : 1000 / 60;
       previewLastFrame = now;
-      frameState.time = time;
+      frameState.deltaMs = rawDeltaMs;
+      frameState.time += rawDeltaMs / 1000;
       frameState.realTimeMs = now;
       frameState.analyser = null;
       const previewDataIntervalMs =
@@ -437,7 +439,7 @@ export function createToyRuntime({
           ? 1000 / 30
           : 0;
       if (now - previewLastDataUpdate >= previewDataIntervalMs) {
-        updatePreviewFrequencyData(time);
+        updatePreviewFrequencyData(frameState.time);
         previewLastDataUpdate = now;
       }
       frameState.frequencyData = previewFrequencyData;
@@ -497,9 +499,12 @@ export function createToyRuntime({
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
-        frameState.deltaMs = lastFrameTime ? (now - lastFrameTime) * 1000 : 0;
+        const rawDeltaMs = lastFrameTime
+          ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
+          : 1000 / 60;
         lastFrameTime = now;
-        frameState.time = now;
+        frameState.deltaMs = rawDeltaMs;
+        frameState.time += rawDeltaMs / 1000;
         frameState.realTimeMs = ctx.realTimeMs;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
