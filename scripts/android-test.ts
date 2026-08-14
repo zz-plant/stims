@@ -309,6 +309,12 @@ async function runDiags(ws: WebSocket) {
   })()`,
   );
   log('diag', `FPS (2s sample): ${fps}`);
+
+  const liveTelemetry = await cdpEvaluate(
+    ws,
+    `typeof window.__stims_telemetry !== 'undefined' ? JSON.stringify(window.__stims_telemetry.getLiveStats(), null, 2) : 'N/A'`,
+  );
+  log('diag', `High-Resolution Telemetry:\n${liveTelemetry}`);
 }
 
 async function cleanup(
