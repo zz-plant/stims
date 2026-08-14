@@ -409,205 +409,259 @@ export function SettingsSheetPanel({
       : 'WebGL'
     : null;
 
+  const [activeTab, setActiveTab] = useState<
+    'playback' | 'hardware' | 'graphics' | 'accessibility'
+  >('playback');
+
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
-      <section className="ctl-section">
-        <div className="ctl-section__head">
-          <h3 className="ctl-section__title">Visual quality</h3>
-        </div>
-        <div
-          className="ctl-options"
-          role="radiogroup"
-          aria-label="Visual quality"
+      <div className="ctl-tabs" role="tablist" aria-label="Settings categories">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'playback'}
+          className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
+          onClick={() => setActiveTab('playback')}
         >
-          {qualityOptions.map((preset) => (
-            <label
-              key={preset.id}
-              className="ctl-option"
-              title={describeQualityNumbers(preset)}
+          Playback &amp; Audio
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'hardware'}
+          className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
+          onClick={() => setActiveTab('hardware')}
+        >
+          MIDI &amp; Stage
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'graphics'}
+          className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
+          onClick={() => setActiveTab('graphics')}
+        >
+          Graphics &amp; Performance
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'accessibility'}
+          className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
+          onClick={() => setActiveTab('accessibility')}
+        >
+          Accessibility &amp; Device
+        </button>
+      </div>
+      {activeTab === 'playback' ? (
+        <>
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Visual quality</h3>
+            </div>
+            <div
+              className="ctl-options"
+              role="radiogroup"
+              aria-label="Visual quality"
             >
-              <input
-                type="radio"
-                name="quality-preset"
-                className="ctl-option__input"
-                value={preset.id}
-                checked={preset.id === qualityPreset.id}
-                onChange={() => engine.setQualityPreset(preset.id)}
-              />
-              <span className="ctl-option__label">{preset.label}</span>
-              <span className="ctl-option__hint">{preset.description}</span>
-            </label>
-          ))}
-        </div>
-        <p className="ctl-readout">{describeQualityNumbers(qualityPreset)}</p>
-      </section>
-
-      <section className="ctl-section">
-        <div className="ctl-section__head">
-          <h3 className="ctl-section__title">Playback</h3>
-        </div>
-        <SwitchRow
-          label="Autoplay"
-          hint="Automatically shuffles to a new preset while audio plays."
-          checked={engineSnapshot?.autoplay ?? false}
-          onChange={(next) => engine.setAutoplay(next)}
-        />
-        <div className="ctl-row">
-          <span className="ctl-row__text">
-            <label className="ctl-row__label" htmlFor="transition-mode">
-              Preset transitions
-            </label>
-            <span className="ctl-row__hint">
-              Blend crossfades into the next preset. Cut switches instantly.
-            </span>
-          </span>
-          <select
-            id="transition-mode"
-            className="ctl-select ctl-select--auto"
-            value={engineSnapshot?.transitionMode ?? 'blend'}
-            onChange={(e) =>
-              engine.setTransitionMode(e.target.value as 'blend' | 'cut')
-            }
-          >
-            <option value="blend">Blend</option>
-            <option value="cut">Cut</option>
-          </select>
-        </div>
-        {(engineSnapshot?.transitionMode ?? 'blend') === 'blend' ? (
-          <div className="ctl-row">
-            <span className="ctl-row__text">
-              <label className="ctl-row__label" htmlFor="blend-duration">
-                Blend duration
-              </label>
-              <span className="ctl-row__hint">
-                How long the crossfade between presets takes.
-              </span>
-            </span>
-            <select
-              id="blend-duration"
-              className="ctl-select ctl-select--auto"
-              value={nearestStep(
-                BLEND_DURATION_STEPS,
-                engineSnapshot?.blendDuration ?? 0.3,
-              )}
-              onChange={(e) =>
-                engine.setBlendDuration(parseFloat(e.target.value))
-              }
-            >
-              {BLEND_DURATION_STEPS.map((step) => (
-                <option key={step.value} value={step.value}>
-                  {step.label}
-                </option>
+              {qualityOptions.map((preset) => (
+                <label
+                  key={preset.id}
+                  className="ctl-option"
+                  title={describeQualityNumbers(preset)}
+                >
+                  <input
+                    type="radio"
+                    name="quality-preset"
+                    className="ctl-option__input"
+                    value={preset.id}
+                    checked={preset.id === qualityPreset.id}
+                    onChange={() => engine.setQualityPreset(preset.id)}
+                  />
+                  <span className="ctl-option__label">{preset.label}</span>
+                  <span className="ctl-option__hint">{preset.description}</span>
+                </label>
               ))}
-            </select>
-          </div>
-        ) : null}
-      </section>
+            </div>
+            <p className="ctl-readout">
+              {describeQualityNumbers(qualityPreset)}
+            </p>
+          </section>
 
-      <section className="ctl-section">
-        <AudioSourcePanel />
-      </section>
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Playback</h3>
+            </div>
+            <SwitchRow
+              label="Autoplay"
+              hint="Automatically shuffles to a new preset while audio plays."
+              checked={engineSnapshot?.autoplay ?? false}
+              onChange={(next) => engine.setAutoplay(next)}
+            />
+            <div className="ctl-row">
+              <span className="ctl-row__text">
+                <label className="ctl-row__label" htmlFor="transition-mode">
+                  Preset transitions
+                </label>
+                <span className="ctl-row__hint">
+                  Blend crossfades into the next preset. Cut switches instantly.
+                </span>
+              </span>
+              <select
+                id="transition-mode"
+                className="ctl-select ctl-select--auto"
+                value={engineSnapshot?.transitionMode ?? 'blend'}
+                onChange={(e) =>
+                  engine.setTransitionMode(e.target.value as 'blend' | 'cut')
+                }
+              >
+                <option value="blend">Blend</option>
+                <option value="cut">Cut</option>
+              </select>
+            </div>
+            {(engineSnapshot?.transitionMode ?? 'blend') === 'blend' ? (
+              <div className="ctl-row">
+                <span className="ctl-row__text">
+                  <label className="ctl-row__label" htmlFor="blend-duration">
+                    Blend duration
+                  </label>
+                  <span className="ctl-row__hint">
+                    How long the crossfade between presets takes.
+                  </span>
+                </span>
+                <select
+                  id="blend-duration"
+                  className="ctl-select ctl-select--auto"
+                  value={nearestStep(
+                    BLEND_DURATION_STEPS,
+                    engineSnapshot?.blendDuration ?? 0.3,
+                  )}
+                  onChange={(e) =>
+                    engine.setBlendDuration(parseFloat(e.target.value))
+                  }
+                >
+                  {BLEND_DURATION_STEPS.map((step) => (
+                    <option key={step.value} value={step.value}>
+                      {step.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+          </section>
 
-      <AccessibilitySection
-        onOpenShortcuts={onOpenShortcuts}
-        onOpenCredits={onOpenCredits}
-      />
+          <section className="ctl-section">
+            <AudioSourcePanel />
+          </section>
 
-      <SyncSessionSection />
+          <SyncSessionSection />
+        </>
+      ) : null}
 
-      <PerformanceSection />
+      {activeTab === 'hardware' ? <PerformanceHardwareSection /> : null}
 
-      <PerformanceHardwareSection />
+      {activeTab === 'graphics' ? (
+        <>
+          <PerformanceSection />
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Graphics</h3>
+              {backendLabel ? (
+                <span className="ctl-readout">running on {backendLabel}</span>
+              ) : null}
+            </div>
 
-      <section className="ctl-section">
-        <div className="ctl-section__head">
-          <h3 className="ctl-section__title">On this device</h3>
-        </div>
-        <SwitchRow
-          label="Thumb mode"
-          hint="Moves the controls within reach at the bottom of the screen."
-          checked={thumbMode}
-          onChange={(next) => onThumbModeChange?.(next)}
-        />
-        <SwitchRow
-          label="Party remote"
-          hint="A large-target remote for shuffle, save, fullscreen, and audio."
-          checked={partyRemoteMode}
-          onChange={(next) => onPartyRemoteModeChange?.(next)}
-        />
-        <SwitchRow
-          label="Touch haptics"
-          hint="Buzzes on tap where the phone supports it."
-          checked={hapticsEnabled}
-          onChange={(next) => onHapticsEnabledChange?.(next)}
-        />
-        <SwitchRow
-          label="Motion control"
-          hint="Steers the visuals by tilting a supported device."
-          checked={motionPreference.enabled}
-          onChange={onMotionPreferenceChange}
-        />
-        {offline ? (
-          <p className="ctl-section__note">
-            Offline mode is on. Community browsing and AI imports are paused
-            until you reconnect.
-          </p>
-        ) : installAvailable ? (
-          <button type="button" className="ctl-btn" onClick={onInstallApp}>
-            Install Stims on this device
-          </button>
-        ) : null}
-      </section>
+            <div className="ctl-row ctl-row--stack">
+              <span className="ctl-row__text">
+                <label className="ctl-row__label" htmlFor="backend-select">
+                  Renderer
+                </label>
+                <span className="ctl-row__hint">
+                  Auto follows the browser's stability rules. WebGL is the safer
+                  fallback. Changing this takes effect after a reload.
+                </span>
+              </span>
+              <select
+                id="backend-select"
+                className="ctl-select"
+                value={
+                  renderPreferences.compatibilityMode
+                    ? 'webgl'
+                    : hasWebGPUCompatibilityGapOverride()
+                      ? 'webgpu'
+                      : 'auto'
+                }
+                onChange={(event) => {
+                  const val = event.target.value as 'auto' | 'webgl' | 'webgpu';
+                  if (val === 'webgl') {
+                    onCompatibilityModeChange(true);
+                    setWebGPUCompatibilityGapOverride(false);
+                  } else if (val === 'webgpu') {
+                    onCompatibilityModeChange(false);
+                    setWebGPUCompatibilityGapOverride(true);
+                  } else {
+                    onCompatibilityModeChange(false);
+                    setWebGPUCompatibilityGapOverride(false);
+                  }
+                  ui.setStatusMessage('Renderer changed. Reload to apply.');
+                }}
+              >
+                <option value="auto">Auto</option>
+                <option value="webgpu">WebGPU</option>
+                <option value="webgl">WebGL</option>
+              </select>
+            </div>
+          </section>
+        </>
+      ) : null}
 
-      <section className="ctl-section">
-        <div className="ctl-section__head">
-          <h3 className="ctl-section__title">Graphics</h3>
-          {backendLabel ? (
-            <span className="ctl-readout">running on {backendLabel}</span>
-          ) : null}
-        </div>
-
-        <div className="ctl-row ctl-row--stack">
-          <span className="ctl-row__text">
-            <label className="ctl-row__label" htmlFor="backend-select">
-              Renderer
-            </label>
-            <span className="ctl-row__hint">
-              Auto follows the browser's stability rules. WebGL is the safer
-              fallback. Changing this takes effect after a reload.
-            </span>
-          </span>
-          <select
-            id="backend-select"
-            className="ctl-select"
-            value={
-              renderPreferences.compatibilityMode
-                ? 'webgl'
-                : hasWebGPUCompatibilityGapOverride()
-                  ? 'webgpu'
-                  : 'auto'
-            }
-            onChange={(event) => {
-              const val = event.target.value as 'auto' | 'webgl' | 'webgpu';
-              if (val === 'webgl') {
-                onCompatibilityModeChange(true);
-                setWebGPUCompatibilityGapOverride(false);
-              } else if (val === 'webgpu') {
-                onCompatibilityModeChange(false);
-                setWebGPUCompatibilityGapOverride(true);
-              } else {
-                onCompatibilityModeChange(false);
-                setWebGPUCompatibilityGapOverride(false);
-              }
-              ui.setStatusMessage('Renderer changed. Reload to apply.');
-            }}
-          >
-            <option value="auto">Auto</option>
-            <option value="webgpu">WebGPU</option>
-            <option value="webgl">WebGL</option>
-          </select>
-        </div>
-      </section>
+      {activeTab === 'accessibility' ? (
+        <>
+          <AccessibilitySection
+            onOpenShortcuts={onOpenShortcuts}
+            onOpenCredits={onOpenCredits}
+          />
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">On this device</h3>
+            </div>
+            <SwitchRow
+              label="Thumb mode"
+              hint="Moves the controls within reach at the bottom of the screen."
+              checked={thumbMode}
+              onChange={(next) => onThumbModeChange?.(next)}
+            />
+            <SwitchRow
+              label="Party remote"
+              hint="A large-target remote for shuffle, save, fullscreen, and audio."
+              checked={partyRemoteMode}
+              onChange={(next) => onPartyRemoteModeChange?.(next)}
+            />
+            <SwitchRow
+              label="Touch haptics"
+              hint="Buzzes on tap where the phone supports it."
+              checked={hapticsEnabled}
+              onChange={(next) => onHapticsEnabledChange?.(next)}
+            />
+            <SwitchRow
+              label="Motion control"
+              hint="Steers the visuals by tilting a supported device."
+              checked={motionPreference.enabled}
+              onChange={onMotionPreferenceChange}
+            />
+            {offline ? (
+              <p className="ctl-section__note">
+                Offline mode is on. Community browsing and AI imports are paused
+                until you reconnect.
+              </p>
+            ) : installAvailable ? (
+              <button type="button" className="ctl-btn" onClick={onInstallApp}>
+                Install Stims on this device
+              </button>
+            ) : null}
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

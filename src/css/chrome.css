@@ -69,6 +69,45 @@ html.light .stims-shell {
     gap: 18px;
   }
 
+  .ctl-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ctl-tab {
+    flex: 1;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ctl-ink-2);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .ctl-tab:hover {
+    color: var(--ctl-ink);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .ctl-tab--active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
   /* ── Section: a flat group, separated by a rule rather than nested
         inside yet another card. ─────────────────────────────────── */
   .ctl-section {
