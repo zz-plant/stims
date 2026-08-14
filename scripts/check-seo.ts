@@ -369,6 +369,26 @@ export async function runSeoChecks(rootDir = repoRoot) {
     details: 'public/manifest.json',
   });
 
+  const oembedExists = await fs
+    .stat(path.join(rootDir, 'functions/api/oembed.ts'))
+    .then(() => true)
+    .catch(() => false);
+  results.push({
+    name: 'oEmbed 1.0 provider endpoint exists',
+    passed: oembedExists,
+    details: 'functions/api/oembed.ts',
+  });
+
+  const feedExists = await fs
+    .stat(path.join(rootDir, 'functions/api/feed.ts'))
+    .then(() => true)
+    .catch(() => false);
+  results.push({
+    name: 'JSON Feed 1.1 endpoint exists',
+    passed: feedExists,
+    details: 'functions/api/feed.ts',
+  });
+
   return results;
 }
 
