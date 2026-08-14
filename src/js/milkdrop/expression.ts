@@ -216,11 +216,14 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
   return { value: diagnostics.length ? null : tokens, diagnostics };
 }
 
+const MAX_EXPRESSION_RECURSION_DEPTH = 100;
+
 class ExpressionParser {
   private readonly tokens: Token[];
   private readonly line: number;
   private readonly diagnostics: MilkdropDiagnostic[] = [];
   private index = 0;
+  private depth = 0;
 
   constructor(tokens: Token[], line: number) {
     this.tokens = tokens;
@@ -245,21 +248,47 @@ class ExpressionParser {
     };
   }
 
+  private enterDepth(): boolean {
+    this.depth += 1;
+    if (this.depth > MAX_EXPRESSION_RECURSION_DEPTH) {
+      this.diagnostics.push(
+        createDiagnostic(
+          this.line,
+          'expr_max_depth_exceeded',
+          'Expression nesting depth exceeded maximum limit of 100.',
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  private leaveDepth() {
+    this.depth = Math.max(0, this.depth - 1);
+  }
+
   /** Assignment has the lowest precedence and is right-associative, so a=b=c
    * parses as a=(b=c). */
   private parseAssignment(): MilkdropExpressionNode {
-    const left = this.parseLogicalOr();
-    const operator = this.matchOperator('=');
-    if (!operator) {
-      return left;
+    if (!this.enterDepth()) {
+      return { type: 'literal', value: 0 };
     }
-    const right = this.parseAssignment();
-    return {
-      type: 'binary',
-      operator: '=',
-      left,
-      right,
-    };
+    try {
+      const left = this.parseLogicalOr();
+      const operator = this.matchOperator('=');
+      if (!operator) {
+        return left;
+      }
+      const right = this.parseAssignment();
+      return {
+        type: 'binary',
+        operator: '=',
+        left,
+        right,
+      };
+    } finally {
+      this.leaveDepth();
+    }
   }
 
   private peek() {
