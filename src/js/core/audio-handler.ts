@@ -9,6 +9,7 @@ import {
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
@@ -101,6 +102,7 @@ export class FrequencyAnalyser {
   private stereoBalance = 0;
   private stereoWidth = 0;
   private spectralFeatures: SpectralFeatureSnapshot | null = null;
+  private spectralFrameCounter = 0;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
     bass: new Array(this.historySize).fill(0),
@@ -657,6 +659,15 @@ export class FrequencyAnalyser {
 
   private updateSpectralFeatures() {
     if (this.timeDomainData.length === 0) {
+      return;
+    }
+
+    this.spectralFrameCounter = (this.spectralFrameCounter + 1) | 0;
+    if (
+      this.spectralFeatures !== null &&
+      getDevicePerformanceProfile().lowPower &&
+      this.spectralFrameCounter % 2 !== 0
+    ) {
       return;
     }
 

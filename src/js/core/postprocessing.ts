@@ -7,6 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import type { RendererBackend } from './renderer-capabilities';
 
 export type MilkdropPostprocessingProfile = {
@@ -200,10 +201,12 @@ export function createMilkdropPostprocessingComposer({
 
   const size = renderer.getSize(new Vector2());
   const mobile = isMobileDevice();
+  const lowPower = getDevicePerformanceProfile().lowPower;
+  const downscaleBloom = mobile || lowPower;
 
   let bloomPass: UnrealBloomPass | undefined;
   if (profile.bloomStrength > 0) {
-    const bloomSize = mobile
+    const bloomSize = downscaleBloom
       ? new Vector2(Math.round(size.x / 2), Math.round(size.y / 2))
       : new Vector2(size.x, size.y);
     bloomPass = new UnrealBloomPass(
