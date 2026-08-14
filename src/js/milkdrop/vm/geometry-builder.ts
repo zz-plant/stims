@@ -240,6 +240,7 @@ type MeshTransformFrame = {
   scaleY: number;
   translateX: number;
   translateY: number;
+  isIdentity: boolean;
   // Per-frame BASE values of the built-in per-pixel variables, read raw off
   // `state` once per pass. Only used by the per-pixel path, which must reset
   // every one of them on EVERY vertex (per-pixel code may overwrite them and
@@ -292,6 +293,27 @@ function createMeshTransformFrame({
   const perPixelEnv = hasPerPixel
     ? createEnv(signals, scratch, { reuseExtraAsEnv: true })
     : null;
+  const zoom = Math.max(state.zoom ?? 1, 0);
+  const zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
+  const warp = state.warp ?? 0;
+  const centerX = normalizeTransformCenter(state.cx ?? 0.5);
+  const centerY = normalizeTransformCenterY(state.cy ?? 0.5);
+  const scaleX = state.sx ?? 1;
+  const scaleY = state.sy ?? 1;
+  const translateX = state.dx ?? 0;
+  const translateY = state.dy ?? 0;
+  const isIdentity =
+    !hasPerPixel &&
+    zoom === 1 &&
+    zoomExponent === 1 &&
+    rot === 0 &&
+    warp === 0 &&
+    scaleX === 1 &&
+    scaleY === 1 &&
+    translateX === 0 &&
+    translateY === 0 &&
+    centerX === 0 &&
+    centerY === 0;
 
   return {
     signals,
@@ -303,17 +325,18 @@ function createMeshTransformFrame({
     aspectY: resolvedAspectY,
     perPixelProgram: hasPerPixel ? perPixel : null,
     rippleTime: signals.time * (0.35 + warpAnimSpeed),
-    zoom: Math.max(state.zoom ?? 1, 0),
-    zoomExponent: Math.max(state.zoomexp ?? 1, 0.0001),
+    zoom,
+    zoomExponent,
     cosRot: Math.cos(rot),
     sinRot: Math.sin(rot),
-    warp: state.warp ?? 0,
-    centerX: normalizeTransformCenter(state.cx ?? 0.5),
-    centerY: normalizeTransformCenterY(state.cy ?? 0.5),
-    scaleX: state.sx ?? 1,
-    scaleY: state.sy ?? 1,
-    translateX: state.dx ?? 0,
-    translateY: state.dy ?? 0,
+    warp,
+    centerX,
+    centerY,
+    scaleX,
+    scaleY,
+    translateX,
+    translateY,
+    isIdentity,
     baseZoom: state.zoom ?? 1,
     baseZoomExp: state.zoomexp ?? 1,
     baseRot: rot,
@@ -335,6 +358,11 @@ function transformMeshPoint(
   gridX: number,
   gridY: number,
 ): { x: number; y: number } {
+  if (frame.isIdentity) {
+    transientTransformResult.x = gridX;
+    transientTransformResult.y = gridY;
+    return transientTransformResult;
+  }
   const aspectX = frame.aspectX;
   const aspectY = frame.aspectY;
   const perPixel = frame.perPixelProgram;
@@ -463,7 +491,7 @@ function transformMeshPoint(
 export function getMeshDensity(state: MutableState, detailScale: number) {
   // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
   // detail scale (gated on backend + quality tier) climbs past ~3x.
-  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 96);
+  return clamp(Math.round((state.mesh_density ?? 24) * detailScale), 8, 96);
 }
 
 export function getMotionVectorDescriptorContext({

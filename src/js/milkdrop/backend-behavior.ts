@@ -21,7 +21,7 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
     currentFrameBoost: 0.1,
     feedbackSoftness: 0.12,
     sceneResolutionScale: 1,
-    feedbackResolutionScale: 1,
+    feedbackResolutionScale: 1.25,
     samples: 0,
   },
   useHalfFloatFeedback: true,

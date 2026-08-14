@@ -271,10 +271,12 @@ export function createMilkdropExperienceFrameLoop({
         if (agentModeEnabled) {
           updateAgentDebugSnapshot(false, renderFrameState);
         }
-        capturedVideoOverlay.update({
-          camera: runtime.toy.camera,
-          reactivity: capturedVideoReactivity,
-        });
+        if (capturedVideoReady) {
+          capturedVideoOverlay.update({
+            camera: runtime.toy.camera,
+            reactivity: capturedVideoReactivity,
+          });
+        }
 
         const renderStartAt = performance.now();
         if (activeBlendState) {

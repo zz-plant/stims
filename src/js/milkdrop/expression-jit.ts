@@ -185,16 +185,10 @@ function compileNode(
       }
       const args = node.args.map((arg) => compileNode(arg, context));
       switch (name) {
-        case 'sin': {
-          const xTemp = nextTemporary(context);
-          const yTemp = nextTemporary(context);
-          return `(${xTemp} = (${args[0] ?? '0'}) * 0.15915494309189535, ${xTemp} = (${xTemp} - Math.floor(${xTemp} + 0.5)) * 6.283185307179586, ${yTemp} = 1.27323954 * ${xTemp} - 0.405284735 * ${xTemp} * Math.abs(${xTemp}), 0.225 * (${yTemp} * Math.abs(${yTemp}) - ${yTemp}) + ${yTemp})`;
-        }
-        case 'cos': {
-          const xTemp = nextTemporary(context);
-          const yTemp = nextTemporary(context);
-          return `(${xTemp} = ((${args[0] ?? '0'}) + 1.5707963267948966) * 0.15915494309189535, ${xTemp} = (${xTemp} - Math.floor(${xTemp} + 0.5)) * 6.283185307179586, ${yTemp} = 1.27323954 * ${xTemp} - 0.405284735 * ${xTemp} * Math.abs(${xTemp}), 0.225 * (${yTemp} * Math.abs(${yTemp}) - ${yTemp}) + ${yTemp})`;
-        }
+        case 'sin':
+          return `Math.sin(${args[0] ?? '0'})`;
+        case 'cos':
+          return `Math.cos(${args[0] ?? '0'})`;
         case 'tan':
           return `Math.tan(${args[0] ?? '0'})`;
         case 'asin':

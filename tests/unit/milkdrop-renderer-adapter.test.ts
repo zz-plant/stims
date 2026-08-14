@@ -3914,8 +3914,8 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.sceneTarget.width).toBe(640);
     expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.targets[0]?.width).toBe(320);
-    expect(feedback?.targets[0]?.height).toBe(180);
+    expect(feedback?.targets[0]?.width).toBe(400);
+    expect(feedback?.targets[0]?.height).toBe(225);
   });
 
   test('forwards shader transform controls into composite uniforms', async () => {
