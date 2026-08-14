@@ -651,10 +651,22 @@ html.light .stims-editor {
 
 .stims-editor__slider {
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 2px 8px;
+  gap: 2px;
   padding: 3px 0;
+}
+
+/* Label, state chip, value — the chip sits between the name and the number
+   because it qualifies the number: "1.02, but the preset rewrites it". */
+.stims-editor__control-head {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.stims-editor__control-head .stims-editor__slider-value,
+.stims-editor__control-head .stims-editor__color-hex {
+  justify-self: end;
 }
 
 .stims-editor__slider-label {
@@ -758,17 +770,128 @@ html.light .stims-editor {
   }
 }
 
-/* Cool accent = "a device is driving this"; warm would read as an alert. */
-.stims-editor__midi-dot {
+/* ── Value-source chip ────────────────────────────────────────────────
+   Four states, and only two of them are clickable. "set" is the quiet
+   default and must not compete with the value beside it; "eq" and "eq ⚠"
+   are the ones worth interrupting for, because the control is not in
+   charge of that field. */
+.stims-editor__state-chip {
   flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: var(--radius-round);
-  background: var(--stims-cool);
+  padding: 0 4px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-dim);
+  font-family: var(--font-family-mono);
+  font-size: 0.6rem;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  cursor: default;
 }
 
-.stims-editor__midi-dot--shadowed {
-  background: var(--stims-warn);
+.stims-editor__state-chip:not(:disabled) {
+  cursor: pointer;
+}
+
+.stims-editor__state-chip:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__state-chip[data-state="static"] {
+  border-color: transparent;
+  opacity: 0.55;
+}
+
+/* Cool accent = "a device is driving this"; warm would read as an alert. */
+.stims-editor__state-chip[data-state="bound"] {
+  border-color: var(--stims-cool);
+  color: var(--stims-cool);
+}
+
+.stims-editor__state-chip[data-state="driven"],
+.stims-editor__state-chip[data-state="shadowed"] {
+  border-color: var(--stims-warn);
+  color: var(--stims-warn);
+}
+
+.stims-editor__state-chip[data-state="driven"]:hover,
+.stims-editor__state-chip[data-state="shadowed"]:hover {
+  background: color-mix(in srgb, var(--stims-warn) 14%, transparent);
+}
+
+/* ── Colour groups ────────────────────────────────────────────────── */
+
+.stims-editor__subhead {
+  margin: 14px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stims-line);
+  color: var(--ed-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stims-editor__colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 16px;
+}
+
+.stims-editor__colors .stims-editor__subhead {
+  grid-column: 1 / -1;
+}
+
+.stims-editor__color {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.stims-editor__color-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stims-editor__color-hex {
+  font-family: var(--font-family-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--stims-ink);
+}
+
+/* Square chip, not the browser's default pill: it reads as a paint sample
+   sitting in the same grid as the faders. */
+.stims-editor__color-swatch {
+  flex: none;
+  width: 26px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--stims-line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.stims-editor__color-swatch::-webkit-color-swatch-wrapper {
+  padding: 1px;
+}
+
+.stims-editor__color-swatch::-webkit-color-swatch {
+  border: 0;
+  border-radius: 1px;
+}
+
+.stims-editor__color-swatch::-moz-color-swatch {
+  border: 0;
+  border-radius: 1px;
+}
+
+.stims-editor__color-swatch:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
 }
 
 /* ── Insert pane ──────────────────────────────────────────────────── */

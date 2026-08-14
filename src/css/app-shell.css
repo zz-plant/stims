@@ -964,6 +964,97 @@ body[data-page="workspace"][data-live="true"] {
     max-height: none;
   }
 
+  /* ── Warp-centre gizmo ──────────────────────────────────────────────
+     A direct handle on cx/cy, drawn over the running visual. The layer is
+     inert; only the handle takes the pointer, so the stage keeps its own
+     click behaviour everywhere else. */
+  .stims-stage-gizmo {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-stage-hero);
+    pointer-events: none;
+  }
+
+  .stims-stage-gizmo__handle {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .stims-stage-gizmo__handle[data-dragging="true"] {
+    cursor: grabbing;
+  }
+
+  /* Crosshair arms. The visual behind this is arbitrary and changes every
+     frame, so the marker cannot rely on a fixed colour having contrast —
+     difference blending guarantees it separates from whatever it is over. */
+  .stims-stage-gizmo__handle::before,
+  .stims-stage-gizmo__handle::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: #fff;
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%);
+  }
+
+  .stims-stage-gizmo__handle::before {
+    width: 100%;
+    height: 1px;
+  }
+
+  .stims-stage-gizmo__handle::after {
+    width: 1px;
+    height: 100%;
+  }
+
+  .stims-stage-gizmo__readout {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 14px);
+    padding: 1px 5px;
+    /* Same opaque chrome the live-mode stage dock uses: the readout sits over
+       video, so it cannot inherit the page's light/dark surface. */
+    border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+    border-radius: var(--radius-sm);
+    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    color: #e5f1ff;
+    font-family: var(--font-family-mono);
+    font-size: 0.6rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.6;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  /* Driven by the preset's own equations: the marker is reporting the
+     literal in the draft, not where the warp is actually centred. */
+  .stims-stage-gizmo__handle[data-driven="true"] .stims-stage-gizmo__readout {
+    border-color: var(--stims-warn);
+    color: var(--stims-warn);
+  }
+
+  .stims-stage-gizmo__handle:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .stims-stage-gizmo__handle::before,
+    .stims-stage-gizmo__handle::after {
+      mix-blend-mode: normal;
+      background: var(--stims-accent);
+    }
+  }
+
   .stims-shell__launch-center {
     display: grid;
     justify-items: start;

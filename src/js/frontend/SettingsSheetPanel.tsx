@@ -5,6 +5,7 @@ import {
   setAccessibilityPreference,
   type TextScale,
 } from '../core/accessibility-preferences.ts';
+import type { PowerSavingLevel } from '../core/power-state.ts';
 import {
   hasWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
@@ -15,6 +16,7 @@ import {
   type PerformanceSettings,
   type ShaderQuality,
 } from '../core/state/performance-settings-store.ts';
+import type { PowerSaverMode } from '../core/state/power-saver-store.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
@@ -199,6 +201,90 @@ function describeAdaptiveQualityStatus(
   }
 }
 
+const POWER_SAVER_OPTIONS: { value: PowerSaverMode; label: string }[] = [
+  { value: 'auto', label: 'On battery' },
+  { value: 'on', label: 'Always' },
+  { value: 'off', label: 'Never' },
+];
+
+function describePowerSaving(
+  level: PowerSavingLevel,
+  mode: PowerSaverMode,
+): string {
+  if (level === 'saving') {
+    return 'Holding 30fps to stretch the charge. The low-power GPU is used from the next reload.';
+  }
+  if (level === 'conserving') {
+    return 'Running on battery — holding 60fps instead of full display rate.';
+  }
+  return mode === 'auto'
+    ? 'Uncapped while plugged in. On battery it holds 60fps, then 30fps below 35% charge.'
+    : 'Uncapped — frames present as fast as the display allows.';
+}
+
+function PowerSaverRow() {
+  const [mode, setMode] = useState<PowerSaverMode>('auto');
+  const [level, setLevel] = useState<PowerSavingLevel>('off');
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
+    void Promise.all([
+      import('../core/power-state.ts'),
+      import('../core/state/power-saver-store.ts'),
+    ]).then(([powerState, store]) => {
+      if (disposed) return;
+      setMode(store.getPowerSaverMode());
+      void powerState.startBatteryMonitoring();
+      // One subscription covers both inputs: the level is derived from the
+      // stored mode *and* the live battery reading, and unplugging the machine
+      // has to move this row without the user touching it.
+      unsubscribe = powerState.subscribeToPowerSavingLevel((next) => {
+        setLevel(next);
+        setMode(store.getPowerSaverMode());
+      });
+    });
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, []);
+
+  const changeMode = (next: PowerSaverMode) => {
+    setMode(next);
+    void import('../core/state/power-saver-store.ts').then(
+      ({ setPowerSaverMode }) => {
+        setPowerSaverMode(next);
+      },
+    );
+  };
+
+  return (
+    <div className="ctl-row">
+      <span className="ctl-row__text">
+        <label className="ctl-row__label" htmlFor="performance-power-saver">
+          Save power
+        </label>
+        <span className="ctl-row__hint" role="status">
+          {describePowerSaving(level, mode)}
+        </span>
+      </span>
+      <select
+        id="performance-power-saver"
+        className="ctl-select ctl-select--auto"
+        value={mode}
+        onChange={(e) => changeMode(e.target.value as PowerSaverMode)}
+      >
+        {POWER_SAVER_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function PerformanceSection() {
   const [perf, setPerf] = useState(() => ({
     shaderQuality: DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
@@ -352,6 +438,8 @@ function PerformanceSection() {
           ))}
         </select>
       </div>
+
+      <PowerSaverRow />
 
       <div className="ctl-row">
         <span className="ctl-row__text">

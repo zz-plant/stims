@@ -70,8 +70,11 @@ import {
 import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
 import {
   computeMidiGutterInfo,
+  findMilkdropEquationLine,
   isFieldShadowedByEquations,
   type MidiGutterEntry,
+  readMilkdropField,
+  upsertMilkdropFields,
 } from '../formatter';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
@@ -173,14 +176,6 @@ export const DEFAULT_EDITOR_SLIDERS: SliderConfig[] = [
     defaultValue: 0.0,
   },
   {
-    label: 'Wave Alpha',
-    key: 'wave_a',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.8,
-  },
-  {
     label: 'Border Size',
     key: 'ob_size',
     min: 0.0,
@@ -189,6 +184,93 @@ export const DEFAULT_EDITOR_SLIDERS: SliderConfig[] = [
     defaultValue: 0.01,
   },
 ];
+
+export type ColorGroupConfig = {
+  label: string;
+  /** Channel field names in r, g, b order. */
+  rgb: [string, string, string];
+  /** Alpha field, when the group has one. MilkDrop is inconsistent about the
+   * suffix — the main wave uses `wave_a`, the solid mesh uses `mesh_alpha`. */
+  alpha: { key: string; defaultValue: number } | null;
+  defaultRgb: [number, number, number];
+  hint: string;
+};
+
+/**
+ * MilkDrop stores every colour as separate 0..1 scalars, so a preset's palette
+ * arrives as ~20 unrelated numbers. Editing them as faders means guessing what
+ * (0.65, 0.20, 0.90) looks like and moving three controls to shift one hue;
+ * grouping them back into swatches is the difference between choosing a colour
+ * and solving for one.
+ */
+export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = [
+  {
+    label: 'Background',
+    rgb: ['bg_r', 'bg_g', 'bg_b'],
+    alpha: null,
+    defaultRgb: [0, 0, 0],
+    hint: 'Cleared behind everything each frame.',
+  },
+  {
+    label: 'Wave',
+    rgb: ['wave_r', 'wave_g', 'wave_b'],
+    alpha: { key: 'wave_a', defaultValue: 0.8 },
+    defaultRgb: [1, 1, 1],
+    hint: 'The main waveform. Most presets recolour this per frame.',
+  },
+  {
+    label: 'Motion vectors',
+    rgb: ['mv_r', 'mv_g', 'mv_b'],
+    alpha: { key: 'mv_a', defaultValue: 0 },
+    defaultRgb: [1, 1, 1],
+    hint: 'Alpha defaults to 0 — the grid is invisible until you raise it.',
+  },
+  {
+    label: 'Outer border',
+    rgb: ['ob_r', 'ob_g', 'ob_b'],
+    alpha: { key: 'ob_a', defaultValue: 0 },
+    defaultRgb: [0, 0, 0],
+    hint: 'Sized by Border Size; drawn only once alpha is above 0.',
+  },
+  {
+    label: 'Inner border',
+    rgb: ['ib_r', 'ib_g', 'ib_b'],
+    alpha: { key: 'ib_a', defaultValue: 0 },
+    defaultRgb: [0.25, 0.25, 0.25],
+    hint: 'Drawn only once alpha is above 0.',
+  },
+  {
+    label: 'Solid mesh',
+    rgb: ['mesh_r', 'mesh_g', 'mesh_b'],
+    alpha: { key: 'mesh_alpha', defaultValue: 0 },
+    defaultRgb: [1, 1, 1],
+    hint: 'A flat tint over the frame; alpha 0 by default.',
+  },
+];
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+/** MilkDrop channels are plain 0..1 multipliers, so the mapping to a colour
+ * input is direct — no gamma step, which would misreport what the preset
+ * actually holds. Values above 1 (presets do overdrive them) clamp for
+ * display only; the buffer keeps whatever the preset wrote until the swatch
+ * is actually moved. */
+function channelsToHex(rgb: [number, number, number]): string {
+  return `#${rgb
+    .map((channel) =>
+      Math.round(clamp01(channel) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+function hexToChannels(hex: string): [number, number, number] {
+  const value = hex.replace('#', '');
+  return [0, 1, 2].map(
+    (index) => Number.parseInt(value.slice(index * 2, index * 2 + 2), 16) / 255,
+  ) as [number, number, number];
+}
 
 export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
   const diagnostics: MilkdropDiagnostic[] = [];
@@ -963,10 +1045,25 @@ export class EditorPanel {
       input: HTMLInputElement;
       display: HTMLSpanElement;
       defaultValue: number;
-      midiDot: HTMLSpanElement;
       learnButton: HTMLButtonElement;
     }
   > = new Map();
+  private colorInputs: Map<
+    string,
+    {
+      group: ColorGroupConfig;
+      swatch: HTMLInputElement;
+      hexLabel: HTMLSpanElement;
+      alphaInput: HTMLInputElement | null;
+    }
+  > = new Map();
+  /** One entry per Tune control: the fields it writes and the chip reporting
+   * who currently owns them. */
+  private fieldStateCells: Array<{
+    chip: HTMLButtonElement;
+    keys: string[];
+    label: string;
+  }> = [];
   private midiTargets: Set<string> = new Set();
   // The slider whose "learn" button is currently armed, waiting for the
   // next CC from any device — mirrors webMidiService.getLearnTarget() but
@@ -1793,6 +1890,7 @@ export class EditorPanel {
     }
 
     this.updateSlidersFromDoc();
+    this.updateColorsFromDoc();
     this.refreshMidiGutter();
     this.refreshSliderMidiState();
   }
@@ -1808,21 +1906,52 @@ export class EditorPanel {
     this.editor.dispatch({ effects: setMidiGutterInfo.of(entries) });
   }
 
-  /** Keeps each Tune slider's status dot and "listening" learn-button state
-   * in sync with webMidiService. Cheap enough to call on every doc change —
-   * there are only 12 sliders. */
+  /** Keeps every Tune control's state chip and the sliders' "listening"
+   * learn-button state in sync with the buffer and webMidiService. Cheap
+   * enough to call on every doc change — there are under 20 controls. */
   private refreshSliderMidiState(): void {
     const doc = this.editor.state.doc.toString();
+
+    for (const cell of this.fieldStateCells) {
+      const driven = cell.keys.filter((key) =>
+        isFieldShadowedByEquations(doc, key),
+      );
+      const bound = cell.keys.filter((key) => this.midiTargets.has(key));
+      const state =
+        driven.length > 0 && bound.length > 0
+          ? 'shadowed'
+          : driven.length > 0
+            ? 'driven'
+            : bound.length > 0
+              ? 'bound'
+              : 'static';
+
+      cell.chip.dataset.state = state;
+      cell.chip.textContent =
+        state === 'static'
+          ? 'set'
+          : state === 'bound'
+            ? 'midi'
+            : state === 'driven'
+              ? 'eq'
+              : 'eq ⚠';
+      // Only the equation states have somewhere to jump to.
+      cell.chip.disabled = driven.length === 0;
+      cell.chip.title =
+        state === 'static'
+          ? `${cell.label} is a literal value in this preset — the control owns it.`
+          : state === 'bound'
+            ? `MIDI/MCP is driving ${bound.join(', ')}.`
+            : state === 'driven'
+              ? `This preset recomputes ${driven.join(', ')} every frame, so the control's value is overwritten. Click to jump to the equation.`
+              : `MIDI/MCP is bound to ${bound.join(', ')}, but this preset's own equations reassign ${driven.join(', ')} every frame — no visible effect. Click to jump to the equation.`;
+      cell.chip.setAttribute(
+        'aria-label',
+        `${cell.label} value source: ${state}`,
+      );
+    }
+
     this.sliderInputs.forEach((item, key) => {
-      const bound = this.midiTargets.has(key);
-      item.midiDot.hidden = !bound;
-      if (bound) {
-        const shadowed = isFieldShadowedByEquations(doc, key);
-        item.midiDot.className = `editor-slider-row__midi-dot editor-slider-row__midi-dot--${shadowed ? 'shadowed' : 'live'}`;
-        item.midiDot.title = shadowed
-          ? `MIDI/MCP is bound to ${key}, but this preset's own equations reassign it every frame — no visible effect.`
-          : `MIDI/MCP is driving ${key}.`;
-      }
       const armed = this.learningSliderKey === key;
       item.learnButton.dataset.armed = armed ? 'true' : 'false';
       item.learnButton.title = armed
@@ -1892,6 +2021,38 @@ export class EditorPanel {
     this.editor.focus();
   }
 
+  /**
+   * A control's state cell. Any MilkDrop field is either a literal the buffer
+   * owns or a value the preset's own equations rewrite every frame, and a
+   * control that cannot tell you which is lying about roughly half the
+   * catalog: the fader moves, the line changes, and the next frame overwrites
+   * it. The chip names the owner, and on a driven field it jumps to the
+   * equation doing the overwriting.
+   */
+  private createFieldStateChip(
+    keys: string[],
+    label: string,
+  ): HTMLButtonElement {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'stims-editor__state-chip';
+    chip.dataset.state = 'static';
+    chip.addEventListener('click', () => {
+      const doc = this.editor.state.doc.toString();
+      const driven = keys.find((key) => isFieldShadowedByEquations(doc, key));
+      const line = driven ? findMilkdropEquationLine(doc, driven) : null;
+      if (line === null) return;
+      const target = this.editor.state.doc.line(line);
+      this.editor.dispatch({
+        selection: { anchor: target.from },
+        scrollIntoView: true,
+      });
+      this.editor.focus();
+    });
+    this.fieldStateCells.push({ chip, keys, label });
+    return chip;
+  }
+
   /** Tune pane. Each row is label + live value on one line, fader and its
    * two controls on the next. In the old 140px column beside the code the
    * label, value, MIDI dot, learn and reset controls all fought for the
@@ -1904,7 +2065,7 @@ export class EditorPanel {
     const hint = document.createElement('p');
     hint.className = 'stims-editor__hint';
     hint.textContent =
-      'Faders rewrite the matching line in the draft, so every move stays inspectable as code.';
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value or the preset recomputes it per frame.';
     panel.appendChild(hint);
 
     const grid = document.createElement('div');
@@ -1912,6 +2073,8 @@ export class EditorPanel {
     panel.appendChild(grid);
 
     this.sliderInputs.clear();
+    this.colorInputs.clear();
+    this.fieldStateCells = [];
 
     for (const s of DEFAULT_EDITOR_SLIDERS) {
       const row = document.createElement('div');
@@ -1958,13 +2121,6 @@ export class EditorPanel {
         this.writeVariableToEditor(s.key, numVal);
       });
 
-      // Passive status: is a MIDI/MCP device currently bound to this
-      // slider's target, and if so does the preset's own equations
-      // silently overwrite whatever it writes? Hidden until bound.
-      const midiDot = document.createElement('span');
-      midiDot.className = 'stims-editor__midi-dot';
-      midiDot.hidden = true;
-
       // Active control: arm MIDI-learn for this exact slider without
       // typing its name into a text field elsewhere — move a knob and
       // it's bound. Click again (or the Performance hardware panel's
@@ -1989,21 +2145,181 @@ export class EditorPanel {
       resetButton.title = `Reset to ${s.defaultValue}`;
       resetButton.addEventListener('click', resetToDefault);
 
-      controls.append(midiDot, input, learnButton, resetButton);
+      controls.append(input, learnButton, resetButton);
 
       this.sliderInputs.set(s.key, {
         input,
         display: valDisplay,
         defaultValue: s.defaultValue,
-        midiDot,
         learnButton,
       });
 
-      row.append(label, valDisplay, controls);
+      const head = document.createElement('div');
+      head.className = 'stims-editor__control-head';
+      head.append(
+        label,
+        this.createFieldStateChip([s.key], s.label),
+        valDisplay,
+      );
+
+      row.append(head, controls);
       grid.appendChild(row);
     }
 
+    panel.appendChild(this.renderColorGroups());
+
     return panel;
+  }
+
+  /** Colour groups. Six swatches stand in for the ~21 r/g/b/a scalars the
+   * format spreads across the background, wave, motion-vector, border and
+   * mesh blocks. */
+  private renderColorGroups(): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'stims-editor__colors';
+    section.setAttribute('role', 'group');
+    section.setAttribute('aria-label', 'Preset colours');
+
+    const heading = document.createElement('h3');
+    heading.className = 'stims-editor__subhead';
+    heading.textContent = 'Colour';
+    section.appendChild(heading);
+
+    for (const group of DEFAULT_EDITOR_COLOR_GROUPS) {
+      const row = document.createElement('div');
+      row.className = 'stims-editor__color';
+
+      const swatch = document.createElement('input');
+      swatch.type = 'color';
+      swatch.className = 'stims-editor__color-swatch';
+      swatch.setAttribute('aria-label', `${group.label} colour`);
+      swatch.title = group.hint;
+
+      const label = document.createElement('label');
+      label.className = 'stims-editor__slider-label';
+      label.textContent = group.label;
+
+      const hexLabel = document.createElement('span');
+      hexLabel.className = 'stims-editor__color-hex';
+
+      // Alpha rides with the colour rather than sitting three rows away as
+      // its own fader: for four of these six groups alpha defaults to 0, so
+      // the swatch alone would be a colour you cannot see and cannot explain.
+      let alphaInput: HTMLInputElement | null = null;
+      const controls = document.createElement('div');
+      controls.className = 'stims-editor__color-controls';
+      controls.appendChild(swatch);
+
+      if (group.alpha) {
+        const alpha = group.alpha;
+        alphaInput = document.createElement('input');
+        alphaInput.type = 'range';
+        alphaInput.min = '0';
+        alphaInput.max = '1';
+        alphaInput.step = '0.01';
+        alphaInput.className = 'stims-editor__slider-input';
+        alphaInput.setAttribute('aria-label', `${group.label} alpha`);
+        alphaInput.addEventListener('input', () => {
+          const next = Number.parseFloat(alphaInput?.value ?? '0');
+          this.writeVariableToEditor(alpha.key, next);
+          this.updateColorHexLabel(group);
+        });
+        controls.appendChild(alphaInput);
+      }
+
+      swatch.addEventListener('input', () => {
+        const [r, g, b] = hexToChannels(swatch.value);
+        this.writeVariablesToEditor({
+          [group.rgb[0]]: r,
+          [group.rgb[1]]: g,
+          [group.rgb[2]]: b,
+        });
+        this.updateColorHexLabel(group);
+      });
+
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'stims-editor__slider-btn';
+      resetButton.textContent = '↺';
+      resetButton.setAttribute('aria-label', `Reset ${group.label} colour`);
+      resetButton.title = 'Reset to the MilkDrop default';
+      resetButton.addEventListener('click', () => {
+        const updates: Record<string, number> = {
+          [group.rgb[0]]: group.defaultRgb[0],
+          [group.rgb[1]]: group.defaultRgb[1],
+          [group.rgb[2]]: group.defaultRgb[2],
+        };
+        if (group.alpha) {
+          updates[group.alpha.key] = group.alpha.defaultValue;
+        }
+        this.writeVariablesToEditor(updates);
+        this.updateColorsFromDoc();
+      });
+      controls.appendChild(resetButton);
+
+      const keys = [...group.rgb];
+      if (group.alpha) keys.push(group.alpha.key);
+
+      const head = document.createElement('div');
+      head.className = 'stims-editor__control-head';
+      head.append(
+        label,
+        this.createFieldStateChip(keys, group.label),
+        hexLabel,
+      );
+
+      row.append(head, controls);
+      section.appendChild(row);
+
+      this.colorInputs.set(group.label, {
+        group,
+        swatch,
+        hexLabel,
+        alphaInput,
+      });
+    }
+
+    return section;
+  }
+
+  private readColorChannels(group: ColorGroupConfig): {
+    rgb: [number, number, number];
+    alpha: number | null;
+  } {
+    const rgb = group.rgb.map((key, index) => {
+      const value = this.readVariableFromEditor(key);
+      return value === null ? group.defaultRgb[index] : value;
+    }) as [number, number, number];
+    const alpha = group.alpha
+      ? (this.readVariableFromEditor(group.alpha.key) ??
+        group.alpha.defaultValue)
+      : null;
+    return { rgb, alpha };
+  }
+
+  private updateColorHexLabel(group: ColorGroupConfig): void {
+    const item = this.colorInputs.get(group.label);
+    if (!item) return;
+    const { rgb, alpha } = this.readColorChannels(group);
+    item.hexLabel.textContent =
+      alpha === null
+        ? channelsToHex(rgb)
+        : `${channelsToHex(rgb)} · ${alpha.toFixed(2)}`;
+  }
+
+  private updateColorsFromDoc(): void {
+    this.colorInputs.forEach((item) => {
+      const active = document.activeElement;
+      if (active === item.swatch || active === item.alphaInput) {
+        return;
+      }
+      const { rgb, alpha } = this.readColorChannels(item.group);
+      item.swatch.value = channelsToHex(rgb);
+      if (item.alphaInput && alpha !== null) {
+        item.alphaInput.value = String(clamp01(alpha));
+      }
+      this.updateColorHexLabel(item.group);
+    });
   }
 
   private updateSlidersFromDoc() {
@@ -2019,30 +2335,26 @@ export class EditorPanel {
   }
 
   public readVariableFromEditor(variableName: string): number | null {
-    const doc = this.editor.state.doc.toString();
-    const regex = new RegExp(
-      `(?:^|\\n|;)\\s*${variableName}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`,
-      'i',
-    );
-    const match = doc.match(regex);
-    return match ? Number.parseFloat(match[1]) : null;
+    return readMilkdropField(this.editor.state.doc.toString(), variableName);
   }
 
   public writeVariableToEditor(variableName: string, value: number): void {
-    const doc = this.editor.state.doc.toString();
-    const formattedValue = value.toFixed(3);
-    const regex = new RegExp(
-      `((?:^|\\n|;)\\s*${variableName}\\s*=\\s*)-?\\d+(?:\\.\\d+)?`,
-      'i',
-    );
-    let newDoc: string;
+    this.writeVariablesToEditor({ [variableName]: value });
+  }
 
-    if (regex.test(doc)) {
-      newDoc = doc.replace(regex, `$1${formattedValue}`);
-    } else {
-      const prefix = doc.length === 0 || doc.endsWith('\n') ? '' : '\n';
-      newDoc = `${doc}${prefix}${variableName}=${formattedValue}\n`;
-    }
+  /**
+   * One transaction for a whole group — the four channels of a colour, both
+   * halves of an XY pair. Writing them one at a time dispatched four separate
+   * doc changes and four separate recompiles for a single swatch drag.
+   */
+  public writeVariablesToEditor(updates: Record<string, number>): void {
+    const doc = this.editor.state.doc.toString();
+    // Was a hand-rolled regex that only matched the canonical spelling and,
+    // on a miss, appended the new line to the very end of the buffer — i.e.
+    // inside [warp_shader] for any preset that has one, where the parser
+    // swallows it as shader text. upsertMilkdropFields knows the aliases and
+    // inserts ahead of the shader sections.
+    const newDoc = upsertMilkdropFields(doc, updates);
 
     if (newDoc !== doc) {
       this.editor.dispatch({

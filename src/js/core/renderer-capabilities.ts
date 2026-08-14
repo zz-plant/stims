@@ -5,6 +5,10 @@ import {
   isMobileDevice,
 } from '../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from './device-profile.ts';
+import {
+  resolveGpuPowerPreference,
+  whenBatteryStateSettled,
+} from './power-state.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -696,8 +700,14 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
       );
     }
     try {
+      // This adapter is not a throwaway probe — its device is handed to the
+      // WebGPU renderer, so this call is what picks the GPU for the whole
+      // session. On a dual-GPU laptop that makes it the largest single power
+      // decision the app makes, hence the short wait for the battery state.
+      await whenBatteryStateSettled();
+      const powerPreference = resolveGpuPowerPreference();
       const adapter =
-        (await gpu.requestAdapter({ powerPreference: 'high-performance' })) ??
+        (await gpu.requestAdapter({ powerPreference })) ??
         (await gpu.requestAdapter());
       if (!adapter) {
         return buildFallback(

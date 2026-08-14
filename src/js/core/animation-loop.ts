@@ -1,5 +1,7 @@
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import { getAverageFrequency, getFrequencyData } from './audio-handler';
+import { createFrameGate } from './frame-pacing';
+import { getPowerSavingFrameCapHz } from './power-state';
 
 export interface AudioLoopToy {
   rendererReady?: Promise<unknown>;
@@ -7,6 +9,7 @@ export interface AudioLoopToy {
   analyser: FrequencyAnalyser | null;
   renderer: {
     setAnimationLoop: ((callback: (() => void) | null) => void) | null;
+    xr?: { isPresenting?: boolean } | null;
   } | null;
 }
 
@@ -96,9 +99,19 @@ export async function startAudioLoop(
   // single uncaught throw would freeze the visual permanently. Guard each
   // frame and stop only after a sustained failure streak.
   let failureStreak = 0;
+  // Power-saver frame ceiling. Gating here rather than inside each toy keeps the
+  // skip ahead of every simulation and draw call, and covers both renderer
+  // backends — WebGL's native scheduling and the WebGPU recovery-aware loop both
+  // funnel through this callback.
+  const frameGate = createFrameGate(getPowerSavingFrameCapHz);
   toy.renderer.setAnimationLoop(() => {
     const now =
       typeof performance !== 'undefined' ? performance.now() : Date.now();
+    // An XR session owns its own presentation cadence; dropping frames there
+    // reads as head-tracking judder, not as a power saving.
+    if (!toy.renderer?.xr?.isPresenting && !frameGate.shouldRenderFrame(now)) {
+      return;
+    }
     ctx.time = now / 1000;
     ctx.realTimeMs = now;
     try {

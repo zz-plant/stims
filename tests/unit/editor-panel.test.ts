@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   computeAstDiagnostics,
+  DEFAULT_EDITOR_COLOR_GROUPS,
   DEFAULT_EDITOR_SLIDERS,
   EditorPanel,
   type EditorPanelCallbacks,
@@ -88,8 +89,31 @@ describe('editor panel AST diagnostics & helpers', () => {
     expect(keys).toContain('sy');
     expect(keys).toContain('dx');
     expect(keys).toContain('dy');
-    expect(keys).toContain('wave_a');
     expect(keys).toContain('ob_size');
+    // wave_a is not a fader any more: it is the alpha half of the Wave colour
+    // group, so the swatch and its alpha move together.
+    expect(keys).not.toContain('wave_a');
+  });
+
+  test('DEFAULT_EDITOR_COLOR_GROUPS covers every r/g/b block in the format', () => {
+    const channels = DEFAULT_EDITOR_COLOR_GROUPS.flatMap((group) => group.rgb);
+    expect(channels).toContain('bg_r');
+    expect(channels).toContain('wave_r');
+    expect(channels).toContain('mv_r');
+    expect(channels).toContain('ob_r');
+    expect(channels).toContain('ib_r');
+    expect(channels).toContain('mesh_r');
+
+    // MilkDrop is not consistent about the alpha suffix; the group has to
+    // carry the real field name or the control writes to nothing.
+    const waveGroup = DEFAULT_EDITOR_COLOR_GROUPS.find(
+      (group) => group.label === 'Wave',
+    );
+    expect(waveGroup?.alpha?.key).toBe('wave_a');
+    const meshGroup = DEFAULT_EDITOR_COLOR_GROUPS.find(
+      (group) => group.label === 'Solid mesh',
+    );
+    expect(meshGroup?.alpha?.key).toBe('mesh_alpha');
   });
 });
 
@@ -158,13 +182,13 @@ describe('EditorPanel class integration', () => {
     panel.writeVariableToEditor('zoom', 1.45);
     expect(panel.readVariableFromEditor('zoom')).toBeCloseTo(1.45, 2);
     expect(callbacks.onEditorSourceChange).toHaveBeenCalledWith(
-      expect.stringContaining('zoom=1.450'),
+      expect.stringContaining('zoom=1.45'),
     );
 
     // Append missing variable
     panel.writeVariableToEditor('dx', 0.15);
     expect(panel.readVariableFromEditor('dx')).toBeCloseTo(0.15, 2);
-    expect(panel.getEditorSource()).toContain('dx=0.150');
+    expect(panel.getEditorSource()).toContain('dx=0.15');
 
     panel.dispose();
   });
@@ -264,7 +288,7 @@ describe('EditorPanel class integration', () => {
     zoomLabel?.dispatchEvent(event);
 
     expect(panel.readVariableFromEditor('zoom')).toBeCloseTo(1.0, 2);
-    expect(panel.getEditorSource()).toContain('zoom=1.000');
+    expect(panel.getEditorSource()).toContain('zoom=1\n');
 
     panel.dispose();
   });
@@ -294,12 +318,12 @@ describe('EditorPanel class integration', () => {
     });
     panel.setSessionState(preset);
     panel.writeVariableToEditor('zoom', 1.9);
-    expect(panel.getEditorSource()).toContain('zoom=1.900');
+    expect(panel.getEditorSource()).toContain('zoom=1.9');
 
     // The compile of an *older* keystroke lands late. It must not yank the
     // buffer out from under the newer draft.
     panel.setSessionState(preset);
-    expect(panel.getEditorSource()).toContain('zoom=1.900');
+    expect(panel.getEditorSource()).toContain('zoom=1.9');
 
     panel.dispose();
   });
@@ -318,7 +342,7 @@ describe('EditorPanel class integration', () => {
 
     // Unsaved local draft belonging to preset A.
     panel.writeVariableToEditor('zoom', 1.9);
-    expect(panel.getEditorSource()).toContain('zoom=1.900');
+    expect(panel.getEditorSource()).toContain('zoom=1.9');
 
     panel.setSessionState(
       sessionStateFor('title=Preset B\nzoom=0.500\n', {

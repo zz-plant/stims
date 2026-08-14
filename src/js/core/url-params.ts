@@ -29,6 +29,12 @@ export interface PerformanceURLParams {
    * frame time for visual quality, which hides both wins and regressions.
    */
   lockedQualityStep: number | null;
+  /**
+   * Forces the power-saver mode (`auto`/`on`/`off`) for this session, so a QA
+   * link can pin the frame cap instead of waiting for a laptop to discharge.
+   * Left as a raw string; `power-saver-store` owns the normalization.
+   */
+  powerSaver: string | null;
 }
 
 export interface MockAudioURLParams {
@@ -280,6 +286,7 @@ export function parseURLParams(
       particleBudget: parseNumberParam(get('particleBudget')),
       shaderQuality: get('shaderQuality')?.trim() || null,
       lockedQualityStep: parseNumberParam(get('lockQualityStep')),
+      powerSaver: get('powerSaver')?.trim() || null,
     },
     audioMock: {
       type: get('mockAudio')?.trim() || null,
@@ -342,6 +349,12 @@ export function getPerformanceOverrideParams(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): PerformanceURLParams {
   return parseURLParams(input).performance;
+}
+
+export function getPowerSaverOverride(
+  input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
+): string | null {
+  return parseURLParams(input).performance.powerSaver;
 }
 
 export function getMockAudioParams(

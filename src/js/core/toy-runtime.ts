@@ -1,11 +1,13 @@
 import type { AnimationContext } from './animation-loop';
 import { getContextFrequencyData } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
+import { createFrameGate } from './frame-pacing';
 import {
   getActivePerformanceSettings,
   type PerformanceSettings,
   subscribeToPerformanceSettings,
 } from './performance-panel';
+import { getPowerSavingFrameCapHz } from './power-state';
 import {
   generateStimulusFrame,
   type StimulusSpec,
@@ -423,8 +425,15 @@ export function createToyRuntime({
     let failureStreak = 0;
 
     let smoothedPreviewDeltaMs = 0;
+    // The pre-audio preview runs before the user has done anything, so it is the
+    // loop most likely to be left burning battery on a page nobody is watching.
+    const previewFrameGate = createFrameGate(getPowerSavingFrameCapHz);
     const tick = (now: number) => {
       if (!previewActive) return;
+      if (!previewFrameGate.shouldRenderFrame(now)) {
+        previewAnimationId = requestAnimationFrame(tick);
+        return;
+      }
       const rawDeltaMs = previewLastFrame
         ? Math.min(100, Math.max(0, now - previewLastFrame))
         : 1000 / 60;
