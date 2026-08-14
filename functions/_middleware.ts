@@ -203,8 +203,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
 
   const [title, author] = entry;
   const authorCredit = author ? ` by ${author}` : '';
-  const fullTitle = `${title} — Stims Music Visualizer`;
-  const description = `Watch "${title}"${authorCredit} react to your music. A MilkDrop preset running live in your browser on Stims — no install, no plugin.`;
+  const fullTitle = `▶ Play ${title}${authorCredit} — Stims Visualizer`;
+  const description = `Tap to launch "${title}" live in 60FPS WebGPU. Reacts to your mic or audio in the browser — zero install required.`;
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
