@@ -106,29 +106,35 @@ export function CreditsPanel() {
 
       <CreditsSection title="Preset Authors & Curators">
         <p>
-          The 1,787 presets in Stims' catalog are created and maintained by
-          hundreds of artists in the demoscene and audio-visual community. Key
-          contributors include:
+          The 1,787 presets in Stims' catalog were made by roughly 140 authors.
+          Counting every appearance in a credit chain rather than only solo
+          bylines, the most-credited are Geiss, Flexi, Martin, Rovastar, Eo.S.,
+          Stahlregen, Unchained, fiShbRaiN, Phat, and Aderrasi.
         </p>
         <CreditEntry
-          name="Eo.S."
-          creditRole="Cream of the Crop curator & artist"
+          name="Rovastar"
+          creditRole="Classic-era author; researched the cross-vendor texel-alignment fix credited in Geiss's MilkDrop changelog"
+        />
+        <CreditEntry
+          name="Krash"
+          creditRole="Classic-era author; his beat-detection routine circulated scene-wide, credited inline in preset titles"
+        />
+        <p>Curation decided which presets most people ever saw:</p>
+        <CreditEntry
+          name="djdafreund"
+          creditRole="Compiler, Better Living Through Chemicals (BLTC) — ships inside projectM as bltc201"
+        />
+        <CreditEntry
+          name="Jason Fletcher / ISOSCELES"
+          creditRole="Compiler, Cream of the Crop — the default projectM preset pack since 2022"
           url="https://github.com/projectM-visualizer/presets-cream-of-the-crop"
         />
-        <CreditEntry
-          name="Rovastar"
-          creditRole="Classic MilkDrop packs & projectM development"
-          url="https://sourceforge.net/projects/milkdrop2/"
-        />
-        <CreditEntry
-          name="projectM Community"
-          creditRole="Distributed preset packs & collections"
-          url="https://github.com/projectM-visualizer/projectm/tree/master/src/libprojectM/presets"
-        />
         <p className="stims-credits-disclaimer">
-          Every preset in your library carries the work and creativity of its
-          original author. Stims aims to make that authorship visible and
-          linkable.
+          MilkDrop credits are accretive: a remixer joins the byline rather than
+          replacing it, so a title like "Stahlregen &amp; Geiss + Rovastar +
+          Illusion + Krash + Rozzor — Cyclopean Shift (Eyeless Mix)" names six
+          hands on one work. Stims preserves those chains in full and never
+          truncates them to "and others."
         </p>
       </CreditsSection>
 

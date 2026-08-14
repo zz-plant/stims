@@ -5,6 +5,11 @@ import {
   type QualityPreset,
 } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
+import {
+  creditedHandles,
+  creditsHandle,
+  resolveHandleKey,
+} from '../milkdrop/preset-handles.ts';
 import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import type {
   AudioSource,
@@ -131,30 +136,18 @@ const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:touch-friendly': 'Touch Friendly',
 };
 
+/**
+ * Pages an author publishes under — their own home, not a place their files
+ * ended up.
+ *
+ * Most preset authors have no live page. Pointing their byline at a preset
+ * pack that merely redistributes their work implies "this is their site" and
+ * quietly credits the distributor, so those links are deliberately absent
+ * rather than approximated. An entry belongs here only when the author
+ * publishes there themselves.
+ */
 const AUTHOR_PROFILES: Record<string, string> = {
-  'ryan geiss': 'http://www.geisswerks.com/milkdrop/',
   geiss: 'http://www.geisswerks.com/milkdrop/',
-  _geiss: 'http://www.geisswerks.com/milkdrop/',
-  rovastar: 'https://sourceforge.net/projects/milkdrop2/',
-  'krash & rovastar': 'https://sourceforge.net/projects/milkdrop2/',
-  'eo.s.': 'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  'eo.s. + phat':
-    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  flexi: 'https://github.com/projectM-visualizer/projectm',
-  martin: 'https://github.com/projectM-visualizer/projectm',
-  aderrasi: 'https://github.com/projectM-visualizer/projectm',
-  orb: 'https://github.com/projectM-visualizer/projectm',
-  shifter: 'https://github.com/projectM-visualizer/projectm',
-  fishbrain: 'https://github.com/projectM-visualizer/projectm',
-  cope: 'https://github.com/projectM-visualizer/projectm',
-  unchained: 'https://github.com/projectM-visualizer/projectm',
-  suksma: 'https://github.com/projectM-visualizer/projectm',
-  'amandio c': 'https://github.com/projectM-visualizer/projectm',
-  stahlregen:
-    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  goody: 'https://github.com/projectM-visualizer/projectm',
-  hexcollie: 'https://github.com/projectM-visualizer/projectm',
-  adamfx: 'https://github.com/projectM-visualizer/projectm',
 };
 
 export function resolveAuthorUrl(
@@ -163,12 +156,11 @@ export function resolveAuthorUrl(
 ): string | undefined {
   if (explicitUrl) return explicitUrl;
   if (!author) return undefined;
-  const key = author.toLowerCase().trim();
-  if (AUTHOR_PROFILES[key]) return AUTHOR_PROFILES[key];
-  for (const [authorName, url] of Object.entries(AUTHOR_PROFILES)) {
-    if (key.includes(authorName)) return url;
-  }
-  return undefined;
+  // Only link a byline that resolves to exactly one author — a chain like
+  // "Flexi + Geiss" must not link the whole credit to one of its hands.
+  const handles = creditedHandles(author);
+  if (handles.length !== 1) return undefined;
+  return AUTHOR_PROFILES[resolveHandleKey(handles[0])];
 }
 
 export function prettifyCollectionTag(collectionTag: string) {
@@ -262,38 +254,34 @@ export function sortBrowseEntries(
   }
 }
 
-function isNicerAuthorCasing(candidate: string, current: string) {
-  if (candidate.length !== current.length) {
-    return candidate.length < current.length;
-  }
-  return /^[A-Z]/.test(candidate) && !/^[A-Z]/.test(current);
-}
-
 /**
- * Distinct author names for the "Browse by author" filter, folding
- * case/underscore variants of the same name (e.g. "Geiss" / "_Geiss") down
- * to one canonical display string per author.
+ * Distinct authors for the "Browse by author" filter.
+ *
+ * MilkDrop bylines are accretive credit chains, so the filter lists the
+ * individual handles credited across the catalog rather than the raw author
+ * strings. Listing the strings instead both split one author across spelling
+ * variants and buried anyone who mostly published in company — 102 catalog
+ * presets credit Phat, and only 5 name him alone.
  */
 export function getAuthorOptions(entries: PresetCatalogEntry[]): string[] {
   const byKey = new Map<string, string>();
   for (const entry of entries) {
-    const raw = entry.author?.trim();
-    if (!raw || raw.toLowerCase() === 'unknown') continue;
-    const key = raw.toLowerCase();
-    const current = byKey.get(key);
-    if (!current || isNicerAuthorCasing(raw, current)) {
-      byKey.set(key, raw);
+    for (const handle of creditedHandles(entry.author)) {
+      byKey.set(resolveHandleKey(handle), handle);
     }
   }
-  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+  return [...byKey.values()].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' }),
+  );
 }
 
+/** True when the entry's credit chain names this author anywhere in it. */
 export function matchesAuthor(
   entry: PresetCatalogEntry,
   author: string | null,
 ) {
   if (!author) return true;
-  return (entry.author ?? '').trim().toLowerCase() === author.toLowerCase();
+  return creditsHandle(entry.author, author);
 }
 
 export function getCollectionTags(entries: PresetCatalogEntry[]) {

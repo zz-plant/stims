@@ -231,9 +231,9 @@ Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md
 Stims is built with deep gratitude for the creative, mathematical, and technical giants whose work pioneered real-time audio visualization:
 
 - **Ryan Geiss & MilkDrop**: For creating the original MilkDrop visualizer, Winamp plugin, and per-pixel math expression language that defined an entire digital art form.
-- **Jordan Seldin & Butterchurn Contributors**: For pioneering web-based MilkDrop rendering in WebGL and establishing open-source web preset parsing patterns.
+- **Jordan Berg (`jberg`) & Butterchurn Contributors**: For pioneering web-based MilkDrop rendering in WebGL and establishing open-source web preset parsing patterns.
 - **Carmelo Piccione, Mischa Spiegelmock & projectM Maintainers**: For building and maintaining projectM, the open-source C++ reference implementation used as our gold-standard visual parity reference target.
-- **The MilkDrop Preset Author Community**: Gratitude to legendary preset authors (*Rovastar, Krash, Zylot, Eo.S., Aderrasi, Orb, Martin, Flexi, Che, FSP, Geiss, Unbalanced, Ning, Benski, Telek, Yad*, and hundreds of others) whose math and artistic vision power the 1,787+ catalog presets.
+- **The MilkDrop Preset Author Community**: Gratitude to the authors whose math and artistic vision power the 1,787 catalog presets. The most-credited handles in the shipped catalog, counting every appearance in an accretive credit chain rather than only solo bylines, are *Geiss, Flexi, Martin, Rovastar, Eo.S., Stahlregen, Unchained, fiShbRaiN, Phat, Aderrasi, Shifter, Zylot, ORB, suksma, Cope, Goody, and Krash* — alongside roughly 120 more.
 - **Nullsoft & Winamp**: For providing the legendary software platform that brought music visualization to millions worldwide.
 
 Stims is an independent implementation. MilkDrop, Butterchurn, and projectM are credited as creative and technical lineage; no official affiliation is implied. See [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md).

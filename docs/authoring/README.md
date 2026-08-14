@@ -17,8 +17,9 @@ If you want the reference instead of the course, see [the language reference](re
 | [6 · Shaders](06-shaders.md) | Warp and composite GLSL — the pair 64% of the catalog uses |
 | [7 · Taste](07-taste.md) | Five masterwork dissections: reaction-diffusion, tempo tracking, hand-rolled HSL, and more |
 | [8 · Shipping](08-shipping.md) | The first cross-engine compatibility matrix, performance, publishing |
+| [9 · Technique glossary](09-technique-glossary.md) | The named-technique vocabulary — Jelly, Relief, Painterly, Krash's beat code — counted across the shipped catalog |
 
-All eight tracks are live. The plan that scoped them, plus ideas for what comes next (a technique cookbook, an in-editor reactivity meter, archive rescue), is in [PRESET_AUTHORING_DOCS_PLAN.md](../PRESET_AUTHORING_DOCS_PLAN.md).
+All nine tracks are live. The plan that scoped them, plus ideas for what comes next (a technique cookbook, an in-editor reactivity meter, archive rescue), is in [PRESET_AUTHORING_DOCS_PLAN.md](../PRESET_AUTHORING_DOCS_PLAN.md).
 
 ## How the examples work
 

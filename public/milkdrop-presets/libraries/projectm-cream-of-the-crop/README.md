@@ -4,6 +4,13 @@ This folder vendors a larger, user-facing subset of presets from the
 `projectM-visualizer/presets-cream-of-the-crop` GitHub repository so they can
 ship directly in Stims without exposing the entire upstream pack.
 
+Curator: **Jason Fletcher / ISOSCELES**, who reduced roughly 52,000 presets to
+9,795 across 11 categories and 183 subcategories, with preview images. It became
+the default projectM preset pack in 2022 — which makes it the point at which one
+curator's taste became the default visual experience for most users of the
+format. Credit the curation as curation, distinctly from the preset authors; see
+[`docs/LINEAGE_AND_CREDITS.md`](../../../../docs/LINEAGE_AND_CREDITS.md).
+
 - Source repository: `https://github.com/projectM-visualizer/presets-cream-of-the-crop`
 - Source commit: `0180df21f5e0bd39b9060cc5de420ed2f1f9e509`
 - Retrieved for Stims: `2026-04-11`
@@ -26,6 +33,13 @@ License note from the upstream repository:
 > Since the presets were freely released and have been used in so many packages
 > and applications in the past two decades, it is safe to assume them to be in
 > the public domain.
+
+Counting note: quote the number of files vendored here, not a pack size. The
+52k/73k/97k figures in circulation for MilkDrop corpora are **file** counts — a
+checksum pass over the 52k corpus yields roughly 44k unique presets, with many
+near-duplicates beyond that. If you dedupe a pack before importing, normalize
+`fRating=` across the files first, or rating differences will defeat checksum
+matching.
 
 If the upstream repository changes or a preset needs to be replaced, update
 `catalog.json` and keep the copied `.milk` files aligned with the selected
