@@ -44,9 +44,7 @@ export function PresetArtwork({
 }) {
   const mood = describePresetMood(entry);
   const liveTile = useLivePresetTile(entry);
-  const staticThumbUrl = entry.preview
-    ? `/milkdrop-presets/previews/${entry.id}.png`
-    : null;
+  const staticThumbUrl = `/milkdrop-presets/previews/${entry.id}.png`;
   const imageUrl = preview?.imageUrl ?? staticThumbUrl;
   const previewStatus = preview?.imageUrl
     ? 'ready'
