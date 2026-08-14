@@ -193,6 +193,7 @@ function configureMilkdropTexture(
   if (colorTexture) {
     texture.colorSpace = SRGBColorSpace;
   }
+  texture.needsUpdate = true;
   return texture;
 }
 
