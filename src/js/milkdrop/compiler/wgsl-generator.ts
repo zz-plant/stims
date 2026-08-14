@@ -281,7 +281,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '%':
           return `milkdropIntMod(${left}, ${right})`;
         case '^':
-          return `pow(${left}, ${right})`;
+          return `pow(max(0.0f, ${left}), ${right})`;
         case '|':
           return `f32(i32(${left}) | i32(${right}))`;
         case '&':
@@ -328,7 +328,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'sqrt':
           return `sqrt(max(0.0f, ${args[0] ?? '0.0f'}))`;
         case 'pow':
-          return `pow(${args[0] ?? '0.0f'}, ${args[1] ?? '1.0f'})`;
+          return `pow(max(0.0f, ${args[0] ?? '0.0f'}), ${args[1] ?? '1.0f'})`;
         case 'mod':
         case 'fmod': {
           const a = args[0] ?? '0.0f';

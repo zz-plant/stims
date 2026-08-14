@@ -643,8 +643,10 @@ export function evaluateMilkdropExpression(
           return Math.abs(args[0] ?? 0);
         case 'sqrt':
           return Math.sqrt(Math.max(0, args[0] ?? 0));
-        case 'pow':
-          return (args[0] ?? 0) ** (args[1] ?? 0);
+        case 'pow': {
+          const res = (args[0] ?? 0) ** (args[1] ?? 0);
+          return Number.isFinite(res) ? res : 0;
+        }
         case 'mod':
         case 'fmod': {
           const left = args[0] ?? 0;
