@@ -441,8 +441,28 @@ export function createMilkdropEngineAdapter() {
       experience?.updateEditorSource(source);
     },
 
+    /** Applies source and resolves with the resulting compile, so callers can
+     * report real diagnostics instead of assuming success. */
+    async applyEditorSourceAwaited(source: string) {
+      return (await experience?.applyEditorSourceAwaited(source)) ?? null;
+    },
+
+    /** Applies a group of fields in one commit and resolves with the result. */
+    async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
+      return (await experience?.applyEditorFieldsAwaited(updates)) ?? null;
+    },
+
+    getEditorSessionState() {
+      return experience?.getEditorSessionState() ?? null;
+    },
+
     updateInspectorField(key: string, value: number) {
       experience?.updateInspectorField?.(key, value);
+    },
+
+    /** Read-only debug accessor for the active preset's compiled IR. */
+    getActiveCompiledPreset() {
+      return experience?.getActiveCompiledPreset() ?? null;
     },
 
     async importPreset(target: FileList | File[] | string) {

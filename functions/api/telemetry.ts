@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: Ingests client performance & engine telemetry metrics
 // POST /api/telemetry
 
+import type { TelemetryEvent } from '../../src/js/core/edge-contracts.ts';
+
 interface AnalyticsEngineDataset {
   writeDataPoint(point: {
     blobs?: string[];
@@ -13,15 +15,9 @@ interface Env {
   STIMS_TELEMETRY?: AnalyticsEngineDataset;
 }
 
-interface TelemetryPayload {
-  event: string;
-  renderer?: 'webgpu' | 'webgl2' | 'webgl1' | 'canvas';
-  fps?: number;
-  audioLatencyMs?: number;
-  presetId?: string;
-  error?: string;
-  userAgent?: string;
-}
+// Shared with the sender (src/js/core/services/crash-telemetry.ts) so the two
+// halves of this endpoint cannot drift apart silently.
+type TelemetryPayload = TelemetryEvent;
 
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;

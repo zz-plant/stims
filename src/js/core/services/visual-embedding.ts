@@ -1,3 +1,7 @@
+import {
+  type VisualSearchRequest,
+  VisualSearchResponseSchema,
+} from '../edge-contracts.ts';
 import { resolveOptionalApiUrl } from './optional-api.ts';
 
 export interface FrameStats {
@@ -200,10 +204,11 @@ export async function searchByFrame(
   const stats = extractFrameStats(canvas);
   const description = describeFrame(stats);
 
+  const request: VisualSearchRequest = { description };
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description }),
+    body: JSON.stringify(request),
     signal,
   });
 
@@ -211,9 +216,9 @@ export async function searchByFrame(
     throw new Error(`Visual search failed: ${response.status}`);
   }
 
-  const data = (await response.json()) as {
-    results: Array<{ presetId: string; score: number }>;
-  };
+  // This caller already surfaces failures to the user, so a malformed body
+  // should throw here rather than sail through as an empty result list.
+  const data = VisualSearchResponseSchema.parse(await response.json());
 
   return data.results;
 }

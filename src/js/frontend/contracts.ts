@@ -98,3 +98,6 @@ export type PresetCatalogEntry = {
 export type PresetCatalogManifest = {
   presets: PresetCatalogEntry[];
 };
+
+// Edge API request/response contracts live in `src/js/core/edge-contracts.ts`
+// so that `core/` consumers can import them too — see the note in that file.

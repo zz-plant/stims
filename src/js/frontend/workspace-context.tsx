@@ -246,7 +246,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setTransitionMode: sessionState.setTransitionMode,
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
+      applyEditorSourceAwaited: sessionState.applyEditorSourceAwaited,
+      applyEditorFieldsAwaited: sessionState.applyEditorFieldsAwaited,
+      getEditorSessionState: sessionState.getEditorSessionState,
       updateInspectorField: sessionState.updateInspectorField,
+      getActiveCompiledPreset: sessionState.getActiveCompiledPreset,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -292,7 +296,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setTransitionMode,
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
+      sessionState.applyEditorSourceAwaited,
+      sessionState.applyEditorFieldsAwaited,
+      sessionState.getEditorSessionState,
       sessionState.updateInspectorField,
+      sessionState.getActiveCompiledPreset,
       shellOrchestration.handleVisualSearch,
     ],
   );

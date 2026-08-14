@@ -4,6 +4,8 @@
 // panel UI and the App-level bridge share one connection; React reads it via
 // useSyncExternalStore.
 
+import { SyncRoomCreateResponseSchema } from '../core/edge-contracts.ts';
+
 const SYNC_BASE = 'https://stims-sync.kanavj.workers.dev';
 const HOST_KEY_STORAGE_PREFIX = 'stims-sync-host-key:';
 const RECONNECT_BASE_DELAY_MS = 1000;
@@ -148,10 +150,12 @@ export async function startHostSession(): Promise<string> {
     setState({ status: 'error', error: 'Could not create a sync session.' });
     throw new Error(`Room creation failed: ${response.status}`);
   }
-  const { room, hostKey } = (await response.json()) as {
-    room: string;
-    hostKey: string;
-  };
+  const parsed = SyncRoomCreateResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    setState({ status: 'error', error: 'Could not create a sync session.' });
+    throw new Error('Room creation returned an unexpected response body');
+  }
+  const { room, hostKey } = parsed.data;
   try {
     sessionStorage.setItem(`${HOST_KEY_STORAGE_PREFIX}${room}`, hostKey);
   } catch {

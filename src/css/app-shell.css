@@ -52,6 +52,7 @@ body[data-page="workspace"][data-live="true"] {
      with a class selector wins over the UA `[hidden]` rule, so this needs the
      `!important` the HTML spec recommends for exactly this case. */
   [hidden] {
+    /* biome-ignore lint/complexity/noImportantStyles: the HTML spec prescribes !important here; see above */
     display: none !important;
   }
 
@@ -2508,6 +2509,149 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__midi-hud {
     animation-duration: 0.01ms;
   }
+}
+
+/* Debug HUD (`?debug=hud`). Opaque panel, not a glass sheet: it overlays a
+   preset that is by definition moving and bright, and a translucent surface
+   makes the numbers unreadable exactly when the visuals are busiest. */
+.stims-shell__debug-hud {
+  position: fixed;
+  top: var(--stims-chrome-top, 22px);
+  right: 16px;
+  z-index: var(--z-nav);
+  width: 260px;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-white-12);
+  border-radius: var(--radius-md, 10px);
+  background: var(--stims-panel-strong);
+  color: var(--stims-ink);
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  pointer-events: auto;
+}
+
+.stims-shell__debug-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--stims-white-08);
+}
+
+.stims-shell__debug-hud-title {
+  color: var(--stims-cool);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.stims-shell__debug-hud-close {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--stims-ink-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.stims-shell__debug-hud-close:hover,
+.stims-shell__debug-hud-close:focus-visible {
+  color: var(--stims-ink);
+}
+
+.stims-shell__debug-hud-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5.5rem) minmax(0, 1fr);
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.stims-shell__debug-hud-grid dt {
+  color: var(--stims-ink-dim);
+}
+
+.stims-shell__debug-hud-grid dd {
+  margin: 0;
+  color: var(--stims-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stims-shell__debug-hud-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-shell__debug-hud-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--stims-white-08);
+}
+
+.stims-shell__debug-hud-heading {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 6px;
+  color: var(--stims-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.stims-shell__debug-hud-note {
+  color: var(--stims-ink-dim);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.stims-shell__debug-hud-empty {
+  margin: 0;
+  color: var(--stims-ink-dim);
+}
+
+.stims-shell__debug-hud-warn {
+  color: var(--stims-accent);
+}
+
+/* Uniforms pack into two columns; each name/value pair is its own grid item
+   so a long value cannot drag its neighbour's label out of alignment. */
+.stims-shell__debug-hud-grid--uniforms {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 10px;
+}
+
+.stims-shell__debug-hud-uniform {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.stims-shell__debug-hud-meter {
+  display: inline-block;
+  width: 70px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--stims-white-08);
+  vertical-align: middle;
+}
+
+.stims-shell__debug-hud-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--stims-cool);
+}
+
+.stims-shell__debug-hud-meter-value {
+  margin-left: 6px;
+  color: var(--stims-ink-muted);
 }
 
 .stims-shell__shortcut-overlay,

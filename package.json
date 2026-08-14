@@ -130,7 +130,8 @@
     "check:production-edge": "bun run scripts/check-production-edge.ts",
     "assets:check": "bun run scripts/check-assets.ts",
     "assets:generate": "bun run scripts/generate-scenes.ts",
-    "perf:low-resource": "bun run scripts/run-certification-corpus-perf-suite.ts --cpu-throttle 4 --renderer compatibility --viewport-width 1280 --viewport-height 720 --output ./screenshots/low-resource-perf"
+    "perf:low-resource": "bun run scripts/run-certification-corpus-perf-suite.ts --cpu-throttle 4 --renderer compatibility --viewport-width 1280 --viewport-height 720 --output ./screenshots/low-resource-perf",
+    "test:audio-rig": "bun run scripts/test-audio-rig.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

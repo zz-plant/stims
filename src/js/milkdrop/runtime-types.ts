@@ -201,6 +201,12 @@ export interface MilkdropEditorSession {
     key: string,
     value: string | number,
   ): Promise<MilkdropEditorSessionState>;
+  /** Applies a group of fields against the newest pending source, so edits
+   * issued while a compile is still running stack instead of overwriting
+   * each other. */
+  updateFields(
+    updates: Record<string, string | number>,
+  ): Promise<MilkdropEditorSessionState>;
   resetToActive(): Promise<MilkdropEditorSessionState>;
   subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;
   dispose(): void;

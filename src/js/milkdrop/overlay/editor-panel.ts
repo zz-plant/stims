@@ -926,6 +926,10 @@ export class EditorPanel {
   private readonly consoleHeaderLabel: HTMLElement;
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
+  /** Identity of the preset the buffer currently belongs to, so a preset
+   * switch can be told apart from the session echoing back the user's own
+   * in-progress edits. */
+  private lastPresetId: string | null = null;
   private lastSessionState: MilkdropEditorSessionState | null = null;
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
@@ -1421,6 +1425,27 @@ export class EditorPanel {
   setSessionState(state: MilkdropEditorSessionState) {
     const nextSource = state.source;
     const currentDoc = this.editor.state.doc.toString();
+
+    // A buffered draft belongs to the preset it was typed against. Holding on
+    // to it across a preset switch would leave the editor showing one preset
+    // while another renders, and the pending debounce would then commit the
+    // old preset's text as the new one's source.
+    const nextPresetId =
+      state.latestCompiled?.source.id ??
+      state.activeCompiled?.source.id ??
+      null;
+    const presetChanged =
+      nextPresetId !== null &&
+      this.lastPresetId !== null &&
+      nextPresetId !== this.lastPresetId;
+    if (presetChanged) {
+      this.hasBufferedEdits = false;
+      this.clearEditorDebounce();
+    }
+    if (nextPresetId !== null) {
+      this.lastPresetId = nextPresetId;
+    }
+
     const preserveBufferedDraft =
       this.hasBufferedEdits && nextSource !== currentDoc;
 

@@ -60,6 +60,7 @@ Use `.agent/skills/*/SKILL.md` for repeatable work classes:
 | presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
 | preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
 | browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
+| performing / jamming — live-coded audio + timed visual gestures | `.agent/skills/perform-livecoding/SKILL.md` |
 | quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
 | end-to-end product change → PR | `.agent/skills/ship-visualizer-change/SKILL.md` |
 | UI iteration, shell chrome, CSS | `.agent/skills/iterate-visualizer-ui/SKILL.md` |
