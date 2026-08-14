@@ -261,10 +261,10 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `abs(${args[0] ?? '0.0'})`;
       }
       if (lower === 'pow') {
-        return `pow(${args[0] ?? '0.0'}, ${args[1] ?? '2.0'})`;
+        return `pow(max(0.0, ${args[0] ?? '0.0'}), ${args[1] ?? '2.0'})`;
       }
       if (lower === 'sqrt') {
-        return `sqrt(${args[0] ?? '0.0'})`;
+        return `sqrt(max(0.0, ${args[0] ?? '0.0'}))`;
       }
       if (lower === 'sin') {
         return `sin(${args[0] ?? '0.0'})`;
