@@ -10,60 +10,88 @@ import { parseMilkdropPreset } from '../../src/js/milkdrop/preset-parser.ts';
 describe('Comprehensive Pressure & Stress Suite', () => {
   describe('1. Math Engine & Expression Boundary Stress', () => {
     it('handles negative base powers without NaN or crash', () => {
-      const parsed = parseMilkdropExpression('pow(-0.0001, -99.9)');
+      const parsed = parseMilkdropExpression('pow(-0.0001, -99.9)', 1);
       expect(parsed.diagnostics.length).toBe(0);
       if (parsed.value) {
-        const result = evaluateMilkdropExpression(parsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          parsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(Number.isFinite(result)).toBe(true);
         expect(Number.isNaN(result)).toBe(false);
       }
     });
 
     it('handles negative square roots without NaN', () => {
-      const parsed = parseMilkdropExpression('sqrt(-1e30)');
+      const parsed = parseMilkdropExpression('sqrt(-1e30)', 1);
       expect(parsed.diagnostics.length).toBe(0);
       if (parsed.value) {
-        const result = evaluateMilkdropExpression(parsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          parsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(result).toBe(0);
       }
     });
 
     it('handles division by zero cleanly', () => {
-      const parsed = parseMilkdropExpression('100 / 0');
+      const parsed = parseMilkdropExpression('100 / 0', 1);
       expect(parsed.diagnostics.length).toBe(0);
       if (parsed.value) {
-        const result = evaluateMilkdropExpression(parsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          parsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(result).toBe(0);
       }
     });
 
     it('handles modulo by zero cleanly', () => {
-      const parsed = parseMilkdropExpression('100 % 0');
+      const parsed = parseMilkdropExpression('100 % 0', 1);
       expect(parsed.diagnostics.length).toBe(0);
       if (parsed.value) {
-        const result = evaluateMilkdropExpression(parsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          parsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(result).toBe(0);
       }
     });
 
     it('handles out-of-bounds inverse trig functions', () => {
-      const asinParsed = parseMilkdropExpression('asin(2.5)');
+      const asinParsed = parseMilkdropExpression('asin(2.5)', 1);
       if (asinParsed.value) {
-        const result = evaluateMilkdropExpression(asinParsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          asinParsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(Number.isFinite(result)).toBe(true);
       }
 
-      const acosParsed = parseMilkdropExpression('acos(-5.0)');
+      const acosParsed = parseMilkdropExpression('acos(-5.0)', 1);
       if (acosParsed.value) {
-        const result = evaluateMilkdropExpression(acosParsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          acosParsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(Number.isFinite(result)).toBe(true);
       }
     });
 
     it('handles log of negative numbers gracefully', () => {
-      const logParsed = parseMilkdropExpression('log(-100)');
+      const logParsed = parseMilkdropExpression('log(-100)', 1);
       if (logParsed.value) {
-        const result = evaluateMilkdropExpression(logParsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          logParsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(result).toBe(0);
       }
     });
@@ -71,9 +99,14 @@ describe('Comprehensive Pressure & Stress Suite', () => {
     it('handles smoothstep with matching edges', () => {
       const smoothstepParsed = parseMilkdropExpression(
         'smoothstep(1.0, 1.0, 0.5)',
+        1,
       );
       if (smoothstepParsed.value) {
-        const result = evaluateMilkdropExpression(smoothstepParsed.value, {}, { nextRandom: () => 0.5 });
+        const result = evaluateMilkdropExpression(
+          smoothstepParsed.value,
+          {},
+          { nextRandom: () => 0.5 },
+        );
         expect(Number.isFinite(result)).toBe(true);
       }
     });
