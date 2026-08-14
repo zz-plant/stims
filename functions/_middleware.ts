@@ -98,6 +98,81 @@ export async function onRequest(context: EventContext): Promise<Response> {
     }
   }
 
+  // `/discover/<slug>` semantic discovery route handler for dynamic topic hubs
+  if (url.pathname.startsWith('/discover/')) {
+    const slug = url.pathname.slice('/discover/'.length).split('/')[0];
+    if (slug) {
+      const formattedName = slug
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const fullTitle = `${formattedName} Music Visualizers — Stims`;
+      const description = `Explore sound-reactive ${formattedName} MilkDrop music visualizers running live in your browser on Stims — high-performance WebGL & WebGPU visual experience.`;
+      const canonical = new URL(`/discover/${encodeURIComponent(slug)}`, url.origin).toString();
+      const oembedUrl = new URL(`/api/oembed?url=${encodeURIComponent(canonical)}`, url.origin).toString();
+
+      const response = await next();
+      if (response.status !== 200 || !response.headers.get('content-type')?.includes('text/html')) {
+        return response;
+      }
+      if (typeof HTMLRewriter === 'undefined') return response;
+
+      const setContent = (value: string) => ({
+        element(el: { setAttribute: (name: string, value: string) => void }) {
+          el.setAttribute('content', value);
+        },
+      });
+
+      const jsonLd = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: fullTitle,
+        description,
+        url: canonical,
+        isPartOf: {
+          '@type': 'SoftwareApplication',
+          name: 'Stims',
+          url: url.origin,
+        },
+      });
+
+      return new HTMLRewriter()
+        .on('title', {
+          element(el) {
+            el.setInnerContent(fullTitle);
+          },
+        })
+        .on('link[rel="canonical"]', {
+          element(el) {
+            el.setAttribute('href', canonical);
+          },
+        })
+        .on('meta[name="description"]', setContent(description))
+        .on('meta[property="og:title"]', setContent(fullTitle))
+        .on('meta[property="og:description"]', setContent(description))
+        .on('meta[property="og:url"]', setContent(canonical))
+        .on('meta[name="twitter:title"]', setContent(fullTitle))
+        .on('meta[name="twitter:description"]', setContent(description))
+        .on('head', {
+          element(el) {
+            el.append(
+              `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script>`,
+              { html: true },
+            );
+          },
+        })
+        .on('noscript', {
+          element(el) {
+            el.append(
+              `<h1>${escapeAttribute(formattedName)} Music Visualizers</h1><p>${escapeAttribute(description)}</p>`,
+              { html: true },
+            );
+          },
+        })
+        .transform(response);
+    }
+  }
+
   const presetId = url.searchParams.get('preset');
 
   // Fetch standard static response first
@@ -145,6 +220,11 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const canonicalUrl = new URL('/', url.origin);
   canonicalUrl.searchParams.set('preset', presetId);
   const canonical = canonicalUrl.toString();
+
+  const oembedUrl = new URL(
+    `/api/oembed?url=${encodeURIComponent(canonical)}`,
+    url.origin,
+  ).toString();
 
   const setContent = (value: string) => ({
     element(el: { setAttribute: (name: string, value: string) => void }) {
@@ -195,6 +275,11 @@ export async function onRequest(context: EventContext): Promise<Response> {
     ],
   });
 
+  const playerUrl = new URL('/', url.origin);
+  playerUrl.searchParams.set('preset', presetId);
+  playerUrl.searchParams.set('embedded', 'true');
+  const embedPlayerUrl = playerUrl.toString();
+
   return (
     new HTMLRewriter()
       .on('title', {
@@ -213,15 +298,19 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .on('meta[property="og:url"]', setContent(canonical))
       .on('meta[property="og:image"]', setContent(imageUrl))
       .on('meta[property="og:image:alt"]', setContent(imageAlt))
+      .on('meta[name="twitter:card"]', setContent('player'))
       .on('meta[name="twitter:title"]', setContent(fullTitle))
       .on('meta[name="twitter:description"]', setContent(description))
       .on('meta[name="twitter:image"]', setContent(imageUrl))
       .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
       .on('head', {
         element(el) {
-          el.append(`<script type="application/ld+json">${jsonLd}</script>`, {
-            html: true,
-          });
+          el.append(
+            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script>`,
+            {
+              html: true,
+            },
+          );
         },
       })
       // A crawler that renders no JavaScript otherwise sees 212 characters of

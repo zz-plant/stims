@@ -149,6 +149,23 @@ export function buildPresetOgSvg({
     <clipPath id="preview-clip">
       <rect x="0" y="0" width="506" height="430" rx="16"/>
     </clipPath>
+    <style>
+      @keyframes pulseDot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      .live-pulse-dot {
+        animation: pulseDot 1.4s ease-in-out infinite;
+      }
+      @keyframes waveFlow {
+        0% { stroke-dashoffset: 0; }
+        100% { stroke-dashoffset: -120; }
+      }
+      .wave-trace {
+        stroke-dasharray: 10, 5;
+        animation: waveFlow 4s linear infinite;
+      }
+    </style>
   </defs>
 
   <!-- Background Layer -->
@@ -209,7 +226,7 @@ export function buildPresetOgSvg({
 
     <!-- Live Status Pill -->
     <rect x="366" y="24" width="116" height="28" rx="14" fill="rgba(16, 185, 129, 0.2)" stroke="rgba(16, 185, 129, 0.5)"/>
-    <circle cx="382" cy="38" r="4" fill="#10b981"/>
+    <circle cx="382" cy="38" r="4" fill="#10b981" class="live-pulse-dot"/>
     <text x="394" y="43" font-size="12" font-weight="700" fill="#10b981" font-family="Space Mono, monospace">LIVE 60FPS</text>
   </g>
 
