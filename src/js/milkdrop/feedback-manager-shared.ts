@@ -1668,6 +1668,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   }
 
   setTransitionBlend(alpha: number): void {
+    const prevAlpha =
+      (this.presentMaterial.uniforms.transitionAlpha?.value as
+        | number
+        | undefined) ?? 0;
+    if (alpha > 0.001 && prevAlpha <= 0.001) {
+      this.saveCurrentFrame();
+    }
     this.presentMaterial.uniforms.transitionAlpha.value = alpha;
   }
 
