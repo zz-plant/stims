@@ -2051,18 +2051,37 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     renderer.setRenderTarget(this.writeTarget);
     renderer.render(this.feedbackBlendScene, this.camera);
 
-    // Display frame: comp shader + post effects over the internal frame.
-    // Never fed back — MilkDrop's comp output is display-only.
     this.compositeMaterial.uniforms.internalTex.value =
       this.writeTarget.texture;
-    renderer.setRenderTarget(null);
-    renderer.render(this.compositeScene, this.camera);
 
-    if (
-      this.blurEnabled &&
-      this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
-    ) {
-      this.renderBlurPasses(renderer);
+    const transitionAlpha =
+      (this.presentMaterial.uniforms.transitionAlpha?.value as
+        | number
+        | undefined) ?? 0;
+
+    if (transitionAlpha > 0.001) {
+      renderer.setRenderTarget(this.displayTarget);
+      renderer.render(this.compositeScene, this.camera);
+
+      if (
+        this.blurEnabled &&
+        this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
+      ) {
+        this.renderBlurPasses(renderer);
+      }
+
+      renderer.setRenderTarget(null);
+      renderer.render(this.presentScene, this.camera);
+    } else {
+      renderer.setRenderTarget(null);
+      renderer.render(this.compositeScene, this.camera);
+
+      if (
+        this.blurEnabled &&
+        this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
+      ) {
+        this.renderBlurPasses(renderer);
+      }
     }
 
     this.swap();
