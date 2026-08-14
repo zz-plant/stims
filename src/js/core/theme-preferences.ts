@@ -19,18 +19,24 @@ function getStorage(): Storage | null {
 }
 
 function readFromStorage(): ThemePreference {
-  const storage = getStorage();
-  const raw = storage?.getItem(THEME_PREFERENCE_KEY);
-  if (raw === null) {
+  try {
+    const raw = getStorage()?.getItem(THEME_PREFERENCE_KEY);
+    if (raw === null || raw === undefined) return { theme: 'dark' };
+    return { theme: raw === 'light' ? 'light' : 'dark' };
+  } catch (error) {
+    console.debug('Unable to read theme preference', error);
     return { theme: 'dark' };
   }
-  return { theme: raw === 'light' ? 'light' : 'dark' };
 }
 
 function persistToStorage(preference: ThemePreference) {
   const storage = getStorage();
   if (!storage) return;
-  storage.setItem(THEME_PREFERENCE_KEY, preference.theme);
+  try {
+    storage.setItem(THEME_PREFERENCE_KEY, preference.theme);
+  } catch (error) {
+    console.debug('Unable to persist theme preference', error);
+  }
 }
 
 export function getActiveThemePreference(): ThemePreference {
