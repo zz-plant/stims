@@ -64,6 +64,12 @@ type SidePanelProps = {
   // rendered, so the live stage and its transport dock stay visible and
   // clickable beside the panel. Used by the editor.
   stageAnchored?: boolean;
+  // When true, the body stops being a scroll container and becomes a
+  // fixed-height flex column instead, so the panel's content manages its own
+  // scrolling regions. The editor needs this: as a plain scroll container the
+  // body let CodeMirror render its whole document at full height, pushing
+  // every tool below the code thousands of pixels out of reach.
+  fillBody?: boolean;
 };
 
 export function SidePanel({
@@ -73,6 +79,7 @@ export function SidePanel({
   children,
   onOpen,
   stageAnchored = false,
+  fillBody = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
@@ -363,7 +370,9 @@ export function SidePanel({
             />
           </button>
         </div>
-        <div className={styles.body}>{children}</div>
+        <div className={styles.body} data-fill={fillBody ? 'true' : undefined}>
+          {children}
+        </div>
       </div>
     </>
   );

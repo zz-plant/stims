@@ -200,6 +200,15 @@
   overscroll-behavior: contain;
 }
 
+/* Content that scrolls its own regions (the code editor) takes the body's
+   full height instead of growing it. */
+.body[data-fill="true"] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 @media (max-width: 767px) {
   .body {
     padding-bottom: max(16px, env(safe-area-inset-bottom));

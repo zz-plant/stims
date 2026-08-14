@@ -419,11 +419,12 @@ const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
 const indentWithTabKeybinding = indentWithTab as KeyBinding;
 
-const EDITOR_FLOW_TIPS = [
-  'Queued edits patch the stage after 120ms of calm typing.',
-  'Cmd/Ctrl+Enter punches the current draft in immediately.',
-  'Compiler errors keep the last stable frame visible while you recover.',
-] as const;
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;');
+}
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
@@ -910,10 +911,13 @@ export class EditorPanel {
   readonly element: HTMLElement;
 
   private readonly callbacks: EditorPanelCallbacks;
-  private readonly editorStatus: HTMLElement;
-  private readonly editorLiveBadge: HTMLElement;
-  private readonly editorSyncBadge: HTMLElement;
-  private readonly editorSafetyBadge: HTMLElement;
+  private readonly note: HTMLElement;
+  private readonly stateEl: HTMLElement;
+  private readonly stateLabel: HTMLElement;
+  private readonly safetyFlag: HTMLElement;
+  private readonly stage: HTMLElement;
+  private readonly problems: HTMLElement;
+  private readonly problemsCount: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
   private readonly editor: EditorView;
@@ -923,7 +927,7 @@ export class EditorPanel {
   private readonly setEditorDiagnostics: (
     diagnostics: MilkdropDiagnostic[],
   ) => void;
-  private readonly consoleHeaderLabel: HTMLElement;
+  private disposeMenuDismiss: (() => void) | null = null;
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
   /** Identity of the preset the buffer currently belongs to, so a preset
@@ -939,6 +943,7 @@ export class EditorPanel {
     label: string;
   }> = [];
   private historyList: HTMLElement | null = null;
+  private assistPane: HTMLElement | null = null;
   private assistedEditContainer: HTMLElement | null = null;
   // True while any AI-backed action (Refine, Explain, Quick-fix, Batch,
   // Blend) has a request in flight. All of those share one /api endpoint
@@ -972,161 +977,169 @@ export class EditorPanel {
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
     this.element = document.createElement('section');
-    this.element.className = 'milkdrop-overlay__tab-panel';
+    this.element.className = 'stims-editor';
+    this.element.setAttribute('aria-label', 'Preset code editor');
 
-    const editorTransport = document.createElement('div');
-    editorTransport.className = 'milkdrop-overlay__editor-transport';
-    const editorIntroCopy = document.createElement('div');
-    editorIntroCopy.className = 'milkdrop-overlay__editor-intro-copy';
-    const editorEyebrow = document.createElement('span');
-    editorEyebrow.className = 'milkdrop-overlay__editor-eyebrow';
-    editorEyebrow.textContent = 'Live code REPL';
-    const editorHeading = document.createElement('strong');
-    editorHeading.className = 'milkdrop-overlay__editor-heading';
-    editorHeading.textContent = 'Patch the active preset';
-    const editorSubheading = document.createElement('p');
-    editorSubheading.className = 'milkdrop-overlay__editor-subheading';
-    editorSubheading.textContent =
-      'Keep the stage running while you type. Cmd/Ctrl+Enter forces an instant punch-in.';
-    editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
-    const editorMeta = document.createElement('div');
-    editorMeta.className = 'milkdrop-overlay__editor-badges';
-    const editorShortcutBadge = document.createElement('span');
-    editorShortcutBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--shortcut';
-    editorShortcutBadge.textContent = 'Cmd/Ctrl+Enter';
-    this.editorLiveBadge = document.createElement('span');
-    this.editorLiveBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--live';
-    this.editorLiveBadge.textContent = 'Auto 120ms';
-    this.editorSyncBadge = document.createElement('span');
-    this.editorSyncBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
-    this.editorSyncBadge.textContent = 'Synced';
-    this.editorSafetyBadge = document.createElement('span');
-    this.editorSafetyBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--safety';
-    this.editorSafetyBadge.textContent = 'Safety net on';
-    editorMeta.append(
-      editorShortcutBadge,
-      this.editorLiveBadge,
-      this.editorSyncBadge,
-      this.editorSafetyBadge,
-    );
-    editorTransport.append(editorIntroCopy, editorMeta);
+    // ── Status line ───────────────────────────────────────────────
+    // One row replaces the old marketing header plus four static badges.
+    // The dot carries the buffer state; the flag only appears when the
+    // stage is showing something other than what the draft says.
+    const statusBar = document.createElement('div');
+    statusBar.className = 'stims-editor__status';
 
-    this.editorStatus = document.createElement('div');
-    this.editorStatus.className = 'milkdrop-overlay__editor-status';
-    this.editorStatus.textContent = '';
-    this.editorStatus.hidden = true;
+    this.stateEl = document.createElement('span');
+    this.stateEl.className = 'stims-editor__state';
+    this.stateEl.dataset.state = 'synced';
+    const stateDot = document.createElement('span');
+    stateDot.className = 'stims-editor__dot';
+    this.stateLabel = document.createElement('span');
+    this.stateLabel.textContent = 'Synced';
+    this.stateEl.append(stateDot, this.stateLabel);
 
-    const editorActions = document.createElement('div');
-    editorActions.className = 'milkdrop-overlay__editor-actions';
+    const flags = document.createElement('div');
+    flags.className = 'stims-editor__flags';
+    this.safetyFlag = document.createElement('span');
+    this.safetyFlag.className = 'stims-editor__flag stims-editor__flag--safety';
+    this.safetyFlag.hidden = true;
+    const shortcutHint = document.createElement('span');
+    shortcutHint.className = 'stims-editor__shortcut';
+    shortcutHint.textContent = '⌘/Ctrl+⏎';
+    shortcutHint.title = 'Apply the draft immediately';
+    flags.append(this.safetyFlag, shortcutHint);
+    statusBar.append(this.stateEl, flags);
 
-    const applyButton = document.createElement('button');
-    applyButton.type = 'button';
-    applyButton.className = 'milkdrop-overlay__editor-apply';
-    applyButton.textContent = 'Update now';
-    applyButton.addEventListener('click', () => this.applyCurrentSource());
-    editorActions.appendChild(applyButton);
+    // ── Toolbar ───────────────────────────────────────────────────
+    // One primary action, one destructive-free secondary, undo/redo as a
+    // single segmented control, and everything preset-level behind an
+    // overflow menu. The old row gave nine buttons identical weight.
+    const toolbar = document.createElement('div');
+    toolbar.className = 'stims-editor__toolbar';
 
-    const revertButton = document.createElement('button');
-    revertButton.type = 'button';
-    revertButton.textContent = 'Reset draft';
-    revertButton.setAttribute(
-      'aria-label',
-      'Reset draft to active preset source',
-    );
-    revertButton.addEventListener('click', () =>
-      this.callbacks.onRevertToActive(),
-    );
-    editorActions.appendChild(revertButton);
+    const applyButton = this.createButton('Update now', {
+      variant: 'primary',
+      title: 'Apply the draft now (Cmd/Ctrl+Enter)',
+      onClick: () => this.applyCurrentSource(),
+    });
+    applyButton.dataset.action = 'apply';
+
+    const revertButton = this.createButton('Reset', {
+      title: 'Reset draft to the active preset source',
+      ariaLabel: 'Reset draft to active preset source',
+      onClick: () => this.callbacks.onRevertToActive(),
+    });
 
     // CodeMirror's history() extension already answers to Cmd/Ctrl+Z, but
     // that was invisible outside the editor — no button, no way to tell
     // undo is even possible without trying it.
-    const undoButton = document.createElement('button');
-    undoButton.type = 'button';
-    undoButton.textContent = '↶ Undo';
-    undoButton.title = 'Undo (Cmd/Ctrl+Z)';
-    undoButton.setAttribute('aria-label', 'Undo last edit');
-    undoButton.addEventListener('click', () => {
-      undo(this.editor);
-      this.editor.focus();
+    const undoRedo = document.createElement('div');
+    undoRedo.className = 'stims-editor__pair';
+    undoRedo.append(
+      this.createButton('↶', {
+        variant: 'icon',
+        title: 'Undo (Cmd/Ctrl+Z)',
+        ariaLabel: 'Undo last edit',
+        onClick: () => {
+          undo(this.editor);
+          this.editor.focus();
+        },
+      }),
+      this.createButton('↷', {
+        variant: 'icon',
+        title: 'Redo (Cmd/Ctrl+Shift+Z)',
+        ariaLabel: 'Redo last undone edit',
+        onClick: () => {
+          redo(this.editor);
+          this.editor.focus();
+        },
+      }),
+    );
+
+    const spacer = document.createElement('div');
+    spacer.className = 'stims-editor__spacer';
+
+    const menuWrap = document.createElement('div');
+    menuWrap.className = 'stims-editor__menu-wrap';
+    const menu = document.createElement('div');
+    menu.className = 'stims-editor__menu';
+    menu.hidden = true;
+    menu.setAttribute('role', 'menu');
+    const menuButton = this.createButton('⋯', {
+      variant: 'icon',
+      title: 'Preset actions',
+      ariaLabel: 'Preset actions',
+      onClick: () => {
+        menu.hidden = !menu.hidden;
+        menuButton.setAttribute('aria-expanded', String(!menu.hidden));
+      },
     });
-    editorActions.appendChild(undoButton);
+    menuButton.setAttribute('aria-haspopup', 'menu');
+    menuButton.setAttribute('aria-expanded', 'false');
 
-    const redoButton = document.createElement('button');
-    redoButton.type = 'button';
-    redoButton.textContent = '↷ Redo';
-    redoButton.title = 'Redo (Cmd/Ctrl+Shift+Z)';
-    redoButton.setAttribute('aria-label', 'Redo last undone edit');
-    redoButton.addEventListener('click', () => {
-      redo(this.editor);
-      this.editor.focus();
-    });
-    editorActions.appendChild(redoButton);
-
-    const duplicateButton = document.createElement('button');
-    duplicateButton.type = 'button';
-    duplicateButton.textContent = 'Remix';
-    duplicateButton.setAttribute(
-      'aria-label',
-      'Remix current preset (keeps its credit lineage)',
+    const closeMenu = () => {
+      if (menu.hidden) return;
+      menu.hidden = true;
+      menuButton.setAttribute('aria-expanded', 'false');
+    };
+    const menuItem = (
+      label: string,
+      onClick: () => void,
+      tone?: 'danger',
+    ): HTMLButtonElement => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'stims-editor__menu-item';
+      item.setAttribute('role', 'menuitem');
+      item.textContent = label;
+      if (tone) item.dataset.tone = tone;
+      item.addEventListener('click', () => {
+        closeMenu();
+        onClick();
+      });
+      return item;
+    };
+    const menuSeparator = document.createElement('div');
+    menuSeparator.className = 'stims-editor__menu-sep';
+    this.deleteButton = menuItem(
+      'Delete preset',
+      () => this.callbacks.onDeletePreset(),
+      'danger',
     );
-    duplicateButton.addEventListener('click', () =>
-      this.callbacks.onDuplicatePreset(),
-    );
-    editorActions.appendChild(duplicateButton);
-
-    const importButton = document.createElement('button');
-    importButton.type = 'button';
-    importButton.textContent = 'Import';
-    importButton.setAttribute('aria-label', 'Import a preset');
-    importButton.addEventListener('click', () =>
-      this.callbacks.onRequestImport(),
-    );
-    editorActions.appendChild(importButton);
-
-    const exportButton = document.createElement('button');
-    exportButton.type = 'button';
-    exportButton.textContent = 'Export';
-    exportButton.setAttribute('aria-label', 'Export current preset');
-    exportButton.addEventListener('click', () => this.callbacks.onExport());
-    editorActions.appendChild(exportButton);
-
-    const importButton2 = document.createElement('button');
-    importButton2.type = 'button';
-    importButton2.textContent = 'Batch';
-    importButton2.title = 'Generate variations (Shift+Enter)';
-    importButton2.setAttribute('aria-label', 'Generate preset variations');
-    importButton2.addEventListener('click', () => this.handleBatchGenerate());
-    editorActions.appendChild(importButton2);
-    this.batchButton = importButton2;
-
-    const blendButton = document.createElement('button');
-    blendButton.type = 'button';
-    blendButton.textContent = 'Blend';
-    blendButton.title = 'Blend with another preset';
-    blendButton.setAttribute('aria-label', 'Blend with another preset');
-    blendButton.addEventListener('click', () => this.handleBlend());
-    editorActions.appendChild(blendButton);
-
-    this.deleteButton = document.createElement('button');
-    this.deleteButton.type = 'button';
-    this.deleteButton.textContent = 'Delete';
     this.deleteButton.hidden = true;
-    this.deleteButton.addEventListener('click', () =>
-      this.callbacks.onDeletePreset(),
+    menu.append(
+      menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
+      menuItem('Import…', () => this.callbacks.onRequestImport()),
+      menuItem('Export', () => this.callbacks.onExport()),
+      menuSeparator,
+      this.deleteButton,
     );
-    editorActions.appendChild(this.deleteButton);
+    menuWrap.append(menuButton, menu);
 
-    const editorWorkbench = document.createElement('div');
-    editorWorkbench.className = 'milkdrop-overlay__editor-workbench';
-    const editorMain = document.createElement('div');
-    editorMain.className = 'milkdrop-overlay__editor-main';
+    // A menu that only closes by re-clicking its own trigger reads as stuck.
+    const dismissMenu = (event: MouseEvent) => {
+      if (!menuWrap.contains(event.target as Node)) closeMenu();
+    };
+    const dismissMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMenu();
+    };
+    document.addEventListener('pointerdown', dismissMenu);
+    document.addEventListener('keydown', dismissMenuOnEscape);
+    this.disposeMenuDismiss = () => {
+      document.removeEventListener('pointerdown', dismissMenu);
+      document.removeEventListener('keydown', dismissMenuOnEscape);
+    };
+
+    toolbar.append(applyButton, revertButton, undoRedo, spacer, menuWrap);
+
+    this.note = document.createElement('div');
+    this.note.className = 'stims-editor__note';
+    this.note.textContent = '';
+    this.note.hidden = true;
+
+    // ── Stage: the code, and anything layered over it ─────────────
+    this.stage = document.createElement('div');
+    this.stage.className = 'stims-editor__stage';
     const editorHost = document.createElement('div');
-    editorHost.className = 'milkdrop-overlay__editor';
+    editorHost.className = 'stims-editor__code';
 
     const editorViewState = createEditorView({
       parent: editorHost,
@@ -1158,236 +1171,108 @@ export class EditorPanel {
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
-    const editorBody = document.createElement('div');
-    editorBody.className = 'editor-body';
-    editorBody.appendChild(editorHost);
-    editorBody.appendChild(this.renderSliders());
-    editorMain.append(this.editorStatus, editorBody);
+    this.stage.append(this.note, editorHost);
 
-    const editorRail = document.createElement('div');
-    editorRail.className = 'milkdrop-overlay__editor-rail';
-
-    const editorCueSection = document.createElement('section');
-    editorCueSection.className = 'milkdrop-overlay__editor-section';
-    const editorCueLabel = document.createElement('span');
-    editorCueLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorCueLabel.textContent = 'Live cues';
-    const editorCueCopy = document.createElement('p');
-    editorCueCopy.className = 'milkdrop-overlay__editor-section-copy';
-    editorCueCopy.textContent =
-      'Drop safe reactive starter lines into the draft and shape them from there.';
-    const editorCueGrid = document.createElement('div');
-    editorCueGrid.className = 'milkdrop-overlay__editor-cue-grid';
-    EDITOR_CUES.forEach((cue) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__editor-cue';
-      const label = document.createElement('strong');
-      label.textContent = cue.label;
-      const description = document.createElement('span');
-      description.textContent = cue.description;
-      button.append(label, description);
-      button.addEventListener('click', () => this.insertSnippet(cue.snippet));
-      editorCueGrid.appendChild(button);
+    // ── Problems strip ────────────────────────────────────────────
+    // An IDE problems panel: pinned directly under the code, collapsible,
+    // and scrolling on its own so a noisy compile can't push the dock off
+    // screen. The old "Console" section sat ~2000px below the editor.
+    this.problems = document.createElement('section');
+    this.problems.className = 'stims-editor__problems';
+    this.problems.dataset.open = 'true';
+    const problemsHead = document.createElement('div');
+    problemsHead.className = 'stims-editor__problems-head';
+    const problemsToggle = document.createElement('button');
+    problemsToggle.type = 'button';
+    problemsToggle.className = 'stims-editor__problems-toggle';
+    problemsToggle.setAttribute('aria-expanded', 'true');
+    const problemsCaret = document.createElement('span');
+    problemsCaret.className = 'stims-editor__caret';
+    problemsCaret.textContent = '▾';
+    problemsCaret.setAttribute('aria-hidden', 'true');
+    const problemsLabel = document.createElement('span');
+    problemsLabel.className = 'stims-editor__legend';
+    problemsLabel.textContent = 'Problems';
+    this.problemsCount = document.createElement('span');
+    this.problemsCount.className = 'stims-editor__count';
+    this.problemsCount.textContent = 'clean';
+    problemsToggle.append(problemsCaret, problemsLabel, this.problemsCount);
+    problemsToggle.addEventListener('click', () => {
+      const open = this.problems.dataset.open !== 'true';
+      this.problems.dataset.open = String(open);
+      problemsToggle.setAttribute('aria-expanded', String(open));
     });
-    editorCueSection.append(editorCueLabel, editorCueCopy, editorCueGrid);
-
-    const editorQuickIdeas = document.createElement('div');
-    editorQuickIdeas.className =
-      'milkdrop-overlay__editor-quick-ideas milkdrop-overlay__editor-section';
-    const editorQuickIdeasLabel = document.createElement('span');
-    editorQuickIdeasLabel.className =
-      'milkdrop-overlay__editor-quick-ideas-label';
-    editorQuickIdeasLabel.textContent = 'Pattern moves';
-    const editorSnippetButtons = document.createElement('div');
-    editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
-    EDITOR_SNIPPETS.forEach((snippetConfig) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__editor-snippet';
-      const label = document.createElement('strong');
-      label.textContent = snippetConfig.label;
-      const description = document.createElement('span');
-      description.textContent = snippetConfig.description;
-      button.append(label, description);
-      button.addEventListener('click', () => {
-        this.insertSnippet(snippetConfig.snippet);
-      });
-      editorSnippetButtons.appendChild(button);
-    });
-    editorQuickIdeas.append(editorQuickIdeasLabel, editorSnippetButtons);
-
-    const editorTips = document.createElement('div');
-    editorTips.className =
-      'milkdrop-overlay__editor-tips milkdrop-overlay__editor-section';
-    const editorTipsLabel = document.createElement('span');
-    editorTipsLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorTipsLabel.textContent = 'Flow';
-    EDITOR_FLOW_TIPS.forEach((tip) => {
-      const item = document.createElement('div');
-      item.className = 'milkdrop-overlay__editor-tip';
-      item.textContent = tip;
-      editorTips.appendChild(item);
-    });
-    editorTips.prepend(editorTipsLabel);
-
-    const editorConsole = document.createElement('section');
-    editorConsole.className = 'milkdrop-overlay__editor-section';
-    const editorConsoleLabel = document.createElement('span');
-    editorConsoleLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorConsoleLabel.textContent = 'Console';
-    this.consoleHeaderLabel = editorConsoleLabel;
-    this.diagnosticsList = document.createElement('div');
-    this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     const quickFixBtn = this.renderQuickFix();
     this.quickFixBtn = quickFixBtn;
-    editorConsole.append(editorConsoleLabel, this.diagnosticsList, quickFixBtn);
+    problemsHead.append(problemsToggle, quickFixBtn);
+    const problemsBody = document.createElement('div');
+    problemsBody.className = 'stims-editor__problems-body';
+    this.diagnosticsList = document.createElement('div');
+    this.diagnosticsList.className = 'stims-editor__problems-list';
+    problemsBody.appendChild(this.diagnosticsList);
+    this.problems.append(problemsHead, problemsBody);
 
-    // ── AI refinement bar ──────────────────────────────
-    const refineSection = document.createElement('section');
-    refineSection.className = 'milkdrop-overlay__editor-section';
-    const refineLabel = document.createElement('span');
-    refineLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    refineLabel.textContent = 'Refine with AI';
-    const refineForm = document.createElement('div');
-    refineForm.className = 'milkdrop-overlay__refine-form';
-    const refineInput = document.createElement('input');
-    refineInput.type = 'text';
-    refineInput.placeholder = '"make it more blue" or "add a slow rotation"';
-    refineInput.className = 'milkdrop-overlay__refine-input';
-    const refineBtn = document.createElement('button');
-    refineBtn.type = 'button';
-    refineBtn.textContent = 'Refine';
-    refineBtn.className = 'milkdrop-overlay__refine-btn';
-    refineBtn.addEventListener('click', async () => {
-      const instruction = refineInput.value.trim();
-      if (!instruction || this.aiPending) return;
-      this.setRefinePending(true);
-      refineBtn.textContent = '…';
-      try {
-        const currentSource = this.editor.state.doc.toString();
-        const res = await fetch('/api/refine-preset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentSource, instruction }),
+    // ── Dock ──────────────────────────────────────────────────────
+    // Four tabs replace six stacked rail sections. At this panel width
+    // stacking meant everything past the first section was unreachable;
+    // tabs make each tool one click away and give it the full width.
+    const dock = document.createElement('div');
+    dock.className = 'stims-editor__dock';
+    dock.dataset.open = 'true';
+    const tabs = document.createElement('div');
+    tabs.className = 'stims-editor__tabs';
+    tabs.setAttribute('role', 'tablist');
+    const dockBody = document.createElement('div');
+    dockBody.className = 'stims-editor__dock-body';
+
+    const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
+      { id: 'tune', label: 'Tune', content: this.renderSliders() },
+      { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
+      { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
+      { id: 'history', label: 'History', content: this.renderHistoryPane() },
+    ];
+    const tabButtons: HTMLButtonElement[] = [];
+    panes.forEach((pane, index) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'stims-editor__tab';
+      tab.textContent = pane.label;
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', String(index === 0));
+      tab.dataset.pane = pane.id;
+      pane.content.classList.add('stims-editor__pane');
+      pane.content.setAttribute('role', 'tabpanel');
+      pane.content.hidden = index !== 0;
+      tab.addEventListener('click', () => {
+        // Selecting a tab in a collapsed dock should show it, not silently
+        // change a hidden selection.
+        dock.dataset.open = 'true';
+        dockToggle.textContent = '▾';
+        tabButtons.forEach((other, otherIndex) => {
+          other.setAttribute('aria-selected', String(other === tab));
+          panes[otherIndex].content.hidden = other !== tab;
         });
-        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
-        const json = await res.json();
-
-        if (json.explanation) {
-          const explanationMsg = document.createElement('div');
-          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
-          explanationMsg.textContent = json.explanation;
-          const closeBtn = document.createElement('button');
-          closeBtn.textContent = '\u2715';
-          closeBtn.className = 'editor-explanation-close';
-          closeBtn.addEventListener('click', () => explanationMsg.remove());
-          explanationMsg.appendChild(closeBtn);
-          refineForm.appendChild(explanationMsg);
-        }
-
-        if (json.milkSource) {
-          this.proposeAssistedEdit(json.milkSource, 'Refine');
-          refineInput.value = '';
-        }
-        refineBtn.textContent = 'Refine';
-        this.setRefinePending(false);
-      } catch (err) {
-        console.error('Refinement failed:', err);
-        this.setRefinePending(false);
-        refineBtn.textContent = 'Error';
-        refineBtn.disabled = true;
-        refineBtn.classList.add('milkdrop-overlay__refine-btn--error');
-        setTimeout(() => {
-          refineBtn.classList.remove('milkdrop-overlay__refine-btn--error');
-          refineBtn.textContent = 'Refine';
-          refineBtn.disabled = false;
-        }, 2000);
-      }
+      });
+      tabButtons.push(tab);
+      tabs.appendChild(tab);
+      dockBody.appendChild(pane.content);
     });
-    refineInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') refineBtn.click();
+
+    const dockToggle = document.createElement('button');
+    dockToggle.type = 'button';
+    dockToggle.className = 'stims-editor__dock-toggle';
+    dockToggle.textContent = '▾';
+    dockToggle.title = 'Collapse the dock to give the code more room';
+    dockToggle.setAttribute('aria-label', 'Toggle editor dock');
+    dockToggle.addEventListener('click', () => {
+      const open = dock.dataset.open !== 'true';
+      dock.dataset.open = String(open);
+      dockToggle.textContent = open ? '▾' : '▴';
     });
-    refineForm.append(refineInput, refineBtn);
+    tabs.appendChild(dockToggle);
+    dock.append(tabs, dockBody);
 
-    const explainBtn = document.createElement('button');
-    explainBtn.type = 'button';
-    explainBtn.textContent = 'Explain';
-    explainBtn.className = 'milkdrop-overlay__refine-btn';
-    explainBtn.title = 'Explain what this preset does visually';
-    explainBtn.addEventListener('click', async () => {
-      if (this.aiPending) return;
-      this.setRefinePending(true);
-      explainBtn.textContent = '…';
-      try {
-        const currentSource = this.editor.state.doc.toString();
-        const res = await fetch('/api/refine-preset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentSource,
-            instruction: 'explain this preset',
-          }),
-        });
-        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
-        const json = await res.json();
-
-        if (json.explanation) {
-          const explanationMsg = document.createElement('div');
-          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
-          explanationMsg.textContent = json.explanation;
-          const closeBtn = document.createElement('button');
-          closeBtn.textContent = '\u2715';
-          closeBtn.className = 'editor-explanation-close';
-          closeBtn.addEventListener('click', () => explanationMsg.remove());
-          explanationMsg.appendChild(closeBtn);
-          refineForm.appendChild(explanationMsg);
-        }
-        explainBtn.textContent = 'Explain';
-        this.setRefinePending(false);
-      } catch (err) {
-        console.error('Explanation failed:', err);
-        this.setRefinePending(false);
-        explainBtn.textContent = 'Error';
-        explainBtn.disabled = true;
-        explainBtn.classList.add('milkdrop-overlay__refine-btn--error');
-        setTimeout(() => {
-          explainBtn.classList.remove('milkdrop-overlay__refine-btn--error');
-          explainBtn.textContent = 'Explain';
-          explainBtn.disabled = false;
-        }, 2000);
-      }
-    });
-    refineForm.appendChild(explainBtn);
-    refineSection.append(refineLabel, refineForm);
-
-    const historySection = document.createElement('section');
-    historySection.className = 'milkdrop-overlay__editor-section';
-    const historyLabel = document.createElement('span');
-    historyLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    historyLabel.textContent = 'History';
-    this.historyList = document.createElement('div');
-    this.historyList.className = 'milkdrop-overlay__editor-history';
-    historySection.append(historyLabel, this.historyList);
-    this.renderHistorySnapshots();
-
-    editorRail.append(
-      editorCueSection,
-      editorQuickIdeas,
-      editorTips,
-      editorConsole,
-      historySection,
-      refineSection,
-    );
-    this.refineBtn = refineBtn;
-    this.explainBtn = explainBtn;
-    editorWorkbench.append(editorMain, editorRail);
-    this.element.append(
-      editorTransport,
-      editorActions,
-      this.renderBlendInput(),
-      editorWorkbench,
-    );
+    this.element.append(statusBar, toolbar, this.stage, this.problems, dock);
 
     const diagnosticsListener = ((
       e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
@@ -1420,6 +1305,263 @@ export class EditorPanel {
 
   setDeleteEnabled(enabled: boolean) {
     this.deleteButton.hidden = !enabled;
+  }
+
+  private createButton(
+    label: string,
+    options: {
+      variant?: 'primary' | 'icon' | 'danger';
+      title?: string;
+      ariaLabel?: string;
+      onClick: () => void;
+    },
+  ): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = options.variant
+      ? `stims-editor__btn stims-editor__btn--${options.variant}`
+      : 'stims-editor__btn';
+    button.textContent = label;
+    if (options.title) button.title = options.title;
+    button.setAttribute('aria-label', options.ariaLabel ?? label);
+    button.addEventListener('click', options.onClick);
+    return button;
+  }
+
+  /** Insert pane: signal references and multi-line patterns. Both were
+   * separate rail sections with identical affordances — one grid of
+   * insertable code, grouped by whether it is a single reactive term or a
+   * whole move. */
+  private renderInsertPane(): HTMLElement {
+    const pane = document.createElement('div');
+
+    const build = (
+      legend: string,
+      hint: string,
+      entries: ReadonlyArray<{
+        label: string;
+        description: string;
+        snippet: string;
+      }>,
+    ) => {
+      const heading = document.createElement('span');
+      heading.className = 'stims-editor__legend';
+      heading.textContent = legend;
+      const copy = document.createElement('p');
+      copy.className = 'stims-editor__hint';
+      copy.textContent = hint;
+      const grid = document.createElement('div');
+      grid.className = 'stims-editor__inserts';
+      entries.forEach((entry) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'stims-editor__insert';
+        button.dataset.insert = entry.label;
+        const label = document.createElement('strong');
+        label.textContent = entry.label;
+        const description = document.createElement('span');
+        description.textContent = entry.description;
+        button.append(label, description);
+        button.addEventListener('click', () =>
+          this.insertSnippet(entry.snippet),
+        );
+        grid.appendChild(button);
+      });
+      pane.append(heading, copy, grid);
+    };
+
+    build(
+      'Signals',
+      'Reactive terms, inserted at the cursor as a working line.',
+      EDITOR_CUES,
+    );
+    const spacer = document.createElement('div');
+    spacer.style.height = '12px';
+    pane.appendChild(spacer);
+    build(
+      'Patterns',
+      'Complete moves you can shape from there.',
+      EDITOR_SNIPPETS,
+    );
+
+    return pane;
+  }
+
+  /** Assist pane: every AI-backed action in one place. They share a single
+   * proposal slot and a single pending flag, so grouping them makes the
+   * mutual exclusion visible instead of surprising. */
+  private renderAssistPane(): HTMLElement {
+    const pane = document.createElement('div');
+
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Every result arrives as a reviewable diff over the code — nothing is applied until you accept it.';
+
+    const form = document.createElement('div');
+    form.className = 'stims-editor__assist-form';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'stims-editor__assist-input';
+    input.placeholder = 'make it more blue · add a slow rotation';
+    input.setAttribute('aria-label', 'Describe the change you want');
+    const refineBtn = this.createButton('Refine', {
+      onClick: () => {
+        void this.runAssist({
+          button: refineBtn,
+          label: 'Refine',
+          instruction: input.value.trim(),
+          proposalLabel: 'Refine',
+          onApplied: () => {
+            input.value = '';
+          },
+        });
+      },
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') refineBtn.click();
+    });
+    form.append(input, refineBtn);
+
+    const actions = document.createElement('div');
+    actions.className = 'stims-editor__assist-actions';
+    const explainBtn = this.createButton('Explain', {
+      title: 'Explain what this preset does visually',
+      onClick: () => {
+        void this.runAssist({
+          button: explainBtn,
+          label: 'Explain',
+          instruction: 'explain this preset',
+        });
+      },
+    });
+    const variationsBtn = this.createButton('Variations', {
+      title: 'Generate preset variations',
+      onClick: () => this.handleBatchGenerate(),
+    });
+
+    const blend = document.createElement('div');
+    blend.className = 'stims-editor__blend';
+    blend.hidden = true;
+    const blendBtn = this.createButton('Blend…', {
+      title: 'Blend with another preset',
+      onClick: () => {
+        blend.hidden = !blend.hidden;
+        if (!blend.hidden) blendTextarea.focus();
+      },
+    });
+    actions.append(explainBtn, variationsBtn, blendBtn);
+
+    const blendTextarea = document.createElement('textarea');
+    blendTextarea.className = 'stims-editor__assist-textarea';
+    blendTextarea.placeholder = 'Paste a second preset source or preset ID';
+    blendTextarea.rows = 4;
+    blendTextarea.setAttribute('aria-label', 'Second preset to blend with');
+    const blendActions = document.createElement('div');
+    blendActions.className = 'stims-editor__assist-actions';
+    const blendSubmit = this.createButton('Blend', {
+      onClick: () => {
+        const sourceB = blendTextarea.value.trim();
+        if (!sourceB || this.aiPending) return;
+        this.doBlend(sourceB);
+        blend.hidden = true;
+        blendTextarea.value = '';
+      },
+    });
+    const blendCancel = this.createButton('Cancel', {
+      onClick: () => {
+        blend.hidden = true;
+        blendTextarea.value = '';
+      },
+    });
+    blendActions.append(blendSubmit, blendCancel);
+    blend.append(blendTextarea, blendActions);
+
+    this.refineBtn = refineBtn;
+    this.explainBtn = explainBtn;
+    this.batchButton = variationsBtn;
+    this.blendSubmitButton = blendSubmit;
+    this.assistPane = pane;
+
+    pane.append(hint, form, actions, blend);
+    return pane;
+  }
+
+  /** Shared plumbing for the two /api/refine-preset callers: pending state,
+   * transient error label, explanation card, and the proposed diff. */
+  private async runAssist(options: {
+    button: HTMLButtonElement;
+    label: string;
+    instruction: string;
+    proposalLabel?: string;
+    onApplied?: () => void;
+  }): Promise<void> {
+    if (!options.instruction || this.aiPending) return;
+    this.setRefinePending(true);
+    options.button.textContent = '…';
+    try {
+      const currentSource = this.editor.state.doc.toString();
+      const res = await fetch('/api/refine-preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentSource,
+          instruction: options.instruction,
+        }),
+      });
+      if (!res.ok) throw new Error(`Refine API: ${res.status}`);
+      const json = await res.json();
+
+      if (json.explanation) {
+        this.showExplanation(json.explanation);
+      }
+      if (options.proposalLabel && json.milkSource) {
+        this.proposeAssistedEdit(json.milkSource, options.proposalLabel);
+        options.onApplied?.();
+      }
+      options.button.textContent = options.label;
+      this.setRefinePending(false);
+    } catch (err) {
+      console.error(`${options.label} failed:`, err);
+      this.setRefinePending(false);
+      options.button.textContent = 'Error';
+      options.button.disabled = true;
+      options.button.classList.add('stims-editor__btn--error');
+      setTimeout(() => {
+        options.button.classList.remove('stims-editor__btn--error');
+        options.button.textContent = options.label;
+        options.button.disabled = false;
+      }, 2000);
+    }
+  }
+
+  private showExplanation(text: string) {
+    if (!this.assistPane) return;
+    this.assistPane.querySelector('.stims-editor__explanation')?.remove();
+    const card = document.createElement('div');
+    card.className = 'stims-editor__explanation';
+    card.textContent = text;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'stims-editor__explanation-close';
+    close.textContent = '✕';
+    close.setAttribute('aria-label', 'Dismiss explanation');
+    close.addEventListener('click', () => card.remove());
+    card.appendChild(close);
+    this.assistPane.appendChild(card);
+  }
+
+  private renderHistoryPane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'A checkpoint is taken before each applied AI edit and before each restore.';
+    this.historyList = document.createElement('div');
+    this.historyList.className = 'stims-editor__history';
+    pane.append(hint, this.historyList);
+    this.renderHistorySnapshots();
+    return pane;
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
@@ -1516,61 +1658,61 @@ export class EditorPanel {
           latestWebgpuStatus !== 'supported'),
     );
     const shouldShowStatus = hasErrors || state.dirty || this.hasBufferedEdits;
+    // The status label already names the state and the problems strip
+    // already counts it, so the note only carries what neither says: what
+    // to do next.
     const baseStatus = hasErrors
-      ? `${errors.length} compile/syntax error${errors.length === 1 ? '' : 's'} in draft. The stage is holding the last good frame.`
+      ? 'Fix the errors below, or Reset to return to the active source.'
       : this.hasBufferedEdits
-        ? 'Typing… the next patch is queued. Press Cmd/Ctrl+Enter to punch it in immediately.'
+        ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
         : state.dirty
-          ? 'Live patch applied. Keep shaping the draft or reset to return to the active source.'
+          ? 'Draft is live on stage. Reset returns to the saved source.'
           : '';
 
     if (hasErrors) {
-      this.editorStatus.innerHTML = `${renderIconSvg('warning', {
-        className: 'milkdrop-overlay__editor-status-icon',
-      })}${baseStatus}`;
+      this.note.innerHTML = `${renderIconSvg('warning', {
+        className: 'stims-editor__note-icon',
+      })}<span>${escapeHtml(baseStatus)}</span>`;
     } else {
-      this.editorStatus.textContent = baseStatus;
+      this.note.textContent = baseStatus;
     }
-    this.editorStatus.hidden = !shouldShowStatus;
-    if (hasErrors) {
-      this.editorStatus.classList.add('milkdrop-overlay__editor-status--error');
-    } else {
-      this.editorStatus.classList.remove(
-        'milkdrop-overlay__editor-status--error',
-      );
-    }
+    this.note.hidden = !shouldShowStatus;
+    this.note.classList.toggle('stims-editor__note--error', hasErrors);
 
-    this.editorLiveBadge.textContent = hasErrors
-      ? 'Last good frame'
-      : 'Auto 120ms';
-    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
-    this.editorLiveBadge.hidden = false;
-    this.editorSyncBadge.textContent = this.hasBufferedEdits
-      ? 'Queued'
-      : state.dirty
-        ? 'Draft live'
-        : 'Synced';
-    this.editorSyncBadge.dataset.tone =
-      this.hasBufferedEdits || state.dirty ? 'accent' : 'muted';
-    this.editorSyncBadge.hidden = false;
-    this.editorSafetyBadge.hidden = !hasErrors && !isDegraded;
-    this.editorSafetyBadge.textContent = hasErrors
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
-      : isDegraded
-        ? 'Showing a simpler preset'
-        : 'Stable';
-    this.editorSafetyBadge.dataset.tone = hasErrors
-      ? 'danger'
-      : isDegraded
-        ? 'warning'
-        : 'muted';
+    // The dot answers "is what I see on stage what I typed?" — the only
+    // question the old four badges were collectively trying to answer.
+    const state_ = hasErrors
+      ? 'error'
+      : this.hasBufferedEdits
+        ? 'queued'
+        : state.dirty
+          ? 'dirty'
+          : 'synced';
+    this.stateEl.dataset.state = state_;
+    this.stateLabel.textContent = hasErrors
+      ? 'Holding last good frame'
+      : this.hasBufferedEdits
+        ? 'Queued'
+        : state.dirty
+          ? 'Draft live'
+          : 'Synced';
 
-    if (this.consoleHeaderLabel) {
-      this.consoleHeaderLabel.textContent =
-        errors.length > 0 || warnings.length > 0
-          ? `Console (${errors.length} error${errors.length === 1 ? '' : 's'}, ${warnings.length} warning${warnings.length === 1 ? '' : 's'})`
-          : 'Console (Clean)';
-    }
+    // Fidelity degradation only. Error counts are the status label's and the
+    // problems strip's job — this flag reports the one thing neither can:
+    // the stage is rendering a simplified version of what compiled.
+    this.safetyFlag.hidden = !isDegraded;
+    this.safetyFlag.textContent = 'Simplified';
+    this.safetyFlag.dataset.tone = 'warning';
+    this.safetyFlag.title =
+      'This preset uses features the active backend cannot render at full fidelity.';
+
+    const problemTotal = errors.length + warnings.length;
+    this.problemsCount.textContent =
+      problemTotal === 0
+        ? 'clean'
+        : `${errors.length} err · ${warnings.length} warn`;
+    this.problemsCount.dataset.tone =
+      errors.length > 0 ? 'danger' : warnings.length > 0 ? 'warning' : 'muted';
 
     this.diagnosticsList.replaceChildren();
     const errorsForQuickFix = state.diagnostics.filter(
@@ -1601,47 +1743,40 @@ export class EditorPanel {
 
     if (consoleMessages.length === 0) {
       const item = document.createElement('div');
-      item.className =
-        'milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--info';
+      item.className = 'stims-editor__problems-empty';
       item.textContent =
-        'Console is clear. Try bass_att, beat_pulse, or time to push the scene around.';
+        'No problems. Try bass_att, beat_pulse, or time to push the scene around.';
       this.diagnosticsList.appendChild(item);
     } else {
       consoleMessages.slice(0, 15).forEach((diagnostic) => {
         const item = document.createElement('div');
-        item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
+        item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
 
+        // Severity as a fixed-width mono tag rather than a filled pill: the
+        // column reads as a log, and the tags stop competing with the code
+        // for attention. (These were inline styles before.)
         const severityTag = document.createElement('span');
-        severityTag.className = `milkdrop-overlay__diagnostic-tag milkdrop-overlay__diagnostic-tag--${diagnostic.severity}`;
-        severityTag.textContent = diagnostic.severity.toUpperCase();
-        severityTag.style.marginRight = '6px';
-        severityTag.style.fontWeight = 'bold';
-        severityTag.style.fontSize = '0.7rem';
-        severityTag.style.padding = '1px 5px';
-        severityTag.style.borderRadius = '4px';
-        if (diagnostic.severity === 'error') {
-          severityTag.style.background = 'rgba(239, 68, 68, 0.3)';
-          severityTag.style.color = '#fca5a5';
-        } else if (diagnostic.severity === 'warning') {
-          severityTag.style.background = 'rgba(245, 158, 11, 0.3)';
-          severityTag.style.color = '#fde68a';
+        severityTag.className = 'stims-editor__problem-tag';
+        severityTag.textContent = diagnostic.severity;
+
+        const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
+        if (hasLine) {
+          const lineTag = document.createElement('span');
+          lineTag.className = 'stims-editor__problem-line';
+          lineTag.textContent = `Line ${diagnostic.line}`;
+          item.append(severityTag, lineTag);
         } else {
-          severityTag.style.background = 'rgba(59, 130, 246, 0.3)';
-          severityTag.style.color = '#93c5fd';
+          item.append(severityTag);
         }
 
         const messageSpan = document.createElement('span');
-        messageSpan.textContent =
-          'line' in diagnostic && diagnostic.line
-            ? `Line ${diagnostic.line}: ${diagnostic.message}`
-            : diagnostic.message;
+        messageSpan.textContent = diagnostic.message;
+        item.appendChild(messageSpan);
 
-        item.append(severityTag, messageSpan);
-
-        if ('line' in diagnostic && diagnostic.line) {
+        if (hasLine && diagnostic.line) {
           const lineNum = diagnostic.line;
-          item.style.cursor = 'pointer';
-          item.title = 'Click to jump to line in editor';
+          item.classList.add('stims-editor__problem--jump');
+          item.title = 'Jump to this line';
           item.addEventListener('click', () => {
             if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
               const line = this.editor.state.doc.line(lineNum);
@@ -1712,6 +1847,8 @@ export class EditorPanel {
     this.disposeDiagnosticsListener = null;
     this.disposeMidiListener?.();
     this.disposeMidiListener = null;
+    this.disposeMenuDismiss?.();
+    this.disposeMenuDismiss = null;
     this.clearEditorDebounce();
     this.unsubscribeTheme();
     this.editor.destroy();
@@ -1755,31 +1892,35 @@ export class EditorPanel {
     this.editor.focus();
   }
 
+  /** Tune pane. Each row is label + live value on one line, fader and its
+   * two controls on the next. In the old 140px column beside the code the
+   * label, value, MIDI dot, learn and reset controls all fought for the
+   * same line; at full panel width they no longer have to. */
   private renderSliders(): HTMLElement {
     const panel = document.createElement('div');
-    panel.className = 'editor-sliders';
-    panel.setAttribute('role', 'region');
+    panel.setAttribute('role', 'group');
     panel.setAttribute('aria-label', 'Parameter sliders');
 
-    const title = document.createElement('h4');
-    title.textContent = 'Tune';
-    title.className = 'editor-sliders__title';
-    panel.appendChild(title);
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Faders rewrite the matching line in the draft, so every move stays inspectable as code.';
+    panel.appendChild(hint);
+
+    const grid = document.createElement('div');
+    grid.className = 'stims-editor__sliders';
+    panel.appendChild(grid);
 
     this.sliderInputs.clear();
 
     for (const s of DEFAULT_EDITOR_SLIDERS) {
       const row = document.createElement('div');
-      row.className = 'editor-slider-row';
-
-      const labelRow = document.createElement('div');
-      labelRow.className = 'editor-slider-row__label-row';
+      row.className = 'stims-editor__slider';
 
       const label = document.createElement('label');
-      label.className = 'editor-slider-row__label';
+      label.className = 'stims-editor__slider-label';
       label.textContent = s.label;
       label.title = `Double-click to reset ${s.label} to ${s.defaultValue}`;
-      label.style.cursor = 'pointer';
 
       const resetToDefault = () => {
         this.writeVariableToEditor(s.key, s.defaultValue);
@@ -1792,14 +1933,36 @@ export class EditorPanel {
 
       label.addEventListener('dblclick', resetToDefault);
 
+      const valDisplay = document.createElement('span');
+      valDisplay.className = 'stims-editor__slider-value';
+
       const controls = document.createElement('div');
-      controls.className = 'editor-slider-row__controls';
+      controls.className = 'stims-editor__slider-row';
+
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = String(s.min);
+      input.max = String(s.max);
+      input.step = String(s.step);
+      input.className = 'stims-editor__slider-input';
+      input.setAttribute('aria-label', s.label);
+
+      const val = this.readVariableFromEditor(s.key);
+      const initialVal = val !== null ? val : s.defaultValue;
+      input.value = String(initialVal);
+      valDisplay.textContent = initialVal.toFixed(2);
+
+      input.addEventListener('input', () => {
+        const numVal = Number.parseFloat(input.value);
+        valDisplay.textContent = numVal.toFixed(2);
+        this.writeVariableToEditor(s.key, numVal);
+      });
 
       // Passive status: is a MIDI/MCP device currently bound to this
       // slider's target, and if so does the preset's own equations
       // silently overwrite whatever it writes? Hidden until bound.
       const midiDot = document.createElement('span');
-      midiDot.className = 'editor-slider-row__midi-dot';
+      midiDot.className = 'stims-editor__midi-dot';
       midiDot.hidden = true;
 
       // Active control: arm MIDI-learn for this exact slider without
@@ -1808,49 +1971,25 @@ export class EditorPanel {
       // Cancel) to back out.
       const learnButton = document.createElement('button');
       learnButton.type = 'button';
-      learnButton.className = 'editor-slider-row__midi-learn';
+      learnButton.className = 'stims-editor__slider-btn';
       learnButton.textContent = '⏺';
       learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
       learnButton.addEventListener('click', () =>
         this.toggleSliderLearn(s.key),
       );
-      controls.append(midiDot, learnButton);
 
       // Double-click on the label was the only way to reset a slider — a
       // real button gives keyboard/click-only users the same path a mouse
       // user already had.
       const resetButton = document.createElement('button');
       resetButton.type = 'button';
-      resetButton.className = 'editor-slider-row__reset';
+      resetButton.className = 'stims-editor__slider-btn';
       resetButton.textContent = '↺';
       resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
       resetButton.title = `Reset to ${s.defaultValue}`;
       resetButton.addEventListener('click', resetToDefault);
-      controls.appendChild(resetButton);
 
-      labelRow.appendChild(label);
-      labelRow.appendChild(controls);
-
-      const input = document.createElement('input');
-      input.type = 'range';
-      input.min = String(s.min);
-      input.max = String(s.max);
-      input.step = String(s.step);
-      input.className = 'editor-slider-row__input';
-
-      const val = this.readVariableFromEditor(s.key);
-      const initialVal = val !== null ? val : s.defaultValue;
-      input.value = String(initialVal);
-
-      const valDisplay = document.createElement('span');
-      valDisplay.className = 'editor-slider-row__value';
-      valDisplay.textContent = initialVal.toFixed(2);
-
-      input.addEventListener('input', () => {
-        const numVal = Number.parseFloat(input.value);
-        valDisplay.textContent = numVal.toFixed(2);
-        this.writeVariableToEditor(s.key, numVal);
-      });
+      controls.append(midiDot, input, learnButton, resetButton);
 
       this.sliderInputs.set(s.key, {
         input,
@@ -1860,10 +1999,8 @@ export class EditorPanel {
         learnButton,
       });
 
-      row.appendChild(labelRow);
-      row.appendChild(input);
-      row.appendChild(valDisplay);
-      panel.appendChild(row);
+      row.append(label, valDisplay, controls);
+      grid.appendChild(row);
     }
 
     return panel;
@@ -1940,15 +2077,15 @@ export class EditorPanel {
     this.discardAssistedEdit();
 
     const container = document.createElement('div');
-    container.className = 'editor-assisted-diff';
+    container.className = 'stims-editor__proposal';
     const heading = document.createElement('div');
-    heading.className = 'editor-assisted-diff__head';
-    heading.textContent = `${label}: review the proposed change`;
+    heading.className = 'stims-editor__proposal-head';
+    heading.textContent = `${label} — review the proposed change`;
     const lines = document.createElement('pre');
-    lines.className = 'editor-assisted-diff__lines';
+    lines.className = 'stims-editor__proposal-lines';
     for (const line of computeSourceDiff(currentSource, nextSource)) {
       const row = document.createElement('span');
-      row.className = `editor-assisted-diff__line editor-assisted-diff__line--${line.kind}`;
+      row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
       const prefix =
         line.kind === 'add'
           ? '+ '
@@ -1962,10 +2099,10 @@ export class EditorPanel {
     }
 
     const actions = document.createElement('div');
-    actions.className = 'editor-assisted-diff__actions';
+    actions.className = 'stims-editor__proposal-actions';
     const applyBtn = document.createElement('button');
     applyBtn.type = 'button';
-    applyBtn.className = 'milkdrop-overlay__refine-btn';
+    applyBtn.className = 'stims-editor__btn stims-editor__btn--primary';
     applyBtn.textContent = 'Apply';
     applyBtn.addEventListener('click', () => {
       const sourceNow = this.editor.state.doc.toString();
@@ -1990,7 +2127,7 @@ export class EditorPanel {
     });
     const discardBtn = document.createElement('button');
     discardBtn.type = 'button';
-    discardBtn.className = 'milkdrop-overlay__refine-btn';
+    discardBtn.className = 'stims-editor__btn';
     discardBtn.textContent = 'Discard';
     discardBtn.addEventListener('click', () => {
       container.remove();
@@ -1998,15 +2135,17 @@ export class EditorPanel {
     });
     actions.append(applyBtn, discardBtn);
     container.append(heading, lines, actions);
-    this.editor.dom.insertAdjacentElement('beforebegin', container);
+    // Layered over the code rather than pushed above it: the review happens
+    // where the change would land, and it can't grow the panel.
+    this.stage.appendChild(container);
     this.assistedEditContainer = container;
   }
 
   private renderQuickFix(): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'editor-quick-fix';
-    btn.textContent = '\u26A1 Fix with AI';
+    btn.className = 'stims-editor__btn stims-editor__fix';
+    btn.textContent = 'Fix with AI';
     btn.title = 'Send this error to the AI for automatic correction';
     btn.style.display = 'none';
     btn.addEventListener('click', () => this.handleQuickFix());
@@ -2063,16 +2202,6 @@ export class EditorPanel {
       .catch(() => this.setRefinePending(false));
   }
 
-  private handleBlend() {
-    const container = this.element.querySelector(
-      '.editor-blend-input',
-    ) as HTMLElement | null;
-    if (container) {
-      container.style.display =
-        container.style.display === 'none' ? '' : 'none';
-    }
-  }
-
   private doBlend(sourceB: string) {
     if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
@@ -2090,47 +2219,6 @@ export class EditorPanel {
         this.setRefinePending(false);
       })
       .catch(() => this.setRefinePending(false));
-  }
-
-  private renderBlendInput(): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'editor-blend-input';
-    container.style.display = 'none';
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'editor-blend-textarea';
-    textarea.placeholder = 'Paste second preset source or preset ID';
-    textarea.rows = 4;
-
-    const btnRow = document.createElement('div');
-    btnRow.style.display = 'flex';
-    btnRow.style.gap = '6px';
-
-    const submitBtn = document.createElement('button');
-    submitBtn.className = 'editor-blend-submit';
-    submitBtn.textContent = 'Blend';
-    submitBtn.addEventListener('click', () => {
-      const sourceB = textarea.value.trim();
-      if (!sourceB || this.aiPending) return;
-      this.doBlend(sourceB);
-      container.style.display = 'none';
-      textarea.value = '';
-    });
-    this.blendSubmitButton = submitBtn;
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'editor-blend-cancel';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => {
-      container.style.display = 'none';
-      textarea.value = '';
-    });
-
-    btnRow.appendChild(submitBtn);
-    btnRow.appendChild(cancelBtn);
-    container.appendChild(textarea);
-    container.appendChild(btnRow);
-    return container;
   }
 
   private setRefinePending(pending: boolean) {
@@ -2166,23 +2254,22 @@ export class EditorPanel {
     this.historyList.replaceChildren();
     if (this.snapshots.length === 0) {
       const empty = document.createElement('div');
-      empty.className = 'milkdrop-overlay__editor-history-empty';
-      empty.textContent =
-        'Checkpoints appear here before each applied AI edit, so you can step back.';
+      empty.className = 'stims-editor__history-empty';
+      empty.textContent = 'No checkpoints yet.';
       this.historyList.appendChild(empty);
       return;
     }
     [...this.snapshots].reverse().forEach((snapshot) => {
       const row = document.createElement('div');
-      row.className = 'milkdrop-overlay__editor-history-row';
+      row.className = 'stims-editor__history-row';
 
       const meta = document.createElement('span');
-      meta.className = 'milkdrop-overlay__editor-history-meta';
+      meta.className = 'stims-editor__history-meta';
       meta.textContent = `${snapshot.label} · ${formatRelativeTime(snapshot.timestamp)}`;
 
       const restoreBtn = document.createElement('button');
       restoreBtn.type = 'button';
-      restoreBtn.className = 'milkdrop-overlay__editor-history-restore';
+      restoreBtn.className = 'stims-editor__btn';
       restoreBtn.textContent = 'Restore';
       restoreBtn.addEventListener('click', () => {
         const currentSource = this.editor.state.doc.toString();

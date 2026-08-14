@@ -10,6 +10,7 @@ import '../../css/app-shell.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
+import '../../css/editor-panel.css';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
@@ -786,6 +787,7 @@ function StimsWorkspaceAppShell() {
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
+        fillBody={stageAnchoredToolOpen}
         onOpen={handleSidePanelOpen}
       >
         <Suspense fallback={null}>
