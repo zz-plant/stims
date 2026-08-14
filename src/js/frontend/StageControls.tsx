@@ -231,6 +231,25 @@ export function StageControls({
       separatorBefore: true,
     },
     {
+      icon: 'sliders' as const,
+      label:
+        (engineSnapshot?.transitionMode ?? 'blend') === 'cut'
+          ? 'Transition: Instant Cut'
+          : `Transition: Blend (${engineSnapshot?.blendDuration ?? 2.7}s)`,
+      action: () =>
+        run(() => {
+          const current = engineSnapshot?.transitionMode ?? 'blend';
+          const nextMode = current === 'blend' ? 'cut' : 'blend';
+          engine.setTransitionMode(nextMode);
+          ui.setStatusMessage(
+            nextMode === 'cut'
+              ? 'Transition set to Instant Cut'
+              : 'Transition set to Smooth Blend',
+          );
+        }),
+      sectionLabel: 'VJ Stage Controls',
+    },
+    {
       icon: 'link' as const,
       label: 'Share link',
       action: () => run(() => void ui.handleShowCurrentLink()),
