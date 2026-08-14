@@ -120,6 +120,14 @@ export function usePresetPreviews({
     isDisposed,
   ]);
 
+  useEffect(() => {
+    return () => {
+      previewServiceRef.current?.dispose();
+      previewServiceRef.current = null;
+      previewServicePromiseRef.current = null;
+    };
+  }, []);
+
   return {
     ensurePresetPreviewService,
     presetPreviews,

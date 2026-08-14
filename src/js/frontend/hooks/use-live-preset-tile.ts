@@ -26,7 +26,25 @@ const agentModeScheduler =
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).get('agent') === 'true';
 
+export const MAX_PRESET_FILE_CACHE_SIZE = 500;
 const presetFileById = new Map<string, string>();
+
+export function setPresetFile(id: string, file: string) {
+  if (presetFileById.has(id)) {
+    presetFileById.delete(id);
+  } else if (presetFileById.size >= MAX_PRESET_FILE_CACHE_SIZE) {
+    const oldestKey = presetFileById.keys().next().value;
+    if (oldestKey !== undefined) {
+      presetFileById.delete(oldestKey);
+    }
+  }
+  presetFileById.set(id, file);
+}
+
+export function getPresetFileCacheSize(): number {
+  return presetFileById.size;
+}
+
 let poolPromise: Promise<MilkdropLiveTilePool> | null = null;
 
 function ensurePool(): Promise<MilkdropLiveTilePool> {
@@ -82,7 +100,7 @@ export function useLivePresetTile(entry: PresetCatalogEntry) {
     if (!enabled || !entry.file) {
       return;
     }
-    presetFileById.set(entry.id, entry.file);
+    setPresetFile(entry.id, entry.file);
     let cancelled = false;
     let handle: MilkdropLiveTileHandle | null = null;
     let canvas: HTMLCanvasElement | null = null;
