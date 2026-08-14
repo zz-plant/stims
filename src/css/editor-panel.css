@@ -820,6 +820,279 @@ html.light .stims-editor {
   background: color-mix(in srgb, var(--stims-warn) 14%, transparent);
 }
 
+/* ── Switches ─────────────────────────────────────────────────────────
+   Boolean fields, which the format stores as floats and this pane used to
+   render as faders you dragged to 1.000. The post-chain bank is in frame
+   processing order, so it reads as a pipeline. */
+
+.stims-editor__toggle-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.stims-editor__toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* In a dense bank of switches, a chip on every one saying "the buffer owns
+   this" is the expected case and reads as noise. Only the exception — a
+   switch the preset overwrites every frame — earns a marker here. Faders
+   keep theirs, where it sits in a label row and qualifies a number. */
+.stims-editor__toggle-wrap .stims-editor__state-chip[data-state="static"] {
+  display: none;
+}
+
+.stims-editor__toggle {
+  padding: 2px 8px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.68rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.stims-editor__toggle:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink);
+}
+
+.stims-editor__toggle:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+/* On reads as filled, not merely tinted: at 0.68rem a border-colour change
+   alone is not a reliable on/off signal. */
+.stims-editor__toggle[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--ed-on-accent);
+  font-weight: 600;
+}
+
+/* ── Segmented mode pickers ───────────────────────────────────────── */
+
+.stims-editor__enum {
+  display: grid;
+  gap: 3px;
+  padding: 3px 0;
+}
+
+.stims-editor__segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.stims-editor__segment {
+  flex: 1 1 auto;
+  min-width: 4.5rem;
+  padding: 2px 6px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.66rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.stims-editor__segment:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink);
+}
+
+.stims-editor__segment:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__segment[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--ed-on-accent);
+  font-weight: 600;
+}
+
+/* ── Dual-handle ranges ───────────────────────────────────────────────
+   Two range inputs stacked on one track. Overlaying real inputs keeps
+   keyboard, focus and screen-reader behaviour that a custom-drawn track
+   would have to reimplement; only the tracks are hidden, not the thumbs. */
+
+.stims-editor__range {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.stims-editor__range-track {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  min-width: 0;
+}
+
+.stims-editor__range-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--stims-line-strong);
+  transform: translateY(-50%);
+}
+
+.stims-editor__range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  /* The bodies overlap, so only the thumbs may take the pointer — otherwise
+     the input on top swallows every click meant for the other handle. */
+  pointer-events: none;
+}
+
+.stims-editor__range-input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: transparent;
+}
+
+.stims-editor__range-input::-moz-range-track {
+  height: 2px;
+  background: transparent;
+}
+
+.stims-editor__range-input::-webkit-slider-thumb {
+  width: 4px;
+  height: 12px;
+  appearance: none;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stims-editor__range-input::-moz-range-thumb {
+  width: 4px;
+  height: 12px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stims-editor__range-input[data-handle="max"]::-webkit-slider-thumb {
+  background: var(--stims-cool);
+}
+
+.stims-editor__range-input[data-handle="max"]::-moz-range-thumb {
+  background: var(--stims-cool);
+}
+
+.stims-editor__range-input:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
+}
+
+/* ── Modulation row ───────────────────────────────────────────────────
+   Folded under each fader. Muted until a source is picked, because on most
+   presets most of these stay off and a bank of loud rows would bury the
+   faders they belong to. */
+
+.stims-editor__mod {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--stims-line);
+}
+
+.stims-editor__mod[data-state="none"] {
+  opacity: 0.5;
+}
+
+.stims-editor__mod[data-state="none"]:hover,
+.stims-editor__mod[data-state="none"]:focus-within {
+  opacity: 1;
+}
+
+.stims-editor__mod[data-state="on"] {
+  border-left-color: var(--stims-cool);
+}
+
+/* A hand-written equation is not something to edit through three widgets,
+   so the row disables itself rather than pretending. */
+.stims-editor__mod[data-state="custom"] {
+  border-left-color: var(--stims-warn);
+  opacity: 0.75;
+}
+
+.stims-editor__mod-select {
+  max-width: 8rem;
+  padding: 1px 2px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.62rem;
+}
+
+.stims-editor__mod-select:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__mod-mode {
+  width: 18px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--stims-ink);
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stims-editor__mod-mode:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stims-editor__mod-mode:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__mod-readout {
+  min-width: 2.6rem;
+  color: var(--stims-cool);
+  font-family: var(--font-family-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stims-editor__mod[data-state="custom"] .stims-editor__mod-readout {
+  min-width: 0;
+  color: var(--stims-warn);
+}
+
 /* ── Colour groups ────────────────────────────────────────────────── */
 
 .stims-editor__subhead {

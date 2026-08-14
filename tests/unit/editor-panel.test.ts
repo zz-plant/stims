@@ -93,6 +93,10 @@ describe('editor panel AST diagnostics & helpers', () => {
     // wave_a is not a fader any more: it is the alpha half of the Wave colour
     // group, so the swatch and its alpha move together.
     expect(keys).not.toContain('wave_a');
+    // Booleans, enums and range pairs moved to their own control types.
+    expect(keys).not.toContain('brighten');
+    expect(keys).not.toContain('wave_mode');
+    expect(keys).not.toContain('blur1_min');
   });
 
   test('DEFAULT_EDITOR_COLOR_GROUPS covers every r/g/b block in the format', () => {
