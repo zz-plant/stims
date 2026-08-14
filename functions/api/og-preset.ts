@@ -224,6 +224,16 @@ export function buildPresetOgSvg({
     <line x1="486" y1="20" x2="466" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
     <line x1="486" y1="20" x2="486" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
 
+    <!-- High-CTR Glassmorphic Play CTA Overlay -->
+    <g transform="translate(253, 200)">
+      <circle r="42" fill="rgba(12, 17, 24, 0.72)" stroke="${palette.primary}" stroke-width="2.5"/>
+      <polygon points="-11,-18 18,0 -11,18" fill="${palette.secondary}"/>
+    </g>
+    <g transform="translate(253, 275)">
+      <rect x="-100" y="-16" width="200" height="32" rx="16" fill="${palette.secondary}"/>
+      <text x="0" y="5" font-size="12" font-weight="700" fill="#0c1118" font-family="Space Mono, monospace" text-anchor="middle">LAUNCH VISUALIZER ▶</text>
+    </g>
+
     <!-- Live Status Pill -->
     <rect x="366" y="24" width="116" height="28" rx="14" fill="rgba(16, 185, 129, 0.2)" stroke="rgba(16, 185, 129, 0.5)"/>
     <circle cx="382" cy="38" r="4" fill="#10b981" class="live-pulse-dot"/>
@@ -235,7 +245,7 @@ export function buildPresetOgSvg({
 
   <g transform="translate(64, 560)">
     <text x="0" y="20" font-size="22" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
-    <text x="110" y="20" font-size="17" font-weight="400" fill="rgba(247,244,235,0.6)" font-family="Space Grotesk, system-ui, sans-serif">• Instant browser audio visualizer</text>
+    <text x="110" y="20" font-size="16" font-weight="500" fill="rgba(247,244,235,0.7)" font-family="Space Grotesk, system-ui, sans-serif">• Instant audio-reactive visualizer in your browser</text>
   </g>
 </svg>`;
 }
