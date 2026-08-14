@@ -55,8 +55,8 @@ function getOrCompileProgram(
   if (cached) {
     return cached;
   }
-  const enableF16 = device?.features.has('shader-f16') ?? false;
-  const enableSubgroups = device?.features.has('subgroups') ?? false;
+  const enableF16 = device?.features?.has('shader-f16') ?? false;
+  const enableSubgroups = device?.features?.has('subgroups') ?? false;
   const compiled = compileProgramToWgsl(block, { enableF16, enableSubgroups });
   PROGRAM_CACHE.set(block, compiled);
   return compiled;

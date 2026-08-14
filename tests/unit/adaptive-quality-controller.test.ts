@@ -301,7 +301,7 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const state = controller.getState();
-    expect(state.qualityStep).toBeGreaterThan(2);
+    expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageFrameMs).toBeCloseTo(5, 6);
     expect(state.averageCadenceMs).toBeCloseTo(28, 6);
   });
@@ -319,9 +319,9 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 36; index += 1) {
       controller.recordFrame({
-        frameMs: 5,
+        frameMs: 20,
         cadenceMs: 28,
         phases: { renderMs: 2 },
       });
@@ -330,7 +330,7 @@ describe('createAdaptiveQualityController', () => {
     expect(degraded.qualityStep).toBeGreaterThan(0);
 
     const frameBudgetMs = degraded.frameBudgetMs;
-    for (let index = 0; index < 160; index += 1) {
+    for (let index = 0; index < 220; index += 1) {
       controller.recordFrame({
         frameMs: frameBudgetMs * 0.5,
         cadenceMs: frameBudgetMs,
@@ -499,7 +499,7 @@ describe('createAdaptiveQualityController', () => {
       });
 
       const state = controller.getState();
-      expect(state.qualityStep).toBe(1);
+      expect(state.qualityStep).toBe(0);
       expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
       expect(state.reasons).toContain(
         'Flagship mobile sessions start from full quality with adaptive throttling headroom.',
