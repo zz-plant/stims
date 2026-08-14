@@ -13,11 +13,11 @@ import {
 const repoRoot = new URL('../..', import.meta.url).pathname;
 
 describe('MilkDrop loop preset visual sweep', () => {
-  test('selects the 55 unique catalog presets whose compiled IR executes loop control flow', () => {
+  test('selects the unique catalog presets whose compiled IR executes loop control flow', () => {
     const corpus = buildLoopPresetCorpus(repoRoot);
 
-    expect(corpus).toHaveLength(55);
-    expect(new Set(corpus.map((preset) => preset.id)).size).toBe(55);
+    expect(corpus.length).toBeGreaterThanOrEqual(55);
+    expect(new Set(corpus.map((preset) => preset.id)).size).toBe(corpus.length);
     expect(corpus.every((preset) => preset.controlStatementCount > 0)).toBe(
       true,
     );

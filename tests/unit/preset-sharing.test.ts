@@ -63,7 +63,7 @@ describe('preset social sharing', () => {
       expect(svg).toContain('<svg');
       expect(svg).toContain('Parallel Universe');
       expect(svg).toContain('Rovastar');
-      expect(svg).toContain('STIMS • AUDIO VISUALIZER');
+      expect(svg).toContain('STIMS • SOUND REACTIVE VISUALIZER');
       expect(svg).toContain('toil.fyi');
     });
 
