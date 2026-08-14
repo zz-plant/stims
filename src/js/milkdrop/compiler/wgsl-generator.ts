@@ -650,6 +650,8 @@ function buildWgslProgram(
     fieldKeys: string[];
     registerKeys: string[];
     usesRandom: boolean;
+    enableF16?: boolean;
+    enableSubgroups?: boolean;
   } = { fieldKeys: [], registerKeys: [], usesRandom: false },
 ): string {
   const { fieldKeys, usesRandom } = options;
@@ -693,11 +695,18 @@ function buildWgslProgram(
     `}`,
   ].join('\n');
 
-  return `${stateStruct}\n\n${signalStruct}\n${body}`;
+  const extensions: string[] = [];
+  if (options.enableF16) extensions.push('enable f16;');
+  if (options.enableSubgroups) extensions.push('enable subgroups;');
+  const extensionHeader =
+    extensions.length > 0 ? `${extensions.join('\n')}\n\n` : '';
+
+  return `${extensionHeader}${stateStruct}\n\n${signalStruct}\n${body}`;
 }
 
 export function compileProgramToWgsl(
   block: MilkdropProgramBlock,
+  options?: { enableF16?: boolean; enableSubgroups?: boolean },
 ): WgslProgramCompilation {
   const { fieldKeys, registerKeys, usesRandom, usesMegabuf, usesGmegabuf } =
     collectStatementFields(block.statements);
@@ -715,6 +724,8 @@ export function compileProgramToWgsl(
     fieldKeys: allFieldKeysForStruct,
     registerKeys,
     usesRandom,
+    enableF16: options?.enableF16,
+    enableSubgroups: options?.enableSubgroups,
   });
 
   // buildWgslProgram's VmState struct always includes 'pi' and 'e' in

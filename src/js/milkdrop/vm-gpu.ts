@@ -32,7 +32,7 @@ export function preloadGpuProgramPipeline(
   device: GPUDevice,
   block: MilkdropProgramBlock,
 ): GPUComputePipeline {
-  const compilation = getOrCompileProgram(block);
+  const compilation = getOrCompileProgram(block, device);
   return getOrCreatePipeline(device, compilation);
 }
 
@@ -49,12 +49,15 @@ export async function warmupGpuPipelines(
 
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
+  device?: GPUDevice,
 ): WgslProgramCompilation {
   const cached = PROGRAM_CACHE.get(block);
   if (cached) {
     return cached;
   }
-  const compiled = compileProgramToWgsl(block);
+  const enableF16 = device?.features.has('shader-f16') ?? false;
+  const enableSubgroups = device?.features.has('subgroups') ?? false;
+  const compiled = compileProgramToWgsl(block, { enableF16, enableSubgroups });
   PROGRAM_CACHE.set(block, compiled);
   return compiled;
 }
@@ -143,7 +146,7 @@ export function createGpuVmRunner() {
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
-    const compilation = getOrCompileProgram(block);
+    const compilation = getOrCompileProgram(block, gpuDevice);
     if (!compilation.gpuExecutable) {
       dispose();
       return false;
