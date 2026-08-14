@@ -440,9 +440,12 @@ export function createAdaptiveQualityController({
    * next recorded frame naturally overwrites it with a fresh, small-sample
    * average.
    */
+  let rollingFrameTimesSqSum = 0;
+
   function resetRollingWindowAfterStepChange() {
     rollingFrameTimes.fill(0);
     rollingFrameTimesSum = 0;
+    rollingFrameTimesSqSum = 0;
     rollingFrameTimesIndex = 0;
     rollingFrameTimesFilled = false;
     consecutiveRollingOverBudget = 0;
@@ -450,10 +453,13 @@ export function createAdaptiveQualityController({
 
   function pushRollingFrameTime(frameMs: number) {
     if (rollingFrameTimesFilled) {
-      rollingFrameTimesSum -= rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
+      const oldVal = rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
+      rollingFrameTimesSum -= oldVal;
+      rollingFrameTimesSqSum -= oldVal * oldVal;
     }
     rollingFrameTimes[rollingFrameTimesIndex] = frameMs;
     rollingFrameTimesSum += frameMs;
+    rollingFrameTimesSqSum += frameMs * frameMs;
     rollingFrameTimesIndex = (rollingFrameTimesIndex + 1) % rollingWindowSize;
     if (rollingFrameTimesIndex === 0) {
       rollingFrameTimesFilled = true;
@@ -473,12 +479,9 @@ export function createAdaptiveQualityController({
       ? rollingWindowSize
       : rollingFrameTimesIndex;
     if (count < 2 || rollingAverageFrameMs === null) return null;
-    let sumSqDiff = 0;
-    for (let i = 0; i < count; i++) {
-      const diff = (rollingFrameTimes[i] ?? 0) - rollingAverageFrameMs;
-      sumSqDiff += diff * diff;
-    }
-    return sumSqDiff / count;
+    const meanSq = rollingFrameTimesSqSum / count;
+    const varVal = meanSq - rollingAverageFrameMs * rollingAverageFrameMs;
+    return varVal < 0 ? 0 : varVal;
   }
 
   function updateThermalState() {
