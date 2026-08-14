@@ -76,6 +76,32 @@ import {
   readMilkdropField,
   upsertMilkdropFields,
 } from '../formatter';
+import {
+  COLOR_GROUPS,
+  type ColorGroupConfig,
+  channelsToHex,
+  clamp01,
+  ENUM_CONTROLS,
+  type EnumControlConfig,
+  formatControlValue,
+  hexToChannels,
+  positionToValue,
+  RANGE_CONTROLS,
+  type RangeControlConfig,
+  SCALAR_CONTROLS,
+  type ScalarControlConfig,
+  TOGGLE_CONTROLS,
+  type ToggleControlConfig,
+  valueToPosition,
+} from '../preset-controls.ts';
+import {
+  MODULATION_SOURCES,
+  type Modulation,
+  type ModulationMode,
+  type ModulationSource,
+  readModulation,
+  writeModulation,
+} from '../preset-modulation.ts';
 import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
@@ -85,192 +111,15 @@ import {
 } from './preset-row';
 import { computeSourceDiff } from './source-diff.ts';
 
-export type SliderConfig = {
-  label: string;
-  key: string;
-  min: number;
-  max: number;
-  step: number;
-  defaultValue: number;
-};
-
-export const DEFAULT_EDITOR_SLIDERS: SliderConfig[] = [
-  {
-    label: 'Zoom',
-    key: 'zoom',
-    min: 0.2,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Warp',
-    key: 'warp',
-    min: 0.0,
-    max: 10.0,
-    step: 0.05,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Rot',
-    key: 'rot',
-    min: -1.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Decay',
-    key: 'decay',
-    min: 0.8,
-    max: 1.0,
-    step: 0.005,
-    defaultValue: 0.98,
-  },
-  {
-    label: 'Center X',
-    key: 'cx',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.5,
-  },
-  {
-    label: 'Center Y',
-    key: 'cy',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.5,
-  },
-  {
-    label: 'Scale X',
-    key: 'sx',
-    min: 0.1,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Scale Y',
-    key: 'sy',
-    min: 0.1,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Shift X',
-    key: 'dx',
-    min: -0.5,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Shift Y',
-    key: 'dy',
-    min: -0.5,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Border Size',
-    key: 'ob_size',
-    min: 0.0,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.01,
-  },
-];
-
-export type ColorGroupConfig = {
-  label: string;
-  /** Channel field names in r, g, b order. */
-  rgb: [string, string, string];
-  /** Alpha field, when the group has one. MilkDrop is inconsistent about the
-   * suffix — the main wave uses `wave_a`, the solid mesh uses `mesh_alpha`. */
-  alpha: { key: string; defaultValue: number } | null;
-  defaultRgb: [number, number, number];
-  hint: string;
-};
-
 /**
- * MilkDrop stores every colour as separate 0..1 scalars, so a preset's palette
- * arrives as ~20 unrelated numbers. Editing them as faders means guessing what
- * (0.65, 0.20, 0.90) looks like and moving three controls to shift one hue;
- * grouping them back into swatches is the difference between choosing a colour
- * and solving for one.
+ * Kept as the module's public names because tests, the MIDI layer and the MCP
+ * tools address the Tune pane through them; the declarations themselves now
+ * live in preset-controls.ts alongside the scale maths.
  */
-export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = [
-  {
-    label: 'Background',
-    rgb: ['bg_r', 'bg_g', 'bg_b'],
-    alpha: null,
-    defaultRgb: [0, 0, 0],
-    hint: 'Cleared behind everything each frame.',
-  },
-  {
-    label: 'Wave',
-    rgb: ['wave_r', 'wave_g', 'wave_b'],
-    alpha: { key: 'wave_a', defaultValue: 0.8 },
-    defaultRgb: [1, 1, 1],
-    hint: 'The main waveform. Most presets recolour this per frame.',
-  },
-  {
-    label: 'Motion vectors',
-    rgb: ['mv_r', 'mv_g', 'mv_b'],
-    alpha: { key: 'mv_a', defaultValue: 0 },
-    defaultRgb: [1, 1, 1],
-    hint: 'Alpha defaults to 0 — the grid is invisible until you raise it.',
-  },
-  {
-    label: 'Outer border',
-    rgb: ['ob_r', 'ob_g', 'ob_b'],
-    alpha: { key: 'ob_a', defaultValue: 0 },
-    defaultRgb: [0, 0, 0],
-    hint: 'Sized by Border Size; drawn only once alpha is above 0.',
-  },
-  {
-    label: 'Inner border',
-    rgb: ['ib_r', 'ib_g', 'ib_b'],
-    alpha: { key: 'ib_a', defaultValue: 0 },
-    defaultRgb: [0.25, 0.25, 0.25],
-    hint: 'Drawn only once alpha is above 0.',
-  },
-  {
-    label: 'Solid mesh',
-    rgb: ['mesh_r', 'mesh_g', 'mesh_b'],
-    alpha: { key: 'mesh_alpha', defaultValue: 0 },
-    defaultRgb: [1, 1, 1],
-    hint: 'A flat tint over the frame; alpha 0 by default.',
-  },
-];
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-
-/** MilkDrop channels are plain 0..1 multipliers, so the mapping to a colour
- * input is direct — no gamma step, which would misreport what the preset
- * actually holds. Values above 1 (presets do overdrive them) clamp for
- * display only; the buffer keeps whatever the preset wrote until the swatch
- * is actually moved. */
-function channelsToHex(rgb: [number, number, number]): string {
-  return `#${rgb
-    .map((channel) =>
-      Math.round(clamp01(channel) * 255)
-        .toString(16)
-        .padStart(2, '0'),
-    )
-    .join('')}`;
-}
-
-function hexToChannels(hex: string): [number, number, number] {
-  const value = hex.replace('#', '');
-  return [0, 1, 2].map(
-    (index) => Number.parseInt(value.slice(index * 2, index * 2 + 2), 16) / 255,
-  ) as [number, number, number];
-}
+export type SliderConfig = ScalarControlConfig;
+export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
+export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
+export type { ColorGroupConfig };
 
 export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
   const diagnostics: MilkdropDiagnostic[] = [];
@@ -1046,6 +895,35 @@ export class EditorPanel {
       display: HTMLSpanElement;
       defaultValue: number;
       learnButton: HTMLButtonElement;
+      config: ScalarControlConfig;
+    }
+  > = new Map();
+  private toggleInputs: Map<
+    string,
+    { button: HTMLButtonElement; config: ToggleControlConfig }
+  > = new Map();
+  private enumInputs: Map<
+    string,
+    { buttons: HTMLButtonElement[]; config: EnumControlConfig }
+  > = new Map();
+  private rangeInputs: Map<
+    string,
+    {
+      minInput: HTMLInputElement;
+      maxInput: HTMLInputElement;
+      readout: HTMLSpanElement;
+      config: RangeControlConfig;
+    }
+  > = new Map();
+  private modulationRows: Map<
+    string,
+    {
+      row: HTMLElement;
+      sourceSelect: HTMLSelectElement;
+      modeButton: HTMLButtonElement;
+      depth: HTMLInputElement;
+      readout: HTMLSpanElement;
+      config: ScalarControlConfig;
     }
   > = new Map();
   private colorInputs: Map<
@@ -1891,6 +1769,10 @@ export class EditorPanel {
 
     this.updateSlidersFromDoc();
     this.updateColorsFromDoc();
+    this.updateTogglesFromDoc();
+    this.updateEnumsFromDoc();
+    this.updateRangesFromDoc();
+    this.updateModulationsFromDoc();
     this.refreshMidiGutter();
     this.refreshSliderMidiState();
   }
@@ -2074,101 +1956,571 @@ export class EditorPanel {
 
     this.sliderInputs.clear();
     this.colorInputs.clear();
+    this.toggleInputs.clear();
+    this.enumInputs.clear();
+    this.rangeInputs.clear();
+    this.modulationRows.clear();
     this.fieldStateCells = [];
 
-    for (const s of DEFAULT_EDITOR_SLIDERS) {
-      const row = document.createElement('div');
-      row.className = 'stims-editor__slider';
+    for (const s of SCALAR_CONTROLS) {
+      grid.appendChild(this.renderScalarControl(s));
+    }
 
-      const label = document.createElement('label');
-      label.className = 'stims-editor__slider-label';
-      label.textContent = s.label;
-      label.title = `Double-click to reset ${s.label} to ${s.defaultValue}`;
+    panel.appendChild(this.renderToggleControls());
+    panel.appendChild(this.renderEnumControls());
+    panel.appendChild(this.renderRangeControls());
+    panel.appendChild(this.renderColorGroups());
 
-      const resetToDefault = () => {
-        this.writeVariableToEditor(s.key, s.defaultValue);
-        const item = this.sliderInputs.get(s.key);
-        if (item) {
-          item.input.value = String(s.defaultValue);
-          item.display.textContent = s.defaultValue.toFixed(2);
+    return panel;
+  }
+
+  /**
+   * One scalar row: fader on its declared scale, live value in that scale's
+   * own units, MIDI-learn, reset, and a modulation control that writes the
+   * per_frame equation when a fader alone cannot reach the field.
+   */
+  private renderScalarControl(s: ScalarControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__slider';
+
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = s.label;
+    label.title = s.hint ?? `Double-click to reset ${s.label}`;
+
+    const valDisplay = document.createElement('span');
+    valDisplay.className = 'stims-editor__slider-value';
+
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+
+    // The input always spans 0..1; the scale maps that onto the field. Giving
+    // the input the field's own min/max would put the value back on a linear
+    // track and undo the whole point.
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0';
+    input.max = '1';
+    input.step = '0.001';
+    input.className = 'stims-editor__slider-input';
+    input.dataset.scale = s.scale;
+    input.setAttribute('aria-label', s.label);
+
+    const applyValue = (value: number) => {
+      input.value = String(valueToPosition(value, s));
+      valDisplay.textContent = formatControlValue(value, s);
+      input.setAttribute('aria-valuetext', formatControlValue(value, s));
+    };
+
+    const resetToDefault = () => {
+      this.writeVariableToEditor(s.key, s.defaultValue);
+      applyValue(s.defaultValue);
+    };
+    label.addEventListener('dblclick', resetToDefault);
+
+    applyValue(this.readVariableFromEditor(s.key) ?? s.defaultValue);
+
+    input.addEventListener('input', () => {
+      let value = positionToValue(Number.parseFloat(input.value), s);
+      // Snap to the neutral value near the detent. Without it a ratio control
+      // can only reach exactly 1.0 by luck, and "no change" is the single
+      // most useful position on the track.
+      if (s.neutral !== undefined) {
+        const neutralPos = valueToPosition(s.neutral, s);
+        if (Math.abs(Number.parseFloat(input.value) - neutralPos) < 0.012) {
+          value = s.neutral;
         }
-      };
-
-      label.addEventListener('dblclick', resetToDefault);
-
-      const valDisplay = document.createElement('span');
-      valDisplay.className = 'stims-editor__slider-value';
-
-      const controls = document.createElement('div');
-      controls.className = 'stims-editor__slider-row';
-
-      const input = document.createElement('input');
-      input.type = 'range';
-      input.min = String(s.min);
-      input.max = String(s.max);
-      input.step = String(s.step);
-      input.className = 'stims-editor__slider-input';
-      input.setAttribute('aria-label', s.label);
-
-      const val = this.readVariableFromEditor(s.key);
-      const initialVal = val !== null ? val : s.defaultValue;
-      input.value = String(initialVal);
-      valDisplay.textContent = initialVal.toFixed(2);
-
-      input.addEventListener('input', () => {
-        const numVal = Number.parseFloat(input.value);
-        valDisplay.textContent = numVal.toFixed(2);
-        this.writeVariableToEditor(s.key, numVal);
-      });
-
-      // Active control: arm MIDI-learn for this exact slider without
-      // typing its name into a text field elsewhere — move a knob and
-      // it's bound. Click again (or the Performance hardware panel's
-      // Cancel) to back out.
-      const learnButton = document.createElement('button');
-      learnButton.type = 'button';
-      learnButton.className = 'stims-editor__slider-btn';
-      learnButton.textContent = '⏺';
-      learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
-      learnButton.addEventListener('click', () =>
-        this.toggleSliderLearn(s.key),
+      }
+      const quantised = Number(
+        (Math.round(value / s.step) * s.step).toFixed(6),
       );
+      valDisplay.textContent = formatControlValue(quantised, s);
+      this.writeVariableToEditor(s.key, quantised);
+    });
 
-      // Double-click on the label was the only way to reset a slider — a
-      // real button gives keyboard/click-only users the same path a mouse
-      // user already had.
-      const resetButton = document.createElement('button');
-      resetButton.type = 'button';
-      resetButton.className = 'stims-editor__slider-btn';
-      resetButton.textContent = '↺';
-      resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
-      resetButton.title = `Reset to ${s.defaultValue}`;
-      resetButton.addEventListener('click', resetToDefault);
+    const learnButton = document.createElement('button');
+    learnButton.type = 'button';
+    learnButton.className = 'stims-editor__slider-btn';
+    learnButton.textContent = '⏺';
+    learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
+    learnButton.addEventListener('click', () => this.toggleSliderLearn(s.key));
 
-      controls.append(input, learnButton, resetButton);
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'stims-editor__slider-btn';
+    resetButton.textContent = '↺';
+    resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
+    resetButton.title = `Reset to ${s.defaultValue}`;
+    resetButton.addEventListener('click', resetToDefault);
 
-      this.sliderInputs.set(s.key, {
-        input,
-        display: valDisplay,
-        defaultValue: s.defaultValue,
-        learnButton,
+    controls.append(input, learnButton, resetButton);
+
+    this.sliderInputs.set(s.key, {
+      input,
+      display: valDisplay,
+      defaultValue: s.defaultValue,
+      learnButton,
+      config: s,
+    });
+
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, this.createFieldStateChip([s.key], s.label), valDisplay);
+
+    row.append(head, controls, this.renderModulationRow(s));
+    return row;
+  }
+
+  /**
+   * The modulation control, folded under each scalar row.
+   *
+   * On a per-frame-heavy preset most of these fields are not literals — the
+   * fader above writes a value the next frame discards, which is what the
+   * `eq` chip reports. This is the control that actually reaches them: pick a
+   * signal and a depth and it writes the `per_frame_` equation, leaving the
+   * fader's value as the base the modulation swings around.
+   */
+  private renderModulationRow(s: ScalarControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__mod';
+
+    const sourceSelect = document.createElement('select');
+    sourceSelect.className = 'stims-editor__mod-select';
+    sourceSelect.setAttribute('aria-label', `${s.label} modulation source`);
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'No modulation';
+    sourceSelect.appendChild(none);
+    for (const source of MODULATION_SOURCES) {
+      const option = document.createElement('option');
+      option.value = source.key;
+      option.textContent = source.label;
+      option.title = source.hint;
+      sourceSelect.appendChild(option);
+    }
+
+    const modeButton = document.createElement('button');
+    modeButton.type = 'button';
+    modeButton.className = 'stims-editor__mod-mode';
+
+    const depth = document.createElement('input');
+    depth.type = 'range';
+    depth.className = 'stims-editor__slider-input';
+    depth.min = '-1';
+    depth.max = '1';
+    depth.step = '0.01';
+    depth.setAttribute('aria-label', `${s.label} modulation depth`);
+
+    const readout = document.createElement('span');
+    readout.className = 'stims-editor__mod-readout';
+
+    const state = () => readModulation(this.editor.state.doc.toString(), s.key);
+
+    const commit = (next: Modulation | null) => {
+      const doc = this.editor.state.doc.toString();
+      const updated = writeModulation(doc, s.key, next);
+      if (updated === doc) return;
+      this.replaceDoc(updated);
+    };
+
+    const currentModulation = (): Modulation => {
+      const now = state();
+      if (now.kind === 'modulated') return now.modulation;
+      return {
+        // A new modulation swings around whatever the fader currently says,
+        // so switching one on does not jump the value.
+        base: this.readVariableFromEditor(s.key) ?? s.defaultValue,
+        depth: s.scale === 'ratio' ? 0.2 : 0.1,
+        mode: s.scale === 'ratio' ? 'multiply' : 'add',
+        source: 'bass_att',
+      };
+    };
+
+    sourceSelect.addEventListener('change', () => {
+      const value = sourceSelect.value;
+      if (!value) {
+        commit(null);
+      } else {
+        commit({
+          ...currentModulation(),
+          source: value as ModulationSource,
+        });
+      }
+      this.updateModulationsFromDoc();
+    });
+
+    modeButton.addEventListener('click', () => {
+      const now = state();
+      if (now.kind !== 'modulated') return;
+      const mode: ModulationMode =
+        now.modulation.mode === 'add' ? 'multiply' : 'add';
+      commit({ ...now.modulation, mode });
+      this.updateModulationsFromDoc();
+    });
+
+    depth.addEventListener('input', () => {
+      const now = state();
+      if (now.kind !== 'modulated') return;
+      commit({
+        ...now.modulation,
+        depth: Number.parseFloat(depth.value),
       });
+    });
+
+    row.append(sourceSelect, modeButton, depth, readout);
+    this.modulationRows.set(s.key, {
+      row,
+      sourceSelect,
+      modeButton,
+      depth,
+      readout,
+      config: s,
+    });
+    return row;
+  }
+
+  private updateModulationsFromDoc(): void {
+    const doc = this.editor.state.doc.toString();
+    this.modulationRows.forEach((item, key) => {
+      const state = readModulation(doc, key);
+
+      if (state.kind === 'custom') {
+        // The preset wrote something richer than this control can express.
+        // Offering to "edit" it would mean silently replacing their code, so
+        // the row steps aside and points at the line instead.
+        item.row.dataset.state = 'custom';
+        item.sourceSelect.disabled = true;
+        item.modeButton.disabled = true;
+        item.depth.disabled = true;
+        item.sourceSelect.value = '';
+        item.readout.textContent = 'hand-written equation';
+        item.readout.title = `Line ${state.line}: ${state.text}`;
+        return;
+      }
+
+      item.sourceSelect.disabled = false;
+      if (state.kind === 'none') {
+        item.row.dataset.state = 'none';
+        item.sourceSelect.value = '';
+        item.modeButton.disabled = true;
+        item.depth.disabled = true;
+        item.modeButton.textContent = '+';
+        item.readout.textContent = '';
+        item.readout.title = '';
+        return;
+      }
+
+      const { modulation } = state;
+      item.row.dataset.state = 'on';
+      item.sourceSelect.value = modulation.source;
+      item.modeButton.disabled = false;
+      item.depth.disabled = false;
+      if (document.activeElement !== item.depth) {
+        item.depth.value = String(modulation.depth);
+      }
+      item.modeButton.textContent = modulation.mode === 'add' ? '+' : '×';
+      item.modeButton.title =
+        modulation.mode === 'add'
+          ? 'Added to the base value. Click for multiply.'
+          : 'Scales the base value. Click for add.';
+      item.readout.textContent = `${modulation.depth >= 0 ? '+' : ''}${modulation.depth.toFixed(2)}`;
+      item.readout.title = `${item.config.label} = ${modulation.base} ${
+        modulation.mode === 'add' ? '+' : '×'
+      } ${modulation.depth} × ${modulation.source}`;
+    });
+  }
+
+  /** Single place that swaps the whole buffer and pushes it downstream, so
+   * equation edits and field edits commit through identical plumbing. */
+  private replaceDoc(next: string): void {
+    const doc = this.editor.state.doc.toString();
+    if (next === doc) return;
+    this.editor.dispatch({
+      changes: { from: 0, to: doc.length, insert: next },
+      scrollIntoView: false,
+    });
+    this.hasBufferedEdits = true;
+    if (this.lastSessionState) {
+      this.renderSessionState(this.lastSessionState);
+    }
+    this.flushEditorDocChange();
+  }
+
+  private createSubhead(text: string): HTMLElement {
+    const heading = document.createElement('h3');
+    heading.className = 'stims-editor__subhead';
+    heading.textContent = text;
+    return heading;
+  }
+
+  /**
+   * Boolean fields. The format stores them as floats, so they arrived here as
+   * faders you had to drag to 1.000 to switch on. The post-processing set is
+   * an ordered chain rather than a bag of flags, so it renders in the order
+   * the frame is actually processed.
+   */
+  private renderToggleControls(): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'stims-editor__toggles';
+    section.setAttribute('role', 'group');
+    section.setAttribute('aria-label', 'Preset switches');
+
+    const groups: Array<[ToggleControlConfig['group'], string]> = [
+      ['post', 'Post chain'],
+      ['frame', 'Frame'],
+      ['wave', 'Wave'],
+    ];
+
+    for (const [group, heading] of groups) {
+      const items = TOGGLE_CONTROLS.filter((t) => t.group === group);
+      if (items.length === 0) continue;
+
+      section.appendChild(this.createSubhead(heading));
+
+      const bank = document.createElement('div');
+      bank.className = 'stims-editor__toggle-bank';
+
+      for (const toggle of items) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'stims-editor__toggle';
+        button.textContent = toggle.label;
+        button.title = toggle.hint;
+        button.setAttribute('role', 'switch');
+
+        button.addEventListener('click', () => {
+          const current = this.readVariableFromEditor(toggle.key);
+          const on = (current ?? toggle.defaultValue) >= 0.5;
+          this.writeVariableToEditor(toggle.key, on ? 0 : 1);
+          this.updateTogglesFromDoc();
+        });
+
+        this.toggleInputs.set(toggle.key, { button, config: toggle });
+        // The chip belongs on the button itself: a switch the preset
+        // overwrites every frame looks identical to one that works.
+        this.fieldStateCells.push({
+          chip: this.createFieldStateChip([toggle.key], toggle.label),
+          keys: [toggle.key],
+          label: toggle.label,
+        });
+        const cell = this.fieldStateCells[this.fieldStateCells.length - 1];
+        const wrap = document.createElement('div');
+        wrap.className = 'stims-editor__toggle-wrap';
+        wrap.append(button, cell.chip);
+        bank.appendChild(wrap);
+      }
+
+      section.appendChild(bank);
+    }
+
+    return section;
+  }
+
+  private updateTogglesFromDoc(): void {
+    this.toggleInputs.forEach((item, key) => {
+      const value =
+        this.readVariableFromEditor(key) ?? item.config.defaultValue;
+      const on = value >= 0.5;
+      item.button.dataset.on = on ? 'true' : 'false';
+      item.button.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+
+  /**
+   * Small-integer fields that pick one of a fixed set. "Wave mode: 5" is not
+   * a number you can reason about, and as a fader it was a value you scrubbed
+   * past looking for the shape you wanted.
+   */
+  private renderEnumControls(): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'stims-editor__enums';
+    section.setAttribute('role', 'group');
+    section.setAttribute('aria-label', 'Preset modes');
+    section.appendChild(this.createSubhead('Modes'));
+
+    for (const config of ENUM_CONTROLS) {
+      const row = document.createElement('div');
+      row.className = 'stims-editor__enum';
+
+      const label = document.createElement('span');
+      label.className = 'stims-editor__slider-label';
+      label.textContent = config.label;
+      label.title = config.hint;
+
+      const head = document.createElement('div');
+      head.className = 'stims-editor__control-head';
+      head.append(label, this.createFieldStateChip([config.key], config.label));
+
+      const bank = document.createElement('div');
+      bank.className = 'stims-editor__segmented';
+      bank.setAttribute('role', 'radiogroup');
+      bank.setAttribute('aria-label', config.label);
+
+      const buttons: HTMLButtonElement[] = [];
+      for (const option of config.options) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'stims-editor__segment';
+        button.textContent = option.label;
+        button.title = option.hint ?? `${config.label}: ${option.label}`;
+        button.setAttribute('role', 'radio');
+        button.addEventListener('click', () => {
+          this.writeVariableToEditor(config.key, option.value);
+          this.updateEnumsFromDoc();
+        });
+        buttons.push(button);
+        bank.appendChild(button);
+      }
+
+      this.enumInputs.set(config.key, { buttons, config });
+      row.append(head, bank);
+      section.appendChild(row);
+    }
+
+    return section;
+  }
+
+  private updateEnumsFromDoc(): void {
+    this.enumInputs.forEach((item, key) => {
+      const value = Math.round(
+        this.readVariableFromEditor(key) ?? item.config.defaultValue,
+      );
+      item.config.options.forEach((option, index) => {
+        const selected = option.value === value;
+        item.buttons[index].dataset.on = selected ? 'true' : 'false';
+        item.buttons[index].setAttribute(
+          'aria-checked',
+          selected ? 'true' : 'false',
+        );
+      });
+    });
+  }
+
+  /**
+   * Field pairs that are two ends of one thing — the three blur passes and
+   * the wave's volume fade-in. Eight faders that only make sense in pairs
+   * become four controls that show the span directly.
+   */
+  private renderRangeControls(): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'stims-editor__ranges';
+    section.setAttribute('role', 'group');
+    section.setAttribute('aria-label', 'Preset ranges');
+    section.appendChild(this.createSubhead('Ranges'));
+
+    for (const config of RANGE_CONTROLS) {
+      const row = document.createElement('div');
+      row.className = 'stims-editor__range';
+
+      const label = document.createElement('span');
+      label.className = 'stims-editor__slider-label';
+      label.textContent = config.label;
+      label.title = config.hint;
+
+      const readout = document.createElement('span');
+      readout.className = 'stims-editor__slider-value';
 
       const head = document.createElement('div');
       head.className = 'stims-editor__control-head';
       head.append(
         label,
-        this.createFieldStateChip([s.key], s.label),
-        valDisplay,
+        this.createFieldStateChip([config.minKey, config.maxKey], config.label),
+        readout,
       );
 
+      // Two overlaid range inputs rather than a custom-drawn track: keyboard
+      // support, focus handling and screen-reader semantics come for free,
+      // and each handle stays an independently addressable control.
+      const track = document.createElement('div');
+      track.className = 'stims-editor__range-track';
+
+      const makeHandle = (which: 'min' | 'max') => {
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = String(config.min);
+        input.max = String(config.max);
+        input.step = String(config.step);
+        input.className = 'stims-editor__range-input';
+        input.dataset.handle = which;
+        input.setAttribute(
+          'aria-label',
+          `${config.label} ${which === 'min' ? 'lower' : 'upper'} bound`,
+        );
+        return input;
+      };
+
+      const minInput = makeHandle('min');
+      const maxInput = makeHandle('max');
+
+      const commit = () => {
+        // The handles are allowed to cross while dragging and are sorted on
+        // commit, which is far less frustrating than a hard stop that makes
+        // the handle you are dragging stick to the other one.
+        const low = Math.min(
+          Number.parseFloat(minInput.value),
+          Number.parseFloat(maxInput.value),
+        );
+        const high = Math.max(
+          Number.parseFloat(minInput.value),
+          Number.parseFloat(maxInput.value),
+        );
+        readout.textContent = `${low.toFixed(2)} – ${high.toFixed(2)}`;
+        this.writeVariablesToEditor({
+          [config.minKey]: low,
+          [config.maxKey]: high,
+        });
+      };
+
+      minInput.addEventListener('input', commit);
+      maxInput.addEventListener('input', commit);
+
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'stims-editor__slider-btn';
+      resetButton.textContent = '↺';
+      resetButton.setAttribute('aria-label', `Reset ${config.label}`);
+      resetButton.title = `Reset to ${config.defaultMin} – ${config.defaultMax}`;
+      resetButton.addEventListener('click', () => {
+        this.writeVariablesToEditor({
+          [config.minKey]: config.defaultMin,
+          [config.maxKey]: config.defaultMax,
+        });
+        this.updateRangesFromDoc();
+      });
+
+      track.append(minInput, maxInput);
+
+      const controls = document.createElement('div');
+      controls.className = 'stims-editor__slider-row';
+      controls.append(track, resetButton);
+
+      this.rangeInputs.set(config.label, {
+        minInput,
+        maxInput,
+        readout,
+        config,
+      });
       row.append(head, controls);
-      grid.appendChild(row);
+      section.appendChild(row);
     }
 
-    panel.appendChild(this.renderColorGroups());
+    return section;
+  }
 
-    return panel;
+  private updateRangesFromDoc(): void {
+    this.rangeInputs.forEach((item) => {
+      const active = document.activeElement;
+      if (active === item.minInput || active === item.maxInput) return;
+      const low =
+        this.readVariableFromEditor(item.config.minKey) ??
+        item.config.defaultMin;
+      const high =
+        this.readVariableFromEditor(item.config.maxKey) ??
+        item.config.defaultMax;
+      item.minInput.value = String(low);
+      item.maxInput.value = String(high);
+      item.readout.textContent = `${low.toFixed(2)} – ${high.toFixed(2)}`;
+    });
   }
 
   /** Colour groups. Six swatches stand in for the ~21 r/g/b/a scalars the
@@ -2327,10 +2679,13 @@ export class EditorPanel {
       if (document.activeElement === item.input) {
         return;
       }
-      const val = this.readVariableFromEditor(key);
-      const displayVal = val !== null ? val : item.defaultValue;
-      item.input.value = String(displayVal);
-      item.display.textContent = displayVal.toFixed(2);
+      const val = this.readVariableFromEditor(key) ?? item.defaultValue;
+      item.input.value = String(valueToPosition(val, item.config));
+      item.display.textContent = formatControlValue(val, item.config);
+      item.input.setAttribute(
+        'aria-valuetext',
+        formatControlValue(val, item.config),
+      );
     });
   }
 
