@@ -173,7 +173,7 @@ describe('editor panel change propagation', () => {
   test('debounces editor changes before reporting source updates', async () => {
     const harness = createEditorPanelHarness();
     const snippetButton = document.querySelector(
-      '.milkdrop-overlay__editor-snippet',
+      '.stims-editor__insert[data-insert="Pulse zoom"]',
     ) as HTMLButtonElement | null;
     if (!snippetButton) {
       throw new Error('Expected a snippet button to exist.');
@@ -196,10 +196,10 @@ describe('editor panel change propagation', () => {
     const harness = createEditorPanelHarness();
 
     const snippetButton = document.querySelector(
-      '.milkdrop-overlay__editor-snippet',
+      '.stims-editor__insert[data-insert="Pulse zoom"]',
     ) as HTMLButtonElement | null;
     const applyButton = document.querySelector(
-      '.milkdrop-overlay__editor-apply',
+      '.stims-editor__btn[data-action="apply"]',
     ) as HTMLButtonElement | null;
     if (!snippetButton || !applyButton) {
       throw new Error('Expected the editor controls to exist.');
@@ -222,7 +222,7 @@ describe('editor panel change propagation', () => {
     const harness = createEditorPanelHarness();
 
     const snippetButton = document.querySelector(
-      '.milkdrop-overlay__editor-snippet',
+      '.stims-editor__insert[data-insert="Pulse zoom"]',
     ) as HTMLButtonElement | null;
     if (!snippetButton) {
       throw new Error('Expected a snippet button to exist.');

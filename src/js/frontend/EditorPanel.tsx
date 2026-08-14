@@ -5,16 +5,20 @@ import { useWorkspace } from './workspace-context.tsx';
 
 export function EditorPanel() {
   const hostRef = useRef<HTMLDivElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<{
     dispose: () => void;
     setSessionState: (state: MilkdropEditorSessionState) => void;
     element: HTMLElement;
   } | null>(null);
-  const { engine } = useWorkspace();
+  const { engine, ui } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
 
   const engineRef = useRef(engine);
   engineRef.current = engine;
+
+  const handleImportRef = useRef(ui.handleImport);
+  handleImportRef.current = ui.handleImport;
 
   const sessionState = engineSnapshot?.sessionState ?? null;
   // The panel is code-split, so it appends itself a tick or two after this
@@ -50,7 +54,10 @@ export function EditorPanel() {
         onDeletePreset: () => {
           void engineRef.current.deleteActivePreset();
         },
-        onRequestImport: () => {},
+        // Was a no-op, which made the panel's Import button dead UI.
+        onRequestImport: () => {
+          importInputRef.current?.click();
+        },
       });
       panelRef.current = panel;
       host.appendChild(panel.element);
@@ -72,5 +79,20 @@ export function EditorPanel() {
     }
   }, [sessionState]);
 
-  return <div ref={hostRef} className="stims-shell__editor-host" />;
+  return (
+    <div ref={hostRef} className="stims-shell__editor-host">
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".milk,text/plain"
+        multiple
+        hidden
+        aria-label="Import preset file"
+        onChange={(event) => {
+          void handleImportRef.current(event.target.files);
+          event.target.value = '';
+        }}
+      />
+    </div>
+  );
 }
