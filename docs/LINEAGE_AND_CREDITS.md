@@ -18,10 +18,11 @@ Avoid language like:
 
 ## Credits Stims owes
 
-- **Ryan Geiss / MilkDrop**: credit the original creative and technical lineage of the flagship visualizer.
-- **Winamp / Nullsoft**: credit the original public product context when discussing MilkDrop history.
-- **Preset authors and curators**: credit the people who created or assembled shipped preset packs, import fixtures, screenshots, and compatibility corpora.
-- **projectM contributors**: credit them whenever projectM materially informs the work through code, tests, behavior diffing, compatibility research, or preset collections.
+- **Ryan Geiss / MilkDrop**: Credit the original creative and technical lineage of the flagship MilkDrop visualizer, per-pixel warp equations, and Winamp plugin.
+- **Jordan Seldin & Butterchurn Contributors**: Credit the pioneering web implementation of MilkDrop in WebGL that made web-based visualization accessible to millions.
+- **Carmelo Piccione, Mischa Spiegelmock & projectM Contributors**: Credit them whenever projectM materially informs the work through code, tests, behavior diffing, compatibility research, reference captures, or preset collections.
+- **Preset Authors and Curators**: Credit the visionary artists (*Rovastar, Krash, Zylot, Eo.S., Aderrasi, Orb, Martin, Flexi, Che, FSP, Geiss, Unbalanced, Ning, Benski, Telek, Yad*, and hundreds of others) who created or assembled shipped preset packs, import fixtures, screenshots, and compatibility corpora.
+- **Winamp / Nullsoft**: Credit the original public product context when discussing MilkDrop history.
 
 ## Contributor rules
 
