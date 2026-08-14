@@ -230,6 +230,12 @@ export function createMilkdropAudioSignalProcessor() {
     const len = source.length;
     ensureSpectrumBuffers(len);
 
+    const safeDelta = Math.max(0, deltaMs);
+    const coeffFloorAttack = Math.exp(-safeDelta / 220);
+    const coeffFloorRelease = Math.exp(-safeDelta / 900);
+    const coeffSmoothAttack = Math.exp(-safeDelta / 26);
+    const coeffSmoothRelease = Math.exp(-safeDelta / 170);
+
     let previous = len > 0 ? source[0] / 255 : 0;
     for (let index = 0; index < len; index += 1) {
       const current = source[index] / 255;
@@ -238,13 +244,10 @@ export function createMilkdropAudioSignalProcessor() {
       const spatial = previous * 0.18 + current * 0.64 + next * 0.18;
       previous = current;
 
-      const floorVal = smoothLevel(
-        spectrumNoiseFloor[index],
-        spatial,
-        deltaMs,
-        220,
-        900,
-      );
+      const prevFloor = spectrumNoiseFloor[index];
+      const coeffFloor =
+        spatial > prevFloor ? coeffFloorAttack : coeffFloorRelease;
+      const floorVal = prevFloor * coeffFloor + spatial * (1 - coeffFloor);
       spectrumNoiseFloor[index] = floorVal;
 
       const denoised = Math.max(0, spatial - Math.min(0.085, floorVal * 0.72));
@@ -255,13 +258,10 @@ export function createMilkdropAudioSignalProcessor() {
         Math.log1p(clamp(compensated, 0, 1.6) * 6.2) * INV_LOG1P_6_2;
       const target = clamp(compressed, 0, 1);
 
-      const smoothed = smoothLevel(
-        smoothedSpectrum[index],
-        target,
-        deltaMs,
-        26,
-        170,
-      );
+      const prevSmooth = smoothedSpectrum[index];
+      const coeffSmooth =
+        target > prevSmooth ? coeffSmoothAttack : coeffSmoothRelease;
+      const smoothed = prevSmooth * coeffSmooth + target * (1 - coeffSmooth);
       smoothedSpectrum[index] = smoothed;
       shapedSpectrum[index] = (clamp(smoothed, 0, 1) * 255) | 0;
       previousSpectrum[index] = current;

@@ -187,23 +187,35 @@ function setOrUpdateVectorAttribute(
 ) {
   const itemSize = columns.length;
   const length = columns[0]?.length ?? 0;
-  const interleaved = new Float32Array(length * itemSize);
-  for (let i = 0; i < length; i += 1) {
-    for (let c = 0; c < itemSize; c += 1) {
-      interleaved[i * itemSize + c] = columns[c]?.[i] ?? 0;
-    }
-  }
+  const requiredLength = length * itemSize;
   const existing = geometry.getAttribute(name);
+
+  let targetArray: Float32Array;
   if (
     existing instanceof Float32BufferAttribute &&
     existing.itemSize === itemSize &&
-    existing.array.length === interleaved.length
+    existing.array.length === requiredLength
   ) {
-    existing.array.set(interleaved);
+    targetArray = existing.array as Float32Array;
+  } else {
+    targetArray = new Float32Array(requiredLength);
+  }
+
+  for (let i = 0; i < length; i += 1) {
+    for (let c = 0; c < itemSize; c += 1) {
+      targetArray[i * itemSize + c] = columns[c]?.[i] ?? 0;
+    }
+  }
+
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length === requiredLength
+  ) {
     existing.needsUpdate = true;
     return;
   }
-  const attribute = new Float32BufferAttribute(interleaved, itemSize);
+  const attribute = new Float32BufferAttribute(targetArray, itemSize);
   attribute.setUsage(DynamicDrawUsage);
   geometry.setAttribute(name, attribute);
 }

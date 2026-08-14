@@ -46,6 +46,9 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   averageRenderMs: number | null;
   averageGpuMs: number | null;
   sampleCount: number;
+  jankCount: number;
+  frameVarianceMs2: number | null;
+  thermalState: 'nominal' | 'elevated' | 'throttling';
   rollingAverageFrameMs: number | null;
   rollingWindowSize: number;
   adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
@@ -55,6 +58,7 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
 export type AdaptiveQualityController = {
   getState: () => AdaptiveQualityState;
   recordFrame: (sample: AdaptiveQualitySample) => AdaptiveQualityState;
+  setQualityStep: (step: number) => AdaptiveQualityState;
   subscribe: (subscriber: (state: AdaptiveQualityState) => void) => () => void;
 };
 
@@ -242,7 +246,10 @@ function buildHeuristicProfile(
     reasons.push('float32 blendable attachments are unavailable.');
     initialStep += 1;
   }
-  if (!capabilities.features.float32Filterable) {
+  if (
+    !capabilities.features.float32Filterable &&
+    !capabilities.features.shaderF16
+  ) {
     reasons.push('float32 filterable textures are unavailable.');
     initialStep += 1;
   }
@@ -304,6 +311,9 @@ function buildState({
   averageCadenceMs,
   averageRenderMs,
   averageGpuMs,
+  jankCount,
+  frameVarianceMs2,
+  thermalState,
   rollingAverageFrameMs,
   rollingWindowSize,
   sampleCount,
@@ -320,6 +330,9 @@ function buildState({
   averageCadenceMs: number | null;
   averageRenderMs: number | null;
   averageGpuMs: number | null;
+  jankCount: number;
+  frameVarianceMs2: number | null;
+  thermalState: 'nominal' | 'elevated' | 'throttling';
   rollingAverageFrameMs: number | null;
   rollingWindowSize: number;
   sampleCount: number;
@@ -341,6 +354,9 @@ function buildState({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    jankCount,
+    frameVarianceMs2,
+    thermalState,
     rollingAverageFrameMs,
     rollingWindowSize,
     adaptation,
@@ -350,6 +366,12 @@ function buildState({
     densityMultiplier: step.densityMultiplier,
     feedbackResolutionMultiplier: step.feedbackResolutionMultiplier,
   } satisfies AdaptiveQualityState;
+}
+
+let activeAdaptiveQualityController: AdaptiveQualityController | null = null;
+
+export function getActiveAdaptiveQualityController(): AdaptiveQualityController | null {
+  return activeAdaptiveQualityController;
 }
 
 export function createAdaptiveQualityController({
@@ -442,6 +464,42 @@ export function createAdaptiveQualityController({
     rollingAverageFrameMs = count > 0 ? rollingFrameTimesSum / count : null;
   }
 
+  let jankCount = 0;
+  let frameVarianceMs2: number | null = null;
+  let thermalState: 'nominal' | 'elevated' | 'throttling' = 'nominal';
+
+  function computeFrameVariance(): number | null {
+    const count = rollingFrameTimesFilled
+      ? rollingWindowSize
+      : rollingFrameTimesIndex;
+    if (count < 2 || rollingAverageFrameMs === null) return null;
+    let sumSqDiff = 0;
+    for (let i = 0; i < count; i++) {
+      const diff = (rollingFrameTimes[i] ?? 0) - rollingAverageFrameMs;
+      sumSqDiff += diff * diff;
+    }
+    return sumSqDiff / count;
+  }
+
+  function updateThermalState() {
+    const varMs2 = computeFrameVariance();
+    frameVarianceMs2 = varMs2;
+    const sqBudget = heuristic.frameBudgetMs * heuristic.frameBudgetMs;
+    if (
+      consecutiveOverBudget >= 5 ||
+      (varMs2 !== null && varMs2 > sqBudget * 0.4)
+    ) {
+      thermalState = 'throttling';
+    } else if (
+      consecutiveOverBudget >= 2 ||
+      (varMs2 !== null && varMs2 > sqBudget * 0.15)
+    ) {
+      thermalState = 'elevated';
+    } else {
+      thermalState = 'nominal';
+    }
+  }
+
   let state = buildState({
     backend,
     timingMode,
@@ -454,6 +512,9 @@ export function createAdaptiveQualityController({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    jankCount,
+    frameVarianceMs2,
+    thermalState,
     rollingAverageFrameMs,
     rollingWindowSize,
     adaptation,
@@ -470,6 +531,7 @@ export function createAdaptiveQualityController({
   });
 
   const publish = () => {
+    updateThermalState();
     state = buildState({
       backend,
       timingMode,
@@ -482,6 +544,9 @@ export function createAdaptiveQualityController({
       averageRenderMs,
       averageGpuMs,
       sampleCount,
+      jankCount,
+      frameVarianceMs2,
+      thermalState,
       rollingAverageFrameMs,
       rollingWindowSize,
       adaptation,
@@ -491,8 +556,27 @@ export function createAdaptiveQualityController({
     return state;
   };
 
-  return {
+  const controller: AdaptiveQualityController = {
     getState: () => state,
+    setQualityStep: (step: number) => {
+      const targetStep = Math.min(
+        Math.max(Math.round(step), 0),
+        QUALITY_STEPS.length - 1,
+      );
+      qualityStep = targetStep;
+      adaptation = 'steady';
+      consecutiveOverBudget = 0;
+      consecutiveUnderBudget = 0;
+      resetRollingWindowAfterStepChange();
+      state = {
+        ...state,
+        reasons: [
+          ...heuristic.reasons,
+          `Quality step manually set to ${QUALITY_STEPS[targetStep].id}.`,
+        ],
+      };
+      return publish();
+    },
     recordFrame: ({
       frameMs,
       cadenceMs,
@@ -504,6 +588,9 @@ export function createAdaptiveQualityController({
       }
 
       sampleCount += 1;
+      if (frameMs > heuristic.frameBudgetMs * 1.5) {
+        jankCount += 1;
+      }
       averageFrameMs = updateEma(averageFrameMs, frameMs);
       pushRollingFrameTime(frameMs);
       if (
@@ -544,7 +631,9 @@ export function createAdaptiveQualityController({
         averageFrameMs > heuristic.frameBudgetMs * 1.08;
       const cadencePressure =
         averageCadenceMs !== null &&
-        averageCadenceMs > heuristic.frameBudgetMs * 1.08;
+        averageCadenceMs > heuristic.frameBudgetMs * 1.12 &&
+        (averageFrameMs === null ||
+          averageFrameMs > heuristic.frameBudgetMs * 0.85);
       const hasHeadroom =
         averageFrameMs !== null &&
         averageFrameMs < heuristic.frameBudgetMs * 0.72 &&
@@ -664,4 +753,6 @@ export function createAdaptiveQualityController({
       };
     },
   };
+  activeAdaptiveQualityController = controller;
+  return controller;
 }

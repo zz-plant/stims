@@ -38,6 +38,8 @@ const BORDER_CORNER_SIGNS = [
   { sx: 1, sy: -1, dx: -1, dy: 1 }, // bottom-right
 ] as const;
 
+const BORDER_ACCENT_DATA_BUFFER = new Float32Array(24);
+
 function buildBorderAccentLines(border: MilkdropBorderVisual): Float32Array {
   // Styled borders get a small decorative accent at each corner.
   // The accent extends from the corner inward at 45 degrees.
@@ -47,22 +49,20 @@ function buildBorderAccentLines(border: MilkdropBorderVisual): Float32Array {
 
   // Each accent is a line from the corner going inward at 45 degrees.
   // 4 corners × 2 vertices × 3 coords = 24
-  const data = new Float32Array(24);
-
   for (let i = 0; i < BORDER_CORNER_SIGNS.length; i += 1) {
     const c = BORDER_CORNER_SIGNS[i];
     const cx = c.sx * outerRadius;
     const cy = c.sy * outerRadius;
     const offset = i * 6;
-    data[offset] = cx;
-    data[offset + 1] = cy;
-    data[offset + 2] = z;
-    data[offset + 3] = cx + c.dx * accentSize;
-    data[offset + 4] = cy + c.dy * accentSize;
-    data[offset + 5] = z;
+    BORDER_ACCENT_DATA_BUFFER[offset] = cx;
+    BORDER_ACCENT_DATA_BUFFER[offset + 1] = cy;
+    BORDER_ACCENT_DATA_BUFFER[offset + 2] = z;
+    BORDER_ACCENT_DATA_BUFFER[offset + 3] = cx + c.dx * accentSize;
+    BORDER_ACCENT_DATA_BUFFER[offset + 4] = cy + c.dy * accentSize;
+    BORDER_ACCENT_DATA_BUFFER[offset + 5] = z;
   }
 
-  return data;
+  return BORDER_ACCENT_DATA_BUFFER;
 }
 
 function buildBorderGeometry(

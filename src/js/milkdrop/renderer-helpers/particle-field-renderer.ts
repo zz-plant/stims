@@ -345,9 +345,7 @@ function getParticleFieldInstanceAnchors(
     const x = meshPositions[baseIndex] ?? 0;
     const y = meshPositions[baseIndex + 1] ?? 0;
     const z = meshPositions[baseIndex + 2] ?? 0;
-    const seed = fract(
-      hashNumber(`${particleField.seed}:${index}:${x}:${y}:${z}`),
-    );
+    const seed = fract(hashNumericValues(particleField.seed, index, x, y, z));
     const jitterX = (fract(seed * 13.371) - 0.5) * 0.03;
     const jitterY = (fract(seed * 91.731) - 0.5) * 0.03;
     const jitterZ = (fract(seed * 47.519) - 0.5) * 0.02;
@@ -366,12 +364,28 @@ function getParticleFieldInstanceAnchors(
   };
 }
 
-function hashNumber(value: string) {
+function hashNumericValues(
+  seed: number,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+) {
   let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
+  const s = (seed * 1000) | 0;
+  hash = Math.imul(hash ^ (s & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((s >> 8) & 0xff), 16777619);
+  hash = Math.imul(hash ^ (index & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((index >> 8) & 0xff), 16777619);
+  const xi = (x * 1000) | 0;
+  hash = Math.imul(hash ^ (xi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((xi >> 8) & 0xff), 16777619);
+  const yi = (y * 1000) | 0;
+  hash = Math.imul(hash ^ (yi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((yi >> 8) & 0xff), 16777619);
+  const zi = (z * 1000) | 0;
+  hash = Math.imul(hash ^ (zi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((zi >> 8) & 0xff), 16777619);
   return (hash >>> 0) / 0x100000000;
 }
 
