@@ -13,8 +13,11 @@
     var(--stims-shadow),
     0 0 16px rgba(244, 122, 84, 0.08);
   color: var(--stims-ink);
+  font-family: var(--font-family-base);
   font-size: 0.84rem;
   line-height: 1.45;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
   transform: translateX(-50%);
   animation: help-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   pointer-events: none;

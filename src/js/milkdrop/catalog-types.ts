@@ -71,7 +71,7 @@ export type MilkdropCatalogEntry = {
 export interface MilkdropCatalogStore {
   listPresets(): Promise<MilkdropCatalogEntry[]>;
   getPresetSource(id: string): Promise<MilkdropPresetSource | null>;
-  prefetchCompiledPresets(): Promise<void>;
+  prefetchCompiledPresets(limit?: number): Promise<void>;
   savePreset(source: MilkdropPresetSource): Promise<MilkdropPresetSource>;
   deletePreset(id: string): Promise<void>;
   saveDraft(id: string, raw: string): Promise<void>;

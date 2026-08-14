@@ -260,10 +260,33 @@ export function useWorkspaceSessionState({
   useStageCanvasSync(stageRef);
 
   useEffect(() => {
-    if (routeState.panel === 'browse' || routeState.presetId) {
+    if (routeState.panel === 'browse') {
       void hydrateFullCatalogNow();
+      return;
     }
-  }, [routeState.panel, routeState.presetId, hydrateFullCatalogNow]);
+
+    if (routeState.presetId) {
+      if (fallbackCatalogReady) {
+        const isPresetInFallback = fallbackCatalog.some(
+          (entry) => entry.id === routeState.presetId,
+        );
+        if (
+          !isPresetInFallback &&
+          routeState.presetId !== FIRST_RUN_PRESET_ID
+        ) {
+          void hydrateFullCatalogNow();
+        }
+      } else {
+        void hydrateFullCatalogNow();
+      }
+    }
+  }, [
+    routeState.panel,
+    routeState.presetId,
+    fallbackCatalogReady,
+    fallbackCatalog,
+    hydrateFullCatalogNow,
+  ]);
 
   useEffect(() => {
     sessionDisposedRef.current = false;

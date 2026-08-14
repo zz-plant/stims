@@ -200,16 +200,15 @@ export function createMilkdropCatalogStore({
       return source;
     },
 
-    async prefetchCompiledPresets() {
+    async prefetchCompiledPresets(limit = 20) {
       if (prefetched) return;
       prefetched = true;
 
       // Each compile runs synchronously on this thread and can take tens of
       // milliseconds, so pacing matters: yielding only a macrotask between
       // ~1800 compiles kept the main thread saturated for minutes and froze
-      // rendering and automation after catalog load. Compile only inside
-      // idle budget, falling back to a coarse delay where
-      // requestIdleCallback is unavailable.
+      // rendering and automation after catalog load. Limit prefetching to
+      // the top curated presets and compile only inside idle budget.
       type IdleBudget = { timeRemaining(): number };
       const waitForIdle = (): Promise<IdleBudget | null> =>
         new Promise((resolve) => {
@@ -230,8 +229,9 @@ export function createMilkdropCatalogStore({
 
       try {
         const bundled = await bundledCatalog.getBundledCatalog();
+        const targetEntries = limit > 0 ? bundled.slice(0, limit) : bundled;
         let budget = await waitForIdle();
-        for (const entry of bundled) {
+        for (const entry of targetEntries) {
           if (analysis.getCachedCompiled(entry.id)) continue;
           if (budget && budget.timeRemaining() < 10) {
             budget = await waitForIdle();

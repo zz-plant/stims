@@ -9,20 +9,9 @@ function CreditsSection({
   children: ReactNode;
 }) {
   return (
-    <section style={{ marginBottom: '2rem' }}>
-      <h3
-        style={{
-          fontSize: '0.95rem',
-          fontWeight: 600,
-          margin: '0 0 0.75rem 0',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          opacity: 0.7,
-        }}
-      >
-        {title}
-      </h3>
-      <div style={{ lineHeight: 1.7, fontSize: '0.9rem' }}>{children}</div>
+    <section className="stims-credits-section">
+      <h3 className="stims-credits-section-title">{title}</h3>
+      <div className="stims-credits-body">{children}</div>
     </section>
   );
 }
@@ -38,18 +27,19 @@ function CreditEntry({
 }) {
   const content = (
     <>
-      <strong>{name}</strong> · {creditRole}
+      <strong className="stims-credits-entry-name">{name}</strong> ·{' '}
+      <span className="stims-credits-entry-role">{creditRole}</span>
     </>
   );
 
   if (url) {
     return (
-      <div style={{ marginBottom: '0.5rem' }}>
+      <div className="stims-credits-entry">
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: 'inherit', textDecoration: 'none' }}
+          className="stims-credits-entry-link"
           title={url}
         >
           {content}
@@ -58,22 +48,13 @@ function CreditEntry({
     );
   }
 
-  return <div style={{ marginBottom: '0.5rem' }}>{content}</div>;
+  return <div className="stims-credits-entry">{content}</div>;
 }
 
 export function CreditsPanel() {
   return (
-    <div
-      style={{
-        padding: '1.5rem',
-        fontSize: '0.9rem',
-        lineHeight: 1.6,
-        maxWidth: '600px',
-      }}
-    >
-      <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.3rem' }}>
-        About Stims
-      </h2>
+    <div className="stims-credits-panel">
+      <h2 className="stims-credits-title">About Stims</h2>
 
       <CreditsSection title="What is Stims?">
         <p>
@@ -82,7 +63,7 @@ export function CreditsPanel() {
           discovery environment for audio-reactive presets—with compatibility
           claims tied to measured evidence.
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           Stims is not affiliated with or endorsed by MilkDrop, Winamp,
           projectM, or Butterchurn. Each project is independent, and this
           lineage is acknowledged with respect.
@@ -99,7 +80,7 @@ export function CreditsPanel() {
           name="Winamp & Nullsoft"
           creditRole="Original public product context"
         />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           MilkDrop defined the preset language, visual vocabulary, and real-time
           visualization paradigm that audio-reactive presets are built on today.
         </p>
@@ -116,7 +97,7 @@ export function CreditsPanel() {
           creditRole="Web-based MilkDrop player"
           url="https://butterchurnviz.com/"
         />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           These projects maintain the format, expand the tooling, and preserve
           the preset ecosystem. Stims compatibility testing references projectM
           captures and code.
@@ -144,7 +125,7 @@ export function CreditsPanel() {
           creditRole="Distributed preset packs & collections"
           url="https://github.com/projectM-visualizer/projectm/tree/master/src/libprojectM/presets"
         />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           Every preset in your library carries the work and creativity of its
           original author. Stims aims to make that authorship visible and
           linkable.
@@ -158,25 +139,25 @@ export function CreditsPanel() {
           innovation, and open-source visualization work—all of which is honored
           through code comments, test fixtures, and this credit page.
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           The full source lives at{' '}
           <a
             href={STIMS_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'inherit', textDecoration: 'underline' }}
+            className="stims-credits-link"
           >
             github.com/zz-plant/stims
           </a>
           .
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           See{' '}
           <a
             href={`${STIMS_REPO_URL}/blob/main/docs/LINEAGE_AND_CREDITS.md`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'inherit', textDecoration: 'underline' }}
+            className="stims-credits-link"
           >
             LINEAGE_AND_CREDITS.md
           </a>{' '}
