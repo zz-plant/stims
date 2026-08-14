@@ -422,14 +422,18 @@ export function createToyRuntime({
     previewLastFrame = previewStart;
     let failureStreak = 0;
 
+    let smoothedPreviewDeltaMs = 0;
     const tick = (now: number) => {
       if (!previewActive) return;
       const rawDeltaMs = previewLastFrame
         ? Math.min(100, Math.max(0, now - previewLastFrame))
         : 1000 / 60;
       previewLastFrame = now;
-      frameState.deltaMs = rawDeltaMs;
-      frameState.time += rawDeltaMs / 1000;
+      smoothedPreviewDeltaMs = smoothedPreviewDeltaMs
+        ? smoothedPreviewDeltaMs * 0.85 + rawDeltaMs * 0.15
+        : rawDeltaMs;
+      frameState.deltaMs = smoothedPreviewDeltaMs;
+      frameState.time += smoothedPreviewDeltaMs / 1000;
       frameState.realTimeMs = now;
       frameState.analyser = null;
       const previewDataIntervalMs =
@@ -494,6 +498,7 @@ export function createToyRuntime({
   }
 
   const startAudio = async (request?: ToyAudioRequest) => {
+    let smoothedAudioDeltaMs = 0;
     const context = await startToyAudio(
       toy,
       (ctx) => {
@@ -503,8 +508,11 @@ export function createToyRuntime({
           ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
           : 1000 / 60;
         lastFrameTime = now;
-        frameState.deltaMs = rawDeltaMs;
-        frameState.time += rawDeltaMs / 1000;
+        smoothedAudioDeltaMs = smoothedAudioDeltaMs
+          ? smoothedAudioDeltaMs * 0.85 + rawDeltaMs * 0.15
+          : rawDeltaMs;
+        frameState.deltaMs = smoothedAudioDeltaMs;
+        frameState.time += smoothedAudioDeltaMs / 1000;
         frameState.realTimeMs = ctx.realTimeMs;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
