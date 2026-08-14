@@ -146,13 +146,17 @@ function createPresentUniforms(initialSource: Texture) {
 function createPresentOutputNode(
   uniforms: ReturnType<typeof createPresentUniforms>,
 ) {
-  return Fn(() =>
-    mix(
-      uniforms.currentTex.sample(uv()),
-      uniforms.savedTex.sample(uv()),
-      clamp(uniforms.transitionAlpha, 0, 1),
-    ),
-  )();
+  return Fn(() => {
+    const current = uniforms.currentTex.sample(uv());
+    const saved = uniforms.savedTex.sample(uv());
+    const a = clamp(uniforms.transitionAlpha, 0, 1);
+    const smoothA = smoothstep(0.0, 1.0, a);
+    const currentSq = current.rgb.mul(current.rgb);
+    const savedSq = saved.rgb.mul(saved.rgb);
+    const blendedRgb = mix(currentSq, savedSq, smoothA).sqrt();
+    const blendedAlpha = mix(current.a, saved.a, smoothA);
+    return vec4(blendedRgb, blendedAlpha);
+  })();
 }
 
 type ShaderNodeValue = {
