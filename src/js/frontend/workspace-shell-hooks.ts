@@ -33,7 +33,7 @@ type WorkspaceShellOrchestrationArgs = {
   fullCatalogReady?: boolean;
   activityCatalog: PresetCatalogEntry[];
   goBackPreset: () => Promise<void>;
-  importPresetFiles: (files: FileList | null) => Promise<void>;
+  importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   pendingPresetIdRef: { current: string | null };
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
@@ -547,7 +547,7 @@ export function useWorkspaceShellOrchestration({
     setStatusMessage('Audio stopped.');
   };
 
-  const handleImport = async (files: FileList | null) => {
+  const handleImport = async (files: FileList | File[] | null) => {
     try {
       await importPresetFiles(files);
       updatePanel('editor');
