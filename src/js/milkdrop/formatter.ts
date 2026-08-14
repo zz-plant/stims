@@ -347,38 +347,49 @@ function insertFieldLines(lines: string[], fieldLines: string[]) {
   ];
 }
 
+/**
+ * The key of a `key=value` line, or null when the line is not an assignment.
+ *
+ * Prefix matching (`line.startsWith('zoom=')`) missed every assignment a hand
+ * edited buffer picks up spaces in — `zoom = 1.0` — and the caller then wrote
+ * a *second* `zoom=` line beside it. Since the compiler takes the last
+ * assignment, that turned the next write into a silent no-op.
+ */
+function readAssignmentKey(line: string): string | null {
+  const trimmed = line.trim();
+  const separatorIndex = trimmed.indexOf('=');
+  if (separatorIndex <= 0) {
+    return null;
+  }
+  return trimmed.slice(0, separatorIndex).trim();
+}
+
+/**
+ * MilkDrop spells several fields two ways (`decay` / `fDecay`) and is not
+ * case-sensitive about any of them, so the literal comparison left knob writes
+ * landing beside the line they meant to replace.
+ */
+function normalizeFieldKey(key: string): string {
+  return canonicalKey(key.trim().toLowerCase()).toLowerCase();
+}
+
+/**
+ * Joins edited lines back into preset source without touching anything the
+ * edit did not: the previous global blank-line collapse and trim renumbered
+ * every line below an edit, which shifts the diagnostics a user is reading
+ * mid-fix and quietly reformats their shader bodies.
+ */
+function joinPresetLines(lines: string[]): string {
+  const text = lines.join('\n');
+  return text.endsWith('\n') ? text : `${text}\n`;
+}
+
 export function upsertMilkdropField(
   source: string,
   key: string,
   value: string | number,
 ) {
-  const lines = source.split(/\r?\n/u);
-  const normalizedKey = key.trim();
-  const serializedValue =
-    typeof value === 'number' ? formatNumber(value) : serializeString(value);
-  const targetPrefix = `${normalizedKey}=`;
-  let found = false;
-  let inShaderSection = false;
-
-  const nextLines = lines.map((line) => {
-    if (shaderSectionHeaderPattern.test(line.trim())) {
-      inShaderSection = true;
-    }
-    if (!inShaderSection && line.trim().startsWith(targetPrefix)) {
-      found = true;
-      return `${normalizedKey}=${serializedValue}`;
-    }
-    return line;
-  });
-
-  const finalLines = found
-    ? nextLines
-    : insertFieldLines(nextLines, [`${normalizedKey}=${serializedValue}`]);
-
-  return `${finalLines
-    .join('\n')
-    .replace(/\n{3,}/gu, '\n\n')
-    .trim()}\n`;
+  return upsertMilkdropFields(source, { [key]: value });
 }
 
 const EQUATION_KEY_PREFIXES = [
@@ -510,10 +521,17 @@ export function upsertMilkdropFields(
   const lines = source.split(/\r?\n/u);
   const pending = new Map(
     Object.entries(updates).map(([key, value]) => [
-      key.trim(),
-      typeof value === 'number' ? formatNumber(value) : serializeString(value),
+      normalizeFieldKey(key),
+      {
+        key: key.trim(),
+        value:
+          typeof value === 'number'
+            ? formatNumber(value)
+            : serializeString(value),
+      },
     ]),
   );
+  const applied = new Set<string>();
 
   let inShaderSection = false;
   const nextLines = lines.map((line) => {
@@ -524,29 +542,34 @@ export function upsertMilkdropFields(
     if (inShaderSection) {
       return line;
     }
-    const separatorIndex = trimmed.indexOf('=');
-    if (separatorIndex <= 0) {
+
+    const lineKey = readAssignmentKey(line);
+    if (lineKey === null) {
       return line;
     }
 
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const value = pending.get(key);
-    if (value === undefined) {
+    const update = pending.get(normalizeFieldKey(lineKey));
+    if (update === undefined) {
       return line;
     }
 
-    pending.delete(key);
-    return `${key}=${value}`;
+    applied.add(normalizeFieldKey(lineKey));
+    // Every occurrence is rewritten, not just the first. The compiler resolves
+    // duplicate keys last-wins, so leaving a stale copy behind kept the old
+    // value in charge and made the control look dead.
+    //
+    // The preset's own spelling is preserved (`fDecay` stays `fDecay`) so a
+    // knob turn does not churn the buffer between equivalent names.
+    return `${lineKey}=${update.value}`;
   });
 
   const pendingLines: string[] = [];
-  pending.forEach((value, key) => {
-    pendingLines.push(`${key}=${value}`);
+  pending.forEach((update, normalized) => {
+    if (applied.has(normalized)) {
+      return;
+    }
+    pendingLines.push(`${update.key}=${update.value}`);
   });
-  const finalLines = insertFieldLines(nextLines, pendingLines);
 
-  return `${finalLines
-    .join('\n')
-    .replace(/\n{3,}/gu, '\n\n')
-    .trim()}\n`;
+  return joinPresetLines(insertFieldLines(nextLines, pendingLines));
 }
