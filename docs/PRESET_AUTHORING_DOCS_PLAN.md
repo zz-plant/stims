@@ -163,6 +163,83 @@ Licensing note: rescue means *link + attribute + teach the technique in our own 
 
 ---
 
+## Part 6.5 — Author outreach
+
+Track 7 and the [technique glossary](authoring/09-technique-glossary.md) both
+hit the same wall: filenames establish *what* and *who applied it*, never *why*
+or *when*. Only the authors can close that, and the scene is twenty-five years
+old. This is the part with an expiry date.
+
+**Outreach is an invitation, not a search.** Post where the community already
+is — the Winamp MilkDrop Presets subforum, the MilkDrop/Butterchurn and
+projectM Discords — and let authors come to us. Do not go looking for anyone's
+identity. Several will not want to be identified, and that is a complete
+answer.
+
+### Ground rules, stated up front in any approach
+
+- Credit by handle, spelled as published, and nothing else — no legal name,
+  location, employer, or personal accounts — unless the person explicitly asks
+  otherwise and confirms it.
+- Nothing gets published without the author reviewing the passage it appears in.
+- Any question can be declined; anything can be said on background; the whole
+  request can be refused.
+- Not commercial, and no one's personal information is being compiled.
+
+These are the same rules as [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md);
+outreach copy should not soften them.
+
+### Questions worth asking
+
+**Origins.** How did you find MilkDrop, and what made you go from watching to
+writing? What was the first preset you released, and does it still exist?
+
+**Craft.** Did you start from math, from a visual idea, or from somebody else's
+file? How much was theory versus fiddling with numbers until it looked right?
+What made a preset *good* to you?
+
+**Technique naming** — the question the glossary cannot answer. Where did the
+mix-name vocabulary come from: Painterly, Jelly, Relief, Composite, Crossfire,
+LSB, HPF? Were those understood as reusable techniques or one-offs that stuck?
+Is the `Jelly V2 → V3 → V4 → 5.5` numbering chronological?
+
+**Remix etiquette.** Was permission asked, or was posting understood as consent?
+Did you ever object to what someone did to your preset? Were there disputes
+about credit?
+
+**The 2007 shader break.** When MilkDrop 2 added per-pixel shaders, was that
+continuous with what you'd been doing or a different craft? Did you keep writing
+MilkDrop 1-compatible presets? Did the community split?
+
+**Hardware.** How much of your time went into making things work on other
+people's cards? What did the ATI/nVidia divide actually cost you? (Stims ships
+10 presets carrying an explicit vendor-fix marker; there were surely more.)
+
+**Curation.** Did being included in BLTC or Cream of the Crop change anything
+for you? Did you feel represented by the selections?
+
+**Afterlife.** How do you feel about your presets running in browsers, VJ sets,
+and planetarium domes twenty years on? Anything you'd want said about how
+they're used or credited?
+
+### Specific unknowns in our own catalog
+
+Worth asking anyone who answers, because these are unresolved *here*, not just
+in general:
+
+- 33 shipped presets have no attributable author. `bun run catalog:authors --
+  --dry-run` prints the list; several are
+  clearly handles we cannot confirm (`BrainStain`, `Fvese`, `Anandamide`,
+  `beta106`, `DemonLD`).
+- Is `raron` — in `suksma + aderrasi martin raron geiss` — a handle or a typo?
+- Are `martin` and `Nitorami` the same person? A community source says yes; the
+  filename record shows them as separate credits. If true, it collapses two
+  entries in every author list including ours.
+- Is the `_Mig_NNN` numbering chronological? We attribute all 53 to Mig; the
+  numbers can be checked against file contents for stylistic drift.
+
+---
+
 ## Part 7 — Phasing
 
 **Phase 1 — Foundation. SHIPPED 2026-08-11** (pending deploy). E1 + E2 fixed. Generated reference: `docs/authoring/reference.md` via `bun run docs:authoring-reference` (freshness-gated in `check:quick`). Tracks 1–2 live at `docs/authoring/` with 13 compiled examples and `#code=` run links, all guarded by `bun run check:authoring-examples`. The `#code=` deep link — previously advertised but only half-implemented (it opened the editor without loading the source) — now applies the decoded preset through the editor session. Public docs IA and CONTRIBUTING.md updated. *Exit criterion met locally; run links go live with the next production deploy.*

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import { UiIcon } from './UiIcon.tsx';
@@ -546,6 +547,14 @@ export function BrowseSheetPanel({
               Clear filters
             </button>
           </div>
+        ) : null}
+
+        {catalogReady ? (
+          <PresetLineageSection
+            catalog={catalog}
+            currentPresetId={currentPresetId}
+            onSelect={(presetId) => engine.handlePresetSelection(presetId)}
+          />
         ) : null}
 
         {catalogReady && sorted.length > 0 ? (
