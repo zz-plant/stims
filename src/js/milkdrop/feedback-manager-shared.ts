@@ -1450,7 +1450,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             return;
           }
           vec4 saved = texture2D(savedTex, vUv);
-          gl_FragColor = mix(current, saved, transitionAlpha);
+          float a = clamp(transitionAlpha, 0.0, 1.0);
+          float smoothA = a * a * (3.0 - 2.0 * a);
+          vec3 currentSq = current.rgb * current.rgb;
+          vec3 savedSq = saved.rgb * saved.rgb;
+          vec3 blendedRgb = sqrt(mix(currentSq, savedSq, smoothA));
+          float blendedAlpha = mix(current.a, saved.a, smoothA);
+          gl_FragColor = vec4(blendedRgb, blendedAlpha);
         }
       `,
     });
