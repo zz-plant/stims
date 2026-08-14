@@ -130,7 +130,9 @@ async function initWebGPURenderer({
 
   let adapter: GPUAdapter | null = null;
   try {
-    adapter = await gpu.requestAdapter();
+    adapter =
+      (await gpu.requestAdapter({ powerPreference: 'high-performance' })) ??
+      (await gpu.requestAdapter());
   } catch (_error) {
     return {
       success: false,

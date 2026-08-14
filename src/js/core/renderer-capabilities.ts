@@ -696,7 +696,9 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
       );
     }
     try {
-      const adapter = await gpu.requestAdapter();
+      const adapter =
+        (await gpu.requestAdapter({ powerPreference: 'high-performance' })) ??
+        (await gpu.requestAdapter());
       if (!adapter) {
         return buildFallback(
           getRendererFallbackReasonMessage(
