@@ -46,11 +46,7 @@ export function PresetArtwork({
   const liveTile = useLivePresetTile(entry);
   const staticThumbUrl = `/milkdrop-presets/previews/${entry.id}.png`;
   const imageUrl = preview?.imageUrl ?? staticThumbUrl;
-  const previewStatus = preview?.imageUrl
-    ? 'ready'
-    : staticThumbUrl
-      ? 'static'
-      : (preview?.status ?? 'queued');
+  const previewStatus = imageUrl ? 'ready' : (preview?.status ?? 'queued');
 
   return (
     <div
