@@ -584,7 +584,25 @@ export const chunkSitemapEntries = (
   );
 
 export function buildRobotsTxt(baseUrl = DEFAULT_BASE_URL) {
-  return `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`;
+  return [
+    'User-agent: *',
+    'Allow: /',
+    '',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    `Sitemap: ${baseUrl}/sitemap.xml`,
+    '',
+  ].join('\n');
 }
 
 export async function buildSeoArtifacts(
