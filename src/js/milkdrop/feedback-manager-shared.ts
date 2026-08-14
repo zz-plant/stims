@@ -1461,6 +1461,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     this.compositeScene.add(quad);
     this.presentScene.add(presentQuad);
+
+    this.camera.matrixAutoUpdate = false;
+    this.camera.updateMatrixWorld(true);
+    this.warpScene.matrixAutoUpdate = false;
+    this.feedbackBlendScene.matrixAutoUpdate = false;
+    this.compositeScene.matrixAutoUpdate = false;
+    this.presentScene.matrixAutoUpdate = false;
+    this.blurScene.matrixAutoUpdate = false;
   }
 
   setAudioTexture(texture: Texture | null): void {

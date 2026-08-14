@@ -1639,6 +1639,12 @@ class WebGPUMilkdropFeedbackManager {
 
   constructor(width: number, height: number) {
     this.camera.position.z = 1;
+    this.camera.matrixAutoUpdate = false;
+    this.camera.updateMatrixWorld(true);
+    this.feedbackBlendScene.matrixAutoUpdate = false;
+    this.compositeScene.matrixAutoUpdate = false;
+    this.presentScene.matrixAutoUpdate = false;
+    this.blurScene.matrixAutoUpdate = false;
     this.viewportWidth = width;
     this.viewportHeight = height;
     this.auxTextures = getSharedMilkdropAuxTextures();
