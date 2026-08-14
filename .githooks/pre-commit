@@ -1,0 +1,19 @@
+#!/usr/bin/env bun
+
+import { $ } from 'bun';
+
+console.log('🔒 Pre-commit guard check...');
+
+const tsNocheckRes = await $`bun run scripts/check-no-ts-nocheck.ts`.nothrow();
+if (tsNocheckRes.exitCode !== 0) {
+  console.error('❌ Commit blocked: @ts-nocheck directive found.');
+  process.exit(1);
+}
+
+const lintRes = await $`bun run scripts/lint-changed.ts`.nothrow();
+if (lintRes.exitCode !== 0) {
+  console.error('❌ Commit blocked: Biome linting errors in changed files.');
+  process.exit(1);
+}
+
+console.log('✅ Pre-commit guards passed.');

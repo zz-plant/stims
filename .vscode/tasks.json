@@ -30,6 +30,10 @@
       "label": "agent:check:quick",
       "type": "shell",
       "command": "bun run check:quick",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
