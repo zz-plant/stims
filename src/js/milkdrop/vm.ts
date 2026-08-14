@@ -192,16 +192,15 @@ class MilkdropPresetVM implements MilkdropVM {
     if (prop in this.frameCommonVars) {
       return this.frameCommonVars[prop];
     }
-    const parsed = this.parseFrameLocalKey(prop);
-    if (parsed) {
-      const { locals, localKey } = parsed;
-      return localKey in locals ? (locals[localKey] ?? 0) : undefined;
-    }
-    // `registers` is `Object.create(state)`, so `in` covers state keys and
-    // reads resolve through the prototype chain exactly like `{...state,
-    // ...registers}`.
     if (prop in this.registers) {
       return this.registers[prop];
+    }
+    if (prop.startsWith('wave') || prop.startsWith('shape')) {
+      const parsed = this.parseFrameLocalKey(prop);
+      if (parsed) {
+        const { locals, localKey } = parsed;
+        return localKey in locals ? (locals[localKey] ?? 0) : undefined;
+      }
     }
     return undefined;
   }
@@ -223,11 +222,16 @@ class MilkdropPresetVM implements MilkdropVM {
       if (prop in this.frameCommonVars) {
         return this.frameCommonVars[prop] !== undefined;
       }
-      const parsed = this.parseFrameLocalKey(prop);
-      if (parsed) {
-        return parsed.localKey in parsed.locals;
+      if (prop in this.registers) {
+        return true;
       }
-      return prop in this.registers;
+      if (prop.startsWith('wave') || prop.startsWith('shape')) {
+        const parsed = this.parseFrameLocalKey(prop);
+        if (parsed) {
+          return parsed.localKey in parsed.locals;
+        }
+      }
+      return false;
     },
     ownKeys: () => {
       if (this.frameVariablesSnapshot === null) {
