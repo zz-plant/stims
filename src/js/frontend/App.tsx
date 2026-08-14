@@ -283,13 +283,12 @@ function StimsWorkspaceAppShell() {
   // binding. It used to live inside PerformanceHardwareSection, which only
   // stayed mounted while Settings was open — closing Settings silently cut
   // the live wire between a controller and the visuals.
-  useEffect(
-    () =>
-      bindMidiToMilkdropControls(webMidiService, (target, value) => {
-        engine.updateInspectorField(target, value);
-      }),
-    [engine],
-  );
+  useEffect(() => {
+    webMidiService.initialize();
+    return bindMidiToMilkdropControls(webMidiService, (target, value) => {
+      engine.updateInspectorField(target, value);
+    });
+  }, [engine]);
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
