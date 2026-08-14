@@ -13,6 +13,7 @@ import {
   getAuthorOptions,
   getFeaturedCollectionTags,
   matchesAuthor,
+  matchesPreset,
   prettifyCollectionTag,
   sortBrowseEntries,
 } from './workspace-helpers.ts';
@@ -137,9 +138,24 @@ export function BrowseSheetPanel({
       : filteredCatalog;
   const browseEntries = useMemo(
     () =>
-      collectionFiltered.filter((entry) => matchesAuthor(entry, authorFilter)),
-    [collectionFiltered, authorFilter],
+      collectionFiltered.filter(
+        (entry) =>
+          matchesPreset(entry, localSearch) &&
+          matchesAuthor(entry, authorFilter),
+      ),
+    [collectionFiltered, localSearch, authorFilter],
   );
+
+  // Auto-scroll active preset into view on initial open or selection
+  useEffect(() => {
+    if (!currentPresetId || !presetListRef.current) return;
+    const activeEl = presetListRef.current.querySelector<HTMLElement>(
+      '[data-active="true"]',
+    );
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [currentPresetId]);
   const sorted = useMemo(
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
