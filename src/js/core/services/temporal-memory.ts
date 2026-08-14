@@ -116,7 +116,21 @@ function getCheckpointStorage() {
 export function getSavedCheckpoints(): VisualCheckpoint[] {
   try {
     const raw = getCheckpointStorage()?.getItem(SAVED_CHECKPOINTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value): value is VisualCheckpoint => {
+      if (value === null || typeof value !== 'object') return false;
+      const item = value as Partial<VisualCheckpoint>;
+      return (
+        typeof item.id === 'string' &&
+        typeof item.name === 'string' &&
+        typeof item.description === 'string' &&
+        typeof item.presetId === 'string' &&
+        typeof item.timestamp === 'number' &&
+        Number.isFinite(item.timestamp)
+      );
+    });
   } catch {
     return [];
   }

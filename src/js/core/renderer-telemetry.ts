@@ -8,9 +8,15 @@ const logger = createLogger('RendererTelemetry');
 
 const STORAGE_KEY = 'stims:renderer-support-stats';
 
-function readTelemetryStats() {
+function readTelemetryStats(): Record<string, unknown> {
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : {};
+  if (!raw) return {};
+  const parsed: unknown = JSON.parse(raw);
+  if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed as Record<string, unknown>;
+  }
+  window.localStorage.removeItem(STORAGE_KEY);
+  return {};
 }
 
 function writeTelemetryStats(nextStats: Record<string, unknown>) {
@@ -79,10 +85,10 @@ function installOptimizationTelemetry() {
         }
 
         const existing = readTelemetryStats();
-        const counters =
+        const counters: Record<string, unknown> =
           existing.optimizationCounters &&
           typeof existing.optimizationCounters === 'object'
-            ? existing.optimizationCounters
+            ? (existing.optimizationCounters as Record<string, unknown>)
             : {};
 
         counters[detail.counter] =

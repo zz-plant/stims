@@ -4,7 +4,32 @@ import {
   WebMidiControllerService,
 } from '../../src/js/core/services/webmidi-controller.ts';
 
+const MIDI_STORAGE_KEY = 'stims:midi-state:v1';
+
 describe('WebMIDI Hardware Controller Service', () => {
+  it('ignores malformed persisted device records and bindings', () => {
+    localStorage.setItem(
+      MIDI_STORAGE_KEY,
+      JSON.stringify({
+        broken: null,
+        valid: {
+          enabled: true,
+          bindings: {
+            1: { target: 'zoom', min: 0, max: 2 },
+            200: { target: 'bad-cc', min: 0, max: 1 },
+            2: { target: 42, min: 0, max: 1 },
+          },
+        },
+      }),
+    );
+
+    const service = new WebMidiControllerService();
+    expect(service.getBindings('broken')).toEqual({});
+    expect(service.getBindings('valid')).toEqual({
+      1: { target: 'zoom', min: 0, max: 2 },
+    });
+    localStorage.removeItem(MIDI_STORAGE_KEY);
+  });
   it('correctly reports support status when WebMIDI API is absent or present', () => {
     const service = new WebMidiControllerService();
     expect(service.isSupported()).toBe(false);

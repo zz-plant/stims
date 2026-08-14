@@ -89,6 +89,13 @@ export function createPictureInPictureController({
     return stream;
   }
 
+  function releaseStream() {
+    stream?.getTracks().forEach((track) => track.stop());
+    stream = null;
+    sourceCanvas = null;
+    if (video) video.srcObject = null;
+  }
+
   /** Must be called directly from a click handler — see file header. */
   async function enter(): Promise<PictureInPictureEnterResult> {
     if (disposed) {
@@ -110,6 +117,7 @@ export function createPictureInPictureController({
       try {
         await playPromise;
       } catch (error) {
+        releaseStream();
         return { ok: false, reason: 'play-failed', error };
       }
     } else {
@@ -120,6 +128,7 @@ export function createPictureInPictureController({
       await el.requestPictureInPicture();
       return { ok: true };
     } catch (error) {
+      releaseStream();
       return { ok: false, reason: 'request-failed', error };
     }
   }
@@ -158,9 +167,7 @@ export function createPictureInPictureController({
     dispose: () => {
       disposed = true;
       void exit();
-      stream?.getTracks().forEach((track) => track.stop());
-      stream = null;
-      sourceCanvas = null;
+      releaseStream();
       video?.remove();
       video = null;
       subscribers.clear();

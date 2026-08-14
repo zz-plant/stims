@@ -6,7 +6,10 @@ export interface FrameStats {
   motionEstimate: number;
 }
 
-let previousPixelData: Uint8ClampedArray | null = null;
+const previousSamples = new WeakMap<
+  HTMLCanvasElement,
+  { width: number; height: number; pixels: Uint8ClampedArray }
+>();
 let catalogEmbeddingsReady = false;
 let embeddingsReadyResolve: (() => void) | null = null;
 let sampleCanvas: HTMLCanvasElement | null = null;
@@ -81,6 +84,11 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
   let sampleCount = 0;
   let edgeDensity = 0;
   let motionEstimate = 0;
+  const previousSample = previousSamples.get(canvas);
+  const previousPixelData =
+    previousSample?.width === w && previousSample.height === h
+      ? previousSample.pixels
+      : null;
 
   for (let y = 0; y < h; y += sampleStep) {
     for (let x = 0; x < w; x += sampleStep) {
@@ -127,7 +135,11 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
     motionEstimate /= sampleCount;
   }
 
-  previousPixelData = new Uint8ClampedArray(pixels);
+  previousSamples.set(canvas, {
+    width: w,
+    height: h,
+    pixels: new Uint8ClampedArray(pixels),
+  });
 
   return { histogram, edgeDensity, motionEstimate };
 }
