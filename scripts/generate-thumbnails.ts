@@ -247,7 +247,7 @@ class RenderSession {
     // lockQualityStep pins the adaptive-quality controller to the sharpest
     // step — boot cost otherwise degrades it, shrinking the framebuffer.
     await page.goto(
-      `${this.devServer}/?preset=${bootId}&agent=true&renderer=webgl&lockQualityStep=0`,
+      `${this.devServer}/?preset=${bootId}&agent=true&renderer=webgl&lockQualityStep=0&audio=none`,
       { waitUntil: 'domcontentloaded' },
     );
     // The engine session installs the render hook once the runtime mounts.
