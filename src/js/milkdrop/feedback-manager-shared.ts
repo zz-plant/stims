@@ -541,9 +541,8 @@ ${MILKDROP_AUX_SAMPLING_HELPERS}
               clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
-          // MilkDrop applies decay only in the default warp path; a preset's
-          // own warp shader implements its fade (e.g. this frame minus 0.004).
-          previousColor *= mix(decay, 1.0, hasDirectWarp);
+          // Apply decay to the previous frame color so history dissipates over time.
+          previousColor *= decay;
           // With a direct warp shader, feedback is the warped previous frame
           // under this frame's geometry (MilkDrop clears to the warp output);
           // the legacy echo blend stays for control-driven presets.
