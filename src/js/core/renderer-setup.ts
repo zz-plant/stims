@@ -14,6 +14,7 @@ import {
   FallbackState,
   FallbackStateMachine,
 } from './fallback-state.ts';
+import { resolveGpuPowerPreference } from './power-state.ts';
 import {
   getRendererCapabilities,
   type RendererBackend,
@@ -205,7 +206,7 @@ export async function initRenderer(
       canvas: resolveFallbackCanvas(),
       antialias,
       alpha,
-      powerPreference: 'high-performance',
+      powerPreference: resolveGpuPowerPreference(),
       failIfMajorPerformanceCaveat: false,
       stencil: true,
       preserveDrawingBuffer:

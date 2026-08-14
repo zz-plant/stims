@@ -1,3 +1,4 @@
+import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropProgramBlock,
@@ -368,9 +369,16 @@ function readAssignmentKey(line: string): string | null {
  * MilkDrop spells several fields two ways (`decay` / `fDecay`) and is not
  * case-sensitive about any of them, so the literal comparison left knob writes
  * landing beside the line they meant to replace.
+ *
+ * The alias table is the compiler's own (field-normalization), so a control
+ * addressing `ob_r` finds the `fOuterBorderR=` line the preset actually
+ * carries. Before that, only the six names canonicalKey knows collapsed:
+ * everything else — the whole border, motion-vector, video-echo and main-wave
+ * blocks, which real .milk files always spell the long way — got a second
+ * assignment appended instead of an in-place rewrite.
  */
 function normalizeFieldKey(key: string): string {
-  return canonicalKey(key.trim().toLowerCase()).toLowerCase();
+  return normalizeProgramAssignmentTarget(key);
 }
 
 /**
@@ -454,17 +462,21 @@ export function isFieldShadowedByEquations(
 }
 
 /**
- * 1-based line number of the literal top-level `target=value` line, or null
- * if there isn't one yet. Mirrors upsertMilkdropField's own search so both
- * agree on what counts as "the" line for a given field.
+ * 1-based line number of the *first* equation line that reassigns `target`,
+ * or null when nothing does. Pairs with isFieldShadowedByEquations: knowing a
+ * control is overwritten every frame is only actionable if you can get to the
+ * line doing the overwriting.
  */
-export function findMilkdropFieldLine(
+export function findMilkdropEquationLine(
   source: string,
   target: string,
 ): number | null {
   const normalizedTarget = target.trim();
   if (!normalizedTarget) return null;
-  const targetPrefix = `${normalizedTarget}=`;
+  const assignPattern = new RegExp(
+    `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+    'u',
+  );
 
   const lines = source.split(/\r?\n/u);
   let inShaderSection = false;
@@ -473,11 +485,76 @@ export function findMilkdropFieldLine(
     if (shaderSectionHeaderPattern.test(trimmed)) {
       inShaderSection = true;
     }
-    if (!inShaderSection && trimmed.startsWith(targetPrefix)) {
+    if (inShaderSection) continue;
+
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx <= 0) continue;
+    if (!isEquationKey(trimmed.slice(0, eqIdx).trim())) continue;
+    if (assignPattern.test(trimmed.slice(eqIdx + 1))) {
       return i + 1;
     }
   }
   return null;
+}
+
+/**
+ * 1-based line number of the literal top-level `target=value` line, or null
+ * if there isn't one yet. Mirrors upsertMilkdropField's own search so both
+ * agree on what counts as "the" line for a given field — including its alias
+ * spelling, so `decay` finds a preset's `fDecay=` line.
+ */
+export function findMilkdropFieldLine(
+  source: string,
+  target: string,
+): number | null {
+  if (!target.trim()) return null;
+  const normalizedTarget = normalizeFieldKey(target);
+
+  const lines = source.split(/\r?\n/u);
+  let inShaderSection = false;
+  let found: number | null = null;
+  for (let i = 0; i < lines.length; i += 1) {
+    const trimmed = lines[i].trim();
+    if (shaderSectionHeaderPattern.test(trimmed)) {
+      inShaderSection = true;
+    }
+    if (inShaderSection) continue;
+
+    const lineKey = readAssignmentKey(lines[i]);
+    if (lineKey !== null && normalizeFieldKey(lineKey) === normalizedTarget) {
+      // Last wins in the compiler, so the last line is the one that decides
+      // the value — and therefore the one a gutter marker should point at.
+      found = i + 1;
+    }
+  }
+  return found;
+}
+
+/**
+ * The numeric value the compiler would take for `target`, read straight from
+ * buffer text. Alias- and case-insensitive, skips shader bodies, and honours
+ * last-wins, so it agrees with what upsertMilkdropField will rewrite.
+ *
+ * Returns null when the field has no literal line (the caller supplies the
+ * MilkDrop default) or when its value is an expression rather than a number.
+ */
+export function readMilkdropField(
+  source: string,
+  target: string,
+): number | null {
+  const line = findMilkdropFieldLine(source, target);
+  if (line === null) return null;
+
+  const text = source.split(/\r?\n/u)[line - 1] ?? '';
+  const rawValue = text.slice(text.indexOf('=') + 1).trim();
+  // The whole value has to be the number. `zoom=1.0 + bass` parses to 1.0 if
+  // you only look at the front, which would have a control report — and then
+  // overwrite — a value the preset never held.
+  if (!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/u.test(rawValue)) {
+    return null;
+  }
+  const parsed = Number.parseFloat(rawValue);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export interface MidiGutterEntry {

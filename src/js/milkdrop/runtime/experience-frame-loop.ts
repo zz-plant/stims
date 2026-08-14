@@ -4,6 +4,7 @@ import {
   resolveWebGLRenderer,
   shouldRenderMilkdropPostprocessing,
 } from '../../core/postprocessing.ts';
+import { getPowerSavingFrameCapHz } from '../../core/power-state.ts';
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
 import type {
   ToyRuntimeFrame,
@@ -346,7 +347,14 @@ export function createMilkdropExperienceFrameLoop({
         });
         getAdaptiveQualityController()?.recordFrame({
           frameMs: frameEndAt - frameStartAt,
-          cadenceMs: frame.deltaMs,
+          // Cadence is evidence the GPU is falling behind only when nothing is
+          // deliberately slowing it down. Under a power-saver cap the wider
+          // gap between frames is the whole point, and reporting it would read
+          // as pressure and walk quality down for a problem that isn't there.
+          // `frameMs` and the phase timings still measure real work, so genuine
+          // overload is still caught.
+          cadenceMs:
+            getPowerSavingFrameCapHz() === null ? frame.deltaMs : undefined,
           phases: {
             simulationMs: renderStartAt - frameStartAt,
             renderMs: frameEndAt - renderStartAt,
