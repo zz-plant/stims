@@ -328,6 +328,27 @@ const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         #define slow_roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
 `;
 
+const Q_VAR_NAMES: readonly (readonly [string, string, string, string])[] = [
+  ['q1', 'q2', 'q3', 'q4'],
+  ['q5', 'q6', 'q7', 'q8'],
+  ['q9', 'q10', 'q11', 'q12'],
+  ['q13', 'q14', 'q15', 'q16'],
+  ['q17', 'q18', 'q19', 'q20'],
+  ['q21', 'q22', 'q23', 'q24'],
+  ['q25', 'q26', 'q27', 'q28'],
+  ['q29', 'q30', 'q31', 'q32'],
+];
+const Q_UNIFORM_NAMES = [
+  '_qa',
+  '_qb',
+  '_qc',
+  '_qd',
+  '_qe',
+  '_qf',
+  '_qg',
+  '_qh',
+] as const;
+
 /**
  * Emulated 3D noise sampling for preset bodies transpiled from
  * tex3D(sampler_noisevol*, ...): routes through the simplex atlas
@@ -1953,16 +1974,16 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     const vars = state.perPixelVariables;
     for (let group = 0; group < 8; group++) {
-      const target = uniforms[`_q${'abcdefgh'[group]}`]?.value as
+      const target = uniforms[Q_UNIFORM_NAMES[group]]?.value as
         | Vector4
         | undefined;
       if (!target) continue;
-      const base = group * 4;
+      const keys = Q_VAR_NAMES[group];
       target.set(
-        vars?.[`q${base + 1}`] ?? 0,
-        vars?.[`q${base + 2}`] ?? 0,
-        vars?.[`q${base + 3}`] ?? 0,
-        vars?.[`q${base + 4}`] ?? 0,
+        vars?.[keys[0]] ?? 0,
+        vars?.[keys[1]] ?? 0,
+        vars?.[keys[2]] ?? 0,
+        vars?.[keys[3]] ?? 0,
       );
     }
   }

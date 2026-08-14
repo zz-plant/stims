@@ -227,46 +227,43 @@ export function createMilkdropAudioSignalProcessor() {
   };
 
   const buildSpectrumFrame = (source: Uint8Array, deltaMs: number) => {
-    ensureSpectrumBuffers(source.length);
+    const len = source.length;
+    ensureSpectrumBuffers(len);
 
-    for (let index = 0; index < source.length; index += 1) {
-      const previous = (source[index - 1] ?? source[index] ?? 0) / 255;
-      const current = (source[index] ?? 0) / 255;
-      const next = (source[index + 1] ?? source[index] ?? 0) / 255;
-      const ratio =
-        source.length > 1 ? index / Math.max(1, source.length - 1) : 0;
+    let previous = len > 0 ? source[0] / 255 : 0;
+    for (let index = 0; index < len; index += 1) {
+      const current = source[index] / 255;
+      const next = index + 1 < len ? source[index + 1] / 255 : current;
+      const ratio = len > 1 ? index / (len - 1) : 0;
       const spatial = previous * 0.18 + current * 0.64 + next * 0.18;
+      previous = current;
 
-      spectrumNoiseFloor[index] = smoothLevel(
-        spectrumNoiseFloor[index] ?? 0,
+      const floorVal = smoothLevel(
+        spectrumNoiseFloor[index],
         spatial,
         deltaMs,
         220,
         900,
       );
+      spectrumNoiseFloor[index] = floorVal;
 
-      const denoised = Math.max(
-        0,
-        spatial - Math.min(0.085, (spectrumNoiseFloor[index] ?? 0) * 0.72),
-      );
+      const denoised = Math.max(0, spatial - Math.min(0.085, floorVal * 0.72));
       const compensated =
         denoised * spectralCompensationForRatio(ratio) +
-        Math.max(0, current - (previousSpectrum[index] ?? 0)) *
-          (0.42 + ratio * 0.08);
+        Math.max(0, current - previousSpectrum[index]) * (0.42 + ratio * 0.08);
       const compressed =
         Math.log1p(clamp(compensated, 0, 1.6) * 6.2) * INV_LOG1P_6_2;
       const target = clamp(compressed, 0, 1);
 
-      smoothedSpectrum[index] = smoothLevel(
-        smoothedSpectrum[index] ?? 0,
+      const smoothed = smoothLevel(
+        smoothedSpectrum[index],
         target,
         deltaMs,
         26,
         170,
       );
-      shapedSpectrum[index] = Math.round(
-        clamp(smoothedSpectrum[index] ?? 0, 0, 1) * 255,
-      );
+      smoothedSpectrum[index] = smoothed;
+      shapedSpectrum[index] = (clamp(smoothed, 0, 1) * 255) | 0;
       previousSpectrum[index] = current;
     }
 
