@@ -218,6 +218,34 @@ export function createGpuVmRunner() {
     return true;
   }
 
+  function dispatchInEncoder(
+    commandEncoder: GPUCommandEncoder,
+    signals: MilkdropGpuVmSignals,
+  ): GPUBuffer {
+    if (
+      !device ||
+      !pipeline ||
+      !bindGroup ||
+      !stateBuffer ||
+      !currentSignalBuffer
+    ) {
+      throw new Error('GPU VM not initialized');
+    }
+
+    populateSignalData(signalData, signals);
+    device.queue.writeBuffer(currentSignalBuffer, 0, signalData);
+
+    const pass = commandEncoder.beginComputePass({
+      label: 'milkdrop-vm-compute-pass',
+    });
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(1);
+    pass.end();
+
+    return stateBuffer;
+  }
+
   async function dispatch(signals: MilkdropGpuVmSignals): Promise<GpuVmResult> {
     if (
       !device ||
@@ -324,6 +352,7 @@ export function createGpuVmRunner() {
   return {
     init,
     dispatch,
+    dispatchInEncoder,
     syncState,
     dispose,
     isInitialized,
