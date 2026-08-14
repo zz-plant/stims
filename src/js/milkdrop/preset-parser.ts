@@ -39,6 +39,10 @@ function stripInlineComment(line: string) {
   return line;
 }
 
+const MAX_SOURCE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_LINE_CHARS = 100_000;
+const MAX_PRESET_FIELDS = 10_000;
+
 export function parseMilkdropPreset(source: string): {
   ast: MilkdropPresetAST;
   diagnostics: MilkdropDiagnostic[];
@@ -48,12 +52,39 @@ export function parseMilkdropPreset(source: string): {
   const sections: string[] = [];
   let currentSection: string | null = null;
 
+  if (source.length > MAX_SOURCE_BYTES) {
+    diagnostics.push({
+      severity: 'error',
+      category: 'parse',
+      code: 'preset_source_too_large',
+      line: 1,
+      message: `Preset source exceeds maximum safe size of 5MB.`,
+    });
+    return { ast: { source: '', fields: [], sections: [] }, diagnostics };
+  }
+
   const lines = source.split(/\r?\n/u);
-  lines.forEach((line, lineIndex) => {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    if (fields.length >= MAX_PRESET_FIELDS) {
+      diagnostics.push({
+        severity: 'warning',
+        category: 'parse',
+        code: 'preset_max_fields_exceeded',
+        line: lineIndex + 1,
+        message: `Preset field count exceeded maximum limit of 10,000 fields.`,
+      });
+      break;
+    }
+
+    const rawLine = lines[lineIndex] ?? '';
+    const line =
+      rawLine.length > MAX_LINE_CHARS
+        ? rawLine.slice(0, MAX_LINE_CHARS)
+        : rawLine;
     const number = lineIndex + 1;
     const trimmed = line.trim();
     if (!trimmed) {
-      return;
+      continue;
     }
 
     if (
@@ -61,7 +92,7 @@ export function parseMilkdropPreset(source: string): {
       trimmed.startsWith('#') ||
       trimmed.startsWith(';')
     ) {
-      return;
+      continue;
     }
 
     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
@@ -69,12 +100,12 @@ export function parseMilkdropPreset(source: string): {
       if (currentSection) {
         sections.push(currentSection);
       }
-      return;
+      continue;
     }
 
     const withoutComments = stripInlineComment(line).trim();
     if (!withoutComments) {
-      return;
+      continue;
     }
 
     const equalsIndex = withoutComments.indexOf('=');
@@ -89,7 +120,7 @@ export function parseMilkdropPreset(source: string): {
           line: number,
           section: currentSection,
         });
-        return;
+        continue;
       }
       diagnostics.push({
         severity: 'warning',
@@ -98,7 +129,7 @@ export function parseMilkdropPreset(source: string): {
         line: number,
         message: `Ignored line without an assignment: "${trimmed}".`,
       });
-      return;
+      continue;
     }
 
     const key =
@@ -117,7 +148,7 @@ export function parseMilkdropPreset(source: string): {
         line: number,
         message: 'Ignored assignment without a key.',
       });
-      return;
+      continue;
     }
 
     fields.push({
@@ -126,7 +157,7 @@ export function parseMilkdropPreset(source: string): {
       line: number,
       section: currentSection,
     });
-  });
+  }
 
   return {
     ast: {
