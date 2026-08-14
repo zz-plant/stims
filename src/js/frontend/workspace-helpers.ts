@@ -102,6 +102,9 @@ export function getToolDescription(tool: Exclude<PanelState, null>) {
 }
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
+  'collection:hall-of-fame': 'Hall of Fame Masterpieces',
+  'collection:webgpu-showcase': 'WebGPU Ultra Showcase',
+  'collection:audio-reactive': 'Audio-Reactive Masterpieces',
   'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
@@ -307,6 +310,9 @@ export function getCollectionTags(entries: PresetCatalogEntry[]) {
 
 export function getFeaturedCollectionTags(collectionTags: string[]) {
   const featuredHints = [
+    'collection:hall-of-fame',
+    'collection:webgpu-showcase',
+    'collection:audio-reactive',
     'collection:cream-of-the-crop',
     'collection:classic-milkdrop',
     'collection:vj-high-intensity',
