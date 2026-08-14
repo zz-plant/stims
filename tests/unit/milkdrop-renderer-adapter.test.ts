@@ -4443,3 +4443,52 @@ ob_a=0.8
     expect(borderMesh?.position?.z).toBe(0.285);
   });
 });
+
+describe('ensureGeometryPositions buffer stability', () => {
+  test('never shrinks the position buffer, and bounds the draw with drawRange', async () => {
+    const { BufferGeometry } = await import('three');
+    const { ensureGeometryPositions } = await import(
+      '../../src/js/milkdrop/renderer-adapter-shared.ts'
+    );
+
+    const geometry = new BufferGeometry();
+
+    // A blend renders the outgoing and incoming preset into the same pooled
+    // geometry, so a wave whose sample count differs between the two used to
+    // reallocate on every frame, alternating between the two lengths. The
+    // draw count follows `position.count` immediately while the backend's
+    // uploaded GPUBuffer does not, so the shrink frame issued a draw wider
+    // than the buffer bound for it and invalidated the command buffer.
+    ensureGeometryPositions(geometry, new Float32Array(2913));
+    const afterSmall = geometry.getAttribute('position');
+    expect(afterSmall.array.length).toBe(2913);
+    expect(geometry.drawRange.count).toBe(971);
+
+    ensureGeometryPositions(geometry, new Float32Array(5019));
+    expect(geometry.getAttribute('position').array.length).toBe(5019);
+    expect(geometry.drawRange.count).toBe(1673);
+
+    // Shrinking back must keep the larger buffer and narrow the draw instead.
+    ensureGeometryPositions(geometry, new Float32Array(2913));
+    const attribute = geometry.getAttribute('position');
+    expect(attribute.array.length).toBe(5019);
+    expect(geometry.drawRange.count).toBe(971);
+    expect(geometry.drawRange.count).toBeLessThanOrEqual(attribute.count);
+  });
+
+  test('writes the supplied data at the start of an oversized buffer', async () => {
+    const { BufferGeometry } = await import('three');
+    const { ensureGeometryPositions } = await import(
+      '../../src/js/milkdrop/renderer-adapter-shared.ts'
+    );
+
+    const geometry = new BufferGeometry();
+    ensureGeometryPositions(geometry, new Float32Array([1, 2, 3, 4, 5, 6]));
+    ensureGeometryPositions(geometry, new Float32Array([7, 8, 9]));
+
+    const array = geometry.getAttribute('position').array as Float32Array;
+    expect(array.length).toBe(6);
+    expect(Array.from(array.slice(0, 3))).toEqual([7, 8, 9]);
+    expect(geometry.drawRange.count).toBe(1);
+  });
+});

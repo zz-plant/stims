@@ -15,6 +15,7 @@ import type {
   MilkdropBackendBehavior,
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
+import { ensureDynamicFloatAttribute } from '../renderer-adapter-shared';
 import type { MilkdropColor, MilkdropWaveVisual } from '../types';
 import { getMilkdropThickWaveSpread } from './primitive-rasterization-metrics';
 
@@ -31,17 +32,11 @@ function syncWaveVertexColors(
     return;
   }
 
-  const existing = geometry.getAttribute('color');
-  if (
-    existing instanceof Float32BufferAttribute &&
-    existing.itemSize === 3 &&
-    existing.array.length === colors.length
-  ) {
-    existing.array.set(colors);
-    existing.needsUpdate = true;
-  } else {
-    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
-  }
+  // Grow-only, for the same reason as the position buffer: a reallocated
+  // vertex buffer can be a frame behind the draw range that references it, and
+  // a colour buffer smaller than the draw range fails validation on slot 1
+  // exactly as an undersized position buffer does on slot 0.
+  ensureDynamicFloatAttribute(geometry, 'color', colors, 3);
   material.vertexColors = true;
 }
 
