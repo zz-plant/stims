@@ -285,6 +285,26 @@ function StimsWorkspaceAppShell() {
   // the live wire between a controller and the visuals.
   useEffect(() => {
     webMidiService.initialize();
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __stims_live?: object }).__stims_live = {
+        setControl: (target: string, value: number) => {
+          engine.updateInspectorField(target, value);
+        },
+        injectMidiCC: (cc: number, value: number) => {
+          webMidiService.injectControlChange(
+            VIRTUAL_CLAUDE_DEVICE_ID,
+            cc,
+            value,
+          );
+        },
+        nextPreset: () => {
+          engine.handleShufflePreset();
+        },
+        previousPreset: () => {
+          engine.handlePreviousPreset();
+        },
+      };
+    }
     return bindMidiToMilkdropControls(webMidiService, (target, value) => {
       engine.updateInspectorField(target, value);
     });
