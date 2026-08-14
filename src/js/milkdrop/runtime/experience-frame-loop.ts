@@ -98,6 +98,7 @@ export function createMilkdropExperienceFrameLoop({
       analyser: ToyRuntimeFrame['analyser'];
       frequencyData: Uint8Array;
       waveformData: Uint8Array;
+      target?: Partial<MilkdropRuntimeSignals>;
     }) => Partial<MilkdropRuntimeSignals>;
   };
   capturedVideoReactivityTracker: {
@@ -201,14 +202,14 @@ export function createMilkdropExperienceFrameLoop({
             ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
             : 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
-        const baseSignals = signalTracker.update({
+        signalTracker.update({
           time: frame.time,
           deltaMs: frame.deltaMs,
           analyser: frame.analyser,
           frequencyData: frame.frequencyData,
           waveformData: frame.waveformData,
+          target: mergedSignals,
         });
-        Object.assign(mergedSignals, baseSignals);
         mergedSignals.aspect =
           frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);
         mergedSignals.pixelsx = frame.toy.viewportWidth;
