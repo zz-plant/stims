@@ -177,7 +177,7 @@ export function buildPresetOgSvg({
   <path d="${WAVEFORM_TRACE_PATH}" fill="none" stroke="${palette.secondary}" stroke-opacity="0.18" stroke-width="2" transform="translate(0, -20)"/>
   <path d="${WAVEFORM_TRACE_PATH}" fill="none" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="3"/>
 
-  <!-- Left Content Glass Panel -->
+  <!-- Left Content Panel -->
   <g transform="translate(64, 60)">
     <!-- Header Badge -->
     <circle cx="10" cy="14" r="5" fill="${palette.secondary}"/>
@@ -206,8 +206,8 @@ export function buildPresetOgSvg({
         ? `<!-- Real Preset Preview Image Snapshot -->
     <image href="${previewImageUri}" x="0" y="0" width="506" height="430" preserveAspectRatio="xMidYMid slice" clip-path="url(#preview-clip)" opacity="0.92"/>
     <rect width="506" height="430" rx="16" fill="none" stroke="url(#card-border)" stroke-width="1.5"/>`
-        : `<!-- Glassmorphic Fallback Frame -->
-    <rect width="506" height="430" rx="16" fill="rgba(15, 23, 34, 0.75)" stroke="url(#card-border)" stroke-width="1.5"/>
+        : `<!-- Fallback HUD Frame -->
+    <rect width="506" height="430" rx="16" fill="#0f1722" stroke="url(#card-border)" stroke-width="1.5"/>
     <circle cx="253" cy="215" r="130" fill="none" stroke="${palette.primary}" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="6,6"/>
     <circle cx="253" cy="215" r="95" fill="none" stroke="${palette.secondary}" stroke-opacity="0.25" stroke-width="1.5"/>
     <circle cx="253" cy="215" r="60" fill="none" stroke="${palette.primary}" stroke-opacity="0.4" stroke-width="2"/>
@@ -224,9 +224,9 @@ export function buildPresetOgSvg({
     <line x1="486" y1="20" x2="466" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
     <line x1="486" y1="20" x2="486" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
 
-    <!-- High-CTR Glassmorphic Play CTA Overlay -->
+    <!-- High-CTR Play CTA Overlay -->
     <g transform="translate(253, 200)">
-      <circle r="42" fill="rgba(12, 17, 24, 0.72)" stroke="${palette.primary}" stroke-width="2.5"/>
+      <circle r="42" fill="#0c1118" stroke="${palette.primary}" stroke-width="2.5"/>
       <polygon points="-11,-18 18,0 -11,18" fill="${palette.secondary}"/>
     </g>
     <g transform="translate(253, 275)">

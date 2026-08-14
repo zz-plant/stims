@@ -2533,17 +2533,13 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-shell__shortcut-card,
 .stims-shell__credits-card {
-  background: rgba(12, 17, 24, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(119, 201, 255, 0.25);
-  border-radius: 20px;
+  background: #0c1117;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
   padding: 32px;
   max-width: 520px;
   width: 92%;
-  box-shadow:
-    0 32px 80px rgba(0, 0, 0, 0.85),
-    0 0 32px rgba(119, 201, 255, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
   animation: stims-modal-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   -webkit-font-smoothing: antialiased;
 }
