@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, useContext } from 'react';
+import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
+import type { MilkdropEditorSessionState } from '../milkdrop/runtime-types.ts';
 import type { CanvasVideoExportRuntime } from '../utils/media/canvas-video-exporter.ts';
 import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
@@ -78,8 +80,22 @@ export interface EngineContextValue {
   setTransitionMode: (mode: 'blend' | 'cut') => void;
   setBlendDuration: (value: number) => void;
   updateEditorSource: (source: string) => void;
+  /** Awaitable live-edit surface used by the agent bridge: resolves with the
+   * resulting compile so a caller can see diagnostics instead of guessing. */
+  applyEditorSourceAwaited: (
+    source: string,
+  ) => Promise<MilkdropEditorSessionState | null>;
+  applyEditorFieldsAwaited: (
+    updates: Record<string, string | number>,
+  ) => Promise<MilkdropEditorSessionState | null>;
+  getEditorSessionState: () => MilkdropEditorSessionState | null;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;
+  /**
+   * The active preset's compiled IR, or null before the engine mounts.
+   * Read-only debug surface (see HudOverlay) — not a render path.
+   */
+  getActiveCompiledPreset: () => MilkdropCompiledPreset | null;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

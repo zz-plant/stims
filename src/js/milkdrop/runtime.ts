@@ -915,16 +915,49 @@ function buildExperienceController(deps: Record<string, any>) {
       await deps.presetFileActions.deleteActivePreset();
       deps.emitChange();
     },
+    /**
+     * Awaitable counterpart to `updateEditorSource`, for callers that need to
+     * know whether the source actually compiled — an agent editing preset
+     * code cannot tell "applied" from "failed and the stage kept rendering
+     * the last good compile" without the resulting diagnostics.
+     */
+    async applyEditorSourceAwaited(source: string) {
+      const next = await deps.session.applySource(source);
+      deps.emitChange();
+      return next;
+    },
+
+    /** Atomic multi-field edit; see `MilkdropEditorSession.updateFields`. */
+    async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
+      const next = await deps.session.updateFields(updates);
+      deps.emitChange();
+      return next;
+    },
+
+    getEditorSessionState() {
+      return deps.session.getState();
+    },
+
+    // These are fire-and-forget by design — the editor renders from the
+    // session's subscription, not from the returned state. They are still
+    // guarded so a compile that fails in an unforeseen way surfaces as a log
+    // line rather than an unhandled rejection that takes the page down.
     updateEditorSource(source: string) {
-      deps.session.applySource(source);
+      void deps.session.applySource(source).catch((error: unknown) => {
+        log.warn('Editor source could not be applied', error);
+      });
       deps.emitChange();
     },
     revertEditorSource() {
-      deps.session.resetToActive();
+      void deps.session.resetToActive().catch((error: unknown) => {
+        log.warn('Editor revert failed', error);
+      });
       deps.emitChange();
     },
     updateInspectorField(key: string, value: string | number) {
-      deps.session.updateField(key, value);
+      void deps.session.updateField(key, value).catch((error: unknown) => {
+        log.warn(`Inspector field "${key}" could not be applied`, error);
+      });
       deps.emitChange();
     },
 

@@ -268,3 +268,427 @@ describe('milkdrop editor session', () => {
     session.dispose();
   });
 });
+
+/**
+ * Live editing is a concurrency problem wearing a text editor's clothes: a
+ * 120ms debounce plus MIDI/knob nudges means several compiles are routinely in
+ * flight against one worker, and every one of them must either land or be
+ * cleanly superseded. These cover the failure modes that strand the editor —
+ * promises that never settle, workers that leak, and edits that vanish.
+ */
+describe('milkdrop editor session under concurrent load', () => {
+  let OriginalWorker: typeof Worker;
+
+  beforeAll(() => {
+    OriginalWorker = globalThis.Worker;
+  });
+
+  afterAll(() => {
+    globalThis.Worker = OriginalWorker;
+  });
+
+  type WorkerRequest = {
+    id: string;
+    source: string;
+    preset: Partial<MilkdropPresetSource>;
+    respond: () => void;
+  };
+
+  type WorkerRig = {
+    requests: WorkerRequest[];
+    created: number;
+    terminated: number;
+    live: () => number;
+    respondToAll: () => void;
+  };
+
+  /** Installs a Worker whose replies this test drives by hand, so a compile can
+   * be held mid-flight for as long as the scenario needs. */
+  function installControllableWorker({
+    autoRespond = false,
+  }: {
+    autoRespond?: boolean;
+  } = {}): WorkerRig {
+    const rig: WorkerRig = {
+      requests: [],
+      created: 0,
+      terminated: 0,
+      live: () => rig.created - rig.terminated,
+      respondToAll: () => {
+        const pending = rig.requests.splice(0, rig.requests.length);
+        pending.forEach((request) => request.respond());
+      },
+    };
+
+    globalThis.Worker = class {
+      private listeners = new Set<(event: MessageEvent<unknown>) => void>();
+      private alive = true;
+
+      constructor() {
+        rig.created += 1;
+      }
+
+      addEventListener(type: string, listener: (event: Event) => void) {
+        if (type === 'message') {
+          this.listeners.add(
+            listener as unknown as (event: MessageEvent<unknown>) => void,
+          );
+        }
+      }
+
+      removeEventListener(type: string, listener: (event: Event) => void) {
+        if (type === 'message') {
+          this.listeners.delete(
+            listener as unknown as (event: MessageEvent<unknown>) => void,
+          );
+        }
+      }
+
+      postMessage(payload: unknown) {
+        const message = payload as {
+          type?: string;
+          path?: string[];
+          id: string;
+          argumentList?: { value: unknown }[];
+        };
+        if (message?.type !== 'APPLY' || message.path?.[0] !== 'compile') {
+          return;
+        }
+        const source = message.argumentList?.[0]?.value as string;
+        const preset = message.argumentList?.[1]
+          ?.value as Partial<MilkdropPresetSource>;
+        const request: WorkerRequest = {
+          id: message.id,
+          source,
+          preset,
+          respond: () => {
+            if (!this.alive) return;
+            const compiled = compileMilkdropPresetSource(source, preset);
+            [...this.listeners].forEach((listener) =>
+              listener({
+                data: { id: message.id, type: 'RAW', value: compiled },
+              } as MessageEvent<unknown>),
+            );
+          },
+        };
+        rig.requests.push(request);
+        if (autoRespond) {
+          setTimeout(() => {
+            rig.requests = rig.requests.filter(
+              (candidate) => candidate !== request,
+            );
+            request.respond();
+          }, 0);
+        }
+      }
+
+      terminate() {
+        // A terminated worker abandons its in-flight replies, exactly as the
+        // real one does — this is what strands un-watchdogged compiles.
+        this.alive = false;
+        this.listeners.clear();
+        rig.terminated += 1;
+      }
+    } as unknown as typeof Worker;
+
+    return rig;
+  }
+
+  /** Fails loudly instead of hanging the suite when a promise never settles. */
+  async function settleWithin<T>(
+    promise: Promise<T>,
+    ms: number,
+    label: string,
+  ): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const guard = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`${label} never settled (waited ${ms}ms)`)),
+        ms,
+      );
+    });
+    try {
+      return await Promise.race([promise, guard]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  const tick = (ms = 0) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
+  const basePreset = (
+    overrides: Partial<MilkdropPresetSource> = {},
+  ): MilkdropPresetSource => ({
+    id: 'pressure-base',
+    title: 'Pressure Base',
+    raw: 'title=Pressure Base\nwave_r=0.4\nwave_g=0.4\n',
+    origin: 'user',
+    ...overrides,
+  });
+
+  test('a stalled worker cannot strand a concurrently queued compile', async () => {
+    installControllableWorker();
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 25,
+    });
+
+    // First edit brings the worker up; the second rides the same worker while
+    // the first is still unanswered.
+    const first = session.applySource('title=Pressure Base\nwave_r=0.5\n');
+    await tick();
+    const second = session.applySource('title=Pressure Base\nwave_r=0.6\n');
+
+    const settled = await settleWithin(
+      Promise.all([first, second]),
+      1500,
+      'concurrent compiles against a stalled worker',
+    );
+
+    expect(settled).toHaveLength(2);
+    // The newest edit must still be what the editor ends up holding.
+    expect(
+      session.getState().activeCompiled?.ir.numericFields.wave_r,
+    ).toBeCloseTo(0.6, 6);
+
+    session.dispose();
+  });
+
+  test('recovers on the next edit after a worker watchdog fires', async () => {
+    const rig = installControllableWorker();
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 25,
+    });
+
+    await settleWithin(
+      session.applySource('title=Pressure Base\nwave_r=0.5\n'),
+      1500,
+      'stalled compile',
+    );
+    expect(rig.terminated).toBeGreaterThan(0);
+
+    // The dead worker must not poison later edits.
+    const recovered = await settleWithin(
+      (async () => {
+        const pending = session.applySource(
+          'title=Pressure Base\nwave_r=0.9\n',
+        );
+        for (let attempt = 0; attempt < 40 && !rig.requests.length; attempt++) {
+          await tick();
+        }
+        rig.respondToAll();
+        return pending;
+      })(),
+      1500,
+      'compile after watchdog recovery',
+    );
+
+    expect(recovered.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(
+      0.9,
+      6,
+    );
+
+    session.dispose();
+  });
+
+  test('rapid edits share a single compile worker', async () => {
+    const rig = installControllableWorker({ autoRespond: true });
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 250,
+    });
+
+    await settleWithin(
+      Promise.all([
+        session.applySource('title=Pressure Base\nwave_r=0.51\n'),
+        session.applySource('title=Pressure Base\nwave_r=0.52\n'),
+        session.applySource('title=Pressure Base\nwave_r=0.53\n'),
+      ]),
+      1500,
+      'burst of edits',
+    );
+
+    expect(rig.created).toBe(1);
+
+    session.dispose();
+    expect(rig.live()).toBe(0);
+  });
+
+  test('disposing mid-compile settles the pending edit instead of hanging', async () => {
+    installControllableWorker();
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 5000,
+    });
+
+    const pending = session.applySource('title=Pressure Base\nwave_r=0.7\n');
+    await tick();
+    session.dispose();
+
+    const settled = await settleWithin(
+      pending,
+      1000,
+      'edit pending at dispose time',
+    );
+    expect(settled).toBeDefined();
+  });
+
+  test('falls back to the main thread when the worker cannot be constructed', async () => {
+    globalThis.Worker = class {
+      constructor() {
+        throw new Error('Worker blocked by content security policy');
+      }
+    } as unknown as typeof Worker;
+
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 250,
+    });
+
+    const applied = await settleWithin(
+      session.applySource('title=Pressure Base\nwave_r=0.8\n'),
+      1500,
+      'edit with an unconstructable worker',
+    );
+    expect(applied.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(0.8, 6);
+
+    // A blocked worker is a permanent condition; the editor should stop paying
+    // the construction cost on every keystroke.
+    const again = await settleWithin(
+      session.applySource('title=Pressure Base\nwave_r=0.85\n'),
+      1500,
+      'second edit with an unconstructable worker',
+    );
+    expect(again.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(0.85, 6);
+
+    session.dispose();
+  });
+
+  test('loading a preset that fails to compile keeps that preset in the editor', async () => {
+    installControllableWorker({ autoRespond: true });
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset({
+        id: 'previous-preset',
+        title: 'Previous Preset',
+        raw: 'title=Previous Preset\nwave_r=0.4\n',
+      }),
+      compileTimeoutMs: 250,
+    });
+
+    const loaded = await session.loadPreset({
+      id: 'broken-preset',
+      title: 'Broken Preset',
+      raw: 'title=Broken Preset\nper_frame_1=wave_r = bad(\n',
+      origin: 'user',
+    });
+
+    expect(
+      loaded.diagnostics.some((diagnostic) => diagnostic.severity === 'error'),
+    ).toBe(true);
+    // The editor must show the preset the user actually asked for, otherwise
+    // the broken source is unreachable and unfixable.
+    expect(loaded.source).toContain('Broken Preset');
+    expect(loaded.source).not.toContain('Previous Preset');
+
+    session.dispose();
+  });
+
+  test('interleaved field nudges do not drop earlier values', async () => {
+    installControllableWorker({ autoRespond: true });
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 250,
+    });
+
+    // Two knobs moved inside one debounce window — the classic MIDI/keyboard
+    // nudge pattern. Both must survive.
+    const [, second] = await settleWithin(
+      Promise.all([
+        session.updateField('wave_r', 0.25),
+        session.updateField('wave_g', 0.75),
+      ]),
+      1500,
+      'interleaved field nudges',
+    );
+
+    expect(second.activeCompiled?.ir.numericFields.wave_g).toBeCloseTo(0.75, 6);
+    expect(second.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(0.25, 6);
+
+    session.dispose();
+  });
+
+  test('updateFields applies a whole knob group atomically', async () => {
+    installControllableWorker({ autoRespond: true });
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 250,
+    });
+
+    const updated = await settleWithin(
+      session.updateFields({ wave_r: 0.1, wave_g: 0.2, wave_b: 0.3 }),
+      1500,
+      'grouped field update',
+    );
+
+    expect(updated.activeCompiled?.ir.numericFields.wave_r).toBeCloseTo(0.1, 6);
+    expect(updated.activeCompiled?.ir.numericFields.wave_g).toBeCloseTo(0.2, 6);
+    expect(updated.activeCompiled?.ir.numericFields.wave_b).toBeCloseTo(0.3, 6);
+
+    session.dispose();
+  });
+
+  test('an in-flight compile is attributed to the preset it started on', async () => {
+    const rig = installControllableWorker();
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset({ id: 'preset-a', title: 'Preset A' }),
+      compileTimeoutMs: 250,
+    });
+
+    const pending = session.applySource('title=Preset A\nwave_r=0.5\n');
+    // Swap presets while the first compile is still resolving its worker.
+    const loaded = session.loadPreset({
+      id: 'preset-b',
+      title: 'Preset B',
+      raw: 'title=Preset B\nwave_g=0.5\n',
+      origin: 'bundled',
+    });
+
+    for (let attempt = 0; attempt < 40 && !rig.requests.length; attempt++) {
+      await tick();
+    }
+    expect(rig.requests).toHaveLength(1);
+    expect(rig.requests[0]?.preset.id).toBe('preset-a');
+
+    rig.respondToAll();
+    await settleWithin(
+      Promise.all([pending, loaded]),
+      1500,
+      'preset swap during compile',
+    );
+    expect(session.getState().activeCompiled?.title).toBe('Preset B');
+
+    session.dispose();
+  });
+
+  test('calls after dispose are inert rather than throwing', async () => {
+    const rig = installControllableWorker({ autoRespond: true });
+    const session = createMilkdropEditorSession({
+      initialPreset: basePreset(),
+      compileTimeoutMs: 250,
+    });
+
+    session.dispose();
+    const after = await settleWithin(
+      session.applySource('title=Pressure Base\nwave_r=0.99\n'),
+      1000,
+      'edit after dispose',
+    );
+
+    expect(after).toBeDefined();
+    expect(rig.created).toBe(0);
+  });
+});

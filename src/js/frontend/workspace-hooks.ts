@@ -560,9 +560,18 @@ export function useWorkspaceSessionState({
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
+    applyEditorSourceAwaited: async (source: string) =>
+      (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
+    applyEditorFieldsAwaited: async (
+      updates: Record<string, string | number>,
+    ) => (await engineRef.current?.applyEditorFieldsAwaited(updates)) ?? null,
+    getEditorSessionState: () =>
+      engineRef.current?.getEditorSessionState() ?? null,
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
     },
+    getActiveCompiledPreset: () =>
+      engineRef.current?.getActiveCompiledPreset() ?? null,
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,

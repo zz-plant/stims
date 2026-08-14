@@ -16,6 +16,15 @@ export function EditorPanel() {
   const engineRef = useRef(engine);
   engineRef.current = engine;
 
+  const sessionState = engineSnapshot?.sessionState ?? null;
+  // The panel is code-split, so it appends itself a tick or two after this
+  // component renders. Session state only changes identity when a compile
+  // commits, so by mount time the state that opened the editor will never be
+  // re-delivered — without this ref the editor opens on an empty document and
+  // stays that way until the first keystroke.
+  const sessionStateRef = useRef(sessionState);
+  sessionStateRef.current = sessionState;
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -45,6 +54,9 @@ export function EditorPanel() {
       });
       panelRef.current = panel;
       host.appendChild(panel.element);
+      if (sessionStateRef.current) {
+        panel.setSessionState(sessionStateRef.current);
+      }
     });
 
     return () => {
@@ -53,8 +65,6 @@ export function EditorPanel() {
       panelRef.current = null;
     };
   }, []);
-
-  const sessionState = engineSnapshot?.sessionState ?? null;
 
   useEffect(() => {
     if (sessionState && panelRef.current) {

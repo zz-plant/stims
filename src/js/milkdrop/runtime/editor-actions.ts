@@ -1,5 +1,4 @@
 import type { createMilkdropEditorSession } from '../editor-session.ts';
-import { upsertMilkdropFields } from '../formatter.ts';
 import type { MilkdropCompiledPreset } from '../types.ts';
 
 type MilkdropEditorSession = ReturnType<typeof createMilkdropEditorSession>;
@@ -13,11 +12,12 @@ export function createMilkdropEditorActions({
   getCompiled: () => MilkdropCompiledPreset;
   setOverlayStatus: (message: string) => void;
 }) {
-  const applyFieldValues = async (updates: Record<string, string | number>) => {
-    const state = session.getState();
-    const baseline = state.latestCompiled?.formattedSource ?? state.source;
-    return session.applySource(upsertMilkdropFields(baseline, updates));
-  };
+  // Baseline selection lives in the session: it is the only place that knows
+  // about sources committed but not yet compiled. Reading it from the public
+  // state here meant a nudge issued during a compile silently reverted the
+  // nudge before it.
+  const applyFieldValues = async (updates: Record<string, string | number>) =>
+    session.updateFields(updates);
 
   const updateFieldValues = async (updates: Record<string, string | number>) =>
     applyFieldValues(updates);

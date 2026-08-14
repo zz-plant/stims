@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   computeAstDiagnostics,
   DEFAULT_EDITOR_SLIDERS,
@@ -9,6 +10,7 @@ import {
 import type {
   MilkdropDiagnostic,
   MilkdropEditorSessionState,
+  MilkdropPresetSource,
 } from '../../src/js/milkdrop/types.ts';
 
 describe('editor panel AST diagnostics & helpers', () => {
@@ -251,6 +253,74 @@ describe('EditorPanel class integration', () => {
 
     expect(panel.readVariableFromEditor('zoom')).toBeCloseTo(1.0, 2);
     expect(panel.getEditorSource()).toContain('zoom=1.000');
+
+    panel.dispose();
+  });
+
+  const sessionStateFor = (
+    raw: string,
+    source: Partial<MilkdropPresetSource>,
+  ): MilkdropEditorSessionState => {
+    const compiled = compileMilkdropPresetSource(raw, source);
+    return {
+      source: compiled.formattedSource,
+      diagnostics: compiled.diagnostics,
+      latestCompiled: compiled,
+      activeCompiled: compiled,
+      dirty: false,
+    };
+  };
+
+  test('an unsaved draft survives session echoes of the same preset', () => {
+    const callbacks = createMockCallbacks();
+    const panel = new EditorPanel(callbacks);
+
+    const preset = sessionStateFor('title=Draft Preset\nzoom=1.050\n', {
+      id: 'draft-preset',
+      title: 'Draft Preset',
+      origin: 'user',
+    });
+    panel.setSessionState(preset);
+    panel.writeVariableToEditor('zoom', 1.9);
+    expect(panel.getEditorSource()).toContain('zoom=1.900');
+
+    // The compile of an *older* keystroke lands late. It must not yank the
+    // buffer out from under the newer draft.
+    panel.setSessionState(preset);
+    expect(panel.getEditorSource()).toContain('zoom=1.900');
+
+    panel.dispose();
+  });
+
+  test('switching presets replaces a buffered draft rather than stranding it', () => {
+    const callbacks = createMockCallbacks();
+    const panel = new EditorPanel(callbacks);
+
+    panel.setSessionState(
+      sessionStateFor('title=Preset A\nzoom=1.050\n', {
+        id: 'preset-a',
+        title: 'Preset A',
+        origin: 'user',
+      }),
+    );
+
+    // Unsaved local draft belonging to preset A.
+    panel.writeVariableToEditor('zoom', 1.9);
+    expect(panel.getEditorSource()).toContain('zoom=1.900');
+
+    panel.setSessionState(
+      sessionStateFor('title=Preset B\nzoom=0.500\n', {
+        id: 'preset-b',
+        title: 'Preset B',
+        origin: 'bundled',
+      }),
+    );
+
+    // Holding on to A's draft would leave the editor showing one preset while
+    // another renders — and the next keystroke would commit A's text as B.
+    expect(panel.getEditorSource()).toContain('Preset B');
+    expect(panel.getEditorSource()).not.toContain('Preset A');
+    expect(panel.readVariableFromEditor('zoom')).toBeCloseTo(0.5, 2);
 
     panel.dispose();
   });

@@ -27,6 +27,7 @@ When the repo state is unknown, run `bun run setup:codex --status` for a quick r
 | shared runtime, loader, renderer, shell, controls, audio, or routing | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](../../.agent/skills/modify-visualizer-runtime/SKILL.md) |
 | bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](../../.agent/skills/modify-preset-workflow/SKILL.md) |
 | browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](../../.agent/skills/play-visualizer/SKILL.md) and [`visual-testing.md`](./visual-testing.md) |
+| performing / jamming on the instrument | [`.agent/skills/perform-livecoding/SKILL.md`](../../.agent/skills/perform-livecoding/SKILL.md) and [`MCP_SERVER.md`](../MCP_SERVER.md) |
 | quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md) |
 | end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](../../.agent/skills/ship-visualizer-change/SKILL.md) |
 

@@ -1,3 +1,7 @@
+import {
+  type VisualSearchRequest,
+  VisualSearchResponseSchema,
+} from '../edge-contracts.ts';
 import { resolveOptionalApiUrl } from './optional-api.ts';
 
 export interface AudioProfile {
@@ -61,16 +65,18 @@ export async function searchByAudioProfile(
   const endpoint = resolveOptionalApiUrl('/api/visual-search');
   if (!endpoint) return [];
 
-  const description = describeAudioProfile(profile);
+  const request: VisualSearchRequest = {
+    description: describeAudioProfile(profile),
+  };
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description }),
+    body: JSON.stringify(request),
     signal,
   });
   if (!res.ok) return [];
-  const data = (await res.json()) as {
-    results: Array<{ presetId: string; score: number }>;
-  };
-  return data.results || [];
+  // Audio match is a background suggestion, so a malformed body degrades to
+  // "no suggestions" rather than throwing into the caller's render path.
+  const parsed = VisualSearchResponseSchema.safeParse(await res.json());
+  return parsed.success ? parsed.data.results : [];
 }

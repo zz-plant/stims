@@ -31,7 +31,11 @@ import {
   getActiveThemePreference,
 } from '../core/theme-preferences.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
-import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
+import {
+  initAgentBridge,
+  toAgentEditorState,
+  updateAgentTelemetry,
+} from './agent-bridge.ts';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
@@ -39,11 +43,13 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
+import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { MidiPerformanceHud } from './MidiPerformanceHud.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
@@ -106,6 +112,11 @@ function prefersThumbModeByDefault() {
 
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
+  // Latest-value ref: the live-performance runtime is installed once per
+  // engine, but needs the current route when it starts Strudel audio. Reading
+  // `ui` directly would rebuild the runtime on every route change.
+  const uiRef = useRef(ui);
+  uiRef.current = ui;
   const { engineSnapshot } = useEngineSnapshot();
   const temporalMemory = useTemporalMemory();
 
@@ -276,6 +287,30 @@ function StimsWorkspaceAppShell() {
       },
       getMidiBindings: () => webMidiService.getAllBindings(),
       getMidiDevices: () => webMidiService.getDevices(),
+      // Read/await surface for live code editing. Without these an agent
+      // could send preset source but never learn whether it compiled.
+      getEditorState: () => {
+        const state = engine.getEditorSessionState();
+        return state ? toAgentEditorState(state) : null;
+      },
+      getEditorFields: () => {
+        // The editor session's own latest compile, not the renderer's active
+        // one. They diverge whenever rendering is paused (a hidden or headless
+        // tab) or the newest source failed — and an agent reading values to
+        // compute a delta needs the buffer it is actually editing.
+        const compiled =
+          engine.getEditorSessionState()?.latestCompiled ??
+          engine.getActiveCompiledPreset();
+        return compiled ? { ...compiled.ir.numericFields } : null;
+      },
+      applyEditorSource: async (source) => {
+        const state = await engine.applyEditorSourceAwaited(source);
+        return state ? toAgentEditorState(state) : null;
+      },
+      applyEditorFields: async (updates) => {
+        const state = await engine.applyEditorFieldsAwaited(updates);
+        return state ? toAgentEditorState(state) : null;
+      },
     });
   }, [engine, engineSnapshot?.activePresetId]);
 
@@ -285,29 +320,55 @@ function StimsWorkspaceAppShell() {
   // the live wire between a controller and the visuals.
   useEffect(() => {
     webMidiService.initialize();
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __stims_live?: object }).__stims_live = {
-        setControl: (target: string, value: number) => {
-          engine.updateInspectorField(target, value);
-        },
-        injectMidiCC: (cc: number, value: number) => {
-          webMidiService.injectControlChange(
-            VIRTUAL_CLAUDE_DEVICE_ID,
-            cc,
-            value,
-          );
-        },
-        nextPreset: () => {
-          engine.handleShufflePreset();
-        },
-        previousPreset: () => {
-          engine.handlePreviousPreset();
-        },
-      };
-    }
-    return bindMidiToMilkdropControls(webMidiService, (target, value) => {
-      engine.updateInspectorField(target, value);
-    });
+
+    // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
+    // patterns, signal measurement) on top of the four controls this effect
+    // used to publish inline.
+    const uninstallLive =
+      typeof window === 'undefined'
+        ? () => {}
+        : installLivePerformance({
+            setTarget: (target, value) => {
+              engine.updateInspectorField(target, value);
+            },
+            injectMidiCC: (cc, value) => {
+              webMidiService.injectControlChange(
+                VIRTUAL_CLAUDE_DEVICE_ID,
+                cc,
+                value,
+              );
+            },
+            nextPreset: () => {
+              engine.handleShufflePreset();
+            },
+            previousPreset: () => {
+              engine.handlePreviousPreset();
+            },
+            startStreamAudio: async (stream) => {
+              const nextRoute = {
+                ...uiRef.current.routeState,
+                audioSource: 'file' as const,
+              };
+              uiRef.current.commitRoute(nextRoute);
+              await engine.startAudioSource({
+                source: 'file',
+                stream,
+                launchState: nextRoute,
+              });
+            },
+          });
+
+    const unbindMidi = bindMidiToMilkdropControls(
+      webMidiService,
+      (target, value) => {
+        engine.updateInspectorField(target, value);
+      },
+    );
+
+    return () => {
+      uninstallLive();
+      unbindMidi();
+    };
   }, [engine]);
 
   useEffect(() => {
@@ -805,6 +866,7 @@ function StimsWorkspaceAppShell() {
         onClose={() => setShowCredits(false)}
         creditsRef={creditsRef}
       />
+      <HudOverlay />
     </main>
   );
 }
