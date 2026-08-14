@@ -140,8 +140,11 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       .replace(/\bmids_att\b/giu, 'signalMidAtt')
       .replace(/\bmid\b/giu, 'signalMid')
       .replace(/\bmids\b/giu, 'signalMid')
-      .replace(/\btreb_att\b/giu, 'signalTrebAtt')
-      .replace(/\btreb\b/giu, 'signalTreb')
+      .replace(
+        /\btreb_att\b|\btreble_att\b|\btrebatt\b|\btrebleatt\b/giu,
+        'signalTrebAtt',
+      )
+      .replace(/\btreb\b|\btreble\b/giu, 'signalTreb')
       .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
       .replace(/\brms\b/giu, 'signalEnergy')
       .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
