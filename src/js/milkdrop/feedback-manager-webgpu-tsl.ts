@@ -1,6 +1,13 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
-import { Mesh, OrthographicCamera, PlaneGeometry, Scene, Vector2 } from 'three';
+import {
+  Mesh,
+  OrthographicCamera,
+  PlaneGeometry,
+  Scene,
+  Vector2,
+  Vector4,
+} from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three/three-dispose';
@@ -1993,7 +2000,22 @@ class WebGPUMilkdropFeedbackManager {
       this.compositeMaterial.uniforms.perPixelT[index].value =
         state.perPixelVariables?.[`t${index + 1}`] ?? 0;
     }
-    this.compositeMaterial.uniforms.aspect.value = state.aspect;
+    const aspect =
+      Number.isFinite(state.aspect) && state.aspect > 0 ? state.aspect : 1;
+    const aspectX = aspect < 1 ? aspect : 1;
+    const aspectY = aspect > 1 ? 1 / aspect : 1;
+    const aspectUniform = this.compositeMaterial.uniforms.aspect;
+    if (
+      aspectUniform &&
+      typeof (aspectUniform.value as Vector4)?.set === 'function'
+    ) {
+      (aspectUniform.value as Vector4).set(
+        aspectX,
+        aspectY,
+        1 / aspectX,
+        1 / aspectY,
+      );
+    }
   }
 
   setAdaptiveQuality({
