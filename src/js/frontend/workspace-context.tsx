@@ -90,7 +90,7 @@ export interface WorkspaceContextValue {
 
   handleBrowseRecovery: () => void;
   handleFeaturedPresetSelection: () => void;
-  handleImport: (files: FileList | null) => Promise<void>;
+  handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
 }

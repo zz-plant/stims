@@ -82,7 +82,7 @@ export function BrowseSheetPanel({
   sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
-  onImport: (files: FileList | null) => void;
+  onImport: (files: FileList | File[] | null) => void;
   offline?: boolean;
   sessionHistory?: Array<{ presetId: string; title: string; at: number }>;
 }) {
@@ -283,9 +283,40 @@ export function BrowseSheetPanel({
           <button
             type="button"
             className="ctl-btn ctl-btn--icon"
-            onClick={() => importInputRef.current?.click()}
-            aria-label="Import preset file"
-            title="Import preset file"
+            onClick={async () => {
+              if (
+                typeof window !== 'undefined' &&
+                'showDirectoryPicker' in window
+              ) {
+                try {
+                  const dirHandle = await (
+                    window as unknown as {
+                      showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+                    }
+                  ).showDirectoryPicker();
+                  const files: File[] = [];
+                  for await (const entry of dirHandle.values()) {
+                    if (
+                      entry.kind === 'file' &&
+                      (entry.name.endsWith('.milk') ||
+                        entry.name.endsWith('.txt'))
+                    ) {
+                      const file = await entry.getFile();
+                      files.push(file);
+                    }
+                  }
+                  if (files.length > 0) {
+                    onImport(files);
+                  }
+                } catch {
+                  // User cancelled directory picker or picker rejected
+                }
+              } else {
+                importInputRef.current?.click();
+              }
+            }}
+            aria-label="Import preset file or folder"
+            title="Import preset file or folder (File System Access API)"
           >
             <UiIcon
               name="upload"

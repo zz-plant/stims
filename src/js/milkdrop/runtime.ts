@@ -895,7 +895,7 @@ function buildExperienceController(deps: Record<string, any>) {
       deps.setBlendDuration(value);
     },
 
-    async importPresetFiles(files: FileList) {
+    async importPresetFiles(files: FileList | File[]) {
       await deps.presetFileActions.importFiles(files);
       deps.emitChange();
     },

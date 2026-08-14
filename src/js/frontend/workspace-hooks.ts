@@ -521,7 +521,7 @@ export function useWorkspaceSessionState({
     fullCatalogReady,
     handleYoutubeUrlKeyDown,
     activityCatalog,
-    importPresetFiles: async (files: FileList | null) => {
+    importPresetFiles: async (files: FileList | File[] | null) => {
       if (!files?.length) {
         return;
       }
