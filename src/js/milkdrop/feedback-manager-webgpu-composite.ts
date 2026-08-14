@@ -779,9 +779,13 @@ export function createSampleAuxTextureNode(
                       source.lessThan(7.5),
                       tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
                       select(
-                        source.lessThan(9.5),
-                        tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                        source.lessThan(8.5),
                         flat,
+                        select(
+                          source.lessThan(9.5),
+                          tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                          flat,
+                        ),
                       ),
                     ),
                   ),

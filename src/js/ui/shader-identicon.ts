@@ -48,6 +48,21 @@ float sdfRing(vec2 p, float r, float thickness) {
   return abs(length(p) - r) - thickness;
 }
 
+mat3 rotate3dX(float a) {
+  float c = cos(a), s = sin(a);
+  return mat3(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
+}
+
+mat3 rotate3dY(float a) {
+  float c = cos(a), s = sin(a);
+  return mat3(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
+}
+
+mat3 rotate3dZ(float a) {
+  float c = cos(a), s = sin(a);
+  return mat3(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
+}
+
 void main() {
   vec2 st = (v_uv - 0.5) * 2.0;
 
@@ -60,13 +75,39 @@ void main() {
   vec2 rotatedSt = rot * st;
 
   float d = 0.0;
+  float specular3d = 0.0;
+
   if (u_mode > 0.5) {
     // 3D Raymarched Polyhedron Mode
+    float rx = u_time * rotateSpeed * 0.7 + u_audio_bass * 0.5;
+    float ry = u_time * rotateSpeed * 1.1 + u_audio_mid * 0.6;
+    float rz = u_time * rotateSpeed * 0.4 + u_audio_treble * 0.4;
+    mat3 rot3d = rotate3dZ(rz) * rotate3dY(ry) * rotate3dX(rx);
+
     vec3 ro = vec3(0.0, 0.0, 2.2);
-    vec3 rd = normalize(vec3(st, -1.5));
-    vec3 p = ro + rd * 1.2;
-    vec3 pRot = vec3(rot * p.xy, p.z);
-    d = sdIcosahedron(pRot, 0.45 + u_audio_bass * 0.15);
+    vec3 rd = normalize(vec3(st, -1.6));
+    float t = 0.6;
+    float rad = 0.45 + u_audio_bass * 0.15;
+    float h = 0.0;
+    for (int i = 0; i < 16; i++) {
+      vec3 p = rot3d * (ro + rd * t);
+      h = sdIcosahedron(p, rad);
+      t += h;
+      if (abs(h) < 0.002 || t > 3.5) break;
+    }
+    vec3 hitPos = rot3d * (ro + rd * t);
+    d = sdIcosahedron(hitPos, rad);
+
+    vec2 eps = vec2(0.003, 0.0);
+    vec3 n = normalize(vec3(
+      sdIcosahedron(hitPos + eps.xyy, rad) - sdIcosahedron(hitPos - eps.xyy, rad),
+      sdIcosahedron(hitPos + eps.yxy, rad) - sdIcosahedron(hitPos - eps.yxy, rad),
+      sdIcosahedron(hitPos + eps.yyx, rad) - sdIcosahedron(hitPos - eps.yyx, rad)
+    ));
+    vec3 lightDir = normalize(vec3(0.5, 0.8, 1.0));
+    vec3 viewDir = normalize(-rd);
+    vec3 halfDir = normalize(lightDir + viewDir);
+    specular3d = pow(max(0.0, dot(n, halfDir)), 12.0) * 0.5;
   } else {
     // 2D Multi-band SDF Mode
     float bassRadius = 0.65 + u_audio_bass * 0.15;
@@ -81,7 +122,7 @@ void main() {
   float totalPeak = (u_audio_bass + u_audio_mid + u_audio_treble) / 3.0;
   float glow = 0.025 / (abs(d) + 0.012) * (0.7 + totalPeak * 0.8);
 
-  vec3 baseColor = 0.5 + 0.5 * cos(6.28318 * (hue / 360.0 + vec3(0.0, 0.33, 0.67)));
+  vec3 baseColor = 0.5 + 0.5 * cos(6.28318 * (hue / 360.0 + vec3(0.0, 0.33, 0.67))) + vec3(specular3d);
 
   // Historical note: this shader originally wrote straight alpha into a
   // premultiplied-alpha canvas, so the compositor contributed color (not

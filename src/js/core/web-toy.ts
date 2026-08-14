@@ -162,7 +162,18 @@ export default class WebToy {
     this.viewportCssHeight = state.cssHeight;
 
     const aspect = state.width / state.height;
-    if ('left' in this.camera) {
+    if (
+      'aspect' in this.camera &&
+      typeof (this.camera as unknown as { updateProjectionMatrix?: () => void })
+        .updateProjectionMatrix === 'function'
+    ) {
+      const persCam = this.camera as unknown as {
+        aspect: number;
+        updateProjectionMatrix: () => void;
+      };
+      persCam.aspect = aspect;
+      persCam.updateProjectionMatrix();
+    } else if ('left' in this.camera) {
       const orthoCam = this.camera as unknown as {
         left: number;
         right: number;
