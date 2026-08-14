@@ -22,6 +22,7 @@ export type OgPresetOptions = {
   tags?: string[];
   fidelity?: string;
   tweak?: string;
+  previewImageUri?: string;
 };
 
 // A row of VU-meter bars, echoing the app's own level meter — a real
@@ -104,6 +105,7 @@ export function buildPresetOgSvg({
   author,
   tags = [],
   tweak,
+  previewImageUri,
 }: OgPresetOptions): string {
   const palette = getPresetPalette(id);
   const truncatedTitle = title.length > 55 ? `${title.slice(0, 52)}...` : title;
@@ -144,6 +146,9 @@ export function buildPresetOgSvg({
       <stop offset="0%" stop-color="${palette.primary}" stop-opacity="0.4"/>
       <stop offset="100%" stop-color="${palette.secondary}" stop-opacity="0.1"/>
     </linearGradient>
+    <clipPath id="preview-clip">
+      <rect x="0" y="0" width="506" height="430" rx="16"/>
+    </clipPath>
   </defs>
 
   <!-- Background Layer -->
@@ -179,29 +184,31 @@ export function buildPresetOgSvg({
 
   <!-- Right Visualizer Preview HUD Canvas Card -->
   <g transform="translate(630, 65)">
-    <!-- Glassmorphic Card Frame -->
+    ${
+      previewImageUri
+        ? `<!-- Real Preset Preview Image Snapshot -->
+    <image href="${previewImageUri}" x="0" y="0" width="506" height="430" preserveAspectRatio="xMidYMid slice" clip-path="url(#preview-clip)" opacity="0.92"/>
+    <rect width="506" height="430" rx="16" fill="none" stroke="url(#card-border)" stroke-width="1.5"/>`
+        : `<!-- Glassmorphic Fallback Frame -->
     <rect width="506" height="430" rx="16" fill="rgba(15, 23, 34, 0.75)" stroke="url(#card-border)" stroke-width="1.5"/>
-
-    <!-- HUD Grid Ticks & Crosshairs -->
-    <line x1="20" y1="20" x2="40" y2="20" stroke="${palette.primary}" stroke-opacity="0.5" stroke-width="2"/>
-    <line x1="20" y1="20" x2="20" y2="40" stroke="${palette.primary}" stroke-opacity="0.5" stroke-width="2"/>
-    <line x1="486" y1="20" x2="466" y2="20" stroke="${palette.primary}" stroke-opacity="0.5" stroke-width="2"/>
-    <line x1="486" y1="20" x2="486" y2="40" stroke="${palette.primary}" stroke-opacity="0.5" stroke-width="2"/>
-
-    <!-- Visualizer Geometric Spectrum Core Rings -->
     <circle cx="253" cy="215" r="130" fill="none" stroke="${palette.primary}" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="6,6"/>
     <circle cx="253" cy="215" r="95" fill="none" stroke="${palette.secondary}" stroke-opacity="0.25" stroke-width="1.5"/>
     <circle cx="253" cy="215" r="60" fill="none" stroke="${palette.primary}" stroke-opacity="0.4" stroke-width="2"/>
     <circle cx="253" cy="215" r="25" fill="${palette.secondary}" fill-opacity="0.6"/>
-
-    <!-- Geometric Perspective Tunnel Lines -->
     <line x1="123" y1="85" x2="228" y2="190" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
     <line x1="383" y1="85" x2="278" y2="190" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
     <line x1="123" y1="345" x2="228" y2="240" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
-    <line x1="383" y1="345" x2="278" y2="240" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
+    <line x1="383" y1="345" x2="278" y2="240" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>`
+    }
+
+    <!-- HUD Grid Ticks -->
+    <line x1="20" y1="20" x2="40" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="20" y1="20" x2="20" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="486" y1="20" x2="466" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="486" y1="20" x2="486" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
 
     <!-- Live Status Pill -->
-    <rect x="366" y="24" width="116" height="28" rx="14" fill="rgba(16, 185, 129, 0.15)" stroke="rgba(16, 185, 129, 0.4)"/>
+    <rect x="366" y="24" width="116" height="28" rx="14" fill="rgba(16, 185, 129, 0.2)" stroke="rgba(16, 185, 129, 0.5)"/>
     <circle cx="382" cy="38" r="4" fill="#10b981"/>
     <text x="394" y="43" font-size="12" font-weight="700" fill="#10b981" font-family="Space Mono, monospace">LIVE 60FPS</text>
   </g>
@@ -386,6 +393,37 @@ async function fallbackPngResponse(
   return Response.redirect(new URL('/og/milkdrop.png', origin), 302);
 }
 
+async function loadPresetPreviewDataUri(
+  assetsBinding: StaticAssetFetcher | undefined,
+  origin: string,
+  presetId: string,
+): Promise<string | undefined> {
+  if (!assetsBinding) return undefined;
+  try {
+    const previewUrl = new URL(
+      `/milkdrop-presets/previews/${encodeURIComponent(presetId)}.png`,
+      origin,
+    );
+    const response = await assetsBinding.fetch(previewUrl);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const b64 =
+        typeof btoa !== 'undefined'
+          ? btoa(binary)
+          : Buffer.from(bytes).toString('base64');
+      return `data:image/png;base64,${b64}`;
+    }
+  } catch {
+    // preview unavailable
+  }
+  return undefined;
+}
+
 export async function onRequest(context: OgPresetContext): Promise<Response> {
   const url = new URL(context.request.url);
   const presetId = normalizePresetId(
@@ -395,7 +433,12 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
 
   const { title, author } = humanizePresetId(presetId);
-  const svg = buildPresetOgSvg({ id: presetId, title, author, tweak });
+  const previewImageUri = await loadPresetPreviewDataUri(
+    context.env?.ASSETS,
+    url.origin,
+    presetId,
+  );
+  const svg = buildPresetOgSvg({ id: presetId, title, author, tweak, previewImageUri });
 
   if (format === 'svg') {
     return new Response(svg, {
