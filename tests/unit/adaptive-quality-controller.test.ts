@@ -281,8 +281,8 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const recovered = controller.getState();
-    expect(recovered.qualityStep).toBe(2);
-    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
+    expect(recovered.qualityStep).toBe(1);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.0, 6);
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
@@ -499,10 +499,10 @@ describe('createAdaptiveQualityController', () => {
       });
 
       const state = controller.getState();
-      expect(state.qualityStep).toBe(2);
+      expect(state.qualityStep).toBe(1);
       expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
       expect(state.reasons).toContain(
-        'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+        'Flagship mobile sessions start from full quality with adaptive throttling headroom.',
       );
     } finally {
       Object.defineProperty(navigator, 'maxTouchPoints', {

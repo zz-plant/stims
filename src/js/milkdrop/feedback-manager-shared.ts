@@ -1895,7 +1895,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalTime.value = state.signalTime;
     uniforms.signalFrame.value = state.signalFrame ?? 0;
     uniforms.signalFps.value = state.signalFps ?? 60;
-    this.syncMilkdropShaderBuiltinUniforms(uniforms, state);
+    this.syncMilkdropShaderBuiltinUniforms(
+      uniforms,
+      this.getCompQTargets(uniforms),
+      state,
+    );
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
@@ -1948,8 +1952,37 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     wu.signalTime.value = state.signalTime;
     wu.signalFrame.value = state.signalFrame ?? 0;
     wu.signalFps.value = state.signalFps ?? 60;
-    this.syncMilkdropShaderBuiltinUniforms(wu, state);
+    this.syncMilkdropShaderBuiltinUniforms(wu, this.getWarpQTargets(wu), state);
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
+  }
+
+  private compQTargetsCache: (Vector4 | undefined)[] | null = null;
+  private compQTargetsMaterial: ShaderMaterial['uniforms'] | null = null;
+  private warpQTargetsCache: (Vector4 | undefined)[] | null = null;
+  private warpQTargetsMaterial: ShaderMaterial['uniforms'] | null = null;
+
+  private getCompQTargets(
+    uniforms: ShaderMaterial['uniforms'],
+  ): (Vector4 | undefined)[] {
+    if (this.compQTargetsMaterial !== uniforms || !this.compQTargetsCache) {
+      this.compQTargetsMaterial = uniforms;
+      this.compQTargetsCache = Q_UNIFORM_NAMES.map(
+        (name) => uniforms[name]?.value as Vector4 | undefined,
+      );
+    }
+    return this.compQTargetsCache;
+  }
+
+  private getWarpQTargets(
+    uniforms: ShaderMaterial['uniforms'],
+  ): (Vector4 | undefined)[] {
+    if (this.warpQTargetsMaterial !== uniforms || !this.warpQTargetsCache) {
+      this.warpQTargetsMaterial = uniforms;
+      this.warpQTargetsCache = Q_UNIFORM_NAMES.map(
+        (name) => uniforms[name]?.value as Vector4 | undefined,
+      );
+    }
+    return this.warpQTargetsCache;
   }
 
   /**
@@ -1960,6 +1993,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
    */
   private syncMilkdropShaderBuiltinUniforms(
     uniforms: ShaderMaterial['uniforms'],
+    qTargets: (Vector4 | undefined)[],
     state: MilkdropFeedbackCompositeState,
   ) {
     const aspect =
@@ -1973,18 +2007,22 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       1 / aspectY,
     );
     const vars = state.perPixelVariables;
-    for (let group = 0; group < 8; group++) {
-      const target = uniforms[Q_UNIFORM_NAMES[group]]?.value as
-        | Vector4
-        | undefined;
-      if (!target) continue;
-      const keys = Q_VAR_NAMES[group];
-      target.set(
-        vars?.[keys[0]] ?? 0,
-        vars?.[keys[1]] ?? 0,
-        vars?.[keys[2]] ?? 0,
-        vars?.[keys[3]] ?? 0,
-      );
+    if (vars) {
+      for (let group = 0; group < 8; group++) {
+        const target = qTargets[group];
+        if (!target) continue;
+        const keys = Q_VAR_NAMES[group];
+        target.set(
+          vars[keys[0]] ?? 0,
+          vars[keys[1]] ?? 0,
+          vars[keys[2]] ?? 0,
+          vars[keys[3]] ?? 0,
+        );
+      }
+    } else {
+      for (let group = 0; group < 8; group++) {
+        qTargets[group]?.set(0, 0, 0, 0);
+      }
     }
   }
 
@@ -2017,7 +2055,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     // Never fed back — MilkDrop's comp output is display-only.
     this.compositeMaterial.uniforms.internalTex.value =
       this.writeTarget.texture;
-    renderer.setRenderTarget(this.displayTarget);
+    renderer.setRenderTarget(null);
     renderer.render(this.compositeScene, this.camera);
 
     if (
@@ -2027,8 +2065,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       this.renderBlurPasses(renderer);
     }
 
-    renderer.setRenderTarget(null);
-    renderer.render(this.presentScene, this.camera);
     this.swap();
     return true;
   }

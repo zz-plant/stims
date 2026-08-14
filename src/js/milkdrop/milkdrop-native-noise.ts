@@ -5,7 +5,7 @@ import {
   UnsignedByteType,
 } from 'three';
 
-export const MILKDROP_NOISE_2D_SIZE = 256;
+export const MILKDROP_NOISE_2D_SIZE = 512;
 export const MILKDROP_NOISE_VOLUME_ATLAS_GRID_SIZE = 8;
 export const MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE = 64;
 export const MILKDROP_NOISE_VOLUME_ATLAS_SIZE =

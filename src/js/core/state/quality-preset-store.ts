@@ -49,7 +49,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     // 1.75 preserves the long-standing effective desktop cap now that preset
     // caps actually apply (the performance store used to override them all).
     maxPixelRatio: 1.75,
-    renderScale: 0.85,
+    renderScale: 1,
     particleScale: 1,
   },
   {

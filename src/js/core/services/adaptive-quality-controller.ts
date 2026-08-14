@@ -178,11 +178,18 @@ function buildHeuristicProfile(
   const frameBudgetMs = estimateFrameBudgetMs();
 
   if (backend === 'webgl') {
+    const isDesktopHighEnd =
+      !isMobileDevice() &&
+      !isSmartTvDevice() &&
+      (typeof navigator === 'undefined' ||
+        (navigator.hardwareConcurrency ?? 0) >= 6);
     const reasons = [
-      'WebGL fallback sessions start from a conservative adaptive quality step.',
+      isDesktopHighEnd
+        ? 'Desktop WebGL sessions start from full quality with coarse frame monitoring.'
+        : 'WebGL fallback sessions start from a conservative adaptive quality step.',
       'Coarse CPU frame timing is used because GPU timing is unavailable.',
     ];
-    let initialStep = 2;
+    let initialStep = isDesktopHighEnd ? 1 : 2;
     if (isSmartTvDevice()) {
       reasons.push(
         'Smart TV hardware operates from a conservative initial quality step.',
@@ -258,9 +265,16 @@ function buildHeuristicProfile(
   }
 
   if (isMobileDevice()) {
-    initialStep = Math.max(initialStep, 2);
+    const isFlagshipMobile =
+      capabilities.performanceTier === 'high-end' &&
+      typeof navigator !== 'undefined' &&
+      (navigator.hardwareConcurrency ?? 0) >= 6;
+    const mobileFloor = isFlagshipMobile ? 1 : 2;
+    initialStep = Math.max(initialStep, mobileFloor);
     reasons.push(
-      'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+      isFlagshipMobile
+        ? 'Flagship mobile sessions start from full quality with adaptive throttling headroom.'
+        : 'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
     );
   } else if (isInAppBrowser()) {
     initialStep = Math.max(initialStep, 2);

@@ -48,6 +48,9 @@ function loadServiceWorker(options: {
       skipWaiting: () => {
         skipWaitingCalls += 1;
       },
+      location: {
+        origin: 'https://toil.fyi',
+      },
     },
   });
   return {
