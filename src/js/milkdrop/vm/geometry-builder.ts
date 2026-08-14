@@ -650,7 +650,9 @@ export function buildMeshField({
   const density = getMeshDensity(state, detailScale);
 
   // Clear per-pixel scratch each frame to prevent accumulation across frames
-  geometryState.pointScratch = {};
+  for (const key in geometryState.pointScratch) {
+    delete geometryState.pointScratch[key];
+  }
 
   if (proceduralMeshPlan) {
     geometryState.meshPoints.length = 0;
