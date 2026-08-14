@@ -86,8 +86,14 @@ export async function onRequest(context: EventContext): Promise<Response> {
   if (url.pathname.startsWith('/preset/')) {
     const pathPresetId = url.pathname.slice('/preset/'.length).split('/')[0];
     if (pathPresetId) {
+      let decodedPresetId: string;
+      try {
+        decodedPresetId = decodeURIComponent(pathPresetId);
+      } catch {
+        return new Response('Malformed preset id.', { status: 400 });
+      }
       const target = new URL('/', url.origin);
-      target.searchParams.set('preset', decodeURIComponent(pathPresetId));
+      target.searchParams.set('preset', decodedPresetId);
       return Response.redirect(target.toString(), 301);
     }
   }
@@ -146,39 +152,41 @@ export async function onRequest(context: EventContext): Promise<Response> {
     },
   });
 
-  return new HTMLRewriter()
-    .on('title', {
-      element(el) {
-        el.setInnerContent(fullTitle);
-      },
-    })
-    .on('link[rel="canonical"]', {
-      element(el) {
-        el.setAttribute('href', canonical);
-      },
-    })
-    .on('meta[name="description"]', setContent(description))
-    .on('meta[property="og:title"]', setContent(fullTitle))
-    .on('meta[property="og:description"]', setContent(description))
-    .on('meta[property="og:url"]', setContent(canonical))
-    .on('meta[property="og:image"]', setContent(imageUrl))
-    .on('meta[property="og:image:alt"]', setContent(imageAlt))
-    .on('meta[name="twitter:title"]', setContent(fullTitle))
-    .on('meta[name="twitter:description"]', setContent(description))
-    .on('meta[name="twitter:image"]', setContent(imageUrl))
-    .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
-    // A crawler that renders no JavaScript otherwise sees 212 characters of
-    // "JavaScript is required". This gives the preset page a real indexable
-    // sentence naming the preset and its author.
-    .on('noscript', {
-      element(el) {
-        el.append(
-          `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
-            `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
-          )}</p>`,
-          { html: true },
-        );
-      },
-    })
-    .transform(response);
+  return (
+    new HTMLRewriter()
+      .on('title', {
+        element(el) {
+          el.setInnerContent(fullTitle);
+        },
+      })
+      .on('link[rel="canonical"]', {
+        element(el) {
+          el.setAttribute('href', canonical);
+        },
+      })
+      .on('meta[name="description"]', setContent(description))
+      .on('meta[property="og:title"]', setContent(fullTitle))
+      .on('meta[property="og:description"]', setContent(description))
+      .on('meta[property="og:url"]', setContent(canonical))
+      .on('meta[property="og:image"]', setContent(imageUrl))
+      .on('meta[property="og:image:alt"]', setContent(imageAlt))
+      .on('meta[name="twitter:title"]', setContent(fullTitle))
+      .on('meta[name="twitter:description"]', setContent(description))
+      .on('meta[name="twitter:image"]', setContent(imageUrl))
+      .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
+      // A crawler that renders no JavaScript otherwise sees 212 characters of
+      // "JavaScript is required". This gives the preset page a real indexable
+      // sentence naming the preset and its author.
+      .on('noscript', {
+        element(el) {
+          el.append(
+            `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
+              `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
+            )}</p>`,
+            { html: true },
+          );
+        },
+      })
+      .transform(response)
+  );
 }

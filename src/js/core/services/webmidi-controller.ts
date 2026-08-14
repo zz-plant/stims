@@ -68,8 +68,47 @@ function readStorage(): PersistedState {
     if (typeof localStorage === 'undefined') return {};
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    const parsed = JSON.parse(raw) as PersistedState;
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
+      return {};
+    }
+    const sanitized: PersistedState = {};
+    for (const [id, value] of Object.entries(parsed)) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value))
+        continue;
+      const candidate = value as Partial<DeviceRecord>;
+      const bindings: MidiBindingMap = {};
+      if (
+        candidate.bindings &&
+        typeof candidate.bindings === 'object' &&
+        !Array.isArray(candidate.bindings)
+      ) {
+        for (const [ccKey, binding] of Object.entries(candidate.bindings)) {
+          const cc = Number(ccKey);
+          if (
+            Number.isInteger(cc) &&
+            cc >= 0 &&
+            cc <= 127 &&
+            binding &&
+            typeof binding === 'object' &&
+            typeof binding.target === 'string' &&
+            Number.isFinite(binding.min) &&
+            Number.isFinite(binding.max)
+          )
+            bindings[cc] = {
+              target: binding.target,
+              min: binding.min,
+              max: binding.max,
+            };
+        }
+      }
+      sanitized[id] = { enabled: candidate.enabled !== false, bindings };
+    }
+    return sanitized;
   } catch {
     // Corrupt JSON or storage disabled (private browsing) — start fresh.
     return {};

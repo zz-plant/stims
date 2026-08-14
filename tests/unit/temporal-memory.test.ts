@@ -30,3 +30,35 @@ test('visual checkpoints tolerate unavailable storage and crypto UUIDs', () => {
   expect(getSavedCheckpoints()).toEqual([]);
   expect(() => saveCheckpoint('A', 'B', 'preset')).not.toThrow();
 });
+
+test('visual checkpoints discard malformed persisted entries', () => {
+  window.localStorage.setItem(
+    'stims:visual-checkpoints',
+    JSON.stringify([
+      null,
+      { id: 'broken' },
+      {
+        id: 'valid',
+        name: 'A',
+        description: 'B',
+        presetId: 'preset',
+        timestamp: 42,
+      },
+    ]),
+  );
+
+  expect(getSavedCheckpoints()).toEqual([
+    {
+      id: 'valid',
+      name: 'A',
+      description: 'B',
+      presetId: 'preset',
+      timestamp: 42,
+    },
+  ]);
+
+  window.localStorage.setItem('stims:visual-checkpoints', '{}');
+  expect(getSavedCheckpoints()).toEqual([]);
+  expect(() => saveCheckpoint('New', 'Description', 'preset')).not.toThrow();
+  expect(getSavedCheckpoints()).toHaveLength(1);
+});

@@ -195,5 +195,15 @@ describe('preset social sharing', () => {
       const res = await middlewareRequest(context);
       expect(res.status).toBe(200);
     });
+
+    test('returns a client error for malformed encoded preset paths', async () => {
+      const context = {
+        request: new Request('https://toil.fyi/preset/%E0%A4%A'),
+        next: async () => new Response('unexpected'),
+      };
+
+      const res = await middlewareRequest(context);
+      expect(res.status).toBe(400);
+    });
   });
 });

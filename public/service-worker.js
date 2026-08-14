@@ -69,6 +69,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
   if (!url.protocol.startsWith('http')) return;
+  if (url.origin !== self.location.origin) return;
 
   // Bypass service worker for immutable hashed assets (/assets/*)
   // Browser HTTP cache handles immutable assets; bypassing SW prevents SPA 404 HTML fallback pollution.

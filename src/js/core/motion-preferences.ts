@@ -21,18 +21,27 @@ function getStorage(): Storage | null {
 }
 
 function readFromStorage(): MotionPreference {
-  const storage = getStorage();
-  const raw = storage?.getItem(MOTION_PREFERENCE_KEY);
-  if (raw === null) {
+  try {
+    const raw = getStorage()?.getItem(MOTION_PREFERENCE_KEY);
+    if (raw === null || raw === undefined) return { enabled: true };
+    return { enabled: raw !== 'false' };
+  } catch (error) {
+    console.debug('Unable to read motion preference', error);
     return { enabled: true };
   }
-  return { enabled: raw !== 'false' };
 }
 
 function persistToStorage(preference: MotionPreference) {
   const storage = getStorage();
   if (!storage) return;
-  storage.setItem(MOTION_PREFERENCE_KEY, preference.enabled ? 'true' : 'false');
+  try {
+    storage.setItem(
+      MOTION_PREFERENCE_KEY,
+      preference.enabled ? 'true' : 'false',
+    );
+  } catch (error) {
+    console.debug('Unable to persist motion preference', error);
+  }
 }
 
 export function getActiveMotionPreference() {

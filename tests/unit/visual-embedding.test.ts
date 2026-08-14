@@ -77,3 +77,36 @@ test('frame sampling does not claim a rendering context on the source canvas', (
 
   expect(sourceContextRequests).toBe(0);
 });
+
+test('motion history is isolated per source canvas', () => {
+  let fill = 0;
+  const scratch = {
+    width: 0,
+    height: 0,
+    getContext: () => ({
+      drawImage: (_canvas: HTMLCanvasElement) => {
+        fill = (_canvas as HTMLCanvasElement & { fill: number }).fill;
+      },
+      getImageData: (
+        _x: number,
+        _y: number,
+        width: number,
+        height: number,
+      ) => ({
+        data: new Uint8ClampedArray(width * height * 4).fill(fill),
+      }),
+    }),
+  };
+  document.createElement = (() =>
+    scratch) as unknown as typeof document.createElement;
+  const dark = { width: 2, height: 2, fill: 0 } as unknown as HTMLCanvasElement;
+  const light = {
+    width: 2,
+    height: 2,
+    fill: 255,
+  } as unknown as HTMLCanvasElement;
+
+  expect(extractFrameStats(dark).motionEstimate).toBe(0);
+  expect(extractFrameStats(light).motionEstimate).toBe(0);
+  expect(extractFrameStats(dark).motionEstimate).toBe(0);
+});
