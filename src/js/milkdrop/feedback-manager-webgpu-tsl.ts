@@ -6,7 +6,7 @@ import {
   PlaneGeometry,
   Scene,
   Vector2,
-  Vector4,
+  type Vector4,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
