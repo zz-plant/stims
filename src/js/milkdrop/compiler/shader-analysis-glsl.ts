@@ -99,6 +99,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         treb: 'signalTreb',
         treb_att: 'signalTrebAtt',
         treble: 'signalTreb',
+        treble_att: 'signalTrebAtt',
         // MilkDrop shader snippets commonly use camelCase attenuated bands;
         // identifiers are lower-cased before lookup, so keep normalized entries here.
         bassatt: 'signalBassAtt',
