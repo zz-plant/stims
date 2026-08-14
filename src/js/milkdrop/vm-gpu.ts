@@ -18,11 +18,13 @@ export type GpuVmResult = {
   randomState: number;
 };
 
-const PROGRAM_CACHE = new Map<string, WgslProgramCompilation>();
+const PROGRAM_CACHE = new WeakMap<
+  MilkdropProgramBlock,
+  WgslProgramCompilation
+>();
 const PIPELINE_CACHE = new Map<string, GPUComputePipeline>();
 
 export function clearGpuVmCaches() {
-  PROGRAM_CACHE.clear();
   PIPELINE_CACHE.clear();
 }
 
@@ -48,15 +50,12 @@ export async function warmupGpuPipelines(
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
 ): WgslProgramCompilation {
-  const signature = JSON.stringify(
-    block.statements.map((s) => ({ target: s.target, source: s.source })),
-  );
-  const cached = PROGRAM_CACHE.get(signature);
+  const cached = PROGRAM_CACHE.get(block);
   if (cached) {
     return cached;
   }
   const compiled = compileProgramToWgsl(block);
-  PROGRAM_CACHE.set(signature, compiled);
+  PROGRAM_CACHE.set(block, compiled);
   return compiled;
 }
 
