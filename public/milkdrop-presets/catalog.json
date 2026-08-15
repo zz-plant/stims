@@ -191,7 +191,7 @@
       "id": "geiss-casino",
       "order": 6,
       "title": "Geiss - Casino",
-      "author": "Ryan Geiss",
+      "author": "Geiss",
       "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-casino.milk",
       "preview": true,
       "tags": [
@@ -972,10 +972,10 @@
     },
     {
       "id": "geiss-bipolar-x",
-      "title": "Geiss - Bipolar - X",
+      "title": "Geiss - Bipolar X",
       "author": "Geiss",
       "order": 30,
-      "file": "/milkdrop-presets/geiss-bipolar-x.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-bipolar-x.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1005,10 +1005,10 @@
     },
     {
       "id": "geiss-happy-drops",
-      "title": "Geiss - Happy - Drops",
+      "title": "Geiss - Happy Drops",
       "author": "Geiss",
       "order": 31,
-      "file": "/milkdrop-presets/geiss-happy-drops.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-happy-drops.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",

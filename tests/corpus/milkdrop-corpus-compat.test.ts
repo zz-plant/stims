@@ -180,14 +180,6 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgl: 'supported',
     webgpu: 'supported',
   },
-  'geiss-bipolar-x.milk': {
-    webgl: 'supported',
-    webgpu: 'supported',
-  },
-  'geiss-happy-drops.milk': {
-    webgl: 'supported',
-    webgpu: 'supported',
-  },
   'orb-acid-in-my-eyes.milk': {
     webgl: 'supported',
     webgpu: 'supported',
@@ -420,7 +412,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(43);
+    expect(corpus.length).toBe(41);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =

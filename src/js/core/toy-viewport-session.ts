@@ -97,6 +97,14 @@ export function createToyViewportSession({
     window.visualViewport.addEventListener('scroll', viewportResizeHandler);
   }
 
+  // Explicit orientationchange handler — visualViewport + ResizeObserver
+  // fire on orientation change but with inconsistent timing across browsers.
+  // A direct listener ensures immediate, reliable response.
+  const handleOrientationChange = () => scheduleResize();
+  window.addEventListener('orientationchange', handleOrientationChange, {
+    passive: true,
+  });
+
   // Track devicePixelRatio changes (e.g., moving between displays)
   let currentDpr = window.devicePixelRatio || 1;
   const dprQuery = window.matchMedia(`(resolution: ${currentDpr}dppx)`);
@@ -144,6 +152,8 @@ export function createToyViewportSession({
       } else {
         dprQuery.removeListener?.(handleDprChange);
       }
+
+      window.removeEventListener('orientationchange', handleOrientationChange);
 
       if (resizeFrameId !== null) {
         window.cancelAnimationFrame(resizeFrameId);
