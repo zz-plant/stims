@@ -2,7 +2,6 @@ import type { Group, Line, LineLoop, Points } from 'three';
 import {
   AdditiveBlending,
   BufferGeometry,
-  Float32BufferAttribute,
   LineBasicMaterial,
   NormalBlending,
   PointsMaterial,
