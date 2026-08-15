@@ -65,7 +65,7 @@ This document is the consolidated source for implementation progress across road
 - [ ] Complete the browse → edit → compare → save → share remix workflow.
 - [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
 - [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
-- [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
+- [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication). Not started: two stub modules were removed unused — neither had a code generator consuming them, and both restated uniform defaults the feedback managers already own.
 - [ ] **WebXR spatial stage experiment** — shipped and unit-tested (`webxr-service.ts`, `useWebXr.ts`, an "Enter VR" item in the stage overflow menu on `immersive-vr`-capable browsers, WebGL only), but **never run on physical VR hardware** — that a session actually presents correctly there is unproven. See README.md's "Experimental foundations" for the full caveat list (no controller input, hand tracking, spatial audio, or AR; no stereo-specific preset tuning).
 
 ## Refactor milestone tracking
@@ -78,12 +78,12 @@ This document is the consolidated source for implementation progress across road
 - [x] **Milestone B:** Pilot migration complete and validated.
   - [x] Documented the runtime ownership map and shell contract in `docs/ARCHITECTURE.md`.
   - [x] Migrated the shipped MilkDrop starter/quality helpers from `utils/` into `core/` as the pilot boundary slice.
-  - [x] Validated the pilot with focused tests, `bun run check:toys`, and `bun run check`.
+  - [x] Validated the pilot with focused tests, `bun run check:readme-claims`, and `bun run check`.
 - [x] **Milestone C:** Broad toy migration with hardened drift checks.
   - [x] Added `bun run check:architecture` and wired it into the full `bun run check` quality gate.
   - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
-  - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `src/data/toys.json`.
-  - [x] Wired `bun run check:toys` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
+  - [x] Retired the generated toy-manifest artifacts; `src/data/toys.json` is now read directly by the MCP server.
+  - [x] Wired `bun run check:readme-claims` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
 - [x] **Milestone D:** Performance/reliability pass complete.
   - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.
   - [x] Expanded browser-backed smoke coverage to include homepage-to-launchpad navigation in addition to live-session launch coverage.
@@ -104,7 +104,7 @@ This document is the consolidated source for implementation progress across road
   - [x] MilkDrop pilot slice now uses `core/` starter/quality helpers instead of `utils/` runtime helpers.
 - [x] 4) Data and metadata consistency hardening.
   - [x] Architecture boundary enforcement now runs in CI-local parity through `bun run check:architecture`.
-  - [x] Toy manifest docs are generated from `src/data/toys.json` and validated by `bun run check:toys`.
+  - [x] README public claims are validated against the shipped catalog by `bun run check:readme-claims`.
   - [x] SEO surface validation now runs alongside the main quality gate through `bun run check:seo`.
 - [x] 5) Incremental performance and reliability pass.
   - [x] Catalog refresh scheduling now coalesces to the latest requested overlay state during rapid preset/backend churn.

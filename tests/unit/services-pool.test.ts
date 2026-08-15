@@ -7,7 +7,6 @@ import type {
 } from 'three';
 import type { FrequencyAnalyser } from '../../src/js/core/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../../src/js/core/audio-handler.ts';
-import { resetRenderPreferencesState } from '../../src/js/core/render-preferences.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
@@ -16,7 +15,6 @@ import {
   acquireAudioHandle,
   resetAudioPool,
 } from '../../src/js/core/services/audio-service.ts';
-
 import type {
   getRendererRuntimeControls as getControlsType,
   requestRenderer as requestType,
@@ -26,6 +24,7 @@ import type {
 } from '../../src/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../../src/js/core/settings-panel.ts';
 import { setQualityPresetById } from '../../src/js/core/state/quality-preset-store.ts';
+import { resetRenderPreferenceStore } from '../../src/js/core/state/render-preference-store.ts';
 import { flushTasks, importFresh } from '../test-helpers.ts';
 
 let getRendererRuntimeControls: typeof getControlsType;
@@ -39,7 +38,7 @@ describe('render-service pooling', () => {
 
   beforeEach(async () => {
     window.localStorage.clear();
-    resetRenderPreferencesState();
+    resetRenderPreferenceStore();
     resetSettingsPanelState();
     delete (window as unknown as { __stims_webgpu_performance_tier?: string })
       .__stims_webgpu_performance_tier;
@@ -81,7 +80,7 @@ describe('render-service pooling', () => {
     setSizeMock.mockReset();
     document.body.innerHTML = '';
     window.localStorage.clear();
-    resetRenderPreferencesState();
+    resetRenderPreferenceStore();
     resetSettingsPanelState();
     if (resetRendererPool) {
       resetRendererPool({ dispose: true });

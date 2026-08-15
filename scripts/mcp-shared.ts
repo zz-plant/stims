@@ -39,11 +39,8 @@ import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2
 import docsMcpServer from '../docs/MCP_SERVER.md';
 import docsReadme from '../docs/README.md';
 import docsStatus202605 from '../docs/STATUS_2026-05.md';
-import docsToyDevelopment from '../docs/TOY_DEVELOPMENT.md';
-import docsToyScriptIndex from '../docs/TOY_SCRIPT_INDEX.md';
-import docsToys from '../docs/toys.md';
 import readme from '../README.md';
-import toyManifest from '../src/js/data/toy-manifest.ts';
+import toyManifest from '../src/data/toys.json';
 
 const defaultInstructions = [
   'Stims is a browser-native MilkDrop visualizer with 43+ bundled presets. The MCP server provides tools organized into these categories:',
@@ -84,9 +81,6 @@ const markdownSources = {
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
   'docs/DEVELOPMENT.md': docsDevelopment,
-  'docs/TOY_DEVELOPMENT.md': docsToyDevelopment,
-  'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
-  'docs/toys.md': docsToys,
   'docs/STATUS_2026-05.md': docsStatus202605,
   'docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md': docsEvidenceLedger202605,
   'docs/evidence/public-claim-audit.md': docsEvidenceClaimAudit,

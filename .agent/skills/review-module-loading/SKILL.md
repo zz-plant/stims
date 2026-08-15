@@ -21,10 +21,10 @@ The pre-React DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*
 
 ## Pre-merge checklist
 
-### 1. All toys load
+### 1. The visualizer loads
 
-- [ ] `bun run check:toys` passes — verifies toy manifest, generated artifacts, and entry points
-- [ ] If adding or removing a toy entry, regenerate with `bun run generate:toys`
+- [ ] `bun run check:readme-claims` passes — verifies README public claims against the shipped catalog
+- [ ] `bun run check:architecture` passes — verifies the layer boundaries still hold
 
 ### 2. Boot order is explicit
 

@@ -761,65 +761,6 @@ body {
   color: rgba(245, 245, 245, 0.76);
 }
 
-.control-panel__eyebrow {
-  margin: 0 0 4px;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(233, 251, 255, 0.72);
-}
-
-.control-panel__gesture-hints {
-  margin: 0 0 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--stims-white-08);
-  background: var(--stims-white-04);
-}
-
-.control-panel__post-start {
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.control-panel__first-steps-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.control-panel__dismiss {
-  min-height: 44px;
-  min-width: 44px;
-  border: 1px solid rgba(148, 165, 180, 0.26);
-  border-radius: var(--radius-pill);
-  background: var(--stims-white-04);
-  color: rgba(233, 251, 255, 0.86);
-  font-size: 0.74rem;
-  font-family: inherit;
-  line-height: 1;
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
-.control-panel__dismiss:focus-visible {
-  outline: 2px solid var(--stims-cool);
-  outline-offset: 2px;
-}
-
-.control-panel__tips--compact {
-  margin-top: 8px;
-  gap: 6px;
-}
-
-.control-panel__comparison {
-  margin: -2px 0 10px;
-  font-size: 0.78rem;
-  color: rgba(233, 251, 255, 0.68);
-}
-
 .control-panel__pill {
   display: inline-flex;
   align-items: center;
@@ -834,15 +775,6 @@ body {
   background: var(--stims-white-05);
 }
 
-.control-panel__tips {
-  margin: 6px 0 0;
-  padding-left: 1rem;
-  display: grid;
-  gap: 4px;
-  font-size: 0.82rem;
-  color: rgba(233, 251, 255, 0.9);
-}
-
 .control-panel__row {
   display: flex;
   align-items: center;
@@ -851,16 +783,6 @@ body {
   margin: 0;
   padding: 10px 0;
   border-top: 1px solid var(--stims-white-08);
-}
-
-.control-panel__row--primary {
-  border-radius: 14px;
-  padding: 12px;
-  margin: 6px 0;
-  background: rgba(95, 192, 181, 0.1);
-  border: 1px solid rgba(95, 192, 181, 0.18);
-  border-top: none;
-  box-shadow: none;
 }
 
 .control-panel__row--toggle {
@@ -882,11 +804,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
-}
-
-.control-panel__subtext {
-  font-size: 0.85rem;
-  color: rgba(233, 251, 255, 0.82);
 }
 
 .control-panel__microcopy {
@@ -914,53 +831,6 @@ body {
   display: grid;
   gap: 8px;
   padding: 4px 0 8px;
-}
-
-.control-panel__status {
-  margin-top: 8px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  padding: 12px 14px 12px 38px;
-  border-radius: 12px;
-  background: var(--stims-white-04);
-  border: 1px solid rgba(148, 165, 180, 0.28);
-  position: relative;
-  box-shadow: none;
-}
-
-.control-panel__status::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-pill);
-  transform: translateY(-50%);
-  background: rgba(148, 165, 180, 0.9);
-  box-shadow: 0 0 0 4px rgba(148, 165, 180, 0.15);
-}
-
-.control-panel__status[data-variant="error"] {
-  border-color: rgba(255, 82, 130, 0.8);
-  color: #ffd6e6;
-  background: rgba(255, 82, 130, 0.08);
-}
-
-.control-panel__status[data-variant="error"]::before {
-  background: rgba(255, 82, 130, 0.9);
-  box-shadow: 0 0 0 4px rgba(255, 82, 130, 0.18);
-}
-
-.control-panel__status[data-variant="success"] {
-  border-color: rgba(148, 165, 180, 0.8);
-  color: #e9fbff;
-  background: rgba(148, 165, 180, 0.08);
-}
-
-.control-panel__status[data-variant="success"]::before {
-  background: rgba(148, 165, 180, 0.95);
-  box-shadow: 0 0 0 4px rgba(148, 165, 180, 0.18);
 }
 
 .control-panel__actions {
@@ -1167,8 +1037,7 @@ body {
   cursor: pointer;
 }
 
-.control-panel select,
-.control-panel__select {
+.control-panel select {
   background: rgba(11, 17, 29, 0.92);
   color: #e9fbff;
   border: 1px solid rgba(148, 165, 180, 0.5);
@@ -1182,8 +1051,7 @@ body {
   font-size: 1rem;
 }
 
-.control-panel select:focus,
-.control-panel__select:focus {
+.control-panel select:focus {
   outline: 2px solid rgba(161, 124, 106, 0.65);
   outline-offset: 2px;
   box-shadow:
@@ -1191,8 +1059,7 @@ body {
     0 0 10px var(--stims-muted-35);
 }
 
-.control-panel input[type="range"],
-.control-panel__slider {
+.control-panel input[type="range"] {
   appearance: none;
   width: 100%;
   height: 44px;
@@ -1204,8 +1071,7 @@ body {
   flex: 1;
 }
 
-.control-panel input[type="range"]:focus-visible,
-.control-panel__slider:focus-visible {
+.control-panel input[type="range"]:focus-visible {
   outline: 2px solid rgba(161, 124, 106, 0.65);
   outline-offset: 3px;
   box-shadow:
@@ -1213,16 +1079,14 @@ body {
     0 0 10px var(--stims-muted-35);
 }
 
-.control-panel input[type="range"]::-webkit-slider-runnable-track,
-.control-panel__slider::-webkit-slider-runnable-track {
+.control-panel input[type="range"]::-webkit-slider-runnable-track {
   height: 12px;
   border-radius: var(--radius-pill);
   background: rgba(148, 165, 180, 0.18);
   border: 1px solid rgba(148, 165, 180, 0.34);
 }
 
-.control-panel input[type="range"]::-webkit-slider-thumb,
-.control-panel__slider::-webkit-slider-thumb {
+.control-panel input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 18px;
   height: 18px;
@@ -1233,16 +1097,14 @@ body {
   margin-top: -4px;
 }
 
-.control-panel input[type="range"]::-moz-range-track,
-.control-panel__slider::-moz-range-track {
+.control-panel input[type="range"]::-moz-range-track {
   height: 12px;
   border-radius: var(--radius-pill);
   background: rgba(148, 165, 180, 0.18);
   border: 1px solid rgba(148, 165, 180, 0.34);
 }
 
-.control-panel input[type="range"]::-moz-range-thumb,
-.control-panel__slider::-moz-range-thumb {
+.control-panel input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -1349,26 +1211,8 @@ body {
     display: block;
   }
 
-  .control-panel__description,
-  .control-panel__comparison,
-  .control-panel__advanced-helper,
-  .control-panel__tips {
+  .control-panel__description {
     display: none;
-  }
-
-  .control-panel__quickstart-spotlight,
-  .control-panel__quickstart,
-  .control-panel__gesture-hints {
-    display: block;
-  }
-
-  .control-panel__quickstart-spotlight .control-panel__comparison {
-    display: block;
-  }
-
-  .control-panel__quickstart-spotlight .control-panel__tips,
-  .control-panel__quickstart .control-panel__tips {
-    display: grid;
   }
 
   .control-panel__row {
@@ -1411,18 +1255,8 @@ body {
     line-height: 1.2;
   }
 
-  .control-panel__subtext {
-    font-size: 0.78rem;
-    line-height: 1.3;
-  }
-
   .control-panel__microcopy {
     font-size: 0.7rem;
-  }
-
-  .control-panel__row--primary {
-    padding: 10px;
-    border-radius: 12px;
   }
 
   .control-panel__description {

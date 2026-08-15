@@ -1,3 +1,4 @@
+import { getBrowserSessionStorage } from './state/browser-storage.ts';
 import { presetNeedsWebgl } from './state/preset-webgl-fallback.ts';
 import { getRequestedRenderer, parseURLParams } from './url-params.ts';
 
@@ -15,18 +16,6 @@ const MIN_CHROME_VERSION_WEBGPU = 120;
  * Chromium WebGPU implementation as Chrome).
  */
 const MIN_EDGE_VERSION_WEBGPU = 120;
-
-function getSessionStorage() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    return window.sessionStorage;
-  } catch (_error) {
-    return null;
-  }
-}
 
 function parseChromeMajorVersion(userAgent: string): number | null {
   const match = userAgent.match(/Chrome\/(\d+)\./);
@@ -88,7 +77,7 @@ function isWebGPUStableInThisBrowser(): boolean {
 }
 
 export function setWebGPUCompatibilityGapOverride(enabled: boolean) {
-  const storage = getSessionStorage();
+  const storage = getBrowserSessionStorage();
   if (!storage) {
     return;
   }
@@ -107,7 +96,8 @@ export function clearWebGPUCompatibilityGapOverride() {
 
 export function hasWebGPUCompatibilityGapOverride() {
   return (
-    getSessionStorage()?.getItem(WEBGPU_COMPATIBILITY_OVERRIDE_KEY) === 'true'
+    getBrowserSessionStorage()?.getItem(WEBGPU_COMPATIBILITY_OVERRIDE_KEY) ===
+    'true'
   );
 }
 

@@ -18,8 +18,8 @@ This plan outlines a staged, low-risk refactor of the Stim Webtoys codebase with
 ## Success metrics
 
 - `bun run check` remains green during each phase.
-- All toy slugs continue to load and pass `bun run check:toys`.
-- Reduced duplicate lifecycle/audio/render code in toy implementations.
+- The shipped visualizer continues to load and `bun run check:readme-claims` stays green.
+- Reduced duplicate lifecycle/audio/render code in the shared runtime.
 - Faster onboarding: new toy implementation time reduced via reusable templates/utilities.
 
 ## Guiding principles
@@ -152,7 +152,7 @@ This plan remains the strategy and acceptance-criteria reference; do not duplica
 ## Validation checklist per milestone
 
 - `bun run check`
-- `bun run check:toys`
+- `bun run check:readme-claims`
 - Targeted manual smoke verification for migrated toys
 - Docs updated for any workflow or structure change
 

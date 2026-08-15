@@ -9,8 +9,9 @@ This document describes the current shipped frontend architecture for Stims afte
 - `src/js/frontend/*` owns route state, workspace UI, and the engine adapter seam.
 - `src/js/milkdrop/*` remains the imperative visualizer engine, overlay, compiler, and catalog runtime.
 - Workspace-scene decorative layers are rendered with imperative Three.js, not a secondary React renderer.
-- `src/js/core/*` owns shared renderer, audio, quality, persistence, and input systems.
+- `src/js/core/*` owns shared renderer, audio, quality, persistence, and input systems, including the Three.js scene bootstrap (`toy-runtime*`, `web-toy.ts`, `toy-*-session.ts`) that the engine session mounts onto.
 - The old DOM shell modules (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) have been deleted. Nothing outside the React workspace boots the engine anymore.
+- There is no toy plugin layer. The old toys directory, the generated toy manifest, and the registry tooling around them were removed once it was clear they described a registry of one; `src/data/toys.json` survives purely as product metadata for the MCP server.
 
 ## Runtime map
 
@@ -35,7 +36,7 @@ flowchart TB
   subgraph engine["MilkDrop engine — src/js/milkdrop/"]
     Runtime["runtime.ts + runtime/*<br/>session · lifecycle · frame loop · failover"]
     Catalog["catalog-store*.ts<br/>presets, collections, persistence"]
-    Compile["preset-parser → compiler/* → vm/*<br/>EEL2 IR · JIT · GLSL/WGSL/TSL codegen"]
+    Compile["preset-parser → compiler/* → vm/*<br/>EEL2 IR · JIT · GLSL + WGSL codegen"]
     RAdapter["renderer-adapter*.ts<br/>WebGL2 / WebGPU backends + feedback managers"]
     Overlay["overlay/*<br/>editor language + preset rows"]
   end
@@ -150,7 +151,7 @@ Primary implementation:
 
 - [`src/js/milkdrop/runtime.ts`](../src/js/milkdrop/runtime.ts) is the long-lived imperative session runtime; it composes the collaborators in [`runtime/`](../src/js/milkdrop/runtime) (lifecycle, frame loop, catalog coordinator, backend failover, persistence, presentation).
 - [`src/js/milkdrop/overlay/`](../src/js/milkdrop/overlay) provides editor language support and preset-row rendering. The browse, editor, settings, and capture surfaces themselves are React panels in `src/js/frontend/`.
-- [`src/js/milkdrop/compiler.ts`](../src/js/milkdrop/compiler.ts), [`compiler/`](../src/js/milkdrop/compiler), [`vm.ts`](../src/js/milkdrop/vm.ts), and [`vm/`](../src/js/milkdrop/vm) are the preset compilation and execution path (EEL2 → IR → JIT/GLSL/WGSL/TSL).
+- [`src/js/milkdrop/compiler.ts`](../src/js/milkdrop/compiler.ts), [`compiler/`](../src/js/milkdrop/compiler), [`vm.ts`](../src/js/milkdrop/vm.ts), and [`vm/`](../src/js/milkdrop/vm) are the preset compilation and execution path (EEL2 → IR → JIT/GLSL/WGSL). There are two shader codegen targets, not three: [`shader-analysis-glsl.ts`](../src/js/milkdrop/compiler/shader-analysis-glsl.ts) and [`wgsl-generator.ts`](../src/js/milkdrop/compiler/wgsl-generator.ts). TSL is used by the WebGPU feedback managers directly, not emitted by the compiler.
 - [`src/js/milkdrop/renderer-adapter.ts`](../src/js/milkdrop/renderer-adapter.ts) and its WebGL/WebGPU siblings own draw submission and the feedback-buffer chain.
 
 Important boundary rule:
@@ -161,8 +162,9 @@ Important boundary rule:
 
 - [`src/js/core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts) probes WebGPU/WebGL support.
 - [`src/js/core/settings-panel.ts`](../src/js/core/settings-panel.ts) owns shared quality preset state, alongside [`state/quality-preset-store.ts`](../src/js/core/state/quality-preset-store.ts) and [`services/adaptive-quality-controller.ts`](../src/js/core/services/adaptive-quality-controller.ts).
+- [`src/js/core/state/browser-storage.ts`](../src/js/core/state/browser-storage.ts) is the single defensive accessor for `localStorage`/`sessionStorage`. Reach for it instead of hand-rolling try/catch around storage.
 - [`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts) and [`services/audio-service.ts`](../src/js/core/services/audio-service.ts) own source selection and the AudioWorklet analysis chain.
-- [`src/js/core/state/render-preference-store.ts`](../src/js/core/state/render-preference-store.ts) owns renderer preferences.
+- [`src/js/core/state/render-preference-store.ts`](../src/js/core/state/render-preference-store.ts) owns renderer preferences. Import it directly — the old `core/render-preferences.ts` re-export shim is gone.
 - [`src/js/core/motion-preferences.ts`](../src/js/core/motion-preferences.ts) owns motion-state persistence.
 - [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes automation-friendly session state and control hooks.
 - [`src/js/core/services/webmidi-controller.ts`](../src/js/core/services/webmidi-controller.ts) owns MIDI device tracking, per-device persisted CC mappings, learn mode, and hot-plug recovery; a virtual "Claude (MCP)" device shares the same pipeline so MCP `session_midi_*` tools and physical hardware bind and drive parameters identically. The live binding to engine parameters is mounted in `App.tsx` rather than inside a settings panel, so it keeps working regardless of which UI is open.

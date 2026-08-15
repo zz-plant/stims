@@ -99,8 +99,34 @@ type LowerGpuFieldProgramOptions = {
   additionalAllowedIdentifiers?: Iterable<string>;
 };
 
-function isGpuFieldTemporary(identifier: string) {
-  return /^q\d+$/u.test(identifier) || /^t\d+$/u.test(identifier);
+/**
+ * A per-pixel program may declare scratch locals with any name it likes —
+ * `thresh`, `du`, `rd`, `snee`. They live for one vertex and never persist, so
+ * anything that is not already a state slot, a signal, or a constant lowers to
+ * a GPU temporary.
+ *
+ * WHY this is not just `/^[qt]\d+$/` (measured 2026-08-14 over the 1,870-preset
+ * corpus): of the 1,139 presets with per-pixel code, 813 failed to lower, and
+ * **492 of those — 60.5% — failed solely because they assigned to an
+ * ordinarily-named local**. Restricting temporaries to q/t-numbered names was
+ * the single largest blocker on the procedural GPU field path.
+ *
+ * The caller's reserved set (state slots + signals + `pi`/`e` +
+ * `additionalAllowedIdentifiers`) is passed in rather than closed over so that
+ * the custom-wave path, which injects `sample`/`value1`/`mystery` and friends,
+ * keeps treating those as its own bindings instead of silently shadowing them
+ * with a zero-initialised local.
+ */
+const GPU_FIELD_TEMPORARY_PATTERN = /^[a-z_][a-z0-9_]*$/u;
+
+function isGpuFieldTemporary(
+  identifier: string,
+  reservedIdentifiers: ReadonlySet<string>,
+) {
+  return (
+    GPU_FIELD_TEMPORARY_PATTERN.test(identifier) &&
+    !reservedIdentifiers.has(identifier)
+  );
 }
 
 function lowerGpuFieldIdentifier(identifier: string) {
@@ -202,12 +228,40 @@ export function lowerGpuFieldProgram(
     'pi',
     'e',
   ]);
+  // Snapshot before the loop: `allowedIdentifiers` grows as targets are
+  // assigned, and a name the program introduced itself must stay eligible as a
+  // temporary rather than reserving itself on its second assignment.
+  const reservedIdentifiers: ReadonlySet<string> = new Set(allowedIdentifiers);
   const temporaries = new Set<string>();
   const statements: MilkdropGpuFieldStatement[] = [];
 
+  // MilkDrop initialises every variable to 0, so reading a local before its
+  // first assignment is legal and yields 0 — and the emitted code already
+  // declares each temporary as `= 0.0` at the top of the per-vertex function.
+  // Pre-declaring every local the program assigns therefore matches MilkDrop
+  // semantics exactly, and lets those early reads lower instead of bailing.
+  // (Measured: worth ~83 further presets, `thresh` alone accounting for 73.)
+  // A name that is never assigned anywhere still bails — it cannot be told
+  // apart from a misspelled builtin.
   for (const statement of program.statements) {
     const target = lowerGpuFieldIdentifier(statement.target);
-    if (!(stateIdentifiers.has(target) || isGpuFieldTemporary(target))) {
+    if (
+      !stateIdentifiers.has(target) &&
+      isGpuFieldTemporary(target, reservedIdentifiers)
+    ) {
+      temporaries.add(target);
+      allowedIdentifiers.add(target);
+    }
+  }
+
+  for (const statement of program.statements) {
+    const target = lowerGpuFieldIdentifier(statement.target);
+    // State slots win over the temporary rule, so a caller-injected binding is
+    // written in place instead of being shadowed by a fresh local.
+    const targetIsState = stateIdentifiers.has(target);
+    const targetIsTemporary =
+      !targetIsState && isGpuFieldTemporary(target, reservedIdentifiers);
+    if (!(targetIsState || targetIsTemporary)) {
       return null;
     }
 
@@ -221,7 +275,7 @@ export function lowerGpuFieldProgram(
 
     statements.push({ target, expression });
     allowedIdentifiers.add(target);
-    if (isGpuFieldTemporary(target)) {
+    if (targetIsTemporary) {
       temporaries.add(target);
     }
   }

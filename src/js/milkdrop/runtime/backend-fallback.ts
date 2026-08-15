@@ -1,5 +1,5 @@
-import { isCompatibilityModeEnabled } from '../../core/render-preferences.ts';
 import { markPresetNeedsWebgl } from '../../core/state/preset-webgl-fallback.ts';
+import { isCompatibilityModeEnabled } from '../../core/state/render-preference-store.ts';
 import { shouldFallbackMilkdropPresetToWebgl } from '../renderer-execution-plan.ts';
 import type { MilkdropCompiledPreset } from '../types.ts';
 import {

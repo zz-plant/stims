@@ -8,8 +8,9 @@
  */
 
 import { getDevicePerformanceProfile } from '../core/device-profile.ts';
-import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
 import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
+import { isCompatibilityModeEnabled } from '../core/state/render-preference-store.ts';
 import {
   getRequestedRenderer,
   getWebGpuFlagParams,
@@ -67,19 +68,14 @@ export type MilkdropWebGpuFeatureRouting = Record<
  * Use `null` to clear the override and return to auto-detection.
  */
 export function setWebGpuSafePathOverride(value: boolean | null): void {
+  const storage = getBrowserStorage();
+  if (!storage) return;
+
   if (value === null) {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // localStorage unavailable
-    }
+    storage.removeItem(STORAGE_KEY);
     return;
   }
-  try {
-    localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
-  } catch {
-    // localStorage unavailable
-  }
+  storage.setItem(STORAGE_KEY, value ? '1' : '0');
 }
 
 /**
@@ -87,13 +83,9 @@ export function setWebGpuSafePathOverride(value: boolean | null): void {
  * Returns `null` if no override is stored.
  */
 export function getWebGpuSafePathOverride(): boolean | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === '1') return true;
-    if (raw === '0') return false;
-  } catch {
-    // localStorage unavailable
-  }
+  const raw = getBrowserStorage()?.getItem(STORAGE_KEY);
+  if (raw === '1') return true;
+  if (raw === '0') return false;
   return null;
 }
 
@@ -104,11 +96,7 @@ export function getWebGpuSafePathOverride(): boolean | null {
  * - 'full': always use full path
  */
 export function setWebGpuForceMode(mode: WebGpuForceMode): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_FORCE_MODE, mode);
-  } catch {
-    // localStorage unavailable
-  }
+  getBrowserStorage()?.setItem(STORAGE_KEY_FORCE_MODE, mode);
 }
 
 /**
@@ -116,13 +104,9 @@ export function setWebGpuForceMode(mode: WebGpuForceMode): void {
  * Returns 'auto' if nothing is stored.
  */
 export function getWebGpuForceMode(): WebGpuForceMode {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_FORCE_MODE);
-    if (raw === 'safe') return 'safe';
-    if (raw === 'full') return 'full';
-  } catch {
-    // localStorage unavailable
-  }
+  const raw = getBrowserStorage()?.getItem(STORAGE_KEY_FORCE_MODE);
+  if (raw === 'safe') return 'safe';
+  if (raw === 'full') return 'full';
   return 'auto';
 }
 
@@ -212,15 +196,9 @@ export function resolveMilkdropWebGpuFeatureRouting(
   const safeMode = description.mode === 'safe';
   const searchInput = location?.search ?? '';
   const webgpuFlagParams = getWebGpuFlagParams(searchInput);
-  const storageRenderBundles = (() => {
-    try {
-      return parseOptionalBooleanFlag(
-        localStorage.getItem(RENDER_BUNDLES_STORAGE_KEY),
-      );
-    } catch {
-      return null;
-    }
-  })();
+  const storageRenderBundles = parseOptionalBooleanFlag(
+    getBrowserStorage()?.getItem(RENDER_BUNDLES_STORAGE_KEY) ?? null,
+  );
   const renderBundlesRollout =
     webgpuFlagParams.renderBundles ?? storageRenderBundles ?? false;
   const safeReason = safeMode
@@ -289,11 +267,8 @@ export function getWebGpuPathDescription(
 }
 
 export function clearMilkdropWebGpuQueryOverride() {
-  if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(STORAGE_KEY_FORCE_MODE);
-  } catch (_error) {
-    // Ignore storage failures
-  }
+  const storage = getBrowserStorage();
+  if (!storage) return;
+  storage.removeItem(STORAGE_KEY);
+  storage.removeItem(STORAGE_KEY_FORCE_MODE);
 }

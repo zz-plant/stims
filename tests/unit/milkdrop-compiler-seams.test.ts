@@ -396,4 +396,116 @@ describe('milkdrop compiler seams', () => {
       name: 'aspect',
     });
   });
+
+  describe('lowerGpuFieldProgram temporaries', () => {
+    const statement = (target: string, source: string, expression: unknown) =>
+      ({
+        target,
+        expression,
+        line: 1,
+        source,
+      }) as never;
+
+    test('lowers scratch locals with arbitrary names, not just q/t-numbered ones', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('thresh', 'thresh = 0.5', {
+            type: 'literal',
+            value: 0.5,
+          }),
+          statement('zoom', 'zoom = thresh', {
+            type: 'identifier',
+            name: 'thresh',
+          }),
+        ],
+        sourceLines: ['thresh = 0.5', 'zoom = thresh'],
+      });
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual(['thresh']);
+      expect(lowered?.statements[1]?.expression).toEqual({
+        type: 'identifier',
+        name: 'thresh',
+      });
+    });
+
+    test('allows a local to be read before its first assignment (MilkDrop zero-init)', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = thresh', {
+            type: 'identifier',
+            name: 'thresh',
+          }),
+          statement('thresh', 'thresh = 1', { type: 'literal', value: 1 }),
+        ],
+        sourceLines: ['zoom = thresh', 'thresh = 1'],
+      });
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual(['thresh']);
+    });
+
+    test('still bails on an identifier that is never assigned anywhere', () => {
+      expect(
+        lowerGpuFieldProgram({
+          statements: [
+            statement('zoom', 'zoom = nosuchthing', {
+              type: 'identifier',
+              name: 'nosuchthing',
+            }),
+          ],
+          sourceLines: ['zoom = nosuchthing'],
+        }),
+      ).toBeNull();
+    });
+
+    test('refuses to turn a signal into a local', () => {
+      expect(
+        lowerGpuFieldProgram({
+          statements: [
+            statement('bass', 'bass = 1', { type: 'literal', value: 1 }),
+          ],
+          sourceLines: ['bass = 1'],
+        }),
+      ).toBeNull();
+    });
+
+    test('writes caller-injected state in place instead of shadowing it', () => {
+      // The custom-wave path passes sample/value1 as state: they must be
+      // assigned directly, never redeclared as a zero-initialised local.
+      const lowered = lowerGpuFieldProgram(
+        {
+          statements: [
+            statement('value1', 'value1 = sample', {
+              type: 'identifier',
+              name: 'sample',
+            }),
+          ],
+          sourceLines: ['value1 = sample'],
+        },
+        { additionalStateIdentifiers: ['sample', 'value1'] },
+      );
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual([]);
+      expect(lowered?.statements[0]?.target).toBe('value1');
+    });
+
+    test('does not reclassify a caller-injected read-only binding as a local', () => {
+      expect(
+        lowerGpuFieldProgram(
+          {
+            statements: [
+              statement('mystery', 'mystery = 1', {
+                type: 'literal',
+                value: 1,
+              }),
+            ],
+            sourceLines: ['mystery = 1'],
+          },
+          { additionalAllowedIdentifiers: ['mystery'] },
+        ),
+      ).toBeNull();
+    });
+  });
 });

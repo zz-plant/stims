@@ -10,7 +10,7 @@ Milestone A baseline evidence is the combination of:
 
   ```bash
   bun run check
-  bun run check:toys
+  bun run check:readme-claims
   ```
 
 - The focused startup and route-contract regression suite:
@@ -116,7 +116,7 @@ Milestone A baseline
 - Branch/commit: <branch or sha>
 - Commands:
   - bun run check
-  - bun run check:toys
+  - bun run check:readme-claims
   - bun run test ...
   - bun run play:toy milkdrop --preset ...
 - Artifact dir: ./screenshots/milestone-a

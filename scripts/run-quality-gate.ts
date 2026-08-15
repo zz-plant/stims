@@ -81,8 +81,8 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:catalog-integrity'],
       },
       {
-        label: 'Toy manifest and docs drift',
-        cmd: ['bun', 'run', 'check:toys'],
+        label: 'README public claim drift',
+        cmd: ['bun', 'run', 'check:readme-claims'],
       },
       {
         label: 'SEO surface check',

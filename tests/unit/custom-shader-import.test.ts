@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { parseCustomShaderBlock } from '../../src/js/milkdrop/compiler/tsl-generator.ts';
+import { parseCustomShaderBlock } from '../../src/js/milkdrop/compiler/custom-shader-block.ts';
 
 describe('Custom Shader Block Parser', () => {
   it('parses WGSL custom shader blocks correctly', () => {

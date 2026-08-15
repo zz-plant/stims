@@ -64,7 +64,7 @@ The bundled Generate panel now calls [`src/js/milkdrop/preset-generator.ts`](../
 - [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes session state and controls for headless verification.
 - `?agent=true` provides the canonical automation route.
 - Native projectM capture metadata, checked-in references, backend-aware browser captures, image diffs, and promoted measured results form the compatibility evidence chain.
-- [`scripts/check-toys.ts`](../scripts/check-toys.ts) prevents the public README preset count and selected product claims from drifting beyond their implementation evidence.
+- [`scripts/check-readme-claims.ts`](../scripts/check-readme-claims.ts) prevents the public README preset count and selected product claims from drifting beyond their implementation evidence.
 
 See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the complete capture and promotion workflow.
 

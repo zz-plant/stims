@@ -155,7 +155,7 @@ bun run check:architecture
 bun run check:seo
 
 # Check toy manifest alignment
-bun run check:toys
+bun run check:readme-claims
 ```
 
 ## Common issues and quick fixes

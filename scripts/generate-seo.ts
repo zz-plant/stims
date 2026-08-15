@@ -366,11 +366,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
         'MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.',
       changefreq: 'weekly',
       priority: '1.0',
-      sourcePaths: [
-        'index.html',
-        'src/data/toys.json',
-        'src/js/toys/milkdrop-toy.ts',
-      ],
+      sourcePaths: ['index.html', 'src/data/toys.json'],
       includeInSitemap: true,
     },
     {

@@ -60,7 +60,6 @@ async function closeSession(session: AgentSession) {
 const qualityGateCommands = {
   full: ['bun', ['run', 'check']],
   quick: ['bun', ['run', 'check:quick']],
-  toys: ['bun', ['run', 'check:toys']],
   typecheck: ['bun', ['run', 'typecheck']],
   test: ['bun', ['run', 'test']],
 } as const;
@@ -177,7 +176,7 @@ server.registerTool(
       'Run Bun-based quality gate commands and return structured pass/fail output. Useful for agent workflows that need deterministic repository checks.',
     inputSchema: z.object({
       scope: z
-        .enum(['full', 'quick', 'toys', 'typecheck', 'test'])
+        .enum(['full', 'quick', 'typecheck', 'test'])
         .optional()
         .default('full')
         .describe('Quality gate scope to run. Defaults to full.'),
