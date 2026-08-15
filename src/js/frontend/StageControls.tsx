@@ -171,18 +171,25 @@ export function StageControls({
   }, [transition.phase, signalActivity]);
 
   useEffect(() => {
+    let activityFrame: number | null = null;
+    const handlePointerMove = () => {
+      if (activityFrame !== null) return;
+      activityFrame = requestAnimationFrame(() => {
+        activityFrame = null;
+        signalActivity();
+      });
+    };
     const handleActivity = () => signalActivity();
-    document.addEventListener('mousemove', handleActivity, { passive: true });
-    document.addEventListener('pointerdown', handleActivity, { passive: true });
-    document.addEventListener('pointermove', handleActivity, {
+    document.addEventListener('pointermove', handlePointerMove, {
       passive: true,
     });
+    document.addEventListener('pointerdown', handleActivity, { passive: true });
     document.addEventListener('wheel', handleActivity, { passive: true });
     document.addEventListener('keydown', handleActivity);
     return () => {
-      document.removeEventListener('mousemove', handleActivity);
+      if (activityFrame !== null) cancelAnimationFrame(activityFrame);
+      document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerdown', handleActivity);
-      document.removeEventListener('pointermove', handleActivity);
       document.removeEventListener('wheel', handleActivity);
       document.removeEventListener('keydown', handleActivity);
     };

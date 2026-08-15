@@ -30,6 +30,7 @@ describe('memory leak prevention', () => {
     const service = createMilkdropPresetPreviewService({
       capturePreview,
       onPreviewChanged,
+      onPreviewEvicted: () => {},
     });
 
     service.requestPreviews(['p1', 'p2', 'p3']);
