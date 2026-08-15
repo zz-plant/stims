@@ -62,6 +62,7 @@ export type RendererHandle = {
 type RendererPoolEntry = {
   handle: RendererHandle;
   inUse: boolean;
+  lastReleasedAt: number;
 };
 
 type RendererPoolLifecycle = {
@@ -71,6 +72,39 @@ type RendererPoolLifecycle = {
 
 const rendererPool: RendererPoolEntry[] = [];
 const rendererLifecycles = new WeakMap<RendererHandle, RendererPoolLifecycle>();
+export const DEFAULT_MAX_IDLE_RENDERERS = 2;
+let maxIdleRenderers = DEFAULT_MAX_IDLE_RENDERERS;
+
+function disposeRendererPoolEntry(entry: RendererPoolEntry) {
+  entry.handle.renderer.setAnimationLoop?.(null);
+  rendererLifecycles.get(entry.handle)?.release();
+  entry.handle.renderer.dispose?.();
+  detachCanvas(entry.handle.canvas);
+  const entryIndex = rendererPool.indexOf(entry);
+  if (entryIndex !== -1) {
+    rendererPool.splice(entryIndex, 1);
+  }
+}
+
+function trimIdleRendererPool() {
+  const idleEntries = rendererPool
+    .filter((entry) => !entry.inUse)
+    .sort((left, right) => left.lastReleasedAt - right.lastReleasedAt);
+  const excessIdleCount = idleEntries.length - maxIdleRenderers;
+  for (let index = 0; index < excessIdleCount; index += 1) {
+    disposeRendererPoolEntry(idleEntries[index]);
+  }
+}
+
+export function setMaxIdleRenderers(maximum: number) {
+  if (!Number.isInteger(maximum) || maximum < 0) {
+    throw new RangeError(
+      'Maximum idle renderer count must be a non-negative integer.',
+    );
+  }
+  maxIdleRenderers = maximum;
+  trimIdleRendererPool();
+}
 
 /**
  * Emitted whenever a pooled renderer stops being the same live GPU renderer
@@ -838,10 +872,14 @@ export async function requestRenderer({
   const poolEntry: RendererPoolEntry = {
     handle,
     inUse: true,
+    lastReleasedAt: 0,
   };
 
   const releaseHandle = handle.release;
   handle.release = () => {
+    if (!poolEntry.inUse) {
+      return;
+    }
     releaseHandle();
     // Stop rendering and park the canvas, but keep the renderer itself
     // alive — the whole point of the pool is to let the next toy reuse it
@@ -852,7 +890,9 @@ export async function requestRenderer({
     // via resetRendererPool({ dispose: true }).
     handle.renderer.setAnimationLoop?.(null);
     poolEntry.inUse = false;
+    poolEntry.lastReleasedAt = performance.now();
     detachCanvas(handle.canvas);
+    trimIdleRendererPool();
   };
 
   rendererPool.push(poolEntry);
@@ -900,21 +940,22 @@ export async function prewarmRendererCapabilities() {
 
 export function resetRendererPool({
   dispose = false,
+  maxIdle = DEFAULT_MAX_IDLE_RENDERERS,
 }: {
   dispose?: boolean;
+  maxIdle?: number;
 } = {}) {
-  rendererPool.forEach((entry) => {
+  setMaxIdleRenderers(maxIdle);
+  for (const entry of [...rendererPool]) {
     entry.inUse = false;
-    rendererLifecycles.get(entry.handle)?.release();
+    entry.lastReleasedAt = performance.now();
     if (dispose) {
-      entry.handle.renderer.setAnimationLoop?.(null);
-      entry.handle.renderer.dispose?.();
-      detachCanvas(entry.handle.canvas);
+      disposeRendererPoolEntry(entry);
+    } else {
+      rendererLifecycles.get(entry.handle)?.release();
     }
-  });
-  if (dispose) {
-    rendererPool.splice(0, rendererPool.length);
   }
+  trimIdleRendererPool();
   activeQuality = getActiveQualityPreset();
   _activeRenderPreferences = getActiveRenderPreferences();
   resetRendererRuntimeControls();
