@@ -72,6 +72,7 @@ export type WaveBuilderState = {
   proceduralMainWaveFrames: MilkdropProceduralWaveVisual[];
   customWaveLocals: MutableState[];
   customWaveTAfterInit: MutableState[];
+  customWaveBaseLocalsPool: MutableState[];
   customWaveFrameIndex: 0 | 1;
   customWaveVisualFrames: [MilkdropWaveVisual[], MilkdropWaveVisual[]];
   proceduralCustomWaveFrames: [
@@ -437,16 +438,6 @@ export function syncSignalEnvironment(
   }
 }
 
-const DEFAULT_CUSTOM_WAVE_T_REGISTERS: Readonly<Record<string, number>> =
-  Object.freeze(
-    Object.fromEntries(
-      Array.from({ length: MAX_CUSTOM_WAVE_SLOTS }, (_, idx) => [
-        `t${idx + 1}`,
-        0,
-      ]),
-    ),
-  );
-
 export const CUSTOM_WAVE_PROPERTY_KEYS = Array.from(
   { length: 32 },
   (_, index) => ({
@@ -530,28 +521,34 @@ export const SHAPECODE_PROPERTY_KEYS = Array.from(
 export function seedCustomWaveFields(
   wave: MilkdropWaveDefinition,
   state: MutableState,
+  target?: MutableState,
 ): MutableState {
   const index = wave.index;
   const keys = CUSTOM_WAVE_PROPERTY_KEYS[index];
-  return {
-    enabled: wave.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0,
-    samples: wave.fields.samples ?? (keys ? state[keys.samples] : 64) ?? 64,
-    spectrum: wave.fields.spectrum ?? (keys ? state[keys.spectrum] : 0) ?? 0,
-    additive: wave.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0,
-    usedots: wave.fields.usedots ?? (keys ? state[keys.usedots] : 0) ?? 0,
-    scaling: wave.fields.scaling ?? (keys ? state[keys.scaling] : 1) ?? 1,
-    smoothing:
-      wave.fields.smoothing ?? (keys ? state[keys.smoothing] : 0.5) ?? 0.5,
-    mystery: wave.fields.mystery ?? (keys ? state[keys.mystery] : 0) ?? 0,
-    thick: wave.fields.thick ?? (keys ? state[keys.thick] : 1) ?? 1,
-    x: wave.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5,
-    y: wave.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5,
-    r: wave.fields.r ?? (keys ? state[keys.r] : 1) ?? 1,
-    g: wave.fields.g ?? (keys ? state[keys.g] : 1) ?? 1,
-    b: wave.fields.b ?? (keys ? state[keys.b] : 1) ?? 1,
-    a: wave.fields.a ?? (keys ? state[keys.a] : 0.4) ?? 0.4,
-    ...DEFAULT_CUSTOM_WAVE_T_REGISTERS,
-  };
+  const locals = target ?? ({} as MutableState);
+  locals.enabled = wave.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0;
+  locals.samples =
+    wave.fields.samples ?? (keys ? state[keys.samples] : 64) ?? 64;
+  locals.spectrum =
+    wave.fields.spectrum ?? (keys ? state[keys.spectrum] : 0) ?? 0;
+  locals.additive =
+    wave.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0;
+  locals.usedots = wave.fields.usedots ?? (keys ? state[keys.usedots] : 0) ?? 0;
+  locals.scaling = wave.fields.scaling ?? (keys ? state[keys.scaling] : 1) ?? 1;
+  locals.smoothing =
+    wave.fields.smoothing ?? (keys ? state[keys.smoothing] : 0.5) ?? 0.5;
+  locals.mystery = wave.fields.mystery ?? (keys ? state[keys.mystery] : 0) ?? 0;
+  locals.thick = wave.fields.thick ?? (keys ? state[keys.thick] : 1) ?? 1;
+  locals.x = wave.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5;
+  locals.y = wave.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5;
+  locals.r = wave.fields.r ?? (keys ? state[keys.r] : 1) ?? 1;
+  locals.g = wave.fields.g ?? (keys ? state[keys.g] : 1) ?? 1;
+  locals.b = wave.fields.b ?? (keys ? state[keys.b] : 1) ?? 1;
+  locals.a = wave.fields.a ?? (keys ? state[keys.a] : 0.4) ?? 0.4;
+  for (let t = 1; t <= MAX_CUSTOM_WAVE_SLOTS; t += 1) {
+    locals[`t${t}`] = 0;
+  }
+  return locals;
 }
 
 export function seedCustomShapeFields(
