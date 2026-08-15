@@ -23,9 +23,45 @@ export type ScaleKind =
    * seconds. On a linear 0.8..1.0 track those are 3px apart. */
   | 'retention';
 
+export type ControlSection = 'warp' | 'wave' | 'post' | 'frame';
+
+/**
+ * The pane is organised by what a field *does*, not by which widget it
+ * happens to render as. Grouping by widget put the main wave's mode, colour,
+ * four switches and volume fade-in in four different places, which is a
+ * taxonomy of controls rather than of the thing being edited.
+ */
+export const CONTROL_SECTIONS: Array<{
+  id: ControlSection;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'warp',
+    label: 'Warp',
+    hint: 'How each frame is scaled, spun and displaced from the last one.',
+  },
+  {
+    id: 'wave',
+    label: 'Wave',
+    hint: 'The waveform drawn over the frame.',
+  },
+  {
+    id: 'post',
+    label: 'Post',
+    hint: 'Processing applied to the finished frame, in pipeline order.',
+  },
+  {
+    id: 'frame',
+    label: 'Frame',
+    hint: 'Feedback, background, borders and overlays.',
+  },
+];
+
 export type ScalarControlConfig = {
   label: string;
   key: string;
+  section: ControlSection;
   min: number;
   max: number;
   step: number;
@@ -41,16 +77,15 @@ export type ScalarControlConfig = {
 export type ToggleControlConfig = {
   label: string;
   key: string;
+  section: ControlSection;
   defaultValue: 0 | 1;
-  /** Grouping in the pane. Post-processing toggles are an ordered chain and
-   * read as one thing; the wave flags are independent. */
-  group: 'post' | 'wave' | 'frame';
   hint: string;
 };
 
 export type EnumControlConfig = {
   label: string;
   key: string;
+  section: ControlSection;
   defaultValue: number;
   options: Array<{ value: number; label: string; hint?: string }>;
   hint: string;
@@ -58,6 +93,7 @@ export type EnumControlConfig = {
 
 export type RangeControlConfig = {
   label: string;
+  section: ControlSection;
   minKey: string;
   maxKey: string;
   /** Track bounds, not the preset's values. */
@@ -71,6 +107,7 @@ export type RangeControlConfig = {
 
 export type ColorGroupConfig = {
   label: string;
+  section: ControlSection;
   rgb: [string, string, string];
   /** MilkDrop is inconsistent about the suffix — the main wave uses `wave_a`,
    * the solid mesh uses `mesh_alpha` — so the group carries the real name. */
@@ -185,6 +222,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Zoom',
     key: 'zoom',
+    section: 'warp',
     min: 0.2,
     max: 3.0,
     step: 0.001,
@@ -196,6 +234,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Warp',
     key: 'warp',
+    section: 'warp',
     min: 0.01,
     max: 10.0,
     step: 0.001,
@@ -207,6 +246,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Rot',
     key: 'rot',
+    section: 'warp',
     min: -1.0,
     max: 1.0,
     step: 0.005,
@@ -218,6 +258,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Decay',
     key: 'decay',
+    section: 'frame',
     min: 0.8,
     max: 0.999,
     step: 0.0005,
@@ -231,6 +272,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Centre X',
     key: 'cx',
+    section: 'warp',
     min: 0,
     max: 1,
     step: 0.005,
@@ -242,6 +284,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Centre Y',
     key: 'cy',
+    section: 'warp',
     min: 0,
     max: 1,
     step: 0.005,
@@ -253,6 +296,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Scale X',
     key: 'sx',
+    section: 'warp',
     min: 0.1,
     max: 3.0,
     step: 0.001,
@@ -264,6 +308,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Scale Y',
     key: 'sy',
+    section: 'warp',
     min: 0.1,
     max: 3.0,
     step: 0.001,
@@ -275,6 +320,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Shift X',
     key: 'dx',
+    section: 'warp',
     min: -0.5,
     max: 0.5,
     step: 0.005,
@@ -286,6 +332,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Shift Y',
     key: 'dy',
+    section: 'warp',
     min: -0.5,
     max: 0.5,
     step: 0.005,
@@ -297,6 +344,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Warp scale',
     key: 'warp_scale',
+    section: 'warp',
     min: 0.01,
     max: 10,
     step: 0.001,
@@ -308,6 +356,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Warp speed',
     key: 'warpanimspeed',
+    section: 'warp',
     min: 0.01,
     max: 8,
     step: 0.001,
@@ -319,6 +368,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Gamma',
     key: 'gammaadj',
+    section: 'post',
     min: 0.2,
     max: 8,
     step: 0.001,
@@ -330,6 +380,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Echo zoom',
     key: 'video_echo_zoom',
+    section: 'post',
     min: 0.2,
     max: 4,
     step: 0.001,
@@ -341,6 +392,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Echo alpha',
     key: 'video_echo_alpha',
+    section: 'post',
     min: 0,
     max: 1,
     step: 0.01,
@@ -351,6 +403,7 @@ export const SCALAR_CONTROLS: ScalarControlConfig[] = [
   {
     label: 'Border size',
     key: 'ob_size',
+    section: 'frame',
     min: 0.0,
     max: 0.5,
     step: 0.005,
@@ -368,99 +421,99 @@ export const TOGGLE_CONTROLS: ToggleControlConfig[] = [
   {
     label: 'Brighten',
     key: 'brighten',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Pushes the frame toward white.',
   },
   {
     label: 'Darken',
     key: 'darken',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Pushes the frame toward black.',
   },
   {
     label: 'Solarize',
     key: 'solarize',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Inverts only the bright half of the range.',
   },
   {
     label: 'Invert',
     key: 'invert',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Inverts the whole frame.',
   },
   {
     label: 'Darken centre',
     key: 'darken_center',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Bleeds the middle of the frame darker each frame.',
   },
   {
     label: 'Red/blue 3D',
     key: 'red_blue_stereo',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Anaglyph split. Needs red/cyan glasses to read as depth.',
   },
   {
     label: 'Echo',
     key: 'video_echo_enabled',
+    section: 'post',
     defaultValue: 0,
-    group: 'post',
     hint: 'Draws a scaled copy over the frame; see Echo zoom/alpha.',
   },
   {
     label: 'Wrap edges',
     key: 'texture_wrap',
+    section: 'warp',
     defaultValue: 1,
-    group: 'frame',
     hint: 'Warp samples wrap around the edges instead of clamping.',
   },
   {
     label: 'Motion vectors',
     key: 'motion_vectors',
+    section: 'frame',
     defaultValue: 0,
-    group: 'frame',
     hint: 'Draws the flow grid. Its alpha defaults to 0 as well.',
   },
   {
     label: 'Additive wave',
     key: 'wave_additive',
+    section: 'wave',
     defaultValue: 0,
-    group: 'wave',
     hint: 'Wave adds to the frame instead of covering it.',
   },
   {
     label: 'Dotted wave',
     key: 'wave_usedots',
+    section: 'wave',
     defaultValue: 0,
-    group: 'wave',
     hint: 'Draws the waveform as points, not a line.',
   },
   {
     label: 'Thick wave',
     key: 'wave_thick',
+    section: 'wave',
     defaultValue: 0,
-    group: 'wave',
     hint: 'Doubles the waveform line width.',
   },
   {
     label: 'Max wave colour',
     key: 'wave_brighten',
+    section: 'wave',
     defaultValue: 1,
-    group: 'wave',
     hint: 'Normalises the wave colour to full brightness.',
   },
   {
     label: 'Wave alpha by volume',
     key: 'bmodwavealphabyvolume',
+    section: 'wave',
     defaultValue: 0,
-    group: 'wave',
     hint: 'Fades the wave in with loudness; see the Wave alpha range.',
   },
 ];
@@ -469,6 +522,7 @@ export const ENUM_CONTROLS: EnumControlConfig[] = [
   {
     label: 'Wave mode',
     key: 'wave_mode',
+    section: 'wave',
     defaultValue: 0,
     hint: 'Which of the eight built-in waveform shapes is drawn.',
     options: [
@@ -485,6 +539,7 @@ export const ENUM_CONTROLS: EnumControlConfig[] = [
   {
     label: 'Echo orientation',
     key: 'video_echo_orientation',
+    section: 'post',
     defaultValue: 0,
     hint: 'How the echo copy is flipped.',
     options: [
@@ -499,6 +554,7 @@ export const ENUM_CONTROLS: EnumControlConfig[] = [
 export const RANGE_CONTROLS: RangeControlConfig[] = [
   {
     label: 'Blur 1',
+    section: 'post',
     minKey: 'blur1_min',
     maxKey: 'blur1_max',
     min: 0,
@@ -510,6 +566,7 @@ export const RANGE_CONTROLS: RangeControlConfig[] = [
   },
   {
     label: 'Blur 2',
+    section: 'post',
     minKey: 'blur2_min',
     maxKey: 'blur2_max',
     min: 0,
@@ -521,6 +578,7 @@ export const RANGE_CONTROLS: RangeControlConfig[] = [
   },
   {
     label: 'Blur 3',
+    section: 'post',
     minKey: 'blur3_min',
     maxKey: 'blur3_max',
     min: 0,
@@ -532,6 +590,7 @@ export const RANGE_CONTROLS: RangeControlConfig[] = [
   },
   {
     label: 'Wave alpha',
+    section: 'wave',
     minKey: 'modwavealphastart',
     maxKey: 'modwavealphaend',
     min: 0,
@@ -551,6 +610,7 @@ export const RANGE_CONTROLS: RangeControlConfig[] = [
 export const COLOR_GROUPS: ColorGroupConfig[] = [
   {
     label: 'Background',
+    section: 'frame',
     rgb: ['bg_r', 'bg_g', 'bg_b'],
     alpha: null,
     defaultRgb: [0, 0, 0],
@@ -558,6 +618,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
   },
   {
     label: 'Wave',
+    section: 'wave',
     rgb: ['wave_r', 'wave_g', 'wave_b'],
     alpha: { key: 'wave_a', defaultValue: 0.8 },
     defaultRgb: [1, 1, 1],
@@ -565,6 +626,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
   },
   {
     label: 'Motion vectors',
+    section: 'frame',
     rgb: ['mv_r', 'mv_g', 'mv_b'],
     alpha: { key: 'mv_a', defaultValue: 0 },
     defaultRgb: [1, 1, 1],
@@ -572,6 +634,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
   },
   {
     label: 'Outer border',
+    section: 'frame',
     rgb: ['ob_r', 'ob_g', 'ob_b'],
     alpha: { key: 'ob_a', defaultValue: 0 },
     defaultRgb: [0, 0, 0],
@@ -579,6 +642,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
   },
   {
     label: 'Inner border',
+    section: 'frame',
     rgb: ['ib_r', 'ib_g', 'ib_b'],
     alpha: { key: 'ib_a', defaultValue: 0 },
     defaultRgb: [0.25, 0.25, 0.25],
@@ -586,6 +650,7 @@ export const COLOR_GROUPS: ColorGroupConfig[] = [
   },
   {
     label: 'Solid mesh',
+    section: 'frame',
     rgb: ['mesh_r', 'mesh_g', 'mesh_b'],
     alpha: { key: 'mesh_alpha', defaultValue: 0 },
     defaultRgb: [1, 1, 1],
