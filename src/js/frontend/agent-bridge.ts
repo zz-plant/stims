@@ -72,7 +72,9 @@ export type AgentBridgeCommand =
   | { type: 'toil:set_audio'; source: 'demo' | 'microphone' | 'file' }
   | { type: 'toil:request_telemetry' }
   | { type: 'toil:midi_set'; target: string; value: number }
-  | { type: 'toil:midi_cc'; cc: number; value: number };
+  | { type: 'toil:midi_cc'; cc: number; value: number }
+  | { type: 'toil:apply_source'; source: string }
+  | { type: 'toil:set_fields'; fields: Record<string, number | string> };
 
 declare global {
   interface Window {
@@ -290,6 +292,34 @@ export function initAgentBridge(callbacks?: {
       case 'toil:midi_cc': {
         if (Number.isFinite(data.cc) && Number.isFinite(data.value)) {
           callbacks?.onMidiCc?.(data.cc, data.value);
+        }
+        break;
+      }
+
+      case 'toil:apply_source': {
+        if (typeof data.source === 'string') {
+          void callbacks?.applyEditorSource?.(data.source).then((state) => {
+            postAgentMessage({
+              type: 'toil:editor_state',
+              action: 'apply_source',
+              success: (state?.errorCount ?? 0) === 0,
+              state,
+            });
+          });
+        }
+        break;
+      }
+
+      case 'toil:set_fields': {
+        if (data.fields && typeof data.fields === 'object') {
+          void callbacks?.applyEditorFields?.(data.fields).then((state) => {
+            postAgentMessage({
+              type: 'toil:editor_state',
+              action: 'set_fields',
+              success: (state?.errorCount ?? 0) === 0,
+              state,
+            });
+          });
         }
         break;
       }

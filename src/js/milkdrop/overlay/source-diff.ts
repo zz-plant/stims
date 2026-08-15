@@ -32,8 +32,10 @@ export function computeSourceDiff(
   after: string,
   options: SourceDiffOptions = {},
 ): SourceDiffLine[] {
-  const a = before.split('\n');
-  const b = after.split('\n');
+  const normalizedBefore = before.replace(/\r\n/gu, '\n');
+  const normalizedAfter = after.replace(/\r\n/gu, '\n');
+  const a = normalizedBefore.split('\n');
+  const b = normalizedAfter.split('\n');
   const stats: SourceDiffStats = {
     oldLineCount: a.length,
     newLineCount: b.length,
@@ -45,7 +47,7 @@ export function computeSourceDiff(
     return diff;
   };
 
-  if (before === after) {
+  if (normalizedBefore === normalizedAfter) {
     return finish([]);
   }
   if (

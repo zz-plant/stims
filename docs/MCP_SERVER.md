@@ -65,8 +65,9 @@ These tools manage a persistent headless browser session so you can interact wit
 **Natural language tweaks supported by `session_tweak`:**
 - Colors: "more blue", "more red", "more green", "warmer", "cooler"
 - Brightness: "brighter", "darker"
-- Motion: "more warp", "less warp", "more zoom", "faster", "slower"
-- Quality: "more saturation", "more contrast", "more decay" (trails)
+- Motion: "more warp", "less warp", "more zoom", "faster", "slower", "more rot" / "spin faster", "less rot" / "spin slower"
+- Audio / Dynamics: "more wave", "less wave", "more beat" / "higher beat sensitivity", "less beat"
+- Quality: "more saturation", "more contrast", "more decay" (trails), "less decay"
 - Deltas resolve against the preset's compiled values; fields the preset does not define are reported as skipped rather than silently succeeding
 
 #### Reading back what an edit actually did
@@ -222,7 +223,7 @@ rather than a guess. Neither needs a browser.
 
 | Tool | Input | Output |
 |------|-------|--------|
-| `inspect_eel_ast` | `source` (EEL), optional `startLine` | Parsed AST per statement, plus parser diagnostics |
+| `inspect_eel_ast` | `source` (EEL), optional `startLine` | Parsed AST statement tree (assignments, `loop`/`while` bodies, expressions) plus parser diagnostics |
 | `inspect_preset_lowerer` | `presetId` or `filePath`, optional `stage` | `summary` (default): shader lowering, GPU field lowering, diagnostics. `glsl` / `wgsl`: generated shader source. `uniforms`: shader controls and custom samplers |
 
 Note that `inspect_preset_lowerer`'s `lowered to GPU field: no` is common and is

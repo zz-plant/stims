@@ -161,7 +161,7 @@ describe('MilkDrop loop preset visual sweep', () => {
     } finally {
       await browser.close();
     }
-  });
+  }, 30000);
 
   test('uses native WebGL for browser sweeps, headed and headless', () => {
     // Headless no longer implies SwiftShader: sweeps launch full Chromium

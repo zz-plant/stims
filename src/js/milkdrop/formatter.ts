@@ -420,6 +420,28 @@ function escapeRegExpLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
+function stripInlineCommentFromLine(line: string): string {
+  let inString: '"' | "'" | null = null;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (inString) {
+      if (char === inString) inString = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      inString = char;
+      continue;
+    }
+    if (char === '/' && line[i + 1] === '/') {
+      return line.slice(0, i);
+    }
+    if (char === '#') {
+      return line.slice(0, i);
+    }
+  }
+  return line;
+}
+
 /**
  * True when a per_frame/per_pixel/wave_/shape_ equation reassigns `target`
  * somewhere in the preset. upsertMilkdropField (used by MIDI, the Tune
@@ -437,7 +459,7 @@ export function isFieldShadowedByEquations(
   if (!normalizedTarget) return false;
   const assignPattern = new RegExp(
     `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
-    'u',
+    'iu',
   );
 
   const lines = source.split(/\r?\n/u);
@@ -448,13 +470,21 @@ export function isFieldShadowedByEquations(
       inShaderSection = true;
     }
     if (inShaderSection) continue;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
+      continue;
+    }
 
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx <= 0) continue;
     const key = trimmed.slice(0, eqIdx).trim();
     if (!isEquationKey(key)) continue;
 
-    if (assignPattern.test(trimmed.slice(eqIdx + 1))) {
+    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
+    if (assignPattern.test(valuePart)) {
       return true;
     }
   }
@@ -475,7 +505,7 @@ export function findMilkdropEquationLine(
   if (!normalizedTarget) return null;
   const assignPattern = new RegExp(
     `(?:^|;)\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
-    'u',
+    'iu',
   );
 
   const lines = source.split(/\r?\n/u);
@@ -486,11 +516,19 @@ export function findMilkdropEquationLine(
       inShaderSection = true;
     }
     if (inShaderSection) continue;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
+      continue;
+    }
 
     const eqIdx = trimmed.indexOf('=');
     if (eqIdx <= 0) continue;
     if (!isEquationKey(trimmed.slice(0, eqIdx).trim())) continue;
-    if (assignPattern.test(trimmed.slice(eqIdx + 1))) {
+    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
+    if (assignPattern.test(valuePart)) {
       return i + 1;
     }
   }
@@ -519,6 +557,13 @@ export function findMilkdropFieldLine(
       inShaderSection = true;
     }
     if (inShaderSection) continue;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
+      continue;
+    }
 
     const lineKey = readAssignmentKey(lines[i]);
     if (lineKey !== null && normalizeFieldKey(lineKey) === normalizedTarget) {
@@ -546,7 +591,9 @@ export function readMilkdropField(
   if (line === null) return null;
 
   const text = source.split(/\r?\n/u)[line - 1] ?? '';
-  const rawValue = text.slice(text.indexOf('=') + 1).trim();
+  const rawValue = stripInlineCommentFromLine(
+    text.slice(text.indexOf('=') + 1),
+  ).trim();
   // The whole value has to be the number. `zoom=1.0 + bass` parses to 1.0 if
   // you only look at the front, which would have a control report — and then
   // overwrite — a value the preset never held.

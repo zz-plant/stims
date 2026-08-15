@@ -59,8 +59,8 @@
   }
 }
 
-/* Mobile: full-height bottom sheet */
-@media (max-width: 767px) {
+/* Mobile: full-height bottom sheet (portrait and landscape phones) */
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .panel {
     top: auto;
     right: 0;
@@ -131,7 +131,7 @@
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .header {
     touch-action: none;
     padding-top: 22px;
@@ -209,7 +209,7 @@
   overflow: hidden;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .body {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }

@@ -72,7 +72,7 @@ export default defineConfig({
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
-    rolldownOptions: {
+    rollupOptions: {
       // Keep the visualizer entry exports intact so dynamic imports from the homepage
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',

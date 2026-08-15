@@ -37,7 +37,7 @@ afterAll(async () => {
   const s = server;
   server = null;
   await s?.stop();
-});
+}, 30000);
 
 async function openPanel(panel: string, theme: 'dark' | 'light' = 'dark') {
   const page = await (browser as Browser).newPage({

@@ -67,7 +67,11 @@ import {
   MILKDROP_BUILTIN_DOCS,
   MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
 } from '../builtin-docs';
-import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
+import {
+  parseMilkdropExpression,
+  parseMilkdropStatement,
+  splitMilkdropStatements,
+} from '../expression';
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
@@ -129,24 +133,59 @@ export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
   diagnostics.push(...presetResult.diagnostics);
 
   const lines = source.split(/\r?\n/u);
+  let inShaderSection = false;
+
   lines.forEach((lineText, lineIdx) => {
     const lineNumber = lineIdx + 1;
     const trimmed = lineText.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      const section = trimmed.slice(1, -1).trim().toLowerCase();
+      inShaderSection = section === 'warp_shader' || section === 'comp_shader';
+      return;
+    }
+
+    if (inShaderSection) {
+      return;
+    }
+
     if (
-      !trimmed ||
       trimmed.startsWith('//') ||
       trimmed.startsWith('#') ||
       trimmed.startsWith(';')
     ) {
       return;
     }
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return;
+
+    // Strip inline comments and string literals so comments like "// smile :)" or
+    // strings like `title = "Part (1)"` do not trigger false parenthesis errors.
+    let strippedCode = '';
+    let inString: '"' | "'" | null = null;
+    for (let i = 0; i < trimmed.length; i += 1) {
+      const char = trimmed[i];
+      if (inString) {
+        if (char === inString) inString = null;
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        inString = char;
+        continue;
+      }
+      if (char === '/' && trimmed[i + 1] === '/') {
+        break;
+      }
+      if (char === '#') {
+        break;
+      }
+      strippedCode += char;
     }
 
     let parenDepth = 0;
-    for (let i = 0; i < trimmed.length; i += 1) {
-      const char = trimmed[i];
+    for (let i = 0; i < strippedCode.length; i += 1) {
+      const char = strippedCode[i];
       if (char === '(') {
         parenDepth += 1;
       } else if (char === ')') {
@@ -171,10 +210,10 @@ export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
       });
     }
 
-    const equalsIdx = trimmed.indexOf('=');
+    const equalsIdx = strippedCode.indexOf('=');
     if (equalsIdx > 0) {
-      const key = trimmed.slice(0, equalsIdx).trim().toLowerCase();
-      const val = trimmed.slice(equalsIdx + 1).trim();
+      const key = strippedCode.slice(0, equalsIdx).trim().toLowerCase();
+      const val = strippedCode.slice(equalsIdx + 1).trim();
 
       const isEquationKey =
         key.startsWith('per_frame') ||
@@ -185,7 +224,7 @@ export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
         key === 'comp';
 
       if (isEquationKey && val) {
-        const statements = val.split(';');
+        const statements = splitMilkdropStatements(val);
         statements.forEach((stmt) => {
           const s = stmt.trim();
           if (!s) return;
@@ -1863,6 +1902,7 @@ export class EditorPanel {
     this.disposeMenuDismiss = null;
     this.clearEditorDebounce();
     this.unsubscribeTheme();
+    this.discardAssistedEdit();
     this.editor.destroy();
     this.element.remove();
   }

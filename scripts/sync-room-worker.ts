@@ -73,19 +73,6 @@ export function parseHostMessage(
   }
 }
 
-interface DurableObjectStorage {
-  get<T>(key: string): Promise<T | undefined>;
-  put(entries: Record<string, unknown>): Promise<void>;
-  deleteAll(): Promise<void>;
-  setAlarm(time: number): Promise<void>;
-}
-
-interface DurableObjectState {
-  storage: DurableObjectStorage;
-  acceptWebSocket(ws: WebSocket): void;
-  getWebSockets(): WebSocket[];
-}
-
 interface HibernatableWebSocket extends WebSocket {
   serializeAttachment(value: SocketAttachment): void;
   deserializeAttachment(): SocketAttachment | null;

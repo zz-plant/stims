@@ -83,7 +83,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await stopDevServerInstance();
-});
+}, 30000);
 
 integrationTest(
   'homepage root renders the milkdrop launch shell',

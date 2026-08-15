@@ -1098,6 +1098,14 @@ body[data-page="workspace"][data-live="true"] {
     gap: 12px;
   }
 
+  @media (max-width: 480px) {
+    .stims-shell__launch-actions-minimal {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
   .stims-shell__launch-cta,
   .stims-shell__launch-secondary {
     padding: 12px 22px;
@@ -1108,10 +1116,23 @@ body[data-page="workspace"][data-live="true"] {
     letter-spacing: 0.02em;
     line-height: 1;
     cursor: pointer;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
     transition:
       background-color var(--transition-base),
       border-color var(--transition-base),
       transform var(--transition-base);
+  }
+
+  @media (max-width: 480px) {
+    .stims-shell__launch-cta,
+    .stims-shell__launch-secondary {
+      width: 100%;
+      text-align: center;
+    }
   }
 
   .stims-shell__launch-cta {
@@ -2359,7 +2380,7 @@ body[data-page="workspace"][data-live="true"] {
   }
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
-      --mobile-bar-height: 132px;
+      --mobile-bar-height: calc(64px + env(safe-area-inset-bottom, 0px));
     }
   }
   @media (max-width: 640px) {
@@ -2607,12 +2628,13 @@ body[data-page="workspace"][data-live="true"] {
    makes the numbers unreadable exactly when the visuals are busiest. */
 .stims-shell__debug-hud {
   position: fixed;
-  top: var(--stims-chrome-top, 22px);
-  right: 16px;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
   z-index: var(--z-nav);
   width: 260px;
-  max-height: calc(100vh - 44px);
+  max-height: calc(100dvh - 32px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 10px 12px;
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-md, 10px);

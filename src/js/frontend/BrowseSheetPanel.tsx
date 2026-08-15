@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -103,6 +103,7 @@ export function BrowseSheetPanel({
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
   const [limit, setLimit] = useState(BATCH_SIZE);
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const deferredSearch = useDeferredValue(localSearch);
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
   const presetListRef = useRef<HTMLUListElement | null>(null);
@@ -141,10 +142,10 @@ export function BrowseSheetPanel({
     () =>
       collectionFiltered.filter(
         (entry) =>
-          matchesPreset(entry, localSearch) &&
+          matchesPreset(entry, deferredSearch) &&
           matchesAuthor(entry, authorFilter),
       ),
-    [collectionFiltered, localSearch, authorFilter],
+    [collectionFiltered, deferredSearch, authorFilter],
   );
 
   // Auto-scroll active preset into view on initial open or selection

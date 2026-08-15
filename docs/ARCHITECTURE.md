@@ -171,6 +171,16 @@ Important boundary rule:
 - For an implementation map that separates shipped systems, partial certification, beta behavior, optional APIs, and scaffolding, see [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md).
 - The renderer support rule is: WebGL is the baseline compatibility path, and WebGPU is an additive path that should not regress WebGL behavior. See [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md) for the short verification matrix.
 
+## Edge runtime & Cloudflare architecture
+
+Stims pairs its browser-native visualizer client with a serverless edge backend on Cloudflare Workers:
+
+- **Site Worker with Static Assets**: The entire production bundle (`dist/`) is served at the edge with smart routing. Navigations hit [`functions/_middleware.ts`](../functions/_middleware.ts) first for dynamic SEO, JSON-LD, and Open Graph rewrites via `HTMLRewriter`.
+- **Workers AI & Vectorize**: `/api/visual-search` runs semantic search using `@cf/baai/bge-base-en-v1.5` embeddings over Vectorize indices (with fallback to cosine scanning over D1 database storage). `/api/generate-preset` uses reasoning and coding models to synthesize `.milk` source on the fly.
+- **D1 SQL & R2 Storage**: Persistent preset galleries, author registries, and social preview assets (`stims-gallery` and `stims-static`).
+- **Durable Objects & WebSockets (Hibernation API)**: [`scripts/sync-room-worker.ts`](../scripts/sync-room-worker.ts) powers real-time watch-together sync rooms where hosts stream visualizer parameters to viewers with zero idle cost.
+- **Vite & Vinext Edge Toolchain**: The codebase uses standard Vite Environment APIs and worker entrypoints (`dist/_worker.js`), ensuring seamless compatibility with modern fullstack edge frameworks like Vinext.
+
 ## Retired compatibility layer
 
 The old DOM shell (`loader.ts`, `router.ts`, `toy-view.ts`, `library-view*`, `bootstrap/*`) is gone. The only surviving compatibility surface is `milkdrop/index.html`, which preserves search and hash while redirecting to `/`. Route new work through the React workspace and the engine adapter.

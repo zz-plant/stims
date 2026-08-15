@@ -298,7 +298,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
       ) : null}
       <div className="stims-shell__source-grid">
         <button
-          id="use-demo-audio"
+          id="use-demo-audio-card"
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__source-card"

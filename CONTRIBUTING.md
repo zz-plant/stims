@@ -118,11 +118,12 @@ Presets are contributions too — you don't need to touch engine code.
 3. **Measure before you submit**: `bun run lab:reactivity -- --file path/to/your.milk` reports whether each variable actually reacts to audio — aim for a `reactive` verdict. (`bun run lab:visual` adds pixel-level verdicts but currently only accepts catalog `--preset` ids, so it runs after your preset lands in `public/milkdrop-presets/`.)
 4. **Submit**: open a PR adding the `.milk` file under `public/milkdrop-presets/` (the catalog gates in `bun run check` will validate it), or share it as a `#code=` URL from the editor. Credit any preset you remixed — multi-author titles are the community's convention, and `deriveRemixCredit` keeps lineage intact.
 
-## MilkDrop product changes
+## Product and runtime changes
 
 For product-facing work, keep these areas aligned together:
 
-- Root workspace and engine seam code in `assets/js/frontend/`, `assets/js/core/`, `assets/js/milkdrop/`, and `assets/js/toys/milkdrop-toy.ts`.
-- The shipped manifest entry in `assets/data/toys.json`.
-- Generated artifacts in `assets/js/data/toy-manifest.ts`, `public/toys.json`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md`.
+- Root workspace and engine seam code in `src/js/frontend/`, `src/js/core/`, and `src/js/milkdrop/`.
+- Edge functions, AI endpoints, and middleware in `functions/` and `functions/api/`.
+- Type contracts and ambient declarations in `src/types/`.
 - Tests in `tests/` where runtime behavior changed.
+- Run `bun run check` to verify all quality gates before opening a PR.

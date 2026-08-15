@@ -14,6 +14,16 @@ interface Env {
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
@@ -26,6 +36,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
       description: string;
       count?: number;
     };
+
+    if (!description || description.trim().length < 3) {
+      return json({ error: 'Description too short' }, 400);
+    }
 
     const n = Math.min(Math.max(count, 1), 5);
     const results: string[] = [];
@@ -69,7 +83,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
 }
 
 function cleanMilkSource(raw: string): string {
-  let s = raw.replace(/```[\w]*\n?/g, '').trim();
+  let s = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/```[\w]*\n?/g, '')
+    .trim();
   if (!s.includes('[preset00]')) s = `[preset00]\n${s}`;
   return s;
 }

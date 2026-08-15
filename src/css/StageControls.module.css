@@ -557,6 +557,9 @@
   flex-direction: column;
   gap: 1px;
   min-width: 180px;
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 4px;
   border-radius: 12px;
   background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
@@ -641,9 +644,11 @@
   }
 
   .menu {
-    right: 8px;
-    left: 8px;
+    right: max(8px, env(safe-area-inset-right));
+    left: max(8px, env(safe-area-inset-left));
     min-width: auto;
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px);
+    max-height: calc(100dvh - 80px);
   }
 }
 

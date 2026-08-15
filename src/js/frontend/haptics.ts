@@ -8,5 +8,7 @@ export function canUseHaptics(enabled = true) {
 
 export function pulseHaptic(pattern: number | number[] = 12, enabled = true) {
   if (!canUseHaptics(enabled)) return;
-  navigator.vibrate(pattern);
+  try {
+    navigator.vibrate(pattern);
+  } catch {}
 }

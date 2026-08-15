@@ -1,37 +1,7 @@
-interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-interface D1PreparedStatement {
-  bind(...params: unknown[]): D1PreparedStatement;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-}
-
-interface VectorizeIndex {
-  query(
-    vector: number[],
-    options?: {
-      topK?: number;
-      returnVectors?: boolean;
-      returnMetadata?: boolean | string;
-    },
-  ): Promise<{
-    matches: Array<{
-      id: string;
-      score: number;
-      metadata?: Record<string, unknown>;
-    }>;
-  }>;
-}
-
-import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
+import { enforceAiRateLimit } from './_ai-guard.ts';
 
 interface Env {
-  AI: {
-    run: (
-      model: string,
-      opts: { text: string[] },
-    ) => Promise<{ data: number[][] }>;
-  };
+  AI?: WorkersAI;
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
   AI_RATE_LIMITER?: RateLimiter;
@@ -120,10 +90,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
     let queryEmbedding: number[] = [];
 
     if (env.AI) {
-      const result = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
+      const result = (await env.AI.run('@cf/baai/bge-base-en-v1.5', {
         text: [body.description],
-      });
-      queryEmbedding = result.data[0];
+      })) as { data?: number[][] };
+      queryEmbedding = result.data?.[0] ?? [];
     }
 
     if (body.embedOnly) {

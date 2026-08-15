@@ -434,15 +434,18 @@ async function loadPresetPreviewDataUri(
     const response = await assetsBinding.fetch(previewUrl);
     if (response.ok) {
       const buffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) {
-        binary += String.fromCharCode(bytes[i]);
+      let b64: string;
+      if (typeof Buffer !== 'undefined') {
+        b64 = Buffer.from(buffer).toString('base64');
+      } else {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        b64 = btoa(binary);
       }
-      const b64 =
-        typeof btoa !== 'undefined'
-          ? btoa(binary)
-          : Buffer.from(bytes).toString('base64');
       return `data:image/png;base64,${b64}`;
     }
   } catch {
@@ -454,7 +457,9 @@ async function loadPresetPreviewDataUri(
 export async function onRequest(context: OgPresetContext): Promise<Response> {
   const url = new URL(context.request.url);
   const presetId = normalizePresetId(
-    url.searchParams.get('id') || url.searchParams.get('preset'),
+    url.searchParams.get('id') ||
+      url.searchParams.get('preset') ||
+      url.searchParams.get('name'),
   );
   const tweak = url.searchParams.get('tweak') || undefined;
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
