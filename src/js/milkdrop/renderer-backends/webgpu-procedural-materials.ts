@@ -1,6 +1,7 @@
 import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
+import { registerRendererTeardownCallback } from '../../core/services/render-service';
 import {
   MILKDROP_CUSTOM_WAVE_Z,
   MILKDROP_WAVE_Z,
@@ -61,6 +62,40 @@ type TslNode = {
 type TslVertexFn = (inputs: object) => TslNode;
 
 type TslUniformNodes<T> = { [K in keyof T]: TslNode };
+
+const WEBGPU_PROCEDURAL_CACHE_LIMIT = 64;
+
+class BoundedLruCache<T> {
+  readonly entries = new Map<string, T>();
+
+  constructor(readonly limit: number) {}
+
+  get(key: string) {
+    const value = this.entries.get(key);
+    if (value !== undefined) {
+      this.entries.delete(key);
+      this.entries.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: string, value: T) {
+    this.entries.delete(key);
+    this.entries.set(key, value);
+    if (this.entries.size > this.limit) {
+      const oldestKey = this.entries.keys().next().value;
+      if (oldestKey !== undefined) this.entries.delete(oldestKey);
+    }
+  }
+
+  clear() {
+    this.entries.clear();
+  }
+
+  get size() {
+    return this.entries.size;
+  }
+}
 
 // The per-preset field programs arrive as expression ASTs and historically
 // compiled to GLSL. On WebGPU they must compile to WGSL instead; the
@@ -490,7 +525,9 @@ const WGSL_APPLY_INTERACTION = `
     );
 `;
 
-const transformIncludeCache = new Map<string, unknown>();
+const transformIncludeCache = new BoundedLruCache<unknown>(
+  WEBGPU_PROCEDURAL_CACHE_LIMIT,
+);
 
 function getTransformInclude(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
@@ -584,7 +621,9 @@ ${WGSL_APPLY_INTERACTION}
   }
 `;
 
-const meshVertexFnCache = new Map<string, TslVertexFn>();
+const meshVertexFnCache = new BoundedLruCache<TslVertexFn>(
+  WEBGPU_PROCEDURAL_CACHE_LIMIT,
+);
 
 function getProceduralMeshVertexFn(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
@@ -728,7 +767,9 @@ ${WGSL_APPLY_INTERACTION}
   }
 `;
 
-const motionVectorVertexFnCache = new Map<string, TslVertexFn>();
+const motionVectorVertexFnCache = new BoundedLruCache<TslVertexFn>(
+  WEBGPU_PROCEDURAL_CACHE_LIMIT,
+);
 
 function getProceduralMotionVectorVertexFn(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
@@ -972,7 +1013,28 @@ ${WGSL_APPLY_INTERACTION}
   }`;
 }
 
-const customWaveVertexFnCache = new Map<string, TslVertexFn>();
+const customWaveVertexFnCache = new BoundedLruCache<TslVertexFn>(
+  WEBGPU_PROCEDURAL_CACHE_LIMIT,
+);
+
+export function clearWebGpuProceduralMaterialCaches() {
+  transformIncludeCache.clear();
+  meshVertexFnCache.clear();
+  motionVectorVertexFnCache.clear();
+  customWaveVertexFnCache.clear();
+}
+
+export function getWebGpuProceduralMaterialCacheDiagnostics() {
+  return {
+    limit: WEBGPU_PROCEDURAL_CACHE_LIMIT,
+    transformIncludes: transformIncludeCache.size,
+    meshVertexFns: meshVertexFnCache.size,
+    motionVectorVertexFns: motionVectorVertexFnCache.size,
+    customWaveVertexFns: customWaveVertexFnCache.size,
+  } as const;
+}
+
+registerRendererTeardownCallback(clearWebGpuProceduralMaterialCaches);
 
 function getProceduralCustomWaveVertexFn(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
