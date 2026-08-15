@@ -71,6 +71,17 @@ export function usePresetPreviews({
               [preview.presetId]: preview,
             }));
           },
+          onPreviewEvicted: (presetId) => {
+            requestedIdsRef.current.delete(presetId);
+            setPresetPreviews((current) => {
+              if (!(presetId in current)) {
+                return current;
+              }
+              const next = { ...current };
+              delete next[presetId];
+              return next;
+            });
+          },
         });
 
         return service;
