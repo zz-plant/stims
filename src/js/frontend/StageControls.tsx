@@ -24,6 +24,44 @@ type MenuItem = {
   sectionLabel?: string;
 };
 
+/**
+ * The transition ladder the stage menu cycles through. A subset of the
+ * durations Settings offers, chosen so one click always lands somewhere
+ * useful mid-set rather than stepping through eight near-identical values.
+ * Settings keeps the full list for when precision matters.
+ */
+const TRANSITION_STEPS = [
+  { mode: 'cut' as const, seconds: 0 },
+  { mode: 'blend' as const, seconds: 1 },
+  { mode: 'blend' as const, seconds: 2 },
+  { mode: 'blend' as const, seconds: 5 },
+];
+
+function describeTransitionStep(step: (typeof TRANSITION_STEPS)[number]) {
+  return step.mode === 'cut' ? 'Instant cut' : `Blend ${step.seconds}s`;
+}
+
+/** Nearest ladder rung to what the engine currently holds, so cycling starts
+ * from where the user actually is even when Settings set an off-ladder
+ * duration like 3s or 8s. */
+function findTransitionStepIndex(
+  mode: 'blend' | 'cut',
+  seconds: number,
+): number {
+  if (mode === 'cut') return 0;
+  let best = 1;
+  for (let i = 1; i < TRANSITION_STEPS.length; i += 1) {
+    const step = TRANSITION_STEPS[i];
+    if (
+      Math.abs(step.seconds - seconds) <
+      Math.abs(TRANSITION_STEPS[best].seconds - seconds)
+    ) {
+      best = i;
+    }
+  }
+  return best;
+}
+
 export function StageControls({
   isFullscreen,
   onToggleFullscreen,
@@ -34,6 +72,11 @@ export function StageControls({
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
+  const transitionStepIndex = findTransitionStepIndex(
+    engineSnapshot?.transitionMode ?? 'blend',
+    engineSnapshot?.blendDuration ?? 2,
+  );
+  const transitionStep = TRANSITION_STEPS[transitionStepIndex];
 
   const presetTitle =
     engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '';
@@ -182,23 +225,24 @@ export function StageControls({
       active: panel === 'browse',
     },
     {
+      // "More like this" and "Match my music" were two menu items opening two
+      // panels that did the same job from different seeds. One entry now
+      // opens the finder; it starts on the audio tab when there is audio to
+      // profile and on the frame tab otherwise, and either tab is one click
+      // away once open.
       icon: 'eye' as const,
-      label: 'More like this',
-      action: () => run(() => void engine.handleVisualSearch?.()),
+      label: 'Find similar',
+      action: () =>
+        run(() => {
+          const target = engineSnapshot?.audioActive
+            ? 'audiomatch'
+            : 'visualsearch';
+          ui.updatePanel(
+            panel === 'audiomatch' || panel === 'visualsearch' ? null : target,
+          );
+        }),
+      active: panel === 'audiomatch' || panel === 'visualsearch',
     },
-    ...(engineSnapshot?.audioActive
-      ? [
-          {
-            icon: 'pulse' as const,
-            label: 'Match my music',
-            action: () =>
-              run(() =>
-                ui.updatePanel(panel === 'audiomatch' ? null : 'audiomatch'),
-              ),
-            active: panel === 'audiomatch',
-          },
-        ]
-      : []),
     {
       icon: 'sparkles' as const,
       label: 'Generate with AI',
@@ -232,20 +276,23 @@ export function StageControls({
     },
     {
       icon: 'sliders' as const,
-      label:
-        (engineSnapshot?.transitionMode ?? 'blend') === 'cut'
-          ? 'Transition: Instant Cut'
-          : `Transition: Blend (${engineSnapshot?.blendDuration ?? 2.7}s)`,
+      // One control that owns everything it displays. This used to toggle
+      // mode only while printing a duration it had no way to change — the
+      // duration lived in Settings, so the menu showed you a number and then
+      // refused to do anything about it. Cycling the whole ladder keeps the
+      // one-click speed a live set needs and makes the label honest.
+      label: `Transition: ${describeTransitionStep(transitionStep)}`,
       action: () =>
         run(() => {
-          const current = engineSnapshot?.transitionMode ?? 'blend';
-          const nextMode = current === 'blend' ? 'cut' : 'blend';
-          engine.setTransitionMode(nextMode);
-          ui.setStatusMessage(
-            nextMode === 'cut'
-              ? 'Transition set to Instant Cut'
-              : 'Transition set to Smooth Blend',
-          );
+          const next =
+            TRANSITION_STEPS[
+              (transitionStepIndex + 1) % TRANSITION_STEPS.length
+            ];
+          engine.setTransitionMode(next.mode);
+          if (next.mode === 'blend') {
+            engine.setBlendDuration(next.seconds);
+          }
+          ui.setStatusMessage(`Transition: ${describeTransitionStep(next)}`);
         }),
       sectionLabel: 'VJ Stage Controls',
     },

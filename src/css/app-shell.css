@@ -3469,59 +3469,99 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   word-break: break-word;
 }
 
-.stims-shell__audiomatch-panel,
-.stims-shell__visualsearch-panel {
+/* ── Preset finder ────────────────────────────────────────────────────
+   One panel for both catalog searches. Replaces the paired
+   __audiomatch- and __visualsearch- rules, which were the same block written
+   twice because the two panels were the same panel written twice. */
+
+.stims-finder {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-.stims-shell__audiomatch-header,
-.stims-shell__visualsearch-header {
+.stims-finder__head {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
 }
 
-.stims-shell__audiomatch-icon,
-.stims-shell__visualsearch-icon {
+.stims-finder__icon {
   flex-shrink: 0;
   color: var(--stims-cool);
 }
 
-.stims-shell__audiomatch-header h3,
-.stims-shell__visualsearch-header h3 {
+.stims-finder__title {
   margin: 0;
   font-size: var(--text-lg);
   color: var(--stims-ink-strong);
 }
 
-.stims-shell__audiomatch-desc,
-.stims-shell__visualsearch-desc {
+.stims-finder__modes {
+  display: flex;
+  gap: 4px;
+}
+
+.stims-finder__mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: var(--stims-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.stims-finder__mode:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink-strong);
+}
+
+.stims-finder__mode:has(:focus-visible) {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+/* The input carries the semantics and keyboard behaviour; the label is the
+   visible control, so the box itself is hidden rather than removed. */
+.stims-finder__mode-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stims-finder__mode[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--stims-on-accent);
+}
+
+.stims-finder__hint {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--stims-muted);
 }
 
-.stims-shell__audiomatch-loading,
-.stims-shell__audiomatch-empty,
-.stims-shell__visualsearch-loading,
-.stims-shell__visualsearch-empty {
+.stims-finder__status {
   padding: var(--space-md);
   text-align: center;
   color: var(--stims-muted);
   font-size: var(--text-sm);
 }
 
-.stims-shell__visualsearch-error {
-  padding: var(--space-md);
-  text-align: center;
+.stims-finder__status--error {
   color: var(--stims-bad, #ff7b72);
-  font-size: var(--text-sm);
 }
 
-.stims-shell__audiomatch-results,
-.stims-shell__visualsearch-results {
+.stims-finder__results {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -3530,13 +3570,18 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   gap: 8px;
 }
 
-.stims-shell__audiomatch-item,
-.stims-shell__visualsearch-item {
+.stims-finder__item {
   list-style: none;
 }
 
-.stims-shell__audiomatch-btn,
-.stims-shell__visualsearch-btn {
+.stims-finder__empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--stims-muted);
+  font-size: var(--text-sm);
+}
+
+.stims-finder__result {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3544,94 +3589,80 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   padding: 10px 12px;
   border: 1px solid var(--stims-line-soft);
   border-radius: var(--stims-radius-control);
-  background: var(--stims-white-04);
+  background: var(--stims-control-fill);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition:
     border-color 150ms ease,
-    background 150ms ease,
-    transform 150ms ease;
-}
-
-.stims-shell__audiomatch-btn:hover,
-.stims-shell__visualsearch-btn:hover {
-  border-color: rgba(119, 201, 255, 0.5);
-  background: var(--stims-white-08);
-  transform: translateY(-1px);
-}
-
-.stims-shell__audiomatch-rank {
-  flex-shrink: 0;
-  font-weight: var(--font-weight-bold);
-  color: var(--stims-cool);
-  font-size: var(--text-sm);
-  min-width: 1.5em;
-}
-
-.stims-shell__audiomatch-id {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stims-shell__audiomatch-score {
-  flex-shrink: 0;
-  font-size: var(--text-xs);
-  color: var(--stims-muted);
-}
-
-.stims-shell__visualsearch-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stims-shell__visualsearch-title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--stims-ink-strong);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stims-shell__visualsearch-meta {
-  font-size: var(--text-xs);
-  color: var(--stims-muted);
-}
-
-.stims-shell__audiomatch-refresh,
-.stims-shell__visualsearch-refresh {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid var(--stims-line);
-  border-radius: var(--stims-radius-control);
-  background: var(--stims-control-fill);
-  color: var(--stims-ink);
-  font: inherit;
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  justify-content: center;
-  transition:
-    border-color 150ms ease,
     background 150ms ease;
 }
 
-.stims-shell__audiomatch-refresh:hover:not(:disabled),
-.stims-shell__visualsearch-refresh:hover {
+.stims-finder__result:hover {
   border-color: var(--stims-line-strong);
   background: var(--stims-control-fill-hover);
 }
 
-.stims-shell__audiomatch-refresh:disabled {
+.stims-finder__result:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.stims-finder__rank {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-round);
+  background: var(--stims-accent-soft);
+  color: var(--stims-accent);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.stims-finder__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stims-finder__name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-finder__meta {
+  font-size: var(--text-xs);
+  color: var(--stims-muted);
+}
+
+.stims-finder__run {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.stims-finder__run:hover:not(:disabled) {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+}
+
+.stims-finder__run:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

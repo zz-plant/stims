@@ -34,7 +34,7 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   { id: 'settings', label: 'Settings', defaultKeys: ['S'] },
   { id: 'editor', label: 'Edit preset code', defaultKeys: ['E'] },
   { id: 'refine', label: 'Refine with AI', defaultKeys: ['G'] },
-  { id: 'visualsearch', label: 'More like this', defaultKeys: ['M'] },
+  { id: 'visualsearch', label: 'Find a preset', defaultKeys: ['M'] },
   {
     id: 'shuffle',
     label: 'Next preset (random)',

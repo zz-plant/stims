@@ -70,8 +70,10 @@ import {
   WorkspaceStagePanel,
 } from './workspace-ui.tsx';
 
-const AudioMatchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.AudioMatchPanel })),
+const PresetFinderPanel = lazy(() =>
+  import('./PresetFinderPanel.tsx').then((m) => ({
+    default: m.PresetFinderPanel,
+  })),
 );
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
@@ -97,9 +99,6 @@ const SynthesizePanel = lazy(() =>
 );
 const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
-);
-const VisualSearchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
 );
 
 function prefersThumbModeByDefault() {
@@ -825,11 +824,17 @@ function StimsWorkspaceAppShell() {
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
-          {ui.routeState.panel === 'audiomatch' ? (
-            <AudioMatchPanel onClose={() => ui.updatePanel(null)} />
-          ) : null}
-          {ui.routeState.panel === 'visualsearch' ? (
-            <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
+          {/* One panel, two seeds. Both ids stay routable so existing deep
+              links and the user's saved shortcuts keep working; they just
+              open the same panel on a different tab. */}
+          {ui.routeState.panel === 'audiomatch' ||
+          ui.routeState.panel === 'visualsearch' ? (
+            <PresetFinderPanel
+              initialMode={
+                ui.routeState.panel === 'visualsearch' ? 'look' : 'sound'
+              }
+              onClose={() => ui.updatePanel(null)}
+            />
           ) : null}
           {ui.routeState.panel === 'synthesize' ? (
             <SynthesizePanel offline={offline} />

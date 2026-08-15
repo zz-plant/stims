@@ -82,10 +82,11 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
       return 'Edit preset code';
     case 'refine':
       return 'Refine with AI';
+    // Both ids open the same finder panel, so they share its title rather
+    // than keeping the two names the two old panels had.
     case 'audiomatch':
-      return 'Match my music';
     case 'visualsearch':
-      return 'More like this';
+      return 'Find a preset';
     case 'synthesize':
       return 'Generate with AI';
     case 'capture':

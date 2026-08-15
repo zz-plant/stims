@@ -323,7 +323,10 @@ describe('Workspace performance regressions', () => {
       ),
       'utf8',
     );
-    const sidePanelSource = readFileSync(
+    // The catalog-lookup memo moved out of SidePanel when "Match my music"
+    // and "More like this" were merged into one finder panel; the guard
+    // follows the code rather than the filename it used to live in.
+    const finderPanelSource = readFileSync(
       join(
         import.meta.dir,
         '..',
@@ -331,16 +334,15 @@ describe('Workspace performance regressions', () => {
         'src',
         'js',
         'frontend',
-        'SidePanel.tsx',
+        'PresetFinderPanel.tsx',
       ),
       'utf8',
     );
 
-    expect(sidePanelSource).toContain('const catalogEntryById = useMemo');
-    expect(sidePanelSource).toContain('catalogEntryById.get(r.presetId)');
-    expect(sidePanelSource).not.toContain(
-      'engine.catalog.find((e) => e.id === r.presetId)',
-    );
+    expect(finderPanelSource).toContain('const catalogEntryById = useMemo');
+    expect(finderPanelSource).toContain('catalogEntryById.get(match.presetId)');
+    // The regression this guards: an O(catalog) scan per result row.
+    expect(finderPanelSource).not.toContain('engine.catalog.find(');
     expect(browsePanelSource).toContain('const sorted = useMemo');
     expect(browsePanelSource).toContain('sortBrowseEntries(');
   });
