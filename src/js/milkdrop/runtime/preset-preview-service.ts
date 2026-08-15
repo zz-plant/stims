@@ -5,21 +5,53 @@ import {
 
 type CaptureResult = Omit<MilkdropPresetRenderPreview, 'presetId' | 'status'>;
 
+// Keeps enough snapshots for the visible catalog rows plus a generous
+// near-visible overscan without retaining every preset a user scrolls past.
+export const MAX_PRESET_PREVIEW_CACHE_SIZE = 48;
+
 export function createMilkdropPresetPreviewService({
   capturePreview,
   onPreviewChanged,
+  onPreviewEvicted,
 }: {
   capturePreview: (presetId: string) => Promise<CaptureResult>;
   onPreviewChanged: (preview: MilkdropPresetRenderPreview) => void;
+  onPreviewEvicted: (presetId: string) => void;
 }) {
   const previews = new Map<string, MilkdropPresetRenderPreview>();
   let queue: string[] = [];
   let currentPresetId: string | null = null;
   let disposed = false;
 
+  const touch = (presetId: string) => {
+    const preview = previews.get(presetId);
+    if (!preview) {
+      return;
+    }
+    previews.delete(presetId);
+    previews.set(presetId, preview);
+  };
+
+  const evictSettledPreviews = () => {
+    while (previews.size > MAX_PRESET_PREVIEW_CACHE_SIZE) {
+      const evictionCandidate = [...previews].find(
+        ([, preview]) =>
+          preview.status === 'ready' || preview.status === 'failed',
+      );
+      if (!evictionCandidate) {
+        return;
+      }
+      const [presetId] = evictionCandidate;
+      previews.delete(presetId);
+      onPreviewEvicted(presetId);
+    }
+  };
+
   const emit = (preview: MilkdropPresetRenderPreview) => {
     previews.set(preview.presetId, preview);
+    touch(preview.presetId);
     onPreviewChanged(preview);
+    evictSettledPreviews();
   };
 
   const ensureQueuedPreview = (presetId: string) => {
@@ -133,7 +165,11 @@ export function createMilkdropPresetPreviewService({
     },
 
     getPreview(presetId: string) {
-      return previews.get(presetId) ?? null;
+      const preview = previews.get(presetId) ?? null;
+      if (preview) {
+        touch(presetId);
+      }
+      return preview;
     },
 
     dispose() {

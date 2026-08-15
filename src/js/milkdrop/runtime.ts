@@ -607,6 +607,7 @@ export function createMilkdropExperience({
     previewService = createMilkdropPresetPreviewService({
       capturePreview: capturePresetPreview,
       onPreviewChanged: () => {},
+      onPreviewEvicted: () => {},
     });
   }
 
