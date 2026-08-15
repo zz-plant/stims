@@ -650,10 +650,17 @@ export function buildMeshField({
 }): MeshField {
   const density = getMeshDensity(state, detailScale);
 
-  // Clear per-pixel scratch each frame to prevent accumulation across frames
-  for (const key in geometryState.pointScratch) {
-    delete geometryState.pointScratch[key];
-  }
+  // Clear per-pixel scratch each frame to prevent accumulation across frames.
+  //
+  // A fresh object rather than `delete`-ing every key: `delete` transitions the
+  // object to V8 dictionary mode, and it never transitions back. `pointScratch`
+  // IS `frame.scratch` — transformMeshPoint writes ~14 properties to it on every
+  // one of the ~1.7k vertices, so a dictionary-mode scratch turns ~25k
+  // inline-cached property writes per frame into hash lookups. Same reasoning as
+  // the per-vertex setPrototypeOf note on MeshTransformFrame above; this was its
+  // surviving sibling. createMeshTransformFrame re-reads pointScratch and
+  // re-wires its prototype immediately below, so swapping the object is safe.
+  geometryState.pointScratch = {};
 
   if (proceduralMeshPlan) {
     geometryState.meshPoints.length = 0;

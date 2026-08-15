@@ -146,6 +146,15 @@ class MilkdropPresetVM implements MilkdropVM {
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
   private perFrameBaseValues: MutableState = {};
+  /**
+   * `perFrameBaseValues` flattened into parallel arrays, rebuilt once per
+   * preset in setPreset. restorePerFrameBaseValues runs on EVERY frame over
+   * ~100 keys; a `for...in` there re-walks the object's enumerable keys (and
+   * its prototype chain) each time, while an indexed loop over two dense
+   * arrays stays monomorphic. Keys and values are positionally paired.
+   */
+  private perFrameBaseKeys: string[] = [];
+  private perFrameBaseNumbers: number[] = [];
 
   /** Resolves `wave${slot}_${key}` / `shape${slot}_${key}` composite keys that
    * exist only in the synthesized snapshot, returning the owning locals object
@@ -368,14 +377,21 @@ class MilkdropPresetVM implements MilkdropVM {
     // User variables (and q/t/reg/megabuf) persist across frames, and
     // `basstime` is conventionally a user accumulator despite having a
     // default, so it persists too.
+    // `basstime` is skipped rather than deleted afterwards: `delete` would move
+    // this object into V8 dictionary mode, and it is enumerated on every frame.
     this.perFrameBaseValues = {};
     for (const key in DEFAULT_MILKDROP_STATE) {
+      if (key === 'basstime') continue;
       this.perFrameBaseValues[key] = this.state[key] ?? 0;
     }
     for (const key in this.preset.ir.numericFields) {
+      if (key === 'basstime') continue;
       this.perFrameBaseValues[key] = this.state[key] ?? 0;
     }
-    delete this.perFrameBaseValues.basstime;
+    this.perFrameBaseKeys = Object.keys(this.perFrameBaseValues);
+    this.perFrameBaseNumbers = this.perFrameBaseKeys.map(
+      (key) => this.perFrameBaseValues[key] ?? 0,
+    );
 
     this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
@@ -581,10 +597,11 @@ class MilkdropPresetVM implements MilkdropVM {
    * a per-frame run (MilkDrop reload semantics). Mutates `this.state` in place
    * so the `registers` prototype chain stays intact. */
   private restorePerFrameBaseValues() {
-    const base = this.perFrameBaseValues;
+    const keys = this.perFrameBaseKeys;
+    const values = this.perFrameBaseNumbers;
     const state = this.state;
-    for (const key in base) {
-      state[key] = base[key];
+    for (let i = 0; i < keys.length; i += 1) {
+      state[keys[i]] = values[i];
     }
   }
 

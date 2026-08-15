@@ -547,16 +547,13 @@ export function syncParticleFieldObject(
   uniforms.size.value = particleField.size;
   uniforms.opacity.value = particleField.alpha * alphaMultiplier;
   uniforms.seed.value = particleField.seed;
-  material.transparent = true;
-  material.depthTest = false;
-  material.depthWrite = false;
-  material.blending = AdditiveBlending;
-  material.side = DoubleSide;
-  if (backend === 'webgl') {
-    // Bumping material.version on a NodeMaterial forces a full pipeline
-    // rebuild every frame on WebGPU; only the WebGL ShaderMaterial needs it.
-    material.needsUpdate = true;
-  }
+  // transparent / depthTest / depthWrite / blending / side are set once at
+  // material construction and never vary, so they are not re-assigned here —
+  // and `needsUpdate` is deliberately NOT set. This function only writes
+  // uniform VALUES, which three.js uploads every render on its own; marking
+  // the material dirty instead bumped material.version each frame, forcing
+  // WebGLRenderer to re-run getParameters() and the program-cache lookup for
+  // a program that never changed (~2% of frame time).
   existing.renderOrder = getMilkdropPassRenderOrder('particle-field');
   existing.position.z = 0.18;
   return existing;
