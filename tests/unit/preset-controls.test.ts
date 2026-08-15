@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   COLOR_GROUPS,
+  CONTROL_SECTIONS,
   channelsToHex,
   ENUM_CONTROLS,
   formatControlValue,
@@ -162,7 +163,7 @@ describe('control catalogue', () => {
   });
 
   it('lists the post-processing toggles in pipeline order', () => {
-    const post = TOGGLE_CONTROLS.filter((t) => t.group === 'post').map(
+    const post = TOGGLE_CONTROLS.filter((t) => t.section === 'post').map(
       (t) => t.key,
     );
     expect(post.indexOf('brighten')).toBeLessThan(post.indexOf('invert'));
@@ -215,5 +216,101 @@ describe('colour channel conversion', () => {
     // Presets do push channels past 1; the swatch has to show something, but
     // the buffer keeps the original until the swatch is actually moved.
     expect(channelsToHex([1.8, 0, 0])).toBe('#ff0000');
+  });
+});
+
+/**
+ * The pane is grouped by what a field does, not by which widget it renders
+ * as. Grouping by widget split the main wave across four separate places —
+ * mode under Modes, colour under Colour, its four flags under Switches, its
+ * volume fade-in under Ranges — which is a taxonomy of controls rather than
+ * of the thing being edited.
+ */
+describe('control sections', () => {
+  const sectionIds = CONTROL_SECTIONS.map((s) => s.id);
+
+  it('assigns every control to a declared section', () => {
+    const sections = [
+      ...SCALAR_CONTROLS.map((c) => c.section),
+      ...TOGGLE_CONTROLS.map((c) => c.section),
+      ...ENUM_CONTROLS.map((c) => c.section),
+      ...RANGE_CONTROLS.map((c) => c.section),
+      ...COLOR_GROUPS.map((c) => c.section),
+    ];
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      expect(sectionIds).toContain(section);
+    }
+  });
+
+  it('leaves no section empty', () => {
+    for (const id of sectionIds) {
+      const members = [
+        ...SCALAR_CONTROLS.filter((c) => c.section === id),
+        ...TOGGLE_CONTROLS.filter((c) => c.section === id),
+        ...ENUM_CONTROLS.filter((c) => c.section === id),
+        ...RANGE_CONTROLS.filter((c) => c.section === id),
+        ...COLOR_GROUPS.filter((c) => c.section === id),
+      ];
+      expect(members.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps everything about the main wave in one section', () => {
+    // The regression this regrouping exists to prevent.
+    expect(ENUM_CONTROLS.find((c) => c.key === 'wave_mode')?.section).toBe(
+      'wave',
+    );
+    expect(COLOR_GROUPS.find((c) => c.label === 'Wave')?.section).toBe('wave');
+    expect(
+      RANGE_CONTROLS.find((c) => c.minKey === 'modwavealphastart')?.section,
+    ).toBe('wave');
+    for (const key of [
+      'wave_additive',
+      'wave_usedots',
+      'wave_thick',
+      'wave_brighten',
+      'bmodwavealphabyvolume',
+    ]) {
+      expect(TOGGLE_CONTROLS.find((c) => c.key === key)?.section).toBe('wave');
+    }
+  });
+
+  it('keeps the post chain with the scalars and ranges it drives', () => {
+    // The echo toggle, its zoom/alpha and its orientation are one effect.
+    for (const key of [
+      'video_echo_enabled',
+      'video_echo_zoom',
+      'video_echo_alpha',
+      'video_echo_orientation',
+      'gammaadj',
+    ]) {
+      const section =
+        SCALAR_CONTROLS.find((c) => c.key === key)?.section ??
+        TOGGLE_CONTROLS.find((c) => c.key === key)?.section ??
+        ENUM_CONTROLS.find((c) => c.key === key)?.section;
+      expect(section).toBe('post');
+    }
+    expect(
+      RANGE_CONTROLS.filter((c) => c.minKey.startsWith('blur')).every(
+        (c) => c.section === 'post',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps the warp transform together', () => {
+    for (const key of [
+      'zoom',
+      'warp',
+      'rot',
+      'cx',
+      'cy',
+      'sx',
+      'sy',
+      'dx',
+      'dy',
+    ]) {
+      expect(SCALAR_CONTROLS.find((c) => c.key === key)?.section).toBe('warp');
+    }
   });
 });

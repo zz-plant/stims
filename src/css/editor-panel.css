@@ -820,6 +820,28 @@ html.light .stims-editor {
   background: color-mix(in srgb, var(--stims-warn) 14%, transparent);
 }
 
+/* ── Subject sections ─────────────────────────────────────────────────
+   Warp / Wave / Post / Frame. Each holds whatever control forms its subject
+   needs, so a section is a mixed stack of swatches, faders, ranges and
+   switches rather than a run of one widget type. The rule below is the only
+   thing separating them, because the heading already does the work. */
+
+.stims-editor__section {
+  display: grid;
+  gap: 4px;
+}
+
+.stims-editor__section + .stims-editor__section {
+  margin-top: 10px;
+}
+
+/* The first heading in the pane has the hint paragraph above it already. */
+.stims-editor__section:first-of-type .stims-editor__subhead {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+}
+
 /* ── Switches ─────────────────────────────────────────────────────────
    Boolean fields, which the format stores as floats and this pane used to
    render as faders you dragged to 1.000. The post-chain bank is in frame
@@ -1110,10 +1132,6 @@ html.light .stims-editor {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 4px 16px;
-}
-
-.stims-editor__colors .stims-editor__subhead {
-  grid-column: 1 / -1;
 }
 
 .stims-editor__color {

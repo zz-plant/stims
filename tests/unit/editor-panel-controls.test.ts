@@ -285,8 +285,10 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
   test('a range control writes both of its fields', () => {
     const panel = open('blur1_min=0\nblur1_max=1\n');
 
+    // Targeted by label, not by position: sections are ordered by subject, so
+    // the first range in the pane is the wave's volume fade, not a blur pass.
     const input = panel.element.querySelector(
-      '.stims-editor__range-input[data-handle="min"]',
+      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
     ) as HTMLInputElement;
     input.value = '0.4';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -301,8 +303,10 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     const panel = open('blur1_min=0\nblur1_max=1\n');
 
     // Drag the lower handle past the upper one.
+    // Targeted by label, not by position: sections are ordered by subject, so
+    // the first range in the pane is the wave's volume fade, not a blur pass.
     const input = panel.element.querySelector(
-      '.stims-editor__range-input[data-handle="min"]',
+      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
     ) as HTMLInputElement;
     input.value = '0.9';
     input.dispatchEvent(new Event('input', { bubbles: true }));
