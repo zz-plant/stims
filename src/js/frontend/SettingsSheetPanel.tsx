@@ -545,39 +545,6 @@ export function SettingsSheetPanel({
         <>
           <section className="ctl-section">
             <div className="ctl-section__head">
-              <h3 className="ctl-section__title">Visual quality</h3>
-            </div>
-            <div
-              className="ctl-options"
-              role="radiogroup"
-              aria-label="Visual quality"
-            >
-              {qualityOptions.map((preset) => (
-                <label
-                  key={preset.id}
-                  className="ctl-option"
-                  title={describeQualityNumbers(preset)}
-                >
-                  <input
-                    type="radio"
-                    name="quality-preset"
-                    className="ctl-option__input"
-                    value={preset.id}
-                    checked={preset.id === qualityPreset.id}
-                    onChange={() => engine.setQualityPreset(preset.id)}
-                  />
-                  <span className="ctl-option__label">{preset.label}</span>
-                  <span className="ctl-option__hint">{preset.description}</span>
-                </label>
-              ))}
-            </div>
-            <p className="ctl-readout">
-              {describeQualityNumbers(qualityPreset)}
-            </p>
-          </section>
-
-          <section className="ctl-section">
-            <div className="ctl-section__head">
               <h3 className="ctl-section__title">Playback</h3>
             </div>
             <SwitchRow
@@ -650,6 +617,43 @@ export function SettingsSheetPanel({
 
       {activeTab === 'graphics' ? (
         <>
+          {/* The quality preset sets the detail, particle and resolution
+              controls below it, so it belongs directly above them. It used to
+              sit in Playback & Audio, which meant changing how hard the
+              renderer works spanned two tabs — one of them named for the job
+              and one of them not. */}
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Visual quality</h3>
+            </div>
+            <div
+              className="ctl-options"
+              role="radiogroup"
+              aria-label="Visual quality"
+            >
+              {qualityOptions.map((preset) => (
+                <label
+                  key={preset.id}
+                  className="ctl-option"
+                  title={describeQualityNumbers(preset)}
+                >
+                  <input
+                    type="radio"
+                    name="quality-preset"
+                    className="ctl-option__input"
+                    value={preset.id}
+                    checked={preset.id === qualityPreset.id}
+                    onChange={() => engine.setQualityPreset(preset.id)}
+                  />
+                  <span className="ctl-option__label">{preset.label}</span>
+                  <span className="ctl-option__hint">{preset.description}</span>
+                </label>
+              ))}
+            </div>
+            <p className="ctl-readout">
+              {describeQualityNumbers(qualityPreset)}
+            </p>
+          </section>
           <PerformanceSection />
           <section className="ctl-section">
             <div className="ctl-section__head">

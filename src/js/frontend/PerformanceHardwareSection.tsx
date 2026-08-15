@@ -114,10 +114,14 @@ export function PerformanceHardwareSection() {
 
       <div className="ctl-row ctl-row--stack">
         <span className="ctl-row__text">
-          <span className="ctl-row__label">Map a knob</span>
+          <span className="ctl-row__label">Map a knob by name</span>
           <span className="ctl-row__hint">
-            Name a target — zoom, warp, rot, decay, q1-q4, or any variable a
-            preset defines — then move a control on your hardware to bind it.
+            For variables with no control of their own — q1-q8, t1-t8, or
+            anything a preset defines. Name it, then move a knob to bind it.
+          </span>
+          <span className="ctl-row__hint">
+            Anything that has a fader, switch or swatch is bound from the
+            control itself: open Edit preset code and use its ⏺ button.
           </span>
         </span>
         <div className="ctl-midi-learn-row">

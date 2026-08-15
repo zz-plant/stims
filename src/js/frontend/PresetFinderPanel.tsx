@@ -1,0 +1,274 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  buildAudioProfile,
+  searchByAudioProfile,
+} from '../core/services/audio-matcher.ts';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
+import type { PresetCatalogEntry } from './contracts.ts';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
+import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
+import { useWorkspace } from './workspace-context.tsx';
+import { resolveAuthorUrl } from './workspace-helpers.ts';
+
+/**
+ * Finding a preset in the catalog, by whichever signal you have to hand.
+ *
+ * "Match my music" and "More like this" were two top-level panels and two
+ * menu items, but they are one job: rank the catalog against the current
+ * moment and let you play a result. They differed only in the seed — the
+ * audio that is playing, or the frame on screen — and in how a row renders.
+ * Splitting them meant deciding which door to walk through before you could
+ * see either set of results, and neither door mentioned the other.
+ *
+ * Generating and refining preset *source* is a genuinely different job with a
+ * different output, so those stay separate; this is not a merge of everything
+ * with "AI" in the name.
+ */
+export type FinderMode = 'sound' | 'look';
+
+/** Both searches collapse onto this so the results list is written once. */
+type FinderResult = {
+  id: string;
+  title: string;
+  entry: PresetCatalogEntry | null;
+  /** Ranking detail a mode wants to show, e.g. "82% match". */
+  detail: string | null;
+};
+
+const MODES: Array<{
+  id: FinderMode;
+  label: string;
+  hint: string;
+  icon: 'music' | 'eye';
+}> = [
+  {
+    id: 'sound',
+    label: 'By sound',
+    hint: 'Ranks the catalog against the audio playing right now.',
+    icon: 'music',
+  },
+  {
+    id: 'look',
+    label: 'By look',
+    hint: 'Ranks the catalog against the frame currently on screen.',
+    icon: 'eye',
+  },
+];
+
+export function PresetFinderPanel({
+  initialMode = 'sound',
+  onClose,
+}: {
+  initialMode?: FinderMode;
+  onClose: () => void;
+}) {
+  const { engine, ui } = useWorkspace();
+  const [mode, setMode] = useState<FinderMode>(initialMode);
+  const [results, setResults] = useState<FinderResult[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [audioEnergy, setAudioEnergy] = useState(getAudioEnergy);
+
+  useEffect(
+    () => subscribeAudioEnergy(() => setAudioEnergy(getAudioEnergy())),
+    [],
+  );
+
+  const catalogEntryById = useMemo(() => {
+    const map = new Map<string, PresetCatalogEntry>();
+    for (const entry of engine.catalog) {
+      map.set(entry.id, entry);
+    }
+    return map;
+  }, [engine.catalog]);
+
+  const search = useCallback(async () => {
+    setLoading(true);
+    setResults(null);
+    setError(null);
+    try {
+      // Both services return the same {presetId, score} ranking, so the only
+      // real difference between the two modes is what gets embedded.
+      let matches: Array<{ presetId: string; score: number }>;
+      if (mode === 'sound') {
+        matches = (
+          await searchByAudioProfile(buildAudioProfile({ audioEnergy }))
+        ).slice(0, 5);
+      } else {
+        const canvas = ui.stageRef.current?.querySelector(
+          'canvas',
+        ) as HTMLCanvasElement | null;
+        if (!canvas) throw new Error('No canvas found');
+        matches = await searchByFrame(canvas);
+      }
+
+      setResults(
+        matches.map((match) => {
+          const entry = catalogEntryById.get(match.presetId) ?? null;
+          return {
+            id: match.presetId,
+            title: entry?.title ?? match.presetId,
+            entry,
+            // Only the audio search's score is calibrated as a percentage
+            // the user can read; the frame search's is a raw distance.
+            detail:
+              mode === 'sound'
+                ? `${(match.score * 100).toFixed(0)}% match`
+                : null,
+          };
+        }),
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [audioEnergy, catalogEntryById, mode, ui]);
+
+  // Each mode runs itself once when it becomes visible, matching what the two
+  // separate panels did on mount. Keyed by mode so switching tabs searches
+  // the new way without the user asking twice.
+  const autoRunRef = useRef<FinderMode | null>(null);
+  useEffect(() => {
+    if (autoRunRef.current === mode) return;
+    // The audio search needs something audible to profile; without it the
+    // old panel sat waiting rather than returning an empty result.
+    if (mode === 'sound' && audioEnergy <= 0.02) return;
+    autoRunRef.current = mode;
+    void search();
+  }, [mode, audioEnergy, search]);
+
+  const activeMode = MODES.find((m) => m.id === mode) ?? MODES[0];
+  const soundUnavailable = mode === 'sound' && audioEnergy <= 0.02;
+
+  return (
+    <div className="stims-finder">
+      <div className="stims-finder__head">
+        <UiIcon
+          name={activeMode.icon}
+          className="stims-finder__icon"
+          aria-hidden="true"
+        />
+        <h3 className="stims-finder__title">Find a preset</h3>
+      </div>
+
+      <div
+        className="stims-finder__modes"
+        role="radiogroup"
+        aria-label="Search by"
+      >
+        {MODES.map((candidate) => (
+          <label
+            key={candidate.id}
+            className="stims-finder__mode"
+            data-on={candidate.id === mode ? 'true' : 'false'}
+            title={candidate.hint}
+          >
+            <input
+              type="radio"
+              name="finder-mode"
+              className="stims-finder__mode-input"
+              value={candidate.id}
+              checked={candidate.id === mode}
+              onChange={() => setMode(candidate.id)}
+            />
+            {candidate.label}
+          </label>
+        ))}
+      </div>
+
+      <p className="stims-finder__hint">{activeMode.hint}</p>
+
+      {loading ? (
+        <div className="stims-finder__status" role="status">
+          {mode === 'sound' ? 'Analysing audio…' : 'Analysing frame…'}
+        </div>
+      ) : error ? (
+        <div className="stims-finder__status stims-finder__status--error">
+          {error}
+        </div>
+      ) : results ? (
+        <ul className="stims-finder__results">
+          {results.length === 0 ? (
+            <li className="stims-finder__empty">No matches found</li>
+          ) : (
+            results.map((result, index) => (
+              <li key={result.id} className="stims-finder__item">
+                <button
+                  type="button"
+                  className="stims-finder__result"
+                  onClick={() => {
+                    engine.handlePlayPreset(result.id);
+                    onClose();
+                  }}
+                >
+                  {result.entry ? (
+                    <PresetArtwork entry={result.entry} compact />
+                  ) : (
+                    <span className="stims-finder__rank">{index + 1}</span>
+                  )}
+                  <span className="stims-finder__info">
+                    <span className="stims-finder__name">{result.title}</span>
+                    <span className="stims-finder__meta">
+                      {result.detail ??
+                        (result.entry?.author ? (
+                          <>
+                            by{' '}
+                            {resolveAuthorUrl(
+                              result.entry.author,
+                              result.entry.authorUrl,
+                            ) ? (
+                              <a
+                                href={resolveAuthorUrl(
+                                  result.entry.author,
+                                  result.entry.authorUrl,
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ctl-preset__author-link"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {result.entry.author}
+                              </a>
+                            ) : (
+                              result.entry.author
+                            )}
+                          </>
+                        ) : (
+                          'Unknown author'
+                        ))}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+
+      <button
+        type="button"
+        className="stims-finder__run"
+        onClick={() => void search()}
+        disabled={loading || soundUnavailable}
+      >
+        <UiIcon
+          name="refresh"
+          className="stims-icon-slot stims-icon-slot--sm"
+          aria-hidden="true"
+        />
+        {mode === 'sound' ? 'Analyse audio' : 'Analyse frame'}
+      </button>
+
+      {soundUnavailable ? (
+        <p className="stims-finder__hint">
+          Start audio to search by sound, or switch to By look.
+        </p>
+      ) : null}
+    </div>
+  );
+}
