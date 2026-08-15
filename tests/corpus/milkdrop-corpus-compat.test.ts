@@ -180,6 +180,18 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgl: 'supported',
     webgpu: 'supported',
   },
+  'geiss-bipolar-x.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'geiss-happy-drops.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'illusion-unchained-new-strategy.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
   'orb-acid-in-my-eyes.milk': {
     webgl: 'supported',
     webgpu: 'supported',
@@ -377,7 +389,19 @@ function loadPresetCorpus(dir: string, origin: 'bundled' | 'user' = 'bundled') {
 }
 
 function loadBundledPresetCorpus() {
-  return loadPresetCorpus(join(process.cwd(), 'public', 'milkdrop-presets'));
+  const root = loadPresetCorpus(
+    join(process.cwd(), 'public', 'milkdrop-presets'),
+  );
+  const lib = loadPresetCorpus(
+    join(
+      process.cwd(),
+      'public',
+      'milkdrop-presets',
+      'libraries',
+      'projectm-cream-of-the-crop',
+    ),
+  );
+  return [...root, ...lib];
 }
 
 function loadLegacyFixtureCorpus() {
@@ -412,7 +436,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(41);
+    expect(corpus.length).toBe(44);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =

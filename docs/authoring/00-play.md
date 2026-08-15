@@ -2,6 +2,17 @@
 
 Fifteen minutes, no code. This track exists because it's how almost every real preset author actually started — including, going by the credits on half the catalog, people who now write raw GLSL from scratch. Remixing is not the beginner's version of authoring; it's the front door the whole hobby uses.
 
+```mermaid
+flowchart LR
+    A[Browse presets] --> B[Find one you love]
+    B --> C[Open Editor panel]
+    C --> D[Drag live sliders]
+    D --> E[See source change in real time]
+    E --> F[Hit Remix — credit preserved]
+    F --> G[Share #code= URL]
+    G --> H[Anyone opens it live, no install]
+```
+
 ## 1 · Find one you love
 
 Open [toil.fyi](https://toil.fyi) and hit **Browse presets**. Scroll, or use the search — it's a real semantic search (find "spinning geometric shapes" or "warm slow color drift" and it works, not just a keyword match against titles). Pick anything that grabs you. The catalog credits its authors on every entry — a lot of what you'll see traces back to Ryan Geiss himself, or to the community members who kept the format alive after him (Rovastar, Flexi, and the "cream of the crop" curators, among many others).
@@ -28,8 +39,28 @@ If the code is unfamiliar, the editor's **Explain** button asks the model to des
 
 Export produces a `.milk` file you can hand to anyone with a copy of Winamp, projectM, Butterchurn, or Stims. But you don't need a file at all: **copy the URL out of your browser's address bar.** Stims encodes the entire preset source directly into the link (`#code=…`) — the same mechanism every run-link in this curriculum uses. Send that URL to someone and it opens your exact remix, live, with nothing to install. This is also how you'll eventually publish your own original work — see the [contributing guide](../../CONTRIBUTING.md#contributing-presets) when you're ready.
 
-## What you just did
+---
 
-You edited real MilkDrop source, credited the author whose work you built on, and published a link that runs it — the entire loop, without writing a line of code from scratch. Everything from here forward is about understanding *why* the code you were just dragging sliders over does what it does.
+### 🎯 Quick reference — Track 0
+
+| Action | Where | What it does |
+|--------|-------|--------------|
+| Browse | Top nav | Semantic search over 1,787 presets |
+| Editor panel | Right rail | Live source + sliders + cues |
+| Remix button | Editor header | Forks preset, preserves credit chain |
+| Explain button | Editor toolbar | AI describes motion/color/reactivity |
+| Refine box | Editor toolbar | AI edits as line diffs you approve |
+| URL share | Address bar | `#code=<base64>` = portable preset |
+
+---
+
+### 🔗 Where these techniques appear in the wild
+
+| Technique | Glossary entry | Example presets |
+|-----------|----------------|-----------------|
+| Credit lineage | [Track 9 — Technique glossary](09-technique-glossary.md#component-credits) | `Aderrasi + Geiss - Airhandler (Painterly Relief Mix)` |
+| Remix culture | [Track 9 — Technique glossary](09-technique-glossary.md#the-glossary) | `Jelly V2` → `V3` → `V4` → `V5.5` version discipline |
+
+---
 
 **Next: [Track 1 — How MilkDrop thinks](01-how-milkdrop-thinks.md)**, the mental model behind every knob you just turned.

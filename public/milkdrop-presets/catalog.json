@@ -424,7 +424,7 @@
       "title": "Eo.S. - Apocalypse",
       "author": "Eo.S.",
       "order": 13,
-      "file": "/milkdrop-presets/eos-apocalypse.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-apocalypse.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -458,7 +458,7 @@
       "title": "Dbleja - Hovering - Over - Mars",
       "author": "Dbleja",
       "order": 14,
-      "file": "/milkdrop-presets/dbleja-hovering-over-mars.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-mars.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -488,7 +488,7 @@
       "title": "Dbleja - Hovering - Over - Pluto",
       "author": "Dbleja",
       "order": 15,
-      "file": "/milkdrop-presets/dbleja-hovering-over-pluto.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-pluto.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -518,7 +518,7 @@
       "title": "Dbleja - Inside - The - Tree - Blue - Mix",
       "author": "Dbleja",
       "order": 16,
-      "file": "/milkdrop-presets/dbleja-inside-the-tree-blue-mix.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-inside-the-tree-blue-mix.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -548,7 +548,7 @@
       "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
       "author": "Eo.S.",
       "order": 17,
-      "file": "/milkdrop-presets/eos-dark-side-of-the-moon-clean-mix.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-dark-side-of-the-moon-clean-mix.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -581,7 +581,7 @@
       "title": "Eos - Ether - Posession - Phat - Edit - V3",
       "author": "Eo.S.",
       "order": 18,
-      "file": "/milkdrop-presets/eos-ether-posession-phat-edit-v3.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether-posession-phat-edit-v3.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -615,7 +615,7 @@
       "title": "Eos - Ether",
       "author": "Eo.S.",
       "order": 19,
-      "file": "/milkdrop-presets/eos-ether.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -649,7 +649,7 @@
       "title": "Eos - Matrix - Cube - C",
       "author": "Eo.S.",
       "order": 20,
-      "file": "/milkdrop-presets/eos-matrix-cube-c.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-matrix-cube-c.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -683,7 +683,7 @@
       "title": "Eos - Phat - Cat - Scan - Nirvana",
       "author": "Eo.S.",
       "order": 21,
-      "file": "/milkdrop-presets/eos-phat-cat-scan-nirvana.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-cat-scan-nirvana.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -716,7 +716,7 @@
       "title": "Eos - Phat - Dark - Heart",
       "author": "Eo.S.",
       "order": 22,
-      "file": "/milkdrop-presets/eos-phat-dark-heart.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-dark-heart.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -749,7 +749,7 @@
       "title": "Eos - Phat - Linear - Clouds - V2",
       "author": "Eo.S.",
       "order": 23,
-      "file": "/milkdrop-presets/eos-phat-linear-clouds-v2.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-linear-clouds-v2.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -782,7 +782,7 @@
       "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
       "author": "Eo.S.",
       "order": 24,
-      "file": "/milkdrop-presets/eos-phat-magnetosphere-13-pulsar.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-magnetosphere-13-pulsar.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -815,7 +815,7 @@
       "title": "Eos - Phat - Vacuum - Deification",
       "author": "Eo.S.",
       "order": 25,
-      "file": "/milkdrop-presets/eos-phat-vacuum-deification.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-vacuum-deification.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -848,7 +848,7 @@
       "title": "Eos - Quasar",
       "author": "Eo.S.",
       "order": 26,
-      "file": "/milkdrop-presets/eos-quasar.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-quasar.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -881,7 +881,7 @@
       "title": "Eos - Starburst - 05 - Phasing",
       "author": "Eo.S.",
       "order": 27,
-      "file": "/milkdrop-presets/eos-starburst-05-phasing.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-starburst-05-phasing.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -915,7 +915,7 @@
       "title": "Evet - Proteus - Core - Element - 5",
       "author": "Evet",
       "order": 28,
-      "file": "/milkdrop-presets/evet-proteus-core-element-5.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/evet-proteus-core-element-5.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -945,7 +945,7 @@
       "title": "Evet - Responsive - Acid - Iris",
       "author": "Evet",
       "order": 29,
-      "file": "/milkdrop-presets/evet-responsive-acid-iris.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/evet-responsive-acid-iris.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -1041,7 +1041,7 @@
       "title": "Orb - Acid - In - My - Eyes",
       "author": "Orb",
       "order": 32,
-      "file": "/milkdrop-presets/orb-acid-in-my-eyes.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-acid-in-my-eyes.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1075,7 +1075,7 @@
       "title": "Orb - Cloud - Scope",
       "author": "Orb",
       "order": 33,
-      "file": "/milkdrop-presets/orb-cloud-scope.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-cloud-scope.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1109,7 +1109,7 @@
       "title": "Orbasonic",
       "author": "Orbasonic",
       "order": 34,
-      "file": "/milkdrop-presets/orbasonic.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orbasonic.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1143,7 +1143,7 @@
       "title": "Pieturp - Sunflare",
       "author": "Pieturp",
       "order": 35,
-      "file": "/milkdrop-presets/pieturp-sunflare.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/pieturp-sunflare.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -1173,7 +1173,7 @@
       "title": "Rovastar - And - Idiot24 - 7 - Abstract - Psychaos",
       "author": "Rovastar",
       "order": 36,
-      "file": "/milkdrop-presets/rovastar-and-idiot24-7-abstract-psychaos.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-and-idiot24-7-abstract-psychaos.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1207,7 +1207,7 @@
       "title": "Rovastar - Dark - Ritual - Star - Of - Destiny - Denied - Mix",
       "author": "Rovastar",
       "order": 37,
-      "file": "/milkdrop-presets/rovastar-dark-ritual-star-of-destiny-denied-mix.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-dark-ritual-star-of-destiny-denied-mix.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1241,7 +1241,7 @@
       "title": "Rovastar - Mosaics - Of - Ages",
       "author": "Rovastar",
       "order": 38,
-      "file": "/milkdrop-presets/rovastar-mosaics-of-ages.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-mosaics-of-ages.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1275,7 +1275,7 @@
       "title": "Rovastar - Oozing - Resistance",
       "author": "Rovastar",
       "order": 39,
-      "file": "/milkdrop-presets/rovastar-oozing-resistance.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-oozing-resistance.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1309,7 +1309,7 @@
       "title": "Shifter - Glassworms - Flare",
       "author": "Shifter",
       "order": 40,
-      "file": "/milkdrop-presets/shifter-glassworms-flare.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-glassworms-flare.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -1339,7 +1339,7 @@
       "title": "Shifter - Spectro",
       "author": "Shifter",
       "order": 41,
-      "file": "/milkdrop-presets/shifter-spectro.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-spectro.milk",
       "preview": true,
       "tags": [
         "collection:cream-of-the-crop",
@@ -1369,7 +1369,7 @@
       "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
       "author": "Phat + Rovastar + Eo.S.",
       "order": 42,
-      "file": "/milkdrop-presets/phat-rovastar-eos-square-faces-v2.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/phat-rovastar-eos-square-faces-v2.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -1403,7 +1403,7 @@
       "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
       "author": "Phat + Rovastar + Eo.S.",
       "order": 43,
-      "file": "/milkdrop-presets/phat-zylot-eos-trippy-rotation.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/phat-zylot-eos-trippy-rotation.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
@@ -21873,7 +21873,7 @@
       "title": "Illusion & Unchained - New Strategy",
       "author": "Illusion & Unchained",
       "order": 671,
-      "file": "/milkdrop-presets/butterchurn/illusion-unchained-new-strategy.milk",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/illusion-unchained-new-strategy.milk",
       "preview": true,
       "tags": [
         "collection:webgpu-showcase",
