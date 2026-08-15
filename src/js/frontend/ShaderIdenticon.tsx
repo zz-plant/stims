@@ -27,7 +27,35 @@ export function ShaderIdenticon({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ShaderIdenticonRenderer | null>(null);
   const animFrameRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number>(performance.now());
+  const startTimeRef = useRef(performance.now());
+  const visibleRef = useRef(false);
+  const documentVisibleRef = useRef(!document.hidden);
+  const reducedMotionRef = useRef(false);
+  const smallIconRef = useRef(size <= 32);
+  const lastAnimatedRenderRef = useRef<number | null>(null);
+  const renderStateRef = useRef({
+    seed,
+    mode,
+    audioPeak,
+    bass: multiBand?.bass,
+    mid: multiBand?.mid,
+    treble: multiBand?.treble,
+  });
+
+  renderStateRef.current = {
+    seed,
+    mode,
+    audioPeak,
+    bass: multiBand?.bass,
+    mid: multiBand?.mid,
+    treble: multiBand?.treble,
+  };
+  smallIconRef.current = size <= 32;
+
+  const controlsRef = useRef({
+    render: (_now: number) => {},
+    reconcile: () => {},
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -35,28 +63,109 @@ export function ShaderIdenticon({
 
     const renderer = new ShaderIdenticonRenderer(canvas);
     rendererRef.current = renderer;
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    reducedMotionRef.current = motionQuery?.matches ?? false;
 
-    const animate = (now: number) => {
-      const timeSec = (now - startTimeRef.current) / 1000;
+    const render = (now: number) => {
+      const state = renderStateRef.current;
       renderer.render({
-        seed,
-        mode,
-        audioPeak,
-        multiBand,
-        timeSec,
+        seed: state.seed,
+        mode: state.mode,
+        audioPeak: state.audioPeak,
+        multiBand: {
+          bass: state.bass,
+          mid: state.mid,
+          treble: state.treble,
+        },
+        timeSec: (now - startTimeRef.current) / 1000,
       });
+    };
+    const isPlaying = () =>
+      visibleRef.current &&
+      documentVisibleRef.current &&
+      !reducedMotionRef.current;
+    const animate = (now: number) => {
+      animFrameRef.current = null;
+      if (!isPlaying()) {
+        render(now);
+        return;
+      }
+      // Source-card icons are numerous and too small to benefit from a full
+      // display-rate update. Keep them on one RAF chain, but draw at ~10fps.
+      const lastRender = lastAnimatedRenderRef.current;
+      if (
+        !smallIconRef.current ||
+        lastRender === null ||
+        now - lastRender >= 100
+      ) {
+        render(now);
+        lastAnimatedRenderRef.current = now;
+      }
       animFrameRef.current = requestAnimationFrame(animate);
     };
+    const reconcile = () => {
+      if (isPlaying()) {
+        if (animFrameRef.current === null) {
+          animFrameRef.current = requestAnimationFrame(animate);
+        }
+      } else {
+        if (animFrameRef.current !== null) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = null;
+        }
+        render(performance.now());
+      }
+    };
+    controlsRef.current = { render, reconcile };
 
-    animFrameRef.current = requestAnimationFrame(animate);
+    const observer =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver((entries) => {
+            visibleRef.current = entries.some(
+              (entry) => entry.target === canvas && entry.isIntersecting,
+            );
+            reconcile();
+          });
+    if (observer) {
+      observer.observe(canvas);
+    } else {
+      // Older browsers and lightweight DOM test environments have no
+      // observer; preserve the previous animated behavior there.
+      visibleRef.current = true;
+      reconcile();
+    }
+
+    const onVisibilityChange = () => {
+      documentVisibleRef.current = !document.hidden;
+      reconcile();
+    };
+    const onMotionChange = (event: MediaQueryListEvent) => {
+      reducedMotionRef.current = event.matches;
+      reconcile();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    motionQuery?.addEventListener('change', onMotionChange);
+    render(performance.now());
 
     return () => {
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      motionQuery?.removeEventListener('change', onMotionChange);
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
       renderer.destroy();
+      rendererRef.current = null;
     };
-  }, [seed, mode, audioPeak, multiBand]);
+  }, []);
+
+  useEffect(() => {
+    if (rendererRef.current && animFrameRef.current === null) {
+      controlsRef.current.render(performance.now());
+    }
+  });
 
   return (
     <span
