@@ -46,6 +46,76 @@ function createEmptyFrameStats(): FrameStats {
   };
 }
 
+/**
+ * The pixel maths, over raw RGBA. Split out from extractFrameStats so the
+ * same code can describe a live canvas in the browser and a rendered preview
+ * PNG in a build script — the query side and the index side have to speak
+ * the same vocabulary, and the only way to guarantee that is to share the
+ * function that produces it.
+ */
+export function computeFrameStats(
+  pixels: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+  previousPixels?: Uint8ClampedArray | Uint8Array | null,
+): FrameStats {
+  if (width <= 0 || height <= 0) {
+    return createEmptyFrameStats();
+  }
+
+  const histogram = new Array(24).fill(0);
+  let sampleCount = 0;
+  let edgeDensity = 0;
+  let motionEstimate = 0;
+  const previousPixelData =
+    previousPixels && previousPixels.length === pixels.length
+      ? previousPixels
+      : null;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const idx = (y * width + x) * 4;
+      const r = pixels[idx];
+      const g = pixels[idx + 1];
+      const b = pixels[idx + 2];
+
+      histogram[Math.min(7, r >> 5)]++;
+      histogram[8 + Math.min(7, g >> 5)]++;
+      histogram[16 + Math.min(7, b >> 5)]++;
+
+      if (x + 1 < width) {
+        const nextIdx = (y * width + (x + 1)) * 4;
+        const grayCurr = 0.299 * r + 0.587 * g + 0.114 * b;
+        const grayNext =
+          0.299 * pixels[nextIdx] +
+          0.587 * pixels[nextIdx + 1] +
+          0.114 * pixels[nextIdx + 2];
+        edgeDensity += Math.abs(grayCurr - grayNext) / 255;
+      }
+
+      if (previousPixelData) {
+        motionEstimate +=
+          (Math.abs(r - previousPixelData[idx]) +
+            Math.abs(g - previousPixelData[idx + 1]) +
+            Math.abs(b - previousPixelData[idx + 2])) /
+          (255 * 3);
+      }
+
+      sampleCount++;
+    }
+  }
+
+  if (sampleCount > 0) {
+    for (let i = 0; i < 24; i++) {
+      histogram[i] /= sampleCount;
+    }
+    edgeDensity /= sampleCount;
+    motionEstimate /= sampleCount;
+  }
+
+  return { histogram, edgeDensity, motionEstimate };
+}
+
 export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
   const sourceWidth = canvas.width;
   const sourceHeight = canvas.height;
@@ -77,67 +147,20 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
   let pixels: Uint8ClampedArray;
   try {
     ctx.drawImage(canvas, 0, 0, sourceWidth, sourceHeight, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
-    pixels = imageData.data;
+    pixels = ctx.getImageData(0, 0, w, h).data;
   } catch {
     return createEmptyFrameStats();
   }
-  const sampleStep = 1;
 
-  const histogram = new Array(24).fill(0);
-  let sampleCount = 0;
-  let edgeDensity = 0;
-  let motionEstimate = 0;
   const previousSample = previousSamples.get(canvas);
-  const previousPixelData =
+  const stats = computeFrameStats(
+    pixels,
+    w,
+    h,
     previousSample?.width === w && previousSample.height === h
       ? previousSample.pixels
-      : null;
-
-  for (let y = 0; y < h; y += sampleStep) {
-    for (let x = 0; x < w; x += sampleStep) {
-      const idx = (y * w + x) * 4;
-      const r = pixels[idx];
-      const g = pixels[idx + 1];
-      const b = pixels[idx + 2];
-
-      const rBucket = Math.min(7, r >> 5);
-      const gBucket = Math.min(7, g >> 5);
-      const bBucket = Math.min(7, b >> 5);
-
-      histogram[rBucket]++;
-      histogram[8 + gBucket]++;
-      histogram[16 + bBucket]++;
-
-      if (x + sampleStep < w) {
-        const nextIdx = (y * w + (x + sampleStep)) * 4;
-        const grayCurr = 0.299 * r + 0.587 * g + 0.114 * b;
-        const grayNext =
-          0.299 * pixels[nextIdx] +
-          0.587 * pixels[nextIdx + 1] +
-          0.114 * pixels[nextIdx + 2];
-        edgeDensity += Math.abs(grayCurr - grayNext) / 255;
-      }
-
-      if (previousPixelData && idx < previousPixelData.length) {
-        const pr = previousPixelData[idx];
-        const pg = previousPixelData[idx + 1];
-        const pb = previousPixelData[idx + 2];
-        motionEstimate +=
-          (Math.abs(r - pr) + Math.abs(g - pg) + Math.abs(b - pb)) / (255 * 3);
-      }
-
-      sampleCount++;
-    }
-  }
-
-  if (sampleCount > 0) {
-    for (let i = 0; i < 24; i++) {
-      histogram[i] /= sampleCount;
-    }
-    edgeDensity /= sampleCount;
-    motionEstimate /= sampleCount;
-  }
+      : null,
+  );
 
   previousSamples.set(canvas, {
     width: w,
@@ -145,7 +168,7 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
     pixels: new Uint8ClampedArray(pixels),
   });
 
-  return { histogram, edgeDensity, motionEstimate };
+  return stats;
 }
 
 function dominantHue(histogram: number[]): string {
@@ -185,11 +208,21 @@ function motionDescription(motionEstimate: number): string {
   return 'high motion';
 }
 
-export function describeFrame(stats: FrameStats): string {
+/**
+ * The one place the search vocabulary is defined. Both sides of the index go
+ * through here — the live canvas at query time, and the rendered preview at
+ * build time (scripts/build-preset-descriptions.ts) — so the two can never
+ * drift into describing the same thing with different words.
+ */
+export function describeFrameParts(stats: FrameStats): string {
   const palette = paletteDescription(stats.histogram);
   const edges = edgeDescription(stats.edgeDensity);
   const motion = motionDescription(stats.motionEstimate);
   return `dominant ${palette}, ${edges}, ${motion}`;
+}
+
+export function describeFrame(stats: FrameStats): string {
+  return describeFrameParts(stats);
 }
 
 export async function searchByFrame(

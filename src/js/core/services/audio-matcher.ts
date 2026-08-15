@@ -41,21 +41,61 @@ export function buildAudioProfile(snapshot: {
   };
 }
 
+/**
+ * Turns a profile into query text in the same vocabulary the catalog is
+ * described with (see describeFrame in visual-embedding.ts).
+ *
+ * This used to read `rms` and ignore the other five fields, which left the
+ * whole feature with five possible queries — two tracks at equal loudness got
+ * byte-identical results regardless of what they actually sounded like.
+ * Spectral balance now picks the palette and edge language, and loudness
+ * picks the motion language, so the query varies with the music rather than
+ * just its volume.
+ */
 export function describeAudioProfile(profile: AudioProfile): string {
-  const { rms } = profile;
+  const { rms, bassEnergy, midEnergy, trebleEnergy, beatIntensity } = profile;
 
-  if (rms < 0.005) return 'silent';
+  if (rms < 0.005)
+    return 'dominant monochrome neutral, smooth gradients, static';
 
-  const intensity =
+  // Which band leads decides the colour language. The mapping is a
+  // convention, not physics: bass reads warm and heavy, treble reads cool and
+  // bright, which is how the catalog's own palettes tend to be described.
+  const bands = bassEnergy + midEnergy + trebleEnergy || 1;
+  const bassShare = bassEnergy / bands;
+  const trebleShare = trebleEnergy / bands;
+  const hue =
+    bassShare > 0.5
+      ? 'red'
+      : trebleShare > 0.4
+        ? 'cyan'
+        : bassShare > trebleShare
+          ? 'orange'
+          : 'blue';
+
+  const palette =
     rms < 0.02
-      ? 'quiet calm ambient slow drift'
-      : rms < 0.06
-        ? 'moderate gentle pulsing smooth motion'
-        : rms < 0.12
-          ? 'energetic driving rhythmic dynamic motion'
-          : 'intense aggressive chaotic explosive heavy';
+      ? `monochrome ${hue}`
+      : rms < 0.08
+        ? `${hue}-dominant palette`
+        : `vibrant ${hue}-centered palette`;
 
-  return intensity;
+  // Treble and transients are where visual busyness comes from.
+  const edges =
+    trebleShare > 0.35 || beatIntensity > 0
+      ? trebleShare > 0.5
+        ? 'dense edges'
+        : 'moderate edges'
+      : 'smooth gradients';
+
+  const motion =
+    rms < 0.02
+      ? 'subtle motion'
+      : rms < 0.06
+        ? 'moderate motion'
+        : 'high motion';
+
+  return `dominant ${palette}, ${edges}, ${motion}`;
 }
 
 export async function searchByAudioProfile(
