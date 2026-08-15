@@ -210,23 +210,27 @@ body {
 .active-toy-container[data-transition-state="running"] .active-toy-stage {
   transition:
     opacity 320ms ease,
-    filter 320ms ease,
     transform 320ms ease;
-  will-change: opacity, filter, transform;
+  will-change: opacity, transform;
 }
 
 .active-toy-container[data-transition-state="running"]
   .active-toy-stage[data-stage-state="incoming"] {
   opacity: 1;
-  filter: blur(0);
   transform: scale(1);
 }
 
 .active-toy-container[data-transition-state="running"]
   .active-toy-stage[data-stage-state="outgoing"] {
   opacity: 0;
-  filter: blur(12px);
   transform: scale(1.015);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active-toy-container[data-transition-state="running"] .active-toy-stage {
+    transition: none;
+    will-change: auto;
+  }
 }
 
 .active-toy-status {
