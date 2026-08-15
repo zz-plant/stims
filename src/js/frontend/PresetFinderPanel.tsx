@@ -30,13 +30,22 @@ import { resolveAuthorUrl } from './workspace-helpers.ts';
  */
 export type FinderMode = 'sound' | 'look';
 
+/**
+ * Cosine floor below which a result is not worth showing.
+ *
+ * bge-base does not bottom out at 0 — measured against the production index,
+ * a deliberately nonsensical query ("purple accountancy spreadsheet tax
+ * return quarterly filing") still scored 0.628 against the old title-based
+ * text and 0.585 against the current visual descriptions. Anything under this
+ * is indistinguishable from that noise floor.
+ */
+const MIN_SCORE = 0.62;
+
 /** Both searches collapse onto this so the results list is written once. */
 type FinderResult = {
   id: string;
   title: string;
   entry: PresetCatalogEntry | null;
-  /** Ranking detail a mode wants to show, e.g. "82% match". */
-  detail: string | null;
 };
 
 const MODES: Array<{
@@ -95,9 +104,10 @@ export function PresetFinderPanel({
       // real difference between the two modes is what gets embedded.
       let matches: Array<{ presetId: string; score: number }>;
       if (mode === 'sound') {
-        matches = (
-          await searchByAudioProfile(buildAudioProfile({ audioEnergy }))
-        ).slice(0, 5);
+        // No slice: the endpoint already returns topK=5.
+        matches = await searchByAudioProfile(
+          buildAudioProfile({ audioEnergy }),
+        );
       } else {
         const canvas = ui.stageRef.current?.querySelector(
           'canvas',
@@ -106,19 +116,17 @@ export function PresetFinderPanel({
         matches = await searchByFrame(canvas);
       }
 
+      // A nearest-neighbour index always returns its topK, so without a floor
+      // "No matches found" is unreachable and every query looks successful.
+      const relevant = matches.filter((match) => match.score >= MIN_SCORE);
+
       setResults(
-        matches.map((match) => {
+        relevant.map((match) => {
           const entry = catalogEntryById.get(match.presetId) ?? null;
           return {
             id: match.presetId,
             title: entry?.title ?? match.presetId,
             entry,
-            // Only the audio search's score is calibrated as a percentage
-            // the user can read; the frame search's is a raw distance.
-            detail:
-              mode === 'sound'
-                ? `${(match.score * 100).toFixed(0)}% match`
-                : null,
           };
         }),
       );
@@ -214,33 +222,32 @@ export function PresetFinderPanel({
                   <span className="stims-finder__info">
                     <span className="stims-finder__name">{result.title}</span>
                     <span className="stims-finder__meta">
-                      {result.detail ??
-                        (result.entry?.author ? (
-                          <>
-                            by{' '}
-                            {resolveAuthorUrl(
-                              result.entry.author,
-                              result.entry.authorUrl,
-                            ) ? (
-                              <a
-                                href={resolveAuthorUrl(
-                                  result.entry.author,
-                                  result.entry.authorUrl,
-                                )}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ctl-preset__author-link"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                {result.entry.author}
-                              </a>
-                            ) : (
-                              result.entry.author
-                            )}
-                          </>
-                        ) : (
-                          'Unknown author'
-                        ))}
+                      {result.entry?.author ? (
+                        <>
+                          by{' '}
+                          {resolveAuthorUrl(
+                            result.entry.author,
+                            result.entry.authorUrl,
+                          ) ? (
+                            <a
+                              href={resolveAuthorUrl(
+                                result.entry.author,
+                                result.entry.authorUrl,
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ctl-preset__author-link"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {result.entry.author}
+                            </a>
+                          ) : (
+                            result.entry.author
+                          )}
+                        </>
+                      ) : (
+                        'Unknown author'
+                      )}
                     </span>
                   </span>
                 </button>
