@@ -88,6 +88,23 @@ export type RendererLifecycleEvent = {
 const rendererLifecycleSubscribers = new Set<
   (event: RendererLifecycleEvent) => void
 >();
+const rendererTeardownCallbacks = new Set<() => void>();
+
+/** Register cleanup for module-level GPU resources tied to pooled renderers. */
+export function registerRendererTeardownCallback(callback: () => void) {
+  rendererTeardownCallbacks.add(callback);
+  return () => rendererTeardownCallbacks.delete(callback);
+}
+
+function notifyRendererTeardown() {
+  rendererTeardownCallbacks.forEach((callback) => {
+    try {
+      callback();
+    } catch (error) {
+      console.warn('Renderer teardown callback failed.', error);
+    }
+  });
+}
 
 export function subscribeToRendererLifecycle(
   subscriber: (event: RendererLifecycleEvent) => void,
@@ -596,6 +613,7 @@ async function createRendererHandle(
         if (observedRevision !== observedWebGpuDeviceRevision) {
           return;
         }
+        notifyRendererTeardown();
         const message = describeWebGpuDeviceLoss(info);
         console.warn(message);
         recordWebGpuDeviceLost(info);
@@ -913,6 +931,7 @@ export function resetRendererPool({
     }
   });
   if (dispose) {
+    notifyRendererTeardown();
     rendererPool.splice(0, rendererPool.length);
   }
   activeQuality = getActiveQualityPreset();

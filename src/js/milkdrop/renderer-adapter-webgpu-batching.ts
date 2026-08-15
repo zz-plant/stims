@@ -24,6 +24,7 @@ import {
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
 } from './renderer-adapter-shared';
+import { clearWebGpuProceduralMaterialCaches } from './renderer-backends/webgpu-procedural-materials';
 import {
   getMilkdropSegmentWidth,
   MILKDROP_CUSTOM_WAVE_Z,
@@ -1873,6 +1874,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     this.dispose();
     clearStaticGeometryCaches();
     clearBufferPool();
+    clearWebGpuProceduralMaterialCaches();
   }
 }
 

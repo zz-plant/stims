@@ -32,6 +32,11 @@ import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-ad
 import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
 import {
   buildMilkdropTransformWgslCode,
+  clearWebGpuProceduralMaterialCaches,
+  createProceduralCustomWaveMaterial,
+  createProceduralMeshMaterial,
+  createProceduralMotionVectorMaterial,
+  getWebGpuProceduralMaterialCacheDiagnostics,
   MILKDROP_FIELD_WGSL_HELPERS_SOURCE,
 } from '../../src/js/milkdrop/renderer-backends/webgpu-procedural-materials.ts';
 import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
@@ -1729,6 +1734,55 @@ per_pixel_3=sx=2;
     expect(transformWgsl).toContain(
       '(rendererFieldY - normalizedCenterY) * fieldScaleY',
     );
+  });
+
+  test('bounds and clears WebGPU procedural material signature caches', () => {
+    clearWebGpuProceduralMaterialCaches();
+    const { limit } = getWebGpuProceduralMaterialCacheDiagnostics();
+
+    for (let index = 0; index < limit + 12; index += 1) {
+      const program = {
+        kind: 'gpu-field-program' as const,
+        statements: [
+          {
+            target: 'x',
+            expression: { type: 'literal' as const, value: index },
+          },
+        ],
+        temporaries: [],
+        signature: `editor-signature-${index}`,
+      };
+      createProceduralMeshMaterial(program).dispose();
+      createProceduralMotionVectorMaterial(program).dispose();
+      createProceduralCustomWaveMaterial(program).dispose();
+    }
+
+    const populated = getWebGpuProceduralMaterialCacheDiagnostics();
+    expect(populated.transformIncludes).toBe(limit);
+    expect(populated.meshVertexFns).toBe(limit);
+    expect(populated.motionVectorVertexFns).toBe(limit);
+    expect(populated.customWaveVertexFns).toBe(limit);
+
+    clearWebGpuProceduralMaterialCaches();
+    expect(getWebGpuProceduralMaterialCacheDiagnostics()).toEqual({
+      limit,
+      transformIncludes: 0,
+      meshVertexFns: 0,
+      motionVectorVertexFns: 0,
+      customWaveVertexFns: 0,
+    });
+
+    createProceduralMeshMaterial({
+      kind: 'gpu-field-program',
+      statements: [],
+      temporaries: [],
+      signature: 'teardown-signature',
+    }).dispose();
+    const batcher = createWebGPUBatchingLayer();
+    batcher.disposeWithCaches?.();
+    expect(
+      getWebGpuProceduralMaterialCacheDiagnostics().transformIncludes,
+    ).toBe(0);
   });
 
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', async () => {
