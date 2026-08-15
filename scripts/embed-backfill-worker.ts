@@ -154,11 +154,22 @@ async function fetchCatalog(env: Env): Promise<CatalogEntry[]> {
   return Array.isArray(doc) ? doc : (doc.presets ?? []);
 }
 
-async function getExistingIds(env: Env): Promise<Set<string>> {
+/**
+ * The text each stored embedding was built from, so a run can tell a preset
+ * that is merely present from one that is up to date.
+ *
+ * Selecting only preset_id meant "already embedded" was the whole test, and
+ * changing how presets are described had no effect on rows already in the
+ * table — the entire catalog would keep its old vectors forever unless
+ * someone manually emptied the table first. Comparing the stored description
+ * makes the backfill self-healing: change describePreset, and the next runs
+ * re-embed exactly the rows whose text actually moved.
+ */
+async function getExistingDescriptions(env: Env): Promise<Map<string, string>> {
   const { results } = await env.DB.prepare(
-    'SELECT preset_id FROM preset_embeddings',
-  ).all<{ preset_id: string }>();
-  return new Set(results.map((r) => r.preset_id));
+    'SELECT preset_id, description FROM preset_embeddings',
+  ).all<{ preset_id: string; description: string | null }>();
+  return new Map(results.map((r) => [r.preset_id, r.description ?? '']));
 }
 
 async function embedDescription(
@@ -236,7 +247,7 @@ async function backfill(env: Env): Promise<{
 }> {
   const catalog = await fetchCatalog(env);
   const visualDescriptions = await fetchVisualDescriptions(env);
-  const existing = await getExistingIds(env);
+  const existing = await getExistingDescriptions(env);
 
   let succeeded = 0;
   let failed = 0;
@@ -246,14 +257,15 @@ async function backfill(env: Env): Promise<{
   for (const entry of catalog) {
     if (processed >= BATCH_SIZE) break;
 
-    if (existing.has(entry.id)) {
+    const description = describePreset(entry, visualDescriptions);
+    // Up to date only if the stored text matches what we would write now.
+    if (existing.get(entry.id) === description) {
       skipped++;
       continue;
     }
 
     processed++;
     try {
-      const description = describePreset(entry, visualDescriptions);
       const embedding = await embedDescription(env, description);
       await storeEmbedding(env, entry.id, embedding, description);
       succeeded++;
