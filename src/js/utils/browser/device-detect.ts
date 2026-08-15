@@ -109,6 +109,7 @@ let cachedIsMobile: boolean | null = null;
 
 export function resetDeviceDetectCache(): void {
   cachedIsMobile = null;
+  cachedEnvironment = null;
 }
 
 export function isMobileDevice(): boolean {
@@ -158,6 +159,16 @@ export function isMobileDevice(): boolean {
   return false;
 }
 
+/**
+ * Memoised alongside `cachedIsMobile`: this derives entirely from the user
+ * agent and navigator.platform, neither of which changes for the lifetime of a
+ * document. It was being recomputed — several regexes plus an object
+ * allocation — on every animation frame, because buildParticleFieldVisual
+ * reaches it through getDevicePerformanceProfile. Cleared by
+ * resetDeviceDetectCache for tests that swap the navigator.
+ */
+let cachedEnvironment: DeviceEnvironmentProfile | null = null;
+
 export function getDeviceEnvironmentProfile(): DeviceEnvironmentProfile {
   if (typeof navigator === 'undefined') {
     return {
@@ -165,6 +176,10 @@ export function getDeviceEnvironmentProfile(): DeviceEnvironmentProfile {
       browserFamily: 'other',
       platformFamily: 'other',
     };
+  }
+
+  if (cachedEnvironment !== null) {
+    return cachedEnvironment;
   }
 
   const nav = navigator as NavigatorWithUserAgentData;
@@ -210,11 +225,12 @@ export function getDeviceEnvironmentProfile(): DeviceEnvironmentProfile {
             ? 'safari'
             : 'other';
 
-  return {
+  cachedEnvironment = {
     isMobile: isMobileDevice(),
     browserFamily,
     platformFamily,
   };
+  return cachedEnvironment;
 }
 
 export function isSmartTvDevice() {
