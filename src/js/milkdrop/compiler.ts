@@ -21,8 +21,28 @@ export {
 const MAX_COMPILED_PRESET_CACHE = 50;
 const compiledPresetCache = new Map<string, MilkdropCompiledPreset>();
 
+function insertCompiledPresetCacheEntry(
+  raw: string,
+  compiled: MilkdropCompiledPreset,
+) {
+  compiledPresetCache.delete(raw);
+  compiledPresetCache.set(raw, compiled);
+
+  while (compiledPresetCache.size > MAX_COMPILED_PRESET_CACHE) {
+    const oldestKey = compiledPresetCache.keys().next().value;
+    if (oldestKey === undefined) {
+      break;
+    }
+    compiledPresetCache.delete(oldestKey);
+  }
+}
+
 export function clearCompiledPresetCache() {
   compiledPresetCache.clear();
+}
+
+export function getCompiledPresetCacheSize() {
+  return compiledPresetCache.size;
 }
 
 export function compileMilkdropPresetSource(
@@ -38,8 +58,7 @@ export function compileMilkdropPresetSource(
   if (isSimpleCall) {
     const cached = compiledPresetCache.get(raw);
     if (cached) {
-      compiledPresetCache.delete(raw);
-      compiledPresetCache.set(raw, cached);
+      insertCompiledPresetCacheEntry(raw, cached);
       return cached;
     }
   }
@@ -62,22 +81,16 @@ export function compileMilkdropPresetSource(
   compiled.formattedSource = formatMilkdropPreset(compiled);
 
   if (isSimpleCall) {
-    if (compiledPresetCache.size >= MAX_COMPILED_PRESET_CACHE) {
-      const oldestKey = compiledPresetCache.keys().next().value;
-      if (oldestKey !== undefined) {
-        compiledPresetCache.delete(oldestKey);
-      }
-    }
-    compiledPresetCache.set(raw, compiled);
+    insertCompiledPresetCacheEntry(raw, compiled);
   }
 
   return compiled;
 }
 
 export function warmupCompiledPresetCache(presets: MilkdropCompiledPreset[]) {
-  presets.forEach((compiled) => {
+  presets.slice(-MAX_COMPILED_PRESET_CACHE).forEach((compiled) => {
     if (compiled.source?.raw) {
-      compiledPresetCache.set(compiled.source.raw, compiled);
+      insertCompiledPresetCacheEntry(compiled.source.raw, compiled);
     }
   });
 }
