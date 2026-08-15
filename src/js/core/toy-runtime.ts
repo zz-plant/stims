@@ -1,5 +1,5 @@
 import type { AnimationContext } from './animation-loop';
-import { getContextFrequencyData } from './animation-loop';
+import { getContextFrequencyData, virtualTimeSource } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import { createFrameGate } from './frame-pacing';
 import {
@@ -417,9 +417,9 @@ export function createToyRuntime({
       return;
     }
     previewActive = true;
-    const timeSource = globalThis.performance ?? {
-      now: () => Date.now(),
-    };
+    const timeSource = virtualTimeSource
+      ? { now: virtualTimeSource }
+      : (globalThis.performance ?? { now: () => Date.now() });
     previewStart = timeSource.now();
     previewLastFrame = previewStart;
     let failureStreak = 0;
@@ -430,20 +430,21 @@ export function createToyRuntime({
     const previewFrameGate = createFrameGate(getPowerSavingFrameCapHz);
     const tick = (now: number) => {
       if (!previewActive) return;
-      if (!previewFrameGate.shouldRenderFrame(now)) {
+      const currentTime = virtualTimeSource ? virtualTimeSource() : now;
+      if (!previewFrameGate.shouldRenderFrame(currentTime)) {
         previewAnimationId = requestAnimationFrame(tick);
         return;
       }
       const rawDeltaMs = previewLastFrame
-        ? Math.min(100, Math.max(0, now - previewLastFrame))
+        ? Math.min(100, Math.max(0, currentTime - previewLastFrame))
         : 1000 / 60;
-      previewLastFrame = now;
+      previewLastFrame = currentTime;
       smoothedPreviewDeltaMs = smoothedPreviewDeltaMs
         ? smoothedPreviewDeltaMs * 0.85 + rawDeltaMs * 0.15
         : rawDeltaMs;
       frameState.deltaMs = smoothedPreviewDeltaMs;
       frameState.time += smoothedPreviewDeltaMs / 1000;
-      frameState.realTimeMs = now;
+      frameState.realTimeMs = currentTime;
       frameState.analyser = null;
       const previewDataIntervalMs =
         typeof navigator !== 'undefined' &&

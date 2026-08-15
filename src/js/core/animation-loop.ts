@@ -3,6 +3,31 @@ import { getAverageFrequency, getFrequencyData } from './audio-handler';
 import { createFrameGate } from './frame-pacing';
 import { getPowerSavingFrameCapHz } from './power-state';
 
+/** Optional virtual time source for deterministic testing/capture.
+ * When set, `performance.now()` is replaced by this function.
+ * Expected to return monotonically increasing milliseconds. */
+export let virtualTimeSource: (() => number) | null = null;
+let virtualTimeAdvanceMs = 0;
+
+export function setVirtualTimeSource(
+  fn: (() => number) | null,
+  advanceMs = 1000 / 60,
+) {
+  virtualTimeSource = fn;
+  virtualTimeAdvanceMs = advanceMs;
+}
+
+export function getVirtualTimeAdvanceMs(): number {
+  return virtualTimeAdvanceMs;
+}
+
+export function now(): number {
+  if (virtualTimeSource) {
+    return virtualTimeSource();
+  }
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
 export interface AudioLoopToy {
   rendererReady?: Promise<unknown>;
   initAudio: (options?: AudioInitOptions) => Promise<unknown>;
@@ -105,15 +130,17 @@ export async function startAudioLoop(
   // funnel through this callback.
   const frameGate = createFrameGate(getPowerSavingFrameCapHz);
   toy.renderer.setAnimationLoop(() => {
-    const now =
-      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const nowMs = now();
     // An XR session owns its own presentation cadence; dropping frames there
     // reads as head-tracking judder, not as a power saving.
-    if (!toy.renderer?.xr?.isPresenting && !frameGate.shouldRenderFrame(now)) {
+    if (
+      !toy.renderer?.xr?.isPresenting &&
+      !frameGate.shouldRenderFrame(nowMs)
+    ) {
       return;
     }
-    ctx.time = now / 1000;
-    ctx.realTimeMs = now;
+    ctx.time = nowMs / 1000;
+    ctx.realTimeMs = nowMs;
     try {
       animate(ctx);
       failureStreak = 0;
