@@ -8,12 +8,10 @@
  * images per preset, so a shader/warp/blend regression that still produces
  * *a* colourful image also fails.
  *
- * See scripts/preset-visual-regression-capture.ts for why this compares a
- * perceptual hash across a frame burst rather than raw pixels of a single
- * frame, and why only four presets are covered: presets animate off
- * `performance.now()`, not a frame-locked clock, and several in the catalog
- * never settled to a low enough natural jitter for a meaningful comparison
- * no matter the technique.
+ * Virtual time (injected via page.addInitScript) replaces performance.now()
+ * with a deterministic clock, eliminating the phase-drift jitter that
+ * previously required burst comparison + dHash. Presets that never settled
+ * under real time are now testable — the catalog coverage can expand.
  *
  * To refresh baselines after an intentional visual change:
  *   bun run dev &
@@ -50,6 +48,9 @@ const TEST_PORT = 5184;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 const REPO_ROOT = process.cwd();
 
+// Maximum concurrent preset captures to avoid overwhelming the CI runner
+const MAX_CONCURRENT = 3;
+
 let devServer: DevServerHandle | null = null;
 
 beforeAll(async () => {
@@ -63,72 +64,86 @@ afterAll(async () => {
   await server?.stop();
 });
 
-for (const presetId of VISUAL_REGRESSION_PRESET_IDS) {
-  browserTest(
-    `${presetId} matches its visual baseline`,
-    async () => {
-      const baseline = await loadBaselineFrames(REPO_ROOT, presetId);
-      if (!baseline) {
-        // Coverage expands incrementally — presets in VISUAL_REGRESSION_PRESET_IDS
-        // without a checked-in baseline are skipped (not failed) so CI stays
-        // green while baselines are generated via the capture script.
-        console.log(
-          `[skip] No visual baseline for "${presetId}". Generate one with:\n` +
-            `  bun run dev &\n` +
-            `  bun run scripts/preset-visual-regression-capture.ts --preset ${presetId}`,
-        );
-        return;
-      }
+async function runPresetTest(
+  presetId: string,
+  browser: import('playwright').Browser,
+) {
+  const baseline = await loadBaselineFrames(REPO_ROOT, presetId);
+  if (!baseline) {
+    // Coverage expands incrementally — presets in VISUAL_REGRESSION_PRESET_IDS
+    // without a checked-in baseline are skipped (not failed) so CI stays
+    // green while baselines are generated via the capture script.
+    console.log(
+      `[skip] No visual baseline for "${presetId}". Generate one with:\n` +
+        `  bun run dev &\n` +
+        `  bun run scripts/preset-visual-regression-capture.ts --preset ${presetId}`,
+    );
+    return;
+  }
 
-      const browser = await chromium.launch({
-        headless: HEADLESS,
-        args: SOFTWARE_RENDERER_ARGS,
+  const ctx = await browser.newContext({
+    viewport: CAPTURE_VIEWPORT,
+    deviceScaleFactor: 1,
+  });
+  try {
+    const page = await ctx.newPage();
+    const live = await capturePresetFrames({
+      page,
+      serverUrl: SERVER_URL,
+      presetId,
+    });
+
+    const [liveHashes, baselineHashes] = await Promise.all([
+      Promise.all(live.map(computeDHash)),
+      Promise.all(baseline.map(computeDHash)),
+    ]);
+    const distance = minPairwiseHammingDistance(liveHashes, baselineHashes);
+
+    if (distance > DHASH_FAIL_THRESHOLD) {
+      const debugDir = `screenshots/preset-visual-regression/${presetId}`;
+      fs.mkdirSync(debugDir, { recursive: true });
+      live.forEach((frame, index) => {
+        fs.writeFileSync(`${debugDir}/live-frame-${index}.png`, frame);
       });
-      const ctx = await browser.newContext({
-        viewport: CAPTURE_VIEWPORT,
-        deviceScaleFactor: 1,
+      baseline.forEach((frame, index) => {
+        fs.writeFileSync(`${debugDir}/baseline-frame-${index}.png`, frame);
       });
-      try {
-        const page = await ctx.newPage();
-        const live = await capturePresetFrames({
-          page,
-          serverUrl: SERVER_URL,
-          presetId,
-        });
-
-        const [liveHashes, baselineHashes] = await Promise.all([
-          Promise.all(live.map(computeDHash)),
-          Promise.all(baseline.map(computeDHash)),
-        ]);
-        const distance = minPairwiseHammingDistance(liveHashes, baselineHashes);
-
-        if (distance > DHASH_FAIL_THRESHOLD) {
-          const debugDir = `screenshots/preset-visual-regression/${presetId}`;
-          fs.mkdirSync(debugDir, { recursive: true });
-          live.forEach((frame, index) => {
-            fs.writeFileSync(`${debugDir}/live-frame-${index}.png`, frame);
-          });
-          baseline.forEach((frame, index) => {
-            fs.writeFileSync(`${debugDir}/baseline-frame-${index}.png`, frame);
-          });
-          throw new Error(
-            `"${presetId}" diverged from its baseline: minimum perceptual-hash ` +
-              `distance ${distance}/${DHASH_BITS} exceeds the ${DHASH_FAIL_THRESHOLD}/${DHASH_BITS} ` +
-              `threshold. Frames written to ${debugDir}/ for comparison. If this is an ` +
-              `intentional visual change, refresh the baseline (see file header).`,
-          );
-        }
-        expect(distance).toBeLessThanOrEqual(DHASH_FAIL_THRESHOLD);
-      } finally {
-        await ctx.close();
-        await browser.close();
-      }
-    },
-    // 240s, not 120s: this suite runs after other SwiftShader-rendered e2e
-    // files in the same CI job, and accumulated GPU/CPU pressure has pushed
-    // capture past a 120s budget for some presets (geiss-casino) in CI even
-    // though it completes in under 20s locally with real GPU (2026-08-06 CI
-    // investigation).
-    { timeout: 240000 },
-  );
+      throw new Error(
+        `"${presetId}" diverged from its baseline: minimum perceptual-hash ` +
+          `distance ${distance}/${DHASH_BITS} exceeds the ${DHASH_FAIL_THRESHOLD}/${DHASH_BITS} ` +
+          `threshold. Frames written to ${debugDir}/ for comparison. If this is an ` +
+          `intentional visual change, refresh the baseline (see file header).`,
+      );
+    }
+    expect(distance).toBeLessThanOrEqual(DHASH_FAIL_THRESHOLD);
+  } finally {
+    await ctx.close();
+  }
 }
+
+browserTest(
+  'visual regression suite',
+  async () => {
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: SOFTWARE_RENDERER_ARGS,
+    });
+
+    try {
+      // Run presets in parallel batches
+      for (
+        let i = 0;
+        i < VISUAL_REGRESSION_PRESET_IDS.length;
+        i += MAX_CONCURRENT
+      ) {
+        const batch = VISUAL_REGRESSION_PRESET_IDS.slice(i, i + MAX_CONCURRENT);
+        await Promise.all(
+          batch.map((presetId) => runPresetTest(presetId, browser)),
+        );
+      }
+    } finally {
+      await browser.close();
+    }
+  },
+  { timeout: 300000 },
+); // 5 min for full parallel suite
