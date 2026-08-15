@@ -24,7 +24,7 @@ The site deploys as the `stims` Worker with static assets, configured in [`wrang
 2. Confirm manifest and generated artifacts remain aligned:
 
    ```bash
-   bun run check:toys
+   bun run check:readme-claims
    ```
 
 3. Push the branch and open a pull request. Workers Builds publishes a preview URL for the branch (`wrangler versions upload`); CI runs the test gates in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) but does not deploy.
@@ -108,7 +108,7 @@ Both commands expect a fresh `bun run build` and read from `dist/`.
 Track A quick path above is the default release preflight. Use this section as the same checklist reference before production deploys:
 
 1. `bun run check`
-2. `bun run check:toys`
+2. `bun run check:readme-claims`
 3. `bun run build`
 4. `bun run preview`
 

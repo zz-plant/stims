@@ -41,7 +41,9 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Explore using TSL for both backends (TSL can emit GLSL)
 
 **Files**:
-- New: `src/js/milkdrop/feedback-composite-ir.ts`
+- New: a composite-pipeline IR module (not yet written — an earlier stub was
+  removed unused, since it duplicated uniform defaults the feedback managers
+  already own and had no code generator consuming it)
 - `src/js/milkdrop/feedback-manager-shared.ts`
 - `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`
 
@@ -55,9 +57,22 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Keep worker WebGL path simple (no feedback/batching)
 
 **Files**:
-- `src/js/core/renderer-worker.ts`
-- `src/js/core/renderer-worker-protocol.ts`
 - `src/js/core/renderer-setup.ts`
+
+> **Start from the prior prototype, not from scratch.** The renderer-worker,
+> renderer-worker-protocol, and worker-renderer-track modules were removed from the tree
+> because nothing in `src/` imported them — but they already implement most of this step:
+> an `OffscreenCanvas.getContext('webgl2')` init path, a WebGPU init path, and the full
+> resize / quality / preset / frame / dispose / sync message protocol. Recover them with:
+>
+> ```
+> git show 29afa912:src/js/core/renderer-worker.ts
+> git show 29afa912:src/js/core/renderer-worker-protocol.ts
+> git show 29afa912:src/js/core/worker-renderer-track.ts
+> ```
+>
+> They were never wired to a host or verified against a live canvas, so treat them as an
+> unproven reference implementation rather than working code.
 
 ### 4) Vectorize WGSL Code Generation
 
@@ -122,7 +137,7 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 ## Validation
 
 - `bun run check` green throughout
-- `bun run check:toys` for toy compatibility
+- `bun run check:readme-claims` for public-claim drift
 - Visual parity: certification corpus diffs against baseline
 - Performance: benchmark before/after for each milestone
 

@@ -16,7 +16,6 @@ type ArchitectureLayer =
   | 'ui'
   | 'utils'
   | 'data'
-  | 'toy'
   | 'milkdrop-public'
   | 'milkdrop';
 
@@ -45,7 +44,6 @@ export function classifyArchitectureLayer(
     return 'ui';
   }
   if (relative.startsWith('src/js/data/')) return 'data';
-  if (relative.startsWith('src/js/toys/')) return 'toy';
   if (relative.startsWith('src/js/milkdrop/public/')) {
     return 'milkdrop-public';
   }
@@ -127,16 +125,6 @@ export function isArchitectureDependencyAllowed({
   if (sourceLayer === 'ui') {
     return (
       targetLayer === 'ui' || targetLayer === 'core' || targetLayer === 'utils'
-    );
-  }
-
-  if (sourceLayer === 'toy') {
-    return (
-      targetLayer === 'toy' ||
-      targetLayer === 'core' ||
-      targetLayer === 'utils' ||
-      targetLayer === 'milkdrop-public' ||
-      targetLayer === 'milkdrop'
     );
   }
 
