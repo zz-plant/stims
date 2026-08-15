@@ -18,6 +18,8 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 - Multi-source browser audio with off-main-thread analysis.
 - Browser canvas recording beta.
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
+- MIDI/VJ hardware workflow with per-device persistent mappings, learn mode, hot-plug recovery, and an MCP-controllable virtual device.
+- WebXR immersive-stage experiment, guarded to `immersive-vr`-capable WebGL browsers and unit-tested, but never run on physical VR hardware — that a session actually presents correctly there is unproven.
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
@@ -47,6 +49,16 @@ Exit criteria:
 
 - a first-time user can find a strong preset without understanding MilkDrop naming conventions; and
 - low-confidence or expensive presets do not dominate default recommendations.
+
+### Flash-safety measurement
+
+The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). Sample runs report zero presets over threshold, and that zero has since been *explained* rather than left ambiguous: stage-by-stage measurement on rendered output confirmed capture sees full-amplitude change, the area floor is genuinely crossed (26.8–29.7% of a 10° window), and what stops a flash registering is directional incoherence — ~14% of the field brightening while ~13% darkens in the same frame. MilkDrop's texture-in-motion aesthetic does not produce the coherent field-wide oscillation WCAG's general flash threshold describes. Two gates remain before this is a safety claim: every measurement used the synthetic preview waveform rather than real high-energy audio, and the red-flash criterion is unimplemented. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+
+Exit criteria:
+
+- the audit tool's apparent resource-exhaustion pattern (timeouts clustering late in a long run) is fixed and a full-corpus run completes without a large unmeasured tail;
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
+- a default-on flash-rate cap ships as a visible safety control, not a buried setting.
 
 ## Next: authoring and creator workflow
 
@@ -82,14 +94,12 @@ These workstreams begin only after their prerequisite user flows and proof contr
 | --- | --- |
 | Stims-native WebGPU preset lane | Stable backend contract, performance telemetry, and a format that produces visuals unavailable to the classic compatibility lane. |
 | Embeddable package or Web Component | Lifecycle, audio, preset, resize, and cleanup APIs proven inside the product and integration tests. |
-| MIDI/VJ hardware workflow | The current beta wiring gains persistent mappings, device QA, and recovery behavior. |
 | Real stem-aware reactivity | On-device separation with measured latency, resource budgets, privacy posture, and populated runtime signals. |
 | Community catalog and sync | Stable preset identity, provenance, moderation, versioning, and local-first failure behavior. |
 | Multi-display or venue output | Deterministic timing, remote recovery, and a supported transport contract. |
 
 ## Research, not roadmap commitments
 
-- WebXR immersive stages;
 - neural audio-to-visual generation;
 - Gaussian-splat or latent rendering;
 - DMX, Art-Net, NDI, or Syphon bridges; and

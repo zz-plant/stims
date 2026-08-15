@@ -1,4 +1,5 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
+import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
 
 interface D1Database {
   prepare(sql: string): D1PreparedStatement;
@@ -25,6 +26,7 @@ interface Env {
   };
   DB: D1Database;
   GALLERY_R2?: R2Bucket;
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 const VISION_MODEL = '@cf/google/gemma-4-26b-a4b-it';
@@ -60,6 +62,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
 
   try {
     let imageBase64: string | undefined;

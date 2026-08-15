@@ -71,6 +71,13 @@ export function makeUiValue(
     youtubeLoading: false,
     youtubePreviewRef: { current: null },
     youtubeReady: false,
+    youtubeTransport: null,
+    youtubeTransportControls: {
+      play: noop,
+      pause: noop,
+      seekTo: noop,
+      nudge: noop,
+    },
     youtubeUrl: '',
     recentYouTubeVideos: [],
     renderPreferences: { compatibilityMode: false },
@@ -144,8 +151,12 @@ export function makeEngineValue(
     setTransitionMode: noop,
     setBlendDuration: noop,
     updateEditorSource: noop,
+    applyEditorSourceAwaited: async () => null,
+    applyEditorFieldsAwaited: async () => null,
+    getEditorSessionState: () => null,
     handleVisualSearch: asyncNoop,
     updateInspectorField: noop,
+    getActiveCompiledPreset: () => null,
     ...overrides,
   };
 }

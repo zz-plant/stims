@@ -17,6 +17,7 @@ flowchart LR
   Start --> Preset["🎨 Preset Authoring"]
   Start --> API["🔌 Optional APIs"]
   Start --> Strat["📊 Strategy & QA"]
+  Start --> Access["♿ Accessibility & Sensory Research"]
 
   GS --> GS1["DEVELOPMENT.md · TESTING.md"]
   GS --> GS2["DEPLOYMENT.md · COMMIT_CONVENTIONS.md"]
@@ -25,11 +26,15 @@ flowchart LR
   Arch --> A2["MILKDROP_PRESET_RUNTIME.md<br/>compiler + VM lifecycle"]
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
 
+  Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
   Preset --> P2["parity plan + backlog"]
 
   API --> E1["api.md<br/>Cloudflare Worker endpoints"]
   API --> E2["MCP_SERVER.md"]
+
+  Access --> AC1["SENSORY_ACCESSIBILITY.md<br/>research program + flash-safety spec"]
+  Access --> AC2["LITERATURE.md<br/>citation reference"]
 
   Strat --> S1["ROADMAP.md · IMPLEMENTATION_STATUS.md"]
   Strat --> S2["QA_PLAN.md · LINEAGE_AND_CREDITS.md"]
@@ -69,7 +74,10 @@ Guides for writing MilkDrop equations, shader math, and projectM compatibility s
 
 | Document | Description |
 | --- | --- |
+| 🎓 [**Preset Authoring Curriculum**](./authoring/README.md) | Learn-by-doing course with live runnable examples — start here if you're new to writing presets |
+| 📖 [**Language Reference**](./authoring/reference.md) | Generated from the compiler's builtin table: every function, signal, state variable, and register |
 | ✒️ [**MilkDrop Coding Guide**](./MILKDROP_CODING_GUIDE.md) | Authoring visualizer presets, MilkDrop math functions, per-frame/per-pixel equations, and top 1% patterns |
+| 🗺️ [**Authoring Docs Master Plan**](./PRESET_AUTHORING_DOCS_PLAN.md) | Landscape assessment and the roadmap for the full curriculum, cookbook, and compatibility matrix |
 | 🎯 [**ProjectM Parity Plan**](./MILKDROP_PROJECTM_PARITY_PLAN.md) | Parity milestone objectives, feature coverage targets, and test suites |
 | 📋 [**ProjectM Parity Backlog**](./MILKDROP_PROJECTM_PARITY_BACKLOG.md) | Detailed feature audit and parity item checklist against original Winamp MilkDrop / projectM |
 
@@ -100,6 +108,17 @@ Roadmap priorities, QA verification suites, and historical context.
 
 ---
 
+### ♿ 6. Accessibility & Sensory Research
+
+Research grounding for Stims' sensory-control claims, open research questions, and the flash-safety specification — no therapeutic claims.
+
+| Document | Description |
+| --- | --- |
+| 🧠 [**Sensory Accessibility & Control Research**](./SENSORY_ACCESSIBILITY.md) | The distinctive-control claim, layered research program, literature status table, and flash-safety spec |
+| 📚 [**Literature Reference Map**](./LITERATURE.md) | Citation list grouped by theme, for UI-copy grounding and the research program above |
+
+---
+
 ## ⚡ Quick Reference Commands
 
 ```bash
@@ -121,9 +140,12 @@ stims/
 ├── src/
 │   ├── js/
 │   │   ├── app.ts      # Application entrypoint & React mounting
-│   │   ├── core/       # Renderer capabilities, audio, quality, state stores, services
+│   │   ├── core/       # Renderer capabilities, audio, quality, state stores, services (incl. MIDI)
+│   │   ├── data/       # Toy manifest and schema
 │   │   ├── frontend/   # React workspace UI, URL state synchronization, engine adapter
+│   │   ├── lighting/   # Lighting-rig toy setup
 │   │   ├── milkdrop/   # Imperative MilkDrop engine, JIT VM, compiler, TSL/WGSL generators
+│   │   ├── toys/       # Standalone toy entry points
 │   │   ├── ui/         # Framework-free UI helpers (audio controls, identicons, YouTube)
 │   │   └── utils/      # Audio, browser, and media utilities
 │   ├── css/            # tokens.css, chrome.css, app-shell.css, component modules

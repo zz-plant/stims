@@ -99,6 +99,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         treb: 'signalTreb',
         treb_att: 'signalTrebAtt',
         treble: 'signalTreb',
+        treble_att: 'signalTrebAtt',
         // MilkDrop shader snippets commonly use camelCase attenuated bands;
         // identifiers are lower-cased before lookup, so keep normalized entries here.
         bassatt: 'signalBassAtt',
@@ -106,6 +107,16 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         midsatt: 'signalMidAtt',
         trebatt: 'signalTrebAtt',
         trebleatt: 'signalTrebAtt',
+        percussive: 'signalPercussive',
+        harmonic: 'signalHarmonic',
+        percussive_low: 'signalPercussiveLow',
+        percussive_mid: 'signalPercussiveMid',
+        percussive_high: 'signalPercussiveHigh',
+        percussive_ratio: 'signalPercussiveRatio',
+        percussivelow: 'signalPercussiveLow',
+        percussivemid: 'signalPercussiveMid',
+        percussivehigh: 'signalPercussiveHigh',
+        percussiveratio: 'signalPercussiveRatio',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
         rand_frame:
@@ -250,10 +261,10 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `abs(${args[0] ?? '0.0'})`;
       }
       if (lower === 'pow') {
-        return `pow(${args[0] ?? '0.0'}, ${args[1] ?? '2.0'})`;
+        return `pow(max(0.0, ${args[0] ?? '0.0'}), ${args[1] ?? '2.0'})`;
       }
       if (lower === 'sqrt') {
-        return `sqrt(${args[0] ?? '0.0'})`;
+        return `sqrt(max(0.0, ${args[0] ?? '0.0'}))`;
       }
       if (lower === 'sin') {
         return `sin(${args[0] ?? '0.0'})`;
@@ -445,7 +456,7 @@ function emitTextureSample(
   let zSlice = args[2] ?? '0.0';
 
   if (dimension === '3d') {
-    const vec3Args = splitGlslConstructorArgs(coordArg, 'vec3');
+    const vec3Args = splitGlslConstructorArgs(coordArg);
     if (vec3Args) {
       if (vec3Args.length >= 3) {
         coordArg = `vec2(${vec3Args[0]}, ${vec3Args[1]})`;
@@ -466,14 +477,22 @@ function emitTextureSample(
   const rawSamplerName = samplerName.startsWith('sampler_')
     ? samplerName.slice('sampler_'.length)
     : samplerName;
-  if (rawSamplerName === 'fw_noise_lq') {
+  if (rawSamplerName === 'fw_noise_lq' || rawSamplerName === 'fw_noise') {
     return `vec3(noise((${coordArg}) * 8.0 + vec2(signalTime * 0.8, signalTime * 0.6)))`;
+  }
+  if (rawSamplerName === 'fw_noise_mq') {
+    return `vec3(noise((${coordArg}) * 12.0 + vec2(signalTime * 1.0, signalTime * 0.75)))`;
   }
   if (rawSamplerName === 'fw_noise_hq') {
     return `vec3(noise((${coordArg}) * 16.0 + vec2(signalTime * 1.2, signalTime * 0.9)))`;
   }
-  if (rawSamplerName === 'pw_noise_lq') {
-    return `texture2D(noiseTex, sampleUv(${coordArg}, textureWrap)).rgba`;
+  if (
+    rawSamplerName === 'pw_noise_lq' ||
+    rawSamplerName === 'pw_noise_mq' ||
+    rawSamplerName === 'pw_noise_hq' ||
+    rawSamplerName === 'pw_noise'
+  ) {
+    return `texture2D(noiseTex, sampleUv(${coordArg}, 1.0)).rgba`;
   }
 
   // Unknown samplers have no texture wired at runtime — emitting a
@@ -513,16 +532,13 @@ function emitTextureSample(
   return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
 }
 
-function splitGlslConstructorArgs(
-  expression: string,
-  constructorName: 'vec3',
-): string[] | null {
+function splitGlslConstructorArgs(expression: string): string[] | null {
   const trimmed = expression.trim();
-  const prefix = `${constructorName}(`;
-  if (!trimmed.startsWith(prefix) || !trimmed.endsWith(')')) {
+  const match = trimmed.match(/^(?:vec3|float3)\((.*)\)$/s);
+  if (!match) {
     return null;
   }
-  const body = trimmed.slice(prefix.length, -1);
+  const body = match[1];
   const args: string[] = [];
   let depth = 0;
   let start = 0;

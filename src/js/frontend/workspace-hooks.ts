@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { createLogger } from '../core/logger.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -14,6 +15,7 @@ import {
   setQualityPresetById,
 } from '../core/settings-panel.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
+import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
@@ -105,7 +107,29 @@ export function useWorkspaceSessionState({
   const ensureEngineMountPromiseRef =
     useRef<Promise<MilkdropEngineAdapter> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(routeState.presetId);
+  // Preset ids that already timed out or failed. Loading the fallback changes
+  // `activePresetId`, which re-runs the load effect; without this the effect
+  // would keep re-requesting the preset that just failed, forever.
+  const failedPresetIdsRef = useRef<Set<string>>(new Set());
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
+
+  // The landing page is the pitch for a visuals product and contained no
+  // visuals: a full-viewport canvas sat behind the launch form with nothing
+  // drawn on it, because the engine only mounted once a preset or an audio
+  // source was in the route. Mount it for the bare landing view too, so an
+  // arrival sees the thing they came for while reading the form.
+  //
+  // Audio is silent until they choose a source, so this leans on the first-run
+  // preset's autonomous motion (see runtime/first-run-preset.ts) rather than on
+  // audio reactivity.
+  //
+  // Gated on the device profile: `lowPower` already folds in
+  // prefers-reduced-motion, limited memory or cores, handhelds and smart TVs,
+  // so anyone who asked for less motion — or whose device should not spend a
+  // GPU context on decoration — still gets the static form.
+  const [attractModeEnabled] = useState(
+    () => !routeState.previewMode && !getDevicePerformanceProfile().lowPower,
+  );
 
   const {
     activityCatalog,
@@ -142,10 +166,28 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     setYoutubeUrl,
   } = useWorkspaceYouTubePreview({
     setStatusMessage,
+    initialVideoId: routeState.youtubeVideoId ?? null,
+    initialStartSeconds: routeState.youtubeStartSeconds ?? null,
+    onVideoLoaded: ({ id, startSeconds }) => {
+      // Keep the address bar shareable: whatever is playing is what a copied
+      // link will reopen.
+      setRouteState((previous) =>
+        previous.youtubeVideoId === id &&
+        (previous.youtubeStartSeconds ?? 0) === startSeconds
+          ? previous
+          : {
+              ...previous,
+              youtubeVideoId: id,
+              youtubeStartSeconds: startSeconds > 0 ? startSeconds : null,
+            },
+      );
+    },
   });
   const { toast, dismissToast } = useWorkspaceToast({
     engineSnapshot,
@@ -218,10 +260,33 @@ export function useWorkspaceSessionState({
   useStageCanvasSync(stageRef);
 
   useEffect(() => {
-    if (routeState.panel === 'browse' || routeState.presetId) {
+    if (routeState.panel === 'browse') {
       void hydrateFullCatalogNow();
+      return;
     }
-  }, [routeState.panel, routeState.presetId, hydrateFullCatalogNow]);
+
+    if (routeState.presetId) {
+      if (fallbackCatalogReady) {
+        const isPresetInFallback = fallbackCatalog.some(
+          (entry) => entry.id === routeState.presetId,
+        );
+        if (
+          !isPresetInFallback &&
+          routeState.presetId !== FIRST_RUN_PRESET_ID
+        ) {
+          void hydrateFullCatalogNow();
+        }
+      } else {
+        void hydrateFullCatalogNow();
+      }
+    }
+  }, [
+    routeState.panel,
+    routeState.presetId,
+    fallbackCatalogReady,
+    fallbackCatalog,
+    hydrateFullCatalogNow,
+  ]);
 
   useEffect(() => {
     sessionDisposedRef.current = false;
@@ -266,7 +331,11 @@ export function useWorkspaceSessionState({
     if (engineSnapshot?.runtimeReady) {
       return;
     }
-    if (!routeState.presetId && !routeState.audioSource) {
+    if (
+      !routeState.presetId &&
+      !routeState.audioSource &&
+      !attractModeEnabled
+    ) {
       return;
     }
 
@@ -281,6 +350,7 @@ export function useWorkspaceSessionState({
     engineSnapshot?.runtimeReady,
     routeState.presetId,
     routeState.audioSource,
+    attractModeEnabled,
   ]);
 
   usePresetRouteSync({
@@ -331,6 +401,12 @@ export function useWorkspaceSessionState({
       return;
     }
 
+    // Already tried this one and it timed out or failed; the fallback is on
+    // screen. Re-requesting it would loop.
+    if (failedPresetIdsRef.current.has(requestedPresetId)) {
+      return;
+    }
+
     if (requestedPresetId === engineSnapshot?.activePresetId) {
       pendingPresetIdRef.current = null;
       return;
@@ -351,14 +427,30 @@ export function useWorkspaceSessionState({
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
+    // A slow or unavailable preset used to leave a black canvas and a "Try
+    // again" toast with nothing to try again with. Fall back to the known-good
+    // first-run preset so the visitor still ends up watching something.
+    const fallBackToFirstRunPreset = (message: string) => {
+      failedPresetIdsRef.current.add(requestedPresetId);
+      pendingPresetIdRef.current = null;
+
+      const engine = engineRef.current;
+      if (!engine || requestedPresetId === FIRST_RUN_PRESET_ID) {
+        setStatusMessage(message);
+        return;
+      }
+
+      setStatusMessage(`${message} Showing another preset instead.`);
+      void engine.loadPreset(FIRST_RUN_PRESET_ID).catch(() => {
+        log.log(`fallback preset ${FIRST_RUN_PRESET_ID} also failed`);
+      });
+    };
+
     let timedOut = false;
     const timeoutId = setTimeout(() => {
       timedOut = true;
       if (pendingPresetIdRef.current === requestedPresetId) {
-        pendingPresetIdRef.current = null;
-        setStatusMessage(
-          `Preset "${requestedPresetId}" took too long to load. Try again.`,
-        );
+        fallBackToFirstRunPreset(`Preset "${requestedPresetId}" timed out.`);
       }
     }, 10_000);
 
@@ -375,9 +467,8 @@ export function useWorkspaceSessionState({
         clearTimeout(timeoutId);
         if (timedOut) return;
         if (pendingPresetIdRef.current === requestedPresetId) {
-          pendingPresetIdRef.current = null;
-          setStatusMessage(
-            `Failed to load preset. "${requestedPresetId}" may be unavailable.`,
+          fallBackToFirstRunPreset(
+            `"${requestedPresetId}" could not be loaded.`,
           );
         }
       },
@@ -430,7 +521,7 @@ export function useWorkspaceSessionState({
     fullCatalogReady,
     handleYoutubeUrlKeyDown,
     activityCatalog,
-    importPresetFiles: async (files: FileList | null) => {
+    importPresetFiles: async (files: FileList | File[] | null) => {
       if (!files?.length) {
         return;
       }
@@ -469,9 +560,18 @@ export function useWorkspaceSessionState({
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
+    applyEditorSourceAwaited: async (source: string) =>
+      (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
+    applyEditorFieldsAwaited: async (
+      updates: Record<string, string | number>,
+    ) => (await engineRef.current?.applyEditorFieldsAwaited(updates)) ?? null,
+    getEditorSessionState: () =>
+      engineRef.current?.getEditorSessionState() ?? null,
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
     },
+    getActiveCompiledPreset: () =>
+      engineRef.current?.getActiveCompiledPreset() ?? null,
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,
@@ -522,6 +622,8 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     clearRecentYouTubeVideos,
     pausePreview: () => {

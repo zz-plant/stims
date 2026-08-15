@@ -13,10 +13,41 @@
   color: var(--stims-ink-strong, #fff8ef);
 }
 
+/* Anchor-snapped overlay: position comes only from data-anchor, never free
+   coordinates. Drag (or the ⇄ button) picks the edge; the hook persists it. */
+.panel[data-anchor="left"] {
+  right: auto;
+  left: 16px;
+}
+
+/* The scope strip spans the full width, so when it docks to the top row the
+   panel (and its collapsed reopen chip) duck underneath it. */
+.panel[data-below-strip="true"],
+.reopenButton[data-below-strip="true"] {
+  top: calc(var(--stims-header-top, 62px) + 152px);
+}
+
+.panel[data-dragging="true"] {
+  z-index: 41;
+  user-select: none;
+}
+
 .header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  cursor: grab;
+  touch-action: none;
+}
+
+.panel[data-dragging="true"] .header {
+  cursor: grabbing;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .title {
@@ -25,7 +56,8 @@
   letter-spacing: 0.04em;
 }
 
-.closeButton {
+.closeButton,
+.moveButton {
   border: 0;
   background: none;
   color: var(--stims-muted, rgba(246, 239, 228, 0.74));
@@ -34,8 +66,13 @@
   cursor: pointer;
 }
 
-.closeButton:hover {
+.closeButton:hover,
+.moveButton:hover {
   color: var(--stims-ink-strong, #fff8ef);
+}
+
+.moveButton {
+  font-size: 0.9rem;
 }
 
 .examples {
@@ -150,6 +187,38 @@
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: 12px;
   background: #14100c;
+  cursor: grab;
+  touch-action: none;
+}
+
+.scopeStrip[data-anchor="top"] {
+  top: calc(var(--stims-header-top, 62px) + 12px);
+  bottom: auto;
+}
+
+.scopeStrip[data-dragging="true"] {
+  z-index: 41;
+  cursor: grabbing;
+}
+
+.scopeMoveButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--stims-muted, rgba(246, 239, 228, 0.74));
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scopeMoveButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--stims-ink-strong, #fff8ef);
 }
 
 .scopeCanvas {
@@ -170,4 +239,9 @@
   color: var(--stims-cool, #77c9ff);
   font-size: 0.8rem;
   cursor: pointer;
+}
+
+.reopenButton[data-anchor="left"] {
+  right: auto;
+  left: 16px;
 }

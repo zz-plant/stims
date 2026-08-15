@@ -26,7 +26,7 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 
 | If the task is mainly about... | Start here |
 | --- | --- |
-| shared runtime, renderer, shell, controls, audio, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| shared runtime, renderer, shell, controls, audio, MIDI/hardware controllers, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
 | bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](./.agent/skills/modify-preset-workflow/SKILL.md) |
 | browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](./.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) |
 | quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
@@ -39,7 +39,7 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 - **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing. If `bun run check` fails, fix the root cause — do not chain fix-attempt commits.
 - **Done criteria by change type:** JS/TS changes need `bun run check`; runtime, preset, audio, shell, or routing changes also need browser verification on `http://localhost:5173/?agent=true`; docs-only edits can skip typecheck/tests unless commands, paths, or workflow-critical instructions changed.
-- **Cloudflare Pages deploy default:** GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) own preview and production deploys; keep local `pages:deploy:*` scripts as the manual fallback.
+- **Site deploy default:** Cloudflare Workers Builds owns preview and production deploys of the `stims` Worker on push (config: [`wrangler.site.jsonc`](../wrangler.site.jsonc)); CI in [`.github/workflows/ci.yml`](./workflows/ci.yml) only gates merges. `bun run site:deploy` is the manual fallback.
 - **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and husky `commit-msg` hook.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 

@@ -494,6 +494,9 @@ export function createCompositeUniforms(
   return {
     currentTex: texture(sceneTexture),
     previousTex: texture(previousTexture),
+    // This frame's internal image written by the feedback-blend pass; the
+    // display-only composite pass reads it (rebound per frame by the manager).
+    internalTex: texture(previousTexture),
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
@@ -570,6 +573,13 @@ export function createCompositeUniforms(
     signalMidAtt: uniform(0),
     signalTreb: uniform(0),
     signalTrebAtt: uniform(0),
+    // Neutral defaults mirror the CPU VM (vm/shared.ts).
+    signalPercussive: uniform(1),
+    signalHarmonic: uniform(1),
+    signalPercussiveLow: uniform(1),
+    signalPercussiveMid: uniform(1),
+    signalPercussiveHigh: uniform(1),
+    signalPercussiveRatio: uniform(0.5),
     signalBeat: uniform(0),
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
@@ -769,9 +779,13 @@ export function createSampleAuxTextureNode(
                       source.lessThan(7.5),
                       tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
                       select(
-                        source.lessThan(9.5),
-                        tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                        source.lessThan(8.5),
                         flat,
+                        select(
+                          source.lessThan(9.5),
+                          tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                          flat,
+                        ),
                       ),
                     ),
                   ),

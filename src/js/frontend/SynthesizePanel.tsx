@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
-  generatePreset,
+  type generatePreset,
   generatePresetFromImage,
+  generatePresetTournament,
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
@@ -128,7 +129,11 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           { guidance: description },
         );
       } else {
-        compiled = await generatePreset(description, {
+        // Tournament, not single-shot: several candidates are generated,
+        // broken ones are salvaged or eliminated, and the most
+        // audio-reactive survivor loads. One malformed model response no
+        // longer surfaces as an error.
+        const outcome = await generatePresetTournament(description, {
           provider:
             provider === 'local'
               ? {
@@ -138,6 +143,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                 }
               : { kind: 'hosted' },
         });
+        compiled = outcome.winner;
       }
       // Quality gate: a generated preset that compiles but whose equations
       // ignore audio still loads, but with a visible label so the user can
@@ -146,7 +152,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       await engine.importPresetFiles(toFileList(compiled.source.raw));
       if (probeResult.verdict === 'static') {
         setStatus(
-          'Loaded, but the equations barely respond to audio. Consider regenerating with stronger beat-reactivity wording.',
+          'Loaded, but this preset barely reacts to sound. Try generating again with wording like “strong beat reaction”.',
         );
       } else {
         ui.updatePanel(null);
@@ -182,11 +188,11 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         />
         <div>
           <h3 id="synth-heading" className={styles.heading}>
-            Generate visualizer
+            Generate a preset
           </h3>
           <p className={styles.intro}>
-            Describe a visual style. A language model will write a MilkDrop
-            preset, which Stims validates before loading.
+            Describe what you want to see. AI writes a new preset for you, and
+            Stims checks that it works before it plays.
           </p>
         </div>
       </div>
@@ -218,63 +224,76 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         </label>
       ) : null}
 
-      <fieldset className={styles.palettes} disabled={generating}>
-        <legend className={styles.label}>Model provider</legend>
-        <div className={styles.paletteRow}>
-          <label className={styles.palette}>
-            <input
-              type="radio"
-              name="model-provider"
-              value="hosted"
-              checked={provider === 'hosted'}
-              onChange={() => handleProviderChange('hosted')}
-            />
-            <span>Hosted model</span>
-          </label>
-          <label className={styles.palette}>
-            <input
-              type="radio"
-              name="model-provider"
-              value="local"
-              checked={provider === 'local'}
-              onChange={() => handleProviderChange('local')}
-            />
-            <span>Local Ollama</span>
-          </label>
-        </div>
-        <p className={styles.providerNote}>
-          {provider === 'local'
-            ? 'No API key is used. Direct requests are limited to loopback addresses; Ollama must allow this browser origin.'
-            : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
-        </p>
-      </fieldset>
+      <details
+        className="stims-shell__settings-advanced"
+        open={provider === 'local' || undefined}
+      >
+        <summary className="stims-shell__settings-summary">
+          <span>Advanced</span>
+          <span className="stims-shell__meta-copy">
+            Run generation on your own machine
+          </span>
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <fieldset className={styles.palettes} disabled={generating}>
+            <legend className={styles.label}>Model provider</legend>
+            <div className={styles.paletteRow}>
+              <label className={styles.palette}>
+                <input
+                  type="radio"
+                  name="model-provider"
+                  value="hosted"
+                  checked={provider === 'hosted'}
+                  onChange={() => handleProviderChange('hosted')}
+                />
+                <span>Hosted model</span>
+              </label>
+              <label className={styles.palette}>
+                <input
+                  type="radio"
+                  name="model-provider"
+                  value="local"
+                  checked={provider === 'local'}
+                  onChange={() => handleProviderChange('local')}
+                />
+                <span>Local Ollama</span>
+              </label>
+            </div>
+            <p className={styles.providerNote}>
+              {provider === 'local'
+                ? 'No API key is used. Direct requests are limited to loopback addresses; Ollama must allow this browser origin.'
+                : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
+            </p>
+          </fieldset>
 
-      {provider === 'local' ? (
-        <div className={styles.localSettings}>
-          <label className={styles.field}>
-            <span className={styles.label}>Local endpoint</span>
-            <input
-              className={styles.input}
-              type="url"
-              value={localEndpoint}
-              onChange={(event) => setLocalEndpoint(event.target.value)}
-              disabled={generating}
-              spellCheck={false}
-            />
-          </label>
-          <label className={styles.field}>
-            <span className={styles.label}>Model</span>
-            <input
-              className={styles.input}
-              type="text"
-              value={localModel}
-              onChange={(event) => setLocalModel(event.target.value)}
-              disabled={generating}
-              spellCheck={false}
-            />
-          </label>
+          {provider === 'local' ? (
+            <div className={styles.localSettings}>
+              <label className={styles.field}>
+                <span className={styles.label}>Local endpoint</span>
+                <input
+                  className={styles.input}
+                  type="url"
+                  value={localEndpoint}
+                  onChange={(event) => setLocalEndpoint(event.target.value)}
+                  disabled={generating}
+                  spellCheck={false}
+                />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Model</span>
+                <input
+                  className={styles.input}
+                  type="text"
+                  value={localModel}
+                  onChange={(event) => setLocalModel(event.target.value)}
+                  disabled={generating}
+                  spellCheck={false}
+                />
+              </label>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </details>
 
       <fieldset className={styles.palettes} disabled={generating}>
         <legend className={styles.label}>Color palette</legend>

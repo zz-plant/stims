@@ -45,6 +45,23 @@ export type MilkdropRuntimeSignals = {
   beat_treb?: number;
   beat_treble?: number;
   weightedEnergy: number;
+  /**
+   * Harmonic/percussive decomposition (median-filter HPSS over the
+   * spectrogram). These measure how transient/broadband versus
+   * sustained/tonal the spectrum is — they are NOT isolated instrument stems.
+   * Energies use the same relative scale as `bass`/`mid`/`treb` (1.0 = this
+   * track's own average); `percussiveRatio` is an absolute 0..1 fraction.
+   */
+  percussive?: number;
+  harmonic?: number;
+  percussiveLow?: number;
+  percussiveMid?: number;
+  percussiveHigh?: number;
+  percussiveRatio?: number;
+  percussive_low?: number;
+  percussive_mid?: number;
+  percussive_high?: number;
+  percussive_ratio?: number;
   inputX: number;
   inputY: number;
   input_x: number;
@@ -183,6 +200,12 @@ export interface MilkdropEditorSession {
   updateField(
     key: string,
     value: string | number,
+  ): Promise<MilkdropEditorSessionState>;
+  /** Applies a group of fields against the newest pending source, so edits
+   * issued while a compile is still running stack instead of overwriting
+   * each other. */
+  updateFields(
+    updates: Record<string, string | number>,
   ): Promise<MilkdropEditorSessionState>;
   resetToActive(): Promise<MilkdropEditorSessionState>;
   subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;

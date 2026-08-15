@@ -1,6 +1,7 @@
 // Cron-triggered Worker: backfills preset embeddings into D1 + Vectorize.
-// Replaces the manual `scripts/embed-preset-catalog.ts` run.
 // Deploy: wrangler deploy --config wrangler.cron.jsonc
+
+import { toVectorizeId } from '../src/js/milkdrop/vectorize-id.ts';
 
 interface D1Database {
   prepare(sql: string): D1PreparedStatement;
@@ -10,12 +11,27 @@ interface D1PreparedStatement {
   all<T = unknown>(): Promise<{ results: T[] }>;
   run(): Promise<void>;
 }
+
 interface VectorizeIndex {
-  insert(vectors: Array<{ id: string; values: number[] }>): Promise<void>;
+  upsert(
+    vectors: Array<{
+      id: string;
+      values: number[];
+      metadata?: Record<string, string>;
+    }>,
+  ): Promise<void>;
   query(
     vector: number[],
     options?: { topK?: number },
   ): Promise<{ matches: Array<{ id: string; score: number }> }>;
+}
+
+interface R2Bucket {
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | null,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<unknown>;
 }
 
 interface Env {
@@ -27,7 +43,10 @@ interface Env {
   };
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
+  STATIC_R2?: R2Bucket;
   ASSET_URL?: string;
+  DESCRIPTIONS_URL?: string;
+  BACKFILL_TOKEN?: string;
 }
 
 // Cloudflare Workers runtime types
@@ -41,8 +60,16 @@ interface ExecutionContext {
 }
 
 const CATALOG_URL = 'https://toil.fyi/milkdrop-presets/catalog.json';
+const DESCRIPTIONS_URL =
+  'https://toil.fyi/milkdrop-presets/preset-descriptions.json';
 const EMBED_MODEL = '@cf/baai/bge-base-en-v1.5';
-const BATCH_SIZE = 25;
+// Per-run cap. Each preset costs ~3 subrequests (AI + D1 + Vectorize), so 100
+// stays well inside the 1000-subrequest budget while clearing a multi-thousand
+// preset catalog within a day at the 15-minute cron cadence.
+const BATCH_SIZE = 100;
+// Rows per invocation when mirroring existing D1 embeddings into Vectorize.
+const SYNC_PAGE_SIZE = 500;
+const VECTORIZE_UPSERT_CHUNK = 100;
 
 interface CatalogEntry {
   id: string;
@@ -55,7 +82,31 @@ interface CatalogDocument {
   presets?: CatalogEntry[];
 }
 
-function describePreset(entry: CatalogEntry): string {
+/**
+ * The text a preset is embedded from.
+ *
+ * Prefers the visual description built by scripts/build-preset-descriptions.ts,
+ * which runs the rendered preview through the very same describeFrame() the
+ * search queries use. Queries describe palette, edge structure and motion; the
+ * old fallback below describes a name and an author, so the two sides shared
+ * no vocabulary and cosine matching degenerated into a filename lottery.
+ * Measured against production before this change: a real visual query scored
+ * 0.684 against title text and deliberate gibberish scored 0.600 — a 0.084
+ * spread. With visual descriptions the same query scores 0.892 against the
+ * same 0.585 gibberish floor, a 3.7x wider separation.
+ *
+ * The title fallback stays for presets with no rendered preview yet, where a
+ * weak description still beats no row at all.
+ */
+function describePreset(
+  entry: CatalogEntry,
+  visualDescriptions: Record<string, string>,
+): string {
+  const visual = visualDescriptions[entry.id];
+  if (visual) {
+    return visual;
+  }
+
   const parts: string[] = [];
   parts.push(`Preset titled "${entry.title}"`);
   if (entry.author) {
@@ -75,6 +126,24 @@ function describePreset(entry: CatalogEntry): string {
   return parts.join(', ');
 }
 
+/** Missing or unreachable descriptions degrade to the title fallback rather
+ * than stalling the backfill run. */
+async function fetchVisualDescriptions(
+  env: Env,
+): Promise<Record<string, string>> {
+  const url = env.DESCRIPTIONS_URL ?? DESCRIPTIONS_URL;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return {};
+    const doc = (await response.json()) as {
+      descriptions?: Record<string, string>;
+    };
+    return doc.descriptions ?? {};
+  } catch {
+    return {};
+  }
+}
+
 async function fetchCatalog(env: Env): Promise<CatalogEntry[]> {
   const url = env.ASSET_URL ?? CATALOG_URL;
   const response = await fetch(url);
@@ -85,11 +154,22 @@ async function fetchCatalog(env: Env): Promise<CatalogEntry[]> {
   return Array.isArray(doc) ? doc : (doc.presets ?? []);
 }
 
-async function getExistingIds(env: Env): Promise<Set<string>> {
+/**
+ * The text each stored embedding was built from, so a run can tell a preset
+ * that is merely present from one that is up to date.
+ *
+ * Selecting only preset_id meant "already embedded" was the whole test, and
+ * changing how presets are described had no effect on rows already in the
+ * table — the entire catalog would keep its old vectors forever unless
+ * someone manually emptied the table first. Comparing the stored description
+ * makes the backfill self-healing: change describePreset, and the next runs
+ * re-embed exactly the rows whose text actually moved.
+ */
+async function getExistingDescriptions(env: Env): Promise<Map<string, string>> {
   const { results } = await env.DB.prepare(
-    'SELECT preset_id FROM preset_embeddings',
-  ).all<{ preset_id: string }>();
-  return new Set(results.map((r) => r.preset_id));
+    'SELECT preset_id, description FROM preset_embeddings',
+  ).all<{ preset_id: string; description: string | null }>();
+  return new Map(results.map((r) => [r.preset_id, r.description ?? '']));
 }
 
 async function embedDescription(
@@ -114,8 +194,49 @@ async function storeEmbedding(
     .run();
 
   if (env.VECTOR_INDEX) {
-    await env.VECTOR_INDEX.insert([{ id: presetId, values: embedding }]);
+    await env.VECTOR_INDEX.upsert([
+      {
+        id: toVectorizeId(presetId),
+        values: embedding,
+        metadata: { presetId },
+      },
+    ]);
   }
+}
+
+// One-time/idempotent migration: mirror embeddings already stored in D1 into
+// Vectorize. Pages through `preset_embeddings`; callers re-POST with the
+// returned nextOffset until done=true.
+async function syncVectorize(
+  env: Env,
+  offset: number,
+): Promise<{ synced: number; nextOffset: number; done: boolean }> {
+  if (!env.VECTOR_INDEX) {
+    throw new Error('VECTOR_INDEX binding is not configured');
+  }
+
+  const { results } = await env.DB.prepare(
+    'SELECT preset_id, embedding FROM preset_embeddings ORDER BY preset_id LIMIT ?1 OFFSET ?2',
+  )
+    .bind(SYNC_PAGE_SIZE, offset)
+    .all<{ preset_id: string; embedding: string }>();
+
+  let synced = 0;
+  for (let i = 0; i < results.length; i += VECTORIZE_UPSERT_CHUNK) {
+    const chunk = results.slice(i, i + VECTORIZE_UPSERT_CHUNK).map((row) => ({
+      id: toVectorizeId(row.preset_id),
+      values: JSON.parse(row.embedding) as number[],
+      metadata: { presetId: row.preset_id },
+    }));
+    await env.VECTOR_INDEX.upsert(chunk);
+    synced += chunk.length;
+  }
+
+  return {
+    synced,
+    nextOffset: offset + results.length,
+    done: results.length < SYNC_PAGE_SIZE,
+  };
 }
 
 async function backfill(env: Env): Promise<{
@@ -125,7 +246,8 @@ async function backfill(env: Env): Promise<{
   skipped: number;
 }> {
   const catalog = await fetchCatalog(env);
-  const existing = await getExistingIds(env);
+  const visualDescriptions = await fetchVisualDescriptions(env);
+  const existing = await getExistingDescriptions(env);
 
   let succeeded = 0;
   let failed = 0;
@@ -135,14 +257,15 @@ async function backfill(env: Env): Promise<{
   for (const entry of catalog) {
     if (processed >= BATCH_SIZE) break;
 
-    if (existing.has(entry.id)) {
+    const description = describePreset(entry, visualDescriptions);
+    // Up to date only if the stored text matches what we would write now.
+    if (existing.get(entry.id) === description) {
       skipped++;
       continue;
     }
 
     processed++;
     try {
-      const description = describePreset(entry);
       const embedding = await embedDescription(env, description);
       await storeEmbedding(env, entry.id, embedding, description);
       succeeded++;
@@ -177,28 +300,62 @@ export default {
     );
   },
 
+  // Manual trigger. Requires `Authorization: Bearer <BACKFILL_TOKEN>` so the
+  // public workers.dev URL can't be used to burn AI neurons; the cron path
+  // above does the routine work.
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
-      });
-    }
-
-    if (request.method !== 'POST') {
+    if (request.method !== 'POST' && request.method !== 'PUT') {
       return new Response('Method not allowed', { status: 405 });
     }
 
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!env.BACKFILL_TOKEN || token !== env.BACKFILL_TOKEN) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    // PUT /static/<key> — streams the body into the static-assets bucket.
+    // Used by scripts/sync-previews-r2.ts to publish preset previews.
+    if (request.method === 'PUT') {
+      const url = new URL(request.url);
+      if (!url.pathname.startsWith('/static/')) {
+        return new Response('Not found', { status: 404 });
+      }
+      if (!env.STATIC_R2) {
+        return new Response('STATIC_R2 binding is not configured', {
+          status: 500,
+        });
+      }
+      const key = decodeURIComponent(url.pathname.slice('/static/'.length));
+      if (!key || key.includes('..')) {
+        return new Response('Invalid key', { status: 400 });
+      }
+      await env.STATIC_R2.put(key, request.body, {
+        httpMetadata: {
+          contentType:
+            request.headers.get('content-type') || 'application/octet-stream',
+        },
+      });
+      return new Response(JSON.stringify({ ok: true, key }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     try {
+      const url = new URL(request.url);
+      if (url.searchParams.get('mode') === 'sync-vectorize') {
+        const offset = Number.parseInt(
+          url.searchParams.get('offset') || '0',
+          10,
+        );
+        const result = await syncVectorize(env, offset);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const result = await backfill(env);
       return new Response(JSON.stringify(result), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
       return new Response(

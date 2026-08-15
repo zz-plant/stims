@@ -1,0 +1,86 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.900000
+nWaveMode=5.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+fWaveAlpha=0.300000
+fWaveScale=3.355000
+fWaveSmoothing=0.900000
+fWarpScale=2.853000
+fZoom=1.040000
+fDX=0.030000
+fWarp=0.474020
+fWaveR=0.900000
+fWaveG=0.770000
+fWaveB=0.600000
+fMotionVectorsA=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.7 * (0.2 * sin(0.933 * time) + 0.3 * sin(1.045 * time));
+per_frame_2=wave_g = wave_g + 0.7 * (0.2 * sin(0.9 * time) + 0.3 * sin(0.956 * time));
+per_frame_3=wave_b = wave_b + 0.2 * (0.2 * sin(0.91 * time) + 0.3 * sin(0.92 * time));
+per_frame_4=zoom = zoom + 0.02 * cos(1.713 * time + 2);
+per_frame_5=zoom = zoom + 0.02 * cos(2.319 * time + 4);
+per_frame_6=zoom = zoom + 0.02 * cos(1.522 * time + 1);
+per_pixel_1=dx = 0.002 * cos(ang + 1.57);
+per_pixel_2=dy = -0.002 * sin(ang + 1.57);
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
+    ((texture (sampler_blur2, uv).xyz * scale2) + bias2)
+  ) * 0.3));
+  ret_1 = (ret_1 * 0.9);
+  ret_1 = (ret_1 + ((
+    ((texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * 
+      (texsize_noise_lq.zw * 0.4)
+    ) + rand_frame.xy)).xyz - 0.5) / 256.0)
+   * 122.0) * clamp (
+    ((treb_att - 1.0) + 0.4)
+  , 0.0, 1.0)));
+  vec3 tmpvar_3;
+  tmpvar_3 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.2, 0.2, 0.2));
+  ret_1 = tmpvar_3;
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = tmpvar_3;
+  ret = tmpvar_4.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 orig_1;
+  vec3 ret_2;
+  float tmpvar_3;
+  tmpvar_3 = fract(((
+    (ang / 6.28)
+   * 9.0) + (time * 0.05)));
+  vec2 tmpvar_4;
+  tmpvar_4.x = cos(tmpvar_3);
+  tmpvar_4.y = sin(tmpvar_3);
+  vec4 tmpvar_5;
+  tmpvar_5 = texture (sampler_main, (0.5 + ((1.75 * 
+    (rad * rad)
+  ) * tmpvar_4)));
+  ret_2 = tmpvar_5.xyz;
+  orig_1 = ret_2;
+  ret_2.yz = vec2(dot (tmpvar_5.xyz, vec3(0.32, 0.49, 0.29)));
+  ret_2.x = orig_1.x;
+  ret_2 = (-0.3 + (1.6 * ret_2));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_2;
+  ret = tmpvar_6.xyz;
+ }

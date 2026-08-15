@@ -34,6 +34,9 @@ export type SessionRouteState = {
   agentMode: boolean;
   previewMode?: boolean;
   invalidExperienceSlug?: string | null;
+  /** Video carried by a shared link, so the recipient lands on the same track. */
+  youtubeVideoId?: string | null;
+  youtubeStartSeconds?: number | null;
 };
 
 export type EngineAudioRequest =
@@ -46,6 +49,28 @@ export type EngineAudioRequest =
       cropTarget?: Element | null;
     };
 
+/**
+ * Computed (not authored) flash/luminance-volatility summary for one preset,
+ * produced by `bun run lab:flash-risk -- --preset <id>` — see
+ * scripts/preset-lab-flash-risk.ts. Same category of field as fidelityTier /
+ * visualCertification below: a classifier run offline and cached here, not
+ * something hand-tagged per preset.
+ *
+ * SCAFFOLD: nothing in the catalog build currently populates this field, and
+ * the underlying detector's threshold is explicitly a placeholder (see the
+ * flash-risk script's file header) — do not surface `flashRiskLevel` in UI
+ * or treat it as a safety guarantee until it's backed by real corpus-wide
+ * data and a threshold sourced from actual photosensitivity guidance.
+ */
+export type PresetSensoryProfile = {
+  flashRiskLevel: 'unknown' | 'none' | 'low' | 'medium' | 'high';
+  maxTransitionsPerSecondEstimate: number;
+  meanLuminance: number;
+  maxLuminanceDelta: number;
+  /** ISO timestamp of the lab run that produced this entry. */
+  measuredAt: string;
+};
+
 export type PresetCatalogEntry = {
   id: string;
   title: string;
@@ -54,6 +79,7 @@ export type PresetCatalogEntry = {
   derivedFrom?: MilkdropPresetLineageRef[];
   file?: string;
   tags?: string[];
+  searchTerms?: string[];
   preview?: boolean;
   isFavorite?: boolean;
   rating?: number;
@@ -62,6 +88,7 @@ export type PresetCatalogEntry = {
   expectedFidelityClass?: string;
   fidelityTier?: VisualFidelityTier;
   visualCertification?: MilkdropVisualCertification;
+  sensoryProfile?: PresetSensoryProfile;
   supports?: {
     webgl?: boolean;
     webgpu?: boolean;
@@ -71,3 +98,6 @@ export type PresetCatalogEntry = {
 export type PresetCatalogManifest = {
   presets: PresetCatalogEntry[];
 };
+
+// Edge API request/response contracts live in `src/js/core/edge-contracts.ts`
+// so that `core/` consumers can import them too — see the note in that file.

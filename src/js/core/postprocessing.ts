@@ -7,6 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import type { RendererBackend } from './renderer-capabilities';
 
 export type MilkdropPostprocessingProfile = {
@@ -107,6 +108,16 @@ const MILKDROP_POSTPROCESSING_SHADER = {
         baseColor.a
       );
 
+      // Sub-pixel edge sharpening for crisp feedback rendering
+      vec2 step = 1.0 / max(resolution, vec2(1.0));
+      vec3 blur = (
+        texture2D(tDiffuse, clamp(warpedUv + vec2(step.x, 0.0), 0.0, 1.0)).rgb +
+        texture2D(tDiffuse, clamp(warpedUv - vec2(step.x, 0.0), 0.0, 1.0)).rgb +
+        texture2D(tDiffuse, clamp(warpedUv + vec2(0.0, step.y), 0.0, 1.0)).rgb +
+        texture2D(tDiffuse, clamp(warpedUv - vec2(0.0, step.y), 0.0, 1.0)).rgb
+      ) * 0.25;
+      vec3 sharpenedColor = clamp(chromaColor.rgb + (chromaColor.rgb - blur) * 0.25, 0.0, 1.0);
+
       float vignetteRadius = clamp(1.0 - vignetteStrength * 0.65, 0.15, 1.0);
       float vignette = smoothstep(
         vignetteRadius,
@@ -114,7 +125,7 @@ const MILKDROP_POSTPROCESSING_SHADER = {
         radius
       );
 
-      vec3 color = mix(chromaColor.rgb, chromaColor.rgb * vignette, vignetteStrength);
+      vec3 color = mix(sharpenedColor, sharpenedColor * vignette, vignetteStrength);
       color = applySaturation(color, saturation);
       color = (color - 0.5) * contrast + 0.5;
       gl_FragColor = vec4(color, chromaColor.a);
@@ -190,10 +201,12 @@ export function createMilkdropPostprocessingComposer({
 
   const size = renderer.getSize(new Vector2());
   const mobile = isMobileDevice();
+  const lowPower = getDevicePerformanceProfile().lowPower;
+  const downscaleBloom = mobile || lowPower;
 
   let bloomPass: UnrealBloomPass | undefined;
   if (profile.bloomStrength > 0) {
-    const bloomSize = mobile
+    const bloomSize = downscaleBloom
       ? new Vector2(Math.round(size.x / 2), Math.round(size.y / 2))
       : new Vector2(size.x, size.y);
     bloomPass = new UnrealBloomPass(

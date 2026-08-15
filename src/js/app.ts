@@ -5,6 +5,7 @@ import {
   applyDeviceTierToDocument,
   startRefreshRateSampling,
 } from './core/device-profile.ts';
+import { startBatteryMonitoring } from './core/power-state.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
@@ -34,6 +35,10 @@ const startApp = async () => {
   // Start early: the adaptive quality controller reads the refresh rate when it
   // is constructed, and an unmeasured rate falls back to a conservative 60.
   startRefreshRateSampling();
+  // Also start early: renderer setup waits on this to choose between the
+  // discrete and integrated GPU, and that wait is only cheap if the probe is
+  // already in flight by the time the capability probe runs.
+  void startBatteryMonitoring();
   installCrashTelemetry();
   installRendererTelemetryPersistence();
   initAgentAPI();

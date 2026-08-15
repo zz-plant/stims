@@ -111,27 +111,35 @@ function catmullRomInterpolateTo(
 }
 
 function sampleByteData(data: Uint8Array, t: number) {
-  if (data.length === 0) {
+  const len = data.length;
+  if (len === 0) {
     return 0;
   }
-  const scaledIndex = clamp(t, 0, 1) * Math.max(0, data.length - 1);
-  const lowerIndex = Math.floor(scaledIndex);
-  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const maxIdx = len - 1;
+  const normT = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  const scaledIndex = normT * maxIdx;
+  const lowerIndex = scaledIndex | 0;
+  const upperIndex = lowerIndex < maxIdx ? lowerIndex + 1 : maxIdx;
   const amount = scaledIndex - lowerIndex;
-  const lower = ((data[lowerIndex] ?? 128) - 128) / 128;
-  const upper = ((data[upperIndex] ?? 128) - 128) / 128;
-  return mix(lower, upper, amount);
+  const lower = ((data[lowerIndex] ?? 128) - 128) * 0.0078125;
+  const upper = ((data[upperIndex] ?? 128) - 128) * 0.0078125;
+  return lower + (upper - lower) * amount;
 }
 
 function sampleFloatData(data: Float32Array, t: number) {
-  if (data.length === 0) {
+  const len = data.length;
+  if (len === 0) {
     return 0;
   }
-  const scaledIndex = clamp(t, 0, 1) * Math.max(0, data.length - 1);
-  const lowerIndex = Math.floor(scaledIndex);
-  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const maxIdx = len - 1;
+  const normT = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  const scaledIndex = normT * maxIdx;
+  const lowerIndex = scaledIndex | 0;
+  const upperIndex = lowerIndex < maxIdx ? lowerIndex + 1 : maxIdx;
   const amount = scaledIndex - lowerIndex;
-  return mix(data[lowerIndex] ?? 0, data[upperIndex] ?? 0, amount);
+  const v0 = data[lowerIndex] ?? 0;
+  const v1 = data[upperIndex] ?? 0;
+  return v0 + (v1 - v0) * amount;
 }
 
 function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
@@ -155,6 +163,9 @@ function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
 // mode-2 spiro reads waveL[(i + 32) % 512]); wrapping keeps the tail of
 // the wave live instead of collapsing it onto the final sample.
 function wrapUnit(t: number) {
+  if (t >= 0 && t < 1) {
+    return t;
+  }
   const wrapped = t - Math.floor(t);
   return wrapped < 0 ? wrapped + 1 : wrapped;
 }
@@ -443,8 +454,8 @@ export function buildMainWaveFrame({
   const scale = clamp(state.wave_scale ?? 1, 0.01, 4);
   const smoothing = clamp(state.wave_smoothing ?? 0.72, 0, 0.98);
   const mystery = normalizeProjectMMystery(state.wave_mystery ?? 0);
-  const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
-  const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 1, 0, 2);
+  const modWaveAlphaStart = clamp(state.modwavealphastart ?? 0.75, 0, 2);
+  const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 0.95, 0, 2);
   const alphaByVolume = (state.bmodwavealphabyvolume ?? 0) >= 0.5;
   // Reuse Float32Arrays when size matches; allocate fresh only when needed
   let liveSamples: Float32Array;

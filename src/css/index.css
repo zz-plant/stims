@@ -80,7 +80,7 @@ canvas {
 body,
 html {
   padding: 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-family-base);
   font-size: calc(16px * var(--tv-scale-multiplier));
   background:
     radial-gradient(
@@ -908,8 +908,6 @@ header.hero,
 }
 
 .cta-button,
-.control-panel__eyebrow,
-.control-panel__stage-label,
 .control-panel__label,
 .eyebrow {
   font-family: var(--font-family-mono);
@@ -920,9 +918,7 @@ header.hero,
   text-transform: uppercase;
 }
 
-.eyebrow,
-.control-panel__eyebrow,
-.control-panel__stage-label {
+.eyebrow {
   letter-spacing: 0.15em;
   font-size: 0.72rem;
 }

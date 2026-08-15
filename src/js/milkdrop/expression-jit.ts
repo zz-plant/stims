@@ -143,10 +143,15 @@ function compileNode(
           return `((${l}) * (${r}))`;
         case '/':
           return `(((${r}) === 0) ? 0 : (${l}) / (${r}))`;
-        case '%':
-          return `((function(a,b){var ai=Math.trunc(a)||0,bi=Math.trunc(b)||0;return bi===0?0:ai%bi})(${l},${r}))`;
-        case '^':
-          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${l},${r}))`;
+        case '%': {
+          const aTemp = nextTemporary(context);
+          const bTemp = nextTemporary(context);
+          return `(${aTemp} = Math.trunc(${l}) || 0, ${bTemp} = Math.trunc(${r}) || 0, ${bTemp} === 0 ? 0 : ${aTemp} % ${bTemp})`;
+        }
+        case '^': {
+          const vTemp = nextTemporary(context);
+          return `(${vTemp} = (${l}) ** (${r}), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
+        }
         case '|':
           return `((Math.trunc(${l})||0) | (Math.trunc(${r})||0))`;
         case '&':
@@ -196,28 +201,35 @@ function compileNode(
           return `Math.abs(${args[0] ?? '0'})`;
         case 'sqrt':
           return `Math.sqrt(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'pow':
-          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${args[0] ?? '0'},${args[1] ?? '0'}))`;
+        case 'pow': {
+          const vTemp = nextTemporary(context);
+          return `(${vTemp} = (${args[0] ?? '0'}) ** (${args[1] ?? '0'}), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
+        }
         case 'mod':
-        case 'fmod':
-          return `((${args[1] ?? '0'}) === 0 ? 0 : (${args[0] ?? '0'}) % (${args[1] ?? '0'}))`;
+        case 'fmod': {
+          const aTemp = nextTemporary(context);
+          const bTemp = nextTemporary(context);
+          return `(${aTemp} = ${args[0] ?? '0'}, ${bTemp} = ${args[1] ?? '0'}, ${bTemp} === 0 ? 0 : ${aTemp} % ${bTemp})`;
+        }
         case 'min':
           return `Math.min(${args.join(',') || '0'})`;
         case 'max':
           return `Math.max(${args.join(',') || '0'})`;
         case 'mix':
         case 'lerp':
-          return `((function(a,b,c){return a+(b-a)*c})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '0'}))`;
+          return `((${args[0] ?? '0'}) + ((${args[1] ?? '0'}) - (${args[0] ?? '0'})) * (${args[2] ?? '0'}))`;
         case 'floor':
           return `Math.floor(${args[0] ?? '0'})`;
         case 'int':
           return `(Math.trunc(${args[0] ?? '0'})||0)`;
         case 'ceil':
           return `Math.ceil(${args[0] ?? '0'})`;
-        case 'sqr':
-          return `((function(v){return v*v})(${args[0] ?? '0'}))`;
+        case 'sqr': {
+          const sTemp = nextTemporary(context);
+          return `(${sTemp} = ${args[0] ?? '0'}, ${sTemp} * ${sTemp})`;
+        }
         case 'clamp':
-          return `((function(v,lo,hi){return Math.min(Math.max(v,lo),hi)})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '1'}))`;
+          return `Math.min(Math.max(${args[0] ?? '0'}, ${args[1] ?? '0'}), ${args[2] ?? '1'})`;
         case 'step':
           return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
         case 'smoothstep':

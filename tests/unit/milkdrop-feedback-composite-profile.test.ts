@@ -75,21 +75,21 @@ test('avoids reserved GLSL identifiers in the shared blur shader', () => {
   }
 });
 
-test('samples warp textures in warp-stage UV space inside the shared feedback shader', () => {
+test('samples warp textures in warp-stage UV space inside the feedback blend shader', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,
     180,
     WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   ) as {
-    compositeMaterial: { fragmentShader: string };
+    feedbackBlendMaterial: { fragmentShader: string };
     dispose: () => void;
   };
 
   try {
-    expect(manager.compositeMaterial.fragmentShader).toContain(
+    expect(manager.feedbackBlendMaterial.fragmentShader).toContain(
       'vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;',
     );
-    expect(manager.compositeMaterial.fragmentShader).not.toContain(
+    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
       'vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;',
     );
   } finally {
@@ -97,25 +97,54 @@ test('samples warp textures in warp-stage UV space inside the shared feedback sh
   }
 });
 
-test('keeps the shared legacy echo path projectM-like by avoiding extra frame-mix fusion', () => {
+test('keeps the legacy echo path projectM-like by avoiding extra frame-mix fusion', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    feedbackBlendMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    expect(manager.feedbackBlendMaterial.fragmentShader).toContain(
+      'clamp(videoEchoAlpha, 0.0, 1.0)',
+    );
+    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+      'clamp(mixAlpha, 0.0, 1.0)',
+    );
+    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+      'color = mix(color, current.rgb, clamp(currentFrameBoost',
+    );
+  } finally {
+    manager.dispose();
+  }
+});
+
+test('keeps the composite pass display-only over the internal frame', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,
     180,
     WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   ) as {
     compositeMaterial: { fragmentShader: string };
+    feedbackBlendMaterial: { fragmentShader: string };
     dispose: () => void;
   };
 
   try {
+    // The composite (display) pass must read the feedback-blend output
+    // instead of re-deriving the frame — feeding comp/post output back into
+    // the loop compounds those effects every frame.
     expect(manager.compositeMaterial.fragmentShader).toContain(
-      'clamp(videoEchoAlpha, 0.0, 1.0)',
+      'texture2D(internalTex, sampleUv(vUv, textureWrap)).rgb',
     );
-    expect(manager.compositeMaterial.fragmentShader).not.toContain(
-      'clamp(mixAlpha, 0.0, 1.0)',
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'vec4 sampleCompFrame(vec2 sampleCoord)',
     );
-    expect(manager.compositeMaterial.fragmentShader).not.toContain(
-      'color = mix(color, current.rgb, clamp(currentFrameBoost',
+    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+      'gammaAdj',
     );
   } finally {
     manager.dispose();

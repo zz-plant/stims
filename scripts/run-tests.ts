@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 
 const TEST_DIR = path.resolve('tests');
@@ -81,12 +80,14 @@ async function assertNoUncategorizedTests(): Promise<void> {
 type ParsedArgs = {
   profile: string;
   watch: boolean;
+  changed: boolean;
   explicitFiles: string[];
 };
 
 function parseArgs(argv: string[]): ParsedArgs {
-  let profile = 'all';
+  let profile: string | undefined;
   let watch = false;
+  let changed = false;
   const explicitFiles: string[] = [];
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -95,6 +96,11 @@ function parseArgs(argv: string[]): ParsedArgs {
 
     if (arg === '--watch') {
       watch = true;
+      continue;
+    }
+
+    if (arg === '--changed') {
+      changed = true;
       continue;
     }
 
@@ -107,7 +113,15 @@ function parseArgs(argv: string[]): ParsedArgs {
     explicitFiles.push(arg);
   }
 
-  return { profile, watch, explicitFiles };
+  // `--changed` is an inner-loop filter, so it defaults to the fast profile
+  // rather than `all`: affected e2e files need their own serial browser pass,
+  // which defeats the point of a sub-second feedback loop.
+  return {
+    profile: profile ?? (changed ? 'fast' : 'all'),
+    watch,
+    changed,
+    explicitFiles,
+  };
 }
 
 function resolveProfileCategories(profile: string): Category[] {
@@ -126,10 +140,14 @@ function resolveProfileCategories(profile: string): Category[] {
 function buildBunTestCmd({
   files,
   watch,
+  changed,
+  parallel,
   maxConcurrency,
 }: {
   files: string[];
   watch: boolean;
+  changed?: boolean;
+  parallel?: number | true;
   maxConcurrency?: number;
 }): string[] {
   return [
@@ -137,6 +155,12 @@ function buildBunTestCmd({
     'test',
     '--preload=./tests/setup.ts',
     ...(watch ? ['--watch'] : []),
+    ...(changed ? ['--changed'] : []),
+    ...(parallel === true
+      ? ['--parallel']
+      : typeof parallel === 'number'
+        ? [`--parallel=${parallel}`]
+        : []),
     ...(typeof maxConcurrency === 'number'
       ? [`--max-concurrency=${maxConcurrency}`]
       : []),
@@ -147,6 +171,8 @@ function buildBunTestCmd({
 async function runBunTest(options: {
   files: string[];
   watch: boolean;
+  changed?: boolean;
+  parallel?: number | true;
   maxConcurrency?: number;
 }) {
   const proc = Bun.spawn({
@@ -160,163 +186,134 @@ async function runBunTest(options: {
   return proc.exited;
 }
 
-// Weights are byte-equivalent shard-packing units, refreshed from measured
-// per-file wall times (2026-08: codex-session 3.3s, catalog-compiler-smoke
-// 1.4s, codex-setup 1.0s; the compiler/shader suites all run under 1s now).
-const KNOWN_HEAVY_TESTS: Record<string, number> = {
-  'tests/unit/codex-session-script.test.ts': 80000,
-  'tests/unit/catalog-compiler-smoke.test.ts': 40000,
-  'tests/unit/codex-setup-script.test.ts': 30000,
-  'tests/unit/milkdrop-catalog-store.test.ts': 25000,
-  'tests/unit/check-toys.test.ts': 25000,
-  'tests/unit/agent-api.test.ts': 25000,
-  'tests/unit/catalog-store-analysis.test.ts': 25000,
-  'tests/unit/mcp-server.test.ts': 25000,
-};
-
 /**
  * `bun test` executes files sequentially inside a single process, so the fast
- * suite was pinned to one core. Sharding splits the file list across several
- * processes to use the machine's cores. Override with STIMS_TEST_SHARDS=n
- * (n=1 restores single-process behavior).
+ * suite would otherwise pin to one core. `--parallel` (Bun 1.3.13+) fans test
+ * files out across worker processes with work stealing and per-file atomic
+ * output — replacing the byte-weighted shard packer and its hand-maintained
+ * per-file weight table that this script used to carry. Override the worker
+ * count with STIMS_TEST_SHARDS=n (n=1 restores single-process behavior);
+ * unset, bun sizes the pool to the machine's CPU count.
  */
-function resolveShardCount(fileCount: number): number {
+function resolveParallelism(): number | true {
   const requested = Number.parseInt(process.env.STIMS_TEST_SHARDS ?? '', 10);
-  const shards =
-    Number.isFinite(requested) && requested > 0
-      ? requested
-      : Math.max(1, Math.min(16, os.cpus().length - 1));
-  return Math.min(shards, fileCount);
+  if (Number.isFinite(requested) && requested > 0) return requested;
+  return true;
 }
 
 /**
- * A real child-process fork/exec (a spawned shell script, a `sleep`
- * placeholder process, etc.) costs orders of magnitude more wall-clock time
- * than the same number of source bytes of pure JS/TS, so byte size badly
- * underestimates these files and they land on shards by chance rather than
- * by design. Detect the pattern directly instead of relying solely on the
- * hand-maintained `KNOWN_HEAVY_TESTS` override list, which drifts stale as
- * new spawn-based tests get added without anyone remembering to weight them.
+ * Browser-backed categories run each file in its own `bun test` process:
+ * these suites hold WebGL contexts and dev-server connections that the
+ * runner does not release until the process exits, and accumulating them in
+ * one process starves small machines and hangs later tests.
+ *
+ * On CI's 2-core runner the files must also run one at a time or they starve
+ * each other. A developer machine has the CPU and GPU to overlap a few — and
+ * every e2e file owns a unique dev-server port, so they don't collide.
+ * Default is 2, not more: these suites carry 5–45s timeout budgets that
+ * start flaking when the machine is also running other sessions' browser
+ * work. STIMS_E2E_CONCURRENCY overrides (1 restores strictly serial runs).
  */
-const SUBPROCESS_SPAWN_WEIGHT = 8000;
-
-function countSubprocessSpawns(source: string): number {
-  if (!/from\s+['"]node:child_process['"]/.test(source)) return 0;
-  const matches = source.match(/\b(?:spawnSync|spawn|execSync|exec)\(/g);
-  return matches ? matches.length : 0;
-}
-
-/**
- * Balance shards by file size, known execution weight, and detected
- * subprocess-spawn cost (largest-first greedy) so one shard doesn't end up
- * with all of the heavyweight compiler/shader/subprocess suites.
- */
-async function buildShards(
-  files: string[],
-  shardCount: number,
-): Promise<string[][]> {
-  const sized = await Promise.all(
-    files.map(async (file) => {
-      const statSize = Bun.file(file).size;
-      const knownWeight = KNOWN_HEAVY_TESTS[file] ?? 0;
-      const source = await Bun.file(file).text();
-      const spawnBonus =
-        countSubprocessSpawns(source) * SUBPROCESS_SPAWN_WEIGHT;
-      const size = Math.max(statSize, knownWeight) + spawnBonus;
-      return { file, size };
-    }),
-  );
-  sized.sort((a, b) => b.size - a.size);
-
-  const shards = Array.from({ length: shardCount }, () => ({
-    files: [] as string[],
-    total: 0,
-  }));
-  for (const { file, size } of sized) {
-    const target = shards.reduce((min, shard) =>
-      shard.total < min.total ? shard : min,
+const SERIAL_FILE_CONCURRENCY = process.env.CI
+  ? 1
+  : Math.max(
+      1,
+      Number.parseInt(process.env.STIMS_E2E_CONCURRENCY ?? '', 10) || 2,
     );
-    target.files.push(file);
-    target.total += size;
+
+async function runSerialCategory(files: string[]): Promise<number> {
+  const concurrency = Math.min(SERIAL_FILE_CONCURRENCY, files.length);
+
+  if (concurrency <= 1) {
+    for (const file of files) {
+      const exitCode = await runBunTest({
+        files: [file],
+        watch: false,
+        maxConcurrency: 1,
+      });
+      if (exitCode !== 0) return exitCode;
+    }
+    return 0;
   }
 
-  return shards.map((shard) => shard.files).filter((list) => list.length > 0);
-}
-
-async function runShardedBunTest(files: string[]): Promise<number> {
-  const shardCount = resolveShardCount(files.length);
-  if (shardCount <= 1) {
-    return runBunTest({ files, watch: false });
-  }
-
-  const shards = await buildShards(files, shardCount);
-  console.log(
-    `Running ${files.length} test files across ${shards.length} shards…`,
-  );
-
-  const procs = shards.map((shardFiles) =>
-    Bun.spawn({
-      cmd: buildBunTestCmd({ files: shardFiles, watch: false }),
-      cwd: process.cwd(),
-      stdin: 'ignore',
-      stdout: 'pipe',
-      stderr: 'pipe',
-    }),
-  );
-
+  const queue = [...files];
+  const active = new Set<ReturnType<typeof Bun.spawn>>();
   // If we die (Ctrl-C, or the quality gate killing us on a sibling step's
-  // failure), the shard child processes must die too — otherwise they keep
-  // running detached and invisible, silently burning CPU.
-  const killShards = () => {
-    for (const proc of procs) proc.kill();
+  // failure), the child processes must die too — otherwise they keep running
+  // detached and invisible, silently burning CPU.
+  const killActive = () => {
+    for (const proc of active) proc.kill();
   };
-  process.once('SIGINT', killShards);
-  process.once('SIGTERM', killShards);
-
-  const runs = procs.map(async (proc, index) => {
-    const [exitCode, stdout, stderr] = await Promise.all([
-      proc.exited,
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ]);
-    return { index, shardFiles: shards[index], exitCode, stdout, stderr };
-  });
+  process.once('SIGINT', killActive);
+  process.once('SIGTERM', killActive);
 
   let worstExitCode = 0;
-  const pending = new Map(runs.map((run, index) => [index, run]));
   try {
-    while (pending.size > 0) {
-      const result = await Promise.race(pending.values());
-      pending.delete(result.index);
+    await Promise.all(
+      Array.from({ length: concurrency }, async () => {
+        for (;;) {
+          const file = queue.shift();
+          if (!file) return;
 
-      console.log(
-        `\n==> Shard ${result.index + 1}/${shards.length} ` +
-          `(${result.shardFiles.length} files) ` +
-          `${result.exitCode === 0 ? 'passed' : `FAILED (exit ${result.exitCode})`}`,
-      );
-      if (result.stdout.trim()) console.log(result.stdout.trim());
-      if (result.stderr.trim()) console.error(result.stderr.trim());
+          const proc = Bun.spawn({
+            cmd: buildBunTestCmd({
+              files: [file],
+              watch: false,
+              maxConcurrency: 1,
+            }),
+            cwd: process.cwd(),
+            stdin: 'ignore',
+            stdout: 'pipe',
+            stderr: 'pipe',
+          });
+          active.add(proc);
+          const [exitCode, stdout, stderr] = await Promise.all([
+            proc.exited,
+            new Response(proc.stdout).text(),
+            new Response(proc.stderr).text(),
+          ]);
+          active.delete(proc);
 
-      if (result.exitCode !== 0) {
-        worstExitCode = worstExitCode || result.exitCode;
-      }
-    }
+          console.log(
+            `\n==> ${file} ${exitCode === 0 ? 'passed' : `FAILED (exit ${exitCode})`}`,
+          );
+          if (stdout.trim()) console.log(stdout.trim());
+          if (stderr.trim()) console.error(stderr.trim());
+          if (exitCode !== 0) {
+            worstExitCode = worstExitCode || exitCode;
+          }
+        }
+      }),
+    );
   } finally {
-    process.off('SIGINT', killShards);
-    process.off('SIGTERM', killShards);
+    process.off('SIGINT', killActive);
+    process.off('SIGTERM', killActive);
   }
 
   return worstExitCode;
 }
 
 async function main() {
-  const { profile, watch, explicitFiles } = parseArgs(process.argv.slice(2));
+  const { profile, watch, changed, explicitFiles } = parseArgs(
+    process.argv.slice(2),
+  );
 
   if (explicitFiles.length > 0) {
-    process.exit(await runBunTest({ files: explicitFiles, watch }));
+    process.exit(await runBunTest({ files: explicitFiles, watch, changed }));
   }
 
   await assertNoUncategorizedTests();
+
+  // `--changed` hands the profile's file list to a single `bun test --changed`
+  // pass, which builds the import graph and keeps only files transitively
+  // affected by uncommitted git changes. Sharding is skipped: the affected
+  // subset is expected to be small, and pre-splitting the list would defeat
+  // bun's own filtering.
+  if (changed) {
+    const categories = resolveProfileCategories(profile);
+    const files = (await Promise.all(categories.map(listCategoryFiles))).flat();
+    process.exit(await runBunTest({ files, watch, changed }));
+  }
 
   // `integration` stays a single-file profile: CI runs it as its own job.
   if (profile === 'integration') {
@@ -345,7 +342,14 @@ async function main() {
   }
 
   if (parallelFiles.length > 0) {
-    const exitCode = await runShardedBunTest(parallelFiles);
+    const parallel = resolveParallelism();
+    const exitCode = await runBunTest({
+      files: parallelFiles,
+      watch: false,
+      // n=1 keeps the documented escape hatch: a plain in-process run with
+      // unbuffered output, no worker pool.
+      ...(parallel === 1 ? {} : { parallel }),
+    });
     if (exitCode !== 0) {
       process.exit(exitCode);
     }
@@ -355,20 +359,9 @@ async function main() {
     const files = await listCategoryFiles(category);
     if (files.length === 0) continue;
 
-    // Run each serial file in its own `bun test` process. Browser-backed e2e
-    // suites hold WebGL/SwiftShader contexts and dev-server connections that
-    // the runner does not release until the process exits; accumulating them
-    // across files in one process starves the 2-core CI runner and hangs
-    // later tests. A fresh process per file resets that pressure.
-    for (const file of files) {
-      const exitCode = await runBunTest({
-        files: [file],
-        watch,
-        maxConcurrency: 1,
-      });
-      if (exitCode !== 0) {
-        process.exit(exitCode);
-      }
+    const exitCode = await runSerialCategory(files);
+    if (exitCode !== 0) {
+      process.exit(exitCode);
     }
   }
 

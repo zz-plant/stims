@@ -1,5 +1,5 @@
 [preset00]
-fRating=5.000000
+fRating=0.000000
 fGammaAdj=1.000000
 fDecay=1.000000
 nWaveMode=6.000000
@@ -12,7 +12,7 @@ fModWaveAlphaStart=0.830000
 fModWaveAlphaEnd=1.310000
 fWarpScale=3.138000
 fZoom=1.023000
-fWarp=0.057240
+fWarp=0.148460
 fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000

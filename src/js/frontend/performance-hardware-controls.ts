@@ -9,28 +9,17 @@ export type MidiControlSource = {
   onControlChange: (listener: MidiControlListener) => () => void;
 };
 
-const LIVE_MILKDROP_CONTROLS = new Set([
-  'zoom',
-  'warp',
-  'rot',
-  'decay',
-  'q1',
-  'q2',
-  'q3',
-  'q4',
-]);
-
+// engine.updateInspectorField/session.updateField already accepts any
+// field name — it's the same path the inspector panel's freeform fields
+// use — so a fixed allowlist here only stopped a controller from driving
+// a preset's own custom q-vars or ib_*/mv_* registers. Any target learned
+// through MIDI-learn (or set directly by name) is trusted as-is.
 export function bindMidiToMilkdropControls(
   midi: MidiControlSource,
   applyControl: (target: string, value: number) => void,
 ): () => void {
   return midi.onControlChange((_cc, _raw, target, normalized) => {
-    if (
-      !target ||
-      normalized === undefined ||
-      !Number.isFinite(normalized) ||
-      !LIVE_MILKDROP_CONTROLS.has(target)
-    ) {
+    if (!target || normalized === undefined || !Number.isFinite(normalized)) {
       return;
     }
     applyControl(target, normalized);

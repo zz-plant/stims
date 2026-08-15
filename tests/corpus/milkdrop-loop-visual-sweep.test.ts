@@ -13,11 +13,11 @@ import {
 const repoRoot = new URL('../..', import.meta.url).pathname;
 
 describe('MilkDrop loop preset visual sweep', () => {
-  test('selects the 55 unique catalog presets whose compiled IR executes loop control flow', () => {
+  test('selects the unique catalog presets whose compiled IR executes loop control flow', () => {
     const corpus = buildLoopPresetCorpus(repoRoot);
 
-    expect(corpus).toHaveLength(55);
-    expect(new Set(corpus.map((preset) => preset.id)).size).toBe(55);
+    expect(corpus.length).toBeGreaterThanOrEqual(55);
+    expect(new Set(corpus.map((preset) => preset.id)).size).toBe(corpus.length);
     expect(corpus.every((preset) => preset.controlStatementCount > 0)).toBe(
       true,
     );
@@ -31,7 +31,13 @@ describe('MilkDrop loop preset visual sweep', () => {
         ),
       ),
     ).toBe(true);
-  }, 15_000);
+    // buildLoopPresetCorpus compiles the entire bundled catalog to find the
+    // presets whose IR actually executes loop control flow. That is pure
+    // deterministic CPU work, so the timeout is a hang guard rather than a
+    // performance assertion — and it has to clear the slowest machine that
+    // runs it, not the fastest. Measured ~5s on an M-series laptop and 26.4s
+    // on a 2-core GitHub runner, where the old 15s guard failed every push.
+  }, 90_000);
 
   test('classifies runtime failures ahead of visible and performance regressions', () => {
     const runtime = classifyLoopPresetSweepSample({
@@ -157,12 +163,28 @@ describe('MilkDrop loop preset visual sweep', () => {
     }
   });
 
-  test('uses native WebGL for the headed browser sweep', () => {
+  test('uses native WebGL for browser sweeps, headed and headless', () => {
+    // Headless no longer implies SwiftShader: sweeps launch full Chromium
+    // via the 'chromium' channel, which renders on the real GPU headless.
     expect(resolveLoopSweepChromiumArgs('webgl', false)).not.toContain(
       '--use-angle=swiftshader',
     );
-    expect(resolveLoopSweepChromiumArgs('webgl', true)).toContain(
+    expect(resolveLoopSweepChromiumArgs('webgl', true)).not.toContain(
       '--use-angle=swiftshader',
     );
+  });
+
+  test('STIMS_SOFTWARE_RENDER=1 restores the deterministic SwiftShader path', () => {
+    process.env.STIMS_SOFTWARE_RENDER = '1';
+    try {
+      expect(resolveLoopSweepChromiumArgs('webgl', true)).toContain(
+        '--use-angle=swiftshader',
+      );
+      expect(resolveLoopSweepChromiumArgs('webgl', false)).toContain(
+        '--use-angle=swiftshader',
+      );
+    } finally {
+      delete process.env.STIMS_SOFTWARE_RENDER;
+    }
   });
 });

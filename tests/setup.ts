@@ -48,13 +48,13 @@ mock.module('../utils/audio/frequency-analyser-processor.ts?worklet', () => ({
 
 import { resetMotionPreferenceState } from '../src/js/core/motion-preferences.ts';
 import { resetPerformancePanelState } from '../src/js/core/performance-panel.ts';
-import { resetRenderPreferencesState } from '../src/js/core/render-preferences.ts';
 import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
+import { resetRenderPreferenceStore } from '../src/js/core/state/render-preference-store.ts';
 import { resetThemePreferenceState } from '../src/js/core/theme-preferences.ts';
 import { resetDeviceDetectCache } from '../src/js/utils/browser/device-detect.ts';
 
 beforeEach(() => {
-  resetRenderPreferencesState();
+  resetRenderPreferenceStore();
   resetMotionPreferenceState();
   resetSettingsPanelState();
   resetPerformancePanelState();
@@ -67,7 +67,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  resetRenderPreferencesState();
+  resetRenderPreferenceStore();
   resetMotionPreferenceState();
   resetSettingsPanelState();
   resetPerformancePanelState();

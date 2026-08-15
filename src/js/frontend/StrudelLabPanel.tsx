@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from '../../css/StrudelLabPanel.module.css';
+import { useOverlayAnchor } from './hooks/use-overlay-anchor.ts';
 import { StrudelScopeStrip } from './StrudelScopeStrip.tsx';
 import {
   loadStrudelBridge,
@@ -58,6 +59,26 @@ export function StrudelLabPanel() {
   const bridgeRef = useRef<StrudelBridge | null>(null);
   const visualizerStartedRef = useRef(false);
 
+  // Both overlays sit on the live art, so where they belong depends on the
+  // preset. They snap between edge anchors (never free coordinates) and the
+  // choice persists across sessions.
+  const panelDock = useOverlayAnchor({
+    storageKey: 'stims:strudel-panel-anchor',
+    anchors: ['left', 'right'] as const,
+    defaultAnchor: 'right',
+    axis: 'horizontal',
+  });
+  const scopeDock = useOverlayAnchor({
+    storageKey: 'stims:strudel-scope-anchor',
+    anchors: ['top', 'bottom'] as const,
+    defaultAnchor: 'bottom',
+    axis: 'vertical',
+  });
+  // The strip spans the full width, so anything in the top row has to duck
+  // under it when it docks up there.
+  const belowStrip =
+    scopeStream && scopeDock.anchor === 'top' ? 'true' : undefined;
+
   // The stage subtree remounts on the home→live transition; rehydrate from
   // the module-level bridge so the scope strip and started-state survive.
   useEffect(() => {
@@ -108,7 +129,15 @@ export function StrudelLabPanel() {
   };
 
   const scopeStrip = scopeStream ? (
-    <StrudelScopeStrip stream={scopeStream} />
+    <StrudelScopeStrip
+      stream={scopeStream}
+      anchor={scopeDock.anchor}
+      targetProps={scopeDock.targetProps}
+      surfaceProps={scopeDock.surfaceProps}
+      onToggleAnchor={() =>
+        scopeDock.setAnchor(scopeDock.anchor === 'bottom' ? 'top' : 'bottom')
+      }
+    />
   ) : null;
 
   if (!open) {
@@ -118,6 +147,8 @@ export function StrudelLabPanel() {
         <button
           type="button"
           className={styles.reopenButton}
+          data-anchor={panelDock.anchor}
+          data-below-strip={belowStrip}
           onClick={() => setOpen(true)}
         >
           Strudel
@@ -129,17 +160,37 @@ export function StrudelLabPanel() {
   return (
     <>
       {scopeStrip}
-      <aside className={styles.panel} aria-label="Strudel pattern lab">
-        <header className={styles.header}>
+      <aside
+        {...panelDock.targetProps}
+        className={styles.panel}
+        aria-label="Strudel pattern lab"
+        data-below-strip={belowStrip}
+      >
+        <header className={styles.header} {...panelDock.surfaceProps}>
           <h2 className={styles.title}>Strudel × Stims</h2>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={() => setOpen(false)}
-            aria-label="Collapse Strudel lab"
-          >
-            ×
-          </button>
+          <div className={styles.headerActions}>
+            <button
+              type="button"
+              className={styles.moveButton}
+              onClick={() =>
+                panelDock.setAnchor(
+                  panelDock.anchor === 'right' ? 'left' : 'right',
+                )
+              }
+              aria-label={`Move lab to ${panelDock.anchor === 'right' ? 'left' : 'right'} edge`}
+              title="Move to the other edge"
+            >
+              ⇄
+            </button>
+            <button
+              type="button"
+              className={styles.closeButton}
+              onClick={() => setOpen(false)}
+              aria-label="Collapse Strudel lab"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
         <div className={styles.examples}>

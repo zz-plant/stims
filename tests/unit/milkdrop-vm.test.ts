@@ -862,7 +862,9 @@ per_pixel_1=zoom=1.1; rot=0.08; warp=0.2;
 
     expect(frameState.variables.motion_vectors_x).toBeCloseTo(64, 6);
     expect(frameState.variables.motion_vectors_y).toBeCloseTo(48, 6);
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    // This preset parks mv_a=0, so the fully transparent 64x48 grid must be
+    // skipped instead of paying a per-pixel program run per cell.
+    expect(frameState.motionVectors).toHaveLength(0);
   });
 
   test('preserves prior frame wave samples for velocity-driven main wave animation', () => {

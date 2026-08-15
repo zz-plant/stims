@@ -53,14 +53,9 @@
   gap: 2px;
   padding: 4px;
   border-radius: 16px;
-  background: rgba(6, 10, 18, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.45),
-    0 0 20px rgba(119, 201, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--ctl-panel-bg, #0a0e16);
+  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.16));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
   pointer-events: auto;
 }
 
@@ -99,26 +94,23 @@
 .btn:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 12px rgba(119, 201, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btn:active {
-  transform: scale(0.92);
+  transform: scale(0.95);
   transition-duration: 60ms;
 }
 
 /* The lit edge, matching the active state used inside the panels. */
 .btn[data-active="true"] {
   color: #77c9ff;
-  background: radial-gradient(
-    circle at center,
-    rgba(119, 201, 255, 0.28) 0%,
-    rgba(119, 201, 255, 0.12) 100%
-  );
+  background: rgba(119, 201, 255, 0.15);
   border-color: rgba(119, 201, 255, 0.45);
   box-shadow:
-    0 0 20px rgba(119, 201, 255, 0.32),
+    0 0 16px rgba(119, 201, 255, 0.25),
     inset 0 -2px 0 #77c9ff;
 }
 
@@ -137,11 +129,9 @@
   gap: 4px;
   padding: 6px;
   border-radius: 14px;
-  background: rgba(8, 12, 22, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  background: var(--ctl-panel-bg, #0a0e16);
+  border: 1px solid var(--ctl-line-strong, rgba(255, 255, 255, 0.16));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65);
   animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -212,15 +202,13 @@
   min-height: 44px;
   padding: 8px 18px;
   border-radius: 14px;
-  background: rgba(5, 7, 13, 0.85);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
   color: var(--stims-ink);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   transition:
@@ -323,7 +311,7 @@
   /* Shift the dock clear of a stage-anchored side panel so the transport
      stays fully clickable while the editor is open. Mobile uses a bottom
      sheet, so the inset only applies on the sidebar breakpoint. */
-  padding-right: var(--stage-tool-inset, 0);
+  padding-right: var(--stage-tool-inset, 0px);
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   pointer-events: none;
   transition:
@@ -355,16 +343,18 @@
 }
 
 .pill {
+  /* Anchors the blend sweep hairline. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0;
   padding: 3px;
   border-radius: var(--radius-round);
-  background: rgba(6, 10, 18, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   pointer-events: auto;
+  /* The second shadow is audio-reactive, not decoration — it is the "lit edge"
+     signature echoing the dock energy bar, so it stays. */
   box-shadow:
     0 8px 28px rgba(0, 0, 0, 0.4),
     0 0 calc(var(--energy, 0) * 16px)
@@ -447,6 +437,79 @@
   flex-shrink: 1;
 }
 
+/* ── Preset transition feedback ──────────────────────────────────────
+   A switch takes seconds (fetch+compile, then a crossfade) while the
+   title flips instantly — these states name that gap so it doesn't read
+   as "the title changed but nothing happened". Cool accent throughout:
+   this is playback state, and warm stays reserved for focus. */
+
+/* Replaces the author line while a phase is active, so the pill's width
+   and baseline don't jump. Text carries the meaning; the pulse is only
+   reinforcement and is disabled under reduced motion. */
+.statusText {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--stims-cool, #77c9ff);
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: transition-pulse 1.2s ease-in-out infinite;
+}
+
+/* The incoming title recedes until the canvas actually shows it. */
+.pill[data-transition="loading"] .titleText {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+/* Hairline tracking the crossfade window: full sweep = blend complete.
+   Runs once per blend (element is keyed per transition). */
+.blendSweep {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--stims-cool, #77c9ff);
+  opacity: 0.8;
+  transform-origin: 0 50%;
+  animation: blend-sweep var(--blend-ms, 2500ms) linear both;
+  pointer-events: none;
+}
+
+@keyframes transition-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes blend-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusText {
+    animation: none;
+  }
+
+  /* Without the sweep animation the hairline reads as a steady underline
+     for the blend window — state still visible, nothing moves. */
+  .blendSweep {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.5;
+  }
+}
+
 .menuBtn {
   display: inline-flex;
   align-items: center;
@@ -487,7 +550,7 @@
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + 48px);
   right: calc(
     max(12px, env(safe-area-inset-right)) +
-    var(--stage-tool-inset, 0)
+    var(--stage-tool-inset, 0px)
   );
   z-index: var(--z-dock);
   display: flex;
@@ -496,10 +559,8 @@
   min-width: 180px;
   padding: 4px;
   border-radius: 12px;
-  background: rgba(8, 12, 22, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   animation: menu-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
@@ -559,6 +620,15 @@
   height: 1px;
   margin: 4px 6px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.menuLabel {
+  padding: 6px 12px 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 @media (max-width: 480px) {

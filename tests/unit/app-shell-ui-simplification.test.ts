@@ -107,7 +107,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
-    expect(toastHookSource).toContain("'Using lighter visual mode.'");
+    expect(toastHookSource).toContain(
+      "'Using a lighter graphics mode so playback stays smooth.'",
+    );
     expect(appSource).toContain("? 'Now playing'");
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');
@@ -171,8 +173,11 @@ describe('Workspace shell UI simplification regression', () => {
     expect(shellCss).toMatch(
       /\.stims-shell__stage-frame\[data-mode="live"\]\s*\{[\s\S]*?box-shadow:\s*none;/u,
     );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-frame\[data-mode="live"\]::before,\s*\.stims-shell__stage-frame\[data-mode="live"\]::after\s*\{[\s\S]*?display:\s*none;/u,
+    // The sheen and vignette overlays used to exist and be hidden per-mode.
+    // They are gone outright now, so there is nothing left to suppress —
+    // assert the absence rather than the old display:none escape hatch.
+    expect(shellCss).not.toMatch(
+      /\.stims-shell__stage-frame::(?:before|after)/u,
     );
     // Themed via the chrome tokens, falling back to the same opaque dark fill.
     expect(sidePanelCss).toMatch(

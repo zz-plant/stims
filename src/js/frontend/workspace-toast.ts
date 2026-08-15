@@ -47,7 +47,10 @@ export function useWorkspaceToast({
     }
 
     webglWarningShownRef.current = true;
-    setToast({ message: 'Using lighter visual mode.', tone: 'warn' });
+    setToast({
+      message: 'Using a lighter graphics mode so playback stays smooth.',
+      tone: 'warn',
+    });
     if (toastTimerRef.current !== null) {
       window.clearTimeout(toastTimerRef.current);
     }

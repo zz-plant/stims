@@ -1,5 +1,6 @@
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
+import { normalizeProgramAssignmentTarget } from '../field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,
@@ -166,128 +167,295 @@ export function buildParticleFieldVisual({
   };
 }
 
-function getTransformCacheKey(x: number, y: number) {
-  const quantizedX = Math.round((x + 1) * 2048);
-  const quantizedY = Math.round((y + 1) * 2048);
-  return quantizedX * 4096 + quantizedY;
-}
+type MilkdropProgramBlock = MilkdropCompiledPreset['ir']['programs']['init'];
 
-export function resetFrameTransformCache(geometryState: GeometryBuilderState) {
-  geometryState.frameTransformCache.clear();
-  geometryState.transformCachePoolIndex = 0;
-}
+type RunProgramFn = (
+  block: MilkdropProgramBlock,
+  env: MutableState,
+  locals?: MutableState | null,
+) => void;
 
-function getTransformCacheEntry(geometryState: GeometryBuilderState): {
-  x: number;
-  y: number;
-} {
-  const pool = geometryState.transformCachePool;
-  const index = geometryState.transformCachePoolIndex;
-  let entry = pool[index];
-  if (!entry) {
-    entry = { x: 0, y: 0 };
-    pool[index] = entry;
-  }
-  geometryState.transformCachePoolIndex = index + 1;
-  return entry;
-}
+type CreateEnvFn = (
+  signals: MilkdropRuntimeSignals,
+  extra?: Record<string, number>,
+  options?: {
+    reuseExtraAsEnv?: boolean;
+  },
+) => MutableState;
 
-function transformMeshPoint({
+/**
+ * Everything a mesh-point transform needs that is CONSTANT for every vertex in
+ * a frame. Built once per pass by createMeshTransformFrame, then reused by
+ * transformMeshPoint for each of the ~1.7k vertices.
+ *
+ * WHY this exists (do not fold it back into the per-vertex path): a CPU profile
+ * (CDP, 200 stepped frames) put transformMeshPoint at 2.5ms of a 4.0ms frame —
+ * 44% — even on a preset with ZERO equations, and frame cost was flat across a
+ * 746x range of preset complexity. The cost was not the geometry math, it was
+ * per-vertex environment wiring:
+ *   - Object.setPrototypeOf(scratch, signalEnv) on every vertex (createEnv with
+ *     reuseExtraAsEnv), which deoptimises every later property access;
+ *   - a 32-iteration loop that built `q${i}` strings and did prototype-chain
+ *     `in` checks — 56,448 `in` checks per frame on a 42x42 mesh;
+ *   - a memoised compileMilkdropProgram WeakMap lookup per vertex which, for a
+ *     preset with no per-pixel code, resolved to NO_OP.
+ *
+ * The q1..q32 seeding loop was additionally DEAD code: `scratch`'s prototype
+ * chain reaches the VM register bank, which always defines q1..q32 (vm.ts seeds
+ * them in setPreset before any frame runs), so `key in local` was always true
+ * and the loop body never executed. Removing it is behaviour-preserving.
+ */
+type MeshTransformFrame = {
+  signals: MilkdropRuntimeSignals;
+  state: MutableState;
+  runProgram: RunProgramFn;
+  scratch: MutableState;
+  /**
+   * `scratch` with its prototype already wired to the VM signal env (what
+   * createEnv(..., { reuseExtraAsEnv: true }) returns — it returns the very
+   * object it was handed). Built ONCE per pass: Object.setPrototypeOf on the
+   * same object with the same prototype is semantically a no-op after the
+   * first call, but V8 treats prototype mutation as a deopt trigger, so doing
+   * it per vertex (~1764x/frame) poisoned every later property access. Null
+   * when the preset has no per-pixel program (scratch is never used then).
+   */
+  perPixelEnv: MutableState | null;
+  aspectX: number;
+  aspectY: number;
+  /** null when the preset ships no per-pixel code (compiles to NO_OP). */
+  perPixelProgram: MilkdropProgramBlock | null;
+  /** signals.time * (0.35 + warpanimspeed); per-frame constant. */
+  rippleTime: number;
+  // Fast-path per-frame transform constants. Only valid (and only read) when
+  // perPixelProgram is null — with per-pixel code every one of these may be
+  // rewritten per vertex, so that path re-reads them from the scratch locals.
+  zoom: number;
+  zoomExponent: number;
+  cosRot: number;
+  sinRot: number;
+  warp: number;
+  centerX: number;
+  centerY: number;
+  scaleX: number;
+  scaleY: number;
+  translateX: number;
+  translateY: number;
+  isIdentity: boolean;
+  // Per-frame BASE values of the built-in per-pixel variables, read raw off
+  // `state` once per pass. Only used by the per-pixel path, which must reset
+  // every one of them on EVERY vertex (per-pixel code may overwrite them and
+  // the next vertex has to start from the frame base, not the neighbour's
+  // leftovers). Hoisting removes only the repeated prototype-chain lookup and
+  // nullish check, not the reset.
+  baseZoom: number;
+  baseZoomExp: number;
+  baseRot: number;
+  baseWarp: number;
+  baseCx: number;
+  baseCy: number;
+  baseSx: number;
+  baseSy: number;
+  baseDx: number;
+  baseDy: number;
+};
+
+function createMeshTransformFrame({
   signals,
-  gridX,
-  gridY,
   state,
   preset,
   geometryState,
   runProgram,
   createEnv,
-  scratch,
   aspectX,
   aspectY,
 }: {
   signals: MilkdropRuntimeSignals;
-  gridX: number;
-  gridY: number;
   state: MutableState;
   preset: MilkdropCompiledPreset;
   geometryState: GeometryBuilderState;
-  runProgram: (
-    block: MilkdropCompiledPreset['ir']['programs']['init'],
-    env: MutableState,
-    locals?: MutableState | null,
-  ) => void;
-  createEnv: (
-    signals: MilkdropRuntimeSignals,
-    extra?: Record<string, number>,
-    options?: {
-      reuseExtraAsEnv?: boolean;
-    },
-  ) => MutableState;
-  scratch: MutableState;
+  runProgram: RunProgramFn;
+  createEnv: CreateEnvFn;
   aspectX?: number;
   aspectY?: number;
-}) {
-  const cacheKey = getTransformCacheKey(gridX, gridY);
-  const cached = geometryState.frameTransformCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  const local = scratch;
+}): MeshTransformFrame {
   const aspectRatio = signals.aspect ?? 1;
   // MilkDrop shrinks the minor axis (values <= 1); mirrors the shader-uniform
   // convention in feedback-manager-shared.ts's syncMilkdropShaderBuiltinUniforms.
   const resolvedAspectX = aspectX ?? (aspectRatio < 1 ? aspectRatio : 1);
   const resolvedAspectY = aspectY ?? (aspectRatio > 1 ? 1 / aspectRatio : 1);
+  const perPixel = preset.ir.programs.perPixel;
+  const hasPerPixel = perPixel.statements.length > 0;
+  const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
+  const rot = state.rot ?? 0;
+  const scratch = geometryState.pointScratch;
+  // Wire the scratch prototype (and refresh the VM signal env, which
+  // prepareSignalEnv memoises per signals/frame/time) exactly once per pass.
+  const perPixelEnv = hasPerPixel
+    ? createEnv(signals, scratch, { reuseExtraAsEnv: true })
+    : null;
+  const zoom = Math.max(state.zoom ?? 1, 0);
+  const zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
+  const warp = state.warp ?? 0;
+  const centerX = normalizeTransformCenter(state.cx ?? 0.5);
+  const centerY = normalizeTransformCenterY(state.cy ?? 0.5);
+  const scaleX = state.sx ?? 1;
+  const scaleY = state.sy ?? 1;
+  const translateX = state.dx ?? 0;
+  const translateY = state.dy ?? 0;
+  const isIdentity =
+    !hasPerPixel &&
+    zoom === 1 &&
+    zoomExponent === 1 &&
+    rot === 0 &&
+    warp === 0 &&
+    scaleX === 1 &&
+    scaleY === 1 &&
+    translateX === 0 &&
+    translateY === 0 &&
+    centerX === 0 &&
+    centerY === 0;
 
-  // Convert from renderer space [-1,1] to MilkDrop space [0,1]
-  // x = 0 is left, x = 1 is right (with aspect correction)
-  // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
-  local.x = gridX * 0.5 * resolvedAspectX + 0.5;
-  local.y = -gridY * 0.5 * resolvedAspectY + 0.5;
+  return {
+    signals,
+    state,
+    runProgram,
+    scratch,
+    perPixelEnv,
+    aspectX: resolvedAspectX,
+    aspectY: resolvedAspectY,
+    perPixelProgram: hasPerPixel ? perPixel : null,
+    rippleTime: signals.time * (0.35 + warpAnimSpeed),
+    zoom,
+    zoomExponent,
+    cosRot: Math.cos(rot),
+    sinRot: Math.sin(rot),
+    warp,
+    centerX,
+    centerY,
+    scaleX,
+    scaleY,
+    translateX,
+    translateY,
+    isIdentity,
+    baseZoom: state.zoom ?? 1,
+    baseZoomExp: state.zoomexp ?? 1,
+    baseRot: rot,
+    baseWarp: state.warp ?? 0,
+    baseCx: state.cx ?? 0.5,
+    baseCy: state.cy ?? 0.5,
+    baseSx: state.sx ?? 1,
+    baseSy: state.sy ?? 1,
+    baseDx: state.dx ?? 0,
+    baseDy: state.dy ?? 0,
+  };
+}
 
-  const aspectGridX = gridX * resolvedAspectX;
-  const aspectGridY = gridY * resolvedAspectY;
-  local.rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
-  local.ang = Math.atan2(aspectGridY, aspectGridX);
-  local.zoom = state.zoom ?? 1;
-  local.zoomexp = state.zoomexp ?? 1;
-  local.rot = state.rot ?? 0;
-  local.warp = state.warp ?? 0;
-  local.cx = state.cx ?? 0.5;
-  local.cy = state.cy ?? 0.5;
-  local.sx = state.sx ?? 1;
-  local.sy = state.sy ?? 1;
-  local.dx = state.dx ?? 0;
-  local.dy = state.dy ?? 0;
+// Every transform is recomputed; callers copy x/y out before the next call.
+const transientTransformResult = { x: 0, y: 0 };
 
-  // Seed per-pixel locals with q1-q32 so per-pixel writes don't leak to
-  // the shared register bank and corrupt the next frame's per-frame pool
-  const env = createEnv(signals, local, { reuseExtraAsEnv: true });
-  for (let i = 1; i <= 32; i += 1) {
-    const key = `q${i}`;
-    if (!(key in local)) {
-      local[key] = (env as Record<string, number>)[key] ?? 0;
-    }
+function transformMeshPoint(
+  frame: MeshTransformFrame,
+  gridX: number,
+  gridY: number,
+): { x: number; y: number } {
+  if (frame.isIdentity) {
+    transientTransformResult.x = gridX;
+    transientTransformResult.y = gridY;
+    return transientTransformResult;
+  }
+  const aspectX = frame.aspectX;
+  const aspectY = frame.aspectY;
+  const perPixel = frame.perPixelProgram;
+
+  const aspectGridX = gridX * aspectX;
+  const aspectGridY = gridY * aspectY;
+
+  let rendererX: number;
+  let rendererY: number;
+  let rad: number;
+  let zoom: number;
+  let zoomExponent: number;
+  let cosRot: number;
+  let sinRot: number;
+  let warp: number;
+  let centerX: number;
+  let centerY: number;
+  let scaleX: number;
+  let scaleY: number;
+  let translateX: number;
+  let translateY: number;
+
+  if (perPixel) {
+    const local = frame.scratch;
+
+    // Convert from renderer space [-1,1] to MilkDrop space [0,1]
+    // x = 0 is left, x = 1 is right (with aspect correction)
+    // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
+    local.x = gridX * 0.5 * aspectX + 0.5;
+    local.y = -gridY * 0.5 * aspectY + 0.5;
+    const dxFromCenter = (local.x - frame.baseCx) * aspectX;
+    const dyFromCenter = (local.y - frame.baseCy) * aspectY;
+    local.rad =
+      Math.sqrt(dxFromCenter * dxFromCenter + dyFromCenter * dyFromCenter) * 2;
+    local.ang = Math.atan2(dyFromCenter, dxFromCenter);
+    // Reset every built-in per-pixel variable from the frame bases: per-pixel
+    // code may have overwritten them on the previous vertex.
+    local.zoom = frame.baseZoom;
+    local.zoomexp = frame.baseZoomExp;
+    local.rot = frame.baseRot;
+    local.warp = frame.baseWarp;
+    local.cx = frame.baseCx;
+    local.cy = frame.baseCy;
+    local.sx = frame.baseSx;
+    local.sy = frame.baseSy;
+    local.dx = frame.baseDx;
+    local.dy = frame.baseDy;
+
+    // frame.perPixelEnv is `local` itself, prototype already wired at pass
+    // setup, so no per-vertex createEnv / setPrototypeOf.
+    frame.runProgram(perPixel, frame.perPixelEnv ?? local, local);
+
+    // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
+    // transform math below runs in renderer [-1,1] space, so invert the mapping.
+    rendererX = (((local.x ?? 0.5) - 0.5) * 2) / aspectX;
+    rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / aspectY);
+    rad = local.rad;
+    warp = local.warp;
+    centerX = normalizeTransformCenter(local.cx ?? 0.5);
+    centerY = normalizeTransformCenterY(local.cy ?? 0.5);
+    scaleX = local.sx ?? 1;
+    scaleY = local.sy ?? 1;
+    translateX = local.dx ?? 0;
+    translateY = local.dy ?? 0;
+    cosRot = Math.cos(local.rot);
+    sinRot = Math.sin(local.rot);
+    zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
+    zoom = Math.max(local.zoom ?? 1, 0);
+  } else {
+    // No per-pixel program: nothing can rewrite x/y/rad/zoom/rot/... per vertex,
+    // so skip the env wiring and the NO_OP program call entirely. The geometric
+    // transform below still runs unchanged. The round trip through MilkDrop
+    // [0,1] space is reproduced literally rather than simplified to `gridX`,
+    // because (gridX * 0.5 * aspectX) * 2 / aspectX is not bit-identical to
+    // gridX when aspectX is not a power of two.
+    const localX = gridX * 0.5 * aspectX + 0.5;
+    const localY = -gridY * 0.5 * aspectY + 0.5;
+    rendererX = ((localX - 0.5) * 2) / aspectX;
+    rendererY = -(((localY - 0.5) * 2) / aspectY);
+    rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
+    warp = frame.warp;
+    centerX = frame.centerX;
+    centerY = frame.centerY;
+    scaleX = frame.scaleX;
+    scaleY = frame.scaleY;
+    translateX = frame.translateX;
+    translateY = frame.translateY;
+    cosRot = frame.cosRot;
+    sinRot = frame.sinRot;
+    zoomExponent = frame.zoomExponent;
+    zoom = frame.zoom;
   }
 
-  runProgram(preset.ir.programs.perPixel, env, local);
-
-  // Per-pixel code reads (and may write) x/y in MilkDrop [0,1] space; the
-  // transform math below runs in renderer [-1,1] space, so invert the mapping.
-  const rendererX = (((local.x ?? 0.5) - 0.5) * 2) / resolvedAspectX;
-  const rendererY = -((((local.y ?? 0.5) - 0.5) * 2) / resolvedAspectY);
-
-  const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
-  const centerX = normalizeTransformCenter(local.cx ?? 0.5);
-  const centerY = normalizeTransformCenterY(local.cy ?? 0.5);
-  const scaleX = local.sx ?? 1;
-  const scaleY = local.sy ?? 1;
-  const translateX = local.dx ?? 0;
-  const translateY = local.dy ?? 0;
-
-  const cosRot = Math.cos(local.rot);
-  const sinRot = Math.sin(local.rot);
   const relX = rendererX - centerX;
   const relY = rendererY - centerY;
   const rx = relX * cosRot - relY * sinRot + centerX;
@@ -295,8 +463,6 @@ function transformMeshPoint({
 
   const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
   const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
-  const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
-  const zoom = Math.max(local.zoom ?? 1, 0);
   // Authored presets legitimately use extreme pairs (orbasonic ships
   // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
   // float32 at the edges and NaN-poisons the warp into a black frame.
@@ -309,10 +475,7 @@ function transformMeshPoint({
   const zx = centerX + (rx - centerX) * zoomScale;
   const zy = centerY + (ry - centerY) * zoomScale;
 
-  const ripple =
-    Math.sin(local.rad * 8.0 + signals.time * (0.35 + warpAnimSpeed)) *
-    local.warp *
-    0.1;
+  const ripple = Math.sin(rad * 8.0 + frame.rippleTime) * warp * 0.1;
   const rippleAngle = Math.atan2(zy - centerY, zx - centerX);
   const wx = zx + Math.cos(rippleAngle) * ripple;
   const wy = zy + Math.sin(rippleAngle) * ripple;
@@ -320,17 +483,16 @@ function transformMeshPoint({
   const tx = wx + translateX;
   const ty = wy + translateY;
 
-  const transformed = getTransformCacheEntry(geometryState);
+  const transformed = transientTransformResult;
   transformed.x = (tx - centerX) * scaleX + centerX;
   transformed.y = (ty - centerY) * scaleY + centerY;
-  geometryState.frameTransformCache.set(cacheKey, transformed);
   return transformed;
 }
 
 export function getMeshDensity(state: MutableState, detailScale: number) {
   // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
   // detail scale (gated on backend + quality tier) climbs past ~3x.
-  return clamp(Math.round((state.mesh_density ?? 16) * detailScale), 8, 96);
+  return clamp(Math.round((state.mesh_density ?? 24) * detailScale), 8, 96);
 }
 
 export function getMotionVectorDescriptorContext({
@@ -340,10 +502,19 @@ export function getMotionVectorDescriptorContext({
   state: MutableState;
   preset: MilkdropCompiledPreset;
 }): MotionVectorDescriptorContext | null {
+  // "Legacy" means the preset steers motion vectors through the mv_* fields
+  // instead of the modern `motion_vectors` toggle. That has to be decided from
+  // what the preset DECLARED, not from runtime values: mv_l defaults to 0.9
+  // and mv_r/g/b to 1 (MilkDrop's real defaults), so a value-based test reads
+  // every preset as legacy.
+  // ast.fields keys are raw preset text (`fMotionVectorsL`), so normalize
+  // before comparing — MilkDrop-authored files never spell them `mv_l`.
+  const declaresLegacyField = preset.ast.fields.some((field) => {
+    const key = normalizeProgramAssignmentTarget(field.key);
+    return key === 'mv_dx' || key === 'mv_dy' || key === 'mv_l';
+  });
   const legacyControls =
-    Math.abs(state.mv_dx ?? 0) > 0.0001 ||
-    Math.abs(state.mv_dy ?? 0) > 0.0001 ||
-    Math.abs(state.mv_l ?? 0) > 0.0001 ||
+    declaresLegacyField ||
     preset.ir.programs.init.statements.some(
       (statement) =>
         statement.target === 'motion_vectors_x' ||
@@ -480,7 +651,9 @@ export function buildMeshField({
   const density = getMeshDensity(state, detailScale);
 
   // Clear per-pixel scratch each frame to prevent accumulation across frames
-  geometryState.pointScratch = {};
+  for (const key in geometryState.pointScratch) {
+    delete geometryState.pointScratch[key];
+  }
 
   if (proceduralMeshPlan) {
     geometryState.meshPoints.length = 0;
@@ -499,23 +672,22 @@ export function buildMeshField({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  const transformFrame = createMeshTransformFrame({
+    signals,
+    state,
+    preset,
+    geometryState,
+    runProgram,
+    createEnv,
+    aspectX,
+    aspectY,
+  });
+
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
       const x = (col / Math.max(1, density - 1)) * 2 - 1;
       const y = (row / Math.max(1, density - 1)) * 2 - 1;
-      const point = transformMeshPoint({
-        signals,
-        gridX: x,
-        gridY: y,
-        state,
-        preset,
-        geometryState,
-        runProgram,
-        createEnv,
-        scratch: geometryState.pointScratch,
-        aspectX,
-        aspectY,
-      });
+      const point = transformMeshPoint(transformFrame, x, y);
       const pointIndex = row * density + col;
       const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
         sourceX: 0,
@@ -730,6 +902,18 @@ export function buildGpuGeometryHints({
   };
 }
 
+// Above this cell count, motion vectors sample the per-pixel program on a
+// coarse grid and bilinear-interpolate the rest. The warp mapping is smooth
+// (zoom/rot/warp fields), so interpolation is visually indistinguishable for
+// indicator vectors, while a dense authored grid (64x48 = 3072 cells) drops
+// to at most 17x13 = 221 program runs per frame.
+const MOTION_VECTOR_INTERPOLATION_THRESHOLD = 288;
+const MOTION_VECTOR_EVAL_COLUMNS = 17;
+const MOTION_VECTOR_EVAL_ROWS = 13;
+// Reused across frames; the VM is single-threaded and buildMotionVectors is
+// not reentrant. Layout: [x0, y0, x1, y1, ...] row-major over the eval grid.
+let motionVectorEvalScratch = new Float32Array(0);
+
 export function buildMotionVectors({
   state,
   preset,
@@ -790,6 +974,15 @@ export function buildMotionVectors({
     hasLegacyMotionVectorControls ? 0 : 0.02,
     1,
   );
+  // Classic presets park a dense grid (mv_x=64;mv_y=48) with mv_a=0 to hide
+  // motion vectors; every cell still costs a per-pixel program run. Fully
+  // transparent vectors can never be seen, so skip the whole grid. mv_a is a
+  // frame variable — if a preset later raises it, vectors resume next frame
+  // (history restarts, matching the from-scratch case).
+  if (alpha <= 0.003) {
+    geometryState.lastMotionVectorField = null;
+    return [];
+  }
   const nextVisualFrameIndex = (geometryState.motionVectorFrameIndex ^ 1) as
     | 0
     | 1;
@@ -814,6 +1007,49 @@ export function buildMotionVectors({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  // Motion-vector sample points CAN repeat (legacy mv_dx/mv_dy offsets clamp
+  // several columns onto +/-1) and can coincide with mesh-lattice points. They
+  // are still recomputed each time, matching MilkDrop, which evaluates every
+  // vector independently. A memo keyed on quantised coordinates used to sit
+  // here; it returned a NEIGHBOUR's transform for points closer together than
+  // the quantisation step (~4.9e-4), misplacing ~4 vectors per frame for a
+  // 0.35% hit rate.
+  const transformFrame = createMeshTransformFrame({
+    signals,
+    state,
+    preset,
+    geometryState,
+    runProgram,
+    createEnv,
+    aspectX,
+    aspectY,
+  });
+
+  const interpolated = countX * countY > MOTION_VECTOR_INTERPOLATION_THRESHOLD;
+  const evalColumns = interpolated
+    ? Math.min(countX, MOTION_VECTOR_EVAL_COLUMNS)
+    : 0;
+  const evalRows = interpolated ? Math.min(countY, MOTION_VECTOR_EVAL_ROWS) : 0;
+  if (interpolated) {
+    if (motionVectorEvalScratch.length < evalColumns * evalRows * 2) {
+      motionVectorEvalScratch = new Float32Array(evalColumns * evalRows * 2);
+    }
+    for (let row = 0; row < evalRows; row += 1) {
+      for (let col = 0; col < evalColumns; col += 1) {
+        const point = transformMeshPoint(
+          transformFrame,
+          (col / (evalColumns - 1)) * 2 - 1,
+          (row / (evalRows - 1)) * 2 - 1,
+        );
+        const offset = (row * evalColumns + col) * 2;
+        motionVectorEvalScratch[offset] = point.x;
+        motionVectorEvalScratch[offset + 1] = point.y;
+      }
+    }
+  }
+
+  let currentPointX = 0;
+  let currentPointY = 0;
   for (let row = 0; row < countY; row += 1) {
     for (let col = 0; col < countX; col += 1) {
       const sourceBaseX = countX === 1 ? 0 : (col / (countX - 1)) * 2 - 1;
@@ -825,19 +1061,45 @@ export function buildMotionVectors({
         ? clamp(sourceBaseY + legacyOffsetY, -1, 1)
         : sourceBaseY;
       const index = row * countX + col;
-      const currentPoint = transformMeshPoint({
-        signals,
-        gridX: sourceX,
-        gridY: sourceY,
-        state,
-        preset,
-        geometryState,
-        runProgram,
-        createEnv,
-        scratch: geometryState.pointScratch,
-        aspectX,
-        aspectY,
-      });
+      if (interpolated) {
+        // Bilinear sample of the coarse transformed grid at (sourceX, sourceY).
+        const u = clamp(
+          ((sourceX + 1) / 2) * (evalColumns - 1),
+          0,
+          evalColumns - 1,
+        );
+        const v = clamp(((sourceY + 1) / 2) * (evalRows - 1), 0, evalRows - 1);
+        const col0 = Math.min(Math.floor(u), evalColumns - 2);
+        const row0 = Math.min(Math.floor(v), evalRows - 2);
+        const fu = u - col0;
+        const fv = v - row0;
+        const i00 = (row0 * evalColumns + col0) * 2;
+        const i10 = i00 + 2;
+        const i01 = i00 + evalColumns * 2;
+        const i11 = i01 + 2;
+        const top =
+          motionVectorEvalScratch[i00] * (1 - fu) +
+          motionVectorEvalScratch[i10] * fu;
+        const bottom =
+          motionVectorEvalScratch[i01] * (1 - fu) +
+          motionVectorEvalScratch[i11] * fu;
+        currentPointX = top * (1 - fv) + bottom * fv;
+        const topY =
+          motionVectorEvalScratch[i00 + 1] * (1 - fu) +
+          motionVectorEvalScratch[i10 + 1] * fu;
+        const bottomY =
+          motionVectorEvalScratch[i01 + 1] * (1 - fu) +
+          motionVectorEvalScratch[i11 + 1] * fu;
+        currentPointY = topY * (1 - fv) + bottomY * fv;
+      } else {
+        const currentPoint = transformMeshPoint(
+          transformFrame,
+          sourceX,
+          sourceY,
+        );
+        currentPointX = currentPoint.x;
+        currentPointY = currentPoint.y;
+      }
       const pointEntry: MotionVectorHistoryPoint = nextHistoryPoints[index] ?? {
         sourceX: 0,
         sourceY: 0,
@@ -846,8 +1108,8 @@ export function buildMotionVectors({
       };
       pointEntry.sourceX = sourceX;
       pointEntry.sourceY = sourceY;
-      pointEntry.x = currentPoint.x;
-      pointEntry.y = currentPoint.y;
+      pointEntry.x = currentPointX;
+      pointEntry.y = currentPointY;
       nextHistoryPoints[index] = pointEntry;
       const previous = previousField?.points[index] ?? {
         sourceX,
@@ -855,13 +1117,13 @@ export function buildMotionVectors({
         x: sourceX,
         y: sourceY,
       };
-      const sourceDx = currentPoint.x - sourceX;
-      const sourceDy = currentPoint.y - sourceY;
+      const sourceDx = currentPointX - sourceX;
+      const sourceDy = currentPointY - sourceY;
       const historyDx = hasPerPixelPrograms
-        ? (currentPoint.x - previous.x) * 1.1
+        ? (currentPointX - previous.x) * 1.1
         : 0;
       const historyDy = hasPerPixelPrograms
-        ? (currentPoint.y - previous.y) * 1.1
+        ? (currentPointY - previous.y) * 1.1
         : 0;
       const baseDx = sourceDx + historyDx;
       const baseDy = sourceDy + historyDy;
@@ -891,11 +1153,11 @@ export function buildMotionVectors({
         additive: false,
       };
       const positions = vector.positions;
-      positions[0] = currentPoint.x - dx * 0.45;
-      positions[1] = currentPoint.y - dy * 0.45;
+      positions[0] = currentPointX - dx * 0.45;
+      positions[1] = currentPointY - dy * 0.45;
       positions[2] = 0.18;
-      positions[3] = currentPoint.x + dx;
-      positions[4] = currentPoint.y + dy;
+      positions[3] = currentPointX + dx;
+      positions[4] = currentPointY + dy;
       positions[5] = 0.18;
       vector.color = colorValue;
       vector.alpha = alpha;

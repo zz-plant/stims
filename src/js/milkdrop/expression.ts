@@ -1,3 +1,7 @@
+import {
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+} from './builtin-docs';
 import { resolveMilkdropIdentifier } from './field-normalization';
 import type {
   MilkdropCompiledStatement,
@@ -43,52 +47,17 @@ type ParseResult<T> = {
 
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 
-export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(['pi', 'e']);
+// The names live in `builtin-docs.ts` (the single source of truth shared with
+// the editor's highlighter, autocomplete, and hover docs); these sets remain
+// the authoritative interface for what the compiler accepts. Every name must
+// have a case in `evaluateMilkdropExpression`'s call switch below.
+export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(
+  MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
+);
 
-export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
-  'sin',
-  'cos',
-  'tan',
-  'asin',
-  'acos',
-  'atan',
-  'abs',
-  'sqrt',
-  'pow',
-  'mod',
-  'fmod',
-  'min',
-  'max',
-  'mix',
-  'lerp',
-  'floor',
-  'int',
-  'ceil',
-  'sqr',
-  'clamp',
-  'step',
-  'smoothstep',
-  'log',
-  'exp',
-  'sigmoid',
-  'sign',
-  'bor',
-  'band',
-  'bnot',
-  'atan2',
-  'frac',
-  'if',
-  'above',
-  'below',
-  'equal',
-  'rand',
-  'randint',
-  'log10',
-  'megabuf',
-  'gmegabuf',
-  'exec2',
-  'exec3',
-]);
+export const MILKDROP_INTRINSIC_FUNCTIONS = new Set(
+  MILKDROP_INTRINSIC_FUNCTION_NAMES,
+);
 
 /** NS-EEL treats values within this distance of zero as false. */
 export const MILKDROP_EEL_CLOSE_FACTOR = 0.00001;
@@ -247,11 +216,14 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
   return { value: diagnostics.length ? null : tokens, diagnostics };
 }
 
+const MAX_EXPRESSION_RECURSION_DEPTH = 100;
+
 class ExpressionParser {
   private readonly tokens: Token[];
   private readonly line: number;
   private readonly diagnostics: MilkdropDiagnostic[] = [];
   private index = 0;
+  private depth = 0;
 
   constructor(tokens: Token[], line: number) {
     this.tokens = tokens;
@@ -276,21 +248,47 @@ class ExpressionParser {
     };
   }
 
+  private enterDepth(): boolean {
+    this.depth += 1;
+    if (this.depth > MAX_EXPRESSION_RECURSION_DEPTH) {
+      this.diagnostics.push(
+        createDiagnostic(
+          this.line,
+          'expr_max_depth_exceeded',
+          'Expression nesting depth exceeded maximum limit of 100.',
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  private leaveDepth() {
+    this.depth = Math.max(0, this.depth - 1);
+  }
+
   /** Assignment has the lowest precedence and is right-associative, so a=b=c
    * parses as a=(b=c). */
   private parseAssignment(): MilkdropExpressionNode {
-    const left = this.parseLogicalOr();
-    const operator = this.matchOperator('=');
-    if (!operator) {
-      return left;
+    if (!this.enterDepth()) {
+      return { type: 'literal', value: 0 };
     }
-    const right = this.parseAssignment();
-    return {
-      type: 'binary',
-      operator: '=',
-      left,
-      right,
-    };
+    try {
+      const left = this.parseLogicalOr();
+      const operator = this.matchOperator('=');
+      if (!operator) {
+        return left;
+      }
+      const right = this.parseAssignment();
+      return {
+        type: 'binary',
+        operator: '=',
+        left,
+        right,
+      };
+    } finally {
+      this.leaveDepth();
+    }
   }
 
   private peek() {
@@ -674,8 +672,10 @@ export function evaluateMilkdropExpression(
           return Math.abs(args[0] ?? 0);
         case 'sqrt':
           return Math.sqrt(Math.max(0, args[0] ?? 0));
-        case 'pow':
-          return (args[0] ?? 0) ** (args[1] ?? 0);
+        case 'pow': {
+          const res = (args[0] ?? 0) ** (args[1] ?? 0);
+          return Number.isFinite(res) ? res : 0;
+        }
         case 'mod':
         case 'fmod': {
           const left = args[0] ?? 0;

@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../../milkdrop/preset-preview.ts';
+import { encodePresetPreviewImage } from '../../milkdrop/preset-preview.ts';
 import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import { createLazyFactory } from '../use-lazy-factory.ts';
 
@@ -55,7 +56,7 @@ export function usePresetPreviews({
             }
 
             const result = {
-              imageUrl: canvas.toDataURL('image/webp', 0.82),
+              imageUrl: encodePresetPreviewImage(canvas),
               actualBackend: engineSnapshot?.backend ?? null,
               updatedAt: Date.now(),
               error: null,
@@ -118,6 +119,14 @@ export function usePresetPreviews({
     engine,
     isDisposed,
   ]);
+
+  useEffect(() => {
+    return () => {
+      previewServiceRef.current?.dispose();
+      previewServiceRef.current = null;
+      previewServicePromiseRef.current = null;
+    };
+  }, []);
 
   return {
     ensurePresetPreviewService,

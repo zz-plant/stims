@@ -93,16 +93,13 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
       .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
       .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
+      .replace(/\bsampler_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b/giu, 'noiseTex')
       .replace(
-        /\bsampler_noise\b|\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_fw_noise_lq\b|\bsampler_fw_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
-        'noiseTex',
-      )
-      .replace(
-        /\bsampler_noisevol\b|\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b|\bsampler_fw_noisevol\b|\bsampler_fw_noisevol_hq\b|\bsampler_fw_noisevol_lq\b/giu,
+        /\bsampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
         'simplexTex',
       )
       .replace(
-        /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
+        /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
         'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
       )
       .replace(
@@ -124,14 +121,27 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
       .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
       .replace(/\btime\b/giu, 'signalTime')
+      // Harmonic/percussive signals are rewritten before the plain band names
+      // so the longer identifiers win; `percussive_mid` cannot be caught by
+      // the `\bmid\b` rule below (underscore is a word character), but the
+      // longest-first ordering is kept explicit to stay robust to edits.
+      .replace(/\bpercussive_?ratio\b/giu, 'signalPercussiveRatio')
+      .replace(/\bpercussive_?low\b/giu, 'signalPercussiveLow')
+      .replace(/\bpercussive_?mid\b/giu, 'signalPercussiveMid')
+      .replace(/\bpercussive_?high\b/giu, 'signalPercussiveHigh')
+      .replace(/\bpercussive\b/giu, 'signalPercussive')
+      .replace(/\bharmonic\b/giu, 'signalHarmonic')
       .replace(/\bbass_att\b/giu, 'signalBassAtt')
       .replace(/\bbass\b/giu, 'signalBass')
       .replace(/\bmid_att\b/giu, 'signalMidAtt')
       .replace(/\bmids_att\b/giu, 'signalMidAtt')
       .replace(/\bmid\b/giu, 'signalMid')
       .replace(/\bmids\b/giu, 'signalMid')
-      .replace(/\btreb_att\b/giu, 'signalTrebAtt')
-      .replace(/\btreb\b/giu, 'signalTreb')
+      .replace(
+        /\btreb_att\b|\btreble_att\b|\btrebatt\b|\btrebleatt\b/giu,
+        'signalTrebAtt',
+      )
+      .replace(/\btreb\b|\btreble\b/giu, 'signalTreb')
       .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
       .replace(/\brms\b/giu, 'signalEnergy')
       .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PresetCatalogEntry } from './contracts.ts';
+import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
+import { runPresetPromoteTransition } from './promote-transition.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -10,8 +14,8 @@ import {
   getAuthorOptions,
   getFeaturedCollectionTags,
   matchesAuthor,
+  matchesPreset,
   prettifyCollectionTag,
-  resolveAuthorUrl,
   sortBrowseEntries,
 } from './workspace-helpers.ts';
 
@@ -74,12 +78,12 @@ function readSortMode(): SortMode {
 
 export function BrowseSheetPanel({
   onCollectionTagChange,
-  onImport: _onImport,
+  onImport,
   offline = false,
-  sessionHistory: _sessionHistory = [],
+  sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
-  onImport: (files: FileList | null) => void;
+  onImport: (files: FileList | File[] | null) => void;
   offline?: boolean;
   sessionHistory?: Array<{ presetId: string; title: string; at: number }>;
 }) {
@@ -101,8 +105,13 @@ export function BrowseSheetPanel({
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
+  const presetListRef = useRef<HTMLUListElement | null>(null);
+  const recentRailRef = useRef<HTMLUListElement | null>(null);
+  const collectionChipsRef = useRef<HTMLElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const authorOptions = useMemo(() => getAuthorOptions(catalog), [catalog]);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
   // Synchronize local search state when global searchQuery is modified externally (e.g. clear filters)
   useEffect(() => {
@@ -130,9 +139,24 @@ export function BrowseSheetPanel({
       : filteredCatalog;
   const browseEntries = useMemo(
     () =>
-      collectionFiltered.filter((entry) => matchesAuthor(entry, authorFilter)),
-    [collectionFiltered, authorFilter],
+      collectionFiltered.filter(
+        (entry) =>
+          matchesPreset(entry, localSearch) &&
+          matchesAuthor(entry, authorFilter),
+      ),
+    [collectionFiltered, localSearch, authorFilter],
   );
+
+  // Auto-scroll active preset into view on initial open or selection
+  useEffect(() => {
+    if (!currentPresetId || !presetListRef.current) return;
+    const activeEl = presetListRef.current.querySelector<HTMLElement>(
+      '[data-active="true"]',
+    );
+    if (activeEl) {
+      activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [currentPresetId]);
   const sorted = useMemo(
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
@@ -140,11 +164,71 @@ export function BrowseSheetPanel({
   const visible = sorted.slice(0, limit);
   const hiddenCount = sorted.length - visible.length;
 
+  // Arrow-key roving nav: Tab into the list costs one stop (lands on the
+  // active item), Up/Down/Home/End move within it. Without this, reaching
+  // the Nth preset by keyboard costs 2N Tab presses (open + favorite button
+  // per row) — thousands at the catalog's full size.
+  useListKeyboardNav(presetListRef, {
+    itemSelector: '.ctl-preset__open',
+    orientation: 'vertical',
+    deps: [visible.length],
+  });
+  useListKeyboardNav(recentRailRef, {
+    itemSelector: '.ctl-recent-rail__item',
+    orientation: 'horizontal',
+  });
+  useListKeyboardNav(collectionChipsRef, {
+    itemSelector: '.ctl-chip',
+    orientation: 'horizontal',
+    deps: [featuredTags.length],
+  });
+
+  // This-session rail: distinct from the "Recently opened" sort mode, which
+  // reads persisted lastOpenedAt across sessions. sessionHistory is in-memory
+  // only, so this is "what you just looked at", good for flicking back a
+  // couple of steps without losing your place in the filtered list below.
+  const recentEntries = useMemo(() => {
+    const seen = new Set<string>();
+    const entries: PresetCatalogEntry[] = [];
+    for (const record of sessionHistory) {
+      if (record.presetId === currentPresetId || seen.has(record.presetId)) {
+        continue;
+      }
+      const entry = catalog.find((item) => item.id === record.presetId);
+      if (!entry) {
+        continue;
+      }
+      seen.add(record.presetId);
+      entries.push(entry);
+      if (entries.length >= 8) {
+        break;
+      }
+    }
+    return entries;
+  }, [sessionHistory, catalog, currentPresetId]);
+
   // Reset pagination when filters change
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset limit on filter changes
   useEffect(() => {
     setLimit(BATCH_SIZE);
   }, [searchQuery, routeState.collectionTag, authorFilter]);
+
+  // Infinite scroll observer: automatically append the next batch when approaching the bottom
+  useEffect(() => {
+    if (hiddenCount <= 0 || !moreRef.current) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+    const target = moreRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setLimit((l) => l + BATCH_SIZE);
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hiddenCount]);
 
   return (
     <div
@@ -162,6 +246,22 @@ export function BrowseSheetPanel({
             spellCheck={false}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                ui.setSearchQuery(localSearch);
+                (e.target as HTMLInputElement).blur();
+              } else if (e.key === 'Escape' && localSearch !== '') {
+                // First Escape clears the query; a second press (now that
+                // the field is already empty) falls through to bubble up
+                // to SidePanel's own Escape handler and close the panel.
+                // Without stopping propagation here, one Escape press would
+                // both wipe what you typed AND close the panel in the same
+                // keystroke.
+                e.stopPropagation();
+                setLocalSearch('');
+                ui.setSearchQuery('');
+              }
+            }}
           />
           <button
             type="button"
@@ -177,9 +277,73 @@ export function BrowseSheetPanel({
               aria-hidden="true"
             />
           </button>
+          {/* A drop zone alone would have been mouse/touch-only — this
+              button (and the native file picker behind it) is the
+              keyboard/click-operable path, not an afterthought bolted onto
+              a drag target. */}
+          <button
+            type="button"
+            className="ctl-btn ctl-btn--icon"
+            onClick={async () => {
+              if (
+                typeof window !== 'undefined' &&
+                'showDirectoryPicker' in window
+              ) {
+                try {
+                  const dirHandle = await (
+                    window as unknown as {
+                      showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+                    }
+                  ).showDirectoryPicker();
+                  const files: File[] = [];
+                  for await (const entry of dirHandle.values()) {
+                    if (
+                      entry.kind === 'file' &&
+                      (entry.name.endsWith('.milk') ||
+                        entry.name.endsWith('.txt'))
+                    ) {
+                      const file = await entry.getFile();
+                      files.push(file);
+                    }
+                  }
+                  if (files.length > 0) {
+                    onImport(files);
+                  }
+                } catch {
+                  // User cancelled directory picker or picker rejected
+                }
+              } else {
+                importInputRef.current?.click();
+              }
+            }}
+            aria-label="Import preset file or folder"
+            title="Import preset file or folder (File System Access API)"
+          >
+            <UiIcon
+              name="upload"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".milk,text/plain"
+            multiple
+            hidden
+            aria-label="Import preset file"
+            onChange={(e) => {
+              onImport(e.target.files);
+              e.target.value = '';
+            }}
+          />
         </div>
 
-        <nav className="ctl-scroller" aria-label="Preset collections">
+        <nav
+          ref={collectionChipsRef}
+          className="ctl-scroller"
+          aria-label="Preset collections"
+        >
           <button
             type="button"
             className="ctl-chip"
@@ -270,6 +434,43 @@ export function BrowseSheetPanel({
         ) : null}
       </section>
 
+      {!hasFilter && recentEntries.length > 0 ? (
+        <section
+          className="ctl-recent-rail"
+          aria-label="Recently played this session"
+        >
+          <p className="ctl-recent-rail__label">Recently played</p>
+          <ul
+            ref={recentRailRef}
+            className="ctl-scroller ctl-recent-rail__list"
+          >
+            {recentEntries.map((entry) => (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  className="ctl-recent-rail__item"
+                  title={entry.title}
+                  onClick={(event) => {
+                    runPresetPromoteTransition({
+                      sourceElement: event.currentTarget,
+                      presetId: entry.id,
+                    });
+                    engine.handlePresetSelection(entry.id);
+                  }}
+                >
+                  <PresetArtwork
+                    entry={entry}
+                    compact
+                    preview={presetPreviews[entry.id] ?? null}
+                  />
+                  <span className="ctl-recent-rail__title">{entry.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section ref={resultsRef} className="ctl-browse-results">
         <div className="ctl-resultbar">
           <p className="ctl-readout" aria-live="polite">
@@ -295,10 +496,16 @@ export function BrowseSheetPanel({
             <option value="author">Author</option>
             <option value="recent">Recently opened</option>
             <option value="favorites-first">Saved first</option>
-            <option value="webgpu-supported">WebGPU first</option>
+            <option value="webgpu-supported">High fidelity first</option>
             <option value="random">Random</option>
           </select>
         </div>
+
+        <p className="ctl-keyboard-hint">
+          <kbd>↑</kbd>
+          <kbd>↓</kbd> browse · <kbd>Home</kbd>
+          <kbd>End</kbd> jump
+        </p>
 
         {!catalogReady && !catalogError ? (
           <ul className="stims-shell__preset-list" aria-busy={true}>
@@ -342,8 +549,16 @@ export function BrowseSheetPanel({
           </div>
         ) : null}
 
+        {catalogReady ? (
+          <PresetLineageSection
+            catalog={catalog}
+            currentPresetId={currentPresetId}
+            onSelect={(presetId) => engine.handlePresetSelection(presetId)}
+          />
+        ) : null}
+
         {catalogReady && sorted.length > 0 ? (
-          <ul className="ctl-presets">
+          <ul ref={presetListRef} className="ctl-presets">
             {visible.map((entry) => (
               <li
                 key={entry.id}
@@ -356,7 +571,13 @@ export function BrowseSheetPanel({
                   aria-current={
                     entry.id === currentPresetId ? 'true' : undefined
                   }
-                  onClick={() => engine.handlePresetSelection(entry.id)}
+                  onClick={(event) => {
+                    runPresetPromoteTransition({
+                      sourceElement: event.currentTarget,
+                      presetId: entry.id,
+                    });
+                    engine.handlePresetSelection(entry.id);
+                  }}
                 >
                   <span className="ctl-preset__art">
                     <PresetArtwork
@@ -369,28 +590,7 @@ export function BrowseSheetPanel({
                     <span className="ctl-preset__title">{entry.title}</span>
                     <span className="ctl-preset__meta">
                       {describePresetMood(entry)}
-                      {entry.author ? (
-                        <>
-                          {' · '}
-                          {resolveAuthorUrl(entry.author, entry.authorUrl) ? (
-                            <a
-                              href={resolveAuthorUrl(
-                                entry.author,
-                                entry.authorUrl,
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ctl-preset__author-link"
-                              title={`View ${entry.author}'s profile or resource`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {entry.author}
-                            </a>
-                          ) : (
-                            entry.author
-                          )}
-                        </>
-                      ) : null}
+                      {entry.author ? ` · ${entry.author}` : null}
                     </span>
                   </span>
                 </button>
@@ -420,7 +620,7 @@ export function BrowseSheetPanel({
         ) : null}
 
         {hiddenCount > 0 ? (
-          <div className="ctl-browse-more">
+          <div ref={moreRef} className="ctl-browse-more">
             <button
               type="button"
               className="ctl-btn"

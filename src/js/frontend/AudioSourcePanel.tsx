@@ -12,6 +12,18 @@ type AudioSourcePanelProps = {
   showHelp?: boolean;
 };
 
+/** m:ss, or h:mm:ss once a video runs past an hour. */
+function formatPlaybackTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const paddedSeconds = String(seconds).padStart(2, '0');
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${paddedSeconds}`
+    : `${minutes}:${paddedSeconds}`;
+}
+
 export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const sourcePanelId = useId();
   const sourceHeadingId = `${sourcePanelId}-source-heading`;
@@ -37,6 +49,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubeLoading = ui.youtubeLoading;
   const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
+  const youtubeTransport = ui.youtubeTransport;
+  const youtubeTransportControls = ui.youtubeTransportControls;
   const youtubeUrl = ui.youtubeUrl;
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
@@ -169,6 +183,58 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         >
           {youtubeFeedback}
         </p>
+        {youtubeTransport ? (
+          <fieldset
+            className="stims-shell__youtube-transport"
+            aria-label="YouTube playback"
+          >
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() => youtubeTransportControls.nudge(-10)}
+              aria-label="Back 10 seconds"
+            >
+              −10s
+            </button>
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() =>
+                youtubeTransport.paused
+                  ? youtubeTransportControls.play()
+                  : youtubeTransportControls.pause()
+              }
+            >
+              {youtubeTransport.paused ? 'Play' : 'Pause'}
+            </button>
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() => youtubeTransportControls.nudge(10)}
+              aria-label="Forward 10 seconds"
+            >
+              +10s
+            </button>
+            <input
+              className="stims-shell__transport-scrubber"
+              type="range"
+              min={0}
+              max={Math.floor(youtubeTransport.durationSeconds)}
+              value={Math.floor(youtubeTransport.currentSeconds)}
+              aria-label="Seek"
+              aria-valuetext={formatPlaybackTime(
+                youtubeTransport.currentSeconds,
+              )}
+              onChange={(event) =>
+                youtubeTransportControls.seekTo(Number(event.target.value))
+              }
+            />
+            <span className="stims-shell__transport-time">
+              {formatPlaybackTime(youtubeTransport.currentSeconds)} /{' '}
+              {formatPlaybackTime(youtubeTransport.durationSeconds)}
+            </span>
+          </fieldset>
+        ) : null}
         {recentYouTubeVideos.length > 0 ? (
           <div className="stims-shell__youtube-recent">
             <div className="stims-shell__youtube-recent-header">
@@ -186,11 +252,21 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
                 <button
                   key={video.id}
                   type="button"
-                  className="stims-shell__chip"
+                  className="stims-shell__chip stims-shell__chip--media"
                   onClick={() => onLoadRecentYouTubeVideo(video.id)}
                 >
+                  {video.thumbnail ? (
+                    <img
+                      className="stims-shell__chip-thumb"
+                      src={video.thumbnail}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : null}
                   <span className="stims-shell__chip-copy">
                     <strong>{video.title}</strong>
+                    {video.author ? <span>{video.author}</span> : null}
                   </span>
                 </button>
               ))}
@@ -207,10 +283,18 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         </div>
       </div>
       {!canCaptureDisplayAudio ? (
-        <p className="stims-shell__meta-copy">
-          Tab and YouTube capture need a desktop browser. Use the microphone to
-          react to whatever is playing nearby.
-        </p>
+        <div className="stims-shell__sheet-callout">
+          <p className="stims-shell__meta-copy">
+            <strong>Playing a video on this device?</strong> Mobile browsers
+            don&apos;t expose tab audio, so start it in the YouTube app or
+            another tab, then pick Microphone below — Stims reacts to what your
+            phone hears.
+          </p>
+          <p className="stims-shell__meta-copy">
+            Turn the volume up and keep the mic clear of your hand for the
+            cleanest beat detection.
+          </p>
+        </div>
       ) : null}
       <div className="stims-shell__source-grid">
         <button

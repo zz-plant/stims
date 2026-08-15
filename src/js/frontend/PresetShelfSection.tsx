@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
+import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { runPresetPromoteTransition } from './promote-transition.ts';
 
 export type { PresetArtwork as PresetArtworkType } from './PresetArtwork.tsx';
 
@@ -40,9 +42,19 @@ export function PresetShelfSection({
   onVisible?: () => void;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [hasTriggered, setHasTriggered] = useState(false);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queuedByLongPressRef = useRef(false);
+
+  // Arrow-key roving nav across rows/columns, on top of the existing
+  // long-press-to-queue touch handling below (unaffected — this only adds a
+  // keydown listener on the grid container).
+  useListKeyboardNav(gridRef, {
+    itemSelector: '.stims-shell__starter-card',
+    orientation: 'grid',
+    deps: [entries.length],
+  });
 
   useEffect(() => {
     return () => {
@@ -113,12 +125,11 @@ export function PresetShelfSection({
         ) : null}
         <p className="stims-shell__meta-copy">{summary}</p>
       </div>
-      <div className="stims-shell__starter-grid">
+      <div ref={gridRef} className="stims-shell__starter-grid">
         {entries.map(({ entry, label, summary: cardSummary }) => (
-          <button
+          <div
             key={`${title}-${entry.id}`}
-            type="button"
-            className="stims-shell__starter-card"
+            className="stims-shell__starter-card-wrap"
             onPointerDown={(event) => {
               if (!onQueue || event.pointerType !== 'touch') return;
               queuedByLongPressRef.current = false;
@@ -130,28 +141,50 @@ export function PresetShelfSection({
             onPointerMove={clearLongPress}
             onPointerCancel={clearLongPress}
             onPointerUp={clearLongPress}
-            onClick={(event) => {
-              if (queuedByLongPressRef.current) {
-                queuedByLongPressRef.current = false;
-                event.preventDefault();
-                return;
-              }
-              onSelect(entry.id);
-            }}
           >
-            <PresetArtwork
-              entry={entry}
-              preview={presetPreviews[entry.id] ?? null}
-            />
-            <span className="stims-shell__starter-label">{label}</span>
-            <strong>{entry.title}</strong>
-            <span className="stims-shell__meta-copy">{cardSummary}</span>
+            <button
+              type="button"
+              className="stims-shell__starter-card"
+              onClick={(event) => {
+                if (queuedByLongPressRef.current) {
+                  queuedByLongPressRef.current = false;
+                  event.preventDefault();
+                  return;
+                }
+                runPresetPromoteTransition({
+                  sourceElement: event.currentTarget,
+                  presetId: entry.id,
+                });
+                onSelect(entry.id);
+              }}
+            >
+              <PresetArtwork
+                entry={entry}
+                preview={presetPreviews[entry.id] ?? null}
+              />
+              <span className="stims-shell__starter-label">{label}</span>
+              <strong>{entry.title}</strong>
+              <span className="stims-shell__meta-copy">{cardSummary}</span>
+            </button>
+            {/* A real button, not just the long-press above: the previous
+                "Long-press to queue" caption described an action that only
+                touch pointers could ever trigger — mouse and keyboard users
+                had no way to queue a preset from the shelf at all. */}
             {onQueue ? (
-              <span className="stims-shell__meta-copy">
-                Long-press to queue
-              </span>
+              <button
+                type="button"
+                className="stims-shell__starter-card__queue"
+                aria-label={`Queue ${entry.title} next`}
+                title="Queue next"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onQueue(entry.id);
+                }}
+              >
+                Queue
+              </button>
             ) : null}
-          </button>
+          </div>
         ))}
       </div>
     </section>

@@ -1,26 +1,26 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
-  COMPATIBILITY_MODE_KEY,
-  resetRenderPreferencesState,
-  setCompatibilityMode,
-  setRenderPreferences,
-} from '../../src/js/core/render-preferences';
-import {
   hasWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
 } from '../../src/js/core/renderer-query-override.ts';
+import {
+  COMPATIBILITY_MODE_KEY,
+  resetRenderPreferenceStore,
+  setCompatibilityMode,
+  setRenderPreferences,
+} from '../../src/js/core/state/render-preference-store.ts';
 
 describe('render preferences', () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
-    resetRenderPreferencesState();
+    resetRenderPreferenceStore();
   });
 
   afterEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
-    resetRenderPreferencesState();
+    resetRenderPreferenceStore();
   });
 
   test('persists compatibility mode to localStorage', () => {

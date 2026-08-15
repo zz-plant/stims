@@ -281,8 +281,8 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const recovered = controller.getState();
-    expect(recovered.qualityStep).toBe(2);
-    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
+    expect(recovered.qualityStep).toBe(1);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.0, 6);
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
@@ -301,9 +301,45 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const state = controller.getState();
-    expect(state.qualityStep).toBeGreaterThan(2);
+    expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageFrameMs).toBeCloseTo(5, 6);
     expect(state.averageCadenceMs).toBeCloseTo(28, 6);
+  });
+
+  test('recovers when presenting exactly at the display cadence', () => {
+    // Regression: hasHeadroom used to require averageCadenceMs to be
+    // *faster* than the frame budget (`< budget * 0.9`). A session
+    // presenting perfectly at vsync has cadenceMs === frameBudgetMs, which
+    // never satisfies "faster than budget" — so once degraded, a session
+    // that was rendering fine could never recover, on any 60Hz/120Hz
+    // display. This pins that cadence exactly at budget still counts as
+    // headroom.
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+
+    for (let index = 0; index < 36; index += 1) {
+      controller.recordFrame({
+        frameMs: 20,
+        cadenceMs: 28,
+        phases: { renderMs: 2 },
+      });
+    }
+    const degraded = controller.getState();
+    expect(degraded.qualityStep).toBeGreaterThan(0);
+
+    const frameBudgetMs = degraded.frameBudgetMs;
+    for (let index = 0; index < 220; index += 1) {
+      controller.recordFrame({
+        frameMs: frameBudgetMs * 0.5,
+        cadenceMs: frameBudgetMs,
+        phases: { renderMs: frameBudgetMs * 0.3 },
+      });
+    }
+
+    const recovered = controller.getState();
+    expect(recovered.qualityStep).toBeLessThan(degraded.qualityStep);
   });
 
   test('uses supplied GPU duration to detect render pressure', () => {
@@ -463,10 +499,10 @@ describe('createAdaptiveQualityController', () => {
       });
 
       const state = controller.getState();
-      expect(state.qualityStep).toBe(2);
+      expect(state.qualityStep).toBe(0);
       expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
       expect(state.reasons).toContain(
-        'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+        'Flagship mobile sessions start from full quality with adaptive throttling headroom.',
       );
     } finally {
       Object.defineProperty(navigator, 'maxTouchPoints', {

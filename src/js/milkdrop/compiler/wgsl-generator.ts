@@ -13,6 +13,207 @@ const WGSL_IDENTIFIER_MAP = new Map<string, string>([
   ['e', '2.718281828459045'],
 ]);
 
+/** Keywords and reserved words from the WGSL spec. MilkDrop's grammar happily
+ * accepts many of these as variable names (`mod` is the common one — it shows
+ * up in stock presets), but emitting them as struct members or field accesses
+ * is a hard parse error that invalidates the whole shader module. */
+const WGSL_RESERVED_WORDS = new Set([
+  // keywords
+  'alias',
+  'break',
+  'case',
+  'const',
+  'const_assert',
+  'continue',
+  'continuing',
+  'default',
+  'diagnostic',
+  'discard',
+  'else',
+  'enable',
+  'false',
+  'fn',
+  'for',
+  'if',
+  'let',
+  'loop',
+  'override',
+  'requires',
+  'return',
+  'struct',
+  'switch',
+  'true',
+  'var',
+  'while',
+  // reserved words
+  'NULL',
+  'Self',
+  'abstract',
+  'active',
+  'alignas',
+  'alignof',
+  'as',
+  'asm',
+  'asm_fragment',
+  'async',
+  'attribute',
+  'auto',
+  'await',
+  'become',
+  'binding_array',
+  'cast',
+  'catch',
+  'class',
+  'co_await',
+  'co_return',
+  'co_yield',
+  'coherent',
+  'column_major',
+  'common',
+  'compile',
+  'compile_fragment',
+  'concept',
+  'const_cast',
+  'consteval',
+  'constexpr',
+  'constinit',
+  'crate',
+  'debugger',
+  'decltype',
+  'delete',
+  'demote',
+  'demote_to_helper',
+  'do',
+  'dynamic_cast',
+  'enum',
+  'explicit',
+  'export',
+  'extends',
+  'extern',
+  'external',
+  'fallthrough',
+  'filter',
+  'final',
+  'finally',
+  'friend',
+  'from',
+  'fxgroup',
+  'get',
+  'goto',
+  'groupshared',
+  'highp',
+  'impl',
+  'implements',
+  'import',
+  'inline',
+  'instanceof',
+  'interface',
+  'layout',
+  'lowp',
+  'macro',
+  'macro_rules',
+  'match',
+  'mediump',
+  'meta',
+  'mod',
+  'module',
+  'move',
+  'mut',
+  'mutable',
+  'namespace',
+  'new',
+  'nil',
+  'noexcept',
+  'noinline',
+  'nointerpolation',
+  'non_coherent',
+  'noncoherent',
+  'noperspective',
+  'null',
+  'nullptr',
+  'of',
+  'operator',
+  'package',
+  'packoffset',
+  'partition',
+  'pass',
+  'patch',
+  'pixelfragment',
+  'precise',
+  'precision',
+  'premerge',
+  'priv',
+  'protected',
+  'pub',
+  'public',
+  'readonly',
+  'ref',
+  'regardless',
+  'register',
+  'reinterpret_cast',
+  'require',
+  'resource',
+  'restrict',
+  'self',
+  'set',
+  'shared',
+  'sizeof',
+  'smooth',
+  'snorm',
+  'static',
+  'static_assert',
+  'static_cast',
+  'std',
+  'subroutine',
+  'super',
+  'target',
+  'template',
+  'this',
+  'thread_local',
+  'throw',
+  'trait',
+  'try',
+  'type',
+  'typedef',
+  'typeid',
+  'typename',
+  'typeof',
+  'union',
+  'unless',
+  'unorm',
+  'unsafe',
+  'unsized',
+  'use',
+  'using',
+  'varying',
+  'virtual',
+  'volatile',
+  'wgsl',
+  'where',
+  'with',
+  'writeonly',
+  'yield',
+]);
+
+/** Prefix applied to preset variables whose names collide with WGSL. */
+const WGSL_ESCAPE_PREFIX = 'mv_';
+
+/** Renames a preset variable so it is safe to emit as a WGSL identifier.
+ *
+ * Only the emitted *text* changes: the GPU buffer layout is derived from the
+ * original (unescaped) field keys in buffer-manager.ts, and both it and the
+ * struct sort those same original names, so offsets are unaffected.
+ *
+ * Escaping already-prefixed names keeps the mapping injective — a preset
+ * variable literally called `mv_mod` becomes `mv_mv_mod` and so cannot collide
+ * with the escaped form of `mod`. */
+function escapeWgslFieldName(name: string): string {
+  if (WGSL_RESERVED_WORDS.has(name) || name.startsWith(WGSL_ESCAPE_PREFIX)) {
+    return `${WGSL_ESCAPE_PREFIX}${name}`;
+  }
+  return name;
+}
+
 function isRegisterIdentifier(name: string) {
   return /^[qt]\d+$/u.test(name.toLowerCase());
 }
@@ -43,13 +244,13 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         return 'rand()';
       }
       if (isRegisterIdentifier(name)) {
-        return `state.${name}`;
+        return `state.${escapeWgslFieldName(name)}`;
       }
       const signalField = MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(name);
       if (signalField !== undefined) {
         return `signals.${signalField}`;
       }
-      return `state.${toWgslIdentifier(expression.name)}`;
+      return `state.${escapeWgslFieldName(toWgslIdentifier(expression.name))}`;
     }
 
     case 'unary': {
@@ -80,7 +281,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '%':
           return `milkdropIntMod(${left}, ${right})`;
         case '^':
-          return `pow(${left}, ${right})`;
+          return `pow(max(0.0f, ${left}), ${right})`;
         case '|':
           return `f32(i32(${left}) | i32(${right}))`;
         case '&':
@@ -127,7 +328,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'sqrt':
           return `sqrt(max(0.0f, ${args[0] ?? '0.0f'}))`;
         case 'pow':
-          return `pow(${args[0] ?? '0.0f'}, ${args[1] ?? '1.0f'})`;
+          return `pow(max(0.0f, ${args[0] ?? '0.0f'}), ${args[1] ?? '1.0f'})`;
         case 'mod':
         case 'fmod': {
           const a = args[0] ?? '0.0f';
@@ -440,7 +641,7 @@ function buildWgslStateField(fieldKey: string): string {
   if (fieldKey === 'rand_state') {
     return `  rand_state: u32,`;
   }
-  return `  ${fieldKey}: f32,`;
+  return `  ${escapeWgslFieldName(fieldKey)}: f32,`;
 }
 
 function buildWgslProgram(
@@ -449,6 +650,8 @@ function buildWgslProgram(
     fieldKeys: string[];
     registerKeys: string[];
     usesRandom: boolean;
+    enableF16?: boolean;
+    enableSubgroups?: boolean;
   } = { fieldKeys: [], registerKeys: [], usesRandom: false },
 ): string {
   const { fieldKeys, usesRandom } = options;
@@ -475,10 +678,10 @@ function buildWgslProgram(
   const statementLines = statements.map((statement) => {
     const target = statement.target.toLowerCase();
     const expression = buildWgslExpression(statement.expression);
-    if (isRegisterIdentifier(target)) {
-      return `  state.${target} = ${expression};`;
-    }
-    return `  state.${target} = ${expression};`;
+    // Registers and ordinary fields are both plain members of VmState, so they
+    // are written the same way; the branch that used to distinguish them
+    // returned identical strings.
+    return `  state.${escapeWgslFieldName(target)} = ${expression};`;
   });
 
   const body = [
@@ -492,11 +695,18 @@ function buildWgslProgram(
     `}`,
   ].join('\n');
 
-  return `${stateStruct}\n\n${signalStruct}\n${body}`;
+  const extensions: string[] = [];
+  if (options.enableF16) extensions.push('enable f16;');
+  if (options.enableSubgroups) extensions.push('enable subgroups;');
+  const extensionHeader =
+    extensions.length > 0 ? `${extensions.join('\n')}\n\n` : '';
+
+  return `${extensionHeader}${stateStruct}\n\n${signalStruct}\n${body}`;
 }
 
 export function compileProgramToWgsl(
   block: MilkdropProgramBlock,
+  options?: { enableF16?: boolean; enableSubgroups?: boolean },
 ): WgslProgramCompilation {
   const { fieldKeys, registerKeys, usesRandom, usesMegabuf, usesGmegabuf } =
     collectStatementFields(block.statements);
@@ -514,6 +724,8 @@ export function compileProgramToWgsl(
     fieldKeys: allFieldKeysForStruct,
     registerKeys,
     usesRandom,
+    enableF16: options?.enableF16,
+    enableSubgroups: options?.enableSubgroups,
   });
 
   // buildWgslProgram's VmState struct always includes 'pi' and 'e' in

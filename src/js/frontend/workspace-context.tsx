@@ -14,7 +14,7 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
-import { setAudioEnergy } from './engine-audio-energy-store.ts';
+import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
   EngineCtx,
@@ -55,8 +55,24 @@ export interface WorkspaceContextValue {
   youtubeLoading: boolean;
   youtubePreviewRef: React.RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
+  youtubeTransport: {
+    currentSeconds: number;
+    durationSeconds: number;
+    paused: boolean;
+  } | null;
+  youtubeTransportControls: {
+    play: () => void;
+    pause: () => void;
+    seekTo: (seconds: number) => void;
+    nudge: (deltaSeconds: number) => void;
+  };
   youtubeUrl: string;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
+  recentYouTubeVideos: Array<{
+    id: string;
+    title: string;
+    thumbnail?: string;
+    author?: string;
+  }>;
   renderPreferences: RenderPreferences;
   fallbackCatalog: PresetCatalogEntry[];
   fallbackCatalogError: string | null;
@@ -74,7 +90,7 @@ export interface WorkspaceContextValue {
 
   handleBrowseRecovery: () => void;
   handleFeaturedPresetSelection: () => void;
-  handleImport: (files: FileList | null) => Promise<void>;
+  handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
 }
@@ -161,6 +177,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const snap = sessionState.engineSnapshot;
     if (snap) {
       setAudioEnergy(snap.audioEnergy);
+      setAudioBands({
+        bass: snap.audioBass,
+        mid: snap.audioMid,
+        treble: snap.audioTreble,
+      });
     }
   }, [sessionState.engineSnapshot]);
 
@@ -230,7 +251,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setTransitionMode: sessionState.setTransitionMode,
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
+      applyEditorSourceAwaited: sessionState.applyEditorSourceAwaited,
+      applyEditorFieldsAwaited: sessionState.applyEditorFieldsAwaited,
+      getEditorSessionState: sessionState.getEditorSessionState,
       updateInspectorField: sessionState.updateInspectorField,
+      getActiveCompiledPreset: sessionState.getActiveCompiledPreset,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -276,7 +301,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setTransitionMode,
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
+      sessionState.applyEditorSourceAwaited,
+      sessionState.applyEditorFieldsAwaited,
+      sessionState.getEditorSessionState,
       sessionState.updateInspectorField,
+      sessionState.getActiveCompiledPreset,
       shellOrchestration.handleVisualSearch,
     ],
   );
@@ -305,6 +334,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       youtubeLoading: sessionState.youtubeLoading,
       youtubePreviewRef: sessionState.youtubePreviewRef,
       youtubeReady: sessionState.youtubeReady,
+      youtubeTransport: sessionState.youtubeTransport,
+      youtubeTransportControls: sessionState.youtubeTransportControls,
       youtubeUrl: sessionState.youtubeUrl,
       recentYouTubeVideos: sessionState.recentYouTubeVideos,
       renderPreferences: sessionState.renderPreferences,
@@ -343,6 +374,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.youtubeLoading,
       sessionState.youtubePreviewRef,
       sessionState.youtubeReady,
+      sessionState.youtubeTransport,
+      sessionState.youtubeTransportControls,
       sessionState.youtubeUrl,
       sessionState.recentYouTubeVideos,
       sessionState.renderPreferences,

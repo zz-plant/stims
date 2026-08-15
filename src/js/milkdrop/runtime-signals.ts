@@ -73,6 +73,16 @@ export function createMilkdropSignalTracker(options?: {
     beat_treb: 0,
     beat_treble: 0,
     weightedEnergy: 0,
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+    percussive_low: 1,
+    percussive_mid: 1,
+    percussive_high: 1,
+    percussive_ratio: 0.5,
     inputX: 0,
     inputY: 0,
     input_x: 0,
@@ -167,6 +177,13 @@ export function createMilkdropSignalTracker(options?: {
   } as unknown as MilkdropRuntimeSignals;
 
   let latestWeightedEnergy = 0;
+  // Kept alongside the weighted energy so the catalog search can describe
+  // spectral balance rather than loudness alone. Attenuated (smoothed) rather
+  // than instantaneous, because a one-shot search query wants the character
+  // of the last moment, not whichever frame the user happened to click on.
+  let latestBass = 0;
+  let latestMid = 0;
+  let latestTreble = 0;
 
   return {
     reset() {
@@ -176,11 +193,17 @@ export function createMilkdropSignalTracker(options?: {
       cachedSpectralFeatures = null;
       lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
       latestWeightedEnergy = 0;
+      latestBass = 0;
+      latestMid = 0;
+      latestTreble = 0;
       signalProcessor.reset();
       beatTracker.reset();
     },
     getLatestAudioEnergy() {
       return latestWeightedEnergy;
+    },
+    getLatestAudioBands() {
+      return { bass: latestBass, mid: latestMid, treble: latestTreble };
     },
     update({
       time,
@@ -192,6 +215,7 @@ export function createMilkdropSignalTracker(options?: {
       frequencyDataR,
       waveformDataL,
       waveformDataR,
+      target,
     }: {
       time: number;
       deltaMs: number;
@@ -202,7 +226,9 @@ export function createMilkdropSignalTracker(options?: {
       frequencyDataR?: Uint8Array | null;
       waveformDataL?: Uint8Array | null;
       waveformDataR?: Uint8Array | null;
+      target?: Partial<MilkdropRuntimeSignals>;
     }): MilkdropRuntimeSignals {
+      const out = target ? (target as MilkdropRuntimeSignals) : signalCache;
       const resolvedWaveformData = waveformData ?? analyser?.getWaveformData();
       const resolvedFrequencyDataL =
         frequencyDataL ?? analyser?.getFrequencyDataL?.() ?? null;
@@ -311,57 +337,76 @@ export function createMilkdropSignalTracker(options?: {
         180,
       );
 
-      signalCache.time = time;
-      signalCache.deltaMs = deltaMs;
-      signalCache.frame = frame;
-      signalCache.fps = deltaMs > 0 ? 1000 / deltaMs : 60;
+      out.time = time;
+      out.deltaMs = deltaMs;
+      out.frame = frame;
+      out.fps = deltaMs > 0 ? 1000 / deltaMs : 60;
       // Preset-facing registers use MilkDrop's relative scale (1.0 = the
       // track's own average for that band), not the 0..1 spectrum average.
       // Preset code is written against that scale — `above(bass, 1)` and
       // `bass_thresh = 1.3` are the two most common idioms in the catalog and
       // never fire on a 0..1 signal.
-      signalCache.bass = relativeBands.bass;
-      signalCache.mid = relativeBands.mid;
-      signalCache.mids = relativeBands.mid;
-      signalCache.treb = relativeBands.treble;
-      signalCache.treble = relativeBands.treble;
-      signalCache.bassAtt = relativeAttenuatedBands.bass;
-      signalCache.midAtt = relativeAttenuatedBands.mid;
-      signalCache.midsAtt = relativeAttenuatedBands.mid;
-      signalCache.trebleAtt = relativeAttenuatedBands.treble;
-      signalCache.bass_att = relativeAttenuatedBands.bass;
-      signalCache.mid_att = relativeAttenuatedBands.mid;
-      signalCache.mids_att = relativeAttenuatedBands.mid;
-      signalCache.treb_att = relativeAttenuatedBands.treble;
-      signalCache.treble_att = relativeAttenuatedBands.treble;
-      signalCache.rms = rms;
-      signalCache.vol = rms;
-      signalCache.music = finalWeightedEnergy;
-      signalCache.beat = update.isBeat ? 1 : 0;
-      signalCache.beatPulse = update.beatIntensity;
-      signalCache.beat_pulse = update.beatIntensity;
-      signalCache.transient = update.isTransient ? 1 : 0;
-      signalCache.spectralFlux = update.spectralFlux;
-      signalCache.bandFlux = update.bandFlux;
-      signalCache.beatBass = update.beatBass ? 1 : 0;
-      signalCache.beatMid = update.beatMid ? 1 : 0;
-      signalCache.beatTreble = update.beatTreble ? 1 : 0;
-      signalCache.beat_bass = update.beatBass ? 1 : 0;
-      signalCache.beat_mid = update.beatMid ? 1 : 0;
-      signalCache.beat_treb = update.beatTreble ? 1 : 0;
-      signalCache.weightedEnergy = finalWeightedEnergy;
-      signalCache.frequencyData = processedSignals.frequencyData;
-      signalCache.waveformData = resolvedWaveformData;
-      signalCache.frequencyDataL = resolvedFrequencyDataL;
-      signalCache.frequencyDataR = resolvedFrequencyDataR;
-      signalCache.waveformDataL = resolvedWaveformDataL;
-      signalCache.waveformDataR = resolvedWaveformDataR;
-      signalCache.waveformFloatData = resolvedWaveformFloat;
-      signalCache.waveformFloatDataL = resolvedWaveformFloatL;
-      signalCache.waveformFloatDataR = resolvedWaveformFloatR;
+      out.bass = relativeBands.bass;
+      out.mid = relativeBands.mid;
+      out.mids = relativeBands.mid;
+      out.treb = relativeBands.treble;
+      out.treble = relativeBands.treble;
+      out.bassAtt = relativeAttenuatedBands.bass;
+      out.midAtt = relativeAttenuatedBands.mid;
+      out.midsAtt = relativeAttenuatedBands.mid;
+      out.trebleAtt = relativeAttenuatedBands.treble;
+      out.bass_att = relativeAttenuatedBands.bass;
+      out.mid_att = relativeAttenuatedBands.mid;
+      out.mids_att = relativeAttenuatedBands.mid;
+      out.treb_att = relativeAttenuatedBands.treble;
+      out.treble_att = relativeAttenuatedBands.treble;
+      out.rms = rms;
+      // MilkDrop's vol is the mean of the relative bands (~1 during steady
+      // music, <0.75 in quiet passages), not an absolute 0..1 level. The
+      // bModWaveAlphaByVolume gate and preset code like `above(vol, 1.2)`
+      // are written against that scale; raw rms never reaches it.
+      out.vol =
+        (relativeBands.bass + relativeBands.mid + relativeBands.treble) / 3;
+      out.music = finalWeightedEnergy;
+      out.beat = update.isBeat ? 1 : 0;
+      out.beatPulse = update.beatIntensity;
+      out.beat_pulse = update.beatIntensity;
+      out.transient = update.isTransient ? 1 : 0;
+      out.spectralFlux = update.spectralFlux;
+      out.bandFlux = update.bandFlux;
+      out.beatBass = update.beatBass ? 1 : 0;
+      out.beatMid = update.beatMid ? 1 : 0;
+      out.beatTreble = update.beatTreble ? 1 : 0;
+      out.beat_bass = update.beatBass ? 1 : 0;
+      out.beat_mid = update.beatMid ? 1 : 0;
+      out.beat_treb = update.beatTreble ? 1 : 0;
+      out.weightedEnergy = finalWeightedEnergy;
+      const hp = processedSignals.harmonicPercussive;
+      out.percussive = hp.percussive;
+      out.harmonic = hp.harmonic;
+      out.percussiveLow = hp.percussiveLow;
+      out.percussiveMid = hp.percussiveMid;
+      out.percussiveHigh = hp.percussiveHigh;
+      out.percussiveRatio = hp.percussiveRatio;
+      out.percussive_low = hp.percussiveLow;
+      out.percussive_mid = hp.percussiveMid;
+      out.percussive_high = hp.percussiveHigh;
+      out.percussive_ratio = hp.percussiveRatio;
+      out.frequencyData = processedSignals.frequencyData;
+      out.waveformData = resolvedWaveformData;
+      out.frequencyDataL = resolvedFrequencyDataL;
+      out.frequencyDataR = resolvedFrequencyDataR;
+      out.waveformDataL = resolvedWaveformDataL;
+      out.waveformDataR = resolvedWaveformDataR;
+      out.waveformFloatData = resolvedWaveformFloat;
+      out.waveformFloatDataL = resolvedWaveformFloatL;
+      out.waveformFloatDataR = resolvedWaveformFloatR;
       latestWeightedEnergy = finalWeightedEnergy;
+      latestBass = relativeAttenuatedBands.bass;
+      latestMid = relativeAttenuatedBands.mid;
+      latestTreble = relativeAttenuatedBands.treble;
 
-      return signalCache;
+      return out;
     },
   };
 }

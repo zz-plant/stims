@@ -46,14 +46,21 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 ## Metadata sync workflow
 
-`src/data/toys.json` remains the checked-in manifest source for the shipped experience. `bun run generate:toys` rewrites the derived artifacts:
+`src/data/toys.json` holds the shipped experience's product metadata (title, description, controls, starter preset). The MCP server reads it directly — there are no generated artifacts to keep in sync.
 
-- `src/js/data/toy-manifest.ts`
-- `public/toys.json`
-- `docs/TOY_SCRIPT_INDEX.md`
-- `docs/toys.md`
+`bun run check:readme-claims` keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
 
-`bun run check:toys` fails if the checked-in JSON or generated artifacts drift. The same guard also keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
+## Catalog id contract
+
+Every entry in `public/milkdrop-presets/catalog.json` must have a unique `id`. Ids are the key for React lists, `Object.fromEntries` lookups, the SEO route map in `scripts/generate-seo.ts`, the search index, and the `.milk` filename on disk — a repeat silently drops one of the pair instead of failing, so `bun run check:catalog-integrity` rejects duplicates outright.
+
+Butterchurn ids come from `slugify(<source filename>)` in `scripts/import-butterchurn-presets.ts`, which collapses every non-alphanumeric run to `-`. The upstream corpus ships filenames that differ only in those characters (`_Geiss - Desert Rose 2` vs `Geiss - Desert Rose 2`, `Rovastar & Unchained - …` vs `Rovastar + Unchained - …`), so slugs collide. `assignPresetIds()` resolves this deterministically across the whole sorted file list, independent of what the catalog already contains:
+
+- the first filename (ASCII sort) for a slug keeps the bare slug;
+- a later filename whose bytes are identical is a true duplicate of the upstream corpus and is not imported at all;
+- a later filename whose bytes differ is a genuinely distinct preset and gets `-alt`, then `-alt-2`, and so on.
+
+The `-alt` suffix is therefore load-bearing, not cosmetic: `geiss-desert-rose-2` and `geiss-desert-rose-2-alt` are different presets with different warp shaders and base values. Assigning ids over the full file list — rather than only over newly seen files — is what keeps a re-import from renaming already-published ids.
 
 ## WebGPU descriptor rollout flags
 

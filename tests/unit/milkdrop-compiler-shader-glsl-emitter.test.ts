@@ -304,12 +304,12 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
 
   test('pow emits GLSL pow', () => {
     const glsl = emitShaderExpression('x = pow(2, 3)');
-    expect(glsl).toBe('x = pow(2.0, 3.0);');
+    expect(glsl).toBe('x = pow(max(0.0, 2.0), 3.0);');
   });
 
   test('sqrt emits GLSL sqrt', () => {
     const glsl = emitShaderExpression('x = sqrt(4)');
-    expect(glsl).toBe('x = sqrt(4.0);');
+    expect(glsl).toBe('x = sqrt(max(0.0, 4.0));');
   });
 
   test('clamp emits GLSL clamp', () => {

@@ -18,11 +18,13 @@ export type GpuVmResult = {
   randomState: number;
 };
 
-const PROGRAM_CACHE = new Map<string, WgslProgramCompilation>();
+const PROGRAM_CACHE = new WeakMap<
+  MilkdropProgramBlock,
+  WgslProgramCompilation
+>();
 const PIPELINE_CACHE = new Map<string, GPUComputePipeline>();
 
 export function clearGpuVmCaches() {
-  PROGRAM_CACHE.clear();
   PIPELINE_CACHE.clear();
 }
 
@@ -30,7 +32,7 @@ export function preloadGpuProgramPipeline(
   device: GPUDevice,
   block: MilkdropProgramBlock,
 ): GPUComputePipeline {
-  const compilation = getOrCompileProgram(block);
+  const compilation = getOrCompileProgram(block, device);
   return getOrCreatePipeline(device, compilation);
 }
 
@@ -47,16 +49,16 @@ export async function warmupGpuPipelines(
 
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
+  device?: GPUDevice,
 ): WgslProgramCompilation {
-  const signature = JSON.stringify(
-    block.statements.map((s) => ({ target: s.target, source: s.source })),
-  );
-  const cached = PROGRAM_CACHE.get(signature);
+  const cached = PROGRAM_CACHE.get(block);
   if (cached) {
     return cached;
   }
-  const compiled = compileProgramToWgsl(block);
-  PROGRAM_CACHE.set(signature, compiled);
+  const enableF16 = device?.features?.has('shader-f16') ?? false;
+  const enableSubgroups = device?.features?.has('subgroups') ?? false;
+  const compiled = compileProgramToWgsl(block, { enableF16, enableSubgroups });
+  PROGRAM_CACHE.set(block, compiled);
   return compiled;
 }
 
@@ -144,7 +146,7 @@ export function createGpuVmRunner() {
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
-    const compilation = getOrCompileProgram(block);
+    const compilation = getOrCompileProgram(block, gpuDevice);
     if (!compilation.gpuExecutable) {
       dispose();
       return false;
@@ -219,6 +221,34 @@ export function createGpuVmRunner() {
     return true;
   }
 
+  function dispatchInEncoder(
+    commandEncoder: GPUCommandEncoder,
+    signals: MilkdropGpuVmSignals,
+  ): GPUBuffer {
+    if (
+      !device ||
+      !pipeline ||
+      !bindGroup ||
+      !stateBuffer ||
+      !currentSignalBuffer
+    ) {
+      throw new Error('GPU VM not initialized');
+    }
+
+    populateSignalData(signalData, signals);
+    device.queue.writeBuffer(currentSignalBuffer, 0, signalData);
+
+    const pass = commandEncoder.beginComputePass({
+      label: 'milkdrop-vm-compute-pass',
+    });
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(1);
+    pass.end();
+
+    return stateBuffer;
+  }
+
   async function dispatch(signals: MilkdropGpuVmSignals): Promise<GpuVmResult> {
     if (
       !device ||
@@ -286,6 +316,20 @@ export function createGpuVmRunner() {
     };
   }
 
+  /** Re-uploads the CPU state mirror into the GPU-resident state buffer.
+   * Used before each dispatch so the per-frame base-value reset (MilkDrop
+   * reload semantics) applies to GPU-accumulated state as well. */
+  function syncState(
+    state: Record<string, number>,
+    registers: Record<string, number>,
+    randomState: number,
+  ) {
+    if (!device || !stateBuffer) {
+      return;
+    }
+    bufferManager.writeState(device, { ...state, ...registers }, randomState);
+  }
+
   function dispose() {
     clearGpuVmCaches();
     if (currentSignalBuffer) {
@@ -311,6 +355,8 @@ export function createGpuVmRunner() {
   return {
     init,
     dispatch,
+    dispatchInEncoder,
+    syncState,
     dispose,
     isInitialized,
   };

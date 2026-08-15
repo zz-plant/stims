@@ -20,8 +20,25 @@
  * markers are stripped before the author split.
  */
 
+/**
+ * A component credit carried inline in the title — the convention's own way of
+ * citing a reusable routine lifted from another author's preset, as in
+ * "Eo.S. - glowsticks v2 05 and proton lights (+Krash's beat code)" and
+ * "shifter - spills blender + krash beatdetect".
+ */
+export type PresetComponentCredit = {
+  /** The author the component is attributed to, as written. */
+  author: string;
+  /** What was borrowed, e.g. "beat code", "beat detection". */
+  component: string;
+};
+
 export type PresetCredit = {
-  /** Accretive author chain, earliest hand first. Empty when unparseable. */
+  /**
+   * Accretive author chain, earliest hand first. Empty when unparseable.
+   * Spellings are as written in the title — see `preset-handles.ts` for the
+   * canonical spelling of a handle and for chain-aware matching.
+   */
   authors: string[];
   /** Base work title. For mashups, the parts joined with " vs ". */
   title: string;
@@ -31,6 +48,16 @@ export type PresetCredit = {
   editNote: string | null;
   /** The two-or-more source titles when the base title is an "A vs B" mashup. */
   mashupOf: string[] | null;
+  /** Inline component credits lifted out of the title. */
+  componentCredits: PresetComponentCredit[];
+  /**
+   * Compatibility maintenance markers — "(Ati Fix)", "(geiss flicker fix)",
+   * "[fixed]". These record the unglamorous work of making a preset run on the
+   * other vendor's hardware, and are part of the authorship record.
+   */
+  compatibilityNotes: string[];
+  /** Shader-model variant: "ps2" or "ps3" (MilkDrop 2 era), else null. */
+  shaderModel: string | null;
   /** The unmodified input string. */
   raw: string;
 };
@@ -38,6 +65,51 @@ export type PresetCredit = {
 const DASH_SEPARATORS = [' - ', ' — ', ' – '];
 const AUTHOR_SPLIT = /\s*(?:\+|&|,)\s*|\s+and\s+/i;
 const MASHUP_SPLIT = /\s+vs\.?\s+/i;
+
+/** Apostrophes in the wild include the prime the catalog actually uses. */
+const APOSTROPHE = "['’′`]";
+const COMPONENT_NAME = String.raw`beat\s*code|beat\s*detection|beat\s*detect|beatdetect`;
+
+/** "(+Krash's beat code)", "(Krash's beat detection)". */
+const PARENTHESIZED_COMPONENT = new RegExp(
+  String.raw`\(\s*\+?\s*([\w.]+(?:\s[\w.]+)?)${APOSTROPHE}?s?\s+(${COMPONENT_NAME})\s*\)`,
+  'gi',
+);
+
+/** The bare form: "spills blender + krash beatdetect". */
+const BARE_COMPONENT = new RegExp(
+  String.raw`\+\s*([\w.]+)${APOSTROPHE}?s?\s+(${COMPONENT_NAME})\b`,
+  'gi',
+);
+
+/** "(Ati Fix)", "(geiss flicker fix)", "[fixed]". */
+const COMPATIBILITY_MARKER =
+  /\(\s*((?:ati|geiss)[\w\s]*fix)\s*\)|\[\s*(fixed)\s*\]/gi;
+
+/** A trailing "(160)" is a serial number in a numbered series, not a mix. */
+const SERIAL_PARENTHETICAL = /^[\d\s.-]+$/;
+
+/** "-ps2", "ps3", "(ps2.0)" — the MilkDrop 2 shader-model variants. */
+const SHADER_MODEL = /[\s(-]-?\s?ps\s?([23])(?:\.0)?\s*\)?(?=\s|$)/i;
+
+function extractAll(
+  text: string,
+  pattern: RegExp,
+  onMatch: (match: RegExpExecArray) => void,
+): string {
+  return text.replace(pattern, (...args) => {
+    const groups = args.slice(0, -2) as unknown as RegExpExecArray;
+    onMatch(groups);
+    return ' ';
+  });
+}
+
+function tidy(text: string): string {
+  return text
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([)\]])/g, '$1')
+    .trim();
+}
 
 function splitAuthors(part: string): string[] {
   return part
@@ -74,6 +146,35 @@ export function parsePresetCredit(
   const raw = rawTitle;
   let rest = rawTitle.trim();
 
+  // Component credits, compatibility markers, and shader-model suffixes can
+  // sit anywhere in the title, so they are lifted out before the positional
+  // author/mix parsing runs. Removing "ps2"/"ps3" also lets the two shader
+  // variants of one work share a family key.
+  const componentCredits: PresetComponentCredit[] = [];
+  const noteComponent = (match: RegExpExecArray) => {
+    componentCredits.push({
+      author: match[1].trim(),
+      component: match[2].trim().toLowerCase().replace(/\s+/g, ' '),
+    });
+  };
+  rest = extractAll(rest, PARENTHESIZED_COMPONENT, noteComponent);
+  rest = extractAll(rest, BARE_COMPONENT, noteComponent);
+
+  const compatibilityNotes: string[] = [];
+  rest = extractAll(rest, COMPATIBILITY_MARKER, (match) => {
+    compatibilityNotes.push((match[1] ?? match[2]).trim());
+  });
+
+  let shaderModel: string | null = null;
+  const shaderMatch = rest.match(SHADER_MODEL);
+  if (shaderMatch) {
+    shaderModel = `ps${shaderMatch[1]}`;
+    rest = `${rest.slice(0, shaderMatch.index)} ${rest.slice(
+      (shaderMatch.index ?? 0) + shaderMatch[0].length,
+    )}`;
+  }
+  rest = tidy(rest);
+
   let editNote: string | null = null;
   const bracketMatch = rest.match(/\s*\[([^\]]+)\]\s*$/);
   if (bracketMatch) {
@@ -85,7 +186,16 @@ export function parsePresetCredit(
   const parenMatch = rest.match(/\s*\(([^()]*)\)\s*$/);
   // Only treat a trailing parenthetical as a mix name when a base title
   // remains after stripping it — "(untitled)" alone is a title, not a mix.
-  if (parenMatch && rest.slice(0, parenMatch.index).trim().length > 0) {
+  //
+  // A purely numeric parenthetical is a serial, not a mix: "Mashup (160)" and
+  // "Mashup (169)" are separate works in one author's numbered series, not two
+  // remixes of a work called "Mashup", so the number stays in the title and
+  // keeps them in separate families.
+  if (
+    parenMatch &&
+    rest.slice(0, parenMatch.index).trim().length > 0 &&
+    !SERIAL_PARENTHETICAL.test(parenMatch[1])
+  ) {
     mixName = parenMatch[1].trim() || null;
     rest = rest.slice(0, parenMatch.index).trim();
   }
@@ -108,7 +218,17 @@ export function parsePresetCredit(
     .filter((part) => part.length > 0);
   const mashupOf = mashupParts.length > 1 ? mashupParts : null;
 
-  return { authors, title, mixName, editNote, mashupOf, raw };
+  return {
+    authors,
+    title,
+    mixName,
+    editNote,
+    mashupOf,
+    componentCredits,
+    compatibilityNotes,
+    shaderModel,
+    raw,
+  };
 }
 
 /** Canonical credit string: `A + B - Title (Mix) [note]`. */
@@ -216,12 +336,29 @@ export function deriveMashupCredit(
     authors.push(options.remixer);
   }
   const title = `${a.title} vs ${b.title}`;
+  // A blend inherits both parents' inline component credits and compatibility
+  // work — dropping them on the floor would be the same failure as truncating
+  // an author chain.
+  const componentCredits = [...a.componentCredits];
+  for (const credit of b.componentCredits) {
+    const duplicate = componentCredits.some(
+      (existing) =>
+        existing.author.toLowerCase() === credit.author.toLowerCase() &&
+        existing.component === credit.component,
+    );
+    if (!duplicate) componentCredits.push(credit);
+  }
   return {
     authors,
     title,
     mixName: null,
     editNote: null,
     mashupOf: [a.title, b.title],
+    componentCredits,
+    compatibilityNotes: [
+      ...new Set([...a.compatibilityNotes, ...b.compatibilityNotes]),
+    ],
+    shaderModel: a.shaderModel ?? b.shaderModel,
     raw: title,
   };
 }

@@ -142,11 +142,28 @@ export function buildFeedbackCompositeState({
     },
     warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ ?? 0,
     signalBass: frameState.signals.bass,
-    signalBassAtt: frameState.signals.bassAtt,
+    signalBassAtt:
+      frameState.signals.bassAtt ??
+      frameState.signals.bass_att ??
+      frameState.signals.bass,
     signalMid: frameState.signals.mid,
-    signalMidAtt: frameState.signals.midAtt,
-    signalTreb: frameState.signals.treb,
-    signalTrebAtt: frameState.signals.trebleAtt,
+    signalMidAtt:
+      frameState.signals.midAtt ??
+      frameState.signals.mid_att ??
+      frameState.signals.mid,
+    signalTreb: frameState.signals.treb ?? frameState.signals.treble,
+    signalTrebAtt:
+      frameState.signals.trebleAtt ??
+      frameState.signals.treb_att ??
+      frameState.signals.treble_att ??
+      frameState.signals.treb ??
+      frameState.signals.treble,
+    signalPercussive: frameState.signals.percussive,
+    signalHarmonic: frameState.signals.harmonic,
+    signalPercussiveLow: frameState.signals.percussiveLow,
+    signalPercussiveMid: frameState.signals.percussiveMid,
+    signalPercussiveHigh: frameState.signals.percussiveHigh,
+    signalPercussiveRatio: frameState.signals.percussiveRatio,
     signalBeat: frameState.signals.beat,
     signalBeatPulse: frameState.signals.beatPulse,
     signalEnergy: frameState.signals.weightedEnergy,

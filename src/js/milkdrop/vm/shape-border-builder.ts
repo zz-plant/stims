@@ -250,9 +250,21 @@ export function buildShapes({
   return built;
 }
 
-export function buildBorders(state: MutableState): MilkdropBorderVisual[] {
+/**
+ * A border is built when the preset asked for one: either it declared the
+ * border's size, or the border is currently visible. Both sizes default to
+ * MilkDrop's 0.01, so a size-only test would emit two fully transparent quads
+ * for every preset in the catalog; requiring visibility alone would drop the
+ * declared-but-transparent borders that per-frame code fades in later.
+ */
+export function buildBorders(
+  state: MutableState,
+  declaredBorderKeys?: ReadonlySet<'outer' | 'inner'>,
+): MilkdropBorderVisual[] {
   const borders: MilkdropBorderVisual[] = [];
-  if ((state.ob_size ?? 0) > 0.001) {
+  const wanted = (key: 'outer' | 'inner', alpha: number) =>
+    (declaredBorderKeys?.has(key) ?? true) || alpha > 0.001;
+  if ((state.ob_size ?? 0) > 0.001 && wanted('outer', state.ob_a ?? 0)) {
     borders.push({
       key: 'outer',
       size: clamp(state.ob_size ?? 0, 0, 0.3),
@@ -266,7 +278,7 @@ export function buildBorders(state: MutableState): MilkdropBorderVisual[] {
       styled: (state.ob_border ?? 0) > 0.5,
     });
   }
-  if ((state.ib_size ?? 0) > 0.001) {
+  if ((state.ib_size ?? 0) > 0.001 && wanted('inner', state.ib_a ?? 0)) {
     borders.push({
       key: 'inner',
       size: clamp(state.ib_size ?? 0, 0, 0.3),

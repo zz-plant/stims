@@ -25,6 +25,7 @@ export function createWebGLFeedbackRenderTarget(
   const options: RenderTargetOptions = {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
+    anisotropy: 4,
     ...(useHalfFloatFeedback
       ? {
           type: HalfFloatType,

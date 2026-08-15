@@ -200,6 +200,15 @@
   overscroll-behavior: contain;
 }
 
+/* Content that scrolls its own regions (the code editor) takes the body's
+   full height instead of growing it. */
+.body[data-fill="true"] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 @media (max-width: 767px) {
   .body {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -212,5 +221,88 @@
   .backdrop,
   .backdrop[data-exiting="true"] {
     animation-duration: 0.01ms;
+  }
+}
+
+/* Stage-anchored (editor) seam: the panel/stage split is resizable on
+   desktop. Width comes from --stage-tool-width, set inline on the shell root
+   by the seam handlers; the transport dock derives its inset from the same
+   variable so it re-centers over the visible stage. */
+.seam {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .panel[data-stage-anchored="true"] {
+    width: min(var(--stage-tool-width, 560px), calc(100vw - 32px));
+  }
+
+  .panel[data-stage-anchored="true"] .seam {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -6px;
+    z-index: 1;
+    width: 12px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .seam::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: transparent;
+    transition: background 0.15s ease;
+  }
+
+  .seam:hover::after,
+  .seam[data-resizing="true"]::after {
+    background: var(--stims-accent, #f47a54);
+  }
+
+  /* Keyboard focus gets a louder cue than hover: a plain outline box would
+     look stray on a 12px-wide invisible hit area spanning the full panel
+     height, so this widens and glows the accent line instead, rather than
+     reusing the hover treatment at the same weight for both. */
+  .seam:focus-visible::after {
+    width: 4px;
+    left: 4px;
+    background: var(--stims-accent, #f47a54);
+    box-shadow: 0 0 6px 1px var(--stims-accent, #f47a54);
+  }
+
+  .seamHint {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    z-index: 2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(10, 14, 22, 0.9);
+    color: var(--stims-ink-dim, rgba(255, 255, 255, 0.6));
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.68rem;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+    transition:
+      opacity 140ms ease,
+      transform 140ms ease;
+    pointer-events: none;
+  }
+
+  .seam:focus-visible ~ .seamHint {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .seam:focus-visible {
+    outline: none;
   }
 }

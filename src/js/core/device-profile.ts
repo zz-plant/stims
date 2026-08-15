@@ -1,4 +1,7 @@
-import { getDeviceEnvironmentProfile } from '../utils/browser/device-detect';
+import {
+  getDeviceEnvironmentProfile,
+  isSmartTvDevice,
+} from '../utils/browser/device-detect';
 
 export type DevicePerformanceProfile = {
   lowPower: boolean;
@@ -9,6 +12,10 @@ export type DevicePerformanceProfile = {
 export type DeviceTier = 'low' | 'mid' | 'high' | 'ultra';
 
 export function getDeviceTier(): DeviceTier {
+  if (isSmartTvDevice()) {
+    return 'mid';
+  }
+
   const environment = getDeviceEnvironmentProfile();
   const hardwareConcurrency =
     typeof navigator !== 'undefined'
@@ -86,6 +93,8 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
     hardwareConcurrency !== null &&
     hardwareConcurrency <= 3;
 
+  const isTv = isSmartTvDevice();
+
   if (reducedMotion) {
     reasons.push('reduced motion preference');
   }
@@ -101,6 +110,9 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   if (inferredLimitedMemory) {
     reasons.push('inferred memory constraint (Safari/Firefox mobile)');
   }
+  if (isTv) {
+    reasons.push('Smart TV limited processing envelope');
+  }
 
   return {
     lowPower:
@@ -108,7 +120,8 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
       limitedDeviceMemory ||
       limitedCpuCores ||
       constrainedHandheld ||
-      inferredLimitedMemory,
+      inferredLimitedMemory ||
+      isTv,
     reason: reasons.length > 0 ? reasons.join(', ') : null,
     reducedMotion,
   };

@@ -5,8 +5,10 @@
   "compatibility_date": "2024-10-20",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  // Every 15 minutes: at 100 presets/run the multi-thousand preset catalog
+  // finishes in hours instead of the months a daily 25-preset run would take.
   "triggers": {
-    "crons": ["0 3 * * *"]
+    "crons": ["*/15 * * * *"]
   },
   "ai": {
     "binding": "AI"
@@ -17,5 +19,15 @@
       "database_name": "stims-gallery",
       "database_id": "89718825-6d36-4578-b97e-9eba1d60d75d"
     }
-  ]
+  ],
+  "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "stims-presets" }],
+  // Static-asset store (preset previews); populated via the authenticated
+  // upload route on this worker, served by the site worker.
+  "r2_buckets": [
+    {
+      "binding": "STATIC_R2",
+      "bucket_name": "stims-static"
+    }
+  ],
+  "observability": { "enabled": true }
 }

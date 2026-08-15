@@ -10,6 +10,7 @@ import '../../css/app-shell.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
+import '../../css/editor-panel.css';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
@@ -20,6 +21,10 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { useTemporalMemory } from '../core/services/temporal-memory.ts';
+import {
+  VIRTUAL_CLAUDE_DEVICE_ID,
+  webMidiService,
+} from '../core/services/webmidi-controller.ts';
 import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
@@ -27,7 +32,11 @@ import {
   getActiveThemePreference,
 } from '../core/theme-preferences.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
-import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
+import {
+  initAgentBridge,
+  toAgentEditorState,
+  updateAgentTelemetry,
+} from './agent-bridge.ts';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
@@ -35,14 +44,19 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { HudOverlay } from './HudOverlay.tsx';
 import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
+import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { MidiPerformanceHud } from './MidiPerformanceHud.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
+import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -56,8 +70,10 @@ import {
   WorkspaceStagePanel,
 } from './workspace-ui.tsx';
 
-const AudioMatchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.AudioMatchPanel })),
+const PresetFinderPanel = lazy(() =>
+  import('./PresetFinderPanel.tsx').then((m) => ({
+    default: m.PresetFinderPanel,
+  })),
 );
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
@@ -84,9 +100,6 @@ const SynthesizePanel = lazy(() =>
 const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
 );
-const VisualSearchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
-);
 
 function prefersThumbModeByDefault() {
   try {
@@ -99,6 +112,11 @@ function prefersThumbModeByDefault() {
 
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
+  // Latest-value ref: the live-performance runtime is installed once per
+  // engine, but needs the current route when it starts Strudel audio. Reading
+  // `ui` directly would rebuild the runtime on every route change.
+  const uiRef = useRef(ui);
+  uiRef.current = ui;
   const { engineSnapshot } = useEngineSnapshot();
   const temporalMemory = useTemporalMemory();
 
@@ -159,6 +177,21 @@ function StimsWorkspaceAppShell() {
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
+  // Stable identity matters here: SidePanel's open-effect keys off this
+  // callback's reference (`[open, onOpen]`), so an inline arrow function
+  // would re-fire on every App re-render — including the frequent ones
+  // driven by engine snapshot churn while audio is playing — and yank focus
+  // back into the search field out from under whatever the user just
+  // focused (Tab-navigating the preset list, for instance).
+  const handleSidePanelOpen = useCallback(() => {
+    if (ui.routeState.panel === 'browse') {
+      const el = document.querySelector<HTMLElement>(
+        BROWSE_PANEL_FOCUS_SELECTOR,
+      );
+      el?.focus();
+    }
+  }, [ui.routeState.panel]);
+
   useAgentFrameRate(ui.routeState.agentMode);
 
   useDocumentTitle({
@@ -168,6 +201,26 @@ function StimsWorkspaceAppShell() {
     liveMode,
     engineReady: engine.engineReady,
   });
+
+  // Shared between the touch long-press gesture and the "L" keyboard
+  // shortcut — one definition of "favorite whatever's currently playing"
+  // rather than two copies that could drift.
+  const toggleFavoriteCurrentPreset = () => {
+    const activePresetId = engineSnapshot?.activePresetId;
+    const activePreset = activePresetId
+      ? engine.catalog.find((preset) => preset.id === activePresetId)
+      : null;
+    if (!activePresetId) {
+      ui.setStatusMessage('Load a preset before saving it.');
+      return;
+    }
+    void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
+    ui.setStatusMessage(
+      activePreset?.isFavorite
+        ? 'Removed from saved presets.'
+        : 'Saved preset.',
+    );
+  };
 
   useKeyboardShortcuts({
     liveMode,
@@ -181,6 +234,8 @@ function StimsWorkspaceAppShell() {
     handleAudioStop: engine.handleAudioStop,
     handleVisualSearch: engine.handleVisualSearch,
     handleToggleFullscreen,
+    toggleFavoritePreset: toggleFavoriteCurrentPreset,
+    setStatusMessage: ui.setStatusMessage,
     setShowShortcuts,
   });
 
@@ -191,25 +246,7 @@ function StimsWorkspaceAppShell() {
     handlePreviousPreset: engine.handlePreviousPreset,
     openBrowse: () => ui.updatePanel('browse'),
     closePanel: () => ui.updatePanel(null),
-    toggleFavoritePreset: () => {
-      const activePresetId = engineSnapshot?.activePresetId;
-      const activePreset = activePresetId
-        ? engine.catalog.find((preset) => preset.id === activePresetId)
-        : null;
-      if (!activePresetId) {
-        ui.setStatusMessage('Load a preset before saving it.');
-        return;
-      }
-      void engine.toggleFavoritePreset(
-        activePresetId,
-        !activePreset?.isFavorite,
-      );
-      ui.setStatusMessage(
-        activePreset?.isFavorite
-          ? 'Removed from saved presets.'
-          : 'Saved preset.',
-      );
-    },
+    toggleFavoritePreset: toggleFavoriteCurrentPreset,
     handleToggleFullscreen,
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
@@ -218,6 +255,14 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     return initAgentBridge({
       onLoadPreset: (payload) => {
+        // milkSource is how an agent hands over preset *code* rather than a
+        // catalog id (MCP's session_apply_source). The bridge has always
+        // forwarded it and this handler always dropped it, so that tool
+        // silently did nothing.
+        if (payload.milkSource) {
+          engine.updateEditorSource(payload.milkSource);
+          return;
+        }
         if (payload.presetId) {
           void engine.handlePlayPreset(payload.presetId);
         }
@@ -227,8 +272,104 @@ function StimsWorkspaceAppShell() {
           void engine.handlePlayPreset(engineSnapshot.activePresetId);
         }
       },
+      // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
+      // live stage through the exact same virtual-device pipeline a
+      // physical controller uses — see webmidi-controller.ts.
+      onMidiSet: (target, value) => {
+        webMidiService.injectTargetValue(
+          VIRTUAL_CLAUDE_DEVICE_ID,
+          target,
+          value,
+        );
+      },
+      onMidiCc: (cc, value) => {
+        webMidiService.injectControlChange(VIRTUAL_CLAUDE_DEVICE_ID, cc, value);
+      },
+      getMidiBindings: () => webMidiService.getAllBindings(),
+      getMidiDevices: () => webMidiService.getDevices(),
+      // Read/await surface for live code editing. Without these an agent
+      // could send preset source but never learn whether it compiled.
+      getEditorState: () => {
+        const state = engine.getEditorSessionState();
+        return state ? toAgentEditorState(state) : null;
+      },
+      getEditorFields: () => {
+        // The editor session's own latest compile, not the renderer's active
+        // one. They diverge whenever rendering is paused (a hidden or headless
+        // tab) or the newest source failed — and an agent reading values to
+        // compute a delta needs the buffer it is actually editing.
+        const compiled =
+          engine.getEditorSessionState()?.latestCompiled ??
+          engine.getActiveCompiledPreset();
+        return compiled ? { ...compiled.ir.numericFields } : null;
+      },
+      applyEditorSource: async (source) => {
+        const state = await engine.applyEditorSourceAwaited(source);
+        return state ? toAgentEditorState(state) : null;
+      },
+      applyEditorFields: async (updates) => {
+        const state = await engine.applyEditorFieldsAwaited(updates);
+        return state ? toAgentEditorState(state) : null;
+      },
     });
   }, [engine, engineSnapshot?.activePresetId]);
+
+  // Physical and virtual (MCP) MIDI both drive the engine through this one
+  // binding. It used to live inside PerformanceHardwareSection, which only
+  // stayed mounted while Settings was open — closing Settings silently cut
+  // the live wire between a controller and the visuals.
+  useEffect(() => {
+    webMidiService.initialize();
+
+    // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
+    // patterns, signal measurement) on top of the four controls this effect
+    // used to publish inline.
+    const uninstallLive =
+      typeof window === 'undefined'
+        ? () => {}
+        : installLivePerformance({
+            setTarget: (target, value) => {
+              engine.updateInspectorField(target, value);
+            },
+            injectMidiCC: (cc, value) => {
+              webMidiService.injectControlChange(
+                VIRTUAL_CLAUDE_DEVICE_ID,
+                cc,
+                value,
+              );
+            },
+            nextPreset: () => {
+              engine.handleShufflePreset();
+            },
+            previousPreset: () => {
+              engine.handlePreviousPreset();
+            },
+            startStreamAudio: async (stream) => {
+              const nextRoute = {
+                ...uiRef.current.routeState,
+                audioSource: 'file' as const,
+              };
+              uiRef.current.commitRoute(nextRoute);
+              await engine.startAudioSource({
+                source: 'file',
+                stream,
+                launchState: nextRoute,
+              });
+            },
+          });
+
+    const unbindMidi = bindMidiToMilkdropControls(
+      webMidiService,
+      (target, value) => {
+        engine.updateInspectorField(target, value);
+      },
+    );
+
+    return () => {
+      uninstallLive();
+      unbindMidi();
+    };
+  }, [engine]);
 
   useEffect(() => {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
@@ -257,12 +398,36 @@ function StimsWorkspaceAppShell() {
     });
   }, [engineSnapshot, ui.routeState.presetId, ui.routeState.agentMode]);
 
+  // A #code= hash carries a full .milk source (see buildPresetCodeHash).
+  // Opening the editor happens immediately so the visitor sees where the
+  // code will land; applying the source has to wait until the session is
+  // live and its initial preset has landed, otherwise the boot-time
+  // fallback/featured preset would overwrite the deep-linked draft.
+  const [pendingCode, setPendingCode] = useState<string | null>(() =>
+    decodePresetCodeFromHash(),
+  );
+  const openedEditorForCodeRef = useRef(false);
+
   useEffect(() => {
-    const decodedCode = decodePresetCodeFromHash();
-    if (decodedCode) {
-      ui.updatePanel('editor');
+    if (!pendingCode || openedEditorForCodeRef.current) return;
+    openedEditorForCodeRef.current = true;
+    ui.updatePanel('editor');
+  }, [pendingCode, ui]);
+
+  useEffect(() => {
+    // Boot-time preset loads (fallback, featured, ?preset=) land as async
+    // editor-session commits, so a single apply can be overwritten by a
+    // load that was already in flight. Re-assert the deep-linked source
+    // every time the session settles on something else, and stop once the
+    // snapshot reflects it — later loads are then real user actions and
+    // must win.
+    if (!pendingCode || !engine.engineReady) return;
+    if (engineSnapshot?.currentSource === pendingCode) {
+      setPendingCode(null);
+      return;
     }
-  }, [ui]);
+    engine.updateEditorSource(pendingCode);
+  }, [pendingCode, engine.engineReady, engineSnapshot?.currentSource, engine]);
 
   useEffect(() => {
     if (
@@ -621,14 +786,8 @@ function StimsWorkspaceAppShell() {
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
-        onOpen={() => {
-          if (ui.routeState.panel === 'browse') {
-            const el = document.querySelector<HTMLElement>(
-              BROWSE_PANEL_FOCUS_SELECTOR,
-            );
-            el?.focus();
-          }
-        }}
+        fillBody={stageAnchoredToolOpen}
+        onOpen={handleSidePanelOpen}
       >
         <Suspense fallback={null}>
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
@@ -665,11 +824,17 @@ function StimsWorkspaceAppShell() {
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
-          {ui.routeState.panel === 'audiomatch' ? (
-            <AudioMatchPanel onClose={() => ui.updatePanel(null)} />
-          ) : null}
-          {ui.routeState.panel === 'visualsearch' ? (
-            <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
+          {/* One panel, two seeds. Both ids stay routable so existing deep
+              links and the user's saved shortcuts keep working; they just
+              open the same panel on a different tab. */}
+          {ui.routeState.panel === 'audiomatch' ||
+          ui.routeState.panel === 'visualsearch' ? (
+            <PresetFinderPanel
+              initialMode={
+                ui.routeState.panel === 'visualsearch' ? 'look' : 'sound'
+              }
+              onClose={() => ui.updatePanel(null)}
+            />
           ) : null}
           {ui.routeState.panel === 'synthesize' ? (
             <SynthesizePanel offline={offline} />
@@ -691,10 +856,13 @@ function StimsWorkspaceAppShell() {
 
       {ui.routeState.panel ? null : <ContextualHelp hint={visibleHint} />}
 
+      <SyncSessionBridge />
+
       <AudioMatchToast
         match={audioMatch}
         onSelect={engine.handlePresetSelection}
       />
+      <MidiPerformanceHud />
       <ShortcutsDialog
         open={showShortcuts}
         onClose={() => setShowShortcuts(false)}
@@ -705,6 +873,7 @@ function StimsWorkspaceAppShell() {
         onClose={() => setShowCredits(false)}
         creditsRef={creditsRef}
       />
+      <HudOverlay />
     </main>
   );
 }

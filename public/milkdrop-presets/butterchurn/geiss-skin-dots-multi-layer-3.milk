@@ -1,18 +1,19 @@
 [preset00]
-fRating=5.000000
+fRating=0.000000
 fGammaAdj=1.000000
 fDecay=1.000000
 bModWaveAlphaByVolume=1.000000
-fWaveAlpha=0.207000
-fWaveScale=0.397000
+fWaveAlpha=0.207218
+fWaveScale=0.397108
 fWaveSmoothing=0.000000
 fWaveParam=0.240000
 fModWaveAlphaEnd=1.170000
-fWarpAnimSpeed=0.451000
-fWarpScale=3.040000
-fZoomExponent=2.194760
-fZoom=1.029710
-fWarp=0.098620
+fWarpAnimSpeed=0.451118
+fWarpScale=3.039840
+fZoomExponent=2.194764
+fZoom=1.029709
+fWarp=0.098617
+fWaveG=0.999999
 nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
@@ -43,25 +44,19 @@ per_pixel_1=zoom = zoom + 0.005 * cos(5 * ang + 1.5 * time);
 [warp_shader]
 shader_body { 
   vec3 ret_1;
-  ret_1 = texture (sampler_main, uv).xyz;
-  ret_1 = (ret_1 + ((ret_1 - 
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
     ((texture (sampler_blur2, uv).xyz * scale2) + bias2)
   ) * 0.3));
   ret_1 = (ret_1 * 0.9);
   ret_1 = (ret_1 + ((
-    ((texture (sampler_noise_lq, ((
-      (uv_orig * texsize.xy)
-     * 
-      (texsize_noise_lq.zw * 0.4)
-    ) + rand_frame.xy)).xyz - 0.5) / 256.0)
-   * 122.0) * clamp (
-    (treb_att - 1.0)
-  , 0.0, 1.0)));
-  ret_1 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.2, 0.2, 0.2));
-  vec4 tmpvar_2;
-  tmpvar_2.w = 1.0;
-  tmpvar_2.xyz = ret_1;
-  ret = tmpvar_2.xyz;
+    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * (texsize_noise_lq.zw * 0.4)) + rand_frame.xy)).xyz - 0.5)
+   / 256.0) * 112.0));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
  }
 
 [comp_shader]

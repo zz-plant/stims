@@ -1,17 +1,14 @@
 import type {
-  MilkdropBlendState,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
   MilkdropEditorSession,
-  MilkdropFrameState,
   MilkdropPresetSource,
   MilkdropRenderBackend,
 } from '../types';
+import { describeWebglFallback } from './backend-fallback';
 import type { MilkdropCatalogCoordinator } from './catalog-coordinator';
+import { FIRST_RUN_PRESET_ID } from './first-run-preset';
 import { createPresetLoadTrace } from './preset-load-trace';
-import { cloneBlendState, estimateFrameBlendWorkload } from './session';
-
-const MAX_BLEND_WORKLOAD = 900;
 
 export function createMilkdropPresetNavigationController({
   catalogStore,
@@ -19,34 +16,34 @@ export function createMilkdropPresetNavigationController({
   session,
   getActivePresetId,
   getActiveBackend,
-  getCurrentFrameState,
-  getBlendDuration,
-  getTransitionMode,
   applyCompiledPreset,
   applyPresetPerformanceOverride,
+  beginPresetTransition,
   setOverlayStatus,
   shouldFallbackToWebgl,
   triggerWebglFallback,
   rememberLastPreset,
-  preparePresetTransition,
-  markPresetSwitched,
 }: {
   catalogStore: MilkdropCatalogStore;
   catalogCoordinator: MilkdropCatalogCoordinator;
   session: MilkdropEditorSession;
   getActivePresetId: () => string;
   getActiveBackend: () => MilkdropRenderBackend;
-  getCurrentFrameState: () => MilkdropFrameState | null;
-  getBlendDuration: () => number;
-  getTransitionMode: () => 'blend' | 'cut';
   applyCompiledPreset: (compiled: MilkdropCompiledPreset) => void;
   applyPresetPerformanceOverride: (presetId: string) => void;
+  /**
+   * Starts the crossfade into the preset about to be applied and reports what
+   * it decided. The blend-vs-cut policy lives with the frame state it reads,
+   * so this controller does not re-derive it.
+   */
+  beginPresetTransition: () => {
+    mode: 'blend' | 'cut';
+    durationSeconds: number;
+  };
   setOverlayStatus: (message: string) => void;
   shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
   triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
   rememberLastPreset: (id: string) => void;
-  preparePresetTransition: (blendState: MilkdropBlendState | null) => void;
-  markPresetSwitched: () => void;
 }) {
   const syncCatalog = () =>
     catalogCoordinator.scheduleCatalogSync({
@@ -64,20 +61,46 @@ export function createMilkdropPresetNavigationController({
     return entry.supports[backend].status !== 'unsupported';
   };
 
-  const getFirstSelectablePresetId = (backend = getActiveBackend()) =>
-    catalogCoordinator.getCatalogEntries().find((entry) => {
-      return entry.supports[backend].status !== 'unsupported';
-    })?.id ?? null;
+  // Prefers the deliberate first-run pick over the head of the sort order. See
+  // first-run-preset.ts for the measurements behind it. Falls back to sort
+  // order when that preset is missing from the catalog or unsupported here, so
+  // a bad id degrades to the previous behaviour rather than to no preset.
+  const getFirstSelectablePresetId = (backend = getActiveBackend()) => {
+    const entries = catalogCoordinator.getCatalogEntries();
+    const selectable = (entry: (typeof entries)[number]) =>
+      entry.supports[backend].status !== 'unsupported';
+
+    const firstRunEntry = entries.find(
+      (entry) => entry.id === FIRST_RUN_PRESET_ID && selectable(entry),
+    );
+
+    return (firstRunEntry ?? entries.find(selectable))?.id ?? null;
+  };
 
   let currentLoadRequestRevision = 0;
 
   const selectPreset = async (
     id: string,
-    options: { recordHistory?: boolean } = {},
+    options: { recordHistory?: boolean; skipIfAlreadyActive?: boolean } = {},
   ) => {
     const requestRevision = ++currentLoadRequestRevision;
     const trace = createPresetLoadTrace(id);
     try {
+      // Startup sets this. The first-run preset is compiled into the bundle and
+      // is already mounted and rendering by the time catalog selection resolves
+      // to that same id, so the fetch + recompile + re-apply below would just
+      // rebuild what is on screen. A stored draft still has to win, so only
+      // skip when there is nothing edited to apply.
+      if (options.skipIfAlreadyActive && id === getActivePresetId()) {
+        trace.step('reuseActive');
+        if (!(await catalogStore.getDraft(id))) {
+          applyPresetPerformanceOverride(id);
+          rememberLastPreset(id);
+          trace.done('already active');
+          return;
+        }
+      }
+
       trace.step('getPresetSource');
 
       const source = await catalogStore.getPresetSource(id);
@@ -141,22 +164,9 @@ export function createMilkdropPresetNavigationController({
       }
 
       if (shouldFallbackToWebgl(nextCompiled)) {
-        const unsupportedItems =
-          nextCompiled.ir?.compatibility?.gpuDescriptorPlans?.webgpu
-            ?.unsupported ?? [];
-        const unsupportedDetail =
-          unsupportedItems.length > 0
-            ? `: ${unsupportedItems.map((u) => u.reason).join('; ')}`
-            : '';
-
-        trace.adapter(
-          'WebGL fallback',
-          `${nextCompiled.title} uses features unsupported on WebGPU${unsupportedDetail}`,
-        );
-        triggerWebglFallback({
-          presetId: id,
-          reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet${unsupportedDetail}, so Stims switched to WebGL compatibility mode.`,
-        });
+        const reason = describeWebglFallback(nextCompiled);
+        trace.adapter('WebGL fallback', reason);
+        triggerWebglFallback({ presetId: id, reason });
         trace.done('fallback to WebGL');
         return;
       }
@@ -165,19 +175,13 @@ export function createMilkdropPresetNavigationController({
       applyPresetPerformanceOverride(nextCompiled.source.id);
 
       trace.step('blendTransition');
-      const currentFrameState = getCurrentFrameState();
-      const canBlend =
-        getTransitionMode() === 'blend' &&
-        getBlendDuration() > 0 &&
-        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+      const transition = beginPresetTransition();
       trace.adapter(
         'transition',
-        canBlend ? `blend (${getBlendDuration().toFixed(2)}s)` : 'cut',
+        transition.mode === 'blend'
+          ? `blend (${transition.durationSeconds.toFixed(2)}s)`
+          : 'cut',
       );
-      preparePresetTransition(
-        canBlend ? cloneBlendState(currentFrameState) : null,
-      );
-      markPresetSwitched();
 
       if (options.recordHistory !== false) {
         await catalogCoordinator.rememberSelection(id);

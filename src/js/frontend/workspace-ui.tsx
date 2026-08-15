@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { StageControls } from './StageControls.tsx';
+import { StageWarpGizmo } from './StageWarpGizmo.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
 import { StrudelLabPanel } from './StrudelLabPanel.tsx';
 import { WorkspaceToast } from './WorkspaceToast.tsx';
@@ -35,6 +37,7 @@ export function WorkspaceStagePanel({
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
+  const presetTransition = usePresetTransition();
   const missingRequestedPreset = engine.missingRequestedPreset;
   const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -51,6 +54,7 @@ export function WorkspaceStagePanel({
         activePresetTitle={engine.selectedPreset?.title ?? null}
         stageRef={ui.stageRef}
         liveMode={liveMode}
+        transitionPhase={presetTransition.phase}
       >
         {liveMode && !missingRequestedPreset ? (
           <StageControls
@@ -58,6 +62,9 @@ export function WorkspaceStagePanel({
             onToggleFullscreen={onToggleFullscreen}
           />
         ) : null}
+        {/* Only while the editor is open — it renders its own null otherwise.
+            The handle is the one thing on this layer that takes the pointer. */}
+        {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
             buttons stay in the tab order and accessibility tree without it */}
         <div className="stims-shell__stage-hero" inert={liveMode}>

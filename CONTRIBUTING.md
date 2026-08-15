@@ -4,7 +4,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 
 ## Quick start
 
-1. Install **Bun 1.3+** (the repo declares `bun@1.3.8` in `package.json`).
+1. Install **Bun 1.3+** (the repo declares `bun@1.3.14` in `package.json`).
 2. Bootstrap the local workspace:
 
    ```bash
@@ -87,8 +87,8 @@ Use these commands before opening a PR:
 - `bun run dev:host` — start Vite on LAN.
 - `bun run build` — production build.
 - `bun run preview` — preview built output.
-- `bun run pages:deploy` — manual production deploy fallback for the static site.
-- `bun run pages:deploy:preview` — manual preview deploy fallback for the static site.
+- `bun run site:deploy` — manual production deploy fallback for the site Worker.
+- `bun run site:preview` — upload a preview version of the site Worker without shifting production traffic.
 - `bun run lint` / `bun run lint:fix` — Biome linting.
 - `bun run format` / `bun run format:check` — Biome formatting.
 - `bun run typecheck` — TypeScript no-emit checks.
@@ -104,10 +104,19 @@ Use these commands before opening a PR:
 
 ## Documentation expectations
 
-When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes). For Pages deploy changes, keep [`wrangler.toml`](./wrangler.toml) aligned with the live Cloudflare project config instead of treating the dashboard as the only source of truth, and keep [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) aligned with the default direct-upload release path.
+When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes). For site deploy changes, keep [`wrangler.site.jsonc`](./wrangler.site.jsonc) aligned with the live Cloudflare Workers Builds config instead of treating the dashboard as the only source of truth.
 
 - Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
 - Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.
+
+## Contributing presets
+
+Presets are contributions too — you don't need to touch engine code.
+
+1. **Learn or refresh**: the guided course lives at [`docs/authoring/README.md`](./docs/authoring/README.md); the generated language reference at [`docs/authoring/reference.md`](./docs/authoring/reference.md).
+2. **Author in the live editor** (`bun run dev`, then the Editor panel — or on the deployed site). Export produces a `.milk` file; Remix preserves credit lineage automatically.
+3. **Measure before you submit**: `bun run lab:reactivity -- --file path/to/your.milk` reports whether each variable actually reacts to audio — aim for a `reactive` verdict. (`bun run lab:visual` adds pixel-level verdicts but currently only accepts catalog `--preset` ids, so it runs after your preset lands in `public/milkdrop-presets/`.)
+4. **Submit**: open a PR adding the `.milk` file under `public/milkdrop-presets/` (the catalog gates in `bun run check` will validate it), or share it as a `#code=` URL from the editor. Credit any preset you remixed — multi-author titles are the community's convention, and `deriveRemixCredit` keeps lineage intact.
 
 ## MilkDrop product changes
 

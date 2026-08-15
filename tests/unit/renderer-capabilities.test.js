@@ -15,9 +15,9 @@ let summarizeRendererOptimizationSupport;
 const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
 let restoreNavigator = () => {};
 
-async function resetRenderPreferencesState() {
-  const { resetRenderPreferencesState: resetPreferences } = await import(
-    '../../src/js/core/render-preferences.ts'
+async function resetRenderPreferenceStore() {
+  const { resetRenderPreferenceStore: resetPreferences } = await import(
+    '../../src/js/core/state/render-preference-store.ts'
   );
   resetPreferences();
 }
@@ -65,7 +65,7 @@ beforeEach(async () => {
     return element;
   });
 
-  await resetRenderPreferencesState();
+  await resetRenderPreferenceStore();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
   ({
     getRendererCapabilities,
@@ -86,7 +86,7 @@ afterEach(async () => {
   resetRendererCapabilities();
   mock.restore();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
-  await resetRenderPreferencesState();
+  await resetRenderPreferenceStore();
   restoreNavigator();
   restoreNavigator = () => {};
 });
@@ -369,7 +369,7 @@ describe('renderer capabilities', () => {
 
   test('marks forced WebGL when compatibility mode is enabled', async () => {
     window.localStorage.setItem(COMPATIBILITY_MODE_KEY, 'true');
-    await resetRenderPreferencesState();
+    await resetRenderPreferenceStore();
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
@@ -394,7 +394,7 @@ describe('renderer capabilities', () => {
   });
 
   test('captures high-end WebGPU feature support for richer defaults', async () => {
-    await resetRenderPreferencesState();
+    await resetRenderPreferenceStore();
     mockNavigatorWithGPU({
       device: { label: 'device' },
       adapter: {
@@ -436,7 +436,7 @@ describe('renderer capabilities', () => {
   });
 
   test('keeps high-end mobile WebGPU sessions on balanced startup quality', async () => {
-    await resetRenderPreferencesState();
+    await resetRenderPreferenceStore();
     mockNavigatorWithGPU({
       device: { label: 'iphone-device' },
       adapter: {

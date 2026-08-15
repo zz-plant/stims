@@ -26,9 +26,9 @@ bun run check
 
 ```bash
 bun run check:architecture    # Cross-boundary import violations
-bun run check:toys            # Preset manifest drift
+bun run check:readme-claims   # README public-claim drift
 bun run check:seo             # SEO surface health
-bash scripts/check_production_edge.sh   # WAF/DNS health
+bun run check:production-edge   # WAF/DNS health
 ```
 
 ## Output

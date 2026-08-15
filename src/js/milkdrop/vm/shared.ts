@@ -93,15 +93,20 @@ export type CustomWaveChannelSample = {
   value2: number;
 };
 
+export type StaticMeshLattice = {
+  density: number;
+  aspectX: number;
+  aspectY: number;
+  gridX: Float32Array;
+  gridY: Float32Array;
+  milkdropX: Float32Array;
+  milkdropY: Float32Array;
+  rad: Float32Array;
+  ang: Float32Array;
+};
+
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
-  frameTransformCache: Map<number, { x: number; y: number }>;
-  /** Pool of reusable {x, y} objects for frameTransformCache entries,
-   * sized once to peak capacity and reused across frames to avoid
-   * per-frame allocation. */
-  transformCachePool: { x: number; y: number }[];
-  /** Number of pooled objects currently in use (0 after a reset). */
-  transformCachePoolIndex: number;
   pointScratch: MutableState;
   meshPoints: MeshFieldPoint[];
   motionVectorFrameIndex: 0 | 1;
@@ -115,6 +120,7 @@ export type GeometryBuilderState = {
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
   meshPositions?: Float32Array;
+  lattice?: StaticMeshLattice;
 };
 
 export type ShapeBuilderState = {
@@ -268,6 +274,20 @@ export function createDefaultSignalEnv(): MutableState {
     vol: 0,
     music: 0,
     weighted_energy: 0,
+    // Harmonic/percussive decomposition. Neutral defaults match the relative
+    // scale used by bass/mid/treb (1.0 = track average, 0.5 = an even split),
+    // so a preset reading them before any audio arrives sees "nothing
+    // unusual" rather than "silence".
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+    percussive_low: 1,
+    percussive_mid: 1,
+    percussive_high: 1,
+    percussive_ratio: 0.5,
     progress: 0,
     aspectx: 1,
     aspecty: 1,
@@ -326,6 +346,16 @@ export function syncSignalEnvironment(
   targetEnv.vol = signals.vol;
   targetEnv.music = signals.music;
   targetEnv.weighted_energy = signals.weightedEnergy;
+  targetEnv.percussive = signals.percussive ?? 1;
+  targetEnv.harmonic = signals.harmonic ?? 1;
+  targetEnv.percussiveLow = signals.percussiveLow ?? 1;
+  targetEnv.percussiveMid = signals.percussiveMid ?? 1;
+  targetEnv.percussiveHigh = signals.percussiveHigh ?? 1;
+  targetEnv.percussiveRatio = signals.percussiveRatio ?? 0.5;
+  targetEnv.percussive_low = signals.percussiveLow ?? 1;
+  targetEnv.percussive_mid = signals.percussiveMid ?? 1;
+  targetEnv.percussive_high = signals.percussiveHigh ?? 1;
+  targetEnv.percussive_ratio = signals.percussiveRatio ?? 0.5;
   targetEnv.progress = signals.frame;
   targetEnv.signalTime = signals.time;
   targetEnv.signalFrame = signals.frame;

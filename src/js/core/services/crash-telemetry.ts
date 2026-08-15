@@ -1,5 +1,6 @@
 import { getDeviceEnvironmentProfile } from '../../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from '../device-profile.ts';
+import type { TelemetryEvent } from '../edge-contracts.ts';
 import { createLogger } from '../logger.ts';
 import { resolveOptionalApiUrl } from './optional-api.ts';
 
@@ -92,7 +93,9 @@ function pushEntry(entry: CrashTelemetryEntry) {
   transmitEntry(entry);
 }
 
-export function buildCrashTelemetryTransmitPayload(entry: CrashTelemetryEntry) {
+export function buildCrashTelemetryTransmitPayload(
+  entry: CrashTelemetryEntry,
+): TelemetryEvent {
   return {
     event: `crash:${entry.type}`,
     error: entry.message.slice(0, 256),

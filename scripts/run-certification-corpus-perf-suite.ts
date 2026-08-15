@@ -6,6 +6,7 @@ import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
+import { ensureDevServer } from './dev-server.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,
@@ -398,6 +399,7 @@ export async function runCertificationCorpusPerfSuite({
     );
   }
 
+  const devServer = await ensureDevServer(port, repoRoot);
   const reportDir = path.join(outputDir, PERF_REPORT_DIR);
   fs.mkdirSync(reportDir, { recursive: true });
   const browserSession = await createPlayToyBrowserSession({
@@ -421,6 +423,7 @@ export async function runCertificationCorpusPerfSuite({
     }
   } finally {
     await closePlayToyBrowserSession(browserSession);
+    devServer.close();
   }
 
   const rankedReports = rankCertificationCorpusPerfReports(

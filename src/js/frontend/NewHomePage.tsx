@@ -5,7 +5,9 @@ import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
+import { STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
@@ -28,6 +30,13 @@ export function NewHomePage() {
   const { ui, engine } = useWorkspace();
   const [lastSession] = useState(() => getLastSession());
   const appliedResumeRef = useRef(false);
+  const autoStartedRef = useRef(false);
+
+  // Captured at mount so it reflects the URL the visitor actually arrived on.
+  // The resume effect below writes `presetId` into the route a tick later, and
+  // a resumed session must keep its explicit "Resume" button rather than
+  // start on its own.
+  const [deepLinkPresetId] = useState(() => ui.routeState.presetId ?? null);
 
   const resumeEntry = lastSession
     ? resolvePresetCatalogEntry(engine.catalog, lastSession.presetId)
@@ -46,6 +55,35 @@ export function NewHomePage() {
     appliedResumeRef.current = true;
     ui.commitRoute({ ...ui.routeState, presetId: resumeEntry.id });
   }, [resumeEntry, lastSession]);
+
+  // A `?preset=` link is a request to watch that preset, not to configure an
+  // audio source. Social cards advertise one specific preset by name, so
+  // landing those clicks on the setup form threw the arrival away. Start demo
+  // audio directly instead.
+  //
+  // Autoplay policy may leave the AudioContext suspended because this runs
+  // outside a user gesture. That is handled: `core/audio-handler.ts` installs
+  // capture-phase pointerdown/touchstart/keydown listeners that resume every
+  // registered context, so the visitor's first interaction unblocks sound
+  // while the visuals have been running from the start.
+  // Waiting for the catalog to actually contain the requested preset is the
+  // point of `deepLinkEntry`, not just a readiness nicety. `handleAudioStart`
+  // "heals" a request it believes is missing by substituting the featured
+  // preset — and until the catalog lands, every id looks missing. Starting on
+  // `engineReady` alone therefore raced the catalog and silently played a
+  // different preset than the link named, which is the exact failure this
+  // whole path exists to prevent.
+  const deepLinkEntry = deepLinkPresetId
+    ? resolvePresetCatalogEntry(engine.catalog, deepLinkPresetId)
+    : null;
+
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    if (!deepLinkEntry) return;
+    if (!engine.engineReady) return;
+    autoStartedRef.current = true;
+    void engine.handleAudioStart('demo');
+  }, [deepLinkEntry, engine.engineReady, engine.handleAudioStart]);
 
   const handlePlayDemo = () => engine.handleAudioStart('demo');
   const handleResume = () => {
@@ -74,7 +112,15 @@ export function NewHomePage() {
           isEngineReady={engine.engineReady}
           onBrowsePresets={handleBrowsePresets}
         />
+        {resume ? null : (
+          <p className="stims-shell__launch-explainer">
+            Every scene is a preset — a small visual program from the MilkDrop
+            community. Switch presets while the music plays, or generate your
+            own.
+          </p>
+        )}
         <AudioSources />
+        <ProjectMeta />
       </div>
     </section>
   );
@@ -107,7 +153,9 @@ function Header({ resume }: { resume: ResumeState }) {
       <h1 id="stims-launch-title" className="stims-shell__launch-title">
         Stims
       </h1>
-      <p className="stims-shell__launch-tagline">Audio-reactive visualizer</p>
+      <p className="stims-shell__launch-tagline">
+        Full-screen visuals that move to whatever you&rsquo;re listening to.
+      </p>
     </>
   );
 }
@@ -171,5 +219,25 @@ function AudioSources() {
     <div className="stims-shell__launch-source-minimal">
       <AudioSourcePanel showHelp={false} />
     </div>
+  );
+}
+
+/**
+ * Closes the launch column with the project's provenance. Deliberately muted —
+ * the repository is a fact about Stims, not a competing call to action.
+ */
+function ProjectMeta() {
+  return (
+    <p className="stims-shell__launch-meta">
+      <a
+        className="stims-shell__launch-meta-link"
+        href={STIMS_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <UiIcon name="github" className="stims-shell__launch-meta-icon" />
+        Open source on GitHub
+      </a>
+    </p>
   );
 }

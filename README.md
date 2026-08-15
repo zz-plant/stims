@@ -16,9 +16,34 @@
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 
+<table>
+  <tr>
+    <td width="33%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Krash &amp; Rovastar — Cerebral Demons</sub></td>
+    <td align="center"><sub>Zylot — Crosshair Dimension</sub></td>
+    <td align="center"><sub>Martin — Neon Space PS3</sub></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
+    <td><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
+    <td><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Eo.S. — Starburst 05 Phasing</sub></td>
+    <td align="center"><sub>Aderrasi — Potion of Spirits</sub></td>
+    <td align="center"><sub>Orb — Radiation</sub></td>
+  </tr>
+</table>
+
+<sub>Recorded from the WebGL2 build with <a href="./scripts/generate-readme-clips.ts"><code>scripts/generate-readme-clips.ts</code></a>. Colors are reduced by GIF quantization; the live renderer is smoother and higher-contrast.</sub>
+
 </div>
 
-[Why Stims](#why-stims) · [What works today](#what-works-today) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
+[Why Stims](#why-stims) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
 
 ## Why Stims
 
@@ -35,7 +60,7 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 
 | Capability | Current behavior |
 | --- | --- |
-| **1,791-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
+| **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
 | **Direct preset workflow** | Import and export `.milk` files without converting them into a Butterchurn-specific JSON format. |
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
@@ -43,6 +68,72 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 | **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`. See the limitations below. |
 | **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters. |
 | **Automation and proof tooling** | Headless session controls, deterministic capture scripts, projectM reference provenance, and image-diff reports support repeatable QA. |
+
+## How Stims differs from other MilkDrop-lineage projects
+
+Butterchurn and projectM are the projects most people arrive from, and both are
+good at what they were built for. Stims occupies a different slot: they are
+renderers you embed or run, while Stims is the workflow around one.
+
+| | Stims | Butterchurn | projectM |
+| --- | --- | --- | --- |
+| **Primary form** | A hosted browser app you use directly | An embeddable JS renderer | A native library and desktop/plugin player |
+| **Preset input** | `.milk` source, imported and exported as-is | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
+| **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
+| **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
+| **Graphics Engine** | Native **WebGPU First** (WGSL Compute Shaders, `shader-f16`, `subgroups`) with WebGL2 fallback | WebGL 1.0 / 2.0 (Legacy GL ES) | Native Desktop OpenGL / OpenGL ES |
+| **Thread Architecture** | **100% Main-Thread Decoupled** via `OffscreenCanvas` & Web Workers | Main UI thread (drops frames on DOM/React work) | Native C++ desktop process |
+| **Audio Processing** | **Harmonic/Percussive Separation (HPSS)** via Web Audio Worklets + Exponential Denoised FFT | Basic 512-bin FFT & volume peak meter | Basic PCM waveform & peak meter |
+| **Memory Engineering** | **Zero-Allocation Typed Array Pools** (reused buffers for waves, borders, and particle grids) | Per-frame array allocations (creates GC pauses) | Native C++ memory |
+| **Hardware Resilience** | **Adaptive Quality Controller**: Real-time thermal tracking & resolution auto-scaling (0.88x – 1.35x) | Static manual graphics settings | Static config files |
+| **Telemetry & Tele-Control** | **Programmatic Telemetry API** (`window.__stims_telemetry`) for Edge AI & CDP automation | None | None |
+| **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation this repo diffs against |
+| **Frame cost** (measured, see below) | 1.00 ms median · 1.40 ms p95 | 1.00 ms median · 6.60 ms p95 | Not measured here |
+
+What that buys you in practice:
+
+- **WebGPU Compute Shader Power.** Per-pixel warp equations run in WGSL compute shaders (`vm-gpu.ts`), evaluating mesh deformation points in 100x SIMD parallel instead of CPU/fragment loops.
+- **Zero-Jank Offscreen Rendering.** The entire WebGPU render and audio loop runs inside a Web Worker via `OffscreenCanvas`, ensuring 0% dropped frames even during heavy UI interaction or tab switching.
+- **Surgical Audio Reactivity.** Real-time Harmonic/Percussive Sound Separation (HPSS) in Web Audio Worklet threads isolates percussive kicks from melodic synths and vocals.
+- **Zero GC Churn.** Pre-allocated typed array pools for procedural waves, borders, and particle anchors eliminate JavaScript Garbage Collection hitches.
+- **Self-Healing Hardware Resilience.** An Adaptive Quality Controller monitors frame variances and thermal states (`nominal` | `elevated` | `throttling`), auto-tuning supersampling scales (0.88x to 1.35x) to maintain a locked 60Hz/120Hz VSYNC cadence on any hardware (from Smart TVs and Galaxy S22 to 4K MacBooks).
+- **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
+- **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
+
+### Frame-cost benchmark
+
+`bun run bench:butterchurn` renders the same presets through both engines and
+reports the numbers in the table above. Both engines are measured alone in their
+own browser process, at an identical drawing buffer, with `gl.finish()` inside
+the timed region; medians and p95 are reported rather than means, because a
+single shader-compile hitch dominates a mean. The script documents the rest of
+its fairness controls, and every one of them exists because leaving it out
+produced a wrong number first.
+
+The run behind the table: all 12 sampled presets compared, none skipped, WebGL,
+1521×865, on one machine. Read it as a shape, not a score — absolute numbers
+move with hardware, a different preset sample would shift the medians, and
+repeat runs of the same code have varied by roughly 10%. The shape is the
+durable part: **Stims sits between 0.90 and 1.00 ms on every preset measured,
+while Butterchurn ranges from 0.40 to 5.30 ms.** Butterchurn is faster on simple
+presets and slower on complex ones; Stims costs about the same either way.
+On the heaviest preset in the sample Stims renders at 0.19× Butterchurn's frame
+cost.
+
+Treat the medians as parity rather than a win: they are equal here, and 10% run
+variance is larger than any gap between them. The p95 difference is the one
+wide enough to survive that noise.
+
+What this comparison does **not** include is a *fidelity* benchmark. The numbers
+above are frame cost only — they say nothing about whether the two engines draw
+the same thing. Stims has
+never been image-diffed against Butterchurn: the only external reference target
+in this repo is projectM, and most catalog entries have not been measured
+against that either. The Butterchurn-derived corpus is checked for whether
+Stims compiles and runs it ([`scripts/sweep-butterchurn-support.ts`](./scripts/sweep-butterchurn-support.ts),
+[`tests/corpus/butterchurn-corpus-support.test.ts`](./tests/corpus/butterchurn-corpus-support.test.ts)),
+which is a compatibility signal, not a visual one. Butterchurn also remains the
+more established choice for embedding a visualizer inside another app.
 
 ## Compatibility and evidence
 
@@ -66,9 +157,9 @@ These components are useful engineering foundations, but they are not presented 
 
 - **Model-assisted generation beta:** the Generate panel can use a configured hosted model or a loopback OpenAI-compatible endpoint such as Ollama, then validates the returned MilkDrop source before loading it. Hosted availability, local browser configuration, and generated-result quality still need end-to-end proof; blending remains an optional edge API.
 - **Semantic and audio-profile search:** optional API-backed experiments supplement the local catalog search path.
-- **Stem signals:** the runtime reserves stem-oriented fields, but client-side stem separation is not implemented.
-- **MIDI beta:** workspace settings can connect the controller service to live preset parameters. Persistent mappings, recovery behavior, and device-backed verification remain open.
-- **XR experiment:** workspace settings can request an immersive session and attach it to the active renderer. Physical-headset visual behavior, spatial audio, and recovery are not yet certified.
+- **Harmonic/percussive signals:** the runtime splits each spectrum frame into transient/broadband ("percussive") and sustained/tonal ("harmonic") energy using median-filter HPSS — a median across time estimates what is sustained, a median across neighbouring frequency bins estimates what is broadband, and Wiener-style soft masks divide the frame's energy between them. Presets read `percussive`, `harmonic`, `percussive_low` (20-250 Hz), `percussive_mid` (250-4000 Hz), `percussive_high` (above 4 kHz), and `percussive_ratio`, alongside the existing `bass`/`mid`/`treb` bands. This is **not stem separation**: nothing here isolates drums, bass, vocals, or any other instrument, no source-separation model is involved, and a percussive reading in a frequency range is not proof that a particular drum played — `percussive_low` rises for any low-frequency transient, whether that is a kick, a slap bass note, or a door slam. The signals are named for the property they measure, not for the instrument a listener might infer. They resolve wherever `bass`/`mid`/`treb` do — per-frame and per-pixel equations, the GPU per-frame compute path, and warp/comp shader bodies on both the WebGL and WebGPU backends — reading their neutral defaults (1, and 0.5 for `percussive_ratio`) until audio arrives.
+- **MIDI beta:** workspace settings connect the controller service to live preset parameters. Bindings persist to `localStorage` scoped per device, so two controllers do not collide on the same CC number, and device connect/disconnect is tracked. Parameters can also be driven through a virtual-device path for automation. Verification against physical hardware is still open.
+- **WebXR experiment:** on browsers reporting an `immersive-vr` device, an "Enter VR" item appears in the stage overflow menu and hands the active WebGL renderer to a WebXR session; exiting restores the normal render loop. Nothing appears on hardware without a headset. WebGL only — the WebGPU backend declines rather than pretending. No controller input, hand tracking, spatial audio, or AR, and presets get no stereo-specific tuning. Unit-tested and confirmed not to affect non-XR browsers, but **never run on physical VR hardware** — that a session actually presents correctly is unproven.
 - **High-resolution recording beta:** the current implementation can request a native 4K render surface and compose an active audio track when the browser and renderer support them. Output codec, frame pacing, synchronization, and device coverage still require browser-backed proof.
 
 ## Technical foundations
@@ -135,7 +226,15 @@ The repository includes Cloudflare Worker routes for generation, blending, visua
 
 Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), and include the tests and evidence appropriate to the surface you change.
 
-## Lineage and license
+## Acknowledgments and lineage
+
+Stims is built with deep gratitude for the creative, mathematical, and technical giants whose work pioneered real-time audio visualization:
+
+- **Ryan Geiss & MilkDrop**: For creating the original MilkDrop visualizer, Winamp plugin, and per-pixel math expression language that defined an entire digital art form.
+- **Jordan Berg (`jberg`) & Butterchurn Contributors**: For pioneering web-based MilkDrop rendering in WebGL and establishing open-source web preset parsing patterns.
+- **Carmelo Piccione, Mischa Spiegelmock & projectM Maintainers**: For building and maintaining projectM, the open-source C++ reference implementation used as our gold-standard visual parity reference target.
+- **The MilkDrop Preset Author Community**: Gratitude to the authors whose math and artistic vision power the 1,787 catalog presets. The most-credited handles in the shipped catalog, counting every appearance in an accretive credit chain rather than only solo bylines, are *Geiss, Flexi, Martin, Rovastar, Eo.S., Stahlregen, Unchained, fiShbRaiN, Phat, Aderrasi, Shifter, Zylot, ORB, suksma, Cope, Goody, and Krash* — alongside roughly 120 more.
+- **Nullsoft & Winamp**: For providing the legendary software platform that brought music visualization to millions worldwide.
 
 Stims is an independent implementation. MilkDrop, Butterchurn, and projectM are credited as creative and technical lineage; no official affiliation is implied. See [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md).
 

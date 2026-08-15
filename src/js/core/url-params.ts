@@ -10,6 +10,13 @@ export interface RoutingURLParams {
   agentMode: boolean;
   previewMode: boolean;
   invalidExperienceSlug: string | null;
+  /**
+   * YouTube video the link was shared with. Without this, `audio=youtube`
+   * restores the source mode but leaves the user staring at an empty input.
+   */
+  youtubeVideoId: string | null;
+  /** Start offset in seconds for {@link youtubeVideoId}. */
+  youtubeStartSeconds: number | null;
 }
 
 export interface PerformanceURLParams {
@@ -22,6 +29,12 @@ export interface PerformanceURLParams {
    * frame time for visual quality, which hides both wins and regressions.
    */
   lockedQualityStep: number | null;
+  /**
+   * Forces the power-saver mode (`auto`/`on`/`off`) for this session, so a QA
+   * link can pin the frame cap instead of waiting for a laptop to discharge.
+   * Left as a raw string; `power-saver-store` owns the normalization.
+   */
+  powerSaver: string | null;
 }
 
 export interface MockAudioURLParams {
@@ -192,6 +205,14 @@ function resolveSearchParams(
   return new URLSearchParams();
 }
 
+/** YouTube ids are exactly 11 URL-safe base64 characters. */
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+
+function normalizeYouTubeVideoId(value: unknown): string | null {
+  const str = readParamValue(value)?.trim() ?? '';
+  return YOUTUBE_ID_PATTERN.test(str) ? str : null;
+}
+
 function parseNumberParam(val: string | null): number | null {
   if (!val) return null;
   const num = Number(val);
@@ -252,6 +273,11 @@ export function parseURLParams(
         legacyExperience && legacyExperience !== 'milkdrop'
           ? legacyExperience
           : null,
+      youtubeVideoId: normalizeYouTubeVideoId(params.get('yt')),
+      youtubeStartSeconds: (() => {
+        const seconds = parseNumberParam(get('t'));
+        return seconds != null && seconds > 0 ? Math.floor(seconds) : null;
+      })(),
     },
     renderer,
     corpus: get('corpus')?.trim() || null,
@@ -260,6 +286,7 @@ export function parseURLParams(
       particleBudget: parseNumberParam(get('particleBudget')),
       shaderQuality: get('shaderQuality')?.trim() || null,
       lockedQualityStep: parseNumberParam(get('lockQualityStep')),
+      powerSaver: get('powerSaver')?.trim() || null,
     },
     audioMock: {
       type: get('mockAudio')?.trim() || null,
@@ -322,6 +349,12 @@ export function getPerformanceOverrideParams(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): PerformanceURLParams {
   return parseURLParams(input).performance;
+}
+
+export function getPowerSaverOverride(
+  input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
+): string | null {
+  return parseURLParams(input).performance.powerSaver;
 }
 
 export function getMockAudioParams(

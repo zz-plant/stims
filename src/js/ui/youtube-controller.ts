@@ -2,7 +2,18 @@ export interface YouTubeVideo {
   id: string;
   title: string;
   timestamp: number;
+  /** oEmbed thumbnail, when the metadata fetch succeeded. */
+  thumbnail?: string;
+  /** Channel name, when the metadata fetch succeeded. */
+  author?: string;
 }
+
+/** Playback position, polled by the transport UI. */
+export type YouTubeTransportState = {
+  currentSeconds: number;
+  durationSeconds: number;
+  paused: boolean;
+};
 
 export type YouTubeVideoReference = {
   id: string;
@@ -25,9 +36,10 @@ type YouTubePlayerOptions = {
   playerVars: {
     autoplay: number;
     playsinline: number;
-    modestbranding: number;
+    enablejsapi: number;
     rel: number;
     start: number;
+    origin?: string;
   };
   events: {
     onReady: () => void;
@@ -39,9 +51,26 @@ type YouTubePlayerOptions = {
 type YouTubePlayer = {
   destroy?: () => void;
   playVideo?: () => void;
+  pauseVideo?: () => void;
+  seekTo?: (seconds: number, allowSeekAhead: boolean) => void;
+  getCurrentTime?: () => number;
+  getDuration?: () => number;
+  getPlayerState?: () => number;
   unMute?: () => void;
   setVolume?: (volume: number) => void;
 };
+
+/** YT.PlayerState.PLAYING — the only state constant we branch on. */
+export const YOUTUBE_STATE_PLAYING = 1;
+
+/**
+ * The IFrame API is a third-party script: ad blockers, offline mode, and
+ * locked-down networks all silently never resolve `onYouTubeIframeAPIReady`.
+ * Without a deadline the Load button spins forever.
+ */
+const API_LOAD_TIMEOUT_MS = 10_000;
+export const YOUTUBE_API_BLOCKED_MESSAGE =
+  "The YouTube player script couldn't load. An ad blocker or network policy may be blocking youtube.com — try demo audio or microphone instead.";
 
 declare global {
   interface Window {
@@ -56,6 +85,51 @@ declare global {
 }
 
 const YOUTUBE_RECENT_STORAGE_KEY = 'stims_recent_youtube';
+const YOUTUBE_METADATA_STORAGE_KEY = 'stims_youtube_metadata';
+/** Titles change rarely; the cap is about storage size, not staleness. */
+const METADATA_CACHE_LIMIT = 50;
+
+type YouTubeVideoMetadata = {
+  title: string;
+  thumbnail?: string;
+  author?: string;
+};
+
+function readMetadataStore(): Record<string, YouTubeVideoMetadata> {
+  try {
+    const stored = localStorage.getItem(YOUTUBE_METADATA_STORAGE_KEY);
+    if (!stored) {
+      return {};
+    }
+    const parsed = JSON.parse(stored) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, YouTubeVideoMetadata>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function readStoredVideoMetadata(id: string): YouTubeVideoMetadata | null {
+  const entry = readMetadataStore()[id];
+  return entry && typeof entry.title === 'string' ? entry : null;
+}
+
+function writeStoredVideoMetadata(id: string, metadata: YouTubeVideoMetadata) {
+  try {
+    const store = readMetadataStore();
+    store[id] = metadata;
+    const ids = Object.keys(store);
+    if (ids.length > METADATA_CACHE_LIMIT) {
+      for (const stale of ids.slice(0, ids.length - METADATA_CACHE_LIMIT)) {
+        delete store[stale];
+      }
+    }
+    localStorage.setItem(YOUTUBE_METADATA_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // Ignore storage errors — the in-memory cache still applies this session.
+  }
+}
 
 function normalizeYouTubeUrl(url: string): string | null {
   if (/^https?:\/\//i.test(url)) {
@@ -185,7 +259,7 @@ export function readStoredRecentYouTubeVideos(): YouTubeVideo[] {
 
 export class YouTubeController {
   private static MAX_RECENT = 5;
-  private static VIDEO_TITLE_CACHE = new Map<string, string>();
+  private static VIDEO_METADATA_CACHE = new Map<string, YouTubeVideoMetadata>();
   private static apiReadyPromise: Promise<void> | null = null;
   private static apiReadyResolve: (() => void) | null = null;
   private static apiInitialized = false;
@@ -240,7 +314,25 @@ export class YouTubeController {
       return;
     }
     this.initAPI();
-    await YouTubeController.apiReadyPromise;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(YOUTUBE_API_BLOCKED_MESSAGE)),
+        API_LOAD_TIMEOUT_MS,
+      );
+    });
+
+    try {
+      await Promise.race([YouTubeController.apiReadyPromise, deadline]);
+    } catch (error) {
+      // Let a later attempt re-inject the script rather than racing a
+      // promise that already lost.
+      YouTubeController.apiInitialized = false;
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   parseVideoReference(url: string): YouTubeVideoReference | null {
@@ -281,9 +373,13 @@ export class YouTubeController {
         playerVars: {
           autoplay: 1,
           playsinline: 1,
-          modestbranding: 1,
+          // Required for the postMessage transport controls to reach the frame.
+          enablejsapi: 1,
           rel: 0,
           start: reference.startSeconds,
+          ...(typeof window !== 'undefined' && window.location?.origin
+            ? { origin: window.location.origin }
+            : {}),
         },
         events: {
           onReady: () => {
@@ -320,11 +416,69 @@ export class YouTubeController {
     return readStoredRecentYouTubeVideos();
   }
 
+  /** Pause playback without tearing down the player or the capture stream. */
+  pause() {
+    this.player?.pauseVideo?.();
+  }
+
+  /** Resume playback. Volume stays wherever the user left it. */
+  play() {
+    this.player?.playVideo?.();
+  }
+
+  seekTo(seconds: number) {
+    this.player?.seekTo?.(Math.max(0, seconds), true);
+  }
+
+  /** Relative seek, for the ±10s transport buttons. */
+  nudge(deltaSeconds: number) {
+    const current = this.player?.getCurrentTime?.();
+    if (typeof current !== 'number' || Number.isNaN(current)) {
+      return;
+    }
+    this.seekTo(current + deltaSeconds);
+  }
+
+  /**
+   * Null until the player reports usable numbers — the IFrame API returns 0
+   * for duration until metadata lands, which would render as a 0:00 scrubber.
+   */
+  getTransportState(): YouTubeTransportState | null {
+    const player = this.player;
+    if (!player?.getDuration || !player.getCurrentTime) {
+      return null;
+    }
+
+    const durationSeconds = player.getDuration();
+    const currentSeconds = player.getCurrentTime();
+    if (
+      typeof durationSeconds !== 'number' ||
+      typeof currentSeconds !== 'number' ||
+      Number.isNaN(durationSeconds) ||
+      Number.isNaN(currentSeconds) ||
+      durationSeconds <= 0
+    ) {
+      return null;
+    }
+
+    return {
+      currentSeconds,
+      durationSeconds,
+      paused: player.getPlayerState?.() !== YOUTUBE_STATE_PLAYING,
+    };
+  }
+
   private async saveToRecent(video: YouTubeVideoReference) {
     let recent = this.getRecentVideos();
-    const title = await this.getVideoTitle(video);
+    const metadata = await this.getVideoMetadata(video);
     recent = recent.filter((v) => v.id !== video.id);
-    recent.unshift({ id: video.id, title, timestamp: Date.now() });
+    recent.unshift({
+      id: video.id,
+      title: metadata.title,
+      timestamp: Date.now(),
+      ...(metadata.thumbnail ? { thumbnail: metadata.thumbnail } : {}),
+      ...(metadata.author ? { author: metadata.author } : {}),
+    });
     recent = recent.slice(0, YouTubeController.MAX_RECENT);
     try {
       localStorage.setItem(YOUTUBE_RECENT_STORAGE_KEY, JSON.stringify(recent));
@@ -333,9 +487,14 @@ export class YouTubeController {
     }
   }
 
-  private async getVideoTitle(video: YouTubeVideoReference): Promise<string> {
-    const cached = YouTubeController.VIDEO_TITLE_CACHE.get(video.id);
+  private async getVideoMetadata(
+    video: YouTubeVideoReference,
+  ): Promise<YouTubeVideoMetadata> {
+    const cached =
+      YouTubeController.VIDEO_METADATA_CACHE.get(video.id) ??
+      readStoredVideoMetadata(video.id);
     if (cached) {
+      YouTubeController.VIDEO_METADATA_CACHE.set(video.id, cached);
       return cached;
     }
 
@@ -345,18 +504,31 @@ export class YouTubeController {
       oEmbedUrl.searchParams.set('format', 'json');
       const response = await fetch(oEmbedUrl.toString());
       if (!response.ok) {
-        throw new Error(`Failed to fetch title: ${response.status}`);
+        throw new Error(`Failed to fetch metadata: ${response.status}`);
       }
-      const data = (await response.json()) as { title?: unknown };
+      const data = (await response.json()) as {
+        title?: unknown;
+        thumbnail_url?: unknown;
+        author_name?: unknown;
+      };
       if (typeof data.title === 'string' && data.title.trim()) {
-        const title = data.title.trim();
-        YouTubeController.VIDEO_TITLE_CACHE.set(video.id, title);
-        return title;
+        const metadata: YouTubeVideoMetadata = {
+          title: data.title.trim(),
+          ...(typeof data.thumbnail_url === 'string' && data.thumbnail_url
+            ? { thumbnail: data.thumbnail_url }
+            : {}),
+          ...(typeof data.author_name === 'string' && data.author_name.trim()
+            ? { author: data.author_name.trim() }
+            : {}),
+        };
+        YouTubeController.VIDEO_METADATA_CACHE.set(video.id, metadata);
+        writeStoredVideoMetadata(video.id, metadata);
+        return metadata;
       }
     } catch {
       // Ignore metadata fetch failures and fall back to the video id.
     }
 
-    return `Video ${video.id}`;
+    return { title: `Video ${video.id}` };
   }
 }

@@ -22,6 +22,7 @@ type CatalogPresetEntry = {
   title: string;
   author?: string;
   tags: string[];
+  searchTerms?: string[];
 };
 
 type CatalogDocument = {
@@ -63,6 +64,7 @@ function getBrowseSearchTerms(preset: CatalogPresetEntry) {
     preset.title,
     preset.author ?? '',
     ...preset.tags,
+    ...(preset.searchTerms ?? []),
     ...preset.tags
       .filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX))
       .map((tag) => collectionLabel(tag)),
@@ -86,7 +88,7 @@ function getBrowseSearchTerms(preset: CatalogPresetEntry) {
     .filter(Boolean);
 }
 
-export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
+export async function generateCatalogSearchIndex(repoRoot = process.cwd()) {
   const catalogPath = path.join(
     repoRoot,
     'public/milkdrop-presets/catalog.json',
@@ -101,8 +103,14 @@ export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
     return;
   }
 
-  const raw = fs.readFileSync(catalogPath, 'utf8');
-  const doc = JSON.parse(raw) as CatalogDocument;
+  let doc: CatalogDocument;
+  if (typeof Bun !== 'undefined') {
+    doc = (await Bun.file(catalogPath).json()) as CatalogDocument;
+  } else {
+    const raw = fs.readFileSync(catalogPath, 'utf8');
+    doc = JSON.parse(raw) as CatalogDocument;
+  }
+
   const presets = doc.presets ?? [];
 
   const searchIndex: Record<
@@ -118,7 +126,13 @@ export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
     };
   }
 
-  fs.writeFileSync(outputPath, JSON.stringify(searchIndex, null, 2), 'utf8');
+  const outputContent = JSON.stringify(searchIndex, null, 2);
+  if (typeof Bun !== 'undefined') {
+    await Bun.write(outputPath, outputContent);
+  } else {
+    fs.writeFileSync(outputPath, outputContent, 'utf8');
+  }
+
   console.log(
     `[INFO] Precompiled search index for ${Object.keys(searchIndex).length} presets -> ${outputPath}`,
   );
