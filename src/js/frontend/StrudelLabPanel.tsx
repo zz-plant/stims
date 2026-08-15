@@ -210,6 +210,12 @@ export function StrudelLabPanel() {
           className={styles.editor}
           value={code}
           onChange={(event) => setCode(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault();
+              void handlePlay();
+            }
+          }}
           rows={9}
           spellCheck={false}
           aria-label="Strudel pattern code"

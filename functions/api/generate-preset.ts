@@ -2,19 +2,10 @@ import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 import {
   allowedModelOrNull,
   enforceAiRateLimit,
-  type RateLimiter,
 } from './_ai-guard.ts';
 
 interface Env {
-  AI?: {
-    run: (
-      model: string,
-      opts: {
-        messages?: Array<{ role: string; content: string }>;
-        text?: string[];
-      },
-    ) => Promise<{ response?: string; data?: number[][] }>;
-  };
+  AI?: WorkersAI;
   AI_RATE_LIMITER?: RateLimiter;
 }
 
@@ -66,16 +57,24 @@ async function classify(
 }
 
 function selectModel(_task: string, c: Classification): string {
-  if (!c.needsReasoning && c.complexity === 'moderate') {
-    return '@cf/qwen/qwen3-30b-a3b-fp8';
-  }
-  if (c.needsReasoning) {
-    return '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b';
-  }
-  if (c.complexity === 'complex') {
+  if (c.needsReasoning || c.complexity === 'complex') {
     return '@cf/qwen/qwen2.5-coder-32b-instruct';
   }
   return '@cf/qwen/qwen3-30b-a3b-fp8';
+}
+
+function cleanModelOutput(raw: string): string {
+  let cleaned = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/```[\w]*\n?/g, '')
+    .trim();
+  const startIdx = cleaned.indexOf('[preset00]');
+  if (startIdx >= 0) {
+    cleaned = `[preset00]\n${cleaned.slice(startIdx + 10).trim()}`;
+  } else if (cleaned.length > 0) {
+    cleaned = `[preset00]\n${cleaned}`;
+  }
+  return cleaned;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
@@ -137,8 +136,8 @@ export async function onRequest(context: { request: Request; env: Env }) {
         { role: 'user', content: userPrompt },
       ],
     });
-    const modelResponse = result.response?.trim();
-    if (!modelResponse) {
+    const rawResponse = result.response?.trim();
+    if (!rawResponse) {
       return new Response(
         JSON.stringify({ error: 'Model returned no output.' }),
         {
@@ -147,11 +146,8 @@ export async function onRequest(context: { request: Request; env: Env }) {
         },
       );
     }
-    const startIdx = modelResponse.indexOf('[preset00]');
-    let milkSource: string;
-    if (startIdx >= 0) {
-      milkSource = `[preset00]\n${modelResponse.slice(startIdx + 10).trim()}`;
-    } else {
+    const milkSource = cleanModelOutput(rawResponse);
+    if (!milkSource.includes('[preset00]')) {
       return new Response(
         JSON.stringify({
           error: 'Model output did not contain a [preset00] section.',

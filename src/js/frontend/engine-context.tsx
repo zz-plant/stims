@@ -118,8 +118,8 @@ export function EngineProvider({
   children: ReactNode;
 }) {
   return (
-    <EngineSnapshotCtx.Provider value={snapshot}>
-      <EngineCtx.Provider value={data}>{children}</EngineCtx.Provider>
-    </EngineSnapshotCtx.Provider>
+    <EngineSnapshotCtx value={snapshot}>
+      <EngineCtx value={data}>{children}</EngineCtx>
+    </EngineSnapshotCtx>
   );
 }

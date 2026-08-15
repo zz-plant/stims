@@ -4,28 +4,6 @@
 // GET  /api/presets/:id   - Get single preset
 // POST /api/presets/:id/favorite - Toggle favorite
 
-// Cloudflare runtime types — provided by platform at deployment
-interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-interface D1PreparedStatement {
-  bind(...params: unknown[]): D1PreparedStatement;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-  first<T = unknown>(): Promise<T | null>;
-  run(): Promise<{ success: boolean }>;
-}
-interface R2Bucket {
-  put(
-    key: string,
-    value: string | ReadableStream,
-    options?: { customMetadata?: Record<string, string> },
-  ): Promise<void>;
-  get(key: string): Promise<R2Object | null>;
-}
-interface R2Object {
-  text(): Promise<string>;
-}
-
 interface Env {
   DB: D1Database; // D1 binding
   GALLERY_R2: R2Bucket; // R2 binding for preset storage
@@ -182,6 +160,15 @@ export async function onRequest(context: {
           (body.tags || []).join(','),
         )
         .run();
+
+      // Invalidate list cache so newly uploaded preset is visible immediately
+      if (cache) {
+        const listUrl = new URL(url.toString());
+        listUrl.search = '';
+        context.waitUntil?.(
+          cache.delete(new Request(listUrl.toString(), { method: 'GET' })),
+        );
+      }
 
       return json({ id: `community:${id}`, title: body.title });
     }

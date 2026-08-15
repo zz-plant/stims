@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
   type generatePreset,
@@ -64,6 +64,8 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const [localEndpoint, setLocalEndpoint] = useState(DEFAULT_LOCAL_ENDPOINT);
   const [localModel, setLocalModel] = useState(DEFAULT_LOCAL_MODEL);
   const [generating, setGenerating] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const isGenerating = generating || isPending;
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState(() =>
     providerStatus(DEFAULT_PROVIDER, offline),
@@ -150,13 +152,15 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       // regenerate instead of wondering why nothing moves to the beat.
       const probeResult = probePresetReactivity(compiled);
       await engine.importPresetFiles(toFileList(compiled.source.raw));
-      if (probeResult.verdict === 'static') {
-        setStatus(
-          'Loaded, but this preset barely reacts to sound. Try generating again with wording like “strong beat reaction”.',
-        );
-      } else {
-        ui.updatePanel(null);
-      }
+      startTransition(() => {
+        if (probeResult.verdict === 'static') {
+          setStatus(
+            'Loaded, but this preset barely reacts to sound. Try generating again with wording like “strong beat reaction”.',
+          );
+        } else {
+          ui.updatePanel(null);
+        }
+      });
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
     } finally {
@@ -169,10 +173,10 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
     reactivity,
     palette,
     provider,
-    offline,
     localEndpoint,
     localModel,
     engine,
+    offline,
     ui,
   ]);
 
@@ -183,7 +187,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           seed={prompt.trim() || 'model-generator'}
           filterPreset="liquid-warp"
           size={36}
-          audioPeak={generating ? 0.8 : 0.2}
+          audioPeak={isGenerating ? 0.8 : 0.2}
           mood={palette === 'auto' ? 'psychedelic' : palette}
         />
         <div>
@@ -205,7 +209,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={3}
-          disabled={generating}
+          disabled={isGenerating}
         />
       </label>
 
@@ -219,7 +223,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
-            disabled={generating}
+            disabled={isGenerating}
           />
         </label>
       ) : null}
@@ -235,7 +239,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
-          <fieldset className={styles.palettes} disabled={generating}>
+          <fieldset className={styles.palettes} disabled={isGenerating}>
             <legend className={styles.label}>Model provider</legend>
             <div className={styles.paletteRow}>
               <label className={styles.palette}>
@@ -275,7 +279,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                   type="url"
                   value={localEndpoint}
                   onChange={(event) => setLocalEndpoint(event.target.value)}
-                  disabled={generating}
+                  disabled={isGenerating}
                   spellCheck={false}
                 />
               </label>
@@ -286,7 +290,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
                   type="text"
                   value={localModel}
                   onChange={(event) => setLocalModel(event.target.value)}
-                  disabled={generating}
+                  disabled={isGenerating}
                   spellCheck={false}
                 />
               </label>
@@ -295,7 +299,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         </div>
       </details>
 
-      <fieldset className={styles.palettes} disabled={generating}>
+      <fieldset className={styles.palettes} disabled={isGenerating}>
         <legend className={styles.label}>Color palette</legend>
         <div className={styles.paletteRow}>
           {PALETTES.map((p) => (
@@ -322,7 +326,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           step="0.1"
           value={intensity}
           onChange={(e) => setIntensity(Number(e.target.value))}
-          disabled={generating}
+          disabled={isGenerating}
           className={styles.slider}
         />
       </label>
@@ -338,7 +342,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           step="0.1"
           value={reactivity}
           onChange={(e) => setReactivity(Number(e.target.value))}
-          disabled={generating}
+          disabled={isGenerating}
           className={styles.slider}
         />
       </label>
@@ -351,7 +355,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         type="button"
         className={styles.generateButton}
         disabled={
-          generating ||
+          isGenerating ||
           (!prompt.trim() && !(provider === 'hosted' && imageFile)) ||
           (provider === 'hosted' && offline) ||
           (provider === 'local' &&
@@ -359,7 +363,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         }
         onClick={() => void handleGenerate()}
       >
-        {generating ? 'Generating…' : 'Generate with model'}
+        {isGenerating ? 'Generating…' : 'Generate with model'}
       </button>
     </section>
   );

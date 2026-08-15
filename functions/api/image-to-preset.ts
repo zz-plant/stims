@@ -46,6 +46,19 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(buffer).toString('base64');
+  }
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
@@ -77,7 +90,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       const file = formData.get('image');
       if (file instanceof File) {
         const buffer = await file.arrayBuffer();
-        imageBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        imageBase64 = arrayBufferToBase64(buffer);
       }
       const guidanceField = formData.get('guidance');
       if (typeof guidanceField === 'string') {

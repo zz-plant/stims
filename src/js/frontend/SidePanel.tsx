@@ -13,7 +13,8 @@ import { useWorkspace } from './workspace-context.tsx';
 
 const isMobileSheet = () =>
   typeof window !== 'undefined' &&
-  window.matchMedia('(max-width: 767px)').matches;
+  (window.matchMedia('(max-width: 767px)').matches ||
+    window.matchMedia('(max-height: 500px) and (pointer: coarse)').matches);
 
 /* Stage-anchored seam: the editor/stage split is user-resizable on desktop.
    The chosen width feeds --stage-tool-width on the shell root, which sizes

@@ -1501,6 +1501,53 @@ server.registerTool(
         field: 'decay',
         delta: -0.02,
       },
+      {
+        match: [
+          'more rot',
+          'more rotation',
+          'spin faster',
+          'faster spin',
+          'rotate more',
+        ],
+        field: 'rot',
+        delta: 0.05,
+      },
+      {
+        match: [
+          'less rot',
+          'less rotation',
+          'spin slower',
+          'slower spin',
+          'rotate less',
+        ],
+        field: 'rot',
+        delta: -0.05,
+      },
+      {
+        match: ['more wave', 'bigger wave', 'increase wave', 'wave scale'],
+        field: 'wave_scale',
+        delta: 0.2,
+      },
+      {
+        match: ['less wave', 'smaller wave', 'decrease wave'],
+        field: 'wave_scale',
+        delta: -0.2,
+      },
+      {
+        match: [
+          'more beat',
+          'higher beat sensitivity',
+          'more sensitive',
+          'beat pulse',
+        ],
+        field: 'beat_sensitivity',
+        delta: 0.2,
+      },
+      {
+        match: ['less beat', 'lower beat sensitivity', 'less sensitive'],
+        field: 'beat_sensitivity',
+        delta: -0.2,
+      },
     ];
 
     const updates: Record<string, number> = {};
@@ -1663,6 +1710,52 @@ function formatExpressionTree(
   }
 }
 
+function formatStatementTree(
+  statement: import('../src/js/milkdrop/types.ts').MilkdropCompiledStatement,
+  indent = 1,
+): string[] {
+  const pad = '  '.repeat(indent);
+  const lines: string[] = [];
+
+  if (statement.control) {
+    const kind = statement.control.kind;
+    lines.push(`${pad}control: ${kind}`);
+    if (statement.control.kind === 'loop') {
+      if (statement.control.count) {
+        lines.push(`${pad}  count:`);
+        lines.push(
+          ...formatExpressionTree(statement.control.count, indent + 2),
+        );
+      }
+    } else if (statement.control.condition) {
+      lines.push(`${pad}  condition:`);
+      lines.push(
+        ...formatExpressionTree(statement.control.condition, indent + 2),
+      );
+    }
+    lines.push(
+      `${pad}  body (${statement.control.body.length} statement${statement.control.body.length === 1 ? '' : 's'}):`,
+    );
+    statement.control.body.forEach((sub, subIdx) => {
+      lines.push(
+        `${pad}    [${subIdx}] line ${sub.line}: ${sub.source.trim()}`,
+      );
+      lines.push(...formatStatementTree(sub, indent + 3));
+    });
+    return lines;
+  }
+
+  if (statement.target === '__control') {
+    lines.push(`${pad}expression statement:`);
+    lines.push(...formatExpressionTree(statement.expression, indent + 1));
+    return lines;
+  }
+
+  lines.push(`${pad}target: ${statement.target}`);
+  lines.push(...formatExpressionTree(statement.expression, indent + 1));
+  return lines;
+}
+
 server.registerTool(
   'inspect_eel_ast',
   {
@@ -1703,12 +1796,7 @@ server.registerTool(
       lines.push(`[${index}] line ${line}: ${statementSource.trim()}`);
 
       if (parsed.value) {
-        lines.push(`  target: ${parsed.value.target}`);
-        lines.push(
-          ...formatExpressionTree(parsed.value.expression, 1).map(
-            (entry) => `  ${entry}`,
-          ),
-        );
+        lines.push(...formatStatementTree(parsed.value, 1));
       } else {
         lines.push('  <unparsed>');
       }

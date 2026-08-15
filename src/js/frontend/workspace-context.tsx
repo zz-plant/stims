@@ -393,10 +393,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <WorkspaceContext.Provider value={uiValue}>
+    <WorkspaceContext value={uiValue}>
       <EngineProvider snapshot={engineSnapshotValue} data={engineDataValue}>
         {children}
       </EngineProvider>
-    </WorkspaceContext.Provider>
+    </WorkspaceContext>
   );
 }

@@ -25,14 +25,30 @@ export const BUILTIN_WORDS: ReadonlySet<string> = new Set(
 // q1-q32 persistent globals and t1-t32 registers, matching what the VM seeds.
 const VARIABLE_WORD = MILKDROP_REGISTER_WORD_PATTERN;
 
-const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
+const NUMBER_TOKEN_PATTERN =
+  /^(?:0[xX][0-9a-fA-F]+|(?:[0-9]*\.)?[0-9]+(?:[eE][+-]?[0-9]+)?|[0-9]+\.)/;
+
+export const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
   name: 'milkdrop-preset',
   token(stream, state) {
-    if (stream.sol() && stream.match(/^\[(\w+)\]/)) return 'heading';
+    if (stream.eatSpace()) return null;
 
-    if (stream.sol() && stream.match('//')) {
+    if (stream.match(/^\[\s*([\w]+)\s*\]/)) return 'heading';
+
+    if (
+      stream.match('//') ||
+      stream.match('#') ||
+      (stream.sol() && stream.match(';'))
+    ) {
       stream.skipToEnd();
       return 'comment';
+    }
+
+    if (
+      stream.match(/^"([^"\\]|\\.)*"/u) ||
+      stream.match(/^'([^'\\]|\\.)*'/u)
+    ) {
+      return 'string';
     }
 
     if (state.afterEquals) {
@@ -56,8 +72,8 @@ const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
         if (BUILTIN_WORDS.has(word)) return 'builtin';
         return null;
       }
-      if (stream.match(/[0-9]+(\.[0-9]+)?/)) return 'number';
-      if (stream.match(/[+\-*/%^<>=!&|]+/)) return 'operator';
+      if (stream.match(NUMBER_TOKEN_PATTERN)) return 'number';
+      if (stream.match(/[+\-*/%^<>=!&|~]+/)) return 'operator';
       stream.next();
       return null;
     }
@@ -67,7 +83,7 @@ const milkdropParser: StreamParser<{ afterEquals: boolean }> = {
       state.afterEquals = true;
       return 'operator';
     }
-    if (stream.match(/[0-9]+(\.[0-9]+)?/)) {
+    if (stream.match(NUMBER_TOKEN_PATTERN)) {
       state.afterEquals = false;
       return 'number';
     }
