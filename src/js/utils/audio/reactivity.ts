@@ -58,6 +58,12 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 const bandIndexCache = new Map<string, { start: number; end: number }>();
+let lastResolveDataLength = -1;
+let lastResolveSampleRate = -1;
+let lastResolveMinHz = -1;
+let lastResolveMaxHz = -1;
+let lastResolveFftSize = -1;
+let lastResolveResult = { start: 0, end: 0 };
 
 function resolveBandIndexes(
   dataLength: number,
@@ -69,37 +75,53 @@ function resolveBandIndexes(
     return { start: 0, end: 0 };
   }
 
-  const cacheKey = `${dataLength}:${sampleRate}:${range.minHz}:${range.maxHz}:${fftSize}`;
-  const cached = bandIndexCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  const min = range.minHz;
+  const max = range.maxHz;
+  if (
+    dataLength === lastResolveDataLength &&
+    sampleRate === lastResolveSampleRate &&
+    min === lastResolveMinHz &&
+    max === lastResolveMaxHz &&
+    fftSize === lastResolveFftSize
+  ) {
+    return lastResolveResult;
   }
 
-  const resolutionHz = sampleRate / fftSize;
-  const nyquistHz = sampleRate / 2;
-  const minHz = clamp(range.minHz, 0, nyquistHz);
-  const maxHz = clamp(Math.max(minHz, range.maxHz), 0, nyquistHz);
-  const startCandidate = Math.ceil(minHz / resolutionHz);
-  const endCandidate = Math.ceil(maxHz / resolutionHz);
-  let result: { start: number; end: number };
+  const cacheKey = `${dataLength}:${sampleRate}:${min}:${max}:${fftSize}`;
+  let result = bandIndexCache.get(cacheKey);
+  if (!result) {
+    const resolutionHz = sampleRate / fftSize;
+    const nyquistHz = sampleRate / 2;
+    const minHz = clamp(min, 0, nyquistHz);
+    const maxHz = clamp(Math.max(minHz, max), 0, nyquistHz);
+    const startCandidate = Math.ceil(minHz / resolutionHz);
+    const endCandidate = Math.ceil(maxHz / resolutionHz);
 
-  if (endCandidate <= startCandidate) {
-    const representative = clamp(
-      Math.floor(((minHz + maxHz) * 0.5) / resolutionHz),
-      0,
-      dataLength - 1,
-    );
-    result = { start: representative, end: representative + 1 };
-  } else {
-    const start = clamp(startCandidate, 0, dataLength - 1);
-    const end = clamp(endCandidate, start + 1, dataLength);
-    result = { start, end };
+    if (endCandidate <= startCandidate) {
+      const representative = clamp(
+        Math.floor(((minHz + maxHz) * 0.5) / resolutionHz),
+        0,
+        dataLength - 1,
+      );
+      result = { start: representative, end: representative + 1 };
+    } else {
+      const start = clamp(startCandidate, 0, dataLength - 1);
+      const end = clamp(endCandidate, start + 1, dataLength);
+      result = { start, end };
+    }
+
+    if (bandIndexCache.size > 128) {
+      bandIndexCache.clear();
+    }
+    bandIndexCache.set(cacheKey, result);
   }
 
-  if (bandIndexCache.size > 128) {
-    bandIndexCache.clear();
-  }
-  bandIndexCache.set(cacheKey, result);
+  lastResolveDataLength = dataLength;
+  lastResolveSampleRate = sampleRate;
+  lastResolveMinHz = min;
+  lastResolveMaxHz = max;
+  lastResolveFftSize = fftSize;
+  lastResolveResult = result;
   return result;
 }
 

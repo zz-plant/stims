@@ -138,6 +138,7 @@ export class FrequencyAnalyser {
   private waveformFloatR: Float32Array | null = null;
   private timeDomainDataL: Float32Array | null = null;
   private timeDomainDataR: Float32Array | null = null;
+  private byteScratch: Uint8Array | null = null;
 
   private constructor({
     sourceNode,
@@ -649,10 +650,17 @@ export class FrequencyAnalyser {
     }
 
     if (typeof this.analyserNode.getByteTimeDomainData === 'function') {
-      const byteData = new Uint8Array(this.timeDomainData.length);
-      this.analyserNode.getByteTimeDomainData(byteData);
-      for (let i = 0; i < byteData.length; i += 1) {
-        this.timeDomainData[i] = (byteData[i] - 128) / 128;
+      if (
+        !this.byteScratch ||
+        this.byteScratch.length !== this.timeDomainData.length
+      ) {
+        this.byteScratch = new Uint8Array(this.timeDomainData.length);
+      }
+      this.analyserNode.getByteTimeDomainData(
+        this.byteScratch as Uint8Array<ArrayBuffer>,
+      );
+      for (let i = 0; i < this.byteScratch.length; i += 1) {
+        this.timeDomainData[i] = (this.byteScratch[i] - 128) / 128;
       }
     }
   }
@@ -722,6 +730,15 @@ export class FrequencyAnalyser {
     this.historyCount = Math.min(this.historyCount + 1, this.historySize);
   }
 
+  private computeArrayAverage(arr: number[]): number {
+    if (this.historyCount === 0) return 0;
+    let total = 0;
+    for (let i = 0; i < this.historyCount; i += 1) {
+      total += arr[i] ?? 0;
+    }
+    return total / this.historyCount;
+  }
+
   getMultiBandEnergy(data?: Uint8Array) {
     if (data && data !== this.frequencyData) {
       return this.calculateMultiBandEnergy(data);
@@ -738,18 +755,10 @@ export class FrequencyAnalyser {
     if (this.workletNode && this.cachedEnergyAverages) {
       return this.cachedEnergyAverages;
     }
-    const avg = (arr: number[]) => {
-      if (this.historyCount === 0) return 0;
-      let total = 0;
-      for (let i = 0; i < this.historyCount; i += 1) {
-        total += arr[i] ?? 0;
-      }
-      return total / this.historyCount;
-    };
     return {
-      bass: avg(this.energyHistory.bass),
-      mid: avg(this.energyHistory.mid),
-      treble: avg(this.energyHistory.treble),
+      bass: this.computeArrayAverage(this.energyHistory.bass),
+      mid: this.computeArrayAverage(this.energyHistory.mid),
+      treble: this.computeArrayAverage(this.energyHistory.treble),
     };
   }
 

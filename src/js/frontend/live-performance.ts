@@ -338,12 +338,23 @@ function summarise(
   samples: ListenSample[],
   telemetry: ReturnType<typeof getAgentTelemetry>,
 ): ListenResult {
-  const values = samples.map((s) => s.rms);
-  const rmsMin = values.length ? Math.min(...values) : 0;
-  const rmsMax = values.length ? Math.max(...values) : 0;
-  const rmsMean = values.length
-    ? values.reduce((a, b) => a + b, 0) / values.length
-    : 0;
+  let rmsMin = 0;
+  let rmsMax = 0;
+  let rmsSum = 0;
+  const len = samples.length;
+
+  if (len > 0) {
+    rmsMin = samples[0].rms;
+    rmsMax = samples[0].rms;
+    for (let i = 0; i < len; i += 1) {
+      const val = samples[i].rms;
+      if (val < rmsMin) rmsMin = val;
+      if (val > rmsMax) rmsMax = val;
+      rmsSum += val;
+    }
+  }
+
+  const rmsMean = len > 0 ? rmsSum / len : 0;
 
   return {
     source,
