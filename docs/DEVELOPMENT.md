@@ -36,7 +36,7 @@ For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFI
 | Fast quality gate (lint + types + guards) | `bun run check:quick` |
 | Full quality gate (guards + fast test suite) | `bun run check` |
 | Complete quality gate (guards + all test profiles) | `bun run check:all` |
-| Toy manifest, generated docs, and public-claim drift check | `bun run check:toys` |
+| README public-claim drift check | `bun run check:readme-claims` |
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Asset health check | `bun run assets:check` |

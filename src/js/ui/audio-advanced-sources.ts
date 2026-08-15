@@ -1,10 +1,34 @@
-import type { AudioControlsOptions } from './audio-controls.ts';
 import { YouTubeController } from './youtube-controller';
 import {
   hideYouTubeStageLayer,
   mountYouTubeStageLayer,
   syncYouTubeStagePreview,
 } from './youtube-stage-layer.ts';
+
+export interface AudioControlsOptions {
+  onRequestMicrophone: () => Promise<void>;
+  onRequestDemoAudio: () => Promise<void>;
+  onRequestYouTubeAudio?: (stream: MediaStream) => Promise<void>;
+  onRequestTabAudio?: (stream: MediaStream) => Promise<void>;
+  onSuccess?: () => void;
+  statusElement?: HTMLElement;
+  initialStatus?: { message: string; variant?: 'success' | 'error' };
+  preferDemoAudio?: boolean;
+  starterTips?: string[];
+  firstRunHint?: string;
+  gestureHints?: string[];
+  desktopHints?: string[];
+  touchHints?: string[];
+  starterPresetLabel?: string;
+  starterPresetId?: string;
+  wowControl?: string;
+  recommendedCapability?: 'demoAudio' | 'microphone' | 'motion' | 'touch';
+  onApplyStarterPreset?: () => void;
+  onPrepareYouTubeContext?: () => Promise<void> | void;
+  autoStartMicrophoneWhenGranted?: boolean;
+  autoStartSource?: 'demo';
+  initialShortcut?: 'tab' | 'youtube';
+}
 
 function renderSourceHelpDisclosure({
   sourceLabelId,

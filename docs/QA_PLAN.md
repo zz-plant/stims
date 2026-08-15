@@ -51,7 +51,7 @@ Use Bun to match the repository tooling:
 
 - Run the focused workspace/session regression suites:
   ```bash
-  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/audio-controls.test.ts
+  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/app-shell-route-sync.test.ts
   ```
 
 - Run the integration harness (real Chromium — also runs in CI on every PR):

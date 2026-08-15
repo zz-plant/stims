@@ -12,7 +12,7 @@
 - `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
 - `docs/PAGE_SPECIFICATIONS.md` — app shell and launch-flow behavior.
 - `docs/DEPLOYMENT.md` — shipping and hosting guidance.
-- `docs/TOY_SCRIPT_INDEX.md` / `docs/toys.md` — generated manifest reference docs synced from `src/data/toys.json`.
+- `src/data/toys.json` — product metadata for the shipped experience, read directly by the MCP server.
 
 ## Architecture and fidelity docs
 

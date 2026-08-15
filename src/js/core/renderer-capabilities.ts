@@ -9,7 +9,6 @@ import {
   resolveGpuPowerPreference,
   whenBatteryStateSettled,
 } from './power-state.ts';
-import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
   inferRendererFallbackReasonCode,
@@ -27,6 +26,7 @@ import {
   recordRendererRetrySuccess,
   resetRendererRetryPolicy,
 } from './renderer-retry-policy.ts';
+import { isCompatibilityModeEnabled } from './state/render-preference-store.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
 

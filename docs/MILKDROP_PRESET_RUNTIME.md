@@ -46,14 +46,9 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 ## Metadata sync workflow
 
-`src/data/toys.json` remains the checked-in manifest source for the shipped experience. `bun run generate:toys` rewrites the derived artifacts:
+`src/data/toys.json` holds the shipped experience's product metadata (title, description, controls, starter preset). The MCP server reads it directly — there are no generated artifacts to keep in sync.
 
-- `src/js/data/toy-manifest.ts`
-- `public/toys.json`
-- `docs/TOY_SCRIPT_INDEX.md`
-- `docs/toys.md`
-
-`bun run check:toys` fails if the checked-in JSON or generated artifacts drift. The same guard also keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
+`bun run check:readme-claims` keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
 
 ## Catalog id contract
 
