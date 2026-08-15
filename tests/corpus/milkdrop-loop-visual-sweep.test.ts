@@ -31,7 +31,13 @@ describe('MilkDrop loop preset visual sweep', () => {
         ),
       ),
     ).toBe(true);
-  }, 15_000);
+    // buildLoopPresetCorpus compiles the entire bundled catalog to find the
+    // presets whose IR actually executes loop control flow. That is pure
+    // deterministic CPU work, so the timeout is a hang guard rather than a
+    // performance assertion — and it has to clear the slowest machine that
+    // runs it, not the fastest. Measured ~5s on an M-series laptop and 26.4s
+    // on a 2-core GitHub runner, where the old 15s guard failed every push.
+  }, 90_000);
 
   test('classifies runtime failures ahead of visible and performance regressions', () => {
     const runtime = classifyLoopPresetSweepSample({
