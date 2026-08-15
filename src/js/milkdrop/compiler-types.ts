@@ -69,6 +69,9 @@ export type MilkdropGpuFieldProgramDescriptor = {
   kind: 'gpu-field-program';
   statements: MilkdropGpuFieldStatement[];
   temporaries: string[];
+  /** Per-frame register names (`q1`..`q8`) read as frame constants. When
+   * non-empty the procedural mesh passes these as per-frame uniform inputs. */
+  registerInputs: string[];
   signature: string;
 };
 

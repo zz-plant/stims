@@ -97,7 +97,60 @@ const GPU_FIELD_FUNCTIONS = new Set([
 type LowerGpuFieldProgramOptions = {
   additionalStateIdentifiers?: Iterable<string>;
   additionalAllowedIdentifiers?: Iterable<string>;
+  /**
+   * Per-frame register names (`q1`..`q8`) that a per-pixel program may READ as
+   * frame constants. A register that is only read (never assigned inside the
+   * per-pixel program) lowers to a per-frame uniform input instead of bailing;
+   * a register that is assigned stays a per-vertex temporary. Excludes the
+   * wave-local `t` bank, which is per-wave state and never a per-pixel input.
+   */
+  registerInputs?: Iterable<string>;
 };
+
+const GPU_FIELD_REGISTER_PATTERN = /^q[0-9]+$/u;
+
+/** Per-frame registers exposed to per-pixel programs as frame-constant
+ * uniform inputs. Bounded to `q1`..`q8`: the bundled catalog reads no higher,
+ * and the per-wave `t` bank is not a per-pixel input. */
+export const PER_FRAME_FIELD_REGISTER_INPUTS = [
+  'q1',
+  'q2',
+  'q3',
+  'q4',
+  'q5',
+  'q6',
+  'q7',
+  'q8',
+];
+
+function collectGpuFieldIdentifierReads(
+  expression: MilkdropExpressionNode,
+): Set<string> {
+  const reads = new Set<string>();
+  const visit = (node: MilkdropExpressionNode): void => {
+    switch (node.type) {
+      case 'identifier':
+        reads.add(lowerGpuFieldIdentifier(node.name));
+        break;
+      case 'unary':
+        visit(node.operand);
+        break;
+      case 'binary':
+        visit(node.left);
+        visit(node.right);
+        break;
+      case 'call':
+        for (const arg of node.args) {
+          visit(arg);
+        }
+        break;
+      case 'literal':
+        break;
+    }
+  };
+  visit(expression);
+  return reads;
+}
 
 /**
  * A per-pixel program may declare scratch locals with any name it likes —
@@ -207,12 +260,16 @@ export function lowerGpuFieldProgram(
   {
     additionalStateIdentifiers = [],
     additionalAllowedIdentifiers = [],
+    registerInputs = [],
   }: LowerGpuFieldProgramOptions = {},
 ): MilkdropGpuFieldProgramDescriptor | null {
   if (program.statements.length === 0) {
     return null;
   }
 
+  const availableRegisters = new Set(
+    Array.from(registerInputs ?? [], (name) => lowerGpuFieldIdentifier(name)),
+  );
   const stateIdentifiers = new Set<string>([
     ...GPU_FIELD_STATE_IDENTIFIERS,
     ...Array.from(additionalStateIdentifiers, (identifier) =>
@@ -254,6 +311,27 @@ export function lowerGpuFieldProgram(
     }
   }
 
+  // A register (`q1`..`q8`) that the per-pixel program only READS is the
+  // per-frame register value — a frame constant, identical across all vertices
+  // — so it lowers to a per-frame uniform input rather than bailing. A register
+  // that is ASSIGNED inside the per-pixel program was caught above as a
+  // per-vertex temporary (MilkDrop register semantics are honoured by the
+  // vertex-local initialisation to 0.0). Reads of registers not in the
+  // caller's available set (e.g. `q9`+ or the per-wave `t` bank) still bail.
+  const registerInputIdentifiers = new Set<string>();
+  for (const statement of program.statements) {
+    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+      if (
+        GPU_FIELD_REGISTER_PATTERN.test(read) &&
+        availableRegisters.has(read) &&
+        !temporaries.has(read)
+      ) {
+        registerInputIdentifiers.add(read);
+        allowedIdentifiers.add(read);
+      }
+    }
+  }
+
   for (const statement of program.statements) {
     const target = lowerGpuFieldIdentifier(statement.target);
     // State slots win over the temporary rule, so a caller-injected binding is
@@ -280,12 +358,15 @@ export function lowerGpuFieldProgram(
     }
   }
 
+  const registerInputNames = [...registerInputIdentifiers].sort();
   return {
     kind: 'gpu-field-program',
     statements,
     temporaries: [...temporaries].sort(),
+    registerInputs: registerInputNames,
     signature: JSON.stringify({
       temporaries: [...temporaries].sort(),
+      registerInputs: registerInputNames,
       statements,
     }),
   };

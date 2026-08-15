@@ -105,6 +105,17 @@ export type MilkdropProceduralFieldTransformVisual = {
   translateY: number;
 };
 
+export type MilkdropPerFrameFieldRegisters = {
+  q1?: number;
+  q2?: number;
+  q3?: number;
+  q4?: number;
+  q5?: number;
+  q6?: number;
+  q7?: number;
+  q8?: number;
+};
+
 export type MilkdropGpuFieldSignalInputs = {
   time: number;
   frame: number;
@@ -131,6 +142,7 @@ export type MilkdropProceduralMeshFieldVisual =
     density: number;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
   };
 
 export type MilkdropProceduralWaveVisual = {
@@ -179,6 +191,7 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     legacyControls: boolean;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
     tint?: MilkdropColor;
     alpha?: number;
   };

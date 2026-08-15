@@ -12,6 +12,7 @@ import type {
   MilkdropWaveDefinition,
   MilkdropWebGpuDescriptorPlan,
 } from '../types';
+import { PER_FRAME_FIELD_REGISTER_INPUTS } from './gpu-field-planner.ts';
 
 const POST_PASS_EPSILON = 0.0001;
 const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
@@ -23,6 +24,7 @@ export function buildWebGpuDescriptorPlan({
   customWaves,
   post,
   lowerGpuFieldProgram,
+  perFrameFieldRegisterInputs = PER_FRAME_FIELD_REGISTER_INPUTS,
 }: {
   featureAnalysis: MilkdropFeatureAnalysis;
   webgpu: MilkdropBackendSupport;
@@ -49,8 +51,10 @@ export function buildWebGpuDescriptorPlan({
     options?: {
       additionalStateIdentifiers?: Iterable<string>;
       additionalAllowedIdentifiers?: Iterable<string>;
+      registerInputs?: Iterable<string>;
     },
   ) => MilkdropProceduralMeshDescriptorPlan['fieldProgram'];
+  perFrameFieldRegisterInputs?: Iterable<string>;
 }): MilkdropWebGpuDescriptorPlan {
   const unsupported = webgpu.evidence
     .filter(
@@ -141,7 +145,9 @@ export function buildWebGpuDescriptorPlan({
       .filter((wave): wave is Exclude<typeof wave, null> => wave !== null),
   ];
 
-  const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel);
+  const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel, {
+    registerInputs: perFrameFieldRegisterInputs,
+  });
   const supportsProceduralFieldEvaluation =
     programs.perPixel.statements.length === 0 ||
     loweredPerPixelProgram !== null;

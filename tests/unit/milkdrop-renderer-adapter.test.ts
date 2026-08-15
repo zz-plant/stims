@@ -2705,6 +2705,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
             { target: 'x', expression: { type: 'literal', value: 0 } },
           ],
           temporaries: [],
+          registerInputs: [],
           signature: 'field-program',
         },
         color: { r: 1, g: 1, b: 1, a: 1 },

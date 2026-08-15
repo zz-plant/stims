@@ -2,6 +2,7 @@ import { Color, type ShaderMaterial } from 'three';
 import type {
   MilkdropGpuFieldSignalInputs,
   MilkdropGpuInteractionTransform,
+  MilkdropPerFrameFieldRegisters,
   MilkdropProceduralFieldTransformVisual,
 } from '../types';
 
@@ -39,11 +40,20 @@ export type ProceduralFieldUniformState = {
   signalVol: { value: number };
   signalMusic: { value: number };
   signalWeightedEnergy: { value: number };
+  registerQ1: { value: number };
+  registerQ2: { value: number };
+  registerQ3: { value: number };
+  registerQ4: { value: number };
+  registerQ5: { value: number };
+  registerQ6: { value: number };
+  registerQ7: { value: number };
+  registerQ8: { value: number };
 };
 
 export type ProceduralFieldVisualWithSignals =
   MilkdropProceduralFieldTransformVisual & {
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
   };
 
 export type ProceduralInteractionUniformState = {
@@ -89,6 +99,14 @@ export function createProceduralFieldUniformState() {
     signalVol: { value: 0 },
     signalMusic: { value: 0 },
     signalWeightedEnergy: { value: 0 },
+    registerQ1: { value: 0 },
+    registerQ2: { value: 0 },
+    registerQ3: { value: 0 },
+    registerQ4: { value: 0 },
+    registerQ5: { value: 0 },
+    registerQ6: { value: 0 },
+    registerQ7: { value: 0 },
+    registerQ8: { value: 0 },
   } satisfies ProceduralFieldUniformState;
 }
 
@@ -121,6 +139,7 @@ export function syncProceduralFieldUniforms(
     signals,
     tint,
     alpha,
+    registers,
   }: ProceduralFieldVisualWithSignals & {
     time: number;
     trebleAtt: number;
@@ -161,6 +180,14 @@ export function syncProceduralFieldUniforms(
   material.uniforms.signalVol.value = signals.vol;
   material.uniforms.signalMusic.value = signals.music;
   material.uniforms.signalWeightedEnergy.value = signals.weightedEnergy;
+  material.uniforms.registerQ1.value = registers?.q1 ?? 0;
+  material.uniforms.registerQ2.value = registers?.q2 ?? 0;
+  material.uniforms.registerQ3.value = registers?.q3 ?? 0;
+  material.uniforms.registerQ4.value = registers?.q4 ?? 0;
+  material.uniforms.registerQ5.value = registers?.q5 ?? 0;
+  material.uniforms.registerQ6.value = registers?.q6 ?? 0;
+  material.uniforms.registerQ7.value = registers?.q7 ?? 0;
+  material.uniforms.registerQ8.value = registers?.q8 ?? 0;
 }
 
 export function syncProceduralInteractionUniforms(
