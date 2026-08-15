@@ -193,7 +193,10 @@ function gpuFieldVarName(name: string) {
   }
 }
 
-function gpuFieldIdentifierToShaderSource(name: string) {
+function gpuFieldIdentifierToShaderSource(
+  name: string,
+  registerInputs: ReadonlySet<string>,
+) {
   switch (name) {
     case 'pi':
       return '3.141592653589793';
@@ -235,9 +238,57 @@ function gpuFieldIdentifierToShaderSource(name: string) {
       return 'signalMusicValue';
     case 'weightedEnergy':
       return 'signalWeightedEnergyValue';
-    default:
+    default: {
+      const registerMatch = /^q(\d+)$/u.exec(name);
+      if (registerMatch && registerInputs.has(name)) {
+        return `fieldRegisterQ${registerMatch[1]}`;
+      }
       return gpuFieldVarName(name);
+    }
   }
+}
+
+// Per-frame registers (`q1`..`q8`) read by a per-pixel program are frame
+// constants, so they lower to per-vertex `let` bindings fed from the two
+// register uniform vectors. The `fieldRegisterQ*` namespace is distinct from
+// `field_q*` (register temporaries written per-vertex), so a register that is
+// both assigned and read elsewhere stays a temporary.
+function buildGpuFieldRegisterBindings(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  if (!program || program.registerInputs.length === 0) {
+    return '';
+  }
+  const slots = ['x', 'y', 'z', 'w'] as const;
+  const bindings = program.registerInputs.map((name) => {
+    const match = /^q(\d+)$/u.exec(name);
+    if (!match) {
+      return '';
+    }
+    const index = Number(match[1]) - 1;
+    if (index < 0 || index > 7) {
+      return '';
+    }
+    const vector = index < 4 ? 'registersA' : 'registersB';
+    return `let fieldRegisterQ${index + 1} = ${vector}.${slots[index % 4]};`;
+  });
+  return bindings.filter(Boolean).join('\n    ');
+}
+
+function buildGpuFieldRegisterParamDecls(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return program && program.registerInputs.length > 0
+    ? `,\n    registersA: vec4<f32>,\n    registersB: vec4<f32>`
+    : '';
+}
+
+function buildGpuFieldRegisterCallArgs(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return program && program.registerInputs.length > 0
+    ? `,\n      registersA,\n      registersB`
+    : '';
 }
 
 function formatWgslFloat(value: number) {
@@ -250,22 +301,32 @@ function formatWgslFloat(value: number) {
 
 function buildGpuFieldExpressionWgslSource(
   expression: MilkdropGpuFieldExpression,
+  registerInputs: ReadonlySet<string>,
 ): string {
   switch (expression.type) {
     case 'literal':
       return formatWgslFloat(expression.value);
     case 'identifier':
-      return gpuFieldIdentifierToShaderSource(expression.name);
+      return gpuFieldIdentifierToShaderSource(expression.name, registerInputs);
     case 'unary': {
-      const operand = buildGpuFieldExpressionWgslSource(expression.operand);
+      const operand = buildGpuFieldExpressionWgslSource(
+        expression.operand,
+        registerInputs,
+      );
       if (expression.operator === '!') {
         return `select(1.0, 0.0, milkdropBool(${operand}) > 0.5)`;
       }
       return `(${expression.operator}${operand})`;
     }
     case 'binary': {
-      const left = buildGpuFieldExpressionWgslSource(expression.left);
-      const right = buildGpuFieldExpressionWgslSource(expression.right);
+      const left = buildGpuFieldExpressionWgslSource(
+        expression.left,
+        registerInputs,
+      );
+      const right = buildGpuFieldExpressionWgslSource(
+        expression.right,
+        registerInputs,
+      );
       switch (expression.operator) {
         case '^':
           return `pow(${left}, ${right})`;
@@ -291,7 +352,9 @@ function buildGpuFieldExpressionWgslSource(
       }
     }
     case 'call': {
-      const args = expression.args.map(buildGpuFieldExpressionWgslSource);
+      const args = expression.args.map((arg) =>
+        buildGpuFieldExpressionWgslSource(arg, registerInputs),
+      );
       switch (expression.name) {
         case 'mod':
         case 'fmod':
@@ -352,11 +415,13 @@ function buildGpuFieldTemporaryDeclarations(
 function buildGpuFieldStatementCode(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
+  const registerInputs = new Set(program?.registerInputs ?? []);
   return (program?.statements ?? [])
     .map(
       (statement) =>
         `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionWgslSource(
           statement.expression,
+          registerInputs,
         )};`,
     )
     .join('\n    ');
@@ -366,11 +431,16 @@ function buildGpuFieldStatementCode(
 // (zoom, zoomExponent, rotation, warp), fieldParamsB = (warpAnimSpeed,
 // centerX, centerY, scaleX), fieldParamsC = (scaleY, translateX,
 // translateY, unused).
-const WGSL_TRANSFORM_HEADER = `fn milkdropTransformPointWithParams(
+function buildTransformHeader(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return `fn milkdropTransformPointWithParams(
     source: vec2<f32>,
     fieldParamsA: vec4<f32>,
     fieldParamsB: vec4<f32>,
-    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS}
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS}${buildGpuFieldRegisterParamDecls(
+      program,
+    )}
   ) -> vec2<f32> {
     let paramZoom = fieldParamsA.x;
     let paramZoomExponent = fieldParamsA.y;
@@ -384,12 +454,14 @@ const WGSL_TRANSFORM_HEADER = `fn milkdropTransformPointWithParams(
     let paramTranslateX = fieldParamsC.y;
     let paramTranslateY = fieldParamsC.z;
 ${WGSL_SIGNAL_UNPACK}`;
+}
 
 export function buildMilkdropTransformWgslCode(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
+  const header = buildTransformHeader(program);
   if (!program) {
-    return `${WGSL_TRANSFORM_HEADER}
+    return `${header}
     let radius = length(source);
     let angle = atan2(source.y, source.x) + paramRotation;
     let transformedX =
@@ -420,7 +492,7 @@ export function buildMilkdropTransformWgslCode(
   }`;
   }
 
-  return `${WGSL_TRANSFORM_HEADER}
+  return `${header}
     // Present x/y/rad/ang to the preset's per-pixel program in MilkDrop
     // [0,1] y-down aspect-weighted space, matching the CPU mesh path
     // (geometry-builder.ts transformMeshPoint) instead of raw renderer
@@ -442,6 +514,7 @@ export function buildMilkdropTransformWgslCode(
     var fieldScaleY = paramScaleY;
     var fieldTranslateX = paramTranslateX * 0.5;
     var fieldTranslateY = paramTranslateY * 0.5;
+    ${buildGpuFieldRegisterBindings(program)}
     ${buildGpuFieldTemporaryDeclarations(program)}
     ${buildGpuFieldStatementCode(program)}
 
@@ -556,12 +629,17 @@ function packInteractionVector(uniforms: Record<string, TslNode>) {
   );
 }
 
-const PROCEDURAL_MESH_VERTEX_WGSL = `
+function buildProceduralMeshVertexFnWgsl(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return `
   fn computeProceduralMeshVertex(
     sourcePosition: vec3<f32>,
     fieldParamsA: vec4<f32>,
     fieldParamsB: vec4<f32>,
-    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS}${buildGpuFieldRegisterParamDecls(
+      program,
+    )},
     interactionTransform: vec4<f32>
   ) -> vec3<f32> {
     let point = milkdropTransformPointWithParams(
@@ -573,7 +651,7 @@ const PROCEDURAL_MESH_VERTEX_WGSL = `
       signalsB,
       signalsC,
       signalsD,
-      signalsE
+      signalsE${buildGpuFieldRegisterCallArgs(program)}
     );
 ${WGSL_APPLY_INTERACTION}
     return vec3<f32>(
@@ -583,6 +661,7 @@ ${WGSL_APPLY_INTERACTION}
     );
   }
 `;
+}
 
 const meshVertexFnCache = new Map<string, TslVertexFn>();
 
@@ -594,7 +673,7 @@ function getProceduralMeshVertexFn(
   if (cached) {
     return cached;
   }
-  const fn = wgslFn(PROCEDURAL_MESH_VERTEX_WGSL, [
+  const fn = wgslFn(buildProceduralMeshVertexFnWgsl(program), [
     MILKDROP_FIELD_WGSL_HELPERS,
     getTransformInclude(program),
   ]) as TslVertexFn;
@@ -611,6 +690,9 @@ export function createProceduralMeshMaterial(
   });
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const fieldParams = packFieldParamVectors(uniforms);
+  const registerInputs = program?.registerInputs?.length
+    ? program.registerInputs
+    : null;
   const vertex = getProceduralMeshVertexFn(program)({
     sourcePosition: attribute('sourcePosition', 'vec3'),
     fieldParamsA: fieldParams.a,
@@ -621,6 +703,22 @@ export function createProceduralMeshMaterial(
     signalsC: signals.c,
     signalsD: signals.d,
     signalsE: signals.e,
+    ...(registerInputs
+      ? {
+          registersA: vec4(
+            uniforms.registerQ1,
+            uniforms.registerQ2,
+            uniforms.registerQ3,
+            uniforms.registerQ4,
+          ),
+          registersB: vec4(
+            uniforms.registerQ5,
+            uniforms.registerQ6,
+            uniforms.registerQ7,
+            uniforms.registerQ8,
+          ),
+        }
+      : {}),
     interactionTransform: packInteractionVector(uniforms),
   });
 
@@ -640,13 +738,18 @@ export function createProceduralMeshMaterial(
 
 // Returns vec4(x, y, alpha, z): the transformed endpoint, its fade alpha,
 // and the depth the caller feeds into gl_Position.
-const PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL = `
+function buildProceduralMotionVectorVertexFnWgsl(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return `
   fn computeProceduralMotionVectorVertex(
     sourcePosition: vec3<f32>,
     endpointWeight: f32,
     fieldParamsA: vec4<f32>,
     fieldParamsB: vec4<f32>,
-    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    fieldParamsC: vec4<f32>,${WGSL_SIGNAL_PARAMETERS}${buildGpuFieldRegisterParamDecls(
+      program,
+    )},
     previousFieldParamsA: vec4<f32>,
     previousFieldParamsB: vec4<f32>,
     previousFieldParamsC: vec4<f32>,
@@ -679,7 +782,7 @@ const PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL = `
       signalsB,
       signalsC,
       signalsD,
-      signalsE
+      signalsE${buildGpuFieldRegisterCallArgs(program)}
     );
     let previous = milkdropTransformPointWithParams(
       previousSource,
@@ -690,7 +793,7 @@ const PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL = `
       previousSignalsB,
       previousSignalsC,
       previousSignalsD,
-      previousSignalsE
+      previousSignalsE${buildGpuFieldRegisterCallArgs(program)}
     );
     let blendedCurrent = mix(previous, current, blendMix);
     let blendedSource = mix(previousSource, currentSource, blendMix);
@@ -727,6 +830,7 @@ ${WGSL_APPLY_INTERACTION}
     );
   }
 `;
+}
 
 const motionVectorVertexFnCache = new Map<string, TslVertexFn>();
 
@@ -738,7 +842,7 @@ function getProceduralMotionVectorVertexFn(
   if (cached) {
     return cached;
   }
-  const fn = wgslFn(PROCEDURAL_MOTION_VECTOR_VERTEX_WGSL, [
+  const fn = wgslFn(buildProceduralMotionVectorVertexFnWgsl(program), [
     MILKDROP_FIELD_WGSL_HELPERS,
     getTransformInclude(program),
   ]) as TslVertexFn;
@@ -818,6 +922,22 @@ export function createProceduralMotionVectorMaterial(
       previousSignalsC: previousSignals.c,
       previousSignalsD: previousSignals.d,
       previousSignalsE: previousSignals.e,
+      ...(program?.registerInputs?.length
+        ? {
+            registersA: vec4(
+              uniforms.registerQ1,
+              uniforms.registerQ2,
+              uniforms.registerQ3,
+              uniforms.registerQ4,
+            ),
+            registersB: vec4(
+              uniforms.registerQ5,
+              uniforms.registerQ6,
+              uniforms.registerQ7,
+              uniforms.registerQ8,
+            ),
+          }
+        : {}),
       offsets: vec4(
         uniforms.sourceOffsetX,
         uniforms.sourceOffsetY,

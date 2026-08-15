@@ -955,6 +955,16 @@ function getProceduralMeshFieldVisual({
     density: meshField.density,
     program: meshField.program,
     signals: meshField.signals,
+    registers: {
+      q1: state.q1,
+      q2: state.q2,
+      q3: state.q3,
+      q4: state.q4,
+      q5: state.q5,
+      q6: state.q6,
+      q7: state.q7,
+      q8: state.q8,
+    },
     ...buildProceduralFieldTransform(state),
   };
 }
@@ -1003,6 +1013,16 @@ function getProceduralMotionVectorFieldVisual({
     legacyControls: motionVectorContext.legacyControls,
     program: proceduralMotionVectorPlan.fieldProgram,
     signals: meshField.signals,
+    registers: {
+      q1: state.q1,
+      q2: state.q2,
+      q3: state.q3,
+      q4: state.q4,
+      q5: state.q5,
+      q6: state.q6,
+      q7: state.q7,
+      q8: state.q8,
+    },
     tint: color(
       state.mv_r ?? 1,
       state.mv_g ?? 1,
