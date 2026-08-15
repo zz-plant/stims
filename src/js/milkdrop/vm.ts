@@ -129,6 +129,7 @@ class MilkdropPresetVM implements MilkdropVM {
       momentumSamples: new Float32Array(0),
     },
     pointLocalsScratch: {},
+    customWaveBaseLocalsPool: [],
   };
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
@@ -339,6 +340,9 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
     );
+    this.waveState.customWaveBaseLocalsPool = this.preset.ir.customWaves.map(
+      (wave) => this.seedCustomWaveState(wave),
+    );
     this.waveState.customWaveFrameIndex = 0;
     this.waveState.customWaveVisualFrames[0].length = 0;
     this.waveState.customWaveVisualFrames[1].length = 0;
@@ -475,8 +479,11 @@ class MilkdropPresetVM implements MilkdropVM {
     return this.randomState / 0x100000000;
   };
 
-  private seedCustomWaveState(wave: MilkdropWaveDefinition) {
-    return seedCustomWaveFields(wave, this.state);
+  private seedCustomWaveState(
+    wave: MilkdropWaveDefinition,
+    target?: MutableState,
+  ) {
+    return seedCustomWaveFields(wave, this.state, target);
   }
 
   private seedCustomShapeState(shape: MilkdropShapeDefinition) {

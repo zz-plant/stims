@@ -129,7 +129,10 @@ export function buildCustomWaves({
       reuseExtraAsEnv?: boolean;
     },
   ) => MutableState;
-  seedCustomWaveState: (wave: MilkdropWaveDefinition) => MutableState;
+  seedCustomWaveState: (
+    wave: MilkdropWaveDefinition,
+    target?: MutableState,
+  ) => MutableState;
   getProceduralCustomWaveDescriptor: (
     wave: MilkdropWaveDefinition,
     drawMode: 'line' | 'dots',
@@ -151,9 +154,17 @@ export function buildCustomWaves({
       continue;
     }
 
-    // Reload base values from wave definition each frame
-    const baseLocals = seedCustomWaveState(wave);
-    const frameLocals = waveState.customWaveLocals[index] ?? baseLocals;
+    // Reload base values from wave definition each frame, writing into a
+    // pooled object (one per wave slot) instead of allocating a fresh ~21-key
+    // locals per wave per frame. Every key is overwritten in the same order, so
+    // the merge below sees identical contents to a fresh seed.
+    const baseLocals = seedCustomWaveState(
+      wave,
+      waveState.customWaveBaseLocalsPool[index],
+    );
+    // Never let a pooled seed become the persistent locals object (that would
+    // alias two waves' state on the rare path where the slot is unseeded).
+    const frameLocals = waveState.customWaveLocals[index] ?? {};
 
     // Merge base values into frame locals (preserves per-frame user vars)
     for (const key in baseLocals) {

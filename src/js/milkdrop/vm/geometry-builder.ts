@@ -28,6 +28,7 @@ import {
   type MutableState,
   normalizeTransformCenter,
   normalizeTransformCenterY,
+  type StaticMeshLattice,
 } from './shared';
 
 type ParticleFieldDeviceProfile = {
@@ -257,6 +258,13 @@ type MeshTransformFrame = {
   baseSy: number;
   baseDx: number;
   baseDy: number;
+  /**
+   * Per-cell constants for the mesh lattice (gridX/gridY/milkdropX/milkdropY/rad),
+   * rebuilt only when density or aspect changes. Precomputed once so the hot
+   * per-vertex loop no longer pays a sqrt (and the [0,1]-space round trip)
+   * for every mesh vertex of every frame.
+   */
+  lattice: StaticMeshLattice | null;
 };
 
 function createMeshTransformFrame({
@@ -347,16 +355,37 @@ function createMeshTransformFrame({
     baseSy: state.sy ?? 1,
     baseDx: state.dx ?? 0,
     baseDy: state.dy ?? 0,
+    lattice: geometryState.lattice ?? null,
   };
 }
 
 // Every transform is recomputed; callers copy x/y out before the next call.
 const transientTransformResult = { x: 0, y: 0 };
 
+/**
+ * Precomputed lattice constants handed to transformMeshPoint by buildMeshField:
+ * the MilkDrop [0,1]-space coordinates and the center-independent radius for
+ * one mesh cell. These are invariant across frames (they depend only on the
+ * grid position and aspect), so the per-vertex loop reads them instead of
+ * recomputing the sqrt (and the round trip) for every vertex of every frame.
+ */
+type LatticeSample = {
+  milkdropX: number;
+  milkdropY: number;
+  rad: number;
+};
+
+const transientLatticeSample: LatticeSample = {
+  milkdropX: 0,
+  milkdropY: 0,
+  rad: 0,
+};
+
 function transformMeshPoint(
   frame: MeshTransformFrame,
   gridX: number,
   gridY: number,
+  latticeSample: LatticeSample | null = null,
 ): { x: number; y: number } {
   if (frame.isIdentity) {
     transientTransformResult.x = gridX;
@@ -367,16 +396,9 @@ function transformMeshPoint(
   const aspectY = frame.aspectY;
   const perPixel = frame.perPixelProgram;
 
-  const aspectGridX = gridX * aspectX;
-  const aspectGridY = gridY * aspectY;
-
   let rendererX: number;
   let rendererY: number;
   let rad: number;
-  let zoom: number;
-  let zoomExponent: number;
-  let cosRot: number;
-  let sinRot: number;
   let warp: number;
   let centerX: number;
   let centerY: number;
@@ -384,6 +406,10 @@ function transformMeshPoint(
   let scaleY: number;
   let translateX: number;
   let translateY: number;
+  let cosRot: number;
+  let sinRot: number;
+  let zoomExponent: number;
+  let zoom: number;
 
   if (perPixel) {
     const local = frame.scratch;
@@ -391,8 +417,12 @@ function transformMeshPoint(
     // Convert from renderer space [-1,1] to MilkDrop space [0,1]
     // x = 0 is left, x = 1 is right (with aspect correction)
     // y = 0 is top, y = 1 is bottom (with y-flip and aspect correction)
-    local.x = gridX * 0.5 * aspectX + 0.5;
-    local.y = -gridY * 0.5 * aspectY + 0.5;
+    local.x = latticeSample
+      ? latticeSample.milkdropX
+      : gridX * 0.5 * aspectX + 0.5;
+    local.y = latticeSample
+      ? latticeSample.milkdropY
+      : -gridY * 0.5 * aspectY + 0.5;
     const dxFromCenter = (local.x - frame.baseCx) * aspectX;
     const dyFromCenter = (local.y - frame.baseCy) * aspectY;
     local.rad =
@@ -438,11 +468,21 @@ function transformMeshPoint(
     // [0,1] space is reproduced literally rather than simplified to `gridX`,
     // because (gridX * 0.5 * aspectX) * 2 / aspectX is not bit-identical to
     // gridX when aspectX is not a power of two.
-    const localX = gridX * 0.5 * aspectX + 0.5;
-    const localY = -gridY * 0.5 * aspectY + 0.5;
+    let localX: number;
+    let localY: number;
+    if (latticeSample) {
+      localX = latticeSample.milkdropX;
+      localY = latticeSample.milkdropY;
+      rad = latticeSample.rad;
+    } else {
+      localX = gridX * 0.5 * aspectX + 0.5;
+      localY = -gridY * 0.5 * aspectY + 0.5;
+      const aspectGridX = gridX * aspectX;
+      const aspectGridY = gridY * aspectY;
+      rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
+    }
     rendererX = ((localX - 0.5) * 2) / aspectX;
     rendererY = -(((localY - 0.5) * 2) / aspectY);
-    rad = Math.sqrt(aspectGridX * aspectGridX + aspectGridY * aspectGridY);
     warp = frame.warp;
     centerX = frame.centerX;
     centerY = frame.centerY;
@@ -461,24 +501,58 @@ function transformMeshPoint(
   const rx = relX * cosRot - relY * sinRot + centerX;
   const ry = relX * sinRot + relY * cosRot + centerY;
 
-  const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
-  const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
-  // Authored presets legitimately use extreme pairs (orbasonic ships
-  // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
-  // float32 at the edges and NaN-poisons the warp into a black frame.
-  // MilkDrop's own math saturates instead of exploding, so bound the scale.
-  const zoomScale = clamp(
-    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1)),
-    0.02,
-    50,
-  );
-  const zx = centerX + (rx - centerX) * zoomScale;
-  const zy = centerY + (ry - centerY) * zoomScale;
+  // Zoom. Skipped when it cannot change the vertex: zoomExponent === 1 folds
+  // the exponent to `zoom ** 1 === zoom` (exact in IEEE), and zoom === 1 folds
+  // `1 ** finite === 1` (exact). Both skip the hypot, the radius-normalization
+  // and the pow — the single most expensive call in this loop.
+  let zx: number;
+  let zy: number;
+  if (zoomExponent === 1) {
+    const zoomScale = clamp(zoom, 0.02, 50);
+    zx = centerX + (rx - centerX) * zoomScale;
+    zy = centerY + (ry - centerY) * zoomScale;
+  } else if (zoom === 1) {
+    zx = centerX + (rx - centerX);
+    zy = centerY + (ry - centerY);
+  } else {
+    const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
+    const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
+    // Authored presets legitimately use extreme pairs (orbasonic ships
+    // zoom=100 with zoomexp=100); unclamped, zoom^(zoomexp^(2r-1)) overflows
+    // float32 at the edges and NaN-poisons the warp into a black frame.
+    // MilkDrop's own math saturates instead of exploding, so bound the scale.
+    const zoomScale = clamp(
+      zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1)),
+      0.02,
+      50,
+    );
+    zx = centerX + (rx - centerX) * zoomScale;
+    zy = centerY + (ry - centerY) * zoomScale;
+  }
 
-  const ripple = Math.sin(rad * 8.0 + frame.rippleTime) * warp * 0.1;
-  const rippleAngle = Math.atan2(zy - centerY, zx - centerX);
-  const wx = zx + Math.cos(rippleAngle) * ripple;
-  const wy = zy + Math.sin(rippleAngle) * ripple;
+  // Ripple. warp === 0 makes the whole ripple exactly zero, so skip the trig
+  // outright. Otherwise the displacement direction is (zx,zy) relative to the
+  // center — a unit vector that needs no atan2: atan2's cosine/sine ARE the
+  // normalized components. Mathematically identical, avoids 3 transcendentals.
+  let wx: number;
+  let wy: number;
+  if (warp === 0) {
+    wx = zx;
+    wy = zy;
+  } else {
+    const ripple = Math.sin(rad * 8.0 + frame.rippleTime) * warp * 0.1;
+    const offsetX = zx - centerX;
+    const offsetY = zy - centerY;
+    if (offsetX === 0 && offsetY === 0) {
+      // atan2(0, 0) === 0, so cos = 1 / sin = 0.
+      wx = zx + ripple;
+      wy = zy;
+    } else {
+      const directionLength = Math.hypot(offsetX, offsetY);
+      wx = zx + (offsetX / directionLength) * ripple;
+      wy = zy + (offsetY / directionLength) * ripple;
+    }
+  }
 
   const tx = wx + translateX;
   const ty = wy + translateY;
@@ -493,6 +567,59 @@ export function getMeshDensity(state: MutableState, detailScale: number) {
   // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
   // detail scale (gated on backend + quality tier) climbs past ~3x.
   return clamp(Math.round((state.mesh_density ?? 24) * detailScale), 8, 96);
+}
+
+/**
+ * Builds the per-cell constants for a mesh lattice. Every value depends only
+ * on the grid position, the density and the aspect — none of them on the
+ * frame — so a single build per density/aspect change replaces a per-vertex
+ * sqrt (and the renderer-space round trip) in every frame of the preset's run.
+ * The `rad` values match transformMeshPoint's non-per-pixel formula exactly;
+ * `ang` is populated for parity with the declared StaticMeshLattice contract.
+ */
+function buildStaticMeshLattice(
+  density: number,
+  aspectX: number,
+  aspectY: number,
+): StaticMeshLattice {
+  const count = density * density;
+  const gridX = new Float32Array(count);
+  const gridY = new Float32Array(count);
+  const milkdropX = new Float32Array(count);
+  const milkdropY = new Float32Array(count);
+  const rad = new Float32Array(count);
+  const ang = new Float32Array(count);
+  const gridStep = Math.max(1, density - 1);
+  for (let row = 0; row < density; row += 1) {
+    const y = (row / gridStep) * 2 - 1;
+    const rowBase = row * density;
+    const milkdropYValue = -y * 0.5 * aspectY + 0.5;
+    const aspectGridY = y * aspectY;
+    for (let col = 0; col < density; col += 1) {
+      const index = rowBase + col;
+      const x = (col / gridStep) * 2 - 1;
+      const aspectGridX = x * aspectX;
+      gridX[index] = x;
+      gridY[index] = y;
+      milkdropX[index] = x * 0.5 * aspectX + 0.5;
+      milkdropY[index] = milkdropYValue;
+      rad[index] = Math.sqrt(
+        aspectGridX * aspectGridX + aspectGridY * aspectGridY,
+      );
+      ang[index] = Math.atan2(aspectGridY, aspectGridX);
+    }
+  }
+  return {
+    density,
+    aspectX,
+    aspectY,
+    gridX,
+    gridY,
+    milkdropX,
+    milkdropY,
+    rad,
+    ang,
+  };
 }
 
 export function getMotionVectorDescriptorContext({
@@ -679,6 +806,16 @@ export function buildMeshField({
   const aspectX = aspectRatio < 1 ? aspectRatio : 1;
   const aspectY = aspectRatio > 1 ? 1 / aspectRatio : 1;
 
+  const lattice = geometryState.lattice;
+  if (
+    !lattice ||
+    lattice.density !== density ||
+    lattice.aspectX !== aspectX ||
+    lattice.aspectY !== aspectY
+  ) {
+    geometryState.lattice = buildStaticMeshLattice(density, aspectX, aspectY);
+  }
+
   const transformFrame = createMeshTransformFrame({
     signals,
     state,
@@ -690,12 +827,23 @@ export function buildMeshField({
     aspectY,
   });
 
+  const latticeCache = geometryState.lattice as StaticMeshLattice;
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
       const x = (col / Math.max(1, density - 1)) * 2 - 1;
       const y = (row / Math.max(1, density - 1)) * 2 - 1;
-      const point = transformMeshPoint(transformFrame, x, y);
       const pointIndex = row * density + col;
+      transientLatticeSample.milkdropX =
+        latticeCache.milkdropX[pointIndex] ?? 0;
+      transientLatticeSample.milkdropY =
+        latticeCache.milkdropY[pointIndex] ?? 0;
+      transientLatticeSample.rad = latticeCache.rad[pointIndex] ?? 0;
+      const point = transformMeshPoint(
+        transformFrame,
+        x,
+        y,
+        transientLatticeSample,
+      );
       const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
         sourceX: 0,
         sourceY: 0,
