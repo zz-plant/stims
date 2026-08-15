@@ -61,6 +61,28 @@ export function applyDeviceTierToDocument() {
   document.documentElement.dataset.deviceTier = tier;
 }
 
+/**
+ * The MediaQueryList is cached, but `.matches` is still read live on every
+ * call, so a user toggling reduced-motion mid-session is still respected.
+ * Only the construction is hoisted: `window.matchMedia(...)` forces a style
+ * resolution, and getDevicePerformanceProfile runs on every animation frame
+ * via buildParticleFieldVisual.
+ */
+let reducedMotionQuery: MediaQueryList | null = null;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  if (reducedMotionQuery === null) {
+    reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  }
+  return reducedMotionQuery.matches;
+}
+
+/** Test seam: drops the cached MediaQueryList when a spec swaps matchMedia. */
+export function resetDeviceProfileCache(): void {
+  reducedMotionQuery = null;
+}
+
 export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   const environment = getDeviceEnvironmentProfile();
   const deviceMemory =
@@ -72,10 +94,7 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
     typeof navigator !== 'undefined'
       ? (navigator.hardwareConcurrency ?? null)
       : null;
-  const reducedMotion =
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
+  const reducedMotion = prefersReducedMotion();
 
   const reasons: string[] = [];
   const limitedDeviceMemory = deviceMemory !== null && deviceMemory <= 3;

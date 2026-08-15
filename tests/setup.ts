@@ -46,6 +46,7 @@ mock.module('../utils/audio/frequency-analyser-processor.ts?worklet', () => ({
   default: workletSource,
 }));
 
+import { resetDeviceProfileCache } from '../src/js/core/device-profile.ts';
 import { resetMotionPreferenceState } from '../src/js/core/motion-preferences.ts';
 import { resetPerformancePanelState } from '../src/js/core/performance-panel.ts';
 import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
@@ -64,6 +65,7 @@ beforeEach(() => {
   // cleared. Tests that carefully build a fake navigator in their own
   // beforeEach were silently reading stale values.
   resetDeviceDetectCache();
+  resetDeviceProfileCache();
 });
 
 afterEach(() => {
@@ -77,6 +79,7 @@ afterEach(() => {
   // cleared. Tests that carefully build a fake navigator in their own
   // beforeEach were silently reading stale values.
   resetDeviceDetectCache();
+  resetDeviceProfileCache();
 });
 
 export {
