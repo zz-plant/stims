@@ -1787,10 +1787,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const blurShaderRanges = resolveMilkdropBlurShaderRanges(
       state.perPixelVariables,
     );
-    for (const [index, range] of blurShaderRanges.entries()) {
-      uniforms[`scale${index + 1}`].value = range.scale;
-      uniforms[`bias${index + 1}`].value = range.bias;
-    }
+    uniforms.scale1.value = blurShaderRanges[0].scale;
+    uniforms.bias1.value = blurShaderRanges[0].bias;
+    uniforms.scale2.value = blurShaderRanges[1].scale;
+    uniforms.bias2.value = blurShaderRanges[1].bias;
+    uniforms.scale3.value = blurShaderRanges[2].scale;
+    uniforms.bias3.value = blurShaderRanges[2].bias;
     const overlayTextureName = resolveAuxTextureName(
       state.overlayTextureSource,
     );
@@ -1924,10 +1926,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
-    for (const [index, range] of blurShaderRanges.entries()) {
-      wu[`scale${index + 1}`].value = range.scale;
-      wu[`bias${index + 1}`].value = range.bias;
-    }
+    wu.scale1.value = blurShaderRanges[0].scale;
+    wu.bias1.value = blurShaderRanges[0].bias;
+    wu.scale2.value = blurShaderRanges[1].scale;
+    wu.bias2.value = blurShaderRanges[1].bias;
+    wu.scale3.value = blurShaderRanges[2].scale;
+    wu.bias3.value = blurShaderRanges[2].bias;
     wu.previousTex.value = this.readTarget.texture;
     wu.warpTex.value = this.readTarget.texture;
     wu.currentTex.value = this.readTarget.texture;

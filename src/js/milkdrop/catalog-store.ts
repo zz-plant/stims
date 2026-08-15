@@ -72,79 +72,71 @@ export function createMilkdropCatalogStore({
         ]);
       const metaById = new Map(storedMeta.map((record) => [record.id, record]));
       const history = historyRecord.stack ?? [];
+      const historyIndexMap = new Map<string, number>();
+      for (let i = 0; i < history.length; i += 1) {
+        historyIndexMap.set(history[i], i);
+      }
 
-      const bundledEntries = (
-        await Promise.all(
-          bundled.map(async (entry) => {
-            try {
-              const meta = metaById.get(entry.id) ?? null;
-              const historyIndex = history.indexOf(entry.id);
-              const cachedCompiled = analysis.getCachedCompiled(entry.id);
+      const bundledEntries: MilkdropCatalogEntry[] = [];
+      for (let i = 0; i < bundled.length; i += 1) {
+        const entry = bundled[i];
+        try {
+          const meta = metaById.get(entry.id) ?? null;
+          const historyIndex = historyIndexMap.get(entry.id) ?? -1;
+          const cachedCompiled = analysis.getCachedCompiled(entry.id);
 
-              if (cachedCompiled) {
-                const validatedOverrides = getValidatedCatalogOverrides(
-                  entry,
-                  cachedCompiled,
-                );
-                return toCatalogEntry(
-                  cachedCompiled.source,
-                  cachedCompiled,
-                  meta,
-                  {
-                    tags: entry.tags ?? [],
-                    curatedRank: entry.curatedRank,
-                    bundledFile: entry.file,
-                    historyIndex,
-                    certification: entry.certification ?? 'bundled',
-                    corpusTier: entry.corpusTier ?? 'bundled',
-                    preview: entry.preview,
-                    ...validatedOverrides,
-                  },
-                );
-              }
-
-              return toBundledCatalogEntryFromManifest(
-                entry,
-                meta,
-                historyIndex,
-              );
-            } catch (error) {
-              log.warn(
-                `Skipping bundled preset "${entry.id}" (${entry.title}): failed to analyze`,
-                error,
-              );
-              return null;
-            }
-          }),
-        )
-      ).filter((entry): entry is MilkdropCatalogEntry => entry !== null);
-
-      const customEntries = storedPresets
-        .map((entry) => {
-          try {
-            const compiled = analysis.getCompiled(entry);
-            return toCatalogEntry(
+          if (cachedCompiled) {
+            const validatedOverrides = getValidatedCatalogOverrides(
               entry,
-              compiled,
-              metaById.get(entry.id) ?? null,
-              {
-                tags: ['custom'],
-                historyIndex: history.indexOf(entry.id),
-                certification:
-                  entry.origin === 'bundled' ? 'bundled' : 'exploratory',
-                corpusTier:
-                  entry.origin === 'bundled' ? 'bundled' : 'exploratory',
-              },
+              cachedCompiled,
             );
-          } catch (error) {
-            log.warn(
-              `Skipping stored preset "${entry.id}" (${entry.title}): failed to compile`,
-              error,
+            bundledEntries.push(
+              toCatalogEntry(cachedCompiled.source, cachedCompiled, meta, {
+                tags: entry.tags ?? [],
+                curatedRank: entry.curatedRank,
+                bundledFile: entry.file,
+                historyIndex,
+                certification: entry.certification ?? 'bundled',
+                corpusTier: entry.corpusTier ?? 'bundled',
+                preview: entry.preview,
+                ...validatedOverrides,
+              }),
             );
-            return null;
+          } else {
+            bundledEntries.push(
+              toBundledCatalogEntryFromManifest(entry, meta, historyIndex),
+            );
           }
-        })
-        .filter((entry): entry is MilkdropCatalogEntry => entry !== null);
+        } catch (error) {
+          log.warn(
+            `Skipping bundled preset "${entry.id}" (${entry.title}): failed to analyze`,
+            error,
+          );
+        }
+      }
+
+      const customEntries: MilkdropCatalogEntry[] = [];
+      for (let i = 0; i < storedPresets.length; i += 1) {
+        const entry = storedPresets[i];
+        try {
+          const compiled = analysis.getCompiled(entry);
+          customEntries.push(
+            toCatalogEntry(entry, compiled, metaById.get(entry.id) ?? null, {
+              tags: ['custom'],
+              historyIndex: historyIndexMap.get(entry.id) ?? -1,
+              certification:
+                entry.origin === 'bundled' ? 'bundled' : 'exploratory',
+              corpusTier:
+                entry.origin === 'bundled' ? 'bundled' : 'exploratory',
+            }),
+          );
+        } catch (error) {
+          log.warn(
+            `Skipping stored preset "${entry.id}" (${entry.title}): failed to compile`,
+            error,
+          );
+        }
+      }
 
       return sortMilkdropCatalogEntries([...bundledEntries, ...customEntries]);
     },

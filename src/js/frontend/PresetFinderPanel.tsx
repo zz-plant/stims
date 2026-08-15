@@ -81,12 +81,14 @@ export function PresetFinderPanel({
   const [results, setResults] = useState<FinderResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [audioEnergy, setAudioEnergy] = useState(getAudioEnergy);
+  const [hasAudio, setHasAudio] = useState(() => getAudioEnergy() > 0.02);
 
-  useEffect(
-    () => subscribeAudioEnergy(() => setAudioEnergy(getAudioEnergy())),
-    [],
-  );
+  useEffect(() => {
+    return subscribeAudioEnergy(() => {
+      const active = getAudioEnergy() > 0.02;
+      setHasAudio((prev) => (prev === active ? prev : active));
+    });
+  }, []);
 
   const catalogEntryById = useMemo(() => {
     const map = new Map<string, PresetCatalogEntry>();
@@ -112,7 +114,7 @@ export function PresetFinderPanel({
         const bands = getAudioBands();
         matches = await searchByAudioProfile(
           buildAudioProfile({
-            audioEnergy,
+            audioEnergy: getAudioEnergy(),
             fftBands: [bands.bass, bands.mid, bands.treble],
           }),
         );
@@ -143,7 +145,7 @@ export function PresetFinderPanel({
     } finally {
       setLoading(false);
     }
-  }, [audioEnergy, catalogEntryById, mode, ui]);
+  }, [catalogEntryById, mode, ui]);
 
   // Each mode runs itself once when it becomes visible, matching what the two
   // separate panels did on mount. Keyed by mode so switching tabs searches
@@ -153,13 +155,13 @@ export function PresetFinderPanel({
     if (autoRunRef.current === mode) return;
     // The audio search needs something audible to profile; without it the
     // old panel sat waiting rather than returning an empty result.
-    if (mode === 'sound' && audioEnergy <= 0.02) return;
+    if (mode === 'sound' && !hasAudio) return;
     autoRunRef.current = mode;
     void search();
-  }, [mode, audioEnergy, search]);
+  }, [mode, hasAudio, search]);
 
   const activeMode = MODES.find((m) => m.id === mode) ?? MODES[0];
-  const soundUnavailable = mode === 'sound' && audioEnergy <= 0.02;
+  const soundUnavailable = mode === 'sound' && !hasAudio;
 
   return (
     <div className="stims-finder">

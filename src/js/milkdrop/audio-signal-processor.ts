@@ -97,6 +97,21 @@ const RELATIVE_SILENCE_EPSILON = 0.001;
 const INV_LOG1P_6_2 = 1 / Math.log1p(6.2);
 const FALLBACK_SYNTHETIC_BUFFER = new Uint8Array(128);
 
+const RAW_ENERGY_OPTIONS = {
+  weights: { bass: 0.58, mid: 0.27, treble: 0.15 },
+  boost: 1.08,
+};
+
+const ATTENUATED_ENERGY_OPTIONS = {
+  weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
+  boost: 1,
+};
+
+const ENERGY_PEAK_OPTIONS = {
+  decay: 0.96,
+  floor: 0.12,
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -444,21 +459,16 @@ export function createMilkdropAudioSignalProcessor() {
       });
       const attenuatedBands = updateBandAttenuation(bands, deltaMs);
       updateRelativeBands(bands, deltaMs);
-      const rawWeightedEnergy = getWeightedEnergy(bands, {
-        weights: { bass: 0.58, mid: 0.27, treble: 0.15 },
-        boost: 1.08,
-      });
-      const attenuatedWeightedEnergy = getWeightedEnergy(attenuatedBands, {
-        weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
-        boost: 1,
-      });
+      const rawWeightedEnergy = getWeightedEnergy(bands, RAW_ENERGY_OPTIONS);
+      const attenuatedWeightedEnergy = getWeightedEnergy(
+        attenuatedBands,
+        ATTENUATED_ENERGY_OPTIONS,
+      );
+      ENERGY_PEAK_OPTIONS.decay = Math.exp(-Math.max(0, deltaMs) / 860);
       energyPeak = updateEnergyPeak(
         energyPeak,
         Math.max(rawWeightedEnergy, attenuatedWeightedEnergy * 0.94),
-        {
-          decay: Math.exp(-Math.max(0, deltaMs) / 860),
-          floor: 0.12,
-        },
+        ENERGY_PEAK_OPTIONS,
       );
       const normalizedRawEnergy = clamp(
         rawWeightedEnergy / Math.max(energyPeak, 0.12),

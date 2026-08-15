@@ -35,7 +35,8 @@ export function applyHarmonicPercussiveUniforms(
     Record<HarmonicPercussiveShaderUniformName, number | undefined>
   >,
 ): void {
-  for (const name of HARMONIC_PERCUSSIVE_SHADER_UNIFORM_NAMES) {
+  for (let i = 0; i < HARMONIC_PERCUSSIVE_SHADER_UNIFORM_NAMES.length; i += 1) {
+    const name = HARMONIC_PERCUSSIVE_SHADER_UNIFORM_NAMES[i];
     const holder = uniforms[name];
     if (!holder) {
       continue;

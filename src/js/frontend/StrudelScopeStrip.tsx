@@ -29,16 +29,32 @@ type BandKey = keyof typeof BAND_COLORS;
 const BANDS: BandKey[] = ['bass', 'mid', 'treble'];
 
 interface BandHistory {
-  instant: number[];
-  attenuated: number[];
-  beat: boolean[];
+  instant: Float32Array;
+  attenuated: Float32Array;
+  beat: Uint8Array;
+  count: number;
 }
 
 function createHistory(): Record<BandKey, BandHistory> {
   return {
-    bass: { instant: [], attenuated: [], beat: [] },
-    mid: { instant: [], attenuated: [], beat: [] },
-    treble: { instant: [], attenuated: [], beat: [] },
+    bass: {
+      instant: new Float32Array(HISTORY_LENGTH),
+      attenuated: new Float32Array(HISTORY_LENGTH),
+      beat: new Uint8Array(HISTORY_LENGTH),
+      count: 0,
+    },
+    mid: {
+      instant: new Float32Array(HISTORY_LENGTH),
+      attenuated: new Float32Array(HISTORY_LENGTH),
+      beat: new Uint8Array(HISTORY_LENGTH),
+      count: 0,
+    },
+    treble: {
+      instant: new Float32Array(HISTORY_LENGTH),
+      attenuated: new Float32Array(HISTORY_LENGTH),
+      beat: new Uint8Array(HISTORY_LENGTH),
+      count: 0,
+    },
   };
 }
 
@@ -122,19 +138,32 @@ export function StrudelScopeStrip({
       for (const band of BANDS) {
         attenuated[band] += (instant[band] - attenuated[band]) * ATT_K;
         const entry = history[band];
-        entry.instant.push(instant[band]);
-        entry.attenuated.push(attenuated[band]);
-        const window = entry.instant.slice(-BEAT_WINDOW);
-        const average =
-          window.reduce((sum, value) => sum + value, 0) /
-          Math.max(1, window.length);
-        entry.beat.push(
-          average > 0.02 && instant[band] > average * BEAT_THRESHOLD,
-        );
-        if (entry.instant.length > HISTORY_LENGTH) {
-          entry.instant.shift();
-          entry.attenuated.shift();
-          entry.beat.shift();
+        const instVal = instant[band];
+        const attVal = attenuated[band];
+
+        let sum = 0;
+        const windowStart = Math.max(0, entry.count - (BEAT_WINDOW - 1));
+        for (let k = windowStart; k < entry.count; k += 1) {
+          sum += entry.instant[k];
+        }
+        sum += instVal;
+        const countInWindow = entry.count - windowStart + 1;
+        const average = sum / Math.max(1, countInWindow);
+        const isBeat =
+          average > 0.02 && instVal > average * BEAT_THRESHOLD ? 1 : 0;
+
+        if (entry.count < HISTORY_LENGTH) {
+          entry.instant[entry.count] = instVal;
+          entry.attenuated[entry.count] = attVal;
+          entry.beat[entry.count] = isBeat;
+          entry.count += 1;
+        } else {
+          entry.instant.copyWithin(0, 1);
+          entry.attenuated.copyWithin(0, 1);
+          entry.beat.copyWithin(0, 1);
+          entry.instant[HISTORY_LENGTH - 1] = instVal;
+          entry.attenuated[HISTORY_LENGTH - 1] = attVal;
+          entry.beat[HISTORY_LENGTH - 1] = isBeat;
         }
       }
 
@@ -280,7 +309,7 @@ function drawBands(
 
   for (const band of BANDS) {
     const entry = history[band];
-    const count = entry.instant.length;
+    const count = entry.count;
     if (count < 2) {
       continue;
     }
@@ -292,7 +321,8 @@ function drawBands(
     ctx.strokeStyle = BAND_COLORS[band];
     ctx.globalAlpha = 0.35;
     ctx.lineWidth = 3;
-    entry.attenuated.forEach((value, i) => {
+    for (let i = 0; i < count; i += 1) {
+      const value = entry.attenuated[i];
       const px = startX + i * step;
       const py = plotTop + (1 - Math.min(1, value)) * plotHeight;
       if (i === 0) {
@@ -300,14 +330,15 @@ function drawBands(
       } else {
         ctx.lineTo(px, py);
       }
-    });
+    }
     ctx.stroke();
 
     // Instantaneous trace: thin and bright.
     ctx.beginPath();
     ctx.globalAlpha = 1;
     ctx.lineWidth = 1;
-    entry.instant.forEach((value, i) => {
+    for (let i = 0; i < count; i += 1) {
+      const value = entry.instant[i];
       const px = startX + i * step;
       const py = plotTop + (1 - Math.min(1, value)) * plotHeight;
       if (i === 0) {
@@ -315,17 +346,17 @@ function drawBands(
       } else {
         ctx.lineTo(px, py);
       }
-    });
+    }
     ctx.stroke();
 
     // Beat ticks along the top edge, bass only (the classic kick detector).
     if (band === 'bass') {
       ctx.fillStyle = BAND_COLORS.bass;
-      entry.beat.forEach((hit, i) => {
-        if (hit) {
+      for (let i = 0; i < count; i += 1) {
+        if (entry.beat[i]) {
           ctx.fillRect(startX + i * step, plotTop, 1.5, 4);
         }
-      });
+      }
     }
   }
   ctx.globalAlpha = 1;

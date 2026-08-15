@@ -18,10 +18,11 @@ export function findNearestMatch(
   let best: string | null = null;
   let bestDist = Infinity;
   for (const c of candidates) {
-    if (c.toLowerCase() === lower) return c;
+    const cLower = c.toLowerCase();
+    if (cLower === lower) return c;
     let matches = 0;
     for (let i = 0; i < lower.length; i++) {
-      if (c.toLowerCase().includes(lower[i])) matches++;
+      if (cLower.includes(lower[i])) matches++;
     }
     const dist = Math.abs(c.length - lower.length) + (lower.length - matches);
     if (dist < bestDist && dist < lower.length) {

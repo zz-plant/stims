@@ -219,6 +219,15 @@ export type BrowseSortMode =
  * `seed` only affects 'random': it keeps the shuffle stable across re-renders
  * so rows don't jump while the user scrolls.
  */
+function deterministicPresetHash(id: string, seed: number): number {
+  let hash = (seed | 0) ^ 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
 export function sortBrowseEntries(
   entries: PresetCatalogEntry[],
   sort: BrowseSortMode,
@@ -246,10 +255,18 @@ export function sortBrowseEntries(
           Number(Boolean(b.supports?.webgpu)) -
           Number(Boolean(a.supports?.webgpu)),
       );
-    case 'random':
-      return sorted.sort((a, b) =>
-        `${a.id}:${seed}`.localeCompare(`${b.id}:${seed}`),
+    case 'random': {
+      const hashes = new Map<string, number>();
+      for (let i = 0; i < sorted.length; i += 1) {
+        const id = sorted[i].id;
+        if (!hashes.has(id)) {
+          hashes.set(id, deterministicPresetHash(id, seed));
+        }
+      }
+      return sorted.sort(
+        (a, b) => (hashes.get(a.id) ?? 0) - (hashes.get(b.id) ?? 0),
       );
+    }
     default:
       return sorted;
   }
