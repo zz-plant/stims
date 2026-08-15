@@ -99,6 +99,9 @@ export function createMilkdropExperience({
     catalogEntries: ReturnType<typeof catalogCoordinator.getCatalogEntries>;
     sessionState: ReturnType<typeof session.getState>;
     audioEnergy: number;
+    audioBass: number;
+    audioMid: number;
+    audioTreble: number;
     autoplay: boolean;
     transitionMode: 'blend' | 'cut';
     blendDuration: number;
@@ -299,6 +302,11 @@ export function createMilkdropExperience({
     catalogEntries: catalogCoordinator.getCatalogEntries(),
     sessionState: session.getState(),
     audioEnergy: signalTracker.getLatestAudioEnergy(),
+    // Three primitives rather than an object: the snapshot equality check is
+    // per-field ===, and a fresh object every frame would defeat it.
+    audioBass: signalTracker.getLatestAudioBands().bass,
+    audioMid: signalTracker.getLatestAudioBands().mid,
+    audioTreble: signalTracker.getLatestAudioBands().treble,
     autoplay,
     transitionMode,
     blendDuration,

@@ -7,6 +7,11 @@ import {
   computeFrameStats,
   describeFrameParts,
 } from '../../src/js/core/services/visual-embedding.ts';
+import {
+  getAudioBands,
+  setAudioBands,
+  subscribeAudioEnergy,
+} from '../../src/js/frontend/engine-audio-energy-store.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { estimatePresetMotion } from '../../src/js/milkdrop/preset-motion-estimate.ts';
 
@@ -186,5 +191,67 @@ describe('describeAudioProfile', () => {
     // The old implementation returned one of five strings for every possible
     // input, so two tracks at equal volume were indistinguishable.
     expect(seen.size).toBeGreaterThan(5);
+  });
+});
+
+describe('audio band plumbing', () => {
+  it('fabricates bands only when none are supplied', () => {
+    // The fallback exists so a caller with nothing but a loudness scalar
+    // still gets a profile — but it invents the 0.6/0.3/0.1 split, so a
+    // caller that has real bands must pass them.
+    const fabricated = buildAudioProfile({ audioEnergy: 0.5 });
+    expect(fabricated.bassEnergy).toBeCloseTo(0.3, 6);
+    expect(fabricated.midEnergy).toBeCloseTo(0.15, 6);
+    expect(fabricated.trebleEnergy).toBeCloseTo(0.05, 6);
+
+    const real = buildAudioProfile({
+      audioEnergy: 0.5,
+      fftBands: [0.1, 0.2, 0.9],
+    });
+    expect(real.bassEnergy).toBeCloseTo(0.1, 6);
+    expect(real.midEnergy).toBeCloseTo(0.2, 6);
+    expect(real.trebleEnergy).toBeCloseTo(0.9, 6);
+  });
+
+  it('describes a bright track differently from a bassy one at equal loudness', () => {
+    // The end-to-end point of plumbing bands: this pair was byte-identical
+    // before, because only rms reached the description.
+    const bassy = describeAudioProfile(
+      buildAudioProfile({ audioEnergy: 0.12, fftBands: [1.4, 0.3, 0.2] }),
+    );
+    const bright = describeAudioProfile(
+      buildAudioProfile({ audioEnergy: 0.12, fftBands: [0.2, 0.3, 1.4] }),
+    );
+    expect(bassy).not.toBe(bright);
+    expect(bassy).toContain('red');
+    expect(bright).toContain('cyan');
+  });
+});
+
+describe('audio band store', () => {
+  it('carries bands and only wakes subscribers on a real change', () => {
+    // The seam that made the whole audio search possible: before this the
+    // store held one scalar, so the search could not see spectral balance
+    // even though the engine had been computing it every frame all along.
+    setAudioBands({ bass: 1.4, mid: 0.6, treble: 0.2 });
+    expect(getAudioBands()).toEqual({ bass: 1.4, mid: 0.6, treble: 0.2 });
+
+    let wakeups = 0;
+    const unsubscribe = subscribeAudioEnergy(() => {
+      wakeups += 1;
+    });
+
+    // Below the dead band: these update every frame during playback, so an
+    // unconditional notify would wake every subscriber 60 times a second.
+    setAudioBands({ bass: 1.4001, mid: 0.6, treble: 0.2 });
+    expect(wakeups).toBe(0);
+
+    setAudioBands({ bass: 0.2, mid: 0.5, treble: 1.5 });
+    expect(wakeups).toBe(1);
+    expect(getAudioBands().treble).toBeCloseTo(1.5, 6);
+
+    unsubscribe();
+    setAudioBands({ bass: 0, mid: 0, treble: 0 });
+    expect(wakeups).toBe(1);
   });
 });

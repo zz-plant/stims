@@ -177,6 +177,13 @@ export function createMilkdropSignalTracker(options?: {
   } as unknown as MilkdropRuntimeSignals;
 
   let latestWeightedEnergy = 0;
+  // Kept alongside the weighted energy so the catalog search can describe
+  // spectral balance rather than loudness alone. Attenuated (smoothed) rather
+  // than instantaneous, because a one-shot search query wants the character
+  // of the last moment, not whichever frame the user happened to click on.
+  let latestBass = 0;
+  let latestMid = 0;
+  let latestTreble = 0;
 
   return {
     reset() {
@@ -186,11 +193,17 @@ export function createMilkdropSignalTracker(options?: {
       cachedSpectralFeatures = null;
       lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
       latestWeightedEnergy = 0;
+      latestBass = 0;
+      latestMid = 0;
+      latestTreble = 0;
       signalProcessor.reset();
       beatTracker.reset();
     },
     getLatestAudioEnergy() {
       return latestWeightedEnergy;
+    },
+    getLatestAudioBands() {
+      return { bass: latestBass, mid: latestMid, treble: latestTreble };
     },
     update({
       time,
@@ -389,6 +402,9 @@ export function createMilkdropSignalTracker(options?: {
       out.waveformFloatDataL = resolvedWaveformFloatL;
       out.waveformFloatDataR = resolvedWaveformFloatR;
       latestWeightedEnergy = finalWeightedEnergy;
+      latestBass = relativeAttenuatedBands.bass;
+      latestMid = relativeAttenuatedBands.mid;
+      latestTreble = relativeAttenuatedBands.treble;
 
       return out;
     },
