@@ -20,6 +20,7 @@ import type {
   requestRenderer as requestType,
   resetRendererPool as resetPoolType,
   setRendererRuntimeControls as setControlsType,
+  setMaxIdleRenderers as setMaxIdleRenderersType,
   subscribeToRendererRuntimeControls as subscribeType,
 } from '../../src/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../../src/js/core/settings-panel.ts';
@@ -30,6 +31,7 @@ import { flushTasks, importFresh } from '../test-helpers.ts';
 let getRendererRuntimeControls: typeof getControlsType;
 let requestRenderer: typeof requestType;
 let resetRendererPool: typeof resetPoolType;
+let setMaxIdleRenderers: typeof setMaxIdleRenderersType;
 let setRendererRuntimeControls: typeof setControlsType;
 let subscribeToRendererRuntimeControls: typeof subscribeType;
 
@@ -58,6 +60,7 @@ describe('render-service pooling', () => {
     getRendererRuntimeControls = renderService.getRendererRuntimeControls;
     requestRenderer = renderService.requestRenderer;
     resetRendererPool = renderService.resetRendererPool;
+    setMaxIdleRenderers = renderService.setMaxIdleRenderers;
     setRendererRuntimeControls = renderService.setRendererRuntimeControls;
     subscribeToRendererRuntimeControls =
       renderService.subscribeToRendererRuntimeControls;
@@ -128,6 +131,74 @@ describe('render-service pooling', () => {
     expect(first.canvas).toBe(second.canvas);
     expect(host.contains(second.canvas)).toBe(true);
     expect(initRendererImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test('bounds idle renderers across repeated concurrent acquire and release cycles', async () => {
+    setMaxIdleRenderers(2);
+    const renderers: Array<{
+      setAnimationLoop: ReturnType<typeof mock>;
+      dispose: ReturnType<typeof mock>;
+    }> = [];
+    const initRendererImpl = mock(async () => {
+      const renderer = {
+        setPixelRatio: mock(),
+        setSize: mock(),
+        setAnimationLoop: mock(),
+        dispose: mock(),
+        toneMappingExposure: 1,
+      };
+      renderers.push(renderer);
+      return {
+        renderer: renderer as unknown as WebGLRenderer,
+        backend: 'webgl' as const,
+        adapter: null,
+        device: null,
+        maxPixelRatio: 2,
+        renderScale: 1,
+        adaptiveMaxPixelRatioMultiplier: 1,
+        adaptiveRenderScaleMultiplier: 1,
+        adaptiveDensityMultiplier: 1,
+        exposure: 1,
+      };
+    });
+
+    const firstCycle = await Promise.all(
+      Array.from({ length: 5 }, () => requestRenderer({ initRendererImpl })),
+    );
+    firstCycle[0].release();
+    firstCycle[1].release();
+    firstCycle[2].release();
+
+    expect(renderers[0].dispose).toHaveBeenCalledTimes(1);
+    expect(renderers[1].dispose).toHaveBeenCalledTimes(0);
+    expect(renderers[2].dispose).toHaveBeenCalledTimes(0);
+    // Renderers that remain checked out must never be candidates for eviction.
+    expect(renderers[3].dispose).toHaveBeenCalledTimes(0);
+    expect(renderers[4].dispose).toHaveBeenCalledTimes(0);
+
+    firstCycle[3].release();
+    firstCycle[4].release();
+    expect(
+      renderers.filter((renderer) => renderer.dispose.mock.calls.length === 0),
+    ).toHaveLength(2);
+
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      const handles = await Promise.all(
+        Array.from({ length: 4 }, () => requestRenderer({ initRendererImpl })),
+      );
+      handles.forEach((handle) => handle.release());
+      expect(
+        renderers.filter(
+          (renderer) => renderer.dispose.mock.calls.length === 0,
+        ),
+      ).toHaveLength(2);
+    }
+
+    for (const renderer of renderers.filter(
+      (candidate) => candidate.dispose.mock.calls.length > 0,
+    )) {
+      expect(renderer.setAnimationLoop).toHaveBeenCalledWith(null);
+    }
   });
 
   test('shares runtime optimization controls through the render service', async () => {
