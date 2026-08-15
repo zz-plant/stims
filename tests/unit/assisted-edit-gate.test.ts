@@ -22,6 +22,82 @@ describe('source diff for assisted edits', () => {
     ]);
   });
 
+  test('handles insertions and deletions without changing surrounding lines', () => {
+    expect(computeSourceDiff('a\nc', 'a\nb\nc')).toEqual([
+      { kind: 'context', text: 'a' },
+      { kind: 'add', text: 'b' },
+      { kind: 'context', text: 'c' },
+    ]);
+    expect(computeSourceDiff('a\nb\nc', 'a\nc')).toEqual([
+      { kind: 'context', text: 'a' },
+      { kind: 'del', text: 'b' },
+      { kind: 'context', text: 'c' },
+    ]);
+  });
+
+  test('finds a stable alignment when lines repeat', () => {
+    expect(
+      computeSourceDiff(
+        'start\nrepeat\nold\nrepeat\nend',
+        'start\nrepeat\nrepeat\nend',
+      ),
+    ).toEqual([
+      { kind: 'context', text: 'start' },
+      { kind: 'context', text: 'repeat' },
+      { kind: 'del', text: 'old' },
+      { kind: 'context', text: 'repeat' },
+      { kind: 'context', text: 'end' },
+    ]);
+  });
+
+  test('uses linear working rows for large synthetic documents', () => {
+    const beforeLines = Array.from({ length: 800 }, (_, i) => `line-${i}`);
+    const afterLines = [...beforeLines];
+    afterLines[400] = 'replacement';
+    let maxWorkingCells = Number.POSITIVE_INFINITY;
+
+    const diff = computeSourceDiff(
+      beforeLines.join('\n'),
+      afterLines.join('\n'),
+      {
+        onStats: (stats) => {
+          maxWorkingCells = stats.maxWorkingCells;
+          expect(stats.usedCoarseFallback).toBe(false);
+        },
+      },
+    );
+
+    expect(diff).toContainEqual({ kind: 'del', text: 'line-400' });
+    expect(diff).toContainEqual({ kind: 'add', text: 'replacement' });
+    // Two rows of the shorter input, not an 800 * 800 LCS matrix.
+    expect(maxWorkingCells).toBeLessThanOrEqual(2 * (beforeLines.length + 1));
+    expect(maxWorkingCells).toBeLessThan(
+      beforeLines.length * afterLines.length,
+    );
+  });
+
+  test('falls back to a coarse replacement for exceptionally large sources', () => {
+    const before = Array.from({ length: 2001 }, (_, i) => `old-${i}`).join(
+      '\n',
+    );
+    const after = Array.from({ length: 2001 }, (_, i) => `new-${i}`).join('\n');
+    let usedCoarseFallback = false;
+
+    expect(
+      computeSourceDiff(before, after, {
+        onStats: (stats) => {
+          usedCoarseFallback = stats.usedCoarseFallback;
+        },
+      }),
+    ).toEqual([
+      {
+        kind: 'gap',
+        text: 'Replaces all 2001 lines with 2001 new lines',
+      },
+    ]);
+    expect(usedCoarseFallback).toBe(true);
+  });
+
   test('folds long unchanged runs into a gap marker', () => {
     const before = Array.from({ length: 30 }, (_, i) => `line${i}`).join('\n');
     const after = `${before}\nnew-tail`;
