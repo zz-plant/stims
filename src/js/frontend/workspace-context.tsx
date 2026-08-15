@@ -14,7 +14,7 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
-import { setAudioEnergy } from './engine-audio-energy-store.ts';
+import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
   EngineCtx,
@@ -177,6 +177,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const snap = sessionState.engineSnapshot;
     if (snap) {
       setAudioEnergy(snap.audioEnergy);
+      setAudioBands({
+        bass: snap.audioBass,
+        mid: snap.audioMid,
+        treble: snap.audioTreble,
+      });
     }
   }, [sessionState.engineSnapshot]);
 

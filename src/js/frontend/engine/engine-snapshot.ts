@@ -17,6 +17,9 @@ export type EngineSnapshot = {
   audioActive: boolean;
   audioSource: AudioSource | null;
   audioEnergy: number;
+  audioBass: number;
+  audioMid: number;
+  audioTreble: number;
   /**
    * Timestamp (`Date.now()`) of the most recent unexpected audio stream
    * termination (mic revoked, tab/display share or YouTube capture
@@ -43,6 +46,9 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioActive: false,
     audioSource: null,
     audioEnergy: 0,
+    audioBass: 0,
+    audioMid: 0,
+    audioTreble: 0,
     audioEndedAt: null,
     autoplay: false,
     transitionMode: 'blend',
@@ -64,6 +70,9 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
     a.audioEnergy === b.audioEnergy &&
+    a.audioBass === b.audioBass &&
+    a.audioMid === b.audioMid &&
+    a.audioTreble === b.audioTreble &&
     a.audioEndedAt === b.audioEndedAt &&
     a.autoplay === b.autoplay &&
     a.transitionMode === b.transitionMode &&
@@ -99,6 +108,9 @@ export function buildEngineSnapshot({
     audioActive,
     audioSource,
     audioEnergy: snapshot?.audioEnergy ?? 0,
+    audioBass: snapshot?.audioBass ?? 0,
+    audioMid: snapshot?.audioMid ?? 0,
+    audioTreble: snapshot?.audioTreble ?? 0,
     audioEndedAt: audioEndedAt ?? null,
     autoplay: snapshot?.autoplay ?? false,
     transitionMode: snapshot?.transitionMode ?? 'blend',

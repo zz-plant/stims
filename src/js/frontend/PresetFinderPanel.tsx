@@ -6,6 +6,7 @@ import {
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import {
+  getAudioBands,
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
@@ -104,9 +105,16 @@ export function PresetFinderPanel({
       // real difference between the two modes is what gets embedded.
       let matches: Array<{ presetId: string; score: number }>;
       if (mode === 'sound') {
+        // Real bands, not the fabricated 0.6/0.3/0.1 split of a single scalar
+        // that buildAudioProfile falls back to, so the query reflects how the
+        // music is voiced and not only how loud it is.
         // No slice: the endpoint already returns topK=5.
+        const bands = getAudioBands();
         matches = await searchByAudioProfile(
-          buildAudioProfile({ audioEnergy }),
+          buildAudioProfile({
+            audioEnergy,
+            fftBands: [bands.bass, bands.mid, bands.treble],
+          }),
         );
       } else {
         const canvas = ui.stageRef.current?.querySelector(
