@@ -25,7 +25,7 @@ export type WebGpuTimestampProfiler = {
 export function createWebGpuTimestampProfiler(
   device: GPUDevice | null | undefined,
 ): WebGpuTimestampProfiler {
-  if (!device || !device.features?.has('timestamp-query')) {
+  if (!device?.features?.has('timestamp-query')) {
     return {
       supported: false,
       resolve: () => {},

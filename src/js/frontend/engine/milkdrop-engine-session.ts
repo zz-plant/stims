@@ -153,7 +153,10 @@ export function createMilkdropEngineAdapter() {
     }
     unsubscribeExperience?.();
     unsubscribeExperience = null;
-    runtime?.dispose();
+    // The runtime may be torn down before the toy starter returns a fully
+    // formed instance (e.g. an engine that fails mid-start), so guard the
+    // method, not just the object.
+    runtime?.dispose?.();
     runtime = null;
     experience?.dispose();
     experience = null;
@@ -458,6 +461,12 @@ export function createMilkdropEngineAdapter() {
 
     updateInspectorField(key: string, value: number) {
       experience?.updateInspectorField?.(key, value);
+    },
+
+    /** Applies a field to the running VM without a recompile, for instant
+     * drag feedback. The editor commits the value to the source on release. */
+    updateFieldLive(key: string, value: number) {
+      experience?.setLiveField?.(key, value);
     },
 
     /** Read-only debug accessor for the active preset's compiled IR. */

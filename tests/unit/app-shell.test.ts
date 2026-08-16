@@ -1,4 +1,7 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: shell boot pokes browser globals and bun mocks that have no stable test-env types.
+
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { act } from 'react';
 import { flushTasks, importFresh } from '../test-helpers.ts';
 
 let mockLoadToy: any;
@@ -18,7 +21,12 @@ async function loadAppShell() {
   };
 
   await importFresh('../../src/js/app.ts');
-  await (globalThis as any).__stimsAppReady;
+  // The shell mounts a React tree; keeping the boot's awaited window inside
+  // act() flushes the concurrent render and effects deterministically so they
+  // do not warn about updates landing after the test's assertions.
+  await act(async () => {
+    await (globalThis as any).__stimsAppReady;
+  });
   await flushTasks(10);
 }
 
@@ -110,7 +118,9 @@ describe('home shell user journeys', () => {
       await loadAppShell();
 
       expect(typeof (globalThis as any).__stimsAppDispose).toBe('function');
-      (globalThis as any).__stimsAppDispose();
+      await act(async () => {
+        (globalThis as any).__stimsAppDispose();
+      });
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // The guard here is that disposing the shell cancels the deferred
