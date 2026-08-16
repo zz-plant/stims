@@ -1985,6 +1985,60 @@ definitely_not_a_real_field=1
     ).toBe(true);
   });
 
+  test('retains Milkdrop2 sz*/@ metadata fields without degrading fidelity', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+szTitle="My Preset"
+szAuthor="Some Author"
+@Comment="A comment"
+szHint="a hint"
+fRating=4.5
+      `.trim(),
+      { id: 'milkdrop2-metadata', origin: 'user' },
+    );
+
+    expect(
+      compiled.diagnostics.some(
+        (entry) => entry.code === 'preset_unknown_field',
+      ),
+    ).toBe(false);
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.title).toBe('My Preset');
+    expect(compiled.ir.author).toBe('Some Author');
+    expect(compiled.ir.description).toBe('A comment');
+    expect(compiled.ir.stringFields.meta_szhint).toBe('a hint');
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual(
+      [],
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
+  });
+
+  test('keeps unknown fields visible but non-blocking for fidelity', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Parity Soft Field
+custom_modded_field=1
+      `.trim(),
+      { id: 'parity-soft-field', origin: 'user' },
+    );
+
+    // The field is still surfaced honestly...
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
+      'custom_modded_field',
+    ]);
+    expect(
+      compiled.diagnostics.some(
+        (entry) => entry.code === 'preset_unknown_field',
+      ),
+    ).toBe(true);
+    // ...but it no longer blocks fidelity classification.
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+  });
+
   test('ignores video echo orientation when echo is disabled', () => {
     const compiled = compileMilkdropPresetSource(
       `

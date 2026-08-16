@@ -1,4 +1,7 @@
-import { isMilkdropVolumeShaderSamplerName } from '../shader-samplers';
+import {
+  getMilkdropShaderAuxTextureSourceId,
+  isMilkdropVolumeShaderSamplerName,
+} from '../shader-samplers';
 import type {
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
@@ -221,6 +224,13 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'tex3d' || lower === 'texture3d') {
         return emitTextureSample(args, '3d');
       }
+      if (
+        lower === 'tex2dlod' ||
+        lower === 'tex2dbias' ||
+        lower === 'tex2dgrad'
+      ) {
+        return emitLodTextureSample(lower, args);
+      }
       if (lower === 'videotex2d') {
         // video texture sampling - maps to videoTex
         const coord = args[1] ?? args[0];
@@ -242,14 +252,20 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'frac') {
         return `fract(${args[0] ?? '0.0'})`;
       }
-      if (lower === 'ddx') {
+      if (lower === 'ddx' || lower === 'dfdx') {
         return `dFdx(${args[0] ?? '0.0'})`;
       }
-      if (lower === 'ddy') {
+      if (lower === 'ddy' || lower === 'dfdy') {
         return `dFdy(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'fwidth') {
+        return `fwidth(${args[0] ?? '0.0'})`;
       }
       if (lower === 'mul') {
         return `(${args[0] ?? '0.0'} * ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'transpose') {
+        return `transpose(${args[0] ?? '0.0'})`;
       }
       if (lower === 'if') {
         const cond = args[0] ?? '0.0';
@@ -265,6 +281,9 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       }
       if (lower === 'sqrt') {
         return `sqrt(max(0.0, ${args[0] ?? '0.0'}))`;
+      }
+      if (lower === 'rsqrt') {
+        return `inversesqrt(max(${args[0] ?? '1.0'}, 0.000001))`;
       }
       if (lower === 'sin') {
         return `sin(${args[0] ?? '0.0'})`;
@@ -283,6 +302,12 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       }
       if (lower === 'ceil') {
         return `ceil(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'trunc') {
+        return `trunc(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'round') {
+        return `round(${args[0] ?? '0.0'})`;
       }
       if (lower === 'min') {
         return `min(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
@@ -311,6 +336,12 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'normalize') {
         return `normalize(${args[0] ?? '0.0'})`;
       }
+      if (lower === 'reflect') {
+        return `reflect(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'refract') {
+        return `refract(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'}, ${args[2] ?? '1.0'})`;
+      }
       if (lower === 'mod' || lower === 'fmod') {
         return `mod(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'})`;
       }
@@ -329,11 +360,17 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'log') {
         return `log(max(${args[0] ?? '1.0'}, 0.000001))`;
       }
+      if (lower === 'log2') {
+        return `log2(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
       if (lower === 'log10') {
         return `(log(max(${args[0] ?? '1.0'}, 0.000001)) * 0.4342944819)`;
       }
       if (lower === 'exp') {
         return `exp(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'exp2') {
+        return `exp2(${args[0] ?? '0.0'})`;
       }
       if (lower === 'atan') {
         const y = args[0] ?? '0.0';
@@ -369,13 +406,23 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `sampleAuxTexture(1.0, 0.0, sampleUv(${coord}, textureWrap), 0.0).r`;
       }
 
-      // vec2/vec3 constructors
-      if (lower === 'vec2') {
+      // vec2/vec3/vec4 constructors (half* aliases lower to the same forms)
+      const constructorName =
+        lower === 'half'
+          ? 'float'
+          : lower === 'half2'
+            ? 'vec2'
+            : lower === 'half3'
+              ? 'vec3'
+              : lower === 'half4'
+                ? 'vec4'
+                : lower;
+      if (constructorName === 'vec2') {
         const x = args[0] ?? '0.0';
         const y = args[1] ?? x;
         return `vec2(${x}, ${y})`;
       }
-      if (lower === 'vec3') {
+      if (constructorName === 'vec3') {
         const x = args[0] ?? '0.0';
         if (args.length === 2) {
           const y = args[1] ?? x;
@@ -394,15 +441,21 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const z = args[2] ?? x;
         return `vec3(${x}, ${y}, ${z})`;
       }
-      if (lower === 'vec4' || lower === 'float4') {
+      if (constructorName === 'vec4' || constructorName === 'float4') {
         const x = args[0] ?? '0.0';
         const y = args[1] ?? x;
         const z = args[2] ?? x;
         const w = args[3] ?? x;
         return `vec4(${x}, ${y}, ${z}, ${w})`;
       }
-      if (lower === 'float') {
+      if (constructorName === 'float') {
         return `float(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'int') {
+        return `int(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'bool') {
+        return `bool(${args[0] ?? '0.0'})`;
       }
 
       // tint constructor
@@ -534,7 +587,7 @@ function emitTextureSample(
 
 function splitGlslConstructorArgs(expression: string): string[] | null {
   const trimmed = expression.trim();
-  const match = trimmed.match(/^(?:vec3|float3)\((.*)\)$/s);
+  const match = trimmed.match(/^(?:vec[234]|float[234])\((.*)\)$/s);
   if (!match) {
     return null;
   }
@@ -556,20 +609,93 @@ function splitGlslConstructorArgs(expression: string): string[] | null {
 }
 
 /**
+ * Resolves a sampler argument to the GLSL texture uniform it samples on the
+ * direct path. Texture uniforms with a real mip chain (framebuffer, blur,
+ * bundled aux textures) support textureLod/textureGrad; the atlas/aux helper
+ * path and procedural feed-forward noise do not, so they fall back to the
+ * base-mip sample.
+ */
+function resolveLodTextureName(samplerArg: string): string | null {
+  const lower = samplerArg.toLowerCase();
+  const raw = lower.startsWith('sampler_')
+    ? lower.slice('sampler_'.length)
+    : lower;
+  const map: Record<string, string> = {
+    main: 'currentTex',
+    fw_main: 'currentTex',
+    pw_main: 'previousTex',
+    pc_main: 'previousTex',
+    fc_main: 'warpTex',
+    blur1: 'blur1Tex',
+    blur2: 'blur2Tex',
+    blur3: 'blur3Tex',
+    noise: 'noiseTex',
+    noise_lq: 'noiseTex',
+    noise_mq: 'noiseTex',
+    noise_hq: 'noiseTex',
+    pw_noise_lq: 'noiseTex',
+    perlin: 'perlinTex',
+    simplex: 'simplexTex',
+    voronoi: 'voronoiTex',
+    aura: 'auraTex',
+    caustics: 'causticsTex',
+    pattern: 'patternTex',
+    fractal: 'fractalTex',
+    video: 'videoTex',
+  };
+  return map[raw] ?? null;
+}
+
+/**
+ * Emits HLSL tex2Dlod/tex2Dbias/tex2Dgrad as GLSL ES 3.00
+ * textureLod/texture(bias)/textureGrad. HLSL's tex2Dlod/tex2Dbias take a
+ * float4 coordinate (xy = uv, w = lod/bias); tex2Dgrad takes a uv plus
+ * explicit gradient vectors. The composite/warp fragment templates stay in
+ * GLSL ES 1.00 style, but three's WebGLRenderer (0.185, WebGL2-only) shims
+ * ShaderMaterial sources to `#version 300 es` and maps texture2D→texture,
+ * so the native ES 3.00 functions resolve. Samplers without a native mip
+ * chain fall back to the base-mip sample so the call never emits invalid
+ * GLSL.
+ */
+function emitLodTextureSample(
+  name: 'tex2dlod' | 'tex2dbias' | 'tex2dgrad',
+  args: string[],
+): string | null {
+  const samplerArg = args[0];
+  const texName = samplerArg ? resolveLodTextureName(samplerArg) : null;
+  if (!texName) {
+    return samplerArg && args[1] ? emitTextureSample(args, '2d') : null;
+  }
+  const coordRaw = args[1] ?? args[0] ?? 'vUv';
+  const vectorArgs = splitGlslConstructorArgs(coordRaw);
+
+  if (name === 'tex2dgrad') {
+    const uv =
+      vectorArgs && vectorArgs.length >= 2
+        ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+        : coordRaw;
+    const dx = args[2] ?? 'dFdx(vUv)';
+    const dy = args[3] ?? 'dFdy(vUv)';
+    return `textureGrad(${texName}, sampleUv(${uv}, textureWrap), ${dx}, ${dy}).rgb`;
+  }
+
+  const uv =
+    vectorArgs && vectorArgs.length >= 2
+      ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+      : coordRaw;
+  const amount =
+    (vectorArgs && vectorArgs.length >= 4 ? vectorArgs[3] : args[2]) ?? '0.0';
+  if (name === 'tex2dlod') {
+    return `textureLod(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+  }
+  return `texture(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+}
+
+/**
  * Returns the numeric source ID for an aux texture name.
  */
 function getAuxTextureSourceId(name: string): string {
-  const map: Record<string, string> = {
-    noise: '1.0',
-    simplex: '2.0',
-    voronoi: '3.0',
-    aura: '4.0',
-    caustics: '5.0',
-    pattern: '6.0',
-    fractal: '7.0',
-    video: '8.0',
-  };
-  return map[name] ?? '0.0';
+  return `${getMilkdropShaderAuxTextureSourceId(name)}.0`;
 }
 
 /**

@@ -192,7 +192,13 @@ export function buildDegradationReasons({
             : `Unknown preset field "${construct.value}" was ignored.`
           : `Shader line "${construct.value}" could not be executed directly and is being approximated.`,
       system: construct.kind === 'field' ? 'compiler' : 'shader',
-      blocking: true,
+      // Unknown/soft fields are retained metadata: they never block a
+      // preset's fidelity the way a hard-unsupported field or an
+      // approximated shader line does.
+      blocking: !(
+        construct.kind === 'field' &&
+        construct.classification === 'soft-unknown'
+      ),
     });
   });
 
@@ -257,7 +263,8 @@ export function classifyFidelity({
   noBlockedConstructs: boolean;
 }): MilkdropFidelityClass {
   const hasBlockingConstruct = blockedConstructDetails.some(
-    (construct) => !construct.allowlisted,
+    (construct) =>
+      !construct.allowlisted && construct.classification !== 'soft-unknown',
   );
   const blockingReasons = degradationReasons.filter(
     (reason) => reason.blocking,

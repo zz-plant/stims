@@ -497,6 +497,10 @@ export function createCompositeUniforms(
     // This frame's internal image written by the feedback-blend pass; the
     // display-only composite pass reads it (rebound per frame by the manager).
     internalTex: texture(previousTexture),
+    // MilkDrop's sampler_fc_main reads the warp output. The WebGPU pipeline
+    // produces that image inside the feedback-blend pass, so warpTex aliases
+    // the internal/warped frame (rebound per frame in render()).
+    warpTex: texture(shared2DPlaceholderRGBA),
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
@@ -508,6 +512,14 @@ export function createCompositeUniforms(
     videoTex: texture(auxTextures.video),
     glyphTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.glyph)),
     organicTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.organic)),
+    // The WebGPU feedback pipeline runs a single gaussian blur pass; the
+    // three blur samplers all read its output (rebound by the manager).
+    // MilkDrop's progressive blur1→blur2→blur3 chain is not reproduced on
+    // this backend, but the samplers resolve to a real texture instead of
+    // the neutral fallback.
+    blur1Tex: texture(shared2DPlaceholderRGBA),
+    blur2Tex: texture(shared2DPlaceholderRGBA),
+    blur3Tex: texture(shared2DPlaceholderRGBA),
     audioTex: texture(shared2DPlaceholderRGBA),
     noiseTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex3D: texture3D(shared3DPlaceholderRGBA),
@@ -651,6 +663,9 @@ export function createSampleAuxTextureNode(
   videoTexNode: ReturnType<typeof texture>,
   glyphTexNode: ReturnType<typeof texture>,
   organicTexNode: ReturnType<typeof texture>,
+  blur1TexNode: ReturnType<typeof texture>,
+  blur2TexNode: ReturnType<typeof texture>,
+  blur3TexNode: ReturnType<typeof texture>,
   tex3DNodes: {
     noise: ReturnType<typeof texture3D>;
     simplex: ReturnType<typeof texture3D>;
@@ -700,7 +715,19 @@ export function createSampleAuxTextureNode(
                           select(
                             source.lessThan(13.5),
                             organicTexNode.sample(sampleUv),
-                            flat,
+                            select(
+                              source.lessThan(14.5),
+                              blur1TexNode.sample(sampleUv),
+                              select(
+                                source.lessThan(15.5),
+                                blur2TexNode.sample(sampleUv),
+                                select(
+                                  source.lessThan(16.5),
+                                  blur3TexNode.sample(sampleUv),
+                                  flat,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),

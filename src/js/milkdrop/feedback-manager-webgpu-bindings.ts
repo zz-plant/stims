@@ -1,4 +1,7 @@
-import { normalizeMilkdropShaderSamplerName } from './shader-samplers.ts';
+import {
+  getMilkdropShaderAuxTextureSourceId,
+  normalizeMilkdropShaderSamplerName,
+} from './shader-samplers.ts';
 import type { MilkdropShaderTextureSampler } from './types';
 
 export type DirectShaderValueKind = 'vec2' | 'vec3';
@@ -19,35 +22,17 @@ function getDirectShaderSamplerSourceId(
   switch (canonicalSource) {
     case 'main':
       return 0;
-    case 'noise':
-    case 'perlin':
-      return 1;
-    case 'simplex':
-      return 2;
-    case 'voronoi':
-      return 3;
-    case 'aura':
-      return 4;
-    case 'caustics':
-      return 5;
-    case 'pattern':
-      return 6;
-    case 'fractal':
-      return 7;
-    case 'video':
-      return 8;
+    // pw_main/pc_main/fc_main are routed to the previous/warp framebuffer
+    // textures by the TSL dispatch before the aux sampler is reached, so
+    // their ids are never consumed by the aux path.
     case 'pw_main':
       return 9;
     case 'pc_main':
       return 10;
     case 'fc_main':
       return 11;
-    case 'glyph':
-      return 12;
-    case 'organic':
-      return 13;
     default:
-      return 0;
+      return getMilkdropShaderAuxTextureSourceId(canonicalSource);
   }
 }
 

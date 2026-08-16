@@ -33,11 +33,13 @@ import {
   defaultSourceId,
   ensureShapeDefinition,
   ensureWaveDefinition,
+  isMilkdropMetadataFieldKey,
   normalizeBlockedConstructValue,
   normalizeFieldKey,
   normalizeShaderFieldChunk,
   normalizeString,
   normalizeVideoEchoOrientation,
+  resolveMilkdropMetadataKey,
   toBlockedFieldConstruct,
   toBlockedShaderConstruct,
 } from './preset-normalization.ts';
@@ -196,6 +198,8 @@ export function createIR(
       pushProgramStatement,
       resolveRuntimeGlobals,
       isHardUnsupportedFieldBlocking,
+      isMilkdropMetadataFieldKey,
+      resolveMilkdropMetadataKey,
     },
     shaderHelpers: {
       extractShaderControls,
