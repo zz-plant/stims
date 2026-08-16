@@ -94,41 +94,41 @@ const QUALITY_STEPS: readonly QualityStep[] = [
   },
   {
     id: 'balanced',
-    renderScaleMultiplier: 0.94,
-    maxPixelRatioMultiplier: 0.96,
-    densityMultiplier: 0.92,
-    feedbackResolutionMultiplier: 0.9,
+    renderScaleMultiplier: 0.96,
+    maxPixelRatioMultiplier: 0.98,
+    densityMultiplier: 0.88,
+    feedbackResolutionMultiplier: 0.88,
   },
   {
     id: 'reduced',
-    renderScaleMultiplier: 0.88,
-    maxPixelRatioMultiplier: 0.92,
-    densityMultiplier: 0.82,
-    feedbackResolutionMultiplier: 0.8,
+    renderScaleMultiplier: 0.92,
+    maxPixelRatioMultiplier: 0.94,
+    densityMultiplier: 0.78,
+    feedbackResolutionMultiplier: 0.78,
   },
   {
     id: 'low',
-    renderScaleMultiplier: 0.8,
-    maxPixelRatioMultiplier: 0.86,
-    densityMultiplier: 0.72,
-    feedbackResolutionMultiplier: 0.68,
+    renderScaleMultiplier: 0.84,
+    maxPixelRatioMultiplier: 0.88,
+    densityMultiplier: 0.68,
+    feedbackResolutionMultiplier: 0.65,
   },
   {
     id: 'minimal',
-    renderScaleMultiplier: 0.72,
+    renderScaleMultiplier: 0.75,
     maxPixelRatioMultiplier: 0.8,
-    densityMultiplier: 0.6,
-    feedbackResolutionMultiplier: 0.56,
+    densityMultiplier: 0.55,
+    feedbackResolutionMultiplier: 0.52,
   },
 ] as const;
 
 const EMA_ALPHA = 0.18;
-const MIN_WARMUP_SAMPLES = 12;
-const DEGRADE_THRESHOLD_SAMPLES = 6;
-const RECOVER_THRESHOLD_SAMPLES = 30;
-const ENHANCE_THRESHOLD_SAMPLES = 60;
+const MIN_WARMUP_SAMPLES = 24;
+const DEGRADE_THRESHOLD_SAMPLES = 12;
+const RECOVER_THRESHOLD_SAMPLES = 18;
+const ENHANCE_THRESHOLD_SAMPLES = 36;
 const RESET_THRESHOLD_SAMPLES = 3;
-const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 3;
+const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 6;
 const ROLLING_WINDOW_MS = 5000;
 /**
  * Cadence that still counts as "presenting on target" when looking for
@@ -138,7 +138,7 @@ const ROLLING_WINDOW_MS = 5000;
  * displays most people use — 16.67ms measured against a 15.0ms bar on
  * 60Hz, 8.33 against 7.5 on 120Hz. Quality could then only ever ratchet
  * down, and one transient spike stranded the session at reduced quality
- * for good. The degrade side treats > 1.08 as pressure, so 1.05 leaves a
+ * for good. The degrade side treats > 1.10 as pressure, so 1.05 leaves a
  * small dead band between "recovering" and "degrading".
  */
 const CADENCE_AT_TARGET_RATIO = 1.05;
@@ -624,14 +624,38 @@ export function createAdaptiveQualityController({
         return state;
       }
 
+      if (sampleCount === MIN_WARMUP_SAMPLES) {
+        // On completing warmup, seed EMAs with the settled post-warmup frame
+        // and reset the rolling window so startup compilation spikes don't falsely
+        // trigger immediate degradation.
+        averageFrameMs = frameMs;
+        averageRenderMs =
+          typeof renderMs === 'number' && Number.isFinite(renderMs)
+            ? renderMs
+            : null;
+        averageCadenceMs =
+          typeof cadenceMs === 'number' && Number.isFinite(cadenceMs)
+            ? cadenceMs
+            : null;
+        averageGpuMs =
+          supportsGpuTimestamps &&
+          typeof gpuMs === 'number' &&
+          Number.isFinite(gpuMs)
+            ? gpuMs
+            : null;
+        consecutiveOverBudget = 0;
+        consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
+      }
+
       const renderPressure =
         averageRenderMs !== null &&
-        averageRenderMs > heuristic.frameBudgetMs * 0.82;
+        averageRenderMs > heuristic.frameBudgetMs * 0.9;
       const gpuPressure =
-        averageGpuMs !== null && averageGpuMs > heuristic.frameBudgetMs * 0.82;
+        averageGpuMs !== null && averageGpuMs > heuristic.frameBudgetMs * 0.9;
       const framePressure =
         averageFrameMs !== null &&
-        averageFrameMs > heuristic.frameBudgetMs * 1.08;
+        averageFrameMs > heuristic.frameBudgetMs * 1.1;
       const cadencePressure =
         averageCadenceMs !== null &&
         averageCadenceMs > heuristic.frameBudgetMs * 1.12 &&
@@ -639,14 +663,13 @@ export function createAdaptiveQualityController({
           averageFrameMs > heuristic.frameBudgetMs * 0.85);
       const hasHeadroom =
         averageFrameMs !== null &&
-        averageFrameMs < heuristic.frameBudgetMs * 0.72 &&
+        averageFrameMs < heuristic.frameBudgetMs * 0.75 &&
         (averageCadenceMs === null ||
           averageCadenceMs <=
             heuristic.frameBudgetMs * CADENCE_AT_TARGET_RATIO) &&
         (averageRenderMs === null ||
-          averageRenderMs < heuristic.frameBudgetMs * 0.55) &&
-        (averageGpuMs === null ||
-          averageGpuMs < heuristic.frameBudgetMs * 0.55);
+          averageRenderMs < heuristic.frameBudgetMs * 0.7) &&
+        (averageGpuMs === null || averageGpuMs < heuristic.frameBudgetMs * 0.7);
       const rollingFramePressure =
         rollingAverageFrameMs !== null &&
         rollingAverageFrameMs > heuristic.frameBudgetMs;
@@ -656,7 +679,20 @@ export function createAdaptiveQualityController({
         consecutiveRollingOverBudget = 0;
       }
 
-      if (renderPressure || gpuPressure || framePressure || cadencePressure) {
+      // Check if current frame is an isolated transient spike/outlier
+      // (e.g., GC pause or compositor hitch where single frameMs > 2x budget, but GPU & render time are normal and rolling window is calm)
+      const isTransientHitch =
+        frameMs > heuristic.frameBudgetMs * 2.0 &&
+        (averageRenderMs === null ||
+          averageRenderMs <= heuristic.frameBudgetMs * 0.9) &&
+        (averageGpuMs === null ||
+          averageGpuMs <= heuristic.frameBudgetMs * 0.9) &&
+        !rollingFramePressure;
+
+      if (
+        !isTransientHitch &&
+        (renderPressure || gpuPressure || framePressure || cadencePressure)
+      ) {
         consecutiveOverBudget += 1;
         consecutiveUnderBudget = 0;
       } else if (hasHeadroom) {

@@ -113,7 +113,7 @@ export class FrequencyAnalyser {
   private historyCount = 0;
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
-  private readonly workletNode?: AudioWorkletNode;
+  private workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
   private readonly analyserNodeL?: AnalyserNode;
   private readonly analyserNodeR?: AnalyserNode;
@@ -173,110 +173,159 @@ export class FrequencyAnalyser {
     this.silentGain = silentGain;
 
     if (this.workletNode) {
-      this.workletNode.port.onmessage = (event: MessageEvent) => {
-        const {
-          frequencyData,
-          waveformData,
-          frequencyDataL,
-          frequencyDataR,
-          waveformDataL,
-          waveformDataR,
-          rms,
-          zeroCrossingRate,
-          spectralFlux,
-          spectralCrest,
-          stereoBalance,
-          stereoWidth,
-          timeDomainData,
-          energy,
-          energyAverages,
-          beatDetection,
-          transientMetrics,
-        } = event.data ?? {};
-        if (typeof rms === 'number') this.rms = rms;
-        if (typeof zeroCrossingRate === 'number')
-          this.zeroCrossingRate = zeroCrossingRate;
-        if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
-        if (typeof spectralCrest === 'number')
-          this.spectralCrest = spectralCrest;
-        if (typeof stereoBalance === 'number')
-          this.stereoBalance = stereoBalance;
-        if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
-        if (frequencyData) {
-          const nextFreq =
-            frequencyData instanceof Uint8Array
-              ? frequencyData
-              : new Uint8Array(frequencyData);
-          if (this.frequencyData.length !== nextFreq.length) {
-            this.frequencyData = new Uint8Array(nextFreq.length);
-            this.frequencyBinCount = nextFreq.length;
-          }
-          this.frequencyData.set(nextFreq);
-          this.dataVersion += 1;
-          if (energy && typeof energy.bass === 'number') {
-            this.cachedEnergy = energy;
-            this.energyVersion = this.dataVersion;
-          } else {
-            this.cachedEnergy = this.calculateMultiBandEnergy(
-              this.frequencyData,
-            );
-            this.energyVersion = this.dataVersion;
-          }
-          this.updateEnergyHistory(this.cachedEnergy);
-        }
-        if (energyAverages && typeof energyAverages.bass === 'number') {
-          this.cachedEnergyAverages = energyAverages;
-        }
-        if (
-          transientMetrics &&
-          typeof transientMetrics.subBassEnv === 'number'
-        ) {
-          this.cachedTransientMetrics = transientMetrics;
-        }
-        if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
-          this.cachedBeatDetection = beatDetection;
-        }
-        if (waveformData) {
-          const nextWave =
-            waveformData instanceof Uint8Array
-              ? waveformData
-              : new Uint8Array(waveformData);
-          if (this.waveformData.length !== nextWave.length) {
-            this.waveformData = new Uint8Array(nextWave.length);
-            this.waveformData.fill(128);
-          }
-          this.waveformData.set(nextWave);
-        }
-        if (frequencyDataL && frequencyDataR) {
-          this.frequencyDataL = toUint8Array(frequencyDataL);
-          this.frequencyDataR = toUint8Array(frequencyDataR);
-        } else {
-          this.frequencyDataL = null;
-          this.frequencyDataR = null;
-        }
-        if (waveformDataL && waveformDataR) {
-          this.waveformDataL = toUint8Array(waveformDataL);
-          this.waveformDataR = toUint8Array(waveformDataR);
-        } else {
-          this.waveformDataL = null;
-          this.waveformDataR = null;
-        }
-        if (timeDomainData) {
-          const nextTimeDomain =
-            timeDomainData instanceof Float32Array
-              ? timeDomainData
-              : new Float32Array(timeDomainData);
-          if (this.timeDomainData.length !== nextTimeDomain.length) {
-            this.timeDomainData = new Float32Array(nextTimeDomain.length);
-          }
-          this.timeDomainData.set(nextTimeDomain);
-          this.updateSpectralFeatures();
-        }
-        if (typeof rms === 'number') {
-          this.rms = rms;
-        }
-      };
+      this.wireWorkletMessagePort(this.workletNode);
     }
+  }
+
+  private wireWorkletMessagePort(workletNode: AudioWorkletNode) {
+    workletNode.port.onmessage = (event: MessageEvent) => {
+      const {
+        frequencyData,
+        waveformData,
+        frequencyDataL,
+        frequencyDataR,
+        waveformDataL,
+        waveformDataR,
+        rms,
+        zeroCrossingRate,
+        spectralFlux,
+        spectralCrest,
+        stereoBalance,
+        stereoWidth,
+        timeDomainData,
+        energy,
+        energyAverages,
+        beatDetection,
+        transientMetrics,
+      } = event.data ?? {};
+      if (typeof rms === 'number') this.rms = rms;
+      if (typeof zeroCrossingRate === 'number')
+        this.zeroCrossingRate = zeroCrossingRate;
+      if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
+      if (typeof spectralCrest === 'number') this.spectralCrest = spectralCrest;
+      if (typeof stereoBalance === 'number') this.stereoBalance = stereoBalance;
+      if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
+      if (frequencyData) {
+        const nextFreq =
+          frequencyData instanceof Uint8Array
+            ? frequencyData
+            : new Uint8Array(frequencyData);
+        if (this.frequencyData.length !== nextFreq.length) {
+          this.frequencyData = new Uint8Array(nextFreq.length);
+          this.frequencyBinCount = nextFreq.length;
+        }
+        this.frequencyData.set(nextFreq);
+        this.dataVersion += 1;
+        if (energy && typeof energy.bass === 'number') {
+          this.cachedEnergy = energy;
+          this.energyVersion = this.dataVersion;
+        } else {
+          this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
+          this.energyVersion = this.dataVersion;
+        }
+        this.updateEnergyHistory(this.cachedEnergy);
+      }
+      if (energyAverages && typeof energyAverages.bass === 'number') {
+        this.cachedEnergyAverages = energyAverages;
+      }
+      if (transientMetrics && typeof transientMetrics.subBassEnv === 'number') {
+        this.cachedTransientMetrics = transientMetrics;
+      }
+      if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
+        this.cachedBeatDetection = beatDetection;
+      }
+      if (waveformData) {
+        const nextWave =
+          waveformData instanceof Uint8Array
+            ? waveformData
+            : new Uint8Array(waveformData);
+        if (this.waveformData.length !== nextWave.length) {
+          this.waveformData = new Uint8Array(nextWave.length);
+          this.waveformData.fill(128);
+        }
+        this.waveformData.set(nextWave);
+      }
+      if (frequencyDataL && frequencyDataR) {
+        this.frequencyDataL = toUint8Array(frequencyDataL);
+        this.frequencyDataR = toUint8Array(frequencyDataR);
+      } else {
+        this.frequencyDataL = null;
+        this.frequencyDataR = null;
+      }
+      if (waveformDataL && waveformDataR) {
+        this.waveformDataL = toUint8Array(waveformDataL);
+        this.waveformDataR = toUint8Array(waveformDataR);
+      } else {
+        this.waveformDataL = null;
+        this.waveformDataR = null;
+      }
+      if (timeDomainData) {
+        const nextTimeDomain =
+          timeDomainData instanceof Float32Array
+            ? timeDomainData
+            : new Float32Array(timeDomainData);
+        if (this.timeDomainData.length !== nextTimeDomain.length) {
+          this.timeDomainData = new Float32Array(nextTimeDomain.length);
+        }
+        this.timeDomainData.set(nextTimeDomain);
+        this.updateSpectralFeatures();
+      }
+      if (typeof rms === 'number') {
+        this.rms = rms;
+      }
+    };
+  }
+
+  public get engineType(): 'worklet' | 'analyser-node' {
+    return this.workletNode ? 'worklet' : 'analyser-node';
+  }
+
+  public async tryUpgradeToWorklet(context: AudioContext): Promise<boolean> {
+    if (this.workletNode || !context.audioWorklet?.addModule) {
+      return false;
+    }
+    try {
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+      await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
+      const workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        processorOptions: {
+          fftSize: this.frequencyBinCount * 2,
+          sampleRate: this.sampleRate,
+          messageEvery: this.frequencyBinCount >= 512 ? 4 : 2,
+        },
+      });
+      this.sourceNode.connect(workletNode);
+      workletNode.connect(this.silentGain);
+      this.wireWorkletMessagePort(workletNode);
+      this.workletNode = workletNode;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public attachAutomaticUpgradeListener(context: AudioContext): void {
+    if (typeof window === 'undefined' || this.workletNode) return;
+    const handler = () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('touchstart', handler);
+      void this.tryUpgradeToWorklet(context);
+    };
+    window.addEventListener('pointerdown', handler, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener('keydown', handler, { once: true, passive: true });
+    window.addEventListener('touchstart', handler, {
+      once: true,
+      passive: true,
+    });
   }
 
   static async create(
@@ -376,7 +425,7 @@ export class FrequencyAnalyser {
       }
     }
 
-    return new FrequencyAnalyser({
+    const analyser = new FrequencyAnalyser({
       sourceNode,
       workletNode,
       analyserNode,
@@ -386,6 +435,12 @@ export class FrequencyAnalyser {
       silentGain,
       sampleRate,
     });
+
+    if (!workletNode) {
+      analyser.attachAutomaticUpgradeListener(context);
+    }
+
+    return analyser;
   }
 
   getFrequencyData() {

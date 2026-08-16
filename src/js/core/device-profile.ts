@@ -133,14 +133,15 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
     reasons.push('Smart TV limited processing envelope');
   }
 
+  const isHardwareLowPower =
+    limitedDeviceMemory ||
+    limitedCpuCores ||
+    constrainedHandheld ||
+    inferredLimitedMemory ||
+    isTv;
+
   return {
-    lowPower:
-      reducedMotion ||
-      limitedDeviceMemory ||
-      limitedCpuCores ||
-      constrainedHandheld ||
-      inferredLimitedMemory ||
-      isTv,
+    lowPower: isHardwareLowPower,
     reason: reasons.length > 0 ? reasons.join(', ') : null,
     reducedMotion,
   };
