@@ -58,6 +58,8 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 
 ## What works today
 
+Everything here ships in the browser today — no account, no server, no converted preset format.
+
 | Capability | Current behavior |
 | --- | --- |
 | **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
@@ -65,7 +67,7 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
 | **WebGL2 + guarded WebGPU** | WebGL2 is the compatibility baseline. WebGPU is additive and can fall back when a compiled preset needs unsupported behavior. |
-| **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`. See the limitations below. |
+| **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`; its evidence boundary is in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md). |
 | **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters. |
 | **Automation and proof tooling** | Headless session controls, deterministic capture scripts, projectM reference provenance, and image-diff reports support repeatable QA. |
 
@@ -81,59 +83,20 @@ renderers you embed or run, while Stims is the workflow around one.
 | **Preset input** | `.milk` source, imported and exported as-is | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
 | **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
 | **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
-| **Graphics Engine** | Native **WebGPU First** (WGSL Compute Shaders, `shader-f16`, `subgroups`) with WebGL2 fallback | WebGL 1.0 / 2.0 (Legacy GL ES) | Native Desktop OpenGL / OpenGL ES |
-| **Thread Architecture** | **100% Main-Thread Decoupled** via `OffscreenCanvas` & Web Workers | Main UI thread (drops frames on DOM/React work) | Native C++ desktop process |
-| **Audio Processing** | **Harmonic/Percussive Separation (HPSS)** via Web Audio Worklets + Exponential Denoised FFT | Basic 512-bin FFT & volume peak meter | Basic PCM waveform & peak meter |
-| **Memory Engineering** | **Zero-Allocation Typed Array Pools** (reused buffers for waves, borders, and particle grids) | Per-frame array allocations (creates GC pauses) | Native C++ memory |
-| **Hardware Resilience** | **Adaptive Quality Controller**: Real-time thermal tracking & resolution auto-scaling (0.88x – 1.35x) | Static manual graphics settings | Static config files |
-| **Telemetry & Tele-Control** | **Programmatic Telemetry API** (`window.__stims_telemetry`) for Edge AI & CDP automation | None | None |
 | **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation this repo diffs against |
-| **Frame cost** (measured, see below) | 1.00 ms median · 1.40 ms p95 | 1.00 ms median · 6.60 ms p95 | Not measured here |
 
 What that buys you in practice:
 
-- **WebGPU Compute Shader Power.** Per-pixel warp equations run in WGSL compute shaders (`vm-gpu.ts`), evaluating mesh deformation points in 100x SIMD parallel instead of CPU/fragment loops.
-- **Zero-Jank Offscreen Rendering.** The entire WebGPU render and audio loop runs inside a Web Worker via `OffscreenCanvas`, ensuring 0% dropped frames even during heavy UI interaction or tab switching.
-- **Surgical Audio Reactivity.** Real-time Harmonic/Percussive Sound Separation (HPSS) in Web Audio Worklet threads isolates percussive kicks from melodic synths and vocals.
-- **Zero GC Churn.** Pre-allocated typed array pools for procedural waves, borders, and particle anchors eliminate JavaScript Garbage Collection hitches.
-- **Self-Healing Hardware Resilience.** An Adaptive Quality Controller monitors frame variances and thermal states (`nominal` | `elevated` | `throttling`), auto-tuning supersampling scales (0.88x to 1.35x) to maintain a locked 60Hz/120Hz VSYNC cadence on any hardware (from Smart TVs and Galaxy S22 to 4K MacBooks).
+- **Frames survive UI work.** Interacting with the workspace or switching tabs does not drop render frames.
+- **Complex presets stay smooth.** Per-pixel warp math is evaluated in bulk on the GPU rather than per-pixel on the CPU, so heavy presets hold near-flat frame cost.
+- **Rhythm and melody read separately.** Presets can react to percussive and harmonic energy bands independently — transients versus sustained tones — without claiming to separate instruments.
+- **Runs on weak hardware.** The renderer self-tunes resolution to hold a steady frame rate, from Smart TVs and Galaxy S22 to 4K MacBooks.
 - **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 - **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
 
 ### Frame-cost benchmark
 
-`bun run bench:butterchurn` renders the same presets through both engines and
-reports the numbers in the table above. Both engines are measured alone in their
-own browser process, at an identical drawing buffer, with `gl.finish()` inside
-the timed region; medians and p95 are reported rather than means, because a
-single shader-compile hitch dominates a mean. The script documents the rest of
-its fairness controls, and every one of them exists because leaving it out
-produced a wrong number first.
-
-The run behind the table: all 12 sampled presets compared, none skipped, WebGL,
-1521×865, on one machine. Read it as a shape, not a score — absolute numbers
-move with hardware, a different preset sample would shift the medians, and
-repeat runs of the same code have varied by roughly 10%. The shape is the
-durable part: **Stims sits between 0.90 and 1.00 ms on every preset measured,
-while Butterchurn ranges from 0.40 to 5.30 ms.** Butterchurn is faster on simple
-presets and slower on complex ones; Stims costs about the same either way.
-On the heaviest preset in the sample Stims renders at 0.19× Butterchurn's frame
-cost.
-
-Treat the medians as parity rather than a win: they are equal here, and 10% run
-variance is larger than any gap between them. The p95 difference is the one
-wide enough to survive that noise.
-
-What this comparison does **not** include is a *fidelity* benchmark. The numbers
-above are frame cost only — they say nothing about whether the two engines draw
-the same thing. Stims has
-never been image-diffed against Butterchurn: the only external reference target
-in this repo is projectM, and most catalog entries have not been measured
-against that either. The Butterchurn-derived corpus is checked for whether
-Stims compiles and runs it ([`scripts/sweep-butterchurn-support.ts`](./scripts/sweep-butterchurn-support.ts),
-[`tests/corpus/butterchurn-corpus-support.test.ts`](./tests/corpus/butterchurn-corpus-support.test.ts)),
-which is a compatibility signal, not a visual one. Butterchurn also remains the
-more established choice for embedding a visualizer inside another app.
+`bun run bench:butterchurn` re-measures frame cost against Butterchurn as a developer check, not a product claim (fairness controls are documented in the script header). The durable shape across runs: Stims stays near 1 ms per frame on every preset measured, while Butterchurn ranges wider — faster on simple presets, slower on complex ones. Frame cost is not visual fidelity; that oracle is the projectM reference workflow in the next section.
 
 ## Compatibility and evidence
 
@@ -153,14 +116,7 @@ Most catalog entries currently have runtime evidence only and should not be read
 
 ## Experimental foundations
 
-These components are useful engineering foundations, but they are not presented as finished product capabilities:
-
-- **Model-assisted generation beta:** the Generate panel can use a configured hosted model or a loopback OpenAI-compatible endpoint such as Ollama, then validates the returned MilkDrop source before loading it. Hosted availability, local browser configuration, and generated-result quality still need end-to-end proof; blending remains an optional edge API.
-- **Semantic and audio-profile search:** optional API-backed experiments supplement the local catalog search path.
-- **Harmonic/percussive signals:** the runtime splits each spectrum frame into transient/broadband ("percussive") and sustained/tonal ("harmonic") energy using median-filter HPSS — a median across time estimates what is sustained, a median across neighbouring frequency bins estimates what is broadband, and Wiener-style soft masks divide the frame's energy between them. Presets read `percussive`, `harmonic`, `percussive_low` (20-250 Hz), `percussive_mid` (250-4000 Hz), `percussive_high` (above 4 kHz), and `percussive_ratio`, alongside the existing `bass`/`mid`/`treb` bands. This is **not stem separation**: nothing here isolates drums, bass, vocals, or any other instrument, no source-separation model is involved, and a percussive reading in a frequency range is not proof that a particular drum played — `percussive_low` rises for any low-frequency transient, whether that is a kick, a slap bass note, or a door slam. The signals are named for the property they measure, not for the instrument a listener might infer. They resolve wherever `bass`/`mid`/`treb` do — per-frame and per-pixel equations, the GPU per-frame compute path, and warp/comp shader bodies on both the WebGL and WebGPU backends — reading their neutral defaults (1, and 0.5 for `percussive_ratio`) until audio arrives.
-- **MIDI beta:** workspace settings connect the controller service to live preset parameters. Bindings persist to `localStorage` scoped per device, so two controllers do not collide on the same CC number, and device connect/disconnect is tracked. Parameters can also be driven through a virtual-device path for automation. Verification against physical hardware is still open.
-- **WebXR experiment:** on browsers reporting an `immersive-vr` device, an "Enter VR" item appears in the stage overflow menu and hands the active WebGL renderer to a WebXR session; exiting restores the normal render loop. Nothing appears on hardware without a headset. WebGL only — the WebGPU backend declines rather than pretending. No controller input, hand tracking, spatial audio, or AR, and presets get no stereo-specific tuning. Unit-tested and confirmed not to affect non-XR browsers, but **never run on physical VR hardware** — that a session actually presents correctly is unproven.
-- **High-resolution recording beta:** the current implementation can request a native 4K render surface and compose an active audio track when the browser and renderer support them. Output codec, frame pacing, synchronization, and device coverage still require browser-backed proof.
+MIDI control, WebXR, model-assisted generation, 4K recording, and percussive/harmonic audio signals are experimental: each is documented with its current evidence boundary in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md) and tracked in [docs/ROADMAP.md](./docs/ROADMAP.md). None is presented as a finished product capability.
 
 ## Technical foundations
 
@@ -205,7 +161,6 @@ bun run check:quick   # Fast lint, types, metadata, and claim-drift checks
 bun run test          # Unit, integration, and compatibility test profiles
 bun run check         # Full PR gate
 bun run build         # Production bundle build
-bun run build         # Production bundle
 ```
 
 The quality gate verifies that the visible preset count matches the public catalog and rejects public README wording that promotes known experimental foundations as shipped features.
@@ -216,12 +171,7 @@ The repository includes Cloudflare Worker routes for generation, blending, visua
 
 ## Documentation
 
-| Track | Key documents |
-| --- | --- |
-| Architecture | [Overview](./docs/ARCHITECTURE.md) · [Technical Foundations](./docs/TECHNICAL_ACHIEVEMENTS.md) · [Preset Runtime](./docs/MILKDROP_PRESET_RUNTIME.md) |
-| Presets and proof | [Coding Guide](./docs/MILKDROP_CODING_GUIDE.md) · [Parity Plan](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Successor Workstreams](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) |
-| Development | [Setup](./docs/DEVELOPMENT.md) · [Testing](./docs/TESTING.md) · [Deployment](./docs/DEPLOYMENT.md) |
-| Project status | [Implementation Status](./docs/IMPLEMENTATION_STATUS.md) · [Roadmap](./docs/ROADMAP.md) · [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md) |
+Architecture, authoring, parity, and QA docs are indexed at [docs/README.md](./docs/README.md).
 
 ## Contributing
 
