@@ -70,7 +70,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { describePresetMood, getToolLabel } from './workspace-helpers.ts';
+import { getToolLabel } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -93,7 +93,7 @@ const EditorPanel = lazy(() =>
   import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
 );
 const RefinePanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.RefinePanel })),
+  import('./RefinePanel.tsx').then((m) => ({ default: m.RefinePanel })),
 );
 const SettingsSheetPanel = lazy(() =>
   import('./SettingsSheetPanel.tsx').then((m) => ({
@@ -644,28 +644,6 @@ function StimsWorkspaceAppShell() {
     void prompt.prompt();
     setInstallPrompt(null);
   }, [installPrompt]);
-
-  const _stageEyebrow = engine.loadingRequestedPreset
-    ? 'Loading preset'
-    : liveMode
-      ? 'Now playing'
-      : 'Ready to play';
-  const _stageTitle = engine.loadingRequestedPreset
-    ? 'Loading preset'
-    : engine.selectedPreset
-      ? engine.selectedPreset.title
-      : engine.missingRequestedPreset
-        ? 'Choose another preset'
-        : (engine.featuredPreset?.title ?? 'Recommended preset');
-  const _stageSummary = engine.loadingRequestedPreset
-    ? `Loading ${ui.routeState.presetId}.`
-    : engine.selectedPreset
-      ? engine.selectedPreset.author || 'Unknown author'
-      : engine.missingRequestedPreset
-        ? 'Start with the recommended preset, or browse the full list.'
-        : engine.featuredPreset
-          ? describePresetMood(engine.featuredPreset)
-          : 'Start with YouTube, mic, tab audio, or browse presets first.';
 
   useEffect(() => {
     return connectWakeLock(() => {

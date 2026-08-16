@@ -1,12 +1,12 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import type { PresetCatalogEntry } from './contracts.ts';
+import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import { UiIcon } from './UiIcon.tsx';
-import { PresetGrid } from './PresetGrid.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   type BrowseSortMode,
@@ -20,52 +20,14 @@ import {
   sortBrowseEntries,
 } from './workspace-helpers.ts';
 
+export {
+  type ImageToPresetAction,
+  type ImageToPresetResponse,
+  resolveImageToPresetAction,
+} from './workspace-helpers.ts';
+
 const BATCH_SIZE = 30;
 type SortMode = BrowseSortMode;
-
-type ImageToPresetResponse = {
-  description?: string;
-  milkSource?: string;
-  presetId?: string;
-  title?: string;
-};
-
-export type ImageToPresetAction =
-  | {
-      kind: 'generated-source';
-      description: string;
-      source: string;
-      title: string;
-    }
-  | {
-      kind: 'preset-id';
-      description: string;
-      presetId: string;
-    };
-
-export function resolveImageToPresetAction(
-  data: ImageToPresetResponse,
-): ImageToPresetAction | null {
-  const description = data.description?.trim() || 'Generated from image.';
-  const source = data.milkSource?.trim();
-  if (source) {
-    return {
-      kind: 'generated-source',
-      description,
-      source,
-      title: data.title?.trim() || 'Image generated preset',
-    };
-  }
-  const presetId = data.presetId?.trim();
-  if (presetId) {
-    return {
-      kind: 'preset-id',
-      description,
-      presetId,
-    };
-  }
-  return null;
-}
 
 function readSortMode(): SortMode {
   try {
@@ -112,13 +74,12 @@ export function BrowseSheetPanel({
   // Wrapper for PresetGrid — only passes presetId and audioSource
   const setPresetRouteState = (next: {
     presetId: string | null;
-    audioSource: string | null;
+    audioSource: AudioSource | null;
   }) => {
     ui.commitRoute({
+      ...ui.routeState,
       ...next,
-      collectionTag: ui.routeState.collectionTag,
-      agentMode: ui.routeState.agentMode,
-    } as any);
+    });
   };
   const presetListRef = useRef<HTMLUListElement | null>(null);
   const recentRailRef = useRef<HTMLUListElement | null>(null);

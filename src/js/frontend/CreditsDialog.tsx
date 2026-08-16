@@ -48,12 +48,7 @@ export function CreditsDialog({
         role="presentation"
       >
         <CreditsPanel />
-        <button
-          type="button"
-          className="cta-button ghost"
-          onClick={onClose}
-          style={{ marginTop: '1.5rem' }}
-        >
+        <button type="button" className="cta-button ghost" onClick={onClose}>
           Close
         </button>
       </div>

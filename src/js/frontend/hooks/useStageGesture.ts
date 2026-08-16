@@ -24,14 +24,6 @@ function isInteractiveTarget(target: EventTarget | null) {
   );
 }
 
-function _supportsTouchShortcutInput() {
-  return (
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(pointer: coarse)').matches ||
-      navigator.maxTouchPoints > 0)
-  );
-}
-
 export function useStageGesture({
   enabled,
   stageRef,

@@ -13,7 +13,6 @@ import {
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
-import { resolveAuthorUrl } from './workspace-helpers.ts';
 
 /**
  * Finding a preset in the catalog, by whichever signal you have to hand.
@@ -232,32 +231,9 @@ export function PresetFinderPanel({
                   <span className="stims-finder__info">
                     <span className="stims-finder__name">{result.title}</span>
                     <span className="stims-finder__meta">
-                      {result.entry?.author ? (
-                        <>
-                          by{' '}
-                          {resolveAuthorUrl(
-                            result.entry.author,
-                            result.entry.authorUrl,
-                          ) ? (
-                            <a
-                              href={resolveAuthorUrl(
-                                result.entry.author,
-                                result.entry.authorUrl,
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ctl-preset__author-link"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {result.entry.author}
-                            </a>
-                          ) : (
-                            result.entry.author
-                          )}
-                        </>
-                      ) : (
-                        'Unknown author'
-                      )}
+                      {result.entry?.author
+                        ? `by ${result.entry.author}`
+                        : 'Unknown author'}
                     </span>
                   </span>
                 </button>

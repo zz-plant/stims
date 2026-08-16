@@ -182,7 +182,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
 
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className={styles.header}>
         <ParametricIdenticon
           seed={prompt.trim() || 'model-generator'}
           filterPreset="liquid-warp"

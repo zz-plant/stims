@@ -110,7 +110,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(toastHookSource).toContain(
       "'Using a lighter graphics mode so playback stays smooth.'",
     );
-    expect(appSource).toContain("? 'Now playing'");
+    expect(stageSource).toContain('Now playing:');
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');
     expect(uiSource).not.toContain('Single-route workspace');

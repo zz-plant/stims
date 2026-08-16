@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { parseURLParams } from '../core/url-params.ts';
 import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import { useEngine, useEngineSnapshot } from './engine-context.tsx';
+import { UiIcon } from './UiIcon.tsx';
 
 /**
  * On-canvas debug HUD, mounted only for `?debug=hud`.
@@ -181,7 +182,10 @@ export function HudOverlay() {
           onClick={() => setDismissed(true)}
           aria-label="Hide debug HUD"
         >
-          ✕
+          <UiIcon
+            name="close"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
         </button>
       </header>
 

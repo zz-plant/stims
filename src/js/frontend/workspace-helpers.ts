@@ -757,3 +757,47 @@ export function getSettingsPresetOptions() {
 export function getQualityImpactSummary(preset: QualityPreset) {
   return describeQualityPresetImpact(preset);
 }
+
+export type ImageToPresetResponse = {
+  description?: string;
+  milkSource?: string;
+  presetId?: string;
+  title?: string;
+};
+
+export type ImageToPresetAction =
+  | {
+      kind: 'generated-source';
+      description: string;
+      source: string;
+      title: string;
+    }
+  | {
+      kind: 'preset-id';
+      description: string;
+      presetId: string;
+    };
+
+export function resolveImageToPresetAction(
+  data: ImageToPresetResponse,
+): ImageToPresetAction | null {
+  const description = data.description?.trim() || 'Generated from image.';
+  const source = data.milkSource?.trim();
+  if (source) {
+    return {
+      kind: 'generated-source',
+      description,
+      source,
+      title: data.title?.trim() || 'Image generated preset',
+    };
+  }
+  const presetId = data.presetId?.trim();
+  if (presetId) {
+    return {
+      kind: 'preset-id',
+      description,
+      presetId,
+    };
+  }
+  return null;
+}
