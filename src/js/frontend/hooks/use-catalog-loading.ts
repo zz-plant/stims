@@ -4,22 +4,40 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
 } from '../../milkdrop/catalog-types.ts';
-import type {
-  PresetCatalogEntry,
-  PresetCatalogManifest,
-} from '../contracts.ts';
+import type { PresetCatalogEntry } from '../contracts.ts';
 import { reportLoadStatus } from '../load-status.ts';
 import { mapRuntimeCatalogEntry } from '../workspace-helpers.ts';
 
 const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
 
-async function loadStarterCatalog() {
-  const response = await fetch(STARTER_CATALOG_URL);
-  if (!response.ok) {
-    throw new Error(`Unable to load starter catalog (${response.status}).`);
+async function loadStarterCatalog(): Promise<PresetCatalogEntry[]> {
+  // Check if a catalog fetch was already initiated from app.ts; if so, use it.
+  // This avoids a duplicate network request when the promise is hoisted up
+  // from the module entry point.
+  const globalPromise =
+    typeof globalThis !== 'undefined'
+      ? (
+          globalThis as unknown as {
+            __stimsStarterCatalogPromise?: Promise<unknown>;
+          }
+        ).__stimsStarterCatalogPromise
+      : undefined;
+
+  let document: unknown;
+  if (globalPromise) {
+    document = await globalPromise;
+  } else {
+    const response = await fetch(STARTER_CATALOG_URL);
+    if (!response.ok) {
+      throw new Error(`Unable to load starter catalog (${response.status}).`);
+    }
+    document = await response.json();
   }
-  const document = (await response.json()) as PresetCatalogManifest;
-  return document.presets ?? [];
+
+  return (
+    (document as { presets: PresetCatalogEntry[] | undefined } | null)
+      ?.presets ?? []
+  );
 }
 
 const scheduleBackgroundTask = (callback: () => void) => {
@@ -108,7 +126,7 @@ export function useCatalogLoading() {
     setFullCatalogReady(false);
 
     void loadStarterCatalog()
-      .then((presets) => {
+      .then((presets: PresetCatalogEntry[]) => {
         if (cancelled) return;
         setFallbackCatalog(presets);
         setFallbackCatalogReady(true);
