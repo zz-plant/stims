@@ -25,6 +25,7 @@ flowchart LR
   Arch --> A1["ARCHITECTURE.md<br/>boot path, URL state, engine seam"]
   Arch --> A2["MILKDROP_PRESET_RUNTIME.md<br/>compiler + VM lifecycle"]
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
+  Arch --> A4["architecture/fallback-state-machine.md<br/>renderer capability contract"]
 
   Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
@@ -65,6 +66,9 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | Implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
 | ⚡ [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
 | 🖥️ [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |
+| 🎯 [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
+| 🔍 [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |
+| 📐 [**Rasterization Fidelity Audit**](./architecture/rasterization-fidelity-audit.md) | WebGL vs WebGPU output divergence across waves, shapes, and borders |
 
 ---
 
@@ -103,6 +107,8 @@ Roadmap priorities, QA verification suites, and historical context.
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
 | 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
+| 📊 [**Release Evidence Ledger**](./evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) | Source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem |
+| 🧹 [**Recurring Fix Patterns Audit**](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) | Root-cause analysis of the recurring regression clusters |
 | 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |
 | 📜 [**Lineage & Credits**](./LINEAGE_AND_CREDITS.md) | Project history, homage to Ryan Geiss's MilkDrop, Butterchurn, and projectM |
 
@@ -116,6 +122,7 @@ Research grounding for Stims' sensory-control claims, open research questions, a
 | --- | --- |
 | 🧠 [**Sensory Accessibility & Control Research**](./SENSORY_ACCESSIBILITY.md) | The distinctive-control claim, layered research program, literature status table, and flash-safety spec |
 | 📚 [**Literature Reference Map**](./LITERATURE.md) | Citation list grouped by theme, for UI-copy grounding and the research program above |
+| ♿ [**Sensory Control Guide**](./guides/accessibility.md) | User-facing story of how Stims lets you decide how much is on screen |
 
 ---
 

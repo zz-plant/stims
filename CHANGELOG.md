@@ -6,11 +6,32 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 
 ## [Unreleased]
 
-### Planned
+### Added
 
-- projectM WebGPU compute shader parity & full WGSL pipeline lowering.
-- Audio analyzer AudioWorklet migration for low-latency FFT analysis.
-- Live EEL preset editor with real-time expression AST diagnostics.
+- Virtual time for deterministic visual captures: `animation-loop.ts` exposes a controllable `virtualTimeSource`, and the capture script plus visual-regression e2e drive it so single-frame comparisons stop drifting on phase (`0951a1a9`).
+- WebGPU timestamp profiler and temporal reconstruction (`e76d092c`).
+- Hermite-spline audio reactivity interpolation (`f8b9ba56`), continuous dynamic-resolution scaling with an accumulator, and CAS sharpening (`fb72fa4d`).
+- Per-frame `q`-registers in GPU field programs (`b93d1adf`), extended shader intrinsics and metadata (`0a5726f4`).
+- Audio search now feeds real spectral bands, and presets are described by how they look rather than what they are called (`29afa912`, `4c44533e`).
+
+### Changed
+
+- Bounded every growth path the `#1105`–`#1111` series touched: compiled-preset cache warmup, preset preview cache, idle renderer pool retention, source-diff memory, and offscreen shader identicons (`a63a1dda`, `12bd38be`, `663df8c8`, `fed4a2bb`, `9cf158e4`).
+- Coalesced stage-control activity and optimized preset stage transitions (`4d046c3d`, `d7f2e5a8`); removed redundant layers (`b28b4aa9`).
+
+### Fixed
+
+- Live editor field writes no longer silently no-op (`37c5a0fa`).
+- Preset transitions no longer invalidate the frame's WebGPU command buffer (`2528bfa7`).
+- Removed duplicate `.milk` files and normalized Geiss/Aderrasi catalog metadata (`7cc92dae`); search index re-embeds presets whose description changed (`03ba5f93`).
+- Stopped three tests failing on the CI runner and nowhere else (`900a3617`).
+
+### Planned — studio first, parity as a floor
+
+- **Remix studio**: dependable undo/redo and named snapshots, side-by-side A/B against the source preset, remix provenance retained in exported `.milk`.
+- **Creator-grade export**: deterministic frame pacing, loop-duration controls, and codec/AV-sync verification for 1080p and 4K recording.
+- **Live EEL preset editor** with real-time expression AST diagnostics.
+- Parity stays a maintenance floor, not a frontier: projectM WebGPU compute-shader lowering and the AudioWorklet analyzer migration proceed only as they serve the compatibility labels and recording path above.
 
 ## [1.3.0] - 2026-07-29
 

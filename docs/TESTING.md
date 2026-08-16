@@ -163,4 +163,4 @@ happy-dom provides `window`, `document`, `navigator`, `localStorage`, and `reque
 - [`QA_PLAN.md`](./QA_PLAN.md) — high-value flows and manual smoke checklist
 - [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md) — feature-level verification mapping
 - [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) — artifact-capture and sign-off checklist for milestone refactors
-- [`RECURRING_FIX_PATTERNS_AUDIT_2026-05.md`](./RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) — root cause analysis for the recurring regression clusters
+- [`evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md`](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) — root cause analysis for the recurring regression clusters
