@@ -90,7 +90,7 @@
     "bench:butterchurn": "bun run scripts/bench-vs-butterchurn.ts",
     "profile:frame": "bun run scripts/profile-frame.ts",
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
-    "generate:all": "bun run --parallel generate:search-index generate:previews && bun run generate:descriptions",
+    "generate:all": "bun run --parallel generate:previews && bun run generate:descriptions",
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
     "cf:whoami": "bunx wrangler whoami",

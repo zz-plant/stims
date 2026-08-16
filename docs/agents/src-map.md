@@ -47,4 +47,3 @@ per area; read the file itself for details.
 | --- | --- | --- |
 | `docs/authoring/reference.md` | `bun run docs:authoring-reference` (from `expression.ts` / `builtin-docs.ts`) | `check:authoring-docs` |
 | `public/milkdrop-presets/catalog.json` | catalog import/sync tooling | `check:catalog-integrity`, `check:catalog-fidelity` |
-| catalog search index | `bun run generate:search-index` | `check:readme-claims` (via preset count) |

@@ -43,7 +43,6 @@ const RULES: Rule[] = [
   {
     match: ['public/milkdrop-presets/catalog.json'],
     guards: ['check:catalog-integrity', 'check:catalog-fidelity'],
-    regens: ['generate:search-index'],
   },
   {
     match: ['public/milkdrop-presets/'],

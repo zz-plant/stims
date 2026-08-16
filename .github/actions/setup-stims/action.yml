@@ -27,6 +27,14 @@ runs:
         restore-keys: |
           ${{ runner.os }}-bun-
 
+    - name: Cache node_modules
+      uses: actions/cache@v6
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
+
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile
