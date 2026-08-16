@@ -69,7 +69,7 @@ If a new fix category is emerging or an existing one is growing:
 
 ### 5. Refresh the audit doc
 
-Update `docs/RECURRING_FIX_PATTERNS_AUDIT_YYYY-MM.md` with:
+Update `docs/evidence/RECURRING_FIX_PATTERNS_AUDIT_YYYY-MM.md` with:
 - New fix counts and percentages
 - Updated hottest-files list
 - New root-cause themes

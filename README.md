@@ -204,6 +204,7 @@ Open `http://localhost:5173`.
 bun run check:quick   # Fast lint, types, metadata, and claim-drift checks
 bun run test          # Unit, integration, and compatibility test profiles
 bun run check         # Full PR gate
+bun run build         # Production bundle build
 bun run build         # Production bundle
 ```
 
