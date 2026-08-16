@@ -1553,7 +1553,11 @@ function createFeedbackBlendOutputNode(
     const activeOffsetY =
       getShaderEnvValue(perPixelEnv, 'dy')?.node ?? uniforms.offsetY;
 
-    const rotationSin = sin(activeRot);
+    // Sampling coordinates must invert the intended image transform (rotate
+    // backward to find where displayed content came from), so negate the
+    // rotation to make the image visually rotate by +rot, matching the WebGL
+    // warp/composite shaders and the CPU/GPU mesh transform direction.
+    const rotationSin = sin(activeRot).mul(-1);
     const rotationCos = cos(activeRot);
     const rotatedUv = vec2(
       centeredUv.x.mul(rotationCos).sub(centeredUv.y.mul(rotationSin)),
@@ -1565,7 +1569,11 @@ function createFeedbackBlendOutputNode(
 
     const currentUv = (
       hasDirectWarpProgram
-        ? applyDirectWarpProgram(shaderPrograms.warp, shaderEnv, baseUv)
+        ? applyDirectWarpProgram(
+            shaderPrograms.warp,
+            shaderEnv,
+            transformedUv.add(0.5),
+          )
         : applyFeedbackWarpNode(transformedUv.add(0.5), activeWarp, activeRot)
     ).toVar();
     const previousUv = (
