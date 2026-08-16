@@ -20,6 +20,35 @@ You're about to code on Stims. Before you dive into docs, grab these five things
    - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
    - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
 
+## Verify by change type
+
+Run exactly what your change can break instead of the whole gate:
+
+| Change touches | Verify with |
+| --- | --- |
+| `README.md`, `docs/`, AGENTS files only | `bun run check:doc-references` + `bun run check:readme-claims` |
+| `src/`, `scripts/` code | `bun run check:quick` |
+| tests | `bun run test <file>` then `bun run check:quick` |
+| `expression.ts` / `builtin-docs.ts` | `bun run docs:authoring-reference` then `bun run check:authoring-docs` |
+| `public/milkdrop-presets/catalog.json` | `bun run check:catalog-integrity` + `bun run check:catalog-fidelity`, then `bun run generate:search-index` |
+| anything | `bun run agent:verify --changed` (smart gate: detects applicable guards/tests/regens) |
+
+## Boundaries and don't-touch areas
+
+- **`src/data/milkdrop-parity/`** — measured results, certification corpus, and
+  reference manifests are promotion outputs. Change them only through the
+  capture → import → promote workflow (`parity:capture:projectm-native`,
+  `parity:promote-reference`, `parity:promote-result`); direct edits break the
+  provenance chain.
+- **`tests/fixtures/milkdrop/projectm-reference/`** and `projectm-upstream/` —
+  provenance-bound fixtures; regenerated, not hand-edited.
+- **`scratch/`, `screenshots/`, `output/`** — gitignored measurement output, not
+  source. Never commit them.
+- **`docs/authoring/reference.md`** — generated from `expression.ts` /
+  `builtin-docs.ts`. Edit the source, then `bun run docs:authoring-reference`.
+- **Stale `docs/archive/` and dated `STATUS_*` docs** — historical records.
+  `check:doc-references` intentionally skips them; don't rewrite the past.
+
 ## Task routing
 
 Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) when the task maps to a repeatable workflow. Fast path:
@@ -57,6 +86,7 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 - `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
 - `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
 - `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).
+- `check:readme-claims` — keeps the public README honest. Any `N-preset catalog` or `**N presets**` figure must equal `public/milkdrop-presets/catalog.json`, and these phrases are rejected as claims for unshipped features: `Stem-Aware Audio Engine`, `WebMIDI & VJ Controls`, `WebXR 6DoF Spatial VR Stage`, `4K / 60FPS Video Export`, `AI Generation & Blending`. README edits must not introduce them.
 
 ## Recommended execution order
 

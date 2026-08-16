@@ -143,19 +143,27 @@ function buildBunTestCmd({
   changed,
   parallel,
   maxConcurrency,
+  bail,
 }: {
   files: string[];
   watch: boolean;
   changed?: boolean;
   parallel?: number | true;
   maxConcurrency?: number;
+  bail?: boolean;
 }): string[] {
+  // Dev feedback stops at the first failing test file; CI keeps running so a
+  // single failure cannot mask the rest of a suite. `--bail` is inert under
+  // `--watch`, which must keep running after a failure.
+  const bailEnabled = (bail ?? true) && !watch && !process.env.CI;
+
   return [
     'bun',
     'test',
     '--preload=./tests/setup.ts',
     ...(watch ? ['--watch'] : []),
     ...(changed ? ['--changed'] : []),
+    ...(bailEnabled ? ['--bail'] : []),
     ...(parallel === true
       ? ['--parallel']
       : typeof parallel === 'number'

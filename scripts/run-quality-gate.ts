@@ -268,7 +268,7 @@ async function runStepListConcurrent(
   while (pending.size > 0) {
     const { index, result } = await Promise.race(pending.values());
     pending.delete(index);
-    printStepResult(result);
+    printStepResult(result, outputMode);
 
     if (result.exitCode !== 0) {
       for (const [idx] of pending.entries()) {
@@ -287,17 +287,18 @@ async function main() {
   const argv = process.argv.slice(2);
   const mode = parseMode(argv);
   const executionMode = parseExecutionMode(argv);
+  const outputMode = parseOutputMode(argv);
   const plan = buildGatePlan(mode, executionMode);
 
-  await runStepListSerial(plan.preflight);
+  await runStepListSerial(plan.preflight, outputMode);
 
   if (plan.executionMode === 'parallel') {
-    await runStepListConcurrent(plan.concurrent);
+    await runStepListConcurrent(plan.concurrent, outputMode);
   } else {
-    await runStepListSerial(plan.concurrent);
+    await runStepListSerial(plan.concurrent, outputMode);
   }
 
-  await runStepListSerial(plan.postflight);
+  await runStepListSerial(plan.postflight, outputMode);
 }
 
 if (import.meta.main) {
