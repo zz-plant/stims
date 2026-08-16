@@ -1,4 +1,4 @@
-export const DEFAULT_WEBGPU_INIT_TIMEOUT_MS = 4000;
+export const DEFAULT_WEBGPU_INIT_TIMEOUT_MS = 3000;
 
 export async function resolveWithTimeout<T>(
   promise: Promise<T>,

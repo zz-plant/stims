@@ -16,7 +16,24 @@ import { initGamepadNavigation } from './utils/browser/gamepad-navigation.ts';
 type StimsAppGlobals = typeof globalThis & {
   __stimsAppDispose?: () => void;
   __stimsAppReady?: Promise<void>;
+  __stimsStarterCatalogPromise?: Promise<unknown>;
 };
+
+/**
+ * Kick off the starter catalog fetch immediately, before React mounts.
+ * The renderer capability probe and battery/refresh-rate sampling also start
+ * here, so this fetch runs in parallel with all of them instead of waiting
+ * for React hydration + useCatalogLoading to fire.
+ */
+const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
+(globalThis as StimsAppGlobals).__stimsStarterCatalogPromise = fetch(
+  STARTER_CATALOG_URL,
+)
+  .then((r) => {
+    if (!r.ok) throw new Error(`Starter catalog fetch failed (${r.status})`);
+    return r.json();
+  })
+  .catch(() => null);
 
 function ensureRootContainer() {
   const existing = document.getElementById('app');
@@ -87,10 +104,8 @@ const appReady = new Promise<void>((resolve) => {
 (globalThis as StimsAppGlobals).__stimsAppReady = appReady;
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then((reg) => {
-      void reg.update();
-    });
+  navigator.serviceWorker.register('/service-worker.js').then((reg) => {
+    void reg.update();
   });
 }
 

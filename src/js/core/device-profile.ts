@@ -311,7 +311,7 @@ export function startRefreshRateSampling() {
     }
     last = now;
 
-    if (deltas.length < 20) {
+    if (deltas.length < 8) {
       window.requestAnimationFrame(sample);
       return;
     }
