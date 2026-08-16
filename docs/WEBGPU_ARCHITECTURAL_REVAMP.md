@@ -16,48 +16,34 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 
 ### 1) Unify Feedback Pipeline to Be Backend-Native
 
-**Objective**: Make feedback render targets backend-aware so WebGPU sessions don't round-trip through WebGL internals.
+Feedback render targets should be backend-aware so WebGPU sessions stop round-tripping through WebGL internals.
 
-**Key changes**:
 - Keep renderer feedback/fallback decisions in `renderer-execution-plan.ts`
 - Extract WebGL feedback target construction behind `feedback-render-targets.ts`
-- Implement WebGPU render target variant using `three/webgpu`
+- Implement a WebGPU render target variant using `three/webgpu`
 - Route `setRenderTarget` calls through the renderer, not hardcoded WebGL assumptions
 
-**Files**:
-- `src/js/milkdrop/renderer-execution-plan.ts`
-- `src/js/milkdrop/feedback-render-targets.ts`
-- `src/js/milkdrop/feedback-manager-shared.ts`
-- `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`  
-- `src/js/milkdrop/renderer-adapter-core.ts`
+Files: `src/js/milkdrop/renderer-execution-plan.ts`, `src/js/milkdrop/feedback-render-targets.ts`, `src/js/milkdrop/feedback-manager-shared.ts`, `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`, `src/js/milkdrop/renderer-adapter-core.ts`
 
 ### 2) Consolidate Composite Shader Source of Truth
 
-**Objective**: Eliminate the GLSL/TSL dual-maintenance problem.
+Composite shading should have one source of truth instead of the GLSL/TSL dual-maintenance problem.
 
-**Key changes**:
-- Define composite pipeline as a declarative IR
+- Define the composite pipeline as a declarative IR
 - Generate both GLSL and TSL from the single IR
 - Explore using TSL for both backends (TSL can emit GLSL)
 
-**Files**:
-- New: a composite-pipeline IR module (not yet written — an earlier stub was
-  removed unused, since it duplicated uniform defaults the feedback managers
-  already own and had no code generator consuming it)
-- `src/js/milkdrop/feedback-manager-shared.ts`
-- `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`
+Files: a new composite-pipeline IR module (not yet written — an earlier stub was removed unused, since it duplicated uniform defaults the feedback managers already own and had no code generator consuming it), `src/js/milkdrop/feedback-manager-shared.ts`, `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`
 
 ### 3) Add WebGL Fallback to Worker Renderer
 
-**Objective**: Make offscreen rendering available on WebGL-only devices.
+Offscreen rendering should also work on WebGL-only devices.
 
-**Key changes**:
 - Add `WorkerWebGLOffscreenRenderer` using `OffscreenCanvas.getContext('webgl2')`
-- Route via existing message protocol
-- Keep worker WebGL path simple (no feedback/batching)
+- Route via the existing message protocol
+- Keep the worker WebGL path simple (no feedback/batching)
 
-**Files**:
-- `src/js/core/renderer-setup.ts`
+Files: `src/js/core/renderer-setup.ts`
 
 > **Start from the prior prototype, not from scratch.** The renderer-worker,
 > renderer-worker-protocol, and worker-renderer-track modules were removed from the tree
@@ -76,54 +62,42 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 
 ### 4) Vectorize WGSL Code Generation
 
-**Objective**: Generate `vec2f`/`vec3f` WGSL types where expression trees operate on related scalars.
+Generate `vec2f`/`vec3f` WGSL types where expression trees operate on related scalars.
 
-**Key changes**:
-- Track value "width" through expression tree
+- Track value "width" through the expression tree
 - Emit vectorized WGSL when all operands share a width
 - Fuse adjacent scalar assignments into vector assignments
 
-**Files**:
-- `src/js/milkdrop/compiler/wgsl-generator.ts`
-- `src/js/milkdrop/vm-gpu.ts`
+Files: `src/js/milkdrop/compiler/wgsl-generator.ts`, `src/js/milkdrop/vm-gpu.ts`
 
 ### 5) Implement RenderBundle for Static Draw Calls
 
-**Objective**: Pre-record static draw commands to reduce per-frame CPU overhead.
+Pre-record static draw commands to reduce per-frame CPU overhead.
 
-**Key changes**:
 - Identify static draw calls (background quad, border outlines)
 - Pre-record as WebGPU RenderBundles
-- Execute bundles in render pass
+- Execute bundles in the render pass
 
-**Files**:
-- New: `src/js/milkdrop/renderer-bundles.ts`
-- `src/js/milkdrop/renderer-adapter-core.ts`
+Files: new `src/js/milkdrop/renderer-bundles.ts`, `src/js/milkdrop/renderer-adapter-core.ts`
 
 ### 6) Gradual WebGPU Enablement
 
-**Objective**: Phase WebGPU enablement by platform instead of universal off.
+Phase WebGPU enablement by platform instead of a universal off.
 
-**Key changes**:
 - Platform-specific gating (Chrome 120+ desktop first)
 - Track engagement/error/fallback rates via telemetry
 
-**Files**:
-- `src/js/core/renderer-query-override.ts`
+Files: `src/js/core/renderer-query-override.ts`
 
 ### 7) Split Compiler Execution Contracts
 
-**Objective**: Make shader execution support explicit without spreading raw field checks across compiler and renderer modules.
+Shader execution support should be explicit, without raw field checks spread across compiler and renderer modules.
 
-**Key changes**:
 - Keep direct shader execution classification in `compiler/shader-execution-classification.ts`
 - Move compatibility aggregation out of `compiler/ir.ts` into a narrow compiler compatibility module
 - Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
 
-**Files**:
-- `src/js/milkdrop/compiler/ir.ts`
-- `src/js/milkdrop/compiler/shader-execution-classification.ts`
-- New follow-up: `src/js/milkdrop/compiler/compatibility-report.ts`
+Files: `src/js/milkdrop/compiler/ir.ts`, `src/js/milkdrop/compiler/shader-execution-classification.ts`, plus a new `src/js/milkdrop/compiler/compatibility-report.ts` (New follow-up)
 
 ## Sequencing
 

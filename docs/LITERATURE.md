@@ -20,7 +20,7 @@ Use the following table to tie literature to specific features so citations are 
 | Audio-reactive visuals (frequency to motion/color mapping) | Toy descriptions, audio onboarding copy | Multisensory integration & audio-visual binding; crossmodal correspondences |
 | “Synesthetic” or linked audio-visual patterns | Toy description for synesthetic-themed visuals | Crossmodal correspondences & synesthesia-related perception |
 | Sensory exploration language (non-therapeutic) | Library landing copy, toy overview cards | Sensory processing differences in neurodiversity (framed as diversity, not treatment) |
-| Music-driven engagement/affect | Demo audio option, descriptions referencing musical response | Music, rhythm, and affective engagement |
+| Music-driven engagement/affect | Demo audio option, descriptions referencing musical response | Music, rhythm, and affect |
 
 ## UI citation/footnote guidance
 
@@ -53,7 +53,7 @@ These references cover sensory modulation and processing differences commonly di
 - Ben-Sasson, A., et al. (2009). A meta-analysis of sensory modulation symptoms in individuals with autism spectrum disorders. *Journal of Autism and Developmental Disorders*, 39, 1–11.
 - Baranek, G. T. (2002). Efficacy of sensory and motor interventions for children with autism. *Journal of Autism and Developmental Disorders*, 32(5), 397–422.
 
-## Music, rhythm, and affective engagement
+## Music, rhythm, and affect
 
 If describing how rhythmic or musical inputs shape engagement or emotional response, these sources provide grounding.
 
@@ -79,7 +79,7 @@ Grounds the accessibility research program in [`SENSORY_ACCESSIBILITY.md`](./SEN
 - Manning, C., Mohan, G., Maher, L., Khan, A., & Tyler, S. L. (2025). Our understanding of autistic sensory processing is limited by our questionnaire measures. *Autism*. https://doi.org/10.1177/13623613251356060
 - Chen, Y., Xi, Z., Greene, T., & Mandy, W. (2025). A systematic review of ecological momentary assessment in autism research. *Autism*, 29(6), 1374–1389. https://doi.org/10.1177/13623613241305722
 
-## Control, predictability, and tolerance of stimulation
+## Predictability, control, and tolerance
 
 General psychology, not sensory- or autism-specific unless noted — useful for the mechanism, not as a direct citation for a Stims-specific claim.
 

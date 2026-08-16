@@ -77,7 +77,7 @@ The one thing Shadertoy/Book-of-Shaders had that MilkDrop never did — run-it-i
 
 1. **Every example is alive.** No code block without a "Run this" affordance: either an embedded iframe stage or a one-click `#code=` link into the full app. A reader should be able to complete the entire curriculum without installing anything.
 2. **Change one number first.** Each lesson opens with a working preset and a single value to change, before any explanation. Explanation follows the dopamine, not the reverse.
-3. **Teach the mental model before the language.** The feedback loop gets taught with an interactive diagram before a single equation is written. Everything downstream (decay, trails, zoom blur, echo) becomes derivable instead of memorized.
+3. **Teach the mental model before the language.** The feedback loop gets taught with an interactive diagram before a single equation is written. Decay, trails, zoom blur, and echo then follow from that model instead of being memorized.
 4. **Remix is the front door, not the consolation prize.** The curriculum's Track 0 is editing existing presets — which is how every real author actually started — and the lineage/credit system (`preset-credit.ts`) makes remixing first-class rather than furtive.
 5. **Honesty about the fragmented ecosystem.** Stims is one engine among Winamp/projectM/Butterchurn/MilkDrop3. Docs state per-feature compatibility plainly and never pretend Stims quirks are MilkDrop semantics.
 6. **Reference is generated, prose is written.** Variable/function tables regenerate from `expression.ts` so they can't drift (they already have — see Prereq E1). Tutorials and essays are hand-written.

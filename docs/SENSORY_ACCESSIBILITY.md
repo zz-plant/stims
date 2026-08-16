@@ -15,7 +15,7 @@ The wide version of this claim — "Stims gives users control over source, initi
 
 Three specific properties do the real work, and are the actual scope of this doc:
 
-1. **Transformation control.** The live preset editor (`src/js/milkdrop/overlay/editor-panel.ts`) changes the generating function itself while it's running — not just which preset plays, but the equations that produce it. This is categorically different from volume or preset selection.
+1. **Transformation control.** The live preset editor (`src/js/milkdrop/overlay/editor-panel.ts`) changes the generating function itself while it's running — not just which preset plays, but the equations that produce it.
 2. **Audiovisual contingency.** Visual parameters are driven by measured audio features (frequency bands, transients, beat detection — `src/js/core/audio-handler.ts`, `frequency-analyser-processor.ts`), not merely co-occurring with sound.
 3. **Transition control.** Cut/Blend mode plus blend duration (0.5–8s) manipulate *discontinuity* independent of the underlying preset's intensity — a dial the literature review below doesn't have an established analogue for.
 
