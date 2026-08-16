@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react';
+import { parseURLParams } from '../core/url-params.ts';
 import {
   getLastSyncedPresetId,
   getSyncSessionState,
@@ -25,7 +26,7 @@ export function SyncSessionBridge(): null {
 
   // Join a shared session named in the URL (viewer, or host resume).
   useEffect(() => {
-    const room = new URLSearchParams(window.location.search).get('sync');
+    const room = parseURLParams().routing.syncRoom;
     if (room && /^[a-z2-9]{4,16}$/.test(room)) {
       joinSyncRoom(room);
     }

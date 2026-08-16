@@ -17,6 +17,11 @@ export interface RoutingURLParams {
   youtubeVideoId: string | null;
   /** Start offset in seconds for {@link youtubeVideoId}. */
   youtubeStartSeconds: number | null;
+  /**
+   * Watch-together room name from `?sync=`. Consumed by the sync bridge, not
+   * part of canonical session state; it survives as a preserved unknown param.
+   */
+  syncRoom: string | null;
 }
 
 export interface PerformanceURLParams {
@@ -42,19 +47,19 @@ export interface MockAudioURLParams {
   frequency: number | null;
 }
 
-export interface OverlayURLParams {
-  autoplay: string | null;
-  blend: string | null;
-  transition: string | null;
-}
-
 export interface HarnessURLParams {
   component: string | null;
   props: string | null;
-  mockBackend: string | null;
-  mockPresetId: string | null;
-  mockAudioActive: boolean;
   grid: string | null;
+}
+
+export interface FlagURLParams {
+  /** `?debug=hud` mounts the on-canvas debug HUD. */
+  debug: string | null;
+  /** `?liveTiles` renders catalog tiles with live engine instances. */
+  liveTiles: boolean;
+  /** `?strudel` mounts the Strudel live-coding lab. */
+  strudel: boolean;
 }
 
 export interface WebGpuFlagURLParams {
@@ -77,7 +82,7 @@ export interface ParsedURLParams {
   audioMock: MockAudioURLParams;
   stats: '1' | '0' | null;
   tvOverride: string | null;
-  overlay: OverlayURLParams;
+  flags: FlagURLParams;
   harness: HarnessURLParams;
   webgpuFlags: WebGpuFlagURLParams;
 }
@@ -278,6 +283,7 @@ export function parseURLParams(
         const seconds = parseNumberParam(get('t'));
         return seconds != null && seconds > 0 ? Math.floor(seconds) : null;
       })(),
+      syncRoom: get('sync')?.trim() || null,
     },
     renderer,
     corpus: get('corpus')?.trim() || null,
@@ -294,17 +300,14 @@ export function parseURLParams(
     },
     stats,
     tvOverride: tvRaw?.trim() || null,
-    overlay: {
-      autoplay: get('autoplay')?.trim() || null,
-      blend: get('blend')?.trim() || null,
-      transition: get('transition')?.trim() || null,
+    flags: {
+      debug: get('debug')?.trim() || null,
+      liveTiles: params.has('liveTiles'),
+      strudel: params.has('strudel'),
     },
     harness: {
       component: get('component')?.trim() || null,
       props: get('props') || null,
-      mockBackend: get('mockBackend')?.trim() || null,
-      mockPresetId: get('mockPresetId')?.trim() || null,
-      mockAudioActive: get('mockAudioActive') === 'true',
       grid: get('grid')?.trim() || null,
     },
     webgpuFlags: {

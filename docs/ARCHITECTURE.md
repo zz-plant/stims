@@ -92,24 +92,48 @@ Stims uses the native History API instead of a client-side router. The app is a 
 - URL writes → `window.history.replaceState(null, '', newUrl)` on state changes
 - Back/forward → `popstate` event listener re-reads the URL
 
-Legacy query params still read on boot:
-  - `experience`
-  - `panel`
-  - `collection`
-  - `preset`
-  - `audio`
-  - `agent`
-Canonical query params written by the app:
-  - `tool`
-  - `collection`
-  - `preset`
-  - `audio`
-  - `agent`
+All URL reads go through one parser, [`src/js/core/url-params.ts`](../src/js/core/url-params.ts)
+(`parseURLParams`), so the parameter surface is auditable in one file.
+
+Canonical session params (read + written by the app):
+- `preset` — active preset id
+- `collection` — collection tag (normalized to `collection:<tag>`)
+- `tool` — active panel: `browse` | `capture` | `editor` | `settings`
+- `audio` — audio source: `demo` | `file` | `microphone` | `tab` | `youtube`
+- `agent` — automation/testing mode (`true`)
+- `embedded` — embed/player mode (`true`)
+- `yt` / `t` — shared YouTube video id and start offset in seconds
+- `experience` — written only when a legacy slug must be surfaced as invalid
+
+Legacy aliases still read on boot: `panel` (`looks` → `browse`), `preview` →
+`embedded`, `audio=sample` → `demo`, `audio=mic` → `microphone`.
+
+Read-only QA / override params:
+- `renderer` — `webgl` | `webgpu` | `auto`
+- `corpus` — deterministic corpus override (e.g. `certification`)
+- `stats` — `1` | `0` (stats-gl overlay)
+- `tv` / `tvMode` — smart-TV override
+- `maxPixelRatio`, `particleBudget`, `shaderQuality`, `lockQualityStep`, `powerSaver`
+- `mockAudio`, `mockFrequency`
+- `milkdrop-webgpu-{main-wave,trail-waves,custom-waves,mesh,motion-vectors,feedback,fallback,compute-vm,render-bundles}`
+- `component`, `props`, `grid` — UI harness page (`ui-harness.html`)
+- `debug=hud` — on-canvas debug HUD
+- `liveTiles`, `strudel` — prototype flags (presence-only)
+
+Feature-local params (read and written within one feature, not session state):
+- `sync` — watch-together room name (sync transport; `SyncSessionBridge`)
+- `modal` — rendering-capability dialog state (`webgl-check.ts`)
+
+Hash params:
+- `#code=<base64>` — a full `.milk` source to load in the editor
+- `#t=<seconds>` — YouTube start offset, only for pasted YouTube URLs
+
 - Unknown query params are preserved during canonicalization.
 - Unsupported legacy `experience` slugs are surfaced as an invalid-experience state instead of silently booting another shell.
 
 Primary implementation:
-- [`src/js/frontend/url-state.ts`](../src/js/frontend/url-state.ts)
+- [`src/js/core/url-params.ts`](../src/js/core/url-params.ts) — single read parser
+- [`src/js/frontend/url-state.ts`](../src/js/frontend/url-state.ts) — session route read/write + canonicalization
 - [`src/js/frontend/contracts.ts`](../src/js/frontend/contracts.ts)
 - URL synchronization hook: `useWorkspaceRouteState()` in [`src/js/frontend/workspace-hooks.ts`](../src/js/frontend/workspace-hooks.ts)
 

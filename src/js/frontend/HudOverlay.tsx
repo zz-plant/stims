@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { parseURLParams } from '../core/url-params.ts';
 import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import { useEngine, useEngineSnapshot } from './engine-context.tsx';
 
@@ -93,7 +94,7 @@ function useHudEnabled(): boolean {
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const debug = new URLSearchParams(window.location.search).get('debug');
+    const debug = parseURLParams().flags.debug;
     setEnabled(debug === 'hud');
   }, []);
   return enabled;
