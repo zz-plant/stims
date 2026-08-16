@@ -3,6 +3,12 @@ import { getAverageFrequency, getFrequencyData } from './audio-handler';
 import { createFrameGate } from './frame-pacing';
 import { getPowerSavingFrameCapHz } from './power-state';
 
+export {
+  createSimulationAccumulator,
+  type SimulationAccumulator,
+  type SimulationAccumulatorOptions,
+} from './simulation-accumulator';
+
 /** Optional virtual time source for deterministic testing/capture.
  * When set, `performance.now()` is replaced by this function.
  * Expected to return monotonically increasing milliseconds. */
