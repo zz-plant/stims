@@ -6,6 +6,7 @@ import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import { UiIcon } from './UiIcon.tsx';
+import { PresetGrid } from './PresetGrid.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   type BrowseSortMode,
@@ -105,7 +106,20 @@ export function BrowseSheetPanel({
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const deferredSearch = useDeferredValue(localSearch);
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
+  const [gridView, setGridView] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
+
+  // Wrapper for PresetGrid — only passes presetId and audioSource
+  const setPresetRouteState = (next: {
+    presetId: string | null;
+    audioSource: string | null;
+  }) => {
+    ui.commitRoute({
+      ...next,
+      collectionTag: ui.routeState.collectionTag,
+      agentMode: ui.routeState.agentMode,
+    } as any);
+  };
   const presetListRef = useRef<HTMLUListElement | null>(null);
   const recentRailRef = useRef<HTMLUListElement | null>(null);
   const collectionChipsRef = useRef<HTMLElement | null>(null);
@@ -390,6 +404,15 @@ export function BrowseSheetPanel({
           </button>
         </nav>
 
+        <button
+          type="button"
+          className={gridView ? 'ctl-chip ctl-chip--active' : 'ctl-chip'}
+          aria-pressed={gridView}
+          onClick={() => setGridView((g) => !g)}
+        >
+          Grid
+        </button>
+
         {authorOptions.length > 0 ? (
           <select
             className="ctl-select"
@@ -470,6 +493,14 @@ export function BrowseSheetPanel({
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {catalogReady && gridView ? (
+        <PresetGrid
+          catalogEntries={browseEntries}
+          routeState={ui.routeState}
+          setRouteState={setPresetRouteState}
+        />
       ) : null}
 
       <section ref={resultsRef} className="ctl-browse-results">
@@ -558,7 +589,7 @@ export function BrowseSheetPanel({
           />
         ) : null}
 
-        {catalogReady && sorted.length > 0 ? (
+        {catalogReady && !gridView && sorted.length > 0 ? (
           <ul ref={presetListRef} className="ctl-presets">
             {visible.map((entry) => (
               <li
