@@ -81,7 +81,7 @@ body,
 html {
   padding: 0;
   font-family: var(--font-family-base);
-  font-size: calc(16px * var(--tv-scale-multiplier));
+  font-size: calc(16px * var(--tv-scale-multiplier) * var(--ui-scale));
   background:
     radial-gradient(
       circle at 15% 0%,

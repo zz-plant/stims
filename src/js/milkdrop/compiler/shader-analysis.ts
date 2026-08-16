@@ -1230,8 +1230,11 @@ function applyShaderProgramHeuristicLine({
       return false;
     }
     const offsetSign = uvAffineMatch[3] === '-' ? -1 : 1;
+    // `(uv-0.5)*z+0.5` scales the sampling coordinate by z (zoom control 1/z,
+    // zoom out for z>1); `(uv-0.5)/z+0.5` scales by 1/z (zoom control z, zoom
+    // in for z>1). Mirrors applyMainUvTransformControls' 1/scale convention.
     const zoomValue =
-      uvAffineMatch[1] === '/' && zoomScalar.value !== 0
+      uvAffineMatch[1] === '*' && zoomScalar.value !== 0
         ? 1 / zoomScalar.value
         : zoomScalar.value;
     const nextZoom = applyShaderControlValue(
