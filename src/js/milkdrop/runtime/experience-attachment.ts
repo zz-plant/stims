@@ -164,6 +164,17 @@ export function createMilkdropExperienceAttachmentController({
         capturedVideoOverlay.attach(nextRuntime.toy.camera);
         setAdapter(nextAdapter);
         nextAdapter.attach();
+        // The adapter was built with the activeCompiled snapshot taken when
+        // rendererReady resolved. A preset requested at startup (e.g. the
+        // ?preset= URL) can apply to the VM during the async WebGPU adapter
+        // creation, before setAdapter above — that apply skips adapter.setPreset
+        // (getAdapter() is still null), so the adapter would render the loaded
+        // preset against the stale first-run descriptor plan. Re-sync the
+        // adapter with the current active compiled preset now that it's wired.
+        const attachedCompiled = activeCompiled();
+        if (attachedCompiled !== compiled) {
+          nextAdapter.setPreset(attachedCompiled);
+        }
         setAdaptiveQualityUnsubscribe(null);
         const adaptiveQualityController = resolveAdaptiveQualityController({
           backend: nextBackend,
