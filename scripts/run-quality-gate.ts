@@ -32,6 +32,7 @@ type GateStepResult = {
   exitCode: number;
   stdout: string;
   stderr: string;
+  ms: number;
 };
 
 const noTsNoCheckLabel = ['No ', '@ts-', 'nocheck', ' guard'].join('');
@@ -44,6 +45,12 @@ export function parseMode(argv: string[]): GateMode {
 
 export function parseExecutionMode(argv: string[]): GateExecutionMode {
   return argv.includes('--serial') ? 'serial' : 'parallel';
+}
+
+export type OutputMode = 'text' | 'json';
+
+export function parseOutputMode(argv: string[]): OutputMode {
+  return argv.includes('--json') ? 'json' : 'text';
 }
 
 export function buildGatePlan(
@@ -64,13 +71,22 @@ export function buildGatePlan(
       },
     ],
     concurrent: [
+      ...(mode === 'quick'
+        ? [
+            {
+              label: 'Biome lint (changed files)',
+              cmd: ['bun', 'run', 'lint:changed'],
+            },
+          ]
+        : [
+            {
+              label: 'Biome check',
+              cmd: ['bun', 'run', 'biome:check'],
+            },
+          ]),
       {
         label: 'Asset health check',
         cmd: ['bun', 'run', 'assets:check'],
-      },
-      {
-        label: 'Biome check',
-        cmd: ['bun', 'run', 'biome:check'],
       },
       {
         label: 'Bundled catalog fidelity',
@@ -113,6 +129,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:architecture'],
       },
       {
+        label: 'Unbounded cache check',
+        cmd: ['bun', 'run', 'check:cache-bounds'],
+      },
+      {
         label: 'TypeScript typecheck',
         cmd: ['bun', 'run', 'typecheck'],
       },
@@ -139,6 +159,7 @@ export function buildGatePlan(
 }
 
 async function runStep(step: GateStep): Promise<GateStepResult> {
+  const start = performance.now();
   const proc = Bun.spawn({
     cmd: step.cmd,
     cwd: process.cwd(),
@@ -158,11 +179,23 @@ async function runStep(step: GateStep): Promise<GateStepResult> {
     exitCode,
     stdout: stdout.trim(),
     stderr: stderr.trim(),
+    ms: Math.round(performance.now() - start),
   };
 }
 
-function printStepResult(result: GateStepResult) {
-  console.log(`\n==> ${result.step.label}`);
+function printStepResult(result: GateStepResult, outputMode: OutputMode) {
+  if (outputMode === 'json') {
+    console.log(
+      JSON.stringify({
+        step: result.step.label,
+        ok: result.exitCode === 0,
+        ms: result.ms,
+      }),
+    );
+    return;
+  }
+
+  console.log(`\n==> ${result.step.label} (${result.ms}ms)`);
   if (result.stdout) {
     console.log(result.stdout);
   }
@@ -174,10 +207,13 @@ function printStepResult(result: GateStepResult) {
   }
 }
 
-async function runStepListSerial(steps: readonly GateStep[]) {
+async function runStepListSerial(
+  steps: readonly GateStep[],
+  outputMode: OutputMode,
+) {
   for (const step of steps) {
     const result = await runStep(step);
-    printStepResult(result);
+    printStepResult(result, outputMode);
     if (result.exitCode !== 0) {
       process.exit(result.exitCode);
     }
@@ -190,7 +226,10 @@ type RunningStep = {
   promise: Promise<GateStepResult>;
 };
 
-async function runStepListConcurrent(steps: readonly GateStep[]) {
+async function runStepListConcurrent(
+  steps: readonly GateStep[],
+  outputMode: OutputMode,
+) {
   const runningSteps: RunningStep[] = steps.map((step) => {
     const proc = Bun.spawn({
       cmd: step.cmd,
@@ -200,16 +239,21 @@ async function runStepListConcurrent(steps: readonly GateStep[]) {
       stderr: 'pipe',
     });
 
-    const promise = Promise.all([
-      proc.exited,
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-    ]).then(([exitCode, stdout, stderr]) => ({
-      step,
-      exitCode,
-      stdout: stdout.trim(),
-      stderr: stderr.trim(),
-    }));
+    const promise = (async () => {
+      const start = performance.now();
+      const [exitCode, stdout, stderr] = await Promise.all([
+        proc.exited,
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+      return {
+        step,
+        exitCode,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        ms: Math.round(performance.now() - start),
+      };
+    })();
 
     return { step, proc, promise };
   });

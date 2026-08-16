@@ -16,4 +16,12 @@ if (lintRes.exitCode !== 0) {
   process.exit(1);
 }
 
+const cacheBoundsRes = await $`bun run scripts/check-cache-bounds.ts --strict`.nothrow();
+if (cacheBoundsRes.exitCode !== 0) {
+  console.error(
+    '❌ Commit blocked: unbounded cache/pool added without a bound or allowlist reason.',
+  );
+  process.exit(1);
+}
+
 console.log('✅ Pre-commit guards passed.');
