@@ -24,6 +24,15 @@ import type {
 const log = createLogger('CatalogStore');
 const HISTORY_RECORD_ID = '__history__';
 
+// The full-catalog load maps ~1800 bundled entries on the main thread right
+// after the shell paints. A single synchronous pass blocks rendering for
+// hundreds of milliseconds on mid-range hardware; yielding a macrotask every
+// time a batch exceeds this budget keeps each contiguous chunk short.
+const CATALOG_BATCH_TIME_BUDGET_MS = 24;
+
+const yieldToMainThread = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 function slugify(value: string) {
   return (
     value
@@ -78,6 +87,7 @@ export function createMilkdropCatalogStore({
       }
 
       const bundledEntries: MilkdropCatalogEntry[] = [];
+      let batchStart = performance.now();
       for (let i = 0; i < bundled.length; i += 1) {
         const entry = bundled[i];
         try {
@@ -112,6 +122,10 @@ export function createMilkdropCatalogStore({
             `Skipping bundled preset "${entry.id}" (${entry.title}): failed to analyze`,
             error,
           );
+        }
+        if (performance.now() - batchStart >= CATALOG_BATCH_TIME_BUDGET_MS) {
+          batchStart = performance.now();
+          await yieldToMainThread();
         }
       }
 
