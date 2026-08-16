@@ -2462,8 +2462,23 @@ class WebGPUMilkdropFeedbackManager {
     renderer.setRenderTarget(this.displayTarget);
     renderer.render(this.compositeScene, this.camera);
 
+    // The WebGL feedback path presents through toneMapped=false
+    // ShaderMaterials, so its output is never ACES-tone-mapped. The WebGPU
+    // common renderer tone-maps every output-target render regardless of the
+    // material flag, so suspend the renderer's tone mapping around the present
+    // to match WebGL's luminance (ACES would brighten the frame).
+    const toneMappedRenderer = renderer as FeedbackRendererLike & {
+      toneMapping?: number;
+    };
+    const savedToneMapping = toneMappedRenderer.toneMapping ?? 0;
+    if (savedToneMapping !== 0) {
+      toneMappedRenderer.toneMapping = 0;
+    }
     renderer.setRenderTarget(null);
     renderer.render(this.presentScene, this.camera);
+    if (savedToneMapping !== 0) {
+      toneMappedRenderer.toneMapping = savedToneMapping;
+    }
     this.swap();
     return true;
   }

@@ -102,15 +102,28 @@ function syncShapeShaderUniforms(
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
+  // WebGL ShaderMaterials get their Color uniforms converted to the working
+  // (linear) color space by three.js itself. NodeMaterials on the WebGPU path
+  // do not, so their colors must be linearized here or the renderer's final
+  // sRGB encoding re-encodes them (doubling brightness).
+  const needsLinearColor =
+    (material as unknown as { isNodeMaterial?: boolean }).isNodeMaterial ===
+    true;
+  const primaryColor = needsLinearColor
+    ? toLinearColor(shape.color)
+    : shape.color;
+  const secondaryColor = needsLinearColor
+    ? toLinearColor(shape.secondaryColor ?? { r: 0, g: 0, b: 0 })
+    : (shape.secondaryColor ?? { r: 0, g: 0, b: 0 });
   material.uniforms.primaryColor.value.setRGB(
-    shape.color.r,
-    shape.color.g,
-    shape.color.b,
+    primaryColor.r,
+    primaryColor.g,
+    primaryColor.b,
   );
   material.uniforms.secondaryColor.value.setRGB(
-    shape.secondaryColor?.r ?? 0,
-    shape.secondaryColor?.g ?? 0,
-    shape.secondaryColor?.b ?? 0,
+    secondaryColor.r,
+    secondaryColor.g,
+    secondaryColor.b,
   );
   material.uniforms.primaryAlpha.value =
     (shape.color.a ?? 0.4) * alphaMultiplier;
@@ -145,21 +158,19 @@ const {
   vec4,
 } = TSL;
 
+function toLinearColor(color: { r: number; g: number; b: number }) {
+  return new Color(color.r, color.g, color.b).convertSRGBToLinear();
+}
+
 function createShapeFillNodeMaterial(
   shape: MilkdropShapeVisual,
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
   const uniforms = {
-    primaryColor: uniform(
-      new Color(shape.color.r, shape.color.g, shape.color.b),
-    ),
+    primaryColor: uniform(toLinearColor(shape.color)),
     secondaryColor: uniform(
-      new Color(
-        shape.secondaryColor?.r ?? 0,
-        shape.secondaryColor?.g ?? 0,
-        shape.secondaryColor?.b ?? 0,
-      ),
+      shape.secondaryColor ? toLinearColor(shape.secondaryColor) : new Color(0, 0, 0),
     ),
     primaryAlpha: uniform((shape.color.a ?? 0.4) * alphaMultiplier),
     secondaryAlpha: uniform((shape.secondaryColor?.a ?? 0) * alphaMultiplier),
