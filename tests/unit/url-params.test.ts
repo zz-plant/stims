@@ -63,6 +63,29 @@ describe('url-params', () => {
     expect(getSmartTvOverride('?tvMode=lg')).toBe('lg');
   });
 
+  it('parses the watch-together room from sync', () => {
+    expect(parseURLParams('?sync=abcd1234').routing.syncRoom).toBe('abcd1234');
+    expect(parseURLParams('?preset=signal-bloom').routing.syncRoom).toBe(null);
+  });
+
+  it('parses prototype and debug flags', () => {
+    const flags = parseURLParams('?debug=hud&liveTiles&strudel').flags;
+    expect(flags.debug).toBe('hud');
+    expect(flags.liveTiles).toBe(true);
+    expect(flags.strudel).toBe(true);
+    expect(parseURLParams('?agent=true').flags.liveTiles).toBe(false);
+    expect(parseURLParams('?agent=true').flags.debug).toBe(null);
+  });
+
+  it('parses ui-harness parameters', () => {
+    const harness = parseURLParams(
+      '?component=WorkspaceToast&props=%7B%22x%22%3A1%7D&grid=375,768',
+    ).harness;
+    expect(harness.component).toBe('WorkspaceToast');
+    expect(harness.props).toBe('{"x":1}');
+    expect(harness.grid).toBe('375,768');
+  });
+
   it('normalizes collection tags correctly', () => {
     expect(normalizeCollectionTag('favorites')).toBe('collection:favorites');
     expect(normalizeCollectionTag('collection:top')).toBe('collection:top');

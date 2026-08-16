@@ -8,6 +8,7 @@
 // paint.
 
 import { useEffect, useRef } from 'react';
+import { isAgentMode, parseURLParams } from '../../core/url-params.ts';
 import type {
   MilkdropLiveTileHandle,
   MilkdropLiveTilePool,
@@ -15,16 +16,12 @@ import type {
 import type { PresetCatalogEntry } from '../contracts.ts';
 import { getAudioEnergy } from '../engine-audio-energy-store.ts';
 
-export const livePresetTilesEnabled =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).has('liveTiles');
+export const livePresetTilesEnabled = parseURLParams().flags.liveTiles;
 
 // Agent-mode QA runs in panes where document.hidden stays true and rAF never
 // fires (see the browser-pane telemetry-bridge notes); a timer scheduler
 // keeps tiles stepping there. Production keeps rAF so background tabs pause.
-const agentModeScheduler =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('agent') === 'true';
+const agentModeScheduler = isAgentMode();
 
 export const MAX_PRESET_FILE_CACHE_SIZE = 500;
 const presetFileById = new Map<string, string>();

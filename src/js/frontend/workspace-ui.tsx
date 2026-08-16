@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { parseURLParams } from '../core/url-params.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { StageControls } from './StageControls.tsx';
 import { StageWarpGizmo } from './StageWarpGizmo.tsx';
@@ -20,9 +21,7 @@ export const BROWSE_PANEL_FOCUS_SELECTOR =
 
 // Prototype flag: `?strudel=1` mounts the Strudel live-coding lab, which
 // drives the visualizer's analyser with Strudel's audio output.
-const strudelLabEnabled =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).has('strudel');
+const strudelLabEnabled = parseURLParams().flags.strudel;
 
 export function WorkspaceStagePanel({
   isFullscreen,
