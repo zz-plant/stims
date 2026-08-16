@@ -61,26 +61,48 @@ import type {
 
 const {
   abs,
+  acos,
+  asin,
+  atan,
+  bool,
+  ceil,
   clamp,
   cos,
+  cross,
+  dFdx,
+  dFdy,
   dot,
   exp,
+  exp2,
   Fn,
   floor,
   float,
   fract,
+  fwidth,
   If,
+  int,
+  inversesqrt,
   length,
+  log,
+  log2,
   mat3,
   max,
   min,
   mix,
+  normalize,
   pow,
+  reflect,
+  refract,
+  round,
   select,
+  sign,
   sin,
   smoothstep,
   step,
+  tan,
   texture,
+  transpose,
+  trunc,
   uniform,
   uv,
   vec2,
@@ -90,6 +112,79 @@ const {
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 const GAUSSIAN_BLUR_KERNEL_RADIUS = 4;
+
+/**
+ * Native shader bodies are rewritten by normalizeHlslToGlsl before the AST
+ * is built (sampler_blur1 → blur1Tex, sampler_fw_main → currentTex, ...), so
+ * the sampler argument the TSL path sees is a texture uniform identifier, not
+ * a sampler_* name. This map folds those identifiers back onto the canonical
+ * sampler names the binding table resolves.
+ */
+const TEXTURE_IDENTIFIER_TO_SAMPLER: Record<string, string> = {
+  currenttex: 'main',
+  previoustex: 'pw_main',
+  warptex: 'fc_main',
+  noisetex: 'noise',
+  simplextex: 'simplex',
+  perlintex: 'perlin',
+  voronoitex: 'voronoi',
+  auratex: 'aura',
+  causticstex: 'caustics',
+  patterntex: 'pattern',
+  fractaltex: 'fractal',
+  videotex: 'video',
+  glyphtex: 'glyph',
+  organictex: 'organic',
+  blur1tex: 'blur1',
+  blur2tex: 'blur2',
+  blur3tex: 'blur3',
+};
+
+function resolveDirectShaderTextureNode(
+  env: ShaderNodeEnv,
+  canonicalSource: string,
+): any {
+  const uniforms = env.uniforms;
+  switch (canonicalSource) {
+    case 'main':
+      return uniforms.currentTex;
+    case 'pw_main':
+    case 'pc_main':
+      return uniforms.previousTex;
+    case 'fc_main':
+      return uniforms.warpTex;
+    case 'blur1':
+      return uniforms.blur1Tex;
+    case 'blur2':
+      return uniforms.blur2Tex;
+    case 'blur3':
+      return uniforms.blur3Tex;
+    case 'noise':
+      return uniforms.noiseTex;
+    case 'perlin':
+      return uniforms.perlinTex;
+    case 'simplex':
+      return uniforms.simplexTex;
+    case 'voronoi':
+      return uniforms.voronoiTex;
+    case 'aura':
+      return uniforms.auraTex;
+    case 'caustics':
+      return uniforms.causticsTex;
+    case 'pattern':
+      return uniforms.patternTex;
+    case 'fractal':
+      return uniforms.fractalTex;
+    case 'video':
+      return uniforms.videoTex;
+    case 'glyph':
+      return uniforms.glyphTex;
+    case 'organic':
+      return uniforms.organicTex;
+    default:
+      return null;
+  }
+}
 
 function createGaussianBlurUniforms(initialSource: Texture) {
   return {
@@ -640,7 +735,7 @@ function getShaderEnvValue(
   return resolved;
 }
 
-function compileShaderExpressionNode(
+export function compileShaderExpressionNode(
   node: MilkdropShaderExpressionNode | MilkdropExpressionNode,
   env: ShaderNodeEnv,
 ): ShaderNodeValue | null {
@@ -688,10 +783,26 @@ function compileShaderExpressionNode(
     }
     case 'call': {
       const name = node.name.toLowerCase();
+      const samplerCall =
+        name === 'tex2d' ||
+        name === 'tex3d' ||
+        name === 'texture' ||
+        name === 'texture2d' ||
+        name === 'texture3d' ||
+        name === 'samplenoisevolume' ||
+        name === 'tex2dlod' ||
+        name === 'tex2dbias' ||
+        name === 'tex2dgrad';
       const args = node.args
         .map((arg) => compileShaderExpressionNode(arg, env))
         .filter((value): value is ShaderNodeValue => value !== null);
-      if (args.length !== node.args.length) {
+      // Sampler calls carry a sampler identifier (sampler_main, blur1Tex, …)
+      // that resolves through the binding table, not the scalar env, so it is
+      // allowed to stay uncompiled. Every other call needs all args.
+      if (
+        args.length !== node.args.length &&
+        !(samplerCall && args.length >= node.args.length - 1)
+      ) {
         return null;
       }
       const constructorPattern = resolveDirectShaderConstructorPattern(
@@ -778,11 +889,13 @@ function compileShaderExpressionNode(
         node.args.length >= 2
       ) {
         const samplerArg = node.args[0];
-        const sourceName =
+        const rawSourceName =
           samplerArg?.type === 'identifier'
             ? samplerArg.name.toLowerCase()
             : 'sampler_main';
-        const coordinate = args[1];
+        const sourceName =
+          TEXTURE_IDENTIFIER_TO_SAMPLER[rawSourceName] ?? rawSourceName;
+        const coordinate = args[0];
         if (!coordinate) {
           return null;
         }
@@ -817,12 +930,19 @@ function compileShaderExpressionNode(
         }
         if (
           resolvedBinding.canonicalSource === 'pw_main' ||
-          resolvedBinding.canonicalSource === 'pc_main' ||
-          resolvedBinding.canonicalSource === 'fc_main'
+          resolvedBinding.canonicalSource === 'pc_main'
         ) {
           return makeShaderValue(
             'vec3',
             env.uniforms.previousTex.sample(
+              env.sampleUvNode(sampleUv, env.uniforms.textureWrap),
+            ).rgb,
+          );
+        }
+        if (resolvedBinding.canonicalSource === 'fc_main') {
+          return makeShaderValue(
+            'vec3',
+            env.uniforms.warpTex.sample(
               env.sampleUvNode(sampleUv, env.uniforms.textureWrap),
             ).rgb,
           );
@@ -835,6 +955,81 @@ function compileShaderExpressionNode(
             sampleUv,
             sampleZ,
           ).rgb,
+        );
+      }
+      if (name === 'samplenoisevolume' && args.length >= 1) {
+        // Native bodies rewrite texture(sampler_noisevol*, vec3) to the
+        // sampleNoiseVolume helper; mirror the GLSL atlas-slice emulation by
+        // routing through the simplex volume slot (source 2, dimension 1).
+        const coordinate = args[0];
+        const sampleUv =
+          coordinate.kind === 'vec3'
+            ? vec2(coordinate.node.x, coordinate.node.y)
+            : coerceShaderValue(coordinate, 'vec2').node;
+        const sampleZ =
+          coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
+        return makeShaderValue(
+          'vec3',
+          env.sampleAuxTextureNode(float(2), float(1), sampleUv, sampleZ).rgb,
+        );
+      }
+      if (
+        (name === 'tex2dlod' || name === 'tex2dbias' || name === 'tex2dgrad') &&
+        node.args.length >= 2 &&
+        args.length >= 1
+      ) {
+        const samplerArg = node.args[0];
+        const rawSourceName =
+          samplerArg?.type === 'identifier'
+            ? samplerArg.name.toLowerCase()
+            : 'sampler_main';
+        const sourceName =
+          TEXTURE_IDENTIFIER_TO_SAMPLER[rawSourceName] ?? rawSourceName;
+        const resolvedBinding = resolveDirectShaderSamplerBinding(
+          sourceName,
+          '2d',
+        );
+        if (!resolvedBinding) {
+          return null;
+        }
+        const textureNode = resolveDirectShaderTextureNode(
+          env,
+          resolvedBinding.canonicalSource,
+        );
+        if (!textureNode) {
+          return null;
+        }
+        const coordinate = args[0];
+        const coordUv =
+          coordinate.kind === 'vec4'
+            ? vec2(coordinate.node.x, coordinate.node.y)
+            : coerceShaderValue(coordinate, 'vec2').node;
+        const sampleUv = env.sampleUvNode(coordUv, env.uniforms.textureWrap);
+        if (name === 'tex2dgrad') {
+          const dx =
+            args.length >= 2
+              ? coerceShaderValue(args[1], 'vec2').node
+              : dFdx(coordUv);
+          const dy =
+            args.length >= 3
+              ? coerceShaderValue(args[2], 'vec2').node
+              : dFdy(coordUv);
+          return makeShaderValue(
+            'vec3',
+            textureNode.grad(dx, dy).sample(sampleUv).rgb,
+          );
+        }
+        const level =
+          coordinate.kind === 'vec4' ? coordinate.node.w : (args[1]?.node ?? 0);
+        if (name === 'tex2dlod') {
+          return makeShaderValue(
+            'vec3',
+            textureNode.level(level).sample(sampleUv).rgb,
+          );
+        }
+        return makeShaderValue(
+          'vec3',
+          textureNode.bias(level).sample(sampleUv).rgb,
         );
       }
       if ((name === 'mix' || name === 'lerp') && args.length >= 3) {
@@ -969,6 +1164,144 @@ function compileShaderExpressionNode(
         return shaderFloat(
           createComparisonNode('<', args[0].node, args[1].node),
         );
+      }
+      if (name === 'saturate' && args.length >= 1) {
+        return shaderValueFromNode(clamp(args[0].node, 0, 1), args[0].kind);
+      }
+      if (name === 'tan' && args.length >= 1) {
+        return shaderValueFromNode(tan(args[0].node), args[0].kind);
+      }
+      if (name === 'asin' && args.length >= 1) {
+        return shaderValueFromNode(asin(args[0].node), args[0].kind);
+      }
+      if (name === 'acos' && args.length >= 1) {
+        return shaderValueFromNode(acos(args[0].node), args[0].kind);
+      }
+      if (name === 'atan' && args.length >= 1) {
+        return shaderValueFromNode(
+          args.length >= 2
+            ? atan(args[0].node, args[1].node)
+            : atan(args[0].node),
+          args[0].kind,
+        );
+      }
+      if (name === 'atan2' && args.length >= 2) {
+        return shaderValueFromNode(
+          atan(args[0].node, args[1].node),
+          args[0].kind,
+        );
+      }
+      if (name === 'ceil' && args.length >= 1) {
+        return shaderValueFromNode(ceil(args[0].node), args[0].kind);
+      }
+      if (name === 'sign' && args.length >= 1) {
+        return shaderValueFromNode(sign(args[0].node), args[0].kind);
+      }
+      if (name === 'exp' && args.length >= 1) {
+        return shaderValueFromNode(exp(args[0].node), args[0].kind);
+      }
+      if (name === 'exp2' && args.length >= 1) {
+        return shaderValueFromNode(exp2(args[0].node), args[0].kind);
+      }
+      if (name === 'log' && args.length >= 1) {
+        return shaderValueFromNode(
+          log(max(args[0].node, float(0.000001))),
+          args[0].kind,
+        );
+      }
+      if (name === 'log2' && args.length >= 1) {
+        return shaderValueFromNode(
+          log2(max(args[0].node, float(0.000001))),
+          args[0].kind,
+        );
+      }
+      if (name === 'log10' && args.length >= 1) {
+        return shaderValueFromNode(
+          log(max(args[0].node, float(0.000001))).mul(float(Math.LOG10E)),
+          args[0].kind,
+        );
+      }
+      if (name === 'rsqrt' && args.length >= 1) {
+        return shaderValueFromNode(
+          inversesqrt(max(args[0].node, float(0.000001))),
+          args[0].kind,
+        );
+      }
+      if (name === 'trunc' && args.length >= 1) {
+        return shaderValueFromNode(trunc(args[0].node), args[0].kind);
+      }
+      if (name === 'round' && args.length >= 1) {
+        return shaderValueFromNode(round(args[0].node), args[0].kind);
+      }
+      if (name === 'frac' && args.length >= 1) {
+        return shaderValueFromNode(fract(args[0].node), args[0].kind);
+      }
+      if (name === 'fwidth' && args.length >= 1) {
+        return shaderValueFromNode(fwidth(args[0].node), args[0].kind);
+      }
+      if (name === 'ddx' && args.length >= 1) {
+        return shaderValueFromNode(dFdx(args[0].node), args[0].kind);
+      }
+      if (name === 'ddy' && args.length >= 1) {
+        return shaderValueFromNode(dFdy(args[0].node), args[0].kind);
+      }
+      if (name === 'cross' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          cross(
+            coerceShaderValue(args[0], 'vec3').node,
+            coerceShaderValue(args[1], 'vec3').node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'normalize' && args.length >= 1) {
+        return shaderValueFromNode(normalize(args[0].node), args[0].kind);
+      }
+      if (name === 'reflect' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          reflect(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'refract' && args.length >= 3) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          refract(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+            coerceShaderValue(args[2], 'scalar').node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'mul' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          coerceShaderValue(args[0], resultKind).node.mul(
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'transpose' && args.length >= 1) {
+        return shaderValueFromNode(transpose(args[0].node), args[0].kind);
+      }
+      if (name === 'float' && args.length >= 1) {
+        return shaderValueFromNode(float(args[0].node), args[0].kind);
+      }
+      if (name === 'half' && args.length >= 1) {
+        return shaderValueFromNode(float(args[0].node), args[0].kind);
+      }
+      if (name === 'int' && args.length >= 1) {
+        return shaderValueFromNode(int(args[0].node), args[0].kind);
+      }
+      if (name === 'bool' && args.length >= 1) {
+        return shaderValueFromNode(bool(args[0].node), args[0].kind);
       }
       return null;
     }
@@ -1135,6 +1468,9 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
     uniforms.videoTex,
     uniforms.glyphTex,
     uniforms.organicTex,
+    uniforms.blur1Tex,
+    uniforms.blur2Tex,
+    uniforms.blur3Tex,
     {
       noise: uniforms.noiseTex3D,
       simplex: uniforms.simplexTex3D,
@@ -1695,6 +2031,9 @@ class WebGPUMilkdropFeedbackManager {
       this.auxTextures,
     );
     uniforms.internalTex.value = this.targets[1].texture;
+    uniforms.blur1Tex.value = this.blurTarget.texture;
+    uniforms.blur2Tex.value = this.blurTarget.texture;
+    uniforms.blur3Tex.value = this.blurTarget.texture;
     uniforms.texelSize.value.set(
       1 / Math.max(1, this.targets[0].width),
       1 / Math.max(1, this.targets[0].height),
@@ -2111,6 +2450,7 @@ class WebGPUMilkdropFeedbackManager {
     // Never fed back — MilkDrop's comp output is display-only.
     this.compositeMaterial.uniforms.internalTex.value =
       this.writeTarget.texture;
+    this.compositeMaterial.uniforms.warpTex.value = this.writeTarget.texture;
     renderer.setRenderTarget(this.displayTarget);
     renderer.render(this.compositeScene, this.camera);
 
@@ -2145,6 +2485,9 @@ class WebGPUMilkdropFeedbackManager {
     );
     this.displayTarget.setSize(feedbackWidth, feedbackHeight);
     this.blurTarget.setSize(feedbackWidth, feedbackHeight);
+    this.compositeMaterial.uniforms.blur1Tex.value = this.blurTarget.texture;
+    this.compositeMaterial.uniforms.blur2Tex.value = this.blurTarget.texture;
+    this.compositeMaterial.uniforms.blur3Tex.value = this.blurTarget.texture;
     if (this.savedFrameTarget) {
       this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
     }

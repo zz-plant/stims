@@ -654,3 +654,109 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
     expect(glsl).toContain(', textureWrap)).rgb');
   });
 });
+
+// ─── Extended HLSL Intrinsics ─────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => {
+  test('tex2Dlod unwraps the HLSL float4 coordinate into textureLod', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dlod(sampler_main, float4(uv, 0.0, 0.0, 2.0)).rgb',
+    );
+    expect(glsl).toContain(
+      'textureLod(currentTex, sampleUv(vec2(vUv, 0.0), textureWrap), 2.0).rgb',
+    );
+  });
+
+  test('tex2Dbias emits texture() with an explicit bias', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dbias(sampler_noise, float4(uv, 0.0, 0.0, 0.5)).rgb',
+    );
+    expect(glsl).toContain(
+      'texture(noiseTex, sampleUv(vec2(vUv, 0.0), textureWrap), 0.5000000000)',
+    );
+  });
+
+  test('tex2Dgrad emits textureGrad with explicit gradients', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dgrad(sampler_main, uv, dFdx(vUv), dFdy(vUv)).rgb',
+    );
+    expect(glsl).toContain(
+      'textureGrad(currentTex, sampleUv(vUv, textureWrap), dFdx(vUv), dFdy(vUv))',
+    );
+  });
+
+  test('tex2Dlod on a sampler without a mip chain falls back to base mip', () => {
+    // fw_noise_lq is procedural; the fallback keeps the emit valid.
+    const glsl = emitShaderExpression(
+      'ret = tex2Dlod(sampler_fw_noise_lq, float4(uv, 0.0, 0.0, 2.0)).rgb',
+    );
+    expect(glsl).toContain('vec3(noise(');
+  });
+
+  test('emits the scalar/vector derivative and pow2 helpers', () => {
+    expect(emitShaderExpression('x = fwidth(bass)')).toContain(
+      'fwidth(signalBass)',
+    );
+    expect(emitShaderExpression('x = exp2(bass)')).toContain(
+      'exp2(signalBass)',
+    );
+    expect(emitShaderExpression('x = log2(bass)')).toContain(
+      'log2(max(signalBass, 0.000001))',
+    );
+    expect(emitShaderExpression('x = rsqrt(bass)')).toContain(
+      'inversesqrt(max(signalBass, 0.000001))',
+    );
+  });
+
+  test('emits the remaining math intrinsics with guarded domains', () => {
+    expect(emitShaderExpression('x = trunc(bass)')).toContain(
+      'trunc(signalBass)',
+    );
+    expect(emitShaderExpression('x = round(bass)')).toContain(
+      'round(signalBass)',
+    );
+    expect(
+      emitShaderExpression('x = reflect(vec3(0,1,0), vec3(0,1,0))'),
+    ).toContain('reflect(vec3(0.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0))');
+    expect(
+      emitShaderExpression('x = refract(vec3(0,1,0), vec3(0,1,0), 1.0)'),
+    ).toContain('refract(vec3(0.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0), 1.0)');
+    expect(emitShaderExpression('x = transpose(mat3(1))')).toContain(
+      'transpose(',
+    );
+  });
+
+  test('half*/int/bool constructors lower to GLSL built-ins', () => {
+    expect(emitShaderExpression('x = half(bass)')).toContain(
+      'float(signalBass)',
+    );
+    expect(emitShaderExpression('x = half2(bass, 1)')).toContain(
+      'vec2(signalBass, 1.0)',
+    );
+    expect(emitShaderExpression('x = half3(uv, 1.0)')).toContain(
+      'vec3(vUv, 1.0)',
+    );
+    expect(emitShaderExpression('x = int(bass)')).toContain('int(signalBass)');
+    expect(emitShaderExpression('x = bool(bass)')).toContain(
+      'bool(signalBass)',
+    );
+  });
+
+  test('routes perlin/glyph/organic aux samplers to their own source ids', () => {
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_perlin, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(9.0, 0, 0, 0).x');
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_glyph, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(12.0, 0, 0, 0).x');
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_organic, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(13.0, 0, 0, 0).x');
+  });
+
+  test('keeps blur samplers on their dedicated blur textures', () => {
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_blur1, uv).rgb'),
+    ).toContain('texture2D(blur1Tex, sampleUv(vUv, textureWrap)).rgb');
+  });
+});

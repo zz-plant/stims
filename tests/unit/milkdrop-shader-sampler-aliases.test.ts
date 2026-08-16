@@ -33,6 +33,18 @@ const SAMPLER_ALIAS_CASES = [
     alias: 'sampler_fw_noisevol_lq',
     canonical: 'simplex',
   },
+  {
+    alias: 'sampler_fw_noisevol_mq',
+    canonical: 'simplex',
+  },
+  {
+    alias: 'sampler_noisevol_mq',
+    canonical: 'simplex',
+  },
+  {
+    alias: 'sampler_pw_noisevol_hq',
+    canonical: 'simplex',
+  },
 ] as const;
 
 const SAMPLER_CANONICAL_CASES = [

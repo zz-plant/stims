@@ -924,6 +924,12 @@ export function hasUnsupportedVolumeSample(
       );
     case 'call': {
       const callName = normalizeShaderCallName(node.name);
+      if (callName === 'samplenoisevolume') {
+        // Native shader bodies rewrite texture(sampler_noisevol*, vec3) to
+        // the sampleNoiseVolume atlas-slice helper; it is supported volume
+        // sampling, never an unsupported-volume construct.
+        return false;
+      }
       if (callName === 'tex3d') {
         const samplerArg = node.args[0];
         const source =

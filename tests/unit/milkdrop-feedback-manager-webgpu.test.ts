@@ -63,7 +63,7 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     });
     expect(resolveDirectShaderSamplerBinding('sampler_perlin', '2d')).toEqual({
       canonicalSource: 'perlin',
-      sourceId: 1,
+      sourceId: 9,
     });
     expect(resolveDirectShaderSamplerBinding('sampler_main', '2d')).toEqual({
       canonicalSource: 'main',

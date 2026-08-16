@@ -150,6 +150,8 @@ type FieldAssemblyHelpers = {
     field: PendingHardUnsupportedField,
     runtimeGlobals: Record<string, number>,
   ) => boolean;
+  isMilkdropMetadataFieldKey: (field: MilkdropPresetField) => boolean;
+  resolveMilkdropMetadataKey: (field: MilkdropPresetField) => string | null;
 };
 
 type ShaderAssemblyHelpers = {
@@ -337,6 +339,16 @@ export function createMilkdropIr({
       stringFields[normalizedKey] = fieldHelpers.normalizeString(
         field.rawValue,
       );
+      return;
+    }
+
+    if (fieldHelpers.isMilkdropMetadataFieldKey(field)) {
+      const metadataKey = fieldHelpers.resolveMilkdropMetadataKey(field);
+      if (metadataKey) {
+        stringFields[metadataKey] = fieldHelpers.normalizeString(
+          field.rawValue,
+        );
+      }
       return;
     }
 
