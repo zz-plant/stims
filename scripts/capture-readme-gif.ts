@@ -96,7 +96,10 @@ async function main(): Promise<void> {
   await new Promise<void>((resolve) => {
     const check = () => {
       const now = Date.now();
-      if (recorder.state === 'inactive' || now - startTime >= CAPTURE_DURATION_MS) {
+      if (
+        recorder.state === 'inactive' ||
+        now - startTime >= CAPTURE_DURATION_MS
+      ) {
         recorder.stop();
         resolve();
       } else {
@@ -110,7 +113,7 @@ async function main(): Promise<void> {
   console.log('Stopping recording...');
   let blob: Blob | null = null;
   await new Promise<void>((resolve) => {
-    ;(recorder as any).onstop = () => {
+    (recorder as any).onstop = () => {
       blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null;
       resolve();
     };
@@ -130,18 +133,38 @@ async function main(): Promise<void> {
   // Build ffmpeg command lines
   const baseName = filename.replace('.webm', '');
   const cmd1 =
-    'ffmpeg -i ' + filename + ' -vf "fps=10,scale=320:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=10,scale=320:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' + PRESET + '-' + timestamp + '.gif';
+    'ffmpeg -i ' +
+    filename +
+    ' -vf "fps=10,scale=320:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=10,scale=320:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' +
+    PRESET +
+    '-' +
+    timestamp +
+    '.gif';
 
   const cmd2 =
-    'ffmpeg -i ' + filename + ' -vf "fps=8,scale=300:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=8,scale=300:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' + PRESET + '-' + timestamp + '-small.gif';
+    'ffmpeg -i ' +
+    filename +
+    ' -vf "fps=8,scale=300:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=8,scale=300:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' +
+    PRESET +
+    '-' +
+    timestamp +
+    '-small.gif';
 
   const cmd3 =
-    'gifsicle --optimize=3 --colors 64 --lossy 90 ' + filename.replace('.webm', '') + '.gif -o output.gif';
+    'gifsicle --optimize=3 --colors 64 --lossy 90 ' +
+    filename.replace('.webm', '') +
+    '.gif -o output.gif';
 
-  console.log(`\n================================================================================`);
+  console.log(
+    `\n================================================================================`,
+  );
   console.log('Captured WebM video: ' + filename);
-  console.log('================================================================================');
-  console.log('Use the following ffmpeg commands to convert to GIF for your README:');
+  console.log(
+    '================================================================================',
+  );
+  console.log(
+    'Use the following ffmpeg commands to convert to GIF for your README:',
+  );
   console.log('');
   console.log(cmd1);
   console.log('');
@@ -149,16 +172,19 @@ async function main(): Promise<void> {
   console.log('');
   console.log('Optional: optimize GIF colors:');
   console.log(cmd3);
-  console.log(`================================================================================`);
+  console.log(
+    `================================================================================`,
+  );
   console.log(
     '\nNotes:' +
-    '\n  - The WebM video is ~5 seconds at 60fps, ~1080p (hd-landscape preset)' +
-    '\n  - First ffmpeg command produces a 320px-wide GIF (~3-5MB)' +
-    '\n  - Second ffmpeg command produces a 300px-wide smaller GIF (~2-3MB)' +
-    '\n  - Third command reduces the GIF color palette for smaller size' +
-    '\n  - Place the resulting .gif file in your repo\'s docs/ or README assets/' +
-    '\n  - GitHub renders GIFs inline in the README' +
-    '\n================================================================================\n');
+      '\n  - The WebM video is ~5 seconds at 60fps, ~1080p (hd-landscape preset)' +
+      '\n  - First ffmpeg command produces a 320px-wide GIF (~3-5MB)' +
+      '\n  - Second ffmpeg command produces a 300px-wide smaller GIF (~2-3MB)' +
+      '\n  - Third command reduces the GIF color palette for smaller size' +
+      "\n  - Place the resulting .gif file in your repo's docs/ or README assets/" +
+      '\n  - GitHub renders GIFs inline in the README' +
+      '\n================================================================================\n',
+  );
 }
 
 // Run

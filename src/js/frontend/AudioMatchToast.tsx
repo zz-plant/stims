@@ -8,7 +8,12 @@ export function AudioMatchToast({
   if (!match) return null;
 
   return (
-    <div className="stims-shell__audio-match">
+    <div
+      className="stims-shell__audio-match"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <span className="stims-shell__eyebrow">Audio match</span>
       <button
         type="button"

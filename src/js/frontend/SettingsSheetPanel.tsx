@@ -51,6 +51,8 @@ function SwitchRow({
       </span>
       <input
         type="checkbox"
+        role="switch"
+        aria-checked={checked}
         className="ctl-switch"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
@@ -505,36 +507,44 @@ export function SettingsSheetPanel({
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
       <div className="ctl-tabs" role="tablist" aria-label="Settings categories">
         <button
+          id="tab-playback"
           type="button"
           role="tab"
           aria-selected={activeTab === 'playback'}
+          aria-controls="panel-playback"
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
           Playback &amp; Audio
         </button>
         <button
+          id="tab-hardware"
           type="button"
           role="tab"
           aria-selected={activeTab === 'hardware'}
+          aria-controls="panel-hardware"
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
           MIDI &amp; Stage
         </button>
         <button
+          id="tab-graphics"
           type="button"
           role="tab"
           aria-selected={activeTab === 'graphics'}
+          aria-controls="panel-graphics"
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
           Graphics &amp; Performance
         </button>
         <button
+          id="tab-accessibility"
           type="button"
           role="tab"
           aria-selected={activeTab === 'accessibility'}
+          aria-controls="panel-accessibility"
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
@@ -542,7 +552,7 @@ export function SettingsSheetPanel({
         </button>
       </div>
       {activeTab === 'playback' ? (
-        <>
+        <div role="tabpanel" id="panel-playback" aria-labelledby="tab-playback">
           <section className="ctl-section">
             <div className="ctl-section__head">
               <h3 className="ctl-section__title">Playback</h3>
@@ -610,13 +620,17 @@ export function SettingsSheetPanel({
           </section>
 
           <SyncSessionSection />
-        </>
+        </div>
       ) : null}
 
-      {activeTab === 'hardware' ? <PerformanceHardwareSection /> : null}
+      {activeTab === 'hardware' ? (
+        <div role="tabpanel" id="panel-hardware" aria-labelledby="tab-hardware">
+          <PerformanceHardwareSection />
+        </div>
+      ) : null}
 
       {activeTab === 'graphics' ? (
-        <>
+        <div role="tabpanel" id="panel-graphics" aria-labelledby="tab-graphics">
           {/* The quality preset sets the detail, particle and resolution
               controls below it, so it belongs directly above them. It used to
               sit in Playback & Audio, which meant changing how hard the
@@ -704,11 +718,15 @@ export function SettingsSheetPanel({
               </select>
             </div>
           </section>
-        </>
+        </div>
       ) : null}
 
       {activeTab === 'accessibility' ? (
-        <>
+        <div
+          role="tabpanel"
+          id="panel-accessibility"
+          aria-labelledby="tab-accessibility"
+        >
           <AccessibilitySection
             onOpenShortcuts={onOpenShortcuts}
             onOpenCredits={onOpenCredits}
@@ -752,7 +770,7 @@ export function SettingsSheetPanel({
               </button>
             ) : null}
           </section>
-        </>
+        </div>
       ) : null}
     </div>
   );

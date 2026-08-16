@@ -90,7 +90,7 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(unary('+', literal(5)))).toBe('5');
     expect(buildWgslExpressionString(unary('-', literal(5)))).toBe('(-5)');
     expect(buildWgslExpressionString(unary('!', ident('enabled')))).toBe(
-      'select(1.0f, 0.0f, abs(state.enabled) > 0.000001f)',
+      'select(1.0f, 0.0f, abs(state.enabled) > 0.00001f)',
     );
   });
 
@@ -144,12 +144,12 @@ describe('wgsl expression generation', () => {
     expect(
       buildWgslExpressionString(binary('&&', ident('beat'), ident('enabled'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(signals.beat) > 0.000001f && abs(state.enabled) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.beat) > 0.00001f && abs(state.enabled) > 0.00001f)',
     );
     expect(
       buildWgslExpressionString(binary('||', ident('bass'), ident('treb'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(signals.bass) > 0.000001f || abs(signals.treb) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.bass) > 0.00001f || abs(signals.treb) > 0.00001f)',
     );
   });
 
@@ -277,7 +277,7 @@ describe('wgsl expression generation', () => {
       buildWgslExpressionString(
         call('if', [literal(1), literal(10), literal(20)]),
       ),
-    ).toBe('select(f32(20), f32(10), abs(1) > 0.000001f)');
+    ).toBe('select(f32(20), f32(10), abs(1) > 0.00001f)');
     expect(
       buildWgslExpressionString(call('above', [literal(5), literal(3)])),
     ).toBe('select(0.0f, 1.0f, (5) > (3))');
@@ -304,7 +304,7 @@ describe('wgsl expression generation', () => {
     ]);
 
     expect(buildWgslExpressionString(expression)).toBe(
-      'select(f32(0), f32(1), abs(select(0.0f, 1.0f, ((signals.treb + signals.treb_att)) > (2.8))) > 0.000001f)',
+      'select(f32(0), f32(1), abs(select(0.0f, 1.0f, ((signals.treb + signals.treb_att)) > (2.8))) > 0.00001f)',
     );
   });
 

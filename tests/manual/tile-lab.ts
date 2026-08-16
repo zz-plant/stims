@@ -3,18 +3,18 @@
 // per-frame cost. Prototype only; not wired into the app shell.
 
 import { Scene, WebGLRenderer } from 'three';
-import { initCamera } from './src/js/core/camera-setup.ts';
+import { initCamera } from '../../src/js/core/camera-setup.ts';
 import {
   createMilkdropPostprocessingComposer,
   type PostprocessingPipeline,
   shouldRenderMilkdropPostprocessing,
-} from './src/js/core/postprocessing.ts';
-import { compileMilkdropPresetSource } from './src/js/milkdrop/compiler.ts';
-import { createMilkdropRendererAdapter } from './src/js/milkdrop/renderer-adapter-factory.ts';
-import type { MilkdropRendererAdapter } from './src/js/milkdrop/renderer-types.ts';
-import { createMilkdropSignalTracker } from './src/js/milkdrop/runtime-signals.ts';
-import type { MilkdropRuntimeSignals } from './src/js/milkdrop/types.ts';
-import { createMilkdropVM } from './src/js/milkdrop/vm.ts';
+} from '../../src/js/core/postprocessing.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
+import type { MilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-types.ts';
+import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
+import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 const params = new URLSearchParams(location.search);
 const TILE_SIZE = Number(params.get('size') ?? 128);

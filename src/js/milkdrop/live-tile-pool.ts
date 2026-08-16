@@ -2,7 +2,7 @@
 // resolution (one canvas + WebGL context each) so catalog tiles can show the
 // actual preset, animated, instead of a static preview frame.
 //
-// Validated by the tile-lab experiment (see docs in memory + tile-lab.html):
+// Validated by the tile-lab experiment (see docs in memory + tests/manual/tile-lab.html):
 // GL cost per tile is ~0.5ms; the budget is CPU vm.step (~2ms for classic
 // presets after the invisible-motion-vector fix), so a pool of ~10 tiles
 // stepping at ~15fps fits comfortably on the main thread. Browsers cap live
