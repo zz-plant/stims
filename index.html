@@ -27,6 +27,8 @@
       .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
       .stims-loading__dots span:first-child{animation-delay:-.32s}
       .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
+      .stims-loading__exit{position:absolute;top:12px;right:12px;width:24px;height:24px;background:rgba(0,0,0,.3);border-radius:50%;color:#e9fbff;font-size:1.2rem;line-height:24px;text-align:center;transition:background .2s;cursor:pointer;}
+      .stims-loading__exit:hover{background:rgba(0,0,0,.5)}
       .stims-crawl-links{position:absolute;top:0;left:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
       @keyframes stims-spin{to{transform:rotate(360deg)}}
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
@@ -52,7 +54,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>Stims — MilkDrop-Inspired Browser Visualizer</title>
+    <title>Stims — MilkDrop-Inspired Audio Visualizer</title>
     <meta property="og:title" content="Stims — MilkDrop-Inspired Audio Visualizer" />
     <meta
       property="og:description"
@@ -75,71 +77,6 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
-    <!-- Design tokens, motion prefs, base reset, and index styles are all
-         non-render-blocking: the loading spinner uses hardcoded inline styles
-         so the shell can paint immediately. These load via the media="print"
-         onload trick and swap to all once ready, avoiding FOUC on the shell
-         chrome while not blocking the initial paint. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
-      />
-    </noscript>
-    <link
-      rel="stylesheet"
-      href="src/css/tokens.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <link
-      rel="stylesheet"
-      href="src/css/motion.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <link
-      rel="stylesheet"
-      href="src/css/base.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <link
-      rel="stylesheet"
-      href="src/css/index.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="src/css/tokens.css" />
-      <link rel="stylesheet" href="src/css/motion.css" />
-      <link rel="stylesheet" href="src/css/base.css" />
-      <link rel="stylesheet" href="src/css/index.css" />
-    </noscript>
-    <link rel="stylesheet" href="src/css/tokens.css" />
-    <link rel="stylesheet" href="src/css/motion.css" />
-    <link
-      rel="stylesheet"
-      href="src/css/base.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <link
-      rel="stylesheet"
-      href="src/css/index.css"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="src/css/base.css" />
-      <link rel="stylesheet" href="src/css/index.css" />
-    </noscript>
     <script>
       (() => {
         try {
@@ -176,9 +113,17 @@
       >
         <div>
           <div class="stims-loading__spinner" aria-hidden="true"></div>
-          <div class="stims-loading__text">
-            Loading MilkDrop visualizer<span class="stims-loading__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <div class="stims-loading__text" id="stims-loading-text">
+            Loading MilkDrop visualizer
           </div>
+          <button
+            class="stims-loading__exit"
+            aria-label="Dismiss loading screen"
+            onclick="document.getElementById('stims-loading').hidden=true"
+            role="button"
+          >
+            ✕
+          </button>
         </div>
       </div>
     </div>
@@ -198,7 +143,7 @@
     </noscript>
     <script>
       (() => {
-        const TIMEOUT_MS = 10000;
+        const TIMEOUT_MS = 15000;
         const phaseLabels = {
           'app-module': 'Starting app shell',
           'shell-rendered': 'Showing controls',
