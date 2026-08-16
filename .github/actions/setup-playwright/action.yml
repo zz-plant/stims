@@ -1,0 +1,28 @@
+name: 'Setup Playwright Environment'
+description: 'Caches Playwright browser binaries and provisions Chromium dependencies'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+
+    # On an exact cache hit only the apt-installed system libraries are
+    # missing (the runner image doesn't guarantee them and they can't be
+    # cached), so skip the ~150 MB browser download and install just the
+    # deps.
+    - name: Install Playwright Chromium
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: bunx playwright install --with-deps chromium
+
+    - name: Install Playwright system deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: bunx playwright install-deps chromium

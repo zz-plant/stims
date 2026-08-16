@@ -3,6 +3,9 @@ export type VmBufferLayout = {
   fieldCount: number;
   bufferSize: number;
   buffer: GPUBuffer | null;
+  stagingBuffer?: ArrayBuffer;
+  stagingFloatView?: Float32Array;
+  stagingUintView?: Uint32Array;
 };
 
 const FLOAT32_BYTES = 4;
@@ -30,11 +33,15 @@ export function createVmBufferManager() {
       offset += UINT32_BYTES;
     }
 
+    const stagingBuffer = new ArrayBuffer(offset);
     return {
       fieldOffsets,
       fieldCount: Object.keys(fieldOffsets).length,
       bufferSize: offset,
       buffer: null as GPUBuffer | null,
+      stagingBuffer,
+      stagingFloatView: new Float32Array(stagingBuffer),
+      stagingUintView: new Uint32Array(stagingBuffer),
     } satisfies VmBufferLayout;
   }
 
@@ -71,9 +78,23 @@ export function createVmBufferManager() {
       return;
     }
 
-    const data = new ArrayBuffer(layout.bufferSize);
-    const floatView = new Float32Array(data);
-    const uintView = new Uint32Array(data);
+    let data = layout.stagingBuffer;
+    let floatView = layout.stagingFloatView;
+    let uintView = layout.stagingUintView;
+
+    if (
+      !data ||
+      !floatView ||
+      !uintView ||
+      data.byteLength !== layout.bufferSize
+    ) {
+      data = new ArrayBuffer(layout.bufferSize);
+      floatView = new Float32Array(data);
+      uintView = new Uint32Array(data);
+      layout.stagingBuffer = data;
+      layout.stagingFloatView = floatView;
+      layout.stagingUintView = uintView;
+    }
 
     for (const [key, value] of Object.entries(state)) {
       const offset = layout.fieldOffsets[key];

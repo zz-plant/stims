@@ -43,7 +43,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
   ```bash
   bun run test tests/unit/frontend-url-state.test.ts
-  bun run test tests/unit/app-shell.test.js
+  bun run test tests/unit/app-shell.test.ts
   ```
 
 ## What to reject in review

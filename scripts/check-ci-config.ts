@@ -33,31 +33,49 @@ const pkg = JSON.parse(readText(join(ROOT, 'package.json'))) as {
   scripts?: Record<string, string>;
 };
 
-/* 1 + 3: workflow script references and npm leakage */
-const workflowDir = join(ROOT, '.github/workflows');
-if (existsSync(workflowDir)) {
-  const BUN_RUN = /\bbun run (?!--)([A-Za-z0-9:_-]+)/g;
-  const NPM_CMD = /(^|\s)(npm|npx) (?:run |ci |install |test )/;
-  for (const file of readdirSync(workflowDir)) {
-    if (!file.endsWith('.yml') && !file.endsWith('.yaml')) continue;
-    const path = join(workflowDir, file);
-    const text = readText(path);
-    for (const match of text.matchAll(BUN_RUN)) {
-      const script = match[1];
-      if (!(script in (pkg.scripts ?? {}))) {
-        errors.push(
-          `${file}: references 'bun run ${script}' which is not a package.json script`,
-        );
-      }
+/* 1 + 3: workflow and action script references and npm leakage */
+function getYamlFiles(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  const entries = readdirSync(dir, { withFileTypes: true, recursive: true });
+  return entries
+    .filter(
+      (e) =>
+        e.isFile() && (e.name.endsWith('.yml') || e.name.endsWith('.yaml')),
+    )
+    .map((e) =>
+      join(
+        e.parentPath || (e as unknown as { path: string }).path || dir,
+        e.name,
+      ),
+    );
+}
+
+const yamlFiles = [
+  ...getYamlFiles(join(ROOT, '.github/workflows')),
+  ...getYamlFiles(join(ROOT, '.github/actions')),
+];
+
+const BUN_RUN = /\bbun run (?!--)([A-Za-z0-9:_-]+)/g;
+const NPM_CMD = /(^|\s)(npm|npx) (?:run |ci |install |test )/;
+
+for (const filePath of yamlFiles) {
+  const relPath = filePath.replace(`${ROOT}/`, '');
+  const text = readText(filePath);
+  for (const match of text.matchAll(BUN_RUN)) {
+    const script = match[1];
+    if (!(script in (pkg.scripts ?? {}))) {
+      errors.push(
+        `${relPath}: references 'bun run ${script}' which is not a package.json script`,
+      );
     }
-    if (NPM_CMD.test(text)) {
-      const lines = text.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        if (NPM_CMD.test(lines[i])) {
-          errors.push(
-            `${file}:${i + 1}: uses npm/npx instead of bun/bunx — ${lines[i].trim()}`,
-          );
-        }
+  }
+  if (NPM_CMD.test(text)) {
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (NPM_CMD.test(lines[i])) {
+        errors.push(
+          `${relPath}:${i + 1}: uses npm/npx instead of bun/bunx — ${lines[i].trim()}`,
+        );
       }
     }
   }
