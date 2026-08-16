@@ -30,7 +30,7 @@ Run exactly what your change can break instead of the whole gate:
 | `src/`, `scripts/` code | `bun run check:quick` |
 | tests | `bun run test <file>` then `bun run check:quick` |
 | `expression.ts` / `builtin-docs.ts` | `bun run docs:authoring-reference` then `bun run check:authoring-docs` |
-| `public/milkdrop-presets/catalog.json` | `bun run check:catalog-integrity` + `bun run check:catalog-fidelity`, then `bun run generate:search-index` |
+| `public/milkdrop-presets/catalog.json` | `bun run check:catalog-integrity` + `bun run check:catalog-fidelity` |
 | anything | `bun run agent:verify --changed` (smart gate: detects applicable guards/tests/regens) |
 
 ## Boundaries and don't-touch areas

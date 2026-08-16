@@ -103,6 +103,18 @@ export async function generateCatalogSearchIndex(repoRoot = process.cwd()) {
     return;
   }
 
+  // Skip regeneration if the search index is already up to date.
+  if (fs.existsSync(outputPath)) {
+    const catalogMtime = fs.statSync(catalogPath).mtimeMs;
+    const indexMtime = fs.statSync(outputPath).mtimeMs;
+    if (indexMtime >= catalogMtime) {
+      console.log(
+        `[INFO] Search index is up to date (catalog mtime ${new Date(catalogMtime).toISOString()}, index mtime ${new Date(indexMtime).toISOString()}). Skipping.`,
+      );
+      return;
+    }
+  }
+
   let doc: CatalogDocument;
   if (typeof Bun !== 'undefined') {
     doc = (await Bun.file(catalogPath).json()) as CatalogDocument;

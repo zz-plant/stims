@@ -12,9 +12,11 @@ const toysData = fs.existsSync(toysDataPath)
   : [];
 const toyEntries = Array.isArray(toysData) ? toysData : [];
 
+// milkdrop/index.html is a pure redirect (no JS imports) — exclude it from
+// Vite bundling to avoid an unnecessary chunk graph.  It is copied to dist/
+// as a static asset by Vite's default public-dir behaviour.
 const htmlInputs = {
   index: path.resolve(rootDir, 'index.html'),
-  milkdrop: path.resolve(rootDir, 'milkdrop/index.html'),
   certify: path.resolve(rootDir, 'certify/index.html'),
   performance: path.resolve(rootDir, 'performance/index.html'),
 };

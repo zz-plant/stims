@@ -27,11 +27,16 @@ const hasBun = (() => {
   }
 })();
 
-run(
-  hasBun
-    ? 'bun scripts/sync-resvg-wasm.mjs'
-    : 'node scripts/sync-resvg-wasm.mjs',
-);
+// Skip WASM sync in CI when node_modules haven't changed (the lockfile key
+// means the binary is already cached). Also skip when STIMS_SKIP_POSTINSTALL_BUILD
+// is set, which is used by the build script's own install step.
+if (!skipCloudflareBuild && !process.env.STIMS_SKIP_POSTINSTALL_BUILD) {
+  run(
+    hasBun
+      ? 'bun scripts/sync-resvg-wasm.mjs'
+      : 'node scripts/sync-resvg-wasm.mjs',
+  );
+}
 
 if (isCloudflarePages) {
   if (skipCloudflareBuild) {

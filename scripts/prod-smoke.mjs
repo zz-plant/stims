@@ -4,7 +4,7 @@ if (!BASE_URL) {
   process.exit(1);
 }
 
-const routes = ['/', '/about'];
+const routes = ['/'];
 if (process.env.CRITICAL_ROUTES) {
   routes.push(...process.env.CRITICAL_ROUTES.split(','));
 }
