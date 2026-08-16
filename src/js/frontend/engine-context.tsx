@@ -80,6 +80,9 @@ export interface EngineContextValue {
   setTransitionMode: (mode: 'blend' | 'cut') => void;
   setBlendDuration: (value: number) => void;
   updateEditorSource: (source: string) => void;
+  /** Applies a field to the live VM without recompiling (instant drag
+   * feedback); the editor commits to source on release. */
+  updateFieldLive: (key: string, value: number) => void;
   /** Awaitable live-edit surface used by the agent bridge: resolves with the
    * resulting compile so a caller can see diagnostics instead of guessing. */
   applyEditorSourceAwaited: (

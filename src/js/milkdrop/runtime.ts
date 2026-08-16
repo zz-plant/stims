@@ -964,10 +964,24 @@ function buildExperienceController(deps: Record<string, any>) {
       deps.emitChange();
     },
     updateInspectorField(key: string, value: string | number) {
+      // Live-first: MIDI faders and the inspector feed continuous values and
+      // used to only become visible once a recompile landed. Write the running
+      // VM immediately for instant feedback; the session commit below still
+      // persists the value into the source.
+      const numeric = typeof value === 'number' ? value : Number(value);
+      if (Number.isFinite(numeric)) {
+        deps.vm.setField(key, numeric);
+      }
       void deps.session.updateField(key, value).catch((error: unknown) => {
         log.warn(`Inspector field "${key}" could not be applied`, error);
       });
       deps.emitChange();
+    },
+    /** Live-apply a numeric field to the running VM without recompiling. The
+     * Tune pane uses this on `input` (during a drag); the value is committed
+     * to the source separately on release. */
+    setLiveField(key: string, value: number) {
+      deps.vm.setField(key, value);
     },
 
     setQualityPreset(presetId: string) {

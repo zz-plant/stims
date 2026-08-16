@@ -560,6 +560,9 @@ export function useWorkspaceSessionState({
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
+    updateFieldLive: (key: string, value: number) => {
+      engineRef.current?.updateFieldLive(key, value);
+    },
     applyEditorSourceAwaited: async (source: string) =>
       (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
     applyEditorFieldsAwaited: async (

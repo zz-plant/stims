@@ -452,6 +452,12 @@ export interface MilkdropVM {
   setRenderBackend(backend: 'webgl' | 'webgpu'): void;
   setGpuDevice(device: GPUDevice | null): void;
   reset(): void;
+  /**
+   * Apply one numeric field to live per-frame state without recompiling.
+   * Feeds the Tune pane's drag feedback: a fader moves and the next frame
+   * reflects it, while the source/compile path stays on the commit.
+   */
+  setField(key: string, value: number): void;
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState;
   stepAsync?(signals: MilkdropRuntimeSignals): Promise<MilkdropFrameState>;
   getStateSnapshot(): Record<string, number>;

@@ -42,6 +42,9 @@ export function EditorPanel() {
         onEditorSourceChange: (source: string) => {
           engineRef.current.updateEditorSource(source);
         },
+        onLiveFieldChange: (key: string, value: number) => {
+          engineRef.current.updateFieldLive(key, value);
+        },
         onRevertToActive: () => {
           engineRef.current.revertEditorSource();
         },

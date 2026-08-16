@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   computeMidiGutterInfo,
   findMilkdropFieldLine,
+  getFieldOverwriteKind,
   isFieldShadowedByEquations,
 } from '../../src/js/milkdrop/formatter.ts';
 
@@ -83,5 +84,46 @@ describe('computeMidiGutterInfo', () => {
     const source = 'zoom=1.4\n';
     const entries = computeMidiGutterInfo(source, ['zoom', 'zoom']);
     expect(entries).toHaveLength(1);
+  });
+});
+
+describe('getFieldOverwriteKind', () => {
+  it('is "none" when nothing reassigns the target', () => {
+    const source = 'zoom=1.4\nper_frame_1=warp = warp + 0.01\n';
+    expect(getFieldOverwriteKind(source, 'zoom')).toBe('none');
+  });
+
+  it('is "absolute" when the equation discards the base', () => {
+    const source = 'zoom=1.4\nper_frame_1=zoom = 1.0 + bass*0.1\n';
+    expect(getFieldOverwriteKind(source, 'zoom')).toBe('absolute');
+  });
+
+  it('is "relative" when the equation references its own target', () => {
+    const source = 'cx=0.5\nper_frame_1=cx = cx + sin(time)*0.01\n';
+    expect(getFieldOverwriteKind(source, 'cx')).toBe('relative');
+  });
+
+  it('is "relative" for a compound self-reference after a semicolon', () => {
+    const source = 'zoom=1.4\nper_frame_1=warp = 1.0; zoom = zoom * 1.01\n';
+    expect(getFieldOverwriteKind(source, 'zoom')).toBe('relative');
+  });
+
+  it('keeps the flavour of the last assignment, since it wins', () => {
+    const relativeThenAbsolute =
+      'zoom=1.4\nper_frame_1=zoom = zoom * 1.01; zoom = 1.0 + bass*0.1\n';
+    expect(getFieldOverwriteKind(relativeThenAbsolute, 'zoom')).toBe(
+      'absolute',
+    );
+
+    const absoluteThenRelative =
+      'zoom=1.4\nper_frame_1=zoom = 1.0 + bass*0.1; zoom = zoom * 1.01\n';
+    expect(getFieldOverwriteKind(absoluteThenRelative, 'zoom')).toBe(
+      'relative',
+    );
+  });
+
+  it('does not treat a same-prefix variable as a self-reference', () => {
+    const source = 'zoom=1.4\nper_frame_1=zoom2 = zoom2 * 1.01\n';
+    expect(getFieldOverwriteKind(source, 'zoom')).toBe('none');
   });
 });

@@ -401,3 +401,248 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     panel.dispose();
   });
 });
+
+/**
+ * Live drag feedback. Continuous controls (faders, ranges, colour swatches)
+ * report each value to the running VM through `onLiveFieldChange` as they
+ * move, so the visual responds mid-drag; the doc write/compile still happens
+ * on the same event so the value persists into the source.
+ */
+describe('editor panel live drag feedback', () => {
+  let OriginalMutationObserver: typeof globalThis.MutationObserver;
+
+  beforeAll(() => {
+    OriginalMutationObserver = globalThis.MutationObserver;
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+  });
+
+  afterAll(() => {
+    globalThis.MutationObserver = OriginalMutationObserver;
+  });
+
+  const createMockCallbacks = (): EditorPanelCallbacks => ({
+    onEditorSourceChange: mock(() => {}),
+    onRevertToActive: mock(() => {}),
+    onDuplicatePreset: mock(() => {}),
+    onExport: mock(() => {}),
+    onDeletePreset: mock(() => {}),
+    onRequestImport: mock(() => {}),
+  });
+
+  const stateFor = (source: string): MilkdropEditorSessionState => ({
+    source,
+    diagnostics: [],
+    latestCompiled: null,
+    activeCompiled: null,
+    dirty: false,
+  });
+
+  const recorded = (onLiveFieldChange: ReturnType<typeof mock>) =>
+    onLiveFieldChange.mock.calls as Array<[string, number]>;
+
+  test('a fader reports a live value for its key while dragging', () => {
+    const onLiveFieldChange = mock(() => {});
+    const panel = new EditorPanel({
+      ...createMockCallbacks(),
+      onLiveFieldChange,
+    });
+    panel.setSessionState(stateFor('zoom=1.0\n'));
+
+    const input = panel.element.querySelector(
+      '.stims-editor__slider-input[aria-label="Zoom"]',
+    ) as HTMLInputElement;
+    expect(input).not.toBeNull();
+    if (!input) return;
+
+    input.value = '0.75';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(onLiveFieldChange).toHaveBeenCalledTimes(1);
+    expect(recorded(onLiveFieldChange)[0]?.[0]).toBe('zoom');
+    expect(recorded(onLiveFieldChange)[0]?.[1]).toBeGreaterThan(1);
+
+    // The doc write still happens so the value persists into the source.
+    expect(panel.readVariableFromEditor('zoom')).toBeGreaterThan(1);
+
+    panel.dispose();
+  });
+
+  test('a range handle reports live values for both of its fields', () => {
+    const onLiveFieldChange = mock(() => {});
+    const panel = new EditorPanel({
+      ...createMockCallbacks(),
+      onLiveFieldChange,
+    });
+    panel.setSessionState(stateFor('blur1_min=0\nblur1_max=1\n'));
+
+    const input = panel.element.querySelector(
+      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
+    ) as HTMLInputElement;
+    input.value = '0.4';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(onLiveFieldChange).toHaveBeenCalledTimes(2);
+    expect(recorded(onLiveFieldChange).map((call) => call[0])).toEqual([
+      'blur1_min',
+      'blur1_max',
+    ]);
+
+    panel.dispose();
+  });
+
+  test('a colour swatch reports live updates for all three channels', () => {
+    const onLiveFieldChange = mock(() => {});
+    const panel = new EditorPanel({
+      ...createMockCallbacks(),
+      onLiveFieldChange,
+    });
+    panel.setSessionState(stateFor('bg_r=0\nbg_g=0\nbg_b=0\n'));
+
+    const rows = Array.from(
+      panel.element.querySelectorAll('.stims-editor__color'),
+    );
+    const row = rows.find(
+      (candidate) =>
+        candidate.querySelector('.stims-editor__slider-label')?.textContent ===
+        'Background',
+    );
+    const swatch = row?.querySelector(
+      '.stims-editor__color-swatch',
+    ) as HTMLInputElement | null;
+    if (!swatch) throw new Error('missing background swatch');
+
+    swatch.value = '#3366ff';
+    swatch.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(onLiveFieldChange).toHaveBeenCalledTimes(3);
+    expect(recorded(onLiveFieldChange).map((call) => call[0])).toEqual([
+      'bg_r',
+      'bg_g',
+      'bg_b',
+    ]);
+    expect(recorded(onLiveFieldChange)[0]?.[1]).toBeCloseTo(0x33 / 255, 3);
+    expect(recorded(onLiveFieldChange)[1]?.[1]).toBeCloseTo(0x66 / 255, 3);
+    expect(recorded(onLiveFieldChange)[2]?.[1]).toBeCloseTo(1, 3);
+
+    panel.dispose();
+  });
+});
+
+/**
+ * The transient overwrite hint. A control on a field the preset's own
+ * equations rewrite every frame shows it only while focused (i.e. mid-drag):
+ * the readout is moving and the stage may not be, so the row says which.
+ */
+describe('editor panel live overwrite hint', () => {
+  let OriginalMutationObserver: typeof globalThis.MutationObserver;
+
+  beforeAll(() => {
+    OriginalMutationObserver = globalThis.MutationObserver;
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+  });
+
+  afterAll(() => {
+    globalThis.MutationObserver = OriginalMutationObserver;
+  });
+
+  const createMockCallbacks = (): EditorPanelCallbacks => ({
+    onEditorSourceChange: mock(() => {}),
+    onRevertToActive: mock(() => {}),
+    onDuplicatePreset: mock(() => {}),
+    onExport: mock(() => {}),
+    onDeletePreset: mock(() => {}),
+    onRequestImport: mock(() => {}),
+  });
+
+  const stateFor = (source: string): MilkdropEditorSessionState => ({
+    source,
+    diagnostics: [],
+    latestCompiled: null,
+    activeCompiled: null,
+    dirty: false,
+  });
+
+  const hintFor = (panel: EditorPanel, label: string) => {
+    const input = panel.element.querySelector(
+      `.stims-editor__slider-input[aria-label="${label}"]`,
+    ) as HTMLInputElement | null;
+    const row = input?.closest('.stims-editor__slider');
+    return row?.querySelector(
+      '.stims-editor__live-hint',
+    ) as HTMLDivElement | null;
+  };
+
+  test('an absolutely overwritten field warns that the value will not stick', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    document.body.appendChild(panel.element);
+    panel.setSessionState(
+      stateFor('zoom=1.0\nper_frame_1=zoom = 1.0 + bass*0.1\n'),
+    );
+
+    const input = panel.element.querySelector(
+      '.stims-editor__slider-input[aria-label="Zoom"]',
+    ) as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    const hint = hintFor(panel, 'Zoom');
+    expect(hint).not.toBeNull();
+    expect(hint?.hidden).toBe(false);
+    expect(hint?.textContent).toContain('Overwritten every frame');
+    expect(hint?.textContent).toContain("won't stick");
+
+    input.blur();
+    expect(hint?.hidden).toBe(true);
+
+    panel.dispose();
+  });
+
+  test('a relative equation says the drag moves its base instead', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    document.body.appendChild(panel.element);
+    panel.setSessionState(
+      stateFor('cx=0.5\nper_frame_1=cx = cx + sin(time)*0.01\n'),
+    );
+
+    const input = panel.element.querySelector(
+      '.stims-editor__slider-input[aria-label="Centre X"]',
+    ) as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    const hint = hintFor(panel, 'Centre X');
+    expect(hint?.hidden).toBe(false);
+    expect(hint?.textContent).toContain('Overwritten every frame');
+    expect(hint?.textContent).toContain('moves its base');
+
+    panel.dispose();
+  });
+
+  test('a field the preset does not overwrite stays quiet', () => {
+    const panel = new EditorPanel(createMockCallbacks());
+    document.body.appendChild(panel.element);
+    panel.setSessionState(stateFor('zoom=1.0\n'));
+
+    const input = panel.element.querySelector(
+      '.stims-editor__slider-input[aria-label="Zoom"]',
+    ) as HTMLInputElement;
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    expect(hintFor(panel, 'Zoom')?.hidden).toBe(true);
+
+    panel.dispose();
+  });
+});

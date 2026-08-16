@@ -75,6 +75,7 @@ import {
 import {
   computeMidiGutterInfo,
   findMilkdropEquationLine,
+  getFieldOverwriteKind,
   isFieldShadowedByEquations,
   type MidiGutterEntry,
   readMilkdropField,
@@ -399,6 +400,11 @@ function escapeHtml(value: string): string {
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
+  /** Live feedback for a numeric field during a drag: applied to the running
+   * VM without a recompile. The value is committed to the source separately
+   * (on release), so the runtime staying absent only degrades to the old
+   * compile-only behavior. */
+  onLiveFieldChange?: (key: string, value: number) => void;
   onRevertToActive: () => void;
   onDuplicatePreset: () => void;
   onExport: () => void;
@@ -878,6 +884,24 @@ function createEditorView({
   };
 }
 
+/**
+ * Transient hint shown under a control while it is being dragged. It only
+ * appears on fields a preset's equations rewrite every frame — the readout is
+ * moving and the stage may not be, so the row says which. Relative equations
+ * (`cx = cx + sin(time)`) reload the base first, so a drag does move the
+ * stage; absolute equations discard it. Returns '' when nothing to warn about.
+ */
+function liveHintForFields(doc: string, keys: string[]): string {
+  for (const key of keys) {
+    const kind = getFieldOverwriteKind(doc, key);
+    if (kind === 'none') continue;
+    return kind === 'relative'
+      ? 'Overwritten every frame — this drag moves its base'
+      : "Overwritten every frame — this value won't stick";
+  }
+  return '';
+}
+
 export class EditorPanel {
   readonly element: HTMLElement;
 
@@ -935,6 +959,7 @@ export class EditorPanel {
       display: HTMLSpanElement;
       defaultValue: number;
       learnButton: HTMLButtonElement;
+      liveHint: HTMLDivElement;
       config: ScalarControlConfig;
     }
   > = new Map();
@@ -952,6 +977,7 @@ export class EditorPanel {
       minInput: HTMLInputElement;
       maxInput: HTMLInputElement;
       readout: HTMLSpanElement;
+      liveHint: HTMLDivElement;
       config: RangeControlConfig;
     }
   > = new Map();
@@ -973,6 +999,7 @@ export class EditorPanel {
       swatch: HTMLInputElement;
       hexLabel: HTMLSpanElement;
       alphaInput: HTMLInputElement | null;
+      liveHint: HTMLDivElement;
     }
   > = new Map();
   /** One entry per Tune control: the fields it writes and the chip reporting
@@ -1880,6 +1907,58 @@ export class EditorPanel {
         ? `Listening… move a knob or fader to map it to ${key}.`
         : `MIDI-learn ${key}: click, then move a knob or fader.`;
     });
+    this.refreshLiveHintsFromDoc();
+  }
+
+  /**
+   * The transient overwrite hint, recomputed cheaply on every doc change and
+   * on focus. It only shows while a control is actually being edited: the
+   * readout is moving and the stage may not be, so the row says which. Blur
+   * listeners hide it; focus and doc changes (re)populate it.
+   */
+  private refreshLiveHintsFromDoc(): void {
+    const doc = this.editor.state.doc.toString();
+    const update = (
+      input: Element | null,
+      hint: HTMLDivElement,
+      keys: string[],
+    ) => {
+      const active = document.activeElement === input;
+      hint.textContent = active ? liveHintForFields(doc, keys) : '';
+      hint.hidden = !active || hint.textContent === '';
+    };
+    this.sliderInputs.forEach((item) => {
+      update(item.input, item.liveHint, [item.config.key]);
+    });
+    this.rangeInputs.forEach((item) => {
+      const active =
+        document.activeElement === item.minInput ||
+        document.activeElement === item.maxInput;
+      if (!active) {
+        item.liveHint.hidden = true;
+        item.liveHint.textContent = '';
+        return;
+      }
+      item.liveHint.textContent = liveHintForFields(doc, [
+        item.config.minKey,
+        item.config.maxKey,
+      ]);
+      item.liveHint.hidden = item.liveHint.textContent === '';
+    });
+    this.colorInputs.forEach((item) => {
+      const keys = [...item.group.rgb];
+      if (item.group.alpha) keys.push(item.group.alpha.key);
+      const active =
+        document.activeElement === item.swatch ||
+        document.activeElement === item.alphaInput;
+      if (!active) {
+        item.liveHint.hidden = true;
+        item.liveHint.textContent = '';
+        return;
+      }
+      item.liveHint.textContent = liveHintForFields(doc, keys);
+      item.liveHint.hidden = item.liveHint.textContent === '';
+    });
   }
 
   private toggleSliderLearn(key: string): void {
@@ -2138,6 +2217,9 @@ export class EditorPanel {
         (Math.round(value / s.step) * s.step).toFixed(6),
       );
       valDisplay.textContent = formatControlValue(quantised, s);
+      // Live first: the running VM reflects the drag immediately. The doc
+      // write below still recompiles so the value persists into the source.
+      this.callbacks.onLiveFieldChange?.(s.key, quantised);
       this.writeVariableToEditor(s.key, quantised);
     });
 
@@ -2158,19 +2240,33 @@ export class EditorPanel {
 
     controls.append(input, learnButton, resetButton);
 
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
     this.sliderInputs.set(s.key, {
       input,
       display: valDisplay,
       defaultValue: s.defaultValue,
       learnButton,
+      liveHint,
       config: s,
+    });
+
+    // Shown only while the handle is held: the readout is moving and the
+    // stage may not be, and the permanent chip is too easy to miss mid-drag.
+    input.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    input.addEventListener('blur', () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
     });
 
     const head = document.createElement('div');
     head.className = 'stims-editor__control-head';
     head.append(label, this.createFieldStateChip([s.key], s.label), valDisplay);
 
-    row.append(head, controls, this.renderModulationRow(s));
+    row.append(head, controls, liveHint, this.renderModulationRow(s));
     return row;
   }
 
@@ -2517,6 +2613,8 @@ export class EditorPanel {
         Number.parseFloat(maxInput.value),
       );
       readout.textContent = `${low.toFixed(2)} – ${high.toFixed(2)}`;
+      this.callbacks.onLiveFieldChange?.(config.minKey, low);
+      this.callbacks.onLiveFieldChange?.(config.maxKey, high);
       this.writeVariablesToEditor({
         [config.minKey]: low,
         [config.maxKey]: high,
@@ -2546,13 +2644,27 @@ export class EditorPanel {
     controls.className = 'stims-editor__slider-row';
     controls.append(track, resetButton);
 
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
     this.rangeInputs.set(config.label, {
       minInput,
       maxInput,
       readout,
+      liveHint,
       config,
     });
-    row.append(head, controls);
+    minInput.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    maxInput.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    const clearRangeHint = () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
+    };
+    minInput.addEventListener('blur', clearRangeHint);
+    maxInput.addEventListener('blur', clearRangeHint);
+    row.append(head, controls, liveHint);
     return row;
   }
 
@@ -2614,6 +2726,7 @@ export class EditorPanel {
       alphaInput.setAttribute('aria-label', `${group.label} alpha`);
       alphaInput.addEventListener('input', () => {
         const next = Number.parseFloat(alphaInput?.value ?? '0');
+        this.callbacks.onLiveFieldChange?.(alpha.key, next);
         this.writeVariableToEditor(alpha.key, next);
         this.updateColorHexLabel(group);
       });
@@ -2622,6 +2735,9 @@ export class EditorPanel {
 
     swatch.addEventListener('input', () => {
       const [r, g, b] = hexToChannels(swatch.value);
+      this.callbacks.onLiveFieldChange?.(group.rgb[0], r);
+      this.callbacks.onLiveFieldChange?.(group.rgb[1], g);
+      this.callbacks.onLiveFieldChange?.(group.rgb[2], b);
       this.writeVariablesToEditor({
         [group.rgb[0]]: r,
         [group.rgb[1]]: g,
@@ -2658,7 +2774,28 @@ export class EditorPanel {
     head.append(label, this.createFieldStateChip(keys, group.label), hexLabel);
 
     row.append(head, controls);
-    this.colorInputs.set(group.label, { group, swatch, hexLabel, alphaInput });
+
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
+    this.colorInputs.set(group.label, {
+      group,
+      swatch,
+      hexLabel,
+      alphaInput,
+      liveHint,
+    });
+    swatch.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    alphaInput?.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    const clearColorHint = () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
+    };
+    swatch.addEventListener('blur', clearColorHint);
+    alphaInput?.addEventListener('blur', clearColorHint);
+    row.append(liveHint);
     return row;
   }
 
