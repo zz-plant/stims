@@ -27,7 +27,7 @@ test('quick gate plan keeps tests out of the concurrent lane', () => {
 
   // The lane is still expected to carry the checks the gate exists for.
   const labels = plan.concurrent.map((step) => step.label);
-  expect(labels).toContain('Biome check');
+  expect(labels).toContain('Biome lint (changed files)');
   expect(labels).toContain('TypeScript typecheck');
   expect(plan.concurrent.length).toBeGreaterThanOrEqual(7);
 
