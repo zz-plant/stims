@@ -26,6 +26,12 @@ These four IDs are the smallest evidence loop that can move the shipped catalog 
 - The certified local parity corpus validates runtime summaries and selected post fields, but it does not diff rendered frames against `projectM`.
 - The compiler compatibility tables are currently optimistic enough that many presets can be classified as supported while still rendering differently.
 
+## Certification scope
+
+Visual certification is proof of method on a bounded sample, not a path to full-catalog certification. The 71-preset corpus in `src/data/milkdrop-parity/certification-corpus.json` is chosen by stratum — representatives per known divergence class (feedback, shader text, samplers, rasterization, motion) plus the bundled-shipped lane — so each certified preset stands in for a class of presets, not one more data point.
+
+The standing claim for everything outside the corpus is "compiles and runs." Unmeasured presets stay labeled `runtime`/`partial`, and the corpus grows only to cover a new divergence stratum — never to chase per-preset coverage of the 1,787-entry catalog.
+
 ## Phase 1: build a real visual oracle
 
 1. Capture deterministic Stims artifacts for specific preset ids.

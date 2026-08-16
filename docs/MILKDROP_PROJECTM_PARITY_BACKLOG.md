@@ -52,7 +52,7 @@ Primary remaining roadmap:
 2. Close the remaining texture and sampler behavior gaps, especially overlay, warp, and shape texture semantics that still differ from `projectM`.
 3. Match wave, shape, border, and mesh rasterization more closely in draw ordering, thickness, smoothing, and blend semantics.
 4. Re-certify WebGPU against both checked-in `projectM` references and the Stims compatibility WebGL path before allowing stronger fidelity claims.
-5. Deepen the measured certification corpus for shader-heavy, sampler-heavy, and rasterization-heavy presets.
+5. Cover any remaining divergence strata with one representative each. The corpus is a bounded proof-of-method sample (see the certification-scope rule in the parity plan), not a path to full-catalog certification.
 
 ## Milestone 0: tooling baseline
 
