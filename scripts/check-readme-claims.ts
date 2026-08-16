@@ -52,11 +52,6 @@ export async function validateReadmeProductClaims(
         'README presents MIDI control as fully shipped, but the current integration still lacks device-backed verification and persistent mappings.',
     },
     {
-      pattern: /WebXR 6DoF Spatial VR Stage/iu,
-      issue:
-        'README presents an immersive XR stage as fully shipped, but the current integration still lacks device-backed visual and audio verification.',
-    },
-    {
       pattern: /4K \/ 60FPS Video Export/iu,
       issue:
         'README presents creator-ready 4K audio-video export as fully shipped, but the native render and audio path still requires browser-backed output verification.',

@@ -77,7 +77,7 @@ mobile-layout, passive-guidance, performance-hardware, performance-regression, r
 skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-state.test.ts` ·
 `frontend-video-export-runtime.test.ts` · `frontend-fullscreen.test.ts` ·
 `split-view-browse.test.ts` · `workspace-activity.test.ts` · `workspace-first-fold-actions.test.ts` ·
-`workspace-youtube-preview.test.ts` · `stage-gestures.test.tsx` · `stage-controls-webxr.test.tsx` ·
+`workspace-youtube-preview.test.ts` · `stage-gestures.test.tsx` ·
 `stage-warp-gizmo.test.tsx` · `preflight-mobile-visibility.test.ts` · `mobile-viewport-matrix.test.ts` ·
 `use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts` ·
 `shader-identicon-component.test.tsx`
@@ -88,9 +88,9 @@ skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-st
 `frame-pacing.test.ts` · `power-state.test.ts` · `simulation-accumulator.test.ts` ·
 `device-profile.test.ts` · `device-refresh-rate.test.ts` · `performance-hardware-controls.test.ts` ·
 `performance-settings-store.test.ts` · `domain-store.test.ts` · `crash-telemetry.test.ts` ·
-`services-pool.test.ts` · `webmidi-controller.test.ts` · `webxr-service.test.ts` ·
+`services-pool.test.ts` · `webmidi-controller.test.ts` ·
 `microphone-permission-service.test.ts` · `optional-api.test.ts` · `visual-embedding.test.ts` ·
-`render-service-prewarm.test.ts` · `render-service-webxr-lifecycle.test.ts`
+`render-service-prewarm.test.ts`
 
 ## Toy / agent / automation
 

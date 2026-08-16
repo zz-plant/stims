@@ -8,8 +8,7 @@ import {
 /**
  * Gates the "Picture in picture" affordance on real browser support and
  * mirrors the stage canvas — inside `stageRef` — into a floating PiP window.
- * `supported` is a synchronous read (unlike WebXR's async device probe), so
- * it's correct on first render.
+ * `supported` is a synchronous read, so it's correct on first render.
  */
 export function usePictureInPicture(
   stageRef: React.RefObject<HTMLDivElement | null>,

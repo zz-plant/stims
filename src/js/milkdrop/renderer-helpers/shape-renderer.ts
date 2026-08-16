@@ -170,7 +170,9 @@ function createShapeFillNodeMaterial(
   const uniforms = {
     primaryColor: uniform(toLinearColor(shape.color)),
     secondaryColor: uniform(
-      shape.secondaryColor ? toLinearColor(shape.secondaryColor) : new Color(0, 0, 0),
+      shape.secondaryColor
+        ? toLinearColor(shape.secondaryColor)
+        : new Color(0, 0, 0),
     ),
     primaryAlpha: uniform((shape.color.a ?? 0.4) * alphaMultiplier),
     secondaryAlpha: uniform((shape.secondaryColor?.a ?? 0) * alphaMultiplier),

@@ -79,7 +79,6 @@ See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for
 
 | Foundation | Current status |
 | --- | --- |
-| WebXR stage | Shipped and unit-tested (`webxr-service.ts`, `useWebXr.ts`), guarded to `immersive-vr`-capable WebGL browsers, but never run on physical VR hardware — that a session actually presents correctly there is unproven. WebGL only (the WebGPU backend declines); no controller input, hand tracking, spatial audio, or AR, and presets get no stereo-specific tuning. |
 | Stem-oriented signals | Retired. Zero-filled runtime fields and an unwired pseudo-stem calculation were removed; reintroduction requires real separation with measured budgets. |
 | Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification. |
 | Model-backed Generate panel | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof. |

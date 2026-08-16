@@ -66,7 +66,6 @@ This document is the consolidated source for implementation progress across road
 - [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
 - [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
 - [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication). Not started: two stub modules were removed unused — neither had a code generator consuming them, and both restated uniform defaults the feedback managers already own.
-- [ ] **WebXR spatial stage experiment** — shipped and unit-tested (`webxr-service.ts`, `useWebXr.ts`, an "Enter VR" item in the stage overflow menu on `immersive-vr`-capable browsers, WebGL only), but **never run on physical VR hardware** — that a session actually presents correctly there is unproven. See [docs/TECHNICAL_ACHIEVEMENTS.md](./TECHNICAL_ACHIEVEMENTS.md) and README.md's "Experimental foundations" for the evidence boundary.
 
 ## Refactor milestone tracking
 
