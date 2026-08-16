@@ -261,7 +261,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '-':
           return `(-${operand})`;
         case '!':
-          return `select(1.0f, 0.0f, abs(${operand}) > 0.000001f)`;
+          return `select(1.0f, 0.0f, abs(${operand}) > 0.00001f)`;
       }
       return '0.0f';
     }
@@ -299,9 +299,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '!=':
           return `select(0.0f, 1.0f, ${left} != ${right})`;
         case '&&':
-          return `select(0.0f, 1.0f, abs(${left}) > 0.000001f && abs(${right}) > 0.000001f)`;
+          return `select(0.0f, 1.0f, abs(${left}) > 0.00001f && abs(${right}) > 0.00001f)`;
         case '||':
-          return `select(0.0f, 1.0f, abs(${left}) > 0.000001f || abs(${right}) > 0.000001f)`;
+          return `select(0.0f, 1.0f, abs(${left}) > 0.00001f || abs(${right}) > 0.00001f)`;
       }
       return '0.0f';
     }
@@ -400,7 +400,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `(${value} - floor(${value}))`;
         }
         case 'if':
-          return `select(f32(${args[2] ?? '0.0f'}), f32(${args[1] ?? '0.0f'}), abs(${args[0] ?? '0.0f'}) > 0.000001f)`;
+          return `select(f32(${args[2] ?? '0.0f'}), f32(${args[1] ?? '0.0f'}), abs(${args[0] ?? '0.0f'}) > 0.00001f)`;
         case 'above':
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) > (${args[1] ?? '0.0f'}))`;
         case 'below':
