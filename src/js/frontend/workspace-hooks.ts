@@ -339,13 +339,41 @@ export function useWorkspaceSessionState({
       return;
     }
 
-    void ensureEngineMounted().catch((error) => {
-      setStatusMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to start the visualizer runtime.',
-      );
-    });
+    const mountEngine = () => {
+      void ensureEngineMounted().catch((error) => {
+        setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to start the visualizer runtime.',
+        );
+      });
+    };
+
+    // Attract-mode boots are decorative: nothing the visitor asked for depends
+    // on them. Paying for the renderer boot up front (WebGPU probe + device
+    // request, shader compile, first-run preset compile, first frames) used to
+    // sit on the initial-load critical path as a ~2.5s main-thread block on
+    // mid-range hardware. Let the shell paint and the page settle first, then
+    // boot during idle budget. A deep-linked preset or audio source is a real
+    // intent and still mounts immediately.
+    if (!routeState.presetId && !routeState.audioSource) {
+      const handle =
+        typeof requestIdleCallback === 'function'
+          ? requestIdleCallback(mountEngine, { timeout: 2500 })
+          : setTimeout(mountEngine, 800);
+      return () => {
+        if (
+          typeof cancelIdleCallback === 'function' &&
+          typeof handle === 'number'
+        ) {
+          cancelIdleCallback(handle);
+        } else {
+          clearTimeout(handle);
+        }
+      };
+    }
+
+    mountEngine();
   }, [
     engineSnapshot?.runtimeReady,
     routeState.presetId,

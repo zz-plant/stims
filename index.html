@@ -39,7 +39,9 @@
       .stims-loading__retry:hover{transform:scale(1.03);opacity:0.95}
       .stims-loading__retry:active{transform:scale(0.98)}
     </style>
-    <link rel="modulepreload" href="/src/js/app.ts" />
+    <!-- The entry module loads via the module script tag at the end of body.
+         A modulepreload for /src/js/app.ts is redundant there, and Rolldown
+         emits it as a data:video/mp2t link that fails every page load. -->
     <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
