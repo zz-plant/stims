@@ -9,24 +9,24 @@ import {
   test,
 } from 'bun:test';
 
-let originalNavigatorDesc;
-let initAudio;
-let DEFAULT_MICROPHONE_CONSTRAINTS;
-let getFrequencyData;
-let FrequencyAnalyser;
-let stylizeFrequencyData;
-let resolveAdaptiveFftSize;
-let originalAudioContext;
-let originalAudioWorkletNode;
-let AudioCtor;
-let PositionalAudioCtor;
+let originalNavigatorDesc: any;
+let initAudio: any;
+let DEFAULT_MICROPHONE_CONSTRAINTS: any;
+let getFrequencyData: any;
+let FrequencyAnalyser: any;
+let stylizeFrequencyData: any;
+let resolveAdaptiveFftSize: any;
+let originalAudioContext: any;
+let originalAudioWorkletNode: any;
+let AudioCtor: any;
+let PositionalAudioCtor: any;
 
 class FakeAudioWorklet {
   addModule = mock().mockResolvedValue(undefined);
 }
 
 class FakeAudioContext {
-  audioWorklet = new FakeAudioWorklet();
+  audioWorklet: any = new FakeAudioWorklet();
   destination = {};
 
   createMediaStreamSource = mock(() => ({
@@ -42,7 +42,7 @@ class FakeAudioContext {
     fftSize: 0,
     frequencyBinCount: 128,
     getByteFrequencyData: mock(),
-    getByteTimeDomainData: mock((target) => target.fill(128)),
+    getByteTimeDomainData: mock((target: any) => target.fill(128)),
     connect: mock(),
     disconnect: mock(),
   }));
@@ -50,9 +50,9 @@ class FakeAudioContext {
 }
 
 class FakeAudioWorkletNode {
-  static instances = [];
+  static instances: any[] = [];
 
-  port = { onmessage: null, postMessage: mock() };
+  port = { onmessage: null as any, postMessage: mock() };
   connect = mock();
   disconnect = mock();
 
@@ -62,10 +62,10 @@ class FakeAudioWorkletNode {
 }
 
 beforeAll(async () => {
-  originalAudioContext = global.AudioContext;
-  originalAudioWorkletNode = global.AudioWorkletNode;
-  global.AudioContext = FakeAudioContext;
-  global.AudioWorkletNode = FakeAudioWorkletNode;
+  originalAudioContext = (global as any).AudioContext;
+  originalAudioWorkletNode = (global as any).AudioWorkletNode;
+  (global as any).AudioContext = FakeAudioContext;
+  (global as any).AudioWorkletNode = FakeAudioWorkletNode;
 
   const baseThree = await import('three');
   mock.module('three', () => {
@@ -73,7 +73,7 @@ beforeAll(async () => {
       add: mock(),
       remove: mock(),
       context: new FakeAudioContext(),
-    }));
+    })) as any;
     AudioCtor = mock(() => ({
       setMediaStreamSource: mock(),
       setVolume: mock(),
@@ -153,21 +153,21 @@ describe('audio-handler utilities', () => {
       Object.defineProperty(global, 'navigator', originalNavigatorDesc);
       originalNavigatorDesc = undefined;
     } else {
-      delete global.navigator;
+      (global as any).navigator = undefined;
     }
   });
 
   afterAll(() => {
     if (originalAudioContext) {
-      global.AudioContext = originalAudioContext;
+      (global as any).AudioContext = originalAudioContext;
     } else {
-      delete global.AudioContext;
+      (global as any).AudioContext = undefined;
     }
 
     if (originalAudioWorkletNode) {
-      global.AudioWorkletNode = originalAudioWorkletNode;
+      (global as any).AudioWorkletNode = originalAudioWorkletNode;
     } else {
-      delete global.AudioWorkletNode;
+      (global as any).AudioWorkletNode = undefined;
     }
 
     mock.restore();
@@ -219,7 +219,7 @@ describe('audio-handler utilities', () => {
     await initAudio();
 
     const listenerInstance = await import('three').then(
-      ({ AudioListener }) => AudioListener.mock.results[0]?.value,
+      ({ AudioListener }: any) => AudioListener.mock.results[0]?.value,
     );
     const addModuleArg =
       listenerInstance?.context?.audioWorklet?.addModule?.mock.calls[0]?.[0];
@@ -351,7 +351,7 @@ describe('audio-handler utilities', () => {
       { getTracks: () => [] },
       256,
     );
-    const analyserNode = context.createAnalyser.mock.results[0]?.value;
+    const analyserNode = (context.createAnalyser as any).mock.results[0]?.value;
 
     const snapshot = analyser.getFrequencyData();
     analyser.getMultiBandEnergy(snapshot);

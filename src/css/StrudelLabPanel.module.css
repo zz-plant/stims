@@ -47,7 +47,28 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
+}
+
+.synthOnlyLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--stims-muted, rgba(246, 239, 228, 0.74));
+  cursor: pointer;
+  user-select: none;
+}
+
+.synthOnlyLabel input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--stims-accent, #f47a54);
+}
+
+.synthOnlyLabel input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .title {

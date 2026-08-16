@@ -1,0 +1,257 @@
+[preset00]
+fRating=4.500000
+fGammaAdj=1.200000
+fDecay=0.920000
+fVideoEchoZoom=1.004000
+fVideoEchoAlpha=0.150000
+nVideoEchoOrientation=0
+nWaveMode=7
+bAdditiveWaves=1
+bWaveDots=0
+bWaveThick=1
+bModWaveAlphaByVolume=1
+bMaximizeWaveColor=1
+bTexWrap=1
+bDarkenCenter=0
+bRedBlueStereo=0
+bBrighten=0
+bDarken=0
+bSolarize=0
+bInvert=0
+fWaveAlpha=0.400000
+fWaveScale=0.008000
+fWaveSmoothing=0.300000
+fWaveParam=0.000000
+fModWaveAlphaStart=0.600000
+fModWaveAlphaEnd=0.900000
+fWarpAnimSpeed=0.050000
+fWarpScale=0.020000
+fZoomExponent=1.100000
+fShader=0.000000
+zoom=1.000000
+rot=0.000000
+cx=0.500000
+cy=0.500000
+dx=0.000000
+dy=0.000000
+warp=0.000000
+sx=1.000000
+sy=1.000000
+wave_r=0.300000
+wave_g=0.400000
+wave_b=0.800000
+wave_x=0.500000
+wave_y=0.500000
+ob_size=0.020000
+ob_r=0.800000
+ob_g=0.200000
+ob_b=0.100000
+ob_a=0.300000
+ib_size=0.015000
+ib_r=0.100000
+ib_g=0.800000
+ib_b=0.200000
+ib_a=0.250000
+nMotionVectorsX=6.000000
+nMotionVectorsY=6.000000
+mv_dx=0.010000
+mv_dy=0.010000
+mv_l=0.200000
+mv_r=0.800000
+mv_g=0.300000
+mv_b=0.900000
+mv_a=0.150000
+wavecode_0_enabled=1
+wavecode_0_samples=512
+wavecode_0_sep=0
+wavecode_0_bSpectrum=1
+wavecode_0_bUseDots=0
+wavecode_0_bDrawThick=1
+wavecode_0_bAdditive=1
+wavecode_0_scaling=1.000000
+wavecode_0_smoothing=0.400000
+wavecode_0_r=0.900000
+wavecode_0_g=0.400000
+wavecode_0_b=0.100000
+wavecode_0_a=0.800000
+wave_0_per_frame1=// RC smoothing for tight footwork response
+wave_0_per_frame2=ra = 1/fps_corr*0.12;
+wave_0_per_frame3=bass_avg = bass_avg*(1-ra) + ra*bass_att;
+wave_0_per_frame4=mid_avg = mid_avg*(1-ra) + ra*mid_att;
+wave_0_per_frame5=treb_avg = treb_avg*(1-ra) + ra*treb_att;
+wave_0_per_frame6=
+wave_0_per_frame7=// Volume squaring for punch
+wave_0_per_frame8=vol = (bass_avg+mid_avg+treb_avg)*0.33;
+wave_0_per_frame9=vol = vol*vol;
+wave_0_per_frame10=
+wave_0_per_frame11=// Master animation clock
+wave_0_per_frame12=mtime = mtime + vol*0.025*(75/fps);
+wave_0_per_frame13=q1 = mtime*0.6;
+wave_0_per_frame14=q8 = vol;
+wave_0_per_frame15=
+wave_0_per_frame16=// Beat detection with adaptive threshold
+wave_0_per_frame17=beat_thresh = above(bass_att,beat_thresh)*2.5 + (1-above(bass_att,beat_thresh))*((beat_thresh-1.4)*0.94+1.4);
+wave_0_per_frame18=beat = above(bass_att,beat_thresh);
+wave_0_per_frame19=
+wave_0_per_frame20=// Color cycling with irrational frequencies
+wave_0_per_frame21=wave_r = wave_r + 0.25*(0.6*sin(0.97*time) + 0.4*sin(1.03*time));
+wave_0_per_frame22=wave_g = wave_g + 0.35*(0.6*sin(0.83*time) + 0.4*sin(1.07*time));
+wave_0_per_frame23=wave_b = wave_b + 0.20*(0.6*sin(0.81*time) + 0.4*sin(1.01*time));
+wave_0_per_frame24=
+wave_0_per_frame25=// Wave position modulation
+wave_0_per_frame26=wave_x = 0.5 + 0.15*sin(q1*0.7);
+wave_0_per_frame27=wave_y = 0.5 + 0.15*cos(q1*0.9);
+wave_0_per_point1=// Per-pixel radial zoom (Pattern 3)
+wave_0_per_point2=zoom = (zoom-1)*rad + 1;
+wave_0_per_point3=
+wave_0_per_point4=// Radial pulse rings (Pattern 4) - synced to q8
+wave_0_per_point5=dr = 0.008 + 0.035*q8*sin(rad*16 + time*0.4);
+wave_0_per_point6=dx = dx + dr*cos(ang)*0.7;
+wave_0_per_point7=dy = dy + dr*sin(-ang)*0.7;
+wave_0_per_point8=
+wave_0_per_point9=// Angular rotation modulated by audio
+wave_0_per_point10=ang = ang + 0.02*q8*sin(rad*8 + time*0.3);
+wave_0_per_point11=
+wave_0_per_point12=// Spectrum-reactive wave shape
+wave_0_per_point13=spec_val = spec_int*0.5 + spec_avg*0.5;
+wave_0_per_point14=y = y + spec_val*0.15*sin(sample*12 + q1*2);
+wave_0_per_point15=
+wave_0_per_point16=// Color from frame state
+wave_0_per_point17=r = wave_r*0.7 + 0.3*sin(ang*3);
+wave_0_per_point18=g = wave_g*0.7 + 0.3*sin(ang*3 + 2.1);
+wave_0_per_point19=b = wave_b*0.7 + 0.3*sin(ang*3 + 4.2);
+wave_0_per_point20=a = 0.6 + 0.4*(1-rad);
+wavecode_1_enabled=1
+wavecode_1_samples=512
+wavecode_1_sep=0
+wavecode_1_bSpectrum=1
+wavecode_1_bUseDots=0
+wavecode_1_bDrawThick=1
+wavecode_1_bAdditive=1
+wavecode_1_scaling=0.800000
+wavecode_1_smoothing=0.500000
+wavecode_1_r=0.200000
+wavecode_1_g=0.900000
+wavecode_1_b=0.300000
+wavecode_1_a=0.600000
+wave_1_per_frame1=
+wave_1_per_point1=// Inverse radial zoom
+wave_1_per_point2=zoom = (zoom-1)*(1-rad) + 1;
+wave_1_per_point3=
+wave_1_per_point4=// Counter-rotating pulse
+wave_1_per_point5=dr = 0.006 + 0.025*q8*sin(rad*12 - time*0.5);
+wave_1_per_point6=dx = dx + dr*cos(ang)*0.5;
+wave_1_per_point7=dy = dy + dr*sin(ang)*0.5;
+wave_1_per_point8=
+wave_1_per_point9=// Different angular modulation
+wave_1_per_point10=ang = ang - 0.015*q8*sin(rad*10 - time*0.4);
+wave_1_per_point11=
+wave_1_per_point12=// Complementary color
+wave_1_per_point13=r = 1.0 - wave_r*0.5 + 0.2*sin(ang*4 + q1);
+wave_1_per_point14=g = 1.0 - wave_g*0.5 + 0.2*sin(ang*4 + 2.1 + q1);
+wave_1_per_point15=b = 1.0 - wave_b*0.5 + 0.2*sin(ang*4 + 4.2 + q1);
+wave_1_per_point16=a = 0.4 + 0.3*rad;
+wavecode_2_enabled=0
+wavecode_3_enabled=0
+shapecode_0_enabled=1
+shapecode_0_sides=8
+shapecode_0_additive=1
+shapecode_0_thickOutline=0
+shapecode_0_textured=0
+shapecode_0_x=0.500000
+shapecode_0_y=0.500000
+shapecode_0_rad=0.150000
+shapecode_0_ang=0.000000
+shapecode_0_tex_ang=0.000000
+shapecode_0_tex_zoom=1.000000
+shapecode_0_r=0.900000
+shapecode_0_g=0.300000
+shapecode_0_b=0.100000
+shapecode_0_a=0.500000
+shapecode_0_r2=0.100000
+shapecode_0_g2=0.900000
+shapecode_0_b2=0.200000
+shapecode_0_a2=0.000000
+shapecode_0_border_r=0.800000
+shapecode_0_border_g=0.200000
+shapecode_0_border_b=0.900000
+shapecode_0_border_a=0.400000
+shape_0_per_frame1=// Shape pulses on beat
+shape_0_per_frame2=rad = 0.08 + 0.12*q8;
+shape_0_per_frame3=ang = ang + 0.05*beat + 0.008*q1;
+shape_0_per_frame4=x = 0.5 + 0.08*sin(q1*1.3);
+shape_0_per_frame5=y = 0.5 + 0.08*cos(q1*0.9);
+shape_0_per_frame6=r = 0.8 + 0.2*sin(q1*2.1);
+shape_0_per_frame7=g = 0.3 + 0.3*sin(q1*1.7 + 2.1);
+shape_0_per_frame8=b = 0.1 + 0.4*sin(q1*2.3 + 4.2);
+shape_0_per_frame9=a = 0.3 + 0.4*q8;
+shapecode_1_enabled=1
+shapecode_1_sides=4
+shapecode_1_additive=1
+shapecode_1_thickOutline=1
+shapecode_1_textured=0
+shapecode_1_x=0.500000
+shapecode_1_y=0.500000
+shapecode_1_rad=0.250000
+shapecode_1_ang=0.785398
+shapecode_1_tex_ang=0.000000
+shapecode_1_tex_zoom=1.000000
+shapecode_1_r=0.100000
+shapecode_1_g=0.800000
+shapecode_1_b=0.900000
+shapecode_1_a=0.300000
+shapecode_1_r2=0.900000
+shapecode_1_g2=0.100000
+shapecode_1_b2=0.800000
+shapecode_1_a2=0.000000
+shapecode_1_border_r=0.900000
+shapecode_1_border_g=0.900000
+shapecode_1_border_b=0.200000
+shapecode_1_border_a=0.500000
+shape_1_per_frame1=// Rotating diamond - counter rotation
+shape_1_per_frame2=rad = 0.15 + 0.08*q8;
+shape_1_per_frame3=ang = ang - 0.04*beat - 0.006*q1;
+shape_1_per_frame4=r = 0.1 + 0.4*sin(q1*1.9);
+shape_1_per_frame5=g = 0.8 + 0.2*sin(q1*2.2 + 2.1);
+shape_1_per_frame6=b = 0.9 + 0.1*sin(q1*1.8 + 4.2);
+shape_1_per_frame7=a = 0.2 + 0.3*q8;
+shapecode_2_enabled=0
+shapecode_3_enabled=0
+per_frame_init_1=mtime=0; q1=0; q8=0;
+per_frame_init_2=bass_avg=0; mid_avg=0; treb_avg=0;
+per_frame_init_3=beat_thresh=1.4;
+per_frame_init_4=wave_r=0.3; wave_g=0.4; wave_b=0.8;
+per_frame_init_5=fps_corr=75.0/fps;
+per_frame_1=// RC smoothing constants
+per_frame_2=ra = 1/fps_corr*0.12;
+per_frame_3=bass_avg = bass_avg*(1-ra) + ra*bass_att;
+per_frame_4=mid_avg = mid_avg*(1-ra) + ra*mid_att;
+per_frame_5=treb_avg = treb_avg*(1-ra) + ra*treb_att;
+per_frame_6=
+per_frame_7=// Volume squaring for kick punch
+per_frame_8=vol = (bass_avg+mid_avg+treb_avg)*0.33;
+per_frame_9=vol = vol*vol;
+per_frame_10=
+per_frame_11=// Master clock
+per_frame_12=mtime = mtime + vol*0.025*(75/fps);
+per_frame_13=q1 = mtime*0.6;
+per_frame_14=q8 = vol;
+per_frame_15=
+per_frame_16=// Adaptive beat detection
+per_frame_17=beat_thresh = above(bass_att,beat_thresh)*2.5 + (1-above(bass_att,beat_thresh))*((beat_thresh-1.4)*0.94+1.4);
+per_frame_18=beat = above(bass_att,beat_thresh);
+per_frame_19=
+per_frame_20=// Color cycling
+per_frame_21=wave_r = wave_r + 0.25*(0.6*sin(0.97*time) + 0.4*sin(1.03*time));
+per_frame_22=wave_g = wave_g + 0.35*(0.6*sin(0.83*time) + 0.4*sin(1.07*time));
+per_frame_23=wave_b = wave_b + 0.20*(0.6*sin(0.81*time) + 0.4*sin(1.01*time));
+per_frame_24=
+per_frame_25=// Wave position
+per_frame_26=wave_x = 0.5 + 0.15*sin(q1*0.7);
+per_frame_27=wave_y = 0.5 + 0.15*cos(q1*0.9);
+per_frame_28=
+per_frame_29=// Zoom breathing
+per_frame_30=zoom = 1.0 + 0.03*q8;
+per_frame_31=
+per_frame_32=// Slight rotation
+per_frame_33=rot = rot + 0.002*q8*sin(time*0.5);

@@ -3,14 +3,14 @@ import { importFresh, replaceProperty } from '../test-helpers.ts';
 
 const capabilitiesModule = '../../src/js/core/renderer-capabilities.ts';
 
-let getRendererCapabilities;
-let getRendererOptimizationSupport;
-let getRenderingSupport;
-let recordRendererOptimizationTelemetry;
-let rememberRendererFallback;
-let resetRendererCapabilities;
-let resolveCapabilityProbeSuccess;
-let summarizeRendererOptimizationSupport;
+let getRendererCapabilities: any;
+let getRendererOptimizationSupport: any;
+let getRenderingSupport: any;
+let recordRendererOptimizationTelemetry: any;
+let rememberRendererFallback: any;
+let resetRendererCapabilities: any;
+let resolveCapabilityProbeSuccess: any;
+let summarizeRendererOptimizationSupport: any;
 
 const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
 let restoreNavigator = () => {};
@@ -22,7 +22,7 @@ async function resetRenderPreferenceStore() {
   resetPreferences();
 }
 
-function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
+function mockNavigatorWithGPU({ device = {}, adapter = {} }: any = {}) {
   const requestDevice = mock(async () => device);
   const requestAdapter = mock(async () => ({
     features: new Set(),
@@ -40,7 +40,7 @@ function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
   return { requestAdapter, requestDevice };
 }
 
-let originalCreateElement;
+let originalCreateElement: any;
 
 beforeEach(async () => {
   mock.restore();
@@ -76,7 +76,7 @@ beforeEach(async () => {
     resetRendererCapabilities,
     resolveCapabilityProbeSuccess,
     summarizeRendererOptimizationSupport,
-  } = await importFresh(capabilitiesModule));
+  } = (await importFresh(capabilitiesModule)) as any);
 });
 
 afterEach(async () => {
@@ -309,7 +309,7 @@ describe('renderer capabilities', () => {
   });
 
   test('records a retryable fallback when the cached WebGPU device is lost', async () => {
-    let resolveLost;
+    let resolveLost: any;
     const lost = new Promise((resolve) => {
       resolveLost = resolve;
     });

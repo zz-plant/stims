@@ -2,13 +2,17 @@ import { describe, expect, test } from 'bun:test';
 import { initLighting } from '../../src/js/lighting/lighting-setup.ts';
 
 class Vector3 {
+  x: number;
+  y: number;
+  z: number;
+
   constructor(x = 0, y = 0, z = 0) {
     this.x = x;
     this.y = y;
     this.z = z;
   }
 
-  set(x, y, z) {
+  set(x: number, y: number, z: number) {
     this.x = x;
     this.y = y;
     this.z = z;
@@ -17,7 +21,7 @@ class Vector3 {
 
 class BaseLight {
   position = new Vector3();
-  set castShadow(_value) {}
+  set castShadow(_value: boolean) {}
 }
 
 class DirectionalLight extends BaseLight {}
@@ -26,14 +30,15 @@ class HemisphereLight extends BaseLight {}
 class PointLight extends BaseLight {}
 
 class Scene {
-  children = [];
+  children: BaseLight[] = [];
 
-  add(light) {
+  add(light: BaseLight) {
     this.children.push(light);
+    return this as any;
   }
 }
 
-const lightingConstructors = {
+const lightingConstructors: any = {
   DirectionalLight,
   SpotLight,
   HemisphereLight,
@@ -58,8 +63,8 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     initLighting(
-      scene,
-      { type: 'DirectionalLight', position: { y: 5 } },
+      scene as any,
+      { type: 'DirectionalLight', position: { y: 5 } } as any,
       lightingConstructors,
     );
 

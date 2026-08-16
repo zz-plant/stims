@@ -1150,8 +1150,8 @@ class InstancedBorderBatch {
           varying vec4 vColor;
 
           void main() {
-            float outerScale = 1.0 - 2.0 * instanceInsets.y;
-            float innerScale = 1.0 - 2.0 * instanceInsets.z;
+            float outerScale = 1.0 - instanceInsets.y;
+            float innerScale = 1.0 - instanceInsets.z;
             float scale = mix(outerScale, innerScale, innerWeight) * instanceInsets.w;
             vec2 point = unitCorner * scale;
             vColor = instanceColorAlpha;
@@ -1188,17 +1188,19 @@ class InstancedBorderBatch {
         scale: 1,
         z: 0.285,
         color: border.color,
-        alpha: border.alpha * 0.45 * alphaMultiplier,
-      });
-      outlines.push({
-        inset: innerInset,
-        outerInset: Math.max(0, innerInset - 0.0035),
-        innerInset: Math.min(0.98, innerInset + 0.0035),
-        scale: 1,
-        z: 0.3,
-        color: border.color,
         alpha: border.alpha * alphaMultiplier,
       });
+      if (border.styled) {
+        outlines.push({
+          inset: innerInset,
+          outerInset: Math.max(0, innerInset - 0.0035),
+          innerInset: Math.min(0.98, innerInset + 0.0035),
+          scale: 1,
+          z: 0.3,
+          color: border.color,
+          alpha: border.alpha * alphaMultiplier,
+        });
+      }
     }
     this.syncMesh(this.fillMesh, fills);
     this.syncMesh(this.outlineMesh, outlines);

@@ -18,7 +18,7 @@ Milestone A baseline evidence is the combination of:
 
   ```bash
   bun run test \
-    tests/unit/app-shell.test.js \
+    tests/unit/app-shell.test.ts \
     tests/unit/frontend-url-state.test.ts \
     tests/e2e/agent-integration.test.ts \
     tests/unit/settings-panel.test.ts

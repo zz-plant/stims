@@ -4,7 +4,7 @@ import { importFresh, replaceProperty } from '../test-helpers.ts';
 let restoreGpu = () => {};
 
 const setTestUrl = () => {
-  window.happyDOM?.setURL?.('https://example.com/milkdrop/');
+  (window as any).happyDOM?.setURL?.('https://example.com/milkdrop/');
 };
 
 describe('ensureWebGL overlay', () => {
@@ -25,7 +25,7 @@ describe('ensureWebGL overlay', () => {
 
   test('shows capability overlay when neither WebGL nor WebGPU are available', async () => {
     const { ensureWebGL, setRenderingSupportResolverForTests } =
-      await importFresh('../../src/js/core/webgl-check.ts');
+      (await importFresh('../../src/js/core/webgl-check.ts')) as any;
     try {
       setRenderingSupportResolverForTests(() => ({
         hasWebGPU: false,
@@ -53,7 +53,7 @@ describe('ensureWebGL overlay', () => {
     trigger.focus();
 
     const { ensureWebGL, setRenderingSupportResolverForTests } =
-      await importFresh('../../src/js/core/webgl-check.ts');
+      (await importFresh('../../src/js/core/webgl-check.ts')) as any;
 
     try {
       setRenderingSupportResolverForTests(() => ({

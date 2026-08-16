@@ -185,6 +185,25 @@ export function createMilkdropSignalTracker(options?: {
   let latestMid = 0;
   let latestTreble = 0;
 
+  const workletBeatUpdateCache: import('../utils/audio/beat').BeatTrackerUpdate =
+    {
+      smoothedBands: { bass: 0, mid: 0, treble: 0 },
+      beatIntensity: 0,
+      isBeat: false,
+      isTransient: false,
+      spectralFlux: 0,
+      bandFlux: 0,
+      beatBass: false,
+      beatMid: false,
+      beatTreble: false,
+    };
+
+  const beatTrackerInputCache = {
+    bands: { bass: 0, mid: 0, treble: 0 },
+    weightedEnergy: 0,
+    deltaMs: 16.67,
+  };
+
   return {
     reset() {
       frame = 0;
@@ -298,35 +317,27 @@ export function createMilkdropSignalTracker(options?: {
       const workletBeat = analyser?.getWorkletBeatDetection?.() ?? null;
       let update: import('../utils/audio/beat').BeatTrackerUpdate;
       if (workletBeat) {
-        update = {
-          smoothedBands: {
-            bass: bands.bass,
-            mid: bands.mid,
-            treble: bands.treble,
-          },
-          beatIntensity: workletBeat.beatIntensity,
-          isBeat: workletBeat.isBeat,
-          isTransient: workletBeat.beatIntensity > 0.6,
-          spectralFlux: analyser?.getSpectralFlux?.() ?? 0,
-          bandFlux: 0,
-          beatBass: workletBeat.beatBass,
-          beatMid: workletBeat.beatMid,
-          beatTreble: workletBeat.beatTreble,
-        };
+        workletBeatUpdateCache.smoothedBands.bass = bands.bass;
+        workletBeatUpdateCache.smoothedBands.mid = bands.mid;
+        workletBeatUpdateCache.smoothedBands.treble = bands.treble;
+        workletBeatUpdateCache.beatIntensity = workletBeat.beatIntensity;
+        workletBeatUpdateCache.isBeat = workletBeat.isBeat;
+        workletBeatUpdateCache.isTransient = workletBeat.beatIntensity > 0.6;
+        workletBeatUpdateCache.spectralFlux =
+          analyser?.getSpectralFlux?.() ?? 0;
+        workletBeatUpdateCache.bandFlux = 0;
+        workletBeatUpdateCache.beatBass = workletBeat.beatBass;
+        workletBeatUpdateCache.beatMid = workletBeat.beatMid;
+        workletBeatUpdateCache.beatTreble = workletBeat.beatTreble;
+        update = workletBeatUpdateCache;
       } else {
-        update = beatTracker.update(
-          {
-            bands: {
-              bass: bands.bass,
-              mid: bands.mid,
-              treble: bands.treble,
-            },
-            weightedEnergy:
-              finalRawWeightedEnergy * 0.62 + finalWeightedEnergy * 0.38,
-            deltaMs,
-          },
-          time * 1000,
-        );
+        beatTrackerInputCache.bands.bass = bands.bass;
+        beatTrackerInputCache.bands.mid = bands.mid;
+        beatTrackerInputCache.bands.treble = bands.treble;
+        beatTrackerInputCache.weightedEnergy =
+          finalRawWeightedEnergy * 0.62 + finalWeightedEnergy * 0.38;
+        beatTrackerInputCache.deltaMs = deltaMs;
+        update = beatTracker.update(beatTrackerInputCache, time * 1000);
       }
 
       rms = smoothLevel(

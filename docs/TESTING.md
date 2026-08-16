@@ -117,7 +117,7 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 
 ### Touching `src/js/core/renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts`
 
-- [ ] Fallback chain tested with WebGPU disabled (see `tests/unit/renderer-capabilities.test.js`)
+- [ ] Fallback chain tested with WebGPU disabled (see `tests/unit/renderer-capabilities.test.ts`)
 - [ ] `renderScale` propagation verified end-to-end (capability probe → renderer plan → query override → pooled renderers)
 - [ ] Audio worklet initialization validated on the fallback path
 - [ ] `bun run test:integration` passes locally if the shell or audio bridge was touched
@@ -136,7 +136,7 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 
 ### Touching shell or routing (`src/js/frontend/App.tsx`, `url-state.ts`, `workspace-hooks.ts`)
 
-- [ ] `tests/unit/app-shell.test.js` and `tests/unit/frontend-url-state.test.ts` pass
+- [ ] `tests/unit/app-shell.test.ts` and `tests/unit/frontend-url-state.test.ts` pass
 - [ ] `bun run test:integration` passes (integration harness exercises the full boot sequence)
 - [ ] URL state normalization tested for both legacy params (`experience`, `panel`) and canonical params (`tool`, `collection`)
 

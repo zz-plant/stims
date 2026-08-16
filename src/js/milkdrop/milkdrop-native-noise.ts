@@ -34,11 +34,14 @@ export function buildMilkdropNoise2dData(size = MILKDROP_NOISE_2D_SIZE) {
   let offset = 0;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const value = toNoiseByte(y + x * 57);
-      data[offset++] = value;
-      data[offset++] = value;
-      data[offset++] = value;
-      data[offset++] = 255;
+      const valR = toNoiseByte(y + x * 57);
+      const valG = toNoiseByte(y * 131 + x * 59 + 17);
+      const valB = toNoiseByte(y * 97 + x * 173 + 31);
+      const valA = toNoiseByte(y * 233 + x * 109 + 47);
+      data[offset++] = valR;
+      data[offset++] = valG;
+      data[offset++] = valB;
+      data[offset++] = valA;
     }
   }
   if (size === MILKDROP_NOISE_2D_SIZE) {
