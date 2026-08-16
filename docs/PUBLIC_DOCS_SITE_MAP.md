@@ -54,16 +54,16 @@ Repository documentation is hubbed in [`docs/README.md`](./README.md) across 6 c
 
 ## What each public page emphasizes
 
-- **Introduction**: MilkDrop-led value proposition, lineage framing, and quick links to launch + browse.
+- **Introduction**: MilkDrop-led value proposition and lineage framing, with quick links to launch and browse.
 - **Quickstart**: launch MilkDrop first, then explore the broader library from one browse surface.
 - **Browser support**: feature-level compatibility and troubleshooting for WebGL, microphone, and WebGPU.
-- **MilkDrop visualizer guide**: presets, blending, editor flow, import/export, and compatibility guardrails.
+- **MilkDrop visualizer guide**: presets, blending, the editor flow, import/export, and compatibility guardrails.
 - **Playing toys**: browse/launch flow, filters, badges, and the toy detail path.
 - **Audio setup**: microphone, demo audio, and tab-capture paths plus troubleshooting.
 - **Accessibility**: motion comfort defaults, reduced-motion handling, and fallback controls.
-- **Performance**: quality presets, persistent settings, and performance panel details.
+- **Performance**: quality presets, persistent settings, and the performance panel.
 - **Browse overview / toy pages**: one browse hub plus canonical toy detail pages instead of large taxonomy matrices.
-- **Contributing getting started**: quality checks, commit/PR expectations, and docs consistency guidance.
+- **Contributing getting started**: quality checks and commit/PR expectations.
 - **Competitive messaging handoff**: external-safe value propositions derived from internal battlecards, avoiding direct competitor callouts.
 
 ## Repo alignment checklist

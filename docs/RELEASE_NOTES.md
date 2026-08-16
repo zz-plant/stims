@@ -7,10 +7,10 @@ Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer 
 ## Release v1.3.0 (2026-07-29)
 
 ### 🌟 Release Highlights
-- **Console-Style Workspace UI**: Fully redesigned settings, preset browse drawer, and dock control UI for streamlined visualizer navigation and audio configuration.
-- **JIT EEL Expression Compiler Overhaul**: Presets compile VM program blocks into single JavaScript functions rather than per-statement closures, cutting CPU execution time by ~45% (from 2.00 ms/frame down to 1.10 ms/frame average).
-- **1,739 MilkDrop Presets Restored**: Transpilation engine recovers 157,950 EEL math statements previously lost during asset imports, enabling full per-frame, per-pixel, and per-shape evaluation across the entire bundled preset corpus.
-- **WebGPU Readback Optimization**: Buffer reuse and signal packing improvements reduce GPU-to-CPU synchronization overhead.
+- Settings, the preset browse drawer, and the dock controls were redesigned into a console-style workspace.
+- Presets now compile VM program blocks into a single JavaScript function each instead of one per statement, cutting VM CPU cost from 2.00 ms/frame to 1.10 ms/frame (~45%).
+- The transpilation engine recovered 157,950 EEL math statements lost during asset imports, restoring per-frame, per-pixel, and per-shape evaluation across the bundled preset corpus.
+- Buffer reuse and signal packing in the compute VM cut GPU-to-CPU readback overhead.
 
 ### 🐛 Bug Fixes & Technical Improvements
 - Added missing EEL math intrinsics: `randint`, `log10`, and global `gmegabuf`.
@@ -22,9 +22,9 @@ Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer 
 ## Release v1.2.0 (2026-07-24)
 
 ### 🌟 Release Highlights
-- **HUD Spectrum Analyzer**: Real-time audio spectrum analyzer overlay integrated directly into stage controls.
-- **Modular Test Harness Restructuring**: Re-architected project test layout into `tests/unit/` and `tests/e2e/`, establishing fast-gate test profiles.
-- **Workspace Panel Modularization**: Extracted monolithic workspace view into `AudioSourcePanel`, `BrowseSheetPanel`, and `SettingsSheetPanel`.
+- The stage controls now include a real-time audio spectrum analyzer overlay.
+- Test layout was re-architected into `tests/unit/` and `tests/e2e/` with fast-gate test profiles.
+- The monolithic workspace view was split into `AudioSourcePanel`, `BrowseSheetPanel`, and `SettingsSheetPanel`.
 
 ### 🐛 Bug Fixes & Technical Improvements
 - Fixed audio autoplay race condition when navigating via URL direct links (`?toy=...`).
@@ -35,9 +35,9 @@ Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer 
 ## Release v1.1.0 (2026-07-19)
 
 ### 🌟 Release Highlights
-- **Native MilkDrop Parity Bridge**: High-fidelity WebGL/WebGPU bridge aligning rendering behavior with native projectM / MilkDrop 2.0 pipelines.
-- **MilkDrop 3D Noise Texture Axis Alignment**: Resolved texture lookup coordinate alignment bug for volumetric procedural noise.
-- **Mobile Edge-to-Edge Fullscreen**: Responsive viewport and gesture handling for mobile visualizer playback.
+- A native MilkDrop parity bridge aligns rendering behavior with native projectM / MilkDrop 2.0 pipelines.
+- Resolved a texture-lookup coordinate alignment bug for volumetric procedural noise.
+- Mobile fullscreen now extends edge-to-edge with responsive viewport and gesture handling.
 
 ### 🐛 Bug Fixes & Technical Improvements
 - High-contrast shell accessibility updates for light mode interface.
@@ -48,5 +48,5 @@ Detailed release notes and milestone breakdown for the Stims Webtoys Visualizer 
 ## Release v1.0.0 (2025-02-04)
 
 ### 🌟 Release Highlights
-- **Initial Release**: Launch of the Stim Webtoys Visualizer Library featuring interactive audio-reactive toys (`aurora-painter`, `defrag`, `lights`, `multi`).
-- **Core Runtime & Build System**: Vite integration, Bun package runner, WebGL fallback chain.
+- Initial release of the interactive audio-reactive toys: `aurora-painter`, `defrag`, `lights`, `multi`.
+- Vite integration, Bun package runner, and a WebGL fallback chain.
