@@ -8,12 +8,12 @@ import {
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
+import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import {
-  createAudioReactivityInterpolator,
   type AudioEnergySnapshot,
   type AudioReactivityInterpolator,
+  createAudioReactivityInterpolator,
 } from './audio-interpolator.ts';
-import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from './device-profile.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
@@ -134,7 +134,8 @@ export class FrequencyAnalyser {
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
   private readonly waveformAgc = createWaveformAutoGain();
-  private readonly interpolator: AudioReactivityInterpolator = createAudioReactivityInterpolator();
+  private readonly interpolator: AudioReactivityInterpolator =
+    createAudioReactivityInterpolator();
   private waveformGain = 1;
   private normalizedWaveform: Uint8Array | null = null;
   private normalizedWaveformL: Uint8Array | null = null;

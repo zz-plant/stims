@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: capability overlay tests reach into window/happyDOM mocks and fresh-imported modules.
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { importFresh, replaceProperty } from '../test-helpers.ts';
 

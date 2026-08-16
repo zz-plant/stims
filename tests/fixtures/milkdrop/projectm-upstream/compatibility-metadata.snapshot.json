@@ -593,7 +593,8 @@
               }
             ],
             "temporaries": [],
-            "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"zoom\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":0.9615},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"rad\"},\"right\":{\"type\":\"literal\",\"value\":0.1}}}}]}"
+            "registerInputs": [],
+            "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"zoom\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":0.9615},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"rad\"},\"right\":{\"type\":\"literal\",\"value\":0.1}}}}]}"
           }
         },
         "proceduralMotionVectors": null,
@@ -1666,7 +1667,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -1769,7 +1771,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -1872,7 +1875,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -1975,7 +1979,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.4},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.4},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -2078,7 +2083,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -2181,7 +2187,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -2313,7 +2320,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"x\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value1\"},\"right\":{\"type\":\"literal\",\"value\":2}}}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value2\"},\"right\":{\"type\":\"literal\",\"value\":2}}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"x\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value1\"},\"right\":{\"type\":\"literal\",\"value\":2}}}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value2\"},\"right\":{\"type\":\"literal\",\"value\":2}}}}]}"
             }
           }
         ],
@@ -2422,7 +2430,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           },
           {
@@ -2457,7 +2466,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.25},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.25},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -2581,7 +2591,8 @@
                 }
               ],
               "temporaries": [],
-              "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
           }
         ],
@@ -2821,7 +2832,8 @@
               }
             ],
             "temporaries": [],
-            "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"cx\",\"expression\":{\"type\":\"identifier\",\"name\":\"x\"}}]}"
+            "registerInputs": [],
+            "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"cx\",\"expression\":{\"type\":\"identifier\",\"name\":\"x\"}}]}"
           }
         },
         "proceduralMotionVectors": null,

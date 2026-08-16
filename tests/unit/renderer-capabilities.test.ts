@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: capability tests mock partial WebGPU/navigator objects that lack complete DOM test types.
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { importFresh, replaceProperty } from '../test-helpers.ts';
 

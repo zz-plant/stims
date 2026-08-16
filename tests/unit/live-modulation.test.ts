@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   bind,
   getModulationHealth,
@@ -8,6 +8,7 @@ import {
   unbind,
   unbindAll,
 } from '../../src/js/frontend/live-modulation.ts';
+import { installAnimationFrameController } from '../environment/animation-frame.ts';
 
 function rig(centres: Record<string, number> = {}) {
   const applied: Array<[string, number]> = [];
@@ -23,6 +24,14 @@ function rig(centres: Record<string, number> = {}) {
 }
 
 const settle = (ms = 140) => new Promise((resolve) => setTimeout(resolve, ms));
+
+beforeEach(() => {
+  // The modulation loop is frame-locked on the shared animation-frame
+  // controller. A prior file in the same process can leave that singleton's
+  // auto-advance timer in a stale state, starving the loop; a fresh install
+  // gives every test its own clean frame queue and rAF globals.
+  installAnimationFrameController();
+});
 
 afterEach(() => {
   unbindAll();

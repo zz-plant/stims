@@ -1,9 +1,12 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import {
   createUnifiedInput,
   type UnifiedInputState,
 } from '../../src/js/core/unified-input.ts';
-import { flushAnimationFrame } from '../environment/animation-frame.ts';
+import {
+  flushAnimationFrame,
+  installAnimationFrameController,
+} from '../environment/animation-frame.ts';
 
 const flushInput = async () => {
   // Fire the pending requestAnimationFrame synchronously instead of waiting
@@ -11,6 +14,14 @@ const flushInput = async () => {
   flushAnimationFrame();
   await Promise.resolve();
 };
+
+beforeEach(() => {
+  // createUnifiedInput schedules its poll via the shared animation-frame
+  // controller. A prior file in the same process can replace the rAF globals
+  // or leave the queue in a stale state; a fresh install guarantees the
+  // controlled rAF is the one the input loop registers against.
+  installAnimationFrameController();
+});
 
 function createTarget() {
   const target = document.createElement('div');
