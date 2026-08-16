@@ -166,7 +166,7 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 24,
         phases: { renderMs: 18 },
@@ -191,6 +191,75 @@ describe('createAdaptiveQualityController', () => {
     expect(['steady', 'recovering', 'enhanced']).toContain(
       recovered.adaptation,
     );
+  });
+
+  test('does not eagerly degrade during startup warmup or transient stutters', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1_024,
+          maxStorageBufferBindingSize: 1_073_741_824,
+          maxTextureDimension2D: 16_384,
+        },
+      },
+    });
+
+    const initialStep = controller.getState().qualityStep;
+
+    // First 18 frames have shader compile jank (during 24-frame warmup)
+    for (let index = 0; index < 18; index += 1) {
+      controller.recordFrame({
+        frameMs: 35,
+        phases: { renderMs: 25 },
+      });
+    }
+    // Controller should remain in warmup without stepping down
+    expect(controller.getState().qualityStep).toBe(initialStep);
+
+    // Next 10 frames are smooth (finishing warmup)
+    for (let index = 0; index < 10; index += 1) {
+      controller.recordFrame({
+        frameMs: 12,
+        phases: { renderMs: 8 },
+      });
+    }
+    expect(controller.getState().qualityStep).toBe(initialStep);
+
+    // Transient 5-frame hitch (less than DEGRADE_THRESHOLD_SAMPLES = 12)
+    for (let index = 0; index < 5; index += 1) {
+      controller.recordFrame({
+        frameMs: 30,
+        phases: { renderMs: 22 },
+      });
+    }
+    expect(controller.getState().qualityStep).toBe(initialStep);
   });
 
   test('degrades when the 5-second rolling frame-time average exceeds budget', () => {
@@ -237,7 +306,7 @@ describe('createAdaptiveQualityController', () => {
 
     // Fill the rolling window with over-budget frames, plus enough samples to
     // clear warmup and the rolling-window degrade threshold.
-    for (let index = 0; index < windowSize + 6; index += 1) {
+    for (let index = 0; index < windowSize + 12; index += 1) {
       controller.recordFrame({
         frameMs: overBudgetFrameMs,
         phases: { renderMs: 2 },
@@ -260,7 +329,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 34,
         phases: { renderMs: 28 },
@@ -292,7 +361,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
         cadenceMs: 28,
@@ -319,7 +388,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 36; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 20,
         cadenceMs: 28,
@@ -380,11 +449,11 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
         cadenceMs: 16,
-        gpuMs: 15,
+        gpuMs: 16,
         phases: { renderMs: 2 },
       });
     }
@@ -392,7 +461,7 @@ describe('createAdaptiveQualityController', () => {
     const state = controller.getState();
     expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageRenderMs).toBeCloseTo(2, 6);
-    expect(state.averageGpuMs).toBeCloseTo(15, 6);
+    expect(state.averageGpuMs).toBeCloseTo(16, 6);
   });
 
   test('starts one step down when high-end webgpu devices prefer balanced quality', () => {

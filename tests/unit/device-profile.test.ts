@@ -129,4 +129,35 @@ describe('device-profile flagship mobile optimizations', () => {
 
     expect(getConstrainedTextureDimensionCap()).toBe(2048);
   });
+
+  test('does not classify reduced-motion preference as hardware lowPower on capable hardware', () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        hardwareConcurrency: 8,
+        deviceMemory: 8,
+      },
+    });
+
+    globalThis.window.matchMedia = ((query: string) =>
+      ({
+        media: query,
+        matches: query.includes('prefers-reduced-motion'),
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia;
+
+    const profile = getDevicePerformanceProfile();
+    expect(profile.reducedMotion).toBe(true);
+    expect(profile.lowPower).toBe(false);
+    expect(getDeviceTier()).toBe('high');
+    expect(getAdaptiveMaxPixelRatio(2.0)).toBe(2.0);
+  });
 });
