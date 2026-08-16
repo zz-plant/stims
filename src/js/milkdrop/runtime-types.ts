@@ -9,6 +9,15 @@ export type MilkdropRuntimeSignals = {
   deltaMs: number;
   frame: number;
   fps: number;
+  /**
+   * When true, the preset-facing `time` and `frame` signals are pinned to
+   * their lock-onset values while the internal audio-analysis clock keeps
+   * running. This is the "relationship lock" for docs/SENSORY_ACCESSIBILITY.md
+   * Layer 2 Q1: the audio->visual mapping (time/frame-driven terms) stays put
+   * while audio still drives output. The VM's env-sync cache must be bypassed
+   * while this is set — see MilkdropPresetVM.prepareSignalEnv.
+   */
+  relationshipLock?: boolean;
   aspect?: number;
   aspectx?: number;
   aspecty?: number;

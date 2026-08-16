@@ -96,6 +96,12 @@ export default defineConfig({
             if (id.includes('/@codemirror/')) return 'vendor-codemirror';
             if (id.includes('/react-dom/') || id.includes('/react/'))
               return 'vendor-react';
+            // Runtime-only vendors: reachable only from the dynamically
+            // imported renderer/audio/editor chain, so keep them out of the
+            // eagerly-fetched vendor-other chunk that the entry graph pulls.
+            if (id.includes('/meyda/')) return 'vendor-meyda';
+            if (id.includes('/comlink/')) return 'vendor-comlink';
+            if (id.includes('/stats-gl/')) return 'vendor-stats-gl';
             return 'vendor-other';
           }
           return null;

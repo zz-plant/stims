@@ -100,6 +100,7 @@ export function createMilkdropExperienceFrameLoop({
       frequencyData: Uint8Array;
       waveformData: Uint8Array;
       target?: Partial<MilkdropRuntimeSignals>;
+      relationshipLock?: boolean;
     }) => Partial<MilkdropRuntimeSignals>;
   };
   capturedVideoReactivityTracker: {
@@ -210,6 +211,7 @@ export function createMilkdropExperienceFrameLoop({
           frequencyData: frame.frequencyData,
           waveformData: frame.waveformData,
           target: mergedSignals,
+          relationshipLock: frame.relationshipLock,
         });
         mergedSignals.aspect =
           frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);

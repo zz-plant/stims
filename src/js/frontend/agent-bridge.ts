@@ -117,6 +117,7 @@ declare global {
         frameOffset?: number;
         totalFrames?: number;
       };
+      relationshipLock?: boolean;
     }) => { rendered: number } | null;
   }
 }

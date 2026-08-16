@@ -61,27 +61,9 @@ export type FeedbackRendererLike = {
   setRenderTarget: (target: RenderTarget | null) => void;
 };
 
-export const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  perlin: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
+export { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
 
-// Canonical sampler names that exist only for custom-sampler aliasing (no
-// real MilkDrop built-in warp/overlay texture slot, unlike the names in
-// MILKDROP_TEXTURE_FILES above). Kept separate so they don't force the
-// legacy warp/overlay texture-selector plumbing (AUX_TEXTURE_SPECS et al.,
-// exhaustively keyed off MILKDROP_TEXTURE_FILES) to grow a slot it has no
-// real numeric ID for.
-export const CUSTOM_TEXTURE_FILES = {
-  glyph: 'glyph_matrix_tile.png',
-  organic: 'organic_mottle.png',
-} as const;
+import { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
 
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },

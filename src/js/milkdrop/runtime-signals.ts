@@ -35,6 +35,12 @@ export function createMilkdropSignalTracker(options?: {
     FrequencyAnalyser['getSpectralFeatures']
   > = null;
   let lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
+  // Relationship lock: pins the preset-facing `time`/`frame` at the values
+  // from the first locked update, while the internal `frame` counter above
+  // keeps advancing (spectral-analysis cadence, beat timing) so audio
+  // responsiveness is unaffected. See docs/SENSORY_ACCESSIBILITY.md.
+  let lockedTime: number | null = null;
+  let lockedFrame: number | null = null;
 
   const signalCache = {
     time: 0,
@@ -211,6 +217,8 @@ export function createMilkdropSignalTracker(options?: {
       spectralAnalyser = null;
       cachedSpectralFeatures = null;
       lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
+      lockedTime = null;
+      lockedFrame = null;
       latestWeightedEnergy = 0;
       latestBass = 0;
       latestMid = 0;
@@ -235,6 +243,7 @@ export function createMilkdropSignalTracker(options?: {
       waveformDataL,
       waveformDataR,
       target,
+      relationshipLock,
     }: {
       time: number;
       deltaMs: number;
@@ -246,6 +255,7 @@ export function createMilkdropSignalTracker(options?: {
       waveformDataL?: Uint8Array | null;
       waveformDataR?: Uint8Array | null;
       target?: Partial<MilkdropRuntimeSignals>;
+      relationshipLock?: boolean;
     }): MilkdropRuntimeSignals {
       const out = target ? (target as MilkdropRuntimeSignals) : signalCache;
       const resolvedWaveformData = waveformData ?? analyser?.getWaveformData();
@@ -351,6 +361,22 @@ export function createMilkdropSignalTracker(options?: {
       out.time = time;
       out.deltaMs = deltaMs;
       out.frame = frame;
+      // Relationship lock: pin preset-facing time/frame at the first locked
+      // frame's values. The internal `frame` counter above still advances (and
+      // the raw `time` argument still feeds the beat tracker), so audio
+      // responsiveness is untouched — only the clock-driven terms presets read
+      // stay put. See docs/SENSORY_ACCESSIBILITY.md Layer 2 Q1.
+      if (relationshipLock) {
+        lockedTime = lockedTime ?? time;
+        lockedFrame = lockedFrame ?? frame;
+        out.time = lockedTime;
+        out.frame = lockedFrame;
+        out.relationshipLock = true;
+      } else {
+        lockedTime = null;
+        lockedFrame = null;
+        out.relationshipLock = false;
+      }
       out.fps = deltaMs > 0 ? 1000 / deltaMs : 60;
       // Preset-facing registers use MilkDrop's relative scale (1.0 = the
       // track's own average for that band), not the 0..1 spectrum average.

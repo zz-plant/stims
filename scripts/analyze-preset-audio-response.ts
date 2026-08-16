@@ -19,6 +19,13 @@
  *   - selectivity: whether a bass-only ramp and a treble-only ramp produce
  *     different responsiveness for the same preset.
  *
+ * With `--lock`, each preset is additionally measured under a *relationship
+ * lock* (renderFrames({ relationshipLock: true })): the preset-facing
+ * time/frame clock is pinned while audio keeps driving. This is the
+ * machine-level version of the Layer 2 Q1 comparison in
+ * docs/SENSORY_ACCESSIBILITY.md — does pinning the mapping suppress autonomy
+ * while preserving responsiveness?
+ *
  * Each preset is reloaded fresh before every trial, deliberately paying the
  * extra reload cost rather than letting one trial's feedback-accumulated
  * state bleed into the next — a controlled experiment needs independent
@@ -34,6 +41,7 @@
  *   bun run scripts/analyze-preset-audio-response.ts                  # 5-preset sample
  *   bun run scripts/analyze-preset-audio-response.ts --count=20
  *   bun run scripts/analyze-preset-audio-response.ts --ids=a,b,c
+ *   bun run scripts/analyze-preset-audio-response.ts --lock           # + locked trials
  *   bun run scripts/analyze-preset-audio-response.ts --out=report.json
  */
 
@@ -93,6 +101,7 @@ function parseArgs(argv: string[]) {
     port: Number(get('port') ?? DEFAULT_PORT),
     out: get('out') ?? DEFAULT_OUT,
     headless: !argv.includes('--no-headless'),
+    lock: argv.includes('--lock'),
   };
 }
 
@@ -114,9 +123,10 @@ async function captureResponse(
   page: Page,
   frames: number,
   spec: StimulusSpec,
+  lock = false,
 ): Promise<CaptureResult> {
   return page.evaluate(
-    ({ frames, deltaMs, warmup, spec, SAMPLE_STRIDE }) => {
+    ({ frames, deltaMs, warmup, spec, SAMPLE_STRIDE, relationshipLock }) => {
       const step = window.__STIMS_AGENT_RENDER_FRAMES__;
       if (typeof step !== 'function') {
         return { error: 'render hook missing' };
@@ -165,6 +175,7 @@ async function captureResponse(
           frames: 1,
           deltaMs,
           stimulus: { spec, frameOffset: f, totalFrames: frames },
+          relationshipLock,
         });
         gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
 
@@ -191,7 +202,14 @@ async function captureResponse(
 
       return { responseSeries };
     },
-    { frames, deltaMs: DELTA_MS, warmup: WARMUP_FRAMES, spec, SAMPLE_STRIDE },
+    {
+      frames,
+      deltaMs: DELTA_MS,
+      warmup: WARMUP_FRAMES,
+      spec,
+      SAMPLE_STRIDE,
+      relationshipLock: lock,
+    },
   );
 }
 
@@ -208,6 +226,10 @@ interface PresetTransferReport {
   bassResponsiveness?: number;
   trebleResponsiveness?: number;
   selectivity?: number;
+  /** Responsiveness with the relationship clock pinned (--lock). */
+  responsivenessLocked?: number;
+  /** Autonomy with the relationship clock pinned (--lock). */
+  autonomyLocked?: number;
 }
 
 async function loadPreset(page: Page, presetId: string) {
@@ -230,6 +252,7 @@ async function loadPreset(page: Page, presetId: string) {
 async function analyzePreset(
   page: Page,
   preset: PresetEntry,
+  lock = false,
 ): Promise<PresetTransferReport> {
   const base: PresetTransferReport = {
     presetId: preset.id,
@@ -336,6 +359,34 @@ async function analyzePreset(
       ? pearsonCorrelation(bandGround, treble.responseSeries)
       : undefined;
 
+  // Trials 6/7 (--lock only): the same ramp and flat trials with the
+  // relationship clock pinned. responsivenessLocked asks whether audio still
+  // drives output when time/frame stop; autonomyLocked asks how much residual
+  // motion is left when the clock is the only thing suppressed.
+  let responsivenessLocked: number | undefined;
+  let autonomyLocked: number | undefined;
+  if (lock) {
+    await loadPreset(page, preset.id);
+    const lockedRamp = await captureResponse(page, RAMP_FRAMES, rampSpec, true);
+    if (!lockedRamp.error && lockedRamp.responseSeries) {
+      responsivenessLocked = pearsonCorrelation(
+        rampGround,
+        lockedRamp.responseSeries,
+      );
+    }
+    await loadPreset(page, preset.id);
+    const lockedFlat = await captureResponse(
+      page,
+      FLAT_FRAMES,
+      { type: 'flat', level: 0.4 },
+      true,
+    );
+    autonomyLocked =
+      !lockedFlat.error && lockedFlat.responseSeries
+        ? autonomyVariance(lockedFlat.responseSeries)
+        : undefined;
+  }
+
   return {
     ...base,
     responsiveness,
@@ -349,6 +400,8 @@ async function analyzePreset(
       bassResponsiveness !== undefined && trebleResponsiveness !== undefined
         ? bassResponsiveness - trebleResponsiveness
         : undefined,
+    responsivenessLocked,
+    autonomyLocked,
   };
 }
 
@@ -372,7 +425,8 @@ async function main() {
 
   console.log(
     `Characterizing ${targets.length} of ${allPresets.length} presets ` +
-      `(5 trials/preset: ramp, transient, flat, bass, treble)`,
+      `(${args.lock ? '7' : '5'} trials/preset: ramp, transient, flat, bass, ` +
+      `treble${args.lock ? ', ramp-locked, flat-locked' : ''})`,
   );
 
   const devServer = await ensureDevServer(args.port);
@@ -401,7 +455,7 @@ async function main() {
     for (const [index, preset] of targets.entries()) {
       const label = `[${index + 1}/${targets.length}] ${preset.id}`;
       try {
-        const report = await analyzePreset(page, preset);
+        const report = await analyzePreset(page, preset, args.lock);
         reports.push(report);
         if (report.error) {
           console.log(`${label} — SKIP (${report.error})`);
@@ -411,7 +465,11 @@ async function main() {
               `lag=${report.latencyFrames}f(r=${report.latencyCorrelation?.toFixed(2)}) ` +
               `persist=${report.persistenceFrames ?? 'n/a'}f ` +
               `autonomy=${report.autonomy?.toFixed(5)} ` +
-              `selectivity=${report.selectivity?.toFixed(3)}`,
+              `selectivity=${report.selectivity?.toFixed(3)}` +
+              (args.lock
+                ? ` respLocked=${report.responsivenessLocked?.toFixed(3)} ` +
+                  `autonomyLocked=${report.autonomyLocked?.toFixed(5)}`
+                : ''),
           );
         }
       } catch (err) {
