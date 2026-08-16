@@ -57,6 +57,52 @@ describe('milkdrop expression', () => {
     }
   });
 
+  describe('NaN and domain guards', () => {
+    function evaluate(source: string) {
+      const parsed = parseMilkdropExpression(source, 1);
+      expect(parsed.diagnostics).toEqual([]);
+      expect(parsed.value).not.toBeNull();
+      if (!parsed.value) {
+        throw new Error('Expected expression to parse.');
+      }
+      return evaluateMilkdropExpression(parsed.value, {});
+    }
+
+    // These pin the guards from `ec59dcf1` (fix(milkdrop): guard pow and sqrt
+    // against NaNs on negative inputs). They shipped untested; if a perf pass
+    // strips a guard again, the suite must fail loudly instead of letting NaN
+    // poison the per-frame/per-pixel state.
+    test('sqrt clamps negative radicands to 0 instead of yielding NaN', () => {
+      expect(evaluate('sqrt(-1)')).toBe(0);
+      expect(evaluate('sqrt(-16)')).toBe(0);
+      expect(evaluate('sqrt(0)')).toBe(0);
+      expect(evaluate('sqrt(9)')).toBe(3);
+    });
+
+    test('pow maps NaN and Infinity results to 0', () => {
+      expect(evaluate('pow(-2, 0.5)')).toBe(0); // negative base, fractional exponent
+      expect(evaluate('pow(0, -1)')).toBe(0); // 0^-1 = Infinity
+      expect(evaluate('pow(2, 10)')).toBe(1024);
+    });
+
+    test('the ^ operator guards NaN results the same way pow does', () => {
+      expect(evaluate('(-2)^0.5')).toBe(0);
+      expect(evaluate('0^-1')).toBe(0);
+      expect(evaluate('2^10')).toBe(1024);
+    });
+
+    test('division by zero yields 0, not Infinity', () => {
+      expect(evaluate('1/0')).toBe(0);
+      expect(evaluate('0/0')).toBe(0);
+    });
+
+    test('mod, fmod, and % by zero yield 0', () => {
+      expect(evaluate('mod(5, 0)')).toBe(0);
+      expect(evaluate('fmod(5, 0)')).toBe(0);
+      expect(evaluate('5 % 0')).toBe(0);
+    });
+  });
+
   test('evaluates every exec2/exec3 argument and returns the last one', () => {
     const parsed = parseMilkdropExpression(
       'exec2(megabuf(0), 3) + exec3(1, 2, 7)',
