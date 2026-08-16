@@ -61,6 +61,8 @@ function setUniformValue(
   return true;
 }
 
+import { CAS_GLSL_SNIPPET } from './shaders/cas.ts';
+
 const MILKDROP_POSTPROCESSING_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
@@ -70,6 +72,7 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     saturation: { value: 1 },
     contrast: { value: 1 },
     pulseWarp: { value: 0 },
+    casSharpness: { value: 0.25 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -87,12 +90,15 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     uniform float saturation;
     uniform float contrast;
     uniform float pulseWarp;
+    uniform float casSharpness;
     varying vec2 vUv;
 
     vec3 applySaturation(vec3 color, float amount) {
       float luminance = dot(color, vec3(0.299, 0.587, 0.114));
       return mix(vec3(luminance), color, amount);
     }
+
+    ${CAS_GLSL_SNIPPET}
 
     void main() {
       vec2 centeredUv = vUv - vec2(0.5);
@@ -108,15 +114,11 @@ const MILKDROP_POSTPROCESSING_SHADER = {
         baseColor.a
       );
 
-      // Sub-pixel edge sharpening for crisp feedback rendering
-      vec2 step = 1.0 / max(resolution, vec2(1.0));
-      vec3 blur = (
-        texture2D(tDiffuse, clamp(warpedUv + vec2(step.x, 0.0), 0.0, 1.0)).rgb +
-        texture2D(tDiffuse, clamp(warpedUv - vec2(step.x, 0.0), 0.0, 1.0)).rgb +
-        texture2D(tDiffuse, clamp(warpedUv + vec2(0.0, step.y), 0.0, 1.0)).rgb +
-        texture2D(tDiffuse, clamp(warpedUv - vec2(0.0, step.y), 0.0, 1.0)).rgb
-      ) * 0.25;
-      vec3 sharpenedColor = clamp(chromaColor.rgb + (chromaColor.rgb - blur) * 0.25, 0.0, 1.0);
+      // Contrast-Adaptive Sharpening for edge reconstruction on downscaled/feedback buffers
+      vec3 sharpenedColor = applyContrastAdaptiveSharpening(tDiffuse, warpedUv, resolution, casSharpness);
+      if (chromaOffset != 0.0) {
+        sharpenedColor = mix(sharpenedColor, chromaColor.rgb, 0.5);
+      }
 
       float vignetteRadius = clamp(1.0 - vignetteStrength * 0.65, 0.15, 1.0);
       float vignette = smoothstep(

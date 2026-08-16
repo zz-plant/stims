@@ -8,6 +8,11 @@ import {
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
+import {
+  createAudioReactivityInterpolator,
+  type AudioEnergySnapshot,
+  type AudioReactivityInterpolator,
+} from './audio-interpolator.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from './device-profile.ts';
 import { createLogger } from './logger.ts';
@@ -129,6 +134,7 @@ export class FrequencyAnalyser {
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
   private readonly waveformAgc = createWaveformAutoGain();
+  private readonly interpolator: AudioReactivityInterpolator = createAudioReactivityInterpolator();
   private waveformGain = 1;
   private normalizedWaveform: Uint8Array | null = null;
   private normalizedWaveformL: Uint8Array | null = null;
@@ -224,6 +230,10 @@ export class FrequencyAnalyser {
           this.energyVersion = this.dataVersion;
         }
         this.updateEnergyHistory(this.cachedEnergy);
+        this.interpolator.pushSample(
+          { ...this.cachedEnergy, rms: this.rms },
+          typeof performance !== 'undefined' ? performance.now() : Date.now(),
+        );
       }
       if (energyAverages && typeof energyAverages.bass === 'number') {
         this.cachedEnergyAverages = energyAverages;
@@ -278,6 +288,13 @@ export class FrequencyAnalyser {
 
   public get engineType(): 'worklet' | 'analyser-node' {
     return this.workletNode ? 'worklet' : 'analyser-node';
+  }
+
+  public getInterpolatedEnergy(timeMs?: number): AudioEnergySnapshot {
+    const nowMs =
+      timeMs ??
+      (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    return this.interpolator.sample(nowMs);
   }
 
   public async tryUpgradeToWorklet(context: AudioContext): Promise<boolean> {
