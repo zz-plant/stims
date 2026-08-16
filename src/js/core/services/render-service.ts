@@ -110,9 +110,9 @@ export function setMaxIdleRenderers(maximum: number) {
  * Emitted whenever a pooled renderer stops being the same live GPU renderer
  * it was a moment ago: recreated after a WebGL context loss or a WebGPU
  * device loss, disposed, or released back to the pool. Consumers that hold
- * external state bound to the *specific* renderer instance (currently only
- * the WebXR session controller) need to know, because the facade keeps its
- * identity across a swap while the underlying renderer does not.
+ * external state bound to the *specific* renderer instance need to know,
+ * because the facade keeps its identity across a swap while the underlying
+ * renderer does not.
  */
 export type RendererLifecycleEvent = {
   type: 'recreated' | 'disposed' | 'released';

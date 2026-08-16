@@ -120,7 +120,7 @@ Most catalog entries currently have runtime evidence only and should not be read
 
 ## Experimental foundations
 
-MIDI control, WebXR, model-assisted generation, 4K recording, and percussive/harmonic audio signals are experimental: each is documented with its current evidence boundary in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md) and tracked in [docs/ROADMAP.md](./docs/ROADMAP.md). None is presented as a finished product capability.
+MIDI control, model-assisted generation, 4K recording, and percussive/harmonic audio signals are experimental: each is documented with its current evidence boundary in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md) and tracked in [docs/ROADMAP.md](./docs/ROADMAP.md). None is presented as a finished product capability.
 
 ## Technical foundations
 

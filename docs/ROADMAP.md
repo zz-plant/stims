@@ -14,12 +14,10 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 
 - Searchable imported preset catalog with previews, collections, favorites, queues, history, and deep links.
 - Direct `.milk` import/export and a live CodeMirror authoring environment.
-- WebGL2 compatibility baseline plus a guarded WebGPU execution path.
+- WebGL2 compatibility baseline plus a guarded WebGPU execution path. Measured visual evidence is currently captured on the WebGPU path (the reference-capture backend); WebGL2 — the baseline most users actually run — lacks the same measured evidence and is tracked as a gap, not claimed.
 - Multi-source browser audio with off-main-thread analysis.
 - Browser canvas recording beta.
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
-- MIDI/VJ hardware workflow with per-device persistent mappings, learn mode, hot-plug recovery, and an MCP-controllable virtual device.
-- WebXR immersive-stage experiment, guarded to `immersive-vr`-capable WebGL browsers and unit-tested, but never run on physical VR hardware (see `TECHNICAL_ACHIEVEMENTS.md` for the evidence boundary).
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
@@ -110,3 +108,5 @@ These workstreams begin only after their prerequisite user flows and proof contr
 - a general plugin marketplace.
 
 Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.
+
+AI-assisted authoring — text/image-to-preset generation, blending, and diff-inspectable assisted edits in the editor — is studio scope and already wired to the Remix workflow. It is distinct from "neural audio-to-visual generation" above, which is the unbuilt research direction.
