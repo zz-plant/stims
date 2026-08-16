@@ -380,26 +380,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
     // When WebGPU render bundles are enabled, group static objects into a
     // BundleGroup so the renderer records their draw calls once per bundle
-    // lifetime instead of every frame.
+    // lifetime instead of every frame. Only the background quad has truly
+    // static geometry; border/motion-vector groups update every frame and
+    // must not be bundled.
     const useBundles =
       backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles;
     const staticBundle = createMilkdropStaticBundleGroup({
       enabled: useBundles,
-      objects: [
-        this.background,
-        this.meshLines,
-        this.borderGroup,
-        this.motionVectorCpuGroup,
-        this.blendBorderGroup,
-        this.blendMotionVectorCpuGroup,
-      ],
+      objects: [this.background],
     });
     if (staticBundle) {
       this.root.add(staticBundle);
     } else {
       this.root.add(this.background);
-      this.root.add(this.meshLines);
     }
+    this.root.add(this.meshLines);
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);

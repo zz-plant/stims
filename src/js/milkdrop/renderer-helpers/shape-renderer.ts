@@ -102,19 +102,14 @@ function syncShapeShaderUniforms(
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
-  // WebGL ShaderMaterials get their Color uniforms converted to the working
-  // (linear) color space by three.js itself. NodeMaterials on the WebGPU path
-  // do not, so their colors must be linearized here or the renderer's final
-  // sRGB encoding re-encodes them (doubling brightness).
-  const needsLinearColor =
-    (material as unknown as { isNodeMaterial?: boolean }).isNodeMaterial ===
-    true;
-  const primaryColor = needsLinearColor
-    ? toLinearColor(shape.color)
-    : shape.color;
-  const secondaryColor = needsLinearColor
-    ? toLinearColor(shape.secondaryColor ?? { r: 0, g: 0, b: 0 })
-    : (shape.secondaryColor ?? { r: 0, g: 0, b: 0 });
+  // Both WebGL ShaderMaterials and WebGPU NodeMaterials need sRGB→linear
+  // conversion here because the renderer's outputColorSpace = SRGBColorSpace
+  // re-encodes colors during output. Without this, the encoder treats sRGB
+  // input as linear and applies a second gamma curve, producing darker fills.
+  const primaryColor = toLinearColor(shape.color);
+  const secondaryColor = toLinearColor(
+    shape.secondaryColor ?? { r: 0, g: 0, b: 0 },
+  );
   material.uniforms.primaryColor.value.setRGB(
     primaryColor.r,
     primaryColor.g,
