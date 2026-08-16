@@ -75,12 +75,11 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
-    <!-- Local CSS loads render-blocking: tokens/base/index are the design system
-         and above-the-fold layout, so deferring them only buys a flash of
-         unstyled content. The normalize reset is @imported by tokens.css so it
-         bundles instead of costing its own round trip. Web fonts stay deferred
-         (with display=swap) because text should paint immediately in a fallback
-         face, not block on the network. -->
+    <!-- Design tokens, motion prefs, base reset, and index styles are all
+         non-render-blocking: the loading spinner uses hardcoded inline styles
+         so the shell can paint immediately. These load via the media="print"
+         onload trick and swap to all once ready, avoiding FOUC on the shell
+         chrome while not blocking the initial paint. -->
     <link
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
@@ -92,6 +91,36 @@
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
       />
+    </noscript>
+    <link
+      rel="stylesheet"
+      href="src/css/tokens.css"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link
+      rel="stylesheet"
+      href="src/css/motion.css"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link
+      rel="stylesheet"
+      href="src/css/base.css"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link
+      rel="stylesheet"
+      href="src/css/index.css"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="src/css/tokens.css" />
+      <link rel="stylesheet" href="src/css/motion.css" />
+      <link rel="stylesheet" href="src/css/base.css" />
+      <link rel="stylesheet" href="src/css/index.css" />
     </noscript>
     <link rel="stylesheet" href="src/css/tokens.css" />
     <link rel="stylesheet" href="src/css/motion.css" />

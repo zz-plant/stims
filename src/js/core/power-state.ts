@@ -139,7 +139,17 @@ export function whenBatteryStateSettled(
   timeoutMs = 120,
 ): Promise<BatterySnapshot> {
   const probe = startBatteryMonitoring();
+  // Resolve immediately when the Battery API is absent (Safari, Firefox,
+  // insecure contexts, embedded webviews) — the common case. Only race the
+  // timeout when the API is actually present and might resolve with useful data.
   if (snapshot.supported || typeof window === 'undefined') {
+    return probe;
+  }
+  const getBattery =
+    typeof navigator !== 'undefined'
+      ? (navigator as NavigatorWithBattery).getBattery
+      : undefined;
+  if (typeof getBattery !== 'function') {
     return probe;
   }
   return Promise.race([

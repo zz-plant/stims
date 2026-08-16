@@ -53,7 +53,13 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { MidiPerformanceHud } from './MidiPerformanceHud.tsx';
-import { NewHomePage } from './NewHomePage.tsx';
+
+const NewHomePage = lazy(() =>
+  import('./NewHomePage.tsx').then((m) => ({
+    default: m.NewHomePage,
+  })),
+);
+
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
@@ -108,6 +114,34 @@ function prefersThumbModeByDefault() {
   } catch {
     return false;
   }
+}
+
+/**
+ * Schedule a non-critical effect to run during browser idle time.
+ * Falls back to a short setTimeout when requestIdleCallback is unavailable.
+ * Returns a cleanup function that cancels the pending task.
+ */
+function deferToIdle(fn: () => undefined | (() => void)): () => void {
+  let cancelled = false;
+  let dispose: (() => void) | undefined;
+  const run = () => {
+    if (cancelled) return;
+    dispose = fn();
+  };
+  if (typeof requestIdleCallback === 'function') {
+    const handle = requestIdleCallback(run, { timeout: 2000 });
+    return () => {
+      cancelled = true;
+      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(handle);
+      dispose?.();
+    };
+  }
+  const handle = setTimeout(run, 80);
+  return () => {
+    cancelled = true;
+    clearTimeout(handle);
+    dispose?.();
+  };
 }
 
 function StimsWorkspaceAppShell() {
@@ -252,65 +286,73 @@ function StimsWorkspaceAppShell() {
     hapticsEnabled,
   });
 
+  // Agent bridge is only needed for MCP/automation sessions; defer to idle
+  // so it doesn't block the interactive shell on first paint.
   useEffect(() => {
-    return initAgentBridge({
-      onLoadPreset: (payload) => {
-        // milkSource is how an agent hands over preset *code* rather than a
-        // catalog id (MCP's session_apply_source). The bridge has always
-        // forwarded it and this handler always dropped it, so that tool
-        // silently did nothing.
-        if (payload.milkSource) {
-          engine.updateEditorSource(payload.milkSource);
-          return;
-        }
-        if (payload.presetId) {
-          void engine.handlePlayPreset(payload.presetId);
-        }
-      },
-      onApplyTweak: (_tweak) => {
-        if (engineSnapshot?.activePresetId) {
-          void engine.handlePlayPreset(engineSnapshot.activePresetId);
-        }
-      },
-      // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
-      // live stage through the exact same virtual-device pipeline a
-      // physical controller uses — see webmidi-controller.ts.
-      onMidiSet: (target, value) => {
-        webMidiService.injectTargetValue(
-          VIRTUAL_CLAUDE_DEVICE_ID,
-          target,
-          value,
-        );
-      },
-      onMidiCc: (cc, value) => {
-        webMidiService.injectControlChange(VIRTUAL_CLAUDE_DEVICE_ID, cc, value);
-      },
-      getMidiBindings: () => webMidiService.getAllBindings(),
-      getMidiDevices: () => webMidiService.getDevices(),
-      // Read/await surface for live code editing. Without these an agent
-      // could send preset source but never learn whether it compiled.
-      getEditorState: () => {
-        const state = engine.getEditorSessionState();
-        return state ? toAgentEditorState(state) : null;
-      },
-      getEditorFields: () => {
-        // The editor session's own latest compile, not the renderer's active
-        // one. They diverge whenever rendering is paused (a hidden or headless
-        // tab) or the newest source failed — and an agent reading values to
-        // compute a delta needs the buffer it is actually editing.
-        const compiled =
-          engine.getEditorSessionState()?.latestCompiled ??
-          engine.getActiveCompiledPreset();
-        return compiled ? { ...compiled.ir.numericFields } : null;
-      },
-      applyEditorSource: async (source) => {
-        const state = await engine.applyEditorSourceAwaited(source);
-        return state ? toAgentEditorState(state) : null;
-      },
-      applyEditorFields: async (updates) => {
-        const state = await engine.applyEditorFieldsAwaited(updates);
-        return state ? toAgentEditorState(state) : null;
-      },
+    return deferToIdle(() => {
+      return initAgentBridge({
+        onLoadPreset: (payload) => {
+          // milkSource is how an agent hands over preset *code* rather than a
+          // catalog id (MCP's session_apply_source). The bridge has always
+          // forwarded it and this handler always dropped it, so that tool
+          // silently did nothing.
+          if (payload.milkSource) {
+            engine.updateEditorSource(payload.milkSource);
+            return;
+          }
+          if (payload.presetId) {
+            void engine.handlePlayPreset(payload.presetId);
+          }
+        },
+        onApplyTweak: (_tweak) => {
+          if (engineSnapshot?.activePresetId) {
+            void engine.handlePlayPreset(engineSnapshot.activePresetId);
+          }
+        },
+        // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
+        // live stage through the exact same virtual-device pipeline a
+        // physical controller uses — see webmidi-controller.ts.
+        onMidiSet: (target, value) => {
+          webMidiService.injectTargetValue(
+            VIRTUAL_CLAUDE_DEVICE_ID,
+            target,
+            value,
+          );
+        },
+        onMidiCc: (cc, value) => {
+          webMidiService.injectControlChange(
+            VIRTUAL_CLAUDE_DEVICE_ID,
+            cc,
+            value,
+          );
+        },
+        getMidiBindings: () => webMidiService.getAllBindings(),
+        getMidiDevices: () => webMidiService.getDevices(),
+        // Read/await surface for live code editing. Without these an agent
+        // could send preset source but never learn whether it compiled.
+        getEditorState: () => {
+          const state = engine.getEditorSessionState();
+          return state ? toAgentEditorState(state) : null;
+        },
+        getEditorFields: () => {
+          // The editor session's own latest compile, not the renderer's active
+          // one. They diverge whenever rendering is paused (a hidden or headless
+          // tab) or the newest source failed — and an agent reading values to
+          // compute a delta needs the buffer it is actually editing.
+          const compiled =
+            engine.getEditorSessionState()?.latestCompiled ??
+            engine.getActiveCompiledPreset();
+          return compiled ? { ...compiled.ir.numericFields } : null;
+        },
+        applyEditorSource: async (source) => {
+          const state = await engine.applyEditorSourceAwaited(source);
+          return state ? toAgentEditorState(state) : null;
+        },
+        applyEditorFields: async (updates) => {
+          const state = await engine.applyEditorFieldsAwaited(updates);
+          return state ? toAgentEditorState(state) : null;
+        },
+      });
     });
   }, [engine, engineSnapshot?.activePresetId]);
 
@@ -318,57 +360,61 @@ function StimsWorkspaceAppShell() {
   // binding. It used to live inside PerformanceHardwareSection, which only
   // stayed mounted while Settings was open — closing Settings silently cut
   // the live wire between a controller and the visuals.
+  // Deferred to idle: MIDI init and live performance setup are not needed for
+  // first paint and can safely wait until the browser is idle.
   useEffect(() => {
-    webMidiService.initialize();
+    return deferToIdle(() => {
+      webMidiService.initialize();
 
-    // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
-    // patterns, signal measurement) on top of the four controls this effect
-    // used to publish inline.
-    const uninstallLive =
-      typeof window === 'undefined'
-        ? () => {}
-        : installLivePerformance({
-            setTarget: (target, value) => {
-              engine.updateInspectorField(target, value);
-            },
-            injectMidiCC: (cc, value) => {
-              webMidiService.injectControlChange(
-                VIRTUAL_CLAUDE_DEVICE_ID,
-                cc,
-                value,
-              );
-            },
-            nextPreset: () => {
-              engine.handleShufflePreset();
-            },
-            previousPreset: () => {
-              engine.handlePreviousPreset();
-            },
-            startStreamAudio: async (stream) => {
-              const nextRoute = {
-                ...uiRef.current.routeState,
-                audioSource: 'file' as const,
-              };
-              uiRef.current.commitRoute(nextRoute);
-              await engine.startAudioSource({
-                source: 'file',
-                stream,
-                launchState: nextRoute,
-              });
-            },
-          });
+      // The live-performance runtime owns `window.__stims_live` (ramps, Strudel
+      // patterns, signal measurement) on top of the four controls this effect
+      // used to publish inline.
+      const uninstallLive =
+        typeof window === 'undefined'
+          ? () => {}
+          : installLivePerformance({
+              setTarget: (target, value) => {
+                engine.updateInspectorField(target, value);
+              },
+              injectMidiCC: (cc, value) => {
+                webMidiService.injectControlChange(
+                  VIRTUAL_CLAUDE_DEVICE_ID,
+                  cc,
+                  value,
+                );
+              },
+              nextPreset: () => {
+                engine.handleShufflePreset();
+              },
+              previousPreset: () => {
+                engine.handlePreviousPreset();
+              },
+              startStreamAudio: async (stream) => {
+                const nextRoute = {
+                  ...uiRef.current.routeState,
+                  audioSource: 'file' as const,
+                };
+                uiRef.current.commitRoute(nextRoute);
+                await engine.startAudioSource({
+                  source: 'file',
+                  stream,
+                  launchState: nextRoute,
+                });
+              },
+            });
 
-    const unbindMidi = bindMidiToMilkdropControls(
-      webMidiService,
-      (target, value) => {
-        engine.updateInspectorField(target, value);
-      },
-    );
+      const unbindMidi = bindMidiToMilkdropControls(
+        webMidiService,
+        (target, value) => {
+          engine.updateInspectorField(target, value);
+        },
+      );
 
-    return () => {
-      uninstallLive();
-      unbindMidi();
-    };
+      return () => {
+        uninstallLive();
+        unbindMidi();
+      };
+    });
   }, [engine]);
 
   useEffect(() => {
@@ -776,7 +822,11 @@ function StimsWorkspaceAppShell() {
       </a>
       <WorkspaceStagePanel
         isFullscreen={isFullscreen}
-        launchPanel={<NewHomePage />}
+        launchPanel={
+          <Suspense fallback={null}>
+            <NewHomePage />
+          </Suspense>
+        }
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
       />

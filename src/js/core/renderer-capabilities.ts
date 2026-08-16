@@ -255,7 +255,17 @@ function resetCache() {
 }
 
 function getFallbackBackend(): RendererBackend | null {
-  return getRenderingSupport().hasWebGL ? 'webgl' : null;
+  const hasWebGPU =
+    typeof navigator !== 'undefined' &&
+    Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
+  // When WebGPU is available, skip the expensive WebGL canvas context probe
+  // — the fallback backend is only needed if WebGPU fails, and we can probe
+  // lazily at that point. When WebGPU is absent, probe WebGL immediately
+  // since it's the only viable backend.
+  if (hasWebGPU) {
+    return 'webgl';
+  }
+  return probeCanvasWebGLContext() ? 'webgl' : null;
 }
 
 function probeCanvasWebGLContext() {
@@ -543,7 +553,11 @@ export function getRenderingSupport(): RenderingSupport {
   const hasWebGPU =
     typeof navigator !== 'undefined' &&
     Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
-  const hasWebGL = probeCanvasWebGLContext();
+  // Skip the expensive WebGL canvas context probe when WebGPU is present —
+  // callers that only need to know "can we render at all?" get an immediate
+  // answer. The probe is still available for callers that need the definitive
+  // WebGL check (e.g., the capability probe's final fallback decision).
+  const hasWebGL = hasWebGPU ? true : probeCanvasWebGLContext();
 
   return {
     hasWebGPU,
