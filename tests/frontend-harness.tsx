@@ -151,6 +151,7 @@ export function makeEngineValue(
     setTransitionMode: noop,
     setBlendDuration: noop,
     updateEditorSource: noop,
+    updateFieldLive: noop,
     applyEditorSourceAwaited: async () => null,
     applyEditorFieldsAwaited: async () => null,
     getEditorSessionState: () => null,

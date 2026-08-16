@@ -1696,3 +1696,41 @@ wave_mystery=0.55
     expect(buffers.momentumSamples).toBe(resized.nextMomentum);
   });
 });
+
+describe('milkdrop vm live field updates', () => {
+  test('setField applies a built-in immediately and it survives per-frame reload', () => {
+    const preset = compileMilkdropPresetSource('title=Live Builtin', {
+      id: 'live-builtin',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('zoom', 1.5);
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(1.5, 6);
+
+    // Per-frame reload resets built-ins to their base; the live value was
+    // written into the base too, so it must survive a step.
+    vm.step(makeSignals({ frame: 1 }));
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(1.5, 6);
+  });
+
+  test('setField writes aliased spellings to the canonical field', () => {
+    const preset = compileMilkdropPresetSource('title=Live Alias', {
+      id: 'live-alias',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('fZoom', 2.0);
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(2.0, 6);
+  });
+
+  test('setField persists a user variable across frames without a recompile', () => {
+    const preset = compileMilkdropPresetSource('title=Live User Var', {
+      id: 'live-user-var',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('q1', 0.42);
+    vm.step(makeSignals({ frame: 1 }));
+    expect(vm.getStateSnapshot().q1).toBeCloseTo(0.42, 6);
+  });
+});

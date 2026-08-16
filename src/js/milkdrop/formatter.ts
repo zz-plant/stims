@@ -492,6 +492,63 @@ export function isFieldShadowedByEquations(
 }
 
 /**
+ * Classifies what an equation-driven overwrite means for a live fader write.
+ * A relative equation (`cx = cx + sin(time)`) reloads `cx` to the base first,
+ * so a live base write moves the stage; an absolute equation (`zoom = 1 +
+ * bass*0.1`) discards the base entirely, so the drag will not show until the
+ * equation itself is edited. The last assignment wins, so the scan keeps the
+ * final matching equation's flavour.
+ */
+export function getFieldOverwriteKind(
+  source: string,
+  target: string,
+): 'none' | 'absolute' | 'relative' {
+  const normalizedTarget = target.trim().toLowerCase();
+  if (!normalizedTarget) return 'none';
+  const targetRef = new RegExp(
+    `\\b${escapeRegExpLiteral(normalizedTarget)}\\b`,
+    'iu',
+  );
+  const lines = source.split(/\r?\n/u);
+  let inShaderSection = false;
+  let last: 'absolute' | 'relative' | null = null;
+  for (const lineText of lines) {
+    const trimmed = lineText.trim();
+    if (shaderSectionHeaderPattern.test(trimmed)) {
+      inShaderSection = true;
+    }
+    if (inShaderSection) continue;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
+      continue;
+    }
+
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx <= 0) continue;
+    if (!isEquationKey(trimmed.slice(0, eqIdx).trim())) continue;
+    const valuePart = stripInlineCommentFromLine(trimmed.slice(eqIdx + 1));
+    // Statements within one equation line run in order, and the last
+    // assignment to the target wins — so classify each and keep the last.
+    // The per-statement match mirrors isFieldShadowedByEquations' `(?!=)`
+    // guard, so `zoom == x` stays "none" rather than reading as an overwrite.
+    const assignPattern = new RegExp(
+      `^\\s*${escapeRegExpLiteral(normalizedTarget)}\\s*=(?!=)`,
+      'iu',
+    );
+    for (const statement of valuePart.split(';')) {
+      if (!assignPattern.test(statement)) continue;
+      const statementEqIdx = statement.indexOf('=');
+      const rhs = statement.slice(statementEqIdx + 1);
+      last = targetRef.test(rhs) ? 'relative' : 'absolute';
+    }
+  }
+  return last ?? 'none';
+}
+
+/**
  * 1-based line number of the *first* equation line that reassigns `target`,
  * or null when nothing does. Pairs with isFieldShadowedByEquations: knowing a
  * control is overwritten every frame is only actionable if you can get to the

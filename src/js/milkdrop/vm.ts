@@ -156,6 +156,10 @@ class MilkdropPresetVM implements MilkdropVM {
    */
   private perFrameBaseKeys: string[] = [];
   private perFrameBaseNumbers: number[] = [];
+  /** O(1) lookup for `setField`: which index a field holds in the parallel
+   * per-frame base arrays, so a live value can be nudged in both without a
+   * linear scan per input event. */
+  private perFrameBaseKeyIndex = new Map<string, number>();
 
   /** Resolves `wave${slot}_${key}` / `shape${slot}_${key}` composite keys that
    * exist only in the synthesized snapshot, returning the owning locals object
@@ -396,6 +400,9 @@ class MilkdropPresetVM implements MilkdropVM {
     this.perFrameBaseNumbers = this.perFrameBaseKeys.map(
       (key) => this.perFrameBaseValues[key] ?? 0,
     );
+    this.perFrameBaseKeyIndex = new Map(
+      this.perFrameBaseKeys.map((key, index) => [key, index]),
+    );
 
     this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
@@ -434,6 +441,29 @@ class MilkdropPresetVM implements MilkdropVM {
       }
       this.shapeState.customShapeTAfterInit[index] = tSnapshot;
     });
+  }
+
+  /**
+   * Live-apply one numeric field without a recompile.
+   *
+   * The per-frame reload (`restorePerFrameBaseValues`) resets every built-in
+   * to its base before each step, so a bare `state` write would be gone next
+   * frame. Writing the base too makes the value stick until the next commit.
+   * User variables and q/t registers are not in the base set and persist on
+   * their own, so they only need the state/register write.
+   */
+  setField(key: string, value: number): void {
+    const normalized = normalizeProgramAssignmentTarget(key);
+    this.state[normalized] = value;
+    if (objectHasOwn(this.registers, normalized)) {
+      this.registers[normalized] = value;
+    }
+    const baseIndex = this.perFrameBaseKeyIndex.get(normalized);
+    if (baseIndex !== undefined) {
+      this.perFrameBaseValues[normalized] = value;
+      this.perFrameBaseNumbers[baseIndex] = value;
+    }
+    this.frameVariablesSnapshot = null;
   }
 
   getStateSnapshot() {
