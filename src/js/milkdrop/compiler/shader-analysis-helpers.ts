@@ -1013,6 +1013,70 @@ export type ShaderUvTransformAnalysis = {
   };
 };
 
+function broadcastScalarVectorResult(node: MilkdropShaderExpressionNode): {
+  values: [number, number];
+  expressions: [MilkdropExpressionNode | null, MilkdropExpressionNode | null];
+} | null {
+  const scalar = evaluateShaderScalarResult(
+    node,
+    { uv: { kind: 'vec2', value: [0, 0] } },
+    DEFAULT_MILKDROP_STATE,
+    {},
+  );
+  if (!scalar) {
+    return null;
+  }
+  return {
+    values: [scalar.value, scalar.value],
+    expressions: [scalar.expression, scalar.expression],
+  };
+}
+
+function negateExpression(
+  expression: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!expression) {
+    return null;
+  }
+  return { type: 'unary', operator: '-', operand: expression };
+}
+
+function combineScaleExpression(
+  left: MilkdropExpressionNode | null,
+  operator: '*' | '/',
+  right: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!right) {
+    return left;
+  }
+  if (!left) {
+    return operator === '/'
+      ? {
+          type: 'binary',
+          operator: '/',
+          left: createLiteralExpression(1),
+          right,
+        }
+      : right;
+  }
+  return { type: 'binary', operator, left, right };
+}
+
+function combineOffsetExpression(
+  left: MilkdropExpressionNode | null,
+  operator: '+' | '-' | '*' | '/',
+  right: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!right) {
+    return left;
+  }
+  if (!left) {
+    // Zero offset scaled or divided stays zero; added/subtracted it is the term.
+    return operator === '*' || operator === '/' ? null : right;
+  }
+  return { type: 'binary', operator, left, right };
+}
+
 export function analyzeShaderUvTransform(
   node: MilkdropShaderExpressionNode,
 ): ShaderUvTransformAnalysis | null {
@@ -1036,13 +1100,14 @@ export function analyzeShaderUvTransform(
     (node.operator === '+' || node.operator === '-')
   ) {
     const base = analyzeShaderUvTransform(node.left);
-    const offset = evaluateShaderVectorResult(
-      node.right,
-      2,
-      { uv: { kind: 'vec2', value: [0, 0] } },
-      DEFAULT_MILKDROP_STATE,
-      {},
-    );
+    const offset =
+      evaluateShaderVectorResult(
+        node.right,
+        2,
+        { uv: { kind: 'vec2', value: [0, 0] } },
+        DEFAULT_MILKDROP_STATE,
+        {},
+      ) ?? broadcastScalarVectorResult(node.right);
     if (!base || !offset) {
       return null;
     }
@@ -1055,22 +1120,18 @@ export function analyzeShaderUvTransform(
       expressions: {
         scaleX: base.expressions.scaleX,
         scaleY: base.expressions.scaleY,
-        offsetX:
-          offset.expressions[0] && sign === -1
-            ? {
-                type: 'unary',
-                operator: '-',
-                operand: offset.expressions[0],
-              }
-            : (offset.expressions[0] ?? base.expressions.offsetX),
-        offsetY:
-          offset.expressions[1] && sign === -1
-            ? {
-                type: 'unary',
-                operator: '-',
-                operand: offset.expressions[1],
-              }
-            : (offset.expressions[1] ?? base.expressions.offsetY),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '+',
+          negateExpression(sign === -1 ? offset.expressions[0] : null) ??
+            offset.expressions[0],
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '+',
+          negateExpression(sign === -1 ? offset.expressions[1] : null) ??
+            offset.expressions[1],
+        ),
       },
     };
   }
@@ -1098,10 +1159,26 @@ export function analyzeShaderUvTransform(
         offsetX: base.offsetX * vector.values[0],
         offsetY: base.offsetY * vector.values[1],
         expressions: {
-          scaleX: vector.expressions[0] ?? base.expressions.scaleX,
-          scaleY: vector.expressions[1] ?? base.expressions.scaleY,
-          offsetX: base.expressions.offsetX,
-          offsetY: base.expressions.offsetY,
+          scaleX: combineScaleExpression(
+            base.expressions.scaleX,
+            '*',
+            vector.expressions[0],
+          ),
+          scaleY: combineScaleExpression(
+            base.expressions.scaleY,
+            '*',
+            vector.expressions[1],
+          ),
+          offsetX: combineOffsetExpression(
+            base.expressions.offsetX,
+            '*',
+            vector.expressions[0],
+          ),
+          offsetY: combineOffsetExpression(
+            base.expressions.offsetY,
+            '*',
+            vector.expressions[1],
+          ),
         },
       };
     }
@@ -1121,10 +1198,115 @@ export function analyzeShaderUvTransform(
       offsetX: base.offsetX * scalar.value,
       offsetY: base.offsetY * scalar.value,
       expressions: {
-        scaleX: scalar.expression ?? base.expressions.scaleX,
-        scaleY: scalar.expression ?? base.expressions.scaleY,
-        offsetX: base.expressions.offsetX,
-        offsetY: base.expressions.offsetY,
+        scaleX: combineScaleExpression(
+          base.expressions.scaleX,
+          '*',
+          scalar.expression,
+        ),
+        scaleY: combineScaleExpression(
+          base.expressions.scaleY,
+          '*',
+          scalar.expression,
+        ),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '*',
+          scalar.expression,
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '*',
+          scalar.expression,
+        ),
+      },
+    };
+  }
+
+  if (node.type === 'binary' && node.operator === '/') {
+    const leftBase = analyzeShaderUvTransform(node.left);
+    const rightBase = leftBase ? null : analyzeShaderUvTransform(node.right);
+    const base = leftBase ?? rightBase;
+    const divisorSide = leftBase ? node.right : rightBase ? node.left : null;
+    if (!base || !divisorSide) {
+      return null;
+    }
+
+    const vector = evaluateShaderVectorResult(
+      divisorSide,
+      2,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (vector) {
+      if (vector.values[0] === 0 || vector.values[1] === 0) {
+        return null;
+      }
+      return {
+        scaleX: base.scaleX / vector.values[0],
+        scaleY: base.scaleY / vector.values[1],
+        offsetX: base.offsetX / vector.values[0],
+        offsetY: base.offsetY / vector.values[1],
+        expressions: {
+          scaleX: combineScaleExpression(
+            base.expressions.scaleX,
+            '/',
+            vector.expressions[0],
+          ),
+          scaleY: combineScaleExpression(
+            base.expressions.scaleY,
+            '/',
+            vector.expressions[1],
+          ),
+          offsetX: combineOffsetExpression(
+            base.expressions.offsetX,
+            '/',
+            vector.expressions[0],
+          ),
+          offsetY: combineOffsetExpression(
+            base.expressions.offsetY,
+            '/',
+            vector.expressions[1],
+          ),
+        },
+      };
+    }
+
+    const scalar = evaluateShaderScalarResult(
+      divisorSide,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!scalar || scalar.value === 0) {
+      return null;
+    }
+    return {
+      scaleX: base.scaleX / scalar.value,
+      scaleY: base.scaleY / scalar.value,
+      offsetX: base.offsetX / scalar.value,
+      offsetY: base.offsetY / scalar.value,
+      expressions: {
+        scaleX: combineScaleExpression(
+          base.expressions.scaleX,
+          '/',
+          scalar.expression,
+        ),
+        scaleY: combineScaleExpression(
+          base.expressions.scaleY,
+          '/',
+          scalar.expression,
+        ),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '/',
+          scalar.expression,
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '/',
+          scalar.expression,
+        ),
       },
     };
   }

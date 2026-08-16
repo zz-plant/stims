@@ -1026,9 +1026,74 @@ warp_shader=uv=(uv-0.5)/1.25+0.5+vec2(0.03,-0.02);
 
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(0.8, 6);
+    // `(uv-0.5)/1.25+0.5` scales the sampling coordinate by 1/1.25 (zoom in),
+    // so the zoom control is 1/(1/1.25) = 1.25 — not the raw divisor.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1.25, 6);
     expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
     expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
+  });
+
+  test('extracts division uv transforms into reciprocal zoom controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Division UV Shader
+warp_shader=uv=uv/2.0;
+      `.trim(),
+      { id: 'division-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    // `uv/2` samples at uv/2 (zoom in), so zoom = 1/(1/2) = 2. Matches the
+    // controls produced for the equivalent `uv*0.5` form.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(2, 6);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(-0.25, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.25, 6);
+  });
+
+  test('extracts centered uv scale transforms into consistent zoom controls', () => {
+    const star = compileMilkdropPresetSource(
+      `
+title=Centered Star UV Shader
+warp_shader=uv=(uv-0.5)*2.0+0.5;
+      `.trim(),
+      { id: 'centered-star-uv-shader' },
+    );
+
+    expect(star.ir.shaderText.supported).toBe(true);
+    // `(uv-0.5)*2+0.5` is a centered zoom-out: zoom = 1/2, offset stays 0.
+    expect(star.ir.post.shaderControls.zoom).toBeCloseTo(0.5, 6);
+    expect(star.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(star.ir.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+
+    const div = compileMilkdropPresetSource(
+      `
+title=Centered Div UV Shader
+warp_shader=uv=(uv-0.5)/2.0+0.5;
+      `.trim(),
+      { id: 'centered-div-uv-shader' },
+    );
+
+    expect(div.ir.shaderText.supported).toBe(true);
+    // `(uv-0.5)/2+0.5` is a centered zoom-in: zoom = 2, offset stays 0.
+    expect(div.ir.post.shaderControls.zoom).toBeCloseTo(2, 6);
+    expect(div.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(div.ir.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+  });
+
+  test('extracts audio-reactive centered uv transforms into live zoom expressions', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Centered Reactive UV Shader
+warp_shader=uv=(uv-0.5)/(1.0+bass*0.1)+0.5;
+      `.trim(),
+      { id: 'centered-reactive-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControlExpressions.zoom).not.toBeNull();
+    // Static analysis runs with bass=0, so the zoom value is 1/1 = 1.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1, 6);
   });
 
   test('maps direct scalar uv shader transforms into compatible controls', () => {

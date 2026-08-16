@@ -1322,6 +1322,24 @@ warp_shader=dx=0.06; dy=-0.03; rot=0.22; zoom=1.1
     expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.1, 6);
   });
 
+  test('evaluates centered uv transform zoom against live signals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Centered UV Zoom VM
+warp_shader=uv=(uv-0.5)/(1.0+bass*0.1)+0.5
+      `.trim(),
+      { id: 'centered-uv-zoom-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 7 }));
+
+    // `(uv-0.5)/(1+bass*0.1)+0.5` zooms in by 1+bass*0.1; with bass=0.7 that
+    // is 1.07. The centered transform keeps the offset at 0.
+    expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.07, 6);
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+  });
+
   test('carries shader color controls into post visuals', () => {
     const preset = compileMilkdropPresetSource(
       `
