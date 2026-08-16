@@ -26,7 +26,12 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOTS = ['docs', '.agent'];
-const EXTRA_FILES = ['AGENTS.md', 'README.md', '.github/AGENTS.md'];
+const EXTRA_FILES = [
+  'AGENTS.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  '.github/AGENTS.md',
+];
 const SKIP_DIRS = new Set([
   'archive',
   'evidence',

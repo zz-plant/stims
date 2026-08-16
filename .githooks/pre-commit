@@ -16,6 +16,12 @@ if (lintRes.exitCode !== 0) {
   process.exit(1);
 }
 
+const formatRes = await $`bun run scripts/format-changed.ts --staged`.nothrow();
+if (formatRes.exitCode !== 0) {
+  console.error('❌ Commit blocked: Biome formatting failed on changed files.');
+  process.exit(1);
+}
+
 const cacheBoundsRes = await $`bun run scripts/check-cache-bounds.ts --strict`.nothrow();
 if (cacheBoundsRes.exitCode !== 0) {
   console.error(

@@ -48,6 +48,7 @@
     "typecheck:watch": "bun --bun ./node_modules/typescript/bin/tsc --noEmit --watch",
     "dev": "vite",
     "dev:host": "vite --host",
+    "dev:agent": "bun run scripts/dev-agent.ts",
     "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
     "play:toy": "bun run scripts/play-toy.ts",
     "doctor": "bun run scripts/doctor.ts",

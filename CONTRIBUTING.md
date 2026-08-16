@@ -62,10 +62,10 @@ Use these commands before opening a PR:
   bun run check:quick
   ```
 
-- Manifest/generated-artifact consistency check:
+- Catalog manifest consistency check:
 
   ```bash
-  bun run check:toys
+  bun run check:catalog-integrity
   ```
 
 - Run targeted tests:
