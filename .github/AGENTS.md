@@ -53,6 +53,7 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 - `check:architecture` — the `frontend/*` → engine boundary; only the engine adapter may cross it.
 - `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
 - `check:css-tokens` — CSS custom properties resolve to a defined token.
+- `check:cache-bounds` — new `Map`/`Set`/`WeakMap` growth containers added in the diff must share their file with an explicit bound (a `MAX_*`/`*_LIMIT`/`capacity`/`maxSize` constant or an eviction path), or be allowlisted with a reason. Strict mode runs at commit; advisory in `bun run check`.
 - `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
 - `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
 - `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).
