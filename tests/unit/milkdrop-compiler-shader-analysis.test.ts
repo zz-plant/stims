@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import {
   buildShaderProgramPayload,
   clearShaderAnalysisCaches,
+  extractNativeShaderBody,
   extractShaderControls,
+  normalizeHlslToGlsl,
+  splitShaderGlobalsAndBody,
 } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
 import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
@@ -309,6 +312,68 @@ warp_texture_scale = bass_att * 0.5
       'fallback-webgl',
     );
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
+  });
+
+  test('extracts a native shader_body block and drops trailing content after its close', () => {
+    const body = extractNativeShaderBody(
+      'shader_body { ret = tex2d(sampler_main, uv).rgb; } dx = 0.5;',
+    );
+    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+  });
+
+  test('extracts only the first shader_body block when presets carry several', () => {
+    const body = extractNativeShaderBody(
+      'shader_body { ret = tex2d(sampler_main, uv).rgb; } shader_body { ret = vec3(1.0); }',
+    );
+    expect(body).toBe('ret = tex2d(currentTex, uv).rgb;');
+    expect(body).not.toContain('vec3(1.0)');
+    expect(body).not.toContain('}');
+  });
+
+  test('keeps nested if/for braces inside a native shader_body block intact', () => {
+    const body = extractNativeShaderBody(
+      'shader_body { if (a > 0.5) { ret = tex2d(sampler_main, uv).rgb; } else { ret = vec3(0.0); } }\n// trailing comment',
+    );
+    expect(body).not.toBeNull();
+    expect(body).toContain('if (a > 0.5) { ret = tex2d(currentTex, uv).rgb;');
+    expect(body).not.toContain('// trailing comment');
+    expect(body?.split('{').length).toBe(body?.split('}').length);
+  });
+
+  test('rewrites texture3D volume-noise samples to the atlas-slice helper', () => {
+    const normalized = normalizeHlslToGlsl(
+      'ret = texture3D(sampler_fw_noisevol_lq, vec3(uv, 0.5)).rgb;',
+    );
+    expect(normalized).toContain('sampleNoiseVolume( vec3(uv, 0.5)).rgb;');
+    expect(normalized).not.toContain('texture3D');
+    expect(normalized).not.toContain('simplexTex');
+  });
+
+  test('splits typed functions with float2/uint/const returns and nested-paren args into globals', () => {
+    const glsl = [
+      'float2 scaleBy(vec2 v, float s) { return v * s; }',
+      'uint pick(vec2 p) { return uint(p.x); }',
+      'const float two() { return 2.0; }',
+      'float x = 0.5;',
+      'ret = scaleBy(uv, two());',
+    ].join('\n');
+
+    const { globals, body } = splitShaderGlobalsAndBody(glsl);
+    expect(globals).toContain(
+      'float2 scaleBy(vec2 v, float s) { return v * s; }',
+    );
+    expect(globals).toContain('uint pick(vec2 p) { return uint(p.x); }');
+    expect(globals).toContain('const float two() { return 2.0; }');
+    expect(body).toContain('float x = 0.5;');
+    expect(body).toContain('ret = scaleBy(uv, two());');
+    expect(body).not.toContain('{');
+  });
+
+  test('leaves bodies without function declarations untouched', () => {
+    const glsl = 'float x = 0.5;\nret = tex2d(sampler_main, uv).rgb;';
+    const { globals, body } = splitShaderGlobalsAndBody(glsl);
+    expect(globals).toBe('');
+    expect(body).toBe(glsl);
   });
 });
 

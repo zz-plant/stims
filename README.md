@@ -6,6 +6,8 @@
 
 *Discover, inspect, remix, and record presets—with compatibility claims tied to measured evidence.*
 
+**▶ Try it live — [toil.fyi](https://toil.fyi). Opens in any WebGL2 browser. No account, no install.**
+
 [![Live Site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=for-the-badge&logo=cloudflare)](https://toil.fyi)
 [![GitHub Stars](https://img.shields.io/github/stars/zz-plant/stims?style=for-the-badge&logo=github)](https://github.com/zz-plant/stims/stargazers)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=for-the-badge&logo=bun)](https://bun.sh)
@@ -13,6 +15,8 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=for-the-badge)](./LICENSE)
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
+
+*1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · open source (MIT)*
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 

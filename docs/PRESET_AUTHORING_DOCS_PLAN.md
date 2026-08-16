@@ -155,7 +155,7 @@ The hobby's institutional memory is rotting behind dead DNS and Cloudflare walls
 
 1. **Winamp forum MilkDrop threads** (via Wayback): Rovastar's "Preset Tutorial" series, the beginners-guide dev threads, key author Q&A. Extract techniques into cookbook pages with attribution and archive links.
 2. **wiki.winamp.com/MilkDrop_Preset_Authoring** (Wayback): cross-check our generated reference against it for spec details the Geiss HTML glosses.
-3. **Preset-embedded comments** across the bundled 1,782 files + cream-of-the-crop: mine for named tricks and author commentary (scriptable; the corpus is already local).
+3. **Preset-embedded comments** across the bundled 1,787 files + cream-of-the-crop: mine for named tricks and author commentary (scriptable; the corpus is already local).
 4. **The ISOSCELES Patreon doc bundle**: identify provenance of its "Pixel Shader Guide" / "GPU Fundamentals" docs; re-home if orphaned.
 5. Modernize the 2002 Beginners Guide's four dissections as Track 2/7 material, credited to Rovastar & Krash.
 

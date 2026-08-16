@@ -1,5 +1,7 @@
 # Full Refactor Plan
 
+> Status: strategy and rationale reference (non-authoritative for checklist state). Live tracking lives in [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md); the toy-stage surface it was written around has since been removed in the MilkDrop-led repositioning.
+
 This plan outlines a staged, low-risk refactor of the Stim Webtoys codebase with clear checkpoints, owners, and rollback paths.
 
 ## Goals

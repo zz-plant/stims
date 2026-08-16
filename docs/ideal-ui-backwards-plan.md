@@ -1,5 +1,7 @@
 # Stims Ideal End-State UI: Working Backwards Plan
 
+> Status: historical working-backwards plan for the UI end-state. Kept for context; not a spec of the current interface.
+
 ## The Ideal End State (written as if it exists)
 
 You open toil.fyi. Before you can think, the screen fills with motion — waveforms,

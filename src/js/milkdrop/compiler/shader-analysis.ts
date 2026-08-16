@@ -76,7 +76,7 @@ export function normalizeHlslToGlsl(shaderText: string): string {
       // texture2D, which has no vec3 overload. Must run before the generic
       // texture( → texture2D( rewrite below.
       .replace(
-        /\b(?:texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
+        /\b(?:texture3D|texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
         'sampleNoiseVolume(',
       )
       .replace(/\btexture\s*\(/giu, 'texture2D(')
@@ -156,6 +156,42 @@ export function normalizeHlslToGlsl(shaderText: string): string {
   );
 }
 
+// Slices the body of a `shader_body { … }` block by scanning to the closing
+// brace that matches the block's opening brace, counting nested braces so
+// if/for blocks stay intact. Content after the closing brace (trailing
+// statements, comments, a second shader_body block) belongs to the preset
+// text outside the body and must never be folded into the executable GLSL.
+function extractShaderBodyBlock(
+  shaderText: string,
+  openBrace: number,
+): string | null {
+  let depth = 1;
+  let inLineComment = false;
+  for (let index = openBrace + 1; index < shaderText.length; index += 1) {
+    const char = shaderText[index];
+    if (inLineComment) {
+      if (char === '\n' || char === '\r') {
+        inLineComment = false;
+      }
+      continue;
+    }
+    if (char === '/' && shaderText[index + 1] === '/') {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return shaderText.slice(openBrace + 1, index);
+      }
+    }
+  }
+  return null;
+}
+
 export function extractNativeShaderBody(shaderText: string) {
   const markerMatch = shaderText.match(/\bshader_body\s*\{/iu);
   if (!markerMatch || markerMatch.index === undefined) {
@@ -174,10 +210,9 @@ export function extractNativeShaderBody(shaderText: string) {
       ),
     )
     .map((line) => `  ${line};`);
-  const rawBody = shaderText
-    .slice(openBrace + 1)
-    .replace(/;\s*}\s*;?\s*$/, '')
-    .replace(/}\s*;?\s*$/, '');
+  const rawBody =
+    extractShaderBodyBlock(shaderText, openBrace) ??
+    shaderText.slice(openBrace + 1);
   const body = normalizeHlslToGlsl(rawBody);
 
   // Collapse whitespace/empty statements introduced when multiple raw
@@ -200,21 +235,55 @@ export function splitShaderGlobalsAndBody(glsl: string): {
   globals: string;
   body: string;
 } {
-  const funcRegex =
-    /\b(?:float|vec[234]|mat[234]|void|int|bool)\s+\w+\s*\([^)]*\)\s*\{/gu;
+  // Matches function declarations by their header: an optional `const`, a
+  // scalar/vector/matrix return type, the function name, and the opening
+  // paren of the argument list. The argument list is scanned separately (it
+  // can contain nested parens, e.g. `vec2 foo(vec2(0.0))`), and a following
+  // `{` confirms it is a declaration rather than a stray typed expression.
+  const funcHeaderRegex =
+    /\b(?:const\s+)?(?:float[234]|vec[234]|mat[234]|double|float|int|uint|bool|void)\s+[a-zA-Z_]\w*\s*\(/gu;
   const ranges: Array<[number, number]> = [];
-  let match: RegExpExecArray | null = funcRegex.exec(glsl);
+  let match: RegExpExecArray | null = funcHeaderRegex.exec(glsl);
   while (match !== null) {
     const start = match.index;
+    // Walk to the paren that closes this candidate's argument list, counting
+    // nested parens so `foo(vec2(a, b))` is consumed as one argument list.
+    let parenDepth = 0;
+    let parenClose = match.index + match[0].length;
+    let closed = false;
+    for (; parenClose < glsl.length; parenClose += 1) {
+      const char = glsl[parenClose];
+      if (char === '(') {
+        parenDepth += 1;
+      } else if (char === ')') {
+        if (parenDepth === 0) {
+          closed = true;
+          break;
+        }
+        parenDepth -= 1;
+      }
+    }
+    if (!closed) {
+      match = funcHeaderRegex.exec(glsl);
+      continue;
+    }
+    let brace = parenClose + 1;
+    while (brace < glsl.length && /\s/u.test(glsl[brace] ?? '')) {
+      brace += 1;
+    }
+    if (glsl[brace] !== '{') {
+      match = funcHeaderRegex.exec(glsl);
+      continue;
+    }
     let depth = 1;
-    let end = start + match[0].length;
+    let end = brace + 1;
     while (depth > 0 && end < glsl.length) {
       if (glsl[end] === '{') depth++;
       else if (glsl[end] === '}') depth--;
       end++;
     }
     ranges.push([start, end]);
-    match = funcRegex.exec(glsl);
+    match = funcHeaderRegex.exec(glsl);
   }
   if (ranges.length === 0) {
     return { globals: '', body: glsl };
