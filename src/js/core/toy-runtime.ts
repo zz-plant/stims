@@ -38,6 +38,12 @@ export type ToyRuntimeFrame = {
   waveformData: Uint8Array;
   input: UnifiedInputState | null;
   performance: PerformanceSettings;
+  /**
+   * Relationship lock flag for the current frame: pins preset-facing
+   * time/frame signals so the audio->visual mapping stays put while audio
+   * keeps driving output. Set by `renderFrames({ relationshipLock })`.
+   */
+  relationshipLock?: boolean;
 };
 
 export type ToyRuntimePlugin = {
@@ -131,6 +137,14 @@ export type ToyRuntimeInstance = ToyInstance & {
        */
       totalFrames?: number;
     };
+    /**
+     * Pin the preset-facing `time` and `frame` signals at their first-locked
+     * values while the internal audio-analysis clock keeps running — the
+     * "relationship lock" for docs/SENSORY_ACCESSIBILITY.md. The audio->visual
+     * mapping (time/frame-driven terms) stays put; audio still drives output.
+     * Only meaningful for the deterministic `renderFrames` path.
+     */
+    relationshipLock?: boolean;
   }) => { rendered: number } | null;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
@@ -341,6 +355,7 @@ export function createToyRuntime({
     waveformData: new Uint8Array(0),
     input: null,
     performance: performanceController.getSettings(),
+    relationshipLock: false,
   };
 
   const inputController = createInputController({
@@ -563,12 +578,14 @@ export function createToyRuntime({
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
+      const relationshipLock = options?.relationshipLock ?? false;
       stopPreviewLoop();
       let rendered = 0;
       for (let i = 0; i < frames; i += 1) {
         frameState.time += deltaMs / 1000;
         frameState.deltaMs = deltaMs;
         frameState.realTimeMs += deltaMs;
+        frameState.relationshipLock = relationshipLock;
         frameState.analyser = null;
         if (stimulus) {
           // A controlled, known signal replaces the decorative wave

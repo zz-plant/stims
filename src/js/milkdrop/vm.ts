@@ -521,7 +521,12 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private prepareSignalEnv(signals: MilkdropRuntimeSignals) {
+    // Under relationship lock, preset-facing time/frame are pinned, so the
+    // frame/time cache key would otherwise trip and freeze every signal —
+    // including audio. Bypass the cache so the env keeps syncing fresh audio
+    // while the clock stays put.
     if (
+      !signals.relationshipLock &&
       this.lastPreparedSignalSource === signals &&
       this.lastPreparedSignalFrame === signals.frame &&
       this.lastPreparedSignalTime === signals.time

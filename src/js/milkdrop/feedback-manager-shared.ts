@@ -51,6 +51,7 @@ import {
 } from './feedback-volume-sampling.ts';
 import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
+import { MILKDROP_TEXTURE_FILES } from './texture-files';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -113,16 +114,6 @@ export function resolveMilkdropBlurShaderRanges(
 }
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
-const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  perlin: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
   perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
