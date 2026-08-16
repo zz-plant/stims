@@ -26,9 +26,18 @@ export function buildFeedbackCompositeState({
   const controls = frameState.post.shaderControls;
   const feedbackOptimizationEnabled =
     backend !== 'webgpu' || directFeedbackShaders;
+  // When the descriptor plan reports shaderExecution === 'direct', the preset's
+  // warp/comp shader is already verified as WebGPU-executable. The
+  // webgpuFeedbackPlanFallback flag reflects broader compatibility concerns
+  // (video echo, feedback texture, shader textures, post effects) and must not
+  // override the explicit 'direct' execution mode — doing so discards the
+  // shader body and forces uniform-only evaluation, producing a major visual
+  // discrepancy with the WebGL backend for shader-heavy presets.
   const plannedShaderExecution =
     backend === 'webgpu'
-      ? feedbackOptimizationEnabled && !webgpuFeedbackPlanFallback
+      ? feedbackOptimizationEnabled &&
+        (!webgpuFeedbackPlanFallback ||
+          webgpuFeedbackPlanShaderExecution === 'direct')
         ? (webgpuFeedbackPlanShaderExecution ?? 'controls')
         : 'controls'
       : null;
