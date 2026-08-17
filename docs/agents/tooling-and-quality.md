@@ -156,17 +156,23 @@ Common commands to keep nearby while implementing:
 ### Development
 
 ```bash
+# One warm feedback loop: dev server + typecheck watch + fast tests watch
+bun run dev:agent
+
 # Warm long-lived agent session
 bun run session:codex -- --profile review
 
 # Route a task to the local LM Studio helper stack
 bun run model:codex -- --mode auto --task "review a loader bug" --no-exec
 
-# Start the dev server
+# Start the dev server only (visual testing: http://localhost:5173/?agent=true)
 bun run dev
 
 # Specifically test the MilkDrop visualizer
 bun run play:toy milkdrop
+
+# Discover every package.json script, grouped by namespace with one-line purpose
+bun run scripts:list
 ```
 
 ### During implementation (iterate-test-verify loop)
@@ -174,6 +180,9 @@ bun run play:toy milkdrop
 ```bash
 # Fast syntax/type/lint check (use frequently)
 bun run check:quick
+
+# Scoped verification: run exactly the guards/tests/regens a change can break
+bun run verify --changed
 
 # Run a specific test file while developing
 bun run test tests/path/to/spec.test.ts

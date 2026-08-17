@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
-import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 
 const GRID_COLS = 3;
@@ -9,57 +9,42 @@ const GRID_VISIBLE = GRID_COLS * GRID_ROWS;
 
 export function PresetGrid({
   catalogEntries,
+  presetPreviews,
+  requestPresetPreviews,
   routeState,
   setRouteState,
 }: {
   catalogEntries: PresetCatalogEntry[];
+  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
+  requestPresetPreviews: (presetIds: string[]) => void | Promise<void>;
   routeState: { presetId: string | null; audioSource: AudioSource | null };
   setRouteState: (next: {
     presetId: string | null;
     audioSource: AudioSource | null;
   }) => void;
 }) {
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const { presetPreviews, requestPresetPreviews } = usePresetPreviews({
-    stageRef,
-    engine: {
-      pausePreview: () => {},
-      resumePreview: () => {},
-    },
-    engineSnapshot: null,
-    fallbackCatalogReady: false,
-    isDisposed: () => false,
-  });
+  // The context request function changes identity on every session render;
+  // keep the latest behind a ref so the mount effect only fires on catalog
+  // changes, not on every re-render.
+  const requestPresetPreviewsRef = useRef(requestPresetPreviews);
+  requestPresetPreviewsRef.current = requestPresetPreviews;
 
-  const [readySet, setReadySet] = useState<Set<string>>(new Set());
-
-  // Request previews for visible entries on mount
+  // Request runtime previews for the visible tiles on mount / catalog change.
+  // Every tile already shows its static thumbnail in the meantime.
   useEffect(() => {
     const ids = catalogEntries.slice(0, GRID_VISIBLE).map((e) => e.id);
-    requestPresetPreviews(ids);
-  }, [catalogEntries, requestPresetPreviews]);
+    void requestPresetPreviewsRef.current(ids);
+  }, [catalogEntries]);
 
-  // Track which previews are ready
-  useEffect(() => {
-    const ready = new Set(
-      catalogEntries
-        .filter((e) => presetPreviews[e.id]?.status === 'ready')
-        .map((e) => e.id),
-    );
-    setReadySet(ready);
-  }, [catalogEntries, presetPreviews]);
-
-  const handleItemClick = (id: string) => {
-    if (!presetPreviews[id]?.imageUrl && !readySet.has(id)) {
-      requestPresetPreviews([id]);
+  const requestIfMissing = (id: string) => {
+    if (presetPreviews[id]?.status !== 'ready') {
+      void requestPresetPreviewsRef.current([id]);
     }
-    setRouteState({ presetId: id, audioSource: routeState.audioSource });
   };
 
-  const handleItemHover = (id: string) => {
-    if (!presetPreviews[id]?.imageUrl && !readySet.has(id)) {
-      requestPresetPreviews([id]);
-    }
+  const handleItemClick = (id: string) => {
+    requestIfMissing(id);
+    setRouteState({ presetId: id, audioSource: routeState.audioSource });
   };
 
   return (
@@ -70,8 +55,8 @@ export function PresetGrid({
           type="button"
           className="stims-preset-grid__item"
           aria-label={entry.title || entry.id}
-          onPointerEnter={() => handleItemHover(entry.id)}
-          onFocus={() => handleItemHover(entry.id)}
+          onPointerEnter={() => requestIfMissing(entry.id)}
+          onFocus={() => requestIfMissing(entry.id)}
           onClick={() => handleItemClick(entry.id)}
         >
           <PresetArtwork

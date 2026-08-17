@@ -2,32 +2,28 @@
 
 import { $ } from 'bun';
 
-console.log('🔒 Pre-commit guard check...');
+console.log('🔒 Pre-commit gate (check:quick + format + strict cache bounds)...');
 
-const tsNocheckRes = await $`bun run scripts/check-no-ts-nocheck.ts`.nothrow();
-if (tsNocheckRes.exitCode !== 0) {
-  console.error('❌ Commit blocked: @ts-nocheck directive found.');
-  process.exit(1);
-}
-
-const lintRes = await $`bun run scripts/lint-changed.ts`.nothrow();
-if (lintRes.exitCode !== 0) {
-  console.error('❌ Commit blocked: Biome linting errors in changed files.');
-  process.exit(1);
-}
-
-const formatRes = await $`bun run scripts/format-changed.ts --staged`.nothrow();
-if (formatRes.exitCode !== 0) {
+const format = await $`bun run format:changed --staged`.nothrow();
+if (format.exitCode !== 0) {
   console.error('❌ Commit blocked: Biome formatting failed on changed files.');
   process.exit(1);
 }
 
-const cacheBoundsRes = await $`bun run scripts/check-cache-bounds.ts --strict`.nothrow();
-if (cacheBoundsRes.exitCode !== 0) {
+const quick = await $`bun run check:quick`.nothrow();
+if (quick.exitCode !== 0) {
+  console.error(
+    '❌ Commit blocked: bun run check:quick failed (lint, typecheck, or guard).',
+  );
+  process.exit(1);
+}
+
+const cacheBounds = await $`bun run scripts/check-cache-bounds.ts --strict`.nothrow();
+if (cacheBounds.exitCode !== 0) {
   console.error(
     '❌ Commit blocked: unbounded cache/pool added without a bound or allowlist reason.',
   );
   process.exit(1);
 }
 
-console.log('✅ Pre-commit guards passed.');
+console.log('✅ Pre-commit gate passed.');

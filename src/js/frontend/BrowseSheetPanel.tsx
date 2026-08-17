@@ -459,6 +459,8 @@ export function BrowseSheetPanel({
       {catalogReady && gridView ? (
         <PresetGrid
           catalogEntries={browseEntries}
+          presetPreviews={presetPreviews}
+          requestPresetPreviews={engine.requestPresetPreviews}
           routeState={ui.routeState}
           setRouteState={setPresetRouteState}
         />
