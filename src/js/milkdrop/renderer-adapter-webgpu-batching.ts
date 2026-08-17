@@ -295,16 +295,12 @@ function createSegmentQuadGeometry() {
   return geometry;
 }
 
-function createBorderRingGeometry() {
+function buildRingGeometryLayout(
+  corners: Array<[number, number]>,
+): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
   const unitCorner: number[] = [];
   const innerWeight: number[] = [];
-  const corners: Array<[number, number]> = [
-    [-1, 1],
-    [1, 1],
-    [1, -1],
-    [-1, -1],
-  ];
   for (let index = 0; index < corners.length; index += 1) {
     const current = corners[index] as [number, number];
     const next = corners[(index + 1) % corners.length] as [number, number];
@@ -340,6 +336,16 @@ function createBorderRingGeometry() {
     new Float32BufferAttribute(innerWeight, 1),
   );
   return geometry;
+}
+
+function createBorderRingGeometry() {
+  const corners: Array<[number, number]> = [
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+  ];
+  return buildRingGeometryLayout(corners);
 }
 
 function toRadiusNormalizedScale(radius: number, offset: number) {
@@ -396,48 +402,9 @@ function getUnitPolygonRingGeometry(sides: number) {
     return cached;
   }
   memoryStats.geometryCacheMisses++;
-  const geometry = new InstancedBufferGeometry();
-  const unitCorner: number[] = [];
-  const innerWeight: number[] = [];
   const vertices = getUnitPolygonVertices(safeSides);
-  for (let index = 0; index < vertices.length; index += 1) {
-    const currentVertex = vertices[index];
-    const nextVertex = vertices[(index + 1) % vertices.length];
-    if (!currentVertex || !nextVertex) {
-      continue;
-    }
-    const current: [number, number] = [currentVertex.x, currentVertex.y];
-    const next: [number, number] = [nextVertex.x, nextVertex.y];
-    unitCorner.push(
-      current[0],
-      current[1],
-      next[0],
-      next[1],
-      current[0],
-      current[1],
-      current[0],
-      current[1],
-      next[0],
-      next[1],
-      next[0],
-      next[1],
-    );
-    innerWeight.push(0, 0, 1, 1, 0, 1);
-  }
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute(
-      new Array((unitCorner.length / 2) * 3).fill(0),
-      3,
-    ),
-  );
-  geometry.setAttribute(
-    'unitCorner',
-    new Float32BufferAttribute(unitCorner, 2),
-  );
-  geometry.setAttribute(
-    'innerWeight',
-    new Float32BufferAttribute(innerWeight, 1),
+  const geometry = buildRingGeometryLayout(
+    vertices.map((vertex) => [vertex.x, vertex.y]),
   );
   polygonRingGeometryCache.set(safeSides, geometry);
   return geometry;
