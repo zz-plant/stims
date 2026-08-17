@@ -85,9 +85,17 @@ export function buildFeedbackCompositeState({
       ? frameState.post.videoEchoAlpha
       : 0,
     zoom: frameState.post.videoEchoEnabled ? frameState.post.videoEchoZoom : 1,
-    videoEchoOrientation: frameState.post.videoEchoEnabled
-      ? frameState.post.videoEchoOrientation
-      : 0,
+    // The echo orientation flip belongs to the legacy echo effect. Presets
+    // that carry a warp shader are feedback-driven by that shader, whose own
+    // sampling defines orientation; the direct path never applies the flip.
+    // Applying it in the legacy fallback rotated the whole previous frame 180°,
+    // making shader-heavy themes render upside down on backends/paths where the
+    // warp shader cannot execute (e.g. WebGPU translated fallback).
+    videoEchoOrientation:
+      frameState.post.videoEchoEnabled &&
+      frameState.post.shaderPrograms.warp === null
+        ? frameState.post.videoEchoOrientation
+        : 0,
     brighten: frameState.post.brighten ? 1 : 0,
     darken: frameState.post.darken ? 1 : 0,
     darkenCenter: frameState.post.darkenCenter ? 1 : 0,

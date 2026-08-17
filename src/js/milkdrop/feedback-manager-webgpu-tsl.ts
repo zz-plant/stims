@@ -12,7 +12,10 @@ import {
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
-import { resolveMilkdropBlurShaderRanges } from './feedback-manager-shared.ts';
+import {
+  applyCompositeUniformState,
+  resolveMilkdropBlurShaderRanges,
+} from './feedback-manager-shared.ts';
 import {
   type CompositeUniformBag,
   createApplyFeedbackWarpNode,
@@ -46,7 +49,6 @@ import {
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
-import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import {
   type MilkdropShaderValueKind,
   resolveMilkdropShaderConstructorPattern,
@@ -2788,105 +2790,16 @@ class WebGPUMilkdropFeedbackManager
     }
 
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
-    this.compositeMaterial.uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     this.compositeMaterial.uniforms.zoom.value = state.zoom;
     this.compositeMaterial.uniforms.videoEchoOrientation.value =
       state.videoEchoOrientation;
-    this.compositeMaterial.uniforms.brighten.value = state.brighten;
-    this.compositeMaterial.uniforms.darken.value = state.darken;
-    this.compositeMaterial.uniforms.darkenCenter.value = state.darkenCenter;
-    this.compositeMaterial.uniforms.solarize.value = state.solarize;
-    this.compositeMaterial.uniforms.invert.value = state.invert;
-    this.compositeMaterial.uniforms.redBlueStereo.value =
-      state.redBlueStereo ?? 0;
-    this.compositeMaterial.uniforms.gammaAdj.value = state.gammaAdj;
-    this.compositeMaterial.uniforms.textureWrap.value = state.textureWrap;
     this.compositeMaterial.uniforms.feedbackTexture.value =
       state.feedbackTexture;
-    this.compositeMaterial.uniforms.decay.value = state.decay;
-    this.compositeMaterial.uniforms.scale1.value = blurShaderRanges[0].scale;
-    this.compositeMaterial.uniforms.bias1.value = blurShaderRanges[0].bias;
-    this.compositeMaterial.uniforms.scale2.value = blurShaderRanges[1].scale;
-    this.compositeMaterial.uniforms.bias2.value = blurShaderRanges[1].bias;
-    this.compositeMaterial.uniforms.scale3.value = blurShaderRanges[2].scale;
-    this.compositeMaterial.uniforms.bias3.value = blurShaderRanges[2].bias;
-    this.compositeMaterial.uniforms.warpScale.value = state.warpScale;
-    this.compositeMaterial.uniforms.offsetX.value = state.offsetX;
-    this.compositeMaterial.uniforms.offsetY.value = state.offsetY;
-    this.compositeMaterial.uniforms.rotation.value = state.rotation;
-    this.compositeMaterial.uniforms.zoomMul.value = state.zoomMul;
-    this.compositeMaterial.uniforms.saturation.value = state.saturation;
-    this.compositeMaterial.uniforms.contrast.value = state.contrast;
-    this.compositeMaterial.uniforms.colorScale.value.setRGB(
-      state.colorScale.r,
-      state.colorScale.g,
-      state.colorScale.b,
+    applyCompositeUniformState(
+      this.compositeMaterial.uniforms,
+      state,
+      blurShaderRanges,
     );
-    this.compositeMaterial.uniforms.hueShift.value = state.hueShift;
-    this.compositeMaterial.uniforms.brightenBoost.value = state.brightenBoost;
-    this.compositeMaterial.uniforms.invertBoost.value = state.invertBoost;
-    this.compositeMaterial.uniforms.solarizeBoost.value = state.solarizeBoost;
-    this.compositeMaterial.uniforms.vignette.value = state.vignette ?? 0;
-    this.compositeMaterial.uniforms.chromaticAberration.value =
-      state.chromaticAberration ?? 0;
-    this.compositeMaterial.uniforms.tint.value.setRGB(
-      state.tint.r,
-      state.tint.g,
-      state.tint.b,
-    );
-    this.compositeMaterial.uniforms.overlayTextureSource.value =
-      state.overlayTextureSource;
-    this.compositeMaterial.uniforms.overlayTextureMode.value =
-      state.overlayTextureMode;
-    this.compositeMaterial.uniforms.overlayTextureSampleDimension.value =
-      state.overlayTextureSampleDimension;
-    this.compositeMaterial.uniforms.overlayTextureInvert.value =
-      state.overlayTextureInvert;
-    this.compositeMaterial.uniforms.overlayTextureAmount.value =
-      state.overlayTextureAmount;
-    this.compositeMaterial.uniforms.overlayTextureScale.value.set(
-      state.overlayTextureScale.x,
-      state.overlayTextureScale.y,
-    );
-    this.compositeMaterial.uniforms.overlayTextureOffset.value.set(
-      state.overlayTextureOffset.x,
-      state.overlayTextureOffset.y,
-    );
-    this.compositeMaterial.uniforms.overlayTextureVolumeSliceZ.value =
-      state.overlayTextureVolumeSliceZ;
-    this.compositeMaterial.uniforms.warpTextureSource.value =
-      state.warpTextureSource;
-    this.compositeMaterial.uniforms.warpTextureSampleDimension.value =
-      state.warpTextureSampleDimension;
-    this.compositeMaterial.uniforms.warpTextureAmount.value =
-      state.warpTextureAmount;
-    this.compositeMaterial.uniforms.warpTextureScale.value.set(
-      state.warpTextureScale.x,
-      state.warpTextureScale.y,
-    );
-    this.compositeMaterial.uniforms.warpTextureOffset.value.set(
-      state.warpTextureOffset.x,
-      state.warpTextureOffset.y,
-    );
-    this.compositeMaterial.uniforms.warpTextureVolumeSliceZ.value =
-      state.warpTextureVolumeSliceZ;
-    this.compositeMaterial.uniforms.signalBass.value = state.signalBass;
-    this.compositeMaterial.uniforms.signalBassAtt.value =
-      state.signalBassAtt ?? state.signalBass;
-    this.compositeMaterial.uniforms.signalMid.value = state.signalMid;
-    this.compositeMaterial.uniforms.signalMidAtt.value =
-      state.signalMidAtt ?? state.signalMid;
-    this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;
-    this.compositeMaterial.uniforms.signalTrebAtt.value =
-      state.signalTrebAtt ?? state.signalTreb;
-    applyHarmonicPercussiveUniforms(this.compositeMaterial.uniforms, state);
-    this.compositeMaterial.uniforms.signalBeat.value = state.signalBeat;
-    this.compositeMaterial.uniforms.signalBeatPulse.value =
-      state.signalBeatPulse;
-    this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
-    this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
-    this.compositeMaterial.uniforms.signalFrame.value = state.signalFrame ?? 0;
-    this.compositeMaterial.uniforms.signalFps.value = state.signalFps ?? 60;
     for (let index = 0; index < 32; index += 1) {
       this.compositeMaterial.uniforms.perPixelQ[index].value =
         state.perPixelVariables?.[`q${index + 1}`] ?? 0;

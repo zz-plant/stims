@@ -12,6 +12,7 @@ import {
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
 import {
+  buildMilkdropCustomWavePoint,
   createSegmentQuadGeometry,
   ensureInstancedAttribute,
   getMilkdropLayerRenderOrder,
@@ -638,18 +639,17 @@ class CompactSegmentUploadBuffer {
     const width = getMilkdropSegmentWidth(wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
-      const sampleValue = wave.samples[index] ?? 0;
-      const x = wave.centerX + (-1 + sampleT * 2) * 0.85;
-      const baseY =
-        wave.centerY +
-        (sampleValue - 0.5) * 0.55 * wave.scaling * (1 + wave.mystery * 0.25);
-      const orbitalY =
-        wave.centerY +
-        Math.sin(sampleT * Math.PI * 2 * (1 + wave.mystery) + wave.time) *
-          0.18 *
-          wave.scaling;
-      const pointY = wave.spectrum ? baseY : orbitalY;
-      positions.push(x, pointY, MILKDROP_CUSTOM_WAVE_Z);
+      const point = buildMilkdropCustomWavePoint(
+        wave.centerX,
+        wave.centerY,
+        wave.scaling,
+        wave.mystery,
+        wave.spectrum ? 1 : 0,
+        wave.time,
+        sampleT,
+        wave.samples[index] ?? 0,
+      );
+      positions.push(point.x, point.y, MILKDROP_CUSTOM_WAVE_Z);
     }
     this.appendPolyline(positions, wave.color, wave.alpha, width);
   }

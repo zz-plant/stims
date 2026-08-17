@@ -150,6 +150,104 @@ export function resolveMilkdropBlurShaderRanges(
   return CACHED_BLUR_RANGES;
 }
 
+type CompositeStateUniformBag = Record<string, { value: unknown }>;
+
+/**
+ * Copies the composite-loop-facing slice of MilkdropFeedbackCompositeState
+ * onto a uniform bag. Shared by the WebGL ShaderMaterial bag and the WebGPU
+ * TSL uniform bag so the ~50 scalar/vector assignments cannot drift. Vector
+ * uniforms are assigned through the same .set/.setRGB call both materials
+ * expose. Texture targets (currentTex/previousTex) and backend-specific
+ * extras stay with each manager.
+ */
+export function applyCompositeUniformState(
+  uniforms: CompositeStateUniformBag,
+  state: MilkdropFeedbackCompositeState,
+  blurShaderRanges: readonly { scale: number; bias: number }[],
+) {
+  uniforms.scale1.value = blurShaderRanges[0].scale;
+  uniforms.bias1.value = blurShaderRanges[0].bias;
+  uniforms.scale2.value = blurShaderRanges[1].scale;
+  uniforms.bias2.value = blurShaderRanges[1].bias;
+  uniforms.scale3.value = blurShaderRanges[2].scale;
+  uniforms.bias3.value = blurShaderRanges[2].bias;
+  uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
+  uniforms.brighten.value = state.brighten;
+  uniforms.darken.value = state.darken;
+  uniforms.darkenCenter.value = state.darkenCenter;
+  uniforms.solarize.value = state.solarize;
+  uniforms.invert.value = state.invert;
+  uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
+  uniforms.gammaAdj.value = state.gammaAdj;
+  uniforms.textureWrap.value = state.textureWrap;
+  uniforms.decay.value = state.decay;
+  uniforms.warpScale.value = state.warpScale;
+  uniforms.offsetX.value = state.offsetX;
+  uniforms.offsetY.value = state.offsetY;
+  uniforms.rotation.value = state.rotation;
+  uniforms.zoomMul.value = state.zoomMul;
+  uniforms.saturation.value = state.saturation;
+  uniforms.contrast.value = state.contrast;
+  (
+    uniforms.colorScale.value as {
+      setRGB(r: number, g: number, b: number): void;
+    }
+  ).setRGB(state.colorScale.r, state.colorScale.g, state.colorScale.b);
+  uniforms.hueShift.value = state.hueShift;
+  uniforms.brightenBoost.value = state.brightenBoost;
+  uniforms.invertBoost.value = state.invertBoost;
+  uniforms.solarizeBoost.value = state.solarizeBoost;
+  uniforms.vignette.value = state.vignette ?? 0;
+  uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
+  (
+    uniforms.tint.value as { setRGB(r: number, g: number, b: number): void }
+  ).setRGB(state.tint.r, state.tint.g, state.tint.b);
+  uniforms.overlayTextureSource.value = state.overlayTextureSource;
+  uniforms.overlayTextureMode.value = state.overlayTextureMode;
+  uniforms.overlayTextureSampleDimension.value =
+    state.overlayTextureSampleDimension;
+  uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
+  uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
+  (
+    uniforms.overlayTextureScale.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.overlayTextureScale.x, state.overlayTextureScale.y);
+  (
+    uniforms.overlayTextureOffset.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.overlayTextureOffset.x, state.overlayTextureOffset.y);
+  uniforms.overlayTextureVolumeSliceZ.value = state.overlayTextureVolumeSliceZ;
+  uniforms.warpTextureSource.value = state.warpTextureSource;
+  uniforms.warpTextureSampleDimension.value = state.warpTextureSampleDimension;
+  uniforms.warpTextureAmount.value = state.warpTextureAmount;
+  (
+    uniforms.warpTextureScale.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.warpTextureScale.x, state.warpTextureScale.y);
+  (
+    uniforms.warpTextureOffset.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.warpTextureOffset.x, state.warpTextureOffset.y);
+  uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+  uniforms.signalBass.value = state.signalBass;
+  uniforms.signalMid.value = state.signalMid;
+  uniforms.signalTreb.value = state.signalTreb;
+  uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
+  uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
+  uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+  applyHarmonicPercussiveUniforms(uniforms, state);
+  uniforms.signalBeat.value = state.signalBeat;
+  uniforms.signalBeatPulse.value = state.signalBeatPulse;
+  uniforms.signalEnergy.value = state.signalEnergy;
+  uniforms.signalTime.value = state.signalTime;
+  uniforms.signalFrame.value = state.signalFrame ?? 0;
+  uniforms.signalFps.value = state.signalFps ?? 60;
+}
+
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
@@ -1639,77 +1737,7 @@ class SharedMilkdropFeedbackManager
       state.warpTextureVolumeSliceZ;
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
-    uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
-    uniforms.brighten.value = state.brighten;
-    uniforms.darken.value = state.darken;
-    uniforms.darkenCenter.value = state.darkenCenter;
-    uniforms.solarize.value = state.solarize;
-    uniforms.invert.value = state.invert;
-    uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
-    uniforms.gammaAdj.value = state.gammaAdj;
-    uniforms.textureWrap.value = state.textureWrap;
-    uniforms.decay.value = state.decay;
-    uniforms.warpScale.value = state.warpScale;
-    uniforms.offsetX.value = state.offsetX;
-    uniforms.offsetY.value = state.offsetY;
-    uniforms.rotation.value = state.rotation;
-    uniforms.zoomMul.value = state.zoomMul;
-    uniforms.saturation.value = state.saturation;
-    uniforms.contrast.value = state.contrast;
-    uniforms.colorScale.value.setRGB(
-      state.colorScale.r,
-      state.colorScale.g,
-      state.colorScale.b,
-    );
-    uniforms.hueShift.value = state.hueShift;
-    uniforms.brightenBoost.value = state.brightenBoost;
-    uniforms.invertBoost.value = state.invertBoost;
-    uniforms.solarizeBoost.value = state.solarizeBoost;
-    uniforms.vignette.value = state.vignette ?? 0;
-    uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
-    uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
-    uniforms.overlayTextureSource.value = state.overlayTextureSource;
-    uniforms.overlayTextureMode.value = state.overlayTextureMode;
-    uniforms.overlayTextureSampleDimension.value =
-      state.overlayTextureSampleDimension;
-    uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
-    uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
-    uniforms.overlayTextureScale.value.set(
-      state.overlayTextureScale.x,
-      state.overlayTextureScale.y,
-    );
-    uniforms.overlayTextureOffset.value.set(
-      state.overlayTextureOffset.x,
-      state.overlayTextureOffset.y,
-    );
-    uniforms.overlayTextureVolumeSliceZ.value =
-      state.overlayTextureVolumeSliceZ;
-    uniforms.warpTextureSource.value = state.warpTextureSource;
-    uniforms.warpTextureSampleDimension.value =
-      state.warpTextureSampleDimension;
-    uniforms.warpTextureAmount.value = state.warpTextureAmount;
-    uniforms.warpTextureScale.value.set(
-      state.warpTextureScale.x,
-      state.warpTextureScale.y,
-    );
-    uniforms.warpTextureOffset.value.set(
-      state.warpTextureOffset.x,
-      state.warpTextureOffset.y,
-    );
-    uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
-    uniforms.signalBass.value = state.signalBass;
-    uniforms.signalMid.value = state.signalMid;
-    uniforms.signalTreb.value = state.signalTreb;
-    uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
-    uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
-    uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
-    applyHarmonicPercussiveUniforms(uniforms, state);
-    uniforms.signalBeat.value = state.signalBeat;
-    uniforms.signalBeatPulse.value = state.signalBeatPulse;
-    uniforms.signalEnergy.value = state.signalEnergy;
-    uniforms.signalTime.value = state.signalTime;
-    uniforms.signalFrame.value = state.signalFrame ?? 0;
-    uniforms.signalFps.value = state.signalFps ?? 60;
+    applyCompositeUniformState(uniforms, state, blurShaderRanges);
     this.syncMilkdropShaderBuiltinUniforms(
       uniforms,
       this.getCompQTargets(uniforms),

@@ -545,6 +545,31 @@ export function syncSegmentMesh(
   join.needsUpdate = true;
 }
 
+/**
+ * Computes one custom-wave vertex in renderer space. Single source of truth
+ * for the JS fallback path; the native WebGPU path keeps the same formula in
+ * WGSL (buildCustomWaveVertexWgslCode in webgpu-procedural-materials.ts).
+ * Returns x/y zero-centered like the WGSL point.
+ */
+export function buildMilkdropCustomWavePoint(
+  centerX: number,
+  centerY: number,
+  scaling: number,
+  mystery: number,
+  spectrum: number,
+  time: number,
+  sampleT: number,
+  sampleValue: number,
+) {
+  const x = centerX + (-1 + sampleT * 2);
+  const baseY =
+    centerY + (sampleValue - 0.5) * 0.55 * scaling * (1 + mystery * 0.25);
+  const orbitalY =
+    centerY +
+    Math.sin(sampleT * Math.PI * 2 * (1 + mystery) + time) * 0.18 * scaling;
+  return { x, y: spectrum >= 0.5 ? baseY : orbitalY };
+}
+
 export function setMaterialBlendMode(
   material: Material | Material[],
   blendMode: 'normal' | 'additive' | 'subtractive' | 'multiplicative',

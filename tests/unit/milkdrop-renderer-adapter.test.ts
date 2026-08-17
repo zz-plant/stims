@@ -1965,6 +1965,69 @@ video_echo_orientation=3
     },
   );
 
+  test.each(['webgl', 'webgpu'] as const)(
+    'drops the echo orientation flip for presets with a warp shader on %s',
+    (backend) => {
+      // A preset whose feedback is driven by a warp shader must not get the
+      // legacy echo orientation flip: the direct warp path never applies it,
+      // so applying it in the legacy fallback would rotate the whole previous
+      // frame 180° and render the theme upside down.
+      const preset = compileMilkdropPresetSource(
+        `
+title=Feedback Orientation Gating
+video_echo=1
+video_echo_alpha=0.42
+video_echo_orientation=3
+[warp_shader]
+shader_body {
+  ret = uv.xxx;
+}
+        `.trim(),
+        { id: `feedback-orientation-gating-${backend}` },
+      );
+      expect(preset.ir.post.shaderPrograms.warp).not.toBeNull();
+
+      const frameState = createMilkdropVM(preset).step(makeSignals());
+      const compositeStates: MilkdropFeedbackCompositeState[] = [];
+      const feedback = {
+        applyCompositeState(state: MilkdropFeedbackCompositeState) {
+          compositeStates.push(state);
+        },
+        render() {
+          return true;
+        },
+        swap() {},
+        resize() {},
+        dispose() {},
+      } as MilkdropFeedbackManager;
+
+      const adapter = createMilkdropRendererAdapterCore({
+        scene: new Scene(),
+        camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+        renderer: {
+          getSize: (target: Vector2) => target.set(320, 180),
+          render() {},
+          setRenderTarget() {},
+        },
+        backend,
+        createFeedbackManager: () => feedback,
+      });
+
+      adapter.attach();
+      expect(
+        adapter.render({
+          frameState,
+          blendState: null,
+        }),
+      ).toBe(true);
+
+      expect(compositeStates[0]).toMatchObject({
+        videoEchoAlpha: 0.42,
+        videoEchoOrientation: 0,
+      });
+    },
+  );
+
   test('routes red-blue stereo flag through the feedback composite state', async () => {
     const preset = compileMilkdropPresetSource(
       `
