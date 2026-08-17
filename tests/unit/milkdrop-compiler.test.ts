@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import {
+  clearCompiledPresetCache,
+  compileMilkdropPresetSource,
+  getCompiledPresetCacheSize,
+} from '../../src/js/milkdrop/compiler.ts';
 import {
   upsertMilkdropField,
   upsertMilkdropFields,
@@ -2724,5 +2728,52 @@ comp_shader=uniform sampler2D sampler_water_caustics; ret = texture(sampler_wate
           diagnostic.code === 'preset_missing_custom_sampler_texture',
       ),
     ).toBe(false);
+  });
+
+  test('load-path compiles with metadata opt into the raw-string cache and reuse the compiled IR', () => {
+    clearCompiledPresetCache();
+
+    const raw = `
+title="Cached Preset"
+fDecay=0.5
+    `.trim();
+    const source = { id: 'cached-preset', origin: 'bundled' } as const;
+
+    const first = compileMilkdropPresetSource(raw, source, {
+      cacheCompile: true,
+    });
+    const second = compileMilkdropPresetSource(raw, source, {
+      cacheCompile: true,
+    });
+
+    // A cache hit returns the identical compiled object — the parse+IR
+    // rebuild that normally costs several milliseconds is skipped entirely.
+    expect(first).toBe(second);
+    expect(second.source.id).toBe('cached-preset');
+    expect(second.source.origin).toBe('bundled');
+    expect(second.formattedSource).not.toBe('');
+
+    clearCompiledPresetCache();
+    expect(getCompiledPresetCacheSize()).toBe(0);
+  });
+
+  test('the raw-string cache stays keyed by exact source text', () => {
+    clearCompiledPresetCache();
+
+    const rawA = 'title="A"\nfDecay=0.5';
+    const rawB = 'title="A"\nfDecay=0.6';
+    const source = { id: 'cached-a', origin: 'bundled' } as const;
+
+    const a = compileMilkdropPresetSource(rawA, source, { cacheCompile: true });
+    const b = compileMilkdropPresetSource(rawB, source, { cacheCompile: true });
+    const aAgain = compileMilkdropPresetSource(rawA, source, {
+      cacheCompile: true,
+    });
+
+    expect(a).not.toBe(b);
+    expect(a).toBe(aAgain);
+    expect(b.ir.numericFields.decay).toBeCloseTo(0.6, 4);
+
+    clearCompiledPresetCache();
   });
 });

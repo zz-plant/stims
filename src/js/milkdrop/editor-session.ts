@@ -164,10 +164,12 @@ export function createMilkdropEditorSession({
     source,
     meta,
     useWorker = true,
+    cacheCompile = false,
   }: {
     source: string;
     meta: MilkdropPresetSource;
     useWorker?: boolean;
+    cacheCompile?: boolean;
   }): Promise<CompileOutcome> => {
     if (disposed) return { kind: 'aborted' };
 
@@ -181,7 +183,11 @@ export function createMilkdropEditorSession({
       );
       return {
         kind: 'compiled',
-        compiled: compileMilkdropPresetSource(source, meta),
+        compiled: compileMilkdropPresetSource(
+          source,
+          meta,
+          cacheCompile ? { cacheCompile: true } : {},
+        ),
       };
     }
 
@@ -242,6 +248,7 @@ export function createMilkdropEditorSession({
     options: {
       markClean?: boolean;
       useWorker?: boolean;
+      cacheCompile?: boolean;
     } = {},
   ) => {
     if (disposed) return state;
@@ -257,6 +264,7 @@ export function createMilkdropEditorSession({
       source,
       meta,
       useWorker: options.useWorker,
+      cacheCompile: options.cacheCompile,
     });
     const compileDuration = performance.now() - compileStart;
 
@@ -315,7 +323,11 @@ export function createMilkdropEditorSession({
     async loadPreset(source) {
       sourceMeta = source;
       editorLog(source.id, 'loadPreset (main-thread compile, mark clean)');
-      return commit(source.raw, { markClean: true, useWorker: false });
+      return commit(source.raw, {
+        markClean: true,
+        useWorker: false,
+        cacheCompile: true,
+      });
     },
 
     async applySource(source) {

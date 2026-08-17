@@ -8,6 +8,8 @@ import type {
 } from '../types';
 import {
   isAuxShaderSamplerName,
+  MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_SIGNAL_NAME_ALIASES,
   normalizeShaderSamplerName,
 } from './shader-analysis-helpers';
 
@@ -90,50 +92,24 @@ export function createCompositeGlslEmitter(): GlslEmitter {
   return {
     emitIdentifier(name: string): string {
       const lower = name.toLowerCase();
-      // Map common MilkDrop shader variables to composite shader uniforms
+      // Signal aliases come from the shared table; only the non-signal
+      // composite uniforms and literal constants live in this map.
       const uniformMap: Record<string, string> = {
-        time: 'signalTime',
-        bass: 'signalBass',
-        bass_att: 'signalBassAtt',
-        mid: 'signalMid',
-        mids: 'signalMid',
-        mid_att: 'signalMidAtt',
-        mids_att: 'signalMidAtt',
-        treb: 'signalTreb',
-        treb_att: 'signalTrebAtt',
-        treble: 'signalTreb',
-        treble_att: 'signalTrebAtt',
-        // MilkDrop shader snippets commonly use camelCase attenuated bands;
-        // identifiers are lower-cased before lookup, so keep normalized entries here.
+        ...MILKDROP_SIGNAL_NAME_ALIASES,
+        rand_frame: MILKDROP_RAND_FRAME_GLSL,
+        // Emitter-only signal aliases: camelCase attenuated bands and energy
+        // synonyms the raw-text normalizer leaves untouched.
         bassatt: 'signalBassAtt',
         midatt: 'signalMidAtt',
         midsatt: 'signalMidAtt',
-        trebatt: 'signalTrebAtt',
-        trebleatt: 'signalTrebAtt',
-        percussive: 'signalPercussive',
-        harmonic: 'signalHarmonic',
-        percussive_low: 'signalPercussiveLow',
-        percussive_mid: 'signalPercussiveMid',
-        percussive_high: 'signalPercussiveHigh',
-        percussive_ratio: 'signalPercussiveRatio',
+        percussiveratio: 'signalPercussiveRatio',
         percussivelow: 'signalPercussiveLow',
         percussivemid: 'signalPercussiveMid',
         percussivehigh: 'signalPercussiveHigh',
-        percussiveratio: 'signalPercussiveRatio',
-        beat: 'signalBeat',
-        beat_pulse: 'signalBeatPulse',
-        rand_frame:
-          'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-        // progress is frame count in ProjectM; signalFrame provides the actual value.
-        progress: 'signalFrame',
-        frame: 'signalFrame',
-        fps: 'signalFps',
-        aspect: 'aspect',
-        vol: 'signalEnergy',
-        vol_att: 'signalEnergy',
-        rms: 'signalEnergy',
         music: 'signalEnergy',
         weighted_energy: 'signalEnergy',
+        // aspect is an actual composite shader uniform, not a signal alias.
+        aspect: 'aspect',
         pi: '3.14159265359',
         e: '2.71828182846',
         warp: 'warpScale',

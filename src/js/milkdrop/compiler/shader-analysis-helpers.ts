@@ -126,6 +126,72 @@ export function normalizeShaderCallName(value: string) {
   return normalizeMilkdropShaderCallName(value);
 }
 
+/**
+ * MilkDrop shader identifiers that map to runtime audio signals. Shared by
+ * the raw-text normalizer (shader-analysis.ts) and the GLSL composite emitter
+ * (shader-analysis-glsl.ts); both translate these aliases to `signal*`
+ * uniforms so there is one table instead of two hand-synced copies.
+ */
+export const MILKDROP_SIGNAL_NAME_ALIASES: Record<string, string> = {
+  time: 'signalTime',
+  bass: 'signalBass',
+  bass_att: 'signalBassAtt',
+  mid: 'signalMid',
+  mids: 'signalMid',
+  mid_att: 'signalMidAtt',
+  mids_att: 'signalMidAtt',
+  treb: 'signalTreb',
+  treble: 'signalTreb',
+  treb_att: 'signalTrebAtt',
+  treble_att: 'signalTrebAtt',
+  trebatt: 'signalTrebAtt',
+  trebleatt: 'signalTrebAtt',
+  percussive: 'signalPercussive',
+  harmonic: 'signalHarmonic',
+  percussive_ratio: 'signalPercussiveRatio',
+  percussiveratio: 'signalPercussiveRatio',
+  percussive_low: 'signalPercussiveLow',
+  percussivelow: 'signalPercussiveLow',
+  percussive_mid: 'signalPercussiveMid',
+  percussivemid: 'signalPercussiveMid',
+  percussive_high: 'signalPercussiveHigh',
+  percussivehigh: 'signalPercussiveHigh',
+  beat: 'signalBeat',
+  beat_pulse: 'signalBeatPulse',
+  progress: 'signalFrame',
+  frame: 'signalFrame',
+  fps: 'signalFps',
+  vol: 'signalEnergy',
+  vol_att: 'signalEnergy',
+  rms: 'signalEnergy',
+};
+
+/** MilkDrop's per-frame random vector, emitted identically by the warp-text
+ * normalizer and the composite emitter. */
+export const MILKDROP_RAND_FRAME_GLSL =
+  'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))';
+
+/**
+ * Builds the `\bname\b → signal*` replacement chain the raw-text normalizer
+ * applies. `\b` word boundaries keep `bass` from matching inside `bass_att`,
+ * so per-alias ordering is safe; keys are still emitted longest-first so the
+ * more specific alias wins when a name is a prefix of another.
+ */
+export function buildMilkdropSignalNameReplacements(text: string): string {
+  let result = text;
+  const aliases = Object.keys(MILKDROP_SIGNAL_NAME_ALIASES).sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const alias of aliases) {
+    const replacement = MILKDROP_SIGNAL_NAME_ALIASES[alias];
+    if (!replacement) {
+      continue;
+    }
+    result = result.replace(new RegExp(`\\b${alias}\\b`, 'giu'), replacement);
+  }
+  return result;
+}
+
 export function normalizeShaderSyntax(value: string) {
   return value
     .trim()
