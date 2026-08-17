@@ -39,7 +39,12 @@ export {
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
 
-import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
+import { isMobileDevice } from '../utils/browser/device-detect';
+import {
+  type FeedbackBackendProfile,
+  getFeedbackBackendProfile,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
 import {
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
@@ -2347,7 +2352,9 @@ function createCompositeOutputNode(
       smoothstep(0, 0.35, centerMask).mul(0.03),
     );
     color.assign(
-      color.mul(mix(float(1), centerMultiplier, step(0.5, uniforms.darkenCenter))),
+      color.mul(
+        mix(float(1), centerMultiplier, step(0.5, uniforms.darkenCenter)),
+      ),
     );
 
     // Vignette
@@ -2526,7 +2533,7 @@ class WebGPUMilkdropFeedbackManager
   readonly displayTarget: RenderTarget;
   readonly blurTarget: RenderTarget;
   readonly blurScene = new Scene();
-  readonly profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
+  readonly profile: FeedbackBackendProfile;
   readonly auxTextures: Record<string, Texture>;
   currentCompositeKey = '';
   currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
@@ -2534,8 +2541,13 @@ class WebGPUMilkdropFeedbackManager
   private savedFrameTarget: RenderTarget | null = null;
   private lastRenderer: FeedbackRendererLike | null = null;
 
-  constructor(width: number, height: number) {
-    super(width, height, WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile);
+  constructor(
+    width: number,
+    height: number,
+    profile: FeedbackBackendProfile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile,
+  ) {
+    super(width, height, profile);
+    this.profile = profile;
     this.camera.position.z = 1;
     this.camera.matrixAutoUpdate = false;
     this.camera.updateMatrixWorld(true);
@@ -2797,6 +2809,13 @@ class WebGPUMilkdropFeedbackManager
       state,
       blurShaderRanges,
     );
+    // Zero for presets that never sample the blur textures: shouldBlur reads
+    // this uniform, so the gaussian passes are skipped instead of rasterized
+    // into a target nothing samples.
+    if (this.compositeMaterial.uniforms.feedbackSoftness) {
+      this.compositeMaterial.uniforms.feedbackSoftness.value =
+        state.feedbackSoftness;
+    }
     for (let index = 0; index < 32; index += 1) {
       this.compositeMaterial.uniforms.perPixelQ[index].value =
         state.perPixelVariables?.[`q${index + 1}`] ?? 0;
@@ -2971,5 +2990,9 @@ export function createMilkdropWebGPUFeedbackManager(
   width: number,
   height: number,
 ) {
-  return new WebGPUMilkdropFeedbackManager(width, height);
+  return new WebGPUMilkdropFeedbackManager(
+    width,
+    height,
+    getFeedbackBackendProfile('webgpu', { mobile: isMobileDevice() }),
+  );
 }

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { transform } from 'esbuild';
+import { build } from 'esbuild';
 import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
@@ -42,13 +42,20 @@ function audioWorkletTransform() {
       const match = id.match(/^(.+?\.ts)\?worklet/);
       if (!match) return null;
       const filePath = match[1];
-      const source = fs.readFileSync(filePath, 'utf8');
-      const result = await transform(source, {
-        loader: 'ts',
-        target: 'es2022',
+      // Bundle (not just transform) so the worklet can import shared DSP
+      // modules like harmonic-percussive.ts. Bundle output for a single
+      // import-free file is identical to the old transform; for files with
+      // imports it inlines them, which keeps the AudioWorkletGlobalScope
+      // import-free.
+      const result = await build({
+        entryPoints: [filePath],
+        bundle: true,
+        write: false,
         format: 'esm',
+        target: 'es2022',
+        logLevel: 'silent',
       });
-      return `export default ${JSON.stringify(result.code)}`;
+      return `export default ${JSON.stringify(result.outputFiles[0].text)}`;
     },
   };
 }

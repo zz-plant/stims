@@ -199,10 +199,11 @@ export function createMilkdropExperienceFrameLoop({
           particleBudget: frame.performance.particleBudget,
           shaderQuality: frame.performance.shaderQuality,
         });
+        // Adaptive quality scales the CPU-side detail (mesh/wave/particle) on
+        // every backend: the VM transform loop is the same single-threaded
+        // cost whether WebGL or WebGPU rasterizes it.
         const adaptiveDensityMultiplier =
-          activeBackend === 'webgpu'
-            ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
-            : 1;
+          runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
         signalTracker.update({
           time: frame.time,

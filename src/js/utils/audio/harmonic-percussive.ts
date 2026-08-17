@@ -130,12 +130,13 @@ export function createHarmonicPercussiveAnalyser(
     },
 
     /**
-     * @param spectrum Byte magnitude spectrum (AnalyserNode layout: bin `i`
-     * covers `i * sampleRate / fftSize` Hz).
+     * @param spectrum Magnitude spectrum in AnalyserNode layout (bin `i` covers
+     * `i * sampleRate / fftSize` Hz): a Uint8Array byte spectrum (dB-mapped,
+     * 0..255) or a Float32Array already normalized to 0..1.
      * @param sampleRate Audio sample rate in Hz.
      */
     analyse(
-      spectrum: Uint8Array,
+      spectrum: Uint8Array | Float32Array,
       sampleRate = 48_000,
     ): HarmonicPercussiveLevels {
       const total = spectrum.length;
@@ -148,10 +149,15 @@ export function createHarmonicPercussiveAnalyser(
       const usable = Math.max(1, Math.min(total, Math.ceil(maxHz / binHz)));
       ensureBuffers(usable);
 
-      // Write this frame into the history ring.
+      // Write this frame into the history ring. Byte spectra are dB-mapped
+      // 0..255; Float32Array inputs are already normalized 0..1.
       const writeOffset = historyWrite * usable;
-      for (let i = 0; i < usable; i += 1) {
-        history[writeOffset + i] = spectrum[i] / 255;
+      if (spectrum instanceof Uint8Array) {
+        for (let i = 0; i < usable; i += 1) {
+          history[writeOffset + i] = spectrum[i] / 255;
+        }
+      } else {
+        history.set(spectrum.subarray(0, usable), writeOffset);
       }
       historyWrite = (historyWrite + 1) % timeFrames;
       historyFilled = Math.min(timeFrames, historyFilled + 1);

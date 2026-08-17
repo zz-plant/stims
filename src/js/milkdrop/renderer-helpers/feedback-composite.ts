@@ -1,8 +1,15 @@
+import { getFeedbackBackendProfile } from '../backend-behavior';
 import { isMilkdropShaderProgramBackendExecutable } from '../compiler/shader-execution-classification.ts';
 import type {
   MilkdropFeedbackCompositeState,
+  MilkdropPostVisual,
   MilkdropRenderPayload,
 } from '../types';
+
+// Mirrors the WebGL manager's blurEnabled gate: the warp/comp feedback loop
+// only reads blur1Tex/blur2Tex/blur3Tex when a preset's shader bodies sample
+// them, so everything else can skip the softness taps and blur passes.
+const BLUR_TEXTURE_SAMPLE_PATTERN = /texture2D\s*\(\s*blur[123]Tex\b/i;
 
 export function buildFeedbackCompositeState({
   frameState,
@@ -70,6 +77,13 @@ export function buildFeedbackCompositeState({
         ? false
         : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
   const perPixelStatements = frameState.post.perPixelStatements ?? null;
+
+  const feedbackSoftness = presetReferencesBlurTextures(
+    frameState.post.shaderPrograms,
+    perPixelStatements ? { statements: perPixelStatements } : null,
+  )
+    ? getFeedbackBackendProfile(backend).feedbackSoftness
+    : 0;
 
   return {
     shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
@@ -189,5 +203,21 @@ export function buildFeedbackCompositeState({
     signalFps: frameState.signals.fps,
     aspect: frameState.signals.aspect ?? 1,
     decay: frameState.post.decay,
+    feedbackSoftness,
   };
+}
+
+function presetReferencesBlurTextures(
+  shaderPrograms: MilkdropPostVisual['shaderPrograms'],
+  perPixelStatements: MilkdropFeedbackCompositeState['perPixelPrograms'] | null,
+) {
+  const sources: Array<string | null> = [
+    shaderPrograms.warp?.source ?? null,
+    shaderPrograms.comp?.source ?? null,
+    ...(perPixelStatements?.statements.map((statement) => statement.source) ??
+      []),
+  ];
+  return sources.some(
+    (source) => source !== null && BLUR_TEXTURE_SAMPLE_PATTERN.test(source),
+  );
 }

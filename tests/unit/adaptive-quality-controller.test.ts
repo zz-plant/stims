@@ -568,11 +568,22 @@ describe('createAdaptiveQualityController', () => {
       });
 
       const state = controller.getState();
-      expect(state.qualityStep).toBe(0);
+      expect(state.qualityStep).toBe(1);
       expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
       expect(state.reasons).toContain(
         'Flagship mobile sessions start from full quality with adaptive throttling headroom.',
       );
+
+      // Sustained headroom must not enhance mobile past the full-quality
+      // floor back into ultra (step 0): the extra density/feedback fill costs
+      // more on a phone than the over-1.0 multipliers are worth.
+      for (let index = 0; index < 60; index += 1) {
+        controller.recordFrame({
+          frameMs: 8,
+          phases: { renderMs: 5 },
+        });
+      }
+      expect(controller.getState().qualityStep).toBe(1);
     } finally {
       Object.defineProperty(navigator, 'maxTouchPoints', {
         configurable: true,

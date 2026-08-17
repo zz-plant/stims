@@ -16,6 +16,7 @@ import {
 } from '../core/settings-panel.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
@@ -29,7 +30,6 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
-import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -37,6 +37,7 @@ import {
   stringifyPlainSearch,
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
+import { runViewTransition } from './view-transition.ts';
 import { buildLaunchIntent } from './workspace-helpers.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -100,6 +101,7 @@ export function useWorkspaceSessionState({
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const engineSnapshotRef = useRef<EngineSnapshot | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
     null,
@@ -208,7 +210,20 @@ export function useWorkspaceSessionState({
       // after createLazyFactory has confirmed this call still owns the slot.
       install: (adapter) => {
         engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-          setEngineSnapshot(snapshot);
+          const audioFlipped =
+            Boolean(engineSnapshotRef.current?.audioActive) !==
+            Boolean(snapshot.audioActive);
+          engineSnapshotRef.current = snapshot;
+          if (audioFlipped) {
+            // The home<->live swap (launch form <-> live stage) is the one
+            // transition worth the view-transition snapshot freeze: the
+            // engine is crossfading presets at the same moment, which masks
+            // the brief static canvas frame. In-live interactions are left
+            // out so the canvas never freezes while music plays.
+            runViewTransition(() => setEngineSnapshot(snapshot));
+          } else {
+            setEngineSnapshot(snapshot);
+          }
         });
       },
       getRef: () => engineRef.current,
@@ -358,7 +373,10 @@ export function useWorkspaceSessionState({
     // boot during idle budget. A deep-linked preset or audio source is a real
     // intent and still mounts immediately.
     if (!routeState.presetId && !routeState.audioSource) {
-      return scheduleIdleTask(mountEngine, { idleTimeout: 2500, fallbackDelay: 800 });
+      return scheduleIdleTask(mountEngine, {
+        idleTimeout: 2500,
+        fallbackDelay: 800,
+      });
     }
 
     mountEngine();

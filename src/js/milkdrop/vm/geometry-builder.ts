@@ -565,8 +565,15 @@ function transformMeshPoint(
 
 export function getMeshDensity(state: MutableState, detailScale: number) {
   // 96 caps the per-frame CPU warp at ~9.2k vertices; only reachable when the
-  // detail scale (gated on backend + quality tier) climbs past ~3x.
-  return clamp(Math.round((state.mesh_density ?? 24) * detailScale), 8, 96);
+  // detail scale (gated on backend + quality tier) climbs past ~3x. Mobile
+  // caps at 48 (~2.3k vertices): the transform loop runs on one phone core
+  // and every vertex costs the same regardless of preset complexity.
+  const ceiling = isMobileDevice() ? 48 : 96;
+  return clamp(
+    Math.round((state.mesh_density ?? 24) * detailScale),
+    8,
+    ceiling,
+  );
 }
 
 /**
