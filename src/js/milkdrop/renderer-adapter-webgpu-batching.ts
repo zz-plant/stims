@@ -1,11 +1,7 @@
 import type { Texture } from 'three';
 import {
-  AddEquation,
-  AdditiveBlending,
   BufferGeometry,
-  CustomBlending,
   DoubleSide,
-  DstColorFactor,
   DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
@@ -13,10 +9,7 @@ import {
   InstancedBufferGeometry,
   Mesh,
   NormalBlending,
-  OneFactor,
-  ReverseSubtractEquation,
   ShaderMaterial,
-  ZeroFactor,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
@@ -24,6 +17,7 @@ import {
   getMilkdropLayerRenderOrder,
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
+  setMaterialBlendMode,
 } from './renderer-adapter-shared';
 import {
   getMilkdropSegmentWidth,
@@ -50,26 +44,7 @@ const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
 ];
 
 function applyBlendMode(material: ShaderMaterial, mode: BlendModeKey): void {
-  switch (mode) {
-    case 'additive':
-      material.blending = AdditiveBlending;
-      break;
-    case 'subtractive':
-      material.blending = CustomBlending;
-      material.blendSrc = OneFactor;
-      material.blendDst = OneFactor;
-      material.blendEquation = ReverseSubtractEquation;
-      break;
-    case 'multiplicative':
-      material.blending = CustomBlending;
-      material.blendSrc = DstColorFactor;
-      material.blendDst = ZeroFactor;
-      material.blendEquation = AddEquation;
-      break;
-    default:
-      material.blending = NormalBlending;
-      break;
-  }
+  setMaterialBlendMode(material, mode);
 }
 
 function getVisualBlendMode(visual: {

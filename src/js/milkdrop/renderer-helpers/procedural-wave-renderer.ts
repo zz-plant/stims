@@ -6,7 +6,6 @@ import {
   Line,
   NormalBlending,
   type ShaderMaterial,
-  Sphere,
   Vector3,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
@@ -15,6 +14,11 @@ import {
   disposeGeometry,
   disposeMaterial,
 } from '../../utils/three/three-dispose';
+import {
+  isSharedGeometry,
+  markSharedGeometry,
+  setGeometryBoundingSphere,
+} from '../renderer-adapter-shared';
 import {
   createProceduralCustomWaveMaterial,
   createProceduralWaveMaterial,
@@ -26,33 +30,9 @@ import type {
 } from '../types';
 import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
 
-const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const PROCEDURAL_WAVE_BOUNDS_RADIUS = Math.SQRT2 * 2.2;
 const PROJECTM_STEREO_OFFSET = 32 / 512;
 const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
-
-function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
-  geometry.userData[SHARED_GEOMETRY_FLAG] = true;
-  return geometry;
-}
-
-function isSharedGeometry(geometry: BufferGeometry) {
-  return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
-}
-
-function setGeometryBoundingSphere(
-  geometry: BufferGeometry,
-  center: Vector3,
-  radius: number,
-) {
-  if (!geometry.boundingSphere) {
-    geometry.boundingSphere = new Sphere(center.clone(), radius);
-    return geometry.boundingSphere;
-  }
-  geometry.boundingSphere.center.copy(center);
-  geometry.boundingSphere.radius = radius;
-  return geometry.boundingSphere;
-}
 
 function getProceduralWaveGeometry(sampleCount: number) {
   const safeCount = Math.max(2, Math.round(sampleCount));
