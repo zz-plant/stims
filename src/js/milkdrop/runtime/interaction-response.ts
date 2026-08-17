@@ -1,5 +1,6 @@
 import type { ShaderQuality } from '../../core/performance-panel';
 import type { UnifiedInputState } from '../../core/unified-input.ts';
+import { isMobileDevice } from '../../utils/browser/device-detect';
 import type {
   MilkdropFrameState,
   MilkdropGpuGeometryHints,
@@ -379,9 +380,15 @@ export function getMilkdropDetailScale({
   const backendBoost = backend === 'webgpu' ? 1.55 : 1.1;
   const shaderQualityScale =
     shaderQuality === 'low' ? 0.72 : shaderQuality === 'high' ? 1.2 : 1;
+  // The WebGPU boost assumes a desktop-class parallel core. On a phone the
+  // single-threaded CPU that runs the per-frame/per-vertex programs pays the
+  // same price for a 55% density bump with no fill-rate headroom to show for
+  // it, so fold the boost back to 1.0 and cap the ceiling lower.
+  const isMobile = isMobileDevice();
+  const effectiveBoost = isMobile && backend === 'webgpu' ? 1 : backendBoost;
   return Math.min(
-    5.0,
-    Math.max(0.5, baseScale * backendBoost * shaderQualityScale),
+    isMobile ? 2.5 : 5.0,
+    Math.max(0.5, baseScale * effectiveBoost * shaderQualityScale),
   );
 }
 

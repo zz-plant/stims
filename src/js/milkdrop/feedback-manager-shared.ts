@@ -1921,6 +1921,17 @@ class SharedMilkdropFeedbackManager
         compositeUniform.value = value;
       }
     }
+
+    // Zero for presets that never sample the blur textures: the warp and
+    // feedback-blend softness taps are skipped instead of softened every
+    // frame for no visible result.
+    if (wu.feedbackSoftness) {
+      wu.feedbackSoftness.value = state.feedbackSoftness;
+    }
+    if (this.feedbackBlendMaterial.uniforms.feedbackSoftness) {
+      this.feedbackBlendMaterial.uniforms.feedbackSoftness.value =
+        state.feedbackSoftness;
+    }
   }
 
   private compQTargetsCache: (Vector4 | undefined)[] | null = null;

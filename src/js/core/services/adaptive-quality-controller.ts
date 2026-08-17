@@ -203,6 +203,7 @@ function buildHeuristicProfile(
     return {
       frameBudgetMs,
       initialStep,
+      floorStep: 0,
       profile: 'fallback-webgl',
       reasons,
     };
@@ -212,6 +213,7 @@ function buildHeuristicProfile(
     return {
       frameBudgetMs,
       initialStep: 3,
+      floorStep: 0,
       profile: 'fallback-webgpu',
       reasons: ['No WebGPU capability snapshot was available for adaptation.'],
     };
@@ -271,13 +273,18 @@ function buildHeuristicProfile(
     );
   }
 
+  let floorStep = 0;
   if (isMobileDevice()) {
     const isFlagshipMobile =
       capabilities.performanceTier === 'high-end' &&
       typeof navigator !== 'undefined' &&
       (navigator.hardwareConcurrency ?? 0) >= 6;
-    const mobileFloor = isFlagshipMobile ? 0 : 2;
-    initialStep = Math.max(initialStep, mobileFloor);
+    // Flagship mobile starts at 'full' (step 1), never 'ultra' (step 0): the
+    // render/pixel-ratio caps already bound the effective resolution, and the
+    // per-pixel multipliers above 1.0 buy nothing while the phone's single
+    // CPU core pays for the extra mesh/wave density and feedback fill.
+    floorStep = isFlagshipMobile ? 1 : 2;
+    initialStep = Math.max(initialStep, floorStep);
     reasons.push(
       isFlagshipMobile
         ? 'Flagship mobile sessions start from full quality with adaptive throttling headroom.'
@@ -295,6 +302,7 @@ function buildHeuristicProfile(
   return {
     frameBudgetMs,
     initialStep,
+    floorStep,
     profile: capabilities.performanceTier,
     reasons,
   };
@@ -756,7 +764,7 @@ export function createAdaptiveQualityController({
       if (
         stepLock === null &&
         consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
-        qualityStep > 0 &&
+        qualityStep > heuristic.floorStep &&
         (heuristic.profile === 'high-end' || heuristic.profile === 'enhanced')
       ) {
         qualityStep -= 1;

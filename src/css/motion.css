@@ -141,26 +141,27 @@
   }
 }
 
-/* Preset transition animation — sharp crossfade + scale */
-@keyframes preset-transition-in {
+/* Launch form stepping aside for the live stage, and back. Applied to the
+   `stims-launch` view-transition snapshot in app-shell.css. */
+@keyframes launch-exit {
   from {
-    opacity: 0;
-    transform: scale(0.96);
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
   to {
-    opacity: 1;
-    transform: scale(1);
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
   }
 }
 
-@keyframes preset-transition-out {
+@keyframes launch-enter {
   from {
-    opacity: 1;
-    transform: scale(1);
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
   }
   to {
-    opacity: 0;
-    transform: scale(1.04);
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -190,29 +191,12 @@
   animation-delay: 0.17s;
 }
 
-/* View Transitions API — preset switch crossfade */
-@supports (view-transition-name: none) {
-  .stims-shell__stage-frame[data-mode="live"] {
-    view-transition-name: stims-stage;
-  }
-
-  ::view-transition-old(stims-stage) {
-    animation: preset-transition-out 0.35s ease both;
-  }
-
-  ::view-transition-new(stims-stage) {
-    animation: preset-transition-in 0.45s var(--spring-enter) both;
-  }
-}
+/* View-transition names and animations for the shell live in app-shell.css.
+   This file keeps the motion primitives (keyframes, utilities). */
 
 /* Reduced motion: disable all animations */
 @media (prefers-reduced-motion: reduce) {
   .stims-shell__preset-list > li {
     animation: none;
-  }
-
-  ::view-transition-old(stims-stage),
-  ::view-transition-new(stims-stage) {
-    animation-duration: 0.01ms;
   }
 }

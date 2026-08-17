@@ -411,6 +411,11 @@ export type MilkdropFeedbackCompositeState = {
   signalFps?: number;
   aspect: number;
   decay: number;
+  /** Effective feedback softening for this preset. Zero when the preset never
+   * samples the blur textures, so the always-on softness taps (and the
+   * backend's blur passes) are skipped instead of rasterizing work nothing
+   * consumes. */
+  feedbackSoftness: number;
 };
 
 export type MilkdropFeedbackSetRenderTarget = {

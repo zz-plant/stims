@@ -377,11 +377,9 @@ export function createMilkdropAudioSignalProcessor() {
   };
 
   const updateHarmonicPercussive = (
-    spectrum: Uint8Array,
-    sampleRate: number | undefined,
+    raw: HarmonicPercussiveLevels,
     deltaMs: number,
   ) => {
-    const raw = harmonicPercussiveAnalyser.analyse(spectrum, sampleRate);
     if (!hpAveragesSeeded) {
       // Same seeding rule as the bands: start the long average at the first
       // frame so the opening second doesn't read as one huge transient.
@@ -494,9 +492,17 @@ export function createMilkdropAudioSignalProcessor() {
       updateResult.attenuatedBands = attenuatedBands;
       updateResult.relativeBands = relativeBands;
       updateResult.relativeAttenuatedBands = relativeAttenuatedBands;
+      // Prefer the worklet's off-thread HPSS levels when they are available
+      // (they advance at analyse cadence on the audio thread). Fall back to
+      // the main-thread analyser on the byte spectrum otherwise — the
+      // analyser-node path, the window before the first worklet message, or
+      // an older worklet without HPSS.
+      const workletLevels = analyser?.getHarmonicPercussiveLevels?.() ?? null;
+      const rawLevels =
+        workletLevels ??
+        harmonicPercussiveAnalyser.analyse(rawSpectrum, sampleRate);
       updateResult.harmonicPercussive = updateHarmonicPercussive(
-        rawSpectrum,
-        sampleRate,
+        rawLevels,
         deltaMs,
       );
       updateResult.rawWeightedEnergy = rawWeightedEnergy;

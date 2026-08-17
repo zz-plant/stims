@@ -128,6 +128,26 @@ describe('harmonic/percussive decomposition (median-filter HPSS)', () => {
     expect(high.percussiveHigh).toBeGreaterThan(low.percussiveHigh);
   });
 
+  test('Float32Array input (pre-normalized 0..1) matches byte input / 255', () => {
+    const byteAnalyser = createHarmonicPercussiveAnalyser();
+    const floatAnalyser = createHarmonicPercussiveAnalyser();
+    const byteTone = toneSpectrum(1_000);
+    const floatTone = new Float32Array(BINS);
+    for (let i = 0; i < BINS; i += 1) {
+      floatTone[i] = byteTone[i] / 255;
+    }
+    for (let frame = 0; frame < 20; frame += 1) {
+      byteAnalyser.analyse(byteTone, SAMPLE_RATE);
+      floatAnalyser.analyse(floatTone, SAMPLE_RATE);
+    }
+    const byteLevels = byteAnalyser.analyse(byteTone, SAMPLE_RATE);
+    const floatLevels = floatAnalyser.analyse(floatTone, SAMPLE_RATE);
+    expect(floatLevels.harmonic).toBeCloseTo(byteLevels.harmonic, 6);
+    expect(floatLevels.percussive).toBeCloseTo(byteLevels.percussive, 6);
+    // The normalized path classifies the tone as harmonic just like bytes do.
+    expect(floatLevels.harmonic).toBeGreaterThan(floatLevels.percussive * 5);
+  });
+
   describe('degenerate inputs stay finite', () => {
     test('silence yields zero energy and a neutral 0.5 ratio, never NaN', () => {
       const analyser = createHarmonicPercussiveAnalyser();

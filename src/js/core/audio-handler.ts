@@ -2,6 +2,7 @@ import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
+import type { HarmonicPercussiveLevels } from '../utils/audio/harmonic-percussive.ts';
 import {
   createWaveformAutoGain,
   type FourBandTransientMetrics,
@@ -133,6 +134,7 @@ export class FrequencyAnalyser {
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
+  private cachedHarmonicPercussive: HarmonicPercussiveLevels | null = null;
   private readonly waveformAgc = createWaveformAutoGain();
   private readonly interpolator: AudioReactivityInterpolator =
     createAudioReactivityInterpolator();
@@ -204,6 +206,7 @@ export class FrequencyAnalyser {
         energyAverages,
         beatDetection,
         transientMetrics,
+        harmonicPercussive,
       } = event.data ?? {};
       if (typeof rms === 'number') this.rms = rms;
       if (typeof zeroCrossingRate === 'number')
@@ -244,6 +247,12 @@ export class FrequencyAnalyser {
       }
       if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
         this.cachedBeatDetection = beatDetection;
+      }
+      if (
+        harmonicPercussive &&
+        typeof harmonicPercussive.percussive === 'number'
+      ) {
+        this.cachedHarmonicPercussive = harmonicPercussive;
       }
       if (waveformData) {
         const nextWave =
@@ -503,6 +512,10 @@ export class FrequencyAnalyser {
 
   getWorkletBeatDetection(): WorkletBeatDetection | null {
     return this.workletNode ? this.cachedBeatDetection : null;
+  }
+
+  getHarmonicPercussiveLevels(): HarmonicPercussiveLevels | null {
+    return this.workletNode ? this.cachedHarmonicPercussive : null;
   }
 
   getWaveformData() {

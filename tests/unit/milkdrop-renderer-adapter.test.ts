@@ -23,6 +23,7 @@ import {
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial } from 'three/webgpu';
+import { getFeedbackBackendProfile } from '../../src/js/milkdrop/backend-behavior';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   __milkdropRendererAdapterTestUtils,
@@ -4068,6 +4069,46 @@ warp_shader=dx=0.05; dy=-0.02; rot=0.18; zoom=1.12
     });
     expect(state.perPixelVariables?.q6).toBeCloseTo(0.5, 6);
     expect(state.signalBassAtt).toBeCloseTo(0.6, 6);
+  });
+
+  test('gates feedback softness on preset blur-texture usage', () => {
+    const nonBlurPreset = compileMilkdropPresetSource(
+      `
+title=No Blur
+comp_shader=saturation=1.4; contrast=1.2
+      `.trim(),
+      { id: 'no-blur-feedback' },
+    );
+    const nonBlurState = buildFeedbackCompositeState({
+      frameState: createMilkdropVM(nonBlurPreset).step(makeSignals()),
+      backend: 'webgpu',
+      directFeedbackShaders: true,
+      webgpuFeedbackPlanShaderExecution: 'controls',
+      getShaderTextureSourceId: () => 0,
+      getShaderTextureBlendModeId: () => 0,
+      getShaderSampleDimensionId: () => 0,
+    });
+    expect(nonBlurState.feedbackSoftness).toBe(0);
+
+    const blurPreset = compileMilkdropPresetSource(
+      `
+title=Samples Blur
+comp_shader=ret=texture2D(blur1Tex, uv)
+      `.trim(),
+      { id: 'blur-feedback' },
+    );
+    const blurState = buildFeedbackCompositeState({
+      frameState: createMilkdropVM(blurPreset).step(makeSignals()),
+      backend: 'webgpu',
+      directFeedbackShaders: true,
+      webgpuFeedbackPlanShaderExecution: 'controls',
+      getShaderTextureSourceId: () => 0,
+      getShaderTextureBlendModeId: () => 0,
+      getShaderSampleDimensionId: () => 0,
+    });
+    expect(blurState.feedbackSoftness).toBe(
+      getFeedbackBackendProfile('webgpu').feedbackSoftness,
+    );
   });
 
   test('forwards shader color controls into composite uniforms', async () => {
