@@ -2,9 +2,6 @@ import type { Group, Mesh } from 'three';
 import {
   AdditiveBlending,
   DoubleSide,
-  DynamicDrawUsage,
-  Float32BufferAttribute,
-  InstancedBufferAttribute,
   InstancedBufferGeometry,
   NormalBlending,
   ShaderMaterial,
@@ -13,8 +10,10 @@ import {
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import {
+  createSegmentQuadGeometry,
   getMilkdropLayerRenderOrder,
   type MilkdropRendererBatcher,
+  syncSegmentMesh,
 } from './renderer-adapter-shared';
 import { getMilkdropSegmentWidth } from './renderer-helpers/primitive-rasterization-metrics';
 import type { MilkdropColor, MilkdropWaveVisual } from './types';
@@ -34,22 +33,6 @@ export type MilkdropSegmentBatchingOptions = {
 
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 
-function createSegmentQuadGeometry() {
-  const geometry = new InstancedBufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute(
-      [0, -1, 0, 1, -1, 0, 0, 1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0],
-      3,
-    ),
-  );
-  geometry.setAttribute(
-    'segmentCoord',
-    new Float32BufferAttribute([0, -1, 1, -1, 0, 1, 0, 1, 1, -1, 1, 1], 2),
-  );
-  return geometry;
-}
-
 function ensureFloat32Capacity(
   source: Float32Array<ArrayBufferLike>,
   requiredLength: number,
@@ -61,30 +44,6 @@ function ensureFloat32Capacity(
   const resized = new Float32Array(nextLength);
   resized.set(source);
   return resized;
-}
-
-function ensureInstancedAttribute(
-  geometry: InstancedBufferGeometry,
-  name: string,
-  itemSize: number,
-  count: number,
-) {
-  const existing = geometry.getAttribute(name);
-  const requiredLength = Math.max(1, count * itemSize);
-  if (
-    existing instanceof InstancedBufferAttribute &&
-    existing.itemSize === itemSize &&
-    existing.array.length === requiredLength
-  ) {
-    return existing;
-  }
-  const attribute = new InstancedBufferAttribute(
-    new Float32Array(requiredLength),
-    itemSize,
-  );
-  attribute.setUsage(DynamicDrawUsage);
-  geometry.setAttribute(name, attribute);
-  return attribute;
 }
 
 /**
@@ -405,41 +364,7 @@ class InstancedSegmentBatch {
   }
 
   private syncMesh(mesh: Mesh, instances: CompactSegmentUploadBuffer) {
-    const geometry = mesh.geometry as InstancedBufferGeometry;
-    geometry.instanceCount = instances.count;
-    mesh.visible = instances.count > 0;
-    const line = ensureInstancedAttribute(
-      geometry,
-      'instanceLine',
-      4,
-      instances.count,
-    );
-    const colorAlpha = ensureInstancedAttribute(
-      geometry,
-      'instanceColorAlpha',
-      4,
-      instances.count,
-    );
-    const control = ensureInstancedAttribute(
-      geometry,
-      'instanceControl',
-      3,
-      instances.count,
-    );
-    const join = ensureInstancedAttribute(
-      geometry,
-      'instanceJoin',
-      4,
-      instances.count,
-    );
-    (line.array as Float32Array).set(instances.getLineData());
-    (colorAlpha.array as Float32Array).set(instances.getStyleData());
-    (control.array as Float32Array).set(instances.getControlData());
-    (join.array as Float32Array).set(instances.getJoinData());
-    line.needsUpdate = true;
-    colorAlpha.needsUpdate = true;
-    control.needsUpdate = true;
-    join.needsUpdate = true;
+    syncSegmentMesh(mesh, instances);
   }
 
   dispose() {

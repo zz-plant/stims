@@ -90,6 +90,51 @@ type ShaderControlAnalysis = {
   nativeBodyUnparsedLines: string[];
 };
 
+/**
+ * Builds the direct-execution shader program payload for one stage (warp or
+ * comp). Both stages go through the same translation/fallback logic, so the
+ * two near-identical call sites share this single builder.
+ */
+function buildShaderProgramForStage(
+  shaderHelpers: Pick<ShaderAssemblyHelpers, 'buildShaderProgramPayload'>,
+  analysis: ShaderControlAnalysis,
+  stage: 'warp' | 'comp',
+  shaderText: string | null,
+  hasTranslatedDirectStatements: boolean,
+) {
+  if (!analysis.directProgramRequired) {
+    return null;
+  }
+  return shaderHelpers.buildShaderProgramPayload({
+    stage,
+    statements: analysis.directProgramStatements,
+    normalizedLines: analysis.directProgramLines,
+    requiresControlFallback:
+      !hasTranslatedDirectStatements ||
+      analysis.directProgramStatements.length !== analysis.statements.length,
+    supportedBackends:
+      hasTranslatedDirectStatements &&
+      (analysis.hasNativeBody
+        ? analysis.nativeBodyUnparsedLines.length === 0
+        : analysis.unsupportedLines.length === 0)
+        ? analysis.hasNativeBody
+          ? (['webgpu'] as const)
+          : (['webgl', 'webgpu'] as const)
+        : [],
+    rawGlsl:
+      analysis.hasNativeBody || !hasTranslatedDirectStatements
+        ? analysis.hasNativeBody
+          ? (extractNativeShaderBody(shaderText ?? '') ??
+            analysis.directProgramLines
+              .map((line) => (line.endsWith(';') ? line : `${line};`))
+              .join('\n'))
+          : analysis.directProgramLines
+              .map((line) => (line.endsWith(';') ? line : `${line};`))
+              .join('\n')
+        : undefined,
+  });
+}
+
 type ProgramAssemblyHelpers = {
   createProgramBlock: () => ProgramBlock;
   compileProgramsFromField: (
@@ -586,68 +631,20 @@ export function createMilkdropIr({
     shaderWarpAnalysis.directProgramStatements.length > 0;
   const compHasTranslatedDirectStatements =
     shaderCompAnalysis.directProgramStatements.length > 0;
-  const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
-    ? shaderHelpers.buildShaderProgramPayload({
-        stage: 'warp',
-        statements: shaderWarpAnalysis.directProgramStatements,
-        normalizedLines: shaderWarpAnalysis.directProgramLines,
-        requiresControlFallback:
-          !warpHasTranslatedDirectStatements ||
-          shaderWarpAnalysis.directProgramStatements.length !==
-            shaderWarpAnalysis.statements.length,
-        supportedBackends:
-          warpHasTranslatedDirectStatements &&
-          (shaderWarpAnalysis.hasNativeBody
-            ? shaderWarpAnalysis.nativeBodyUnparsedLines.length === 0
-            : shaderWarpAnalysis.unsupportedLines.length === 0)
-            ? shaderWarpAnalysis.hasNativeBody
-              ? ['webgpu' as const]
-              : ['webgl' as const, 'webgpu' as const]
-            : [],
-        rawGlsl:
-          shaderWarpAnalysis.hasNativeBody || !warpHasTranslatedDirectStatements
-            ? shaderWarpAnalysis.hasNativeBody
-              ? (extractNativeShaderBody(warpShaderText ?? '') ??
-                shaderWarpAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n'))
-              : shaderWarpAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n')
-            : undefined,
-      })
-    : null;
-  const compShaderProgram = shaderCompAnalysis.directProgramRequired
-    ? shaderHelpers.buildShaderProgramPayload({
-        stage: 'comp',
-        statements: shaderCompAnalysis.directProgramStatements,
-        normalizedLines: shaderCompAnalysis.directProgramLines,
-        requiresControlFallback:
-          !compHasTranslatedDirectStatements ||
-          shaderCompAnalysis.directProgramStatements.length !==
-            shaderCompAnalysis.statements.length,
-        supportedBackends:
-          compHasTranslatedDirectStatements &&
-          (shaderCompAnalysis.hasNativeBody
-            ? shaderCompAnalysis.nativeBodyUnparsedLines.length === 0
-            : shaderCompAnalysis.unsupportedLines.length === 0)
-            ? shaderCompAnalysis.hasNativeBody
-              ? ['webgpu' as const]
-              : ['webgl' as const, 'webgpu' as const]
-            : [],
-        rawGlsl:
-          shaderCompAnalysis.hasNativeBody || !compHasTranslatedDirectStatements
-            ? shaderCompAnalysis.hasNativeBody
-              ? (extractNativeShaderBody(compShaderText ?? '') ??
-                shaderCompAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n'))
-              : shaderCompAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n')
-            : undefined,
-      })
-    : null;
+  const warpShaderProgram = buildShaderProgramForStage(
+    shaderHelpers,
+    shaderWarpAnalysis,
+    'warp',
+    warpShaderText,
+    warpHasTranslatedDirectStatements,
+  );
+  const compShaderProgram = buildShaderProgramForStage(
+    shaderHelpers,
+    shaderCompAnalysis,
+    'comp',
+    compShaderText,
+    compHasTranslatedDirectStatements,
+  );
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();

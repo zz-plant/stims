@@ -2,10 +2,8 @@ import type { Texture } from 'three';
 import {
   BufferGeometry,
   DoubleSide,
-  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
-  InstancedBufferAttribute,
   InstancedBufferGeometry,
   Mesh,
   NormalBlending,
@@ -14,10 +12,13 @@ import {
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
 import {
+  createSegmentQuadGeometry,
+  ensureInstancedAttribute,
   getMilkdropLayerRenderOrder,
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
   setMaterialBlendMode,
+  syncSegmentMesh,
 } from './renderer-adapter-shared';
 import {
   getMilkdropSegmentWidth,
@@ -279,22 +280,6 @@ export function resetWebGPUBatchingMemoryStats(): void {
   };
 }
 
-function createSegmentQuadGeometry() {
-  const geometry = new InstancedBufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute(
-      [0, -1, 0, 1, -1, 0, 0, 1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0],
-      3,
-    ),
-  );
-  geometry.setAttribute(
-    'segmentCoord',
-    new Float32BufferAttribute([0, -1, 1, -1, 0, 1, 0, 1, 1, -1, 1, 1], 2),
-  );
-  return geometry;
-}
-
 function buildRingGeometryLayout(
   corners: Array<[number, number]>,
 ): InstancedBufferGeometry {
@@ -414,30 +399,6 @@ function cloneAsInstancedGeometry(geometry: BufferGeometry) {
   return new InstancedBufferGeometry().copy(
     geometry as unknown as InstancedBufferGeometry,
   ) as InstancedBufferGeometry;
-}
-
-function ensureInstancedAttribute(
-  geometry: InstancedBufferGeometry,
-  name: string,
-  itemSize: number,
-  count: number,
-) {
-  const existing = geometry.getAttribute(name);
-  const requiredLength = Math.max(1, count * itemSize);
-  if (
-    existing instanceof InstancedBufferAttribute &&
-    existing.itemSize === itemSize &&
-    existing.array.length === requiredLength
-  ) {
-    return existing;
-  }
-  const attribute = new InstancedBufferAttribute(
-    new Float32Array(requiredLength),
-    itemSize,
-  );
-  attribute.setUsage(DynamicDrawUsage);
-  geometry.setAttribute(name, attribute);
-  return attribute;
 }
 
 function getTextureAspectY(texture: Texture | null) {
@@ -1023,41 +984,7 @@ class InstancedSegmentBatch {
   }
 
   private syncMesh(mesh: Mesh, instances: CompactSegmentUploadBuffer) {
-    const geometry = mesh.geometry as InstancedBufferGeometry;
-    geometry.instanceCount = instances.count;
-    mesh.visible = instances.count > 0;
-    const line = ensureInstancedAttribute(
-      geometry,
-      'instanceLine',
-      4,
-      instances.count,
-    );
-    const colorAlpha = ensureInstancedAttribute(
-      geometry,
-      'instanceColorAlpha',
-      4,
-      instances.count,
-    );
-    const control = ensureInstancedAttribute(
-      geometry,
-      'instanceControl',
-      3,
-      instances.count,
-    );
-    const join = ensureInstancedAttribute(
-      geometry,
-      'instanceJoin',
-      4,
-      instances.count,
-    );
-    (line.array as Float32Array).set(instances.getLineData());
-    (colorAlpha.array as Float32Array).set(instances.getStyleData());
-    (control.array as Float32Array).set(instances.getControlData());
-    (join.array as Float32Array).set(instances.getJoinData());
-    line.needsUpdate = true;
-    colorAlpha.needsUpdate = true;
-    control.needsUpdate = true;
-    join.needsUpdate = true;
+    syncSegmentMesh(mesh, instances);
   }
 
   dispose() {
