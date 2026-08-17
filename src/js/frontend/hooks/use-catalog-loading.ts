@@ -6,6 +6,7 @@ import type {
 } from '../../milkdrop/catalog-types.ts';
 import type { PresetCatalogEntry } from '../contracts.ts';
 import { reportLoadStatus } from '../load-status.ts';
+import { scheduleIdleTask } from '../../utils/browser/idle-task.ts';
 import { mapRuntimeCatalogEntry } from '../workspace-helpers.ts';
 
 const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
@@ -40,15 +41,8 @@ async function loadStarterCatalog(): Promise<PresetCatalogEntry[]> {
   );
 }
 
-const scheduleBackgroundTask = (callback: () => void) => {
-  if (typeof requestIdleCallback === 'function') {
-    const handle = requestIdleCallback(callback, { timeout: 2500 });
-    return () => cancelIdleCallback(handle);
-  }
-
-  const handle = setTimeout(callback, 1200);
-  return () => clearTimeout(handle);
-};
+const scheduleBackgroundTask = (callback: () => void) =>
+  scheduleIdleTask(callback, { idleTimeout: 2500, fallbackDelay: 1200 });
 
 export function useCatalogLoading() {
   const [fallbackCatalog, setFallbackCatalog] = useState<PresetCatalogEntry[]>(

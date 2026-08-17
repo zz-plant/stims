@@ -16,6 +16,7 @@ import {
   getActiveAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import {
   buildAudioProfile,
   searchByAudioProfile,
@@ -128,18 +129,10 @@ function deferToIdle(fn: () => undefined | (() => void)): () => void {
     if (cancelled) return;
     dispose = fn();
   };
-  if (typeof requestIdleCallback === 'function') {
-    const handle = requestIdleCallback(run, { timeout: 2000 });
-    return () => {
-      cancelled = true;
-      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(handle);
-      dispose?.();
-    };
-  }
-  const handle = setTimeout(run, 80);
+  const cancel = scheduleIdleTask(run, { idleTimeout: 2000, fallbackDelay: 80 });
   return () => {
     cancelled = true;
-    clearTimeout(handle);
+    cancel();
     dispose?.();
   };
 }
@@ -488,20 +481,7 @@ function StimsWorkspaceAppShell() {
       autoPlayedRef.current = true;
       const presetId = engine.featuredPreset.id;
       const request = () => void engine.handlePlayPreset(presetId);
-      const handle =
-        typeof requestIdleCallback === 'function'
-          ? requestIdleCallback(request, { timeout: 2500 })
-          : setTimeout(request, 1500);
-      return () => {
-        if (
-          typeof cancelIdleCallback === 'function' &&
-          typeof handle === 'number'
-        ) {
-          cancelIdleCallback(handle);
-        } else {
-          clearTimeout(handle);
-        }
-      };
+      return scheduleIdleTask(request, { fallbackDelay: 1500 });
     }
   }, [
     engine.engineReady,

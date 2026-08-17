@@ -29,6 +29,7 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -357,20 +358,7 @@ export function useWorkspaceSessionState({
     // boot during idle budget. A deep-linked preset or audio source is a real
     // intent and still mounts immediately.
     if (!routeState.presetId && !routeState.audioSource) {
-      const handle =
-        typeof requestIdleCallback === 'function'
-          ? requestIdleCallback(mountEngine, { timeout: 2500 })
-          : setTimeout(mountEngine, 800);
-      return () => {
-        if (
-          typeof cancelIdleCallback === 'function' &&
-          typeof handle === 'number'
-        ) {
-          cancelIdleCallback(handle);
-        } else {
-          clearTimeout(handle);
-        }
-      };
+      return scheduleIdleTask(mountEngine, { idleTimeout: 2500, fallbackDelay: 800 });
     }
 
     mountEngine();
