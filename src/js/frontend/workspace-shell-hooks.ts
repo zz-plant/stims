@@ -7,6 +7,7 @@ import {
   shareOrCopyLink,
 } from '../utils/media/share-link.ts';
 import type {
+  AudioSource,
   PanelState,
   PresetCatalogEntry,
   SessionRouteState,
@@ -22,6 +23,41 @@ import {
   pickFavoritePresets,
   pickRecentPresets,
 } from './workspace-helpers.ts';
+
+const IN_APP_BROWSER_LIMITED_MIC_MESSAGE =
+  "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.";
+
+/**
+ * When the requested preset is missing (e.g. a dead link), fall back to the
+ * featured preset and surface the heal in a status message. Shared by the
+ * file-audio and microphone/demo start paths.
+ */
+function buildHealedPresetRoute(
+  routeState: SessionRouteState,
+  missingRequestedPreset: boolean,
+  featuredPreset: PresetCatalogEntry | null | undefined,
+  audioSource: AudioSource,
+): {
+  nextRouteState: SessionRouteState;
+  healMessage: string | null;
+} {
+  const healedPresetId = missingRequestedPreset
+    ? (featuredPreset?.id ?? null)
+    : routeState.presetId;
+  const healMessage =
+    missingRequestedPreset && featuredPreset
+      ? `Requested preset unavailable. Starting with ${featuredPreset.title}.`
+      : null;
+  return {
+    nextRouteState: {
+      ...routeState,
+      audioSource,
+      panel: null,
+      presetId: healedPresetId,
+    },
+    healMessage,
+  };
+}
 
 type WorkspaceShellOrchestrationArgs = {
   commitRoute: (nextState: SessionRouteState) => void;
@@ -323,20 +359,15 @@ export function useWorkspaceShellOrchestration({
       source.connect(audioContext.destination);
       source.start(0);
 
-      const healedPresetId = shellState.missingRequestedPreset
-        ? (shellState.featuredPreset?.id ?? null)
-        : routeState.presetId;
-      const nextRouteState = {
-        ...routeState,
-        audioSource: 'file' as const,
-        panel: null,
-        presetId: healedPresetId,
-      };
+      const { nextRouteState, healMessage } = buildHealedPresetRoute(
+        routeState,
+        shellState.missingRequestedPreset,
+        shellState.featuredPreset,
+        'file',
+      );
 
-      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
-        setStatusMessage(
-          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
-        );
+      if (healMessage) {
+        setStatusMessage(healMessage);
       }
 
       commitRoute(nextRouteState);
@@ -387,20 +418,15 @@ export function useWorkspaceShellOrchestration({
 
     try {
       setStatusMessage(null);
-      const healedPresetId = shellState.missingRequestedPreset
-        ? (shellState.featuredPreset?.id ?? null)
-        : routeState.presetId;
-      const nextRouteState = {
-        ...routeState,
-        audioSource: source,
-        panel: null,
-        presetId: healedPresetId,
-      };
+      const { nextRouteState, healMessage } = buildHealedPresetRoute(
+        routeState,
+        shellState.missingRequestedPreset,
+        shellState.featuredPreset,
+        source,
+      );
 
-      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
-        setStatusMessage(
-          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
-        );
+      if (healMessage) {
+        setStatusMessage(healMessage);
       }
 
       if (source === 'microphone') {
@@ -425,9 +451,7 @@ export function useWorkspaceShellOrchestration({
               source: 'demo',
               launchState: demoRouteState,
             });
-            setStatusMessage(
-              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
-            );
+            setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
             return;
           }
 
@@ -462,9 +486,7 @@ export function useWorkspaceShellOrchestration({
               source: 'demo',
               launchState: demoRouteState,
             });
-            setStatusMessage(
-              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
-            );
+            setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
             return;
           }
 
