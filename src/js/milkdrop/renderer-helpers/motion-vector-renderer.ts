@@ -4,12 +4,15 @@ import {
   Float32BufferAttribute,
   type LineBasicMaterial,
   type ShaderMaterial,
-  Sphere,
   Vector3,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial } from 'three/webgpu';
 import { disposeGeometry } from '../../utils/three/three-dispose';
+import {
+  markSharedGeometry,
+  setGeometryBoundingSphere,
+} from '../renderer-adapter-shared';
 import { createProceduralMotionVectorMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type { MilkdropRenderPayload } from '../types';
 import type { ProceduralFieldVisualWithSignals } from './procedural-field-uniforms';
@@ -19,7 +22,6 @@ import {
   syncProceduralInteractionUniforms,
 } from './procedural-field-uniforms';
 
-const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const PROCEDURAL_MOTION_VECTOR_BOUNDS_RADIUS = Math.SQRT2 * 2.35;
 const proceduralMotionVectorGeometryCache = new Map<string, BufferGeometry>();
 
@@ -29,25 +31,6 @@ type ProceduralFieldUniformInput = ProceduralFieldVisualWithSignals & {
   tint: { r: number; g: number; b: number };
   alpha: number;
 };
-
-function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
-  geometry.userData[SHARED_GEOMETRY_FLAG] = true;
-  return geometry;
-}
-
-function setGeometryBoundingSphere(
-  geometry: BufferGeometry,
-  center: Vector3,
-  radius: number,
-) {
-  if (!geometry.boundingSphere) {
-    geometry.boundingSphere = new Sphere(center.clone(), radius);
-    return geometry.boundingSphere;
-  }
-  geometry.boundingSphere.center.copy(center);
-  geometry.boundingSphere.radius = radius;
-  return geometry.boundingSphere;
-}
 
 export function getProceduralMotionVectorGeometry(
   countX: number,

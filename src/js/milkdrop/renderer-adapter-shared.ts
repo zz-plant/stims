@@ -14,6 +14,7 @@ import {
   type Material,
   type Mesh,
   type MeshBasicMaterial,
+  NormalBlending,
   OneFactor,
   PlaneGeometry,
   type Points,
@@ -449,15 +450,30 @@ export function setMaterialColor(
 
 export function setMaterialBlendMode(
   material: Material | Material[],
-  blendMode: 'subtractive' | 'multiplicative',
+  blendMode: 'normal' | 'additive' | 'subtractive' | 'multiplicative',
 ) {
   const candidates = Array.isArray(material) ? material : [material];
   for (const mat of candidates) {
-    mat.blending = CustomBlending;
-    mat.blendSrc = blendMode === 'multiplicative' ? DstColorFactor : OneFactor;
-    mat.blendDst = blendMode === 'multiplicative' ? ZeroFactor : OneFactor;
-    mat.blendEquation =
-      blendMode === 'subtractive' ? ReverseSubtractEquation : AddEquation;
+    switch (blendMode) {
+      case 'additive':
+        mat.blending = AdditiveBlending;
+        break;
+      case 'subtractive':
+        mat.blending = CustomBlending;
+        mat.blendSrc = OneFactor;
+        mat.blendDst = OneFactor;
+        mat.blendEquation = ReverseSubtractEquation;
+        break;
+      case 'multiplicative':
+        mat.blending = CustomBlending;
+        mat.blendSrc = DstColorFactor;
+        mat.blendDst = ZeroFactor;
+        mat.blendEquation = AddEquation;
+        break;
+      default:
+        mat.blending = NormalBlending;
+        break;
+    }
   }
 }
 
