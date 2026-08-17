@@ -11,6 +11,7 @@ import {
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three/three-dispose';
+import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import { resolveMilkdropBlurShaderRanges } from './feedback-manager-shared.ts';
 import {
   type CompositeUniformBag,
@@ -2503,7 +2504,10 @@ function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
   ].join('\u001f');
 }
 
-class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
+class WebGPUMilkdropFeedbackManager
+  extends MilkdropFeedbackManagerLifecycleBase<RenderTarget>
+  implements MilkdropFeedbackManager
+{
   readonly compositeScene = new Scene();
   readonly feedbackBlendScene = new Scene();
   readonly presentScene = new Scene();
@@ -2523,23 +2527,16 @@ class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly displayTarget: RenderTarget;
   readonly blurTarget: RenderTarget;
   readonly blurScene = new Scene();
-  private index = 0;
   readonly profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
-  readonly sceneResolutionScale = this.profile.sceneResolutionScale;
-  readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
   readonly auxTextures: Record<string, Texture>;
-  adaptiveFeedbackResolutionMultiplier = 1;
   currentCompositeKey = '';
-  currentFeedbackResolutionScale = this.feedbackResolutionScale;
   currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
-  viewportWidth: number;
-  viewportHeight: number;
   private savedFrameTarget: RenderTarget | null = null;
   private lastRenderer: FeedbackRendererLike | null = null;
-  private adaptiveResizeFrameId: number | null = null;
 
   constructor(width: number, height: number) {
+    super(width, height, WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile);
     this.camera.position.z = 1;
     this.camera.matrixAutoUpdate = false;
     this.camera.updateMatrixWorld(true);
@@ -2547,8 +2544,6 @@ class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.compositeScene.matrixAutoUpdate = false;
     this.presentScene.matrixAutoUpdate = false;
     this.blurScene.matrixAutoUpdate = false;
-    this.viewportWidth = width;
-    this.viewportHeight = height;
     this.auxTextures = getSharedMilkdropAuxTextures();
     for (const name of Object.keys(MILKDROP_TEXTURE_FILES) as Array<
       keyof typeof MILKDROP_TEXTURE_FILES
@@ -2649,18 +2644,6 @@ class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.blurScene.add(blurQuad);
   }
 
-  get readTarget() {
-    return this.targets[this.index];
-  }
-
-  get writeTarget() {
-    return this.targets[(this.index + 1) % 2];
-  }
-
-  getShapeTexture() {
-    return this.readTarget.texture;
-  }
-
   setAudioTexture(audioTexture: Texture | null): void {
     if (this.compositeMaterial?.uniforms?.audioTex) {
       this.compositeMaterial.uniforms.audioTex.value = audioTexture;
@@ -2689,17 +2672,6 @@ class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
     this.presentMaterial.uniforms.savedTex.value =
       this.savedFrameTarget.texture;
-  }
-
-  setTransitionBlend(alpha: number): void {
-    const prevAlpha =
-      (this.presentMaterial.uniforms.transitionAlpha?.value as
-        | number
-        | undefined) ?? 0;
-    if (alpha > 0.001 && prevAlpha <= 0.001) {
-      this.saveCurrentFrame();
-    }
-    this.presentMaterial.uniforms.transitionAlpha.value = alpha;
   }
 
   applyPostprocessingProfile(
@@ -2937,46 +2909,6 @@ class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
         1 / aspectY,
       );
     }
-  }
-
-  setAdaptiveQuality({
-    feedbackResolutionMultiplier,
-  }: Partial<{
-    feedbackResolutionMultiplier: number;
-  }>) {
-    const nextMultiplier = Math.min(
-      1.5,
-      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
-    );
-    if (
-      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
-      0.0001
-    ) {
-      return;
-    }
-    const previousFeedbackResolutionScale = this.currentFeedbackResolutionScale;
-    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
-    this.currentFeedbackResolutionScale =
-      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
-    if (this.currentFeedbackResolutionScale < previousFeedbackResolutionScale) {
-      this.resize(this.viewportWidth, this.viewportHeight);
-      return;
-    }
-    this.scheduleAdaptiveResize();
-  }
-
-  private scheduleAdaptiveResize() {
-    if (this.adaptiveResizeFrameId !== null) {
-      return;
-    }
-    if (typeof requestAnimationFrame !== 'function') {
-      this.resize(this.viewportWidth, this.viewportHeight);
-      return;
-    }
-    this.adaptiveResizeFrameId = requestAnimationFrame(() => {
-      this.adaptiveResizeFrameId = null;
-      this.resize(this.viewportWidth, this.viewportHeight);
-    });
   }
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {

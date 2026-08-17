@@ -14,39 +14,52 @@ const entry: PresetCatalogEntry = {
   tags: ['glow'],
 };
 
+const STATIC_THUMB_URL = '/milkdrop-presets/previews/glow.png';
+
+function staticPreview(
+  status: MilkdropPresetRenderPreview['status'],
+): MilkdropPresetRenderPreview {
+  return {
+    presetId: entry.id,
+    status,
+    imageUrl: null,
+    actualBackend: null,
+    updatedAt: Date.now(),
+    error: null,
+    source: 'runtime-snapshot',
+  };
+}
+
 describe('PresetArtwork', () => {
   test.each(['queued', 'capturing'] as const)(
-    'keeps the %s preview state free of fallback copy while loading',
+    'keeps the %s preview state on the static thumbnail',
     (status) => {
       const { container, dispose } = createToyContainer(
         `preset-artwork-${status}`,
       );
       const root = createRoot(container);
-      const preview: MilkdropPresetRenderPreview = {
-        presetId: entry.id,
-        status,
-        imageUrl: null,
-        actualBackend: null,
-        updatedAt: Date.now(),
-        error: null,
-        source: 'runtime-snapshot',
-      };
 
       flushSync(() => {
-        root.render(createElement(PresetArtwork, { entry, preview }));
+        root.render(
+          createElement(PresetArtwork, {
+            entry,
+            preview: staticPreview(status),
+          }),
+        );
       });
 
-      expect(container.textContent).toBe('');
       expect(
-        container.querySelector('.stims-shell__preset-art-fallback'),
-      ).toBeNull();
+        container.querySelector<HTMLImageElement>(
+          '.stims-shell__preset-preview-image',
+        )?.src,
+      ).toBe(STATIC_THUMB_URL);
 
       root.unmount();
       dispose();
     },
   );
 
-  test('renders the loading ghost while no preview result exists', () => {
+  test('renders the static thumbnail while no preview result exists', () => {
     const { container, dispose } = createToyContainer('preset-artwork-loading');
     const root = createRoot(container);
 
@@ -54,24 +67,23 @@ describe('PresetArtwork', () => {
       root.render(createElement(PresetArtwork, { entry, preview: null }));
     });
 
-    expect(container.textContent).toBe('');
-    expect(container.querySelector('.preset-artwork-ghost')).not.toBeNull();
+    expect(
+      container.querySelector<HTMLImageElement>(
+        '.stims-shell__preset-preview-image',
+      )?.src,
+    ).toBe(STATIC_THUMB_URL);
+    expect(container.querySelector('.preset-artwork-ghost')).toBeNull();
 
     root.unmount();
     dispose();
   });
 
-  test('keeps fallback artwork quiet when runtime preview capture is unavailable', () => {
+  test('keeps the static thumbnail when runtime preview capture is unavailable', () => {
     const { container, dispose } = createToyContainer('preset-artwork-root');
     const root = createRoot(container);
     const failedPreview: MilkdropPresetRenderPreview = {
-      presetId: entry.id,
-      status: 'failed',
-      imageUrl: null,
-      actualBackend: null,
-      updatedAt: Date.now(),
+      ...staticPreview('failed'),
       error: 'Preview canvas was not available.',
-      source: 'runtime-snapshot',
     };
 
     flushSync(() => {
@@ -80,8 +92,30 @@ describe('PresetArtwork', () => {
       );
     });
 
-    expect(container.textContent).toContain('Bright pulse');
+    expect(
+      container.querySelector<HTMLImageElement>(
+        '.stims-shell__preset-preview-image',
+      )?.src,
+    ).toBe(STATIC_THUMB_URL);
     expect(container.textContent).not.toContain('Preview failed');
+
+    root.unmount();
+    dispose();
+  });
+
+  test('shows the mood fallback only when the artwork image itself fails', () => {
+    const { container, dispose } = createToyContainer(
+      'preset-artwork-image-error',
+    );
+    const root = createRoot(container);
+
+    flushSync(() => {
+      root.render(createElement(PresetArtwork, { entry, preview: null }));
+    });
+
+    // The thumbnail URL cannot load in the test environment, so the image
+    // errors exactly as it would for a preset without a shipped preview.
+    expect(container.textContent).toContain('Bright pulse');
 
     root.unmount();
     dispose();

@@ -1,5 +1,3 @@
-/* eslint-env node */
-/* global fetch, console, process */
 import { createServer } from 'vite';
 
 async function main() {
@@ -31,7 +29,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error(error);
   process.exitCode = 1;
 });

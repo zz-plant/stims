@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, no-empty */
 /**
  * generate-scenes.ts — renders source.svg into scene-specific PNGs with variation.
  * Usage: bun run scripts/generate-scenes.ts [--dry-run]

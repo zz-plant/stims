@@ -87,7 +87,6 @@ async function main() {
 
   for (const component of COMPONENTS) {
     for (const width of BREAKPOINTS) {
-      // eslint-disable-next-line no-console
       console.log(`Capturing ${component} @ ${width}px...`);
       const result = await captureComponent(browser, component, width);
       results.push(result);
@@ -110,18 +109,13 @@ async function main() {
   const reportPath = path.join(OUTPUT_DIR, 'report.json');
   await writeFile(reportPath, JSON.stringify(report, null, 2));
 
-  // eslint-disable-next-line no-console
   console.log(`\nUI diff complete: ${report.summary.total} captures`);
-  // eslint-disable-next-line no-console
   console.log(`  Errors: ${report.summary.errors}`);
-  // eslint-disable-next-line no-console
   console.log(`  Warnings: ${report.summary.warnings}`);
-  // eslint-disable-next-line no-console
   console.log(`  Report: ${reportPath}`);
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error(error);
   process.exit(1);
 });

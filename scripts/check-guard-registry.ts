@@ -34,7 +34,7 @@ function getChangedFiles(): string[] {
   }
 }
 
-export function checkPreCommitGuards(): boolean {
+export function checkGuardRegistry(): boolean {
   const files = getChangedFiles();
   if (files.length === 0) {
     logInfo('No changed files found to check.');
@@ -127,9 +127,9 @@ export function checkPreCommitGuards(): boolean {
 }
 
 if (import.meta.main) {
-  const ok = checkPreCommitGuards();
+  const ok = checkGuardRegistry();
   if (!ok) {
     process.exit(1);
   }
-  logInfo('Pre-commit guardrail checks passed.');
+  logInfo('Guard-registry checks passed.');
 }

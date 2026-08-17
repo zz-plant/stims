@@ -2948,59 +2948,6 @@ body[data-page="workspace"][data-live="true"] {
   line-height: 1.55;
 }
 
-/* ===== Ghost loading ===== */
-.preset-artwork-ghost {
-  position: relative;
-  border-radius: var(--stims-radius);
-  background: var(--stims-surface);
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  display: flex;
-  flex-direction: column;
-}
-
-.preset-artwork-ghost__shimmer {
-  flex: 1;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.04) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: ghost-shimmer 1.5s ease-in-out infinite;
-}
-
-@keyframes ghost-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.preset-artwork-ghost__meta {
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.preset-artwork-ghost__title {
-  height: 10px;
-  width: 70%;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 3px;
-}
-
-.preset-artwork-ghost__author {
-  height: 8px;
-  width: 40%;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 3px;
-}
-
 /* ===== UI/UX Fixes: Active Chips, Flex layout, badging, home details ===== */
 @scope (.stims-shell) {
   .stims-shell__sheet-panel--browse {

@@ -690,7 +690,6 @@ html.light .stims-shell {
     object-fit: cover;
   }
 
-  .ctl-preset__art .preset-artwork-ghost__meta,
   .ctl-preset__art .stims-shell__preset-art-fallback {
     display: none;
   }

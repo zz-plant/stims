@@ -13,12 +13,14 @@ You're about to code on Stims. Before you dive into docs, grab these five things
 
 3. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
 
-4. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
+4. **Test visually in the browser** — For a live edit loop, run `bun run dev:agent` (one warm loop: dev server + typecheck watch + fast tests watch). For visual QA only, run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
 
 5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type/guard check (~5-10s with fail-fast feedback)
    - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
    - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
+
+   For anything else, `bun run scripts:list` (alias `bun run help`) prints every script grouped by namespace with a one-line purpose.
 
 ## Verify by change type
 
@@ -31,7 +33,7 @@ Run exactly what your change can break instead of the whole gate:
 | tests | `bun run test <file>` then `bun run check:quick` |
 | `expression.ts` / `builtin-docs.ts` | `bun run docs:authoring-reference` then `bun run check:authoring-docs` |
 | `public/milkdrop-presets/catalog.json` | `bun run check:catalog-integrity` + `bun run check:catalog-fidelity` |
-| anything | `bun run agent:verify --changed` (smart gate: detects applicable guards/tests/regens) |
+| anything | `bun run verify --changed` (smart gate: detects applicable guards/tests/regens; `agent:verify` is the same script) |
 
 ## Boundaries and don't-touch areas
 
@@ -72,9 +74,19 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 - **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and husky `commit-msg` hook.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
+## Dev modes
+
+| Command | What it runs | When to use |
+| --- | --- | --- |
+| `bun run dev:agent` | Vite (`?agent=true` route) + typecheck watch + fast tests watch | Canonical warm loop for humans and agents |
+| `bun run dev` | Vite only | Visual QA at `http://localhost:5173/?agent=true` |
+| `bun run dev:host` | Vite on LAN | Testing from another device |
+| `bun run dev:webgpu` | WebGPU-focused dev harness | WebGPU backend work |
+| `bun run dev:ui` | Vite with `vite.config.ui.js` | Standalone UI-harness work |
+
 ## Regression guards
 
-The quality gate (`bun run check`) runs these guards automatically. New code must pass them:
+The quality gate (`bun run check`) runs these guards automatically. New code must pass them. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
 
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
