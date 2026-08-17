@@ -1024,10 +1024,108 @@ function buildCustomSamplerUniformDeclarations(
   return [...names].map((name) => `uniform sampler2D ${name};\n`).join('');
 }
 
+const MILKDROP_GLSL_RESERVED_WORDS = new Set(
+  `
+    attribute const uniform varying buffer shared
+    atomic_uint layout centroid flat smooth
+    in out inout invariant discard return
+    break continue do for while switch case default
+    if else struct void bool int uint float double
+    vec2 vec3 vec4 bvec2 bvec3 bvec4 ivec2 ivec3 ivec4 uvec2 uvec3 uvec4
+    mat2 mat3 mat4 mat2x2 mat2x3 mat2x4 mat3x2 mat3x3 mat3x4 mat4x2 mat4x3 mat4x4
+    sampler1D sampler2D sampler3D samplerCube sampler1DShadow sampler2DShadow
+    samplerCubeShadow sampler1DArray sampler2DArray sampler1DArrayShadow sampler2DArrayShadow
+    sampler2DMS sampler2DMSArray samplerCubeArray samplerCubeArrayShadow
+    isampler1D isampler2D isampler3D isamplerCube isampler1DArray isampler2DArray
+    usampler1D usampler2D usampler3D usamplerCube usampler1DArray usampler2DArray
+    precision highp mediump lowp
+    gl_FragColor gl_FragCoord gl_FragDepth gl_FrontFacing gl_PointCoord
+    gl_Position gl_PointSize gl_VertexID gl_InstanceID
+    true false
+    abs acos all any asin atan ceil clamp cos cross dFdx dFdy degrees determinant
+    distance dot equal exp exp2 faceforward floor fract fwidth greaterThan
+    greaterThanEqual inversesqrt isinf isnan length lessThan lessThanEqual log log2
+    matrixCompMult max min mix mod not notEqual outerProduct pow radians reflect
+    refract round sign sin sinh smoothstep sqrt step tan tanh transpose trunc
+  `.split(/\s+/).filter(Boolean),
+);
+
+const MILKDROP_SWIZZLE_IDENTIFIER = /^[xyzw]{1,4}$/u;
+const MILKDROP_TYPE_DECLARATION =
+  /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\))/gu;
+
+function stripShaderComments(text: string): string {
+  return text
+    .replace(/\/\/[^\n]*/gu, '')
+    .replace(/\/\*[\s\S]*?\*\//gu, '');
+}
+
+/**
+ * MilkDrop per-frame variables (`trelx`, `tele`, `vshift`, …) are shader
+ * globals in the reference engine: per_frame code writes them every frame and
+ * shader bodies read them. The WebGL templates declare q-registers, signals,
+ * and the built-in shader controls but not these arbitrary names, so a shader
+ * body that references one fails to compile (e.g. `trelx` in
+ * martin-alien-grand-theft-water). Collect the identifiers the injected
+ * bodies reference that the templates do not already provide, so they can be
+ * declared as `uniform float` and driven from the per-frame VM state.
+ */
+function extractReferencedPerFrameVariables(
+  fragments: Array<string | null>,
+): string[] {
+  const declared = new Set<string>([
+    ...MILKDROP_GLSL_RESERVED_WORDS,
+  ]);
+  const templates = [
+    MILKDROP_WARP_FRAGMENT_SHADER,
+    MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+    MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER,
+    MILKDROP_SHADER_BUILTIN_DECLARATIONS,
+    MILKDROP_AUX_SAMPLING_HELPERS,
+    MILKDROP_NOISE_VOLUME_HELPERS,
+    MILKDROP_FEEDBACK_WARP_HELPER,
+  ];
+  for (const template of templates) {
+    for (const match of stripShaderComments(template).matchAll(
+      /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gu,
+    )) {
+      declared.add(match[1]);
+    }
+  }
+
+  const found = new Set<string>();
+  for (const fragment of fragments) {
+    if (!fragment) {
+      continue;
+    }
+    const clean = stripShaderComments(fragment);
+    const locals = new Set<string>();
+    for (const match of clean.matchAll(MILKDROP_TYPE_DECLARATION)) {
+      locals.add(match[1]);
+    }
+    for (const match of clean.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gu)) {
+      const id = match[1];
+      const nextChar = clean[match.index + id.length];
+      if (
+        MILKDROP_SWIZZLE_IDENTIFIER.test(id) ||
+        id.startsWith('sampler_') ||
+        id.startsWith('_') ||
+        declared.has(id) ||
+        locals.has(id) ||
+        nextChar === '('
+      ) {
+        continue;
+      }
+      found.add(id);
+    }
+  }
+  return [...found].sort();
+}
+
 export function assembleMilkdropDirectFragmentShaders(
   warpGlsl: string | null,
   compGlsl: string | null,
-): { warp: string; composite: string } {
+): { warp: string; composite: string; perFrameVariables: string[] } {
   const cleanWarpBody = warpGlsl
     ? (extractNativeShaderBody(warpGlsl) ?? warpGlsl)
     : null;
@@ -1041,15 +1139,6 @@ export function assembleMilkdropDirectFragmentShaders(
     warpGlobals = split.globals || null;
     warpBody = split.body || null;
   }
-
-  const warp =
-    buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
-    injectDirectShaderGlsl(
-      MILKDROP_WARP_FRAGMENT_SHADER,
-      warpBody,
-      null,
-      warpGlobals,
-    );
 
   const rawCompBody = compGlsl
     ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
@@ -1068,8 +1157,28 @@ export function assembleMilkdropDirectFragmentShaders(
       )
     : null;
 
+  const perFrameVariables = extractReferencedPerFrameVariables([
+    warpGlobals,
+    warpBody,
+    cleanCompBody,
+  ]);
+  const perFrameVariableDeclarations = perFrameVariables
+    .map((name) => `uniform float ${name};\n`)
+    .join('');
+
+  const warp =
+    perFrameVariableDeclarations +
+    buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
+    injectDirectShaderGlsl(
+      MILKDROP_WARP_FRAGMENT_SHADER,
+      warpBody,
+      null,
+      warpGlobals,
+    );
+
   // Build composite shader: warp section kept empty since warp runs separate
   const composite =
+    perFrameVariableDeclarations +
     buildCustomSamplerUniformDeclarations([cleanCompBody]) +
     injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
@@ -1077,7 +1186,7 @@ export function assembleMilkdropDirectFragmentShaders(
       cleanCompBody,
     );
 
-  return { warp, composite };
+  return { warp, composite, perFrameVariables };
 }
 
 class SharedMilkdropFeedbackManager
@@ -1120,6 +1229,7 @@ class SharedMilkdropFeedbackManager
   private blurEnabled = false;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
+  private perFrameShaderVariables: string[] = [];
   private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
@@ -1632,8 +1742,20 @@ class SharedMilkdropFeedbackManager
     const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
 
     // Rebuild both shaders with preset GLSL injected (pass-through when null)
-    const { warp: injectedWarp, composite: injectedShader } =
-      assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    const {
+      warp: injectedWarp,
+      composite: injectedShader,
+      perFrameVariables,
+    } = assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    this.perFrameShaderVariables = perFrameVariables;
+    for (const name of perFrameVariables) {
+      if (!this.warpMaterial.uniforms[name]) {
+        this.warpMaterial.uniforms[name] = { value: 0 };
+      }
+      if (!this.compositeMaterial.uniforms[name]) {
+        this.compositeMaterial.uniforms[name] = { value: 0 };
+      }
+    }
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
@@ -1799,6 +1921,20 @@ class SharedMilkdropFeedbackManager
     wu.signalFps.value = state.signalFps ?? 60;
     this.syncMilkdropShaderBuiltinUniforms(wu, this.getWarpQTargets(wu), state);
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
+
+    // Per-frame variables referenced by the injected shader bodies are
+    // uniforms driven from the CPU VM's computed frame state.
+    for (const name of this.perFrameShaderVariables) {
+      const value = state.perPixelVariables?.[name] ?? 0;
+      const warpUniform = wu[name];
+      if (warpUniform) {
+        warpUniform.value = value;
+      }
+      const compositeUniform = this.compositeMaterial.uniforms[name];
+      if (compositeUniform) {
+        compositeUniform.value = value;
+      }
+    }
   }
 
   private compQTargetsCache: (Vector4 | undefined)[] | null = null;
