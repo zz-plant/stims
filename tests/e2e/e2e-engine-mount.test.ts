@@ -485,3 +485,158 @@ smartphoneMicrophoneTest(
   () => verifySmartphoneMicrophoneAccess({ returningUser: true }),
   { timeout: 120000 },
 );
+
+const VT_COUNT_INIT_SCRIPT = `
+  const win = window;
+  win.__stimsVTCount = 0;
+  win.__stimsVTs = [];
+  win.__stimsVTDone = () =>
+    Promise.all(win.__stimsVTs.map((p) => p.catch(() => {}))).then(() => true);
+  const original = document.startViewTransition?.bind(document);
+  if (original) {
+    document.startViewTransition = (callback) => {
+      const transition = original(callback);
+      win.__stimsVTCount = (win.__stimsVTCount ?? 0) + 1;
+      win.__stimsVTs.push(transition.finished);
+      return transition;
+    };
+  }
+`;
+
+async function readVtCount(page: import('playwright').Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (window as typeof window & { __stimsVTCount?: number }).__stimsVTCount ??
+      0,
+  );
+}
+
+browserTest(
+  'home-to-live flip runs a view transition and mounts the live canvas',
+  async () => {
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: RENDERER_ARGS,
+    });
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+    });
+    await ctx.addInitScript(VT_COUNT_INIT_SCRIPT);
+    const page = await ctx.newPage();
+    page.on('console', (msg) => {
+      console.log(`[VT SWAP TEST CONSOLE] ${msg.type()}: ${msg.text()}`);
+    });
+
+    try {
+      await page.goto(`${SERVER_URL}/?agent=true&renderer=webgl`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('#stims-main', { timeout: 30000 });
+      await page.waitForSelector(
+        '.stims-shell__stage-frame[data-mode="home"]',
+        { timeout: 30000 },
+      );
+      await page.waitForSelector('.stims-shell__stage-hero', {
+        timeout: 30000,
+      });
+
+      // Demo audio needs no mic permission. Click() auto-waits for engineReady.
+      await page.locator('#use-demo-audio-card').click();
+
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: 60000 },
+      );
+      await page.waitForSelector(
+        '.stims-shell__stage-frame[data-mode="live"]',
+        { timeout: 30000 },
+      );
+      await page.waitForSelector('.stims-shell__stage-frame canvas', {
+        timeout: 30000,
+      });
+
+      // The shell flip is wired to the engine's audioActive edge, so
+      // startViewTransition must have fired at least once by now.
+      expect(await readVtCount(page)).toBeGreaterThanOrEqual(1);
+
+      // Wait for that transition to finish before flipping back: while a
+      // transition is active runViewTransition skips the next one (correct
+      // reentrancy behavior), which would make the home-side flip below
+      // update directly instead of running its own transition.
+      await page.evaluate(() =>
+        (
+          window as typeof window & {
+            __stimsVTDone: () => Promise<boolean>;
+          }
+        ).__stimsVTDone(),
+      );
+
+      // Flip back to home through the app's own route plumbing: dropping the
+      // audio param stops audio, which re-crosses the audioActive edge and
+      // runs the home-side transition.
+      await page.evaluate(() => {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.delete('audio');
+        window.history.pushState(null, '', nextUrl);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive !== 'true',
+        undefined,
+        { timeout: 60000 },
+      );
+      await page.waitForSelector(
+        '.stims-shell__stage-frame[data-mode="home"]',
+        { timeout: 30000 },
+      );
+
+      expect(await readVtCount(page)).toBeGreaterThanOrEqual(2);
+    } finally {
+      await closeQuietly(ctx, browser);
+    }
+  },
+  { timeout: 240000 },
+);
+
+browserTest(
+  'skips the view transition when the OS prefers reduced motion',
+  async () => {
+    const browser = await chromium.launch({
+      headless: HEADLESS,
+      args: RENDERER_ARGS,
+    });
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+      reducedMotion: 'reduce',
+    });
+    await ctx.addInitScript(VT_COUNT_INIT_SCRIPT);
+    const page = await ctx.newPage();
+
+    try {
+      await page.goto(`${SERVER_URL}/?agent=true&renderer=webgl`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('#stims-main', { timeout: 30000 });
+      await page.locator('#use-demo-audio-card').click();
+
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: 60000 },
+      );
+      await page.waitForSelector(
+        '.stims-shell__stage-frame[data-mode="live"]',
+        { timeout: 30000 },
+      );
+
+      // Mode flips, but the flip must happen without any view transition.
+      expect(await readVtCount(page)).toBe(0);
+    } finally {
+      await closeQuietly(ctx, browser);
+    }
+  },
+  { timeout: 180000 },
+);
