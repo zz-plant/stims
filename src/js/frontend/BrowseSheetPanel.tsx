@@ -80,6 +80,12 @@ export function BrowseSheetPanel({
       ...next,
     });
   };
+  const clearFilters = () => {
+    setLocalSearch('');
+    ui.setSearchQuery('');
+    onCollectionTagChange(null);
+    setAuthorFilter(null);
+  };
   const presetListRef = useRef<HTMLUListElement | null>(null);
   const recentRailRef = useRef<HTMLUListElement | null>(null);
   const collectionChipsRef = useRef<HTMLElement | null>(null);
@@ -409,12 +415,7 @@ export function BrowseSheetPanel({
             <button
               type="button"
               className="ctl-btn ctl-btn--quiet"
-              onClick={() => {
-                setLocalSearch('');
-                ui.setSearchQuery('');
-                onCollectionTagChange(null);
-                setAuthorFilter(null);
-              }}
+              onClick={clearFilters}
             >
               Clear
             </button>
@@ -532,16 +533,7 @@ export function BrowseSheetPanel({
               Widen the search, or clear the filters to see all {catalog.length}{' '}
               presets.
             </p>
-            <button
-              type="button"
-              className="ctl-btn"
-              onClick={() => {
-                setLocalSearch('');
-                ui.setSearchQuery('');
-                onCollectionTagChange(null);
-                setAuthorFilter(null);
-              }}
-            >
+            <button type="button" className="ctl-btn" onClick={clearFilters}>
               Clear filters
             </button>
           </div>

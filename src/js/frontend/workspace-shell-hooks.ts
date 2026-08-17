@@ -17,6 +17,7 @@ import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
   getCollectionTags,
+  isDocumentAudioActive,
   mapRuntimeCatalogEntry,
   matchesPreset,
   mergeCatalogActivity,
@@ -180,9 +181,7 @@ export function useWorkspaceShellOrchestration({
   );
 
   const audioActive = useMemo(
-    () =>
-      engineSnapshot?.audioActive ||
-      document.body.dataset.audioActive === 'true',
+    () => engineSnapshot?.audioActive || isDocumentAudioActive(),
     [engineSnapshot?.audioActive],
   );
 

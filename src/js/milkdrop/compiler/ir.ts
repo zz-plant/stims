@@ -915,13 +915,40 @@ export function createMilkdropIr({
   const author = stringFields.author;
   const description = stringFields.description;
 
+  const brighten = (numericFields.brighten ?? 0) > 0.5;
+  const darken = (numericFields.darken ?? 0) > 0.5;
+  const darkenCenter = (numericFields.darken_center ?? 0) > 0.5;
+  const solarize = (numericFields.solarize ?? 0) > 0.5;
+  const invert = (numericFields.invert ?? 0) > 0.5;
+  const videoEchoEnabled =
+    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
+    (numericFields.video_echo_alpha ?? 0) > 0;
+  const redBlueStereo =
+    (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
+  const gammaAdj = numericFields.gammaadj ?? 1;
+  const shaderEnabled =
+    (numericFields.shader ?? 1) > 0.5 ||
+    videoEchoEnabled ||
+    brighten ||
+    darken ||
+    darkenCenter ||
+    solarize ||
+    invert ||
+    redBlueStereo ||
+    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
+    warpShaderText !== null ||
+    compShaderText !== null ||
+    warpShaderProgram !== null ||
+    compShaderProgram !== null ||
+    hasNonNeutralShaderControls(mergedShaderControls.controls);
+
   const post = {
-    brighten: (numericFields.brighten ?? 0) > 0.5,
-    darken: (numericFields.darken ?? 0) > 0.5,
-    darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
-    solarize: (numericFields.solarize ?? 0) > 0.5,
-    invert: (numericFields.invert ?? 0) > 0.5,
-    shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+    brighten,
+    darken,
+    darkenCenter,
+    solarize,
+    invert,
+    shaderEnabled,
     textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
     feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
     outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
@@ -932,10 +959,8 @@ export function createMilkdropIr({
       warp: warpShaderProgram,
       comp: compShaderProgram,
     },
-    gammaAdj: numericFields.gammaadj ?? 1,
-    videoEchoEnabled:
-      (numericFields.video_echo_enabled ?? 0) > 0.5 ||
-      (numericFields.video_echo_alpha ?? 0) > 0,
+    gammaAdj,
+    videoEchoEnabled,
     videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
     videoEchoZoom: numericFields.video_echo_zoom ?? 1,
     videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
@@ -1006,32 +1031,6 @@ export function createMilkdropIr({
   const mainWave = Object.fromEntries(
     Object.entries(numericFields).filter(([key]) => key.startsWith('wave_')),
   );
-  const brighten = (numericFields.brighten ?? 0) > 0.5;
-  const darken = (numericFields.darken ?? 0) > 0.5;
-  const darkenCenter = (numericFields.darken_center ?? 0) > 0.5;
-  const solarize = (numericFields.solarize ?? 0) > 0.5;
-  const invert = (numericFields.invert ?? 0) > 0.5;
-  const videoEchoEnabled =
-    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
-    (numericFields.video_echo_alpha ?? 0) > 0;
-  const redBlueStereo =
-    (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
-  const gammaAdj = numericFields.gammaadj ?? 1;
-  const shaderEnabled =
-    (numericFields.shader ?? 1) > 0.5 ||
-    videoEchoEnabled ||
-    brighten ||
-    darken ||
-    darkenCenter ||
-    solarize ||
-    invert ||
-    redBlueStereo ||
-    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
-    warpShaderText !== null ||
-    compShaderText !== null ||
-    warpShaderProgram !== null ||
-    compShaderProgram !== null ||
-    hasNonNeutralShaderControls(mergedShaderControls.controls);
 
   const perPixelStatements =
     programs.perPixel.statements.length > 0
@@ -1085,31 +1084,7 @@ export function createMilkdropIr({
         a: numericFields.ib_a,
       },
     },
-    post: {
-      brighten,
-      darken,
-      darkenCenter,
-      solarize,
-      invert,
-      shaderEnabled,
-      textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
-      feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
-      outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
-      innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
-      shaderControls: mergedShaderControls.controls,
-      shaderControlExpressions: mergedShaderControls.expressions,
-      shaderPrograms: {
-        warp: warpShaderProgram,
-        comp: compShaderProgram,
-      },
-      gammaAdj,
-      videoEchoEnabled,
-      videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
-      videoEchoZoom: numericFields.video_echo_zoom ?? 1,
-      videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
-        numericFields.video_echo_orientation ?? 0,
-      ),
-    },
+    post,
     compatibility,
   } satisfies MilkdropPresetIR;
 }

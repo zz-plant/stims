@@ -523,6 +523,10 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
   return starterPresets;
 }
 
+export function isDocumentAudioActive(): boolean {
+  return document.body.dataset.audioActive === 'true';
+}
+
 export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
   switch (source) {
     case 'demo':
