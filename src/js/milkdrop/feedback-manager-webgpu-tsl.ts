@@ -2322,17 +2322,32 @@ function createCompositeOutputNode(
     // Darken
     color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
 
+    // Solarize
+    color.assign(
+      mix(
+        color,
+        abs(color.sub(0.5)).mul(2.0),
+        clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
+      ),
+    );
+
+    // Invert
+    color.assign(
+      mix(
+        color,
+        vec3(1).sub(color),
+        clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
+      ),
+    );
+
     // Darken center
     const centerDist = baseUv.sub(0.5).length();
     const centerMask = clamp(float(1).sub(centerDist.mul(1.4)), 0, 1);
+    const centerMultiplier = float(1).sub(
+      smoothstep(0, 0.35, centerMask).mul(0.03),
+    );
     color.assign(
-      color.mul(
-        mix(
-          float(1),
-          float(0.97).add(smoothstep(0, 0.35, centerMask).mul(0.03)),
-          step(0.5, uniforms.darkenCenter),
-        ),
-      ),
+      color.mul(mix(float(1), centerMultiplier, step(0.5, uniforms.darkenCenter))),
     );
 
     // Vignette
@@ -2353,24 +2368,6 @@ function createCompositeOutputNode(
     const chromaR = uniforms.internalTex.sample(baseUv.add(chromaDir)).r;
     const chromaB = uniforms.internalTex.sample(baseUv.sub(chromaDir)).b;
     color.assign(mix(color, vec3(chromaR, color.g, chromaB), chromaEnabled));
-
-    // Solarize
-    color.assign(
-      mix(
-        color,
-        abs(color.sub(0.5)).mul(2.0),
-        clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
-      ),
-    );
-
-    // Invert
-    color.assign(
-      mix(
-        color,
-        vec3(1).sub(color),
-        clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
-      ),
-    );
 
     // Red-blue stereo
     const stereoEnabled = step(0.5, uniforms.redBlueStereo);
