@@ -20,6 +20,10 @@ import {
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
 import {
+  isFirefoxUA,
+  isRecognizedWebGPUBrowser,
+} from './renderer-query-override.ts';
+import {
   getRendererRetrySnapshot,
   type RendererRetrySnapshot,
   recordRendererRetryFailure,
@@ -685,10 +689,20 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
     return CapabilityProbeState.CheckingGapsGuard;
   },
   [CapabilityProbeState.CheckingGapsGuard]: (ctx) => {
-    if (ctx.preferWebGLForKnownCompatibilityGaps) {
+    // Feature detection (the probe below) is the real availability signal; the
+    // UA stability check is a bias, not a verdict. Recognized-but-unstable
+    // engines (Firefox, old Chrome/Edge/Safari/Opera/Samsung) prefer WebGL
+    // without paying a probe cost, with a hard skip reserved for Firefox —
+    // the one engine whose WebGPU is disabled by default. Unrecognized
+    // browsers that expose a working WebGPU probe it and use it; the runtime
+    // fallback is the safety net for a bad guess.
+    if (
+      ctx.preferWebGLForKnownCompatibilityGaps &&
+      isRecognizedWebGPUBrowser()
+    ) {
       return buildFallback(
         'WebGPU is not enabled automatically for this browser or session. Using WebGL mode.',
-        { forceWebGL: true },
+        { forceWebGL: isFirefoxUA() },
       );
     }
     return CapabilityProbeState.CheckingWebGpuAPI;

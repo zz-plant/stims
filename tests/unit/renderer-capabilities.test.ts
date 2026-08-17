@@ -158,6 +158,14 @@ describe('renderer capabilities', () => {
       device: { label: 'desktop-device' },
     });
 
+    // The gap preference only biases *recognized* engines; use Firefox so the
+    // guard fires instead of falling through to feature detection.
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0',
+    });
+
     const result = await getRendererCapabilities({
       forceRetry: true,
       preferWebGLForKnownCompatibilityGaps: true,
@@ -179,6 +187,14 @@ describe('renderer capabilities', () => {
       device: { label: 'desktop-device' },
     });
 
+    // Firefox is a recognized engine, so the gap preference bias fires for
+    // the middle call without costing an adapter probe.
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:141.0) Gecko/20100101 Firefox/141.0',
+    });
+
     const first = await getRendererCapabilities({ forceRetry: true });
     const second = await getRendererCapabilities({
       preferWebGLForKnownCompatibilityGaps: true,
@@ -194,6 +210,56 @@ describe('renderer capabilities', () => {
     expect(third.preferredBackend).toBe('webgpu');
     expect(requestAdapter).toHaveBeenCalledTimes(2);
     expect(requestDevice).toHaveBeenCalledTimes(2);
+  });
+
+  test('unrecognized browsers with a working WebGPU probe it despite the gap preference', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'unknown-browser-device' },
+    });
+
+    // Explicitly unknown engine (no recognized brand token). Feature
+    // detection decides availability; the UA stability bias does not apply.
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (compatible; SomeUnknownBrowser/1.0; WebKit/605.1.15)',
+    });
+
+    const result = await getRendererCapabilities({
+      forceRetry: true,
+      preferWebGLForKnownCompatibilityGaps: true,
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(result.preferredBackend).toBe('webgpu');
+    expect(result.forceWebGL).toBe(false);
+  });
+
+  test('a known-unstable engine prefers WebGL without the Firefox hard-skip flag', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'old-chrome-device' },
+    });
+
+    // Chrome 119 is below the stability floor but not Firefox, so the bias
+    // applies as a preference (WebGL) rather than a forced skip.
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    });
+
+    const result = await getRendererCapabilities({
+      forceRetry: true,
+      preferWebGLForKnownCompatibilityGaps: true,
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(0);
+    expect(requestDevice).toHaveBeenCalledTimes(0);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.forceWebGL).toBe(false);
   });
 
   test('falls back when WebGPU device acquisition times out during capability probing', async () => {
