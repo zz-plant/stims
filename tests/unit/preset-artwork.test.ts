@@ -119,7 +119,7 @@ describe('PresetArtwork', () => {
     const img = container.querySelector('img');
     expect(img).not.toBeNull();
     await act(async () => {
-      img!.dispatchEvent(new Event('error'));
+      img?.dispatchEvent(new Event('error'));
     });
 
     expect(container.textContent).toContain('Bright pulse');

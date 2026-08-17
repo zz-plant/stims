@@ -234,13 +234,14 @@ function StimsWorkspaceAppShell() {
   // rather than two copies that could drift.
   const toggleFavoriteCurrentPreset = () => {
     const activePresetId = engineSnapshot?.activePresetId;
-    const activePreset = activePresetId
-      ? engine.catalog.find((preset) => preset.id === activePresetId)
-      : null;
     if (!activePresetId) {
       ui.setStatusMessage('Load a preset before saving it.');
       return;
     }
+    const activePreset =
+      engine.selectedPreset?.id === activePresetId
+        ? engine.selectedPreset
+        : null;
     void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
     ui.setStatusMessage(
       activePreset?.isFavorite
