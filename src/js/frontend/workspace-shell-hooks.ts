@@ -246,6 +246,7 @@ export function useWorkspaceShellOrchestration({
 
   const updatePanel = useCallback(
     (panel: PanelState) => {
+      if (panel === routeState.panel) return;
       commitRoute({ ...routeState, panel });
     },
     [commitRoute, routeState],
