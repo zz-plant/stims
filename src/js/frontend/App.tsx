@@ -350,6 +350,18 @@ function StimsWorkspaceAppShell() {
     });
   }, [engine, engineSnapshot?.activePresetId]);
 
+  // The editor and refine panels are code-split, and the editor's first open
+  // pays for the whole codemirror/compiler graph (the largest lazy dependency
+  // chain in the app). Warm those chunks during idle after first paint so the
+  // first E/G press doesn't stall on the download.
+  useEffect(() => {
+    return deferToIdle(() => {
+      void import('./EditorPanel.tsx');
+      void import('./RefinePanel.tsx');
+      void import('../milkdrop/overlay/editor-panel.ts');
+    });
+  }, []);
+
   // Physical and virtual (MCP) MIDI both drive the engine through this one
   // binding. It used to live inside PerformanceHardwareSection, which only
   // stayed mounted while Settings was open — closing Settings silently cut
