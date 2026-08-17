@@ -2503,7 +2503,7 @@ function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
   ].join('\u001f');
 }
 
-class WebGPUMilkdropFeedbackManager {
+class WebGPUMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly compositeScene = new Scene();
   readonly feedbackBlendScene = new Scene();
   readonly presentScene = new Scene();
@@ -3129,8 +3129,5 @@ export function createMilkdropWebGPUFeedbackManager(
   width: number,
   height: number,
 ) {
-  return new WebGPUMilkdropFeedbackManager(
-    width,
-    height,
-  ) as MilkdropFeedbackManager;
+  return new WebGPUMilkdropFeedbackManager(width, height);
 }

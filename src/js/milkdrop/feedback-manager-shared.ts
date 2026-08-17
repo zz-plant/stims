@@ -431,7 +431,12 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
+`;
 
+// The control-driven feedback warp is needed by the feedback-blend pass.
+// The warp pass defines its own warp (it adds per-pass power/rotation
+// scaling), so this stays separate from MILKDROP_AUX_SAMPLING_HELPERS.
+const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           vec2 centered = uv - 0.5;
           float radius = length(centered);
@@ -480,6 +485,7 @@ const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform float warpTextureVolumeSliceZ;
         varying vec2 vUv;
 ${MILKDROP_AUX_SAMPLING_HELPERS}
+${MILKDROP_FEEDBACK_WARP_HELPER}
         void main() {
           vec2 centeredUv = vUv - 0.5;
           // Sampling coordinates must invert the intended image transform
@@ -889,49 +895,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
         float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
         float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
 
-        vec2 sampleUv(vec2 uv, float wrap) {
-          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
-        }
-
-        vec4 sampleAuxTexture2d(float source, vec2 uv) {
-          if (source < 0.5) { return vec4(0.5, 0.5, 0.5, 1.0); }
-          if (source < 1.5) { return texture2D(noiseTex, uv); }
-          if (source < 2.5) { return texture2D(simplexTex, uv); }
-          if (source < 3.5) { return texture2D(voronoiTex, uv); }
-          if (source < 4.5) { return texture2D(auraTex, uv); }
-          if (source < 5.5) { return texture2D(causticsTex, uv); }
-          if (source < 6.5) { return texture2D(patternTex, uv); }
-          if (source < 7.5) { return texture2D(fractalTex, uv); }
-          if (source < 8.5) { return texture2D(videoTex, uv); }
-          if (source < 9.5) { return texture2D(perlinTex, uv); }
-          return vec4(0.5, 0.5, 0.5, 1.0);
-        }
-
-        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
-          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
-          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
-          vec2 tileSize = vec2(1.0 / gridSize);
-          float column = mod(sliceIndex, gridSize);
-          float row = floor(sliceIndex / gridSize);
-          return (vec2(column, row) + localUv) * tileSize;
-        }
-
-        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
-          vec2 wrappedUv = fract(uv);
-          if (sampleDimension < 0.5) { return sampleAuxTexture2d(source, wrappedUv); }
-          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          float wrappedSliceZ = fract(sliceZ);
-          float scaledSlice = wrappedSliceZ * sliceCount;
-          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
-          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
-          float sliceBlend = fract(scaledSlice);
-          float edgeMargin = 0.02;
-          if (sliceBlend < edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA)); }
-          if (sliceBlend > 1.0 - edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB)); }
-          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          return mix(sliceA, sliceB, sliceBlend);
-        }
+${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
         vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
           vec2 centered = uv - 0.5;

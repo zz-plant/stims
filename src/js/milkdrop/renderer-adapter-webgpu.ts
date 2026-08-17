@@ -21,13 +21,6 @@ export type MilkdropWebGPURendererAdapterConfig = Omit<
   'backend'
 >;
 
-const WEBGPU_BEHAVIOR = {
-  ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-  supportsShapeGradient: true,
-  supportsShapeShaderFill: true,
-  supportsFeedbackPass: true,
-} as const;
-
 function buildSafeWebGpuOptimizationFlags(
   flags: MilkdropWebGpuOptimizationFlags | undefined,
 ): MilkdropWebGpuOptimizationFlags {
@@ -95,7 +88,7 @@ export function createMilkdropWebGPURendererAdapter(
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
-    behavior: WEBGPU_BEHAVIOR,
+    behavior: WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
     createFeedbackManager:
       executionPlan.feedbackMode === 'webgpu-native'
         ? createMilkdropWebGPUFeedbackManager

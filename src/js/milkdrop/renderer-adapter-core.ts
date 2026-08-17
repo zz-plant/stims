@@ -1426,8 +1426,6 @@ export function createMilkdropRendererAdapterCore({
   return adapter;
 }
 
-export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;
-
 export const __milkdropRendererAdapterTestUtils = {
   syncInterpolatedProceduralWaveObject,
   syncInterpolatedProceduralCustomWaveObject,
