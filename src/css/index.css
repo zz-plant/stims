@@ -1002,11 +1002,9 @@ header.hero::after {
   border-radius: 18px;
 }
 
-@supports (container-type: inline-size) {
-  @container home-hero (max-width: 900px) {
-    .hero-cta-row .cta-button.primary {
-      grid-column: auto;
-    }
+@container home-hero (max-width: 900px) {
+  .hero-cta-row .cta-button.primary {
+    grid-column: auto;
   }
 }
 

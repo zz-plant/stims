@@ -95,10 +95,8 @@ body[data-page="workspace"][data-live="true"] {
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
   }
-  @supports (min-height: 100svh) {
-    :scope {
-      min-height: 100svh;
-    }
+  :scope {
+    min-height: 100svh;
   }
   .stims-shell__eyebrow,
   .stims-shell__meta-copy {
@@ -2086,46 +2084,6 @@ body[data-page="workspace"][data-live="true"] {
       inset: 76px 12px 12px;
     }
   }
-  @supports not (color: color-mix(in srgb, white, black)) {
-    :scope::after {
-      background:
-        radial-gradient(
-          circle at 18% 40%,
-          rgba(244, 122, 84, 0.24),
-          transparent 42%
-        ),
-        radial-gradient(
-          circle at 82% 18%,
-          rgba(119, 201, 255, 0.26),
-          transparent 36%
-        );
-    }
-    .stims-shell__starter-label,
-    .stims-shell__preset-tech {
-      color: #a9ddff;
-    }
-
-    .stims-shell__section-label {
-      color: #ffae8c;
-    }
-
-    .stims-shell__youtube-feedback[data-state="invalid"] {
-      color: #ffb7bd;
-    }
-
-    .stims-shell__youtube-feedback[data-state="ready"] {
-      color: #a9f7c6;
-    }
-
-    .cta-button {
-      border-color: rgba(119, 201, 255, 0.24);
-    }
-
-    .stims-shell .cta-button.primary {
-      background: linear-gradient(135deg, #e8f5c8, #b8e2a3);
-      border-color: rgba(255, 255, 255, 0.24);
-    }
-  }
   @media (max-width: 720px) {
     :root {
       --stims-chrome-top: 10px;
@@ -3066,41 +3024,39 @@ body[data-page="workspace"][data-live="true"] {
    engine's preset blend happening at the same moment. Panel opens/closes keep
    their CSS animations and never touch view transitions, so the canvas never
    freezes while music plays. */
-@supports (view-transition-name: none) {
-  .stims-shell__stage-root {
-    view-transition-name: stims-stage;
-  }
+.stims-shell__stage-root {
+  view-transition-name: stims-stage;
+}
 
-  ::view-transition-old(stims-stage) {
-    animation: 0.15s ease both;
-  }
+::view-transition-old(stims-stage) {
+  animation: 0.15s ease both;
+}
 
-  ::view-transition-new(stims-stage) {
-    animation: 0.25s ease both;
-  }
+::view-transition-new(stims-stage) {
+  animation: 0.25s ease both;
+}
 
-  .stims-shell__stage-hero {
-    view-transition-name: stims-launch;
-  }
+.stims-shell__stage-hero {
+  view-transition-name: stims-launch;
+}
 
-  ::view-transition-old(stims-launch) {
-    animation: launch-exit 0.22s ease both;
-  }
+::view-transition-old(stims-launch) {
+  animation: launch-exit 0.22s ease both;
+}
 
-  ::view-transition-new(stims-launch) {
-    animation: launch-enter 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) both;
-  }
+::view-transition-new(stims-launch) {
+  animation: launch-enter 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
 
-  .stims-shell__audio-match {
-    view-transition-name: stims-audio-match;
-  }
+.stims-shell__audio-match {
+  view-transition-name: stims-audio-match;
+}
 
-  ::view-transition-old(stims-audio-match) {
-    animation: 0.15s ease both;
-  }
-  ::view-transition-new(stims-audio-match) {
-    animation: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
+::view-transition-old(stims-audio-match) {
+  animation: 0.15s ease both;
+}
+::view-transition-new(stims-audio-match) {
+  animation: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
