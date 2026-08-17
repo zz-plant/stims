@@ -1,20 +1,15 @@
 import {
   type Camera,
-  ClampToEdgeWrapping,
   Color,
   DataTexture,
   Mesh,
-  NearestFilter,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
-  RepeatWrapping,
   RGBAFormat,
   Scene,
   ShaderMaterial,
-  SRGBColorSpace,
   type Texture,
-  TextureLoader,
   UnsignedByteType,
   Vector2,
   Vector4,
@@ -47,12 +42,18 @@ import {
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
 import {
+  AUX_TEXTURE_SPECS,
+  type AuxTextureName,
+  configureMilkdropTexture,
+  getSharedMilkdropTexture,
+  resolveAuxTextureName,
+} from './feedback-texture-utils.ts';
+import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
-import { MILKDROP_TEXTURE_FILES } from './texture-files';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -150,38 +151,9 @@ export function resolveMilkdropBlurShaderRanges(
 }
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
-const AUX_TEXTURE_SPECS = {
-  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
-  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
-  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
-  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
-  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
-  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
-  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
-  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
-} as const satisfies Record<
-  keyof typeof MILKDROP_TEXTURE_FILES,
-  { fileName: string; colorTexture: boolean }
->;
-
-type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
 
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
-type MilkdropTextureSampleMode = {
-  filter: 'linear' | 'nearest';
-  wrap: 'repeat' | 'clamp';
-};
-
-// Must be initialized before the placeholder-texture IIFE below runs at
-// module load — configureMilkdropTexture reads it as a default parameter.
-const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
-  filter: 'linear',
-  wrap: 'repeat',
-};
-
-const milkdropTextureLoader = new TextureLoader();
-const sharedMilkdropTextureCache = new Map<string, Texture>();
 const sharedMilkdropTexturePlaceholder = (() => {
   const texture = new DataTexture(
     new Uint8Array([128, 128, 128, 255]),
@@ -194,53 +166,6 @@ const sharedMilkdropTexturePlaceholder = (() => {
   return configureMilkdropTexture(texture);
 })();
 const sharedMilkdropNativeNoiseTexture = createMilkdropNoiseTexture();
-
-function resolveTextureUrl(fileName: string) {
-  const baseUrl =
-    typeof import.meta.env.BASE_URL === 'string'
-      ? import.meta.env.BASE_URL
-      : '/';
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBaseUrl}textures/${fileName}`;
-}
-
-function configureMilkdropTexture(
-  texture: Texture,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const wrapMode =
-    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
-  texture.wrapS = wrapMode;
-  texture.wrapT = wrapMode;
-  if (sampleMode.filter === 'nearest') {
-    texture.minFilter = NearestFilter;
-    texture.magFilter = NearestFilter;
-  }
-  if (colorTexture) {
-    texture.colorSpace = SRGBColorSpace;
-  }
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function getSharedMilkdropTexture(
-  fileName: string,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
-  let texture = sharedMilkdropTextureCache.get(cacheKey);
-  if (!texture) {
-    texture = configureMilkdropTexture(
-      milkdropTextureLoader.load(resolveTextureUrl(fileName)),
-      colorTexture,
-      sampleMode,
-    );
-    sharedMilkdropTextureCache.set(cacheKey, texture);
-  }
-  return texture;
-}
 
 function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
@@ -258,40 +183,6 @@ function getSharedAuxTextures(): SharedAuxTextureMap {
     fractal: getSharedMilkdropTexturePlaceholder(),
     video: getSharedMilkdropCapturedVideoTexture(),
   };
-}
-
-function resolveAuxTextureName(source: number) {
-  if (source < 0.5) {
-    return null;
-  }
-  if (source < 1.5) {
-    return 'noise';
-  }
-  if (source < 2.5) {
-    return 'simplex';
-  }
-  if (source < 3.5) {
-    return 'voronoi';
-  }
-  if (source < 4.5) {
-    return 'aura';
-  }
-  if (source < 5.5) {
-    return 'caustics';
-  }
-  if (source < 6.5) {
-    return 'pattern';
-  }
-  if (source < 7.5) {
-    return 'fractal';
-  }
-  if (source < 8.5) {
-    return null;
-  }
-  if (source < 9.5) {
-    return 'perlin';
-  }
-  return null;
 }
 
 /**
