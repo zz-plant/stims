@@ -1790,18 +1790,27 @@ export function extractShaderControls(
       ) {
         return;
       }
-      // Skip control-flow and structural lines that don't translate to TSL:
-      //   `}` `} else { ... }`  — closing braces / else clauses from if-blocks
-      //   `if (...) { ...`       — if-block openings (branching unsupported)
-      //   bare `tmpvar_N`         — declaration without type (e.g. `vec2 tmpvar_2;`
-      //                            split such that the type was consumed by a
-      //                            prior statement)
+      // Bare declaration tails (e.g. `vec2 tmpvar_2;` split such that the type
+      // was consumed by a prior statement) carry no executable logic.
+      if (/^[a-z_]\w*\s*$/u.test(line)) {
+        return;
+      }
+      // Control-flow lines (if/else/braces) don't translate to the TSL
+      // statement model — branching is unsupported, and the parser splits the
+      // body on `;` so an `if (...) { stmt` segment swallows the branch body
+      // into the structural line. Record them so native bodies are classified
+      // as not WebGPU-direct-executable and fall back to WebGL's raw GLSL
+      // instead of silently dropping the branch statements.
       if (
         /^\}\s*(?:else\s*\{.*)?$/u.test(line) ||
         /^if\s*\(.*\)\s*\{.*$/u.test(line) ||
-        /^else\s*\{.*$/u.test(line) ||
-        /^[a-z_]\w*\s*$/u.test(line)
+        /^else\s*\{.*$/u.test(line)
       ) {
+        if (nativeShaderBody) {
+          nativeBodyUnparsedLines.push(line);
+        } else {
+          trackUnsupported(line);
+        }
         return;
       }
       // For native shader bodies, parse failures don't invalidate the raw

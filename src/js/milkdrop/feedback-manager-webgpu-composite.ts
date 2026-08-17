@@ -582,7 +582,7 @@ export function createCompositeUniforms(
     signalFps: uniform(60),
     perPixelQ: Array.from({ length: 32 }, () => uniform(0)),
     perPixelT: Array.from({ length: 32 }, () => uniform(0)),
-    aspect: uniform(1),
+    aspect: uniform(new Vector4(1, 1, 1, 1)),
     decay: uniform(0.98),
     postBloomStrength: uniform(0),
     postBloomThreshold: uniform(0.85),
@@ -592,6 +592,19 @@ export function createCompositeUniforms(
     postAfterimageDamp: uniform(0),
     texelSize: uniform(new Vector2(1, 1)),
     texsize: uniform(new Vector4(1, 1, 1, 1)),
+    // Butterchurn bodies reference per-preset random constants as
+    // rand_preset; the WebGL path rolls fresh values once per preset load.
+    rand_preset: uniform(new Vector4(0, 0, 0, 0)),
+    // Butterchurn shader bodies multiply blur samplers by scaleN/biasN
+    // (derived from the preset's blur1_min/blur1_max … ranges). The WebGL
+    // templates expose them as uniforms; mirror that so warp/comp statements
+    // that reference them don't drop.
+    scale1: uniform(1),
+    bias1: uniform(0),
+    scale2: uniform(1),
+    bias2: uniform(0),
+    scale3: uniform(1),
+    bias3: uniform(0),
     texsizeNoiseLq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoiseHq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoisevolHq: uniform(
