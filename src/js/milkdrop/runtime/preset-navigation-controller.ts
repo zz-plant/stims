@@ -1,3 +1,4 @@
+import { compileMilkdropPresetSource } from '../compiler';
 import type {
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
@@ -78,6 +79,48 @@ export function createMilkdropPresetNavigationController({
   };
 
   let currentLoadRequestRevision = 0;
+
+  // Best-effort warm-up for the next likely switch. Resolves the adjacent
+  // selectable preset's source and pre-compiles it into the shared raw-string
+  // cache in idle, so a next/prev or autoplay advance applies in ~0ms instead
+  // of blocking the main thread for a full parse+IR rebuild right before the
+  // blend begins.
+  let adjacentPrefetchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const prefetchAdjacentPreset = async (presetId: string) => {
+    const entries = catalogCoordinator.getCatalogEntries();
+    const backend = getActiveBackend();
+    const pool = entries.filter(
+      (entry) => entry.supports[backend].status !== 'unsupported',
+    );
+    const currentIndex = pool.findIndex((entry) => entry.id === presetId);
+    const next = pool[(currentIndex + 1) % pool.length];
+    if (!next || next.id === getActivePresetId()) {
+      return;
+    }
+    try {
+      const source = await catalogStore.getPresetSource(next.id);
+      if (!source) {
+        return;
+      }
+      compileMilkdropPresetSource(source.raw, source, {
+        cacheCompile: true,
+      });
+    } catch {
+      // Prefetch is invisible to the user; a failure just costs a cold
+      // compile later.
+    }
+  };
+
+  const scheduleAdjacentPresetPrefetch = (presetId: string) => {
+    if (adjacentPrefetchTimer !== null) {
+      clearTimeout(adjacentPrefetchTimer);
+    }
+    adjacentPrefetchTimer = setTimeout(() => {
+      adjacentPrefetchTimer = null;
+      void prefetchAdjacentPreset(presetId);
+    }, 250);
+  };
 
   const selectPreset = async (
     id: string,
@@ -196,6 +239,7 @@ export function createMilkdropPresetNavigationController({
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);
       setOverlayStatus(`Loaded ${nextCompiled.title}.`);
+      scheduleAdjacentPresetPrefetch(id);
 
       trace.step('catalogSync');
       await syncCatalog();

@@ -1663,20 +1663,15 @@ class SharedMilkdropFeedbackManager
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
     this.feedbackBlendMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
-    // Preserve current uniform values before disposing old material
-    const oldUniforms = this.compositeMaterial.uniforms;
-    disposeMaterial(this.compositeMaterial);
-
-    // Find and replace the composite mesh material
-    const oldQuad = this.compositeScene.children[0] as Mesh | undefined;
-    if (oldQuad) {
-      this.compositeScene.remove(oldQuad);
-    }
-
-    const newMaterial = this.createCompositeMaterial(injectedShader);
-    // Restore uniform values from old material
-    Object.assign(newMaterial.uniforms, oldUniforms);
-    newMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
+    // Reuse the composite material across presets: only the injected
+    // fragment shader changes, and its uniform set is fixed. Recreating the
+    // ShaderMaterial per switch (dispose + fresh ~50-uniform object + new
+    // quad + uniform-value copy) rebuilt GPU programs and churned uniforms on
+    // every preset load, stalling the first frame of each switch.
+    const composite = this.compositeMaterial;
+    composite.fragmentShader = injectedShader;
+    composite.needsUpdate = true;
+    composite.uniforms.hasDirectWarp.value = hasDirectWarp;
 
     // New preset shaders → fresh rand_preset draw (MilkDrop rolls these
     // per-preset random constants once per preset load).
@@ -1686,17 +1681,12 @@ class SharedMilkdropFeedbackManager
       Math.random(),
       Math.random(),
     );
-    (newMaterial.uniforms.rand_preset.value as Vector4).copy(
+    (composite.uniforms.rand_preset.value as Vector4).copy(
       this.warpMaterial.uniforms.rand_preset.value as Vector4,
     );
 
-    (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
-      newMaterial;
-    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
-    this.compositeScene.add(quad);
-
     this.blurEnabled =
-      /texture2D\s*\(\s*blur[123]Tex/.test(newMaterial.fragmentShader) ||
+      /texture2D\s*\(\s*blur[123]Tex/.test(composite.fragmentShader) ||
       /texture2D\s*\(\s*blur[123]Tex/.test(this.warpMaterial.fragmentShader);
   }
 

@@ -23,6 +23,7 @@ import {
   applyShaderControlValue,
   applyShaderExpressionOperator,
   applyTextureLayerSample,
+  buildMilkdropSignalNameReplacements,
   buildTintBlendExpression,
   createDefaultShaderControlExpressions,
   createDefaultShaderControls,
@@ -41,6 +42,7 @@ import {
   isShaderScalarValue,
   isShaderSolarizeSampleExpression,
   isShaderUvIdentifier,
+  MILKDROP_RAND_FRAME_GLSL,
   normalizeShaderSamplerName,
   normalizeShaderSyntax,
   normalizeShaderTextureBlendMode,
@@ -69,91 +71,62 @@ export {
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
 export function normalizeHlslToGlsl(shaderText: string): string {
-  return (
-    shaderText
-      // Volume-noise samples take a vec3 coordinate; route them to the
-      // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
-      // texture2D, which has no vec3 overload. Must run before the generic
-      // texture( → texture2D( rewrite below.
-      .replace(
-        /\b(?:texture3D|texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
-        'sampleNoiseVolume(',
-      )
-      .replace(/\btexture\s*\(/giu, 'texture2D(')
-      .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
-      .replace(/\b(\d+)u\b/giu, '$1')
-      .replace(/\bfloat2\b/giu, 'vec2')
-      .replace(/\bfloat3\b/giu, 'vec3')
-      .replace(/\bfloat4\b/giu, 'vec4')
-      .replace(/\bsampler_main\b/giu, 'currentTex')
-      .replace(/\bsampler_fw_main\b/giu, 'currentTex')
-      .replace(/\bsampler_pc_main\b/giu, 'previousTex')
-      .replace(/\bsampler_pw_main\b/giu, 'previousTex')
-      .replace(/\bsampler_fc_main\b/giu, 'warpTex')
-      .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
-      .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
-      .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
-      .replace(/\bsampler_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b/giu, 'noiseTex')
-      .replace(
-        /\bsampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
-        'simplexTex',
-      )
-      .replace(
-        /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
-        'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
-      )
-      .replace(
-        /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
-        'vec4(1.0 / texelSize, texelSize)',
-      )
-      // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
-      // uniform behind them — MilkDrop injects them at runtime, this pipeline
-      // does not — so any identifier left after the specific rewrites above
-      // would reach the GLSL undeclared and fail to compile. Every bundled
-      // substitute texture is 640x640 (xy = size, zw = 1/size).
-      .replace(
-        /\btexsize_[A-Za-z0-9_]+\b/giu,
-        'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
-      )
-      .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
-      .replace(/\buv_orig\b/giu, 'vUv')
-      .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
-      .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
-      .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
-      .replace(/\btime\b/giu, 'signalTime')
-      // Harmonic/percussive signals are rewritten before the plain band names
-      // so the longer identifiers win; `percussive_mid` cannot be caught by
-      // the `\bmid\b` rule below (underscore is a word character), but the
-      // longest-first ordering is kept explicit to stay robust to edits.
-      .replace(/\bpercussive_?ratio\b/giu, 'signalPercussiveRatio')
-      .replace(/\bpercussive_?low\b/giu, 'signalPercussiveLow')
-      .replace(/\bpercussive_?mid\b/giu, 'signalPercussiveMid')
-      .replace(/\bpercussive_?high\b/giu, 'signalPercussiveHigh')
-      .replace(/\bpercussive\b/giu, 'signalPercussive')
-      .replace(/\bharmonic\b/giu, 'signalHarmonic')
-      .replace(/\bbass_att\b/giu, 'signalBassAtt')
-      .replace(/\bbass\b/giu, 'signalBass')
-      .replace(/\bmid_att\b/giu, 'signalMidAtt')
-      .replace(/\bmids_att\b/giu, 'signalMidAtt')
-      .replace(/\bmid\b/giu, 'signalMid')
-      .replace(/\bmids\b/giu, 'signalMid')
-      .replace(
-        /\btreb_att\b|\btreble_att\b|\btrebatt\b|\btrebleatt\b/giu,
-        'signalTrebAtt',
-      )
-      .replace(/\btreb\b|\btreble\b/giu, 'signalTreb')
-      .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
-      .replace(/\brms\b/giu, 'signalEnergy')
-      .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
-      .replace(/\bbeat\b/giu, 'signalBeat')
-      .replace(/\bprogress\b/giu, 'signalFrame')
-      .replace(/\bframe\b/giu, 'signalFrame')
-      .replace(/\bfps\b/giu, 'signalFps')
-      .replace(
-        /\brand_frame\b/giu,
-        'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-      )
-  );
+  const result = shaderText
+    // Volume-noise samples take a vec3 coordinate; route them to the
+    // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
+    // texture2D, which has no vec3 overload. Must run before the generic
+    // texture( → texture2D( rewrite below.
+    .replace(
+      /\b(?:texture3D|texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
+      'sampleNoiseVolume(',
+    )
+    .replace(/\btexture\s*\(/giu, 'texture2D(')
+    .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
+    .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bfloat2\b/giu, 'vec2')
+    .replace(/\bfloat3\b/giu, 'vec3')
+    .replace(/\bfloat4\b/giu, 'vec4')
+    .replace(/\bsampler_main\b/giu, 'currentTex')
+    .replace(/\bsampler_fw_main\b/giu, 'currentTex')
+    .replace(/\bsampler_pc_main\b/giu, 'previousTex')
+    .replace(/\bsampler_pw_main\b/giu, 'previousTex')
+    .replace(/\bsampler_fc_main\b/giu, 'warpTex')
+    .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
+    .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
+    .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
+    .replace(/\bsampler_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b/giu, 'noiseTex')
+    .replace(
+      /\bsampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
+      'simplexTex',
+    )
+    .replace(
+      /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
+      'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
+    )
+    .replace(
+      /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
+      'vec4(1.0 / texelSize, texelSize)',
+    )
+    // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
+    // uniform behind them — MilkDrop injects them at runtime, this pipeline
+    // does not — so any identifier left after the specific rewrites above
+    // would reach the GLSL undeclared and fail to compile. Every bundled
+    // substitute texture is 640x640 (xy = size, zw = 1/size).
+    .replace(
+      /\btexsize_[A-Za-z0-9_]+\b/giu,
+      'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
+    )
+    .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+    .replace(/\buv_orig\b/giu, 'vUv')
+    .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
+    .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
+    .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
+    .replace(/\brand_frame\b/giu, MILKDROP_RAND_FRAME_GLSL);
+  // Signal aliases are rewritten through the shared table
+  // (MILKDROP_SIGNAL_NAME_ALIASES) so this chain and the composite emitter
+  // cannot drift. `\b` word boundaries keep `bass` from matching inside
+  // `bass_att`; longest-first ordering keeps the more specific alias winning.
+  return buildMilkdropSignalNameReplacements(result);
 }
 
 // Slices the body of a `shader_body { … }` block by scanning to the closing
