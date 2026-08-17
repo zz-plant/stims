@@ -98,16 +98,6 @@ textarea::placeholder {
   }
 }
 
-@supports not (backdrop-filter: blur(1px)) {
-  .stims-shell__nav,
-  .top-nav,
-  .control-panel,
-  .active-toy-nav,
-  .active-toy-status__content {
-    background: var(--stims-panel-strong, rgba(12, 16, 26, 0.96));
-  }
-}
-
 /* TV mode tokens now in tokens.css */
 canvas {
   display: block;
@@ -144,21 +134,19 @@ body {
     var(--bg-color);
 }
 
-@supports (view-transition-name: none) {
-  .content {
-    view-transition-name: library-view;
-  }
+.content {
+  view-transition-name: library-view;
+}
 
-  .active-toy-container {
-    view-transition-name: toy-view;
-  }
+.active-toy-container {
+  view-transition-name: toy-view;
+}
 
-  ::view-transition-old(library-view),
-  ::view-transition-new(library-view),
-  ::view-transition-old(toy-view),
-  ::view-transition-new(toy-view) {
-    animation: fadeSlide 0.35s ease;
-  }
+::view-transition-old(library-view),
+::view-transition-new(library-view),
+::view-transition-old(toy-view),
+::view-transition-new(toy-view) {
+  animation: fadeSlide 0.35s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -251,14 +239,12 @@ body {
     0 0 18px color-mix(in srgb, #dcaa6e 25%, transparent);
 }
 
-@supports selector(:has(*)) {
-  .shell-panel:has(
-    > .control-panel,
-    > [data-audio-controls]:not(:empty),
-    > [data-settings-panel]:not(:empty)
-  ) {
-    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
-  }
+.shell-panel:has(
+  > .control-panel,
+  > [data-audio-controls]:not(:empty),
+  > [data-settings-panel]:not(:empty)
+) {
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
 }
 
 :root[data-focused-session="launch"]

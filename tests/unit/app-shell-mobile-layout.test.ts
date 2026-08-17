@@ -104,11 +104,14 @@ describe('Workspace shell mobile layout regression', () => {
     ).toBe(true);
   });
 
-  test('keeps a fallback for browsers without color-mix', () => {
+  test('styles the CTA directly with color-mix (baseline, no fallback guard)', () => {
     const css = readAppShellCss();
 
     expect(css).toMatch(
-      /@supports not \(color: color-mix\(in srgb, white, black\)\) \{[\s\S]*?\.stims-shell \.cta-button\.primary/u,
+      /\.cta-button\.primary \{[^}]*color-mix\(in srgb, #e8f5c8 78%, #fff9e9\)/u,
+    );
+    expect(css).not.toMatch(
+      /@supports not \(color: color-mix\(in srgb, white, black\)\)/u,
     );
   });
 });
