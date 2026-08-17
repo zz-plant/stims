@@ -57,7 +57,6 @@ export function BrowseSheetPanel({
   const catalogReady = engine.catalogReady;
   const collectionTags = engine.collectionTags;
   const currentPresetId = engineSnapshot?.activePresetId ?? null;
-  const filteredCatalog = engine.filteredCatalog;
   const presetPreviews = engine.presetPreviews;
   const routeState = ui.routeState;
   const searchQuery = ui.searchQuery;
@@ -109,18 +108,22 @@ export function BrowseSheetPanel({
     routeState.collectionTag !== null ||
     authorFilter !== null;
 
-  const collectionFiltered =
-    routeState.collectionTag === 'collection:community'
-      ? engine.filteredCatalog
-      : filteredCatalog;
   const browseEntries = useMemo(
     () =>
-      collectionFiltered.filter(
-        (entry) =>
+      catalog.filter((entry) => {
+        if (
+          routeState.collectionTag &&
+          routeState.collectionTag !== 'collection:community' &&
+          !entry.tags?.includes(routeState.collectionTag)
+        ) {
+          return false;
+        }
+        return (
           matchesPreset(entry, deferredSearch) &&
-          matchesAuthor(entry, authorFilter),
-      ),
-    [collectionFiltered, deferredSearch, authorFilter],
+          matchesAuthor(entry, authorFilter)
+        );
+      }),
+    [catalog, routeState.collectionTag, deferredSearch, authorFilter],
   );
 
   // Auto-scroll active preset into view on initial open or selection
