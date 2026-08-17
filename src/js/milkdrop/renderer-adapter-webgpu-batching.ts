@@ -21,6 +21,7 @@ import {
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
 import {
+  getMilkdropLayerRenderOrder,
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
 } from './renderer-adapter-shared';
@@ -513,29 +514,35 @@ function getBatchedTargetRenderOrder(key: string) {
   switch (key) {
     case 'wave:main-wave':
     case 'procedural-wave:main-wave':
-      return 20;
+      return getMilkdropLayerRenderOrder('main-wave');
     case 'wave:custom-wave':
     case 'procedural-custom-wave':
-      return 30;
+      return getMilkdropLayerRenderOrder('custom-wave');
     case 'line:trails':
     case 'procedural-wave:trail-waves':
-      return 40;
+      return getMilkdropLayerRenderOrder('trails');
+    case 'particle-field':
+    case 'wave:particle-field':
+      return getMilkdropLayerRenderOrder('particle-field');
+    case 'blend-particle-field':
+    case 'wave:blend-particle-field':
+      return getMilkdropLayerRenderOrder('blend-particle-field');
     case 'shapes':
-      return 50;
+      return getMilkdropLayerRenderOrder('shapes');
     case 'borders':
-      return 60;
+      return getMilkdropLayerRenderOrder('borders');
     case 'line:motion-vectors':
-      return 70;
+      return getMilkdropLayerRenderOrder('motion-vectors');
     case 'wave:blend-main-wave':
-      return 80;
+      return getMilkdropLayerRenderOrder('blend-main-wave');
     case 'wave:blend-custom-wave':
-      return 90;
+      return getMilkdropLayerRenderOrder('blend-custom-wave');
     case 'blend-shapes':
-      return 100;
+      return getMilkdropLayerRenderOrder('blend-shapes');
     case 'blend-borders':
-      return 110;
+      return getMilkdropLayerRenderOrder('blend-borders');
     case 'line:blend-motion-vectors':
-      return 120;
+      return getMilkdropLayerRenderOrder('blend-motion-vectors');
     default:
       return 0;
   }

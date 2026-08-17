@@ -45,7 +45,7 @@ export function useStageGesture({
   closePanel?: () => void;
   toggleFavoritePreset?: () => void;
   handleToggleFullscreen?: () => void;
-  setStatusMessage?: (message: string) => void;
+  setStatusMessage?: (message: string | null) => void;
   hapticsEnabled?: boolean;
   longPressMs?: number;
 }) {
