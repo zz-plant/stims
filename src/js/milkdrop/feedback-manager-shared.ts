@@ -458,9 +458,11 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
         }
 `;
 
-// The control-driven feedback warp is needed by the feedback-blend pass.
-// The warp pass defines its own warp (it adds per-pass power/rotation
-// scaling), so this stays separate from MILKDROP_AUX_SAMPLING_HELPERS.
+// The control-driven feedback warp is shared by the warp pass and the
+// feedback-blend pass, and by the WebGPU feedback node, so every stage warps
+// with identical math. The warp pass must not define its own variant here —
+// divergent formulas made the feedback chain and the fresh-scene sample
+// disagree and drove WebGL away from WebGPU.
 const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           vec2 centered = uv - 0.5;
@@ -922,21 +924,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
 
 ${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
-        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
-          vec2 centered = uv - 0.5;
-          float cosR = cos(rot);
-          float sinR = sin(rot);
-          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
-          float angle = atan(rotated.y, rotated.x);
-          float radius = length(rotated);
-          float power = 0.5 + sin(angle * 3.0) * 0.15;
-          radius = pow(radius, power - scale * 0.25);
-          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
-          angle += spiral + rot * 0.22;
-          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
-          return vec2(cos(angle), sin(angle)) * radius + 0.5;
-        }
-
+${MILKDROP_FEEDBACK_WARP_HELPER}
         vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
           float flipU = step(0.5, mod(orientation, 2.0));
           float flipV = step(1.5, mod(orientation, 4.0));
@@ -1047,7 +1035,9 @@ const MILKDROP_GLSL_RESERVED_WORDS = new Set(
     greaterThanEqual inversesqrt isinf isnan length lessThan lessThanEqual log log2
     matrixCompMult max min mix mod not notEqual outerProduct pow radians reflect
     refract round sign sin sinh smoothstep sqrt step tan tanh transpose trunc
-  `.split(/\s+/).filter(Boolean),
+  `
+    .split(/\s+/)
+    .filter(Boolean),
 );
 
 const MILKDROP_SWIZZLE_IDENTIFIER = /^[xyzw]{1,4}$/u;
@@ -1055,9 +1045,7 @@ const MILKDROP_TYPE_DECLARATION =
   /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\))/gu;
 
 function stripShaderComments(text: string): string {
-  return text
-    .replace(/\/\/[^\n]*/gu, '')
-    .replace(/\/\*[\s\S]*?\*\//gu, '');
+  return text.replace(/\/\/[^\n]*/gu, '').replace(/\/\*[\s\S]*?\*\//gu, '');
 }
 
 /**
@@ -1073,9 +1061,7 @@ function stripShaderComments(text: string): string {
 function extractReferencedPerFrameVariables(
   fragments: Array<string | null>,
 ): string[] {
-  const declared = new Set<string>([
-    ...MILKDROP_GLSL_RESERVED_WORDS,
-  ]);
+  const declared = new Set<string>(MILKDROP_GLSL_RESERVED_WORDS);
   const templates = [
     MILKDROP_WARP_FRAGMENT_SHADER,
     MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,

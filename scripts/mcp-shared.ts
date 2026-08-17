@@ -1279,7 +1279,7 @@ function extractMarkdownSection(markdown: string, heading: string) {
 
   const startIndex = match.index + match[0].length;
   const rest = markdown.slice(startIndex);
-  const nextHeading = rest.search(/^#{1,6}\\s+/m);
+  const nextHeading = rest.search(/^#{1,6}\s+/m);
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
 
   return {
