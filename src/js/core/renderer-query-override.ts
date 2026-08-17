@@ -17,6 +17,25 @@ const MIN_CHROME_VERSION_WEBGPU = 120;
  */
 const MIN_EDGE_VERSION_WEBGPU = 120;
 
+/**
+ * Minimum Safari major version for WebGPU. Safari 26.0 (macOS 15.2+ / iOS 26)
+ * shipped WebGPU on by default; earlier versions either lacked it or kept it
+ * behind a flag.
+ */
+const MIN_SAFARI_VERSION_WEBGPU = 26;
+
+/**
+ * Minimum Chromium-based Opera major version for WebGPU. Opera moved to
+ * Chromium's WebGPU implementation at 99.
+ */
+const MIN_OPERA_VERSION_WEBGPU = 99;
+
+/**
+ * Minimum Samsung Internet major version for WebGPU. Samsung Internet 24
+ * switched to a Chromium version that ships WebGPU.
+ */
+const MIN_SAMSUNG_VERSION_WEBGPU = 24;
+
 function parseChromeMajorVersion(userAgent: string): number | null {
   const match = userAgent.match(/Chrome\/(\d+)\./);
   if (!match?.[1]) return null;
@@ -26,6 +45,30 @@ function parseChromeMajorVersion(userAgent: string): number | null {
 
 function parseEdgeMajorVersion(userAgent: string): number | null {
   const match = userAgent.match(/Edg\/(\d+)\./);
+  if (!match?.[1]) return null;
+  const version = Number.parseInt(match[1], 10);
+  return Number.isFinite(version) ? version : null;
+}
+
+function parseSafariMajorVersion(userAgent: string): number | null {
+  // Safari reports its product version as `Version/<major>.<minor>` (e.g.
+  // `Version/26.0`). Chrome/Edge/Opera/Samsung UAs also carry `Safari/` but
+  // never `Version/`, so a `Version/` match identifies a real WebKit build.
+  const match = userAgent.match(/Version\/(\d+)\./);
+  if (!match?.[1]) return null;
+  const version = Number.parseInt(match[1], 10);
+  return Number.isFinite(version) ? version : null;
+}
+
+function parseOperaMajorVersion(userAgent: string): number | null {
+  const match = userAgent.match(/\bOPR\/(\d+)\./);
+  if (!match?.[1]) return null;
+  const version = Number.parseInt(match[1], 10);
+  return Number.isFinite(version) ? version : null;
+}
+
+function parseSamsungMajorVersion(userAgent: string): number | null {
+  const match = userAgent.match(/SamsungBrowser\/(\d+)\./);
   if (!match?.[1]) return null;
   const version = Number.parseInt(match[1], 10);
   return Number.isFinite(version) ? version : null;
@@ -45,23 +88,41 @@ function isWebGPUStableInThisBrowser(): boolean {
   const ua = (navigator as Navigator & { userAgent?: string }).userAgent ?? '';
   const lowerUA = ua.toLowerCase();
 
-  // Firefox: WebGPU is behind a flag until at least Firefox 130+
-  // Safari: WebGPU is experimental; enable only via explicit override
+  // Firefox keeps WebGPU disabled by default (no production rollout), so its
+  // users stay on the WebGL path regardless of version.
   if (lowerUA.includes('firefox/') || lowerUA.includes('fxios/')) {
     return false;
   }
+
+  // Pure WebKit Safari (excludes Chrome/Edge/Opera/Samsung, which all embed a
+  // Chromium token and carry `Chrome/`). Safari 26+ ships WebGPU by default;
+  // earlier versions had it experimental or absent.
   if (
     lowerUA.includes('safari/') &&
     !lowerUA.includes('chrome/') &&
     !lowerUA.includes('crios/')
   ) {
-    return false;
+    const safariVersion = parseSafariMajorVersion(ua);
+    return safariVersion !== null && safariVersion >= MIN_SAFARI_VERSION_WEBGPU;
   }
 
   // Edge (Chromium-based): check minimum version
   const edgeVersion = parseEdgeMajorVersion(ua);
   if (edgeVersion !== null) {
     return edgeVersion >= MIN_EDGE_VERSION_WEBGPU;
+  }
+
+  // Chromium-based Opera: check minimum version before the Chrome fallback,
+  // since Opera UAs embed a Chromium `Chrome/<version>` token too.
+  const operaVersion = parseOperaMajorVersion(ua);
+  if (operaVersion !== null) {
+    return operaVersion >= MIN_OPERA_VERSION_WEBGPU;
+  }
+
+  // Samsung Internet: same Chromium-UA situation, check before Chrome.
+  const samsungVersion = parseSamsungMajorVersion(ua);
+  if (samsungVersion !== null) {
+    return samsungVersion >= MIN_SAMSUNG_VERSION_WEBGPU;
   }
 
   // Chrome: check minimum version
@@ -92,6 +153,41 @@ export function setWebGPUCompatibilityGapOverride(enabled: boolean) {
 
 export function clearWebGPUCompatibilityGapOverride() {
   setWebGPUCompatibilityGapOverride(false);
+}
+
+/**
+ * Whether the user agent belongs to a browser family this app recognizes and
+ * has made a stability decision about (Chrome, Edge, Safari, Firefox, Opera,
+ * Samsung Internet, and their iOS WebKit wrappers). Unrecognized engines are
+ * treated as unknown: WebGPU availability is left to feature detection rather
+ * than a brand guess.
+ */
+export function isRecognizedWebGPUBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = (navigator as Navigator & { userAgent?: string }).userAgent ?? '';
+  const lowerUA = ua.toLowerCase();
+  if (
+    /chrome\/|crios\/|edg\/|edgios\/|firefox\/|fxios\/|opr\/|opera\/|samsungbrowser\//.test(
+      lowerUA,
+    )
+  ) {
+    return true;
+  }
+  // Pure WebKit Safari (excludes Chromium engines, which embed a `Chrome/`
+  // token). Matches the Safari branch of isWebGPUStableInThisBrowser.
+  return (
+    lowerUA.includes('safari/') &&
+    !lowerUA.includes('chrome/') &&
+    !lowerUA.includes('crios/')
+  );
+}
+
+/** Whether the user agent is Firefox (desktop or iOS). */
+export function isFirefoxUA(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = (navigator as Navigator & { userAgent?: string }).userAgent ?? '';
+  const lowerUA = ua.toLowerCase();
+  return lowerUA.includes('firefox/') || lowerUA.includes('fxios/');
 }
 
 export function hasWebGPUCompatibilityGapOverride() {
