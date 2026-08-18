@@ -224,6 +224,73 @@ describe('stims.agent.selectPreset', () => {
   });
 });
 
+describe('stims.agent.waitForPreset', () => {
+  test('resolves once the active preset matches, from an externally-driven change', async () => {
+    setAgentMode(true);
+    const { installAgentDriver } = await importFresh<
+      typeof import('../../src/js/core/agent-driver.ts')
+    >('src/js/core/agent-driver.ts');
+    installAgentDriver();
+
+    let active = 'boot-preset';
+    (globalThis as StimsGlobals).__milkdropRuntimeDebug = fakeHandle({
+      getState: () => ({
+        activePresetId: active,
+        backend: 'webgpu',
+        status: null,
+      }),
+    });
+
+    const agent = (
+      globalThis as StimsGlobals & {
+        stims: {
+          agent: {
+            waitForPreset: (
+              id: string,
+              o?: { timeoutMs?: number },
+            ) => Promise<void>;
+          };
+        };
+      }
+    ).stims.agent;
+
+    const pending = agent.waitForPreset('target-preset', { timeoutMs: 2000 });
+    // Simulates a route/popstate change landing outside selectPreset.
+    setTimeout(() => {
+      active = 'target-preset';
+    }, 20);
+
+    await pending;
+  });
+
+  test('rejects with the last-seen preset id on timeout', async () => {
+    setAgentMode(true);
+    const { installAgentDriver } = await importFresh<
+      typeof import('../../src/js/core/agent-driver.ts')
+    >('src/js/core/agent-driver.ts');
+    installAgentDriver();
+
+    (globalThis as StimsGlobals).__milkdropRuntimeDebug = fakeHandle();
+
+    const agent = (
+      globalThis as StimsGlobals & {
+        stims: {
+          agent: {
+            waitForPreset: (
+              id: string,
+              o?: { timeoutMs?: number },
+            ) => Promise<void>;
+          };
+        };
+      }
+    ).stims.agent;
+
+    await expect(
+      agent.waitForPreset('never-arrives', { timeoutMs: 200 }),
+    ).rejects.toThrow(/timed out.*boot-preset/);
+  });
+});
+
 describe('stims.agent.state', () => {
   test('returns the null snapshot before a driver handle registers', async () => {
     setAgentMode(true);

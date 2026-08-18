@@ -70,6 +70,18 @@ export type StimsAgentDriver = {
   state(): AgentState;
   setAutoplay(enabled: boolean): void;
   /**
+   * Waits for the active preset to become `presetId`, however it gets
+   * there — a URL/route change, `history.pushState` + `popstate`, another
+   * tab's BroadcastChannel sync, autoplay. Use this instead of `selectPreset`
+   * when the test is exercising one of those paths and `selectPreset` would
+   * bypass the very thing under test. Polls the same authoritative state
+   * `selectPreset` checks, not the DOM.
+   */
+  waitForPreset(
+    presetId: string,
+    options?: { timeoutMs?: number },
+  ): Promise<void>;
+  /**
    * Best-effort settle heuristic: waits for at least `minFrames` rendered
    * frames since the call, then for the rolling average frame cost to stop
    * moving by more than ~1.5ms for `quietMs`. This is NOT a guarantee that
@@ -228,6 +240,25 @@ export function installAgentDriver(): void {
     },
 
     state: readState,
+
+    async waitForPreset(
+      presetId,
+      { timeoutMs = DEFAULT_SELECT_TIMEOUT_MS } = {},
+    ) {
+      const deadline = Date.now() + timeoutMs;
+      for (;;) {
+        if (readState().presetId === presetId) {
+          return;
+        }
+        if (Date.now() >= deadline) {
+          throw new Error(
+            `stims.agent.waitForPreset(${JSON.stringify(presetId)}) timed ` +
+              `out after ${timeoutMs}ms (active: ${JSON.stringify(readState().presetId)}).`,
+          );
+        }
+        await sleep(50);
+      }
+    },
 
     setAutoplay(enabled) {
       getGlobals().__milkdropRuntimeDebug?.setAutoplay(enabled);

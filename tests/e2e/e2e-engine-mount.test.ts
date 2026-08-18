@@ -99,26 +99,37 @@ async function waitForRenderedContent(page: import('playwright').Page) {
   );
 }
 
+/**
+ * Waits for the milkdrop runtime to mount and, for a boot preset requested
+ * via the `?preset=` URL, to have finished applying it — window.stims.agent
+ * .ready() already waits out the runtime's own startup preset selection
+ * (see agent-driver.ts), which used to race a caller's own DOM poll here
+ * closely enough to make "did the boot preset actually land yet" genuinely
+ * ambiguous. Only good for the *initial* preset; a preset changed afterward
+ * (route push, popstate) needs waitForActivePreset below instead.
+ */
 async function waitForMountedStage(page: import('playwright').Page) {
-  await page.waitForFunction(
-    () =>
-      document.querySelector('#stims-main[data-active-preset-id]') !== null &&
-      document.querySelector('.stims-shell__stage-frame canvas') !== null,
-    undefined,
-    { timeout: 60000 },
-  );
+  await page.waitForSelector('#stims-main', { timeout: 30000 });
+  await page.evaluate(() => window.stims?.agent?.ready({ timeoutMs: 55000 }));
+  await page.waitForSelector('.stims-shell__stage-frame canvas', {
+    timeout: 30000,
+  });
 }
 
+/**
+ * Waits for a preset change that happens outside stims.agent's own
+ * selectPreset — a route push + popstate, in these tests — by polling the
+ * same authoritative engine state selectPreset checks, instead of two
+ * separate DOM queries (the data-active-preset-id attribute and canvas
+ * presence, checked independently before).
+ */
 async function waitForActivePreset(
   page: import('playwright').Page,
   presetId: string,
 ) {
-  await page.waitForSelector(
-    `.stims-shell__stage-frame[data-active-preset-id="${presetId}"]`,
-    {
-      state: 'attached',
-      timeout: 60000,
-    },
+  await page.evaluate(
+    (id) => window.stims?.agent?.waitForPreset(id, { timeoutMs: 55000 }),
+    presetId,
   );
 }
 
@@ -168,21 +179,24 @@ browserTest(
         { waitUntil: 'domcontentloaded' },
       );
 
-      // App shell must be present
-      await page.waitForSelector('#stims-main', { timeout: 30000 });
+      // A preset route mounts the runtime preview without inventing an audio
+      // source. This also covers the #stims-main / canvas presence checks
+      // that used to be separate waits — ready() only resolves once the
+      // shell has mounted and the boot preset from the URL has actually
+      // applied (see agent-driver.ts's startupSettled).
+      await waitForMountedStage(page);
+
       const shell = await page.$('#stims-main');
       expect(shell).not.toBeNull();
-
-      // A preset route mounts the runtime preview without inventing an audio source.
-      await waitForMountedStage(page);
-      await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
-
-      // Canvas must appear once engine finishes mounting
-      const canvas = await page.waitForSelector(
-        '.stims-shell__stage-frame canvas',
-        { timeout: 30000 },
-      );
+      const canvas = await page.$('.stims-shell__stage-frame canvas');
       expect(canvas).not.toBeNull();
+
+      // ready() already guarantees the boot preset settled; read the state
+      // once rather than polling for it.
+      const bootPresetId = await page.evaluate(
+        () => window.stims?.agent?.state().presetId,
+      );
+      expect(bootPresetId).toBe('eos-glowsticks-v2-03-music');
 
       // Wait for the GPU to produce non-zero output before asserting.
       await waitForRenderedContent(page);
@@ -241,12 +255,7 @@ browserTest(
         `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none&agent=true&renderer=webgl`,
         { waitUntil: 'domcontentloaded' },
       );
-      await page.waitForSelector('#stims-main', { timeout: 30000 });
       await waitForMountedStage(page);
-      await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
-      await page.waitForSelector('.stims-shell__stage-frame canvas', {
-        timeout: 30000,
-      });
       // Wait for the GPU to produce non-zero output before capturing.
       await waitForRenderedContent(page);
 
@@ -265,11 +274,10 @@ browserTest(
         window.history.pushState(null, '', nextUrl);
         window.dispatchEvent(new PopStateEvent('popstate'));
       });
-      await waitForMountedStage(page);
+      // The canvas element itself persists across an in-place preset switch
+      // under a pinned renderer=webgl (only a WebGPU-fallback swap replaces
+      // it) — no need to re-wait for its presence, just the state change.
       await waitForActivePreset(page, 'rovastar-parallel-universe');
-      await page.waitForSelector('.stims-shell__stage-frame canvas', {
-        timeout: 30000,
-      });
 
       // Wait for the GPU to produce non-zero output after the preset switch.
       await waitForRenderedContent(page);
