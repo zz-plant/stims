@@ -37,6 +37,16 @@
 /textures/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+# Icons and the manifest previously shipped with no Cache-Control at all,
+# leaving freshness to browser heuristics (typically 10% of file age — days
+# for these). Explicit rules make revocation predictable: a day of caching,
+# then background revalidation.
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/manifest.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
 /og/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
