@@ -16,6 +16,7 @@
         "@lezer/highlight": "^1.2.3",
         "@resvg/resvg-wasm": "^2.6.2",
         "@strudel/web": "^1.3.0",
+        "@tanstack/react-virtual": "^3.14.10",
         "browser-fs-access": "^0.38.0",
         "comlink": "^4.4.2",
         "meyda": "^5.6.3",
@@ -318,6 +319,10 @@
     "@strudel/web": ["@strudel/web@1.3.0", "", { "dependencies": { "@strudel/core": "1.2.6", "@strudel/mini": "1.2.6", "@strudel/tonal": "1.2.6", "@strudel/transpiler": "1.2.6", "@strudel/webaudio": "1.3.0" } }, "sha512-iob9+OrZMM5oMQmDNQAXc6+CYnzKaOUeARs8fcRRxDDSvCxewmZf/ancwyqVSCJsVzgCgw+I9PkpFyhSpLS3FQ=="],
 
     "@strudel/webaudio": ["@strudel/webaudio@1.3.0", "", { "dependencies": { "@strudel/core": "1.2.6", "@strudel/draw": "1.2.6", "superdough": "1.3.0", "supradough": "1.2.4" } }, "sha512-H23KJfxA5l2woG0TwNf+VMvjbj9SwR1y1qgzJW26Z35/9c5pbVs2IHPUpFwP0dWoA/4dmG2cmTMwI1e/TL8kGA=="],
+
+    "@tanstack/react-virtual": ["@tanstack/react-virtual@3.14.10", "", { "dependencies": { "@tanstack/virtual-core": "3.17.8" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-SRyoUbdFMRHuYXMijV5H4ZarQWpXkj3iANq8OFre+pybeVap8ZJjZ3Nz9bVjx4d8PfobVUQUdKyyyHYk3E+djw=="],
+
+    "@tanstack/virtual-core": ["@tanstack/virtual-core@3.17.8", "", {}, "sha512-BfEvehNpOT75r5Ksc5xW6NZuXujTfb7nlSEyVu4XHG3gdxNg1KqXruWbDewXOUaUYIo4oRbSfkjIajz4MAT8tA=="],
 
     "@tonaljs/abc-notation": ["@tonaljs/abc-notation@4.9.1", "", { "dependencies": { "@tonaljs/pitch-distance": "5.0.5", "@tonaljs/pitch-note": "6.1.0" } }, "sha512-2fDUdPsFDdgZgyIiZCTYGKy30QiwIQxSXCSN2thGrSMXbQKCp8iTC8haStYcrA+25MPWhWlmvC/pz3tGcTNAqQ=="],
 

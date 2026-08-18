@@ -619,10 +619,26 @@ function StimsWorkspaceAppShell() {
   // rather than paying its Suspense fallback cold.
   useEffect(() => {
     return deferToIdle(() => {
-      void import('./EditorPanel.tsx');
-      void import('./RefinePanel.tsx');
-      void import('../milkdrop/overlay/editor-panel.ts');
+      // Browse earns its prewarm everywhere: it's the app's primary
+      // navigation surface and a likely first interaction on any device.
       void import('./BrowseSheetPanel.tsx');
+      // The code editor (and its ~125KB-gzipped CodeMirror bundle) is a
+      // desktop workflow: on coarse-pointer devices, and for anyone who
+      // asked their browser to save data, don't spend mobile radio time on
+      // a panel almost no phone user opens — the first E press pays the
+      // Suspense fallback instead.
+      const saveData =
+        (
+          navigator as Navigator & {
+            connection?: { saveData?: boolean };
+          }
+        ).connection?.saveData === true;
+      const finePointer = window.matchMedia('(pointer: fine)').matches;
+      if (finePointer && !saveData) {
+        void import('./EditorPanel.tsx');
+        void import('./RefinePanel.tsx');
+        void import('../milkdrop/overlay/editor-panel.ts');
+      }
     });
   }, []);
 
@@ -1042,6 +1058,13 @@ function StimsWorkspaceAppShell() {
   }, []);
 
   const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
+  // Browse virtualizes its preset list (BrowseSheetPanel), which needs a
+  // dedicated, bounded-height scroll container rather than the sheet's
+  // normal whole-body scroll — the same "manages its own scrolling" shape
+  // the editor already opts into via fillBody, just without editor's
+  // additional stage-anchored placement.
+  const sidePanelFillBody =
+    stageAnchoredToolOpen || ui.routeState.panel === 'browse';
 
   return (
     <main
@@ -1083,7 +1106,7 @@ function StimsWorkspaceAppShell() {
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
         stageAnchored={stageAnchoredToolOpen}
-        fillBody={stageAnchoredToolOpen}
+        fillBody={sidePanelFillBody}
         onOpen={handleSidePanelOpen}
       >
         <Suspense fallback={<PanelLoadingFallback />}>
