@@ -152,6 +152,13 @@ jobs:
   visual-evidence:
     name: Visual evidence (manual)
     runs-on: ubuntu-latest
+    # No job here should ever legitimately run long: ui:diff + two
+    # lab:visual presets normally finish in a few minutes. Without this,
+    # a hang (confirmed: lab:visual silently hung after starting its
+    # second preset's dev server, no output, no crash) runs to GitHub's
+    # default 6-hour job timeout and burns that much billed runner time
+    # for nothing. Keep this well above normal runtime but far below "hours".
+    timeout-minutes: 20
     # Manual-only, deliberately not part of ci-status or its `needs:` list.
     # Captures + reports; asserts nothing on pixel content. The old e2e
     # visual-regression test was removed from `integration` above because
@@ -195,6 +202,7 @@ jobs:
         continue-on-error: true
 
       - name: Capture bundled preset visuals (software rendering — no GPU on this runner)
+        timeout-minutes: 10
         env:
           STIMS_SOFTWARE_RENDER: '1'
         run: |
