@@ -97,6 +97,7 @@
     "generate:descriptions": "bun run scripts/build-preset-descriptions.ts",
     "generate:clips": "bun run scripts/generate-readme-clips.ts",
     "bench:butterchurn": "bun run scripts/bench-vs-butterchurn.ts",
+    "trace:butterchurn": "bun run scripts/trace-vs-butterchurn.ts",
     "profile:frame": "bun run scripts/profile-frame.ts",
     "previews:sync": "bun run scripts/sync-previews-r2.ts",
     "generate:all": "bun run --parallel generate:previews && bun run generate:descriptions",
