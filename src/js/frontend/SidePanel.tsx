@@ -71,10 +71,17 @@ export function SidePanel({
   const closeTimerRef = useRef<number | null>(null);
 
   const isActive = open && !exiting;
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useFocusTrap<HTMLDivElement>({
     active: isActive,
     autoFocus: true,
     restoreFocusOnUnmount: true,
+    // Stage-anchored panels are non-modal: the stage and dock stay usable
+    // beside them (for pointer AND keyboard), so focus must not be fenced in.
+    // The seam is first in DOM order but is the wrong first landing — start
+    // on the close button, a control every panel shares.
+    trapFocus: !stageAnchored,
+    initialFocusRef: stageAnchored ? closeBtnRef : undefined,
   });
 
   const startClose = useCallback(() => {
@@ -247,12 +254,22 @@ export function SidePanel({
   const handleSeamKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const current = clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH);
+      // stopPropagation: ArrowLeft/ArrowRight are also the global
+      // previous/shuffle preset shortcuts on document — a resize nudge must
+      // not switch presets underneath the editor.
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        e.stopPropagation();
         commitSeamWidth(clampSeamWidth(current + SEAM_KEY_STEP));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
+        e.stopPropagation();
         commitSeamWidth(clampSeamWidth(current - SEAM_KEY_STEP));
+      } else if (e.key === 'Enter') {
+        // Keyboard path for the double-click reset.
+        e.preventDefault();
+        e.stopPropagation();
+        commitSeamWidth(null);
       }
     },
     [seamWidth, commitSeamWidth],
@@ -295,7 +312,7 @@ export function SidePanel({
         data-exiting={String(exiting)}
         data-stage-anchored={stageAnchored ? 'true' : undefined}
         role="dialog"
-        aria-modal="true"
+        aria-modal={stageAnchored ? undefined : 'true'}
         aria-label={title}
         data-shell-dialog="true"
         tabIndex={-1}
@@ -308,7 +325,7 @@ export function SidePanel({
               role="separator"
               aria-orientation="vertical"
               aria-label="Resize editor panel"
-              aria-keyshortcuts="ArrowLeft ArrowRight"
+              aria-keyshortcuts="ArrowLeft ArrowRight Enter"
               aria-valuemin={SEAM_MIN_WIDTH}
               aria-valuemax={
                 typeof window !== 'undefined'
@@ -317,7 +334,7 @@ export function SidePanel({
               }
               aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
               tabIndex={0}
-              title="← → to resize · double-click to reset"
+              title="← → to resize · Enter or double-click to reset"
               onPointerDown={handleSeamPointerDown}
               onPointerMove={handleSeamPointerMove}
               onPointerUp={handleSeamPointerEnd}
@@ -344,6 +361,7 @@ export function SidePanel({
           <div className={styles.grabber} aria-hidden="true" />
           <h2 className={styles.title}>{title}</h2>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.closeBtn}
             onClick={startClose}

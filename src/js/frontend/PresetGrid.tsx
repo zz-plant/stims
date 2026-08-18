@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
+import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 
 /**
@@ -31,7 +32,11 @@ const GridTile = memo(function GridTile({
       type="button"
       className="stims-preset-grid__item"
       data-preset-id={entry.id}
-      aria-label={entry.title || entry.id}
+      aria-label={
+        variants > 0
+          ? `${entry.title || entry.id} (+${variants} near-identical variant${variants === 1 ? '' : 's'})`
+          : entry.title || entry.id
+      }
       onPointerEnter={() => onAudition(entry.id)}
       onPointerLeave={() => onAuditionEnd(entry.id)}
       onFocus={() => onAudition(entry.id)}
@@ -93,6 +98,15 @@ export function PresetGrid({
 
   const gridRef = useRef<HTMLElement | null>(null);
   const [auditionId, setAuditionId] = useState<string | null>(null);
+
+  // Same roving pattern as the list view: one Tab stop for the whole grid,
+  // arrows/Home/End move between tiles — otherwise every tile is its own
+  // Tab stop and reaching the Nth costs N presses.
+  useListKeyboardNav(gridRef, {
+    itemSelector: '.stims-preset-grid__item',
+    orientation: 'grid',
+    deps: [catalogEntries],
+  });
 
   const { visibleEntries, variantCounts } = useMemo(() => {
     const present = new Set(catalogEntries.map((entry) => entry.id));

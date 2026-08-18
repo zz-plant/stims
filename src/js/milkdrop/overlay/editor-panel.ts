@@ -105,6 +105,7 @@ import {
 } from '../preset-modulation.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
+import { numberScrubExtension } from './editor-number-scrub.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
 
 export { computeAstDiagnostics, mergeDiagnostics };
@@ -619,12 +620,16 @@ function createEditorView({
   onBufferedEdit,
   isChangeSuppressed,
   onQuickFixDiagnostic,
+  onEscapeBlur,
 }: {
   parent: HTMLElement;
   onDocChange: (source: string) => void;
   onBufferedEdit: () => void;
   isChangeSuppressed: () => boolean;
   onQuickFixDiagnostic: (diagnostic: MilkdropDiagnostic) => void;
+  /** Called when Escape leaves the editor so the panel can park focus on a
+   * sensible control instead of dropping it on <body>. */
+  onEscapeBlur: () => void;
 }) {
   let debounceId: number | null = null;
   let view: EditorView;
@@ -681,6 +686,10 @@ function createEditorView({
         EditorState.allowMultipleSelections.of(true),
         rectangularSelection(),
         crosshairCursor(),
+        // Alt-drag a numeric literal to scrub it like a slider (Alt+Arrow
+        // Up/Down is the keyboard equivalent). Registered before the keymaps
+        // so its Prec.highest bindings resolve ahead of moveLineUp/copyLineUp.
+        numberScrubExtension(),
         keymap.of([
           ...closeBracketsKeymap,
           ...searchKeymap,
@@ -717,6 +726,22 @@ function createEditorView({
       ],
     }),
     parent,
+  });
+
+  // Escape inside the code must never fall through to the document-level
+  // handler that closes the whole editor panel. CodeMirror's own listener is
+  // registered first, so its Escape bindings (snippet clear, search close,
+  // selection simplify) have already run — and preventDefault'ed — by the
+  // time this fires; when none of them claimed the key, Escape becomes
+  // "leave the editor": blur the content DOM and hand focus back to the
+  // panel. The listener dies with contentDOM on view.destroy().
+  view.contentDOM.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    view.contentDOM.blur();
+    onEscapeBlur();
   });
 
   const unsubscribeTheme = subscribeToThemePreference(({ theme }) => {
@@ -908,11 +933,17 @@ export class EditorPanel {
     this.safetyFlag = document.createElement('span');
     this.safetyFlag.className = 'stims-editor__flag stims-editor__flag--safety';
     this.safetyFlag.hidden = true;
+    // The apply shortcut is also part of the Update button's accessible
+    // name, so the visual chip can stay decorative.
     const shortcutHint = document.createElement('span');
     shortcutHint.className = 'stims-editor__shortcut';
     shortcutHint.textContent = '⌘/Ctrl+⏎';
     shortcutHint.title = 'Apply the draft immediately';
-    flags.append(this.safetyFlag, shortcutHint);
+    shortcutHint.setAttribute('aria-hidden', 'true');
+    const scrubHint = document.createElement('span');
+    scrubHint.className = 'stims-editor__shortcut';
+    scrubHint.textContent = '⌥ drag number to scrub';
+    flags.append(this.safetyFlag, scrubHint, shortcutHint);
     statusBar.append(this.stateEl, flags);
 
     // ── Toolbar ───────────────────────────────────────────────────
@@ -925,6 +956,7 @@ export class EditorPanel {
     const applyButton = this.createButton('Update now', {
       variant: 'primary',
       title: 'Apply the draft now (Cmd/Ctrl+Enter)',
+      ariaLabel: 'Update now — apply the draft (Cmd/Ctrl+Enter)',
       onClick: () => this.applyCurrentSource(),
     });
     applyButton.dataset.action = 'apply';
@@ -970,6 +1002,10 @@ export class EditorPanel {
     menu.className = 'stims-editor__menu';
     menu.hidden = true;
     menu.setAttribute('role', 'menu');
+    const visibleMenuItems = (): HTMLButtonElement[] =>
+      Array.from(
+        menu.querySelectorAll<HTMLButtonElement>('.stims-editor__menu-item'),
+      ).filter((item) => !item.hidden);
     const menuButton = this.createButton('⋯', {
       variant: 'icon',
       title: 'Preset actions',
@@ -977,6 +1013,9 @@ export class EditorPanel {
       onClick: () => {
         menu.hidden = !menu.hidden;
         menuButton.setAttribute('aria-expanded', String(!menu.hidden));
+        // Standard menu-button contract: opening the menu moves focus to
+        // its first item so arrow keys work immediately.
+        if (!menu.hidden) visibleMenuItems()[0]?.focus();
       },
     });
     menuButton.setAttribute('aria-haspopup', 'menu');
@@ -996,6 +1035,9 @@ export class EditorPanel {
       item.type = 'button';
       item.className = 'stims-editor__menu-item';
       item.setAttribute('role', 'menuitem');
+      // Menu items are reached with arrow keys, not Tab — the trigger is
+      // the single tab stop for the whole widget.
+      item.tabIndex = -1;
       item.textContent = label;
       if (tone) item.dataset.tone = tone;
       item.addEventListener('click', () => {
@@ -1004,6 +1046,36 @@ export class EditorPanel {
       });
       return item;
     };
+    // ArrowUp/ArrowDown/Home/End roving focus inside the open menu; the
+    // handled keys are consumed so nothing upstream scrolls or navigates.
+    menu.addEventListener('keydown', (event) => {
+      const items = visibleMenuItems();
+      if (items.length === 0) return;
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      let next: number;
+      switch (event.key) {
+        case 'ArrowDown':
+          next = index < 0 ? 0 : (index + 1) % items.length;
+          break;
+        case 'ArrowUp':
+          next =
+            index < 0
+              ? items.length - 1
+              : (index - 1 + items.length) % items.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = items.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      items[next].focus();
+    });
     const menuSeparator = document.createElement('div');
     menuSeparator.className = 'stims-editor__menu-sep';
     this.deleteButton = menuItem(
@@ -1025,14 +1097,22 @@ export class EditorPanel {
     const dismissMenu = (event: MouseEvent) => {
       if (!menuWrap.contains(event.target as Node)) closeMenu();
     };
+    // Registered in the capture phase so an Escape aimed at the open menu is
+    // consumed before the document-level bubble handler that closes the whole
+    // editor panel — one press closes the menu, a second closes the panel.
+    // With the menu closed the key is left alone entirely.
     const dismissMenuOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
+      if (event.key !== 'Escape' || menu.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeMenu();
+      menuButton.focus();
     };
     document.addEventListener('pointerdown', dismissMenu);
-    document.addEventListener('keydown', dismissMenuOnEscape);
+    document.addEventListener('keydown', dismissMenuOnEscape, true);
     this.disposeMenuDismiss = () => {
       document.removeEventListener('pointerdown', dismissMenu);
-      document.removeEventListener('keydown', dismissMenuOnEscape);
+      document.removeEventListener('keydown', dismissMenuOnEscape, true);
     };
 
     toolbar.append(applyButton, revertButton, undoRedo, spacer, menuWrap);
@@ -1082,6 +1162,9 @@ export class EditorPanel {
       isChangeSuppressed: () => this.suppressEditorChange,
       onQuickFixDiagnostic: (diagnostic) =>
         this.applyQuickFixForDiagnostic(diagnostic),
+      // Escape out of the code lands on the primary action rather than
+      // dropping focus on <body>.
+      onEscapeBlur: () => applyButton.focus(),
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
@@ -1150,30 +1233,71 @@ export class EditorPanel {
       { id: 'history', label: 'History', content: this.renderHistoryPane() },
     ];
     const tabButtons: HTMLButtonElement[] = [];
+    // Selection and roving tabindex move together: the selected tab is the
+    // tablist's single Tab stop, arrows move both focus and selection.
+    const selectTab = (tab: HTMLButtonElement) => {
+      // Selecting a tab in a collapsed dock should show it, not silently
+      // change a hidden selection.
+      dock.dataset.open = 'true';
+      dockToggle.textContent = '▾';
+      tabButtons.forEach((other, otherIndex) => {
+        const selected = other === tab;
+        other.setAttribute('aria-selected', String(selected));
+        other.tabIndex = selected ? 0 : -1;
+        panes[otherIndex].content.hidden = !selected;
+      });
+    };
     panes.forEach((pane, index) => {
       const tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'stims-editor__tab';
       tab.textContent = pane.label;
+      tab.id = `stims-editor-tab-${pane.id}`;
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-selected', String(index === 0));
+      tab.setAttribute('aria-controls', `stims-editor-pane-${pane.id}`);
+      tab.tabIndex = index === 0 ? 0 : -1;
       tab.dataset.pane = pane.id;
       pane.content.classList.add('stims-editor__pane');
+      pane.content.id = `stims-editor-pane-${pane.id}`;
       pane.content.setAttribute('role', 'tabpanel');
+      pane.content.setAttribute(
+        'aria-labelledby',
+        `stims-editor-tab-${pane.id}`,
+      );
       pane.content.hidden = index !== 0;
-      tab.addEventListener('click', () => {
-        // Selecting a tab in a collapsed dock should show it, not silently
-        // change a hidden selection.
-        dock.dataset.open = 'true';
-        dockToggle.textContent = '▾';
-        tabButtons.forEach((other, otherIndex) => {
-          other.setAttribute('aria-selected', String(other === tab));
-          panes[otherIndex].content.hidden = other !== tab;
-        });
-      });
+      tab.addEventListener('click', () => selectTab(tab));
       tabButtons.push(tab);
       tabs.appendChild(tab);
       dockBody.appendChild(pane.content);
+    });
+    tabs.addEventListener('keydown', (event) => {
+      const current = tabButtons.indexOf(event.target as HTMLButtonElement);
+      // The dock toggle shares the strip but is not a tab; leave its keys
+      // (and any unhandled key) alone.
+      if (current === -1) return;
+      let next: number;
+      switch (event.key) {
+        case 'ArrowRight':
+          next = (current + 1) % tabButtons.length;
+          break;
+        case 'ArrowLeft':
+          next = (current - 1 + tabButtons.length) % tabButtons.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = tabButtons.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const tab = tabButtons[next];
+      selectTab(tab);
+      tab.focus();
     });
 
     const dockToggle = document.createElement('button');
@@ -1695,7 +1819,11 @@ export class EditorPanel {
           const lineNum = diagnostic.line;
           item.classList.add('stims-editor__problem--jump');
           item.title = 'Jump to this line';
-          item.addEventListener('click', () => {
+          // The row acts as a button, so it must be reachable and operable
+          // from the keyboard like one.
+          item.setAttribute('role', 'button');
+          item.tabIndex = 0;
+          const jumpToLine = () => {
             if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
               const line = this.editor.state.doc.line(lineNum);
               this.editor.dispatch({
@@ -1704,6 +1832,13 @@ export class EditorPanel {
               });
               this.editor.focus();
             }
+          };
+          item.addEventListener('click', jumpToLine);
+          item.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            event.stopPropagation();
+            jumpToLine();
           });
         }
         this.diagnosticsList.appendChild(item);
@@ -2070,7 +2205,11 @@ export class EditorPanel {
     input.step = '0.001';
     input.className = 'stims-editor__slider-input';
     input.dataset.scale = s.scale;
-    input.setAttribute('aria-label', s.label);
+    // The label's title hint is hover-only; fold it into the fader's name.
+    input.setAttribute(
+      'aria-label',
+      s.hint ? `${s.label}. ${s.hint}` : s.label,
+    );
 
     const applyValue = (value: number) => {
       input.value = String(valueToPosition(value, s));
@@ -2179,12 +2318,18 @@ export class EditorPanel {
       option.value = source.key;
       option.textContent = source.label;
       option.title = source.hint;
+      // Option titles never show in most pickers; keep the hint in the
+      // accessible name instead.
+      option.setAttribute('aria-label', `${source.label}. ${source.hint}`);
       sourceSelect.appendChild(option);
     }
 
     const modeButton = document.createElement('button');
     modeButton.type = 'button';
     modeButton.className = 'stims-editor__mod-mode';
+    // The glyph ('+' / '×') means nothing on its own; updateModulationsFromDoc
+    // keeps this name in sync with the current mode.
+    modeButton.setAttribute('aria-label', `${s.label} modulation mode`);
 
     const depth = document.createElement('input');
     depth.type = 'range';
@@ -2302,10 +2447,17 @@ export class EditorPanel {
         item.depth.value = String(modulation.depth);
       }
       item.modeButton.textContent = modulation.mode === 'add' ? '+' : '×';
-      item.modeButton.title =
+      const modeHint =
         modulation.mode === 'add'
           ? 'Added to the base value. Click for multiply.'
           : 'Scales the base value. Click for add.';
+      item.modeButton.title = modeHint;
+      item.modeButton.setAttribute(
+        'aria-label',
+        `${item.config.label} modulation mode: ${
+          modulation.mode === 'add' ? 'add' : 'multiply'
+        }. ${modeHint}`,
+      );
       item.readout.textContent = `${modulation.depth >= 0 ? '+' : ''}${modulation.depth.toFixed(2)}`;
       item.readout.title = `${item.config.label} = ${modulation.base} ${
         modulation.mode === 'add' ? '+' : '×'
@@ -2346,6 +2498,8 @@ export class EditorPanel {
     button.className = 'stims-editor__toggle';
     button.textContent = toggle.label;
     button.title = toggle.hint;
+    // The hint is part of the accessible name, not just a hover tooltip.
+    button.setAttribute('aria-label', `${toggle.label}. ${toggle.hint}`);
     button.setAttribute('role', 'switch');
 
     button.addEventListener('click', () => {
@@ -2396,16 +2550,32 @@ export class EditorPanel {
     const bank = document.createElement('div');
     bank.className = 'stims-editor__segmented';
     bank.setAttribute('role', 'radiogroup');
-    bank.setAttribute('aria-label', config.label);
+    // The hint used to live only in the label's title, i.e. hover-only;
+    // folding it into the group name gives everyone the same information.
+    bank.setAttribute(
+      'aria-label',
+      config.hint ? `${config.label}. ${config.hint}` : config.label,
+    );
 
+    const defaultValue = Math.round(config.defaultValue);
     const buttons: HTMLButtonElement[] = [];
     for (const option of config.options) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'stims-editor__segment';
       button.textContent = option.label;
-      button.title = option.hint ?? `${config.label}: ${option.label}`;
+      if (option.hint) {
+        button.title = option.hint;
+        // Per-option hints were hover-only too.
+        button.setAttribute('aria-label', `${option.label}. ${option.hint}`);
+      } else {
+        button.title = `${config.label}: ${option.label}`;
+      }
       button.setAttribute('role', 'radio');
+      button.setAttribute(
+        'aria-checked',
+        String(option.value === defaultValue),
+      );
       button.addEventListener('click', () => {
         this.writeVariableToEditor(config.key, option.value);
         this.updateEnumsFromDoc();
@@ -2413,6 +2583,46 @@ export class EditorPanel {
       buttons.push(button);
       bank.appendChild(button);
     }
+    // Roving tabindex: the checked radio (or the first, when the default
+    // matches no option) is the group's single Tab stop; updateEnumsFromDoc
+    // keeps this in sync with the doc afterwards.
+    const checkedIndex = config.options.findIndex(
+      (option) => option.value === defaultValue,
+    );
+    buttons.forEach((button, index) => {
+      button.tabIndex = index === Math.max(checkedIndex, 0) ? 0 : -1;
+    });
+
+    // Radio-group arrow keys: moving focus also selects, per the ARIA
+    // pattern (and matching how native radios behave).
+    bank.addEventListener('keydown', (event) => {
+      const current = buttons.indexOf(event.target as HTMLButtonElement);
+      if (current === -1) return;
+      let next: number;
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          next = (current + 1) % buttons.length;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          next = (current - 1 + buttons.length) % buttons.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = buttons.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.writeVariableToEditor(config.key, config.options[next].value);
+      this.updateEnumsFromDoc();
+      buttons[next].focus();
+    });
 
     this.enumInputs.set(config.key, { buttons, config });
     row.append(head, bank);
@@ -2424,6 +2634,9 @@ export class EditorPanel {
       const value = Math.round(
         this.readVariableFromEditor(key) ?? item.config.defaultValue,
       );
+      const selectedIndex = item.config.options.findIndex(
+        (option) => option.value === value,
+      );
       item.config.options.forEach((option, index) => {
         const selected = option.value === value;
         item.buttons[index].dataset.on = selected ? 'true' : 'false';
@@ -2431,6 +2644,11 @@ export class EditorPanel {
           'aria-checked',
           selected ? 'true' : 'false',
         );
+        // Keep the roving tab stop on the checked radio; if the doc holds a
+        // value outside the enum, fall back to the first option so the
+        // group stays Tab-reachable.
+        item.buttons[index].tabIndex =
+          index === Math.max(selectedIndex, 0) ? 0 : -1;
       });
     });
   }
@@ -2474,9 +2692,11 @@ export class EditorPanel {
       input.step = String(config.step);
       input.className = 'stims-editor__range-input';
       input.dataset.handle = which;
+      const boundName = `${config.label} ${which === 'min' ? 'lower' : 'upper'} bound`;
+      // The pair's hint otherwise lives only in the label's hover title.
       input.setAttribute(
         'aria-label',
-        `${config.label} ${which === 'min' ? 'lower' : 'upper'} bound`,
+        config.hint ? `${boundName}. ${config.hint}` : boundName,
       );
       return input;
     };

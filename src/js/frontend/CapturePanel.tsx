@@ -16,6 +16,18 @@ const CAPTURE_FORMATS = [
   'youtube-shorts',
 ] as const;
 
+const CAPTURE_FORMAT_STORAGE_KEY = 'stims:capture-format';
+
+function initialCaptureFormat(): (typeof CAPTURE_FORMATS)[number] {
+  try {
+    const stored = localStorage.getItem(CAPTURE_FORMAT_STORAGE_KEY);
+    const match = CAPTURE_FORMATS.find((format) => format === stored);
+    return match ?? 'hd-landscape';
+  } catch {
+    return 'hd-landscape';
+  }
+}
+
 function getFilename(preset: ExportPresetTarget, mimeType: string) {
   const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
   return `stims-${preset}-${new Date().toISOString().slice(0, 10)}.${extension}`;
@@ -25,7 +37,7 @@ export function CapturePanel() {
   const { engine, ui } = useWorkspace();
   const exporterRef = useRef<CanvasVideoExporter | null>(null);
   const [preset, setPreset] =
-    useState<(typeof CAPTURE_FORMATS)[number]>('hd-landscape');
+    useState<(typeof CAPTURE_FORMATS)[number]>(initialCaptureFormat);
   const [support, setSupport] = useState<CanvasVideoExporterSupport | null>(
     null,
   );
@@ -143,7 +155,12 @@ export function CapturePanel() {
                 name="capture-format"
                 value={format}
                 checked={preset === format}
-                onChange={() => setPreset(format)}
+                onChange={() => {
+                  setPreset(format);
+                  try {
+                    localStorage.setItem(CAPTURE_FORMAT_STORAGE_KEY, format);
+                  } catch {}
+                }}
               />
               <span>
                 <strong>{details.label}</strong>

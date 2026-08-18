@@ -1,4 +1,6 @@
+import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import {
   isInAppBrowser,
   isMobileDevice,
@@ -84,6 +86,30 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
     }
   };
 
+  // A pasted link that parses is a load request — start it without waiting
+  // for a Load click. Typed input still goes through the Load button. The
+  // default paste action is left alone so the field updates as usual.
+  const handleYoutubeUrlPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    if (youtubeLoading) {
+      return;
+    }
+    const pastedText = event.clipboardData.getData('text');
+    if (!pastedText.trim()) {
+      return;
+    }
+    const input = event.currentTarget;
+    const selectionStart = input.selectionStart ?? input.value.length;
+    const selectionEnd = input.selectionEnd ?? input.value.length;
+    const nextValue =
+      input.value.slice(0, selectionStart) +
+      pastedText +
+      input.value.slice(selectionEnd);
+    if (!parseYouTubeVideoReference(nextValue)) {
+      return;
+    }
+    void engine.loadYouTubePreview(nextValue);
+  };
+
   const isAppBrowser = isInAppBrowser();
 
   return (
@@ -149,6 +175,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             onKeyDown={(e) =>
               onYoutubeUrlKeyDown(e, () => onAudioStart('youtube'))
             }
+            onPaste={handleYoutubeUrlPaste}
           />
           <button
             id="load-youtube"

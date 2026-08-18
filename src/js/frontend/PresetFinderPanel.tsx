@@ -41,6 +41,17 @@ export type FinderMode = 'sound' | 'look';
  */
 const MIN_SCORE = 0.62;
 
+const FINDER_MODE_STORAGE_KEY = 'stims:finder-mode';
+
+function readStoredFinderMode(): FinderMode | null {
+  try {
+    const stored = localStorage.getItem(FINDER_MODE_STORAGE_KEY);
+    return stored === 'sound' || stored === 'look' ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Both searches collapse onto this so the results list is written once. */
 type FinderResult = {
   id: string;
@@ -76,7 +87,15 @@ export function PresetFinderPanel({
   onClose: () => void;
 }) {
   const { engine, ui } = useWorkspace();
-  const [mode, setMode] = useState<FinderMode>(initialMode);
+  const [mode, setMode] = useState<FinderMode>(() => {
+    // The remembered mode wins over the route's default, but availability
+    // stays authoritative: searching by sound needs live audio, so a
+    // remembered 'sound' falls back to 'look' when nothing is playing.
+    const candidate = readStoredFinderMode() ?? initialMode;
+    return candidate === 'sound' && !(getAudioEnergy() > 0.02)
+      ? 'look'
+      : candidate;
+  });
   const [results, setResults] = useState<FinderResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +210,12 @@ export function PresetFinderPanel({
               className="stims-finder__mode-input"
               value={candidate.id}
               checked={candidate.id === mode}
-              onChange={() => setMode(candidate.id)}
+              onChange={() => {
+                setMode(candidate.id);
+                try {
+                  localStorage.setItem(FINDER_MODE_STORAGE_KEY, candidate.id);
+                } catch {}
+              }}
             />
             {candidate.label}
           </label>

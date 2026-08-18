@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -36,8 +37,10 @@ import {
   toAgentEditorState,
   updateAgentTelemetry,
 } from './agent-bridge.ts';
+import { CommandPalette, useCommandPaletteHotkey } from './CommandPalette.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
+import type { CommandAction } from './command-palette-registry.ts';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
   getAudioEnergy,
@@ -194,13 +197,6 @@ function StimsWorkspaceAppShell() {
       return false;
     }
   });
-  const [partyRemoteMode, setPartyRemoteMode] = useState(() => {
-    try {
-      return localStorage.getItem('stims:mobile-party-remote') === 'true';
-    } catch {
-      return false;
-    }
-  });
   const [hapticsEnabled, setHapticsEnabled] = useState(() => {
     try {
       return localStorage.getItem('stims:mobile-haptics') !== 'false';
@@ -293,6 +289,149 @@ function StimsWorkspaceAppShell() {
     setShowShortcuts,
   });
 
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useCommandPaletteHotkey(() => setPaletteOpen(true));
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen state
+  const paletteActions: CommandAction[] = useMemo(
+    () => [
+      {
+        id: 'open-browse',
+        label: 'Browse presets',
+        shortcutHint: 'B',
+        run: () => ui.updatePanel('browse'),
+      },
+      {
+        id: 'next-preset',
+        label: 'Next preset (random)',
+        shortcutHint: 'N',
+        keywords: ['shuffle', 'surprise'],
+        run: () => void engine.handleShufflePreset(),
+      },
+      {
+        id: 'previous-preset',
+        label: 'Previous preset',
+        shortcutHint: 'P',
+        keywords: ['back'],
+        run: () => void engine.handlePreviousPreset(),
+      },
+      {
+        id: 'save-preset',
+        label: 'Save preset',
+        shortcutHint: 'A',
+        keywords: ['favorite', 'star'],
+        run: toggleFavoriteCurrentPreset,
+      },
+      {
+        id: 'find-similar',
+        label: 'Find similar presets',
+        shortcutHint: 'M',
+        keywords: ['match', 'sound', 'look'],
+        run: () => void engine.handleVisualSearch(),
+      },
+      {
+        id: 'open-editor',
+        label: 'Edit preset code',
+        shortcutHint: 'E',
+        run: () => ui.updatePanel('editor'),
+      },
+      {
+        id: 'open-refine',
+        label: 'Refine with AI',
+        shortcutHint: 'G',
+        run: () => ui.updatePanel('refine'),
+      },
+      {
+        id: 'open-generate',
+        label: 'Generate with AI',
+        keywords: ['synthesize', 'create', 'make'],
+        run: () => ui.updatePanel('synthesize'),
+      },
+      {
+        id: 'open-record',
+        label: 'Record video',
+        keywords: ['capture', 'export'],
+        run: () => ui.updatePanel('capture'),
+      },
+      {
+        id: 'open-settings',
+        label: 'Settings',
+        shortcutHint: 'S',
+        run: () => ui.updatePanel('settings'),
+      },
+      {
+        id: 'toggle-fullscreen',
+        label: isFullscreen ? 'Exit full screen' : 'Full screen',
+        shortcutHint: 'F',
+        run: handleToggleFullscreen,
+      },
+      {
+        id: 'share-link',
+        label: 'Share link',
+        keywords: ['copy', 'url'],
+        run: () => void ui.handleShowCurrentLink(),
+      },
+      {
+        id: 'transition-cut',
+        label: 'Transition: instant cut',
+        run: () => engine.setTransitionMode('cut'),
+      },
+      {
+        id: 'transition-1s',
+        label: 'Transition: 1s blend',
+        run: () => {
+          engine.setTransitionMode('blend');
+          engine.setBlendDuration(1);
+        },
+      },
+      {
+        id: 'transition-2s',
+        label: 'Transition: 2s blend',
+        run: () => {
+          engine.setTransitionMode('blend');
+          engine.setBlendDuration(2);
+        },
+      },
+      {
+        id: 'transition-5s',
+        label: 'Transition: 5s blend',
+        run: () => {
+          engine.setTransitionMode('blend');
+          engine.setBlendDuration(5);
+        },
+      },
+      {
+        id: 'audio-demo',
+        label: 'Play demo audio',
+        keywords: ['source', 'sample'],
+        run: () => void engine.handleAudioStart('demo'),
+      },
+      {
+        id: 'audio-microphone',
+        label: 'Use microphone audio',
+        keywords: ['source', 'mic'],
+        run: () => void engine.handleAudioStart('microphone'),
+      },
+      {
+        id: 'audio-tab',
+        label: "Use this tab's audio",
+        keywords: ['source', 'capture'],
+        run: () => void engine.handleAudioStart('tab'),
+      },
+      ...(liveMode
+        ? [
+            {
+              id: 'stop-audio',
+              label: 'Stop audio',
+              shortcutHint: 'Space',
+              run: () => engine.handleAudioStop(),
+            } satisfies CommandAction,
+          ]
+        : []),
+    ],
+    [liveMode, isFullscreen],
+  );
+
   useStageGesture({
     enabled: liveMode,
     stageRef: ui.stageRef,
@@ -307,7 +446,8 @@ function StimsWorkspaceAppShell() {
   });
 
   // Agent bridge is only needed for MCP/automation sessions; defer to idle
-  // so it doesn't block the interactive shell on first paint.
+  // so it doesn't block the interactive shell on first paint. Installed once;
+  // live values flow through refs.
   useEffect(() => {
     return deferToIdle(() => {
       return initAgentBridge({
@@ -366,16 +506,17 @@ function StimsWorkspaceAppShell() {
           return compiled ? { ...compiled.ir.numericFields } : null;
         },
         applyEditorSource: async (source) => {
-          const state = await engineBridgeRef.current.applyEditorSourceAwaited(source);
+          const state =
+            await engineBridgeRef.current.applyEditorSourceAwaited(source);
           return state ? toAgentEditorState(state) : null;
         },
         applyEditorFields: async (updates) => {
-          const state = await engineBridgeRef.current.applyEditorFieldsAwaited(updates);
+          const state =
+            await engineBridgeRef.current.applyEditorFieldsAwaited(updates);
           return state ? toAgentEditorState(state) : null;
         },
       });
     });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: install once; live values flow through refs
   }, []);
 
   // The editor and refine panels are code-split, and the editor's first open
@@ -643,13 +784,6 @@ function StimsWorkspaceAppShell() {
     } catch {}
   }, []);
 
-  const updatePartyRemoteMode = useCallback((enabled: boolean) => {
-    setPartyRemoteMode(enabled);
-    try {
-      localStorage.setItem('stims:mobile-party-remote', String(enabled));
-    } catch {}
-  }, []);
-
   const updateHapticsEnabled = useCallback((enabled: boolean) => {
     setHapticsEnabled(enabled);
     try {
@@ -762,12 +896,6 @@ function StimsWorkspaceAppShell() {
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
   useEffect(() => {
-    if (!audioMatch) return;
-    const timeoutId = window.setTimeout(() => setAudioMatch(null), 6000);
-    return () => window.clearTimeout(timeoutId);
-  }, [audioMatch]);
-
-  useEffect(() => {
     const handleOpenShortcuts = () => setShowShortcuts(true);
     window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
     return () =>
@@ -859,8 +987,6 @@ function StimsWorkspaceAppShell() {
             <SettingsSheetPanel
               thumbMode={thumbMode}
               onThumbModeChange={updateThumbMode}
-              partyRemoteMode={partyRemoteMode}
-              onPartyRemoteModeChange={updatePartyRemoteMode}
               hapticsEnabled={hapticsEnabled}
               onHapticsEnabledChange={updateHapticsEnabled}
               offline={offline}
@@ -915,8 +1041,20 @@ function StimsWorkspaceAppShell() {
       <AudioMatchToast
         match={audioMatch}
         onSelect={engine.handlePresetSelection}
+        onDismiss={() => setAudioMatch(null)}
       />
       <MidiPerformanceHud />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={paletteActions}
+        presets={engine.filteredCatalog.map((entry) => ({
+          id: entry.id,
+          title: entry.title,
+          author: entry.author,
+        }))}
+        onSelectPreset={engine.handlePresetSelection}
+      />
       <ShortcutsDialog
         open={showShortcuts}
         onClose={() => setShowShortcuts(false)}

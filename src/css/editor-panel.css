@@ -511,6 +511,15 @@ html.light .stims-editor {
   color: var(--stims-ink);
 }
 
+/* The row is keyboard-operable (role=button); ring matches the panel's
+   other inset focus styles. */
+.stims-editor__problem--jump:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+  background: var(--ed-tint-4);
+  color: var(--stims-ink);
+}
+
 .stims-editor__problem-tag {
   flex: none;
   width: 3.4em;

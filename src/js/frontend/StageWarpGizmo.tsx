@@ -181,7 +181,10 @@ export function StageWarpGizmo() {
                     ? [0, step]
                     : null;
           if (!delta) return;
+          // Also stop propagation: ArrowLeft/ArrowRight double as the global
+          // previous/shuffle preset shortcuts on document.
           event.preventDefault();
+          event.stopPropagation();
           nudge(delta[0], delta[1]);
         }}
       >

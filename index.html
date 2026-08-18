@@ -159,7 +159,10 @@
     </div>
 
 
-    <nav class="stims-crawl-links" aria-label="Crawlable site links">
+    <!-- inert: these exist for crawlers reading the HTML source; without it
+         they are 8 invisible tab stops in front of the app, and Enter on one
+         navigates the page away. -->
+    <nav class="stims-crawl-links" aria-label="Crawlable site links" inert>
       <a href="/">Visualizer</a>
       <a href="/performance/">Compatibility and performance</a>
       <a href="/discover/audio-reactive">Audio-reactive visualizers</a>
