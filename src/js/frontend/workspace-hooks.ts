@@ -1,6 +1,7 @@
 import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useDeferredValue,
   useEffect,
   useEffectEvent,
@@ -18,6 +19,7 @@ import {
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { recordStatusMessage } from './agent-state.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
@@ -111,7 +113,14 @@ export function useWorkspaceSessionState({
   const { motionPreference, qualityPreset, renderPreferences } =
     useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessageState] = useState<string | null>(null);
+  // Status toasts are the app's confirmation channel but they evaporate;
+  // mirror every message into the agent-state ring buffer so automation can
+  // verify effects after the fact.
+  const setStatusMessage = useCallback((message: string | null) => {
+    recordStatusMessage(message);
+    setStatusMessageState(message);
+  }, []);
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
@@ -404,6 +413,7 @@ export function useWorkspaceSessionState({
     routeState.presetId,
     routeState.audioSource,
     attractModeEnabled,
+    setStatusMessage,
   ]);
 
   usePresetRouteSync({
@@ -565,6 +575,7 @@ export function useWorkspaceSessionState({
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,
     routeState.presetId,
+    setStatusMessage,
   ]);
 
   useAudioSourceSync({

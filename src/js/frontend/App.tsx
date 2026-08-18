@@ -37,6 +37,7 @@ import {
   toAgentEditorState,
   updateAgentTelemetry,
 } from './agent-bridge.ts';
+import { installAgentStateGlobal } from './agent-state.ts';
 import { CommandPalette, useCommandPaletteHotkey } from './CommandPalette.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
@@ -448,6 +449,51 @@ function StimsWorkspaceAppShell() {
     ],
     [liveMode, isFullscreen],
   );
+
+  // Machine-readable state for automation: window.__stims_agent (snapshot,
+  // status log, run-palette-action-by-id) plus a selector-waitable
+  // data-engine-state attribute on <body>. Providers read refs, so this
+  // installs exactly once.
+  const paletteActionsRef = useRef(paletteActions);
+  paletteActionsRef.current = paletteActions;
+  const liveModeRef = useRef(liveMode);
+  liveModeRef.current = liveMode;
+  const engineReadyRef = useRef(engine.engineReady);
+  engineReadyRef.current = engine.engineReady;
+  useEffect(() => {
+    return installAgentStateGlobal({
+      getActions: () => paletteActionsRef.current,
+      getSnapshot: () => {
+        const snap = engineSnapshotRef.current;
+        const live = liveModeRef.current;
+        const ready = engineReadyRef.current;
+        return {
+          engineState: live ? 'live' : ready ? 'ready' : 'booting',
+          engineReady: ready,
+          liveMode: live,
+          backend: snap?.backend ?? null,
+          panel: uiRef.current.routeState.panel ?? null,
+          presetId: snap?.activePresetId ?? null,
+          presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
+          audioSource: snap?.audioSource ?? null,
+          audioEnergy: getAudioEnergy(),
+          autoplay: snap?.autoplay ?? null,
+          transition: {
+            mode: snap?.transitionMode ?? null,
+            blendDuration: snap?.blendDuration ?? null,
+          },
+        };
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    document.body.dataset.engineState = liveMode
+      ? 'live'
+      : engine.engineReady
+        ? 'ready'
+        : 'booting';
+  }, [liveMode, engine.engineReady]);
 
   useStageGesture({
     enabled: liveMode,
