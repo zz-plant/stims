@@ -789,6 +789,7 @@ export class EditorPanel {
   private disposeMenuDismiss: (() => void) | null = null;
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
+  private bufferedEditDebounceId: number | null = null;
   /** Identity of the preset the buffer currently belongs to, so a preset
    * switch can be told apart from the session echoing back the user's own
    * in-progress edits. */
@@ -1051,21 +1052,32 @@ export class EditorPanel {
       parent: editorHost,
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
       onBufferedEdit: () => {
+        // The flag must flip synchronously (commit logic reads it), but the
+        // diagnostics + control re-render below cost a full preset parse and
+        // dozens of whole-document scans — far too much to run undebounced on
+        // every keystroke. 80ms trailing keeps feedback near-instant at
+        // typing pauses without paying per character.
         this.hasBufferedEdits = true;
-        const currentDoc = this.editor.state.doc.toString();
-        const astDiag = computeAstDiagnostics(currentDoc);
-        const combined = mergeDiagnostics(
-          this.lastSessionState?.diagnostics ?? [],
-          astDiag,
-        );
-        this.setEditorDiagnostics(combined);
-        if (this.lastSessionState) {
-          this.renderSessionState({
-            ...this.lastSessionState,
-            source: currentDoc,
-            diagnostics: combined,
-          });
+        if (this.bufferedEditDebounceId !== null) {
+          window.clearTimeout(this.bufferedEditDebounceId);
         }
+        this.bufferedEditDebounceId = window.setTimeout(() => {
+          this.bufferedEditDebounceId = null;
+          const currentDoc = this.editor.state.doc.toString();
+          const astDiag = computeAstDiagnostics(currentDoc);
+          const combined = mergeDiagnostics(
+            this.lastSessionState?.diagnostics ?? [],
+            astDiag,
+          );
+          this.setEditorDiagnostics(combined);
+          if (this.lastSessionState) {
+            this.renderSessionState({
+              ...this.lastSessionState,
+              source: currentDoc,
+              diagnostics: combined,
+            });
+          }
+        }, 80);
       },
       isChangeSuppressed: () => this.suppressEditorChange,
       onQuickFixDiagnostic: (diagnostic) =>
@@ -1844,6 +1856,14 @@ export class EditorPanel {
     this.disposeMenuDismiss?.();
     this.disposeMenuDismiss = null;
     this.clearEditorDebounce();
+    if (this.bufferedEditDebounceId !== null) {
+      window.clearTimeout(this.bufferedEditDebounceId);
+      this.bufferedEditDebounceId = null;
+    }
+    if (this.controlFlushTimer !== null) {
+      window.clearTimeout(this.controlFlushTimer);
+      this.controlFlushTimer = null;
+    }
     this.unsubscribeTheme();
     this.discardAssistedEdit();
     this.editor.destroy();
@@ -2749,8 +2769,32 @@ export class EditorPanel {
       if (this.lastSessionState) {
         this.renderSessionState(this.lastSessionState);
       }
-      this.flushEditorDocChange();
+      this.scheduleControlFlush();
     }
+  }
+
+  /**
+   * Throttled flush for continuous control input (slider/swatch drags).
+   * Flushing on every `input` event recompiled the preset per pointermove;
+   * leading + ~90ms trailing keeps the visual response immediate while
+   * bounding recompiles to ~11Hz for the duration of a drag.
+   */
+  private lastControlFlushAt = 0;
+  private controlFlushTimer: number | null = null;
+  private scheduleControlFlush(): void {
+    const now = performance.now();
+    const elapsed = now - this.lastControlFlushAt;
+    if (elapsed >= 90) {
+      this.lastControlFlushAt = now;
+      this.flushEditorDocChange();
+      return;
+    }
+    if (this.controlFlushTimer !== null) return;
+    this.controlFlushTimer = window.setTimeout(() => {
+      this.controlFlushTimer = null;
+      this.lastControlFlushAt = performance.now();
+      this.flushEditorDocChange();
+    }, 90 - elapsed);
   }
 
   // Every AI-assisted edit lands here instead of replacing the buffer:

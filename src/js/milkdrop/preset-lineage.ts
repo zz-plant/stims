@@ -127,6 +127,16 @@ export function buildPresetFamilies(
  * A one-member family is not a lineage, so it is reported as null rather than
  * rendering a "family" of one.
  */
+// buildPresetFamilies credit-parses every catalog entry (regex-heavy), but
+// its result only depends on the entries array. findPresetFamily runs on
+// every preset selection with the same catalog, so memoize per identity —
+// without this, each selection re-parses the full catalog synchronously in
+// the browse panel's render.
+const familiesCache = new WeakMap<
+  readonly LineageCatalogEntry[],
+  Map<string, PresetLineageFamily>
+>();
+
 export function findPresetFamily(
   entries: readonly LineageCatalogEntry[],
   presetId: string,
@@ -135,7 +145,12 @@ export function findPresetFamily(
   if (!target) return null;
   const key = presetFamilyKey(parsePresetCredit(target.title, target.author));
   if (!key) return null;
-  const family = buildPresetFamilies(entries).get(key);
+  let families = familiesCache.get(entries);
+  if (!families) {
+    families = buildPresetFamilies(entries);
+    familiesCache.set(entries, families);
+  }
+  const family = families.get(key);
   if (!family || family.members.length < 2) return null;
   return family;
 }

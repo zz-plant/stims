@@ -172,6 +172,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
 
   const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
+  // The context VALUE wrapper must also keep its identity when the coarse
+  // fields are unchanged — returning a fresh `{ engineSnapshot: prev }` per
+  // snapshot tick re-rendered every useEngineSnapshot consumer at frame rate
+  // while audio played (the snapshot itself rebuilds per frame on
+  // audioEnergy), which showed up as continuous 60-80ms long tasks whenever
+  // a panel with catalog rows was open.
+  const coarseValueRef = useRef<EngineSnapshotValue | null>(null);
   const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
 
   useEffect(() => {
@@ -200,6 +207,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (
       prev &&
       snap &&
+      coarseValueRef.current &&
       prev.activePresetId === snap.activePresetId &&
       prev.backend === snap.backend &&
       prev.status === snap.status &&
@@ -210,10 +218,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       prev.catalogEntries === snap.catalogEntries &&
       prev.sessionState === snap.sessionState
     ) {
-      return { engineSnapshot: prev };
+      return coarseValueRef.current;
     }
     coarseRef.current = snap;
-    return { engineSnapshot: snap };
+    coarseValueRef.current = { engineSnapshot: snap };
+    return coarseValueRef.current;
   }, [sessionState.engineSnapshot]);
 
   const engineDataValue: EngineContextValue = useMemo(

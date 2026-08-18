@@ -85,16 +85,30 @@ export function getShortcutKeys(
   return overrides[id]?.filter(Boolean) ?? def?.defaultKeys ?? [];
 }
 
+// Reads happen on every document keydown (useKeyboardShortcuts), so the
+// parsed overrides are cached; writes go through writeShortcutOverrides
+// below, and cross-tab edits invalidate via the storage event.
+let overridesCache: ShortcutOverrides | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === SHORTCUT_STORAGE_KEY || event.key === null) {
+      overridesCache = null;
+    }
+  });
+}
+
 export function readShortcutOverrides(): ShortcutOverrides {
+  if (overridesCache) return overridesCache;
   if (typeof localStorage === 'undefined') return {};
   try {
     const parsed = JSON.parse(
       localStorage.getItem(SHORTCUT_STORAGE_KEY) ?? '{}',
     ) as ShortcutOverrides;
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    overridesCache = parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
-    return {};
+    overridesCache = {};
   }
+  return overridesCache;
 }
 
 /** Returns false (instead of throwing) when the write could not persist. */
@@ -102,6 +116,7 @@ export function writeShortcutOverrides(overrides: ShortcutOverrides): boolean {
   if (typeof localStorage === 'undefined') return false;
   try {
     localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(overrides));
+    overridesCache = overrides;
     return true;
   } catch (error) {
     // A quota/private-browsing failure here runs inside a keydown handler;
