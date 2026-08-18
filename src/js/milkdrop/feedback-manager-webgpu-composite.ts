@@ -739,13 +739,19 @@ export function createSampleAuxTextureNode(
           ),
         ),
       );
+      // `video` has no real 3D texture (a video frame isn't a volume) so it
+      // always needs the 2D-atlas emulation. `simplex` used to be force-
+      // routed here too with no comment explaining why; its native
+      // Data3DTexture is wired up the same way as every other volume type
+      // (see the constructor's getShared3dAuxTexture(name).then(...) loop)
+      // and there is no evidence the swap doesn't take effect, so it now
+      // takes the native-3D path like noise/voronoi/aura/etc.
       const isVideo = source.greaterThanEqual(7.5).and(source.lessThan(8.5));
-      const isSimplex = source.greaterThanEqual(1.5).and(source.lessThan(2.5));
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
         select(
-          isVideo.or(isSimplex),
+          isVideo,
           atlasTrilinearSample(source, wrappedUv, sliceZ),
           native3dSample,
         ),
