@@ -180,6 +180,15 @@ export function useCatalogLoading() {
   }, []);
 
   const hydrateFullCatalogNow = useEffectEvent(async () => {
+    // Idempotent once the full catalog has landed. Callers re-invoke this from
+    // effects that depend on the catalog arrays this function replaces (e.g.
+    // the deep-link hydration effect in workspace-hooks.ts keys on
+    // `fallbackCatalog`); every pass builds fresh array identities, so without
+    // this guard an id the full catalog still cannot resolve re-triggers those
+    // effects forever — a render loop that pinned a core at ~50 commits/sec.
+    if (fullCatalogReady) {
+      return;
+    }
     try {
       const mapped = await loadFullCatalog();
       setFallbackCatalog(mapped);

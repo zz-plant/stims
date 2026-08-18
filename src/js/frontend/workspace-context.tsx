@@ -162,7 +162,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     activityCatalog: sessionState.activityCatalog,
     goBackPreset: sessionState.goBackPreset,
     importPresetFiles: sessionState.importPresetFiles,
-    pendingPresetIdRef: sessionState.pendingPresetIdRef,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
     startAudioSource: sessionState.startAudioSource,
