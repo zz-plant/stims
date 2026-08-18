@@ -1827,7 +1827,8 @@ class SharedMilkdropFeedbackManager
         })
       | null;
     const hasCustomShaders = warpGlsl !== null || compGlsl !== null;
-    if (!hasCustomShaders || !renderer?.compileAsync) {
+    const compileAsync = renderer?.compileAsync?.bind(renderer);
+    if (!hasCustomShaders || !compileAsync) {
       this.applyAssembledDirectShaders(warpGlsl, compGlsl);
       return;
     }
@@ -1877,12 +1878,25 @@ class SharedMilkdropFeedbackManager
       this.disposeRetiredWarmupMaterials();
       this.retiredWarmupMaterials.push(...warmupMaterials);
     };
+    // The kick is deferred a macrotask: this method runs from
+    // applyCompositeState, i.e. mid-frame between the renderer's internal
+    // passes, and compileAsync's first step is a synchronous
+    // renderer.compile() of the warm scene — running that inside the live
+    // frame corrupts the in-flight render state and blacked out the stage
+    // (verified against the deep-link boot flow). After the current frame
+    // unwinds, compiling the throwaway scene is safe.
+    //
     // A compile error surfaces identically to today's sync path: finishSwap
     // assigns the shaders anyway and THREE logs the failure at first use.
-    void renderer.compileAsync(warmupScene, this.camera).then(
-      finishSwap,
-      finishSwap,
-    );
+    setTimeout(() => {
+      if (revision !== this.directShaderSwapRevision) {
+        for (const material of warmupMaterials) {
+          material.dispose();
+        }
+        return;
+      }
+      void compileAsync(warmupScene, this.camera).then(finishSwap, finishSwap);
+    }, 0);
   }
 
   private disposeRetiredWarmupMaterials() {

@@ -109,6 +109,24 @@ export function createMilkdropExperience({
   };
 
   const catalogStore = createMilkdropCatalogStore();
+  // Deep-link boots used to fetch the requested preset's source only after
+  // engine mount + catalog projection + the route effect round-tripped.
+  // Kicking the fetch here overlaps it (and the parse+IR compile, via the
+  // shared raw-string cache) with renderer boot and GPU init; the later real
+  // load then hits warm caches. Fire-and-forget: a bad id resolves to null
+  // and the normal load path still owns every user-visible outcome.
+  if (initialPresetId && initialPresetId !== FIRST_RUN_PRESET_ID) {
+    void catalogStore
+      .getPresetSource(initialPresetId)
+      .then((source) => {
+        if (source) {
+          compileMilkdropPresetSource(source.raw, source, {
+            cacheCompile: true,
+          });
+        }
+      })
+      .catch(() => {});
+  }
   const defaultPreset = compileMilkdropPresetSource(
     DEFAULT_MILKDROP_PRESET_SOURCE,
     {
@@ -533,6 +551,11 @@ export function createMilkdropExperience({
       adapter?.saveFeedbackFrame?.();
     }
     lastPresetSwitchAt = performance.now();
+    // Warm-up hint: the incoming preset's first frames carry compile and
+    // feedback warm-up cost that resolves on its own. The controller clears
+    // stale pressure evidence and, on constrained devices, pre-pays the
+    // warm-up with one quality step instead of dropped frames.
+    adaptiveQualityController?.notePresetApplied();
     return {
       mode: canBlend ? ('blend' as const) : ('cut' as const),
       durationSeconds: blendDuration,

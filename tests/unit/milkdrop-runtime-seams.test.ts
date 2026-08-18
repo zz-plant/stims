@@ -10,6 +10,7 @@ import {
   buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
+  shouldPrepareNextPreset,
 } from '../../src/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from '../../src/js/milkdrop/runtime/lifetime.ts';
 import {
@@ -180,6 +181,22 @@ describe('milkdrop runtime lifecycle seams', () => {
     ).toBe(false);
   });
 
+  test('asks to prepare the next pick a lead window before the advance', () => {
+    const base = {
+      autoplay: true,
+      catalogSize: 3,
+      lastPresetSwitchAt: 1_000,
+      blendDuration: 2,
+    };
+    // Advance fires at 31s; preparation must lead it, not trail it.
+    expect(shouldPrepareNextPreset({ ...base, now: 24_000 })).toBe(true);
+    expect(shouldPrepareNextPreset({ ...base, now: 20_000 })).toBe(false);
+    // Same gates as the advance itself: no autoplay → no preparation.
+    expect(
+      shouldPrepareNextPreset({ ...base, autoplay: false, now: 24_000 }),
+    ).toBe(false);
+  });
+
   test('builds blend payloads only while an active blend is still valid', () => {
     const blend = buildBlendStateForRender({
       transitionMode: 'blend',
@@ -235,6 +252,41 @@ describe('milkdrop runtime lifecycle seams', () => {
 
     expect(downgraded).not.toBe(frameState);
     expect(downgraded.post.shaderEnabled).toBe(false);
+    expect(downgraded.post.videoEchoEnabled).toBe(false);
+    expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
+    expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
+  });
+
+  test('keeps the shader stage at low quality when it is the preset painter', () => {
+    // Direct warp/comp programs paint the frame; stripping them at the low
+    // step turned those presets into a black screen with a bare wave line.
+    const frameState = {
+      post: {
+        shaderEnabled: true,
+        videoEchoEnabled: true,
+        shaderPrograms: { warp: null, comp: { rawGlsl: 'ret = float3(1);' } },
+        postprocessingProfile: {
+          enabled: true,
+        },
+      },
+      gpuGeometry: {
+        particleField: {
+          enabled: true,
+          instanceCount: 96,
+        },
+      },
+    } as unknown as MilkdropFrameState;
+
+    const downgraded = buildRenderFrameState({
+      frameState,
+      shaderQuality: 'low',
+      lowQualityPostOverride: {
+        shaderEnabled: false,
+        videoEchoEnabled: false,
+      },
+    });
+
+    expect(downgraded.post.shaderEnabled).toBe(true);
     expect(downgraded.post.videoEchoEnabled).toBe(false);
     expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
     expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);

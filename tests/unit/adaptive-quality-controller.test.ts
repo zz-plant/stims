@@ -598,4 +598,84 @@ describe('createAdaptiveQualityController', () => {
       window.matchMedia = originalMatchMedia;
     }
   });
+
+  test('notePresetApplied pre-degrades constrained profiles after warmup, never high-end', () => {
+    const capabilitiesForTier = (performanceTier: 'baseline' | 'high-end') => ({
+      preferredCanvasFormat: 'bgra8unorm' as const,
+      performanceTier,
+      recommendedQualityPreset: 'balanced' as const,
+      workers: {
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+      },
+      optimization: {
+        timestampQuery: false,
+        shaderF16: false,
+        subgroups: false,
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+        workerOffscreenPipeline: true,
+      },
+      features: {
+        bgra8unormStorage: false,
+        float32Blendable: false,
+        float32Filterable: false,
+        shaderF16: false,
+        subgroups: false,
+        timestampQuery: false,
+      },
+      limits: {
+        maxColorAttachments: 4,
+        maxComputeInvocationsPerWorkgroup: 256,
+        maxStorageBufferBindingSize: 268_435_456,
+        maxTextureDimension2D: 4_096,
+      },
+    });
+
+    const baseline = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('baseline'),
+    });
+    const startStep = baseline.getState().qualityStep;
+
+    // During session warmup a switch clears evidence but must not pre-degrade
+    // (the boot heuristics already start conservatively).
+    baseline.notePresetApplied();
+    expect(baseline.getState().qualityStep).toBe(startStep);
+
+    // Get past warmup with settled frames, then pin a known mid step so the
+    // +1 is observable regardless of where this environment's heuristics
+    // settle the baseline profile.
+    for (let index = 0; index < 30; index += 1) {
+      baseline.recordFrame({ frameMs: 12, phases: { renderMs: 8 } });
+    }
+    baseline.setQualityStep(2);
+    const state = baseline.notePresetApplied();
+    expect(state.qualityStep).toBe(3);
+    expect(state.adaptation).toBe('degraded');
+
+    const highEnd = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('high-end'),
+    });
+    for (let index = 0; index < 30; index += 1) {
+      highEnd.recordFrame({ frameMs: 6, phases: { renderMs: 4 } });
+    }
+    const highEndStep = highEnd.getState().qualityStep;
+    highEnd.notePresetApplied();
+    expect(highEnd.getState().qualityStep).toBe(highEndStep);
+
+    const locked = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('baseline'),
+      lockedQualityStep: 2,
+    });
+    for (let index = 0; index < 30; index += 1) {
+      locked.recordFrame({ frameMs: 12, phases: { renderMs: 8 } });
+    }
+    locked.notePresetApplied();
+    expect(locked.getState().qualityStep).toBe(2);
+  });
 });
