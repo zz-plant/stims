@@ -306,3 +306,15 @@
     outline: none;
   }
 }
+
+/* Agent mode: entry/exit animations depend on the CSS animation timeline,
+   which browsers freeze in hidden/occluded tabs — an automation session
+   opening a panel in a background tab would find it parked at the
+   animation's from-state (translated fully offscreen) forever. Agent mode
+   already opts out of the hidden-tab render pause (experience-frame-loop);
+   this is the same contract for panel chrome: rest at the final position
+   immediately, and screenshots become deterministic as a bonus. */
+:global(html[data-agent-mode="true"]) .panel,
+:global(html[data-agent-mode="true"]) .backdrop {
+  animation: none;
+}

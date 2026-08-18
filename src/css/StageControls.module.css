@@ -95,6 +95,10 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  /* Fixed-size control: without this, a tight pill (375px phones) crushes
+     the buttons below their touch-target size while the title keeps its
+     max-width — the flexible element is the title, which truncates. */
+  flex-shrink: 0;
   padding: 0;
   border: none;
   border-radius: var(--radius-round);
@@ -137,6 +141,10 @@
   font-weight: 500;
   cursor: pointer;
   max-width: min(20rem, 40vw);
+  /* The one flexible element in the pill: shrinks (truncating its text)
+     so the fixed-size buttons around it never have to. */
+  flex-shrink: 1;
+  min-width: 0;
   overflow: hidden;
   transition:
     background 0.15s ease,
@@ -236,6 +244,8 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  /* Same fixed-size contract as .navBtn: the title shrinks, buttons don't. */
+  flex-shrink: 0;
   padding: 0;
   border: none;
   border-radius: var(--radius-round);
