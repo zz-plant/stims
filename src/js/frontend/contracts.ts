@@ -86,6 +86,9 @@ export type PresetCatalogEntry = {
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;
+  /** Near-duplicate cluster annotation (dedup-catalog.ts); duplicateOf names
+   * the cluster representative when this entry is a non-representative. */
+  similarity?: { clusterId: string; duplicateOf?: string };
   fidelityTier?: VisualFidelityTier;
   visualCertification?: MilkdropVisualCertification;
   sensoryProfile?: PresetSensoryProfile;

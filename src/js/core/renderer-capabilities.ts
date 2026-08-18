@@ -16,7 +16,7 @@ import {
   type RendererFallbackReasonCode,
 } from './renderer-fallback-reasons.ts';
 import {
-  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  getDefaultWebGpuInitTimeoutMs,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
 import {
@@ -846,7 +846,7 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
 
 async function probeRendererCapabilities({
   preferWebGLForKnownCompatibilityGaps = false,
-  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
 }: {
   preferWebGLForKnownCompatibilityGaps?: boolean;
   webgpuInitTimeoutMs?: number;
@@ -947,7 +947,7 @@ export function rememberRendererFallback(
 export async function getRendererCapabilities({
   forceRetry = false,
   preferWebGLForKnownCompatibilityGaps = false,
-  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
 }: RendererCapabilityProbeOptions = {}) {
   const environmentKey = getEnvironmentKey({
     preferWebGLForKnownCompatibilityGaps,

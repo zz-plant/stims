@@ -38,13 +38,16 @@ export function PresetArtwork({
   entry,
   compact = false,
   preview = null,
+  audition = false,
 }: {
   entry: PresetCatalogEntry;
   compact?: boolean;
   preview?: MilkdropPresetRenderPreview | null;
+  /** Render a live engine tile while true (grid hover/focus audition). */
+  audition?: boolean;
 }) {
   const mood = describePresetMood(entry);
-  const liveTile = useLivePresetTile(entry);
+  const liveTile = useLivePresetTile(entry, { audition });
   const staticThumbUrl = `/milkdrop-presets/previews/${entry.id}.png`;
   // The static R2 thumbnail is the default artwork; a ready runtime snapshot
   // only upgrades it. A failed capture must not hide the thumbnail.

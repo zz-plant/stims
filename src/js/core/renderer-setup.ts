@@ -25,7 +25,7 @@ import {
   RENDERER_FALLBACK_REASON_CODES,
 } from './renderer-fallback-reasons.ts';
 import {
-  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  getDefaultWebGpuInitTimeoutMs,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
@@ -138,7 +138,7 @@ export async function initRenderer(
     adaptiveMaxPixelRatioMultiplier = 1,
     adaptiveRenderScaleMultiplier = 1,
     adaptiveDensityMultiplier = 1,
-    webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+    webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
     forceRetryCapabilities = false,
     preserveDrawingBuffer = false,
   } = config;

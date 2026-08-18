@@ -357,7 +357,32 @@ async function verifySmartphoneMicrophoneAccess({
     await page.goto(`${SERVER_URL}/?audio=none&renderer=webgl`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.locator('#start-audio-btn').click();
+    // The tap must not race the engine-ready layout flip: the moment
+    // engineReady enables this card, surrounding elements re-render and the
+    // source grid shifts, so a tap dispatched at just-checked coordinates
+    // lands on the demo control instead and the flow silently starts demo
+    // audio (observed deterministically on the iPhone 13 emulation). Scroll
+    // the card into view and wait for its rect to hold still across two
+    // polls before tapping.
+    const micButton = page.locator('#start-audio-btn');
+    await micButton.scrollIntoViewIfNeeded();
+    await page.waitForFunction(
+      () => {
+        const btn = document.querySelector(
+          '#start-audio-btn',
+        ) as HTMLButtonElement | null;
+        if (!btn || btn.disabled) return false;
+        const r = btn.getBoundingClientRect();
+        const w = window as typeof window & { __micBtnRect?: string };
+        const prev = w.__micBtnRect;
+        const cur = `${r.x},${r.y},${r.width},${r.height}`;
+        w.__micBtnRect = cur;
+        return prev === cur;
+      },
+      undefined,
+      { timeout: 30000, polling: 250 },
+    );
+    await micButton.click();
     await page.waitForFunction(
       () => document.body.dataset.audioActive === 'true',
       undefined,

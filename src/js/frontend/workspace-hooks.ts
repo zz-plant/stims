@@ -499,9 +499,11 @@ export function useWorkspaceSessionState({
     };
 
     let timedOut = false;
+    let fellBack = false;
     const timeoutId = setTimeout(() => {
       timedOut = true;
       if (pendingPresetIdRef.current === requestedPresetId) {
+        fellBack = true;
         fallBackToFirstRunPreset(`Preset "${requestedPresetId}" timed out.`);
       }
     }, 10_000);
@@ -509,7 +511,22 @@ export function useWorkspaceSessionState({
     void engineRef.current.loadPreset(requestedPresetId).then(
       () => {
         clearTimeout(timeoutId);
-        if (timedOut) return;
+        if (timedOut) {
+          // The fallback fired while this load was still finishing — a race
+          // the wall-clock timer cannot avoid. The visitor asked for this
+          // preset and it did load (the compile is cached now), so reclaim
+          // the stage from the substitute instead of stranding them on it.
+          if (fellBack) {
+            failedPresetIdsRef.current.delete(requestedPresetId);
+            pendingPresetIdRef.current = null;
+            setStatusMessage(null);
+            log.log(`reclaiming ${requestedPresetId} after timeout fallback`);
+            void engineRef.current?.loadPreset(requestedPresetId).catch(() => {
+              failedPresetIdsRef.current.add(requestedPresetId);
+            });
+          }
+          return;
+        }
         log.log(`loaded ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
