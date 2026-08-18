@@ -61,6 +61,32 @@ export function buildAgentMilkdropDebugSnapshot({
   };
 }
 
+export type MilkdropAgentDriverHandle = {
+  getRuntime: () => ToyRuntimeInstance | null;
+  getAdapter: () => MilkdropRendererAdapter | null;
+  getState: () => {
+    activePresetId: string;
+    backend: 'webgl' | 'webgpu';
+    status: string | null;
+  };
+  getAdaptiveQuality: () => AdaptiveQualityState | null;
+  getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
+  /**
+   * Selects a preset directly through the navigation controller, bypassing
+   * the route/URL layer entirely. Resolves once the controller's own
+   * supersede/fallback/error handling has settled — it does not reject on a
+   * failed load (a bad id, a compile error, a superseded request all
+   * resolve normally), so callers must check the return value.
+   */
+  selectPreset: (presetId: string) => Promise<void>;
+  setAutoplay: (enabled: boolean) => void;
+  /** Resolves once the runtime's own async startup preset selection has
+   * finished. An agent that calls `selectPreset` before this settles can
+   * have its choice silently overwritten (or vice versa) — see the
+   * comment at its definition in runtime.ts. */
+  startupSettled: () => Promise<void>;
+};
+
 export function registerAgentMilkdropRuntimeDebugHandle({
   isAgentMode,
   getRuntime,
@@ -68,6 +94,9 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   getState,
   getAdaptiveQuality,
   getPerformance,
+  selectPreset,
+  setAutoplay,
+  startupSettled,
 }: {
   isAgentMode: () => boolean;
   getRuntime: () => ToyRuntimeInstance | null;
@@ -79,6 +108,9 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   };
   getAdaptiveQuality: () => AdaptiveQualityState | null;
   getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
+  selectPreset: (presetId: string) => Promise<void>;
+  setAutoplay: (enabled: boolean) => void;
+  startupSettled: () => Promise<void>;
 }) {
   if (typeof window === 'undefined' || !isAgentMode()) {
     return;
@@ -86,21 +118,14 @@ export function registerAgentMilkdropRuntimeDebugHandle({
 
   (
     window as Window & {
-      __milkdropRuntimeDebug?: {
-        getRuntime: () => ToyRuntimeInstance | null;
-        getAdapter: () => MilkdropRendererAdapter | null;
-        getState: () => {
-          activePresetId: string;
-          backend: 'webgl' | 'webgpu';
-          status: string | null;
-        };
-        getAdaptiveQuality: () => AdaptiveQualityState | null;
-        getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
-      };
+      __milkdropRuntimeDebug?: MilkdropAgentDriverHandle;
     }
   ).__milkdropRuntimeDebug = {
     getRuntime,
     getAdapter,
+    selectPreset,
+    setAutoplay,
+    startupSettled,
     getState,
     getAdaptiveQuality,
     getPerformance,
