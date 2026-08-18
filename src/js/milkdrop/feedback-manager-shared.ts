@@ -15,6 +15,7 @@ import {
   Vector4,
   type WebGLRenderTarget,
 } from 'three';
+import { isAgentMode } from '../core/agent-api.ts';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import type {
@@ -1838,7 +1839,12 @@ class SharedMilkdropFeedbackManager
       | null;
     const hasCustomShaders = warpGlsl !== null || compGlsl !== null;
     const compileAsync = renderer?.compileAsync?.bind(renderer);
-    if (!hasCustomShaders || !compileAsync) {
+    // Agent mode captures frames immediately after a preset applies
+    // (preview generation, deterministic parity captures); the async warm-up
+    // window would put pass-through styling in those captures — the 08-18
+    // preview batch recorded 176 near-black/flat thumbnails this way.
+    // Same rule as the WebGPU manager's pipeline swap: sync in agent mode.
+    if (!hasCustomShaders || !compileAsync || isAgentMode()) {
       this.applyAssembledDirectShaders(warpGlsl, compGlsl);
       return;
     }
