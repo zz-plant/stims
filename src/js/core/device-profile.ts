@@ -1,5 +1,6 @@
 import {
   getDeviceEnvironmentProfile,
+  isInAppBrowser,
   isSmartTvDevice,
 } from '../utils/browser/device-detect';
 
@@ -11,26 +12,58 @@ export type DevicePerformanceProfile = {
 
 export type DeviceTier = 'low' | 'mid' | 'high' | 'ultra';
 
-export function getDeviceTier(): DeviceTier {
-  if (isSmartTvDevice()) {
-    return 'mid';
-  }
+/**
+ * Single read-point for the raw hardware facts that every "should this
+ * session start lighter" heuristic in the codebase (first-run quality
+ * preset here, and the adaptive-quality controller's initial step) ends up
+ * asking about. Consumers apply their own thresholds on top of these facts —
+ * centralizing here only removes the duplicated navigator/device-detect
+ * plumbing, not each consumer's judgment call about what counts as "weak".
+ */
+export type HardwareSignals = {
+  hardwareConcurrency: number | null;
+  deviceMemory: number | null;
+  isMobile: boolean;
+  isSmartTv: boolean;
+  isInAppBrowser: boolean;
+};
 
+export function getHardwareSignals(): HardwareSignals {
   const environment = getDeviceEnvironmentProfile();
   const hardwareConcurrency =
     typeof navigator !== 'undefined'
       ? (navigator.hardwareConcurrency ?? null)
       : null;
+  const deviceMemory =
+    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
+      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null)
+      : null;
+
+  return {
+    hardwareConcurrency,
+    deviceMemory,
+    isMobile: environment.isMobile,
+    isSmartTv: isSmartTvDevice(),
+    isInAppBrowser: isInAppBrowser(),
+  };
+}
+
+export function getDeviceTier(): DeviceTier {
+  const signals = getHardwareSignals();
+  if (signals.isSmartTv) {
+    return 'mid';
+  }
 
   // Mobile stays at 12+ cores: 8-core chips like the Snapdragon 8 Gen 1 (S22)
   // look capable by core count but have a fraction of the sustained GPU
   // throughput and thermal-throttle within seconds. Desktop uses 10+ so
   // sustained-clock parts like the 10-core M1 Pro qualify.
   const isUltra =
-    (hardwareConcurrency !== null &&
-      (environment.isMobile
-        ? hardwareConcurrency >= 12
-        : hardwareConcurrency >= 10)) ||
+    (signals.hardwareConcurrency !== null &&
+      (signals.isMobile
+        ? signals.hardwareConcurrency >= 12
+        : signals.hardwareConcurrency >= 10)) ||
     readVerifiedWebGpuTier() === 'high-end';
 
   if (isUltra) return 'ultra';
@@ -38,19 +71,14 @@ export function getDeviceTier(): DeviceTier {
   const profile = getDevicePerformanceProfile();
   if (!profile.lowPower) return 'high';
 
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-
   const veryConstrained =
-    (deviceMemory !== null && deviceMemory <= 2) ||
-    (hardwareConcurrency !== null && hardwareConcurrency <= 2) ||
-    (deviceMemory !== null &&
-      deviceMemory <= 3 &&
-      hardwareConcurrency !== null &&
-      hardwareConcurrency <= 3);
+    (signals.deviceMemory !== null && signals.deviceMemory <= 2) ||
+    (signals.hardwareConcurrency !== null &&
+      signals.hardwareConcurrency <= 2) ||
+    (signals.deviceMemory !== null &&
+      signals.deviceMemory <= 3 &&
+      signals.hardwareConcurrency !== null &&
+      signals.hardwareConcurrency <= 3);
 
   return veryConstrained ? 'low' : 'mid';
 }
@@ -84,16 +112,13 @@ export function resetDeviceProfileCache(): void {
 }
 
 export function getDevicePerformanceProfile(): DevicePerformanceProfile {
-  const environment = getDeviceEnvironmentProfile();
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-  const hardwareConcurrency =
-    typeof navigator !== 'undefined'
-      ? (navigator.hardwareConcurrency ?? null)
-      : null;
+  const signals = getHardwareSignals();
+  const {
+    deviceMemory,
+    hardwareConcurrency,
+    isMobile,
+    isSmartTv: isTv,
+  } = signals;
   const reducedMotion = prefersReducedMotion();
 
   const reasons: string[] = [];
@@ -101,18 +126,16 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   const limitedCpuCores =
     hardwareConcurrency !== null && hardwareConcurrency <= 3;
   const constrainedHandheld =
-    environment.isMobile &&
+    isMobile &&
     ((deviceMemory !== null && deviceMemory <= 3) ||
       (hardwareConcurrency !== null && hardwareConcurrency <= 3));
 
   // When deviceMemory is unavailable (Safari/Firefox), use core count as proxy
   const inferredLimitedMemory =
     deviceMemory === null &&
-    environment.isMobile &&
+    isMobile &&
     hardwareConcurrency !== null &&
     hardwareConcurrency <= 3;
-
-  const isTv = isSmartTvDevice();
 
   if (reducedMotion) {
     reasons.push('reduced motion preference');

@@ -1,9 +1,7 @@
 import {
-  isInAppBrowser,
-  isMobileDevice,
-  isSmartTvDevice,
-} from '../../utils/browser/device-detect.ts';
-import { getDisplayRefreshRate } from '../device-profile.ts';
+  getDisplayRefreshRate,
+  getHardwareSignals,
+} from '../device-profile.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -164,7 +162,7 @@ export function getAdaptiveQualityDisplayRefreshRate(): number {
 function estimateFrameBudgetMs(): number {
   // Mobile displays (especially high-refresh 120Hz/144Hz panels) target 60Hz
   // (16.67ms) to preserve battery life and prevent rapid thermal throttling.
-  if (isMobileDevice()) {
+  if (getHardwareSignals().isMobile) {
     return 1000 / 60;
   }
 
@@ -180,13 +178,14 @@ function buildHeuristicProfile(
   capabilities: WebGPUCapabilitySummary | null,
 ) {
   const frameBudgetMs = estimateFrameBudgetMs();
+  const signals = getHardwareSignals();
 
   if (backend === 'webgl') {
     const isDesktopHighEnd =
-      !isMobileDevice() &&
-      !isSmartTvDevice() &&
-      (typeof navigator === 'undefined' ||
-        (navigator.hardwareConcurrency ?? 0) >= 6);
+      !signals.isMobile &&
+      !signals.isSmartTv &&
+      (signals.hardwareConcurrency === null ||
+        signals.hardwareConcurrency >= 6);
     const reasons = [
       isDesktopHighEnd
         ? 'Desktop WebGL sessions start from full quality with coarse frame monitoring.'
@@ -194,7 +193,7 @@ function buildHeuristicProfile(
       'Coarse CPU frame timing is used because GPU timing is unavailable.',
     ];
     let initialStep = isDesktopHighEnd ? 1 : 2;
-    if (isSmartTvDevice()) {
+    if (signals.isSmartTv) {
       reasons.push(
         'Smart TV hardware operates from a conservative initial quality step.',
       );
@@ -227,7 +226,7 @@ function buildHeuristicProfile(
         ? 1
         : 2;
 
-  if (isSmartTvDevice()) {
+  if (signals.isSmartTv) {
     reasons.push(
       'Smart TV hardware operates from a conservative initial quality step.',
     );
@@ -274,11 +273,10 @@ function buildHeuristicProfile(
   }
 
   let floorStep = 0;
-  if (isMobileDevice()) {
+  if (signals.isMobile) {
     const isFlagshipMobile =
       capabilities.performanceTier === 'high-end' &&
-      typeof navigator !== 'undefined' &&
-      (navigator.hardwareConcurrency ?? 0) >= 6;
+      (signals.hardwareConcurrency ?? 0) >= 6;
     // Flagship mobile starts at 'full' (step 1), never 'ultra' (step 0): the
     // render/pixel-ratio caps already bound the effective resolution, and the
     // per-pixel multipliers above 1.0 buy nothing while the phone's single
@@ -290,7 +288,7 @@ function buildHeuristicProfile(
         ? 'Flagship mobile sessions start from full quality with adaptive throttling headroom.'
         : 'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
     );
-  } else if (isInAppBrowser()) {
+  } else if (signals.isInAppBrowser) {
     initialStep = Math.max(initialStep, 2);
     reasons.push(
       'In-app webview sessions start from balanced quality for steadier sustained performance.',
