@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "machine": "Kanavs-MacBook-Pro.local",
+  "renderer": "auto",
+  "capturedAt": "2026-08-18T17:18:50.087Z",
+  "presets": {
+    "geiss-game-of-life": {
+      "averageFrameMs": 2.0616666662196317,
+      "averageSimulationMs": 0.5833333328366279,
+      "averageRenderMs": 1.4783333333830038
+    },
+    "martin-the-bridge-of-khazad-dum": {
+      "averageFrameMs": 8.975000001490116,
+      "averageSimulationMs": 1.6416666679084302,
+      "averageRenderMs": 7.333333333581686
+    },
+    "flexi-mindblob-2-0": {
+      "averageFrameMs": 2.90333333487312,
+      "averageSimulationMs": 0.7125000002483527,
+      "averageRenderMs": 2.1908333346247675
+    }
+  }
+}
