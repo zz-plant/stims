@@ -69,24 +69,31 @@ export function PresetGrid({
     const flush = () => {
       flushTimer = null;
       if (pending.size === 0) return;
-      const ids = [...pending];
+      // Cap per flush: a screenful is ~12 tiles; anything beyond that came
+      // from a scroll jump and will re-observe if it's still visible.
+      const ids = [...pending].slice(0, 12);
       pending.clear();
       void requestPresetPreviewsRef.current(ids);
     };
     const observer = new IntersectionObserver(
       (intersections) => {
         for (const intersection of intersections) {
-          if (!intersection.isIntersecting) continue;
           const id = (intersection.target as HTMLElement).dataset.presetId;
           if (!id) continue;
+          if (!intersection.isIntersecting) {
+            // Tiles flung past during a fast scroll leave before the flush
+            // fires; requesting previews for them is pure wasted engine work.
+            pending.delete(id);
+            continue;
+          }
           if (presetPreviewsRef.current[id]?.status === 'ready') continue;
           pending.add(id);
         }
         if (pending.size > 0 && flushTimer === null) {
-          flushTimer = window.setTimeout(flush, 150);
+          flushTimer = window.setTimeout(flush, 300);
         }
       },
-      { root: null, rootMargin: '300px' },
+      { root: null, rootMargin: '150px' },
     );
     for (const tile of grid.querySelectorAll('[data-preset-id]')) {
       observer.observe(tile);
