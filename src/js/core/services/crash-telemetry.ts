@@ -26,6 +26,7 @@ export type CrashTelemetryEntry = {
   message: string;
   stack?: string;
   detail?: Record<string, unknown>;
+  renderer?: TelemetryEvent['renderer'];
 };
 
 export type CrashTelemetryReport = {
@@ -99,6 +100,7 @@ export function buildCrashTelemetryTransmitPayload(
   return {
     event: `crash:${entry.type}`,
     error: entry.message.slice(0, 256),
+    renderer: entry.renderer,
     userAgent:
       typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
   };
@@ -191,6 +193,7 @@ export function recordWebGpuDeviceLost(info: unknown) {
     iso: new Date().toISOString(),
     message: `WebGPU device lost: ${reason}`,
     detail: { reason, message },
+    renderer: 'webgpu',
   });
   logger.error(`WebGPU device lost: ${reason}`, { reason, message });
 }
@@ -205,11 +208,14 @@ export function recordWebGpuUncapturedError(
     iso: new Date().toISOString(),
     message: `WebGPU uncaptured error: ${message}`,
     detail: { message },
+    renderer: 'webgpu',
   });
   logger.error(`WebGPU uncaptured error: ${message}`, { message });
 }
 
 export function recordWebGLContextLost(
+  // Only ever called on a 'webgl' backend (see the guard in render-service.ts),
+  // and this app always requests webgl2 there, so the literal is fixed.
   event?: { statusMessage?: string } | null,
 ) {
   const statusMessage =
@@ -224,6 +230,7 @@ export function recordWebGLContextLost(
     iso: new Date().toISOString(),
     message: `WebGL context lost: ${statusMessage}`,
     detail: { statusMessage },
+    renderer: 'webgl2',
   });
   logger.error(`WebGL context lost: ${statusMessage}`, { statusMessage });
 }
