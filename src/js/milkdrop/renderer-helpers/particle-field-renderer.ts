@@ -212,6 +212,10 @@ function createParticleFieldShaderMaterial(
     depthTest: false,
     depthWrite: false,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     blending: AdditiveBlending,
     uniforms: makeParticleFieldUniforms(
       particleField,

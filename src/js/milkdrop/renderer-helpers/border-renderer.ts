@@ -157,6 +157,10 @@ function createBorderGroupObjectRaw(
       transparent: true,
       opacity: border.alpha * alphaMultiplier,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       toneMapped: false,
     }),
   );
@@ -220,6 +224,10 @@ function createBorderGroupObject(
         transparent: true,
         opacity: border.alpha * alphaMultiplier,
         side: DoubleSide,
+        // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+        // two-pass render (it bumps material.needsUpdate twice per object per
+        // frame, forcing getParameters/getProgram churn on every material).
+        forceSinglePass: true,
         toneMapped: false,
       }),
     ),
