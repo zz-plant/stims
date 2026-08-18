@@ -56,6 +56,7 @@ import { createMilkdropPresetPreviewService } from './runtime/preset-preview-ser
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
+import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
@@ -156,8 +157,7 @@ export function createMilkdropExperience({
   let pendingStartupPresetId = initialPresetId ?? null;
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let currentFrameState: MilkdropFrameState | null = null;
-  let blendState = cloneBlendState(currentFrameState);
-  let blendEndAtMs = 0;
+  const transitionController = createMilkdropTransitionController();
   let autoplay = preferences.getAutoplay();
   let lockedPreset = false;
   let blendDuration = preferences.getBlendDuration(
@@ -545,9 +545,9 @@ export function createMilkdropExperience({
       transitionMode === 'blend' &&
       blendDuration > 0 &&
       estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
-    blendState = canBlend ? cloneBlendState(currentFrameState) : null;
-    blendEndAtMs = blendState ? performance.now() + blendDuration * 1000 : 0;
-    if (blendState) {
+    const nextBlendState = canBlend ? cloneBlendState(currentFrameState) : null;
+    transitionController.begin(nextBlendState, blendDuration);
+    if (nextBlendState) {
       adapter?.saveFeedbackFrame?.();
     }
     lastPresetSwitchAt = performance.now();
@@ -706,8 +706,7 @@ export function createMilkdropExperience({
     setCurrentFrameState: (frameState) => {
       currentFrameState = frameState;
     },
-    getBlendState: () => blendState,
-    getBlendEndAtMs: () => blendEndAtMs,
+    transitionController,
     getBlendDuration: () => blendDuration,
     getTransitionMode: () => transitionMode,
     getAutoplay: () => autoplay && !lockedPreset,

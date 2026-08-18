@@ -7,7 +7,6 @@ import {
 import { applyMilkdropCapturedVideoFrameState } from '../../src/js/milkdrop/runtime/captured-video-frame.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 import {
-  buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
@@ -17,17 +16,8 @@ import {
   resolveStartupPresetId,
   shouldDeferStartupPresetFallback,
 } from '../../src/js/milkdrop/runtime/startup.ts';
-import type {
-  MilkdropBlendState,
-  MilkdropFrameState,
-} from '../../src/js/milkdrop/types.ts';
+import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
-
-const gpuBlendState: MilkdropBlendState = {
-  mode: 'gpu',
-  previousFrame: { presetId: 'prev' } as MilkdropFrameState,
-  alpha: 1,
-};
 
 function resolveCapturedVideoReactivity({
   weightedEnergy,
@@ -197,32 +187,8 @@ describe('milkdrop runtime lifecycle seams', () => {
     ).toBe(false);
   });
 
-  test('builds blend payloads only while an active blend is still valid', () => {
-    const blend = buildBlendStateForRender({
-      transitionMode: 'blend',
-      shaderQuality: 'balanced',
-      canBlendCurrentFrame: true,
-      blendState: gpuBlendState,
-      now: 3_000,
-      blendEndAtMs: 4_000,
-      blendDuration: 2,
-    });
-
-    expect(blend?.mode).toBe('gpu');
-    expect(blend?.alpha).toBeCloseTo(0.5, 6);
-
-    expect(
-      buildBlendStateForRender({
-        transitionMode: 'cut',
-        shaderQuality: 'balanced',
-        canBlendCurrentFrame: true,
-        blendState: gpuBlendState,
-        now: 3_000,
-        blendEndAtMs: 4_000,
-        blendDuration: 2,
-      }),
-    ).toBeNull();
-  });
+  // Blend-alpha behavior moved to runtime/transition-controller.ts; see
+  // tests/unit/milkdrop-transition-controller.test.ts.
 
   test('disables heavy post effects for low shader quality frames', () => {
     const frameState = {

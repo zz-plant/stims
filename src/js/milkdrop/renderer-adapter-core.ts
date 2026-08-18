@@ -466,6 +466,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.feedback?.saveCurrentFrame?.();
   }
 
+  /**
+   * False while the incoming preset's warp/comp shaders are still warming
+   * asynchronously (rendering on the pass-through pair). The transition
+   * controller keeps the reveal covered until this flips true.
+   */
+  isPresetPresentable(): boolean {
+    return !(this.feedback?.isDirectShaderSwapPending?.() ?? false);
+  }
+
   setTransitionBlend(alpha: number): void {
     this.feedback?.setTransitionBlend?.(alpha);
   }
