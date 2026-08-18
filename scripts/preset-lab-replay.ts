@@ -48,9 +48,10 @@ type FrameInputs = {
 type FrameCapture = {
   /** FNV-1a digest over sorted variables + geometry. */
   digest: string;
-  /** Full variable snapshot, kept so divergences can be named precisely. */
-  variables: Record<string, number>;
-  geometry: { mainWave: number; customWaves: number; shapes: number };
+  /** Full variable snapshot, kept so divergences can be named precisely.
+   * Compact (golden) traces keep it only on checkpoint frames. */
+  variables?: Record<string, number>;
+  geometry?: { mainWave: number; customWaves: number; shapes: number };
 };
 
 type TraceFile = {
@@ -59,9 +60,15 @@ type TraceFile = {
   capturedAt: string;
   fps: number;
   scenario: string;
-  inputs: FrameInputs[];
+  frameCount: number;
+  /** Raw recorded inputs; null for synthetic traces, whose inputs are
+   * regenerated from (scenario, frameCount) on replay. Live browser
+   * captures must always store inputs. */
+  inputs: FrameInputs[] | null;
   frames: FrameCapture[];
 };
+
+export type { FrameCapture, FrameInputs, TraceFile };
 
 function repoRootFromScript() {
   return path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -118,7 +125,7 @@ function captureFrame(frameState: {
   return { digest, variables, geometry };
 }
 
-function runTrace(
+export function runTrace(
   raw: string,
   presetId: string,
   inputs: FrameInputs[],
@@ -144,7 +151,7 @@ function runTrace(
   return frames;
 }
 
-function buildScenarioInputs(
+export function buildScenarioInputs(
   scenario: PresetLabScenario,
   frameCount: number,
 ): FrameInputs[] {
@@ -166,27 +173,75 @@ function buildScenarioInputs(
   return inputs;
 }
 
-function diffFrames(recorded: FrameCapture, replayed: FrameCapture): string[] {
+export function diffFrames(
+  recorded: FrameCapture,
+  replayed: FrameCapture,
+): string[] {
+  if (!recorded.variables || !recorded.geometry) {
+    return [
+      '  (compact trace: no variable checkpoint at this frame — re-record without --compact to name variables)',
+    ];
+  }
   const details: string[] = [];
   const keys = new Set([
     ...Object.keys(recorded.variables),
-    ...Object.keys(replayed.variables),
+    ...Object.keys(replayed.variables ?? {}),
   ]);
   for (const key of [...keys].sort()) {
     const before = recorded.variables[key];
-    const after = replayed.variables[key];
+    const after = replayed.variables?.[key];
     if (before !== after) {
       details.push(`  variables.${key}: ${before} -> ${after}`);
     }
   }
   for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
-    if (recorded.geometry[field] !== replayed.geometry[field]) {
+    if (recorded.geometry[field] !== replayed.geometry?.[field]) {
       details.push(
-        `  geometry.${field}: ${recorded.geometry[field]} -> ${replayed.geometry[field]}`,
+        `  geometry.${field}: ${recorded.geometry[field]} -> ${replayed.geometry?.[field]}`,
       );
     }
   }
   return details;
+}
+
+/** Compares a replay against a trace; returns null when every frame's digest
+ * matches, else the first divergence. Shared by the CLI and the golden-trace
+ * unit gate. */
+export function compareReplay(
+  trace: TraceFile,
+  replayed: FrameCapture[],
+): { frame: number; details: string[] } | null {
+  for (let index = 0; index < trace.frames.length; index += 1) {
+    const recorded = trace.frames[index] as FrameCapture;
+    const current = replayed[index];
+    if (!current || current.digest !== recorded.digest) {
+      return {
+        frame: index,
+        details: current
+          ? diffFrames(recorded, current)
+          : ['  (missing frame)'],
+      };
+    }
+  }
+  return null;
+}
+
+export function traceInputs(trace: TraceFile): FrameInputs[] {
+  return (
+    trace.inputs ??
+    buildScenarioInputs(
+      trace.scenario as PresetLabScenario,
+      trace.frameCount ?? trace.frames.length,
+    )
+  );
+}
+
+const GOLDEN_CHECKPOINT_EVERY = 30;
+
+function compactFrames(frames: FrameCapture[]): FrameCapture[] {
+  return frames.map((frame, index) =>
+    index % GOLDEN_CHECKPOINT_EVERY === 0 ? frame : { digest: frame.digest },
+  );
 }
 
 function main() {
@@ -199,6 +254,7 @@ function main() {
   const presetId = get('--preset');
   const recordPath = get('--record');
   const replayPath = get('--replay');
+  const compact = args.includes('--compact');
   const frameCount = Number(get('--frames') ?? DEFAULT_FRAMES);
   const scenario = (get('--scenario') ?? 'full-mix') as PresetLabScenario;
   const dumpFrame = get('--dump');
@@ -217,8 +273,9 @@ function main() {
       capturedAt: new Date().toISOString(),
       fps: FPS,
       scenario,
-      inputs,
-      frames,
+      frameCount: frames.length,
+      inputs: compact ? null : inputs,
+      frames: compact ? compactFrames(frames) : frames,
     };
     fs.mkdirSync(path.dirname(path.resolve(recordPath)), { recursive: true });
     fs.writeFileSync(path.resolve(recordPath), JSON.stringify(trace));
@@ -233,7 +290,7 @@ function main() {
       fs.readFileSync(path.resolve(replayPath), 'utf8'),
     ) as TraceFile;
     const source = loadPresetSource(repoRoot, { presetId: trace.presetId });
-    const replayed = runTrace(source.raw, trace.presetId, trace.inputs);
+    const replayed = runTrace(source.raw, trace.presetId, traceInputs(trace));
 
     if (dumpFrame !== undefined) {
       const index = Number(dumpFrame);
@@ -244,25 +301,18 @@ function main() {
       }
     }
 
-    for (let index = 0; index < trace.frames.length; index += 1) {
-      const recorded = trace.frames[index] as FrameCapture;
-      const current = replayed[index];
-      if (!current || current.digest !== recorded.digest) {
-        console.error(
-          `✗ DIVERGED at frame ${index}/${trace.frames.length} ` +
-            `(recorded ${recorded.digest}, replayed ${current?.digest ?? 'missing'})`,
-        );
-        if (current) {
-          const details = diffFrames(recorded, current);
-          console.error(
-            details.slice(0, 20).join('\n') +
-              (details.length > 20
-                ? `\n  … ${details.length - 20} more differing fields`
-                : ''),
-          );
-        }
-        process.exit(1);
-      }
+    const divergence = compareReplay(trace, replayed);
+    if (divergence) {
+      console.error(
+        `✗ DIVERGED at frame ${divergence.frame}/${trace.frames.length}`,
+      );
+      console.error(
+        divergence.details.slice(0, 20).join('\n') +
+          (divergence.details.length > 20
+            ? `\n  … ${divergence.details.length - 20} more differing fields`
+            : ''),
+      );
+      process.exit(1);
     }
     console.log(
       `✔ replay verified: ${trace.frames.length} frames of ${trace.presetId} match the recording bit-for-bit.`,
@@ -278,4 +328,6 @@ function main() {
   process.exit(1);
 }
 
-main();
+if (import.meta.main) {
+  main();
+}
