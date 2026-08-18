@@ -12,7 +12,10 @@ import type {
   MilkdropWaveDefinition,
   MilkdropWebGpuDescriptorPlan,
 } from '../types';
-import { PER_FRAME_FIELD_REGISTER_INPUTS } from './gpu-field-planner.ts';
+import {
+  PER_FRAME_FIELD_REGISTER_INPUTS,
+  PER_PIXEL_VIEWPORT_BUILTIN_INPUTS,
+} from './gpu-field-planner.ts';
 
 const POST_PASS_EPSILON = 0.0001;
 const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
@@ -147,6 +150,7 @@ export function buildWebGpuDescriptorPlan({
 
   const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel, {
     registerInputs: perFrameFieldRegisterInputs,
+    additionalAllowedIdentifiers: PER_PIXEL_VIEWPORT_BUILTIN_INPUTS,
   });
   const supportsProceduralFieldEvaluation =
     programs.perPixel.statements.length === 0 ||

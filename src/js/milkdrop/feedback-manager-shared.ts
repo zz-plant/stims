@@ -83,6 +83,14 @@ function getCachedGlslForShaderProgram(
 
 const BLUR_PASS_RADII = [2, 4, 8] as const;
 
+/**
+ * Per-level blur pyramid resolution, as a fraction of feedback resolution.
+ * MilkDrop 2 allocates its blur textures at 1/2, 1/4, 1/8 of the frame;
+ * level 0 was previously full-res here, doubling fill cost on both gaussian
+ * passes of the largest level for extra sharpness the reference never had.
+ */
+const BLUR_LEVEL_SCALES = [0.5, 0.25, 0.125] as const;
+
 const CACHED_BLUR_RANGES = [
   { scale: 1, bias: 0 },
   { scale: 1, bias: 0 },
@@ -488,6 +496,12 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
 // disagree and drove WebGL away from WebGPU.
 const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
+          // Zero warp + zero rotation is an identity polar round-trip; skip
+          // the atan/sin/cos entirely. Both inputs are uniform-driven, so the
+          // branch is coherent across the whole pass.
+          if (abs(amount) < 0.000001 && abs(rotationAmount) < 0.000001) {
+            return uv;
+          }
           vec2 centered = uv - 0.5;
           float radius = length(centered);
           float angle = atan(centered.y, centered.x);
@@ -1292,34 +1306,40 @@ class SharedMilkdropFeedbackManager
     });
     this.blurTargets = [
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[0],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[1],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[2],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
     ];
     this.blurHTargets = [
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[0],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[1],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[2],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
@@ -2205,27 +2225,21 @@ class SharedMilkdropFeedbackManager
       target.setSize(feedbackWidth, feedbackHeight),
     );
     this.displayTarget.setSize(feedbackWidth, feedbackHeight);
-    this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
-    this.blurHTargets[0].setSize(feedbackWidth, feedbackHeight);
     if (this.savedFrameTarget) {
       this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
     }
-    this.blurTargets[1].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.5)),
-      Math.max(1, Math.round(feedbackHeight * 0.5)),
-    );
-    this.blurHTargets[1].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.5)),
-      Math.max(1, Math.round(feedbackHeight * 0.5)),
-    );
-    this.blurTargets[2].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.25)),
-      Math.max(1, Math.round(feedbackHeight * 0.25)),
-    );
-    this.blurHTargets[2].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.25)),
-      Math.max(1, Math.round(feedbackHeight * 0.25)),
-    );
+    for (let level = 0; level < BLUR_LEVEL_SCALES.length; level += 1) {
+      const levelWidth = Math.max(
+        1,
+        Math.round(feedbackWidth * BLUR_LEVEL_SCALES[level]),
+      );
+      const levelHeight = Math.max(
+        1,
+        Math.round(feedbackHeight * BLUR_LEVEL_SCALES[level]),
+      );
+      this.blurTargets[level].setSize(levelWidth, levelHeight);
+      this.blurHTargets[level].setSize(levelWidth, levelHeight);
+    }
     this.compositeMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),

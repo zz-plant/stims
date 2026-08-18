@@ -982,65 +982,16 @@ function getShaderEnvValue(
         env.uniforms.rand_preset.w,
       ),
     // Butterchurn-compiled bodies address q registers through the packed
-    // _qa.._qh vec4 uniforms (#define q1 _qa.x …). Provide the same vec4s from
-    // the per-pixel q register array so statements swizzling _qb.xy etc. don't
-    // drop.
-    _qa: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[0],
-        env.uniforms.perPixelQ[1],
-        env.uniforms.perPixelQ[2],
-        env.uniforms.perPixelQ[3],
-      ),
-    _qb: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[4],
-        env.uniforms.perPixelQ[5],
-        env.uniforms.perPixelQ[6],
-        env.uniforms.perPixelQ[7],
-      ),
-    _qc: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[8],
-        env.uniforms.perPixelQ[9],
-        env.uniforms.perPixelQ[10],
-        env.uniforms.perPixelQ[11],
-      ),
-    _qd: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[12],
-        env.uniforms.perPixelQ[13],
-        env.uniforms.perPixelQ[14],
-        env.uniforms.perPixelQ[15],
-      ),
-    _qe: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[16],
-        env.uniforms.perPixelQ[17],
-        env.uniforms.perPixelQ[18],
-        env.uniforms.perPixelQ[19],
-      ),
-    _qf: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[20],
-        env.uniforms.perPixelQ[21],
-        env.uniforms.perPixelQ[22],
-        env.uniforms.perPixelQ[23],
-      ),
-    _qg: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[24],
-        env.uniforms.perPixelQ[25],
-        env.uniforms.perPixelQ[26],
-        env.uniforms.perPixelQ[27],
-      ),
-    _qh: () =>
-      shaderVec4(
-        env.uniforms.perPixelQ[28],
-        env.uniforms.perPixelQ[29],
-        env.uniforms.perPixelQ[30],
-        env.uniforms.perPixelQ[31],
-      ),
+    // _qa.._qh vec4 uniforms (#define q1 _qa.x …). The uniform banks are
+    // already packed four-per-vec4, so each maps straight to one uniform node.
+    _qa: () => makeShaderValue('vec4', env.uniforms.perPixelQ[0]),
+    _qb: () => makeShaderValue('vec4', env.uniforms.perPixelQ[1]),
+    _qc: () => makeShaderValue('vec4', env.uniforms.perPixelQ[2]),
+    _qd: () => makeShaderValue('vec4', env.uniforms.perPixelQ[3]),
+    _qe: () => makeShaderValue('vec4', env.uniforms.perPixelQ[4]),
+    _qf: () => makeShaderValue('vec4', env.uniforms.perPixelQ[5]),
+    _qg: () => makeShaderValue('vec4', env.uniforms.perPixelQ[6]),
+    _qh: () => makeShaderValue('vec4', env.uniforms.perPixelQ[7]),
     // Butterchurn shader bodies reference the time-driven roam oscillators as
     // vec4 macros; the WebGL templates define them as #defines. Provide the
     // same expressions here so statements multiplying by roam_sin/roam_cos
@@ -1104,10 +1055,16 @@ function getShaderEnvValue(
         ? env.uniforms.perPixelT
         : null;
   const registerIndex = Number(registerMatch?.[2] ?? 0) - 1;
-  const resolved =
+  // Registers live four-per-vec4 in the packed banks; a scalar read is a
+  // component swizzle of the owning vector.
+  const registerVector =
     registerUniforms && registerIndex >= 0
-      ? shaderFloat(registerUniforms[registerIndex])
-      : (uniformMap[normalized]?.() ?? null);
+      ? registerUniforms[Math.floor(registerIndex / 4)]
+      : null;
+  const registerComponent = (['x', 'y', 'z', 'w'] as const)[registerIndex % 4];
+  const resolved = registerVector
+    ? shaderFloat(registerVector[registerComponent])
+    : (uniformMap[normalized]?.() ?? null);
   if (resolved) {
     env.values.set(normalized, resolved);
   }
@@ -2925,11 +2882,21 @@ class WebGPUMilkdropFeedbackManager
       this.compositeMaterial.uniforms.feedbackSoftness.value =
         state.feedbackSoftness;
     }
-    for (let index = 0; index < 32; index += 1) {
-      this.compositeMaterial.uniforms.perPixelQ[index].value =
-        state.perPixelVariables?.[`q${index + 1}`] ?? 0;
-      this.compositeMaterial.uniforms.perPixelT[index].value =
-        state.perPixelVariables?.[`t${index + 1}`] ?? 0;
+    const perPixelVariables = state.perPixelVariables;
+    for (let vector = 0; vector < 8; vector += 1) {
+      const base = vector * 4;
+      (this.compositeMaterial.uniforms.perPixelQ[vector].value as Vector4).set(
+        perPixelVariables?.[`q${base + 1}`] ?? 0,
+        perPixelVariables?.[`q${base + 2}`] ?? 0,
+        perPixelVariables?.[`q${base + 3}`] ?? 0,
+        perPixelVariables?.[`q${base + 4}`] ?? 0,
+      );
+      (this.compositeMaterial.uniforms.perPixelT[vector].value as Vector4).set(
+        perPixelVariables?.[`t${base + 1}`] ?? 0,
+        perPixelVariables?.[`t${base + 2}`] ?? 0,
+        perPixelVariables?.[`t${base + 3}`] ?? 0,
+        perPixelVariables?.[`t${base + 4}`] ?? 0,
+      );
     }
     const aspect =
       Number.isFinite(state.aspect) && state.aspect > 0 ? state.aspect : 1;

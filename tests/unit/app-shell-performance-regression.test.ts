@@ -492,7 +492,11 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(feedbackSource).toContain('buildCompositeStateKey(state)');
+    // 13779ef0 replaced the multi-KB string state key with a field-compare
+    // change signal; the guard follows the replacement.
+    expect(feedbackSource).toContain(
+      'compositeStateIdentityChanged(this.compositeIdentity, state)',
+    );
     expect(feedbackSource).not.toContain('JSON.stringify({');
     expect(feedbackSource).toContain('currentOverlayTextureName');
     expect(feedbackSource).toContain('currentWarpTextureName');

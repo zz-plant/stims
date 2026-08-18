@@ -51,6 +51,8 @@ const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
   ['vol', 'vol'],
   ['music', 'music'],
   ['weighted_energy', 'weightedEnergy'],
+  ['aspectx', 'aspectX'],
+  ['aspecty', 'aspectY'],
 ]);
 
 const GPU_FIELD_FUNCTIONS = new Set([
@@ -77,6 +79,7 @@ const GPU_FIELD_FUNCTIONS = new Set([
   'step',
   'smoothstep',
   'log',
+  'log10',
   'exp',
   'sigmoid',
   'sign',
@@ -98,7 +101,7 @@ type LowerGpuFieldProgramOptions = {
   additionalStateIdentifiers?: Iterable<string>;
   additionalAllowedIdentifiers?: Iterable<string>;
   /**
-   * Per-frame register names (`q1`..`q8`) that a per-pixel program may READ as
+   * Per-frame register names (`q1`..`q32`) that a per-pixel program may READ as
    * frame constants. A register that is only read (never assigned inside the
    * per-pixel program) lowers to a per-frame uniform input instead of bailing;
    * a register that is assigned stays a per-vertex temporary. Excludes the
@@ -110,18 +113,34 @@ type LowerGpuFieldProgramOptions = {
 const GPU_FIELD_REGISTER_PATTERN = /^q[0-9]+$/u;
 
 /** Per-frame registers exposed to per-pixel programs as frame-constant
- * uniform inputs. Bounded to `q1`..`q8`: the bundled catalog reads no higher,
- * and the per-wave `t` bank is not a per-pixel input. */
-export const PER_FRAME_FIELD_REGISTER_INPUTS = [
-  'q1',
-  'q2',
-  'q3',
-  'q4',
-  'q5',
-  'q6',
-  'q7',
-  'q8',
+ * uniform inputs. Covers the full MilkDrop 2 `q1`..`q32` bank (measured
+ * 2026-08-18: q9+ reads were the sole lowering blocker for 75 of the 203
+ * still-unlowered bundled presets). The per-wave `t` bank stays excluded —
+ * it is per-wave state, never a per-pixel input. */
+export const PER_FRAME_FIELD_REGISTER_INPUTS = Array.from(
+  { length: 32 },
+  (_, index) => `q${index + 1}`,
+);
+
+/** Viewport/mesh builtins a per-pixel program may read as frame constants
+ * (`pixelsx`/`pixelsy` are the render resolution, `meshx`/`meshy` the warp
+ * mesh dimensions). Passed as `additionalAllowedIdentifiers` by the per-pixel
+ * descriptor-plan call only — the custom-wave WGSL scope does not bind them. */
+export const PER_PIXEL_VIEWPORT_BUILTIN_INPUTS = [
+  'pixelsx',
+  'pixelsy',
+  'meshx',
+  'meshy',
 ];
+
+/** MilkDrop initialises `pi`/`e` as ordinary overwritable variables, and a
+ * handful of presets assign them (`pi = 3.14159`, `pi = asin(1)`). Such a
+ * target lowers to a temporary whose declaration is initialised to the
+ * mathematical constant instead of 0, so reads before the first assignment
+ * still see the builtin value. */
+function isOverwritableConstant(identifier: string) {
+  return identifier === 'pi' || identifier === 'e';
+}
 
 function collectGpuFieldIdentifierReads(
   expression: MilkdropExpressionNode,
@@ -304,14 +323,15 @@ export function lowerGpuFieldProgram(
     const target = lowerGpuFieldIdentifier(statement.target);
     if (
       !stateIdentifiers.has(target) &&
-      isGpuFieldTemporary(target, reservedIdentifiers)
+      (isGpuFieldTemporary(target, reservedIdentifiers) ||
+        isOverwritableConstant(target))
     ) {
       temporaries.add(target);
       allowedIdentifiers.add(target);
     }
   }
 
-  // A register (`q1`..`q8`) that the per-pixel program only READS is the
+  // A register (`q1`..`q32`) that the per-pixel program only READS is the
   // per-frame register value — a frame constant, identical across all vertices
   // — so it lowers to a per-frame uniform input rather than bailing. A register
   // that is ASSIGNED inside the per-pixel program was caught above as a
@@ -338,7 +358,9 @@ export function lowerGpuFieldProgram(
     // written in place instead of being shadowed by a fresh local.
     const targetIsState = stateIdentifiers.has(target);
     const targetIsTemporary =
-      !targetIsState && isGpuFieldTemporary(target, reservedIdentifiers);
+      !targetIsState &&
+      (isGpuFieldTemporary(target, reservedIdentifiers) ||
+        isOverwritableConstant(target));
     if (!(targetIsState || targetIsTemporary)) {
       return null;
     }

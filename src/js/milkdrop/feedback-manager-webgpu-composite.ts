@@ -485,8 +485,15 @@ export function createCompositeUniforms(
     signalTime: uniform(0),
     signalFrame: uniform(0),
     signalFps: uniform(60),
-    perPixelQ: Array.from({ length: 32 }, () => uniform(0)),
-    perPixelT: Array.from({ length: 32 }, () => uniform(0)),
+    // q/t register banks packed four-per-vec4 (q1..q4 in [0], q5..q8 in [1],
+    // …), matching the WebGL path's _qa.._qh packing: 16 uniform nodes and 16
+    // per-frame writes instead of 64 scalars.
+    perPixelQ: Array.from({ length: 8 }, () =>
+      uniform(new Vector4(0, 0, 0, 0)),
+    ),
+    perPixelT: Array.from({ length: 8 }, () =>
+      uniform(new Vector4(0, 0, 0, 0)),
+    ),
     aspect: uniform(new Vector4(1, 1, 1, 1)),
     decay: uniform(0.98),
     postBloomStrength: uniform(0),

@@ -105,16 +105,12 @@ export type MilkdropProceduralFieldTransformVisual = {
   translateY: number;
 };
 
-export type MilkdropPerFrameFieldRegisters = {
-  q1?: number;
-  q2?: number;
-  q3?: number;
-  q4?: number;
-  q5?: number;
-  q6?: number;
-  q7?: number;
-  q8?: number;
-};
+/** Frame-constant `q` register values a lowered per-pixel program reads as
+ * uniforms. Sparse: producers only populate the registers the program's
+ * `registerInputs` actually name (full bank is `q1`..`q32`). */
+export type MilkdropPerFrameFieldRegisters = Partial<
+  Record<`q${number}`, number>
+>;
 
 export type MilkdropGpuFieldSignalInputs = {
   time: number;
@@ -135,6 +131,10 @@ export type MilkdropGpuFieldSignalInputs = {
   vol: number;
   music: number;
   weightedEnergy: number;
+  /** Real viewport pixel size when the runtime knows it; consumers fall back
+   * to deriveMilkdropViewportSignalValues' aspect-based estimate otherwise. */
+  pixelsx?: number;
+  pixelsy?: number;
 };
 
 export type MilkdropProceduralMeshFieldVisual =
@@ -192,6 +192,8 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
     registers?: MilkdropPerFrameFieldRegisters;
+    /** Warp mesh density, for the meshx/meshy builtins. */
+    density?: number;
     tint?: MilkdropColor;
     alpha?: number;
   };

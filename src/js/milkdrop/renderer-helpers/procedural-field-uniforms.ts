@@ -5,6 +5,7 @@ import type {
   MilkdropPerFrameFieldRegisters,
   MilkdropProceduralFieldTransformVisual,
 } from '../types';
+import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout.ts';
 
 export type ProceduralFieldUniformState = {
   zoom: { value: number };
@@ -40,20 +41,36 @@ export type ProceduralFieldUniformState = {
   signalVol: { value: number };
   signalMusic: { value: number };
   signalWeightedEnergy: { value: number };
-  registerQ1: { value: number };
-  registerQ2: { value: number };
-  registerQ3: { value: number };
-  registerQ4: { value: number };
-  registerQ5: { value: number };
-  registerQ6: { value: number };
-  registerQ7: { value: number };
-  registerQ8: { value: number };
-};
+  signalPixelsX: { value: number };
+  signalPixelsY: { value: number };
+  meshSize: { value: number };
+} & ProceduralFieldRegisterUniformState;
+
+/** Full MilkDrop `q1`..`q32` register bank, one scalar uniform each
+ * (`registerQ1`..`registerQ32`). Materials only wire the registers a lowered
+ * program actually reads into its packed vec4 arguments. */
+export const FIELD_REGISTER_UNIFORM_COUNT = 32;
+
+export type ProceduralFieldRegisterUniformState = Record<
+  `registerQ${number}`,
+  { value: number }
+>;
+
+function createFieldRegisterUniformState(): ProceduralFieldRegisterUniformState {
+  const state: Record<string, { value: number }> = {};
+  for (let index = 1; index <= FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
+    state[`registerQ${index}`] = { value: 0 };
+  }
+  return state as ProceduralFieldRegisterUniformState;
+}
 
 export type ProceduralFieldVisualWithSignals =
   MilkdropProceduralFieldTransformVisual & {
     signals: MilkdropGpuFieldSignalInputs;
     registers?: MilkdropPerFrameFieldRegisters;
+    /** Warp mesh dimension (meshx/meshy builtin); mesh and motion-vector
+     * visuals carry the density their CPU counterpart ran with. */
+    density?: number;
   };
 
 export type ProceduralInteractionUniformState = {
@@ -99,14 +116,10 @@ export function createProceduralFieldUniformState() {
     signalVol: { value: 0 },
     signalMusic: { value: 0 },
     signalWeightedEnergy: { value: 0 },
-    registerQ1: { value: 0 },
-    registerQ2: { value: 0 },
-    registerQ3: { value: 0 },
-    registerQ4: { value: 0 },
-    registerQ5: { value: 0 },
-    registerQ6: { value: 0 },
-    registerQ7: { value: 0 },
-    registerQ8: { value: 0 },
+    signalPixelsX: { value: 1280 },
+    signalPixelsY: { value: 1280 },
+    meshSize: { value: 48 },
+    ...createFieldRegisterUniformState(),
   } satisfies ProceduralFieldUniformState;
 }
 
@@ -140,6 +153,7 @@ export function syncProceduralFieldUniforms(
     tint,
     alpha,
     registers,
+    density,
   }: ProceduralFieldVisualWithSignals & {
     time: number;
     trebleAtt: number;
@@ -180,14 +194,14 @@ export function syncProceduralFieldUniforms(
   material.uniforms.signalVol.value = signals.vol;
   material.uniforms.signalMusic.value = signals.music;
   material.uniforms.signalWeightedEnergy.value = signals.weightedEnergy;
-  material.uniforms.registerQ1.value = registers?.q1 ?? 0;
-  material.uniforms.registerQ2.value = registers?.q2 ?? 0;
-  material.uniforms.registerQ3.value = registers?.q3 ?? 0;
-  material.uniforms.registerQ4.value = registers?.q4 ?? 0;
-  material.uniforms.registerQ5.value = registers?.q5 ?? 0;
-  material.uniforms.registerQ6.value = registers?.q6 ?? 0;
-  material.uniforms.registerQ7.value = registers?.q7 ?? 0;
-  material.uniforms.registerQ8.value = registers?.q8 ?? 0;
+  const viewport = deriveMilkdropViewportSignalValues(signals);
+  material.uniforms.signalPixelsX.value = viewport.pixelsx;
+  material.uniforms.signalPixelsY.value = viewport.pixelsy;
+  material.uniforms.meshSize.value = density ?? 48;
+  for (let index = 1; index <= FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
+    material.uniforms[`registerQ${index}`].value =
+      registers?.[`q${index}`] ?? 0;
+  }
 }
 
 export function syncProceduralInteractionUniforms(
@@ -235,4 +249,8 @@ export function syncPreviousProceduralFieldUniforms(
   material.uniforms.previousSignalMusic.value = field.signals.music;
   material.uniforms.previousSignalWeightedEnergy.value =
     field.signals.weightedEnergy;
+  const previousViewport = deriveMilkdropViewportSignalValues(field.signals);
+  material.uniforms.previousSignalPixelsX.value = previousViewport.pixelsx;
+  material.uniforms.previousSignalPixelsY.value = previousViewport.pixelsy;
+  material.uniforms.previousMeshSize.value = field.density ?? 48;
 }
