@@ -45,6 +45,8 @@ thumbnails/
 # --output outside the repo instead.
 /screenshots/loop-preset-sweep*/
 /screenshots/certification-perf/
+/screenshots/ui-diff/
+/screenshots/ui-diff-baseline/
 
 # Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
 # Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
