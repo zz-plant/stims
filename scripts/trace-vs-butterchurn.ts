@@ -16,6 +16,16 @@
  * but the UMD/global quirks (control 6) and preset-loaded-by-boot-URL
  * discipline (control 2) still apply.
  *
+ * Frame alignment: Stims steps via renderFrames({frames: 1}) — one
+ * synchronous simulation frame per call, decoupled from wall clock and rAF
+ * (the same mechanism the preview generator uses) — and Butterchurn steps
+ * via one visualizer.render() call. Both read their variable bag
+ * immediately after that single step, so frame N on one side is frame N on
+ * the other; a divergence's frame index is directly comparable, not a
+ * rAF-sampling artifact. (Earlier versions of this tool sampled Stims'
+ * live rAF loop and could not make that guarantee — first-divergence
+ * findings from before this comment was added should be re-verified.)
+ *
  * Usage:
  *   bun run trace:butterchurn                       # 8 presets, 60 frames
  *   bun run trace:butterchurn -- --ids=geiss-casino
@@ -299,45 +309,44 @@ async function traceStims(
     return (await withDeadline(
       page.evaluate(
         ({ frameCount, vars }) => {
-          // window.stimState is the public agent API (agent-api.ts); the
-          // per-frame variable bag rides in the 'milkdrop' debug snapshot,
-          // refreshed once per rendered frame by presentation-controller.ts
-          // (buildAgentMilkdropDebugSnapshot → frameState.variables). There
-          // is no manual step API, so this samples the live rAF-driven
-          // state once per animation frame rather than forcing deterministic
-          // stepping — which is why frame counts are NOT expected to align
-          // 1:1 across engines; the trace compares trajectories and reports
-          // the first point they diverge beyond tolerance, not a
-          // frame-index equality.
-          const stimState = (
-            window as unknown as {
-              stimState?: {
-                getDebugSnapshot: (key: string) => {
-                  frameState?: { variables?: Record<string, number> } | null;
-                } | null;
-              };
-            }
-          ).stimState;
-          if (!stimState) return null;
-          const out: Array<Record<string, number>> = [];
-          return new Promise<Array<Record<string, number>>>((resolve) => {
-            const tick = () => {
-              const snapshot = stimState.getDebugSnapshot('milkdrop');
-              const variables = snapshot?.frameState?.variables ?? {};
-              const row: Record<string, number> = {};
-              for (const v of vars) {
-                row[v] =
-                  typeof variables[v] === 'number' ? variables[v] : Number.NaN;
-              }
-              out.push(row);
-              if (out.length >= frameCount) {
-                resolve(out);
-              } else {
-                requestAnimationFrame(tick);
-              }
+          // window.__STIMS_AGENT_RENDER_FRAMES__ (agent-bridge.ts →
+          // toy-runtime.ts renderFrames) synchronously pumps ONE simulation
+          // frame per call — sim time decoupled from wall clock, the same
+          // mechanism the preview generator uses for deterministic capture.
+          // Each pumped frame runs pluginManager.update(), which is the
+          // exact call that refreshes the 'milkdrop' debug snapshot, so
+          // reading the snapshot right after one renderFrames({frames: 1})
+          // call gives a true 1:1 frame index — no rAF sampling, no
+          // alignment ambiguity with Butterchurn's synchronous render().
+          const win = window as unknown as {
+            stimState?: {
+              getDebugSnapshot: (key: string) => {
+                frameState?: { variables?: Record<string, number> } | null;
+              } | null;
             };
-            requestAnimationFrame(tick);
-          });
+            __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
+              frames?: number;
+            }) => { rendered: number } | null;
+          };
+          if (!win.stimState || !win.__STIMS_AGENT_RENDER_FRAMES__) {
+            return null;
+          }
+          const out: Array<Record<string, number>> = [];
+          for (let i = 0; i < frameCount; i++) {
+            const step = win.__STIMS_AGENT_RENDER_FRAMES__({ frames: 1 });
+            if (!step || step.rendered !== 1) {
+              return null;
+            }
+            const snapshot = win.stimState.getDebugSnapshot('milkdrop');
+            const variables = snapshot?.frameState?.variables ?? {};
+            const row: Record<string, number> = {};
+            for (const v of vars) {
+              row[v] =
+                typeof variables[v] === 'number' ? variables[v] : Number.NaN;
+            }
+            out.push(row);
+          }
+          return out;
         },
         { frameCount: frames, vars: TRACE_VARIABLES },
       ),
