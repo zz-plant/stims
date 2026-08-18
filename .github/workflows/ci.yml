@@ -162,6 +162,11 @@ jobs:
     # or PR when you want proof a visual change landed, without CI blocking
     # on inherently noisy SwiftShader pixel/timing comparisons.
     if: github.event_name == 'workflow_dispatch'
+    env:
+      # `secrets` isn't a valid context inside `if:` expressions, so the
+      # deploy step below checks these env vars instead.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Setup environment
         uses: ./.github/actions/setup-stims
@@ -199,10 +204,7 @@ jobs:
       # skipped (not failed) when they aren't configured, so this stays safe
       # on forks and doesn't block the rest of the job.
       - name: Deploy live preview
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: |
           bun run preview:deploy -- --json | tee preview-url.json
           echo "### Live preview" >> "$GITHUB_STEP_SUMMARY"
