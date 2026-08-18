@@ -18,9 +18,10 @@ import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import {
   getSyncSessionState,
-  startHostSession,
+  leaveSyncSession,
+  setSyncUrlParam,
+  startOrCopyWatchParty,
   subscribeSyncSession,
-  syncShareUrl,
 } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -84,22 +85,14 @@ const AUDIO_SOURCE_OPTIONS = [
   { source: 'tab' as const, shortLabel: 'Tab', name: 'This tab' },
 ];
 
-// Mirrors the private setSyncUrlParam in SyncSessionSection.tsx: the ?sync
-// param keeps the address bar shareable and lets this tab resume as host
-// after a reload. replaceState (not commitRoute) because the sync room is
-// transport state, not a route the panel system owns.
-function setSyncUrlParam(room: string): void {
-  const url = new URL(window.location.href);
-  url.searchParams.set('sync', room);
-  window.history.replaceState(window.history.state, '', url.toString());
-}
-
 export function StageControls({
   isFullscreen,
   onToggleFullscreen,
+  onOpenPalette,
 }: {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  onOpenPalette?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -274,34 +267,10 @@ export function StageControls({
   }, [engine, currentPresetId, presetSaved, signalActivity]);
 
   // Start hosting and copy the room link in one action; when already
-  // hosting, just copy. The clipboard write after the room fetch can lose
-  // transient user activation in stricter browsers, so a copy failure still
-  // reports a live session — the ?sync link sits in the address bar.
+  // hosting, just copy. Shared with the command palette via sync-session.
   const handleWatchParty = useCallback(async () => {
-    const wasHosting = hostingRoom !== null;
-    let room = hostingRoom;
-    if (!room) {
-      try {
-        room = await startHostSession();
-        setSyncUrlParam(room);
-      } catch {
-        ui.setStatusMessage('Could not start a watch party.');
-        return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(syncShareUrl(room));
-      ui.setStatusMessage(
-        wasHosting
-          ? 'Watch party link copied'
-          : 'Watch party started — link copied',
-      );
-    } catch {
-      ui.setStatusMessage(
-        'Watch party is live — copy the link from the address bar.',
-      );
-    }
-  }, [hostingRoom, ui]);
+    await startOrCopyWatchParty(ui.setStatusMessage);
+  }, [ui]);
 
   const run = useCallback(
     (fn: () => void) => {
@@ -372,7 +341,21 @@ export function StageControls({
       icon: 'video' as const,
       label: 'Record video',
       action: () =>
-        run(() => ui.updatePanel(panel === 'capture' ? null : 'capture')),
+        run(() => {
+          if (panel === 'capture') {
+            ui.updatePanel(null);
+            return;
+          }
+          // Repeat use starts recording immediately with the remembered
+          // format; the panel's own mount effect consumes this flag. First
+          // ever use (no stored format) just opens the panel.
+          try {
+            if (localStorage.getItem('stims:capture-format')) {
+              sessionStorage.setItem('stims:capture-autostart', '1');
+            }
+          } catch {}
+          ui.updatePanel('capture');
+        }),
       active: panel === 'capture',
       separatorBefore: true,
     },
@@ -389,12 +372,30 @@ export function StageControls({
     },
     {
       // One action: create the room (unless this tab already hosts one) and
-      // put the invite link on the clipboard. Peer count and Leave live in
+      // put the invite link on the clipboard. Peer count still lives in
       // Settings → Watch together.
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
       action: () => run(() => void handleWatchParty()),
     },
+    // Ending should be as close as starting was — symmetric with the item
+    // above, shown only while this tab hosts.
+    ...(hostingRoom
+      ? [
+          {
+            icon: 'close' as const,
+            label: 'End watch party',
+            action: () =>
+              run(() => {
+                leaveSyncSession();
+                setSyncUrlParam(null);
+                ui.setStatusMessage(
+                  'Watch party ended — viewers keep local control.',
+                );
+              }),
+          } satisfies MenuItem,
+        ]
+      : []),
     {
       icon: 'sliders' as const,
       label: 'Settings',
@@ -432,6 +433,23 @@ export function StageControls({
             action: () => run(() => engine.handleAudioStop()),
             separatorBefore: true,
           },
+        ]
+      : []),
+    // Discoverability for the palette: keyboard users find ⌘K, pointer users
+    // find this. Hidden when App doesn't wire the palette (e.g. harnesses).
+    ...(onOpenPalette
+      ? [
+          {
+            icon: 'sparkles' as const,
+            label: `Command palette (${
+              typeof navigator !== 'undefined' &&
+              /Mac|iPhone|iPad/.test(navigator.platform)
+                ? '⌘K'
+                : 'Ctrl+K'
+            })`,
+            action: () => run(onOpenPalette),
+            separatorBefore: true,
+          } satisfies MenuItem,
         ]
       : []),
   ];

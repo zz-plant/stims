@@ -28,11 +28,13 @@ export function WorkspaceStagePanel({
   launchPanel,
   liveMode,
   onToggleFullscreen,
+  onOpenPalette,
 }: {
   isFullscreen: boolean;
   launchPanel: ReactNode;
   liveMode: boolean;
   onToggleFullscreen: () => void;
+  onOpenPalette?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -59,6 +61,7 @@ export function WorkspaceStagePanel({
           <StageControls
             isFullscreen={isFullscreen}
             onToggleFullscreen={onToggleFullscreen}
+            onOpenPalette={onOpenPalette}
           />
         ) : null}
         {/* Only while the editor is open — it renders its own null otherwise.

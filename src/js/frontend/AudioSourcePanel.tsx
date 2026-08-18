@@ -82,7 +82,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
     if (youtubeReady) {
       void onAudioStart('youtube');
     } else {
-      void engine.loadYouTubePreview(youtubeUrl, () => onAudioStart('youtube'));
+      // Deliberately NOT chaining capture onto the load: getDisplayMedia
+      // needs transient user activation, and by the time an async load
+      // finishes the Load click's activation may have expired (silent
+      // failure). The button morphs to "Start capture" in place, focus is
+      // still on it, so the deterministic path costs one Enter press.
+      void engine.loadYouTubePreview(youtubeUrl);
     }
   };
 
