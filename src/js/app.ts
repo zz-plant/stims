@@ -1,6 +1,7 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
+import { installAgentDriver } from './core/agent-driver.ts';
 import {
   applyDeviceTierToDocument,
   startRefreshRateSampling,
@@ -59,6 +60,7 @@ const startApp = async () => {
   installCrashTelemetry();
   installRendererTelemetryPersistence();
   initAgentAPI();
+  installAgentDriver();
   initGamepadNavigation();
 
   if (document.body) {

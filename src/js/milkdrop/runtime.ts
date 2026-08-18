@@ -183,6 +183,16 @@ export function createMilkdropExperience({
     videoEchoEnabled: false,
   };
   const lifetime = createMilkdropRuntimeLifetime();
+  // Resolves once the async startup preset selection below (catalog sync +
+  // selectMilkdropStartupPreset) has run to completion. Startup selection
+  // races any preset an agent selects immediately after mount — without a
+  // signal for "startup is done," an early stims.agent.selectPreset() call
+  // could apply successfully and then get silently overwritten a moment
+  // later, or vice versa. Exposed to agent callers via the debug handle.
+  let resolveStartupSettled: () => void = () => {};
+  const startupSettled = new Promise<void>((resolve) => {
+    resolveStartupSettled = resolve;
+  });
   const capturedVideoOverlay = createMilkdropCapturedVideoOverlay();
   const getQualityPresetById = (presetId: string) =>
     qualityControl.presets.find((preset) => preset.id === presetId) ?? null;
@@ -277,6 +287,12 @@ export function createMilkdropExperience({
     }),
     getAdaptiveQuality: () => adaptiveQualityState,
     getPerformance: () => performanceTracker.getSnapshot(),
+    // Closures over bindings assigned later in this function (`navigation`,
+    // `setAutoplayEnabled`) — safe because agent callers can only invoke
+    // these after createMilkdropExperience has finished running.
+    selectPreset: (presetId) => navigation.selectPreset(presetId),
+    setAutoplay: (enabled) => setAutoplayEnabled(enabled),
+    startupSettled: () => startupSettled,
   });
 
   const backendFailover = createMilkdropBackendFailover({
@@ -790,38 +806,42 @@ export function createMilkdropExperience({
     );
   }
   void (async () => {
-    await catalogCoordinator.scheduleCatalogSync({
-      activePresetId,
-      activeBackend,
-    });
-    if (!lifetime.isActive()) {
-      return;
-    }
-    const { startupPresetId } = await selectMilkdropStartupPreset({
-      catalogCoordinator,
-      navigation,
-      preferences,
-      initialPresetId,
-      activeBackend,
-    });
-    pendingStartupPresetId = startupPresetId;
-    if (!lifetime.isActive()) {
-      return;
-    }
-    if (startupPresetId) {
-      await navigation.selectPreset(startupPresetId, {
-        recordHistory: false,
-        skipIfAlreadyActive: true,
+    try {
+      await catalogCoordinator.scheduleCatalogSync({
+        activePresetId,
+        activeBackend,
       });
-      pendingStartupPresetId = null;
       if (!lifetime.isActive()) {
         return;
       }
-      if (activePresetId === startupPresetId) {
+      const { startupPresetId } = await selectMilkdropStartupPreset({
+        catalogCoordinator,
+        navigation,
+        preferences,
+        initialPresetId,
+        activeBackend,
+      });
+      pendingStartupPresetId = startupPresetId;
+      if (!lifetime.isActive()) {
         return;
       }
+      if (startupPresetId) {
+        await navigation.selectPreset(startupPresetId, {
+          recordHistory: false,
+          skipIfAlreadyActive: true,
+        });
+        pendingStartupPresetId = null;
+        if (!lifetime.isActive()) {
+          return;
+        }
+        if (activePresetId === startupPresetId) {
+          return;
+        }
+      }
+      pendingStartupPresetId = null;
+    } finally {
+      resolveStartupSettled();
     }
-    pendingStartupPresetId = null;
   })();
 
   return buildExperienceController({

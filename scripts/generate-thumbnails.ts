@@ -268,25 +268,31 @@ class RenderSession {
   async render(preset: PresetEntry): Promise<void> {
     const page = this.page ?? (await this.boot(preset.id));
 
-    await page.evaluate((presetId) => {
-      window.postMessage({ type: 'toil:load_preset', presetId }, '*');
-    }, preset.id);
-    // Telemetry's currentPresetId falls back to the *route* id before the
-    // engine finishes compiling, so it lies under load. data-active-preset-id
-    // is stamped from the engine snapshot and only flips once the preset is
-    // actually applied. The stage canvas only sizes once the stage mounts
-    // (identicon canvases are 56×56; the stage is viewport-sized).
-    await page.waitForFunction(
-      (presetId) => {
-        const main = document.querySelector('#stims-main');
-        if (main?.getAttribute('data-active-preset-id') !== presetId) {
-          return false;
-        }
-        return [...document.querySelectorAll('canvas')].some(
-          (c) => c.width >= 400,
-        );
-      },
+    // window.stims.agent.selectPreset calls straight through to the
+    // navigation controller (bypassing route/URL state and the postMessage
+    // bridge), and its promise only resolves once the controller's own
+    // supersede/fallback handling has settled — so a bad id or a dropped
+    // bridge message surfaces immediately as `applied: false` instead of
+    // silently eating the full SWAP_TIMEOUT_MS. The stage canvas still needs
+    // its own check: it sizes on its own render cycle after the preset
+    // state flips (identicon canvases are 56×56; the stage is
+    // viewport-sized).
+    const result = await page.evaluate(
+      (presetId) => window.stims?.agent?.selectPreset(presetId),
       preset.id,
+    );
+    if (!result) {
+      throw new Error(`stims.agent driver not installed for ${preset.id}.`);
+    }
+    if (!result.applied) {
+      throw new Error(
+        `preset did not apply (active: ${result.activePresetId ?? 'none'}) for ${preset.id}.`,
+      );
+    }
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll('canvas')].some((c) => c.width >= 400),
+      undefined,
       { timeout: SWAP_TIMEOUT_MS },
     );
 
