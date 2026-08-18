@@ -51,6 +51,47 @@ report(
   'public/milkdrop-presets/catalog.json',
 );
 
+// 7. Visual-verification tier (GPU vs. software rendering vs. no browser)
+//
+// Advisory only — doesn't count toward checksPassed/totalChecks, since
+// missing a GPU is an environment fact, not a broken setup. Tells an agent
+// which tier of `docs/agents/visual-testing.md` applies here before it
+// wastes a capture on a black canvas.
+let visualTier = 'lab:reactivity only (no browser)';
+if (pwOk) {
+  try {
+    const { chromium } = await import('playwright');
+    const { resolveAgentChromiumArgs } = await import('./browser-launch.ts');
+    const browser = await chromium.launch({
+      headless: true,
+      args: resolveAgentChromiumArgs(),
+    });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const renderer = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+      if (!gl) return null;
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+      return String(gl.getParameter(param));
+    });
+    await browser.close();
+    if (renderer) {
+      const isSoftware = /swiftshader|llvmpipe|software/i.test(renderer);
+      visualTier = isSoftware
+        ? `headless Chromium + software rendering (${renderer}) — bun run lab:visual / ctl / mcp work, set STIMS_GPU_RENDER=1 to try hardware`
+        : `headless Chromium + GPU (${renderer}) — full lab:visual / ctl / mcp / sweep tooling available`;
+    } else {
+      visualTier =
+        'headless Chromium launches but WebGL is unavailable — text-only tools only (lab:reactivity)';
+    }
+  } catch (error) {
+    visualTier = `headless Chromium failed to launch (${(error as Error).message.split('\n')[0]}) — text-only tools only (lab:reactivity)`;
+  }
+}
+console.log(`  🖥️  Visual-verification tier: ${visualTier}`);
+
 console.log(
   `\nDiagnosis: ${checksPassed}/${totalChecks} checks passed cleanly.`,
 );

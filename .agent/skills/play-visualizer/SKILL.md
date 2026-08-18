@@ -7,6 +7,17 @@ description: "Launch and inspect the flagship visualizer in a real browser. Use 
 
 Use this skill for real-browser verification of the main visualizer product.
 
+## No browser, or no GPU?
+
+This skill assumes a GUI browser and eyes on the screen. If you're in a
+headless/cloud sandbox instead:
+
+| Your environment | Use this instead |
+| --- | --- |
+| No browser at all | `bun run lab:reactivity -- --preset <id>` — drives the MilkDrop VM directly, numeric verdicts, no browser |
+| Headless browser, no confirmed GPU | `bun run ctl -- --preset <id> --screenshot out.png` or `bun run mcp` (`session_describe_frame`) — both default to software rendering (SwiftShader) for exactly this case; see [`../../docs/agents/visual-testing.md`](../../docs/agents/visual-testing.md#cloud-sandboxed-agents-without-a-gpu) |
+| Headless browser + vision, need pixel fidelity | `bun run lab:visual -- --preset <id>` |
+
 ## Fastest path
 
 For scripted smoke coverage:

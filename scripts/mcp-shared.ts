@@ -1223,6 +1223,25 @@ function asTextResponse(text: string) {
   };
 }
 
+/**
+ * Returns a screenshot as an inline base64 image content block alongside a
+ * text summary, so a client connected over a remote transport (no shared
+ * filesystem with this process) can still see the pixels — a local stdio
+ * client that can Read the file path is unaffected either way.
+ */
+function asImageResponse(pngBuffer: Buffer, summaryText: string) {
+  return {
+    content: [
+      { type: 'text' as const, text: summaryText },
+      {
+        type: 'image' as const,
+        data: pngBuffer.toString('base64'),
+        mimeType: 'image/png',
+      },
+    ],
+  };
+}
+
 function normalizeToys(data: unknown): ToyMetadata[] {
   if (!Array.isArray(data)) return [];
 
@@ -1460,6 +1479,7 @@ export type {
   ToyMetadata,
 };
 export {
+  asImageResponse,
   asTextResponse,
   buildDocPointers,
   createMcpServer,

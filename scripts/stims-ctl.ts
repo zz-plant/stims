@@ -33,6 +33,7 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { chromium } from 'playwright';
+import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { ensureDevServer } from './dev-server.ts';
 
 type Backend = 'webgl' | 'webgpu' | 'auto';
@@ -202,7 +203,10 @@ function parseArgs(argv: string[]): CliOptions {
 
 async function run(options: CliOptions) {
   const server = await ensureDevServer(options.port);
-  const browser = await chromium.launch({ headless: options.headless });
+  const browser = await chromium.launch({
+    headless: options.headless,
+    args: resolveAgentChromiumArgs(),
+  });
 
   try {
     const page = await browser.newPage({
@@ -281,11 +285,22 @@ async function run(options: CliOptions) {
       backend: document.body.dataset.activeBackend ?? null,
       midiBindings: window.__STIMS_AGENT_BRIDGE__?.getMidiBindings?.() ?? null,
     }));
+    const rendererString = await page
+      .evaluate(() => {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+        if (!gl) return null;
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+        return String(gl.getParameter(param));
+      })
+      .catch(() => null);
 
     console.log(
       JSON.stringify(
         {
           ...summary,
+          rendererString,
           toyLoaded: loaded,
           screenshot: options.screenshot,
           fieldsSet: options.setFields,

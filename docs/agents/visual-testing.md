@@ -144,6 +144,54 @@ Reports land in `scratch/preset-lab/<id>/` (gitignored). The full loop and
 metric interpretation guide live in
 [`.agent/skills/improve-preset-fidelity/SKILL.md`](../../.agent/skills/improve-preset-fidelity/SKILL.md).
 
+## Cloud/sandboxed agents without a GPU
+
+Playwright's default headless Chromium launches the real Chrome binary,
+which needs a real GPU for WebGL/WebGPU. On a GPU-less host (most cloud
+agent sandboxes) that silently produces a black canvas — no error, just a
+blank capture that looks like a rendering bug.
+
+- `bun run ctl` (`scripts/stims-ctl.ts`) and `bun run mcp` (`scripts/mcp-server.ts`)
+  default to **software rendering (SwiftShader)** for exactly this reason —
+  deterministic and works with no GPU, at some speed cost. Set
+  `STIMS_GPU_RENDER=1` to use the host GPU instead, when you know one is
+  available and want the speed.
+- `bun run lab:visual`, `bun run sweep:milkdrop-loops`, and the corpus/parity
+  suites default the **other** way (real GPU, since they run mostly on
+  developer machines) — set `STIMS_SOFTWARE_RENDER=1` to force SwiftShader
+  there.
+- Every capture records the actual WebGL renderer string
+  (`rendererString` in `stims-ctl` output, `probeCaptureBackend` in lab/sweep
+  artifacts). Check it before trusting a result — SwiftShader and real-GPU
+  captures are not pixel-comparable, and `lab:visual --compare` refuses to
+  diff across a backend mismatch.
+- `bun run lab:reactivity` needs no browser or GPU at all — it drives the
+  MilkDrop VM directly in-process. Prefer it when you only need to know
+  "does this preset respond to audio," not "what does it look like."
+- `session_describe_frame` (MCP) returns numeric image metrics (brightness,
+  colorfulness, near-black detection) alongside the screenshot path, so an
+  agent without vision can tell a real render apart from a blank one.
+- For anything where a screenshot isn't enough evidence — GPU-specific
+  behavior, WebGPU, anything you want a human to actually click around in —
+  `bun run preview:deploy` (`scripts/deploy-preview.ts`) builds and deploys a
+  real Cloudflare Worker version preview and prints the live URL (`-- --json`
+  for a parseable `{ url, versionId }`). This is a real deploy, not a
+  screenshot: it needs `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
+  credentials (locally via `wrangler login`, or as repo secrets for the CI
+  step below), and it's the strongest fallback a cloud agent with no local
+  browser/GPU has — hand the URL to a human, or drive it yourself with a
+  Browser-pane-style tool.
+- The `visual-evidence` GitHub Actions job (`workflow_dispatch` only, see
+  `.github/workflows/ci.yml`) runs `ui:diff` + `lab:visual`, uploads the
+  results as build artifacts, and — if `CLOUDFLARE_API_TOKEN` /
+  `CLOUDFLARE_ACCOUNT_ID` repo secrets are configured — deploys a live
+  preview and writes the URL to the job summary. It asserts nothing on pixel
+  content, so it can't reintroduce the SwiftShader-timing flakiness the old
+  e2e visual-regression test had; trigger it from a pushed branch to get
+  evidence without running a browser locally at all. **The Cloudflare
+  secrets are not currently configured in this repo's CI** — until they are,
+  that one step is skipped and everything else in the job still runs.
+
 ## Automated visual regression testing
 
 For visual changes that need to be tracked over time, refer to:

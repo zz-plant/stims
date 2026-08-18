@@ -149,6 +149,66 @@ jobs:
       - name: Run browser end-to-end tests
         run: xvfb-run -a bun test --preload=./tests/setup.ts --max-concurrency=1 tests/e2e/${{ matrix.file }}
 
+  visual-evidence:
+    name: Visual evidence (manual)
+    runs-on: ubuntu-latest
+    # Manual-only, deliberately not part of ci-status or its `needs:` list.
+    # Captures + reports; asserts nothing on pixel content. The old e2e
+    # visual-regression test was removed from `integration` above because
+    # SwiftShader timing assertions on a shared runner flaked without ever
+    # catching a real rendering bug (see the `parity` job comment). This job
+    # sidesteps that by uploading evidence for a human/agent to look at
+    # instead of asserting pass/fail on it — run it on demand from a branch
+    # or PR when you want proof a visual change landed, without CI blocking
+    # on inherently noisy SwiftShader pixel/timing comparisons.
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Capture UI harness screenshots + baseline diff
+        run: bun run ui:diff
+        continue-on-error: true
+
+      - name: Capture bundled preset visuals (software rendering — no GPU on this runner)
+        env:
+          STIMS_SOFTWARE_RENDER: '1'
+        run: |
+          bun run lab:visual -- \
+            --preset eos-glowsticks-v2-03-music \
+            --preset rovastar-parallel-universe
+        continue-on-error: true
+
+      - name: Upload visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-${{ github.sha }}
+          path: |
+            screenshots/ui-diff/
+            scratch/preset-lab/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Real deploy of a live URL (a Worker *version* preview, not production
+      # traffic — see docs/DEPLOYMENT.md), for anyone/anything that wants to
+      # look at the actual thing rather than a SwiftShader-rendered
+      # screenshot. Requires Cloudflare deploy credentials as repo secrets;
+      # skipped (not failed) when they aren't configured, so this stays safe
+      # on forks and doesn't block the rest of the job.
+      - name: Deploy live preview
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bun run preview:deploy -- --json | tee preview-url.json
+          echo "### Live preview" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"- URL: " + (.url // "deploy failed — see job log")' preview-url.json >> "$GITHUB_STEP_SUMMARY"
+        continue-on-error: true
+
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest

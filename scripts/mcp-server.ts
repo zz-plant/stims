@@ -1,16 +1,24 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 import { z } from 'zod';
 import type { MilkdropExpressionNode } from '../src/js/milkdrop/common-types.ts';
+import { resolveAgentChromiumArgs } from './browser-launch.ts';
 import { registerPerformanceTools } from './mcp-performance-tools.ts';
-import { asTextResponse, createMcpServer } from './mcp-shared.ts';
+import {
+  asImageResponse,
+  asTextResponse,
+  createMcpServer,
+} from './mcp-shared.ts';
 import { playToy } from './play-toy.ts';
+import { computeImageMetrics } from './preset-lab-metrics.ts';
 
 const server = createMcpServer();
 const transport = new StdioServerTransport();
@@ -243,9 +251,13 @@ server.registerTool(
         );
       }
 
-      return asTextResponse(
-        `Captured screenshot for ${slug} at ${result.screenshot}\nAudio Active: ${result.audioActive}\nConsole Errors: ${result.consoleErrors?.length || 0}`,
-      );
+      const summary = `Captured screenshot for ${slug} at ${result.screenshot}\nAudio Active: ${result.audioActive}\nConsole Errors: ${result.consoleErrors?.length || 0}`;
+      const pngBuffer = result.screenshot
+        ? await readFile(result.screenshot).catch(() => null)
+        : null;
+      return pngBuffer
+        ? asImageResponse(pngBuffer, summary)
+        : asTextResponse(summary);
     } catch (e) {
       return asTextResponse(`Error running automation: ${e}`);
     }
@@ -297,16 +309,20 @@ server.registerTool(
         );
       }
 
-      return asTextResponse(
-        [
-          `Preset: ${preset.title} by ${preset.author}`,
-          `Screenshot: ${result.screenshot}`,
-          `Audio Active: ${result.audioActive}`,
-          result.consoleErrors?.length
-            ? `Console Warnings: ${result.consoleErrors.length}`
-            : 'No console errors',
-        ].join('\n'),
-      );
+      const summary = [
+        `Preset: ${preset.title} by ${preset.author}`,
+        `Screenshot: ${result.screenshot}`,
+        `Audio Active: ${result.audioActive}`,
+        result.consoleErrors?.length
+          ? `Console Warnings: ${result.consoleErrors.length}`
+          : 'No console errors',
+      ].join('\n');
+      const pngBuffer = result.screenshot
+        ? await readFile(result.screenshot).catch(() => null)
+        : null;
+      return pngBuffer
+        ? asImageResponse(pngBuffer, summary)
+        : asTextResponse(summary);
     } catch (e) {
       return asTextResponse(`Error capturing preset: ${e}`);
     }
@@ -475,7 +491,10 @@ server.registerTool(
   async ({ presetId, headless }) => {
     try {
       const id = randomUUID();
-      const browser = await chromium.launch({ headless });
+      const browser = await chromium.launch({
+        headless,
+        args: resolveAgentChromiumArgs(),
+      });
       const page = await browser.newPage({
         viewport: { width: 1280, height: 720 },
       });
@@ -583,7 +602,7 @@ server.registerTool(
   'session_capture_frame',
   {
     description:
-      'Capture a screenshot from an active agent session. Returns the file path to the captured image. Use after start_agent_session.',
+      'Capture a screenshot from an active agent session. Returns both the file path and the image itself (inline base64), so it works whether the client shares a filesystem with this process or not. Use after start_agent_session.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
       waitMs: z
@@ -611,9 +630,10 @@ server.registerTool(
 
       const filename = `frame-${session.presetId}-${Date.now()}.png`;
       const filepath = join(session.screenshotDir, filename);
-      await session.page.screenshot({ path: filepath });
+      const pngBuffer = await session.page.screenshot({ path: filepath });
 
-      return asTextResponse(
+      return asImageResponse(
+        pngBuffer,
         `Frame captured: ${filepath}\nPreset: ${session.presetId}`,
       );
     } catch (e) {
@@ -1231,7 +1251,9 @@ server.registerTool(
 
       // Capture a screenshot and analyze it via Playwright's built-in pixel access
       const screenshotPath = `/tmp/stims-analyze-${Date.now()}.png`;
-      await session.page.screenshot({ path: screenshotPath });
+      const screenshotBuffer = await session.page.screenshot({
+        path: screenshotPath,
+      });
 
       // Basic metadata from the page
       const meta = await session.page.evaluate(() => {
@@ -1247,12 +1269,28 @@ server.registerTool(
         };
       });
 
-      // For pixel-level analysis, agents should use session_capture_frame
-      // and interpret the image themselves or via a vision model.
+      // Numeric image metrics (brightness, colorfulness, blown highlights,
+      // near-black detection) so an agent without vision can still tell a
+      // rendering apart from a black/frozen canvas. session_capture_frame
+      // remains the path for actually looking at the pixels.
+      const { data, info } = await sharp(screenshotBuffer)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const metrics = computeImageMetrics({
+        data,
+        width: info.width,
+        height: info.height,
+        channels: info.channels,
+      });
+
       const analysis = {
         ...meta,
         screenshotPath,
-        note: 'Pixel data extracted to screenshot. Use a vision model or external tool for detailed analysis.',
+        metrics,
+        note: metrics.nearBlack
+          ? 'Frame reads as near-black — likely a blank/failed render, not just a dark preset. Check session_get_state and console errors.'
+          : 'Use session_capture_frame to inspect pixels directly (e.g. with a vision model) if these metrics are ambiguous.',
       };
 
       return asTextResponse(JSON.stringify(analysis, null, 2));
@@ -1318,7 +1356,10 @@ server.registerTool(
         return asTextResponse('No presets found matching that description.');
 
       // Open a session and try each candidate
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch({
+        headless: true,
+        args: resolveAgentChromiumArgs(),
+      });
       const page = await browser.newPage({
         viewport: { width: 1280, height: 720 },
       });
