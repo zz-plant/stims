@@ -264,6 +264,10 @@ function createShapeFillShaderMaterial(
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     ...(shape.additive ? { blending: AdditiveBlending } : {}),
     vertexShader: `
       varying vec2 vLocal;
@@ -340,6 +344,10 @@ function createShapeFillMaterial(
     opacity: (fillColor.a ?? 0.4) * alphaMultiplier,
     transparent: true,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     ...(shape.additive ? { blending: AdditiveBlending } : {}),
   });
 }
@@ -594,6 +602,10 @@ export function syncShapeFillMaterial(
       opacity: (fillColor.a ?? 0.4) * alphaMultiplier,
       transparent: true,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       ...(shape.additive ? { blending: AdditiveBlending } : {}),
     });
   }

@@ -894,6 +894,10 @@ class InstancedSegmentBatch {
       depthWrite: false,
       depthTest: true,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       blending: NormalBlending,
       vertexShader: `
           attribute vec2 segmentCoord;
@@ -1017,6 +1021,10 @@ class InstancedBorderBatch {
         transparent: true,
         depthWrite: false,
         side: DoubleSide,
+        // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+        // two-pass render (it bumps material.needsUpdate twice per object per
+        // frame, forcing getParameters/getProgram churn on every material).
+        forceSinglePass: true,
         toneMapped: false,
         vertexShader: `
           attribute vec2 unitCorner;
@@ -1142,6 +1150,10 @@ class InstancedShapeFillBatch {
       transparent: true,
       depthWrite: false,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       blending: NormalBlending,
       uniforms: {
         shapeTexture: {
@@ -1321,6 +1333,10 @@ class InstancedShapeRingBatch {
       transparent: true,
       depthWrite: false,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       blending: NormalBlending,
       uniforms: {
         layerZ: { value: layerZ },
