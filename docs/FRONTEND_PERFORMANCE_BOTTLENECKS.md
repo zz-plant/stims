@@ -9,6 +9,10 @@
 
 ## Fixed since the original audit (do not re-file)
 
+- **Autoplay advance stampede** (fixed 2026-08-18) — the frame loop fired
+  `selectRandomPreset` on every frame of the fetch+compile window (6–20
+  superseded fetch+compiles per advance); an in-flight latch in
+  `experience-frame-loop.ts` allows one advance at a time.
 - **Per-frame `variables` snapshot** — `vm.ts` now exposes a lazy proxy and
   nulls the frame snapshot; the full copy only materializes when a debug
   consumer asks for it.

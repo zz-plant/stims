@@ -325,6 +325,12 @@ Implementation tasks:
    - projectM reference output
    - Stims compatibility WebGL output
 2. Disable exactness claims for WebGPU where descriptor-plan output diverges.
+   (2026-08-18: the semantic layer of this divergence is now converged and
+   fuzz-guarded — `tests/unit/gpu-field-tier-differential.test.ts` holds the
+   lowered-descriptor semantics equal to the CPU JIT after fixing six
+   divergence classes that covered 32% of lowered programs. Remaining
+   divergence sources are f32 precision and non-lowered constructs, not
+   operator/function semantics.)
 3. Keep fallback routing conservative until equivalence is proven.
 
 Current remaining focus:
