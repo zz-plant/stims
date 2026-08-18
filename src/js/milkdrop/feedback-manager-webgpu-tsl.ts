@@ -46,6 +46,7 @@ import {
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './backend-behavior';
 import {
+  MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
@@ -244,22 +245,69 @@ function createPresentUniforms(initialSource: Texture) {
     currentTex: texture(initialSource),
     savedTex: texture(initialSource),
     transitionAlpha: uniform(0),
+    patternAspect: uniform(16 / 9),
   };
 }
 
 function createPresentOutputNode(
   uniforms: ReturnType<typeof createPresentUniforms>,
 ) {
+  // MilkDrop-style dissolve, mirroring the WebGL present shader in
+  // feedback-manager-shared.ts: a static noise pattern sets when each pixel
+  // flips from the saved frame to the live preset, so the transition sweeps
+  // through the image in organic patches instead of one flat fade. Knobs
+  // live in MILKDROP_BLEND_DISSOLVE (feedback-composite-profile.ts).
+  // Sin-free hash (Dave Hoskins): fract(sin(x) * 43758.5453) breaks down on
+  // mediump mobile GPUs (Mali/Adreno) and costs more there.
+  const hash21 = (p: any) => {
+    const p3 = fract(vec3(p.x, p.y, p.x).mul(0.1031));
+    const q = p3.add(dot(p3, p3.yzx.add(33.33)));
+    return fract(q.x.add(q.y).mul(q.z));
+  };
+  const valueNoise = (p: any) => {
+    const i = floor(p);
+    const f = fract(p);
+    const u = f.mul(f).mul(f.mul(-2.0).add(3.0));
+    const a = hash21(i);
+    const b = hash21(i.add(vec2(1.0, 0.0)));
+    const c = hash21(i.add(vec2(0.0, 1.0)));
+    const d = hash21(i.add(vec2(1.0, 1.0)));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  };
+  const { coarseScale, fineScale, coarseWeight, fineOffset, band } =
+    MILKDROP_BLEND_DISSOLVE;
   return Fn(() => {
     const current = uniforms.currentTex.sample(uv());
-    const saved = uniforms.savedTex.sample(uv());
-    const a = clamp(uniforms.transitionAlpha, 0, 1);
-    const smoothA = smoothstep(0.0, 1.0, a);
-    const currentSq = current.rgb.mul(current.rgb);
-    const savedSq = saved.rgb.mul(saved.rgb);
-    const blendedRgb = mix(currentSq, savedSq, smoothA).sqrt();
-    const blendedAlpha = mix(current.a, saved.a, smoothA);
-    return vec4(blendedRgb, blendedAlpha);
+    const result = vec4(current).toVar();
+    const linearA = clamp(uniforms.transitionAlpha, 0, 1);
+    // Uniform branch mirroring the WebGL shader's early-out: the present
+    // pass runs full-screen every frame, so outside a preset transition the
+    // GPU must skip the dissolve math entirely (transitionAlpha is a
+    // uniform, so this is uniform control flow and genuinely branches).
+    If(linearA.greaterThan(0.001), () => {
+      const saved = uniforms.savedTex.sample(uv());
+      // Ease the global progression so the wipe starts and ends gently
+      // instead of snapping into motion off the linear alpha ramp.
+      const a = smoothstep(0.0, 1.0, linearA);
+      // Aspect-corrected sample point keeps dissolve patches round on any
+      // viewport instead of stretched across the wide axis.
+      const p = vec2(uv().x.mul(uniforms.patternAspect), uv().y);
+      const pattern = valueNoise(p.mul(coarseScale))
+        .mul(coarseWeight)
+        .add(
+          valueNoise(p.mul(fineScale).add(fineOffset)).mul(1 - coarseWeight),
+        );
+      // Remap so a=1 keeps every pixel on the saved frame and a=0 releases
+      // every pixel, regardless of where its pattern threshold landed.
+      const aa = a.mul(1.0 + 2.0 * band).sub(band);
+      const local = smoothstep(pattern.sub(band), pattern.add(band), aa);
+      const currentSq = current.rgb.mul(current.rgb);
+      const savedSq = saved.rgb.mul(saved.rgb);
+      const blendedRgb = mix(currentSq, savedSq, local).sqrt();
+      const blendedAlpha = mix(current.a, saved.a, local);
+      result.assign(vec4(blendedRgb, blendedAlpha));
+    });
+    return result;
   })();
 }
 
