@@ -59,7 +59,12 @@ export async function onRequest(context: { request: Request; env: Env }) {
           (data.error || '').slice(0, 256),
           request.headers.get('cf-ipcountry') || 'XX',
         ],
-        doubles: [data.fps || 0, data.audioLatencyMs || 0, Date.now()],
+        doubles: [
+          data.fps || 0,
+          data.audioLatencyMs || 0,
+          Date.now(),
+          data.dwellMs || 0,
+        ],
         indexes: [data.event.slice(0, 32)],
       });
     }

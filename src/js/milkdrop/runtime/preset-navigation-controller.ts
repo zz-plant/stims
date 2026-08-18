@@ -1,3 +1,4 @@
+import { notePresetShown } from '../../core/services/preset-telemetry';
 import { compileMilkdropPresetSource } from '../compiler';
 import type {
   MilkdropCatalogStore,
@@ -238,6 +239,7 @@ export function createMilkdropPresetNavigationController({
 
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);
+      notePresetShown(nextCompiled.source.id);
       setOverlayStatus(`Loaded ${nextCompiled.title}.`);
       scheduleAdjacentPresetPrefetch(id);
 
