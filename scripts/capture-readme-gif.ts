@@ -19,6 +19,8 @@
  *  4. Output the ffmpeg command to convert to GIF for the README
  */
 
+export {};
+
 // Hardcoded preset dimensions for hd-landscape (no module imports needed)
 const PRESET = 'hd-landscape';
 const PRESET_WIDTH = 1920;
