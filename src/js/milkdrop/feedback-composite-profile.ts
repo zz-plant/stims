@@ -48,4 +48,9 @@ export const MILKDROP_BLEND_DISSOLVE = {
    * softer and approaches the old uniform crossfade; narrower is a hard
    * wipe that can shimmer on high-contrast presets. */
   band: 0.22,
+  /** Peak zoom applied to the saved frame as it dissolves out. The saved
+   * side is a static snapshot; without any motion it reads as the view
+   * freezing for the whole blend. A slow zoom keeps every pixel on screen
+   * moving while the live preset takes over. 0 disables the drift. */
+  savedZoomDrift: 0.08,
 } as const;

@@ -19,7 +19,6 @@ import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
-import { useTemporalMemory } from '../core/services/temporal-memory.ts';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
   webMidiService,
@@ -164,7 +163,6 @@ function StimsWorkspaceAppShell() {
   const uiRef = useRef(ui);
   uiRef.current = ui;
   const { engineSnapshot } = useEngineSnapshot();
-  const temporalMemory = useTemporalMemory();
 
   const { isFullscreen, handleToggleFullscreen } = useFullscreen(
     ui.stageRef,
@@ -686,15 +684,12 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.routeState.panel, showHint]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: internal refs and service methods don't change
-  useEffect(() => {
-    const activePresetId = engineSnapshot?.activePresetId;
-    if (!activePresetId) return;
-    const canvas = ui.stageRef.current?.querySelector(
-      'canvas',
-    ) as HTMLCanvasElement | null;
-    temporalMemory.record(activePresetId, canvas);
-  }, [engineSnapshot?.activePresetId]);
+  // NOTE: temporal-memory frame recording was removed here deliberately.
+  // It sampled the live stage canvas (2D drawImage + getImageData) on every
+  // preset switch; reading back a WebGPU canvas that way stalled the main
+  // thread 8-10 seconds per switch on mobile (measured on a Galaxy S22),
+  // and nothing consumed the recorded stats. If a consumer ever needs frame
+  // stats, capture them on demand, never on the switch path.
 
   useEffect(() => {
     const presetId = engineSnapshot?.activePresetId;
