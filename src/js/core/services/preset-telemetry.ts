@@ -60,3 +60,41 @@ export function notePresetShown(presetId: string) {
     });
   }
 }
+
+/**
+ * Records that the app substituted something for what the visitor asked for:
+ * the fallback preset replaced a deep link, the renderer fell back to WebGL,
+ * or a requested preset failed to load outright. Substitutions are the
+ * failures users never report — they don't know anything went wrong — so
+ * without this signal their frequency in production is unknowable.
+ */
+export function noteSubstitution(
+  kind: 'fallback-preset' | 'backend-fallback' | 'preset-load-failed',
+  detail: string,
+) {
+  if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
+  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  if (!endpoint) return;
+  try {
+    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+      navigator.sendBeacon(
+        endpoint,
+        new Blob(
+          [
+            // Field names match what /api/telemetry writes into Analytics
+            // Engine blobs: event, error. The kind rides in the event name so
+            // it is queryable via the event index.
+            JSON.stringify({
+              event: `substitution-${kind}`,
+              error: detail.slice(0, 200),
+            }),
+          ],
+          { type: 'application/json' },
+        ),
+      );
+      transmitted++;
+    }
+  } catch {
+    // Telemetry must never surface as a user-visible failure.
+  }
+}
