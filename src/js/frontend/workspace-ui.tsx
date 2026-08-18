@@ -51,6 +51,7 @@ export function WorkspaceStagePanel({
       <StimsStageFrame
         activePresetId={activePresetId}
         activePresetTitle={engine.selectedPreset?.title ?? null}
+        incomingPresetId={engine.selectedPreset?.id ?? null}
         stageRef={ui.stageRef}
         liveMode={liveMode}
         transitionPhase={presetTransition.phase}
