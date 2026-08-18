@@ -162,6 +162,14 @@ jobs:
     # or PR when you want proof a visual change landed, without CI blocking
     # on inherently noisy SwiftShader pixel/timing comparisons.
     if: github.event_name == 'workflow_dispatch'
+    # Opts out of the workflow-level concurrency group (keyed on the shared
+    # ref, cancel-in-progress: true) with a group unique to this run. This
+    # job's own steps take longer than the gap between pushes on a busy
+    # main, and being sat in the shared group meant every dispatch got
+    # cancelled mid-capture by the next push before it could finish.
+    concurrency:
+      group: ci-visual-evidence-${{ github.run_id }}
+      cancel-in-progress: false
     env:
       # `secrets` isn't a valid context inside `if:` expressions, so the
       # deploy step below checks these env vars instead.
