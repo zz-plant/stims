@@ -75,26 +75,6 @@ type TslUniformNodes<T> = { [K in keyof T]: TslNode };
 // a tenfold-tighter 0.000001, which flipped boolean results near the
 // threshold between backends.
 export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `${MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE}
-  fn milkdropIntMod(left: f32, right: f32) -> f32 {
-    let li = trunc(left);
-    let ri = trunc(right);
-    let m = select(li - ri * trunc(li / ri), 0.0, ri == 0.0);
-    // C-style remainder carries the dividend's sign onto zero results
-    // (-1 % -1 is -0); the subtraction form yields +0, which atan2 turns
-    // into a visible ±pi flip. sign(left) * 0.0 reconstructs the signed zero.
-    return select(m, 0.0 * sign(left), m == 0.0);
-  }
-
-  fn milkdropMod(left: f32, right: f32) -> f32 {
-    // Truncated remainder (sign follows left), matching HLSL fmod — the
-    // semantics MilkDrop shader code was written against and what the CPU
-    // tier's JS % computes. GLSL-style floor-mod diverged for negative
-    // operands.
-    let m = select(left - right * trunc(left / right), 0.0, abs(right) <= 0.00001);
-    // Dividend-signed zero, matching C fmod and the CPU tier's JS %.
-    return select(m, 0.0 * sign(left), m == 0.0);
-  }
-
   fn milkdropNormalizeTransformCenterX(value: f32) -> f32 {
     return select(value, (value - 0.5) * 2.0, value >= 0.0 && value <= 1.0);
   }

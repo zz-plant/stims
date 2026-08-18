@@ -146,11 +146,16 @@ const gpuMod = (l: number, r: number) => {
 };
 const signedZero = (l: number) =>
   Object.is(Math.sign(l), -0) || l < 0 ? -0 : 0;
+const gpuTruncInt = (v: number) => {
+  const truncated = Math.trunc(Number.isFinite(v) ? v : 0);
+  return Math.min(Math.max(truncated, -2147483520), 2147483520);
+};
 const gpuIntMod = (l: number, r: number) => {
-  const li = Math.trunc(l);
-  const ri = Math.trunc(r);
-  const m = ri === 0 ? 0 : li - ri * Math.trunc(li / ri);
-  // Dividend-signed zero, matching C remainder and the WGSL helper.
+  // Mirrors the unified milkdropIntMod in wgsl-eel-helpers.ts: i32-clamped
+  // operands, integer remainder, dividend-signed zero.
+  const li = gpuTruncInt(l);
+  const ri = gpuTruncInt(r);
+  const m = ri === 0 ? 0 : li % ri;
   return m === 0 ? signedZero(l) : m;
 };
 const gpuFinite = (v: number) => (Math.abs(v) < 3.402823e38 ? v : 0);
