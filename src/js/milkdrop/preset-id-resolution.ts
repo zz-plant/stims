@@ -137,6 +137,21 @@ function findUniqueMatch<T extends PresetLookupEntry>(
   return match;
 }
 
+/**
+ * Result cache keyed by catalog array identity. An id that resolves exits
+ * via the cheap exact scan, but an id that does NOT resolve pays two full
+ * catalog scans with per-entry slug building — and several callers resolve
+ * in React render bodies, so an unresolvable `?preset=` id (stale share
+ * link, renamed preset) burned that cost on every render (~54ms/frame on
+ * the 2,686-preset catalog, measured 2026-08-18). Bounded per catalog
+ * array; the WeakMap lets replaced catalog snapshots collect.
+ */
+const RESOLUTION_CACHE_LIMIT = 64;
+const resolutionCache = new WeakMap<
+  readonly PresetLookupEntry[],
+  Map<string, PresetLookupEntry | null>
+>();
+
 export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
   entries: readonly T[],
   requestedPresetId: string | null | undefined,
@@ -146,6 +161,26 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     return null;
   }
 
+  let cache = resolutionCache.get(entries);
+  if (cache?.has(requested)) {
+    return (cache.get(requested) ?? null) as T | null;
+  }
+
+  const resolved = resolvePresetCatalogEntryUncached(entries, requested);
+  if (!cache) {
+    cache = new Map();
+    resolutionCache.set(entries, cache);
+  } else if (cache.size >= RESOLUTION_CACHE_LIMIT) {
+    cache.clear();
+  }
+  cache.set(requested, resolved);
+  return resolved;
+}
+
+function resolvePresetCatalogEntryUncached<T extends PresetLookupEntry>(
+  entries: readonly T[],
+  requested: string,
+): T | null {
   const normalizedRequestedId = normalizeExactCandidate(
     safeDecodeCandidate(requested),
   );

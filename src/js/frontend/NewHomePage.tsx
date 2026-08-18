@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
@@ -50,9 +50,15 @@ export function NewHomePage() {
   // click the moment the startup preset landed in the route.
   const [deepLinkPresetId] = useState(() => ARRIVAL_PRESET_ID);
 
-  const resumeEntry = lastSession
-    ? resolvePresetCatalogEntry(engine.catalog, lastSession.presetId)
-    : null;
+  // Memoized: resolution of an id the catalog does NOT contain costs two
+  // full catalog scans, and this component re-renders with workspace state.
+  const resumeEntry = useMemo(
+    () =>
+      lastSession
+        ? resolvePresetCatalogEntry(engine.catalog, lastSession.presetId)
+        : null,
+    [engine.catalog, lastSession],
+  );
 
   // Pre-select the resumed preset so the existing source buttons (demo,
   // mic, tab, YouTube) start it directly — no bespoke resume plumbing.
@@ -85,9 +91,13 @@ export function NewHomePage() {
   // `engineReady` alone therefore raced the catalog and silently played a
   // different preset than the link named, which is the exact failure this
   // whole path exists to prevent.
-  const deepLinkEntry = deepLinkPresetId
-    ? resolvePresetCatalogEntry(engine.catalog, deepLinkPresetId)
-    : null;
+  const deepLinkEntry = useMemo(
+    () =>
+      deepLinkPresetId
+        ? resolvePresetCatalogEntry(engine.catalog, deepLinkPresetId)
+        : null,
+    [engine.catalog, deepLinkPresetId],
+  );
 
   useEffect(() => {
     if (autoStartedRef.current) return;
