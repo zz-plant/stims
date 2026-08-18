@@ -612,32 +612,57 @@ html.light .stims-shell {
     outline-offset: 2px;
   }
 
-  /* ── Preset rows ───────────────────────────────────────────────── */
+  /* ── Preset rows ───────────────────────────────────────────────────
+     Virtualized (BrowseSheetPanel.tsx, @tanstack/react-virtual): only
+     the rows within the scroll viewport plus a small overscan exist as
+     real DOM nodes, so the list stays cheap to render regardless of
+     catalog size. .ctl-presets-scroll is the dedicated scroll region —
+     it needs an explicit bounded height, which it gets from the
+     [data-fill="true"] flex-column chain set up in App.tsx (Browse
+     opts into fillBody the same way the editor already does) down
+     through .ctl-browse-results. .ctl-presets itself is sized to the
+     virtualizer's reported total content height (inline style) and each
+     .ctl-preset row is absolutely positioned at its reported offset
+     (also inline) — position/gap here are just the positioning context
+     and containing-block, not real layout participants. ─────────────── */
+  [data-fill="true"] > .stims-shell__sheet-panel--browse[data-view="list"] {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  [data-fill="true"]
+    .stims-shell__sheet-panel--browse[data-view="list"]
+    .ctl-browse-results {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .ctl-presets-scroll {
+    flex: 1;
+    min-height: 120px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .ctl-presets {
-    display: grid;
-    gap: 2px;
+    position: relative;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .ctl-preset {
-    position: relative;
+    position: absolute;
     display: grid;
     grid-template-columns: 56px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
     border-radius: var(--ctl-radius);
     transition: background var(--ctl-ease);
-    /* Skip layout/paint for offscreen rows — the same containment the grid
-       view already gets. The catalog is browsed here as an unbounded
-       infinite-scroll list (append-only, no windowing), so without this
-       every scrolled-in batch of rows keeps paying full layout/paint cost
-       for the whole accumulated list, not just what's visible. Intrinsic
-       size must match the real row height (measured: 52px) or the
-       scrollbar/scroll position jumps as rows come in and out of view. */
-    content-visibility: auto;
-    contain-intrinsic-size: auto 52px;
   }
 
   .ctl-preset:hover {
@@ -1082,13 +1107,6 @@ html.light .stims-shell {
     display: grid;
     gap: 4px;
     align-content: start;
-  }
-
-  .ctl-browse-more {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-top: 10px;
   }
 
   /* ── Audio source panel ────────────────────────────────────────────
