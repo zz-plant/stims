@@ -129,8 +129,12 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(false);
   });
 
-  test('forces WebGL on guarded mobile browsers with known WebGPU instability', async () => {
-    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+  test('lets current Samsung Internet through to the WebGPU probe', async () => {
+    // SamsungBrowser 28 on a Galaxy S24 Ultra: at or above the stability
+    // floor (MIN_SAMSUNG_VERSION_WEBGPU), so the mobile guard must defer to
+    // feature detection instead of forcing WebGL. A blanket samsungbrowser/
+    // guard here kept every Galaxy on WebGL in its default browser.
+    const { requestAdapter } = mockNavigatorWithGPU({
       device: { label: 'mobile-device' },
     });
 
@@ -138,6 +142,24 @@ describe('renderer capabilities', () => {
       configurable: true,
       value:
         'Mozilla/5.0 (Linux; Android 15; SAMSUNG SM-S928U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/124.0.0.0 Mobile Safari/537.36',
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter.mock.calls.length).toBeGreaterThan(0);
+    expect(result.forceWebGL).toBe(false);
+  });
+
+  test('forces WebGL on guarded mobile browsers with known WebGPU instability', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'mobile-device' },
+    });
+
+    // Samsung Internet below the stability floor stays guarded.
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Linux; Android 13; SAMSUNG SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/20.0 Chrome/106.0.0.0 Mobile Safari/537.36',
     });
 
     const result = await getRendererCapabilities({ forceRetry: true });
@@ -150,6 +172,23 @@ describe('renderer capabilities', () => {
     expect(result.fallbackReason).toContain(
       'temporarily disabled on this mobile browser',
     );
+    expect(result.forceWebGL).toBe(true);
+  });
+
+  test('forces WebGL inside Android WebViews even when WebGPU is exposed', async () => {
+    const { requestAdapter } = mockNavigatorWithGPU({
+      device: { label: 'webview-device' },
+    });
+
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Linux; Android 15; SM-S928U; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36',
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(0);
     expect(result.forceWebGL).toBe(true);
   });
 
