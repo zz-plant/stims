@@ -2598,6 +2598,12 @@ class WebGPUMilkdropFeedbackManager
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   private savedFrameTarget: RenderTarget | null = null;
   private lastRenderer: FeedbackRendererLike | null = null;
+  private compositeSwapRevision = 0;
+  // Warm-up materials from the previous preset swap. They are kept alive
+  // until the next swap (or dispose): releasing them immediately would
+  // decrement the renderer's code-keyed program refcounts and evict the very
+  // pipelines the warm-up just compiled before the live materials rebuild.
+  private retiredWarmMaterials: NodeMaterial[] = [];
 
   constructor(
     width: number,
@@ -2764,6 +2770,68 @@ class WebGPUMilkdropFeedbackManager
       : 0;
   }
 
+  private async warmAndSwapCompositeNodes(
+    renderer: FeedbackRendererLike & {
+      compileAsync: (
+        scene: Scene,
+        camera: OrthographicCamera,
+      ) => Promise<unknown>;
+      getRenderTarget?: () => RenderTarget | null;
+    },
+    revision: number,
+    feedbackBlendNode: unknown,
+    compositeNode: unknown,
+  ) {
+    for (const material of this.retiredWarmMaterials) {
+      disposeMaterial(material);
+    }
+    this.retiredWarmMaterials = [];
+
+    const warmBlend = new NodeMaterial();
+    warmBlend.outputNode = feedbackBlendNode as typeof warmBlend.outputNode;
+    warmBlend.needsUpdate = true;
+    const warmComposite = new NodeMaterial();
+    warmComposite.outputNode = compositeNode as typeof warmComposite.outputNode;
+    warmComposite.needsUpdate = true;
+
+    const warmScene = new Scene();
+    warmScene.matrixAutoUpdate = false;
+    warmScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, warmBlend));
+    warmScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, warmComposite));
+
+    // Compile against the real feedback target so the pipeline cache key
+    // (color format, sample count) matches the live passes.
+    const previousTarget = renderer.getRenderTarget?.() ?? null;
+    try {
+      renderer.setRenderTarget(this.writeTarget);
+      await renderer.compileAsync(warmScene, this.camera);
+    } catch {
+      // Warm-up is best-effort: on failure the swap below still happens and
+      // the first frame compiles synchronously, which is the old behavior.
+    } finally {
+      try {
+        renderer.setRenderTarget(previousTarget);
+      } catch {
+        // The renderer may have been disposed mid-warm-up.
+      }
+    }
+
+    if (revision !== this.compositeSwapRevision) {
+      // A newer preset superseded this swap while its pipelines compiled.
+      disposeMaterial(warmBlend);
+      disposeMaterial(warmComposite);
+      return;
+    }
+
+    this.retiredWarmMaterials = [warmBlend, warmComposite];
+    this.feedbackBlendMaterial.outputNode =
+      feedbackBlendNode as typeof this.feedbackBlendMaterial.outputNode;
+    this.feedbackBlendMaterial.needsUpdate = true;
+    this.compositeMaterial.outputNode =
+      compositeNode as typeof this.compositeMaterial.outputNode;
+    this.compositeMaterial.needsUpdate = true;
+  }
+
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
     const blurShaderRanges = resolveMilkdropBlurShaderRanges(
       state.perPixelVariables,
@@ -2789,17 +2857,51 @@ class WebGPUMilkdropFeedbackManager
           Math.random(),
         );
       }
-      this.feedbackBlendMaterial.outputNode = createFeedbackBlendOutputNode(
+      const nextFeedbackBlendNode = createFeedbackBlendOutputNode(
         this.feedbackBlendMaterial.uniforms,
         state.shaderPrograms,
         state.perPixelPrograms,
       );
-      this.feedbackBlendMaterial.needsUpdate = true;
-      this.compositeMaterial.outputNode = createCompositeOutputNode(
+      const nextCompositeNode = createCompositeOutputNode(
         this.compositeMaterial.uniforms,
         state.shaderPrograms,
       );
-      this.compositeMaterial.needsUpdate = true;
+      const revision = ++this.compositeSwapRevision;
+      const renderer = this.lastRenderer as
+        | (FeedbackRendererLike & {
+            compileAsync?: (
+              scene: Scene,
+              camera: OrthographicCamera,
+            ) => Promise<unknown>;
+            getRenderTarget?: () => RenderTarget | null;
+          })
+        | null;
+      if (renderer?.compileAsync) {
+        // Progressive apply, mirroring the WebGL manager: assigning the new
+        // output nodes directly makes the next render create their pipelines
+        // through the synchronous createRenderPipeline — on mobile drivers
+        // (Adreno) that is a multi-second GPU-task stall for shader-heavy
+        // presets. Warm the pipelines through compileAsync on throwaway
+        // materials first; the live swap then hits the renderer's
+        // code-keyed program cache and the driver's pipeline cache.
+        void this.warmAndSwapCompositeNodes(
+          renderer as FeedbackRendererLike & {
+            compileAsync: (
+              scene: Scene,
+              camera: OrthographicCamera,
+            ) => Promise<unknown>;
+            getRenderTarget?: () => RenderTarget | null;
+          },
+          revision,
+          nextFeedbackBlendNode,
+          nextCompositeNode,
+        );
+      } else {
+        this.feedbackBlendMaterial.outputNode = nextFeedbackBlendNode;
+        this.feedbackBlendMaterial.needsUpdate = true;
+        this.compositeMaterial.outputNode = nextCompositeNode;
+        this.compositeMaterial.needsUpdate = true;
+      }
     }
 
     const needsSceneResolution =
@@ -3054,6 +3156,13 @@ class WebGPUMilkdropFeedbackManager
   }
 
   dispose() {
+    // Invalidate any in-flight pipeline warm-up so it cannot swap nodes onto
+    // disposed materials.
+    this.compositeSwapRevision += 1;
+    for (const material of this.retiredWarmMaterials) {
+      disposeMaterial(material);
+    }
+    this.retiredWarmMaterials = [];
     if (
       this.adaptiveResizeFrameId !== null &&
       typeof cancelAnimationFrame === 'function'
