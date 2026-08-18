@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  type OEmbedResponse,
   OEmbedResponseSchema,
   SyncRoomCreateResponseSchema,
+  type TelemetryEvent,
   TelemetryEventSchema,
   VisualSearchEmbedResponseSchema,
   VisualSearchMatchSchema,
   VisualSearchRequestSchema,
-  VisualSearchResponseSchema,
-  type OEmbedResponse,
-  type TelemetryEvent,
   type VisualSearchResponse,
+  VisualSearchResponseSchema,
 } from '../../src/js/core/edge-contracts.ts';
 
 describe('edge-contracts validators', () => {

@@ -4,9 +4,9 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
 } from '../../milkdrop/catalog-types.ts';
+import { scheduleIdleTask } from '../../utils/browser/idle-task.ts';
 import type { PresetCatalogEntry } from '../contracts.ts';
 import { reportLoadStatus } from '../load-status.ts';
-import { scheduleIdleTask } from '../../utils/browser/idle-task.ts';
 import { mapRuntimeCatalogEntry } from '../workspace-helpers.ts';
 
 const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';

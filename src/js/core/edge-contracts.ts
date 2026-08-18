@@ -81,8 +81,8 @@ export type VisualSearchRequest = {
   embedOnly?: boolean;
 };
 
-export const VisualSearchRequestSchema =
-  contractSchema<VisualSearchRequest>((input) => {
+export const VisualSearchRequestSchema = contractSchema<VisualSearchRequest>(
+  (input) => {
     if (!isObject(input)) return null;
     if (!isString(input.description) || input.description.length < 3) {
       return null;
@@ -95,19 +95,21 @@ export const VisualSearchRequestSchema =
       result.embedOnly = input.embedOnly;
     }
     return result;
-  });
+  },
+);
 
 export type VisualSearchMatch = {
   presetId: string;
   score: number;
 };
 
-export const VisualSearchMatchSchema =
-  contractSchema<VisualSearchMatch>((input) => {
+export const VisualSearchMatchSchema = contractSchema<VisualSearchMatch>(
+  (input) => {
     if (!isObject(input)) return null;
     if (!isString(input.presetId) || !isNumber(input.score)) return null;
     return { presetId: input.presetId, score: input.score };
-  });
+  },
+);
 
 export type VisualSearchResponse = {
   results: VisualSearchMatch[];
@@ -115,8 +117,8 @@ export type VisualSearchResponse = {
   source?: 'vectorize';
 };
 
-export const VisualSearchResponseSchema =
-  contractSchema<VisualSearchResponse>((input) => {
+export const VisualSearchResponseSchema = contractSchema<VisualSearchResponse>(
+  (input) => {
     if (!isObject(input)) return null;
     if (!Array.isArray(input.results)) return null;
     const results: VisualSearchMatch[] = [];
@@ -130,7 +132,8 @@ export const VisualSearchResponseSchema =
       source = 'vectorize';
     }
     return source ? { results, source } : { results };
-  });
+  },
+);
 
 export type VisualSearchEmbedResponse = {
   embedding: number[];
