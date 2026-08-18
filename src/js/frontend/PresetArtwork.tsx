@@ -81,6 +81,7 @@ export function PresetArtwork({
         src={imageUrl}
         alt=""
         loading="lazy"
+        decoding="async"
         width={220}
         height={180}
         onError={() => setImageError(true)}

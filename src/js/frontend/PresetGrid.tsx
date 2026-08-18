@@ -1,7 +1,58 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+
+/**
+ * One tile, memoized: an audition (hover) state change on the grid must only
+ * re-render the two tiles whose `audition` prop actually flipped — a plain
+ * inline map re-rendered every tile in the catalog per hover, which was the
+ * grid's dominant pointer-move hitch.
+ */
+const GridTile = memo(function GridTile({
+  entry,
+  preview,
+  variants,
+  audition,
+  onAudition,
+  onAuditionEnd,
+  onOpen,
+}: {
+  entry: PresetCatalogEntry;
+  preview: MilkdropPresetRenderPreview | null;
+  variants: number;
+  audition: boolean;
+  onAudition: (id: string) => void;
+  onAuditionEnd: (id: string) => void;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="stims-preset-grid__item"
+      data-preset-id={entry.id}
+      aria-label={entry.title || entry.id}
+      onPointerEnter={() => onAudition(entry.id)}
+      onPointerLeave={() => onAuditionEnd(entry.id)}
+      onFocus={() => onAudition(entry.id)}
+      onBlur={() => onAuditionEnd(entry.id)}
+      onClick={() => onOpen(entry.id)}
+    >
+      <PresetArtwork entry={entry} preview={preview} audition={audition} />
+      {variants > 0 ? (
+        <span
+          className="stims-preset-grid__variants"
+          title={`${variants} near-identical variant${variants === 1 ? '' : 's'} (see list view)`}
+        >
+          +{variants}
+        </span>
+      ) : null}
+      <div className="stims-preset-grid__meta">
+        <span className="stims-preset-grid__title">{entry.title}</span>
+      </div>
+    </button>
+  );
+});
 
 /**
  * Grid browse view.
@@ -104,12 +155,56 @@ export function PresetGrid({
     };
   }, [visibleEntries]);
 
-  const handleItemClick = (id: string) => {
+  const routeStateRef = useRef(routeState);
+  routeStateRef.current = routeState;
+  const setRouteStateRef = useRef(setRouteState);
+  setRouteStateRef.current = setRouteState;
+
+  // Stable identities so GridTile's memo holds across grid re-renders.
+  // Hover intent: auditioning spins up a real engine tile (compile + mount),
+  // so it only starts after a sustained hover — a pointer sweeping across
+  // the grid must not ignite an engine per tile it crosses.
+  const auditionIntentRef = useRef<{ id: string; timer: number } | null>(null);
+  const handleAudition = useCallback((id: string) => {
+    const pending = auditionIntentRef.current;
+    if (pending?.id === id) return;
+    if (pending) window.clearTimeout(pending.timer);
+    auditionIntentRef.current = {
+      id,
+      timer: window.setTimeout(() => {
+        auditionIntentRef.current = null;
+        setAuditionId((current) => (current === id ? current : id));
+      }, 250),
+    };
+  }, []);
+  // Clear only if this tile still owns the audition (or its pending intent):
+  // enter(new) can fire before leave(old), and an unconditional clear would
+  // kill the new one.
+  const handleAuditionEnd = useCallback((id: string) => {
+    const pending = auditionIntentRef.current;
+    if (pending?.id === id) {
+      window.clearTimeout(pending.timer);
+      auditionIntentRef.current = null;
+    }
+    setAuditionId((current) => (current === id ? null : current));
+  }, []);
+  useEffect(
+    () => () => {
+      if (auditionIntentRef.current) {
+        window.clearTimeout(auditionIntentRef.current.timer);
+      }
+    },
+    [],
+  );
+  const handleOpen = useCallback((id: string) => {
     if (presetPreviewsRef.current[id]?.status !== 'ready') {
       void requestPresetPreviewsRef.current([id]);
     }
-    setRouteState({ presetId: id, audioSource: routeState.audioSource });
-  };
+    setRouteStateRef.current({
+      presetId: id,
+      audioSource: routeStateRef.current.audioSource,
+    });
+  }, []);
 
   return (
     <section
@@ -117,48 +212,18 @@ export function PresetGrid({
       className="stims-preset-grid"
       aria-label="Preset grid"
     >
-      {visibleEntries.map((entry) => {
-        const variants = variantCounts.get(entry.id) ?? 0;
-        return (
-          <button
-            key={entry.id}
-            type="button"
-            className="stims-preset-grid__item"
-            data-preset-id={entry.id}
-            aria-label={entry.title || entry.id}
-            onPointerEnter={() => setAuditionId(entry.id)}
-            onPointerLeave={() =>
-              setAuditionId((current) =>
-                current === entry.id ? null : current,
-              )
-            }
-            onFocus={() => setAuditionId(entry.id)}
-            onBlur={() =>
-              setAuditionId((current) =>
-                current === entry.id ? null : current,
-              )
-            }
-            onClick={() => handleItemClick(entry.id)}
-          >
-            <PresetArtwork
-              entry={entry}
-              preview={presetPreviews[entry.id] ?? null}
-              audition={auditionId === entry.id}
-            />
-            {variants > 0 ? (
-              <span
-                className="stims-preset-grid__variants"
-                title={`${variants} near-identical variant${variants === 1 ? '' : 's'} (see list view)`}
-              >
-                +{variants}
-              </span>
-            ) : null}
-            <div className="stims-preset-grid__meta">
-              <span className="stims-preset-grid__title">{entry.title}</span>
-            </div>
-          </button>
-        );
-      })}
+      {visibleEntries.map((entry) => (
+        <GridTile
+          key={entry.id}
+          entry={entry}
+          preview={presetPreviews[entry.id] ?? null}
+          variants={variantCounts.get(entry.id) ?? 0}
+          audition={auditionId === entry.id}
+          onAudition={handleAudition}
+          onAuditionEnd={handleAuditionEnd}
+          onOpen={handleOpen}
+        />
+      ))}
     </section>
   );
 }
