@@ -72,7 +72,6 @@ type WorkspaceShellOrchestrationArgs = {
   activityCatalog: PresetCatalogEntry[];
   goBackPreset: () => Promise<void>;
   importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
-  pendingPresetIdRef: { current: string | null };
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
   startAudioSource: (request: {
@@ -97,7 +96,6 @@ export function useWorkspaceShellOrchestration({
   activityCatalog,
   goBackPreset,
   importPresetFiles,
-  pendingPresetIdRef,
   routeState,
   setStatusMessage,
   startAudioSource,
@@ -215,12 +213,18 @@ export function useWorkspaceShellOrchestration({
 
   const engineReady = useMemo(() => catalogError === null, [catalogError]);
 
+  // No pendingPresetIdRef shield here: the ref is seeded with the arrival's
+  // route preset id (workspace-hooks.ts) so the engine→route sync cannot
+  // clobber a deep link while its launch-intent load is in flight. But once
+  // the FULL catalog has settled and still cannot resolve the id, that load
+  // can never succeed (loadPreset draws from the same store+bundle), so the
+  // seed would otherwise suppress "missing" forever — stranding a dead share
+  // link on the launch form with the heal path never firing.
   const missingRequestedPreset = Boolean(
     routeState.presetId &&
       catalogReady &&
       (fullCatalogReady ?? true) &&
-      !resolvedRequestedPreset &&
-      pendingPresetIdRef.current !== routeState.presetId,
+      !resolvedRequestedPreset,
   );
 
   const loadingRequestedPreset = Boolean(
