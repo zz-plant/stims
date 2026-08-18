@@ -20,6 +20,47 @@ import {
 const POST_PASS_EPSILON = 0.0001;
 const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
 
+const EXCLUDED_ASSIGNMENT_TARGET_PATTERN = /^(?:[qt]\d+|megabuf|gmegabuf)$/u;
+
+/** Lowercased names the given programs assign, control-flow bodies included.
+ * q/t registers and the memory buffers are excluded — q registers are already
+ * canonical inputs and the others never land in VM state. */
+function collectProgramAssignmentTargets(
+  blocks: ReadonlyArray<{
+    statements: ReadonlyArray<{
+      target: string;
+      control?: { body: unknown[] } | null;
+    }>;
+  }>,
+): string[] {
+  const targets = new Set<string>();
+  const visitStatements = (
+    statements: ReadonlyArray<{
+      target: string;
+      control?: { body: unknown[] } | null;
+    }>,
+  ) => {
+    for (const statement of statements) {
+      const normalized = statement.target.toLowerCase();
+      if (!EXCLUDED_ASSIGNMENT_TARGET_PATTERN.test(normalized)) {
+        targets.add(normalized);
+      }
+      if (statement.control?.body) {
+        visitStatements(
+          statement.control.body as ReadonlyArray<{
+            target: string;
+            control?: { body: unknown[] } | null;
+          }>,
+        );
+      }
+    }
+  };
+  for (const block of blocks) {
+    visitStatements(block.statements);
+  }
+  return [...targets].sort();
+}
+
 export function buildWebGpuDescriptorPlan({
   featureAnalysis,
   webgpu,
@@ -148,8 +189,18 @@ export function buildWebGpuDescriptorPlan({
       .filter((wave): wave is Exclude<typeof wave, null> => wave !== null),
   ];
 
+  // Any scalar the init/per-frame programs assign is a frame constant by the
+  // time the per-pixel program runs — the compiled program stores non-q/t
+  // targets straight into VM state, where the frame producer already copies
+  // register inputs by name. Exposing them alongside q1..q32 lets per-pixel
+  // reads of per-frame user variables (mx, xpos, w, dir …) lower instead of
+  // bailing (the dominant remaining blocker in the 2026-08-18 census).
+  const perFrameAssignedInputs = collectProgramAssignmentTargets([
+    programs.init,
+    programs.perFrame,
+  ]);
   const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel, {
-    registerInputs: perFrameFieldRegisterInputs,
+    registerInputs: [...perFrameFieldRegisterInputs, ...perFrameAssignedInputs],
     additionalAllowedIdentifiers: PER_PIXEL_VIEWPORT_BUILTIN_INPUTS,
   });
   const supportsProceduralFieldEvaluation =

@@ -258,46 +258,38 @@ function gpuFieldIdentifierToShaderSource(
     case 'weightedEnergy':
       return 'signalWeightedEnergyValue';
     default: {
-      const registerMatch = /^q(\d+)$/u.exec(name);
-      if (registerMatch && registerInputs.has(name)) {
-        return `fieldRegisterQ${registerMatch[1]}`;
+      if (registerInputs.has(name)) {
+        return registerBindingName(name);
       }
       return gpuFieldVarName(name);
     }
   }
 }
 
-// Per-frame registers (`q1`..`q32`) read by a per-pixel program are frame
-// constants, so they lower to per-vertex `let` bindings fed from packed
-// register uniform vectors (`registersA`..`registersH`, four registers each).
-// Only the vectors a program actually reads are declared and passed. The
-// `fieldRegisterQ*` namespace is distinct from `field_q*` (register
-// temporaries written per-vertex), so a register that is both assigned and
-// read elsewhere stays a temporary.
+// Frame-constant register inputs (q registers and per-frame-assigned user
+// variables alike) lower to per-vertex `let` bindings fed from packed
+// register uniform vectors (`registersA`..`registersH`, four scalars each).
+// Slot assignment is positional in the descriptor's sorted `registerInputs`
+// list, so only ceil(inputs/4) vectors are declared and passed. The
+// `fieldRegisterIn_*` namespace is distinct from `field_*` (temporaries
+// written per-vertex), so a name that is both assigned and read elsewhere
+// stays a temporary.
 const REGISTER_VECTOR_LETTERS = 'ABCDEFGH';
 const REGISTER_VECTOR_COUNT = REGISTER_VECTOR_LETTERS.length;
+const REGISTER_VECTOR_SLOTS = ['x', 'y', 'z', 'w'] as const;
+
+function registerBindingName(name: string) {
+  return `fieldRegisterIn_${name}`;
+}
 
 /** Sorted indices (0-based, one per vec4) of the register vectors the
- * program's `registerInputs` touch. */
+ * program's `registerInputs` occupy positionally. */
 function getRegisterVectorIndices(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ): number[] {
-  if (!program || program.registerInputs.length === 0) {
-    return [];
-  }
-  const vectors = new Set<number>();
-  for (const name of program.registerInputs) {
-    const match = /^q(\d+)$/u.exec(name);
-    if (!match) {
-      continue;
-    }
-    const index = Number(match[1]) - 1;
-    const vector = Math.floor(index / 4);
-    if (index >= 0 && vector < REGISTER_VECTOR_COUNT) {
-      vectors.add(vector);
-    }
-  }
-  return [...vectors].sort((a, b) => a - b);
+  const count = program?.registerInputs.length ?? 0;
+  const vectors = Math.min(REGISTER_VECTOR_COUNT, Math.ceil(count / 4));
+  return Array.from({ length: vectors }, (_, index) => index);
 }
 
 function buildGpuFieldRegisterBindings(
@@ -306,18 +298,12 @@ function buildGpuFieldRegisterBindings(
   if (!program || program.registerInputs.length === 0) {
     return '';
   }
-  const slots = ['x', 'y', 'z', 'w'] as const;
-  const bindings = program.registerInputs.map((name) => {
-    const match = /^q(\d+)$/u.exec(name);
-    if (!match) {
-      return '';
-    }
-    const index = Number(match[1]) - 1;
+  const bindings = program.registerInputs.map((name, index) => {
     const vector = Math.floor(index / 4);
-    if (index < 0 || vector >= REGISTER_VECTOR_COUNT) {
+    if (vector >= REGISTER_VECTOR_COUNT) {
       return '';
     }
-    return `let fieldRegisterQ${index + 1} = registers${REGISTER_VECTOR_LETTERS[vector]}.${slots[index % 4]};`;
+    return `let ${registerBindingName(name)} = registers${REGISTER_VECTOR_LETTERS[vector]}.${REGISTER_VECTOR_SLOTS[index % 4]};`;
   });
   return bindings.filter(Boolean).join('\n    ');
 }
@@ -719,10 +705,10 @@ function packRegisterVectorArgs(
   for (const vector of getRegisterVectorIndices(program)) {
     const base = vector * 4;
     args[`registers${REGISTER_VECTOR_LETTERS[vector]}`] = vec4(
-      uniforms[`registerQ${base + 1}`],
-      uniforms[`registerQ${base + 2}`],
-      uniforms[`registerQ${base + 3}`],
-      uniforms[`registerQ${base + 4}`],
+      uniforms[`registerSlot${base}`],
+      uniforms[`registerSlot${base + 1}`],
+      uniforms[`registerSlot${base + 2}`],
+      uniforms[`registerSlot${base + 3}`],
     ) as TslNode;
   }
   return args;

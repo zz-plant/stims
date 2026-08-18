@@ -108,9 +108,7 @@ export type MilkdropProceduralFieldTransformVisual = {
 /** Frame-constant `q` register values a lowered per-pixel program reads as
  * uniforms. Sparse: producers only populate the registers the program's
  * `registerInputs` actually name (full bank is `q1`..`q32`). */
-export type MilkdropPerFrameFieldRegisters = Partial<
-  Record<`q${number}`, number>
->;
+export type MilkdropPerFrameFieldRegisters = Partial<Record<string, number>>;
 
 export type MilkdropGpuFieldSignalInputs = {
   time: number;

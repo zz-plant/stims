@@ -110,7 +110,8 @@ type LowerGpuFieldProgramOptions = {
   registerInputs?: Iterable<string>;
 };
 
-const GPU_FIELD_REGISTER_PATTERN = /^q[0-9]+$/u;
+/** Capacity of the packed per-frame register uniform bank (8 vec4s). */
+export const MAX_FIELD_REGISTER_INPUTS = 32;
 
 /** Per-frame registers exposed to per-pixel programs as frame-constant
  * uniform inputs. Covers the full MilkDrop 2 `q1`..`q32` bank (measured
@@ -331,25 +332,28 @@ export function lowerGpuFieldProgram(
     }
   }
 
-  // A register (`q1`..`q32`) that the per-pixel program only READS is the
-  // per-frame register value — a frame constant, identical across all vertices
-  // — so it lowers to a per-frame uniform input rather than bailing. A register
-  // that is ASSIGNED inside the per-pixel program was caught above as a
-  // per-vertex temporary (MilkDrop register semantics are honoured by the
-  // vertex-local initialisation to 0.0). Reads of registers not in the
-  // caller's available set (e.g. `q9`+ or the per-wave `t` bank) still bail.
+  // A name in the caller's `registerInputs` set that the per-pixel program
+  // only READS is a frame constant, identical across all vertices — q
+  // registers and any per-frame-assigned user variable alike — so it lowers
+  // to a per-frame uniform input rather than bailing. A name that is
+  // ASSIGNED inside the per-pixel program was caught above as a per-vertex
+  // temporary (MilkDrop per-pixel writes are vertex-local). State slots and
+  // signals keep their own bindings: `allowedIdentifiers` already contains
+  // them, so they never reach the register check.
   const registerInputIdentifiers = new Set<string>();
   for (const statement of program.statements) {
     for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
-      if (
-        GPU_FIELD_REGISTER_PATTERN.test(read) &&
-        availableRegisters.has(read) &&
-        !temporaries.has(read)
-      ) {
+      if (!allowedIdentifiers.has(read) && availableRegisters.has(read)) {
         registerInputIdentifiers.add(read);
         allowedIdentifiers.add(read);
       }
     }
+  }
+  // The uniform bank holds MAX_FIELD_REGISTER_INPUTS packed scalars; a
+  // program reading more frame constants than that cannot be fed and bails
+  // to the CPU path.
+  if (registerInputIdentifiers.size > MAX_FIELD_REGISTER_INPUTS) {
+    return null;
   }
 
   for (const statement of program.statements) {

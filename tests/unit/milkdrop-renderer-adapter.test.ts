@@ -1771,16 +1771,44 @@ per_pixel_1=zoom=zoom+q20*0.01+q32*0.001+aspectx*0-aspecty*0+log10(rad+1);
     expect(program?.registerInputs).toEqual(['q20', 'q32']);
 
     const transformWgsl = buildMilkdropTransformWgslCode(program);
-    // q20 lives in vector E (index 4) slot w; q32 in vector H slot w.
-    expect(transformWgsl).toContain('let fieldRegisterQ20 = registersE.w;');
-    expect(transformWgsl).toContain('let fieldRegisterQ32 = registersH.w;');
-    // Only the touched register vectors are declared as parameters.
-    expect(transformWgsl).toContain('registersE: vec4<f32>');
-    expect(transformWgsl).toContain('registersH: vec4<f32>');
-    expect(transformWgsl).not.toContain('registersA: vec4<f32>');
+    // Slots are positional in the sorted registerInputs list: q20 first,
+    // q32 second, both in the first packed vector.
+    expect(transformWgsl).toContain(
+      'let fieldRegisterIn_q20 = registersA.x;',
+    );
+    expect(transformWgsl).toContain(
+      'let fieldRegisterIn_q32 = registersA.y;',
+    );
+    // Only ceil(2/4) = 1 register vector is declared as a parameter.
+    expect(transformWgsl).toContain('registersA: vec4<f32>');
+    expect(transformWgsl).not.toContain('registersB: vec4<f32>');
     expect(transformWgsl).toContain('signalAspectXValue');
     expect(transformWgsl).toContain('signalAspectYValue');
     expect(transformWgsl).toContain('log(');
+  });
+
+  test('lowers per-frame user variables as frame-constant register inputs', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Per Frame Var Bus
+per_frame_1=mx=0.3+0.2*sin(time);
+per_frame_2=wavescale=1.5+bass*0.1;
+per_pixel_1=dx=(x-mx)*0.01*wavescale;
+      `.trim(),
+      { id: 'per-frame-var-bus' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.registerInputs).toEqual(['mx', 'wavescale']);
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    expect(transformWgsl).toContain('let fieldRegisterIn_mx = registersA.x;');
+    expect(transformWgsl).toContain(
+      'let fieldRegisterIn_wavescale = registersA.y;',
+    );
+    expect(transformWgsl).toContain('fieldRegisterIn_mx');
   });
 
   test('binds viewport/mesh builtins and overwritten pi in transform WGSL', () => {
