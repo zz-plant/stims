@@ -76,6 +76,7 @@ flowchart LR
   Signals --> VM["vm.ts / expression-jit<br/>evaluate per frame"]
   IR --> VM
   VM --> Draw["renderer-adapter<br/>warp · waves · shapes · feedback"]
+  Transition["runtime/transition-controller<br/>preset-blend alpha (sim clock,<br/>presentable hold)"] --> Draw
   Draw --> Backend{"WebGL2 baseline<br/>or guarded WebGPU"}
   Backend --> Canvas["Live canvas"]
   Backend -.->|init failure or<br/>frame-budget breach| Fallback["runtime/backend-fallback<br/>+ adaptive-quality-controller"]

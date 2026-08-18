@@ -31,6 +31,19 @@ Tests are grouped into three speed tiers. Use the right tier for your workflow.
 **Concurrency & Sharding:** The fast suite runs under `bun test --parallel`, which distributes test files across worker processes with work stealing (`STIMS_TEST_SHARDS=n` overrides the worker count; `n=1` forces a single in-process run).  
 **When to use:** Pre-commit, `bun run check`, any time you want confident signal without waiting.
 
+Two tests in this tier act as **execution-tier contracts** rather than
+ordinary unit coverage — treat a failure as a semantics divergence, not a
+flake:
+
+- `tests/unit/eel-tier-differential.test.ts` — seeded random EEL programs run
+  through both the analysis interpreter (`expression.ts`) and the runtime JIT
+  (`expression-jit.ts`); results must match. Required reading before editing
+  either file.
+- `tests/unit/gpu-field-tier-differential.test.ts` — lowered per-pixel
+  descriptors evaluated with the WGSL emitter's exact semantics
+  (`webgpu-procedural-materials.ts`) against the CPU JIT. The test's JS
+  reference evaluator and the WGSL helper functions must be kept in lockstep.
+
 Tests excluded from this tier:
 
 | File | Why excluded |
