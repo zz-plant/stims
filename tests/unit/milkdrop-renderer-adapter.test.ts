@@ -434,6 +434,81 @@ shapecode_0_thickoutline=1
     );
   });
 
+  test('hides blend-layer visuals once the blend ends instead of ghosting', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Blend Ghosting
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_a=0.7
+shapecode_0_border_a=0.9
+      `.trim(),
+      { id: 'blend-ghosting' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const previousFrame = vm.step(makeSignals());
+    const frameState = vm.step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+    adapter.attach();
+
+    // Blend layers render at order >= 80 (getMilkdropLayerRenderOrder). A
+    // node ghosts when it still draws content while every ancestor up to the
+    // scene is visible.
+    const effectivelyVisibleBlendNodes = () => {
+      const walk = (
+        node: RenderTreeNode,
+        out: RenderTreeNode[],
+      ): RenderTreeNode[] => {
+        if (node.visible === false) {
+          return out;
+        }
+        if (
+          (node.renderOrder ?? -1) >= 80 &&
+          ((getGeometryInstanceCount(node) ?? 0) > 0 ||
+            node.geometry?.getAttribute?.('position') !== undefined)
+        ) {
+          out.push(node);
+        }
+        for (const child of node.children ?? []) {
+          walk(child, out);
+        }
+        return out;
+      };
+      return walk(scene as RenderTreeNode, []);
+    };
+
+    adapter.render({
+      frameState,
+      blendState: { mode: 'gpu', previousFrame, alpha: 0.6 },
+    });
+    expect(effectivelyVisibleBlendNodes().length).toBeGreaterThan(0);
+
+    // Blend settled (or was cut/cancelled): nothing from the blend layer may
+    // stay effectively visible — this is the preset-ghosting regression.
+    adapter.render({
+      frameState: vm.step(makeSignals()),
+      blendState: null,
+    });
+    expect(effectivelyVisibleBlendNodes()).toHaveLength(0);
+
+    // A following switch re-shows the blend layer.
+    adapter.render({
+      frameState: vm.step(makeSignals()),
+      blendState: { mode: 'gpu', previousFrame, alpha: 0.6 },
+    });
+    expect(effectivelyVisibleBlendNodes().length).toBeGreaterThan(0);
+    adapter.dispose();
+  });
+
   test('uses non-shader render materials for query-forced webgpu sessions', async () => {
     const restoreLocation = replaceProperty(
       globalThis,

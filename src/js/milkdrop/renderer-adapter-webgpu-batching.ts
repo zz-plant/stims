@@ -1693,6 +1693,8 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       this.waveTargets.set(key, target);
       this.root.add(target.group);
     }
+    // A sync re-shows a target hidden by hideBlendTargets.
+    target.group.visible = true;
     return target;
   }
 
@@ -1717,6 +1719,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
     }
+    target.group.visible = true;
     return target;
   }
 
@@ -1730,6 +1733,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       this.borderTargets.set(key, target);
       this.root.add(target.group);
     }
+    target.group.visible = true;
     return target;
   }
 
@@ -1844,6 +1848,24 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     return true;
   }
 
+  hideBlendTargets() {
+    for (const [key, target] of this.waveTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+    for (const [key, target] of this.shapeTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+    for (const [key, target] of this.borderTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+  }
+
   dispose() {
     for (const target of this.waveTargets.values()) {
       target.dispose();
@@ -1905,6 +1927,7 @@ export function createNativeWebGPUShapeBatchingLayer(
         alphaMultiplier,
         screenAspect,
       ),
+    hideBlendTargets: () => layer.hideBlendTargets(),
     dispose: () => layer.dispose(),
     disposeWithCaches: () => layer.disposeWithCaches(),
   };
