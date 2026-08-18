@@ -6,7 +6,7 @@ import {
   PlaneGeometry,
   Scene,
   Vector2,
-  type Vector4,
+  Vector4,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
@@ -201,8 +201,28 @@ function createGaussianBlurUniforms(initialSource: Texture) {
     sourceTex: texture(initialSource),
     texelSize: uniform(new Vector2(1, 1)),
     blurDirection: uniform(new Vector2(1, 0)),
-    kernelSigma: uniform(1),
+    // Center weight + the 4 symmetric off-center weights, normalized so the
+    // shader needs no weight-sum divide. Computed CPU-side per sigma change;
+    // the previous in-shader exp() evaluated 9 identical Gaussians per pixel.
+    kernelCenterWeight: uniform(1),
+    kernelSideWeights: uniform(new Vector4(0, 0, 0, 0)),
     blurPixelStep: uniform(1),
+  };
+}
+
+/** Normalized 9-tap Gaussian kernel for the given sigma. */
+export function computeGaussianBlurKernelWeights(sigma: number) {
+  const twoSigmaSq = Math.max(2 * sigma * sigma, 0.0001);
+  const side = [1, 2, 3, 4].map((tap) => Math.exp(-(tap * tap) / twoSigmaSq));
+  const sum = 1 + 2 * (side[0] + side[1] + side[2] + side[3]);
+  return {
+    center: 1 / sum,
+    side: side.map((weight) => weight / sum) as [
+      number,
+      number,
+      number,
+      number,
+    ],
   };
 }
 
@@ -214,29 +234,28 @@ function createGaussianBlurOutputNode(
     const offset = blurUniforms.blurDirection.mul(
       blurUniforms.texelSize.mul(blurUniforms.blurPixelStep),
     );
-    const twoSigmaSq = blurUniforms.kernelSigma
-      .mul(blurUniforms.kernelSigma)
-      .mul(2);
-    let weightedColor = vec4(0, 0, 0, 0);
-    let weightSum = float(0);
+    const sideWeights = [
+      blurUniforms.kernelSideWeights.x,
+      blurUniforms.kernelSideWeights.y,
+      blurUniforms.kernelSideWeights.z,
+      blurUniforms.kernelSideWeights.w,
+    ];
+    let weightedColor = blurUniforms.sourceTex
+      .sample(centerUv)
+      .mul(blurUniforms.kernelCenterWeight);
 
-    for (
-      let tap = -GAUSSIAN_BLUR_KERNEL_RADIUS;
-      tap <= GAUSSIAN_BLUR_KERNEL_RADIUS;
-      tap += 1
-    ) {
-      const tapFloat = float(tap);
-      const i2 = tapFloat.mul(tapFloat);
-      const exponent = float(0).sub(i2).div(max(twoSigmaSq, 0.0001));
-      const weight = exp(exponent);
-      const sampleUv = centerUv.add(offset.mul(tapFloat));
+    for (let tap = 1; tap <= GAUSSIAN_BLUR_KERNEL_RADIUS; tap += 1) {
+      const weight = sideWeights[tap - 1];
+      const tapOffset = offset.mul(float(tap));
       weightedColor = weightedColor.add(
-        blurUniforms.sourceTex.sample(sampleUv).mul(weight),
+        blurUniforms.sourceTex.sample(centerUv.add(tapOffset)).mul(weight),
       );
-      weightSum = weightSum.add(weight);
+      weightedColor = weightedColor.add(
+        blurUniforms.sourceTex.sample(centerUv.sub(tapOffset)).mul(weight),
+      );
     }
 
-    return weightedColor.div(max(weightSum, 0.0001));
+    return weightedColor;
   })();
 }
 
@@ -2606,6 +2625,7 @@ class WebGPUMilkdropFeedbackManager
   readonly auxTextures: Record<string, Texture>;
   compositeIdentity: CompositeStateIdentity | null = null;
   sceneResolutionReleaseCountdown = 0;
+  lastBlurKernelSigma = -1;
   currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   private savedFrameTarget: RenderTarget | null = null;
@@ -2942,10 +2962,15 @@ class WebGPUMilkdropFeedbackManager
 
     if (shouldBlur) {
       const blurTexelSize = this.blurMaterial.uniforms.texelSize.value;
-      this.blurMaterial.uniforms.kernelSigma.value = Math.max(
-        0.5,
-        softness * 1.5,
-      );
+      const sigma = Math.max(0.5, softness * 1.5);
+      if (sigma !== this.lastBlurKernelSigma) {
+        this.lastBlurKernelSigma = sigma;
+        const weights = computeGaussianBlurKernelWeights(sigma);
+        this.blurMaterial.uniforms.kernelCenterWeight.value = weights.center;
+        (this.blurMaterial.uniforms.kernelSideWeights.value as Vector4).set(
+          ...weights.side,
+        );
+      }
       this.blurMaterial.uniforms.blurPixelStep.value =
         MILKDROP_FEEDBACK_BLUR_OFFSET_BASE +
         softness * MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE;

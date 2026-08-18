@@ -779,7 +779,12 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           // image (warped feedback + geometry). This pass is display-only,
           // matching MilkDrop: nothing computed here feeds the next frame.
           vec3 color = texture2D(internalTex, sampleUv(vUv, textureWrap)).rgb;
-          color = hueRotate(color, hueShift);
+          // Uniform branch: skip the sin/cos + mat3 build when no hue shift
+          // is active (the common case) — mobile GPUs run transcendentals on
+          // a slow special-function unit.
+          if (abs(hueShift) > 0.0001) {
+            color = hueRotate(color, hueShift);
+          }
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
           color *= colorScale;
@@ -863,7 +868,12 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
             vec3 rightColor = texture2D(internalTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
-          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          // Uniform branch: gamma is 1.0 for most presets, and pow costs
+          // three log/exp pairs per pixel. Sibling effects above are already
+          // uniform-guarded; this was the one that wasn't.
+          if (abs(gammaAdj - 1.0) > 0.0001) {
+            color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          }
           gl_FragColor = vec4(color, 1.0);
         }
       `;

@@ -28,6 +28,16 @@ import WebToy, { type WebToyOptions } from './web-toy';
 
 const EMPTY_UINT8 = new Uint8Array(0);
 
+// Touch/mobile detection is static per session; evaluating the UA regex
+// inside the preview tick put it on the pre-audio hot path for no reason.
+// Mobile throttles the synthetic preview data to 30Hz; desktop runs every tick.
+const PREVIEW_DATA_INTERVAL_MS =
+  typeof navigator !== 'undefined' &&
+  ((navigator.maxTouchPoints ?? 0) > 0 ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
+    ? 1000 / 30
+    : 0;
+
 export type ToyRuntimeFrame = {
   toy: WebToy;
   time: number;
@@ -460,12 +470,7 @@ export function createToyRuntime({
       frameState.time += smoothedPreviewDeltaMs / 1000;
       frameState.realTimeMs = currentTime;
       frameState.analyser = null;
-      const previewDataIntervalMs =
-        typeof navigator !== 'undefined' &&
-        ((navigator.maxTouchPoints ?? 0) > 0 ||
-          /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
-          ? 1000 / 30
-          : 0;
+      const previewDataIntervalMs = PREVIEW_DATA_INTERVAL_MS;
       if (now - previewLastDataUpdate >= previewDataIntervalMs) {
         updatePreviewFrequencyData(frameState.time);
         previewLastDataUpdate = now;

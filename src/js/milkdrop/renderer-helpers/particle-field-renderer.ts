@@ -495,10 +495,14 @@ export function syncParticleFieldObject(
     return null;
   }
 
+  // Instance count is deliberately NOT part of the match: it folds in the
+  // adaptive-quality detail scale, so a count change happens exactly when
+  // the device is under load — rebuilding here would dispose the material
+  // and force a pipeline recompile at the worst moment. The attribute
+  // updater below resizes buffers and instanceCount in place.
   const matches =
     !!existing &&
     existing.geometry instanceof InstancedBufferGeometry &&
-    existing.geometry.instanceCount === particleField.instanceCount &&
     isParticleFieldMaterialForBackend(existing.material, backend) &&
     existing.userData.particleFieldSeed === particleField.seed;
 

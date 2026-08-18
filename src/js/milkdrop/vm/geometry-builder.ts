@@ -629,6 +629,8 @@ function buildStaticMeshLattice(
   };
 }
 
+const legacyMotionVectorControlsCache = new WeakMap<object, boolean>();
+
 export function getMotionVectorDescriptorContext({
   state,
   preset,
@@ -643,22 +645,27 @@ export function getMotionVectorDescriptorContext({
   // every preset as legacy.
   // ast.fields keys are raw preset text (`fMotionVectorsL`), so normalize
   // before comparing — MilkDrop-authored files never spell them `mv_l`.
-  const declaresLegacyField = preset.ast.fields.some((field) => {
-    const key = normalizeProgramAssignmentTarget(field.key);
-    return key === 'mv_dx' || key === 'mv_dy' || key === 'mv_l';
-  });
-  const legacyControls =
-    declaresLegacyField ||
-    preset.ir.programs.init.statements.some(
-      (statement) =>
-        statement.target === 'motion_vectors_x' ||
-        statement.target === 'motion_vectors_y',
-    ) ||
-    preset.ir.programs.perFrame.statements.some(
-      (statement) =>
-        statement.target === 'motion_vectors_x' ||
-        statement.target === 'motion_vectors_y',
-    );
+  // Pure function of the preset, but this context is requested up to twice
+  // per frame — cache so the full AST/program sweep runs once per preset.
+  let legacyControls = legacyMotionVectorControlsCache.get(preset);
+  if (legacyControls === undefined) {
+    legacyControls =
+      preset.ast.fields.some((field) => {
+        const key = normalizeProgramAssignmentTarget(field.key);
+        return key === 'mv_dx' || key === 'mv_dy' || key === 'mv_l';
+      }) ||
+      preset.ir.programs.init.statements.some(
+        (statement) =>
+          statement.target === 'motion_vectors_x' ||
+          statement.target === 'motion_vectors_y',
+      ) ||
+      preset.ir.programs.perFrame.statements.some(
+        (statement) =>
+          statement.target === 'motion_vectors_x' ||
+          statement.target === 'motion_vectors_y',
+      );
+    legacyMotionVectorControlsCache.set(preset, legacyControls);
+  }
 
   if ((state.motion_vectors ?? 0) < 0.5 && !legacyControls) {
     return null;

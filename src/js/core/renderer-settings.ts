@@ -3,7 +3,10 @@ import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
 } from '../utils/browser/device-detect';
-import { getDevicePerformanceProfile } from './device-profile.ts';
+import {
+  getAdaptiveMaxPixelRatio,
+  getDevicePerformanceProfile,
+} from './device-profile.ts';
 import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
@@ -216,10 +219,13 @@ export function applyRendererSettings(
     browserFamily: currentDeviceEnv.browserFamily,
     platformFamily: currentDeviceEnv.platformFamily,
   });
+  // getAdaptiveMaxPixelRatio clamps low-power hardware to 1.25; renderer
+  // init applies it, and omitting it here let the first resize silently
+  // raise a low-power desktop back to the 1.75-4x backend cap.
   const effectiveMaxPixelRatio = Math.max(
     0.5,
     Math.min(
-      (merged.maxPixelRatio ?? 2) *
+      getAdaptiveMaxPixelRatio(merged.maxPixelRatio ?? 2) *
         (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
       backendPixelRatioCap,
     ),
