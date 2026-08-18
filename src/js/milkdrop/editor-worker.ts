@@ -3,8 +3,12 @@ import { compileMilkdropPresetSource } from './compiler';
 import type { MilkdropEditorCompiler } from './types';
 
 const editorCompiler: MilkdropEditorCompiler = {
-  async compile(source, preset) {
-    return compileMilkdropPresetSource(source, preset);
+  async compile(source, preset, options) {
+    return compileMilkdropPresetSource(
+      source,
+      preset,
+      options?.cacheCompile ? { cacheCompile: true } : {},
+    );
   },
 };
 

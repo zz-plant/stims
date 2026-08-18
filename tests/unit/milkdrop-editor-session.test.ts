@@ -81,26 +81,32 @@ describe('milkdrop editor session', () => {
     globalThis.Worker = DefaultMockWorker as unknown as typeof Worker;
   });
 
-  test('loads presets without starting the editor worker', async () => {
+  test('loads presets through the compile worker', async () => {
+    // Preset loads happen mid-playback: compiling them on the main thread
+    // stalls the running visual (measured in seconds on mobile), so
+    // loadPreset uses the worker like applySource does. Session creation
+    // itself stays worker-free — the initial preset is compiled inline.
     const session = createMilkdropEditorSession({
       initialPreset: {
-        id: 'editor-load-no-worker',
-        title: 'Editor Load No Worker',
-        raw: 'title=Editor Load No Worker\nwave_r=0.4\n',
+        id: 'editor-load-worker',
+        title: 'Editor Load Worker',
+        raw: 'title=Editor Load Worker\nwave_r=0.4\n',
         origin: 'user',
       },
     });
+    expect(workerCreations).toBe(0);
 
-    await session.loadPreset({
-      id: 'editor-load-no-worker-2',
-      title: 'Editor Load No Worker 2',
-      raw: 'title=Editor Load No Worker 2\nwave_g=0.5\n',
+    const loaded = await session.loadPreset({
+      id: 'editor-load-worker-2',
+      title: 'Editor Load Worker 2',
+      raw: 'title=Editor Load Worker 2\nwave_g=0.5\n',
       origin: 'bundled',
     });
 
-    expect(workerCreations).toBe(0);
+    expect(workerCreations).toBe(1);
+    expect(loaded.activeCompiled?.ir.numericFields.wave_g).toBeCloseTo(0.5, 6);
 
-    await session.applySource('title=Editor Load No Worker 2\nwave_g=0.75\n');
+    await session.applySource('title=Editor Load Worker 2\nwave_g=0.75\n');
     expect(workerCreations).toBe(1);
 
     session.dispose();
@@ -256,8 +262,11 @@ describe('milkdrop editor session', () => {
       } as MessageEvent<unknown>),
     );
 
-    const resolvedState = await pendingDraft;
-    expect(resolvedState.activeCompiled?.title).toBe('Stale Commit B');
+    // The superseded draft commit resolves with whatever state was current
+    // when it was discarded — with loadPreset compiling through the (hung)
+    // worker too, that can be the pre-load snapshot. What matters is that
+    // the stale reply never overwrites the newer preset in session state.
+    await pendingDraft;
     const finalState = session.getState();
     expect(finalState.activeCompiled?.title).toBe('Stale Commit B');
     if (!finalState.activeCompiled) {
@@ -657,11 +666,14 @@ describe('milkdrop editor session under concurrent load', () => {
       origin: 'bundled',
     });
 
-    for (let attempt = 0; attempt < 40 && !rig.requests.length; attempt++) {
+    // Both the draft edit and the preset load compile through the worker;
+    // each request must stay attributed to the preset it started on.
+    for (let attempt = 0; attempt < 40 && rig.requests.length < 2; attempt++) {
       await tick();
     }
-    expect(rig.requests).toHaveLength(1);
+    expect(rig.requests).toHaveLength(2);
     expect(rig.requests[0]?.preset.id).toBe('preset-a');
+    expect(rig.requests[1]?.preset.id).toBe('preset-b');
 
     rig.respondToAll();
     await settleWithin(

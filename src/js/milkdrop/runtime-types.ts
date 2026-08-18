@@ -225,5 +225,6 @@ export interface MilkdropEditorCompiler {
   compile(
     source: string,
     preset: Partial<MilkdropPresetSource>,
+    options?: { cacheCompile?: boolean },
   ): Promise<MilkdropCompiledPreset>;
 }

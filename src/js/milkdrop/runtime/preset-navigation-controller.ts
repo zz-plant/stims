@@ -1,5 +1,6 @@
 import { notePresetShown } from '../../core/services/preset-telemetry';
 import { compileMilkdropPresetSource } from '../compiler';
+import { prewarmMilkdropPrograms } from '../expression-jit.ts';
 import type {
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
@@ -240,6 +241,19 @@ export function createMilkdropPresetNavigationController({
       }
 
       rememberLastPreset(id);
+
+      // Pre-warm the equation JIT before the swap: otherwise every
+      // `new Function` parse lands in the first rendered frame of the new
+      // preset — one long task that visibly hitches playback mid-blend.
+      trace.step('jitPrewarm');
+      await prewarmMilkdropPrograms(
+        nextCompiled.ir,
+        () => requestRevision !== currentLoadRequestRevision,
+      );
+      if (requestRevision !== currentLoadRequestRevision) {
+        trace.done('superseded');
+        return;
+      }
 
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);

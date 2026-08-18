@@ -208,7 +208,7 @@ export function createMilkdropEditorSession({
     };
 
     const fromWorker = activeLease.compiler
-      .compile(source, meta)
+      .compile(source, meta, cacheCompile ? { cacheCompile: true } : undefined)
       .catch((error): typeof WORKER_FAILED => {
         editorWarn(meta.id, 'worker compilation failed', error);
         return WORKER_FAILED;
@@ -322,10 +322,14 @@ export function createMilkdropEditorSession({
 
     async loadPreset(source) {
       sourceMeta = source;
-      editorLog(source.id, 'loadPreset (main-thread compile, mark clean)');
+      // Compile in the worker: preset loads happen mid-playback, and a heavy
+      // preset compiled on the main thread stalls the running visual for
+      // hundreds of ms to seconds (measured on a Galaxy S22). The worker
+      // path falls back to a main-thread compile on spawn failure/timeout.
+      editorLog(source.id, 'loadPreset (worker compile, mark clean)');
       return commit(source.raw, {
         markClean: true,
-        useWorker: false,
+        useWorker: true,
         cacheCompile: true,
       });
     },
