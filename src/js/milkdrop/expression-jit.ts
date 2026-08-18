@@ -74,8 +74,11 @@ function compileNode(
       return String(node.value);
     case 'identifier': {
       const name = node.name.toLowerCase();
-      if (name === 'pi') return 'Math.PI';
-      if (name === 'e') return 'Math.E';
+      // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
+      // variables and preset assignments to them must stick (see
+      // expression.ts identifier resolution for the rationale).
+      if (name === 'pi') return '(e["pi"] ?? Math.PI)';
+      if (name === 'e') return '(e["e"] ?? Math.E)';
       const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
       const aliased = aliasMap[normalized] || normalized;
       if (aliased !== node.name) {

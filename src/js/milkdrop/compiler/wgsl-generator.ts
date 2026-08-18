@@ -7,6 +7,7 @@ import {
   MILKDROP_WGSL_SIGNAL_ALIAS_MAP,
   MILKDROP_WGSL_SIGNAL_FIELDS,
 } from '../wgsl-signal-layout.ts';
+import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from './wgsl-eel-helpers.ts';
 
 const WGSL_IDENTIFIER_MAP = new Map<string, string>([
   ['pi', '3.141592653589793'],
@@ -227,7 +228,12 @@ function toWgslIdentifier(name: string) {
   );
 }
 
-function buildWgslExpression(expression: MilkdropExpressionNode): string {
+const NO_OVERWRITTEN_CONSTANTS: ReadonlySet<string> = new Set();
+
+function buildWgslExpression(
+  expression: MilkdropExpressionNode,
+  overwrittenConstants: ReadonlySet<string> = NO_OVERWRITTEN_CONSTANTS,
+): string {
   switch (expression.type) {
     case 'literal':
       return Number.isFinite(expression.value)
@@ -238,6 +244,13 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
       const name = expression.name.toLowerCase();
       const mapped = WGSL_IDENTIFIER_MAP.get(name);
       if (mapped !== undefined) {
+        // pi/e are ordinary prepopulated EEL variables; a program that
+        // assigns one reads it back from state (the CPU tiers and the field
+        // planner's isOverwritableConstant model the same thing). The inline
+        // constant is only for programs that never write it.
+        if (overwrittenConstants.has(name)) {
+          return `state.${escapeWgslFieldName(name)}`;
+        }
         return mapped;
       }
       if (name === 'rand') {
@@ -254,7 +267,10 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
     }
 
     case 'unary': {
-      const operand = buildWgslExpression(expression.operand);
+      const operand = buildWgslExpression(
+        expression.operand,
+        overwrittenConstants,
+      );
       switch (expression.operator) {
         case '+':
           return operand;
@@ -267,8 +283,8 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
     }
 
     case 'binary': {
-      const left = buildWgslExpression(expression.left);
-      const right = buildWgslExpression(expression.right);
+      const left = buildWgslExpression(expression.left, overwrittenConstants);
+      const right = buildWgslExpression(expression.right, overwrittenConstants);
       switch (expression.operator) {
         case '+':
           return `(${left} + ${right})`;
@@ -277,11 +293,19 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '*':
           return `(${left} * ${right})`;
         case '/':
-          return `select(0.0f, (${left}) / (${right}), abs(${right}) > 0.000001f)`;
+          // milkdropDiv semantics: exact-zero guard only. A tolerance guard
+          // (abs > 1e-6) zeroed divisions by tiny-but-nonzero values that the
+          // CPU tiers compute as large finite results.
+          return `milkdropDiv(${left}, ${right})`;
         case '%':
           return `milkdropIntMod(${left}, ${right})`;
         case '^':
-          return `pow(max(0.0f, ${left}), ${right})`;
+          // Raw pow + finite clamp, matching the CPU tiers (l ** r with
+          // Number.isFinite fallback to 0) and the field-program WGSL emitter.
+          // The old max(0, base) clamp turned (-2)^0 into pow(0,0)=1 by luck
+          // but every other negative-base case into pow(0,y), diverging from
+          // both CPU and the other GPU tier.
+          return `milkdropPow(${left}, ${right})`;
         case '|':
           return `f32(i32(${left}) | i32(${right}))`;
         case '&':
@@ -307,7 +331,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
     }
 
     case 'call': {
-      const args = expression.args.map(buildWgslExpression);
+      const args = expression.args.map((argument) =>
+        buildWgslExpression(argument, overwrittenConstants),
+      );
       const name = expression.name.toLowerCase();
 
       switch (name) {
@@ -326,9 +352,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'abs':
           return `abs(${args[0] ?? '0.0f'})`;
         case 'sqrt':
-          return `sqrt(max(0.0f, ${args[0] ?? '0.0f'}))`;
+          return `milkdropSqrt(${args[0] ?? '0.0f'})`;
         case 'pow':
-          return `pow(max(0.0f, ${args[0] ?? '0.0f'}), ${args[1] ?? '1.0f'})`;
+          return `milkdropPow(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
         case 'mod':
         case 'fmod': {
           const a = args[0] ?? '0.0f';
@@ -367,9 +393,11 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `smoothstep(${edge0}, ${edge1}, ${value})`;
         }
         case 'log':
-          return `log(max(0.000001f, ${args[0] ?? '1.0f'}))`;
+          // max(0)+finite-clamp (log(0) -> 0), matching the CPU tiers; the
+          // old 1e-6 floor returned -13.8 where every other tier returns 0.
+          return `milkdropLog(${args[0] ?? '0.0f'})`;
         case 'log10':
-          return `(log(max(0.000001f, ${args[0] ?? '1.0f'})) * 0.4342944819f)`;
+          return `milkdropLog10(${args[0] ?? '0.0f'})`;
         case 'exp':
           return `exp(${args[0] ?? '0.0f'})`;
         case 'sigmoid': {
@@ -406,7 +434,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'below':
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) < (${args[1] ?? '0.0f'}))`;
         case 'equal':
-          return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) == (${args[1] ?? '0.0f'}))`;
+          // equal() is close-factor equality (MILKDROP_EEL_CLOSE_FACTOR),
+          // like the interpreter/JIT — only the == operator compares exactly.
+          return `milkdropEqual(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
         case 'megabuf':
         case 'gmegabuf':
           // Megabuffer programs are classified for CPU fallback. Returning a
@@ -675,18 +705,33 @@ function buildWgslProgram(
 
   const randomFn = usesRandom ? WGSL_RANDOM_FN : '';
 
+  const overwrittenConstants = new Set<string>();
+  for (const statement of statements) {
+    const target = statement.target.toLowerCase();
+    if (WGSL_IDENTIFIER_MAP.has(target)) {
+      overwrittenConstants.add(target);
+    }
+  }
+
   const statementLines = statements.map((statement) => {
     const target = statement.target.toLowerCase();
-    const expression = buildWgslExpression(statement.expression);
+    const expression = buildWgslExpression(
+      statement.expression,
+      overwrittenConstants,
+    );
     // Registers and ordinary fields are both plain members of VmState, so they
     // are written the same way; the branch that used to distinguish them
     // returned identical strings.
-    return `  state.${escapeWgslFieldName(target)} = ${expression};`;
+    // milkdropFinite mirrors the per-statement store clamp both CPU tiers
+    // apply (the JIT's `_v = ...; Number.isFinite(_v) ? _v : 0`): a NaN/Inf
+    // intermediate must not persist into VM state.
+    return `  state.${escapeWgslFieldName(target)} = milkdropFinite(${expression});`;
   });
 
   const body = [
     `@group(0) @binding(0) var<storage, read_write> state: VmState;`,
     `@group(0) @binding(1) var<storage, read> signals: VmSignals;`,
+    MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE,
     WGSL_MOD_FNS,
     randomFn,
     `@compute @workgroup_size(1)`,
@@ -766,6 +811,9 @@ export function compileProgramToWgsl(
   };
 }
 
-export function buildWgslExpressionString(expression: MilkdropExpressionNode) {
-  return buildWgslExpression(expression);
+export function buildWgslExpressionString(
+  expression: MilkdropExpressionNode,
+  overwrittenConstants: ReadonlySet<string> = NO_OVERWRITTEN_CONSTANTS,
+) {
+  return buildWgslExpression(expression, overwrittenConstants);
 }

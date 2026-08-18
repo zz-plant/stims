@@ -1,6 +1,7 @@
 import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
+import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from '../compiler/wgsl-eel-helpers';
 import {
   MILKDROP_CUSTOM_WAVE_Z,
   MILKDROP_WAVE_Z,
@@ -73,31 +74,7 @@ type TslUniformNodes<T> = { [K in keyof T]: TslNode };
 // same constant, and the tier-differential census caught these helpers using
 // a tenfold-tighter 0.000001, which flipped boolean results near the
 // threshold between backends.
-export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
-  fn milkdropBool(value: f32) -> f32 {
-    return select(0.0, 1.0, abs(value) > 0.00001);
-  }
-
-  fn milkdropDiv(left: f32, right: f32) -> f32 {
-    return select(left / right, 0.0, right == 0.0);
-  }
-
-  fn milkdropFinite(value: f32) -> f32 {
-    return select(0.0, value, abs(value) < 3.402823e38);
-  }
-
-  fn milkdropSqrt(value: f32) -> f32 {
-    return sqrt(max(value, 0.0));
-  }
-
-  fn milkdropAsin(value: f32) -> f32 {
-    return asin(clamp(value, -1.0, 1.0));
-  }
-
-  fn milkdropAcos(value: f32) -> f32 {
-    return acos(clamp(value, -1.0, 1.0));
-  }
-
+export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `${MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE}
   fn milkdropIntMod(left: f32, right: f32) -> f32 {
     let li = trunc(left);
     let ri = trunc(right);
@@ -108,52 +85,6 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
     return select(m, 0.0 * sign(left), m == 0.0);
   }
 
-  fn milkdropPow(base: f32, exponent: f32) -> f32 {
-    let v = pow(base, exponent);
-    return select(0.0, v, abs(v) < 3.402823e38);
-  }
-
-  fn milkdropLog(value: f32) -> f32 {
-    let v = log(max(value, 0.0));
-    return select(0.0, v, abs(v) < 3.402823e38);
-  }
-
-  fn milkdropLog10(value: f32) -> f32 {
-    return milkdropLog(value) * 0.4342944819032518;
-  }
-
-  fn milkdropBitOr(left: f32, right: f32) -> f32 {
-    return f32(i32(left) | i32(right));
-  }
-
-  fn milkdropBitAnd(left: f32, right: f32) -> f32 {
-    return f32(i32(left) & i32(right));
-  }
-
-  fn milkdropFrac(value: f32) -> f32 {
-    return value - floor(value);
-  }
-
-  fn milkdropSigmoid(value: f32, slope: f32) -> f32 {
-    return 1.0 / (1.0 + exp(-value * slope));
-  }
-
-  fn milkdropIf(condition: f32, whenTrue: f32, whenFalse: f32) -> f32 {
-    return select(whenFalse, whenTrue, abs(condition) > 0.00001);
-  }
-
-  fn milkdropAbove(left: f32, right: f32) -> f32 {
-    return select(0.0, 1.0, left > right);
-  }
-
-  fn milkdropBelow(left: f32, right: f32) -> f32 {
-    return select(0.0, 1.0, left < right);
-  }
-
-  fn milkdropEqual(left: f32, right: f32) -> f32 {
-    return select(0.0, 1.0, abs(left - right) <= 0.00001);
-  }
-
   fn milkdropMod(left: f32, right: f32) -> f32 {
     // Truncated remainder (sign follows left), matching HLSL fmod — the
     // semantics MilkDrop shader code was written against and what the CPU
@@ -162,10 +93,6 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
     let m = select(left - right * trunc(left / right), 0.0, abs(right) <= 0.00001);
     // Dividend-signed zero, matching C fmod and the CPU tier's JS %.
     return select(m, 0.0 * sign(left), m == 0.0);
-  }
-
-  fn milkdropRand(seed: f32, time: f32) -> f32 {
-    return milkdropFrac(sin(dot(vec2<f32>(seed, time), vec2<f32>(12.9898, 78.233))) * 43758.5453);
   }
 
   fn milkdropNormalizeTransformCenterX(value: f32) -> f32 {
