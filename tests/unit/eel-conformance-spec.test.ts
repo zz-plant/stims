@@ -125,9 +125,9 @@ const SPEC: SpecCase[] = [
     expected: { x: 0 },
   },
   {
-    name: 'negative base with integral exponent is real on CPU',
-    // Known accepted GPU divergence: WGSL pow() is NaN here and clamps to 0
-    // (see compiler/wgsl-eel-helpers.ts header).
+    name: 'negative base with integral exponent is real',
+    // All tiers: milkdropPow is sign-decomposed on the GPU to match JS **
+    // (verified by lab:gpu-differential).
     program: ['x = (-2) ^ 2'],
     expected: { x: 4 },
   },

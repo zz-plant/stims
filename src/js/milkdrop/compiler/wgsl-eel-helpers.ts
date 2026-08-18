@@ -17,10 +17,10 @@
  * threshold is MILKDROP_EEL_CLOSE_FACTOR (0.00001) everywhere — a
  * tenfold-tighter constant here has already caused visible cross-tier flips.
  *
- * Known, accepted CPU/GPU divergence: pow with a negative base and integral
- * exponent is finite on the CPU ((-2)^2 = 4) but NaN in WGSL pow(), which
- * milkdropPow clamps to 0. No corpus preset has been observed to depend on
- * it; if one appears, the fix is an explicit sign-decomposed pow here.
+ * milkdropPow is sign-decomposed to match JS ** exactly (0^0 = 1, negative
+ * bases real for integral exponents) — the real-GPU differential
+ * (lab:gpu-differential) showed naive WGSL pow() diverging constantly on
+ * boolean-fed pow idioms, so this is NOT an acceptable divergence.
  */
 export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   fn milkdropBool(value: f32) -> f32 {
@@ -48,7 +48,29 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   }
 
   fn milkdropPow(base: f32, exponent: f32) -> f32 {
-    let v = pow(base, exponent);
+    // JS ** semantics (the CPU reference): x^0 = 1 including 0^0 and
+    // (-x)^0; a negative base with an integral exponent is real with the
+    // parity sign; negative base with fractional exponent is NaN, which the
+    // CPU's per-op finite clamp turns into 0. Naive WGSL pow() is NaN for
+    // every negative base — the real-GPU differential caught boolean-fed
+    // pow idioms (above(..) ^ above(..)) flipping 1 -> 0 constantly.
+    if (exponent == 0.0) {
+      return 1.0;
+    }
+    if (base == 0.0) {
+      // 0^positive = 0; 0^negative = +Inf, which the finite clamp zeroes.
+      return 0.0;
+    }
+    var v: f32;
+    if (base < 0.0) {
+      if (exponent != trunc(exponent)) {
+        return 0.0;
+      }
+      let magnitude = pow(-base, exponent);
+      v = select(magnitude, -magnitude, abs(trunc(exponent)) % 2.0 == 1.0);
+    } else {
+      v = pow(base, exponent);
+    }
     return select(0.0, v, abs(v) < 3.402823e38);
   }
 
