@@ -1094,6 +1094,34 @@ body[data-page="workspace"][data-live="true"] {
     line-height: 1.6;
   }
 
+  /* Signal trace under the wordmark: the doubled 600-unit strip drifts one
+     150-unit period (-25% of its own width) and loops seamlessly. */
+  .stims-shell__launch-trace {
+    width: min(21rem, 72vw);
+    height: 34px;
+    overflow: hidden;
+    margin-top: -4px;
+  }
+
+  .stims-shell__launch-trace svg {
+    display: block;
+    width: 200%;
+    height: 100%;
+    animation: stims-launch-trace-drift 8s linear infinite;
+  }
+
+  @keyframes stims-launch-trace-drift {
+    to {
+      transform: translateX(-25%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__launch-trace svg {
+      animation: none;
+    }
+  }
+
   .stims-shell__launch-resume-art {
     width: min(16rem, 100%);
   }
