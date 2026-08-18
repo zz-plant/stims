@@ -60,6 +60,8 @@ import type {
   MilkdropShaderProgramPayload,
 } from './types';
 
+const BLUR_PASS_RADII = [2, 4, 8] as const;
+
 const CACHED_BLUR_RANGES = [
   { scale: 1, bias: 0 },
   { scale: 1, bias: 0 },
@@ -2077,7 +2079,7 @@ class SharedMilkdropFeedbackManager
     for (let i = 0; i < 3; i++) {
       const hTarget = this.blurHTargets[i];
       const vTarget = this.blurTargets[i];
-      const radius = [2, 4, 8][i];
+      const radius = BLUR_PASS_RADII[i];
 
       this.blurHMaterial.uniforms.sourceTex.value = srcTex;
       this.blurHMaterial.uniforms.texelSize.value.set(1 / srcW, 1 / srcH);
