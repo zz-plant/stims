@@ -327,7 +327,6 @@ export function createToyRuntime({
     canvas,
   });
   let analyser: FrequencyAnalyser | null = null;
-  let smoothedBassLevel = 0;
   let lastFrameTime = 0;
   const pluginManager = createPluginManager(plugins);
   let runtime: ToyRuntimeInstance | null = null;
@@ -545,11 +544,6 @@ export function createToyRuntime({
         frameState.input = inputController.getState();
         frameState.performance = performanceController.getSettings();
         pluginManager.update(frameState);
-
-        if (typeof window !== 'undefined' && analyser) {
-          const energy = analyser.getMultiBandEnergy(frameState.frequencyData);
-          smoothedBassLevel = smoothedBassLevel * 0.84 + energy.bass * 0.16;
-        }
       },
       resolveToyAudioOptions(request, {
         fftSize: audio?.fftSize,

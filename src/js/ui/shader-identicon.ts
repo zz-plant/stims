@@ -280,9 +280,13 @@ export class ShaderIdenticonRenderer {
     const mode = state.mode === '3d-polyhedron' ? 1.0 : 0.0;
 
     const { gl, canvas: glCanvas, program } = shared;
-    if (glCanvas.width !== width || glCanvas.height !== height) {
-      glCanvas.width = width;
-      glCanvas.height = height;
+    // Grow-only: the canvas is shared by every identicon on screen, and
+    // several render at different sizes on interleaved rAF ticks. An exact
+    // size match would reallocate the drawing buffer multiple times per
+    // frame, so keep the largest size seen and draw into a sub-viewport.
+    if (glCanvas.width < width || glCanvas.height < height) {
+      glCanvas.width = Math.max(glCanvas.width, width);
+      glCanvas.height = Math.max(glCanvas.height, height);
     }
 
     gl.viewport(0, 0, width, height);
@@ -303,8 +307,20 @@ export class ShaderIdenticonRenderer {
 
     // Blit synchronously in the same task as the draw — once control returns
     // to the browser, the shared drawing buffer may be cleared.
+    // The viewport sits at the bottom-left of the (possibly larger) shared
+    // buffer, which is the top of the canvas' flipped coordinate space.
     ctx2d.clearRect(0, 0, width, height);
-    ctx2d.drawImage(glCanvas, 0, 0, width, height, 0, 0, width, height);
+    ctx2d.drawImage(
+      glCanvas,
+      0,
+      glCanvas.height - height,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+    );
   }
 
   public destroy() {

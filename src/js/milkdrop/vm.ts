@@ -308,13 +308,34 @@ class MilkdropPresetVM implements MilkdropVM {
     );
   }
 
+  private cachedEffectivePlan: ReturnType<
+    typeof applyMilkdropWebGpuOptimizationFlags
+  > | null = null;
+  private cachedEffectivePlanSource: unknown = null;
+  private cachedEffectivePlanFlags: MilkdropWebGpuOptimizationFlags | null =
+    null;
+
   private getEffectiveWebGpuDescriptorPlan() {
-    return this.renderBackend === 'webgpu'
-      ? applyMilkdropWebGpuOptimizationFlags(
-          this.preset.ir.compatibility.gpuDescriptorPlans.webgpu,
-          this.webgpuOptimizationFlags,
-        )
-      : null;
+    if (this.renderBackend !== 'webgpu') {
+      return null;
+    }
+    // Called several times per frame (waves, mesh, motion vectors, and once
+    // per custom wave); applyMilkdropWebGpuOptimizationFlags allocates a new
+    // plan each call, so memoize on its two inputs. The flags object is
+    // cloned on every set, so identity is a valid change signal for both.
+    const source = this.preset.ir.compatibility.gpuDescriptorPlans.webgpu;
+    if (
+      this.cachedEffectivePlanSource !== source ||
+      this.cachedEffectivePlanFlags !== this.webgpuOptimizationFlags
+    ) {
+      this.cachedEffectivePlan = applyMilkdropWebGpuOptimizationFlags(
+        source,
+        this.webgpuOptimizationFlags,
+      );
+      this.cachedEffectivePlanSource = source;
+      this.cachedEffectivePlanFlags = this.webgpuOptimizationFlags;
+    }
+    return this.cachedEffectivePlan;
   }
 
   reset() {

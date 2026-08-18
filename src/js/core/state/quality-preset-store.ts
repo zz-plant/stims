@@ -89,8 +89,31 @@ let activeQualityPreset: QualityPreset | null = null;
 let activeQualityPresetStorageKey: string | null = null;
 const qualitySubscribers = new Set<QualitySubscriber>();
 
+// The stored id is read from the frame loop (via getActiveQualityPreset →
+// power-state), so it must not hit localStorage per call: synchronous storage
+// reads block the main thread, worst on the low-end devices this preset
+// exists to protect. All in-module writes update the cache; cross-tab writes
+// arrive via the window 'storage' event.
+const storedPresetIdCache = new Map<string, string | null>();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === null) {
+      storedPresetIdCache.clear();
+    } else if (storedPresetIdCache.has(event.key)) {
+      storedPresetIdCache.set(event.key, event.newValue);
+    }
+  });
+}
+
 function getStoredPresetId(storageKey: string) {
-  return getBrowserStorage()?.getItem(storageKey) ?? null;
+  const cached = storedPresetIdCache.get(storageKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const stored = getBrowserStorage()?.getItem(storageKey) ?? null;
+  storedPresetIdCache.set(storageKey, stored);
+  return stored;
 }
 
 export function hasStoredQualityPreset(storageKey = QUALITY_STORAGE_KEY) {
@@ -199,6 +222,7 @@ export function setQualityPresetById(
   }
 
   getBrowserStorage()?.setItem(storageKey, preset.id);
+  storedPresetIdCache.set(storageKey, preset.id);
   activeQualityPreset = preset;
   activeQualityPresetStorageKey = storageKey;
   qualitySubscribers.forEach((subscriber) => subscriber(preset));
@@ -250,6 +274,7 @@ export function markQualityPresetAsCustom({
   storageKey?: string;
 } = {}): QualityPreset {
   getBrowserStorage()?.setItem(storageKey, CUSTOM_QUALITY_PRESET.id);
+  storedPresetIdCache.set(storageKey, CUSTOM_QUALITY_PRESET.id);
   activeQualityPreset = CUSTOM_QUALITY_PRESET;
   activeQualityPresetStorageKey = storageKey;
   qualitySubscribers.forEach((subscriber) => subscriber(CUSTOM_QUALITY_PRESET));
@@ -259,5 +284,6 @@ export function markQualityPresetAsCustom({
 export function resetQualityPresetState() {
   activeQualityPreset = null;
   activeQualityPresetStorageKey = null;
+  storedPresetIdCache.clear();
   qualitySubscribers.clear();
 }

@@ -494,6 +494,14 @@ export class FrequencyAnalyser {
   }
 
   getFrequencyData() {
+    // With a worklet the message port already keeps frequencyData,
+    // timeDomainData, and the spectral snapshot fresh; running the analyser
+    // path too (possible after an automatic upgrade, which keeps the
+    // AnalyserNode alive) would duplicate the full time-domain read and the
+    // main-thread Meyda FFT every frame.
+    if (this.workletNode) {
+      return this.frequencyData;
+    }
     this.updateTimeDomainData();
     if (this.frequencyData.length > 0) {
       if (

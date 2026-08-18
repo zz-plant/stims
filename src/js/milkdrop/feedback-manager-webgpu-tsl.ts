@@ -2547,15 +2547,36 @@ function applyPostAfterimageNode(
   });
 }
 
-function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
-  return [
-    state.shaderExecution,
-    state.shaderPrograms.warp?.source ?? '',
-    state.shaderPrograms.comp?.source ?? '',
-    state.perPixelPrograms?.statements
-      .map((statement) => statement.source)
-      .join('\u001e') ?? '',
-  ].join('\u001f');
+/**
+ * Identity snapshot of the inputs that force a node-graph rebuild. The state
+ * wrapper is rebuilt every frame, but the program payloads and statement
+ * arrays inside it are stable per compiled preset, so reference equality is
+ * an exact change signal — the previous multi-KB string key concatenated the
+ * full shader sources every frame just to compare them.
+ */
+type CompositeStateIdentity = {
+  shaderExecution: MilkdropFeedbackCompositeState['shaderExecution'];
+  warp: unknown;
+  comp: unknown;
+  perPixelStatements: unknown;
+};
+
+// ~2s at 60fps: long enough to ride out beat-driven oscillation of the
+// scene-resolution predicates, short enough to reclaim the cheaper feedback
+// resolution soon after a preset stops needing the scene path.
+const WEBGPU_SCENE_RESOLUTION_RELEASE_FRAMES = 120;
+
+function compositeStateIdentityChanged(
+  previous: CompositeStateIdentity | null,
+  state: MilkdropFeedbackCompositeState,
+) {
+  return (
+    !previous ||
+    previous.shaderExecution !== state.shaderExecution ||
+    previous.warp !== state.shaderPrograms.warp ||
+    previous.comp !== state.shaderPrograms.comp ||
+    previous.perPixelStatements !== (state.perPixelPrograms?.statements ?? null)
+  );
 }
 
 class WebGPUMilkdropFeedbackManager
@@ -2583,7 +2604,8 @@ class WebGPUMilkdropFeedbackManager
   readonly blurScene = new Scene();
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: Record<string, Texture>;
-  currentCompositeKey = '';
+  compositeIdentity: CompositeStateIdentity | null = null;
+  sceneResolutionReleaseCountdown = 0;
   currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   private savedFrameTarget: RenderTarget | null = null;
@@ -2758,9 +2780,13 @@ class WebGPUMilkdropFeedbackManager
     const blurShaderRanges = resolveMilkdropBlurShaderRanges(
       state.perPixelVariables,
     );
-    const nextCompositeKey = buildCompositeStateKey(state);
-    if (nextCompositeKey !== this.currentCompositeKey) {
-      this.currentCompositeKey = nextCompositeKey;
+    if (compositeStateIdentityChanged(this.compositeIdentity, state)) {
+      this.compositeIdentity = {
+        shaderExecution: state.shaderExecution,
+        warp: state.shaderPrograms.warp,
+        comp: state.shaderPrograms.comp,
+        perPixelStatements: state.perPixelPrograms?.statements ?? null,
+      };
       // MilkDrop rolls rand_preset once per preset load; shader-program
       // changes are a close-enough signal for a fresh draw.
       const randUniform = this.compositeMaterial.uniforms.rand_preset;
@@ -2803,7 +2829,22 @@ class WebGPUMilkdropFeedbackManager
       state.invert > 0.5 ||
       (state.redBlueStereo ?? 0) > 0.5 ||
       Math.abs(state.gammaAdj - 1) > 0.0001;
-    const nextResolutionScale = needsSceneResolution
+    // Several of the inputs above (zoom, brighten, solarize, gammaAdj, …) are
+    // per-frame MilkDrop variables that presets animate across the
+    // thresholds, and a scale change triggers resize() — a destroy/recreate
+    // of every render target. Latch upward immediately (correctness needs
+    // the scene-resolution path the frame it's requested) but only release
+    // after the condition has been continuously false for a cooldown, so a
+    // beat-driven preset can't thrash target reallocation at beat rate.
+    if (needsSceneResolution) {
+      this.sceneResolutionReleaseCountdown =
+        WEBGPU_SCENE_RESOLUTION_RELEASE_FRAMES;
+    } else if (this.sceneResolutionReleaseCountdown > 0) {
+      this.sceneResolutionReleaseCountdown -= 1;
+    }
+    const holdSceneResolution =
+      needsSceneResolution || this.sceneResolutionReleaseCountdown > 0;
+    const nextResolutionScale = holdSceneResolution
       ? this.sceneResolutionScale
       : this.feedbackResolutionScale *
         this.adaptiveFeedbackResolutionMultiplier;
