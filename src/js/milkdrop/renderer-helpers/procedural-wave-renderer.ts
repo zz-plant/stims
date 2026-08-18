@@ -233,10 +233,14 @@ function resampleScalarValues(values: ArrayLike<number>, targetLength: number) {
   return resampled;
 }
 
-export function syncProceduralWaveObject(
+/**
+ * Ensures a Line object with the correct geometry/material for a procedural
+ * wave exists, creating or replacing either as needed. Does not touch
+ * per-frame attribute data — call fillProceduralWaveAttributes for that.
+ */
+function ensureProceduralWaveObject(
   object: Line | undefined,
   wave: MilkdropProceduralWaveVisual,
-  interaction?: MilkdropGpuInteractionTransform | null,
 ) {
   const next =
     object ??
@@ -262,13 +266,26 @@ export function syncProceduralWaveObject(
     }
     next.geometry = createProceduralWaveObjectGeometry(renderCount);
   }
+  return next;
+}
 
+/**
+ * Computes and uploads the per-frame sampleT/sampleData/sampleMisc
+ * attributes for a procedural wave's current-frame data. Returns the
+ * computed sampleData channels so callers that also need a
+ * previous-frame snapshot (e.g. syncInterpolatedProceduralWaveObject)
+ * can reuse them instead of recomputing identical values.
+ */
+function fillProceduralWaveAttributes(
+  next: Line,
+  wave: MilkdropProceduralWaveVisual,
+) {
   setOrUpdateScalarAttribute(
     next.geometry,
     'sampleT',
     buildProceduralWaveSampleT(wave.samples.length, wave.closed),
   );
-  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
+  const sampleDataChannels = [
     buildProceduralWaveAttributeValues(wave.samples, wave.closed),
     buildProceduralWaveAttributeValues(
       wave.samples,
@@ -285,34 +302,37 @@ export function syncProceduralWaveObject(
       wave.closed,
       PROJECTM_STEREO_OFFSET * 3,
     ),
+  ];
+  setOrUpdateVectorAttribute(next.geometry, 'sampleData', sampleDataChannels);
+  const velocityChannel = buildProceduralWaveAttributeValues(
+    wave.velocities,
+    wave.closed,
+  );
+  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
+    buildProceduralWaveParity(wave.samples.length, wave.closed),
+    velocityChannel,
+    velocityChannel,
   ]);
+  return { sampleDataChannels, velocityChannel };
+}
+
+export function syncProceduralWaveObject(
+  object: Line | undefined,
+  wave: MilkdropProceduralWaveVisual,
+  interaction?: MilkdropGpuInteractionTransform | null,
+) {
+  const next = ensureProceduralWaveObject(object, wave);
+  const { sampleDataChannels } = fillProceduralWaveAttributes(next, wave);
   // "previous" is the same snapshot as "current" here — this sync path
   // always drives blendMix to 1 below, so mix(previous, current, 1) reduces
   // to current regardless. syncInterpolatedProceduralWaveObject overwrites
   // this with a genuine previous-frame snapshot and a real blendMix.
-  setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
-    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET,
-    ),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 2,
-    ),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 3,
-    ),
-  ]);
-  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
-    buildProceduralWaveParity(wave.samples.length, wave.closed),
-    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-  ]);
+  // Reuse the arrays computed above instead of recomputing identical values.
+  setOrUpdateVectorAttribute(
+    next.geometry,
+    'previousSampleData',
+    sampleDataChannels,
+  );
 
   const material = next.material as ShaderMaterial;
   material.uniforms.mode.value = wave.mode;
@@ -458,7 +478,11 @@ export function syncInterpolatedProceduralWaveObject(
   alphaMultiplier: number,
   interaction: MilkdropGpuInteractionTransform | null | undefined,
 ) {
-  const next = syncProceduralWaveObject(object, currentWave, interaction);
+  const next = ensureProceduralWaveObject(object, currentWave);
+  const { sampleDataChannels, velocityChannel } = fillProceduralWaveAttributes(
+    next,
+    currentWave,
+  );
   const previousSamples = resampleScalarValues(
     previousWave.samples,
     currentWave.samples.length,
@@ -467,24 +491,10 @@ export function syncInterpolatedProceduralWaveObject(
     previousWave.velocities,
     currentWave.velocities.length,
   );
-  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
-    buildProceduralWaveAttributeValues(currentWave.samples, currentWave.closed),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET,
-    ),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET * 2,
-    ),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET * 3,
-    ),
-  ]);
+  // sampleData/sampleMisc's "current" channels were already computed and
+  // uploaded by fillProceduralWaveAttributes above; only previousSampleData
+  // and the previous-velocity slot of sampleMisc are genuinely new here.
+  void sampleDataChannels;
   setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
     buildProceduralWaveAttributeValues(previousSamples, currentWave.closed),
     buildProceduralWaveAttributeValues(
@@ -505,13 +515,18 @@ export function syncInterpolatedProceduralWaveObject(
   ]);
   setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
     buildProceduralWaveParity(currentWave.samples.length, currentWave.closed),
-    buildProceduralWaveAttributeValues(
-      currentWave.velocities,
-      currentWave.closed,
-    ),
+    velocityChannel,
     buildProceduralWaveAttributeValues(previousVelocities, currentWave.closed),
   ]);
   const material = next.material as ShaderMaterial;
+  material.uniforms.mode.value = currentWave.mode;
+  material.uniforms.centerX.value = currentWave.centerX;
+  material.uniforms.centerY.value = currentWave.centerY;
+  material.uniforms.scale.value = currentWave.scale;
+  material.uniforms.mystery.value = currentWave.mystery;
+  material.uniforms.signalTime.value = currentWave.time;
+  material.uniforms.beatPulse.value = currentWave.beatPulse;
+  material.uniforms.trebleAtt.value = currentWave.trebleAtt;
   material.uniforms.previousCenterX.value = previousWave.centerX;
   material.uniforms.previousCenterY.value = previousWave.centerY;
   material.uniforms.previousScale.value = previousWave.scale;
