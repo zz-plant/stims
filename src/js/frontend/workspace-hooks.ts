@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { createLogger } from '../core/logger.ts';
+import { noteSubstitution } from '../core/services/preset-telemetry.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
@@ -488,10 +489,15 @@ export function useWorkspaceSessionState({
 
       const engine = engineRef.current;
       if (!engine || requestedPresetId === FIRST_RUN_PRESET_ID) {
+        noteSubstitution(
+          'preset-load-failed',
+          `${requestedPresetId}: ${message}`,
+        );
         setStatusMessage(message);
         return;
       }
 
+      noteSubstitution('fallback-preset', `${requestedPresetId}: ${message}`);
       setStatusMessage(`${message} Showing another preset instead.`);
       void engine.loadPreset(FIRST_RUN_PRESET_ID).catch(() => {
         log.log(`fallback preset ${FIRST_RUN_PRESET_ID} also failed`);

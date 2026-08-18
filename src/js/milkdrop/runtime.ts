@@ -6,6 +6,7 @@ import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
 } from '../core/services/adaptive-quality-controller.ts';
+import { noteSubstitution } from '../core/services/preset-telemetry.ts';
 import { subscribeToRendererLifecycle } from '../core/services/render-service.ts';
 import {
   type QualityPreset,
@@ -56,9 +57,9 @@ import { createMilkdropPresetPreviewService } from './runtime/preset-preview-ser
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
-import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
+import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
@@ -401,6 +402,7 @@ export function createMilkdropExperience({
      * and would make the failover guard silently drop the request. */
     backend?: 'webgl' | 'webgpu';
   }) => {
+    noteSubstitution('backend-fallback', `${presetId}: ${reason}`);
     backendFailover.trigger({
       presetId,
       reason,
