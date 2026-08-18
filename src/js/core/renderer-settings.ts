@@ -37,7 +37,6 @@ export function getRendererBackendMaxPixelRatioCap({
   platformFamily?: 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'other';
 }) {
   if (isMobile) {
-    const isLowPower = getDevicePerformanceProfile().lowPower;
     if (
       browserFamily === 'safari' ||
       browserFamily === 'chrome' ||
@@ -46,16 +45,10 @@ export function getRendererBackendMaxPixelRatioCap({
       platformFamily === 'ios' ||
       platformFamily === 'android'
     ) {
-      if (isLowPower) {
-        return backend === 'webgpu' ? 1.2 : 1.0;
-      }
-      // Measured on a Galaxy S22 (WebGPU, 'enhanced' tier): the old 1.2 cap
-      // rendered at ~43% of native and left over half the 60Hz frame budget
-      // idle. Capable phones get a higher ceiling; the adaptive controller
-      // still walks quality down if the device can't sustain it.
-      return backend === 'webgpu' ? 2.0 : 1.2;
+      return backend === 'webgpu' ? 1.2 : 1.0;
     }
 
+    const isLowPower = getDevicePerformanceProfile().lowPower;
     if (isLowPower) {
       return backend === 'webgpu' ? 1.2 : 1.0;
     }
