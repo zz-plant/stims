@@ -14,6 +14,19 @@
   animation: cmdk-fade-in 0.15s ease both;
 }
 
+/* Phones and landscape-short viewports: the input autofocuses, so the
+   on-screen keyboard claims the lower half of the screen immediately —
+   pin the card near the top (with safe-area room) instead of 18vh down,
+   or the results list opens straight into the keyboard. */
+@media (max-width: 640px), (max-height: 500px) {
+  .backdrop {
+    padding: max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+}
+
 @keyframes cmdk-fade-in {
   from {
     opacity: 0;
@@ -83,6 +96,9 @@
 
 .list {
   max-height: min(420px, 48vh);
+  /* dvh where supported: tracks the browser's dynamic toolbars so the list
+     doesn't extend under a collapsed-then-expanded mobile URL bar. */
+  max-height: min(420px, 48dvh);
   overflow-y: auto;
   padding: 6px;
 }
@@ -139,4 +155,12 @@
   color: var(--stims-muted, rgba(246, 239, 228, 0.74));
   font-size: var(--text-sm, 0.875rem);
   text-align: center;
+}
+
+/* Same agent-mode contract as SidePanel: no timeline-dependent entry
+   animation in automation sessions (frozen in hidden tabs; nondeterministic
+   in screenshots). */
+:global(html[data-agent-mode="true"]) .backdrop,
+:global(html[data-agent-mode="true"]) .card {
+  animation: none;
 }
