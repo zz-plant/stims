@@ -18,22 +18,23 @@ import type {
  * implementations have no other forcing function keeping them in step.
  */
 
-/** Transliteration of `milkdropTruncInt` in wgsl-generator.ts. */
+/** Transliteration of `milkdropTruncInt` in wgsl-eel-helpers.ts. */
 function wgslTruncInt(value: number): number {
   const truncated = Math.trunc(Number.isFinite(value) ? value : 0);
   return Math.min(Math.max(truncated, -2147483520), 2147483520);
 }
 
-/** Transliteration of `milkdropIntMod`. */
+/** Transliteration of `milkdropIntMod` (JS % already carries the
+ * dividend-signed zero the WGSL helper reconstructs). */
 function wgslIntMod(left: number, right: number): number {
   const l = wgslTruncInt(left);
   const r = wgslTruncInt(right);
   return r === 0 ? 0 : l % r;
 }
 
-/** Transliteration of `milkdropFmod`. */
+/** Transliteration of `milkdropMod` (exact-zero guard, like the CPU). */
 function wgslFmod(left: number, right: number): number {
-  if (Math.abs(right) <= 0.000001) return 0;
+  if (right === 0) return 0;
   const quotient = left / right;
   const truncated = Math.sign(quotient) * Math.floor(Math.abs(quotient));
   return left - right * truncated;
@@ -115,7 +116,7 @@ describe('modulo parity between the CPU interpreter and the WGSL compute path', 
 
     expect(wgslCode).toContain('fn milkdropTruncInt');
     expect(wgslCode).toContain('fn milkdropIntMod');
-    expect(wgslCode).toContain('fn milkdropFmod');
+    expect(wgslCode).toContain('fn milkdropMod');
   });
 
   test('the emitted helpers still match what the transliterations assume', () => {
@@ -125,7 +126,7 @@ describe('modulo parity between the CPU interpreter and the WGSL compute path', 
     const { wgslCode } = compileProgramToWgsl(programWithOneStatement());
     const bodyOf = (name: string) => {
       const match = wgslCode.match(
-        new RegExp(`fn ${name}\\([^)]*\\)[^{]*\\{([\\s\\S]*?)\\n\\}`, 'u'),
+        new RegExp(`fn ${name}\\([^)]*\\)[^{]*\\{([\\s\\S]*?)\\n\\s*\\}`, 'u'),
       );
       if (!match) throw new Error(`Could not find fn ${name} in the program`);
       return match[1] as string;
@@ -137,12 +138,12 @@ describe('modulo parity between the CPU interpreter and the WGSL compute path', 
     // ...and the remainder is taken on integers, not reconstructed from a
     // float quotient.
     expect(intMod).toMatch(/%/u);
-    expect(intMod).not.toMatch(/floor|sign/u);
+    expect(intMod).not.toMatch(/trunc\(l \/ r\)|floor\(/u);
 
-    const fmod = bodyOf('milkdropFmod');
+    const fmod = bodyOf('milkdropMod');
     // Float remainder keeps full precision: no operand truncation.
     expect(fmod).not.toMatch(/milkdropTruncInt/u);
     // Quotient truncates toward zero, which is what JS % does.
-    expect(fmod).toMatch(/sign\(quotient\)\s*\*\s*floor\(abs\(quotient\)\)/u);
+    expect(fmod).toMatch(/trunc\(left \/ right\)/u);
   });
 });

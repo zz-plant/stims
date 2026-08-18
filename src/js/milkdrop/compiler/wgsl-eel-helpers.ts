@@ -118,4 +118,39 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   fn milkdropRand(seed: f32, time: f32) -> f32 {
     return milkdropFrac(sin(dot(vec2<f32>(seed, time), vec2<f32>(12.9898, 78.233))) * 43758.5453);
   }
+
+  fn milkdropTruncInt(value: f32) -> i32 {
+    // Non-finite collapses to 0, matching toMilkdropInt. Clamp before the
+    // i32 cast: out-of-range float-to-int conversion is undefined in WGSL.
+    let finite = value == value && abs(value) < 3.402823e38;
+    let truncated = trunc(select(0.0, value, finite));
+    return i32(clamp(truncated, -2147483520.0, 2147483520.0));
+  }
+
+  fn milkdropIntMod(left: f32, right: f32) -> f32 {
+    // The % OPERATOR: both operands truncate to integers first (see the
+    // conformance spec). i32 remainder is exact where the corpus lives
+    // (|x| < 2^31); the old float-subtraction form lost exactness past
+    // 2^24 in f32.
+    let l = milkdropTruncInt(left);
+    let r = milkdropTruncInt(right);
+    // select() evaluates both arms, so keep the divisor non-zero even when
+    // the result is discarded — integer remainder by zero is UB in WGSL.
+    let safeRight = select(r, 1, r == 0);
+    let m = select(f32(l % safeRight), 0.0, r == 0);
+    // C-style remainder carries the dividend's sign onto zero results
+    // (-1 % -1 is -0); i32 math yields +0, which atan2 turns into a
+    // visible +/-pi flip. sign(left) * 0.0 reconstructs the signed zero.
+    return select(m, 0.0 * sign(left), m == 0.0);
+  }
+
+  fn milkdropMod(left: f32, right: f32) -> f32 {
+    // The mod()/fmod() FUNCTIONS: float truncated remainder (sign follows
+    // left), matching HLSL fmod and the CPU tiers' JS %. The zero guard is
+    // exact like the CPU (a tolerance guard zeroed tiny-divisor cases the
+    // CPU computes).
+    let m = select(left - right * trunc(left / right), 0.0, right == 0.0);
+    // Dividend-signed zero, matching C fmod and the CPU tier's JS %.
+    return select(m, 0.0 * sign(left), m == 0.0);
+  }
 `;

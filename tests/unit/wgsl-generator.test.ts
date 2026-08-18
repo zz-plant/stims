@@ -183,7 +183,7 @@ describe('wgsl expression generation', () => {
     // mod()/fmod() are float remainders, unlike the `%` operator above.
     expect(
       buildWgslExpressionString(call('mod', [literal(7), literal(3)])),
-    ).toBe('milkdropFmod(7, 3)');
+    ).toBe('milkdropMod(7, 3)');
     expect(buildWgslExpressionString(call('floor', [literal(3.7)]))).toBe(
       'floor(3.7)',
     );
@@ -553,7 +553,7 @@ describe('wgsl edge cases', () => {
     );
 
     expect(result.wgslCode).not.toContain('3.4028235e38');
-    expect(result.wgslCode).toContain('abs(value) < 3.402823e38f');
+    expect(result.wgslCode).toContain('abs(value) < 3.402823e38');
   });
 
   test('nested rand()', () => {
