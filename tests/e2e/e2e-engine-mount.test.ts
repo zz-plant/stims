@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium, devices } from 'playwright';
+import { writeAgentFailureArtifact } from './agent-api.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import {
   HEADLESS,
@@ -201,6 +202,12 @@ browserTest(
       if (!info) throw new Error('canvas info is null');
       expect(info.width).toBeGreaterThan(0);
       expect(info.height).toBeGreaterThan(0);
+    } catch (error) {
+      await writeAgentFailureArtifact(
+        page,
+        'e2e-engine-mount-mounts-engine-loads-preset-renders-preview-frame',
+      );
+      throw error;
     } finally {
       await closeQuietly(ctx, browser);
     }
@@ -284,6 +291,12 @@ browserTest(
       expect(hash1).toBeTruthy();
       expect(hash2).toBeTruthy();
       expect(hash1).not.toEqual(hash2);
+    } catch (error) {
+      await writeAgentFailureArtifact(
+        page,
+        'e2e-engine-mount-switches-preset-and-canvas-content-changes',
+      );
+      throw error;
     } finally {
       await closeQuietly(ctx, browser);
     }
@@ -424,6 +437,12 @@ async function verifySmartphoneMicrophoneAccess({
     expect(audioConstraints).not.toHaveProperty('deviceId');
 
     expect(info.route).toContain('audio=microphone');
+  } catch (error) {
+    await writeAgentFailureArtifact(
+      page,
+      `e2e-engine-mount-smartphone-mic-access-${returningUser ? 'returning' : 'first-time'}-user`,
+    );
+    throw error;
   } finally {
     await closeQuietly(ctx, browser);
   }
@@ -552,6 +571,12 @@ browserTest(
       );
 
       expect(await readVtCount(page)).toBeGreaterThanOrEqual(2);
+    } catch (error) {
+      await writeAgentFailureArtifact(
+        page,
+        'e2e-engine-mount-home-to-live-flip-view-transition',
+      );
+      throw error;
     } finally {
       await closeQuietly(ctx, browser);
     }
@@ -593,6 +618,12 @@ browserTest(
 
       // Mode flips, but the flip must happen without any view transition.
       expect(await readVtCount(page)).toBe(0);
+    } catch (error) {
+      await writeAgentFailureArtifact(
+        page,
+        'e2e-engine-mount-skips-view-transition-reduced-motion',
+      );
+      throw error;
     } finally {
       await closeQuietly(ctx, browser);
     }

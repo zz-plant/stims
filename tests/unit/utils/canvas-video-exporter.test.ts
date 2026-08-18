@@ -343,8 +343,11 @@ describe('Canvas Video Exporter Utility', () => {
     expect(panelSource).toContain('aria-live="polite"');
     expect(panelSource).toContain('Stop and save video');
     expect(stageControlsSource).toContain('Record video');
+    // Toggle-off still closes the panel directly; toggle-on now also sets a
+    // one-shot autostart flag when a format is remembered (ea04bfeb).
     expect(stageControlsSource).toContain(
-      "ui.updatePanel(panel === 'capture' ? null : 'capture')",
+      "if (panel === 'capture') {\n            ui.updatePanel(null);",
     );
+    expect(stageControlsSource).toContain("ui.updatePanel('capture');");
   });
 });

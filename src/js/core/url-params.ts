@@ -78,6 +78,13 @@ export interface ParsedURLParams {
   routing: RoutingURLParams;
   renderer: RequestedRenderer;
   corpus: string | null;
+  /**
+   * `?seed=<integer>` — makes autoplay's weighted random preset pick
+   * reproducible. Without it a flaky "shuffle crashed on some preset" is
+   * unreproducible; with it, CI/an agent can replay the exact sequence to
+   * bisect which pick triggered the failure. See core/deterministic-random.ts.
+   */
+  seed: number | null;
   performance: PerformanceURLParams;
   audioMock: MockAudioURLParams;
   stats: '1' | '0' | null;
@@ -287,6 +294,7 @@ export function parseURLParams(
     },
     renderer,
     corpus: get('corpus')?.trim() || null,
+    seed: parseNumberParam(get('seed')),
     performance: {
       maxPixelRatio: parseNumberParam(get('maxPixelRatio')),
       particleBudget: parseNumberParam(get('particleBudget')),

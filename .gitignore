@@ -96,3 +96,6 @@ thumbnails/
 !/screenshots/parity/debug-page-*.png
 # Generated preset previews are published to R2 (scripts/sync-previews-r2.ts)
 /public/milkdrop-presets/previews/
+
+# e2e failure diagnostics (tests/e2e/agent-api.ts writeAgentFailureArtifact)
+/test-results/
