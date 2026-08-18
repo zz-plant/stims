@@ -79,6 +79,17 @@ const deviceEnvironment = getDeviceEnvironmentProfile();
 // already WebGPU-bound.
 const webgpuBoundCanvases = new WeakSet<HTMLCanvasElement>();
 
+// Original canvas → the replacement element currently occupying its spot in
+// the DOM. A device-loss recovery can run several init attempts against the
+// same (original, now detached) canvas; each WebGL fallback must clone from
+// the element that is actually in the document, or `replaceChild` silently
+// no-ops on the parentless original and the renderer paints a canvas nobody
+// can see.
+const liveReplacementCanvases = new WeakMap<
+  HTMLCanvasElement,
+  HTMLCanvasElement
+>();
+
 function shouldPreserveDrawingBufferForValidation() {
   if (typeof window === 'undefined') {
     return false;
@@ -188,10 +199,19 @@ export async function initRenderer(
     ) {
       return canvas;
     }
-    const replacement = canvas.cloneNode(false) as HTMLCanvasElement;
-    if (canvas.parentNode) {
-      canvas.parentNode.replaceChild(replacement, canvas);
+    // Swap out whichever element currently holds the stage slot: the canvas
+    // itself, or — when an earlier fallback attempt already swapped it — the
+    // replacement that took its place.
+    const priorReplacement = liveReplacementCanvases.get(canvas);
+    const target =
+      canvas.parentNode || !priorReplacement?.parentNode
+        ? canvas
+        : priorReplacement;
+    const replacement = target.cloneNode(false) as HTMLCanvasElement;
+    if (target.parentNode) {
+      target.parentNode.replaceChild(replacement, target);
     }
+    liveReplacementCanvases.set(canvas, replacement);
     console.info(
       'Replaced WebGPU-bound canvas with a fresh element for the WebGL fallback.',
     );
