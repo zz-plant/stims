@@ -133,6 +133,7 @@
     "lab:visual": "bun run scripts/preset-lab-visual.ts",
     "lab:profile": "bun run scripts/preset-lab-profile.ts",
     "lab:nan-sweep": "bun run scripts/preset-lab-nan-sweep.ts",
+    "lab:replay": "bun run scripts/preset-lab-replay.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
     "sweep:milkdrop-loops": "bun run scripts/run-milkdrop-loop-visual-sweep.ts",
