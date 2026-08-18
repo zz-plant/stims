@@ -3,6 +3,7 @@ import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,
 } from './common-types.ts';
+import { evaluateMilkdropExpression } from './expression.ts';
 import { aliasMap } from './field-normalization.ts';
 
 /**
@@ -431,6 +432,159 @@ function compileProgramSource(block: MilkdropProgramBlock) {
 const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
 
 /**
+ * Whether `new Function` codegen is permitted. A strict Content-Security-
+ * Policy without 'unsafe-eval' (extensions, embedded iframes, some
+ * enterprise deployments) makes it throw — probed once, and the whole VM
+ * then runs on the interpreter-backed fallback below instead of dying.
+ */
+let jitAvailable: boolean | null = null;
+
+function isJitAvailable(): boolean {
+  if (jitAvailable === null) {
+    try {
+      new Function('');
+      jitAvailable = true;
+    } catch {
+      jitAvailable = false;
+    }
+  }
+  return jitAvailable;
+}
+
+/** Test seam: force (or reset with null) the CSP probe result. */
+export function __setJitAvailableForTests(value: boolean | null): void {
+  jitAvailable = value;
+}
+
+/**
+ * Interpreter-backed MilkdropProgramFn with the JIT's exact store contract:
+ * per-statement finite clamp, q registers mirrored into the register bank,
+ * other targets mirrored into locals (when active) or state, megabuf
+ * bounds-checked writes, and the same loop/while iteration caps. Nested
+ * assignments inside expressions reach the mirrors through the env proxy —
+ * the interpreter writes them to the env, and the proxy fans them out the
+ * way compileStoreExpression's generated code does.
+ *
+ * Slower than the JIT by design; it exists so CSP environments degrade to
+ * correct-but-slower instead of broken. Parity with the JIT is pinned by
+ * tests/unit/eel-csp-fallback.test.ts.
+ */
+function buildInterpretedProgram(
+  block: MilkdropProgramBlock,
+): MilkdropProgramFn {
+  return (e, s, r, l, mb, gb, rnd) => {
+    const mirroredEnv = new Proxy(e, {
+      set(target, property, value) {
+        if (typeof property === 'string') {
+          const normalized = property.toLowerCase();
+          const registerMatch = normalized.match(REGISTER_PATTERN);
+          if (registerMatch?.[1] === 'q') {
+            r[normalized] = value as number;
+          } else if (registerMatch) {
+            if (l !== null) l[property] = value as number;
+            else r[normalized] = value as number;
+          } else if (l !== null) {
+            l[property] = value as number;
+          } else {
+            s[property] = value as number;
+          }
+        }
+        target[property as string] = value as number;
+        return true;
+      },
+    });
+    const helpers = {
+      nextRandom: rnd,
+      megabuf: (index: number) =>
+        index >= 0 && index < MILKDROP_MEGABUF_SIZE ? (mb[index] as number) : 0,
+      gmegabuf: (index: number) =>
+        index >= 0 && index < MILKDROP_GMEGABUF_SIZE
+          ? (gb[index] as number)
+          : 0,
+      megabufWrite: (index: number, value: number) => {
+        if (index >= 0 && index < MILKDROP_MEGABUF_SIZE) mb[index] = value;
+      },
+      gmegabufWrite: (index: number, value: number) => {
+        if (index >= 0 && index < MILKDROP_GMEGABUF_SIZE) gb[index] = value;
+      },
+    };
+    let guard = 0;
+    const run = (statements: readonly MilkdropCompiledStatement[]) => {
+      for (const statement of statements) {
+        if (!statement) continue;
+        if (statement.control) {
+          const { kind, body } = statement.control;
+          if (kind === 'loop') {
+            const rawCount = statement.control.count
+              ? evaluateMilkdropExpression(
+                  statement.control.count,
+                  mirroredEnv,
+                  helpers,
+                )
+              : MILKDROP_LOOP_ITERATION_CAP;
+            const count = Math.min(
+              MILKDROP_LOOP_ITERATION_CAP,
+              Math.max(0, Math.trunc(rawCount) || 0),
+            );
+            for (
+              let index = 0;
+              index < count && guard < MILKDROP_LOOP_ITERATION_CAP;
+              index += 1, guard += 1
+            ) {
+              run(body);
+            }
+          } else {
+            while (guard < MILKDROP_LOOP_ITERATION_CAP) {
+              const condition = statement.control.condition
+                ? evaluateMilkdropExpression(
+                    statement.control.condition,
+                    mirroredEnv,
+                    helpers,
+                  )
+                : 1;
+              if (condition === 0) break;
+              guard += 1;
+              run(body);
+            }
+          }
+          continue;
+        }
+
+        let value = evaluateMilkdropExpression(
+          statement.expression,
+          mirroredEnv,
+          helpers,
+        );
+        if (!Number.isFinite(value)) value = 0;
+
+        if (statement.target === 'megabuf' || statement.target === 'gmegabuf') {
+          const index = Math.trunc(
+            statement.targetExpression
+              ? evaluateMilkdropExpression(
+                  statement.targetExpression,
+                  mirroredEnv,
+                  helpers,
+                )
+              : 0,
+          );
+          const buffer = statement.target === 'megabuf' ? mb : gb;
+          const size =
+            statement.target === 'megabuf'
+              ? MILKDROP_MEGABUF_SIZE
+              : MILKDROP_GMEGABUF_SIZE;
+          if (index >= 0 && index < size) buffer[index] = value;
+          e[statement.target] = value;
+          continue;
+        }
+
+        mirroredEnv[statement.target] = value;
+      }
+    };
+    run(block.statements);
+  };
+}
+
+/**
  * Compiles a program block into a single callable, memoised per block.
  */
 export function compileMilkdropProgram(
@@ -444,16 +598,18 @@ export function compileMilkdropProgram(
   const compiled =
     block.statements.length === 0
       ? NO_OP
-      : (new Function(
-          'e',
-          's',
-          'r',
-          'l',
-          'mb',
-          'gb',
-          'rnd',
-          compileProgramSource(block),
-        ) as MilkdropProgramFn);
+      : isJitAvailable()
+        ? (new Function(
+            'e',
+            's',
+            'r',
+            'l',
+            'mb',
+            'gb',
+            'rnd',
+            compileProgramSource(block),
+          ) as MilkdropProgramFn)
+        : buildInterpretedProgram(block);
 
   compiledPrograms.set(block, compiled);
   return compiled;

@@ -80,7 +80,7 @@ function runJit(lines: string[], env: Record<string, number>) {
   return env;
 }
 
-type SpecCase = {
+export type SpecCase = {
   name: string;
   program: string[];
   env?: Record<string, number>;
@@ -90,7 +90,7 @@ type SpecCase = {
 
 const CLOSE = 1e-12;
 
-const SPEC: SpecCase[] = [
+export const SPEC: SpecCase[] = [
   // ── Division and modulo ───────────────────────────────────────────────
   {
     name: 'division by zero yields 0',
