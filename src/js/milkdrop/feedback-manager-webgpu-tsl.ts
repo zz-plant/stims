@@ -293,8 +293,14 @@ function createPresentOutputNode(
     const d = hash21(i.add(vec2(1.0, 1.0)));
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
   };
-  const { coarseScale, fineScale, coarseWeight, fineOffset, band } =
-    MILKDROP_BLEND_DISSOLVE;
+  const {
+    coarseScale,
+    fineScale,
+    coarseWeight,
+    fineOffset,
+    band,
+    savedZoomDrift,
+  } = MILKDROP_BLEND_DISSOLVE;
   return Fn(() => {
     const current = uniforms.currentTex.sample(uv());
     const result = vec4(current).toVar();
@@ -304,10 +310,15 @@ function createPresentOutputNode(
     // GPU must skip the dissolve math entirely (transitionAlpha is a
     // uniform, so this is uniform control flow and genuinely branches).
     If(linearA.greaterThan(0.001), () => {
-      const saved = uniforms.savedTex.sample(uv());
       // Ease the global progression so the wipe starts and ends gently
       // instead of snapping into motion off the linear alpha ramp.
       const a = smoothstep(0.0, 1.0, linearA);
+      // The saved frame is a static snapshot; zoom it slowly as it
+      // dissolves out (alpha runs 1 -> 0) so the outgoing image keeps
+      // moving instead of freezing for the whole blend.
+      const drift = a.oneMinus().mul(savedZoomDrift).add(1.0);
+      const savedUv = uv().sub(0.5).div(drift).add(0.5);
+      const saved = uniforms.savedTex.sample(savedUv);
       // Aspect-corrected sample point keeps dissolve patches round on any
       // viewport instead of stretched across the wide axis.
       const p = vec2(uv().x.mul(uniforms.patternAspect), uv().y);

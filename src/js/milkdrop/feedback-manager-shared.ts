@@ -1262,6 +1262,11 @@ class SharedMilkdropFeedbackManager
   private blurEnabled = false;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
+  /** Bumped per shader swap so a stale async warm-up can't apply. */
+  private directShaderSwapRevision = 0;
+  /** Warm-up materials kept alive until the live materials share their
+   * programs; see setDirectShaderPrograms. */
+  private retiredWarmupMaterials: ShaderMaterial[] = [];
   private perFrameShaderVariables: string[] = [];
   private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
   readonly warpMaterial: ShaderMaterial;
@@ -1575,11 +1580,17 @@ class SharedMilkdropFeedbackManager
             gl_FragColor = current;
             return;
           }
-          vec4 saved = texture2D(savedTex, vUv);
           float a = clamp(transitionAlpha, 0.0, 1.0);
           // Ease the global progression so the wipe starts and ends gently
           // instead of snapping into motion off the linear alpha ramp.
           a = a * a * (3.0 - 2.0 * a);
+          // The saved frame is a static snapshot; zoom it slowly as it
+          // dissolves out (alpha runs 1 -> 0) so the outgoing image keeps
+          // moving instead of freezing for the whole blend.
+          float drift = 1.0 +
+            ${MILKDROP_BLEND_DISSOLVE.savedZoomDrift.toFixed(4)} * (1.0 - a);
+          vec2 savedUv = (vUv - 0.5) / drift + 0.5;
+          vec4 saved = texture2D(savedTex, savedUv);
           // Aspect-corrected sample point keeps dissolve patches round on
           // any viewport instead of stretched across the wide axis.
           vec2 p = vec2(vUv.x * patternAspect, vUv.y);
@@ -1808,7 +1819,83 @@ class SharedMilkdropFeedbackManager
 
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
+    const revision = ++this.directShaderSwapRevision;
 
+    const renderer = this.lastRenderer as
+      | (NonNullable<SharedMilkdropFeedbackManager['lastRenderer']> & {
+          compileAsync?: (scene: Scene, camera: Camera) => Promise<unknown>;
+        })
+      | null;
+    const hasCustomShaders = warpGlsl !== null || compGlsl !== null;
+    if (!hasCustomShaders || !renderer?.compileAsync) {
+      this.applyAssembledDirectShaders(warpGlsl, compGlsl);
+      return;
+    }
+
+    // Progressive apply. Assigning the custom fragment shaders directly
+    // would make the next render build their GL programs synchronously —
+    // the single biggest stall of a preset switch (hundreds of ms on weak
+    // GPUs, seconds under software rasterizers). Instead the preset lands
+    // on the pass-through pair now (its program is shared by every preset
+    // and already cached), the custom pair warms through
+    // KHR_parallel_shader_compile on throwaway materials, and the live
+    // materials pick the finished programs out of the renderer's program
+    // cache when the swap completes. Equations, waves, and shapes are
+    // unaffected — they render from frame one; only the warp/comp styling
+    // arrives a beat later.
+    this.applyAssembledDirectShaders(null, null);
+
+    const { warp: warmWarpShader, composite: warmCompositeShader } =
+      assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    const warmupMaterials = [
+      new ShaderMaterial({
+        vertexShader: this.warpMaterial.vertexShader,
+        fragmentShader: warmWarpShader,
+      }),
+      new ShaderMaterial({
+        vertexShader: this.compositeMaterial.vertexShader,
+        fragmentShader: warmCompositeShader,
+      }),
+    ];
+    const warmupScene = new Scene();
+    for (const material of warmupMaterials) {
+      warmupScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
+    }
+    const finishSwap = () => {
+      if (revision !== this.directShaderSwapRevision) {
+        for (const material of warmupMaterials) {
+          material.dispose();
+        }
+        return;
+      }
+      this.applyAssembledDirectShaders(warpGlsl, compGlsl);
+      // The warm materials must outlive the swap: they hold the program
+      // refcount until the live materials acquire it at their next render.
+      // Disposing them now would drop the count to zero and force the sync
+      // recompile this path exists to avoid. They retire at the next swap
+      // (or manager dispose) instead.
+      this.disposeRetiredWarmupMaterials();
+      this.retiredWarmupMaterials.push(...warmupMaterials);
+    };
+    // A compile error surfaces identically to today's sync path: finishSwap
+    // assigns the shaders anyway and THREE logs the failure at first use.
+    void renderer.compileAsync(warmupScene, this.camera).then(
+      finishSwap,
+      finishSwap,
+    );
+  }
+
+  private disposeRetiredWarmupMaterials() {
+    for (const material of this.retiredWarmupMaterials) {
+      material.dispose();
+    }
+    this.retiredWarmupMaterials.length = 0;
+  }
+
+  private applyAssembledDirectShaders(
+    warpGlsl: string | null,
+    compGlsl: string | null,
+  ) {
     // Every `sampler_*` still referenced after the built-in rewrites is a
     // texture-pack sampler (MilkDrop auto-binds them without declarations);
     // each resolves to a bundled texture or a deterministic fallback so the
@@ -2272,6 +2359,9 @@ class SharedMilkdropFeedbackManager
     disposeMaterial(this.blurVMaterial);
     disposeMaterial(this.warpMaterial);
     disposeMaterial(this.feedbackBlendMaterial);
+    // Invalidate any in-flight async shader warm-up and drop its materials.
+    this.directShaderSwapRevision += 1;
+    this.disposeRetiredWarmupMaterials();
     this.compositeScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();
