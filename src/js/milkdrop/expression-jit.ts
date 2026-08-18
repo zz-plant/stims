@@ -100,19 +100,24 @@ function compileNode(
       const r = compileNode(node.right, context);
       switch (node.operator) {
         case '=': {
-          // Assignment: lvalue = rvalue; returns rvalue
+          // Assignment nested inside an expression: lvalue = rvalue, and the
+          // expression's value is the (finite-clamped) rvalue. This used to
+          // splice the statement-form store (`if (...) { ... }`, trailing
+          // semicolons, writes through the statement-level `_v`) into a comma
+          // expression — a SyntaxError for register/local/megabuf targets, a
+          // stale-`_v` write for the rest, and it never mirrored the value
+          // into `e`, which is where every identifier read resolves. All
+          // three fixed by emitting a pure expression store against a fresh
+          // temporary, matching the statement path's semantics (including
+          // MilkDrop's never-let-NaN-escape clamp).
           const rvalue = r;
-          let assignment = '';
+          const tempVar = nextTemporary(context);
+          const clamped = `${tempVar} = (${rvalue}), ${tempVar} = Number.isFinite(${tempVar}) ? ${tempVar} : 0`;
           if (node.left.type === 'identifier') {
-            const target = node.left.name;
-            const statement: MilkdropCompiledStatement = {
-              target,
-              expression: node.right,
-              line: 0,
-              source: '',
-            };
-            assignment = compileStore(statement, context);
-          } else if (
+            const store = compileStoreExpression(node.left.name, tempVar);
+            return `(${clamped}, ${store}, ${tempVar})`;
+          }
+          if (
             node.left.type === 'call' &&
             (node.left.name.toLowerCase() === 'megabuf' ||
               node.left.name.toLowerCase() === 'gmegabuf')
@@ -126,11 +131,8 @@ function compileNode(
             const indexSource = node.left.args[0]
               ? compileNode(node.left.args[0], context)
               : '0';
-            assignment = `${index} = Math.trunc(${indexSource}); if (${index} >= 0 && ${index} < ${size}) { ${buffer === 'megabuf' ? 'mb' : 'gb'}[${index}] = ${rvalue}; }`;
-          }
-          if (assignment) {
-            const tempVar = nextTemporary(context);
-            return `(${tempVar} = ${rvalue}, ${assignment}, ${tempVar})`;
+            const bufferName = buffer === 'megabuf' ? 'mb' : 'gb';
+            return `(${clamped}, ${index} = Math.trunc(${indexSource}), (${index} >= 0 && ${index} < ${size} ? ${bufferName}[${index}] = ${tempVar} : 0), ${tempVar})`;
           }
           // Invalid assignment target, just return rvalue
           return `(${rvalue})`;
@@ -141,8 +143,14 @@ function compileNode(
           return `((${l}) - (${r}))`;
         case '*':
           return `((${l}) * (${r}))`;
-        case '/':
-          return `(((${r}) === 0) ? 0 : (${l}) / (${r}))`;
+        case '/': {
+          // Operands land in temporaries: the old template spliced `r` twice
+          // (side effects like a nested assignment ran twice) and evaluated
+          // it before `l` (opposite of the interpreter and EEL).
+          const lTemp = nextTemporary(context);
+          const rTemp = nextTemporary(context);
+          return `(${lTemp} = (${l}), ${rTemp} = (${r}), ${rTemp} === 0 ? 0 : ${lTemp} / ${rTemp})`;
+        }
         case '%': {
           const aTemp = nextTemporary(context);
           const bTemp = nextTemporary(context);
@@ -234,10 +242,19 @@ function compileNode(
           return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
         case 'smoothstep':
           return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
-        case 'log':
-          return `Math.log(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'log10':
-          return `Math.log10(Math.max(0, ${args[0] ?? '0'}))`;
+        // Finite-clamped like the interpreter: log(0) is -Infinity, which the
+        // statement-level store clamp would zero anyway, but inside an
+        // expression it flipped comparisons relative to the analysis
+        // evaluator (above(log10(x), y) style). Clamp at the source so both
+        // tiers agree everywhere.
+        case 'log': {
+          const temp = nextTemporary(context);
+          return `(${temp} = Math.log(Math.max(0, ${args[0] ?? '0'})), Number.isFinite(${temp}) ? ${temp} : 0)`;
+        }
+        case 'log10': {
+          const temp = nextTemporary(context);
+          return `(${temp} = Math.log10(Math.max(0, ${args[0] ?? '0'})), Number.isFinite(${temp}) ? ${temp} : 0)`;
+        }
         case 'exp':
           return `Math.exp(${args[0] ?? '0'})`;
         case 'sigmoid':
@@ -252,8 +269,12 @@ function compileNode(
           return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? 0 : 1)`;
         case 'atan2':
           return `Math.atan2(${args[0] ?? '0'}, ${args[1] ?? '0'})`;
-        case 'frac':
-          return `((${args[0] ?? '0'}) - Math.floor(${args[0] ?? '0'}))`;
+        case 'frac': {
+          // Temp for the same reason as '/': the argument string must not be
+          // spliced twice, or its side effects run twice.
+          const temp = nextTemporary(context);
+          return `(${temp} = (${args[0] ?? '0'}), ${temp} - Math.floor(${temp}))`;
+        }
         case 'if':
           return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
         case 'above':
@@ -275,6 +296,28 @@ function compileNode(
       return '(0)';
     }
   }
+}
+
+/**
+ * Expression-position twin of {@link compileStore} + the statement path's
+ * `e` mirror: a single comma-safe expression that stores `valueVar` into the
+ * engine-facing map (locals/registers/state) and into `e`, where identifier
+ * reads resolve. Must stay semantically aligned with compileStore and
+ * compileStatementSource.
+ */
+function compileStoreExpression(target: string, valueVar: string) {
+  const rawKey = JSON.stringify(target);
+  const normalized = target.toLowerCase();
+  const registerMatch = normalized.match(REGISTER_PATTERN);
+  const normalizedKey = JSON.stringify(normalized);
+
+  const mirror =
+    registerMatch?.[1] === 'q'
+      ? `r[${normalizedKey}] = ${valueVar}`
+      : registerMatch
+        ? `(l !== null ? l[${rawKey}] = ${valueVar} : r[${normalizedKey}] = ${valueVar})`
+        : `(l !== null ? l[${rawKey}] = ${valueVar} : s[${rawKey}] = ${valueVar})`;
+  return `${mirror}, e[${rawKey}] = ${valueVar}`;
 }
 
 function compileStore(
