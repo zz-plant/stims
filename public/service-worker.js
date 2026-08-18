@@ -3,7 +3,7 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v9';
+const CACHE_NAME = 'stims-shell-v10';
 // Keep this list to what the shell needs to paint offline. The full preset
 // catalog (~1.5 MB) is deliberately absent: the app loads a 20 KB starter
 // catalog first and defers the full one to a background task, and precaching
@@ -92,12 +92,19 @@ function queueCacheWrite(event, request, response) {
 
 async function staleWhileRevalidate(event, request) {
   const cached = await caches.match(request);
-  const refresh = fetch(request).then((networkResponse) => {
-    if (networkResponse.ok) {
-      queueCacheWrite(event, request, networkResponse.clone());
-    }
-    return networkResponse;
-  });
+  // `cache: 'no-cache'` forces a conditional revalidation at the origin
+  // (cheap 304 via ETag when unchanged). A plain fetch here reads the HTTP
+  // cache, whose own stale-while-revalidate headers can hand back the exact
+  // stale copy this refresh exists to replace — layering the two caches
+  // stretched "one-load staleness after a deploy" into an hour or more.
+  const refresh = fetch(request, { cache: 'no-cache' }).then(
+    (networkResponse) => {
+      if (networkResponse.ok) {
+        queueCacheWrite(event, request, networkResponse.clone());
+      }
+      return networkResponse;
+    },
+  );
 
   if (cached) {
     if (event.waitUntil) {
