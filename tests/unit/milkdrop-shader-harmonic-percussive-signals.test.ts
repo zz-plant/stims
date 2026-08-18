@@ -217,9 +217,9 @@ describe('harmonic/percussive signals in shader bodies', () => {
       // biome-ignore lint/suspicious/noExplicitAny: minimal program block
     } as any).wgslCode;
 
-    expect(wgsl).toContain('signals.percussive;');
-    expect(wgsl).toContain('signals.percussive_ratio;');
-    expect(wgsl).toContain('signals.percussive_high;');
+    expect(wgsl).toContain('milkdropFinite(signals.percussive);');
+    expect(wgsl).toContain('milkdropFinite(signals.percussive_ratio);');
+    expect(wgsl).toContain('milkdropFinite(signals.percussive_high);');
     expect(wgsl).toContain('  percussive: f32,');
     expect(wgsl).toContain('  percussive_ratio: f32,');
   });

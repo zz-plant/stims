@@ -106,9 +106,9 @@ describe('wgsl expression generation', () => {
     ).toBe('(signals.bass * 2)');
     expect(
       buildWgslExpressionString(binary('/', ident('vol'), literal(0))),
-    ).toBe('select(0.0f, (signals.vol) / (0), abs(0) > 0.000001f)');
+    ).toBe('milkdropDiv(signals.vol, 0)');
     expect(buildWgslExpressionString(binary('^', literal(2), literal(3)))).toBe(
-      'pow(max(0.0f, 2), 3)',
+      'milkdropPow(2, 3)',
     );
     // `%` is integer modulo in EEL: both operands truncate before dividing.
     expect(buildWgslExpressionString(binary('%', literal(7), literal(3)))).toBe(
@@ -175,11 +175,11 @@ describe('wgsl expression generation', () => {
       'abs(-3)',
     );
     expect(buildWgslExpressionString(call('sqrt', [literal(4)]))).toBe(
-      'sqrt(max(0.0f, 4))',
+      'milkdropSqrt(4)',
     );
     expect(
       buildWgslExpressionString(call('pow', [literal(2), literal(3)])),
-    ).toBe('pow(max(0.0f, 2), 3)');
+    ).toBe('milkdropPow(2, 3)');
     // mod()/fmod() are float remainders, unlike the `%` operator above.
     expect(
       buildWgslExpressionString(call('mod', [literal(7), literal(3)])),
@@ -196,8 +196,9 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(call('sign', [literal(-5)]))).toBe(
       'sign(-5)',
     );
+    // log(0) is 0 (max(0)+finite clamp), matching the CPU tiers.
     expect(buildWgslExpressionString(call('log', [literal(10)]))).toBe(
-      'log(max(0.000001f, 10))',
+      'milkdropLog(10)',
     );
     expect(buildWgslExpressionString(call('exp', [literal(1)]))).toBe('exp(1)');
   });
@@ -286,7 +287,9 @@ describe('wgsl expression generation', () => {
     ).toBe('select(0.0f, 1.0f, (5) < (3))');
     expect(
       buildWgslExpressionString(call('equal', [literal(5), literal(5)])),
-    ).toBe('select(0.0f, 1.0f, (5) == (5))');
+      // equal() is close-factor equality, like the interpreter; only the ==
+      // operator compares exactly.
+    ).toBe('milkdropEqual(5, 5)');
     expect(buildWgslExpressionString(call('rand', []))).toBe('rand()');
     expect(buildWgslExpressionString(call('nonexistent', [literal(1)]))).toBe(
       '0.0f',
@@ -337,7 +340,9 @@ describe('wgsl program compilation', () => {
     expect(result.usesRandom).toBe(false);
     expect(result.fieldKeys).toContain('bass');
     expect(result.fieldKeys).toContain('myvar');
-    expect(result.wgslCode).toContain('state.myvar = (signals.bass + 1)');
+    expect(result.wgslCode).toContain(
+      'state.myvar = milkdropFinite((signals.bass + 1))',
+    );
     expect(result.wgslCode).toContain('struct VmState');
     expect(result.wgslCode).toContain('struct VmSignals');
     expect(result.wgslCode).toContain('fn main()');
@@ -383,9 +388,15 @@ describe('wgsl program compilation', () => {
     expect(result.registerKeys).toContain('t5');
     expect(result.fieldKeys).toContain('q1');
     expect(result.fieldKeys).toContain('t5');
-    expect(result.wgslCode).toContain('state.q1 = (signals.bass + 1)');
-    expect(result.wgslCode).toContain('state.t5 = (signals.mid * 2)');
-    expect(result.wgslCode).toContain('state.result = state.q1');
+    expect(result.wgslCode).toContain(
+      'state.q1 = milkdropFinite((signals.bass + 1))',
+    );
+    expect(result.wgslCode).toContain(
+      'state.t5 = milkdropFinite((signals.mid * 2))',
+    );
+    expect(result.wgslCode).toContain(
+      'state.result = milkdropFinite(state.q1)',
+    );
     expect(result.wgslCode).not.toContain('var reg_q1');
     expect(result.wgslCode).not.toContain('var reg_t5');
   });
@@ -499,7 +510,9 @@ describe('wgsl program compilation', () => {
       block([statement('bg_r', binary('+', ident('bass'), literal(0.02)))]),
     );
     expect(result.usesRandom).toBe(false);
-    expect(result.wgslCode).toContain('state.bg_r = (signals.bass + 0.02)');
+    expect(result.wgslCode).toContain(
+      'state.bg_r = milkdropFinite((signals.bass + 0.02))',
+    );
     expect(result.wgslCode).not.toContain('fn rand()');
     expect(result.wgslCode).not.toContain('rand_state');
   });
@@ -524,12 +537,14 @@ describe('wgsl edge cases', () => {
     expect(result.registerKeys).toEqual([]);
   });
 
-  test('division by near-zero guarded', () => {
+  test('division routes through milkdropDiv (exact-zero guard)', () => {
+    // The guard is exact zero, not a tolerance: dividing by a tiny nonzero
+    // value must produce the same large finite result the CPU tiers compute
+    // (the old abs(right) > 1e-6 guard silently zeroed it).
     const result = buildWgslExpressionString(
       binary('/', ident('vol'), literal(0.0000001)),
     );
-    expect(result).toContain('select');
-    expect(result).toContain('abs');
+    expect(result).toBe('milkdropDiv(signals.vol, 1e-7)');
   });
 
   test('integer helpers use a representable f32 finite-value threshold', () => {

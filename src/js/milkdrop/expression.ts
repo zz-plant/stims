@@ -555,8 +555,16 @@ export function evaluateMilkdropExpression(
       return node.value;
     case 'identifier': {
       const normalized = node.name.toLowerCase();
-      if (normalized === 'pi') return Math.PI;
-      if (normalized === 'e') return Math.E;
+      // pi/e are ordinary prepopulated variables in MilkDrop's EEL (ns-eel
+      // registers them like any other var), so preset assignments to them
+      // must stick — ~74 corpus presets overwrite one of them. The GPU field
+      // planner already models this (isOverwritableConstant); resolving the
+      // env first converges the CPU tiers with it. Envs without the key
+      // (partial analysis envs) still see the constants.
+      if (normalized === 'pi')
+        return resolveMilkdropIdentifier(env, node.name) ?? Math.PI;
+      if (normalized === 'e')
+        return resolveMilkdropIdentifier(env, node.name) ?? Math.E;
       return resolveMilkdropIdentifier(env, node.name) ?? 0;
     }
     case 'unary': {
