@@ -676,11 +676,7 @@ export function createSampleAuxTextureNode(
       // margins so cross-slice color never bleeds near atlas seams.
       const edgeMargin = 0.02;
       const blended = mix(lowerSample, upperSample, blend);
-      const snapLow = select(
-        step(edgeMargin, blend),
-        blended,
-        lowerSample,
-      );
+      const snapLow = select(step(edgeMargin, blend), blended, lowerSample);
       const snapHigh = select(
         step(float(1).sub(edgeMargin), blend),
         upperSample,

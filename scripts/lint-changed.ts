@@ -11,7 +11,10 @@ const files = [...rawDiff.split('\n'), ...rawUntracked.split('\n')]
       /\.(js|ts|tsx|jsx|json|css|html|jsonc)$/i.test(f) &&
       !f.startsWith('dist/') &&
       !f.startsWith('node_modules/'),
-  );
+  )
+  // A deletion also shows up in the diff; Biome errors on paths that no
+  // longer exist on disk.
+  .filter((f) => Bun.file(f).size > 0);
 
 if (files.length === 0) {
   console.log('No modified or untracked files to lint.');

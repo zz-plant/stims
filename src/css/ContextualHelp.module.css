@@ -27,11 +27,6 @@
   pointer-events: none;
 }
 
-:global(.stims-shell[data-sheet-open="true"]) .toast {
-  opacity: 0;
-  pointer-events: none;
-}
-
 @keyframes help-enter {
   from {
     opacity: 0;

@@ -1,4 +1,4 @@
-import Stats from 'stats-gl';
+import type Stats from 'stats-gl';
 import { getBrowserStorage } from './state/browser-storage.ts';
 import { parseURLParams } from './url-params.ts';
 
@@ -53,30 +53,38 @@ export function createStatsOverlay({
         return;
       }
 
-      const nextStats = new Stats({
-        trackGPU: true,
-        trackCPT: false,
-        trackHz: false,
-        minimal: false,
-        horizontal: false,
-      });
+      // stats-gl only loads when the overlay is actually enabled, so the
+      // library stays out of the runtime chunk for regular sessions.
+      initPromise = import('stats-gl')
+        .then(({ default: StatsGl }) => {
+          const nextStats = new StatsGl({
+            trackGPU: true,
+            trackCPT: false,
+            trackHz: false,
+            minimal: false,
+            horizontal: false,
+          });
 
-      nextStats.dom.style.position = 'fixed';
-      nextStats.dom.style.right = '12px';
-      nextStats.dom.style.bottom = '12px';
-      nextStats.dom.style.zIndex = '3000';
-      nextStats.dom.dataset.stimsStatsGl = 'true';
-      document.body.appendChild(nextStats.dom);
+          nextStats.dom.style.position = 'fixed';
+          nextStats.dom.style.right = '12px';
+          nextStats.dom.style.bottom = '12px';
+          nextStats.dom.style.zIndex = '3000';
+          nextStats.dom.dataset.stimsStatsGl = 'true';
+          document.body.appendChild(nextStats.dom);
 
-      stats = nextStats;
-      initPromise = nextStats
-        .init(renderer as never)
-        .then(() => {
-          initialized = true;
+          stats = nextStats;
+          return nextStats
+            .init(renderer as never)
+            .then(() => {
+              initialized = true;
+            })
+            .catch(() => {
+              nextStats.dom.remove();
+              nextStats.dispose();
+              stats = null;
+            });
         })
         .catch(() => {
-          nextStats.dom.remove();
-          nextStats.dispose();
           stats = null;
         })
         .finally(() => {

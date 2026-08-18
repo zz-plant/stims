@@ -1,4 +1,7 @@
 import { useEffect, useRef } from 'react';
+// Editor styles ship with this lazy chunk so visitors who never open the
+// editor don't pay for them at startup.
+import '../../css/editor-panel.css';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { useWorkspace } from './workspace-context.tsx';

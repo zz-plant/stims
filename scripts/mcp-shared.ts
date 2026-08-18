@@ -1279,7 +1279,11 @@ function extractMarkdownSection(markdown: string, heading: string) {
 
   const startIndex = match.index + match[0].length;
   const rest = markdown.slice(startIndex);
-  const nextHeading = rest.search(/^#{1,6}\s+/m);
+  // A section runs until the next heading of the same or higher level —
+  // cutting at ANY heading would return empty content for a section whose
+  // body starts with a subsection.
+  const level = /^#+/.exec(match[1])?.[0].length ?? 6;
+  const nextHeading = rest.search(new RegExp(`^#{1,${level}}\\s+`, 'm'));
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
 
   return {

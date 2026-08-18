@@ -546,7 +546,7 @@ describe('Service worker caching behavior', () => {
     expect(worker.skipWaitingCalls).toBe(1);
   });
 
-  test('finishes runtime cache writes before resolving a network response', async () => {
+  test('resolves the network response without blocking on the cache write, holding the write on waitUntil', async () => {
     let finishPut: (() => void) | undefined;
     const putWork = new Promise<void>((resolve) => {
       finishPut = resolve;
@@ -567,6 +567,7 @@ describe('Service worker caching behavior', () => {
       throw new Error('Expected a fetch handler.');
     }
     let responseWork: Promise<Response> | undefined;
+    const extensions: Promise<unknown>[] = [];
     fetchHandler({
       request: {
         method: 'GET',
@@ -576,17 +577,19 @@ describe('Service worker caching behavior', () => {
       respondWith(response) {
         responseWork = response;
       },
+      waitUntil(work) {
+        extensions.push(work);
+      },
     });
 
-    let resolved = false;
-    void responseWork?.then(() => {
-      resolved = true;
-    });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(resolved).toBe(false);
+    // The response must not wait for the (still pending) cache write — the
+    // write is handed to event.waitUntil, which keeps the worker alive
+    // until it finishes without adding storage latency to the response.
+    await expect(responseWork).resolves.toBeInstanceOf(Response);
+    expect(extensions.length).toBeGreaterThan(0);
 
     finishPut?.();
-    await expect(responseWork).resolves.toBeInstanceOf(Response);
+    await Promise.all(extensions);
   });
 
   test('returns a successful network response when an optional runtime write fails', async () => {

@@ -1,4 +1,4 @@
-import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
+import type { MeydaAudioFeature, MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
@@ -15,7 +15,6 @@ import {
   type AudioReactivityInterpolator,
   createAudioReactivityInterpolator,
 } from './audio-interpolator.ts';
-import { getDevicePerformanceProfile } from './device-profile.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
@@ -44,6 +43,30 @@ const MEYDA_FEATURES = [
   'spectralFlatness',
   'spectralRolloff',
 ] satisfies MeydaAudioFeature[];
+
+// Meyda is only needed on the AnalyserNode fallback path (worklet-capable
+// browsers never reach updateSpectralFeatures), so it loads on demand instead
+// of shipping in the core chunk for every session.
+type MeydaModule = typeof import('meyda')['default'];
+let meydaInstance: MeydaModule | null = null;
+let meydaLoadFailed = false;
+let meydaLoadStarted = false;
+
+function requestMeyda(): MeydaModule | null {
+  if (meydaInstance || meydaLoadFailed || meydaLoadStarted) {
+    return meydaInstance;
+  }
+  meydaLoadStarted = true;
+  import('meyda')
+    .then((module) => {
+      meydaInstance = module.default;
+    })
+    .catch((error) => {
+      meydaLoadFailed = true;
+      logger.warn('Failed to load meyda for spectral features', error);
+    });
+  return null;
+}
 
 type SpectralFeatureSnapshot = {
   rms: number;
@@ -757,18 +780,22 @@ export class FrequencyAnalyser {
     }
 
     this.spectralFrameCounter = (this.spectralFrameCounter + 1) | 0;
-    if (
-      this.spectralFeatures !== null &&
-      getDevicePerformanceProfile().lowPower &&
-      this.spectralFrameCounter % 2 !== 0
-    ) {
+    // Meyda runs a full FFT on the main thread; once a snapshot exists,
+    // refreshing it every fourth frame keeps the spectral signals responsive
+    // without paying for the transform on every rendered frame.
+    if (this.spectralFeatures !== null && this.spectralFrameCounter % 4 !== 0) {
+      return;
+    }
+
+    const meyda = requestMeyda();
+    if (!meyda) {
       return;
     }
 
     try {
-      Meyda.bufferSize = this.timeDomainData.length;
-      Meyda.sampleRate = this.sampleRate;
-      const features = Meyda.extract(
+      meyda.bufferSize = this.timeDomainData.length;
+      meyda.sampleRate = this.sampleRate;
+      const features = meyda.extract(
         MEYDA_FEATURES,
         this.timeDomainData,
       ) as Partial<MeydaFeaturesObject> | null;

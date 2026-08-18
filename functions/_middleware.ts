@@ -8,6 +8,8 @@
 //      site root, so every preset told crawlers it was the same page and every
 //      social share collapsed onto `/`.
 
+import { isAllowedDiscoverSlug } from './discover-slugs.ts';
+
 interface EventContext {
   request: Request;
   next: () => Promise<Response>;
@@ -98,21 +100,34 @@ export async function onRequest(context: EventContext): Promise<Response> {
     }
   }
 
-  // `/discover/<slug>` semantic discovery route handler for dynamic topic hubs
+  // `/discover/<slug>` semantic discovery route handler for curated topic
+  // hubs. Slugs outside the allowlist fall through to the app shell with its
+  // default root-canonical metadata — generating unique self-canonical pages
+  // for arbitrary slugs would mint an unbounded crawlable space of thin
+  // near-duplicate pages.
   if (url.pathname.startsWith('/discover/')) {
     const slug = url.pathname.slice('/discover/'.length).split('/')[0];
-    if (slug) {
+    if (slug && isAllowedDiscoverSlug(slug)) {
       const formattedName = slug
         .split('-')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
       const fullTitle = `${formattedName} Music Visualizers — Stims`;
       const description = `Explore sound-reactive ${formattedName} MilkDrop music visualizers running live in your browser on Stims — high-performance WebGL & WebGPU visual experience.`;
-      const canonical = new URL(`/discover/${encodeURIComponent(slug)}`, url.origin).toString();
-      const oembedUrl = new URL(`/api/oembed?url=${encodeURIComponent(canonical)}`, url.origin).toString();
+      const canonical = new URL(
+        `/discover/${encodeURIComponent(slug)}`,
+        url.origin,
+      ).toString();
+      const oembedUrl = new URL(
+        `/api/oembed?url=${encodeURIComponent(canonical)}`,
+        url.origin,
+      ).toString();
 
       const response = await next();
-      if (response.status !== 200 || !response.headers.get('content-type')?.includes('text/html')) {
+      if (
+        response.status !== 200 ||
+        !response.headers.get('content-type')?.includes('text/html')
+      ) {
         return response;
       }
       if (typeof HTMLRewriter === 'undefined') return response;
@@ -341,4 +356,3 @@ export async function onRequest(context: EventContext): Promise<Response> {
       .transform(response)
   );
 }
-
