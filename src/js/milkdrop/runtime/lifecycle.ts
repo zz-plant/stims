@@ -44,48 +44,10 @@ export function shouldPrepareNextPreset(args: {
   });
 }
 
-export function buildBlendStateForRender({
-  transitionMode,
-  shaderQuality,
-  canBlendCurrentFrame,
-  getCurrentFrameWorkload,
-  maxWorkload = Number.POSITIVE_INFINITY,
-  blendState,
-  now,
-  blendEndAtMs,
-  blendDuration,
-}: {
-  transitionMode: 'blend' | 'cut';
-  shaderQuality: 'low' | 'balanced' | 'high';
-  canBlendCurrentFrame?: boolean;
-  getCurrentFrameWorkload?: () => number;
-  maxWorkload?: number;
-  blendState: MilkdropBlendState | null;
-  now: number;
-  blendEndAtMs: number;
-  blendDuration: number;
-}) {
-  if (
-    transitionMode !== 'blend' ||
-    shaderQuality === 'low' ||
-    !blendState ||
-    now >= blendEndAtMs
-  ) {
-    return null;
-  }
-
-  const canBlend =
-    getCurrentFrameWorkload !== undefined
-      ? getCurrentFrameWorkload() < maxWorkload
-      : Boolean(canBlendCurrentFrame);
-  if (!canBlend) {
-    return null;
-  }
-
-  blendState.alpha =
-    1 - (now - (blendEndAtMs - blendDuration * 1000)) / (blendDuration * 1000);
-  return blendState;
-}
+// Per-frame blend alpha lives in runtime/transition-controller.ts now: the
+// wall-clock recompute that used to live here jumped after hidden-tab pauses
+// and kept running through gated frames. The per-frame gates (transition
+// mode, shader quality, workload) moved to the frame loop's tick call.
 
 export function buildRenderFrameState({
   frameState,

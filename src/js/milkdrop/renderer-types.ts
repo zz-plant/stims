@@ -436,6 +436,8 @@ export interface MilkdropFeedbackManager {
   ): void;
   saveCurrentFrame?(): void;
   setTransitionBlend?(alpha: number): void;
+  /** True while an async warp/comp shader swap is still warming. */
+  isDirectShaderSwapPending?(): boolean;
   render(
     renderer: {
       render(scene: Scene, camera: Camera): void;

@@ -1264,6 +1264,14 @@ class SharedMilkdropFeedbackManager
   private lastCompGlsl: string | null = null;
   /** Bumped per shader swap so a stale async warm-up can't apply. */
   private directShaderSwapRevision = 0;
+  /** True while the async warp/comp warm-up has landed the pass-through
+   * pair but not yet the preset's own shaders — the window the transition
+   * controller keeps covered. */
+  private directShaderSwapPending = false;
+
+  isDirectShaderSwapPending(): boolean {
+    return this.directShaderSwapPending;
+  }
   /** Warm-up materials kept alive until the live materials share their
    * programs; see setDirectShaderPrograms. */
   private retiredWarmupMaterials: ShaderMaterial[] = [];
@@ -1820,6 +1828,8 @@ class SharedMilkdropFeedbackManager
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
     const revision = ++this.directShaderSwapRevision;
+    // A new swap supersedes any pending one; the async path re-arms below.
+    this.directShaderSwapPending = false;
 
     const renderer = this.lastRenderer as
       | (NonNullable<SharedMilkdropFeedbackManager['lastRenderer']> & {
@@ -1845,6 +1855,7 @@ class SharedMilkdropFeedbackManager
     // unaffected — they render from frame one; only the warp/comp styling
     // arrives a beat later.
     this.applyAssembledDirectShaders(null, null);
+    this.directShaderSwapPending = true;
 
     const { warp: warmWarpShader, composite: warmCompositeShader } =
       assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
@@ -1869,6 +1880,7 @@ class SharedMilkdropFeedbackManager
         }
         return;
       }
+      this.directShaderSwapPending = false;
       this.applyAssembledDirectShaders(warpGlsl, compGlsl);
       // The warm materials must outlive the swap: they hold the program
       // refcount until the live materials acquire it at their next render.
@@ -2375,6 +2387,7 @@ class SharedMilkdropFeedbackManager
     disposeMaterial(this.feedbackBlendMaterial);
     // Invalidate any in-flight async shader warm-up and drop its materials.
     this.directShaderSwapRevision += 1;
+    this.directShaderSwapPending = false;
     this.disposeRetiredWarmupMaterials();
     this.compositeScene.clear();
     this.presentScene.clear();

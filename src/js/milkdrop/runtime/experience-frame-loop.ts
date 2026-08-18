@@ -12,6 +12,7 @@ import type {
 } from '../../core/toy-runtime';
 import type {
   MilkdropCapturedVideoReactiveState,
+  MilkdropBlendState,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types';
@@ -27,11 +28,11 @@ import {
   getMilkdropDetailScale,
 } from './interaction-response.ts';
 import {
-  buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
+import type { MilkdropTransitionController } from './transition-controller.ts';
 import { estimateFrameBlendWorkload } from './session.ts';
 
 export function createMilkdropExperienceFrameLoop({
@@ -39,8 +40,7 @@ export function createMilkdropExperienceFrameLoop({
   getAdapter,
   getActiveBackend,
   setCurrentFrameState,
-  getBlendState,
-  getBlendEndAtMs,
+  transitionController,
   getBlendDuration,
   getTransitionMode,
   getAutoplay,
@@ -66,14 +66,14 @@ export function createMilkdropExperienceFrameLoop({
   getAdapter: () => {
     render: (args: {
       frameState: MilkdropFrameState;
-      blendState: ReturnType<typeof buildBlendStateForRender>;
+      blendState: MilkdropBlendState | null;
     }) => boolean;
     setTransitionBlend?: (alpha: number) => void;
+    isPresetPresentable?: () => boolean;
   } | null;
   getActiveBackend: () => 'webgl' | 'webgpu';
   setCurrentFrameState: (frameState: MilkdropFrameState | null) => void;
-  getBlendState: () => ReturnType<typeof buildBlendStateForRender> | null;
-  getBlendEndAtMs: () => number;
+  transitionController: MilkdropTransitionController;
   getBlendDuration: () => number;
   getTransitionMode: () => 'blend' | 'cut';
   getAutoplay: () => boolean;
@@ -255,15 +255,17 @@ export function createMilkdropExperienceFrameLoop({
         );
         setCurrentFrameState(currentFrameState);
         blendWorkloadFrameState = currentFrameState;
-        const activeBlendState = buildBlendStateForRender({
-          transitionMode: getTransitionMode(),
-          shaderQuality: frame.performance.shaderQuality,
-          getCurrentFrameWorkload,
-          maxWorkload: 900,
-          blendState: getBlendState(),
+        // Per-frame gates stay with the caller (they read live quality and
+        // workload); the controller owns the clock, so a gated frame
+        // suspends the blend instead of letting wall time race past it.
+        const canBlendThisFrame =
+          getTransitionMode() === 'blend' &&
+          frame.performance.shaderQuality !== 'low' &&
+          getCurrentFrameWorkload() < 900;
+        const activeBlendState = transitionController.tick({
           now: frameStartAt,
-          blendEndAtMs: getBlendEndAtMs(),
-          blendDuration: getBlendDuration(),
+          canBlendThisFrame,
+          presentable: adapter.isPresetPresentable?.() ?? true,
         });
 
         const renderFrameState = applyMilkdropEnhancedEffectsPolicy({

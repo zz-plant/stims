@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test';
 import { buildAgentMilkdropDebugSnapshot } from '../../src/js/milkdrop/runtime/debug-snapshot.ts';
-import { buildBlendStateForRender } from '../../src/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimePerformanceTracker } from '../../src/js/milkdrop/runtime/performance-tracker.ts';
 import { createMilkdropPresentationController } from '../../src/js/milkdrop/runtime/presentation-controller.ts';
 
@@ -53,103 +52,5 @@ test('buildAgentMilkdropDebugSnapshot carries performance metrics', () => {
   });
 });
 
-test('buildBlendStateForRender reuses the active blend payload', () => {
-  const blendState = {
-    mode: 'gpu' as const,
-    previousFrame: { presetId: 'signal-bloom' } as never,
-    alpha: 1,
-  };
-
-  const result = buildBlendStateForRender({
-    transitionMode: 'blend',
-    shaderQuality: 'balanced',
-    canBlendCurrentFrame: true,
-    blendState,
-    now: 500,
-    blendEndAtMs: 1500,
-    blendDuration: 2,
-  });
-
-  expect(result).toBe(blendState);
-  expect(result?.alpha).toBeCloseTo(0.5, 6);
-});
-
-test('buildBlendStateForRender evaluates workload only for eligible blends', () => {
-  const blendState = {
-    mode: 'gpu' as const,
-    previousFrame: { presetId: 'signal-bloom' } as never,
-    alpha: 1,
-  };
-  let workloadReads = 0;
-  const getCurrentFrameWorkload = () => {
-    workloadReads += 1;
-    return 480;
-  };
-  const common = {
-    shaderQuality: 'balanced',
-    blendState,
-    now: 500,
-    blendEndAtMs: 1500,
-    blendDuration: 2,
-    getCurrentFrameWorkload,
-    maxWorkload: 900,
-  } as unknown as Parameters<typeof buildBlendStateForRender>[0];
-
-  const active = buildBlendStateForRender({
-    ...common,
-    transitionMode: 'blend',
-  });
-  const inactive = buildBlendStateForRender({
-    ...common,
-    transitionMode: 'cut',
-  });
-
-  expect(active).toBe(blendState);
-  expect(inactive).toBeNull();
-  expect(workloadReads).toBe(1);
-});
-
-test('presentation controller throttles agent debug snapshot refreshes', () => {
-  const setDebugSnapshotCalls: Array<{ tool: string; snapshot: unknown }> = [];
-
-  const controller = createMilkdropPresentationController({
-    vm: {
-      setPreset: () => {},
-      setRenderBackend: () => {},
-    } as never,
-    getAdapter: () => null,
-    getState: () => ({
-      activePresetId: 'rovastar-parallel-universe',
-      compiledPreset: {
-        source: { id: 'rovastar-parallel-universe' },
-        title: 'Rovastar Parallel Universe',
-      } as never,
-      frameState: null,
-      backend: 'webgpu',
-      status: null,
-      adaptiveQuality: null,
-    }),
-    setCompiledState: () => {},
-    isAgentMode: () => true,
-    setDebugSnapshot: (tool, snapshot) => {
-      setDebugSnapshotCalls.push({ tool, snapshot });
-    },
-    getPerformanceMetrics: () => ({
-      sampleCount: 1,
-      windowSize: 4,
-      averageFrameMs: 12,
-      averageSimulationMs: 4,
-      averageRenderMs: 8,
-      p95FrameMs: 12,
-      maxFrameMs: 12,
-      gpuTimings: null,
-    }),
-  });
-
-  controller.updateAgentDebugSnapshot(true);
-  controller.updateAgentDebugSnapshot();
-  expect(setDebugSnapshotCalls).toHaveLength(1);
-
-  controller.updateAgentDebugSnapshot(true);
-  expect(setDebugSnapshotCalls).toHaveLength(2);
-});
+// Blend-alpha behavior now lives in runtime/transition-controller.ts and is
+// covered by tests/unit/milkdrop-transition-controller.test.ts.
