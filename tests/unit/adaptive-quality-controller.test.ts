@@ -305,22 +305,28 @@ describe('createAdaptiveQualityController', () => {
     const overBudgetFrameMs = budgetMs * 1.5;
 
     // Fill the rolling window with over-budget frames, plus enough samples to
-    // clear warmup and the rolling-window degrade threshold.
+    // clear warmup and the rolling-window degrade threshold. Capture the state
+    // at the moment of the degrade event: steady-state republishing means the
+    // final published state legitimately settles back to 'steady' afterwards.
+    let degradeState: ReturnType<typeof controller.getState> | null = null;
     for (let index = 0; index < windowSize + 12; index += 1) {
-      controller.recordFrame({
+      const next = controller.recordFrame({
         frameMs: overBudgetFrameMs,
         phases: { renderMs: 2 },
       });
+      if (!degradeState && next.adaptation === 'degraded') {
+        degradeState = next;
+      }
     }
 
     const state = controller.getState();
     expect(state.rollingAverageFrameMs).not.toBeNull();
     expect(state.rollingAverageFrameMs as number).toBeGreaterThan(budgetMs);
     expect(state.qualityStep).toBeGreaterThan(0);
-    expect(state.adaptation).toBe('degraded');
-    expect(state.reasons.some((reason) => reason.includes('5-second'))).toBe(
-      true,
-    );
+    expect(degradeState).not.toBeNull();
+    expect(
+      degradeState?.reasons.some((reason) => reason.includes('5-second')),
+    ).toBe(true);
   });
 
   test('starts conservatively and adapts on webgl backends', () => {

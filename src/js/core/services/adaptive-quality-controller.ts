@@ -120,6 +120,7 @@ const QUALITY_STEPS: readonly QualityStep[] = [
   },
 ] as const;
 
+const STEADY_REPUBLISH_INTERVAL_SAMPLES = 60;
 const EMA_ALPHA = 0.18;
 const MIN_WARMUP_SAMPLES = 24;
 const DEGRADE_THRESHOLD_SAMPLES = 12;
@@ -275,7 +276,8 @@ function buildHeuristicProfile(
   let floorStep = 0;
   if (signals.isMobile) {
     const isFlagshipMobile =
-      capabilities.performanceTier === 'high-end' &&
+      (capabilities.performanceTier === 'high-end' ||
+        capabilities.performanceTier === 'enhanced') &&
       (signals.hardwareConcurrency ?? 0) >= 6;
     // Flagship mobile starts at 'full' (step 1), never 'ultra' (step 0): the
     // render/pixel-ratio caps already bound the effective resolution, and the
@@ -786,6 +788,15 @@ export function createAdaptiveQualityController({
         consecutiveUnderBudget < RESET_THRESHOLD_SAMPLES
       ) {
         adaptation = 'steady';
+      }
+
+      // Steady frames never hit a publish() branch above, so without this the
+      // published state (telemetry, HUD, agent bridge) freezes on the last
+      // warmup snapshot — including startup-spike averages and a spurious
+      // thermalState — for the rest of the session. Republish about once a
+      // second so observers track the live EMAs without per-frame GC churn.
+      if (sampleCount % STEADY_REPUBLISH_INTERVAL_SAMPLES === 0) {
+        return publish();
       }
 
       return state;
