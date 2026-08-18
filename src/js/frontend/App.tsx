@@ -163,6 +163,15 @@ function StimsWorkspaceAppShell() {
   const uiRef = useRef(ui);
   uiRef.current = ui;
   const { engineSnapshot } = useEngineSnapshot();
+  // Latest-value refs for the agent bridge: the bridge must be installed
+  // exactly once. Depending on `engine`/`engineSnapshot` re-ran the install
+  // effect on every snapshot emit, and each re-run tore the window `message`
+  // listener down for seconds (deferToIdle) — agent/automation messages
+  // (preview capture, MCP) landing in the gap were silently dropped.
+  const engineBridgeRef = useRef(engine);
+  engineBridgeRef.current = engine;
+  const engineSnapshotRef = useRef(engineSnapshot);
+  engineSnapshotRef.current = engineSnapshot;
 
   const { isFullscreen, handleToggleFullscreen } = useFullscreen(
     ui.stageRef,
@@ -308,16 +317,17 @@ function StimsWorkspaceAppShell() {
           // forwarded it and this handler always dropped it, so that tool
           // silently did nothing.
           if (payload.milkSource) {
-            engine.updateEditorSource(payload.milkSource);
+            engineBridgeRef.current.updateEditorSource(payload.milkSource);
             return;
           }
           if (payload.presetId) {
-            void engine.handlePlayPreset(payload.presetId);
+            void engineBridgeRef.current.handlePlayPreset(payload.presetId);
           }
         },
         onApplyTweak: (_tweak) => {
-          if (engineSnapshot?.activePresetId) {
-            void engine.handlePlayPreset(engineSnapshot.activePresetId);
+          const activePresetId = engineSnapshotRef.current?.activePresetId;
+          if (activePresetId) {
+            void engineBridgeRef.current.handlePlayPreset(activePresetId);
           }
         },
         // Lets an MCP session_midi_set/session_midi_cc call "perform" on the
@@ -342,7 +352,7 @@ function StimsWorkspaceAppShell() {
         // Read/await surface for live code editing. Without these an agent
         // could send preset source but never learn whether it compiled.
         getEditorState: () => {
-          const state = engine.getEditorSessionState();
+          const state = engineBridgeRef.current.getEditorSessionState();
           return state ? toAgentEditorState(state) : null;
         },
         getEditorFields: () => {
@@ -351,21 +361,22 @@ function StimsWorkspaceAppShell() {
           // tab) or the newest source failed — and an agent reading values to
           // compute a delta needs the buffer it is actually editing.
           const compiled =
-            engine.getEditorSessionState()?.latestCompiled ??
-            engine.getActiveCompiledPreset();
+            engineBridgeRef.current.getEditorSessionState()?.latestCompiled ??
+            engineBridgeRef.current.getActiveCompiledPreset();
           return compiled ? { ...compiled.ir.numericFields } : null;
         },
         applyEditorSource: async (source) => {
-          const state = await engine.applyEditorSourceAwaited(source);
+          const state = await engineBridgeRef.current.applyEditorSourceAwaited(source);
           return state ? toAgentEditorState(state) : null;
         },
         applyEditorFields: async (updates) => {
-          const state = await engine.applyEditorFieldsAwaited(updates);
+          const state = await engineBridgeRef.current.applyEditorFieldsAwaited(updates);
           return state ? toAgentEditorState(state) : null;
         },
       });
     });
-  }, [engine, engineSnapshot?.activePresetId]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: install once; live values flow through refs
+  }, []);
 
   // The editor and refine panels are code-split, and the editor's first open
   // pays for the whole codemirror/compiler graph (the largest lazy dependency

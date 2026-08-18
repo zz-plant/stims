@@ -10,6 +10,7 @@ import {
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
+import { isAgentMode } from '../core/agent-api.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -2876,7 +2877,12 @@ class WebGPUMilkdropFeedbackManager
             getRenderTarget?: () => RenderTarget | null;
           })
         | null;
-      if (renderer?.compileAsync) {
+      // Agent mode (headless captures, labs, e2e) pumps simulation frames
+      // synchronously and reads the canvas immediately after a preset apply;
+      // a deferred swap would capture the previous preset's styling and trip
+      // duplicate-frame guards. Those environments run desktop GPUs where the
+      // synchronous pipeline compile is cheap, so they keep the direct path.
+      if (renderer?.compileAsync && !isAgentMode()) {
         // Progressive apply, mirroring the WebGL manager: assigning the new
         // output nodes directly makes the next render create their pipelines
         // through the synchronous createRenderPipeline — on mobile drivers
