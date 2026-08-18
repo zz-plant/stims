@@ -287,6 +287,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     ),
     getMilkdropLayerRenderOrder('motion-vectors'),
   );
+  /** True while the blend-layer groups are visible with the outgoing
+   * preset's geometry, so blend end hides them exactly once. */
+  private blendVisualsVisible = false;
   private readonly blendWaveGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('blend-main-wave'),
@@ -1285,6 +1288,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
+  private setBlendVisualsVisible(visible: boolean) {
+    this.blendWaveGroup.visible = visible;
+    this.blendCustomWaveGroup.visible = visible;
+    this.blendParticleFieldGroup.visible = visible;
+    this.blendShapeGroup.visible = visible;
+    this.blendBorderGroup.visible = visible;
+    this.blendMotionVectorGroup.visible = visible;
+    if (!visible) {
+      // Batched blend targets render under the batcher's root, not these
+      // groups; hide them too or they keep the ghost alive on their own.
+      this.batcher?.hideBlendTargets?.();
+    }
+    this.blendVisualsVisible = visible;
+  }
+
   render(payload: MilkdropRenderPayload) {
     try {
       this.audioTexture.update(
@@ -1314,7 +1332,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
       const blend = payload.blendState;
       if (blend) {
+        if (!this.blendVisualsVisible) {
+          this.setBlendVisualsVisible(true);
+        }
         this.renderBlendVisuals(payload, blend);
+      } else if (this.blendVisualsVisible) {
+        // No blend this frame (settled, cut/cancelled, or gate-suspended):
+        // the blend groups still hold the outgoing preset's last geometry
+        // and would keep rendering it as a ghost — hide them. Contents are
+        // kept (not disposed) so the next blend reuses the pooled objects
+        // instead of recompiling their materials.
+        this.setBlendVisualsVisible(false);
       }
 
       if (

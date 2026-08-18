@@ -74,6 +74,11 @@ export type MilkdropRendererAdapterConfig = {
 export type MilkdropRendererBatcher = {
   attach: (root: Group) => void;
   dispose: () => void;
+  /** Hides every batched target belonging to the blend layer. Batched
+   * targets live under the batcher's own root, not the adapter's blend
+   * groups, so blend end must hide them here or their last synced
+   * instances keep rendering as a ghost of the outgoing preset. */
+  hideBlendTargets?: () => void;
   disposeWithCaches?: () => void;
   setShapeTexture?: (texture: Texture | null) => void;
   renderWaveGroup?: (
