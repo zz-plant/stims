@@ -70,6 +70,14 @@ export abstract class MilkdropFeedbackManagerLifecycleBase<
       this.saveCurrentFrame();
     }
     this.presentMaterial.uniforms.transitionAlpha.value = alpha;
+    // Keeps the dissolve pattern's aspect correction in sync with the
+    // viewport; set here (once per blend frame) rather than on resize so
+    // both backends stay covered without touching their resize paths.
+    const aspectUniform = this.presentMaterial.uniforms.patternAspect;
+    if (aspectUniform) {
+      aspectUniform.value =
+        this.viewportWidth / Math.max(1, this.viewportHeight);
+    }
   }
 
   setAdaptiveQuality({

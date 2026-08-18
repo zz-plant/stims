@@ -35,6 +35,7 @@ import {
 } from './compiler/shader-analysis-glsl.ts';
 import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-execution-classification.ts';
 import {
+  MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
@@ -1475,6 +1476,7 @@ class SharedMilkdropFeedbackManager
         currentTex: { value: this.displayTarget.texture },
         savedTex: { value: null },
         transitionAlpha: { value: 0 },
+        patternAspect: { value: 16 / 9 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -1487,7 +1489,31 @@ class SharedMilkdropFeedbackManager
         uniform sampler2D currentTex;
         uniform sampler2D savedTex;
         uniform float transitionAlpha;
+        uniform float patternAspect;
         varying vec2 vUv;
+
+        // MilkDrop-style dissolve: a static noise pattern sets when each pixel
+        // flips from the saved frame to the live preset, so the transition
+        // sweeps through the image in organic patches instead of one flat
+        // full-screen fade. Knobs live in MILKDROP_BLEND_DISSOLVE
+        // (feedback-composite-profile.ts), shared with the WebGPU TSL node.
+        // Sin-free hash (Dave Hoskins): fract(sin(x) * 43758.5453) breaks
+        // down on mediump mobile GPUs (Mali/Adreno) and costs more there.
+        float hash21(vec2 p) {
+          vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+          p3 += dot(p3, p3.yzx + 33.33);
+          return fract((p3.x + p3.y) * p3.z);
+        }
+        float valueNoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          float a = hash21(i);
+          float b = hash21(i + vec2(1.0, 0.0));
+          float c = hash21(i + vec2(0.0, 1.0));
+          float d = hash21(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+        }
         void main() {
           vec4 current = texture2D(currentTex, vUv);
           if (transitionAlpha < 0.001) {
@@ -1496,11 +1522,27 @@ class SharedMilkdropFeedbackManager
           }
           vec4 saved = texture2D(savedTex, vUv);
           float a = clamp(transitionAlpha, 0.0, 1.0);
-          float smoothA = a * a * (3.0 - 2.0 * a);
+          // Ease the global progression so the wipe starts and ends gently
+          // instead of snapping into motion off the linear alpha ramp.
+          a = a * a * (3.0 - 2.0 * a);
+          // Aspect-corrected sample point keeps dissolve patches round on
+          // any viewport instead of stretched across the wide axis.
+          vec2 p = vec2(vUv.x * patternAspect, vUv.y);
+          float pattern =
+            ${MILKDROP_BLEND_DISSOLVE.coarseWeight.toFixed(4)} *
+              valueNoise(p * ${MILKDROP_BLEND_DISSOLVE.coarseScale.toFixed(4)}) +
+            ${(1 - MILKDROP_BLEND_DISSOLVE.coarseWeight).toFixed(4)} *
+              valueNoise(p * ${MILKDROP_BLEND_DISSOLVE.fineScale.toFixed(4)} +
+                ${MILKDROP_BLEND_DISSOLVE.fineOffset.toFixed(4)});
+          const float band = ${MILKDROP_BLEND_DISSOLVE.band.toFixed(4)};
+          // Remap so a=1 keeps every pixel on the saved frame and a=0 releases
+          // every pixel, regardless of where its pattern threshold landed.
+          float aa = a * (1.0 + 2.0 * band) - band;
+          float local = smoothstep(pattern - band, pattern + band, aa);
           vec3 currentSq = current.rgb * current.rgb;
           vec3 savedSq = saved.rgb * saved.rgb;
-          vec3 blendedRgb = sqrt(mix(currentSq, savedSq, smoothA));
-          float blendedAlpha = mix(current.a, saved.a, smoothA);
+          vec3 blendedRgb = sqrt(mix(currentSq, savedSq, local));
+          float blendedAlpha = mix(current.a, saved.a, local);
           gl_FragColor = vec4(blendedRgb, blendedAlpha);
         }
       `,
