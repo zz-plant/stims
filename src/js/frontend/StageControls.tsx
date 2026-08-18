@@ -34,6 +34,9 @@ type MenuItem = {
   separatorBefore?: boolean;
   // Short group header rendered above the item (implies a separator).
   sectionLabel?: string;
+  // Stable automation id, matching the command-palette action id where one
+  // exists — labels are copy and may change; data-action must not.
+  actionId?: string;
 };
 
 /**
@@ -293,6 +296,7 @@ export function StageControls({
       label: 'Browse presets',
       action: () =>
         run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
+      actionId: 'open-browse',
       active: panel === 'browse',
     },
     {
@@ -303,6 +307,7 @@ export function StageControls({
       // away once open.
       icon: 'eye' as const,
       label: 'Find similar',
+      actionId: 'find-similar',
       action: () =>
         run(() => {
           const target = engineSnapshot?.audioActive
@@ -317,6 +322,7 @@ export function StageControls({
     {
       icon: 'sparkles' as const,
       label: 'Generate with AI',
+      actionId: 'open-generate',
       action: () =>
         run(() => ui.updatePanel(panel === 'synthesize' ? null : 'synthesize')),
       active: panel === 'synthesize',
@@ -326,6 +332,7 @@ export function StageControls({
     {
       icon: 'wand' as const,
       label: 'Refine with AI',
+      actionId: 'open-refine',
       action: () =>
         run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
       active: panel === 'refine',
@@ -333,6 +340,7 @@ export function StageControls({
     {
       icon: 'pencil' as const,
       label: 'Edit preset code',
+      actionId: 'open-editor',
       action: () =>
         run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
       active: panel === 'editor',
@@ -340,6 +348,7 @@ export function StageControls({
     {
       icon: 'video' as const,
       label: 'Record video',
+      actionId: 'open-record',
       action: () =>
         run(() => {
           if (panel === 'capture') {
@@ -368,6 +377,7 @@ export function StageControls({
     {
       icon: 'link' as const,
       label: 'Share link',
+      actionId: 'share-link',
       action: () => run(() => void ui.handleShowCurrentLink()),
     },
     {
@@ -376,6 +386,7 @@ export function StageControls({
       // Settings → Watch together.
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
+      actionId: 'watch-party',
       action: () => run(() => void handleWatchParty()),
     },
     // Ending should be as close as starting was — symmetric with the item
@@ -385,6 +396,7 @@ export function StageControls({
           {
             icon: 'close' as const,
             label: 'End watch party',
+            actionId: 'end-watch-party',
             action: () =>
               run(() => {
                 leaveSyncSession();
@@ -399,6 +411,7 @@ export function StageControls({
     {
       icon: 'sliders' as const,
       label: 'Settings',
+      actionId: 'open-settings',
       action: () =>
         run(() => ui.updatePanel(panel === 'settings' ? null : 'settings')),
       active: panel === 'settings',
@@ -407,6 +420,7 @@ export function StageControls({
     {
       icon: 'expand' as const,
       label: isFullscreen ? 'Exit full screen' : 'Full screen',
+      actionId: 'toggle-fullscreen',
       action: () => run(() => onToggleFullscreen()),
     },
     // Absent on browsers without the Picture-in-Picture API (a synchronous
@@ -418,6 +432,7 @@ export function StageControls({
             label: pip.active
               ? 'Exit picture in picture'
               : 'Picture in picture',
+            actionId: 'toggle-pip',
             // `run` invokes this synchronously inside the click handler, so
             // the PiP request still carries transient user activation.
             action: () => run(() => pip.toggle()),
@@ -430,6 +445,7 @@ export function StageControls({
           {
             icon: 'volume-off' as const,
             label: 'Stop audio',
+            actionId: 'stop-audio',
             action: () => run(() => engine.handleAudioStop()),
             separatorBefore: true,
           },
@@ -447,6 +463,7 @@ export function StageControls({
                 ? '⌘K'
                 : 'Ctrl+K'
             })`,
+            actionId: 'open-palette',
             action: () => run(onOpenPalette),
             separatorBefore: true,
           } satisfies MenuItem,
@@ -464,6 +481,7 @@ export function StageControls({
       ) : null}
       <button
         type="button"
+        data-action={item.actionId}
         {...(item.active === undefined
           ? { role: 'menuitem' as const }
           : {
@@ -513,6 +531,7 @@ export function StageControls({
           <button
             type="button"
             className={styles.navBtn}
+            data-action="previous-preset"
             aria-label="Previous preset"
             title="Previous"
             onClick={handlePrevious}
@@ -525,6 +544,7 @@ export function StageControls({
           <button
             type="button"
             className={styles.navBtn}
+            data-action="next-preset"
             aria-label="Shuffle to random preset"
             title="Surprise me"
             onClick={handleShuffle}
@@ -538,6 +558,7 @@ export function StageControls({
           <button
             type="button"
             className={styles.titleBtn}
+            data-action="open-browse"
             data-active={String(panel === 'browse')}
             aria-label="Browse presets"
             onClick={handleBrowse}
@@ -556,6 +577,7 @@ export function StageControls({
             <button
               type="button"
               className={styles.navBtn}
+              data-action="save-preset"
               data-saved={String(presetSaved)}
               aria-pressed={presetSaved}
               aria-label={presetSaved ? 'Remove from saved' : 'Save preset'}
@@ -626,6 +648,11 @@ export function StageControls({
                   aria-checked={index === transitionStepIndex}
                   aria-label={`Transition: ${describeTransitionStep(step)}`}
                   className={styles.menuOption}
+                  data-action={
+                    step.mode === 'cut'
+                      ? 'transition-cut'
+                      : `transition-${step.seconds}s`
+                  }
                   data-active={String(index === transitionStepIndex)}
                   onClick={() =>
                     run(() => {
@@ -662,6 +689,7 @@ export function StageControls({
                   aria-checked={engineSnapshot?.audioSource === option.source}
                   aria-label={option.name}
                   className={styles.menuOption}
+                  data-action={`audio-${option.source}`}
                   data-active={String(
                     engineSnapshot?.audioSource === option.source,
                   )}
