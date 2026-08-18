@@ -6,6 +6,7 @@ import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
 } from '../core/services/adaptive-quality-controller.ts';
+import { subscribeToRendererLifecycle } from '../core/services/render-service.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
@@ -844,6 +845,7 @@ export function createMilkdropExperience({
 
 // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
 function buildExperienceController(deps: Record<string, any>) {
+  let rendererLifecycleUnsubscribe: (() => void) | null = null;
   return {
     subscribe(listener: unknown) {
       return deps.subscribe(listener);
@@ -1007,6 +1009,25 @@ function buildExperienceController(deps: Record<string, any>) {
         const renderer = (handle as { renderer?: unknown } | null)?.renderer;
         if (!renderer || !deps.lifetime.isActive()) return;
         void deps.statsOverlay.init(renderer);
+        // The pooled renderer handle keeps its identity across a device-loss
+        // recovery, but the underlying renderer (and possibly the backend —
+        // WebGPU can come back as WebGL) does not. The adapter and material
+        // graph are compiled per-renderer, so a recreation must re-run the
+        // attachment or every subsequent frame renders against disposed GPU
+        // state (a permanently black stage with per-frame adapter errors).
+        rendererLifecycleUnsubscribe?.();
+        rendererLifecycleUnsubscribe = subscribeToRendererLifecycle((event) => {
+          if (event.type !== 'recreated' || event.handle !== handle) {
+            return;
+          }
+          if (!deps.lifetime.isActive()) {
+            return;
+          }
+          log.log(
+            `Renderer recreated (backend: ${event.handle.backend}); rebuilding the milkdrop attachment.`,
+          );
+          deps.attachmentController.attachRuntime(nextRuntime);
+        });
       });
       return result;
     },
@@ -1017,6 +1038,8 @@ function buildExperienceController(deps: Record<string, any>) {
     },
 
     dispose() {
+      rendererLifecycleUnsubscribe?.();
+      rendererLifecycleUnsubscribe = null;
       deps.statsOverlay.dispose();
       deps.lifetime.dispose();
       deps.clearDebugSnapshot?.('milkdrop');
