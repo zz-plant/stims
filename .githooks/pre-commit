@@ -10,7 +10,9 @@ if (format.exitCode !== 0) {
   process.exit(1);
 }
 
-const quick = await $`bun run check:quick`.nothrow();
+// Staged-only lint scope: this hook gates the commit's contents, not
+// another session's live working-tree churn (see scripts/lint-changed.ts).
+const quick = await $`STIMS_LINT_STAGED=1 bun run check:quick`.nothrow();
 if (quick.exitCode !== 0) {
   console.error(
     '❌ Commit blocked: bun run check:quick failed (lint, typecheck, or guard).',

@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -34,6 +35,10 @@ function logError(msg: string) {
 
 function logInfo(msg: string) {
   console.log(`\x1b[32m[INFO]\x1b[0m ${msg}`);
+}
+
+function logWarning(msg: string) {
+  console.warn(`\x1b[33m[WARN]\x1b[0m ${msg}`);
 }
 
 export function checkCatalogIntegrity(): boolean {
@@ -174,6 +179,32 @@ export function checkCatalogIntegrity(): boolean {
   // otherwise a known-broken render ships indistinguishable from a working
   // one.
   if (fs.existsSync(PREVIEW_FAILURES_PATH)) {
+    // A preview-generation batch rewrites this file continuously while it
+    // runs, and its interim contents describe the batch's captures, not the
+    // shipped catalog. While the file has uncommitted changes, the mismatch
+    // is in-flight work: report it as a warning so unrelated commits are not
+    // blocked for the duration of a batch. Once the file is committed (the
+    // only state CI ever sees), the check is strict again.
+    let failuresFileDirty = false;
+    try {
+      failuresFileDirty =
+        execSync(`git status --porcelain -- ${PREVIEW_FAILURES_PATH}`, {
+          encoding: 'utf8',
+        }).trim().length > 0;
+    } catch {
+      // Not a git checkout (CI tarball, etc.) — treat as clean and strict.
+    }
+    const report = failuresFileDirty
+      ? (message: string) => logWarning(message)
+      : (message: string) => {
+          logError(message);
+          errorsCount += 1;
+        };
+    if (failuresFileDirty) {
+      logWarning(
+        'preview-failures.json has uncommitted changes (a preview batch is in flight); preview-flag mismatches below are advisory until the batch is reconciled and committed.',
+      );
+    }
     try {
       const failures = JSON.parse(
         fs.readFileSync(PREVIEW_FAILURES_PATH, 'utf8'),
@@ -182,10 +213,9 @@ export function checkCatalogIntegrity(): boolean {
       for (const failure of failures) {
         const entry = presetsById.get(failure.presetId);
         if (entry && entry.preview === true) {
-          logError(
+          report(
             `Preset "${failure.presetId}" is listed in preview-failures.json (${failure.reason ?? 'render failure'}) but still has preview=true in the catalog. Set preview=false or fix and re-render the preview.`,
           );
-          errorsCount += 1;
         }
       }
     } catch (error) {
