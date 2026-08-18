@@ -603,6 +603,16 @@ export function evaluateMilkdropExpression(
       }
 
       const left = evaluateMilkdropExpression(node.left, env, helpers);
+      // Short-circuit like EEL (and the JIT's emitted JS): the right side of
+      // a decided boolean op must not run — preset code puts assignments
+      // there and relies on them being skipped.
+      if (node.operator === '&&' || node.operator === '||') {
+        const leftTruthy = Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR;
+        if (node.operator === '&&' && !leftTruthy) return 0;
+        if (node.operator === '||' && leftTruthy) return 1;
+        const right = evaluateMilkdropExpression(node.right, env, helpers);
+        return Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR ? 1 : 0;
+      }
       const right = evaluateMilkdropExpression(node.right, env, helpers);
       switch (node.operator) {
         case '+':
@@ -638,24 +648,29 @@ export function evaluateMilkdropExpression(
           return left === right ? 1 : 0;
         case '!=':
           return left !== right ? 1 : 0;
-        case '&&':
-          return Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR &&
-            Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR
-            ? 1
-            : 0;
-        case '||':
-          return Math.abs(left) > MILKDROP_EEL_CLOSE_FACTOR ||
-            Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR
-            ? 1
-            : 0;
       }
       return 0;
     }
     case 'call': {
+      const lazyName = node.name.toLowerCase();
+      // `if` must evaluate only the taken branch — EEL compiles it to a
+      // branch, and preset code relies on that for side effects
+      // (`if(c, q1 = a, q1 = b)`). The JIT emits a lazy ternary; evaluating
+      // all three args here ran both branches' assignments and diverged.
+      if (lazyName === 'if') {
+        const condition = node.args[0]
+          ? evaluateMilkdropExpression(node.args[0], env, helpers)
+          : 0;
+        const branch =
+          Math.abs(condition) > MILKDROP_EEL_CLOSE_FACTOR
+            ? node.args[1]
+            : node.args[2];
+        return branch ? evaluateMilkdropExpression(branch, env, helpers) : 0;
+      }
       const args = node.args.map((arg) =>
         evaluateMilkdropExpression(arg, env, helpers),
       );
-      const name = node.name.toLowerCase();
+      const name = lazyName;
       switch (name) {
         case 'sin':
           return Math.sin(args[0] ?? 0);
