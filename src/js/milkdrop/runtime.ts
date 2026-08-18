@@ -863,6 +863,9 @@ export function createMilkdropExperience({
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
     statsOverlay,
+    // setLiveField/applyFields drive the running VM directly (Tune drags,
+    // MIDI, the agent API); omitting vm here made them throw.
+    vm,
     // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
   } as any);
 }

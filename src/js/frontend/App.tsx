@@ -33,11 +33,16 @@ import {
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
+  getAgentTelemetry,
   initAgentBridge,
   toAgentEditorState,
   updateAgentTelemetry,
 } from './agent-bridge.ts';
-import { installAgentStateGlobal } from './agent-state.ts';
+import {
+  type AgentCoreSnapshot,
+  emitAgentCommit,
+  installAgentStateGlobal,
+} from './agent-state.ts';
 import { CommandPalette, useCommandPaletteHotkey } from './CommandPalette.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { CreditsDialog } from './CreditsDialog.tsx';
@@ -460,32 +465,41 @@ function StimsWorkspaceAppShell() {
   liveModeRef.current = liveMode;
   const engineReadyRef = useRef(engine.engineReady);
   engineReadyRef.current = engine.engineReady;
+  const buildAgentCoreSnapshot = useCallback((): AgentCoreSnapshot => {
+    const snap = engineSnapshotRef.current;
+    const live = liveModeRef.current;
+    const ready = engineReadyRef.current;
+    return {
+      engineState: live ? 'live' : ready ? 'ready' : 'booting',
+      engineReady: ready,
+      liveMode: live,
+      backend: snap?.backend ?? null,
+      panel: uiRef.current.routeState.panel ?? null,
+      presetId: snap?.activePresetId ?? null,
+      presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
+      audioSource: snap?.audioSource ?? null,
+      audioEnergy: getAudioEnergy(),
+      autoplay: snap?.autoplay ?? null,
+      transition: {
+        mode: snap?.transitionMode ?? null,
+        blendDuration: snap?.blendDuration ?? null,
+      },
+    };
+  }, []);
+
   useEffect(() => {
     return installAgentStateGlobal({
       getActions: () => paletteActionsRef.current,
-      getSnapshot: () => {
-        const snap = engineSnapshotRef.current;
-        const live = liveModeRef.current;
-        const ready = engineReadyRef.current;
-        return {
-          engineState: live ? 'live' : ready ? 'ready' : 'booting',
-          engineReady: ready,
-          liveMode: live,
-          backend: snap?.backend ?? null,
-          panel: uiRef.current.routeState.panel ?? null,
-          presetId: snap?.activePresetId ?? null,
-          presetTitle: engineBridgeRef.current.selectedPreset?.title ?? null,
-          audioSource: snap?.audioSource ?? null,
-          audioEnergy: getAudioEnergy(),
-          autoplay: snap?.autoplay ?? null,
-          transition: {
-            mode: snap?.transitionMode ?? null,
-            blendDuration: snap?.blendDuration ?? null,
-          },
-        };
-      },
+      getSnapshot: buildAgentCoreSnapshot,
+      getTelemetry: getAgentTelemetry,
+      selectPreset: (presetId) =>
+        engineBridgeRef.current.handlePresetSelection(presetId),
+      setField: (key, value) =>
+        engineBridgeRef.current.updateFieldLive(key, value),
+      getStageCanvas: () =>
+        uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
     });
-  }, []);
+  }, [buildAgentCoreSnapshot]);
 
   useEffect(() => {
     document.body.dataset.engineState = liveMode
@@ -494,6 +508,19 @@ function StimsWorkspaceAppShell() {
         ? 'ready'
         : 'booting';
   }, [liveMode, engine.engineReady]);
+
+  // Post-commit notification for run()/waitFor(): fires after React commits
+  // any snapshot-relevant change, so a resolved waiter observes real state.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the listed deps are re-run triggers, not reads — the snapshot is read through refs
+  useEffect(() => {
+    emitAgentCommit(buildAgentCoreSnapshot());
+  }, [
+    buildAgentCoreSnapshot,
+    engineSnapshot,
+    liveMode,
+    engine.engineReady,
+    ui.routeState.panel,
+  ]);
 
   useStageGesture({
     enabled: liveMode,
