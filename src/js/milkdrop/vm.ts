@@ -587,12 +587,25 @@ class MilkdropPresetVM implements MilkdropVM {
     return env;
   }
 
+  /** Reused across frames: the flat env consumer (buildShaderControls) reads
+   * it synchronously and the program fallback spreads it into its own copy,
+   * so nothing retains the object between frames. Rebuilding it fresh was
+   * ~7% of total CPU (2026-08-18 rAF profile) — ~300 properties into a new
+   * dictionary-mode object every frame; overwriting a stable-shape scratch
+   * object costs only the value stores. Keys are only ever added (state and
+   * registers never delete), so stale keys cannot survive. */
+  private flatEnvScratch: MutableState | null = null;
+
   private createFlatEnv(
     signals: MilkdropRuntimeSignals,
     extra: Record<string, number> = {},
   ) {
     this.prepareSignalEnv(signals);
-    const env = Object.create(this.signalEnv) as MutableState;
+    let env = this.flatEnvScratch;
+    if (!env || Object.getPrototypeOf(env) !== this.signalEnv) {
+      env = Object.create(this.signalEnv) as MutableState;
+      this.flatEnvScratch = env;
+    }
     Object.assign(env, this.state, this.registers, this.signalEnv, extra);
     return env;
   }
