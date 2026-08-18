@@ -22,6 +22,7 @@ import {
 import {
   isFirefoxUA,
   isRecognizedWebGPUBrowser,
+  isWebGPUStableInThisBrowser,
 } from './renderer-query-override.ts';
 import {
   getRendererRetrySnapshot,
@@ -239,12 +240,16 @@ function isGuardedMobileWebGPUEnvironment() {
     Boolean(nav.gpu) && typeof nav.gpu?.requestAdapter === 'function';
   const userAgent = nav.userAgent?.toLowerCase() ?? '';
 
-  // Guard against known unstable WebGPU implementations even when the API is present
-  if (
-    userAgent.includes('samsungbrowser/') ||
-    userAgent.includes('; wv') ||
-    userAgent.includes('miuibrowser/')
-  ) {
+  // Guard embedded WebViews and browsers with known-unstable WebGPU even
+  // when the API is present. Samsung Internet defers to the same
+  // version-aware stability check the desktop path uses — a blanket
+  // `samsungbrowser/` guard here contradicted that whitelist and kept every
+  // Galaxy owner using their default browser on WebGL forever, current
+  // flagship hardware included.
+  if (userAgent.includes('; wv') || userAgent.includes('miuibrowser/')) {
+    return true;
+  }
+  if (userAgent.includes('samsungbrowser/') && !isWebGPUStableInThisBrowser()) {
     return true;
   }
 
