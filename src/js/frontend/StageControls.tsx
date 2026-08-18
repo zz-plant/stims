@@ -495,6 +495,9 @@ export function StageControls({
               className="stims-icon-slot stims-icon-slot--sm"
             />
           </span>
+          {/* A bare chevron on an unlabeled pill was the only visible UI on
+              an idle stage; first-time visitors had to guess what it did. */}
+          <span>Controls</span>
         </button>
       ) : null}
     </>
