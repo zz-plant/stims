@@ -629,6 +629,15 @@ html.light .stims-shell {
     gap: 12px;
     border-radius: var(--ctl-radius);
     transition: background var(--ctl-ease);
+    /* Skip layout/paint for offscreen rows — the same containment the grid
+       view already gets. The catalog is browsed here as an unbounded
+       infinite-scroll list (append-only, no windowing), so without this
+       every scrolled-in batch of rows keeps paying full layout/paint cost
+       for the whole accumulated list, not just what's visible. Intrinsic
+       size must match the real row height (measured: 52px) or the
+       scrollbar/scroll position jumps as rows come in and out of view. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 52px;
   }
 
   .ctl-preset:hover {

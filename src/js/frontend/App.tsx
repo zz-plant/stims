@@ -612,12 +612,17 @@ function StimsWorkspaceAppShell() {
   // The editor and refine panels are code-split, and the editor's first open
   // pays for the whole codemirror/compiler graph (the largest lazy dependency
   // chain in the app). Warm those chunks during idle after first paint so the
-  // first E/G press doesn't stall on the download.
+  // first E/G press doesn't stall on the download. Browse joins them for the
+  // same reason: it's the single-letter 'B' shortcut and the app's primary
+  // navigation surface (2000+ presets), so its first open is one of the most
+  // likely early interactions — worth prefetching alongside the others
+  // rather than paying its Suspense fallback cold.
   useEffect(() => {
     return deferToIdle(() => {
       void import('./EditorPanel.tsx');
       void import('./RefinePanel.tsx');
       void import('../milkdrop/overlay/editor-panel.ts');
+      void import('./BrowseSheetPanel.tsx');
     });
   }, []);
 
