@@ -32,18 +32,6 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const toastHookSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'workspace-toast.ts',
-      ),
-      'utf8',
-    );
     const stageSource = readFileSync(
       join(
         import.meta.dir,
@@ -107,9 +95,10 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
-    expect(toastHookSource).toContain(
-      "'Using a lighter graphics mode so playback stays smooth.'",
-    );
+    // The boot-time "lighter graphics mode" toast this used to check for
+    // lean copy was removed entirely in 6f8db66c ("drop boot backend
+    // toast") — there's no copy left to assert here. Coverage for that
+    // decision now lives in app-shell-toast-regression.test.ts.
     expect(stageSource).toContain('Now playing:');
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');
