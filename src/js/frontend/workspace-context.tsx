@@ -14,6 +14,7 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
@@ -146,6 +147,43 @@ export function WorkspaceValueProvider({
   );
 }
 
+/**
+ * Coarse-field equality for the engine snapshot context value. The snapshot
+ * rebuilds per frame while audio plays (audioEnergy/bass/mid/treble churn), so
+ * the context deliberately skips those four fields — they flow through the
+ * dedicated audio-energy store instead. Every other snapshot field MUST be
+ * compared here: any field left out silently stops propagating to
+ * useEngineSnapshot consumers until an included field happens to change
+ * (this is how setBlendDuration appeared to "not take effect" until a page
+ * reload — the setter and the runtime were correct, the context memo swallowed
+ * the update).
+ *
+ * `currentSource` derives from `sessionState.source`, so the `sessionState`
+ * identity check covers it.
+ *
+ * Exported for unit tests.
+ */
+export function coarseEngineSnapshotEqual(
+  prev: EngineSnapshot,
+  snap: EngineSnapshot,
+): boolean {
+  return (
+    prev.activePresetId === snap.activePresetId &&
+    prev.backend === snap.backend &&
+    prev.status === snap.status &&
+    prev.runtimeReady === snap.runtimeReady &&
+    prev.audioActive === snap.audioActive &&
+    prev.audioSource === snap.audioSource &&
+    prev.audioEndedAt === snap.audioEndedAt &&
+    prev.adaptiveQuality === snap.adaptiveQuality &&
+    prev.catalogEntries === snap.catalogEntries &&
+    prev.sessionState === snap.sessionState &&
+    prev.autoplay === snap.autoplay &&
+    prev.transitionMode === snap.transitionMode &&
+    prev.blendDuration === snap.blendDuration
+  );
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
 
@@ -207,15 +245,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       prev &&
       snap &&
       coarseValueRef.current &&
-      prev.activePresetId === snap.activePresetId &&
-      prev.backend === snap.backend &&
-      prev.status === snap.status &&
-      prev.runtimeReady === snap.runtimeReady &&
-      prev.audioActive === snap.audioActive &&
-      prev.audioSource === snap.audioSource &&
-      prev.adaptiveQuality === snap.adaptiveQuality &&
-      prev.catalogEntries === snap.catalogEntries &&
-      prev.sessionState === snap.sessionState
+      coarseEngineSnapshotEqual(prev, snap)
     ) {
       return coarseValueRef.current;
     }
