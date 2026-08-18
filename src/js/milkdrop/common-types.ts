@@ -245,8 +245,10 @@ export type MilkdropVisualCertification = {
 
 export type MilkdropBackendSupportEvidenceCode =
   | 'unknown-field'
+  | 'unknown-function'
   | 'unsupported-hard-feature'
   | 'unsupported-shader-text-gap'
+  | 'shader-text-translated'
   | 'volume-sampler-gap'
   | 'shape-texture-gap'
   | 'video-echo-gap'

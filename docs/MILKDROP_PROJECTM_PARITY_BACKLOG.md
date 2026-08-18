@@ -40,7 +40,7 @@ Bundled shipped preset lane:
   - run `bun run parity:suite`,
   - promote the suite result into `src/data/milkdrop-parity/measured-results.json`,
   - sync `public/milkdrop-presets/catalog.json`.
-  - The current report intentionally classifies one as WebGL-only and three as uncertified because the latest captures do not pass the required native WebGPU lane. They must not be described as WebGPU-certified.
+  - The current report certifies `eos-glowsticks-v2-03-music` on both backends and classifies the other three as uncertified because their latest captures fail visual tolerance (`rovastar-parallel-universe` at ~98% pixel mismatch on both backends). They must not be described as WebGPU-certified.
 
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
@@ -307,7 +307,7 @@ Status:
 
 Current evidence:
 - The comparator requires native WebGPU captures and records backend mismatches instead of accepting fallback WebGL captures.
-- Current report: 2 presets certified on both backends, 1 WebGL-only, 6 uncertified, 14 unmeasured, and 0 missing native WebGPU captures. The volume fixtures are now captured natively but fail visual tolerance.
+- Current report (`src/data/milkdrop-parity/webgpu-certification-report.json`, 2026-07-29): 3 presets certified on both backends, 0 WebGL-only, 6 uncertified, and 62 unmeasured out of a 71-preset corpus. The volume fixtures are captured natively but fail visual tolerance.
 - Native WebGPU direct feedback remains disabled for live sessions and is enabled only in the explicit `renderer=webgpu&corpus=certification` lane, pending measured ShaderMaterial/TSL composite equivalence for broader use.
 - Built-in `noise_lq` and `noisevol_lq` now use deterministic RGBA noise sources for browser parity; strict pixel comparison remains intentionally non-certifying because native projectM seeds these textures independently per process.
 

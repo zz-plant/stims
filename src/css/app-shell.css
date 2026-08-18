@@ -169,6 +169,23 @@ body[data-page="workspace"][data-live="true"] {
     border-radius: var(--stims-radius-card);
   }
 
+  /* Suspense fallback while a lazy panel chunk loads: visible skeleton rows
+     instead of an empty sheet. */
+  .stims-shell__panel-loading {
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .stims-shell__panel-loading .stims-shell__skeleton {
+    height: 44px;
+  }
+
+  .stims-shell__panel-loading .stims-shell__skeleton:first-child {
+    height: 28px;
+    width: 55%;
+  }
+
   .stims-shell__skeleton::after {
     content: "";
     position: absolute;

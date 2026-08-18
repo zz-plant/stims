@@ -250,8 +250,17 @@ async function main() {
 
             let prevLum: Float64Array | null = null;
             const curLum = new Float64Array(sampleCount);
+            // Red-flash channel per PEAT/Harding: value = max(0, R-G-B)*320
+            // on 0..1 channels, and a transition only qualifies when it
+            // moves to or from a saturated red (R/(R+G+B) >= 0.8).
+            let prevRed: Float64Array | null = null;
+            let prevRedSat: Uint8Array | null = null;
+            const curRed = new Float64Array(sampleCount);
+            const curRedSat = new Uint8Array(sampleCount);
             const rising: number[][] = [];
             const falling: number[][] = [];
+            const redRising: number[][] = [];
+            const redFalling: number[][] = [];
             const frameMeanLuminance: number[] = [];
             const frameMeanDelta: number[] = [];
 
@@ -262,16 +271,19 @@ async function main() {
               let lumSum = 0;
               for (let i = 0; i < sampleCount; i += 1) {
                 const o = (sampleYs[i] * w + sampleXs[i]) * 4;
-                const l =
-                  0.2126 * LUT[px[o]] +
-                  0.7152 * LUT[px[o + 1]] +
-                  0.0722 * LUT[px[o + 2]];
+                const r = px[o];
+                const g = px[o + 1];
+                const b = px[o + 2];
+                const l = 0.2126 * LUT[r] + 0.7152 * LUT[g] + 0.0722 * LUT[b];
                 curLum[i] = l;
                 lumSum += l;
+                curRed[i] = Math.max(0, (r - g - b) / 255) * 320;
+                const rgbSum = r + g + b;
+                curRedSat[i] = rgbSum > 0 && r / rgbSum >= 0.8 ? 1 : 0;
               }
               frameMeanLuminance.push(lumSum / sampleCount);
 
-              if (prevLum) {
+              if (prevLum && prevRed && prevRedSat) {
                 // Magnitude is decided per pixel, against the full-scale
                 // WCAG threshold, BEFORE any spatial aggregation. Averaging
                 // luminance over a tile first would scale each swing down
@@ -281,31 +293,51 @@ async function main() {
                 // zero flashes corpus-wide.
                 const up = new Array(tileCount).fill(0);
                 const down = new Array(tileCount).fill(0);
+                const redUp = new Array(tileCount).fill(0);
+                const redDown = new Array(tileCount).fill(0);
                 let deltaSum = 0;
                 for (let i = 0; i < sampleCount; i += 1) {
                   const before = prevLum[i];
                   const after = curLum[i];
                   deltaSum += Math.abs(after - before);
                   if (
-                    Math.abs(after - before) < 0.1 ||
-                    Math.min(before, after) >= 0.8
+                    Math.abs(after - before) >= 0.1 &&
+                    Math.min(before, after) < 0.8
                   ) {
-                    continue;
+                    if (after > before) up[sampleTile[i]] += 1;
+                    else down[sampleTile[i]] += 1;
                   }
-                  if (after > before) up[sampleTile[i]] += 1;
-                  else down[sampleTile[i]] += 1;
+                  const redBefore = prevRed[i];
+                  const redAfter = curRed[i];
+                  if (
+                    (prevRedSat[i] === 1 || curRedSat[i] === 1) &&
+                    Math.abs(redAfter - redBefore) > 20
+                  ) {
+                    if (redAfter > redBefore) redUp[sampleTile[i]] += 1;
+                    else redDown[sampleTile[i]] += 1;
+                  }
                 }
                 rising.push(up);
                 falling.push(down);
+                redRising.push(redUp);
+                redFalling.push(redDown);
                 frameMeanDelta.push(deltaSum / sampleCount);
               }
               prevLum = prevLum ? prevLum : new Float64Array(sampleCount);
               prevLum.set(curLum);
+              prevRed = prevRed ? prevRed : new Float64Array(sampleCount);
+              prevRed.set(curRed);
+              prevRedSat = prevRedSat
+                ? prevRedSat
+                : new Uint8Array(sampleCount);
+              prevRedSat.set(curRedSat);
             }
 
             return {
               rising,
               falling,
+              redRising,
+              redFalling,
               tilePixels,
               frameMeanLuminance,
               frameMeanDelta,
@@ -332,6 +364,9 @@ async function main() {
             peakFlashesPerSecond: 0,
             totalFlashes: 0,
             exceedsThreshold: false,
+            peakRedFlashesPerSecond: 0,
+            totalRedFlashes: 0,
+            exceedsRedThreshold: false,
             motionEnergy: 0,
             luminanceVolatility: 0,
             meanLuminance: 0,
@@ -343,6 +378,8 @@ async function main() {
         const cap = captured as {
           rising: number[][];
           falling: number[][];
+          redRising: number[][];
+          redFalling: number[][];
           tilePixels: number;
           frameMeanLuminance: number[];
           frameMeanDelta: number[];
@@ -350,6 +387,8 @@ async function main() {
         const analysis = analyzeFlashEvents({
           rising: cap.rising,
           falling: cap.falling,
+          redRising: cap.redRising,
+          redFalling: cap.redFalling,
           tilePixels: cap.tilePixels,
           // Grid shape drives WCAG's "25% of any 10 degree visual field"
           // window; without it the area test degrades to whole-screen and
@@ -368,9 +407,12 @@ async function main() {
         });
         console.log(
           `${label} — peak=${analysis.peakFlashesPerSecond}/s ` +
+            `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
             `vol=${analysis.luminanceVolatility.toFixed(4)}` +
-            (analysis.exceedsThreshold ? '  ** OVER THRESHOLD **' : ''),
+            (analysis.exceedsThreshold || analysis.exceedsRedThreshold
+              ? '  ** OVER THRESHOLD **'
+              : ''),
         );
       } catch (err) {
         const reason = err instanceof Error ? err.message : String(err);
@@ -388,6 +430,9 @@ async function main() {
           peakFlashesPerSecond: 0,
           totalFlashes: 0,
           exceedsThreshold: false,
+          peakRedFlashesPerSecond: 0,
+          totalRedFlashes: 0,
+          exceedsRedThreshold: false,
           motionEnergy: 0,
           luminanceVolatility: 0,
           meanLuminance: 0,
@@ -402,7 +447,8 @@ async function main() {
   }
 
   const ok = reports.filter((r) => !r.error);
-  const over = ok.filter((r) => r.exceedsThreshold);
+  const over = ok.filter((r) => r.exceedsThreshold || r.exceedsRedThreshold);
+  const overRed = ok.filter((r) => r.exceedsRedThreshold);
   const peaks = ok.map((r) => r.peakFlashesPerSecond).sort((a, b) => a - b);
   const pct = (p: number) => peaks[Math.floor((peaks.length - 1) * p)] ?? 0;
 
@@ -412,6 +458,7 @@ async function main() {
     framesPerPreset: CAPTURE_FRAMES,
     overThresholdCount: over.length,
     overThresholdShare: ok.length ? over.length / ok.length : 0,
+    overRedThresholdCount: overRed.length,
     peakFlashesPerSecond: {
       median: pct(0.5),
       p90: pct(0.9),

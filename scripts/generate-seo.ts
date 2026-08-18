@@ -11,6 +11,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
+import { DISCOVER_SLUGS } from '../functions/discover-slugs.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -391,6 +392,29 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       sourcePaths: ['milkdrop/index.html'],
       includeInSitemap: false,
     },
+    // Curated /discover/ topic hubs, served by functions/_middleware.ts
+    // against the allowlist in functions/discover-slugs.ts. Listing them here
+    // gives the preset corpus an internal-linking entry path — without it the
+    // hubs were orphaned from every sitemap.
+    ...DISCOVER_SLUGS.map((slug) => {
+      const name = slug
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      return {
+        path: `/discover/${slug}`,
+        imagePath: '/og/milkdrop.png',
+        imageTitle: `${name} Music Visualizers | Stims`,
+        imageCaption: `Sound-reactive ${name} MilkDrop visualizers running live in the browser.`,
+        changefreq: 'monthly' as const,
+        priority: '0.5',
+        sourcePaths: [
+          'functions/_middleware.ts',
+          'functions/discover-slugs.ts',
+        ],
+        includeInSitemap: true,
+      };
+    }),
   ];
 }
 

@@ -185,7 +185,6 @@ function Actions({
           className="stims-shell__launch-cta"
           disabled={!isEngineReady}
           onClick={onResume}
-          aria-label={`Resume visualizer with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         >
           Resume with {RESUME_SOURCE_LABEL[resume.session.source]}
         </button>
@@ -197,7 +196,6 @@ function Actions({
           className="stims-shell__launch-cta"
           disabled={!isEngineReady}
           onClick={onPlayDemo}
-          aria-label="Start visualizer with demo audio"
         >
           Play demo
         </button>
@@ -206,7 +204,6 @@ function Actions({
         type="button"
         className="stims-shell__launch-secondary"
         onClick={onBrowsePresets}
-        aria-label="Browse preset collection"
       >
         Browse presets
       </button>

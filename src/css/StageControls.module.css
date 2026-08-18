@@ -48,6 +48,18 @@
     visibility 0s linear 0.3s;
 }
 
+/* Never hide the bar under a keyboard user: hiding while a control inside
+   holds focus would drop focus to <body> (WCAG 2.4.7). */
+.bar[data-visible="false"]:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    visibility 0s linear 0s;
+}
+
 .bar[data-visible="true"] {
   opacity: 1;
   transform: translateY(0);

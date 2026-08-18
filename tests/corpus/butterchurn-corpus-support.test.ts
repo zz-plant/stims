@@ -31,19 +31,66 @@ describe('butterchurn preset corpus support', () => {
   // laptop, so bun's 5s default made this fail as a matter of course rather
   // than because anything regressed.
   test(
-    'all butterchurn presets are supported on both backends',
+    'corpus support statuses match the measured baseline',
     () => {
       const corpus = loadButterchurnCorpus();
 
       expect(corpus.length).toBeGreaterThan(1700);
 
+      // Hard floor: nothing in the bundled corpus may be flat-out
+      // unsupported on either backend.
       const unsupported = corpus.filter(
         ({ compiled }) =>
-          compiled.ir.compatibility.backends.webgl.status !== 'supported' ||
-          compiled.ir.compatibility.backends.webgpu.status !== 'supported',
+          compiled.ir.compatibility.backends.webgl.status === 'unsupported' ||
+          compiled.ir.compatibility.backends.webgpu.status === 'unsupported',
       );
-
       expect(unsupported.map(({ file }) => file)).toEqual([]);
+
+      // Partial statuses must be explained by a known evidence code — an
+      // unexplained partial means a new gap slipped in unclassified.
+      const knownPartialCodes = new Set([
+        'shader-text-translated',
+        'unknown-function',
+        'unknown-field',
+      ]);
+      const unexplainedPartials = corpus.filter(({ compiled }) => {
+        const { webgl, webgpu } = compiled.ir.compatibility.backends;
+        return [webgl, webgpu].some(
+          (backend) =>
+            backend.status === 'partial' &&
+            !backend.evidence.every((entry) =>
+              knownPartialCodes.has(entry.code),
+            ),
+        );
+      });
+      expect(unexplainedPartials.map(({ file }) => file)).toEqual([]);
+
+      // Measured baseline (2026-08): 169 presets execute shader programs
+      // directly on WebGL but fall back to extracted scalar controls on
+      // WebGPU (the packed sampler_fc_main gap), and 9 presets reference
+      // EEL identifiers the expression VM evaluates to 0 (5 of them overlap
+      // both categories). These counts moving DOWN means gaps were closed —
+      // update the baseline. Moving UP means a regression introduced new
+      // degradation.
+      const translatedOnWebgpu = corpus.filter(({ compiled }) =>
+        compiled.ir.compatibility.backends.webgpu.evidence.some(
+          (entry) => entry.code === 'shader-text-translated',
+        ),
+      );
+      expect(translatedOnWebgpu.length).toBe(169);
+
+      const missingIdentifiers = corpus.filter(
+        ({ compiled }) =>
+          compiled.ir.compatibility.parity.missingAliasesOrFunctions.length > 0,
+      );
+      expect(missingIdentifiers.length).toBe(9);
+
+      // Everything else stays fully supported on both backends.
+      const fullySupported = corpus.filter(({ compiled }) => {
+        const { webgl, webgpu } = compiled.ir.compatibility.backends;
+        return webgl.status === 'supported' && webgpu.status === 'supported';
+      });
+      expect(fullySupported.length).toBe(1577);
     },
     { timeout: 30000 },
   );
