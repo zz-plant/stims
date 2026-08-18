@@ -46,20 +46,22 @@ export type ProceduralFieldUniformState = {
   meshSize: { value: number };
 } & ProceduralFieldRegisterUniformState;
 
-/** Full MilkDrop `q1`..`q32` register bank, one scalar uniform each
- * (`registerQ1`..`registerQ32`). Materials only wire the registers a lowered
- * program actually reads into its packed vec4 arguments. */
+/** Packed frame-constant register bank: 32 positional scalar slots
+ * (`registerSlot0`..`registerSlot31`), assigned in the order of the lowered
+ * program's `registerInputs` list. Slot uniforms carry q registers and
+ * per-frame-assigned user variables alike; materials wire ceil(inputs/4)
+ * vec4s from them. */
 export const FIELD_REGISTER_UNIFORM_COUNT = 32;
 
 export type ProceduralFieldRegisterUniformState = Record<
-  `registerQ${number}`,
+  `registerSlot${number}`,
   { value: number }
 >;
 
 function createFieldRegisterUniformState(): ProceduralFieldRegisterUniformState {
   const state: Record<string, { value: number }> = {};
-  for (let index = 1; index <= FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
-    state[`registerQ${index}`] = { value: 0 };
+  for (let index = 0; index < FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
+    state[`registerSlot${index}`] = { value: 0 };
   }
   return state as ProceduralFieldRegisterUniformState;
 }
@@ -71,6 +73,8 @@ export type ProceduralFieldVisualWithSignals =
     /** Warp mesh dimension (meshx/meshy builtin); mesh and motion-vector
      * visuals carry the density their CPU counterpart ran with. */
     density?: number;
+    /** Lowered field program; its registerInputs order defines slot layout. */
+    program?: { registerInputs?: readonly string[] } | null;
   };
 
 export type ProceduralInteractionUniformState = {
@@ -154,6 +158,7 @@ export function syncProceduralFieldUniforms(
     alpha,
     registers,
     density,
+    program,
   }: ProceduralFieldVisualWithSignals & {
     time: number;
     trebleAtt: number;
@@ -198,9 +203,13 @@ export function syncProceduralFieldUniforms(
   material.uniforms.signalPixelsX.value = viewport.pixelsx;
   material.uniforms.signalPixelsY.value = viewport.pixelsy;
   material.uniforms.meshSize.value = density ?? 48;
-  for (let index = 1; index <= FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
-    material.uniforms[`registerQ${index}`].value =
-      registers?.[`q${index}`] ?? 0;
+  // Slots are positional in the lowered program's registerInputs order; the
+  // registers payload is a sparse name→value map copied from VM state.
+  const registerInputs = program?.registerInputs;
+  for (let slot = 0; slot < FIELD_REGISTER_UNIFORM_COUNT; slot += 1) {
+    const name = registerInputs?.[slot];
+    material.uniforms[`registerSlot${slot}`].value =
+      name !== undefined ? (registers?.[name] ?? 0) : 0;
   }
 }
 
