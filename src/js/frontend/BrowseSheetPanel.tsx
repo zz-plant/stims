@@ -461,8 +461,11 @@ export function BrowseSheetPanel({
       ) : null}
 
       {catalogReady && gridView ? (
+        // `visible`, not `browseEntries`: the grid must share the list's
+        // pagination. Handing it the full filtered catalog renders thousands
+        // of tiles in one commit and freezes the toggle at catalog scale.
         <PresetGrid
-          catalogEntries={browseEntries}
+          catalogEntries={visible}
           presetPreviews={presetPreviews}
           requestPresetPreviews={engine.requestPresetPreviews}
           routeState={ui.routeState}

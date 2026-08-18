@@ -108,21 +108,34 @@ export function useWorkspaceShellOrchestration({
   const audioStartInProgressRef = useRef(false);
   const fileAudioContextRef = useRef<AudioContext | null>(null);
 
+  // Dep on the narrow snapshot fields, never the snapshot object: while audio
+  // plays the snapshot is rebuilt every frame (audioEnergy changes), and a
+  // whole-object dep made this remap+merge the full catalog per frame — and
+  // hand a fresh catalog identity to every consumer, re-filtering the browse
+  // panel at frame rate. catalogEntries/runtimeReady keep stable identities
+  // across those rebuilds (see engine-snapshot.ts equality).
+  const snapshotCatalogEntries = engineSnapshot?.catalogEntries;
+  const snapshotRuntimeReady = engineSnapshot?.runtimeReady ?? false;
   const enrichedCatalog = useMemo(() => {
-    const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
+    const runtimeCatalog = (snapshotCatalogEntries ?? []).map(
       mapRuntimeCatalogEntry,
     );
     const runtimeCatalogReady =
-      (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
+      snapshotRuntimeReady || runtimeCatalog.length > 0;
     const rawCatalog = runtimeCatalogReady ? runtimeCatalog : fallbackCatalog;
     return mergeCatalogActivity(rawCatalog, activityCatalog);
-  }, [engineSnapshot, fallbackCatalog, activityCatalog]);
+  }, [
+    snapshotCatalogEntries,
+    snapshotRuntimeReady,
+    fallbackCatalog,
+    activityCatalog,
+  ]);
 
   const catalogReady = useMemo(
     () =>
-      ((engineSnapshot?.runtimeReady ?? false) || fallbackCatalogReady) &&
+      (snapshotRuntimeReady || fallbackCatalogReady) &&
       enrichedCatalog.length > 0,
-    [engineSnapshot, fallbackCatalogReady, enrichedCatalog],
+    [snapshotRuntimeReady, fallbackCatalogReady, enrichedCatalog],
   );
 
   // Only report a catalog error when there is nothing to show — a fallback
