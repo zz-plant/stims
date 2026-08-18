@@ -72,6 +72,13 @@ async function loadWebGPURenderer() {
 const isMobileUserAgent = isMobileDevice();
 const deviceEnvironment = getDeviceEnvironmentProfile();
 
+// Canvases that have ever had a WebGPURenderer constructed on them. A canvas
+// permanently binds its first context type, so this must outlive a single
+// initRenderer call: device-loss recovery re-invokes initRenderer with the
+// same element, and a WebGL fallback there needs to know the canvas is
+// already WebGPU-bound.
+const webgpuBoundCanvases = new WeakSet<HTMLCanvasElement>();
+
 function shouldPreserveDrawingBufferForValidation() {
   if (typeof window === 'undefined') {
     return false;
@@ -175,7 +182,10 @@ export async function initRenderer(
   let webgpuBoundToCanvas = false;
 
   const resolveFallbackCanvas = (): HTMLCanvasElement => {
-    if (!webgpuBoundToCanvas || typeof canvas.cloneNode !== 'function') {
+    if (
+      (!webgpuBoundToCanvas && !webgpuBoundCanvases.has(canvas)) ||
+      typeof canvas.cloneNode !== 'function'
+    ) {
       return canvas;
     }
     const replacement = canvas.cloneNode(false) as HTMLCanvasElement;
@@ -269,8 +279,14 @@ export async function initRenderer(
       const WebGPURendererConstructor = await loadWebGPURenderer();
       // From this point the canvas may carry a `webgpu` context — even a
       // timed-out init keeps running in the background and can bind it later,
-      // so any fallback below must treat the canvas as WebGPU-bound.
+      // so any fallback below must treat the canvas as WebGPU-bound. The
+      // module-level set makes this survive into *future* initRenderer calls:
+      // device-loss recovery re-runs init with the same canvas, and a WebGL
+      // fallback in that later run would otherwise reuse the WebGPU-bound
+      // element, fail context creation ("existing context of a different
+      // type"), and leave the stage permanently black.
       webgpuBoundToCanvas = true;
+      webgpuBoundCanvases.add(canvas);
       const renderer = new WebGPURendererConstructor({
         canvas,
         antialias,

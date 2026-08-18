@@ -50,6 +50,54 @@ async function closeQuietly(
   }
 }
 
+/**
+ * Waits for the GPU to produce non-zero output anywhere on the stage canvas.
+ *
+ * The probe downscales the full frame into a small scratch canvas and scans
+ * every sample instead of reading one pixel: presets like
+ * rovastar-parallel-universe render a sparse starfield whose center pixel is
+ * black on essentially every frame, so a single-pixel probe times out while
+ * the preset is rendering perfectly well.
+ *
+ * Read-only probe. Calling getContext('webgl') here would bind a context to
+ * the app's canvas whenever the poll wins the race against renderer init — a
+ * canvas keeps its first context type forever, so THREE's webgl2 init then
+ * fails ("existing context of a different type") and the app must recover on
+ * a fresh canvas. drawImage into a scratch 2D canvas reads pixels without
+ * ever touching the app canvas's context.
+ */
+async function waitForRenderedContent(page: import('playwright').Page) {
+  await page.waitForFunction(
+    () => {
+      const canvas = document.querySelector(
+        '.stims-shell__stage-frame canvas',
+      ) as HTMLCanvasElement | null;
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        return false;
+      }
+      const SAMPLE_W = 32;
+      const SAMPLE_H = 18;
+      const scratch = document.createElement('canvas');
+      scratch.width = SAMPLE_W;
+      scratch.height = SAMPLE_H;
+      const ctx = scratch.getContext('2d');
+      if (!ctx) return false;
+      ctx.drawImage(canvas, 0, 0, SAMPLE_W, SAMPLE_H);
+      const data = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
+      for (let i = 0; i < data.length; i += 4) {
+        // RGB only: an opaque-black cleared buffer has alpha 255 and must
+        // not count as rendered content.
+        if (data[i] > 0 || data[i + 1] > 0 || data[i + 2] > 0) {
+          return true;
+        }
+      }
+      return false;
+    },
+    undefined,
+    { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
+  );
+}
+
 async function waitForMountedStage(page: import('playwright').Page) {
   await page.waitForFunction(
     () =>
@@ -136,45 +184,7 @@ browserTest(
       expect(canvas).not.toBeNull();
 
       // Wait for the GPU to produce non-zero output before asserting.
-      await page.waitForFunction(
-        () => {
-          const canvas = document.querySelector(
-            '.stims-shell__stage-frame canvas',
-          ) as HTMLCanvasElement | null;
-          if (!canvas || canvas.width === 0 || canvas.height === 0) {
-            return false;
-          }
-          // Read-only probe. Calling getContext('webgl') here would bind a
-          // context to the app's canvas whenever the poll wins the race
-          // against renderer init — a canvas keeps its first context type
-          // forever, so THREE's webgl2 init then fails ("existing context
-          // of a different type") and the app must recover on a fresh
-          // canvas. drawImage into a scratch 2D canvas reads the same
-          // pixel without ever touching the app canvas's context.
-          const scratch = document.createElement('canvas');
-          scratch.width = 1;
-          scratch.height = 1;
-          const ctx = scratch.getContext('2d');
-          if (!ctx) return false;
-          ctx.drawImage(
-            canvas,
-            Math.floor(canvas.width / 2),
-            Math.floor(canvas.height / 2),
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-          );
-          const data = ctx.getImageData(0, 0, 1, 1).data;
-          // RGB only: an opaque-black cleared buffer has alpha 255 and must
-          // not count as rendered content.
-          return data[0] > 0 || data[1] > 0 || data[2] > 0;
-        },
-        undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
-      );
+      await waitForRenderedContent(page);
 
       const info = await page.evaluate(() => {
         const c = document.querySelector(
@@ -231,45 +241,7 @@ browserTest(
         timeout: 30000,
       });
       // Wait for the GPU to produce non-zero output before capturing.
-      await page.waitForFunction(
-        () => {
-          const canvas = document.querySelector(
-            '.stims-shell__stage-frame canvas',
-          ) as HTMLCanvasElement | null;
-          if (!canvas || canvas.width === 0 || canvas.height === 0) {
-            return false;
-          }
-          // Read-only probe. Calling getContext('webgl') here would bind a
-          // context to the app's canvas whenever the poll wins the race
-          // against renderer init — a canvas keeps its first context type
-          // forever, so THREE's webgl2 init then fails ("existing context
-          // of a different type") and the app must recover on a fresh
-          // canvas. drawImage into a scratch 2D canvas reads the same
-          // pixel without ever touching the app canvas's context.
-          const scratch = document.createElement('canvas');
-          scratch.width = 1;
-          scratch.height = 1;
-          const ctx = scratch.getContext('2d');
-          if (!ctx) return false;
-          ctx.drawImage(
-            canvas,
-            Math.floor(canvas.width / 2),
-            Math.floor(canvas.height / 2),
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-          );
-          const data = ctx.getImageData(0, 0, 1, 1).data;
-          // RGB only: an opaque-black cleared buffer has alpha 255 and must
-          // not count as rendered content.
-          return data[0] > 0 || data[1] > 0 || data[2] > 0;
-        },
-        undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
-      );
+      await waitForRenderedContent(page);
 
       const hash1 = await page.evaluate(() =>
         document
@@ -293,45 +265,7 @@ browserTest(
       });
 
       // Wait for the GPU to produce non-zero output after the preset switch.
-      await page.waitForFunction(
-        () => {
-          const canvas = document.querySelector(
-            '.stims-shell__stage-frame canvas',
-          ) as HTMLCanvasElement | null;
-          if (!canvas || canvas.width === 0 || canvas.height === 0) {
-            return false;
-          }
-          // Read-only probe. Calling getContext('webgl') here would bind a
-          // context to the app's canvas whenever the poll wins the race
-          // against renderer init — a canvas keeps its first context type
-          // forever, so THREE's webgl2 init then fails ("existing context
-          // of a different type") and the app must recover on a fresh
-          // canvas. drawImage into a scratch 2D canvas reads the same
-          // pixel without ever touching the app canvas's context.
-          const scratch = document.createElement('canvas');
-          scratch.width = 1;
-          scratch.height = 1;
-          const ctx = scratch.getContext('2d');
-          if (!ctx) return false;
-          ctx.drawImage(
-            canvas,
-            Math.floor(canvas.width / 2),
-            Math.floor(canvas.height / 2),
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-          );
-          const data = ctx.getImageData(0, 0, 1, 1).data;
-          // RGB only: an opaque-black cleared buffer has alpha 255 and must
-          // not count as rendered content.
-          return data[0] > 0 || data[1] > 0 || data[2] > 0;
-        },
-        undefined,
-        { timeout: GPU_PROBE_TIMEOUT_MS, polling: 250 },
-      );
+      await waitForRenderedContent(page);
 
       const hash2 = await page.evaluate(() =>
         document
