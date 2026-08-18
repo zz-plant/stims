@@ -146,11 +146,23 @@ function findUniqueMatch<T extends PresetLookupEntry>(
  * the 2,686-preset catalog, measured 2026-08-18). Bounded per catalog
  * array; the WeakMap lets replaced catalog snapshots collect.
  */
-const RESOLUTION_CACHE_LIMIT = 64;
-const resolutionCache = new WeakMap<
-  readonly PresetLookupEntry[],
-  Map<string, PresetLookupEntry | null>
->();
+const RESOLUTION_CACHE_LIMIT = 128;
+/** requested-id+fingerprint → resolved id ('' = resolved to nothing). Only
+ * the id is cached and the entry is re-found in the caller's own array, so
+ * callers passing differently shaped entry types never receive each other's
+ * objects. */
+const resolutionCache = new Map<string, string>();
+
+/**
+ * Catalog arrays are re-derived per React render (workspace-helpers maps the
+ * runtime catalog into fresh arrays), so identity-keyed caching misses every
+ * frame. Membership and order are what resolution depends on, and every
+ * per-render derivation preserves both — so length plus the boundary ids is
+ * a stable fingerprint of the catalog's resolution-relevant shape.
+ */
+function catalogFingerprint(entries: readonly PresetLookupEntry[]) {
+  return `${entries.length} ${entries[0]?.id ?? ''} ${entries[entries.length - 1]?.id ?? ''}`;
+}
 
 export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
   entries: readonly T[],
@@ -161,19 +173,19 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     return null;
   }
 
-  let cache = resolutionCache.get(entries);
-  if (cache?.has(requested)) {
-    return (cache.get(requested) ?? null) as T | null;
+  const cacheKey = `${catalogFingerprint(entries)} ${requested}`;
+  const cachedId = resolutionCache.get(cacheKey);
+  if (cachedId !== undefined) {
+    return cachedId === ''
+      ? null
+      : (entries.find((entry) => entry.id === cachedId) ?? null);
   }
 
   const resolved = resolvePresetCatalogEntryUncached(entries, requested);
-  if (!cache) {
-    cache = new Map();
-    resolutionCache.set(entries, cache);
-  } else if (cache.size >= RESOLUTION_CACHE_LIMIT) {
-    cache.clear();
+  if (resolutionCache.size >= RESOLUTION_CACHE_LIMIT) {
+    resolutionCache.clear();
   }
-  cache.set(requested, resolved);
+  resolutionCache.set(cacheKey, resolved?.id ?? '');
   return resolved;
 }
 
