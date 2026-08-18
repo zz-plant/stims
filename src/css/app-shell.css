@@ -854,6 +854,38 @@ body[data-page="workspace"][data-live="true"] {
     z-index: var(--z-stage-root);
   }
 
+  /* Destination still while the next preset fetches + compiles. Sits on the
+     stage-root layer, after the canvas in DOM order, so it paints over the
+     outgoing render but under the hero/controls. The fade-in delay keeps
+     warm-cache switches (precompiled or already-cached presets) from ever
+     flashing the still; the fade-out hands off to the engine's own blend. */
+  .stims-shell__stage-incoming {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-stage-root);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 320ms ease-out;
+  }
+
+  .stims-shell__stage-incoming[data-visible="true"] {
+    opacity: 1;
+    transition: opacity 260ms ease-in 240ms;
+  }
+
+  .stims-shell__stage-incoming img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__stage-incoming {
+      transition-duration: 0ms;
+    }
+  }
+
   .stims-shell__stage-hero {
     position: absolute;
     inset: max(72px, 8vh) auto 26px 28px;
