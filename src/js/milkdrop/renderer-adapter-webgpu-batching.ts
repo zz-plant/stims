@@ -1,4 +1,4 @@
-import type { Texture } from 'three';
+import type { Material, Texture } from 'three';
 import {
   BufferGeometry,
   DoubleSide,
@@ -36,7 +36,11 @@ import type {
   MilkdropWaveVisual,
 } from './types';
 
-type BlendModeKey = 'normal' | 'additive' | 'subtractive' | 'multiplicative';
+export type BlendModeKey =
+  | 'normal'
+  | 'additive'
+  | 'subtractive'
+  | 'multiplicative';
 
 const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
   'normal',
@@ -45,7 +49,32 @@ const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
   'multiplicative',
 ];
 
-function applyBlendMode(material: ShaderMaterial, mode: BlendModeKey): void {
+/**
+ * Uniform handles the fill batch pokes every sync. Both the GLSL
+ * ShaderMaterial and the native-WebGPU NodeMaterial implementations expose
+ * plain `{ value }` slots so the batch classes stay shader-dialect agnostic.
+ */
+export type ShapeFillBatchMaterial = Material & {
+  batchUniforms: {
+    shapeTexture: { value: Texture | null };
+    textureAspectY: { value: number };
+  };
+};
+
+/**
+ * Creates the shape/border materials for the batching layer. The default
+ * implementation below emits GLSL ShaderMaterials (WebGL backend and the
+ * WebGPU compatibility path); renderer-backends/webgpu-batching-materials.ts
+ * provides the NodeMaterial/TSL equivalent for the native WebGPU renderer,
+ * which cannot compile GLSL.
+ */
+export type ShapeBatchMaterialFactory = {
+  createShapeFillMaterial(): ShapeFillBatchMaterial;
+  createShapeRingMaterial(layerZ: number): Material;
+  createBorderMaterial(): Material;
+};
+
+function applyBlendMode(material: Material, mode: BlendModeKey): void {
   setMaterialBlendMode(material, mode);
 }
 
@@ -1002,31 +1031,17 @@ class InstancedSegmentBatch {
   }
 }
 
-class InstancedBorderBatch {
-  readonly group = new Group();
-  private readonly fillMesh: Mesh;
-  private readonly outlineMesh: Mesh;
-
-  constructor(renderOrder: number) {
-    this.group.renderOrder = renderOrder;
-    this.fillMesh = this.createMesh(0.285, renderOrder);
-    this.outlineMesh = this.createMesh(0.3, renderOrder);
-    this.group.add(this.fillMesh, this.outlineMesh);
-  }
-
-  private createMesh(_defaultZ: number, renderOrder: number) {
-    const mesh = new Mesh(
-      BORDER_RING_GEOMETRY.clone(),
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        side: DoubleSide,
-        // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
-        // two-pass render (it bumps material.needsUpdate twice per object per
-        // frame, forcing getParameters/getProgram churn on every material).
-        forceSinglePass: true,
-        toneMapped: false,
-        vertexShader: `
+function createGlslBorderMaterial(): Material {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    toneMapped: false,
+    vertexShader: `
           attribute vec2 unitCorner;
           attribute float innerWeight;
           attribute vec4 instanceInsets;
@@ -1042,13 +1057,34 @@ class InstancedBorderBatch {
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, instanceInsets.x, 1.0);
           }
         `,
-        fragmentShader: `
+    fragmentShader: `
           varying vec4 vColor;
           void main() {
             gl_FragColor = vColor;
           }
         `,
-      }),
+  });
+}
+
+class InstancedBorderBatch {
+  readonly group = new Group();
+  private readonly fillMesh: Mesh;
+  private readonly outlineMesh: Mesh;
+
+  constructor(renderOrder: number, materials: ShapeBatchMaterialFactory) {
+    this.group.renderOrder = renderOrder;
+    this.fillMesh = this.createMesh(renderOrder, materials);
+    this.outlineMesh = this.createMesh(renderOrder, materials);
+    this.group.add(this.fillMesh, this.outlineMesh);
+  }
+
+  private createMesh(
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    const mesh = new Mesh(
+      BORDER_RING_GEOMETRY.clone(),
+      materials.createBorderMaterial(),
     );
     mesh.renderOrder = renderOrder;
     return mesh;
@@ -1135,35 +1171,25 @@ class InstancedBorderBatch {
   }
 }
 
-class InstancedShapeFillBatch {
-  readonly mesh: Mesh;
-  private readonly getShapeTexture: () => Texture | null;
-
-  constructor(
-    sides: number,
-    mode: BlendModeKey,
-    getShapeTexture: () => Texture | null,
-    renderOrder: number,
-  ) {
-    this.getShapeTexture = getShapeTexture;
-    const material = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: DoubleSide,
-      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
-      // two-pass render (it bumps material.needsUpdate twice per object per
-      // frame, forcing getParameters/getProgram churn on every material).
-      forceSinglePass: true,
-      blending: NormalBlending,
-      uniforms: {
-        shapeTexture: {
-          value: null,
-        },
-        textureAspectY: {
-          value: 1,
-        },
+function createGlslShapeFillMaterial(): ShapeFillBatchMaterial {
+  const material = new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    blending: NormalBlending,
+    uniforms: {
+      shapeTexture: {
+        value: null,
       },
-      vertexShader: `
+      textureAspectY: {
+        value: 1,
+      },
+    },
+    vertexShader: `
           attribute vec4 instanceTransform;
           attribute vec4 instancePrimaryColorAlpha;
           attribute vec4 instanceSecondaryColorAlpha;
@@ -1200,7 +1226,7 @@ class InstancedShapeFillBatch {
             );
           }
         `,
-      fragmentShader: `
+    fragmentShader: `
           uniform sampler2D shapeTexture;
           uniform float textureAspectY;
           varying vec4 vPrimaryColor;
@@ -1236,11 +1262,35 @@ class InstancedShapeFillBatch {
             gl_FragColor = color;
           }
         `,
-    });
-    applyBlendMode(material, mode);
+  });
+  return Object.assign(material, {
+    batchUniforms: {
+      shapeTexture: material.uniforms.shapeTexture as {
+        value: Texture | null;
+      },
+      textureAspectY: material.uniforms.textureAspectY as { value: number },
+    },
+  });
+}
+
+class InstancedShapeFillBatch {
+  readonly mesh: Mesh;
+  private readonly material: ShapeFillBatchMaterial;
+  private readonly getShapeTexture: () => Texture | null;
+
+  constructor(
+    sides: number,
+    mode: BlendModeKey,
+    getShapeTexture: () => Texture | null,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    this.getShapeTexture = getShapeTexture;
+    this.material = materials.createShapeFillMaterial();
+    applyBlendMode(this.material, mode);
     this.mesh = new Mesh(
       cloneAsInstancedGeometry(getUnitPolygonFillGeometry(sides)),
-      material,
+      this.material,
     );
     this.mesh.renderOrder = renderOrder;
   }
@@ -1249,10 +1299,10 @@ class InstancedShapeFillBatch {
     const geometry = this.mesh.geometry as InstancedBufferGeometry;
     geometry.instanceCount = instances.length;
     this.mesh.visible = instances.length > 0;
-    const material = this.mesh.material as ShaderMaterial;
     const shapeTexture = this.getShapeTexture();
-    material.uniforms.shapeTexture.value = shapeTexture;
-    material.uniforms.textureAspectY.value = getTextureAspectY(shapeTexture);
+    this.material.batchUniforms.shapeTexture.value = shapeTexture;
+    this.material.batchUniforms.textureAspectY.value =
+      getTextureAspectY(shapeTexture);
     const transform = ensureInstancedAttribute(
       geometry,
       'instanceTransform',
@@ -1320,28 +1370,20 @@ class InstancedShapeFillBatch {
   }
 }
 
-class InstancedShapeRingBatch {
-  readonly mesh: Mesh;
-
-  constructor(
-    sides: number,
-    mode: BlendModeKey,
-    layerZ: number,
-    renderOrder: number,
-  ) {
-    const material = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: DoubleSide,
-      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
-      // two-pass render (it bumps material.needsUpdate twice per object per
-      // frame, forcing getParameters/getProgram churn on every material).
-      forceSinglePass: true,
-      blending: NormalBlending,
-      uniforms: {
-        layerZ: { value: layerZ },
-      },
-      vertexShader: `
+function createGlslShapeRingMaterial(layerZ: number): Material {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    blending: NormalBlending,
+    uniforms: {
+      layerZ: { value: layerZ },
+    },
+    vertexShader: `
           uniform float layerZ;
           attribute vec2 unitCorner;
           attribute float innerWeight;
@@ -1367,13 +1409,32 @@ class InstancedShapeRingBatch {
             );
           }
         `,
-      fragmentShader: `
+    fragmentShader: `
           varying vec4 vColor;
           void main() {
             gl_FragColor = vColor;
           }
         `,
-    });
+  });
+}
+
+export const GLSL_SHAPE_BATCH_MATERIAL_FACTORY: ShapeBatchMaterialFactory = {
+  createShapeFillMaterial: createGlslShapeFillMaterial,
+  createShapeRingMaterial: createGlslShapeRingMaterial,
+  createBorderMaterial: createGlslBorderMaterial,
+};
+
+class InstancedShapeRingBatch {
+  readonly mesh: Mesh;
+
+  constructor(
+    sides: number,
+    mode: BlendModeKey,
+    layerZ: number,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    const material = materials.createShapeRingMaterial(layerZ);
     applyBlendMode(material, mode);
     this.mesh = new Mesh(getUnitPolygonRingGeometry(sides).clone(), material);
     this.mesh.renderOrder = renderOrder;
@@ -1441,6 +1502,7 @@ class ShapeBatchBucket {
     mode: BlendModeKey,
     getShapeTexture: () => Texture | null,
     renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
   ) {
     const bucketRenderOrder = renderOrder + BLEND_MODE_KEYS.indexOf(mode);
     this.getShapeTexture = getShapeTexture;
@@ -1450,12 +1512,14 @@ class ShapeBatchBucket {
       mode,
       getShapeTexture,
       bucketRenderOrder,
+      materials,
     );
     this.outline = new InstancedShapeRingBatch(
       sides,
       mode,
       0.16,
       bucketRenderOrder,
+      materials,
     );
     this.group.add(this.fill.mesh, this.outline.mesh);
   }
@@ -1514,10 +1578,16 @@ class ShapeBatchTarget {
   private readonly groupScratch = new Map<number, MilkdropShapeVisual[]>();
   private readonly getShapeTexture: () => Texture | null;
   private readonly renderOrder: number;
+  private readonly materials: ShapeBatchMaterialFactory;
 
-  constructor(getShapeTexture: () => Texture | null, renderOrder: number) {
+  constructor(
+    getShapeTexture: () => Texture | null,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
     this.getShapeTexture = getShapeTexture;
     this.renderOrder = renderOrder;
+    this.materials = materials;
     this.group.renderOrder = renderOrder;
   }
 
@@ -1551,6 +1621,7 @@ class ShapeBatchTarget {
           mode,
           this.getShapeTexture,
           this.renderOrder,
+          this.materials,
         );
         this.buckets.set(key, bucket);
         this.group.add(bucket.group);
@@ -1593,6 +1664,13 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     multiplicative: new CompactSegmentUploadBuffer(),
   };
   private shapeTexture: Texture | null = null;
+  private readonly materials: ShapeBatchMaterialFactory;
+
+  constructor(
+    materials: ShapeBatchMaterialFactory = GLSL_SHAPE_BATCH_MATERIAL_FACTORY,
+  ) {
+    this.materials = materials;
+  }
 
   setShapeTexture(texture: Texture | null) {
     this.shapeTexture = texture;
@@ -1634,6 +1712,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       target = new ShapeBatchTarget(
         () => this.shapeTexture,
         getBatchedTargetRenderOrder(key),
+        this.materials,
       );
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
@@ -1644,7 +1723,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
-      target = new InstancedBorderBatch(getBatchedTargetRenderOrder(key));
+      target = new InstancedBorderBatch(
+        getBatchedTargetRenderOrder(key),
+        this.materials,
+      );
       this.borderTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1791,4 +1873,39 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
 
 export function createWebGPUBatchingLayer(): MilkdropRendererBatcher {
   return new WebGPUBatchingLayer();
+}
+
+/**
+ * Shapes+borders-only batcher for the native WebGPU renderer. Waves, lines,
+ * and motion vectors intentionally stay on the existing native TSL paths
+ * (procedural materials with cross-preset blending), so only the shape and
+ * border hooks are exposed; the adapter core falls back to per-object
+ * rendering for everything else.
+ */
+export function createNativeWebGPUShapeBatchingLayer(
+  materials: ShapeBatchMaterialFactory,
+): MilkdropRendererBatcher {
+  const layer = new WebGPUBatchingLayer(materials);
+  return {
+    attach: (root) => layer.attach(root),
+    setShapeTexture: (texture) => layer.setShapeTexture(texture),
+    renderShapeGroup: (target, group, shapes, alphaMultiplier) =>
+      layer.renderShapeGroup(target, group, shapes, alphaMultiplier),
+    renderBorderGroup: (
+      target,
+      group,
+      borders,
+      alphaMultiplier,
+      screenAspect,
+    ) =>
+      layer.renderBorderGroup(
+        target,
+        group,
+        borders,
+        alphaMultiplier,
+        screenAspect,
+      ),
+    dispose: () => layer.dispose(),
+    disposeWithCaches: () => layer.disposeWithCaches(),
+  };
 }
