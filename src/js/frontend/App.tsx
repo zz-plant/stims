@@ -65,6 +65,7 @@ const NewHomePage = lazy(() =>
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
+import { startOrCopyWatchParty } from './sync-session.ts';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -370,6 +371,22 @@ function StimsWorkspaceAppShell() {
         label: 'Share link',
         keywords: ['copy', 'url'],
         run: () => void ui.handleShowCurrentLink(),
+      },
+      {
+        id: 'watch-party',
+        label: 'Start watch party (copy link)',
+        keywords: ['sync', 'room', 'host', 'together'],
+        run: () => void startOrCopyWatchParty(ui.setStatusMessage),
+      },
+      {
+        id: 'toggle-autoplay',
+        label: 'Toggle autoplay',
+        keywords: ['shuffle', 'automatic'],
+        run: () => {
+          const next = !(engineSnapshotRef.current?.autoplay ?? false);
+          engine.setAutoplay(next);
+          ui.setStatusMessage(next ? 'Autoplay on.' : 'Autoplay off.');
+        },
       },
       {
         id: 'transition-cut',
@@ -868,6 +885,10 @@ function StimsWorkspaceAppShell() {
     currentAudioSource,
   ]);
 
+  // Eager match on source start: sampling once at t=0 almost always reads
+  // silence (the stream hasn't produced audio yet), so poll until the signal
+  // is audible, then run one vector search and offer the top match. One
+  // search per source start keeps the Vectorize endpoint cold-path cheap.
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
     if (!engineSnapshot?.audioActive) {
@@ -875,24 +896,42 @@ function StimsWorkspaceAppShell() {
       return;
     }
     const controller = new AbortController();
-    const snap = engineSnapshot;
-    const profile = buildAudioProfile({ audioEnergy: snap.audioEnergy });
-    if (profile.rms < 0.02) return;
+    const MAX_ATTEMPTS = 8;
+    const RETRY_MS = 2000;
+    let attempts = 0;
+    let retryTimer: number | null = null;
 
-    void searchByAudioProfile(profile, controller.signal).then((results) => {
+    const tryMatch = () => {
       if (controller.signal.aborted) return;
-      if (results.length === 0) return;
-      const top = results[0];
-      if (top.score < 0.75) return;
-      const preset = engine.catalog.find((e) => e.id === top.presetId);
-      setAudioMatch({
-        presetId: top.presetId,
-        name: preset?.title ?? top.presetId,
-        score: top.score,
+      attempts += 1;
+      const audioEnergy = engineSnapshotRef.current?.audioEnergy;
+      const profile = buildAudioProfile({ audioEnergy });
+      if (profile.rms < 0.02) {
+        if (attempts < MAX_ATTEMPTS) {
+          retryTimer = window.setTimeout(tryMatch, RETRY_MS);
+        }
+        return;
+      }
+      void searchByAudioProfile(profile, controller.signal).then((results) => {
+        if (controller.signal.aborted) return;
+        if (results.length === 0) return;
+        const top = results[0];
+        if (top.score < 0.75) return;
+        const preset = engine.catalog.find((e) => e.id === top.presetId);
+        setAudioMatch({
+          presetId: top.presetId,
+          name: preset?.title ?? top.presetId,
+          score: top.score,
+        });
       });
-    });
+    };
 
-    return () => controller.abort();
+    tryMatch();
+
+    return () => {
+      controller.abort();
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
   useEffect(() => {
@@ -958,6 +997,7 @@ function StimsWorkspaceAppShell() {
         }
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
+        onOpenPalette={() => setPaletteOpen(true)}
       />
 
       <SidePanel

@@ -107,6 +107,27 @@ export function CapturePanel() {
     );
   }, [engine.audioActive, preset]);
 
+  // Repeat use is instant: the ☰ "Record video" item sets this flag when a
+  // remembered format exists, so opening the panel starts recording with it
+  // immediately. First-ever use (no stored format, no flag) shows the form.
+  const autoStartConsumedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartConsumedRef.current) return;
+    // Wait for the exporter's support probe: consuming the flag before it
+    // resolves would drop the auto-start on the floor.
+    if (!support?.supported || recording) return;
+    let flagged = false;
+    try {
+      flagged = sessionStorage.getItem('stims:capture-autostart') === '1';
+    } catch {}
+    if (!flagged) return;
+    autoStartConsumedRef.current = true;
+    try {
+      sessionStorage.removeItem('stims:capture-autostart');
+    } catch {}
+    startRecording();
+  }, [support, recording, startRecording]);
+
   const stopRecording = useCallback(async () => {
     const exporter = exporterRef.current;
     if (!exporter) return;

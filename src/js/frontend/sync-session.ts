@@ -203,3 +203,50 @@ export function syncShareUrl(room: string): string {
   url.searchParams.set('sync', room);
   return url.toString();
 }
+
+// The ?sync param keeps the address bar shareable and lets this tab resume
+// as host after a reload. replaceState (not the route system) because the
+// sync room is transport state, not a route the panel system owns.
+export function setSyncUrlParam(room: string | null): void {
+  const url = new URL(window.location.href);
+  if (room === null) {
+    url.searchParams.delete('sync');
+  } else {
+    url.searchParams.set('sync', room);
+  }
+  window.history.replaceState(window.history.state, '', url.toString());
+}
+
+/**
+ * One action for menus and the command palette: create a room (unless this
+ * tab already hosts one), put the invite link on the clipboard, and report
+ * what happened through `announce`. The clipboard write after the room fetch
+ * can lose transient user activation in stricter browsers, so a copy failure
+ * still reports a live session — the ?sync link sits in the address bar.
+ */
+export async function startOrCopyWatchParty(
+  announce: (message: string) => void,
+): Promise<void> {
+  const current = state.role === 'host' ? state.room : null;
+  const wasHosting = current !== null;
+  let room = current;
+  if (!room) {
+    try {
+      room = await startHostSession();
+      setSyncUrlParam(room);
+    } catch {
+      announce('Could not start a watch party.');
+      return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(syncShareUrl(room));
+    announce(
+      wasHosting
+        ? 'Watch party link copied'
+        : 'Watch party started — link copied',
+    );
+  } catch {
+    announce('Watch party is live — copy the link from the address bar.');
+  }
+}
