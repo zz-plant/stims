@@ -24,6 +24,26 @@ export function shouldAutoAdvancePreset({
   );
 }
 
+/**
+ * Lead time before an autoplay advance in which the frame loop asks the
+ * navigation controller to plan (pick + prefetch + precompile) the next
+ * random preset, so the switch itself is a warm-cache apply.
+ */
+export const AUTO_ADVANCE_PREPARE_LEAD_MS = 8000;
+
+export function shouldPrepareNextPreset(args: {
+  autoplay: boolean;
+  catalogSize: number;
+  now: number;
+  lastPresetSwitchAt: number;
+  blendDuration: number;
+}) {
+  return shouldAutoAdvancePreset({
+    ...args,
+    now: args.now + AUTO_ADVANCE_PREPARE_LEAD_MS,
+  });
+}
+
 export function buildBlendStateForRender({
   transitionMode,
   shaderQuality,
@@ -86,10 +106,19 @@ export function buildRenderFrameState({
     return frameState;
   }
 
+  // Direct warp/comp programs are the preset's painter, not a decorative
+  // post pass: stripping them leaves those presets as a black screen with a
+  // bare wave line — "lighter graphics" must never mean "no graphics". Keep
+  // the shader stage for them (the low step's feedback-resolution multiplier
+  // still shrinks its pixel cost) and shed only the true extras.
+  const shaderStageIsThePainter =
+    (frameState.post.shaderPrograms?.warp ?? null) !== null ||
+    (frameState.post.shaderPrograms?.comp ?? null) !== null;
+
   return {
     ...frameState,
     post: Object.assign({}, frameState.post, lowQualityPostOverride, {
-      shaderEnabled: false,
+      shaderEnabled: shaderStageIsThePainter,
       videoEchoEnabled: false,
       postprocessingProfile: frameState.post.postprocessingProfile
         ? {

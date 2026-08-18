@@ -496,4 +496,80 @@ describe('milkdrop preset navigation controller', () => {
       'Procedural custom waves not supported on WebGPU',
     );
   });
+
+  test('prepareNextRandomPreset plans a pick that the advance then consumes', async () => {
+    const entries = [
+      createCatalogEntry('active-preset', {
+        webgl: 'supported',
+        webgpu: 'supported',
+      }),
+      createCatalogEntry('other-preset', {
+        webgl: 'supported',
+        webgpu: 'supported',
+      }),
+    ];
+    const compiled = createCompiledPreset('other-preset');
+    const sourceFetches: string[] = [];
+    const applied: string[] = [];
+
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          sourceFetches.push(id);
+          return {
+            id,
+            title: id,
+            raw: `title=${id}\n`,
+            origin: 'bundled',
+          } satisfies MilkdropPresetSource;
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        scheduleCatalogSync: async () => undefined,
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => entries,
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: createSession({ 'other-preset': compiled }),
+      getActivePresetId: () => 'active-preset',
+      getActiveBackend: () => 'webgl',
+      applyCompiledPreset: (next) => {
+        applied.push(next.source.id);
+      },
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => false,
+      triggerWebglFallback: () => undefined,
+      rememberLastPreset: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
+    });
+
+    // Only one candidate besides the active preset, so the plan is
+    // deterministic: prepare must prefetch it, and the advance must apply
+    // the planned pick without re-rolling.
+    controller.prepareNextRandomPreset();
+    // The prefetch fetch is fire-and-forget; give the microtask queue a turn.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sourceFetches).toContain('other-preset');
+
+    // Planning twice must not re-pick or re-fetch while the plan is valid.
+    const fetchesAfterFirstPlan = sourceFetches.length;
+    controller.prepareNextRandomPreset();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sourceFetches.length).toBe(fetchesAfterFirstPlan);
+
+    await controller.selectRandomPreset();
+    expect(applied).toEqual(['other-preset']);
+  });
 });

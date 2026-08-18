@@ -306,10 +306,10 @@ export function createMilkdropPresetNavigationController({
     }
   };
 
-  const selectRandomPreset = async () => {
+  const pickRandomPresetId = (): string | null => {
     const catalogEntries = catalogCoordinator.getCatalogEntries();
     if (!catalogEntries.length) {
-      return;
+      return null;
     }
     const activePresetId = getActivePresetId();
     const activeBackend = getActiveBackend();
@@ -323,7 +323,7 @@ export function createMilkdropPresetNavigationController({
       ? pool
       : catalogEntries.filter((entry) => entry.id !== activePresetId);
     if (!candidates.length) {
-      return;
+      return null;
     }
 
     const scatterWeight = (entry: (typeof candidates)[number]) => {
@@ -359,7 +359,40 @@ export function createMilkdropPresetNavigationController({
       return roll <= 0;
     });
 
-    const selectionId = picked?.entry.id ?? candidates[0]?.id;
+    return picked?.entry.id ?? candidates[0]?.id ?? null;
+  };
+
+  // Autoplay's next pick used to be rolled at switch time, so its fetch +
+  // parse + IR rebuild always landed on the exact frame the blend began.
+  // Planning the pick ahead (the frame loop calls this a few seconds before
+  // the advance) lets the source fetch and compile happen in the quiet window
+  // instead, and the switch itself becomes a warm-cache apply.
+  let plannedRandomPresetId: string | null = null;
+
+  const isPlannedPickStillValid = (id: string) =>
+    id !== getActivePresetId() && isBackendSelectable(id);
+
+  const prepareNextRandomPreset = () => {
+    if (
+      plannedRandomPresetId !== null &&
+      isPlannedPickStillValid(plannedRandomPresetId)
+    ) {
+      return;
+    }
+    plannedRandomPresetId = pickRandomPresetId();
+    if (plannedRandomPresetId) {
+      void prefetchPresetById(plannedRandomPresetId);
+    }
+  };
+
+  const selectRandomPreset = async () => {
+    const planned =
+      plannedRandomPresetId !== null &&
+      isPlannedPickStillValid(plannedRandomPresetId)
+        ? plannedRandomPresetId
+        : null;
+    plannedRandomPresetId = null;
+    const selectionId = planned ?? pickRandomPresetId();
     if (selectionId) {
       await selectPreset(selectionId);
     }
@@ -380,6 +413,7 @@ export function createMilkdropPresetNavigationController({
     selectPreset,
     selectAdjacentPreset,
     selectRandomPreset,
+    prepareNextRandomPreset,
     goBackPreset,
   };
 }

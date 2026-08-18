@@ -57,6 +57,15 @@ export type AdaptiveQualityController = {
   getState: () => AdaptiveQualityState;
   recordFrame: (sample: AdaptiveQualitySample) => AdaptiveQualityState;
   setQualityStep: (step: number) => AdaptiveQualityState;
+  /**
+   * Tells the controller a preset was just applied. Clears in-flight
+   * pressure evidence (the compile + feedback warm-up spike resolves on its
+   * own, and letting it demote the step forces a needless degrade→recover
+   * round trip), and on constrained profiles pre-degrades one step so the
+   * warm-up renders at reduced resolution instead of dropping frames first —
+   * the existing headroom-recovery path walks it back up.
+   */
+  notePresetApplied: () => AdaptiveQualityState;
   subscribe: (subscriber: (state: AdaptiveQualityState) => void) => () => void;
 };
 
@@ -800,6 +809,36 @@ export function createAdaptiveQualityController({
       }
 
       return state;
+    },
+    notePresetApplied: () => {
+      // A preset switch invalidates pressure evidence the same way a step
+      // change does: the frames behind the averages were rendered under the
+      // previous preset's workload.
+      consecutiveOverBudget = 0;
+      consecutiveUnderBudget = 0;
+      resetRollingWindowAfterStepChange();
+
+      const constrainedProfile =
+        heuristic.profile !== 'high-end' && heuristic.profile !== 'enhanced';
+      // The session-start warmup path (MIN_WARMUP_SAMPLES) already seeds the
+      // boot conservatively; the pre-degrade is for switches after that.
+      if (
+        stepLock === null &&
+        constrainedProfile &&
+        sampleCount >= MIN_WARMUP_SAMPLES &&
+        qualityStep < QUALITY_STEPS.length - 1
+      ) {
+        qualityStep += 1;
+        adaptation = 'degraded';
+        state = {
+          ...state,
+          reasons: [
+            ...heuristic.reasons,
+            'Preset switch: warming up at a reduced quality step.',
+          ],
+        };
+      }
+      return publish();
     },
     subscribe: (subscriber) => {
       subscribers.add(subscriber);

@@ -30,6 +30,7 @@ import {
   buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
+  shouldPrepareNextPreset,
 } from './lifecycle.ts';
 import { estimateFrameBlendWorkload } from './session.ts';
 
@@ -110,6 +111,7 @@ export function createMilkdropExperienceFrameLoop({
   };
   navigation: {
     selectRandomPreset: () => Promise<void>;
+    prepareNextRandomPreset: () => void;
   };
   catalogCoordinator: {
     getCatalogEntries: () => unknown[];
@@ -230,16 +232,20 @@ export function createMilkdropExperienceFrameLoop({
           signals,
         );
 
-        if (
-          shouldAutoAdvancePreset({
-            autoplay: getAutoplay(),
-            catalogSize: catalogCoordinator.getCatalogEntries().length,
-            now: frameStartAt,
-            lastPresetSwitchAt: getLastPresetSwitchAt(),
-            blendDuration: getBlendDuration(),
-          })
-        ) {
+        const autoAdvanceArgs = {
+          autoplay: getAutoplay(),
+          catalogSize: catalogCoordinator.getCatalogEntries().length,
+          now: frameStartAt,
+          lastPresetSwitchAt: getLastPresetSwitchAt(),
+          blendDuration: getBlendDuration(),
+        };
+        if (shouldAutoAdvancePreset(autoAdvanceArgs)) {
           void navigation.selectRandomPreset();
+        } else if (shouldPrepareNextPreset(autoAdvanceArgs)) {
+          // Idempotent: the controller keeps its planned pick until the
+          // advance consumes it, so hitting this every frame in the lead
+          // window costs two comparisons.
+          navigation.prepareNextRandomPreset();
         }
 
         const currentFrameState = applyMilkdropInteractionResponse(
