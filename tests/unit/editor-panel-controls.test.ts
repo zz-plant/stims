@@ -288,7 +288,7 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     // Targeted by label, not by position: sections are ordered by subject, so
     // the first range in the pane is the wave's volume fade, not a blur pass.
     const input = panel.element.querySelector(
-      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
+      '.stims-editor__range-input[aria-label^="Blur 1 lower bound"]',
     ) as HTMLInputElement;
     input.value = '0.4';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -306,7 +306,7 @@ describe('editor panel toggles, modes, ranges and modulation', () => {
     // Targeted by label, not by position: sections are ordered by subject, so
     // the first range in the pane is the wave's volume fade, not a blur pass.
     const input = panel.element.querySelector(
-      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
+      '.stims-editor__range-input[aria-label^="Blur 1 lower bound"]',
     ) as HTMLInputElement;
     input.value = '0.9';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -455,7 +455,7 @@ describe('editor panel live drag feedback', () => {
     panel.setSessionState(stateFor('zoom=1.0\n'));
 
     const input = panel.element.querySelector(
-      '.stims-editor__slider-input[aria-label="Zoom"]',
+      '.stims-editor__slider-input[aria-label^="Zoom."]',
     ) as HTMLInputElement;
     expect(input).not.toBeNull();
     if (!input) return;
@@ -482,7 +482,7 @@ describe('editor panel live drag feedback', () => {
     panel.setSessionState(stateFor('blur1_min=0\nblur1_max=1\n'));
 
     const input = panel.element.querySelector(
-      '.stims-editor__range-input[aria-label="Blur 1 lower bound"]',
+      '.stims-editor__range-input[aria-label^="Blur 1 lower bound"]',
     ) as HTMLInputElement;
     input.value = '0.4';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -576,7 +576,7 @@ describe('editor panel live overwrite hint', () => {
 
   const hintFor = (panel: EditorPanel, label: string) => {
     const input = panel.element.querySelector(
-      `.stims-editor__slider-input[aria-label="${label}"]`,
+      `.stims-editor__slider-input[aria-label^="${label}."]`,
     ) as HTMLInputElement | null;
     const row = input?.closest('.stims-editor__slider');
     return row?.querySelector(
@@ -592,7 +592,7 @@ describe('editor panel live overwrite hint', () => {
     );
 
     const input = panel.element.querySelector(
-      '.stims-editor__slider-input[aria-label="Zoom"]',
+      '.stims-editor__slider-input[aria-label^="Zoom."]',
     ) as HTMLInputElement;
     input.focus();
     expect(document.activeElement).toBe(input);
@@ -617,7 +617,7 @@ describe('editor panel live overwrite hint', () => {
     );
 
     const input = panel.element.querySelector(
-      '.stims-editor__slider-input[aria-label="Centre X"]',
+      '.stims-editor__slider-input[aria-label^="Centre X."]',
     ) as HTMLInputElement;
     input.focus();
     expect(document.activeElement).toBe(input);
@@ -636,7 +636,7 @@ describe('editor panel live overwrite hint', () => {
     panel.setSessionState(stateFor('zoom=1.0\n'));
 
     const input = panel.element.querySelector(
-      '.stims-editor__slider-input[aria-label="Zoom"]',
+      '.stims-editor__slider-input[aria-label^="Zoom."]',
     ) as HTMLInputElement;
     input.focus();
     expect(document.activeElement).toBe(input);

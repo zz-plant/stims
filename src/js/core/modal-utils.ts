@@ -22,8 +22,9 @@ export function getFocusableElements(container: HTMLElement) {
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
   ).filter((element) => {
     if (
-      element.hasAttribute('aria-hidden') ||
-      element.closest('[aria-hidden="true"]')
+      element.getAttribute('aria-hidden') === 'true' ||
+      element.closest('[aria-hidden="true"]') ||
+      element.getAttribute('tabindex') === '-1'
     ) {
       return false;
     }

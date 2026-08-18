@@ -465,8 +465,6 @@ export function SettingsSheetPanel({
   onOpenCredits,
   thumbMode = false,
   onThumbModeChange,
-  partyRemoteMode = false,
-  onPartyRemoteModeChange,
   hapticsEnabled = true,
   onHapticsEnabledChange,
   offline = false,
@@ -479,8 +477,6 @@ export function SettingsSheetPanel({
   onOpenCredits: () => void;
   thumbMode?: boolean;
   onThumbModeChange?: (enabled: boolean) => void;
-  partyRemoteMode?: boolean;
-  onPartyRemoteModeChange?: (enabled: boolean) => void;
   hapticsEnabled?: boolean;
   onHapticsEnabledChange?: (enabled: boolean) => void;
   offline?: boolean;
@@ -509,15 +505,44 @@ export function SettingsSheetPanel({
     'playback' | 'hardware' | 'graphics' | 'accessibility'
   >('playback');
 
+  // The tablist role promises arrow-key movement; without it the tabs are
+  // Tab+Enter only and the roving tabIndex below would strand focus.
+  const tabOrder = [
+    'playback',
+    'hardware',
+    'graphics',
+    'accessibility',
+  ] as const;
+  const handleTablistKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = tabOrder.indexOf(activeTab);
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (index + 1) % tabOrder.length;
+    else if (e.key === 'ArrowLeft')
+      next = (index + tabOrder.length - 1) % tabOrder.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabOrder.length - 1;
+    if (next === -1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveTab(tabOrder[next]);
+    document.getElementById(`tab-${tabOrder[next]}`)?.focus();
+  };
+
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
-      <div className="ctl-tabs" role="tablist" aria-label="Settings categories">
+      <div
+        className="ctl-tabs"
+        role="tablist"
+        aria-label="Settings categories"
+        onKeyDown={handleTablistKeyDown}
+      >
         <button
           id="tab-playback"
           type="button"
           role="tab"
           aria-selected={activeTab === 'playback'}
           aria-controls="panel-playback"
+          tabIndex={activeTab === 'playback' ? 0 : -1}
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
@@ -529,6 +554,7 @@ export function SettingsSheetPanel({
           role="tab"
           aria-selected={activeTab === 'hardware'}
           aria-controls="panel-hardware"
+          tabIndex={activeTab === 'hardware' ? 0 : -1}
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
@@ -540,6 +566,7 @@ export function SettingsSheetPanel({
           role="tab"
           aria-selected={activeTab === 'graphics'}
           aria-controls="panel-graphics"
+          tabIndex={activeTab === 'graphics' ? 0 : -1}
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
@@ -551,6 +578,7 @@ export function SettingsSheetPanel({
           role="tab"
           aria-selected={activeTab === 'accessibility'}
           aria-controls="panel-accessibility"
+          tabIndex={activeTab === 'accessibility' ? 0 : -1}
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
@@ -752,12 +780,6 @@ export function SettingsSheetPanel({
               hint="Moves the controls within reach at the bottom of the screen."
               checked={thumbMode}
               onChange={(next) => onThumbModeChange?.(next)}
-            />
-            <SwitchRow
-              label="Party remote"
-              hint="A large-target remote for shuffle, save, fullscreen, and audio."
-              checked={partyRemoteMode}
-              onChange={(next) => onPartyRemoteModeChange?.(next)}
             />
             <SwitchRow
               label="Touch haptics"

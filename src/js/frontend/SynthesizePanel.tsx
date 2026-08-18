@@ -1,4 +1,4 @@
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
   type generatePreset,
@@ -45,6 +45,60 @@ const DEFAULT_PROVIDER: ProviderKind = viteEnv?.DEV ? 'local' : 'hosted';
 const DEFAULT_LOCAL_ENDPOINT = 'http://127.0.0.1:11434/v1';
 const DEFAULT_LOCAL_MODEL = 'gemma4:e4b-32k';
 
+const SYNTH_SETTINGS_STORAGE_KEY = 'stims:synthesize-settings';
+
+type StoredSynthesizeSettings = {
+  palette: Palette;
+  intensity: number;
+  reactivity: number;
+  provider: ProviderKind;
+  localEndpoint: string;
+  localModel: string;
+};
+
+function clampControl(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(2, Math.max(0, value))
+    : fallback;
+}
+
+function readStoredSynthesizeSettings(): StoredSynthesizeSettings {
+  const defaults: StoredSynthesizeSettings = {
+    palette: 'auto',
+    intensity: 1.0,
+    reactivity: 1.0,
+    provider: DEFAULT_PROVIDER,
+    localEndpoint: DEFAULT_LOCAL_ENDPOINT,
+    localModel: DEFAULT_LOCAL_MODEL,
+  };
+  try {
+    const raw = localStorage.getItem(SYNTH_SETTINGS_STORAGE_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as Partial<StoredSynthesizeSettings>;
+    return {
+      palette:
+        PALETTES.find((p) => p.value === parsed.palette)?.value ??
+        defaults.palette,
+      intensity: clampControl(parsed.intensity, defaults.intensity),
+      reactivity: clampControl(parsed.reactivity, defaults.reactivity),
+      provider:
+        parsed.provider === 'hosted' || parsed.provider === 'local'
+          ? parsed.provider
+          : defaults.provider,
+      localEndpoint:
+        typeof parsed.localEndpoint === 'string' && parsed.localEndpoint.trim()
+          ? parsed.localEndpoint
+          : defaults.localEndpoint,
+      localModel:
+        typeof parsed.localModel === 'string' && parsed.localModel.trim()
+          ? parsed.localModel
+          : defaults.localModel,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
 function providerStatus(provider: ProviderKind, offline: boolean) {
   if (provider === 'hosted' && offline) {
     return 'AI imports are paused while offline. Reconnect, or switch to local mode if Ollama is running on this device.';
@@ -56,20 +110,38 @@ function providerStatus(provider: ProviderKind, offline: boolean) {
 
 export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
   const { engine, ui } = useWorkspace();
+  const [stored] = useState(readStoredSynthesizeSettings);
   const [prompt, setPrompt] = useState('');
-  const [palette, setPalette] = useState<Palette>('auto');
-  const [intensity, setIntensity] = useState(1.0);
-  const [reactivity, setReactivity] = useState(1.0);
-  const [provider, setProvider] = useState<ProviderKind>(DEFAULT_PROVIDER);
-  const [localEndpoint, setLocalEndpoint] = useState(DEFAULT_LOCAL_ENDPOINT);
-  const [localModel, setLocalModel] = useState(DEFAULT_LOCAL_MODEL);
+  const [palette, setPalette] = useState<Palette>(stored.palette);
+  const [intensity, setIntensity] = useState(stored.intensity);
+  const [reactivity, setReactivity] = useState(stored.reactivity);
+  const [provider, setProvider] = useState<ProviderKind>(stored.provider);
+  const [localEndpoint, setLocalEndpoint] = useState(stored.localEndpoint);
+  const [localModel, setLocalModel] = useState(stored.localModel);
   const [generating, setGenerating] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isGenerating = generating || isPending;
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [canRegenerate, setCanRegenerate] = useState(false);
   const [status, setStatus] = useState(() =>
-    providerStatus(DEFAULT_PROVIDER, offline),
+    providerStatus(stored.provider, offline),
   );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SYNTH_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          palette,
+          intensity,
+          reactivity,
+          provider,
+          localEndpoint,
+          localModel,
+        } satisfies StoredSynthesizeSettings),
+      );
+    } catch {}
+  }, [palette, intensity, reactivity, provider, localEndpoint, localModel]);
 
   const handleProviderChange = useCallback(
     (next: ProviderKind) => {
@@ -106,6 +178,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
       return;
     }
     setGenerating(true);
+    setCanRegenerate(false);
     setStatus(
       useImage
         ? 'Describing the image and generating with the hosted model…'
@@ -157,6 +230,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           setStatus(
             'Loaded, but this preset barely reacts to sound. Try generating again with wording like “strong beat reaction”.',
           );
+          setCanRegenerate(true);
         } else {
           ui.updatePanel(null);
         }
@@ -349,6 +423,18 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
 
       <p className={styles.status} role="status" aria-live="polite">
         {status}
+        {canRegenerate && !isGenerating ? (
+          <>
+            {' '}
+            <button
+              type="button"
+              className={styles.regenerateButton}
+              onClick={() => void handleGenerate()}
+            >
+              Regenerate
+            </button>
+          </>
+        ) : null}
       </p>
 
       <button

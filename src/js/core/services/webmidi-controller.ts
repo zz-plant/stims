@@ -63,6 +63,23 @@ export type MidiControlListener = (
 
 type DevicesChangedListener = (devices: MidiDeviceInfo[]) => void;
 
+/**
+ * Global "touch + turn" learn: armed once from the Performance hardware
+ * panel, it waits for BOTH a UI-designated target (any instrumented control
+ * — the editor's per-field ⏺ path routes here automatically while armed)
+ * AND a CC message, in either order, then binds them.
+ */
+export type GlobalLearnState =
+  | { phase: 'idle' }
+  | {
+      phase: 'armed';
+      target: string | null;
+      pendingCc: { deviceId: string; cc: number } | null;
+    }
+  | { phase: 'bound'; target: string; cc: number; deviceId: string };
+
+type GlobalLearnListener = (state: GlobalLearnState) => void;
+
 function readStorage(): PersistedState {
   try {
     if (typeof localStorage === 'undefined') return {};
@@ -122,6 +139,8 @@ export class WebMidiControllerService {
   private readonly deviceRecords = new Map<string, DeviceRecord>();
   private readonly hardwareDevices = new Map<string, MidiDeviceInfo>();
   private learnTarget: string | null = null;
+  private globalLearn: GlobalLearnState = { phase: 'idle' };
+  private readonly globalLearnListeners = new Set<GlobalLearnListener>();
 
   constructor() {
     const persisted = readStorage();
@@ -246,15 +265,91 @@ export class WebMidiControllerService {
 
   // ── Learn mode ───────────────────────────────────────────────────
   public beginLearn(target: string): void {
+    // While global learn is armed, every per-field arm call (the editor's
+    // ⏺ buttons already go through here) converges into the global
+    // handshake: touching an instrumented control designates the target
+    // instead of starting a separate one-off learn.
+    if (this.globalLearn.phase === 'armed') {
+      this.setLearnTarget(target);
+      return;
+    }
     this.learnTarget = target;
   }
 
   public cancelLearn(): void {
     this.learnTarget = null;
+    // A per-field cancel (e.g. toggling the editor's ⏺ back off) while
+    // global learn is armed un-designates the target but keeps the mode
+    // armed — only cancelGlobalLearn/armGlobalLearn leave the mode.
+    if (this.globalLearn.phase === 'armed' && this.globalLearn.target) {
+      this.globalLearn = { ...this.globalLearn, target: null };
+      this.notifyGlobalLearn();
+    }
   }
 
   public getLearnTarget(): string | null {
     return this.learnTarget;
+  }
+
+  // ── Global "touch + turn" learn ──────────────────────────────────
+  /** Arm global learn: the next designated target (setLearnTarget, or any
+   * per-field beginLearn call) pairs with the next CC message, in either
+   * order, and the pair becomes a binding on that CC's device. */
+  public armGlobalLearn(): void {
+    // A pending per-field learn would race the global handshake for the
+    // next CC — global mode supersedes it.
+    this.learnTarget = null;
+    this.globalLearn = { phase: 'armed', target: null, pendingCc: null };
+    this.notifyGlobalLearn();
+  }
+
+  public cancelGlobalLearn(): void {
+    if (this.globalLearn.phase === 'idle') return;
+    this.globalLearn = { phase: 'idle' };
+    this.notifyGlobalLearn();
+  }
+
+  /** Designate the target half of an armed global learn. Called by
+   * instrumented controls when the user touches them; a no-op unless
+   * global learn is armed. */
+  public setLearnTarget(target: string): void {
+    if (this.globalLearn.phase !== 'armed' || !target) return;
+    const pending = this.globalLearn.pendingCc;
+    if (pending) {
+      this.completeGlobalLearn(target, pending.deviceId, pending.cc);
+      return;
+    }
+    this.globalLearn = { ...this.globalLearn, target };
+    this.notifyGlobalLearn();
+  }
+
+  public getGlobalLearnState(): GlobalLearnState {
+    return this.globalLearn;
+  }
+
+  public onGlobalLearnChanged(listener: GlobalLearnListener): () => void {
+    this.globalLearnListeners.add(listener);
+    return () => this.globalLearnListeners.delete(listener);
+  }
+
+  private completeGlobalLearn(
+    target: string,
+    deviceId: string,
+    cc: number,
+  ): void {
+    // Settle state before bindCc, mirroring the per-field ordering: bindCc
+    // synchronously fires onDevicesChanged, and listeners probing "did
+    // learn just finish" must observe the completed state, not the armed
+    // one that's about to flip.
+    this.globalLearn = { phase: 'bound', target, cc, deviceId };
+    this.notifyGlobalLearn();
+    this.bindCc(deviceId, cc, target, 0, 1);
+  }
+
+  private notifyGlobalLearn(): void {
+    for (const listener of this.globalLearnListeners) {
+      listener(this.globalLearn);
+    }
   }
 
   // ── Bindings ─────────────────────────────────────────────────────
@@ -358,7 +453,23 @@ export class WebMidiControllerService {
     cc: number,
     raw: number,
   ): { cc: number; raw: number; target?: string; normalized?: number } {
-    if (this.learnTarget !== null) {
+    if (this.globalLearn.phase === 'armed') {
+      if (this.globalLearn.target) {
+        // Target was designated first — this CC completes the handshake,
+        // and the same motion immediately drives the fresh binding below.
+        this.completeGlobalLearn(this.globalLearn.target, deviceId, cc);
+      } else if (
+        this.globalLearn.pendingCc?.deviceId !== deviceId ||
+        this.globalLearn.pendingCc?.cc !== cc
+      ) {
+        // CC arrived first — park it and keep waiting for a touch.
+        this.globalLearn = {
+          ...this.globalLearn,
+          pendingCc: { deviceId, cc },
+        };
+        this.notifyGlobalLearn();
+      }
+    } else if (this.learnTarget !== null) {
       // Clear before bindCc, not after: bindCc synchronously fires
       // onDevicesChanged, and a listener asking "did learn just finish"
       // via getLearnTarget() === null during that notification must see

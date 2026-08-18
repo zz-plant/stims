@@ -12,6 +12,10 @@ export type UseFocusTrapOptions<T extends HTMLElement = HTMLDivElement> = {
   restoreFocusOnUnmount?: boolean;
   initialFocusRef?: RefObject<HTMLElement | null>;
   externalContainerRef?: RefObject<T | null>;
+  // Non-modal surfaces (stage-anchored panels) keep autofocus and focus
+  // restore but must not fence focus in: the stage and its dock stay
+  // interactive beside the panel for keyboard users too.
+  trapFocus?: boolean;
 };
 
 export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
@@ -20,6 +24,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
   restoreFocusOnUnmount = true,
   initialFocusRef,
   externalContainerRef,
+  trapFocus = true,
 }: UseFocusTrapOptions<T>): RefObject<T | null> {
   const localContainerRef = useRef<T | null>(null);
   const containerRef = externalContainerRef ?? localContainerRef;
@@ -50,10 +55,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
       }
     }
 
-    const cleanupTrap = trapFocusWithin(container);
+    const cleanupTrap = trapFocus ? trapFocusWithin(container) : undefined;
 
     return () => {
-      cleanupTrap();
+      cleanupTrap?.();
       if (restoreFocusOnUnmount) {
         const el = previouslyFocusedRef.current;
         previouslyFocusedRef.current = null;
@@ -65,7 +70,14 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
         }
       }
     };
-  }, [active, autoFocus, restoreFocusOnUnmount, initialFocusRef, containerRef]);
+  }, [
+    active,
+    autoFocus,
+    restoreFocusOnUnmount,
+    initialFocusRef,
+    containerRef,
+    trapFocus,
+  ]);
 
   return containerRef;
 }

@@ -102,6 +102,27 @@ const PERFORMANCE_ACTION_KEYS = {
   remix: ['r'],
 } satisfies Record<keyof UnifiedPerformanceActions, string[]>;
 
+/** Keys the canvas consumes for the virtual pointer while focused. */
+const KEYBOARD_POINTER_KEYS = new Set([
+  'arrowleft',
+  'arrowright',
+  'arrowup',
+  'arrowdown',
+  'a',
+  'd',
+  'w',
+  's',
+]);
+
+/** Keyboard stand-in for the two-finger pinch/rotate gesture: = / - scale,
+    , / . rotate. Without this, gesture-driven preset signals (pinchDelta →
+    warp/zoom/video-echo) are unreachable without a touchscreen. */
+const KEYBOARD_GESTURE_KEYS = new Set(['=', '+', '-', '_', ',', '.']);
+
+const KEYBOARD_GESTURE_SCALE_RATE = 0.9; // log-scale units per second
+const KEYBOARD_GESTURE_ROTATION_RATE = 1.2; // radians per second
+const KEYBOARD_GESTURE_RELEASE_MS = 400;
+
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
@@ -349,7 +370,22 @@ export function createUnifiedInput({
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
     if (isTextInput(document.activeElement)) return;
-    keyState.add(event.key.toLowerCase());
+    const lowerKey = event.key.toLowerCase();
+    keyState.add(lowerKey);
+    // Consume keys this surface handles. Space/e/x/q/z/r/1-3 and the
+    // movement arrows all collide with document-level shell shortcuts
+    // (stop audio, open editor, quick-select, previous/next preset) — without
+    // this, one keystroke on a focused canvas fires both behaviors.
+    if (
+      KEYBOARD_POINTER_KEYS.has(lowerKey) ||
+      KEYBOARD_GESTURE_KEYS.has(lowerKey) ||
+      Object.values(PERFORMANCE_ACTION_KEYS).some((keys) =>
+        keys.includes(lowerKey),
+      )
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (!event.repeat) {
       const now =
         typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -406,6 +442,55 @@ export function createUnifiedInput({
       9998,
       'keyboard',
     );
+  };
+
+  let keyboardGestureScale = 1;
+  let keyboardGestureRotation = 0;
+  let keyboardGestureActive = false;
+  let keyboardGestureIdleMs = 0;
+
+  // Two-finger gesture stand-in: while = / - / , / . are held the synthetic
+  // gesture accumulates like a pinch in progress; releasing the keys for
+  // KEYBOARD_GESTURE_RELEASE_MS "lifts the fingers" and resets the anchor.
+  const updateKeyboardGesture = (deltaMs: number): UnifiedGesture | null => {
+    if (!keyboardEnabled) {
+      keyboardGestureActive = false;
+      return null;
+    }
+    const zoomIn = keyState.has('=') || keyState.has('+');
+    const zoomOut = keyState.has('-') || keyState.has('_');
+    const rotateLeft = keyState.has(',');
+    const rotateRight = keyState.has('.');
+    const engaged = zoomIn || zoomOut || rotateLeft || rotateRight;
+
+    if (engaged) {
+      keyboardGestureActive = true;
+      keyboardGestureIdleMs = 0;
+      const boost = keyState.has('shift') ? keyboardBoost : 1;
+      const scaleRate = (KEYBOARD_GESTURE_SCALE_RATE * boost * deltaMs) / 1000;
+      if (zoomIn) keyboardGestureScale *= Math.exp(scaleRate);
+      if (zoomOut) keyboardGestureScale *= Math.exp(-scaleRate);
+      keyboardGestureScale = clamp(keyboardGestureScale, 0.2, 5);
+      const rotationRate =
+        (KEYBOARD_GESTURE_ROTATION_RATE * boost * deltaMs) / 1000;
+      if (rotateLeft) keyboardGestureRotation -= rotationRate;
+      if (rotateRight) keyboardGestureRotation += rotationRate;
+    } else if (keyboardGestureActive) {
+      keyboardGestureIdleMs += deltaMs;
+      if (keyboardGestureIdleMs > KEYBOARD_GESTURE_RELEASE_MS) {
+        keyboardGestureActive = false;
+        keyboardGestureScale = 1;
+        keyboardGestureRotation = 0;
+      }
+    }
+
+    if (!keyboardGestureActive) return null;
+    return {
+      pointerCount: 2,
+      scale: keyboardGestureScale,
+      rotation: keyboardGestureRotation,
+      translation: { x: 0, y: 0 },
+    };
   };
 
   const updateGamepadPointer = (deltaMs: number) => {
@@ -592,7 +677,11 @@ export function createUnifiedInput({
 
     const summary = getPointerSummary(pointers);
     const activeSummary = getPointerSummary(activePointerList);
-    const gesture = getGesture(activePointerList, activeSummary);
+    // Run the keyboard gesture every frame so its release timer decays even
+    // while real pointers take precedence.
+    const keyboardGesture = updateKeyboardGesture(deltaMs);
+    const gesture =
+      getGesture(activePointerList, activeSummary) ?? keyboardGesture;
     const primary = pointers[0] ?? null;
     const pressed =
       activePointerList.length > 0 || keyboardPressed || gamepadPressed;

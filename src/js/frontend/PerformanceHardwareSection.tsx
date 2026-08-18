@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type {
+  GlobalLearnState,
   MidiBindingMap,
   MidiDeviceInfo,
 } from '../core/services/webmidi-controller.ts';
@@ -20,7 +21,12 @@ export function PerformanceHardwareSection() {
   );
   const [learnTarget, setLearnTarget] = useState('');
   const [learning, setLearning] = useState(false);
+  const [globalLearn, setGlobalLearn] = useState<GlobalLearnState>(() =>
+    webMidiService.getGlobalLearnState(),
+  );
   const pendingLearnLabelRef = useRef('');
+
+  useEffect(() => webMidiService.onGlobalLearnChanged(setGlobalLearn), []);
 
   useEffect(() => {
     // Reused as a general "MIDI state changed" signal (device connect,
@@ -66,6 +72,22 @@ export function PerformanceHardwareSection() {
     setLearning(false);
     setMidiMessage(null);
   };
+
+  const globalLearnArmed = globalLearn.phase === 'armed';
+  const globalLearnStatus = (() => {
+    switch (globalLearn.phase) {
+      case 'armed':
+        if (globalLearn.target)
+          return `Target: ${globalLearn.target} — now move a knob`;
+        if (globalLearn.pendingCc)
+          return `CC${globalLearn.pendingCc.cc} received — now touch a control`;
+        return "Touch a control in the editor's Tune tab or the stage, then move a knob…";
+      case 'bound':
+        return `Bound CC${globalLearn.cc} → ${globalLearn.target}`;
+      default:
+        return null;
+    }
+  })();
 
   return (
     <section className="ctl-section">
@@ -114,6 +136,40 @@ export function PerformanceHardwareSection() {
 
       <div className="ctl-row ctl-row--stack">
         <span className="ctl-row__text">
+          <span className="ctl-row__label">Learn from a control</span>
+          <span className="ctl-row__hint">
+            No typing: arm learn, touch the on-screen control you want (in the
+            editor's Tune tab or on the stage), then move a knob — in either
+            order.
+          </span>
+        </span>
+        <div className="ctl-midi-learn-row">
+          {globalLearnArmed ? (
+            <button
+              type="button"
+              className="ctl-btn"
+              onClick={() => webMidiService.cancelGlobalLearn()}
+            >
+              Cancel
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="ctl-btn"
+              disabled={!midiConnected}
+              onClick={() => webMidiService.armGlobalLearn()}
+            >
+              Learn from a control
+            </button>
+          )}
+          <span className="ctl-readout" role="status">
+            {globalLearnStatus}
+          </span>
+        </div>
+      </div>
+
+      <div className="ctl-row ctl-row--stack">
+        <span className="ctl-row__text">
           <span className="ctl-row__label">Map a knob by name</span>
           <span className="ctl-row__hint">
             For variables with no control of their own — q1-q8, t1-t8, or
@@ -142,7 +198,9 @@ export function PerformanceHardwareSection() {
             <button
               type="button"
               className="ctl-btn"
-              disabled={!learnTarget.trim() || !midiConnected}
+              disabled={
+                !learnTarget.trim() || !midiConnected || globalLearnArmed
+              }
               onClick={startLearn}
             >
               Learn

@@ -298,6 +298,16 @@ export function useWorkspaceYouTubePreview({
     }
 
     event.preventDefault();
+    // The loaded video is already playing — Enter means "start capture", and
+    // getDisplayMedia needs the transient activation this keypress carries,
+    // so call straight through instead of reloading first.
+    if (
+      youtubeReady &&
+      youtubeInputState.reference?.canonicalUrl === loadedVideoKey
+    ) {
+      onLoaded?.();
+      return;
+    }
     void loadYouTubePreview(youtubeUrl, onLoaded);
   };
 
@@ -307,7 +317,12 @@ export function useWorkspaceYouTubePreview({
     setYoutubeUrlState(nextUrl);
     setYoutubeReady(false);
     setLoadedVideoKey(null);
-    void loadYouTubePreview(nextUrl, onLoaded);
+    void loadYouTubePreview(nextUrl);
+    // Capture records this tab's audio, not the player element, so it does
+    // not need the load to finish — and getDisplayMedia must run inside the
+    // chip's click gesture, which expires long before the player is ready.
+    // Fire it now and let the video load behind the share prompt.
+    onLoaded?.();
   };
 
   const clearRecentYouTubeVideos = () => {

@@ -59,6 +59,10 @@ export function useKeyboardShortcuts({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // A widget that already handled this key (the editor seam's arrow
+      // resize, the warp gizmo's nudge) prevents default; firing the global
+      // preset shortcuts on top of it double-acts the keystroke.
+      if (event.defaultPrevented) return;
       const shortcutOverrides = readShortcutOverrides();
       if (
         event.target instanceof HTMLInputElement ||

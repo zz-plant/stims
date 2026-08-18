@@ -44,7 +44,9 @@ const requiredInIndexHtml = [
 ];
 
 const requiredHomepageCrawlLinks = [
-  '<nav class="stims-crawl-links" aria-label="Crawlable site links">',
+  // `inert` is load-bearing: crawlers read the links from the HTML source,
+  // while keyboard/AT users must not tab through 8 invisible links.
+  '<nav class="stims-crawl-links" aria-label="Crawlable site links" inert>',
   '<a href="/">Visualizer</a>',
   '<a href="/performance/">Compatibility and performance</a>',
 ];

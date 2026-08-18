@@ -116,6 +116,12 @@
   transform: scale(0.92);
 }
 
+/* Saved-state star rides the existing cool = selected convention (warm
+   stays reserved for focus). */
+.navBtn[data-saved="true"] {
+  color: var(--stims-cool, #77c9ff);
+}
+
 .titleBtn {
   display: inline-flex;
   align-items: baseline;
@@ -333,6 +339,66 @@
   font-weight: 700;
 }
 
+/* ── Radio rows (transition, audio source) ───────────────────────────
+   A labeled row of small flat options instead of one cycling item: the
+   whole ladder is visible and any rung is one click. Same opaque panel
+   language as the rest of the menu — no fills beyond the active tint. */
+.menuGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 10px 8px;
+}
+
+.menuGroupLabel {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(229, 241, 255, 0.55);
+}
+
+.menuGroupOptions {
+  display: flex;
+  gap: 4px;
+}
+
+.menuOption {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(229, 241, 255, 0.72);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menuOption:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+/* Same double encoding as active menu items: cool accent plus a visible
+   border, never a 10%-alpha tint alone. */
+.menuOption[data-active="true"] {
+  color: var(--stims-cool, #77c9ff);
+  background: rgba(119, 201, 255, 0.1);
+  border-color: rgba(119, 201, 255, 0.45);
+}
+
+.menuOption:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
 .menuSep {
   height: 1px;
   margin: 4px 6px;
@@ -401,8 +467,10 @@
     max-width: calc(100vw - 16px);
   }
 
+  /* The save star added a fourth 32px control, so the title's budget
+     shrinks accordingly to keep the pill on one row. */
   .titleBtn {
-    max-width: calc(100vw - 120px);
+    max-width: calc(100vw - 156px);
   }
 
   .menu {
@@ -427,6 +495,10 @@
 
   .menuItem {
     padding: 11px 12px;
+  }
+
+  .menuOption {
+    padding: 10px 6px;
   }
 }
 
