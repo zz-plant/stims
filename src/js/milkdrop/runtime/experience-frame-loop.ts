@@ -150,6 +150,8 @@ export function createMilkdropExperienceFrameLoop({
   getFreezeFrame: () => boolean;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
+  /** True while an autoplay advance is between trigger and transition. */
+  let autoAdvanceInFlight = false;
   let consecutiveFrameFailures = 0;
   const getCurrentFrameWorkload = () =>
     estimateFrameBlendWorkload(blendWorkloadFrameState);
@@ -239,8 +241,19 @@ export function createMilkdropExperienceFrameLoop({
           lastPresetSwitchAt: getLastPresetSwitchAt(),
           blendDuration: getBlendDuration(),
         };
-        if (shouldAutoAdvancePreset(autoAdvanceArgs)) {
-          void navigation.selectRandomPreset();
+        if (!autoAdvanceInFlight && shouldAutoAdvancePreset(autoAdvanceArgs)) {
+          // In-flight latch: lastPresetSwitchAt only moves once the switch
+          // reaches beginPresetTransition (after fetch + compile), so without
+          // it this branch fired selectRandomPreset on EVERY frame of that
+          // window — a stampede of superseded fetch+compiles in which the
+          // last random roll won, throwing away the planned, prefetched pick.
+          autoAdvanceInFlight = true;
+          void navigation
+            .selectRandomPreset()
+            .catch(() => {})
+            .finally(() => {
+              autoAdvanceInFlight = false;
+            });
         } else if (shouldPrepareNextPreset(autoAdvanceArgs)) {
           // Idempotent: the controller keeps its planned pick until the
           // advance consumes it, so hitting this every frame in the lead

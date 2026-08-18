@@ -516,9 +516,20 @@ export function useWorkspaceSessionState({
           // the wall-clock timer cannot avoid. The visitor asked for this
           // preset and it did load (the compile is cached now), so reclaim
           // the stage from the substitute instead of stranding them on it.
+          //
+          // Unless the visitor has since navigated: the fallback cleared
+          // pendingPresetIdRef, so a non-null value here means a NEWER
+          // request is in flight — reclaiming now would hijack it with a
+          // later engine revision. Their pick wins; only the failed-preset
+          // mark is lifted so the original id stays retryable.
           if (fellBack) {
             failedPresetIdsRef.current.delete(requestedPresetId);
-            pendingPresetIdRef.current = null;
+            if (pendingPresetIdRef.current !== null) {
+              log.log(
+                `skipping reclaim of ${requestedPresetId}: ${pendingPresetIdRef.current} was requested meanwhile`,
+              );
+              return;
+            }
             setStatusMessage(null);
             log.log(`reclaiming ${requestedPresetId} after timeout fallback`);
             void engineRef.current?.loadPreset(requestedPresetId).catch(() => {
