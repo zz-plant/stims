@@ -182,8 +182,8 @@ export function ShaderIdenticon({
     >
       <canvas
         ref={canvasRef}
-        width={size * window.devicePixelRatio}
-        height={size * window.devicePixelRatio}
+        width={size * Math.min(window.devicePixelRatio || 1, 2)}
+        height={size * Math.min(window.devicePixelRatio || 1, 2)}
         style={{
           width: '100%',
           height: '100%',

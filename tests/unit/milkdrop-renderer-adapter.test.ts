@@ -104,12 +104,28 @@ function getFloat32AttributeArray(
   const attribute = node?.geometry?.getAttribute?.(name) as
     | {
         array?: ArrayLike<number>;
+        itemSize?: number;
       }
     | undefined;
   if (!attribute?.array) {
     return null;
   }
-  return Float32Array.from(attribute.array);
+  const full = Float32Array.from(attribute.array);
+  // Instanced attribute buffers are capacity-allocated (rounded up past the
+  // live instance count), so only the slots covered by instanceCount hold
+  // meaningful data.
+  const instanceCount = (
+    node?.geometry as { instanceCount?: number } | undefined
+  )?.instanceCount;
+  const itemSize = attribute.itemSize;
+  if (
+    typeof instanceCount === 'number' &&
+    typeof itemSize === 'number' &&
+    instanceCount * itemSize <= full.length
+  ) {
+    return full.slice(0, instanceCount * itemSize);
+  }
+  return full;
 }
 
 function getRootChildByRenderOrder(
@@ -408,8 +424,14 @@ shapecode_0_thickoutline=1
     });
     expect(fillMesh).toBeDefined();
     expect(fillControl?.array[0]).toBe(1);
-    expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
-    expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
+    // Instanced attribute buffers are capacity-allocated (rounded up to
+    // 64-instance granularity), so only the written prefix is meaningful.
+    expect(fillPrimary?.array.slice(0, 4)).toEqual(
+      new Float32Array([1, 0.2, 0.1, 0.7]),
+    );
+    expect(fillSecondary?.array.slice(0, 4)).toEqual(
+      new Float32Array([0.1, 0.2, 1, 0.3]),
+    );
   });
 
   test('uses non-shader render materials for query-forced webgpu sessions', async () => {

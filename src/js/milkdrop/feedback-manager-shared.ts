@@ -61,6 +61,26 @@ import type {
   MilkdropShaderProgramPayload,
 } from './types';
 
+// Generated GLSL per shader-program payload. Payload objects are stable for
+// the lifetime of a compiled preset, so caching on identity turns the
+// per-frame "did the program change?" comparison into pure string identity.
+const generatedGlslCache = new WeakMap<object, string | null>();
+
+function getCachedGlslForShaderProgram(
+  program: {
+    statements: Parameters<typeof generateGlslFromShaderStatements>[0];
+  },
+  stage: 'warp' | 'comp',
+): string | null {
+  if (!generatedGlslCache.has(program)) {
+    generatedGlslCache.set(
+      program,
+      generateGlslFromShaderStatements(program.statements, stage) ?? null,
+    );
+  }
+  return generatedGlslCache.get(program) ?? null;
+}
+
 const BLUR_PASS_RADII = [2, 4, 8] as const;
 
 const CACHED_BLUR_RANGES = [
@@ -1734,13 +1754,16 @@ class SharedMilkdropFeedbackManager
     const executableComp = isMilkdropShaderProgramBackendExecutable(comp)
       ? comp
       : null;
+    // This runs every frame; without the cache, translated presets (no
+    // rawGlsl) would regenerate multi-KB GLSL strings for both stages each
+    // frame just to hit the "nothing changed" early-out below.
     const warpGlsl = executableWarp
       ? (executableWarp.rawGlsl ??
-        generateGlslFromShaderStatements(executableWarp.statements, 'warp'))
+        getCachedGlslForShaderProgram(executableWarp, 'warp'))
       : null;
     const compGlsl = executableComp
       ? (executableComp.rawGlsl ??
-        generateGlslFromShaderStatements(executableComp.statements, 'comp'))
+        getCachedGlslForShaderProgram(executableComp, 'comp'))
       : null;
 
     // Skip rebuild if nothing changed

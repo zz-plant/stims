@@ -482,15 +482,25 @@ export function ensureInstancedAttribute(
 ) {
   const existing = geometry.getAttribute(name);
   const requiredLength = Math.max(1, count * itemSize);
+  // Capacity policy, not exact-fit: instance counts track live audio, so an
+  // exact length check reallocates the CPU array and the GPU buffer (and, on
+  // WebGPU, rebuilds bind groups) nearly every frame. Keep any buffer that
+  // fits and isn't wildly oversized; draw range is governed by
+  // geometry.instanceCount, not the array length.
   if (
     existing instanceof InstancedBufferAttribute &&
     existing.itemSize === itemSize &&
-    existing.array.length === requiredLength
+    existing.array.length >= requiredLength &&
+    existing.array.length <= requiredLength * 4 + 64 * itemSize
   ) {
     return existing;
   }
+  // Round capacity up to 64-instance granularity so small count jitter never
+  // crosses an allocation boundary.
+  const capacityLength =
+    Math.ceil(requiredLength / (64 * itemSize)) * 64 * itemSize;
   const attribute = new InstancedBufferAttribute(
-    new Float32Array(requiredLength),
+    new Float32Array(capacityLength),
     itemSize,
   );
   attribute.setUsage(DynamicDrawUsage);
