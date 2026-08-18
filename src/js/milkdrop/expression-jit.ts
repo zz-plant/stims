@@ -412,3 +412,72 @@ export function compileMilkdropProgram(
   compiledPrograms.set(block, compiled);
   return compiled;
 }
+
+/**
+ * Pre-warms the per-block JIT cache for every program in a compiled preset,
+ * yielding to the event loop between blocks.
+ *
+ * Without this, all `new Function` parse/compile work lands inside the first
+ * rendered frame of a newly applied preset — one long task mid-blend that
+ * visibly stalls playback on mobile (hundreds of ms for equation-heavy
+ * presets, measured on a Galaxy S22). Compiling block-by-block ahead of the
+ * swap splits that into frame-sized slices; the swap then finds every block
+ * already cached.
+ *
+ * `shouldAbort` lets a superseded preset load stop wasting main-thread time.
+ */
+export async function prewarmMilkdropPrograms(
+  ir: {
+    programs: {
+      init: MilkdropProgramBlock;
+      perFrame: MilkdropProgramBlock;
+      perPixel: MilkdropProgramBlock;
+    };
+    customWaves: Array<{
+      programs: {
+        init: MilkdropProgramBlock;
+        perFrame: MilkdropProgramBlock;
+        perPoint: MilkdropProgramBlock;
+      };
+    }>;
+    customShapes: Array<{
+      programs: {
+        init: MilkdropProgramBlock;
+        perFrame: MilkdropProgramBlock;
+      };
+    }>;
+  },
+  shouldAbort?: () => boolean,
+): Promise<void> {
+  // Best-effort warm-up: partially-shaped IR (test doubles, presets stripped
+  // by a compile fallback) just skips instead of throwing mid-load.
+  if (!ir?.programs) {
+    return;
+  }
+  const blocks: MilkdropProgramBlock[] = [
+    ir.programs.init,
+    ir.programs.perFrame,
+    ir.programs.perPixel,
+  ];
+  for (const wave of ir.customWaves ?? []) {
+    blocks.push(wave.programs.init, wave.programs.perFrame);
+    blocks.push(wave.programs.perPoint);
+  }
+  for (const shape of ir.customShapes ?? []) {
+    blocks.push(shape.programs.init, shape.programs.perFrame);
+  }
+
+  const yieldToEventLoop = () =>
+    new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  for (const block of blocks) {
+    if (shouldAbort?.()) {
+      return;
+    }
+    if (block.statements.length === 0) {
+      continue;
+    }
+    compileMilkdropProgram(block);
+    await yieldToEventLoop();
+  }
+}
