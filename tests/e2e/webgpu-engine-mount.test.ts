@@ -19,6 +19,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium } from 'playwright';
+import { captureAgentStats, writeAgentFailureArtifact } from './agent-api.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import {
   HEADLESS,
@@ -180,6 +181,48 @@ localWebGpuTest(
       expect(finalState).not.toBeNull();
       expect(finalState?.backend).toBe('webgpu');
       expect(finalState?.activePresetId).toBe(PRESET_ID);
+
+      // Supplementary cross-check against the agent API's pixel-stats
+      // readback. The sampleCount assertions above are the real correctness
+      // signal (they need no canvas readback at all, which is the whole
+      // reason this suite exists instead of reusing the WebGL suite's
+      // pixel probes). This is additive only: log what captureStats() sees
+      // across two captures ~300ms apart, but never fail the test on it —
+      // a static-looking frame pair can legitimately read motionEstimate
+      // 0, and this is a fragile GPU suite that shouldn't gain a second way
+      // to flake.
+      try {
+        const statsA = await captureAgentStats(page);
+        await page.waitForTimeout(300);
+        const statsB = await captureAgentStats(page);
+        console.log(
+          '[webgpu-engine-mount] captureAgentStats cross-check:',
+          JSON.stringify({
+            motionEstimateA: statsA?.motionEstimate ?? null,
+            motionEstimateB: statsB?.motionEstimate ?? null,
+            edgeDensityB: statsB?.edgeDensity ?? null,
+          }),
+        );
+        if (statsB && !(statsB.motionEstimate >= 0)) {
+          console.warn(
+            '[webgpu-engine-mount] captureAgentStats reported a non-numeric ' +
+              'motionEstimate; supplementary signal only, not failing the test.',
+          );
+        }
+      } catch (statsError) {
+        // Supplementary signal only — never let a captureStats hiccup fail
+        // this test when the primary sampleCount assertions already passed.
+        console.warn(
+          '[webgpu-engine-mount] captureAgentStats cross-check threw (non-fatal):',
+          statsError,
+        );
+      }
+    } catch (error) {
+      await writeAgentFailureArtifact(
+        page,
+        'webgpu-engine-mount-mounts-engine-on-webgpu-and-produces-frames',
+      );
+      throw error;
     } finally {
       try {
         await ctx.close();

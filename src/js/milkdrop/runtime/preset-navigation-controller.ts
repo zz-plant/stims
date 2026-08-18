@@ -1,3 +1,4 @@
+import { getSessionRandom } from '../../core/deterministic-random.ts';
 import { notePresetShown } from '../../core/services/preset-telemetry';
 import { compileMilkdropPresetSource } from '../compiler';
 import { prewarmMilkdropPrograms } from '../expression-jit.ts';
@@ -353,7 +354,7 @@ export function createMilkdropPresetNavigationController({
       weight: scatterWeight(entry),
     }));
     const totalWeight = scoredPool.reduce((sum, s) => sum + s.weight, 0);
-    let roll = Math.random() * totalWeight;
+    let roll = getSessionRandom()() * totalWeight;
     const picked = scoredPool.find((s) => {
       roll -= s.weight;
       return roll <= 0;

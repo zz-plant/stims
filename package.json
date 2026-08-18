@@ -78,6 +78,7 @@
     "check:readme-claims": "bun run scripts/check-readme-claims.ts",
     "check:seo": "bun run scripts/check-seo.ts",
     "check:css-tokens": "bun run scripts/check-css-tokens.ts",
+    "check:agent-action-ids": "bun run scripts/check-agent-action-ids.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
     "check:authoring-examples": "bun run scripts/check-authoring-examples.ts",

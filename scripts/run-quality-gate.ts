@@ -115,6 +115,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:css-tokens'],
       },
       {
+        label: 'Agent action id drift',
+        cmd: ['bun', 'run', 'check:agent-action-ids'],
+      },
+      {
         label: 'Stale assets/ path check',
         cmd: ['bun', 'run', 'check:stale-paths'],
       },

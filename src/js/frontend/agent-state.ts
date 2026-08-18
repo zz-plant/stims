@@ -81,6 +81,95 @@ let lastErrorMessage: string | null = null;
 const commitListeners = new Set<() => void>();
 let lastCore: AgentCoreSnapshot | null = null;
 
+/**
+ * Table-driven commit diff, coupled to AgentCoreSnapshot's own field list by
+ * a paired test (tests/unit/agent-state-core-diff.test.ts) the same way
+ * workspace-context.tsx's coarseEngineSnapshotEqual is coupled to
+ * EngineSnapshot's fields — that test enumerates every AgentCoreSnapshot key
+ * and requires it to be either covered by a descriptor's `fields` list here
+ * or listed in CORE_SNAPSHOT_INTENTIONALLY_SKIPPED with a reason, so a field
+ * added to AgentCoreSnapshot but forgotten here fails a test instead of
+ * silently going unobserved in getEvents().
+ */
+type CoreDiffDescriptor = {
+  fields: ReadonlyArray<keyof AgentCoreSnapshot>;
+  changed: (prev: AgentCoreSnapshot, next: AgentCoreSnapshot) => boolean;
+  event: (
+    prev: AgentCoreSnapshot,
+    next: AgentCoreSnapshot,
+  ) => { type: AgentEventType; data: Record<string, unknown> };
+};
+
+export const CORE_SNAPSHOT_DIFF_DESCRIPTORS: readonly CoreDiffDescriptor[] = [
+  {
+    fields: ['engineState'],
+    changed: (p, n) => p.engineState !== n.engineState,
+    event: (p, n) => ({
+      type: 'engine-state',
+      data: { from: p.engineState, to: n.engineState },
+    }),
+  },
+  {
+    // presetTitle is bundled into the same event as presetId (it's the
+    // human-readable name of whatever preset just became active), but is
+    // also checked alone in case a title correction ever lands without an
+    // id change.
+    fields: ['presetId', 'presetTitle'],
+    changed: (p, n) =>
+      p.presetId !== n.presetId || p.presetTitle !== n.presetTitle,
+    event: (p, n) => ({
+      type: 'preset',
+      data: { from: p.presetId, to: n.presetId, title: n.presetTitle },
+    }),
+  },
+  {
+    fields: ['panel'],
+    changed: (p, n) => p.panel !== n.panel,
+    event: (p, n) => ({ type: 'panel', data: { from: p.panel, to: n.panel } }),
+  },
+  {
+    fields: ['audioSource'],
+    changed: (p, n) => p.audioSource !== n.audioSource,
+    event: (p, n) => ({
+      type: 'audio-source',
+      data: { from: p.audioSource, to: n.audioSource },
+    }),
+  },
+  {
+    fields: ['transition'],
+    changed: (p, n) =>
+      p.transition.mode !== n.transition.mode ||
+      p.transition.blendDuration !== n.transition.blendDuration,
+    event: (_p, n) => ({ type: 'transition', data: { ...n.transition } }),
+  },
+  {
+    fields: ['autoplay'],
+    changed: (p, n) => p.autoplay !== n.autoplay,
+    event: (_p, n) => ({ type: 'autoplay', data: { enabled: n.autoplay } }),
+  },
+  {
+    fields: ['backend'],
+    changed: (p, n) => p.backend !== n.backend,
+    event: (p, n) => ({
+      type: 'backend',
+      data: { from: p.backend, to: n.backend },
+    }),
+  },
+];
+
+// Fields deliberately not diffed into events, each with a reason:
+export const CORE_SNAPSHOT_INTENTIONALLY_SKIPPED: ReadonlySet<
+  keyof AgentCoreSnapshot
+> = new Set([
+  // Per-frame churn while audio plays; an event per frame would flood the
+  // (bounded) log within seconds. Read live via getState().audioEnergy.
+  'audioEnergy',
+  // Derived into engineState: booting->ready and ready->live are both
+  // engineState transitions, already emitted as 'engine-state' events.
+  'engineReady',
+  'liveMode',
+] as const);
+
 function pushEvent(type: AgentEventType, data: Record<string, unknown>): void {
   eventSeq += 1;
   events.push({ seq: eventSeq, at: Date.now(), type, data });
@@ -113,44 +202,30 @@ export function emitAgentCommit(core: AgentCoreSnapshot): void {
   const prev = lastCore;
   lastCore = core;
   if (prev) {
-    if (prev.engineState !== core.engineState) {
-      pushEvent('engine-state', {
-        from: prev.engineState,
-        to: core.engineState,
-      });
-    }
-    if (prev.presetId !== core.presetId) {
-      pushEvent('preset', {
-        from: prev.presetId,
-        to: core.presetId,
-        title: core.presetTitle,
-      });
-    }
-    if (prev.panel !== core.panel) {
-      pushEvent('panel', { from: prev.panel, to: core.panel });
-    }
-    if (prev.audioSource !== core.audioSource) {
-      pushEvent('audio-source', {
-        from: prev.audioSource,
-        to: core.audioSource,
-      });
-    }
-    if (
-      prev.transition.mode !== core.transition.mode ||
-      prev.transition.blendDuration !== core.transition.blendDuration
-    ) {
-      pushEvent('transition', { ...core.transition });
-    }
-    if (prev.autoplay !== core.autoplay) {
-      pushEvent('autoplay', { enabled: core.autoplay });
-    }
-    if (prev.backend !== core.backend) {
-      pushEvent('backend', { from: prev.backend, to: core.backend });
+    for (const descriptor of CORE_SNAPSHOT_DIFF_DESCRIPTORS) {
+      if (descriptor.changed(prev, core)) {
+        const { type, data } = descriptor.event(prev, core);
+        pushEvent(type, data);
+      }
     }
   }
   for (const listener of [...commitListeners]) {
     listener();
   }
+}
+
+/** Test-only: clears the module-level log/commit state between test cases. */
+export function resetAgentStateForTests(): void {
+  statusLog.length = 0;
+  events.length = 0;
+  eventSeq = 0;
+  lastErrorMessage = null;
+  lastCore = null;
+  commitListeners.clear();
+}
+
+export function getAgentEventsForTests(): readonly AgentEvent[] {
+  return [...events];
 }
 
 function nextCommit(timeoutMs: number): Promise<boolean> {
