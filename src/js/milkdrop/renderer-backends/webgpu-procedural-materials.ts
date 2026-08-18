@@ -10,17 +10,18 @@ import {
   createProceduralFieldUniformState,
   createProceduralInteractionUniformState,
 } from '../renderer-helpers/procedural-field-uniforms';
+import { registerWebGpuHelperMaterials } from '../renderer-helpers/webgpu-materials-loader';
 import type {
   MilkdropGpuFieldExpression,
   MilkdropGpuFieldProgramDescriptor,
 } from '../types';
 
-// NOTE: The WebGPU path loads a true Data3DTexture for simplex noise (see
-// feedback-manager-webgpu-composite.ts) but samples it via 2D atlas slicing
-// because Three.js WebGPU/TSL does not expose texture3D() natively. The 2D
-// atlas sampling approximates the GLSL path's atlas slicing approach. True
-// 3D texture sampling would require TSL nodes or a custom WGSL shader once
-// the API supports it.
+// NOTE: this was previously wrong — TSL DOES expose a native texture3D()
+// node (see feedback-manager-webgpu-composite.ts, `texture3D` imported from
+// TSL and used via tex3DNodes.*.sample()). The composite path samples real
+// Data3DTextures natively for every volume type (noise, simplex, voronoi,
+// aura, caustics, pattern, fractal, perlin); only `video` still needs 2D
+// atlas slicing, since a captured video frame isn't a real volume.
 
 // three.js's WebGPURenderer only recognizes materials registered in its
 // StandardNodeLibrary (MeshBasicMaterial, MeshStandardMaterial, etc). A
@@ -1486,3 +1487,20 @@ export function createProceduralWaveMaterial() {
 
   return Object.assign(material, { uniforms });
 }
+
+// Register the WebGPU material toolkit for the shared renderer helpers
+// (shape/mesh/particle-field/procedural-wave/motion-vector renderers). They
+// run on both backends and must not import 'three/webgpu' statically — that
+// would drag the WebGPU three.js bundle into the boot path of WebGL-only
+// browsers — so this module (which is only reachable through the lazily
+// loaded WebGPU adapter graph) hands them NodeMaterial/TSL and the
+// procedural factories at module scope. See
+// renderer-helpers/webgpu-materials-loader.ts.
+registerWebGpuHelperMaterials({
+  NodeMaterial,
+  TSL,
+  createProceduralMeshMaterial,
+  createProceduralMotionVectorMaterial,
+  createProceduralWaveMaterial,
+  createProceduralCustomWaveMaterial,
+});
