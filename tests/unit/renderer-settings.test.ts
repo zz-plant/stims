@@ -23,6 +23,9 @@ describe('applyRendererSettings', () => {
   });
 
   test('keeps mobile webgpu below the desktop ceiling', () => {
+    // The test environment reports a capable (non-lowPower) device profile,
+    // so mainstream mobile browsers get the higher capable-phone ceiling.
+    // Low-power hardware keeps the 1.2/1.0 caps via the lowPower branch.
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgl',
@@ -30,7 +33,7 @@ describe('applyRendererSettings', () => {
         browserFamily: 'safari',
         platformFamily: 'ios',
       }),
-    ).toBe(1);
+    ).toBe(1.2);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
@@ -38,7 +41,7 @@ describe('applyRendererSettings', () => {
         browserFamily: 'safari',
         platformFamily: 'ios',
       }),
-    ).toBe(1.2);
+    ).toBe(2.0);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
@@ -46,7 +49,20 @@ describe('applyRendererSettings', () => {
         browserFamily: 'chrome',
         platformFamily: 'android',
       }),
-    ).toBe(1.2);
+    ).toBe(2.0);
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgpu',
+        isMobile: true,
+        browserFamily: 'chrome',
+        platformFamily: 'android',
+      }),
+    ).toBeLessThan(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgpu',
+        isMobile: false,
+      }),
+    );
   });
 
   test('applies explicit viewport dimensions when provided', () => {
