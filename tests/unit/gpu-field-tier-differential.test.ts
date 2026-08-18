@@ -46,7 +46,12 @@ const STATE_VARS = [
   'dy',
 ];
 const TEMP_VARS = ['t1', 't2', 't3'];
+// Frame-constant register inputs (q registers and per-frame user vars):
+// read-only in the generator so the planner classifies them as
+// registerInputs — the q-var lowering path — rather than temporaries.
+const REGISTER_VARS = ['q1', 'q20', 'q31', 'frameuser'];
 const VARS = [...STATE_VARS, ...TEMP_VARS];
+const READ_VARS = [...VARS, ...REGISTER_VARS];
 const UNARY_FNS = [
   'sin',
   'cos',
@@ -96,7 +101,7 @@ function genExpr(rnd: () => number, depth: number): string {
   if (depth <= 0 || roll < 0.28) {
     return rnd() < 0.5
       ? (rnd() * 8 - 4).toFixed(4)
-      : VARS[Math.floor(rnd() * VARS.length)];
+      : READ_VARS[Math.floor(rnd() * READ_VARS.length)];
   }
   if (roll < 0.52) {
     return `${UNARY_FNS[Math.floor(rnd() * UNARY_FNS.length)]}(${genExpr(rnd, depth - 1)})`;
@@ -135,12 +140,18 @@ function parseProgram(lines: string[]): MilkdropProgramBlock | null {
 // --- Reference evaluation of the descriptor, WGSL-emitter semantics ------
 const GPU_CLOSE = 0.00001;
 const gpuBool = (v: number) => (Math.abs(v) > GPU_CLOSE ? 1 : 0);
-const gpuMod = (l: number, r: number) =>
-  Math.abs(r) <= GPU_CLOSE ? 0 : l - r * Math.trunc(l / r);
+const gpuMod = (l: number, r: number) => {
+  const m = Math.abs(r) <= GPU_CLOSE ? 0 : l - r * Math.trunc(l / r);
+  return m === 0 ? signedZero(l) : m;
+};
+const signedZero = (l: number) =>
+  Object.is(Math.sign(l), -0) || l < 0 ? -0 : 0;
 const gpuIntMod = (l: number, r: number) => {
   const li = Math.trunc(l);
   const ri = Math.trunc(r);
-  return ri === 0 ? 0 : li - ri * Math.trunc(li / ri);
+  const m = ri === 0 ? 0 : li - ri * Math.trunc(li / ri);
+  // Dividend-signed zero, matching C remainder and the WGSL helper.
+  return m === 0 ? signedZero(l) : m;
 };
 const gpuFinite = (v: number) => (Math.abs(v) < 3.402823e38 ? v : 0);
 const gpuPow = (b: number, ex: number) => gpuFinite(b ** ex);
@@ -246,7 +257,7 @@ function evalGpu(e: GpuExpr, env: Record<string, number>): number {
         case 'log':
           return gpuLog(a[0]);
         case 'log10':
-          return gpuLog(a[0]) * 0.4342944819032518;
+          return gpuLog(a[0]) * Math.LOG10E;
         case 'exp':
           return Math.exp(a[0]);
         case 'sign':
@@ -283,7 +294,7 @@ const closeEnough = (a: number, b: number) => {
 describe('GPU field tier differential', () => {
   test('JIT and lowered-descriptor semantics agree on seeded programs', () => {
     let lowered = 0;
-    let skipped = 0;
+    let _skipped = 0;
     let mismatches = 0;
     const classes = new Map<string, { count: number; example: string }>();
 
@@ -292,19 +303,21 @@ describe('GPU field tier differential', () => {
       const lines = genProgram(rnd);
       const block = parseProgram(lines);
       if (!block) {
-        skipped++;
+        _skipped++;
         continue;
       }
-      const descriptor = lowerGpuFieldProgram(block);
+      const descriptor = lowerGpuFieldProgram(block, {
+        registerInputs: REGISTER_VARS,
+      });
       if (!descriptor) {
-        skipped++;
+        _skipped++;
         continue;
       }
       lowered++;
 
       const inputRnd = mulberry32(seed * 104729);
       const env: Record<string, number> = {};
-      for (const v of VARS) env[v] = inputRnd() * 4 - 2;
+      for (const v of READ_VARS) env[v] = inputRnd() * 4 - 2;
 
       const envJit = { ...env };
       try {
