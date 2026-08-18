@@ -10,6 +10,7 @@ import {
   hasWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
 } from '../core/renderer-query-override.ts';
+import { getLastRendererFallbackReason } from '../core/renderer-telemetry.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import {
   DEFAULT_PERFORMANCE_SETTINGS,
@@ -498,6 +499,11 @@ export function SettingsSheetPanel({
       ? 'WebGPU'
       : 'WebGL'
     : null;
+  // Read once per panel open — the value only changes on a renderer probe,
+  // which only happens on page load.
+  const [rendererFallbackReason] = useState(() =>
+    getLastRendererFallbackReason(),
+  );
 
   const [activeTab, setActiveTab] = useState<
     'playback' | 'hardware' | 'graphics' | 'accessibility'
@@ -676,6 +682,12 @@ export function SettingsSheetPanel({
                 <span className="ctl-readout">running on {backendLabel}</span>
               ) : null}
             </div>
+
+            {engineSnapshot?.backend === 'webgl' && rendererFallbackReason ? (
+              <p className="ctl-row__hint">
+                WebGL because: {rendererFallbackReason}
+              </p>
+            ) : null}
 
             <div className="ctl-row ctl-row--stack">
               <span className="ctl-row__text">

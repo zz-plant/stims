@@ -168,3 +168,20 @@ export function installRendererTelemetryPersistence() {
   installOptimizationTelemetry();
   installGlobalTelemetryAPI();
 }
+
+/**
+ * The reason recorded the last time the renderer probe fell back from
+ * WebGPU, or null when the last probe succeeded (or nothing is stored).
+ * Lets the settings UI answer "why am I on WebGL?" without devtools.
+ */
+export function getLastRendererFallbackReason(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const reason = readTelemetryStats().lastFallbackReason;
+    return typeof reason === 'string' && reason.length > 0 ? reason : null;
+  } catch {
+    return null;
+  }
+}
