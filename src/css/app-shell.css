@@ -3699,7 +3699,8 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 /* ── Preset Grid View ─────────────────────────────────────────────── */
 .stims-preset-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Reflow with the resizable panel instead of stretching a fixed 3-up. */
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: var(--space-sm, 8px);
   padding: var(--space-xs, 4px) 0;
   width: 100%;
@@ -3707,6 +3708,10 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 
 .stims-preset-grid__item {
   position: relative;
+  /* Virtualization: skip layout/paint for offscreen tiles. The intrinsic
+     size must match a real tile (4:3 art + meta row) or scroll jumps. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -3757,4 +3762,18 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 
 .stims-preset-grid__spacer {
   grid-column: 1 / -1;
+}
+
+.stims-preset-grid__variants {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  right: var(--space-xs, 4px);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
+  border: 1px solid var(--stims-line);
+  color: var(--stims-ink-soft, var(--stims-ink));
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  pointer-events: none;
 }

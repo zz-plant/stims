@@ -7,7 +7,7 @@ import {
   getAdaptiveMaxPixelRatio,
   getDevicePerformanceProfile,
 } from './device-profile.ts';
-import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
+import { getDefaultWebGpuInitTimeoutMs } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
@@ -99,7 +99,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   exposure: 1,
   antialias: true,
   alpha: false,
-  webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs: getDefaultWebGpuInitTimeoutMs(),
   forceRetryCapabilities: false,
   preserveDrawingBuffer: false,
 };

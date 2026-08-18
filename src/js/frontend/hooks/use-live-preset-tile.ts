@@ -89,14 +89,27 @@ export function canRenderLiveTile(entry: PresetCatalogEntry): boolean {
   return livePresetTilesEnabled && typeof entry.file === 'string';
 }
 
+/** Whether this entry could host a hover-audition live tile. */
+export function canAuditionLiveTile(entry: PresetCatalogEntry): boolean {
+  return typeof entry.file === 'string';
+}
+
 /**
  * Mounts a live tile canvas for the preset into the returned host element.
  * The canvas is owned by the pool (it survives unmounts for LRU revival), so
  * the hook only ever appends/removes it, never destroys it.
  */
-export function useLivePresetTile(entry: PresetCatalogEntry) {
+export function useLivePresetTile(
+  entry: PresetCatalogEntry,
+  options: { audition?: boolean } = {},
+) {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const enabled = canRenderLiveTile(entry);
+  // `audition` activates one tile on demand (grid hover/focus) without the
+  // global ?liveTiles flag. Deactivating unmounts the effect, which releases
+  // the pool handle — so a single hovered tile is the steady-state cost.
+  const enabled =
+    canRenderLiveTile(entry) ||
+    (options.audition === true && canAuditionLiveTile(entry));
 
   useEffect(() => {
     if (!enabled || !entry.file) {

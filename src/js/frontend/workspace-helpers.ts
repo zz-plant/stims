@@ -659,6 +659,7 @@ export function mapRuntimeCatalogEntry(
         : undefined,
     lastOpenedAt: entry.lastOpenedAt,
     expectedFidelityClass: entry.fidelityClass,
+    similarity: entry.similarity,
     fidelityTier: entry.fidelityTier,
     visualCertification: entry.visualCertification,
     supports: {

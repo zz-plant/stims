@@ -22,6 +22,8 @@ export type MilkdropBundledCatalogEntry = {
   tags?: string[];
   searchTerms?: string[];
   curatedRank?: number;
+  /** Near-duplicate cluster annotation from scripts/dedup-catalog.ts. */
+  similarity?: { clusterId: string; duplicateOf?: string };
   corpusTier?: 'bundled' | 'certified' | 'exploratory';
   certification?: 'bundled' | 'certified' | 'exploratory';
   expectedFidelityClass?: MilkdropFidelityClass;
@@ -44,6 +46,7 @@ export type MilkdropCatalogEntry = {
   origin: MilkdropPresetOrigin;
   tags: string[];
   curatedRank?: number;
+  similarity?: { clusterId: string; duplicateOf?: string };
   isFavorite: boolean;
   rating: number;
   lastOpenedAt?: number;

@@ -88,6 +88,21 @@ export function createMilkdropPresetNavigationController({
   // blend begins.
   let adjacentPrefetchTimer: ReturnType<typeof setTimeout> | null = null;
 
+  const prefetchPresetById = async (id: string) => {
+    try {
+      const source = await catalogStore.getPresetSource(id);
+      if (!source) {
+        return;
+      }
+      compileMilkdropPresetSource(source.raw, source, {
+        cacheCompile: true,
+      });
+    } catch {
+      // Prefetch is invisible to the user; a failure just costs a cold
+      // compile later.
+    }
+  };
+
   const prefetchAdjacentPreset = async (presetId: string) => {
     const entries = catalogCoordinator.getCatalogEntries();
     const backend = getActiveBackend();
@@ -99,18 +114,7 @@ export function createMilkdropPresetNavigationController({
     if (!next || next.id === getActivePresetId()) {
       return;
     }
-    try {
-      const source = await catalogStore.getPresetSource(next.id);
-      if (!source) {
-        return;
-      }
-      compileMilkdropPresetSource(source.raw, source, {
-        cacheCompile: true,
-      });
-    } catch {
-      // Prefetch is invisible to the user; a failure just costs a cold
-      // compile later.
-    }
+    await prefetchPresetById(next.id);
   };
 
   const scheduleAdjacentPresetPrefetch = (presetId: string) => {
