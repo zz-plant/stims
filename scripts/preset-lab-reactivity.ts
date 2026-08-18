@@ -145,7 +145,7 @@ function repoRootFromScript() {
   return path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 }
 
-function loadCatalogEntries(repoRoot: string) {
+export function loadCatalogEntries(repoRoot: string) {
   const publicRoot = path.join(repoRoot, 'public');
   const catalogPaths = [
     path.join(publicRoot, 'milkdrop-presets', 'catalog.json'),
