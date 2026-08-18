@@ -79,22 +79,59 @@ export function NewHomePage() {
 
   useEffect(() => {
     if (autoStartedRef.current) return;
-    if (!deepLinkEntry) return;
+    if (!deepLinkPresetId) return;
     if (!engine.engineReady) return;
+    // A resolved entry starts the named preset. A link whose id the settled
+    // catalog does NOT contain must still start — handleAudioStart heals the
+    // route to the featured preset and says so in a status message. Without
+    // this branch a stale or renamed id (old share links, indexed search
+    // results) stranded the arrival on the generic launch form with no
+    // feedback at all.
+    if (!deepLinkEntry && !engine.missingRequestedPreset) return;
     autoStartedRef.current = true;
     void engine.handleAudioStart('demo');
-  }, [deepLinkEntry, engine.engineReady, engine.handleAudioStart]);
+  }, [
+    deepLinkPresetId,
+    deepLinkEntry,
+    engine.engineReady,
+    engine.missingRequestedPreset,
+    engine.handleAudioStart,
+  ]);
 
-  const handlePlayDemo = () => engine.handleAudioStart('demo');
+  // Without attract mode (mobile, low-power) the engine only boots when this
+  // is pressed, which takes seconds on a phone. A CTA that just sits there
+  // reads as broken and invites rage-taps; show the in-flight state.
+  const [audioStarting, setAudioStarting] = useState(false);
+  const startWithFeedback = (source: ResumableAudioSource) => {
+    setAudioStarting(true);
+    void Promise.resolve(engine.handleAudioStart(source)).finally(() =>
+      setAudioStarting(false),
+    );
+  };
+  const handlePlayDemo = () => startWithFeedback('demo');
   const handleResume = () => {
     if (!lastSession) return;
-    engine.handleAudioStart(lastSession.source);
+    startWithFeedback(lastSession.source);
   };
   const handleBrowsePresets = () => ui.updatePanel('browse');
 
   const resume =
     lastSession && resumeEntry
       ? { session: lastSession, entry: resumeEntry }
+      : null;
+
+  // A `?preset=` arrival came for one specific preset; while the engine and
+  // catalog get ready (up to a few seconds on mid devices), name it instead
+  // of showing the generic pitch — otherwise the page reads as "configure
+  // me" and then replaces itself without explanation when demo audio
+  // auto-starts. The catalog title wins once it lands; before that, the slug
+  // is prettified so the wait is still acknowledged.
+  const deepLink =
+    !resume && deepLinkPresetId && !autoStartedRef.current
+      ? {
+          title: deepLinkEntry?.title ?? prettifyPresetSlug(deepLinkPresetId),
+          entry: deepLinkEntry,
+        }
       : null;
 
   return (
@@ -104,12 +141,13 @@ export function NewHomePage() {
       aria-labelledby="stims-launch-title"
     >
       <div className="stims-shell__launch-center">
-        <Header resume={resume} />
+        <Header resume={resume} deepLink={deepLink} />
         <Actions
           resume={resume}
           onPlayDemo={handlePlayDemo}
           onResume={handleResume}
           isEngineReady={engine.engineReady}
+          isStarting={audioStarting}
           onBrowsePresets={handleBrowsePresets}
         />
         {resume ? null : (
@@ -131,7 +169,44 @@ type ResumeState = {
   entry: PresetCatalogEntry;
 } | null;
 
-function Header({ resume }: { resume: ResumeState }) {
+type DeepLinkState = {
+  title: string;
+  entry: PresetCatalogEntry | null;
+} | null;
+
+/** "aderrasi-potion-of-spirits" → "Aderrasi Potion Of Spirits". */
+function prettifyPresetSlug(slug: string) {
+  return slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function Header({
+  resume,
+  deepLink,
+}: {
+  resume: ResumeState;
+  deepLink: DeepLinkState;
+}) {
+  if (deepLink) {
+    return (
+      <>
+        <h1 id="stims-launch-title" className="stims-shell__launch-title">
+          {deepLink.title}
+        </h1>
+        <p className="stims-shell__launch-tagline" aria-live="polite">
+          Starting with demo audio…
+        </p>
+        {deepLink.entry ? (
+          <div className="stims-shell__launch-resume-art">
+            <PresetArtwork entry={deepLink.entry} compact />
+          </div>
+        ) : null}
+      </>
+    );
+  }
   if (resume) {
     return (
       <>
@@ -165,6 +240,7 @@ interface ActionsProps {
   onPlayDemo: () => void;
   onResume: () => void;
   isEngineReady: boolean;
+  isStarting: boolean;
   onBrowsePresets: () => void;
 }
 
@@ -173,6 +249,7 @@ function Actions({
   onPlayDemo,
   onResume,
   isEngineReady,
+  isStarting,
   onBrowsePresets,
 }: ActionsProps) {
   return (
@@ -183,10 +260,13 @@ function Actions({
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady}
+          disabled={!isEngineReady || isStarting}
+          aria-busy={isStarting}
           onClick={onResume}
         >
-          Resume with {RESUME_SOURCE_LABEL[resume.session.source]}
+          {isStarting
+            ? 'Starting…'
+            : `Resume with ${RESUME_SOURCE_LABEL[resume.session.source]}`}
         </button>
       ) : (
         <button
@@ -194,10 +274,11 @@ function Actions({
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady}
+          disabled={!isEngineReady || isStarting}
+          aria-busy={isStarting}
           onClick={onPlayDemo}
         >
-          Play demo
+          {isStarting ? 'Starting…' : 'Play demo'}
         </button>
       )}
       <button

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
+import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import {
   formatPresetShareCopy,
@@ -162,8 +163,17 @@ export function useWorkspaceShellOrchestration({
     [enrichedCatalog],
   );
 
+  // The deliberate first-run pick wins: it is measured for audio reactivity
+  // and brightness (see milkdrop/runtime/first-run-preset.ts). Falling
+  // through to catalog order resurfaces eos-glowsticks — the near-black
+  // preset that pick exists to replace — exactly on the healed-deep-link and
+  // featured surfaces where a first impression is being made.
   const featuredPreset = useMemo(
-    () => starterPresets[0]?.preset ?? enrichedCatalog[0] ?? null,
+    () =>
+      enrichedCatalog.find((entry) => entry.id === FIRST_RUN_PRESET_ID) ??
+      starterPresets[0]?.preset ??
+      enrichedCatalog[0] ??
+      null,
     [starterPresets, enrichedCatalog],
   );
 
