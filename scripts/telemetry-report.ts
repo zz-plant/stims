@@ -112,6 +112,27 @@ function buildReports(days: number): Report[] {
             GROUP BY blob3 ORDER BY events DESC LIMIT 100`,
       columns: ['presetId', 'events', 'skips', 'avg_dwell_ms'],
     },
+    {
+      // Substitutions (noteSubstitution, preset-telemetry.ts, added 2026-08-18):
+      // the app showed something other than what was asked for — a fallback
+      // preset replaced a deep link, the renderer fell back to WebGL, or a
+      // requested preset failed outright. These are invisible to visitors
+      // (no error surfaces beyond a transient toast), so this is the only
+      // signal for how often a Google-search or shared-link arrival gets a
+      // different experience than the one that was promised.
+      title: `Substitutions by kind (last ${days}d)`,
+      sql: `SELECT blob1 AS event, COUNT() AS count FROM ${DATASET}
+            WHERE timestamp > ${since} AND blob1 LIKE 'substitution-%'
+            GROUP BY blob1 ORDER BY count DESC`,
+      columns: ['event', 'count'],
+    },
+    {
+      title: `Substitution detail, most frequent (last ${days}d)`,
+      sql: `SELECT blob1 AS event, blob4 AS detail, COUNT() AS count FROM ${DATASET}
+            WHERE timestamp > ${since} AND blob1 LIKE 'substitution-%'
+            GROUP BY blob1, blob4 ORDER BY count DESC LIMIT 30`,
+      columns: ['event', 'detail', 'count'],
+    },
   ];
 }
 
