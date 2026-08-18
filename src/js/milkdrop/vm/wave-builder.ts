@@ -227,11 +227,15 @@ export function buildCustomWaves({
       drawMode,
     );
     const useProcedural = proceduralDescriptor !== null;
-    const pointLocals = { ...frameLocals };
+    // Non-reuse createEnv builds the copy with Object.create(signalEnv) so
+    // the object is BORN with the right prototype. The previous
+    // `{...frameLocals}` + reuseExtraAsEnv path guaranteed a
+    // Object.setPrototypeOf on a fresh object every wave every frame — the
+    // exact V8 deopt the reuse path's comment warns about — right before a
+    // several-hundred-iteration per-point loop reads from it.
+    const pointEnv = useProcedural ? null : createEnv(signals, frameLocals);
+    const pointLocals = pointEnv ?? { ...frameLocals };
     waveState.pointLocalsScratch = pointLocals;
-    const pointEnv = useProcedural
-      ? null
-      : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
 
     let positions = useProcedural ? null : visualWave.positions;
     const visualWaveWithColorCache = visualWave as MilkdropWaveVisual & {

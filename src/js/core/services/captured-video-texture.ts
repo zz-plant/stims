@@ -270,8 +270,21 @@ function startCaptureLoop() {
   stopCaptureLoop();
   const video = captureVideo as VideoFrameCallbackVideo | null;
   if (video && typeof video.requestVideoFrameCallback === 'function') {
+    // Apply the same frame-interval cap the rAF fallback honors: rVFC fires
+    // per source video frame (60fps for a 60fps tab capture), and each draw
+    // is a full-frame rescale + texture upload the visualizer pays on top of
+    // its own budget. Also skip drawing while the tab is hidden — the
+    // callback keeps firing, but nobody can see the texture.
+    const limits = resolveCapturedVideoLimits();
+    let lastDrawAt = -Infinity;
     const step = () => {
-      drawCaptureFrame();
+      const now =
+        typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const hidden = typeof document !== 'undefined' && document.hidden;
+      if (!hidden && now - lastDrawAt >= limits.fallbackFrameIntervalMs) {
+        drawCaptureFrame();
+        lastDrawAt = now;
+      }
       if (!activeStream || captureVideo !== video) {
         captureVideoFrameId = null;
         return;

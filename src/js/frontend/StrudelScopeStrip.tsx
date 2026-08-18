@@ -94,9 +94,22 @@ export function StrudelScopeStrip({
     const ctx2d = canvas.getContext('2d');
     let frame = 0;
 
+    // This strip is decorative; don't pay for a second full audio-analysis
+    // pipeline when it can't be seen (hidden tab or scrolled offscreen).
+    // The rAF keeps ticking so it resumes instantly, but the analyser reads,
+    // band sums, and canvas work are skipped.
+    let onScreen = true;
+    const intersectionObserver =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver((entries) => {
+            onScreen = entries[0]?.isIntersecting ?? true;
+          })
+        : null;
+    intersectionObserver?.observe(canvas);
+
     const draw = () => {
       frame = requestAnimationFrame(draw);
-      if (!ctx2d) {
+      if (!ctx2d || document.hidden || !onScreen) {
         return;
       }
 
@@ -187,6 +200,7 @@ export function StrudelScopeStrip({
     draw();
 
     return () => {
+      intersectionObserver?.disconnect();
       cancelAnimationFrame(frame);
       source.disconnect();
       analyser.disconnect();

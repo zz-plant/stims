@@ -359,7 +359,7 @@ export function clearSharedMilkdropGeometries() {
 
 export function closeLinePositions<T extends ArrayLike<number>>(
   positions: T,
-): T | number[] {
+): T | Float32Array {
   if (positions.length < 6) {
     return positions;
   }
@@ -374,7 +374,15 @@ export function closeLinePositions<T extends ArrayLike<number>>(
   ) {
     return positions;
   }
-  return [...Array.from(positions), firstX, firstY, firstZ];
+  // Single typed-array copy; the previous [...Array.from(positions), ...]
+  // materialized the whole wave as boxed JS numbers twice per closed
+  // wave/border per frame.
+  const closed = new Float32Array(positions.length + 3);
+  closed.set(positions);
+  closed[positions.length] = firstX;
+  closed[positions.length + 1] = firstY;
+  closed[positions.length + 2] = firstZ;
+  return closed;
 }
 
 export function getWaveLinePositions(
