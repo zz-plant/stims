@@ -1,7 +1,17 @@
 import { $ } from 'bun';
 
-const rawDiff = await $`git diff --name-only HEAD`.text();
-const rawUntracked = await $`git ls-files --others --exclude-standard`.text();
+// --staged narrows to the index: the pre-commit hook must gate what is being
+// committed, not another session's live working-tree churn (a running
+// preview batch's unformatted JSON used to fail every unrelated commit on
+// the machine). Default (no flag) keeps the wider working-tree scope for
+// interactive `bun run lint:changed` runs.
+const stagedOnly = process.argv.includes('--staged');
+const rawDiff = stagedOnly
+  ? await $`git diff --name-only --cached`.text()
+  : await $`git diff --name-only HEAD`.text();
+const rawUntracked = stagedOnly
+  ? ''
+  : await $`git ls-files --others --exclude-standard`.text();
 
 const files = [...rawDiff.split('\n'), ...rawUntracked.split('\n')]
   .map((f) => f.trim())

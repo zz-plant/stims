@@ -75,7 +75,13 @@ export function buildGatePlan(
         ? [
             {
               label: 'Biome lint (changed files)',
-              cmd: ['bun', 'run', 'lint:changed'],
+              // STIMS_LINT_STAGED=1 (set by the pre-commit hook) narrows the
+              // lint to the index so another session's working-tree churn
+              // cannot block an unrelated commit.
+              cmd:
+                process.env.STIMS_LINT_STAGED === '1'
+                  ? ['bun', 'run', 'lint:changed', '--staged']
+                  : ['bun', 'run', 'lint:changed'],
             },
           ]
         : [
