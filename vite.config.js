@@ -60,8 +60,26 @@ function audioWorkletTransform() {
   };
 }
 
+// Preset previews are published to R2 (scripts/sync-previews-r2.ts) and
+// served from there in production; the default public-dir copy only bloats
+// local dist (~270MB of images) and slows local deploys. CI never has them
+// (the directory is gitignored), so pruning makes local builds match CI.
+// Local `vite preview` will 404 preview images — PresetArtwork falls back.
+function prunePreviewsFromDist() {
+  return {
+    name: 'prune-previews-from-dist',
+    apply: 'build',
+    closeBundle() {
+      fs.rmSync(path.resolve(rootDir, 'dist/milkdrop-presets/previews'), {
+        recursive: true,
+        force: true,
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), audioWorkletTransform()],
+  plugins: [react(), audioWorkletTransform(), prunePreviewsFromDist()],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],
   },
@@ -111,6 +129,13 @@ export default defineConfig({
             if (id.includes('/meyda/')) return 'vendor-meyda';
             if (id.includes('/comlink/')) return 'vendor-comlink';
             if (id.includes('/stats-gl/')) return 'vendor-stats-gl';
+            // The Strudel live-coding stack is behind ?strudel=1 and its
+            // bridge lazy-imports @strudel/web — but without this carve-out
+            // its whole dependency tree (core/tonal/superdough/…) landed in
+            // vendor-other, which the entry graph fetches eagerly, taxing
+            // every visitor's boot for a lab almost none of them open.
+            if (id.includes('/@strudel/') || id.includes('/superdough'))
+              return 'vendor-strudel';
             return 'vendor-other';
           }
           return null;

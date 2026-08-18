@@ -1,38 +1,17 @@
+import {
+  type BundledCatalogPipelineRequest,
+  loadMergedBundledCatalog,
+} from './catalog-bundled-pipeline.ts';
+import type {
+  BundledCatalogParseRequest,
+  BundledCatalogParseResponse,
+} from './catalog-parse-worker.ts';
 import { shouldUseCertificationCorpus } from './catalog-query-override.ts';
 import type {
   MilkdropBundledCatalogEntry,
   MilkdropPresetSource,
 } from './types';
 
-type BundledCatalogDocument =
-  | MilkdropBundledCatalogEntry[]
-  | {
-      certification?: 'bundled' | 'certified' | 'exploratory';
-      corpusTier?: 'bundled' | 'certified' | 'exploratory';
-      presets?: Array<
-        MilkdropBundledCatalogEntry & {
-          order?: number;
-          compatibility?: {
-            webgl?: boolean;
-            webgpu?: boolean;
-          };
-        }
-      >;
-    };
-
-type CertificationCorpusDocument = {
-  presets?: Array<{
-    id: string;
-    title: string;
-    file: string;
-    fixtureRoot: string;
-    sourceFamily?: string;
-    strata?: string[];
-  }>;
-};
-
-const CERTIFICATION_CORPUS_URL =
-  '/src/data/milkdrop-parity/certification-corpus.json';
 const DEFAULT_LIBRARY_MANIFEST_URLS = [
   '/milkdrop-presets/libraries/projectm-cream-of-the-crop/catalog.json',
   '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
@@ -84,110 +63,72 @@ export async function loadText(url: string): Promise<string> {
   throw lastError ?? new Error(`Failed to fetch preset source: ${url}`);
 }
 
-function buildCertificationCorpusFileUrl(
-  fixtureRoot: string,
-  fileName: string,
-) {
-  const normalizedFixtureRoot = fixtureRoot.replace(/^\/+/, '');
-  const publicRelativeRoot = normalizedFixtureRoot.startsWith('public/')
-    ? normalizedFixtureRoot.slice('public/'.length)
-    : normalizedFixtureRoot;
-  const normalizedRoot = publicRelativeRoot.replace(/\/+$/, '');
-  return `/${[normalizedRoot, fileName].filter(Boolean).join('/')}`;
-}
+/**
+ * Once worker construction fails (older browser, CSP, bun test with no
+ * Vite worker resolution), stop re-attempting it for the session.
+ */
+let catalogWorkerUnavailable = false;
+let nextCatalogWorkerRequestId = 1;
 
-async function loadCertificationCorpusCatalog(): Promise<
-  MilkdropBundledCatalogEntry[]
-> {
-  const response = await fetch(CERTIFICATION_CORPUS_URL);
-  if (!response.ok) {
-    return [] as MilkdropBundledCatalogEntry[];
+/**
+ * Runs the catalog fetch+parse+merge pipeline on a dedicated one-shot Web
+ * Worker so the multi-MB JSON.parse never lands on the main thread while the
+ * engine renders. Resolves `null` whenever the worker path is unusable —
+ * construction failure, message error, or an in-worker pipeline error — so
+ * the caller can fall back to the identical main-thread pipeline.
+ */
+async function loadMergedCatalogOnWorker(
+  request: BundledCatalogPipelineRequest,
+): Promise<MilkdropBundledCatalogEntry[] | null> {
+  if (
+    catalogWorkerUnavailable ||
+    typeof Worker === 'undefined' ||
+    // Bun (unit tests, scripts) has a Worker global but not Vite's `?worker`
+    // module resolution; take the main-thread path there without noise.
+    typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined'
+  ) {
+    return null;
   }
 
-  const document = (await response.json()) as CertificationCorpusDocument;
-  return (document.presets ?? []).map(
-    (entry, index): MilkdropBundledCatalogEntry => ({
-      id: entry.id,
-      title: entry.title,
-      file: buildCertificationCorpusFileUrl(entry.fixtureRoot, entry.file),
-      tags: [
-        ...(entry.strata ?? []),
-        ...(entry.sourceFamily ? [entry.sourceFamily] : []),
-        'certification-corpus',
-      ],
-      curatedRank: 10_000 + index,
-      certification: 'certified',
-      corpusTier: 'certified',
-    }),
-  );
-}
+  let worker: Worker;
+  try {
+    const { default: CatalogWorkerCtor } = await import(
+      './catalog-parse-worker.ts?worker'
+    );
+    worker = new CatalogWorkerCtor();
+  } catch (error) {
+    catalogWorkerUnavailable = true;
+    console.warn(
+      '[catalog-store] Catalog parse worker could not start; parsing on the main thread from here on:',
+      error,
+    );
+    return null;
+  }
 
-function toBundledCatalogEntries(document: BundledCatalogDocument) {
-  const defaultCertification = Array.isArray(document)
-    ? 'bundled'
-    : (document.certification ?? 'bundled');
-  const defaultCorpusTier = Array.isArray(document)
-    ? 'bundled'
-    : (document.corpusTier ?? 'bundled');
+  const requestId = nextCatalogWorkerRequestId;
+  nextCatalogWorkerRequestId += 1;
 
-  return Array.isArray(document)
-    ? document
-    : (document.presets ?? []).map((entry) => ({
-        id: entry.id,
-        title: entry.title,
-        author: entry.author,
-        file: entry.file,
-        tags: entry.tags,
-        curatedRank: entry.curatedRank ?? entry.order,
-        similarity: entry.similarity,
-        certification: entry.certification ?? defaultCertification,
-        corpusTier: entry.corpusTier ?? defaultCorpusTier,
-        expectedFidelityClass: entry.expectedFidelityClass,
-        visualEvidenceTier: entry.visualEvidenceTier,
-        semanticSupport: entry.semanticSupport,
-        visualCertification: entry.visualCertification,
-        supports: entry.supports ?? entry.compatibility,
-        preview: entry.preview,
-      }));
-}
-
-async function loadOptionalCatalog(
-  catalogUrl: string,
-  { reportFailures = true }: { reportFailures?: boolean } = {},
-): Promise<MilkdropBundledCatalogEntry[]> {
-  return fetch(catalogUrl)
-    .then(async (response) => {
-      if (!response.ok) {
-        if (reportFailures) {
-          console.warn(`Optional catalog not found: ${catalogUrl}`);
-        }
-        return [] as MilkdropBundledCatalogEntry[];
-      }
-      const document = (await response.json()) as BundledCatalogDocument;
-      return toBundledCatalogEntries(document);
-    })
-    .catch((error) => {
-      if (reportFailures) {
-        console.warn(`Failed to load optional catalog: ${catalogUrl}`, error);
-      }
-      return [] as MilkdropBundledCatalogEntry[];
-    });
-}
-
-function mergeUniqueCatalogEntries(
-  ...catalogs: MilkdropBundledCatalogEntry[][]
-): MilkdropBundledCatalogEntry[] {
-  const entriesById = new Map<string, MilkdropBundledCatalogEntry>();
-
-  catalogs.forEach((catalog) => {
-    catalog.forEach((entry) => {
-      if (!entriesById.has(entry.id)) {
-        entriesById.set(entry.id, entry);
-      }
-    });
-  });
-
-  return [...entriesById.values()];
+  try {
+    return await new Promise<MilkdropBundledCatalogEntry[] | null>(
+      (resolve) => {
+        worker.onmessage = (
+          event: MessageEvent<BundledCatalogParseResponse>,
+        ) => {
+          const response = event.data;
+          if (response.requestId !== requestId) {
+            return;
+          }
+          resolve(response.ok ? response.entries : null);
+        };
+        worker.onerror = () => resolve(null);
+        worker.onmessageerror = () => resolve(null);
+        const message: BundledCatalogParseRequest = { requestId, ...request };
+        worker.postMessage(message);
+      },
+    );
+  } finally {
+    worker.terminate();
+  }
 }
 
 /**
@@ -222,36 +163,18 @@ export function createBundledCatalogLoader({
   const getBundledCatalog = async () => {
     let bundledCatalogPromise = sharedBundledCatalogPromises.get(cacheKey);
     if (!bundledCatalogPromise) {
-      bundledCatalogPromise = Promise.all([
-        loadOptionalCatalog(catalogUrl),
-        Promise.all(
-          libraryManifestUrls.map((url) =>
-            loadOptionalCatalog(url, { reportFailures: false }),
-          ),
-        ),
-      ])
-        .then(async ([bundledEntries, libraryCatalogs]) => {
-          const supplementalEntries = libraryCatalogs.flat();
-          const mergedEntries = mergeUniqueCatalogEntries(
-            bundledEntries,
-            supplementalEntries,
-          );
-          if (!shouldUseCertificationCorpus()) {
-            return mergedEntries;
+      // Read on the main thread — the worker cannot see URL params.
+      const pipelineRequest: BundledCatalogPipelineRequest = {
+        catalogUrl,
+        libraryManifestUrls,
+        useCertificationCorpus: shouldUseCertificationCorpus(),
+      };
+      bundledCatalogPromise = loadMergedCatalogOnWorker(pipelineRequest)
+        .then((workerEntries) => {
+          if (workerEntries !== null) {
+            return workerEntries;
           }
-
-          let certificationEntries: MilkdropBundledCatalogEntry[] = [];
-          try {
-            certificationEntries = await loadCertificationCorpusCatalog();
-          } catch (error) {
-            // A broken supplemental corpus must not take the primary
-            // catalog down with it.
-            console.warn(
-              '[catalog-store] Certification corpus failed to load; continuing without it:',
-              error,
-            );
-          }
-          return mergeUniqueCatalogEntries(mergedEntries, certificationEntries);
+          return loadMergedBundledCatalog(pipelineRequest);
         })
         .then((entries) => {
           if (entries.length === 0) {
