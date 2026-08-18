@@ -1754,6 +1754,62 @@ per_pixel_3=sx=2;
     );
   });
 
+  test('binds high q registers and aspect builtins in generated transform WGSL', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=High Register Field
+per_frame_1=q20=bass;
+per_frame_2=q32=treb;
+per_pixel_1=zoom=zoom+q20*0.01+q32*0.001+aspectx*0-aspecty*0+log10(rad+1);
+      `.trim(),
+      { id: 'high-register-field' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.registerInputs).toEqual(['q20', 'q32']);
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    // q20 lives in vector E (index 4) slot w; q32 in vector H slot w.
+    expect(transformWgsl).toContain('let fieldRegisterQ20 = registersE.w;');
+    expect(transformWgsl).toContain('let fieldRegisterQ32 = registersH.w;');
+    // Only the touched register vectors are declared as parameters.
+    expect(transformWgsl).toContain('registersE: vec4<f32>');
+    expect(transformWgsl).toContain('registersH: vec4<f32>');
+    expect(transformWgsl).not.toContain('registersA: vec4<f32>');
+    expect(transformWgsl).toContain('signalAspectXValue');
+    expect(transformWgsl).toContain('signalAspectYValue');
+    expect(transformWgsl).toContain('log(');
+  });
+
+  test('binds viewport/mesh builtins and overwritten pi in transform WGSL', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Viewport Builtin Field
+per_pixel_1=pi=3.14159;
+per_pixel_2=dx=cos(x*pixelsx*0.001+pi)*0.01+sin(y*meshx)*0.001;
+per_pixel_3=dy=sin(y*pixelsy*0.001)*0.01;
+      `.trim(),
+      { id: 'viewport-builtin-field' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.temporaries).toContain('pi');
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    expect(transformWgsl).toContain('signalPixelsXValue');
+    expect(transformWgsl).toContain('signalPixelsYValue');
+    expect(transformWgsl).toContain('fieldMeshSizeValue');
+    // Overwritable pi: declared as a var initialised to the constant, and
+    // reads reference the var, not an inlined literal.
+    expect(transformWgsl).toContain('var field_pi: f32 = 3.141592653589793;');
+    expect(transformWgsl).toContain('field_pi = 3.14159;');
+    expect(transformWgsl).toContain('+ field_pi)');
+  });
+
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', async () => {
     const preset = compileMilkdropPresetSource(
       `

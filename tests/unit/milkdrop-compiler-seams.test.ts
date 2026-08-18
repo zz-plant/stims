@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { buildWebGpuDescriptorPlan } from '../../src/js/milkdrop/compiler/gpu-descriptor-plan.ts';
-import { lowerGpuFieldProgram } from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
+import {
+  lowerGpuFieldProgram,
+  PER_FRAME_FIELD_REGISTER_INPUTS,
+} from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
 import {
   buildBackendSupport,
   buildFeatureAnalysis,
@@ -531,6 +534,58 @@ describe('milkdrop compiler seams', () => {
       expect(lowered).not.toBeNull();
       expect(lowered?.temporaries).toEqual([]);
       expect(lowered?.statements[0]?.target).toBe('value1');
+    });
+
+    test('lowers reads of the full q1..q32 register bank as frame-constant inputs', () => {
+      const lowered = lowerGpuFieldProgram(
+        {
+          statements: [
+            statement('zoom', 'zoom = q20 + q32', {
+              type: 'binary',
+              operator: '+',
+              left: { type: 'identifier', name: 'q20' },
+              right: { type: 'identifier', name: 'q32' },
+            }),
+          ],
+          sourceLines: ['zoom = q20 + q32'],
+        },
+        { registerInputs: PER_FRAME_FIELD_REGISTER_INPUTS },
+      );
+      expect(lowered?.registerInputs).toEqual(['q20', 'q32']);
+    });
+
+    test('lowers aspectx/aspecty reads to the derived aspect signal aliases', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = aspectx * aspecty', {
+            type: 'binary',
+            operator: '*',
+            left: { type: 'identifier', name: 'aspectx' },
+            right: { type: 'identifier', name: 'aspecty' },
+          }),
+        ],
+        sourceLines: ['zoom = aspectx * aspecty'],
+      });
+      expect(lowered?.statements[0]?.expression).toEqual({
+        type: 'binary',
+        operator: '*',
+        left: { type: 'identifier', name: 'aspectX' },
+        right: { type: 'identifier', name: 'aspectY' },
+      });
+    });
+
+    test('lowers log10 calls', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = log10(rad)', {
+            type: 'call',
+            name: 'log10',
+            args: [{ type: 'identifier', name: 'rad' }],
+          }),
+        ],
+        sourceLines: ['zoom = log10(rad)'],
+      });
+      expect(lowered).not.toBeNull();
     });
 
     test('does not reclassify a caller-injected read-only binding as a local', () => {

@@ -155,6 +155,12 @@ const WGSL_SIGNAL_UNPACK = `
     let signalVolValue = signalsD.w;
     let signalMusicValue = signalsE.x;
     let signalWeightedEnergyValue = signalsE.y;
+    let signalPixelsXValue = signalsE.z;
+    let signalPixelsYValue = signalsE.w;
+    // MilkDrop aspectx/aspecty builtins, derived exactly as the CPU path does
+    // (wgsl-signal-layout.ts deriveMilkdropViewportSignalValues).
+    let signalAspectXValue = select(1.0, 1.0 / signalAspectValue, signalAspectValue < 1.0);
+    let signalAspectYValue = select(1.0, signalAspectValue, signalAspectValue > 1.0);
 `;
 
 const WGSL_SIGNAL_PARAMETERS = `
@@ -210,6 +216,19 @@ function gpuFieldIdentifierToShaderSource(
       return 'signalFpsValue';
     case 'aspect':
       return 'signalAspectValue';
+    case 'aspectX':
+      return 'signalAspectXValue';
+    case 'aspectY':
+      return 'signalAspectYValue';
+    case 'pixelsx':
+      return 'signalPixelsXValue';
+    case 'pixelsy':
+      return 'signalPixelsYValue';
+    // The warp mesh is square (density x density), so both dimensions read
+    // the same packed param.
+    case 'meshx':
+    case 'meshy':
+      return 'fieldMeshSizeValue';
     case 'bass':
       return 'signalBassValue';
     case 'mid':
@@ -248,11 +267,39 @@ function gpuFieldIdentifierToShaderSource(
   }
 }
 
-// Per-frame registers (`q1`..`q8`) read by a per-pixel program are frame
-// constants, so they lower to per-vertex `let` bindings fed from the two
-// register uniform vectors. The `fieldRegisterQ*` namespace is distinct from
-// `field_q*` (register temporaries written per-vertex), so a register that is
-// both assigned and read elsewhere stays a temporary.
+// Per-frame registers (`q1`..`q32`) read by a per-pixel program are frame
+// constants, so they lower to per-vertex `let` bindings fed from packed
+// register uniform vectors (`registersA`..`registersH`, four registers each).
+// Only the vectors a program actually reads are declared and passed. The
+// `fieldRegisterQ*` namespace is distinct from `field_q*` (register
+// temporaries written per-vertex), so a register that is both assigned and
+// read elsewhere stays a temporary.
+const REGISTER_VECTOR_LETTERS = 'ABCDEFGH';
+const REGISTER_VECTOR_COUNT = REGISTER_VECTOR_LETTERS.length;
+
+/** Sorted indices (0-based, one per vec4) of the register vectors the
+ * program's `registerInputs` touch. */
+function getRegisterVectorIndices(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+): number[] {
+  if (!program || program.registerInputs.length === 0) {
+    return [];
+  }
+  const vectors = new Set<number>();
+  for (const name of program.registerInputs) {
+    const match = /^q(\d+)$/u.exec(name);
+    if (!match) {
+      continue;
+    }
+    const index = Number(match[1]) - 1;
+    const vector = Math.floor(index / 4);
+    if (index >= 0 && vector < REGISTER_VECTOR_COUNT) {
+      vectors.add(vector);
+    }
+  }
+  return [...vectors].sort((a, b) => a - b);
+}
+
 function buildGpuFieldRegisterBindings(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
@@ -266,11 +313,11 @@ function buildGpuFieldRegisterBindings(
       return '';
     }
     const index = Number(match[1]) - 1;
-    if (index < 0 || index > 7) {
+    const vector = Math.floor(index / 4);
+    if (index < 0 || vector >= REGISTER_VECTOR_COUNT) {
       return '';
     }
-    const vector = index < 4 ? 'registersA' : 'registersB';
-    return `let fieldRegisterQ${index + 1} = ${vector}.${slots[index % 4]};`;
+    return `let fieldRegisterQ${index + 1} = registers${REGISTER_VECTOR_LETTERS[vector]}.${slots[index % 4]};`;
   });
   return bindings.filter(Boolean).join('\n    ');
 }
@@ -278,17 +325,20 @@ function buildGpuFieldRegisterBindings(
 function buildGpuFieldRegisterParamDecls(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
-  return program && program.registerInputs.length > 0
-    ? `,\n    registersA: vec4<f32>,\n    registersB: vec4<f32>`
-    : '';
+  return getRegisterVectorIndices(program)
+    .map(
+      (vector) =>
+        `,\n    registers${REGISTER_VECTOR_LETTERS[vector]}: vec4<f32>`,
+    )
+    .join('');
 }
 
 function buildGpuFieldRegisterCallArgs(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
-  return program && program.registerInputs.length > 0
-    ? `,\n      registersA,\n      registersB`
-    : '';
+  return getRegisterVectorIndices(program)
+    .map((vector) => `,\n      registers${REGISTER_VECTOR_LETTERS[vector]}`)
+    .join('');
 }
 
 function formatWgslFloat(value: number) {
@@ -302,16 +352,22 @@ function formatWgslFloat(value: number) {
 function buildGpuFieldExpressionWgslSource(
   expression: MilkdropGpuFieldExpression,
   registerInputs: ReadonlySet<string>,
+  temporaries: readonly string[] = [],
 ): string {
   switch (expression.type) {
     case 'literal':
       return formatWgslFloat(expression.value);
     case 'identifier':
-      return gpuFieldIdentifierToShaderSource(expression.name, registerInputs);
+      // A program that assigns pi/e turned them into temporaries; reads must
+      // reference the declared var, not the inlined constant.
+      return temporaries.includes(expression.name)
+        ? gpuFieldVarName(expression.name)
+        : gpuFieldIdentifierToShaderSource(expression.name, registerInputs);
     case 'unary': {
       const operand = buildGpuFieldExpressionWgslSource(
         expression.operand,
         registerInputs,
+        temporaries,
       );
       if (expression.operator === '!') {
         return `select(1.0, 0.0, milkdropBool(${operand}) > 0.5)`;
@@ -322,10 +378,12 @@ function buildGpuFieldExpressionWgslSource(
       const left = buildGpuFieldExpressionWgslSource(
         expression.left,
         registerInputs,
+        temporaries,
       );
       const right = buildGpuFieldExpressionWgslSource(
         expression.right,
         registerInputs,
+        temporaries,
       );
       switch (expression.operator) {
         case '^':
@@ -353,7 +411,7 @@ function buildGpuFieldExpressionWgslSource(
     }
     case 'call': {
       const args = expression.args.map((arg) =>
-        buildGpuFieldExpressionWgslSource(arg, registerInputs),
+        buildGpuFieldExpressionWgslSource(arg, registerInputs, temporaries),
       );
       switch (expression.name) {
         case 'mod':
@@ -378,6 +436,8 @@ function buildGpuFieldExpressionWgslSource(
           return `select(1.0, 0.0, milkdropBool(${args[0]}) > 0.5)`;
         case 'atan2':
           return `atan2(${args[0]}, ${args[1]})`;
+        case 'log10':
+          return `(log(${args[0]}) * 0.4342944819032518)`;
         case 'atan':
           return args.length === 2
             ? `atan2(${args[0]}, ${args[1]})`
@@ -404,11 +464,24 @@ function buildGpuFieldExpressionWgslSource(
   }
 }
 
+// MilkDrop presets may overwrite pi/e; when the planner turned one into a
+// temporary its declaration starts at the mathematical constant (not 0), so
+// reads before the first assignment still see the builtin value.
+const TEMPORARY_INITIAL_VALUES: Record<string, string> = {
+  pi: '3.141592653589793',
+  e: '2.718281828459045',
+};
+
 function buildGpuFieldTemporaryDeclarations(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
   return (program?.temporaries ?? [])
-    .map((temporary) => `var ${gpuFieldVarName(temporary)}: f32 = 0.0;`)
+    .map(
+      (temporary) =>
+        `var ${gpuFieldVarName(temporary)}: f32 = ${
+          TEMPORARY_INITIAL_VALUES[temporary] ?? '0.0'
+        };`,
+    )
     .join('\n    ');
 }
 
@@ -416,12 +489,16 @@ function buildGpuFieldStatementCode(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
   const registerInputs = new Set(program?.registerInputs ?? []);
+  // Kept as the descriptor's own (tiny, compile-time-fixed) array — the
+  // membership checks per identifier are over a handful of names at most.
+  const temporaries = program?.temporaries ?? [];
   return (program?.statements ?? [])
     .map(
       (statement) =>
         `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionWgslSource(
           statement.expression,
           registerInputs,
+          temporaries,
         )};`,
     )
     .join('\n    ');
@@ -430,7 +507,7 @@ function buildGpuFieldStatementCode(
 // Field transform parameters are packed like the signals: fieldParamsA =
 // (zoom, zoomExponent, rotation, warp), fieldParamsB = (warpAnimSpeed,
 // centerX, centerY, scaleX), fieldParamsC = (scaleY, translateX,
-// translateY, unused).
+// translateY, meshSize).
 function buildTransformHeader(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
@@ -453,6 +530,7 @@ function buildTransformHeader(
     let paramScaleY = fieldParamsC.x;
     let paramTranslateX = fieldParamsC.y;
     let paramTranslateY = fieldParamsC.z;
+    let fieldMeshSizeValue = fieldParamsC.w;
 ${WGSL_SIGNAL_UNPACK}`;
 }
 
@@ -597,7 +675,12 @@ function packSignalUniformVectors(
     b: vec4(get('Bass'), get('Mid'), get('Mids'), get('Treble')),
     c: vec4(get('BassAtt'), get('MidAtt'), get('MidsAtt'), get('TrebleAtt')),
     d: vec4(get('Beat'), get('BeatPulse'), get('Rms'), get('Vol')),
-    e: vec4(get('Music'), get('WeightedEnergy'), 0, 0),
+    e: vec4(
+      get('Music'),
+      get('WeightedEnergy'),
+      get('PixelsX'),
+      get('PixelsY'),
+    ),
   };
 }
 
@@ -616,8 +699,33 @@ function packFieldParamVectors(uniforms: Record<string, TslNode>, prefix = '') {
       get('centerY'),
       get('scaleX'),
     ),
-    c: vec4(get('scaleY'), get('translateX'), get('translateY'), 0),
+    c: vec4(
+      get('scaleY'),
+      get('translateX'),
+      get('translateY'),
+      get('meshSize'),
+    ),
   };
+}
+
+/** TSL-side mirror of buildGpuFieldRegisterParamDecls: packs the register
+ * uniforms into the vec4 arguments the generated WGSL declares, one entry per
+ * register vector the program reads. */
+function packRegisterVectorArgs(
+  uniforms: Record<string, TslNode>,
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const args: Record<string, TslNode> = {};
+  for (const vector of getRegisterVectorIndices(program)) {
+    const base = vector * 4;
+    args[`registers${REGISTER_VECTOR_LETTERS[vector]}`] = vec4(
+      uniforms[`registerQ${base + 1}`],
+      uniforms[`registerQ${base + 2}`],
+      uniforms[`registerQ${base + 3}`],
+      uniforms[`registerQ${base + 4}`],
+    ) as TslNode;
+  }
+  return args;
 }
 
 function packInteractionVector(uniforms: Record<string, TslNode>) {
@@ -690,9 +798,6 @@ export function createProceduralMeshMaterial(
   });
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const fieldParams = packFieldParamVectors(uniforms);
-  const registerInputs = program?.registerInputs?.length
-    ? program.registerInputs
-    : null;
   const vertex = getProceduralMeshVertexFn(program)({
     sourcePosition: attribute('sourcePosition', 'vec3'),
     fieldParamsA: fieldParams.a,
@@ -703,22 +808,7 @@ export function createProceduralMeshMaterial(
     signalsC: signals.c,
     signalsD: signals.d,
     signalsE: signals.e,
-    ...(registerInputs
-      ? {
-          registersA: vec4(
-            uniforms.registerQ1,
-            uniforms.registerQ2,
-            uniforms.registerQ3,
-            uniforms.registerQ4,
-          ),
-          registersB: vec4(
-            uniforms.registerQ5,
-            uniforms.registerQ6,
-            uniforms.registerQ7,
-            uniforms.registerQ8,
-          ),
-        }
-      : {}),
+    ...packRegisterVectorArgs(uniforms, program),
     interactionTransform: packInteractionVector(uniforms),
   });
 
@@ -891,6 +981,9 @@ function createMotionVectorUniformState() {
     previousSignalVol: { value: 0 },
     previousSignalMusic: { value: 0 },
     previousSignalWeightedEnergy: { value: 0 },
+    previousSignalPixelsX: { value: 1280 },
+    previousSignalPixelsY: { value: 1280 },
+    previousMeshSize: { value: 48 },
   };
 }
 
@@ -922,22 +1015,7 @@ export function createProceduralMotionVectorMaterial(
       previousSignalsC: previousSignals.c,
       previousSignalsD: previousSignals.d,
       previousSignalsE: previousSignals.e,
-      ...(program?.registerInputs?.length
-        ? {
-            registersA: vec4(
-              uniforms.registerQ1,
-              uniforms.registerQ2,
-              uniforms.registerQ3,
-              uniforms.registerQ4,
-            ),
-            registersB: vec4(
-              uniforms.registerQ5,
-              uniforms.registerQ6,
-              uniforms.registerQ7,
-              uniforms.registerQ8,
-            ),
-          }
-        : {}),
+      ...packRegisterVectorArgs(uniforms, program),
       offsets: vec4(
         uniforms.sourceOffsetX,
         uniforms.sourceOffsetY,
