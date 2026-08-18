@@ -10,13 +10,14 @@
 
 [![Live Site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=for-the-badge&logo=cloudflare)](https://toil.fyi)
 [![GitHub Stars](https://img.shields.io/github/stars/zz-plant/stims?style=for-the-badge&logo=github)](https://github.com/zz-plant/stims/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/zz-plant/stims/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/zz-plant/stims/actions/workflows/ci.yml)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=for-the-badge&logo=bun)](https://bun.sh)
 [![WebGPU & WebGL2](https://img.shields.io/badge/graphics-WebGPU%20%7C%20WebGL2-00C7B7?style=for-the-badge&logo=webgpu)](https://toil.fyi)
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=for-the-badge)](./LICENSE)
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
-*1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · open source (MIT)*
+*1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · public domain (Unlicense)*
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 
@@ -181,6 +182,10 @@ Architecture, authoring, parity, and QA docs are indexed at [docs/README.md](./d
 
 Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), and include the tests and evidence appropriate to the surface you change.
 
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=zz-plant/stims&type=Date)](https://star-history.com/#zz-plant/stims&Date)
+
 ## Acknowledgments and lineage
 
 Stims is built with deep gratitude for the creative, mathematical, and technical giants whose work pioneered real-time audio visualization:
@@ -193,4 +198,4 @@ Stims is built with deep gratitude for the creative, mathematical, and technical
 
 Stims is an independent implementation. MilkDrop, Butterchurn, and projectM are credited as creative and technical lineage; no official affiliation is implied. See [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md).
 
-Licensed under the [MIT License](./LICENSE).
+Licensed under [the Unlicense](./LICENSE) — public domain.
