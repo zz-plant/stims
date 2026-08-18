@@ -282,20 +282,6 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
-      {!canCaptureDisplayAudio ? (
-        <div className="stims-shell__sheet-callout">
-          <p className="stims-shell__meta-copy">
-            <strong>Playing a video on this device?</strong> Mobile browsers
-            don&apos;t expose tab audio, so start it in the YouTube app or
-            another tab, then pick Microphone below — Stims reacts to what your
-            phone hears.
-          </p>
-          <p className="stims-shell__meta-copy">
-            Turn the volume up and keep the mic clear of your hand for the
-            cleanest beat detection.
-          </p>
-        </div>
-      ) : null}
       <div className="stims-shell__source-grid">
         <button
           id="use-demo-audio-card"

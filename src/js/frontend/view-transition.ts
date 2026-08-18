@@ -51,6 +51,14 @@ export function runViewTransition(update: () => void): void {
     flushSync(update);
   });
   activeTransition = transition;
+  // A transition the browser skips (rapid successive updates, tab hidden)
+  // rejects `ready` and `updateCallbackDone` as well as `finished`. Only
+  // `finished` was handled, so every skipped transition surfaced as an
+  // unhandledrejection ("Transition was aborted because of invalid state")
+  // and landed in crash telemetry as noise.
+  const swallow = () => {};
+  transition.ready?.catch(swallow);
+  transition.updateCallbackDone?.catch(swallow);
   transition.finished.then(
     () => {
       if (activeTransition === transition) {
