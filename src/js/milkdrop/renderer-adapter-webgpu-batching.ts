@@ -1490,7 +1490,12 @@ class ShapeBatchBucket {
 
 class ShapeBatchTarget {
   readonly group = new Group();
-  private readonly buckets = new Map<string, ShapeBatchBucket>();
+  private readonly buckets = new Map<number, ShapeBatchBucket>();
+  // Persistent grouping scratch: numeric keys (sides × blend mode) and
+  // reused per-bucket arrays, so the per-frame regroup allocates nothing.
+  // The old version built a fresh Map, a template-literal key per shape,
+  // and fresh bucket arrays every frame.
+  private readonly groupScratch = new Map<number, MilkdropShapeVisual[]>();
   private readonly getShapeTexture: () => Texture | null;
   private readonly renderOrder: number;
 
@@ -1501,20 +1506,32 @@ class ShapeBatchTarget {
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
-    const grouped = new Map<string, MilkdropShapeVisual[]>();
+    const grouped = this.groupScratch;
+    for (const bucketShapes of grouped.values()) {
+      bucketShapes.length = 0;
+    }
     for (const shape of shapes) {
-      const key = `${shape.sides}:${getVisualBlendMode(shape)}`;
-      const bucket = grouped.get(key) ?? [];
-      bucket.push(shape);
-      grouped.set(key, bucket);
+      const key =
+        shape.sides * BLEND_MODE_KEYS.length +
+        BLEND_MODE_KEYS.indexOf(getVisualBlendMode(shape));
+      let bucketShapes = grouped.get(key);
+      if (!bucketShapes) {
+        bucketShapes = [];
+        grouped.set(key, bucketShapes);
+      }
+      bucketShapes.push(shape);
     }
 
     for (const [key, bucketShapes] of grouped) {
+      if (bucketShapes.length === 0) {
+        continue;
+      }
       let bucket = this.buckets.get(key);
       if (!bucket) {
-        const [sidesStr, mode] = key.split(':') as [string, BlendModeKey];
+        const sides = Math.floor(key / BLEND_MODE_KEYS.length);
+        const mode = BLEND_MODE_KEYS[key % BLEND_MODE_KEYS.length] ?? 'normal';
         bucket = new ShapeBatchBucket(
-          Number(sidesStr),
+          sides,
           mode,
           this.getShapeTexture,
           this.renderOrder,
@@ -1525,8 +1542,10 @@ class ShapeBatchTarget {
       bucket.sync(bucketShapes, alphaMultiplier);
     }
 
-    for (const [key, bucket] of [...this.buckets.entries()]) {
-      if (grouped.has(key)) {
+    // Deleting during Map iteration is well-defined, so no entries() copy.
+    for (const [key, bucket] of this.buckets) {
+      const live = grouped.get(key);
+      if (live && live.length > 0) {
         continue;
       }
       bucket.dispose();

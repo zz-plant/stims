@@ -1344,13 +1344,16 @@ class SharedMilkdropFeedbackManager
         uniform float radius;
         varying vec2 vUv;
         void main() {
-          vec4 result = vec4(0.0);
-          float totalWeight = 0.0;
-          float r = radius;
-          for (float x = -8.0; x <= 8.0; x += 1.0) {
-            if (abs(x) > r) continue;
-            result += texture2D(sourceTex, vUv + vec2(x * texelSize.x, 0.0));
-            totalWeight += 1.0;
+          // Symmetric taps with an early break: the old -8..8 walk ran all
+          // 17 iterations (with a continue) even for the radius-2 pass.
+          vec4 result = texture2D(sourceTex, vUv);
+          float totalWeight = 1.0;
+          for (float x = 1.0; x <= 8.0; x += 1.0) {
+            if (x > radius) break;
+            vec2 offset = vec2(x * texelSize.x, 0.0);
+            result += texture2D(sourceTex, vUv + offset);
+            result += texture2D(sourceTex, vUv - offset);
+            totalWeight += 2.0;
           }
           gl_FragColor = result / totalWeight;
         }
@@ -1369,13 +1372,15 @@ class SharedMilkdropFeedbackManager
         uniform float radius;
         varying vec2 vUv;
         void main() {
-          vec4 result = vec4(0.0);
-          float totalWeight = 0.0;
-          float r = radius;
-          for (float y = -8.0; y <= 8.0; y += 1.0) {
-            if (abs(y) > r) continue;
-            result += texture2D(sourceTex, vUv + vec2(0.0, y * texelSize.y));
-            totalWeight += 1.0;
+          // Symmetric taps with an early break; see the horizontal pass.
+          vec4 result = texture2D(sourceTex, vUv);
+          float totalWeight = 1.0;
+          for (float y = 1.0; y <= 8.0; y += 1.0) {
+            if (y > radius) break;
+            vec2 offset = vec2(0.0, y * texelSize.y);
+            result += texture2D(sourceTex, vUv + offset);
+            result += texture2D(sourceTex, vUv - offset);
+            totalWeight += 2.0;
           }
           gl_FragColor = result / totalWeight;
         }

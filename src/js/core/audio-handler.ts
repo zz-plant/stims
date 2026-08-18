@@ -1256,10 +1256,9 @@ function createProceduralDemoAudio() {
     stepIndex += 1;
   };
 
-  let intervalId: ReturnType<typeof setInterval> | null = setInterval(
-    scheduleStep,
-    stepMs,
-  );
+  // The interval is created once below, after the drum-patched step exists —
+  // starting one here just to clear and replace it churned a spare timer.
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
   // ── Drums ─────────────────────────────────────────────────────
   // Kick on beats 1 & 3. Hi-hat on every 8th note.
@@ -1275,6 +1274,12 @@ function createProceduralDemoAudio() {
   // Patch the scheduleStep to add drums.
   const originalSchedule = scheduleStep;
   const patchedStep = () => {
+    // A suspended context (hidden tab, autoplay block) plays nothing, but
+    // the throttled interval would still allocate 3-5 WebAudio nodes per
+    // step. Skip until it runs again.
+    if (context.state !== 'running') {
+      return;
+    }
     const now = context.currentTime;
     const beat = stepIndex; // snapshot before arp increments it
 
@@ -1311,9 +1316,6 @@ function createProceduralDemoAudio() {
     hat.stop(now + 0.08);
   };
 
-  if (intervalId !== null) {
-    clearInterval(intervalId);
-  }
   intervalId = setInterval(patchedStep, stepMs);
 
   // ── Sub drone ────────────────────────────────────────────────
