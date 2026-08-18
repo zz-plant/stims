@@ -1773,18 +1773,16 @@ per_pixel_1=zoom=zoom+q20*0.01+q32*0.001+aspectx*0-aspecty*0+log10(rad+1);
     const transformWgsl = buildMilkdropTransformWgslCode(program);
     // Slots are positional in the sorted registerInputs list: q20 first,
     // q32 second, both in the first packed vector.
-    expect(transformWgsl).toContain(
-      'let fieldRegisterIn_q20 = registersA.x;',
-    );
-    expect(transformWgsl).toContain(
-      'let fieldRegisterIn_q32 = registersA.y;',
-    );
+    expect(transformWgsl).toContain('let fieldRegisterIn_q20 = registersA.x;');
+    expect(transformWgsl).toContain('let fieldRegisterIn_q32 = registersA.y;');
     // Only ceil(2/4) = 1 register vector is declared as a parameter.
     expect(transformWgsl).toContain('registersA: vec4<f32>');
     expect(transformWgsl).not.toContain('registersB: vec4<f32>');
     expect(transformWgsl).toContain('signalAspectXValue');
     expect(transformWgsl).toContain('signalAspectYValue');
-    expect(transformWgsl).toContain('log(');
+    // log10 lowers through the domain-guarded helper (tier-differential
+    // convergence), not a raw WGSL log().
+    expect(transformWgsl).toContain('milkdropLog10(');
   });
 
   test('lowers per-frame user variables as frame-constant register inputs', () => {
@@ -1834,7 +1832,9 @@ per_pixel_3=dy=sin(y*pixelsy*0.001)*0.01;
     // Overwritable pi: declared as a var initialised to the constant, and
     // reads reference the var, not an inlined literal.
     expect(transformWgsl).toContain('var field_pi: f32 = 3.141592653589793;');
-    expect(transformWgsl).toContain('field_pi = 3.14159;');
+    // Stores wrap in milkdropFinite — the per-statement clamp matching the
+    // CPU JIT's `_v` clamp (tier-differential convergence).
+    expect(transformWgsl).toContain('field_pi = milkdropFinite(3.14159);');
     expect(transformWgsl).toContain('+ field_pi)');
   });
 

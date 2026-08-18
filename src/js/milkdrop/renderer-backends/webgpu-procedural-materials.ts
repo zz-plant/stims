@@ -68,9 +68,54 @@ type TslUniformNodes<T> = { [K in keyof T]: TslNode };
 // no mod() builtin (milkdropMod helper, which also guards divide-by-zero
 // like the GLSL version did), two-argument atan spelled atan2, and
 // float(int(...)) casts spelled f32(i32(...)).
+// Every truthiness/equality threshold below is MilkDrop's EEL close factor
+// (0.00001, MILKDROP_EEL_CLOSE_FACTOR) — the CPU JIT and interpreter use the
+// same constant, and the tier-differential census caught these helpers using
+// a tenfold-tighter 0.000001, which flipped boolean results near the
+// threshold between backends.
 export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
   fn milkdropBool(value: f32) -> f32 {
-    return select(0.0, 1.0, abs(value) > 0.000001);
+    return select(0.0, 1.0, abs(value) > 0.00001);
+  }
+
+  fn milkdropDiv(left: f32, right: f32) -> f32 {
+    return select(left / right, 0.0, right == 0.0);
+  }
+
+  fn milkdropFinite(value: f32) -> f32 {
+    return select(0.0, value, abs(value) < 3.402823e38);
+  }
+
+  fn milkdropSqrt(value: f32) -> f32 {
+    return sqrt(max(value, 0.0));
+  }
+
+  fn milkdropAsin(value: f32) -> f32 {
+    return asin(clamp(value, -1.0, 1.0));
+  }
+
+  fn milkdropAcos(value: f32) -> f32 {
+    return acos(clamp(value, -1.0, 1.0));
+  }
+
+  fn milkdropIntMod(left: f32, right: f32) -> f32 {
+    let li = trunc(left);
+    let ri = trunc(right);
+    return select(li - ri * trunc(li / ri), 0.0, ri == 0.0);
+  }
+
+  fn milkdropPow(base: f32, exponent: f32) -> f32 {
+    let v = pow(base, exponent);
+    return select(0.0, v, abs(v) < 3.402823e38);
+  }
+
+  fn milkdropLog(value: f32) -> f32 {
+    let v = log(max(value, 0.0));
+    return select(0.0, v, abs(v) < 3.402823e38);
+  }
+
+  fn milkdropLog10(value: f32) -> f32 {
+    return milkdropLog(value) * 0.4342944819032518;
   }
 
   fn milkdropBitOr(left: f32, right: f32) -> f32 {
@@ -90,7 +135,7 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
   }
 
   fn milkdropIf(condition: f32, whenTrue: f32, whenFalse: f32) -> f32 {
-    return select(whenFalse, whenTrue, abs(condition) > 0.000001);
+    return select(whenFalse, whenTrue, abs(condition) > 0.00001);
   }
 
   fn milkdropAbove(left: f32, right: f32) -> f32 {
@@ -102,11 +147,15 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
   }
 
   fn milkdropEqual(left: f32, right: f32) -> f32 {
-    return select(0.0, 1.0, abs(left - right) <= 0.000001);
+    return select(0.0, 1.0, abs(left - right) <= 0.00001);
   }
 
   fn milkdropMod(left: f32, right: f32) -> f32 {
-    return select(left - right * floor(left / right), 0.0, abs(right) <= 0.000001);
+    // Truncated remainder (sign follows left), matching HLSL fmod — the
+    // semantics MilkDrop shader code was written against and what the CPU
+    // tier's JS % computes. GLSL-style floor-mod diverged for negative
+    // operands.
+    return select(left - right * trunc(left / right), 0.0, abs(right) <= 0.00001);
   }
 
   fn milkdropRand(seed: f32, time: f32) -> f32 {
@@ -373,9 +422,15 @@ function buildGpuFieldExpressionWgslSource(
       );
       switch (expression.operator) {
         case '^':
-          return `pow(${left}, ${right})`;
+          // Finite-clamped like the CPU JIT: pow on a negative base with a
+          // fractional exponent is NaN, which the CPU tier zeroes.
+          return `milkdropPow(${left}, ${right})`;
         case '%':
-          return `milkdropMod(${left}, ${right})`;
+          // EEL '%' is C-style truncated INTEGER modulo (matching the CPU
+          // JIT), not float floor-mod — the tier-differential census showed
+          // this as the largest CPU/GPU divergence class. Float mod stays
+          // available through the mod()/fmod() calls below.
+          return `milkdropIntMod(${left}, ${right})`;
         case '|':
           return `milkdropBitOr(${left}, ${right})`;
         case '&':
@@ -391,6 +446,10 @@ function buildGpuFieldExpressionWgslSource(
           return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 && milkdropBool(${right}) > 0.5)`;
         case '||':
           return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 || milkdropBool(${right}) > 0.5)`;
+        case '/':
+          // Zero-guarded like the CPU JIT; unguarded f32 division let
+          // Inf/NaN escape into feedback state on the GPU tier only.
+          return `milkdropDiv(${left}, ${right})`;
         default:
           return `(${left} ${expression.operator} ${right})`;
       }
@@ -407,7 +466,9 @@ function buildGpuFieldExpressionWgslSource(
         case 'lerp':
           return `mix(${args[0]}, ${args[1]}, ${args[2]})`;
         case 'int':
-          return `floor(${args[0]})`;
+          // EEL int() truncates toward zero (CPU JIT: Math.trunc); floor()
+          // diverged by one for negative values.
+          return `trunc(${args[0]})`;
         case 'sqr':
           return `((${args[0]}) * (${args[0]}))`;
         case 'sigmoid':
@@ -422,8 +483,21 @@ function buildGpuFieldExpressionWgslSource(
           return `select(1.0, 0.0, milkdropBool(${args[0]}) > 0.5)`;
         case 'atan2':
           return `atan2(${args[0]}, ${args[1]})`;
+        // Domain-guarded like the CPU JIT (sqrt(max(0,x)),
+        // asin/acos(clamp(-1,1))): the raw WGSL builtins return NaN outside
+        // their domain, which the CPU tier never produces.
+        case 'sqrt':
+          return `milkdropSqrt(${args[0]})`;
+        case 'asin':
+          return `milkdropAsin(${args[0]})`;
+        case 'acos':
+          return `milkdropAcos(${args[0]})`;
+        case 'log':
+          return `milkdropLog(${args[0]})`;
         case 'log10':
-          return `(log(${args[0]}) * 0.4342944819032518)`;
+          return `milkdropLog10(${args[0]})`;
+        case 'pow':
+          return `milkdropPow(${args[0]}, ${args[1]})`;
         case 'atan':
           return args.length === 2
             ? `atan2(${args[0]}, ${args[1]})`
@@ -481,11 +555,15 @@ function buildGpuFieldStatementCode(
   return (program?.statements ?? [])
     .map(
       (statement) =>
-        `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionWgslSource(
+        // milkdropFinite mirrors the CPU JIT's per-statement `_v` clamp:
+        // MilkDrop never lets NaN/Infinity escape a statement into state
+        // that persists across pixels/frames. Without it, a sqrt/asin/acos
+        // domain error poisoned GPU-side state that the CPU tier zeroes.
+        `${gpuFieldVarName(statement.target)} = milkdropFinite(${buildGpuFieldExpressionWgslSource(
           statement.expression,
           registerInputs,
           temporaries,
-        )};`,
+        )});`,
     )
     .join('\n    ');
 }
