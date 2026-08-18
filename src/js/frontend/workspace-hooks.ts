@@ -48,8 +48,12 @@ export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
   );
+  const previousPanelRef = useRef<SessionRouteState['panel']>(routeState.panel);
 
   useEffect(() => {
+    const previousPanel = previousPanelRef.current;
+    previousPanelRef.current = routeState.panel;
+
     const currentSearch = parsePlainSearch(window.location.search);
     const nextSearch = buildSessionRouteSearch(routeState, currentSearch);
     const serialized = stringifyPlainSearch(nextSearch);
@@ -60,7 +64,16 @@ export function useWorkspaceRouteState() {
 
     const hash = window.location.hash;
     const newUrl = hash ? `${serialized}${hash}` : serialized;
-    window.history.replaceState(null, '', newUrl);
+    // Opening a panel pushes a history entry so the browser Back button (and
+    // the Android back gesture) closes the sheet instead of leaving the
+    // site. Every other route change — preset switches, audio source,
+    // filters, panel-to-panel moves — stays a replace so history isn't
+    // flooded with entries.
+    if (routeState.panel !== null && previousPanel === null) {
+      window.history.pushState(null, '', newUrl);
+    } else {
+      window.history.replaceState(null, '', newUrl);
+    }
   }, [routeState]);
 
   useEffect(() => {
@@ -126,13 +139,18 @@ export function useWorkspaceSessionState({
   // preset's autonomous motion (see runtime/first-run-preset.ts) rather than on
   // audio reactivity.
   //
-  // Gated on the device profile: `lowPower` already folds in
-  // prefers-reduced-motion, limited memory or cores, handhelds and smart TVs,
-  // so anyone who asked for less motion — or whose device should not spend a
-  // GPU context on decoration — still gets the static form.
-  const [attractModeEnabled] = useState(
-    () => !routeState.previewMode && !getDevicePerformanceProfile().lowPower,
-  );
+  // Gated on the device profile: `lowPower` covers limited memory or cores,
+  // handhelds and smart TVs, and `reducedMotion` honors the OS-level
+  // prefers-reduced-motion request — anyone who asked for less motion, or
+  // whose device should not spend a GPU context on decoration, still gets the
+  // static form.
+  const [attractModeEnabled] = useState(() => {
+    if (routeState.previewMode) {
+      return false;
+    }
+    const profile = getDevicePerformanceProfile();
+    return !profile.lowPower && !profile.reducedMotion;
+  });
 
   const {
     activityCatalog,

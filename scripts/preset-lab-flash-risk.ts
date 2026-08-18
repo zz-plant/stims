@@ -430,6 +430,14 @@ function parseArgs(argv: string[]): CliOptions {
 }
 
 async function main() {
+  console.warn(
+    '⚠ lab:flash-risk is a relative-activity heuristic, NOT a WCAG 2.3.1 ' +
+      'instrument: it reduces each frame to one whole-frame mean luminance, ' +
+      'so opposing regional changes cancel and no spatial-area criterion is ' +
+      'evaluated. For a real WCAG flash audit use `bun run lab:flash-audit` ' +
+      '(scripts/analyze-preset-flash.ts). Do not cite these numbers as a ' +
+      'safety result.\n',
+  );
   const options = parseArgs(process.argv.slice(2));
   if (options.presetIds.length === 0) {
     console.error(

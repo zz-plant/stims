@@ -24,6 +24,15 @@
 
 /** WCAG general flash threshold: >3 flashes in any 1s window fails. */
 export const FLASHES_PER_SECOND_LIMIT = 3;
+/**
+ * Red-flash criterion (WCAG 2.3.1 via the PEAT/Harding working definition):
+ * a saturated red is a color with R/(R+G+B) >= 0.8, and a transition
+ * qualifies when it moves to or from a saturated red with a change in the
+ * red-flash value max(0, R-G-B) * 320 greater than 20 (channels 0..1).
+ */
+export const RED_SATURATION_MIN = 0.8;
+export const RED_FLASH_DELTA = 20;
+export const RED_FLASH_SCALE = 320;
 /** Luminance delta counting as a flash transition (10% of max). */
 export const FLASH_LUMINANCE_DELTA = 0.1;
 /** A flash only counts when the darker of the pair is below this. */
@@ -62,6 +71,12 @@ export interface FlashAnalysis {
   totalFlashes: number;
   /** True when the timeline exceeds the WCAG general flash threshold. */
   exceedsThreshold: boolean;
+  /** Worst red flashes-per-second across any 1s sliding window. */
+  peakRedFlashesPerSecond: number;
+  /** Total qualifying red-flash events across the timeline. */
+  totalRedFlashes: number;
+  /** True when the timeline exceeds the WCAG red-flash threshold. */
+  exceedsRedThreshold: boolean;
   /** Mean absolute frame-to-frame luminance change (0..1) — motion energy. */
   motionEnergy: number;
   /** Std-dev of frame-to-frame luminance change — volatility, not speed. */
@@ -98,6 +113,34 @@ export function isFlashTransition(before: number, after: number): boolean {
   );
 }
 
+/** Red-flash value from sRGB bytes: max(0, R-G-B) scaled per PEAT. */
+export function redFlashValue(r: number, g: number, b: number): number {
+  return Math.max(0, (r - g - b) / 255) * RED_FLASH_SCALE;
+}
+
+/** Whether an sRGB byte triple is a saturated red (R/(R+G+B) >= 0.8). */
+export function isSaturatedRed(r: number, g: number, b: number): boolean {
+  const sum = r + g + b;
+  return sum > 0 && r / sum >= RED_SATURATION_MIN;
+}
+
+/**
+ * Whether a single pixel's transition qualifies as a red-flash step: it
+ * moves to or from a saturated red with a large enough change in red-flash
+ * value.
+ */
+export function isRedFlashTransition(
+  beforeValue: number,
+  afterValue: number,
+  beforeSaturated: boolean,
+  afterSaturated: boolean,
+): boolean {
+  return (
+    (beforeSaturated || afterSaturated) &&
+    Math.abs(afterValue - beforeValue) > RED_FLASH_DELTA
+  );
+}
+
 function mean(values: readonly number[]): number {
   if (values.length === 0) return 0;
   let total = 0;
@@ -122,6 +165,14 @@ export interface FlashCountInput {
   rising: ReadonlyArray<ReadonlyArray<number>>;
   /** Same shape as `rising`, for darkening steps. */
   falling: ReadonlyArray<ReadonlyArray<number>>;
+  /**
+   * Optional red-flash channel: per-transition, per-tile counts of sampled
+   * pixels whose red-flash value rose while moving to/from saturated red.
+   * Same shape as `rising`. Omit when the capture path has no color data.
+   */
+  redRising?: ReadonlyArray<ReadonlyArray<number>>;
+  /** Same shape as `redRising`, for falling red-flash steps. */
+  redFalling?: ReadonlyArray<ReadonlyArray<number>>;
   /** Sampled pixels per tile — the denominator for the area test. */
   tilePixels: number;
   cols: number;
@@ -185,19 +236,22 @@ function peakWindowFraction(
  * per-pixel harness path and the luminance-grid path below funnel through
  * this so the flash-pairing and 1-second-window logic exist once.
  */
-export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
-  const { rising, falling, tilePixels, cols, rows, deltaMs } = input;
+function countPairedFlashes({
+  rising,
+  falling,
+  tilePixels,
+  cols,
+  rows,
+  deltaMs,
+}: {
+  rising: ReadonlyArray<ReadonlyArray<number>>;
+  falling: ReadonlyArray<ReadonlyArray<number>>;
+  tilePixels: number;
+  cols: number;
+  rows: number;
+  deltaMs: number;
+}): { peak: number; total: number } {
   const transitionCount = Math.min(rising.length, falling.length);
-  const empty: FlashAnalysis = {
-    peakFlashesPerSecond: 0,
-    totalFlashes: 0,
-    exceedsThreshold: false,
-    motionEnergy: mean(input.frameMeanDelta ?? []),
-    luminanceVolatility: stdDev(input.frameMeanDelta ?? []),
-    meanLuminance: mean(input.frameMeanLuminance ?? []),
-    frameCount: transitionCount + 1,
-  };
-  if (transitionCount === 0 || deltaMs <= 0 || tilePixels <= 0) return empty;
 
   // A "flash" in WCAG terms is a *pair* of opposing changes, so directions
   // are paired below rather than counted individually — a monotonic fade
@@ -237,11 +291,55 @@ export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
     if (count > peak) peak = count;
   }
 
+  return { peak, total: flashFrames.length };
+}
+
+export function analyzeFlashEvents(input: FlashCountInput): FlashAnalysis {
+  const { rising, falling, tilePixels, cols, rows, deltaMs } = input;
+  const transitionCount = Math.min(rising.length, falling.length);
+  const empty: FlashAnalysis = {
+    peakFlashesPerSecond: 0,
+    totalFlashes: 0,
+    exceedsThreshold: false,
+    peakRedFlashesPerSecond: 0,
+    totalRedFlashes: 0,
+    exceedsRedThreshold: false,
+    motionEnergy: mean(input.frameMeanDelta ?? []),
+    luminanceVolatility: stdDev(input.frameMeanDelta ?? []),
+    meanLuminance: mean(input.frameMeanLuminance ?? []),
+    frameCount: transitionCount + 1,
+  };
+  if (transitionCount === 0 || deltaMs <= 0 || tilePixels <= 0) return empty;
+
+  const general = countPairedFlashes({
+    rising,
+    falling,
+    tilePixels,
+    cols,
+    rows,
+    deltaMs,
+  });
+
+  const red =
+    input.redRising && input.redFalling
+      ? countPairedFlashes({
+          rising: input.redRising,
+          falling: input.redFalling,
+          tilePixels,
+          cols,
+          rows,
+          deltaMs,
+        })
+      : { peak: 0, total: 0 };
+
   return {
     ...empty,
-    peakFlashesPerSecond: peak,
-    totalFlashes: flashFrames.length,
-    exceedsThreshold: peak > FLASHES_PER_SECOND_LIMIT,
+    peakFlashesPerSecond: general.peak,
+    totalFlashes: general.total,
+    exceedsThreshold: general.peak > FLASHES_PER_SECOND_LIMIT,
+    peakRedFlashesPerSecond: red.peak,
+    totalRedFlashes: red.total,
+    exceedsRedThreshold: red.peak > FLASHES_PER_SECOND_LIMIT,
   };
 }
 
@@ -284,10 +382,15 @@ function peakLocalFraction(
 
 export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
   const { frames, deltaMs } = input;
+  // Luminance-grid input carries no color channels, so the red-flash
+  // criterion cannot be evaluated on this path and reports zero.
   const empty: FlashAnalysis = {
     peakFlashesPerSecond: 0,
     totalFlashes: 0,
     exceedsThreshold: false,
+    peakRedFlashesPerSecond: 0,
+    totalRedFlashes: 0,
+    exceedsRedThreshold: false,
     motionEnergy: 0,
     luminanceVolatility: 0,
     meanLuminance: 0,
@@ -380,6 +483,7 @@ export function analyzeFlashTimeline(input: FlashAnalysisInput): FlashAnalysis {
   }
 
   return {
+    ...empty,
     peakFlashesPerSecond: peak,
     totalFlashes: flashFrames.length,
     exceedsThreshold: peak > FLASHES_PER_SECOND_LIMIT,

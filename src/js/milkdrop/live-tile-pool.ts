@@ -71,6 +71,13 @@ export type MilkdropLiveTilePoolOptions = {
    * follow the room's energy (engine-audio-energy-store on the React side). */
   energyProvider?: () => number;
   maxEngines?: number;
+  /**
+   * Optional live capacity signal (e.g. from the adaptive quality
+   * controller). Sampled on each boot/evict decision; the effective engine
+   * cap is min(maxEngines, capacityProvider()), floored at 1, so the tile
+   * pool sheds engines instead of competing with a struggling stage.
+   */
+  capacityProvider?: () => number;
   tileSize?: number;
   stepIntervalMs?: number;
   /** Stepping budget per scheduler tick, so a burst of due tiles cannot eat
@@ -265,8 +272,16 @@ export function createMilkdropLiveTilePool(
     frameHandle = scheduleFrame(tick);
   }
 
+  function effectiveMaxEngines() {
+    const provided = options.capacityProvider?.();
+    if (typeof provided !== 'number' || !Number.isFinite(provided)) {
+      return maxEngines;
+    }
+    return Math.max(1, Math.min(maxEngines, Math.floor(provided)));
+  }
+
   function evictForCapacity() {
-    if (engineCount() < maxEngines) {
+    if (engineCount() < effectiveMaxEngines()) {
       return true;
     }
     let candidate: TileRecord | null = null;

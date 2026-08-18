@@ -10,13 +10,11 @@ import '../../css/app-shell.css';
 import '../../css/shell-theme.css';
 import '../../css/shell-launch.css';
 import '../../css/chrome.css';
-import '../../css/editor-panel.css';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
-import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import {
   buildAudioProfile,
   searchByAudioProfile,
@@ -32,6 +30,7 @@ import {
   applyTheme,
   getActiveThemePreference,
 } from '../core/theme-preferences.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
   initAgentBridge,
@@ -108,6 +107,23 @@ const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
 );
 
+// Rendered while a lazy panel chunk downloads. On a cold cache that can take
+// seconds, and an empty sheet reads as broken — announce and show progress.
+function PanelLoadingFallback() {
+  return (
+    <div
+      className="stims-shell__panel-loading"
+      role="status"
+      aria-label="Loading panel"
+    >
+      <div className="stims-shell__skeleton" />
+      <div className="stims-shell__skeleton" />
+      <div className="stims-shell__skeleton" />
+      <div className="stims-shell__skeleton" />
+    </div>
+  );
+}
+
 function prefersThumbModeByDefault() {
   try {
     return window.matchMedia('(pointer: coarse) and (max-width: 767px)')
@@ -129,7 +145,10 @@ function deferToIdle(fn: () => undefined | (() => void)): () => void {
     if (cancelled) return;
     dispose = fn();
   };
-  const cancel = scheduleIdleTask(run, { idleTimeout: 2000, fallbackDelay: 80 });
+  const cancel = scheduleIdleTask(run, {
+    idleTimeout: 2000,
+    fallbackDelay: 80,
+  });
   return () => {
     cancelled = true;
     cancel();
@@ -791,10 +810,15 @@ function StimsWorkspaceAppShell() {
       <a href="#stims-visualizer" className="skip-link">
         Skip to visualizer
       </a>
+      {/* The launch screen's visible h1 unmounts once the visualizer goes
+          live; keep a screen-reader heading so the document always has one. */}
+      {liveMode ? (
+        <h1 className="stims-shell__sr-only">Stims visualizer</h1>
+      ) : null}
       <WorkspaceStagePanel
         isFullscreen={isFullscreen}
         launchPanel={
-          <Suspense fallback={null}>
+          <Suspense fallback={<PanelLoadingFallback />}>
             <NewHomePage />
           </Suspense>
         }
@@ -810,7 +834,7 @@ function StimsWorkspaceAppShell() {
         fillBody={stageAnchoredToolOpen}
         onOpen={handleSidePanelOpen}
       >
-        <Suspense fallback={null}>
+        <Suspense fallback={<PanelLoadingFallback />}>
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
@@ -875,7 +899,10 @@ function StimsWorkspaceAppShell() {
         </div>
       ) : null}
 
-      {ui.routeState.panel ? null : <ContextualHelp hint={visibleHint} />}
+      {/* Rendered regardless of open panels: the browse/editor hints fire
+          exactly when those panels open, so unmounting on panel-open made
+          them unreachable. */}
+      <ContextualHelp hint={visibleHint} />
 
       <SyncSessionBridge />
 

@@ -551,7 +551,14 @@ class MilkdropPresetVM implements MilkdropVM {
   ) {
     this.prepareSignalEnv(signals);
     if (options.reuseExtraAsEnv) {
-      Object.setPrototypeOf(extra, this.signalEnv);
+      // Persistent locals (shape/wave state) pass through here every frame.
+      // Re-setting an unchanged prototype is semantically a no-op, but V8
+      // treats prototype mutation as a deopt trigger for every later
+      // property access on the object (see geometry-builder.ts), so only
+      // write it when the prototype actually changes.
+      if (Object.getPrototypeOf(extra) !== this.signalEnv) {
+        Object.setPrototypeOf(extra, this.signalEnv);
+      }
       return extra as MutableState;
     }
     const env = Object.create(this.signalEnv) as MutableState;

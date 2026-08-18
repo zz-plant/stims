@@ -3,7 +3,10 @@ import {
   analyzeFlashEvents,
   analyzeFlashTimeline,
   isFlashTransition,
+  isRedFlashTransition,
+  isSaturatedRed,
   linearizeChannel,
+  redFlashValue,
   relativeLuminance,
 } from '../../scripts/flash-analysis.ts';
 
@@ -354,5 +357,111 @@ describe('analyzeFlashEvents (per-pixel magnitude, area aggregated after)', () =
     expect(r.totalFlashes).toBe(0);
     expect(r.meanLuminance).toBeCloseTo(0.3, 6);
     expect(r.motionEnergy).toBeCloseTo(0.2, 6);
+  });
+});
+
+describe('red flash criterion', () => {
+  const COLS = 30;
+  const ROWS = 18;
+  const TILES = COLS * ROWS;
+  const TILE_PIXELS = 100;
+
+  it('computes red-flash value and saturation from sRGB bytes', () => {
+    // Pure saturated red: value = (255-0-0)/255 * 320 = 320.
+    expect(redFlashValue(255, 0, 0)).toBeCloseTo(320, 6);
+    expect(isSaturatedRed(255, 0, 0)).toBe(true);
+    // White: R-G-B negative -> clamped to 0, and not saturated.
+    expect(redFlashValue(255, 255, 255)).toBe(0);
+    expect(isSaturatedRed(255, 255, 255)).toBe(false);
+    // Dark screen: no division blow-up on black.
+    expect(isSaturatedRed(0, 0, 0)).toBe(false);
+    // 80% red share exactly meets the saturation floor.
+    expect(isSaturatedRed(200, 25, 25)).toBe(true);
+  });
+
+  it('qualifies transitions only to or from saturated red with enough swing', () => {
+    const red = redFlashValue(255, 0, 0);
+    const black = redFlashValue(0, 0, 0);
+    expect(isRedFlashTransition(black, red, false, true)).toBe(true);
+    expect(isRedFlashTransition(red, black, true, false)).toBe(true);
+    // Large luminance swing between unsaturated colors is not a red flash.
+    expect(isRedFlashTransition(0, 0, false, false)).toBe(false);
+    // Saturated red endpoints but a tiny value change stays under the
+    // delta floor.
+    expect(isRedFlashTransition(300, 310, true, true)).toBe(false);
+  });
+
+  function alternatingRed(transitions: number, perTile: number) {
+    const zero = () => new Array(TILES).fill(0);
+    const redRising: number[][] = [];
+    const redFalling: number[][] = [];
+    const rising: number[][] = [];
+    const falling: number[][] = [];
+    for (let f = 0; f < transitions; f += 1) {
+      const up = zero();
+      const down = zero();
+      const target = f % 2 === 0 ? up : down;
+      for (let t = 0; t < TILES; t += 1) target[t] = perTile;
+      redRising.push(up);
+      redFalling.push(down);
+      // No general-flash pixels: a black<->red strobe can stay under the
+      // luminance delta while failing the red criterion.
+      rising.push(zero());
+      falling.push(zero());
+    }
+    return { rising, falling, redRising, redFalling };
+  }
+
+  it('flags a red strobe that the luminance criterion alone would miss', () => {
+    const { rising, falling, redRising, redFalling } = alternatingRed(
+      120,
+      TILE_PIXELS,
+    );
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      redRising,
+      redFalling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsThreshold).toBe(false);
+    expect(r.exceedsRedThreshold).toBe(true);
+    expect(r.peakRedFlashesPerSecond).toBeGreaterThan(3);
+  });
+
+  it('keeps sparse red flashing under the 25% area floor unflagged', () => {
+    const perTile = Math.round(TILE_PIXELS * 0.2);
+    const { rising, falling, redRising, redFalling } = alternatingRed(
+      120,
+      perTile,
+    );
+    const r = analyzeFlashEvents({
+      rising,
+      falling,
+      redRising,
+      redFalling,
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.exceedsRedThreshold).toBe(false);
+    expect(r.totalRedFlashes).toBe(0);
+  });
+
+  it('reports zero red metrics when the capture path has no color data', () => {
+    const r = analyzeFlashEvents({
+      rising: [new Array(TILES).fill(TILE_PIXELS)],
+      falling: [new Array(TILES).fill(0)],
+      tilePixels: TILE_PIXELS,
+      cols: COLS,
+      rows: ROWS,
+      deltaMs: DELTA_MS,
+    });
+    expect(r.peakRedFlashesPerSecond).toBe(0);
+    expect(r.exceedsRedThreshold).toBe(false);
   });
 });

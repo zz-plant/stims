@@ -21,6 +21,7 @@ import {
   EngineProvider,
   type EngineSnapshotValue,
 } from './engine-context.tsx';
+import { setEngineQualityState } from './engine-quality-store.ts';
 import { usePersistentPresetQueue } from './preset-queue.ts';
 import {
   useWorkspaceRouteState,
@@ -182,6 +183,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         mid: snap.audioMid,
         treble: snap.audioTreble,
       });
+      setEngineQualityState(
+        snap.adaptiveQuality
+          ? {
+              step: snap.adaptiveQuality.qualityStep,
+              stepCount: snap.adaptiveQuality.qualityStepCount,
+            }
+          : null,
+      );
     }
   }, [sessionState.engineSnapshot]);
 

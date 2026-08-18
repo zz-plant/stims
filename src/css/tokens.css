@@ -32,7 +32,8 @@
   --stims-accent-blue: rgba(119, 201, 255, 0.8);
   --stims-audio-glow: rgba(119, 201, 255, 0.16);
   --stims-border: rgba(255, 255, 255, 0.14);
-  --stims-ink-dim: rgba(255, 248, 239, 0.4);
+  /* 0.55 alpha keeps ~5.9:1 on --bg-color so dim labels stay WCAG AA. */
+  --stims-ink-dim: rgba(255, 248, 239, 0.55);
   --stims-ink-muted: rgba(247, 244, 235, 0.65);
   --stims-energy: 0;
 
@@ -318,8 +319,9 @@ html.light {
   --accent-contrast: #ffffff;
   --link-color: #2f6f6a;
   --link-hover: #7e4c2d;
-  --accent-color: #2f8b83;
-  --accent-purple: #2f8b83;
+  /* Dark enough that white text on the accent fill clears 4.5:1 AA. */
+  --accent-color: #2a7d76;
+  --accent-purple: #2a7d76;
   --accent-magenta: #b86f3d;
   --glow-color: rgba(47, 139, 131, 0.1);
   --accent-soft: rgba(47, 139, 131, 0.08);

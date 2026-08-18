@@ -184,12 +184,17 @@ export function StageControls({
     document.addEventListener('pointerdown', handleActivity, { passive: true });
     document.addEventListener('wheel', handleActivity, { passive: true });
     document.addEventListener('keydown', handleActivity);
+    // Tabbing into the dock counts as activity too, so the hide timer resets
+    // while a keyboard user is reading it (the CSS :focus-within rule is the
+    // hard guarantee that focus is never left on a hidden control).
+    document.addEventListener('focusin', handleActivity);
     return () => {
       if (activityFrame !== null) cancelAnimationFrame(activityFrame);
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerdown', handleActivity);
       document.removeEventListener('wheel', handleActivity);
       document.removeEventListener('keydown', handleActivity);
+      document.removeEventListener('focusin', handleActivity);
     };
   }, [signalActivity]);
 

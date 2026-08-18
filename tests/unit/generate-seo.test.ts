@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { isAllowedDiscoverSlug } from '../../functions/discover-slugs.ts';
 import {
   buildSitemapChunk,
   buildSitemapEntries,
@@ -19,7 +20,15 @@ describe('generate-seo sitemap routes', () => {
       .filter((route) => route.includeInSitemap)
       .map((route) => route.path);
 
-    expect(canonicalPaths).toEqual(['/', '/performance/']);
+    expect(canonicalPaths).not.toContain('/milkdrop/');
+    expect(canonicalPaths.slice(0, 2)).toEqual(['/', '/performance/']);
+    // Curated /discover/ hubs join the sitemap; every one must be on the
+    // middleware allowlist so the sitemap never advertises a slug the edge
+    // won't rewrite.
+    for (const path of canonicalPaths.slice(2)) {
+      expect(path.startsWith('/discover/')).toBe(true);
+      expect(isAllowedDiscoverSlug(path.slice('/discover/'.length))).toBe(true);
+    }
   });
 
   test('builds sitemap entries for the canonical route with the launch OG image', async () => {
@@ -28,7 +37,7 @@ describe('generate-seo sitemap routes', () => {
       resolveLastmod: async () => '2026-04-04',
     });
 
-    expect(entries).toEqual([
+    expect(entries.slice(0, 2)).toEqual([
       expect.objectContaining({
         loc: 'https://toil.fyi/',
         lastmod: '2026-04-04',
@@ -42,6 +51,9 @@ describe('generate-seo sitemap routes', () => {
         imageTitle: 'Compatibility and Performance | Stims',
       }),
     ]);
+    for (const entry of entries.slice(2)) {
+      expect(entry.loc.startsWith('https://toil.fyi/discover/')).toBe(true);
+    }
   });
 
   test('renders image metadata without listing the redirect alias', () => {

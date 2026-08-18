@@ -135,6 +135,48 @@ describe('milkdrop compiler seams', () => {
     expect(support.evidence).toHaveLength(2);
   });
 
+  test('flags asymmetric shader translation as partial backend evidence', () => {
+    const featureAnalysis = buildFeatureAnalysis({
+      programs: {
+        init: { statements: [], sourceLines: [] },
+        perFrame: { statements: [], sourceLines: [] },
+        perPixel: { statements: [], sourceLines: [] },
+      },
+      customWaves: [],
+      customShapes: [],
+      numericFields: {},
+      unsupportedShaderText: false,
+      supportedShaderText: true,
+      shaderTextExecution: { webgl: 'direct', webgpu: 'translated' },
+      featureOrder: ['base-globals', 'unsupported-shader-text'],
+      analyzeProgramRegisters: () => {},
+      hasProgramStatements: (block) => block.statements.length > 0,
+      hasLegacyMotionVectorControls: () => false,
+    });
+
+    const buildSupport = (backend: 'webgl' | 'webgpu') =>
+      buildBackendSupport({
+        backend,
+        featureAnalysis,
+        sharedWarnings: [],
+        softUnknownKeys: [],
+        hardUnsupportedFields: [],
+        unsupportedVolumeSamplerWarnings: [],
+        createBackendEvidence: (args) => args as MilkdropBackendSupportEvidence,
+        backendPartialFeatureGaps: { webgl: {}, webgpu: {} },
+        backendShaderTextGaps: { webgl: {}, webgpu: {} },
+      });
+
+    const webgl = buildSupport('webgl');
+    const webgpu = buildSupport('webgpu');
+
+    expect(webgl.status).toBe('supported');
+    expect(webgpu.status).toBe('partial');
+    expect(
+      webgpu.evidence.some((entry) => entry.code === 'shader-text-translated'),
+    ).toBe(true);
+  });
+
   test('routes WebGPU descriptor planning to fallback when unsupported features remain', () => {
     const plan = buildWebGpuDescriptorPlan({
       featureAnalysis: {

@@ -659,10 +659,11 @@ export function createMilkdropIr({
       hardUnsupportedFields,
       approximatedShaderLines,
     });
-  compatibilityHelpers.collectExpressionsFromValue(
-    mergedShaderControls.expressions,
-    parsedExpressions,
-  );
+  // Shader-control expressions are intentionally NOT fed into the unknown-
+  // identifier gap check below: they carry HLSL-style temp declarations with
+  // their own resolution environment, so EEL scoping rules would flag false
+  // positives. The check covers the expression-VM programs, where an unknown
+  // identifier really does evaluate to 0.
   for (const block of [
     programs.init,
     programs.perFrame,
@@ -687,6 +688,17 @@ export function createMilkdropIr({
       parsedExpressions,
       assignedTargets,
     );
+  // The expression VM evaluates unrecognized functions and aliases to 0 at
+  // runtime, which silently distorts the preset. Surface each gap as a
+  // diagnostic so the report reflects it instead of claiming exact fidelity.
+  missingAliasesOrFunctions.forEach((name) => {
+    fieldHelpers.addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_expression_unknown_function',
+      `Expression references unknown function or variable "${name}", which evaluates to 0 at runtime.`,
+    );
+  });
   const hasShaderText = Boolean(warpShaderText || compShaderText);
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
@@ -818,6 +830,7 @@ export function createMilkdropIr({
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
+      missingAliasesOrFunctions,
       createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,
@@ -829,6 +842,7 @@ export function createMilkdropIr({
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
+      missingAliasesOrFunctions,
       createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,

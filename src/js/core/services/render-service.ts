@@ -279,6 +279,10 @@ function createRendererFacade({
   let animationLoop: (() => void) | null = null;
   let animationFrameId: number | null = null;
   const overrides = new Map<PropertyKey, unknown>();
+  const boundMethodCache = new WeakMap<
+    object,
+    Map<PropertyKey, { source: unknown; bound: unknown }>
+  >();
 
   const cancelScheduledFrame = () => {
     if (animationFrameId === null) {
@@ -357,12 +361,39 @@ function createRendererFacade({
         };
       }
 
-      const value = Reflect.get(getRenderer() as object, property);
-      return typeof value === 'function' ? value.bind(getRenderer()) : value;
+      const target = getRenderer() as object;
+      const value = Reflect.get(target, property);
+      if (typeof value !== 'function') {
+        return value;
+      }
+      // Bound-method cache keyed by the live renderer instance: the frame
+      // loop reads renderer methods dozens of times per frame, and minting a
+      // fresh closure on each access both allocates and defeats V8's inline
+      // caches. Entries rebind automatically if the underlying method or the
+      // renderer instance changes.
+      let cache = boundMethodCache.get(target);
+      if (!cache) {
+        cache = new Map();
+        boundMethodCache.set(target, cache);
+      }
+      const entry = cache.get(property);
+      if (entry && entry.source === value) {
+        return entry.bound;
+      }
+      const bound = (value as (...args: unknown[]) => unknown).bind(target);
+      cache.set(property, { source: value, bound });
+      return bound;
     },
     set: (_target, property, value) => {
+      const target = getRenderer() as object;
+      if (
+        overrides.get(property) === value &&
+        Reflect.get(target, property) === value
+      ) {
+        return true;
+      }
       overrides.set(property, value);
-      Reflect.set(getRenderer() as object, property, value);
+      Reflect.set(target, property, value);
       return true;
     },
   });

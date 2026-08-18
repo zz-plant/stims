@@ -20,9 +20,16 @@
 # Large preset sources, previews, and textures use stable human-readable names.
 # Cache them long enough to avoid repeat transfers during normal use, then
 # revalidate in the background so an in-place asset correction still reaches
-# returning users. Catalog manifests (*.json) intentionally do not match.
+# returning users.
 /milkdrop-presets/*.milk
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Catalog manifests are the largest payloads in the app (catalog.json ~1.7 MB,
+# search-index.json ~1.1 MB) and change only on deploy. A short max-age keeps
+# them fresh within the hour while stale-while-revalidate makes repeat visits
+# serve instantly from HTTP cache instead of re-downloading on every load.
+/milkdrop-presets/*.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
 
 /milkdrop-presets/previews/*.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

@@ -62,6 +62,83 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Large, slowly-changing payloads (the 1.7 MB preset catalog, textures,
+// previews) are served cache-first with a background refresh. Waiting on the
+// network for these on every load penalized exactly the repeat visits the
+// cache exists for; one-load staleness after a deploy is the accepted trade.
+const STALE_WHILE_REVALIDATE_PREFIXES = ['/milkdrop-presets/', '/textures/'];
+
+function offlineResponse() {
+  return new Response('Offline — please check your connection.', {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: { 'Content-Type': 'text/plain' },
+  });
+}
+
+// Queue the cache write on event.waitUntil: it keeps the worker alive until
+// the write completes (the reason the write used to block the response)
+// without holding the response itself hostage to storage latency. Quota or
+// storage failures stay non-fatal.
+function queueCacheWrite(event, request, response) {
+  const write = caches
+    .open(CACHE_NAME)
+    .then((cache) => cache.put(request, response))
+    .catch(() => {});
+  if (event.waitUntil) {
+    event.waitUntil(write);
+  }
+}
+
+async function staleWhileRevalidate(event, request) {
+  const cached = await caches.match(request);
+  const refresh = fetch(request).then((networkResponse) => {
+    if (networkResponse.ok) {
+      queueCacheWrite(event, request, networkResponse.clone());
+    }
+    return networkResponse;
+  });
+
+  if (cached) {
+    if (event.waitUntil) {
+      event.waitUntil(refresh.catch(() => {}));
+    }
+    return cached;
+  }
+
+  try {
+    return await refresh;
+  } catch (_networkError) {
+    return offlineResponse();
+  }
+}
+
+async function networkFirst(event, request) {
+  try {
+    const networkResponse = await fetch(request);
+    const contentType = networkResponse.headers.get('content-type') || '';
+    const isHtml = contentType.includes('text/html');
+
+    // Only cache non-HTML or navigation responses when successful
+    if (networkResponse.ok && (request.mode === 'navigate' || !isHtml)) {
+      queueCacheWrite(event, request, networkResponse.clone());
+    }
+    return networkResponse;
+  } catch (_networkError) {
+    // Network failed, try the cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+
+    // For navigation requests, fall back to the cached index.html
+    if (request.mode === 'navigate') {
+      const shellResponse = await caches.match('/index.html');
+      if (shellResponse) return shellResponse;
+    }
+
+    return offlineResponse();
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests for http(s)
   const { request } = event;
@@ -78,45 +155,14 @@ self.addEventListener('fetch', (event) => {
   // Bypass service worker for API calls
   if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(
-    (async () => {
-      // Try network first for the freshest content
-      try {
-        const networkResponse = await fetch(request);
-        const contentType = networkResponse.headers.get('content-type') || '';
-        const isHtml = contentType.includes('text/html');
+  if (
+    STALE_WHILE_REVALIDATE_PREFIXES.some((prefix) =>
+      url.pathname.startsWith(prefix),
+    )
+  ) {
+    event.respondWith(staleWhileRevalidate(event, request));
+    return;
+  }
 
-        // Only cache non-HTML or navigation responses when successful
-        if (networkResponse.ok && (request.mode === 'navigate' || !isHtml)) {
-          const cache = await caches.open(CACHE_NAME);
-          // Keep the worker alive until the write completes; otherwise the
-          // browser may terminate it after returning the network response.
-          try {
-            await cache.put(request, networkResponse.clone());
-          } catch (_cacheWriteError) {
-            // Runtime caching is opportunistic. A quota or storage failure
-            // must never turn a successful network response into a 503.
-          }
-        }
-        return networkResponse;
-      } catch (_networkError) {
-        // Network failed, try the cache
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) return cachedResponse;
-
-        // For navigation requests, fall back to the cached index.html
-        if (request.mode === 'navigate') {
-          const shellResponse = await caches.match('/index.html');
-          if (shellResponse) return shellResponse;
-        }
-
-        // Nothing cached, return a simple offline response
-        return new Response('Offline — please check your connection.', {
-          status: 503,
-          statusText: 'Service Unavailable',
-          headers: { 'Content-Type': 'text/plain' },
-        });
-      }
-    })(),
-  );
+  event.respondWith(networkFirst(event, request));
 });

@@ -22,11 +22,28 @@ function getStorage(): Storage | null {
   }
 }
 
+// Until the user makes an explicit in-app choice, honor the contrast
+// preference they already expressed at the OS level.
+function prefersMoreContrast(): boolean {
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-contrast: more)').matches
+    );
+  } catch {
+    return false;
+  }
+}
+
 function readFromStorage(): AccessibilityPreference {
   const storage = getStorage();
   const raw = storage?.getItem(ACCESSIBILITY_PREFERENCE_KEY);
   if (!raw) {
-    return { textScale: 1, highContrast: false, freezeFrame: false };
+    return {
+      textScale: 1,
+      highContrast: prefersMoreContrast(),
+      freezeFrame: false,
+    };
   }
   try {
     const parsed = JSON.parse(raw) as Partial<AccessibilityPreference>;
@@ -36,7 +53,11 @@ function readFromStorage(): AccessibilityPreference {
       freezeFrame: parsed.freezeFrame === true,
     };
   } catch {
-    return { textScale: 1, highContrast: false, freezeFrame: false };
+    return {
+      textScale: 1,
+      highContrast: prefersMoreContrast(),
+      freezeFrame: false,
+    };
   }
 }
 

@@ -25,8 +25,18 @@ jobs:
     name: Quality gate
     runs-on: ubuntu-latest
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup environment
         uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
 
       # Fails on high/critical advisories against the lockfile. Moderate and
       # below only report locally via `bun audit`; gate them here once the
@@ -55,8 +65,18 @@ jobs:
     # deterministic — same input, same shader text, same pixels — so it fails
     # for real reasons. It takes about 10s.
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup environment
         uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
 
       # The loop-preset visual sweep in tests/corpus/ launches headless
       # Chromium, so the corpus is no longer browser-free.
@@ -73,8 +93,18 @@ jobs:
     # docs/DEPLOYMENT.md), which builds and deploys on push independently of
     # Actions. This job only proves the production bundle still builds.
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup environment
         uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
 
       - name: Build production bundle
         run: bun run build
@@ -97,8 +127,18 @@ jobs:
           - chrome-visual-contract.test.ts
           - e2e-engine-mount.test.ts
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup environment
         uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
 
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright

@@ -297,7 +297,11 @@ function runDomChecks(stateName: string) {
 async function audit() {
   console.log('🔍 Running comprehensive accessibility audit...\n');
 
-  const browser = await chromium.launch({ headless: false });
+  // Headless by default so the audit can run in CI; set HEADFUL=1 to watch
+  // the run locally.
+  const browser = await chromium.launch({
+    headless: process.env.HEADFUL !== '1',
+  });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },
     locale: 'en-US',

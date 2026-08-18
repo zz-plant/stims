@@ -15,6 +15,7 @@ import type {
 } from '../../milkdrop/live-tile-pool.ts';
 import type { PresetCatalogEntry } from '../contracts.ts';
 import { getAudioEnergy } from '../engine-audio-energy-store.ts';
+import { getLiveTileCapacity } from '../engine-quality-store.ts';
 
 export const livePresetTilesEnabled = parseURLParams().flags.liveTiles;
 
@@ -60,6 +61,10 @@ function ensurePool(): Promise<MilkdropLiveTilePool> {
         // pulse so tiles follow the room even before raw analyser data is
         // exposed to this side of the engine seam.
         energyProvider: () => 0.35 + getAudioEnergy() * 0.9,
+        // Shrink the preview pool while the stage's adaptive quality is
+        // degrading, so browse-grid decoration stops competing with the
+        // renderer the user is actually watching.
+        capacityProvider: getLiveTileCapacity,
         ...(agentModeScheduler
           ? {
               scheduleFrame: (cb: () => void) =>

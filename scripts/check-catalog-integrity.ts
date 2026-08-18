@@ -7,6 +7,10 @@ const CATALOG_PATH = path.join(
   'public/milkdrop-presets/catalog.json',
 );
 const PREVIEWS_DIR = path.join(REPO_ROOT, 'public/milkdrop-presets/previews');
+const PREVIEW_FAILURES_PATH = path.join(
+  REPO_ROOT,
+  'public/milkdrop-presets/preview-failures.json',
+);
 
 type PresetEntry = {
   id: string;
@@ -162,6 +166,33 @@ export function checkCatalogIntegrity(): boolean {
         );
         errorsCount += 1;
       }
+    }
+  }
+
+  // The thumbnail pipeline records presets whose renders came back black or
+  // otherwise unusable. A preset on that list must not advertise a preview —
+  // otherwise a known-broken render ships indistinguishable from a working
+  // one.
+  if (fs.existsSync(PREVIEW_FAILURES_PATH)) {
+    try {
+      const failures = JSON.parse(
+        fs.readFileSync(PREVIEW_FAILURES_PATH, 'utf8'),
+      ) as Array<{ presetId: string; reason?: string }>;
+      const presetsById = new Map(catalog.presets.map((p) => [p.id, p]));
+      for (const failure of failures) {
+        const entry = presetsById.get(failure.presetId);
+        if (entry && entry.preview === true) {
+          logError(
+            `Preset "${failure.presetId}" is listed in preview-failures.json (${failure.reason ?? 'render failure'}) but still has preview=true in the catalog. Set preview=false or fix and re-render the preview.`,
+          );
+          errorsCount += 1;
+        }
+      }
+    } catch (error) {
+      logError(
+        `Failed to parse preview-failures.json: ${(error as Error).message}`,
+      );
+      errorsCount += 1;
     }
   }
 
