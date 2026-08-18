@@ -1116,9 +1116,24 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
+  /* Amplitude follows live audio energy (set on the container by
+     LaunchSignalTrace). Quiet idle trace at rest; up to ~1.7x with music,
+     so the page starts moving to the sound before the stage takes over. */
+  .stims-shell__launch-trace-amp {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    transform: scaleY(calc(0.65 + var(--stims-energy, 0) * 1.05));
+    transition: transform 140ms ease-out;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .stims-shell__launch-trace svg {
       animation: none;
+    }
+
+    .stims-shell__launch-trace-amp {
+      transform: none;
+      transition: none;
     }
   }
 

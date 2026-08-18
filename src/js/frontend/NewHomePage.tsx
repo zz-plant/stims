@@ -4,6 +4,10 @@ import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -194,24 +198,47 @@ const TRACE_ECHO =
  * one in each brand accent. Pure CSS drift, so it gives the launch page life
  * on exactly the devices where attract mode is gated off; reduced-motion gets
  * the static trace.
+ *
+ * Once audio flows (Play demo pressed, or a deep link auto-starting while
+ * this header is still up), the trace amplitude follows live energy via the
+ * `--stims-energy` custom property — the launch page starts moving to the
+ * music before the stage takes over, so the handoff reads as one continuous
+ * instrument rather than a page swap.
  */
 function LaunchSignalTrace() {
+  const traceRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const updateEnergy = () => {
+      const energy = Math.min(1, Math.max(0, getAudioEnergy()));
+      traceRef.current?.style.setProperty('--stims-energy', String(energy));
+    };
+    updateEnergy();
+    return subscribeAudioEnergy(updateEnergy);
+  }, []);
+
   return (
-    <div className="stims-shell__launch-trace" aria-hidden="true">
+    <div
+      className="stims-shell__launch-trace"
+      aria-hidden="true"
+      ref={traceRef}
+    >
       <svg viewBox="0 0 600 40" preserveAspectRatio="none" role="presentation">
-        <path
-          d={TRACE_ECHO}
-          fill="none"
-          stroke="var(--stims-cool)"
-          strokeWidth="1.4"
-          opacity="0.45"
-        />
-        <path
-          d={TRACE_PRIMARY}
-          fill="none"
-          stroke="var(--stims-accent)"
-          strokeWidth="1.6"
-        />
+        <g className="stims-shell__launch-trace-amp">
+          <path
+            d={TRACE_ECHO}
+            fill="none"
+            stroke="var(--stims-cool)"
+            strokeWidth="1.4"
+            opacity="0.45"
+          />
+          <path
+            d={TRACE_PRIMARY}
+            fill="none"
+            stroke="var(--stims-accent)"
+            strokeWidth="1.6"
+          />
+        </g>
       </svg>
     </div>
   );
