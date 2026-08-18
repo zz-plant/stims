@@ -101,7 +101,11 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
   fn milkdropIntMod(left: f32, right: f32) -> f32 {
     let li = trunc(left);
     let ri = trunc(right);
-    return select(li - ri * trunc(li / ri), 0.0, ri == 0.0);
+    let m = select(li - ri * trunc(li / ri), 0.0, ri == 0.0);
+    // C-style remainder carries the dividend's sign onto zero results
+    // (-1 % -1 is -0); the subtraction form yields +0, which atan2 turns
+    // into a visible ±pi flip. sign(left) * 0.0 reconstructs the signed zero.
+    return select(m, 0.0 * sign(left), m == 0.0);
   }
 
   fn milkdropPow(base: f32, exponent: f32) -> f32 {
@@ -155,7 +159,9 @@ export const MILKDROP_FIELD_WGSL_HELPERS_SOURCE = `
     // semantics MilkDrop shader code was written against and what the CPU
     // tier's JS % computes. GLSL-style floor-mod diverged for negative
     // operands.
-    return select(left - right * trunc(left / right), 0.0, abs(right) <= 0.00001);
+    let m = select(left - right * trunc(left / right), 0.0, abs(right) <= 0.00001);
+    // Dividend-signed zero, matching C fmod and the CPU tier's JS %.
+    return select(m, 0.0 * sign(left), m == 0.0);
   }
 
   fn milkdropRand(seed: f32, time: f32) -> f32 {
