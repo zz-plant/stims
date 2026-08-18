@@ -207,17 +207,39 @@ export function buildFeedbackCompositeState({
   };
 }
 
+// The answer is preset-invariant but the question is asked every frame;
+// cache per stable program/statement object so the regex sweep over full
+// shader sources runs once per preset instead of per frame.
+const blurReferenceCache = new WeakMap<object, boolean>();
+
+function sourceReferencesBlurTextures(holder: object, source: string | null) {
+  let result = blurReferenceCache.get(holder);
+  if (result === undefined) {
+    result = source !== null && BLUR_TEXTURE_SAMPLE_PATTERN.test(source);
+    blurReferenceCache.set(holder, result);
+  }
+  return result;
+}
+
 function presetReferencesBlurTextures(
   shaderPrograms: MilkdropPostVisual['shaderPrograms'],
   perPixelStatements: MilkdropFeedbackCompositeState['perPixelPrograms'] | null,
 ) {
-  const sources: Array<string | null> = [
-    shaderPrograms.warp?.source ?? null,
-    shaderPrograms.comp?.source ?? null,
-    ...(perPixelStatements?.statements.map((statement) => statement.source) ??
-      []),
-  ];
-  return sources.some(
-    (source) => source !== null && BLUR_TEXTURE_SAMPLE_PATTERN.test(source),
-  );
+  const warp = shaderPrograms.warp;
+  const comp = shaderPrograms.comp;
+  if (warp && sourceReferencesBlurTextures(warp, warp.source ?? null)) {
+    return true;
+  }
+  if (comp && sourceReferencesBlurTextures(comp, comp.source ?? null)) {
+    return true;
+  }
+  const statements = perPixelStatements?.statements;
+  if (statements) {
+    for (const statement of statements) {
+      if (sourceReferencesBlurTextures(statement, statement.source ?? null)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

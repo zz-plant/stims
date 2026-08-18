@@ -147,9 +147,27 @@ export function useWorkspaceYouTubePreview({
     }
 
     const readTransport = () => {
-      setYoutubeTransport(
-        youtubeControllerRef.current?.getTransportState() ?? null,
-      );
+      // Skip the read while the tab is hidden — the poll would only thrash
+      // state for a UI nobody can see, and it resumes on the next tick.
+      if (typeof document !== 'undefined' && document.hidden) {
+        return;
+      }
+      const next = youtubeControllerRef.current?.getTransportState() ?? null;
+      // getTransportState returns a fresh object every call; committing it
+      // unconditionally re-rendered the workspace subtree once a second even
+      // while paused. Only publish when a field actually moved.
+      setYoutubeTransport((previous) => {
+        if (
+          previous &&
+          next &&
+          previous.currentSeconds === next.currentSeconds &&
+          previous.durationSeconds === next.durationSeconds &&
+          previous.paused === next.paused
+        ) {
+          return previous;
+        }
+        return next;
+      });
     };
 
     readTransport();

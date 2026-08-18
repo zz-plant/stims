@@ -253,10 +253,16 @@ export function createMilkdropPostprocessingComposer({
       bloomPass.strength = nextProfile.bloomStrength;
       bloomPass.radius = nextProfile.bloomRadius;
       bloomPass.threshold = nextProfile.bloomThreshold;
+      // UnrealBloom is ~11 full-screen passes even at zero strength; disable
+      // it (and the film pass) outright when the profile zeroes them, the
+      // same way afterimage is gated below.
+      bloomPass.enabled = nextProfile.bloomStrength > 0;
     }
     setUniformValue(filmPass.uniforms, 'nIntensity', nextProfile.filmNoise);
     setUniformValue(filmPass.uniforms, 'sIntensity', nextProfile.filmScanlines);
     setUniformValue(filmPass.uniforms, 'sCount', nextProfile.filmScanlineCount);
+    filmPass.enabled =
+      nextProfile.filmNoise > 0 || nextProfile.filmScanlines > 0;
     if (afterimagePass) {
       afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
       afterimagePass.enabled = nextProfile.afterimageDamp > 0;
