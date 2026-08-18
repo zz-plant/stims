@@ -49,7 +49,7 @@ async function resolveCredentials(): Promise<{
 }
 
 // blobs: [event, renderer, presetId, error, country]
-// doubles: [fps, audioLatencyMs, timestamp]
+// doubles: [fps, audioLatencyMs, timestamp, dwellMs]
 // indexes: [event]
 
 interface Report {
@@ -95,6 +95,22 @@ function buildReports(days: number): Report[] {
             WHERE timestamp > ${since} AND double1 > 0
             GROUP BY blob2 ORDER BY samples DESC`,
       columns: ['renderer', 'samples', 'min_fps', 'avg_fps', 'max_fps'],
+    },
+    {
+      // Engagement per preset: views vs quick skips and average dwell.
+      // To feed curation, save these rows as JSON at
+      // scratch/preset-engagement.json and re-run `bun run catalog:score`.
+      title: `Preset engagement (last ${days}d)`,
+      sql: `SELECT blob3 AS presetId,
+                   COUNT() AS events,
+                   SUM(IF(blob1 = 'preset-skip', 1, 0)) AS skips,
+                   AVG(double4) AS avg_dwell_ms
+            FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 IN ('preset-dwell', 'preset-skip')
+              AND blob3 != ''
+            GROUP BY blob3 ORDER BY events DESC LIMIT 100`,
+      columns: ['presetId', 'events', 'skips', 'avg_dwell_ms'],
     },
   ];
 }

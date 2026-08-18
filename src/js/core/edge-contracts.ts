@@ -156,6 +156,8 @@ export type TelemetryEvent = {
   fps?: number;
   audioLatencyMs?: number;
   presetId?: string;
+  /** Milliseconds a preset stayed on screen (preset-dwell / preset-skip). */
+  dwellMs?: number;
   error?: string;
   userAgent?: string;
 };
@@ -187,6 +189,10 @@ export const TelemetryEventSchema = contractSchema<TelemetryEvent>((input) => {
   if (input.presetId !== undefined) {
     if (!isString(input.presetId)) return null;
     result.presetId = input.presetId;
+  }
+  if (input.dwellMs !== undefined) {
+    if (!isNumber(input.dwellMs)) return null;
+    result.dwellMs = input.dwellMs;
   }
   if (input.error !== undefined) {
     if (!isString(input.error)) return null;
