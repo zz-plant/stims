@@ -97,7 +97,21 @@ export type BuildPaletteResultsInput = {
   searchPresets?: (query: string) => PalettePresetResult[];
   /** Cap on returned results. Default 12. */
   limit?: number;
+  /**
+   * Frecency: use counts keyed by result id ('action:<id>' / 'preset:<id>').
+   * Applied as a bounded boost so repeat workflows surface with one or two
+   * typed characters — it breaks ties and reorders near-equal matches, but
+   * can never outrank a decisively better text match (boost caps below the
+   * ~200-point gap between match tiers).
+   */
+  useCounts?: Record<string, number>;
 };
+
+/** Bounded so frecency reorders within a match tier, never across tiers. */
+function frecencyBoost(count: number | undefined): number {
+  if (!count || count <= 0) return 0;
+  return Math.min(150, Math.log2(1 + count) * 40);
+}
 
 export const DEFAULT_PALETTE_LIMIT = 12;
 
@@ -112,15 +126,23 @@ export function buildPaletteResults({
   presets,
   searchPresets,
   limit = DEFAULT_PALETTE_LIMIT,
+  useCounts,
 }: BuildPaletteResultsInput): PaletteResult[] {
   const trimmed = query.trim();
 
   if (trimmed.length === 0) {
-    return actions.slice(0, limit).map((action) => ({
+    // Empty query: most-used actions first, authored order as the tiebreak.
+    const ranked = actions.map((action, index) => ({
+      action,
+      index,
+      boost: frecencyBoost(useCounts?.[`action:${action.id}`]),
+    }));
+    ranked.sort((a, b) => b.boost - a.boost || a.index - b.index);
+    return ranked.slice(0, limit).map(({ action, boost }) => ({
       kind: 'action',
       id: `action:${action.id}`,
       action,
-      score: 0,
+      score: boost,
     }));
   }
 
@@ -129,11 +151,12 @@ export function buildPaletteResults({
   for (const action of actions) {
     const score = scoreAction(trimmed, action);
     if (score !== null) {
+      const id = `action:${action.id}`;
       results.push({
         kind: 'action',
-        id: `action:${action.id}`,
+        id,
         action,
-        score,
+        score: score + frecencyBoost(useCounts?.[id]),
       });
     }
   }
@@ -146,11 +169,12 @@ export function buildPaletteResults({
     // authority on relevance for its own list.
     const score = scorePreset(trimmed, preset) ?? (searchPresets ? 0 : null);
     if (score !== null) {
+      const id = `preset:${preset.id}`;
       results.push({
         kind: 'preset',
-        id: `preset:${preset.id}`,
+        id,
         preset,
-        score,
+        score: score + frecencyBoost(useCounts?.[id]),
       });
     }
   }

@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import '../../css/app-shell.css';
 import '../../css/shell-theme.css';
@@ -71,9 +72,18 @@ const NewHomePage = lazy(() =>
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
-import { startOrCopyWatchParty } from './sync-session.ts';
+import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
+import {
+  endWatchParty,
+  openRecordPanel,
+  setTransition,
+  startAudioSource,
+  startOrCopyWatchPartyAction,
+  toggleAutoplay,
+  togglePanel,
+} from './workspace-actions.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
@@ -299,14 +309,35 @@ function StimsWorkspaceAppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   useCommandPaletteHotkey(() => setPaletteOpen(true));
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen state
+  // Stable panel surface for the shared action bodies: reads through the
+  // ref so the memoized action list never goes stale on route changes.
+  const paletteSurface = useMemo(
+    () => ({
+      updatePanel: (panel: Parameters<typeof ui.updatePanel>[0]) =>
+        uiRef.current.updatePanel(panel),
+      routePanel: () => uiRef.current.routeState.panel ?? null,
+    }),
+    [],
+  );
+
+  const syncSession = useSyncExternalStore(
+    subscribeSyncSession,
+    getSyncSessionState,
+  );
+  const hostingWatchParty =
+    syncSession.role === 'host' && syncSession.status !== 'idle';
+
+  // Behavior bodies live in workspace-actions.ts, shared with the stage
+  // dock menu — a verb must not do different things depending on which
+  // surface invoked it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen/hosting state
   const paletteActions: CommandAction[] = useMemo(
     () => [
       {
         id: 'open-browse',
         label: 'Browse presets',
         shortcutHint: 'B',
-        run: () => ui.updatePanel('browse'),
+        run: () => togglePanel(paletteSurface, 'browse'),
       },
       {
         id: 'next-preset',
@@ -340,31 +371,31 @@ function StimsWorkspaceAppShell() {
         id: 'open-editor',
         label: 'Edit preset code',
         shortcutHint: 'E',
-        run: () => ui.updatePanel('editor'),
+        run: () => togglePanel(paletteSurface, 'editor'),
       },
       {
         id: 'open-refine',
         label: 'Refine with AI',
         shortcutHint: 'G',
-        run: () => ui.updatePanel('refine'),
+        run: () => togglePanel(paletteSurface, 'refine'),
       },
       {
         id: 'open-generate',
         label: 'Generate with AI',
         keywords: ['synthesize', 'create', 'make'],
-        run: () => ui.updatePanel('synthesize'),
+        run: () => togglePanel(paletteSurface, 'synthesize'),
       },
       {
         id: 'open-record',
         label: 'Record video',
         keywords: ['capture', 'export'],
-        run: () => ui.updatePanel('capture'),
+        run: () => openRecordPanel(paletteSurface),
       },
       {
         id: 'open-settings',
         label: 'Settings',
         shortcutHint: 'S',
-        run: () => ui.updatePanel('settings'),
+        run: () => togglePanel(paletteSurface, 'settings'),
       },
       {
         id: 'toggle-fullscreen',
@@ -380,66 +411,70 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'watch-party',
-        label: 'Start watch party (copy link)',
+        label: hostingWatchParty
+          ? 'Copy watch party link'
+          : 'Start watch party (copy link)',
         keywords: ['sync', 'room', 'host', 'together'],
-        run: () => void startOrCopyWatchParty(ui.setStatusMessage),
+        run: () => startOrCopyWatchPartyAction(ui.setStatusMessage),
       },
+      ...(hostingWatchParty
+        ? [
+            {
+              id: 'end-watch-party',
+              label: 'End watch party',
+              keywords: ['sync', 'room', 'leave', 'stop'],
+              run: () => endWatchParty(ui.setStatusMessage),
+            } satisfies CommandAction,
+          ]
+        : []),
       {
         id: 'toggle-autoplay',
         label: 'Toggle autoplay',
         keywords: ['shuffle', 'automatic'],
-        run: () => {
-          const next = !(engineSnapshotRef.current?.autoplay ?? false);
-          engine.setAutoplay(next);
-          ui.setStatusMessage(next ? 'Autoplay on.' : 'Autoplay off.');
-        },
+        run: () =>
+          toggleAutoplay(
+            engine,
+            ui.setStatusMessage,
+            engineSnapshotRef.current?.autoplay ?? false,
+          ),
       },
       {
         id: 'transition-cut',
         label: 'Transition: instant cut',
-        run: () => engine.setTransitionMode('cut'),
+        run: () => setTransition(engine, ui.setStatusMessage, 'cut', 0),
       },
       {
         id: 'transition-1s',
         label: 'Transition: 1s blend',
-        run: () => {
-          engine.setTransitionMode('blend');
-          engine.setBlendDuration(1);
-        },
+        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 1),
       },
       {
         id: 'transition-2s',
         label: 'Transition: 2s blend',
-        run: () => {
-          engine.setTransitionMode('blend');
-          engine.setBlendDuration(2);
-        },
+        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 2),
       },
       {
         id: 'transition-5s',
         label: 'Transition: 5s blend',
-        run: () => {
-          engine.setTransitionMode('blend');
-          engine.setBlendDuration(5);
-        },
+        run: () => setTransition(engine, ui.setStatusMessage, 'blend', 5),
       },
       {
         id: 'audio-demo',
         label: 'Play demo audio',
         keywords: ['source', 'sample'],
-        run: () => void engine.handleAudioStart('demo'),
+        run: () => startAudioSource(engine, 'demo'),
       },
       {
         id: 'audio-microphone',
         label: 'Use microphone audio',
         keywords: ['source', 'mic'],
-        run: () => void engine.handleAudioStart('microphone'),
+        run: () => startAudioSource(engine, 'microphone'),
       },
       {
         id: 'audio-tab',
         label: "Use this tab's audio",
         keywords: ['source', 'capture'],
-        run: () => void engine.handleAudioStart('tab'),
+        run: () => startAudioSource(engine, 'tab'),
       },
       ...(liveMode
         ? [
@@ -452,7 +487,7 @@ function StimsWorkspaceAppShell() {
           ]
         : []),
     ],
-    [liveMode, isFullscreen],
+    [liveMode, isFullscreen, hostingWatchParty],
   );
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,

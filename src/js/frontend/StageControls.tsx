@@ -16,14 +16,16 @@ import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
-import {
-  getSyncSessionState,
-  leaveSyncSession,
-  setSyncUrlParam,
-  startOrCopyWatchParty,
-  subscribeSyncSession,
-} from './sync-session.ts';
+import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
+import {
+  endWatchParty,
+  openRecordPanel,
+  setTransition,
+  startAudioSource,
+  startOrCopyWatchPartyAction,
+  togglePanel,
+} from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 type MenuItem = {
@@ -270,10 +272,16 @@ export function StageControls({
   }, [engine, currentPresetId, presetSaved, signalActivity]);
 
   // Start hosting and copy the room link in one action; when already
-  // hosting, just copy. Shared with the command palette via sync-session.
-  const handleWatchParty = useCallback(async () => {
-    await startOrCopyWatchParty(ui.setStatusMessage);
+  // hosting, just copy. Shared body with the command palette.
+  const handleWatchParty = useCallback(() => {
+    startOrCopyWatchPartyAction(ui.setStatusMessage);
   }, [ui]);
+
+  // Panel surface for the shared action bodies; reads live route state.
+  const menuSurface = {
+    updatePanel: ui.updatePanel,
+    routePanel: () => ui.routeState.panel ?? null,
+  };
 
   const run = useCallback(
     (fn: () => void) => {
@@ -294,8 +302,7 @@ export function StageControls({
     {
       icon: 'grid' as const,
       label: 'Browse presets',
-      action: () =>
-        run(() => ui.updatePanel(panel === 'browse' ? null : 'browse')),
+      action: () => run(() => togglePanel(menuSurface, 'browse')),
       actionId: 'open-browse',
       active: panel === 'browse',
     },
@@ -323,8 +330,7 @@ export function StageControls({
       icon: 'sparkles' as const,
       label: 'Generate with AI',
       actionId: 'open-generate',
-      action: () =>
-        run(() => ui.updatePanel(panel === 'synthesize' ? null : 'synthesize')),
+      action: () => run(() => togglePanel(menuSurface, 'synthesize')),
       active: panel === 'synthesize',
       separatorBefore: true,
       sectionLabel: 'Make your own',
@@ -333,38 +339,23 @@ export function StageControls({
       icon: 'wand' as const,
       label: 'Refine with AI',
       actionId: 'open-refine',
-      action: () =>
-        run(() => ui.updatePanel(panel === 'refine' ? null : 'refine')),
+      action: () => run(() => togglePanel(menuSurface, 'refine')),
       active: panel === 'refine',
     },
     {
       icon: 'pencil' as const,
       label: 'Edit preset code',
       actionId: 'open-editor',
-      action: () =>
-        run(() => ui.updatePanel(panel === 'editor' ? null : 'editor')),
+      action: () => run(() => togglePanel(menuSurface, 'editor')),
       active: panel === 'editor',
     },
     {
       icon: 'video' as const,
       label: 'Record video',
       actionId: 'open-record',
-      action: () =>
-        run(() => {
-          if (panel === 'capture') {
-            ui.updatePanel(null);
-            return;
-          }
-          // Repeat use starts recording immediately with the remembered
-          // format; the panel's own mount effect consumes this flag. First
-          // ever use (no stored format) just opens the panel.
-          try {
-            if (localStorage.getItem('stims:capture-format')) {
-              sessionStorage.setItem('stims:capture-autostart', '1');
-            }
-          } catch {}
-          ui.updatePanel('capture');
-        }),
+      // Shared body (workspace-actions.ts): repeat use auto-starts with the
+      // remembered format; the palette's "Record video" runs the same code.
+      action: () => run(() => openRecordPanel(menuSurface)),
       active: panel === 'capture',
       separatorBefore: true,
     },
@@ -387,7 +378,7 @@ export function StageControls({
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
       actionId: 'watch-party',
-      action: () => run(() => void handleWatchParty()),
+      action: () => run(handleWatchParty),
     },
     // Ending should be as close as starting was — symmetric with the item
     // above, shown only while this tab hosts.
@@ -397,14 +388,7 @@ export function StageControls({
             icon: 'close' as const,
             label: 'End watch party',
             actionId: 'end-watch-party',
-            action: () =>
-              run(() => {
-                leaveSyncSession();
-                setSyncUrlParam(null);
-                ui.setStatusMessage(
-                  'Watch party ended — viewers keep local control.',
-                );
-              }),
+            action: () => run(() => endWatchParty(ui.setStatusMessage)),
           } satisfies MenuItem,
         ]
       : []),
@@ -412,8 +396,7 @@ export function StageControls({
       icon: 'sliders' as const,
       label: 'Settings',
       actionId: 'open-settings',
-      action: () =>
-        run(() => ui.updatePanel(panel === 'settings' ? null : 'settings')),
+      action: () => run(() => togglePanel(menuSurface, 'settings')),
       active: panel === 'settings',
       separatorBefore: true,
     },
@@ -655,15 +638,14 @@ export function StageControls({
                   }
                   data-active={String(index === transitionStepIndex)}
                   onClick={() =>
-                    run(() => {
-                      engine.setTransitionMode(step.mode);
-                      if (step.mode === 'blend') {
-                        engine.setBlendDuration(step.seconds);
-                      }
-                      ui.setStatusMessage(
-                        `Transition: ${describeTransitionStep(step)}`,
-                      );
-                    })
+                    run(() =>
+                      setTransition(
+                        engine,
+                        ui.setStatusMessage,
+                        step.mode,
+                        step.seconds,
+                      ),
+                    )
                   }
                 >
                   {step.mode === 'cut' ? 'Cut' : `${step.seconds}s`}
@@ -694,7 +676,7 @@ export function StageControls({
                     engineSnapshot?.audioSource === option.source,
                   )}
                   onClick={() =>
-                    run(() => void engine.handleAudioStart(option.source))
+                    run(() => startAudioSource(engine, option.source))
                   }
                 >
                   {option.shortLabel}

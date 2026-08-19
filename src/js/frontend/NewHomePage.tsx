@@ -334,10 +334,37 @@ function Actions({
   onBrowsePresets,
 }: ActionsProps) {
   const engineStatusId = useId();
+  const ctaRef = useRef<HTMLButtonElement>(null);
+  // The CTA is disabled until the engine reports ready, so a plain autoFocus
+  // would focus a button that can't yet be activated. Move focus the moment
+  // it becomes enabled instead — but only if nothing has claimed focus since
+  // mount (no Tab press, no click elsewhere), so a keyboard user landing here
+  // needs exactly one Enter, without ever stealing focus from someone who's
+  // already interacting with the page.
+  const focusClaimedRef = useRef(false);
+  useEffect(() => {
+    const claim = () => {
+      focusClaimedRef.current = true;
+    };
+    document.addEventListener('focusin', claim);
+    document.addEventListener('pointerdown', claim);
+    document.addEventListener('keydown', claim);
+    return () => {
+      document.removeEventListener('focusin', claim);
+      document.removeEventListener('pointerdown', claim);
+      document.removeEventListener('keydown', claim);
+    };
+  }, []);
+  useEffect(() => {
+    if (isEngineReady && !focusClaimedRef.current) {
+      ctaRef.current?.focus();
+    }
+  }, [isEngineReady]);
   return (
     <div className="stims-shell__launch-actions-minimal">
       {resume ? (
         <button
+          ref={ctaRef}
           id="use-demo-audio"
           data-demo-audio-btn="true"
           type="button"
@@ -353,6 +380,7 @@ function Actions({
         </button>
       ) : (
         <button
+          ref={ctaRef}
           id="use-demo-audio"
           data-demo-audio-btn="true"
           type="button"

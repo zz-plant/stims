@@ -55,18 +55,12 @@ const PALETTE_ONLY_EXEMPT = new Set(['toggle-autoplay']);
  * justified by reading App.tsx's paletteActions list, not added just to
  * make the check pass.
  *
- * - 'end-watch-party': the palette only exposes 'watch-party' (start/copy);
- *   ending a hosted party is a dock-only affordance shown while hosting.
  * - 'toggle-pip': Picture-in-Picture is gated behind a browser support
  *   check (`pip.supported`) that only makes sense as a dock control.
  * - 'open-palette': the dock's "open command palette" button — a palette
  *   action to open the palette from within itself would be meaningless.
  */
-const DOCK_ONLY_EXEMPT = new Set([
-  'end-watch-party',
-  'toggle-pip',
-  'open-palette',
-]);
+const DOCK_ONLY_EXEMPT = new Set(['toggle-pip', 'open-palette']);
 
 function extractPaletteActionIds(source: string): string[] {
   const startMarker = 'const paletteActions: CommandAction[] = useMemo(';
@@ -76,11 +70,11 @@ function extractPaletteActionIds(source: string): string[] {
       `Could not find "${startMarker}" in ${APP_PATH}. The paletteActions useMemo may have moved or been renamed — update this script's boundary marker.`,
     );
   }
-  // Bound the scan to the `[liveMode, isFullscreen]` deps array close, i.e.
-  // the useMemo's closing `);` — find the first `\n  );` after the start
-  // that is followed (within a short window) by the deps-array line, so we
-  // don't accidentally run past this block into unrelated code.
-  const depsMarker = '[liveMode, isFullscreen],\n  );';
+  // Bound the scan to the useMemo's closing deps array, i.e. the useMemo's
+  // closing `);` — find the first `\n  );` after the start that is followed
+  // (within a short window) by the deps-array line, so we don't accidentally
+  // run past this block into unrelated code.
+  const depsMarker = '[liveMode, isFullscreen, hostingWatchParty],\n  );';
   const depsIdx = source.indexOf(depsMarker, startIdx);
   if (depsIdx === -1) {
     throw new Error(
