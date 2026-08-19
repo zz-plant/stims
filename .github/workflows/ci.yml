@@ -16,11 +16,38 @@ permissions:
   contents: read
 
 jobs:
-  # Commit-message hygiene is enforced locally by the husky commit-msg hook
-  # (scripts/check-commit-msg.ts), and the former shader-parity job only
-  # re-ran tests/unit/ files that already run inside `bun run check` below —
-  # both CI jobs were duplicate enforcement and were removed to cut runner
-  # usage.
+  # Commit-message hygiene was left to the husky commit-msg hook alone, on the
+  # assumption that every commit passes through it. It does not: 20+ commits
+  # whose subjects this guard rejects are on main, including a run of GitHub
+  # web-editor "Update <file>.ts" commits, which never touch a local hook. This
+  # job is the backstop that assumption needed.
+  #
+  # PR-only and deliberately narrower than the hook: it gates the Conventional
+  # prefix and non-descriptive subjects — the rules that actually leaked — but
+  # waives the 72-char ceiling, which current practice breaks routinely on
+  # otherwise-good subjects. The hook still enforces length locally.
+  commit-messages:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The base..head range needs real history, not a depth-1 clone.
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      - name: Check commit subjects in this PR
+        run: |
+          bun run check:commit-msg -- \
+            --range "origin/${{ github.base_ref }}..HEAD" \
+            --allow-long-subjects
+
   check:
     name: Quality gate
     runs-on: ubuntu-latest
@@ -108,6 +135,13 @@ jobs:
 
       - name: Build production bundle
         run: bun run build
+
+      # The budget guard needs dist/, so it runs here rather than in the
+      # quality gate (see the script's docblock). It was added with the lazy
+      # EditorPanel work and then never wired to anything, which left the
+      # startup payload unguarded against step-change regressions.
+      - name: Check bundle-size budget
+        run: bun run check:bundle-size
 
   integration:
     name: Browser end-to-end tests (${{ matrix.file }})
@@ -238,22 +272,29 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [check, parity, build, integration]
+    needs: [check, parity, build, integration, commit-messages]
     if: always()
     steps:
       - name: Verify all required jobs passed
         run: |
+          # commit-messages is pull_request-only, so it reports "skipped" on
+          # push/merge_group runs. Skipped is a pass here; only an actual
+          # failure should block.
+          commit_outcome="${{ needs['commit-messages'].result }}"
           check_outcome="${{ needs.check.result }}"
           parity_outcome="${{ needs.parity.result }}"
           build_outcome="${{ needs.build.result }}"
           integration_outcome="${{ needs.integration.result }}"
 
+          echo "Commit Messages: $commit_outcome"
           echo "Quality Gate: $check_outcome"
           echo "Parity Corpus: $parity_outcome"
           echo "Production Build: $build_outcome"
           echo "Integration Tests: $integration_outcome"
 
-          if [ "$check_outcome" = "success" ] && \
+          if [ "$commit_outcome" != "failure" ] && \
+             [ "$commit_outcome" != "cancelled" ] && \
+             [ "$check_outcome" = "success" ] && \
              [ "$parity_outcome" = "success" ] && \
              [ "$build_outcome" = "success" ] && \
              [ "$integration_outcome" = "success" ]; then
