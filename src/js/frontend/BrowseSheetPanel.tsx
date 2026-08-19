@@ -110,6 +110,12 @@ export function BrowseSheetPanel({
       ...next,
     });
   };
+  const setView = (next: boolean) => {
+    setGridView(next);
+    // Private-mode storage failure just means the choice is session-only;
+    // the toggle still works. writeStored already swallows that.
+    writeStored('stims:browse-view', next ? 'grid' : 'list');
+  };
   const clearFilters = () => {
     setLocalSearch('');
     ui.setSearchQuery('');
@@ -452,6 +458,50 @@ export function BrowseSheetPanel({
               e.target.value = '';
             }}
           />
+
+          {/* Segmented, not a single chip reading "Grid": that button was
+              styled like the collection filters beside it (a different kind
+              of control), took a full row for a binary, and labelled itself
+              with the CURRENT mode — so clicking the one that said "Grid"
+              took you to the list. Two always-visible segments make the
+              choice and the current state readable at a glance. */}
+          {/* biome-ignore lint/a11y/useSemanticElements: <fieldset> is for form controls and carries min-width:min-content, which misbehaves inside this flex row; role="group" is valid ARIA for a segmented control and keeps the two buttons announced as one */}
+          <div
+            className="ctl-viewtoggle"
+            role="group"
+            aria-label="Result layout"
+          >
+            <button
+              type="button"
+              className="ctl-viewtoggle__btn"
+              data-active={String(gridView)}
+              aria-pressed={gridView}
+              title="Grid view"
+              onClick={() => setView(true)}
+            >
+              <UiIcon
+                name="grid"
+                className="stims-icon-slot stims-icon-slot--sm"
+                aria-hidden="true"
+              />
+              <span className="stims-shell__sr-only">Grid view</span>
+            </button>
+            <button
+              type="button"
+              className="ctl-viewtoggle__btn"
+              data-active={String(!gridView)}
+              aria-pressed={!gridView}
+              title="List view"
+              onClick={() => setView(false)}
+            >
+              <UiIcon
+                name="menu"
+                className="stims-icon-slot stims-icon-slot--sm"
+                aria-hidden="true"
+              />
+              <span className="stims-shell__sr-only">List view</span>
+            </button>
+          </div>
         </div>
 
         <nav
@@ -504,44 +554,55 @@ export function BrowseSheetPanel({
           </button>
         </nav>
 
-        <button
-          type="button"
-          className={gridView ? 'ctl-chip ctl-chip--active' : 'ctl-chip'}
-          aria-pressed={gridView}
-          onClick={() =>
-            setGridView((g) => {
-              const next = !g;
-              try {
-                localStorage.setItem(
-                  'stims:browse-view',
-                  next ? 'grid' : 'list',
-                );
-              } catch {
-                // Private-mode storage failure just means the choice is
-                // session-only; the toggle still works.
-              }
-              return next;
-            })
-          }
-        >
-          Grid
-        </button>
+        {/* Author and sort are both "refine the result set" selects, so they
+            share one row and one visual language. Sort used to live alone in
+            a bar BELOW the recently-played rail, visually divorced from the
+            filters it belongs with — and in grid view that bar rendered
+            after the whole result set, i.e. off-screen. The count rides
+            along here because it is the readout for exactly these controls. */}
+        <div className="ctl-browse-refine">
+          {authorOptions.length > 0 ? (
+            <select
+              className="ctl-select"
+              aria-label="Filter by author"
+              value={authorFilter ?? ''}
+              onChange={(e) => setAuthorFilter(e.target.value || null)}
+            >
+              <option value="">All authors</option>
+              {authorOptions.map((author) => (
+                <option key={author} value={author}>
+                  {author}
+                </option>
+              ))}
+            </select>
+          ) : null}
 
-        {authorOptions.length > 0 ? (
           <select
             className="ctl-select"
-            aria-label="Filter by author"
-            value={authorFilter ?? ''}
-            onChange={(e) => setAuthorFilter(e.target.value || null)}
+            aria-label="Sort presets"
+            value={sortMode}
+            onChange={(e) => {
+              const next = e.target.value as SortMode;
+              setSortMode(next);
+              if (next === 'random') setRandomSeed(Date.now());
+              writeStored('stims:browse-sort', next);
+            }}
           >
-            <option value="">All authors</option>
-            {authorOptions.map((author) => (
-              <option key={author} value={author}>
-                {author}
-              </option>
-            ))}
+            <option value="relevance">Recommended</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="recent">Recently opened</option>
+            <option value="favorites-first">Saved first</option>
+            <option value="webgpu-supported">High fidelity first</option>
+            <option value="random">Random</option>
           </select>
-        ) : null}
+
+          <p className="ctl-readout ctl-browse-count" aria-live="polite">
+            {catalogReady
+              ? `${sorted.length.toLocaleString()} preset${sorted.length === 1 ? '' : 's'}`
+              : 'loading…'}
+          </p>
+        </div>
 
         {hasFilter ? (
           <p
@@ -567,7 +628,11 @@ export function BrowseSheetPanel({
         ) : null}
       </section>
 
-      {!hasFilter && recentEntries.length > 0 ? (
+      {/* Two, not one: the rail costs a labelled row plus thumbnails — 17%
+          of the panel's height — and a single tile is not a history worth
+          that. Below the threshold the presets you just played are still
+          the top of the "Recently opened" sort. */}
+      {!hasFilter && recentEntries.length > 1 ? (
         <section
           className="ctl-recent-rail"
           aria-label="Recently played this session"
@@ -605,35 +670,10 @@ export function BrowseSheetPanel({
       ) : null}
 
       <section ref={resultsRef} className="ctl-browse-results">
-        <div className="ctl-resultbar">
-          <p className="ctl-readout" aria-live="polite">
-            {catalogReady
-              ? `${sorted.length} preset${sorted.length === 1 ? '' : 's'}`
-              : 'loading…'}
-          </p>
-          <select
-            className="ctl-select ctl-select--auto"
-            aria-label="Sort presets"
-            value={sortMode}
-            onChange={(e) => {
-              const next = e.target.value as SortMode;
-              setSortMode(next);
-              if (next === 'random') setRandomSeed(Date.now());
-              writeStored('stims:browse-sort', next);
-            }}
-          >
-            <option value="relevance">Recommended</option>
-            <option value="title">Title</option>
-            <option value="author">Author</option>
-            <option value="recent">Recently opened</option>
-            <option value="favorites-first">Saved first</option>
-            <option value="webgpu-supported">High fidelity first</option>
-            <option value="random">Random</option>
-          </select>
-        </div>
-
         {/* Both views roam with a roving tabindex, but the grid adds a
-            horizontal axis — advertising only ↑↓ there understates it. */}
+            horizontal axis — advertising only ↑↓ there understates it.
+            Hidden on coarse pointers (see chrome.css): it costs a row of
+            panel height to advertise keys a touch device does not have. */}
         <p className="ctl-keyboard-hint">
           {gridView ? (
             <>
@@ -800,9 +840,18 @@ export function BrowseSheetPanel({
                         <span className="ctl-preset__title">
                           {display.title}
                         </span>
+                        {/* The credit, not a mood. describePresetMood
+                            keyword-matches the title to guess a vibe and
+                            falls back to "Instant pick", which is not a
+                            mood at all — so the one metadata line each row
+                            gets was spent restating the title in vaguer
+                            words, right next to the title. The author is
+                            real, cited metadata and is how people actually
+                            navigate this catalog (Geiss, Rovastar, Flexi).
+                            The mood still earns its keep in PresetArtwork,
+                            where it stands in for a missing thumbnail. */}
                         <span className="ctl-preset__meta">
-                          {describePresetMood(entry)}
-                          {display.byline ? ` · ${display.byline}` : null}
+                          {display.byline ?? describePresetMood(entry)}
                         </span>
                       </span>
                     </button>

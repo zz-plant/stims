@@ -1237,6 +1237,52 @@ body[data-page="workspace"][data-live="true"] {
     margin-top: 10px;
   }
 
+  /* A quiet line of text, not a card or a button: it must read as the
+     secondary path so the primary CTA above keeps its rank. */
+  .stims-shell__launch-sources-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    color: var(--stims-muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--transition-fast);
+  }
+
+  .stims-shell__launch-sources-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Own marker so it points down when closed and up when open — the native
+     one is suppressed above to keep the row on a single baseline. */
+  .stims-shell__launch-sources-summary::after {
+    content: "▾";
+    font-size: 0.95em;
+    line-height: 1;
+    transition: transform var(--transition-fast);
+  }
+
+  .stims-shell__launch-source-minimal[open]
+    .stims-shell__launch-sources-summary::after {
+    transform: rotate(180deg);
+  }
+
+  .stims-shell__launch-sources-summary:hover {
+    color: var(--stims-ink);
+  }
+
+  .stims-shell__launch-sources-summary:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 3px;
+    border-radius: var(--stims-radius-control);
+  }
+
+  .stims-shell__launch-sources-body {
+    margin-top: 12px;
+  }
+
   .stims-shell__launch-meta {
     margin: 0;
     font-size: 0.8rem;
@@ -3799,13 +3845,41 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 }
 
 /* The tile's caption sits under full-bleed art, so it carries the padding the
-   card itself cannot; its title is a size smaller than a list row's. */
+   card itself cannot; its title is a size smaller than a list row's.
+
+   One line, not two. MilkDrop community names run past 60 characters
+   ("Reaction Diffusion 3 (Ov…", "Thumbdrum Tokamak [c…") while a tile is
+   ~165px wide, so a stacked title-over-byline spent two rows to show roughly
+   twenty characters of each. Inlining them halves the caption and puts more
+   art per screen, which is the entire reason to be in grid view. */
 .stims-preset-grid__item .stims-preset-identity {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
   padding: var(--space-xs, 4px) var(--space-sm, 8px);
+}
+
+/* Both shrink and both ellipsize, so a long title cannot push the credit out
+   of the tile entirely and vice versa. */
+.stims-preset-grid__item .stims-preset-identity__title,
+.stims-preset-grid__item .stims-preset-identity__subtitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stims-preset-grid__item .stims-preset-identity__title {
   font-size: var(--text-xs);
+}
+
+/* --stims-muted, not a border token: this reads as punctuation between two
+   runs of text, so it needs text contrast rather than hairline contrast. */
+.stims-preset-grid__item .stims-preset-identity__subtitle::before {
+  content: "·";
+  margin-right: 4px;
+  color: var(--stims-muted);
 }
 
 .stims-preset-grid__spacer {
