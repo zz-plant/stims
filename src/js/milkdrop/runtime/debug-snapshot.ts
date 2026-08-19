@@ -8,6 +8,7 @@ import type {
   MilkdropRuntimeSignals,
 } from '../types.ts';
 import type { MilkdropRuntimePerformanceSnapshot } from './performance-tracker.ts';
+import type { MilkdropPresetSelectionReason } from './startup.ts';
 import type { MilkdropTraceRecorderState } from './trace-recorder.ts';
 
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
@@ -70,6 +71,9 @@ export type MilkdropAgentDriverHandle = {
     activePresetId: string;
     backend: 'webgl' | 'webgpu';
     status: string | null;
+    /** Why the active preset is the one showing (boot-bundle, deep-link,
+     * remembered, collection, first-selectable, requested, autoplay). */
+    presetSelectionReason?: MilkdropPresetSelectionReason;
   };
   getAdaptiveQuality: () => AdaptiveQualityState | null;
   getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
@@ -119,6 +123,9 @@ export function registerAgentMilkdropRuntimeDebugHandle({
     activePresetId: string;
     backend: 'webgl' | 'webgpu';
     status: string | null;
+    /** Why the active preset is the one showing (boot-bundle, deep-link,
+     * remembered, collection, first-selectable, requested, autoplay). */
+    presetSelectionReason?: MilkdropPresetSelectionReason;
   };
   getAdaptiveQuality: () => AdaptiveQualityState | null;
   getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
