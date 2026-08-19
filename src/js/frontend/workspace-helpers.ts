@@ -1,4 +1,5 @@
 import type { MotionPreference } from '../core/motion-preferences.ts';
+import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   describeQualityPresetImpact,
@@ -305,6 +306,23 @@ export function matchesAuthor(
 ) {
   if (!author) return true;
   return creditsHandle(entry.author, author);
+}
+
+/**
+ * The "Reduce flashing" filter, applied wherever presets are listed or
+ * shuffled into.
+ *
+ * Only *measured* high-risk presets are removed. An unmeasured preset stays
+ * in the list — hiding it would quietly shrink the catalog to whatever the
+ * lab has audited and imply everything remaining had been cleared, which is
+ * the opposite of what a partial audit means.
+ */
+export function passesFlashPreference(
+  entry: PresetCatalogEntry,
+  reduceFlashing: boolean,
+) {
+  if (!reduceFlashing) return true;
+  return !hiddenByFlashPreference(entry.sensoryProfile);
 }
 
 export function getCollectionTags(entries: PresetCatalogEntry[]) {

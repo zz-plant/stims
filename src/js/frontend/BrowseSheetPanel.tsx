@@ -7,13 +7,19 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
+import {
+  getActiveAccessibilityPreference,
+  subscribeToAccessibilityPreference,
+} from '../core/accessibility-preferences.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
+import { PresetSignals } from './PresetSignals.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { writeStored } from './safe-storage.ts';
@@ -27,6 +33,7 @@ import {
   getFeaturedCollectionTags,
   matchesAuthor,
   matchesPreset,
+  passesFlashPreference,
   prettifyCollectionTag,
   sortBrowseEntries,
 } from './workspace-helpers.ts';
@@ -157,6 +164,14 @@ export function BrowseSheetPanel({
     routeState.collectionTag !== null ||
     authorFilter !== null;
 
+  // Live-read so flipping "Reduce flashing" in Settings re-filters the open
+  // sheet rather than waiting for a reload.
+  const reduceFlashing = useSyncExternalStore(
+    subscribeToAccessibilityPreference,
+    () => getActiveAccessibilityPreference().reduceFlashing,
+    () => false,
+  );
+
   const browseEntries = useMemo(
     () =>
       catalog.filter((entry) => {
@@ -168,11 +183,18 @@ export function BrowseSheetPanel({
           return false;
         }
         return (
+          passesFlashPreference(entry, reduceFlashing) &&
           matchesPreset(entry, deferredSearch) &&
           matchesAuthor(entry, authorFilter)
         );
       }),
-    [catalog, routeState.collectionTag, deferredSearch, authorFilter],
+    [
+      catalog,
+      routeState.collectionTag,
+      deferredSearch,
+      authorFilter,
+      reduceFlashing,
+    ],
   );
 
   const sorted = useMemo(
@@ -853,6 +875,7 @@ export function BrowseSheetPanel({
                         <span className="ctl-preset__meta">
                           {display.byline ?? describePresetMood(entry)}
                         </span>
+                        <PresetSignals entry={entry} />
                       </span>
                     </button>
                     <button

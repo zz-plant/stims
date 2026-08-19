@@ -4,6 +4,13 @@ export type AccessibilityPreference = {
   textScale: TextScale;
   highContrast: boolean;
   freezeFrame: boolean;
+  /**
+   * Hide presets measured above the WCAG 2.3.1 flash threshold from browse
+   * and shuffle. Defaults on when the OS asks for reduced motion — someone
+   * who has already said "less movement" should not have to find this
+   * switch before the catalog stops handing them strobing presets.
+   */
+  reduceFlashing: boolean;
 };
 
 type AccessibilitySubscriber = (preference: AccessibilityPreference) => void;
@@ -19,6 +26,19 @@ function getStorage(): Storage | null {
     return typeof localStorage !== 'undefined' ? localStorage : null;
   } catch {
     return null;
+  }
+}
+
+// Until the user makes an explicit in-app choice, honor the motion
+// preference they already expressed at the OS level.
+function prefersReducedMotion(): boolean {
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -43,6 +63,7 @@ function readFromStorage(): AccessibilityPreference {
       textScale: 1,
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
+      reduceFlashing: prefersReducedMotion(),
     };
   }
   try {
@@ -51,12 +72,19 @@ function readFromStorage(): AccessibilityPreference {
       textScale: clampTextScale(parsed.textScale),
       highContrast: parsed.highContrast === true,
       freezeFrame: parsed.freezeFrame === true,
+      // Absent from a preference saved before this field existed: fall back
+      // to the OS signal rather than to a bare false.
+      reduceFlashing:
+        typeof parsed.reduceFlashing === 'boolean'
+          ? parsed.reduceFlashing
+          : prefersReducedMotion(),
     };
   } catch {
     return {
       textScale: 1,
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
+      reduceFlashing: prefersReducedMotion(),
     };
   }
 }

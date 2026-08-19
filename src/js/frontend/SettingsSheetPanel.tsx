@@ -182,6 +182,15 @@ function AccessibilitySection({
           setAccessibilityPreference({ freezeFrame });
         }}
       />
+      <SwitchRow
+        label="Reduce flashing"
+        hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured yet still appear, and say so."
+        checked={prefs.reduceFlashing}
+        onChange={(reduceFlashing) => {
+          setPrefs((p) => ({ ...p, reduceFlashing }));
+          setAccessibilityPreference({ reduceFlashing });
+        }}
+      />
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
         Keyboard shortcuts
       </button>
