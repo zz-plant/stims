@@ -361,8 +361,13 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(helperSource).toContain('presetSearchIndexCache');
-    expect(helperSource).toContain('getPresetSearchIndex(entry)');
+    // Renamed from presetSearchIndexCache/getPresetSearchIndex when the
+    // browse matcher and the palette scorer were unified onto one weighted
+    // field model. The guard is the per-entry WeakMap cache, not the names:
+    // what must never come back is rebuilding the haystack per match.
+    expect(helperSource).toContain('presetMatchFieldsCache');
+    expect(helperSource).toContain('new WeakMap<PresetCatalogEntry');
+    expect(helperSource).toContain('getPresetMatchFields(entry)');
     expect(helperSource).not.toContain(
       'const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]',
     );

@@ -1,4 +1,21 @@
-export type PanelState = 'browse' | 'capture' | 'editor' | 'settings' | null;
+/**
+ * Canonical panel and audio-source unions.
+ *
+ * These live in core rather than frontend/contracts.ts because core cannot
+ * import from frontend, and both files used to declare their own copy. The
+ * copies had already drifted — this one was missing 'refine', 'finder', and
+ * 'synthesize', which is precisely why those panels were not URL-addressable.
+ * frontend/contracts.ts re-exports these; do not reintroduce a second union.
+ */
+export type PanelState =
+  | 'browse'
+  | 'capture'
+  | 'editor'
+  | 'finder'
+  | 'refine'
+  | 'settings'
+  | 'synthesize'
+  | null;
 export type AudioSource = 'demo' | 'file' | 'microphone' | 'tab' | 'youtube';
 export type RequestedRenderer = 'webgl' | 'webgpu' | 'auto' | null;
 
@@ -10,6 +27,8 @@ export interface RoutingURLParams {
   agentMode: boolean;
   previewMode: boolean;
   invalidExperienceSlug: string | null;
+  /** A ?tool=/?panel= value that matched no known panel, for shell feedback. */
+  invalidPanel: string | null;
   /**
    * YouTube video the link was shared with. Without this, `audio=youtube`
    * restores the source mode but leaves the user staring at an empty input.
@@ -99,11 +118,20 @@ export interface ParsedURLParams {
   webgpuFlags: WebGpuFlagURLParams;
 }
 
+/**
+ * Every panel is addressable. 'refine', 'finder', and 'synthesize' were
+ * missing here for no reason anyone recorded — they simply never got added as
+ * they shipped — which meant the AI panels, the newest capability in the app,
+ * could not be linked, bookmarked, or restored across a reload.
+ */
 const VALID_PANELS = new Set<Exclude<PanelState, null>>([
   'browse',
   'capture',
   'editor',
+  'finder',
+  'refine',
   'settings',
+  'synthesize',
 ]);
 
 const VALID_AUDIO_SOURCES = new Set<AudioSource>([
@@ -279,6 +307,19 @@ export function parseURLParams(
         VALID_PANELS,
         LEGACY_PANEL_ALIASES,
       ),
+      // A misspelled ?tool= used to normalize to null and drop you on the
+      // stage with no explanation. Keep the rejected value so the shell can
+      // say which name it did not recognize.
+      invalidPanel: (() => {
+        const requested = readParamValue(get('tool') ?? get('panel'))
+          ?.trim()
+          .toLowerCase();
+        if (!requested) return null;
+        const mapped = LEGACY_PANEL_ALIASES[requested] ?? requested;
+        return VALID_PANELS.has(mapped as Exclude<PanelState, null>)
+          ? null
+          : requested;
+      })(),
       audioSource: normalizeEnum(
         get('audio'),
         VALID_AUDIO_SOURCES,

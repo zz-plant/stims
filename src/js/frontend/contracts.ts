@@ -1,31 +1,21 @@
+/**
+ * Panel and audio-source unions are owned by core/url-params.ts — the router
+ * has to agree with the router. Re-exported here so frontend code keeps its
+ * single import site.
+ */
+import type { AudioSource, PanelState } from '../core/url-params.ts';
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type {
   MilkdropPresetLineageRef,
   MilkdropVisualCertification,
 } from '../milkdrop/types.ts';
 
-export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
-
-export type PanelState =
-  | 'browse'
-  | 'editor'
-  | 'refine'
-  /* One finder panel. It was two ('audiomatch'/'visualsearch') back when the
-     two seeds were separate panels; they merged, but both route ids stayed,
-     so every consumer had to test for both. Neither was ever URL-addressable
-     (url-params' VALID_PANELS excludes them), so collapsing them is internal
-     only — no link or saved shortcut changes meaning. The seed (sound vs
-     look) is panel state now, which is where it belongs. */
-  | 'finder'
-  | 'capture'
-  | 'settings'
-  | 'synthesize'
-  | null;
+export type { AudioSource, PanelState };
 
 export type LaunchIntent = {
   presetId: string | null;
   collectionTag: string | null;
-  panel: Exclude<PanelState, 'capture' | 'settings' | 'synthesize'> | null;
+  panel: PanelState;
   audioSource: AudioSource | null;
   agentMode: boolean;
   previewMode?: boolean;
@@ -39,6 +29,7 @@ export type SessionRouteState = {
   agentMode: boolean;
   previewMode?: boolean;
   invalidExperienceSlug?: string | null;
+  invalidPanel?: string | null;
   /** Video carried by a shared link, so the recipient lands on the same track. */
   youtubeVideoId?: string | null;
   youtubeStartSeconds?: number | null;

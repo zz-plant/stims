@@ -41,8 +41,13 @@ describe('passive first-use guidance', () => {
 
     expect(app).not.toContain('Not now');
     expect(app).not.toContain('Got it');
-    expect(app).toContain(
-      "localStorage.setItem('stims:rotate-hint-dismissed', 'true');",
+    // Asserts the behaviour (the hint is remembered so it shows once), not
+    // the call spelling. Pinning the literal `localStorage.setItem(...)` made
+    // this guard fail the moment those writes moved behind a safe-storage
+    // helper, even though nothing about the behaviour changed.
+    expect(app).toContain("readStored('stims:rotate-hint-dismissed')");
+    expect(app).toMatch(
+      /(?:localStorage\.setItem|writeStored)\(\s*'stims:rotate-hint-dismissed',\s*'true'/,
     );
     expect(app).toContain(
       'window.setTimeout(() => setShowRotateHint(false), 4200)',
