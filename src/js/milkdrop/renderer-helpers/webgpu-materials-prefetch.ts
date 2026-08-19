@@ -5,11 +5,17 @@
  * dynamic import that WARMS that module cannot live in the registry too —
  * dependency-cruiser rightly flags registry -> materials -> registry.
  *
- * Imported for its side effect by the renderer adapter factory, which is on
- * the engine-mount path for both backends: WebGPU-capable browsers warm the
- * chunk before the WebGPU adapter needs it; browsers without WebGPU never
- * fetch the bytes (mirrors renderer-bundles.ts).
+ * This is a pure warm-ahead optimization, never a correctness requirement:
+ * renderer-adapter-webgpu.ts statically imports the materials module, so a
+ * WebGPU session always gets the toolkit registered before any helper
+ * material is constructed whether or not this prefetch ever runs.
+ *
+ * Imported for its side effect by the renderer adapter factory, which sits on
+ * the engine-mount path for both backends.
  */
+
+import { scheduleIdleTask } from '../../utils/browser/idle-task.ts';
+import { shouldPrefetchWebGpuModules } from '../webgpu-prefetch-policy.ts';
 import {
   getWebGpuHelperMaterialsSync,
   type WebGpuHelperMaterials,
@@ -22,20 +28,19 @@ export function prefetchWebGpuHelperMaterials(): Promise<WebGpuHelperMaterials> 
   );
 }
 
-if (
-  typeof navigator !== 'undefined' &&
-  (navigator as { gpu?: unknown }).gpu !== undefined
-) {
-  // Deferred a tick rather than fired at module evaluation: the factory
-  // imports this module before running its own backend capability probe,
-  // and kicking a large dynamic-import at that exact moment starved the
-  // probe in constrained environments (observed as a silent WebGL fallback
-  // under Playwright's Chromium while real Chrome was unaffected). A
-  // microtask-later start keeps the prefetch comfortably ahead of any
-  // adapter construction without contending with the probe.
-  void Promise.resolve().then(() => {
-    setTimeout(() => {
+if (shouldPrefetchWebGpuModules()) {
+  // Real idle, not setTimeout(0). The factory imports this module during
+  // engine mount, when the critical path is still busy — an immediate
+  // dynamic import of a 648KB chunk competes for bandwidth with the work
+  // the user is actually waiting on (and starved the backend capability
+  // probe outright in constrained environments, observed as a silent WebGL
+  // fallback under Playwright's Chromium). requestIdleCallback yields until
+  // the browser is genuinely free; the timeout bounds the wait so the
+  // warm-ahead still lands before a user opens anything WebGPU-specific.
+  scheduleIdleTask(
+    () => {
       void prefetchWebGpuHelperMaterials().catch(() => {});
-    }, 0);
-  });
+    },
+    { idleTimeout: 3000, fallbackDelay: 1200 },
+  );
 }

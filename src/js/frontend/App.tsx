@@ -164,7 +164,10 @@ function prefersThumbModeByDefault() {
  * Falls back to a short setTimeout when requestIdleCallback is unavailable.
  * Returns a cleanup function that cancels the pending task.
  */
-function deferToIdle(fn: () => undefined | (() => void)): () => void {
+function deferToIdle(
+  fn: () => undefined | (() => void),
+  options?: { idleTimeout?: number; fallbackDelay?: number },
+): () => void {
   let cancelled = false;
   let dispose: (() => void) | undefined;
   const run = () => {
@@ -172,8 +175,8 @@ function deferToIdle(fn: () => undefined | (() => void)): () => void {
     dispose = fn();
   };
   const cancel = scheduleIdleTask(run, {
-    idleTimeout: 2000,
-    fallbackDelay: 80,
+    idleTimeout: options?.idleTimeout ?? 2000,
+    fallbackDelay: options?.fallbackDelay ?? 80,
   });
   return () => {
     cancelled = true;
@@ -660,29 +663,42 @@ function StimsWorkspaceAppShell() {
   // likely early interactions — worth prefetching alongside the others
   // rather than paying its Suspense fallback cold.
   useEffect(() => {
+    // Browse earns its prewarm everywhere and early: it's the app's primary
+    // navigation surface, a likely first interaction on any device, and
+    // small (~5KB gzipped) — cheap enough not to contend for bandwidth.
     return deferToIdle(() => {
-      // Browse earns its prewarm everywhere: it's the app's primary
-      // navigation surface and a likely first interaction on any device.
       void import('./BrowseSheetPanel.tsx');
-      // The code editor (and its ~125KB-gzipped CodeMirror bundle) is a
-      // desktop workflow: on coarse-pointer devices, and for anyone who
-      // asked their browser to save data, don't spend mobile radio time on
-      // a panel almost no phone user opens — the first E press pays the
-      // Suspense fallback instead.
-      const saveData =
-        (
-          navigator as Navigator & {
-            connection?: { saveData?: boolean };
-          }
-        ).connection?.saveData === true;
-      const finePointer = window.matchMedia('(pointer: fine)').matches;
-      if (finePointer && !saveData) {
+    });
+  }, []);
+
+  // The editor chain is the heaviest prefetch in the app (CodeMirror alone is
+  // ~125KB gzipped). Held back on two axes rather than one:
+  //   - device: a desktop workflow, so coarse-pointer and data-saver sessions
+  //     skip it entirely and pay the Suspense fallback on first E press.
+  //   - time: waits for the runtime to actually be up, then for real idle.
+  //     Measured on a production build, this chunk previously started ~88ms
+  //     in — while the engine was still mounting — competing for bandwidth
+  //     with the visuals the user is actually waiting on.
+  const runtimeReadyForPrewarm = Boolean(engineSnapshot?.runtimeReady);
+  useEffect(() => {
+    if (!runtimeReadyForPrewarm) return;
+    const saveData =
+      (
+        navigator as Navigator & {
+          connection?: { saveData?: boolean };
+        }
+      ).connection?.saveData === true;
+    const finePointer = window.matchMedia('(pointer: fine)').matches;
+    if (!finePointer || saveData) return;
+    return deferToIdle(
+      () => {
         void import('./EditorPanel.tsx');
         void import('./RefinePanel.tsx');
         void import('../milkdrop/overlay/editor-panel.ts');
-      }
-    });
-  }, []);
+      },
+      { idleTimeout: 6000, fallbackDelay: 2000 },
+    );
+  }, [runtimeReadyForPrewarm]);
 
   // Physical and virtual (MCP) MIDI both drive the engine through this one
   // binding. It used to live inside PerformanceHardwareSection, which only

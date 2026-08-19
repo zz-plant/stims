@@ -12,6 +12,8 @@
 
 import type { Object3D } from 'three';
 import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { shouldPrefetchWebGpuModules } from './webgpu-prefetch-policy.ts';
 
 type BundleGroupLike = Object3D & {
   needsUpdate: boolean;
@@ -55,14 +57,28 @@ function loadWebGpuBundleGroupCtor(): Promise<BundleGroupConstructor> {
   return webGpuBundleGroupCtorPromise;
 }
 
-// Pre-fetch on browsers that expose WebGPU so the ctor is resolved by the
-// time the WebGPU adapter constructs (construction waits on the renderer,
-// which imports the same module). Browsers without WebGPU never fetch it.
-if (
-  typeof navigator !== 'undefined' &&
-  (navigator as { gpu?: unknown }).gpu !== undefined
-) {
-  void loadWebGpuBundleGroupCtor().catch(() => {});
+// Pre-fetch so the ctor is resolved by the time the WebGPU adapter
+// constructs (construction waits on the renderer, which imports the same
+// module).
+//
+// Gated on the backend the app actually chose, not on `navigator.gpu`
+// alone: capability answers "can this browser do WebGPU", not "will this
+// session use it". Chrome exposes navigator.gpu, so `?renderer=webgl`, a
+// preset pinned to WebGL, and post-fallback reloads all still pulled the
+// whole 648KB three/webgpu bundle they can never execute — measured on a
+// production build with the renderer explicitly pinned to WebGL.
+//
+// Scheduled at real idle rather than immediately: this module is evaluated
+// during engine mount, when the critical path is still busy, and a 648KB
+// dynamic import there competes for bandwidth with the visuals the user is
+// waiting on.
+if (shouldPrefetchWebGpuModules()) {
+  scheduleIdleTask(
+    () => {
+      void loadWebGpuBundleGroupCtor().catch(() => {});
+    },
+    { idleTimeout: 3000, fallbackDelay: 1200 },
+  );
 }
 
 /**
