@@ -13,6 +13,7 @@ import { describeWebglFallback } from './backend-fallback';
 import type { MilkdropCatalogCoordinator } from './catalog-coordinator';
 import { FIRST_RUN_PRESET_ID } from './first-run-preset';
 import { createPresetLoadTrace } from './preset-load-trace';
+import type { MilkdropPresetSelectionReason } from './startup.ts';
 
 export function createMilkdropPresetNavigationController({
   catalogStore,
@@ -27,6 +28,7 @@ export function createMilkdropPresetNavigationController({
   shouldFallbackToWebgl,
   triggerWebglFallback,
   rememberLastPreset,
+  noteSelectionReason,
 }: {
   catalogStore: MilkdropCatalogStore;
   catalogCoordinator: MilkdropCatalogCoordinator;
@@ -48,6 +50,10 @@ export function createMilkdropPresetNavigationController({
   shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
   triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
   rememberLastPreset: (id: string) => void;
+  /** Records why the current preset was chosen, for runtime state/debugging.
+   * Purely observational — optional so callers that do not surface it (tests,
+   * preview runtimes) need not supply a stub. */
+  noteSelectionReason?: (reason: MilkdropPresetSelectionReason) => void;
 }) {
   const syncCatalog = () =>
     catalogCoordinator.scheduleCatalogSync({
@@ -131,9 +137,17 @@ export function createMilkdropPresetNavigationController({
 
   const selectPreset = async (
     id: string,
-    options: { recordHistory?: boolean; skipIfAlreadyActive?: boolean } = {},
+    options: {
+      recordHistory?: boolean;
+      skipIfAlreadyActive?: boolean;
+      /** Why this preset is being selected; surfaced on the runtime state so
+       * an unexpected preset can be traced to its cause. Defaults to
+       * 'requested' (a UI/route/agent selection). */
+      reason?: MilkdropPresetSelectionReason;
+    } = {},
   ) => {
     const requestRevision = ++currentLoadRequestRevision;
+    noteSelectionReason?.(options.reason ?? 'requested');
     const trace = createPresetLoadTrace(id);
     try {
       // Startup sets this. The first-run preset is compiled into the bundle and
@@ -401,7 +415,7 @@ export function createMilkdropPresetNavigationController({
     plannedRandomPresetId = null;
     const selectionId = planned ?? pickRandomPresetId();
     if (selectionId) {
-      await selectPreset(selectionId);
+      await selectPreset(selectionId, { reason: 'autoplay' });
     }
   };
 

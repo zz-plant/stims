@@ -2,7 +2,7 @@ import { consumeRequestedMilkdropCollectionSelection } from '../collection-inten
 import { consumeRequestedMilkdropPresetSelection } from '../preset-selection.ts';
 import type { createMilkdropCatalogCoordinator } from './catalog-coordinator.ts';
 import type { createMilkdropPresetNavigationController } from './preset-navigation-controller.ts';
-import { resolveStartupPresetId } from './startup.ts';
+import { resolveStartupPresetChoice } from './startup.ts';
 
 export async function selectMilkdropStartupPreset({
   catalogCoordinator,
@@ -33,19 +33,25 @@ export async function selectMilkdropStartupPreset({
     typeof window === 'undefined'
       ? null
       : consumeRequestedMilkdropPresetSelection();
-  const startupPresetId = resolveStartupPresetId({
-    requestedPresetId: requestedPresetId ?? null,
-    preferredStartupPresetId:
-      preferences.getStartupPresetId(initialPresetId) ?? null,
-    collectionEntryId: collectionEntry?.id ?? null,
-    isBackendSelectable: navigation.isBackendSelectable,
-    getFirstSelectablePresetId: navigation.getFirstSelectablePresetId,
-    activeBackend,
-  });
+  const { presetId: startupPresetId, reason: startupPresetReason } =
+    resolveStartupPresetChoice({
+      // A deep link and a remembered preset are separated here purely so the
+      // reported reason names the right one: `getStartupPresetId(id)` returns
+      // `id ?? lastPresetId`, which folded a `?preset=` arrival into the
+      // "remembered" slot and made provenance report it as a restored
+      // session. Priority is unchanged — deep link still outranks history.
+      requestedPresetId: requestedPresetId ?? initialPresetId ?? null,
+      preferredStartupPresetId: preferences.getStartupPresetId() ?? null,
+      collectionEntryId: collectionEntry?.id ?? null,
+      isBackendSelectable: navigation.isBackendSelectable,
+      getFirstSelectablePresetId: navigation.getFirstSelectablePresetId,
+      activeBackend,
+    });
 
   return {
     requestedCollectionTag,
     collectionEntry,
     startupPresetId,
+    startupPresetReason,
   };
 }

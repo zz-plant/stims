@@ -57,6 +57,7 @@ import { createMilkdropPresetPreviewService } from './runtime/preset-preview-ser
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
+import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
@@ -180,6 +181,10 @@ export function createMilkdropExperience({
     : null;
   let lastPresetSwitchAt = performance.now();
   let lastStatusMessage: string | null = null;
+  // Seeded as the bundled boot preset: that is genuinely what is on screen
+  // until startup selection resolves, and labelling it makes the "why is this
+  // preset showing?" question answerable from runtime state alone.
+  let presetSelectionReason: MilkdropPresetSelectionReason = 'boot-bundle';
   let disposeKeyboardShortcuts: (() => void) | null = null;
   let disposeRequestedPresetListener: (() => void) | null = null;
   let adaptiveQualityController: AdaptiveQualityController | null = null;
@@ -294,6 +299,7 @@ export function createMilkdropExperience({
       activePresetId,
       backend: activeBackend,
       status: lastStatusMessage,
+      presetSelectionReason,
     }),
     getAdaptiveQuality: () => adaptiveQualityState,
     getPerformance: () => performanceTracker.getSnapshot(),
@@ -621,6 +627,9 @@ export function createMilkdropExperience({
         preferences.rememberLastPreset(id);
       }
     },
+    noteSelectionReason: (reason) => {
+      presetSelectionReason = reason;
+    },
   });
 
   const presetFileActions = createMilkdropPresetFileActions({
@@ -839,13 +848,14 @@ export function createMilkdropExperience({
       if (!lifetime.isActive()) {
         return;
       }
-      const { startupPresetId } = await selectMilkdropStartupPreset({
-        catalogCoordinator,
-        navigation,
-        preferences,
-        initialPresetId,
-        activeBackend,
-      });
+      const { startupPresetId, startupPresetReason } =
+        await selectMilkdropStartupPreset({
+          catalogCoordinator,
+          navigation,
+          preferences,
+          initialPresetId,
+          activeBackend,
+        });
       pendingStartupPresetId = startupPresetId;
       if (!lifetime.isActive()) {
         return;
@@ -854,6 +864,7 @@ export function createMilkdropExperience({
         await navigation.selectPreset(startupPresetId, {
           recordHistory: false,
           skipIfAlreadyActive: true,
+          reason: startupPresetReason,
         });
         pendingStartupPresetId = null;
         if (!lifetime.isActive()) {

@@ -13,6 +13,7 @@ import {
 } from '../../src/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from '../../src/js/milkdrop/runtime/lifetime.ts';
 import {
+  resolveStartupPresetChoice,
   resolveStartupPresetId,
   shouldDeferStartupPresetFallback,
 } from '../../src/js/milkdrop/runtime/startup.ts';
@@ -116,6 +117,62 @@ describe('milkdrop runtime startup seams', () => {
     });
 
     expect(startupId).toBe('fallback');
+  });
+
+  // Provenance: the id alone cannot tell you why a preset is on screen, which
+  // is what made "why is it showing this preset?" a code-reading exercise.
+  test('reports which branch chose the startup preset', () => {
+    const choose = (
+      over: Partial<Parameters<typeof resolveStartupPresetChoice>[0]>,
+    ) =>
+      resolveStartupPresetChoice({
+        requestedPresetId: null,
+        preferredStartupPresetId: null,
+        collectionEntryId: null,
+        isBackendSelectable: () => true,
+        getFirstSelectablePresetId: () => 'fallback',
+        activeBackend: 'webgpu',
+        ...over,
+      });
+
+    expect(choose({ requestedPresetId: 'deep' })).toEqual({
+      presetId: 'deep',
+      reason: 'deep-link',
+    });
+    expect(choose({ preferredStartupPresetId: 'stored' })).toEqual({
+      presetId: 'stored',
+      reason: 'remembered',
+    });
+    expect(choose({ collectionEntryId: 'coll' })).toEqual({
+      presetId: 'coll',
+      reason: 'collection',
+    });
+    expect(choose({})).toEqual({
+      presetId: 'fallback',
+      reason: 'first-selectable',
+    });
+    // An unsupported preferred pick falls through to the fallback, and the
+    // reason must fall through with it rather than still claiming 'remembered'.
+    expect(
+      choose({
+        preferredStartupPresetId: 'blocked',
+        isBackendSelectable: (id) => id !== 'blocked',
+      }),
+    ).toEqual({ presetId: 'fallback', reason: 'first-selectable' });
+  });
+
+  test('resolveStartupPresetId stays in agreement with the reported choice', () => {
+    const args = {
+      requestedPresetId: null,
+      preferredStartupPresetId: 'stored',
+      collectionEntryId: 'coll',
+      isBackendSelectable: () => true,
+      getFirstSelectablePresetId: () => 'fallback',
+      activeBackend: 'webgpu' as const,
+    };
+    expect(resolveStartupPresetId(args)).toBe(
+      resolveStartupPresetChoice(args).presetId,
+    );
   });
 });
 
