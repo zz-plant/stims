@@ -58,14 +58,17 @@ export type EngineAudioRequest =
  * or treat it as a safety guarantee until it's backed by real corpus-wide
  * data and a threshold sourced from actual photosensitivity guidance.
  */
-export type PresetSensoryProfile = {
-  flashRiskLevel: 'unknown' | 'none' | 'low' | 'medium' | 'high';
-  maxTransitionsPerSecondEstimate: number;
-  meanLuminance: number;
-  maxLuminanceDelta: number;
-  /** ISO timestamp of the lab run that produced this entry. */
-  measuredAt: string;
-};
+/**
+ * Owned by core/sensory-profile.ts, which also holds the classifier that
+ * decides the risk bands — the merge script and the UI have to agree on what
+ * "high" means. Re-exported here so frontend code keeps one import site.
+ */
+import type {
+  FlashRiskLevel,
+  PresetSensoryProfile,
+} from '../core/sensory-profile.ts';
+
+export type { FlashRiskLevel, PresetSensoryProfile };
 
 export type PresetCatalogEntry = {
   id: string;

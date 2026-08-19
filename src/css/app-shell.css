@@ -3907,3 +3907,32 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   border-color: var(--stims-accent);
   background: var(--stims-panel-strong);
 }
+
+/* Inline preset signals: photosensitivity warning and audio-reactivity band.
+   The flash chip is deliberately the only coloured one — it is the only
+   signal here that can matter to someone's safety, so it must not compete
+   with the neutral reactivity chip for attention. */
+.stims-preset-signals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.stims-preset-signals__chip {
+  font-size: 0.68rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  padding: 1px 7px 2px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--stims-line);
+  color: var(--stims-ink-2);
+  white-space: nowrap;
+}
+
+.stims-preset-signals__chip--flash {
+  border-color: var(--stims-accent);
+  color: var(--stims-accent);
+  font-weight: 600;
+}
