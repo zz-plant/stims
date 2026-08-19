@@ -164,3 +164,20 @@
 :global(html[data-agent-mode="true"]) .card {
   animation: none;
 }
+
+/* Section heading in the unfiltered command list. Not an option: it sits
+   between options as a sibling so the listbox's index mapping — which drives
+   aria-activedescendant — is unaffected, and it is never highlightable. */
+.groupLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--stims-ink-3, var(--stims-muted));
+  padding: 12px 14px 4px;
+  pointer-events: none;
+}
+
+.groupLabel:first-child {
+  padding-top: 4px;
+}

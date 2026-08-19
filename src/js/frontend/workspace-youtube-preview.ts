@@ -256,8 +256,20 @@ export function useWorkspaceYouTubePreview({
       setYoutubeReady(false);
       setLoadedVideoKey(null);
       previewHost.hidden = false;
+      // Resolve the player element *within* the host this hook holds a ref
+      // to, rather than by a document-wide id. Both AudioSourcePanel mounts
+      // render a player container; getElementById returned the home hero's
+      // copy, so loading a video from Settings put the iframe in the panel
+      // the user could not see. The ref is last-mount-wins, which is the
+      // visible one.
+      const playerHost = previewHost.querySelector<HTMLElement>(
+        '[data-youtube-player]',
+      );
+      if (!playerHost) {
+        throw new Error('YouTube player container is not mounted.');
+      }
       await youtubeControllerRef.current.loadVideo(
-        'workspace-youtube-player',
+        playerHost,
         reference,
         (state) => {
           if (state === 1) {

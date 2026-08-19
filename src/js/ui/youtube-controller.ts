@@ -76,7 +76,9 @@ declare global {
   interface Window {
     YT?: {
       Player: new (
-        containerId: string,
+        // The real API takes an id or the element itself; the declaration
+        // said id-only, which is what pushed callers onto a shared id.
+        container: string | HTMLElement,
         options: YouTubePlayerOptions,
       ) => YouTubePlayer;
     };
@@ -344,7 +346,13 @@ export class YouTubeController {
   }
 
   async loadVideo(
-    containerId: string,
+    /**
+     * The YT API accepts an id or an element. Callers should pass the
+     * element: the audio-source panel renders in two places at once (the home
+     * hero and Settings), so a shared id string resolved to whichever copy
+     * happened to be first in the DOM rather than the one on screen.
+     */
+    container: string | HTMLElement,
     video: string | YouTubeVideoReference,
     onStateChange?: (state: number) => void,
   ): Promise<void> {
@@ -366,7 +374,7 @@ export class YouTubeController {
       }
 
       this.player?.destroy?.();
-      this.player = new window.YT.Player(containerId, {
+      this.player = new window.YT.Player(container, {
         height: '180',
         width: '100%',
         videoId: reference.id,

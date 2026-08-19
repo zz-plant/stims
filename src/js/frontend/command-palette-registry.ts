@@ -16,6 +16,13 @@ export type CommandAction = {
   keywords?: string[];
   /** Display-only hint, e.g. 'B' or 'Cmd+Enter'. Rendered as <kbd>. */
   shortcutHint?: string;
+  /**
+   * Section heading for the unfiltered list. The palette grew past 25 actions
+   * as a flat list, which undercuts its "open it and scan" affordance.
+   * Headings are shown only when there is no query — once you type, relevance
+   * order is the point and section breaks would fight it.
+   */
+  group?: string;
   run: () => void;
 };
 

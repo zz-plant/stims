@@ -20,6 +20,26 @@ type AudioSourcePanelProps = {
   showHelp?: boolean;
 };
 
+/**
+ * One device enumeration per page, shared by every mount of this panel.
+ *
+ * This panel renders twice concurrently — once in the home hero, which stays
+ * mounted for the whole session, and once in Settings — so a per-instance
+ * effect asked the browser for the device list twice on every Settings open.
+ * enumerateDevices also prompts a permission-state check in some browsers,
+ * making the duplicate more than just wasted work.
+ */
+let audioInputsPromise: Promise<MediaDeviceInfo[]> | null = null;
+
+function listAudioInputs(): Promise<MediaDeviceInfo[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return Promise.resolve([]);
+  audioInputsPromise ??= navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) => devices.filter((d) => d.kind === 'audioinput'))
+    .catch(() => []);
+  return audioInputsPromise;
+}
+
 /** m:ss, or h:mm:ss once a video runs past an hour. */
 function formatPlaybackTime(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
@@ -127,15 +147,18 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
 
   useEffect(() => {
     if (mobileDevice) return;
-    if (!navigator.mediaDevices?.enumerateDevices) return;
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const inputs = devices.filter((d) => d.kind === 'audioinput');
+    let cancelled = false;
+    void listAudioInputs().then((inputs) => {
+      if (cancelled) return;
       setAudioDevices(inputs);
       if (!deviceInitRef.current && inputs.length > 0) {
         deviceInitRef.current = true;
         setSelectedDeviceId(inputs[0].deviceId);
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [mobileDevice]);
 
   const canCaptureDisplayAudio =
@@ -376,7 +399,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           className="stims-shell__youtube-preview"
           hidden
         >
-          <div id="workspace-youtube-player"></div>
+          <div data-youtube-player></div>
         </div>
       </div>
       <div className="stims-shell__source-grid">

@@ -29,7 +29,7 @@
 //     onSelectPreset={handlePresetSelection}
 //   />
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../css/CommandPalette.module.css';
 import {
   buildPaletteResults,
@@ -262,49 +262,72 @@ export function CommandPalette({
           {results.length === 0 ? (
             <p className={styles.empty}>No matches</p>
           ) : (
-            results.map((result, index) => (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation happens via Enter on the combobox input (aria-activedescendant pattern)
-              <div
-                key={result.id}
-                id={optionDomId(index)}
-                className={styles.option}
-                role="option"
-                aria-selected={index === highlightIndex}
-                // Programmatically focusable only; DOM focus stays on the
-                // input (aria-activedescendant drives the highlight).
-                tabIndex={-1}
-                onMouseEnter={() => setActiveIndex(index)}
-                // mousedown would steal focus from the input before click
-                // lands; suppress it so the palette stays typeable even
-                // after a misclick that doesn't complete.
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => runResult(result)}
-              >
-                {result.kind === 'action' ? (
-                  <>
-                    <span className={styles.optionLabel}>
-                      {result.action.label}
-                    </span>
-                    {result.action.shortcutHint ? (
-                      <kbd className={styles.optionHint}>
-                        {result.action.shortcutHint}
-                      </kbd>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    <span className={styles.optionLabel}>
-                      {result.preset.title}
-                    </span>
-                    <span className={styles.optionMeta}>
-                      {result.preset.author
-                        ? `Preset · ${result.preset.author}`
-                        : 'Preset'}
-                    </span>
-                  </>
-                )}
-              </div>
-            ))
+            results.map((result, index) => {
+              // Section headings, only in the unfiltered list. They are
+              // siblings of the options rather than wrappers, and carry
+              // role="presentation", so option indices — which drive
+              // optionDomId/aria-activedescendant — stay untouched.
+              const group =
+                result.kind === 'action' ? result.action.group : undefined;
+              const previous = results[index - 1];
+              const previousGroup =
+                previous?.kind === 'action' ? previous.action.group : undefined;
+              const heading =
+                query.trim() === '' && group && group !== previousGroup ? (
+                  <div
+                    key={`group-${group}`}
+                    className={styles.groupLabel}
+                    role="presentation"
+                  >
+                    {group}
+                  </div>
+                ) : null;
+              return (
+                <Fragment key={result.id}>
+                  {heading}
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation happens via Enter on the combobox input (aria-activedescendant pattern) */}
+                  <div
+                    id={optionDomId(index)}
+                    className={styles.option}
+                    role="option"
+                    aria-selected={index === highlightIndex}
+                    // Programmatically focusable only; DOM focus stays on the
+                    // input (aria-activedescendant drives the highlight).
+                    tabIndex={-1}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    // mousedown would steal focus from the input before click
+                    // lands; suppress it so the palette stays typeable even
+                    // after a misclick that doesn't complete.
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => runResult(result)}
+                  >
+                    {result.kind === 'action' ? (
+                      <>
+                        <span className={styles.optionLabel}>
+                          {result.action.label}
+                        </span>
+                        {result.action.shortcutHint ? (
+                          <kbd className={styles.optionHint}>
+                            {result.action.shortcutHint}
+                          </kbd>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.optionLabel}>
+                          {result.preset.title}
+                        </span>
+                        <span className={styles.optionMeta}>
+                          {result.preset.author
+                            ? `Preset · ${result.preset.author}`
+                            : 'Preset'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </Fragment>
+              );
+            })
           )}
         </div>
       </div>
