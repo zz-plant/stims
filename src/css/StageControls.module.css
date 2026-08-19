@@ -103,7 +103,7 @@
   border: none;
   border-radius: var(--radius-round);
   background: transparent;
-  color: rgba(229, 241, 255, 0.6);
+  color: var(--ctl-ink-2);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -112,8 +112,8 @@
 }
 
 .navBtn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--ctl-ink);
+  background: var(--ctl-fill-hover);
 }
 
 .navBtn:active {
@@ -135,7 +135,7 @@
   border: none;
   border-radius: var(--radius-round);
   background: transparent;
-  color: rgba(229, 241, 255, 0.85);
+  color: var(--ctl-ink);
   font: inherit;
   font-size: 0.78rem;
   font-weight: 500;
@@ -153,8 +153,8 @@
 }
 
 .titleBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--ctl-fill);
+  color: var(--ctl-ink);
 }
 
 /* Cool = playing/selected (the fallback already said so); the warm
@@ -172,7 +172,9 @@
 .authorText {
   font-size: 0.68rem;
   font-weight: 400;
-  color: rgba(191, 219, 254, 0.5);
+  /* ink-2, not ink-3: at 0.68rem this is WCAG "normal text" needing 4.5:1,
+     and ink-3 measured 4.48:1 on the light pill — just under. */
+  color: var(--ctl-ink-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -250,7 +252,7 @@
   border: none;
   border-radius: var(--radius-round);
   background: transparent;
-  color: rgba(229, 241, 255, 0.6);
+  color: var(--ctl-ink-2);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -259,13 +261,13 @@
 }
 
 .menuBtn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--ctl-ink);
+  background: var(--ctl-fill-hover);
 }
 
 .menuBtn[aria-expanded="true"] {
   color: var(--stims-cool, #77c9ff);
-  background: rgba(119, 201, 255, 0.14);
+  background: var(--ctl-accent-dim);
 }
 
 .menuBtn:focus-visible,
@@ -317,7 +319,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: rgba(229, 241, 255, 0.72);
+  color: var(--ctl-ink-2);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 500;
@@ -330,8 +332,8 @@
 }
 
 .menuItem:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
+  background: var(--ctl-fill-hover);
+  color: var(--ctl-ink);
 }
 
 /* Open-panel state is triple-encoded — cool accent, the same inset lit
@@ -339,7 +341,7 @@
    never rests on a 10%-alpha tint alone. */
 .menuItem[data-active="true"] {
   color: var(--stims-cool, #77c9ff);
-  background: rgba(119, 201, 255, 0.1);
+  background: var(--ctl-accent-dim);
   box-shadow: inset 2px 0 0 var(--stims-cool, #77c9ff);
 }
 
@@ -363,7 +365,7 @@
 .menuGroupLabel {
   font-size: 0.72rem;
   font-weight: 500;
-  color: rgba(229, 241, 255, 0.55);
+  color: var(--ctl-ink-3);
 }
 
 .menuGroupOptions {
@@ -378,7 +380,7 @@
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
   border-radius: 7px;
   background: transparent;
-  color: rgba(229, 241, 255, 0.72);
+  color: var(--ctl-ink-2);
   font: inherit;
   font-size: 0.74rem;
   font-weight: 500;
@@ -392,16 +394,16 @@
 }
 
 .menuOption:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
+  background: var(--ctl-fill-hover);
+  color: var(--ctl-ink);
 }
 
 /* Same double encoding as active menu items: cool accent plus a visible
    border, never a 10%-alpha tint alone. */
 .menuOption[data-active="true"] {
   color: var(--stims-cool, #77c9ff);
-  background: rgba(119, 201, 255, 0.1);
-  border-color: rgba(119, 201, 255, 0.45);
+  background: var(--ctl-accent-dim);
+  border-color: var(--ctl-accent);
 }
 
 .menuOption:focus-visible {
@@ -412,7 +414,7 @@
 .menuSep {
   height: 1px;
   margin: 4px 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ctl-fill-hover);
 }
 
 .menuLabel {
@@ -421,7 +423,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--ctl-ink-3);
 }
 
 /* Reveal handle (when bar is hidden) */
@@ -456,7 +458,7 @@
 }
 
 .handle:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--ctl-line);
   transform: translateX(-50%) translateY(-1px);
 }
 
@@ -468,8 +470,8 @@
 
 :global(html.light) .handle {
   background: rgba(8, 14, 22, 0.92);
-  color: #f7f4eb;
-  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--ctl-ink);
+  border-color: var(--ctl-line-strong);
 }
 
 @media (max-width: 480px) {
