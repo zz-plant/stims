@@ -38,6 +38,10 @@ export type MilkdropTraceRecorderState = {
 
 export type MilkdropTraceRecorder = {
   start: (options?: { maxFrames?: number }) => MilkdropTraceRecorderState;
+  /** Cheap per-frame gate: the frame loop checks this before building the
+   * recordFrame args (frame/signal snapshots), so agent-mode sessions pay
+   * nothing extra on the ~all frames where nothing is being recorded. */
+  isRecording: () => boolean;
   /** Called by the frame loop with the raw (pre-interaction-response) frame
    * state; must run synchronously before anything mutates it. */
   recordFrame: (args: {
@@ -188,5 +192,6 @@ export function createMilkdropTraceRecorder({
     },
     stop: finalize,
     getState,
+    isRecording: () => recording,
   };
 }

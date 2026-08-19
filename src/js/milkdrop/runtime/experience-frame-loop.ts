@@ -267,16 +267,20 @@ export function createMilkdropExperienceFrameLoop({
 
         const rawFrameState = vm.step(signals);
         // Capture before the interaction response: replay re-runs vm.step
-        // only, and the response mutates the frame state in place.
-        traceRecorder?.recordFrame({
-          time: frame.time,
-          deltaMs: frame.deltaMs,
-          frequencyData: frame.frequencyData,
-          waveformData: frame.waveformData,
-          signals,
-          frameState: rawFrameState,
-          detailScale: detailScale * adaptiveDensityMultiplier,
-        });
+        // only, and the response mutates the frame state in place. Gated on
+        // isRecording() so agent-mode sessions build this args object only
+        // while a capture is actually running, not on every frame it exists.
+        if (traceRecorder?.isRecording()) {
+          traceRecorder.recordFrame({
+            time: frame.time,
+            deltaMs: frame.deltaMs,
+            frequencyData: frame.frequencyData,
+            waveformData: frame.waveformData,
+            signals,
+            frameState: rawFrameState,
+            detailScale: detailScale * adaptiveDensityMultiplier,
+          });
+        }
         const currentFrameState = applyMilkdropInteractionResponse(
           rawFrameState,
           frame.input,
