@@ -418,11 +418,27 @@ function Actions({
   );
 }
 
+/**
+ * The alternatives to the primary CTA, behind a disclosure.
+ *
+ * The pitch is "press one button and it plays" — but the YouTube field and
+ * the four source cards rendered flat underneath the CTA at roughly equal
+ * visual weight, so the page offered six ways to start and ranked none of
+ * them. Collapsing them restores the ranking without removing anything: the
+ * summary names every source inside, so nothing becomes undiscoverable, and
+ * a returning visitor's usual source is already the primary button ("Resume
+ * with your mic"), which is why this stays closed even for them.
+ */
 function AudioSources() {
   return (
-    <div className="stims-shell__launch-source-minimal">
-      <AudioSourcePanel showHelp={false} />
-    </div>
+    <details className="stims-shell__launch-source-minimal">
+      <summary className="stims-shell__launch-sources-summary">
+        Or use your own audio — YouTube, mic, a file, or this tab
+      </summary>
+      <div className="stims-shell__launch-sources-body">
+        <AudioSourcePanel showHelp={false} />
+      </div>
+    </details>
   );
 }
 

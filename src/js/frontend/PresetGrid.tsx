@@ -12,10 +12,19 @@ import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts'
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { PresetIdentity } from './PresetIdentity.tsx';
 
-/** Mirrors `grid-template-columns: repeat(auto-fill, minmax(132px, 1fr))` and
- * `gap` in app-shell.css — the virtualizer has to derive the same column count
- * the CSS grid would pick, or rows misalign with what's painted. */
+/** Column sizing. Rows carry their own inline `grid-template-columns` built
+ * from the count derived here, so this — not the CSS — is the single source
+ * of truth for how wide a tile gets.
+ *
+ * The narrow minimum exists because a single `auto-fill` minimum cannot serve
+ * both ends: 132px yields a sensible 3-up in the default ~527px panel, but
+ * anything under 272px collapses to ONE column, at which point "grid view" is
+ * just the list with bigger art and twice the scrolling. Lowering the single
+ * minimum instead would have shrunk the default panel to a 5-up of small
+ * tiles, so the minimum steps down only once the panel is genuinely narrow. */
 const GRID_MIN_COLUMN_PX = 132;
+const GRID_NARROW_MIN_COLUMN_PX = 96;
+const GRID_NARROW_PANEL_PX = 280;
 const GRID_GAP_PX = 8;
 /** Seed row height (tile + gap) used only for the very first paint, before a
  * real row has been measured. Tile height scales with column width (the art
@@ -176,9 +185,13 @@ export function PresetGrid({
     const node = scrollRef.current;
     if (!node) return;
     const measure = (width: number) => {
+      const minColumn =
+        width < GRID_NARROW_PANEL_PX
+          ? GRID_NARROW_MIN_COLUMN_PX
+          : GRID_MIN_COLUMN_PX;
       const next = Math.max(
         1,
-        Math.floor((width + GRID_GAP_PX) / (GRID_MIN_COLUMN_PX + GRID_GAP_PX)),
+        Math.floor((width + GRID_GAP_PX) / (minColumn + GRID_GAP_PX)),
       );
       setColumnCount((current) => (current === next ? current : next));
     };

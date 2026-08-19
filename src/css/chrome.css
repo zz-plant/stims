@@ -828,15 +828,18 @@ html.light .stims-shell {
   }
 
   /* ── Recent rail: this-session history, not persisted lastOpenedAt ─ */
+  /* Compact on purpose. This rail is a convenience — the same presets are
+     also the top of the "Recently opened" sort — so it should not cost a
+     sixth of the panel's height before a single result is visible. */
   .ctl-recent-rail {
-    padding: 12px 16px 4px;
+    padding: 10px 16px 4px;
     border-bottom: 1px solid var(--ctl-line);
   }
 
   .ctl-recent-rail__label {
-    margin: 0 0 8px;
+    margin: 0 0 5px;
     color: var(--ctl-ink-3);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -855,8 +858,8 @@ html.light .stims-shell {
 
   .ctl-recent-rail__item {
     display: grid;
-    gap: 6px;
-    width: 84px;
+    gap: 4px;
+    width: 76px;
     border: none;
     background: transparent;
     color: inherit;
@@ -872,8 +875,8 @@ html.light .stims-shell {
   }
 
   .ctl-recent-rail__item .stims-shell__preset-art {
-    width: 84px;
-    height: 64px;
+    width: 76px;
+    height: 50px;
     min-width: 0;
     min-height: 0;
     margin: 0;
@@ -890,7 +893,7 @@ html.light .stims-shell {
   .ctl-recent-rail__title {
     overflow: hidden;
     color: var(--ctl-ink-2);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1029,12 +1032,67 @@ html.light .stims-shell {
   }
 
   /* ── Result bar ────────────────────────────────────────────────── */
-  .ctl-resultbar {
+  /* Author + sort + count on one line. These are one job — narrow the
+     result set and say how big it is — and they used to be split across a
+     full-width select in the filter block and a separate bar below the
+     recently-played rail. */
+  .ctl-browse-refine {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 2px 0 6px;
+    gap: 8px;
+  }
+
+  /* Selects share the row evenly; the count takes only what it needs. */
+  .ctl-browse-refine .ctl-select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ctl-browse-count {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Segmented view switch. Sits in the search row rather than owning a row
+     of its own, and shows both options so the current one is legible
+     without having to reason about what the label means. */
+  .ctl-viewtoggle {
+    display: flex;
+    flex: 0 0 auto;
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill-sunk);
+  }
+
+  .ctl-viewtoggle__btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    padding: 0;
+    border: none;
+    border-radius: calc(var(--ctl-radius) - 3px);
+    background: transparent;
+    color: var(--ctl-ink-3);
+    cursor: pointer;
+    transition:
+      background var(--ctl-ease),
+      color var(--ctl-ease);
+  }
+
+  .ctl-viewtoggle__btn:hover {
+    color: var(--ctl-ink);
+  }
+
+  .ctl-viewtoggle__btn[data-active="true"] {
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-ink);
+  }
+
+  .ctl-viewtoggle__btn:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 1px;
   }
 
   /* A hint only the keyboard user who already found the feature would ever
