@@ -5,6 +5,11 @@ import type {
   MilkdropRenderBackend,
 } from '../types';
 
+/** How long to wait for the coalescing frame before flushing anyway. Long
+ * enough that a visible tab always coalesces via rAF (~16ms), short enough
+ * that a hidden tab's startup is not perceptibly delayed. */
+const CATALOG_SYNC_FALLBACK_MS = 250;
+
 const CATALOG_SORT_FIELDS = [
   'isFavorite',
   'historyIndex',
@@ -56,6 +61,19 @@ export function createMilkdropCatalogCoordinator({
   let catalogSyncPromise: Promise<void> | null = null;
   let resolveCatalogSyncPromise: (() => void) | null = null;
   let catalogSyncFrameId: number | null = null;
+  let catalogSyncFallbackTimer: number | null = null;
+
+  /** Cancels whichever of the frame/timer pair did not fire. */
+  const clearScheduledFlush = () => {
+    if (catalogSyncFrameId !== null) {
+      window.cancelAnimationFrame(catalogSyncFrameId);
+      catalogSyncFrameId = null;
+    }
+    if (catalogSyncFallbackTimer !== null) {
+      window.clearTimeout(catalogSyncFallbackTimer);
+      catalogSyncFallbackTimer = null;
+    }
+  };
   let catalogSyncQueuedArgs: {
     activePresetId: string;
     activeBackend: MilkdropRenderBackend;
@@ -168,19 +186,31 @@ export function createMilkdropCatalogCoordinator({
       return scheduledSync;
     }
 
-    catalogSyncFrameId = window.requestAnimationFrame(() => {
-      catalogSyncFrameId = null;
+    // rAF here is only a coalescing optimization — it batches a burst of sync
+    // requests into one flush at the next frame. The work itself needs no
+    // frame, and a hidden/backgrounded tab never fires rAF at all, which used
+    // to strand this permanently: the catalog stayed empty, the promise this
+    // returns never resolved, and the runtime's startup selection (which
+    // awaits it) hung forever — so a deep-linked preset never loaded and the
+    // stage sat on the bundled boot preset. The frame loop already treats a
+    // hidden tab as legitimate in agent mode; this must not contradict that.
+    // The timer races the frame: whichever fires first flushes, the other
+    // is cancelled.
+    const runFlush = () => {
+      clearScheduledFlush();
       void flushScheduledCatalogSync();
-    });
+    };
+    catalogSyncFrameId = window.requestAnimationFrame(runFlush);
+    catalogSyncFallbackTimer = window.setTimeout(
+      runFlush,
+      CATALOG_SYNC_FALLBACK_MS,
+    );
 
     return scheduledSync;
   };
 
   const disposeScheduledCatalogSync = () => {
-    if (catalogSyncFrameId !== null) {
-      window.cancelAnimationFrame(catalogSyncFrameId);
-      catalogSyncFrameId = null;
-    }
+    clearScheduledFlush();
     catalogSyncQueuedArgs = null;
     finishScheduledCatalogSync();
   };
