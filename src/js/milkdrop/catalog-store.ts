@@ -229,6 +229,13 @@ export function createMilkdropCatalogStore({
           if (typeof ric === 'function') {
             ric((deadline) => resolve(deadline), { timeout: 1000 });
           } else {
+            // requestIdleCallback fallback only (Safari) — approximates "one
+            // frame has passed" at 30fps. Deliberately unrelated to
+            // CATALOG_BATCH_TIME_BUDGET_MS above: that constant bounds a
+            // synchronous mapping batch's length; this one paces a
+            // completely different prefetch/compile loop when the real idle
+            // API isn't available. Same file, different jobs — not a
+            // mismatch to reconcile.
             setTimeout(() => resolve(null), 32);
           }
         });

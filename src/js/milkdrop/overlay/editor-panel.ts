@@ -730,6 +730,14 @@ function createEditorView({
           if (!update.docChanged || isChangeSuppressed()) {
             return;
           }
+          // Two independent debounced timers restart on every keystroke, not
+          // one: onBufferedEdit's 80ms (above, in createEditorView's caller)
+          // repaints local UI (diagnostics, Tune controls) — cheap and wants
+          // to feel responsive. onDocChange 120ms below propagates the draft
+          // upstream to the actual preset recompile — heavier, and doesn't
+          // need to run more often than the local repaint. 120ms > 80ms is
+          // deliberate so the recompile settles just after the UI has
+          // already caught up, not simultaneously fighting it for the CPU.
           onBufferedEdit();
           if (debounceId !== null) {
             window.clearTimeout(debounceId);
