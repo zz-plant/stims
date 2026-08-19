@@ -34,6 +34,7 @@ import {
   subscribeToThemePreference,
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
+import { parseURLParams } from '../core/url-params.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
@@ -130,6 +131,40 @@ const SynthesizePanel = lazy(() =>
 const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
 );
+
+/**
+ * Start the routed panel's chunk downloading immediately.
+ *
+ * Every panel is a lazy chunk, and the idle prewarms below cover the panels a
+ * user is *likely* to open next. Neither covered the one the URL explicitly
+ * asked for: the route is known the moment the URL parses, but the import
+ * only fired once React had mounted and rendered the panel, so a deep link
+ * sat on the Suspense skeleton for a round trip it never needed to pay.
+ *
+ * This runs at module scope — before the first render — and is deliberately
+ * not deferred to idle: unlike a speculative prewarm, this chunk is on the
+ * critical path of the page the user actually requested.
+ */
+const ROUTED_PANEL_CHUNKS: Record<string, () => void> = {
+  browse: () => void import('./BrowseSheetPanel.tsx'),
+  capture: () => void import('./CapturePanel.tsx'),
+  editor: () => {
+    void import('./EditorPanel.tsx');
+    void import('../milkdrop/overlay/editor-panel.ts');
+  },
+  finder: () => void import('./PresetFinderPanel.tsx'),
+  refine: () => void import('./RefinePanel.tsx'),
+  settings: () => void import('./SettingsSheetPanel.tsx'),
+  synthesize: () => void import('./SynthesizePanel.tsx'),
+};
+
+try {
+  const routedPanel = parseURLParams().routing.panel;
+  if (routedPanel) ROUTED_PANEL_CHUNKS[routedPanel]?.();
+} catch (error) {
+  // A malformed URL must never keep the shell from booting.
+  console.debug('Routed panel prefetch skipped', error);
+}
 
 // The one "is there real audio" cutoff for getAudioEnergy()/rms readings,
 // shared by the audio-match search below and the quiet-audio coaching nudge.
@@ -356,12 +391,14 @@ function StimsWorkspaceAppShell() {
     () => [
       {
         id: 'open-browse',
+        group: 'Presets',
         label: 'Browse presets',
         shortcutHint: 'B',
         run: () => togglePanel(paletteSurface, 'browse'),
       },
       {
         id: 'next-preset',
+        group: 'Presets',
         label: 'Next preset (random)',
         shortcutHint: 'N',
         keywords: ['shuffle', 'surprise'],
@@ -369,6 +406,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'previous-preset',
+        group: 'Presets',
         label: 'Previous preset',
         shortcutHint: 'P',
         keywords: ['back'],
@@ -376,6 +414,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'save-preset',
+        group: 'Presets',
         label: 'Save preset',
         shortcutHint: 'A',
         keywords: ['favorite', 'star'],
@@ -383,6 +422,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'find-similar',
+        group: 'Presets',
         label: 'Find similar presets',
         shortcutHint: 'M',
         keywords: ['match', 'sound', 'look'],
@@ -390,36 +430,42 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'open-editor',
+        group: 'Create',
         label: 'Edit preset code',
         shortcutHint: 'E',
         run: () => togglePanel(paletteSurface, 'editor'),
       },
       {
         id: 'open-refine',
+        group: 'Create',
         label: 'Refine with AI',
         shortcutHint: 'G',
         run: () => togglePanel(paletteSurface, 'refine'),
       },
       {
         id: 'open-generate',
+        group: 'Create',
         label: 'Generate with AI',
         keywords: ['synthesize', 'create', 'make'],
         run: () => togglePanel(paletteSurface, 'synthesize'),
       },
       {
         id: 'open-record',
+        group: 'Share',
         label: 'Record video',
         keywords: ['capture', 'export'],
         run: () => openRecordPanel(paletteSurface),
       },
       {
         id: 'open-settings',
+        group: 'View',
         label: 'Settings',
         shortcutHint: 'S',
         run: () => togglePanel(paletteSurface, 'settings'),
       },
       {
         id: 'open-shortcuts',
+        group: 'View',
         label: 'Keyboard shortcuts',
         shortcutHint: '?',
         keywords: ['help', 'keys', 'bindings'],
@@ -430,6 +476,7 @@ function StimsWorkspaceAppShell() {
         // scan, and three near-identical theme rows cost more attention than
         // the one extra press cycling costs.
         id: 'cycle-theme',
+        group: 'View',
         label: `Theme: ${themeChoice === 'system' ? 'match system' : themeChoice}`,
         keywords: ['dark', 'light', 'appearance', 'contrast'],
         run: () => {
@@ -446,6 +493,7 @@ function StimsWorkspaceAppShell() {
         // settings are not: it is the one people reach for mid-playback, when
         // a preset is chugging and Settings is three interactions away.
         id: 'use-webgl',
+        group: 'View',
         label: 'Switch renderer to WebGL',
         keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
         run: () => {
@@ -455,18 +503,21 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'toggle-fullscreen',
+        group: 'View',
         label: isFullscreen ? 'Exit full screen' : 'Full screen',
         shortcutHint: 'F',
         run: handleToggleFullscreen,
       },
       {
         id: 'share-link',
+        group: 'Share',
         label: 'Share link',
         keywords: ['copy', 'url'],
         run: () => void ui.handleShowCurrentLink(),
       },
       {
         id: 'watch-party',
+        group: 'Share',
         label: hostingWatchParty
           ? 'Copy watch party link'
           : 'Start watch party (copy link)',
@@ -477,6 +528,7 @@ function StimsWorkspaceAppShell() {
         ? [
             {
               id: 'end-watch-party',
+              group: 'Share',
               label: 'End watch party',
               keywords: ['sync', 'room', 'leave', 'stop'],
               run: () => endWatchParty(ui.setStatusMessage),
@@ -566,6 +618,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'toggle-autoplay',
+        group: 'Playback',
         label: 'Toggle autoplay',
         keywords: ['shuffle', 'automatic'],
         run: () =>
@@ -577,38 +630,45 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'transition-cut',
+        group: 'Playback',
         label: 'Transition: instant cut',
         run: () => setTransition(engine, ui.setStatusMessage, 'cut', 0),
       },
       {
         id: 'transition-1s',
+        group: 'Playback',
         label: 'Transition: 1s blend',
         run: () => setTransition(engine, ui.setStatusMessage, 'blend', 1),
       },
       {
         id: 'transition-2s',
+        group: 'Playback',
         label: 'Transition: 2s blend',
         run: () => setTransition(engine, ui.setStatusMessage, 'blend', 2),
       },
       {
         id: 'transition-5s',
+        group: 'Playback',
         label: 'Transition: 5s blend',
         run: () => setTransition(engine, ui.setStatusMessage, 'blend', 5),
       },
       {
         id: 'audio-demo',
+        group: 'Audio',
         label: 'Play demo audio',
         keywords: ['source', 'sample'],
         run: () => startAudioSource(engine, 'demo'),
       },
       {
         id: 'audio-microphone',
+        group: 'Audio',
         label: 'Use microphone audio',
         keywords: ['source', 'mic'],
         run: () => startAudioSource(engine, 'microphone'),
       },
       {
         id: 'audio-tab',
+        group: 'Audio',
         label: "Use this tab's audio",
         keywords: ['source', 'capture'],
         run: () => startAudioSource(engine, 'tab'),
@@ -617,6 +677,7 @@ function StimsWorkspaceAppShell() {
         ? [
             {
               id: 'stop-audio',
+              group: 'Audio',
               label: 'Stop audio',
               shortcutHint: 'Space',
               run: () => engine.handleAudioStop(),

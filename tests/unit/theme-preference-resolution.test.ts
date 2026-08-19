@@ -44,12 +44,16 @@ afterEach(() => {
 });
 
 describe('theme preference resolution', () => {
-  test('defaults to dark when nothing is stored', () => {
-    // Deliberate: the light theme had never been exercised by real traffic,
-    // so 'system' is opt-in rather than the default. If this flips, it should
-    // be a decision, not a drift.
-    expect(getActiveThemePreference().theme).toBe('dark');
+  test('defaults to system when nothing is stored', () => {
+    // This must match index.html's inline pre-paint script, which has always
+    // fallen back to prefers-color-scheme. It briefly read 'dark' here, which
+    // made light-mode visitors paint light and then snap to dark on mount.
+    // theme-boot-parity.test.ts guards the two against drifting again.
+    expect(getActiveThemePreference().theme).toBe('system');
+    stubPrefersLight(false);
     expect(resolveTheme()).toBe('dark');
+    stubPrefersLight(true);
+    expect(resolveTheme()).toBe('light');
   });
 
   test('explicit choices resolve to themselves regardless of the OS', () => {
@@ -90,8 +94,8 @@ describe('theme preference resolution', () => {
     expect(getActiveThemePreference().theme).toBe('system');
   });
 
-  test('an unrecognized stored value degrades to dark, not to a crash', () => {
+  test('an unrecognized stored value degrades to system, not to a crash', () => {
     localStorage.setItem('stims:theme', 'chartreuse');
-    expect(getActiveThemePreference().theme).toBe('dark');
+    expect(getActiveThemePreference().theme).toBe('system');
   });
 });

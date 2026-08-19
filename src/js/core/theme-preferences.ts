@@ -5,12 +5,16 @@
  * that paints reads `resolveTheme()`, which collapses that choice down to the
  * two values the stylesheets actually key off (`html.light` / `html.dark`).
  *
- * The default stays `dark` rather than `system` on purpose. The light theme
- * shipped fully styled but with no control to reach it, so it has never been
- * exercised by real traffic — defaulting to `system` would hand it to every
- * visitor on a light-mode OS in one release. Making it an explicit choice
- * gets it in front of users who opt in first. Revisit the default once it has
- * had some real mileage.
+ * The default is `system`, and it has to stay that way: index.html runs an
+ * inline pre-paint script that falls back to `prefers-color-scheme` when
+ * nothing is stored. This store briefly defaulted to `dark` instead, which
+ * meant a light-mode visitor with no stored choice painted light before React
+ * mounted and then snapped to dark when the sync effect ran. Two defaults
+ * across the pre-paint boundary is a visible flash, not a preference.
+ *
+ * tests/unit/theme-boot-parity.test.ts parses that inline script and asserts
+ * the two agree, because they cannot share code — one runs before any module
+ * is fetched.
  */
 export type ThemeChoice = 'light' | 'dark' | 'system';
 
@@ -37,8 +41,9 @@ function getStorage(): Storage | null {
 }
 
 function normalizeChoice(raw: string | null | undefined): ThemeChoice {
-  if (raw === 'light' || raw === 'system') return raw;
-  return 'dark';
+  if (raw === 'light' || raw === 'dark') return raw;
+  // Covers both 'system' and anything unrecognized, including absent.
+  return 'system';
 }
 
 function readFromStorage(): ThemePreference {
@@ -48,7 +53,7 @@ function readFromStorage(): ThemePreference {
     };
   } catch (error) {
     console.debug('Unable to read theme preference', error);
-    return { theme: 'dark' };
+    return { theme: 'system' };
   }
 }
 
