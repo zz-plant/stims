@@ -145,35 +145,88 @@ export function buildScenarioInputs(
   return inputs;
 }
 
-export function diffFrames(
-  recorded: FrameCapture,
-  replayed: FrameCapture,
+/** Field-level diff between two frame snapshots, using a caller-supplied
+ * equality predicate — exact `===` for same-tier replay, tolerance-based for
+ * cross-tier (f32 vs f64) diffs. The one field-walker every comparison mode
+ * (CPU replay, GPU tier, live-trace replay) goes through, so "what moved" is
+ * described identically everywhere. */
+function diffFields(
+  left: FrameCapture,
+  right: FrameCapture,
+  equals: (a: number | undefined, b: number | undefined) => boolean,
+  labels: [string, string],
 ): string[] {
-  if (!recorded.variables || !recorded.geometry) {
-    return [
-      '  (compact trace: no variable checkpoint at this frame — re-record without --compact to name variables)',
-    ];
-  }
+  const [leftLabel, rightLabel] = labels;
   const details: string[] = [];
   const keys = new Set([
-    ...Object.keys(recorded.variables),
-    ...Object.keys(replayed.variables ?? {}),
+    ...Object.keys(left.variables ?? {}),
+    ...Object.keys(right.variables ?? {}),
   ]);
   for (const key of [...keys].sort()) {
-    const before = recorded.variables[key];
-    const after = replayed.variables?.[key];
-    if (before !== after) {
-      details.push(`  variables.${key}: ${before} -> ${after}`);
+    const a = left.variables?.[key];
+    const b = right.variables?.[key];
+    if (!equals(a, b)) {
+      details.push(`  variables.${key}: ${leftLabel}=${a} ${rightLabel}=${b}`);
     }
   }
   for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
-    if (recorded.geometry[field] !== replayed.geometry?.[field]) {
-      details.push(
-        `  geometry.${field}: ${recorded.geometry[field]} -> ${replayed.geometry?.[field]}`,
-      );
+    const a = left.geometry?.[field];
+    const b = right.geometry?.[field];
+    if (!equals(a, b)) {
+      details.push(`  geometry.${field}: ${leftLabel}=${a} ${rightLabel}=${b}`);
     }
   }
   return details;
+}
+
+type DivergenceOptions = {
+  equals: (a: number | undefined, b: number | undefined) => boolean;
+  labels: [string, string];
+  /** Fast pre-check per frame (e.g. digest equality) that skips the
+   * detailed field diff entirely when true. Omit for tolerance-based
+   * comparisons, where no cross-tier digest is meaningful. */
+  sameFrame?: (left: FrameCapture, right: FrameCapture) => boolean;
+  /** Shown when a frame exists on both sides but neither has enough data
+   * (compact trace, or an incomplete snapshot) to name what moved. */
+  noSnapshotNotice: string;
+  /** Shown when the right-hand series has no frame at this index at all. */
+  missingFrameNotice: string;
+};
+
+/** Walks two frame series in lockstep and returns the first divergence, or
+ * null when every frame agrees under `equals`. The single first-divergence
+ * walker behind compareReplay/compareTiers — same loop, different equality
+ * and messaging per mode. */
+function findFirstDivergence(
+  leftFrames: FrameCapture[],
+  rightFrames: Array<FrameCapture | undefined>,
+  options: DivergenceOptions,
+): { frame: number; details: string[] } | null {
+  const { equals, labels, sameFrame, noSnapshotNotice, missingFrameNotice } =
+    options;
+  for (let index = 0; index < leftFrames.length; index += 1) {
+    const left = leftFrames[index] as FrameCapture;
+    const right = rightFrames[index];
+    if (!right) {
+      return { frame: index, details: [missingFrameNotice] };
+    }
+    if (sameFrame?.(left, right)) {
+      continue;
+    }
+    if (
+      !left.variables ||
+      !left.geometry ||
+      !right.variables ||
+      !right.geometry
+    ) {
+      return { frame: index, details: [noSnapshotNotice] };
+    }
+    const details = diffFields(left, right, equals, labels);
+    if (details.length > 0) {
+      return { frame: index, details };
+    }
+  }
+  return null;
 }
 
 /** Compares a replay against a trace; returns null when every frame's digest
@@ -183,19 +236,14 @@ export function compareReplay(
   trace: TraceFile,
   replayed: FrameCapture[],
 ): { frame: number; details: string[] } | null {
-  for (let index = 0; index < trace.frames.length; index += 1) {
-    const recorded = trace.frames[index] as FrameCapture;
-    const current = replayed[index];
-    if (!current || current.digest !== recorded.digest) {
-      return {
-        frame: index,
-        details: current
-          ? diffFrames(recorded, current)
-          : ['  (missing frame)'],
-      };
-    }
-  }
-  return null;
+  return findFirstDivergence(trace.frames, replayed, {
+    equals: (a, b) => a === b,
+    labels: ['recorded', 'replayed'],
+    sameFrame: (left, right) => left.digest === right.digest,
+    missingFrameNotice: '  (missing frame)',
+    noSnapshotNotice:
+      '  (compact trace: no variable checkpoint at this frame — re-record without --compact to name variables)',
+  });
 }
 
 export function traceInputs(trace: TraceFile): FrameInputs[] {
@@ -212,58 +260,36 @@ export function traceInputs(trace: TraceFile): FrameInputs[] {
  * as f32 and re-reads it every frame, so drift against the f64 CPU replay is
  * expected; the divergences this tier-diff exists to catch — wrong guard or
  * operator semantics — are orders of magnitude, not ulps. */
-function closeEnough(cpu: number, gpu: number, tolerance: number): boolean {
-  if (!Number.isFinite(cpu) || !Number.isFinite(gpu)) {
-    return cpu === gpu;
-  }
-  const diff = Math.abs(cpu - gpu);
-  return (
-    diff <= tolerance + 5 * tolerance * Math.max(Math.abs(cpu), Math.abs(gpu))
-  );
+function toleranceEquals(tolerance: number) {
+  return (a: number | undefined, b: number | undefined): boolean => {
+    const left = a ?? 0;
+    const right = b ?? 0;
+    if (!Number.isFinite(left) || !Number.isFinite(right)) {
+      return left === right;
+    }
+    const diff = Math.abs(left - right);
+    return (
+      diff <=
+      tolerance + 5 * tolerance * Math.max(Math.abs(left), Math.abs(right))
+    );
+  };
 }
 
 /** Tolerance-based cross-tier diff: first frame where any variable or
  * geometry checksum moves beyond `tolerance`, or null. Digests are ignored
- * (exact equality across f32/f64 tiers is meaningless). */
+ * (exact equality across f32/f64 tiers, or across V8/JSC, is meaningless). */
 export function compareTiers(
   cpuFrames: FrameCapture[],
   gpuFrames: FrameCapture[],
   tolerance: number,
   labels: [string, string] = ['cpu', 'gpu'],
 ): { frame: number; details: string[] } | null {
-  const [leftLabel, rightLabel] = labels;
-  for (let index = 0; index < cpuFrames.length; index += 1) {
-    const cpu = cpuFrames[index] as FrameCapture;
-    const gpu = gpuFrames[index];
-    if (!gpu?.variables || !gpu.geometry || !cpu.variables || !cpu.geometry) {
-      return { frame: index, details: ['  (missing frame or snapshot)'] };
-    }
-    const details: string[] = [];
-    const keys = new Set([
-      ...Object.keys(cpu.variables),
-      ...Object.keys(gpu.variables),
-    ]);
-    for (const key of [...keys].sort()) {
-      const cpuValue = cpu.variables[key] ?? 0;
-      const gpuValue = gpu.variables[key] ?? 0;
-      if (!closeEnough(cpuValue, gpuValue, tolerance)) {
-        details.push(
-          `  variables.${key}: ${leftLabel}=${cpuValue} ${rightLabel}=${gpuValue}`,
-        );
-      }
-    }
-    for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
-      if (!closeEnough(cpu.geometry[field], gpu.geometry[field], tolerance)) {
-        details.push(
-          `  geometry.${field}: ${leftLabel}=${cpu.geometry[field]} ${rightLabel}=${gpu.geometry[field]}`,
-        );
-      }
-    }
-    if (details.length > 0) {
-      return { frame: index, details };
-    }
-  }
-  return null;
+  return findFirstDivergence(cpuFrames, gpuFrames, {
+    equals: toleranceEquals(tolerance),
+    labels,
+    missingFrameNotice: '  (missing frame or snapshot)',
+    noSnapshotNotice: '  (missing frame or snapshot)',
+  });
 }
 
 /** Replays a trace through the full VM with the compute-VM per-frame program
