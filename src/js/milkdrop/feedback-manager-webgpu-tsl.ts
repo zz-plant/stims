@@ -266,6 +266,14 @@ function createPresentUniforms(initialSource: Texture) {
     savedTex: texture(initialSource),
     transitionAlpha: uniform(0),
     patternAspect: uniform(16 / 9),
+    // Display-frame postprocessing (profile-driven). Applied here — over the
+    // COMPOSITED frame the present pass samples — never inside the composite
+    // pass, which cannot take neighbor samples of its own output.
+    postBloomStrength: uniform(0),
+    postBloomRadius: uniform(0.5),
+    postBloomThreshold: uniform(0.85),
+    postChromaticAberration: uniform(0),
+    postTexelSize: uniform(new Vector2(1 / 1280, 1 / 720)),
   };
 }
 
@@ -303,8 +311,55 @@ function createPresentOutputNode(
     savedZoomDrift,
   } = MILKDROP_BLEND_DISSOLVE;
   return Fn(() => {
-    const current = uniforms.currentTex.sample(uv());
-    const result = vec4(current).toVar();
+    const presentUv = uv();
+    const current = uniforms.currentTex.sample(presentUv);
+    const base = current.rgb.toVar();
+
+    // Chromatic aberration over the composited frame (profile-driven).
+    If(step(0.0001, uniforms.postChromaticAberration), () => {
+      const offset = presentUv
+        .sub(0.5)
+        .mul(uniforms.postChromaticAberration)
+        .mul(uniforms.postTexelSize);
+      const red = uniforms.currentTex.sample(
+        clamp(presentUv.add(offset), vec2(0), vec2(1)),
+      ).r;
+      const blue = uniforms.currentTex.sample(
+        clamp(presentUv.sub(offset), vec2(0), vec2(1)),
+      ).b;
+      base.assign(vec3(red, base.g, blue));
+    });
+
+    // Bloom over the composited frame (profile-driven).
+    If(step(0.0001, uniforms.postBloomStrength), () => {
+      const texel = uniforms.postTexelSize.mul(
+        max(uniforms.postBloomRadius, 0.0001),
+      );
+      const top = uniforms.currentTex.sample(
+        clamp(presentUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+      ).rgb;
+      const bottom = uniforms.currentTex.sample(
+        clamp(presentUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+      ).rgb;
+      const left = uniforms.currentTex.sample(
+        clamp(presentUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      ).rgb;
+      const right = uniforms.currentTex.sample(
+        clamp(presentUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      ).rgb;
+      const blurred = top.add(bottom).add(left).add(right).div(4);
+      const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
+      const bloomMask = smoothstep(
+        uniforms.postBloomThreshold.sub(0.05),
+        uniforms.postBloomThreshold.add(0.05),
+        lum,
+      );
+      base.assign(
+        base.add(blurred.mul(uniforms.postBloomStrength).mul(bloomMask)),
+      );
+    });
+
+    const result = vec4(max(base, vec3(0)), current.a).toVar();
     const linearA = clamp(uniforms.transitionAlpha, 0, 1);
     // Uniform branch mirroring the WebGL shader's early-out: the present
     // pass runs full-screen every frame, so outside a preset transition the
@@ -2263,9 +2318,6 @@ function createCompositeOutputNode(
         sampleUvNode(sampleCoord, uniforms.textureWrap),
       ).rgb;
 
-    const rawPreviousColor = uniforms.previousTex
-      .sample(sampleUvNode(baseUv, uniforms.textureWrap))
-      .rgb.toVar();
     const color = sampleMainNode(baseUv).toVar();
 
     // Apply color adjustments in MilkDrop order — before the comp program,
@@ -2432,75 +2484,19 @@ function createCompositeOutputNode(
     color.assign(gammaAdjusted);
 
     // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
-    color.assign(applyPostBloomNode(uniforms)(color));
-    color.assign(applyPostChromaticAberrationNode(uniforms)(color));
+    // Only pointwise film grain runs in-pass. The old in-pass bloom,
+    // chromatic aberration, and afterimage nodes sampled internalTex /
+    // previousTex — the PRE-COMP internal image — so whenever the
+    // postprocessing profile enabled them they replaced comp-program output
+    // channels with internal-image pixels (chroma alone turned every
+    // grayscale comp preset green by zeroing R/B; afterimage buried up to
+    // 90% of the comp output). Bloom and chroma now run in the present pass
+    // over the COMPOSITED frame; afterimage is intentionally not applied on
+    // this backend until it has a proper display-frame accumulator.
     color.assign(applyPostFilmGrainNode(uniforms)(color));
-    color.assign(applyPostAfterimageNode(uniforms, rawPreviousColor)(color));
 
     return vec4(max(color, vec3(0)), 1);
   })();
-}
-
-function applyPostBloomNode(uniforms: CompositeUniformBag) {
-  return Fn(([baseColor]: [any]) => {
-    const sampleUv = uv();
-    const strength = uniforms.postBloomStrength;
-    const enabled = step(0.0001, strength);
-    const outColor = baseColor.toVar();
-
-    If(enabled, () => {
-      const radius = max(uniforms.postBloomRadius, 0.0001);
-      const texel = uniforms.texelSize.mul(radius);
-      const threshold = uniforms.postBloomThreshold;
-
-      const top = uniforms.internalTex.sample(
-        clamp(sampleUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
-      ).rgb;
-      const bottom = uniforms.internalTex.sample(
-        clamp(sampleUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
-      ).rgb;
-      const left = uniforms.internalTex.sample(
-        clamp(sampleUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
-      ).rgb;
-      const right = uniforms.internalTex.sample(
-        clamp(sampleUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
-      ).rgb;
-
-      const blurred = top.add(bottom).add(left).add(right).div(4);
-      const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
-      const bloomMask = smoothstep(
-        threshold.sub(0.05),
-        threshold.add(0.05),
-        lum,
-      );
-      const bloom = blurred.mul(strength).mul(bloomMask);
-      outColor.assign(baseColor.add(bloom));
-    });
-
-    return outColor;
-  });
-}
-
-function applyPostChromaticAberrationNode(uniforms: CompositeUniformBag) {
-  return Fn(([baseColor]: [any]) => {
-    const sampleUv = uv();
-    const enabled = step(0.0001, uniforms.postChromaticAberration);
-    const outColor = baseColor.toVar();
-
-    If(enabled, () => {
-      const centered = sampleUv.sub(0.5);
-      const offset = centered
-        .mul(uniforms.postChromaticAberration)
-        .mul(vec2(uniforms.texsize.z, uniforms.texsize.w));
-      const clampedPlus = clamp(sampleUv.add(offset), vec2(0), vec2(1));
-      const clampedMinus = clamp(sampleUv.sub(offset), vec2(0), vec2(1));
-      const red = uniforms.internalTex.sample(clampedPlus).r;
-      const blue = uniforms.internalTex.sample(clampedMinus).b;
-      outColor.assign(vec3(red, baseColor.g, blue));
-    });
-
-    return outColor;
-  });
 }
 
 function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
@@ -2522,16 +2518,6 @@ function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
     });
 
     return outColor;
-  });
-}
-
-function applyPostAfterimageNode(
-  uniforms: CompositeUniformBag,
-  rawPreviousColor: any,
-) {
-  return Fn(([baseColor]: [any]) => {
-    const damp = clamp(uniforms.postAfterimageDamp, 0, 1);
-    return mix(baseColor, rawPreviousColor, damp);
   });
 }
 
@@ -2754,21 +2740,33 @@ class WebGPUMilkdropFeedbackManager
     profile: MilkdropPostprocessingProfile | null | undefined,
   ) {
     const uniforms = this.compositeMaterial.uniforms;
+    const presentUniforms = this.presentMaterial.uniforms;
     const enabled = Boolean(profile?.enabled);
-    uniforms.postBloomStrength.value = enabled
+    // Bloom and chromatic aberration run in the PRESENT pass over the
+    // composited frame; their old composite-pass versions sampled the
+    // pre-comp internal image and corrupted comp-program output (the
+    // noisevol green-screen bug).
+    presentUniforms.postBloomStrength.value = enabled
       ? (profile?.bloomStrength ?? 0)
       : 0;
-    uniforms.postBloomThreshold.value = profile?.bloomThreshold ?? 0.85;
-    uniforms.postBloomRadius.value = profile?.bloomRadius ?? 0.5;
+    presentUniforms.postBloomThreshold.value = profile?.bloomThreshold ?? 0.85;
+    presentUniforms.postBloomRadius.value = profile?.bloomRadius ?? 0.5;
+    presentUniforms.postTexelSize.value.set(
+      1 / Math.max(1, this.displayTarget.width),
+      1 / Math.max(1, this.displayTarget.height),
+    );
     uniforms.postFilmGrainAmount.value = enabled
       ? (profile?.filmNoise ?? 0)
       : 0;
-    uniforms.postChromaticAberration.value = enabled
+    presentUniforms.postChromaticAberration.value = enabled
       ? (profile?.chromaOffset ?? 0)
       : 0;
-    uniforms.postAfterimageDamp.value = enabled
-      ? (profile?.afterimageDamp ?? 0)
-      : 0;
+    // Afterimage is intentionally NOT applied on this backend: the old
+    // implementation mixed the comp output with the raw feedback texture
+    // (replacing up to 90% of it); a faithful display-frame accumulator
+    // needs an extra ping-pong pass, which currently trips a renderer
+    // encoder hazard. Tracked in the noisevol color-divergence notes.
+    uniforms.postAfterimageDamp.value = 0;
   }
 
   private async warmAndSwapCompositeNodes(
