@@ -5,15 +5,12 @@ import {
   LineBasicMaterial,
   Vector3,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial } from 'three/webgpu';
 import { disposeGeometry } from '../../utils/three/three-dispose';
 import {
   isSharedGeometry,
   markSharedGeometry,
   setGeometryBoundingSphere,
 } from '../renderer-adapter-shared';
-import { createProceduralMeshMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type {
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionTransform,
@@ -24,6 +21,10 @@ import {
   syncProceduralFieldUniforms,
   syncProceduralInteractionUniforms,
 } from './procedural-field-uniforms';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 const PROCEDURAL_MESH_BOUNDS_RADIUS = Math.SQRT2 * 2;
 const proceduralMeshGeometryCache = new Map<number, BufferGeometry>();
@@ -116,12 +117,15 @@ export function renderMesh({
     const fieldProgramSignature =
       proceduralMesh.program?.signature ?? 'default';
     if (
-      !(meshLines.material instanceof NodeMaterial) ||
+      !isWebGpuNodeMaterial(meshLines.material) ||
       meshLines.material.userData.fieldProgramSignature !==
         fieldProgramSignature
     ) {
       disposeMaterial(meshLines.material);
-      meshLines.material = createProceduralMeshMaterial(proceduralMesh.program);
+      meshLines.material =
+        getWebGpuHelperMaterialsSync().createProceduralMeshMaterial(
+          proceduralMesh.program,
+        );
     }
     meshLines.geometry = getProceduralMeshGeometry(proceduralMesh.density);
     syncProceduralFieldUniforms(meshLines.material as ShaderMaterial, {

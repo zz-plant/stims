@@ -10,8 +10,6 @@ import {
   ShaderMaterial,
   Mesh as ThreeMesh,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   disposeObject,
   getMilkdropPassRenderOrder,
@@ -24,6 +22,10 @@ import type {
   MilkdropRenderPayload,
   MilkdropRuntimeSignals,
 } from '../types';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 type ParticleFieldObject = Mesh<InstancedBufferGeometry, ShaderMaterial>;
 
@@ -100,26 +102,29 @@ function makeParticleFieldUniforms(
 // not recognize plain ShaderMaterial and silently swaps in a blank default
 // material), while the WebGL path keeps the original GLSL ShaderMaterial —
 // this helper runs on both backends, unlike the procedural descriptor
-// materials in webgpu-procedural-materials.ts.
-const {
-  attribute,
-  cameraProjectionMatrix,
-  modelViewMatrix,
-  positionGeometry,
-  smoothstep,
-  uniform,
-  uv,
-  varying,
-  vec3,
-  vec4,
-} = TSL;
-
+// materials in webgpu-procedural-materials.ts. NodeMaterial/TSL come from
+// the lazy toolkit (webgpu-materials-loader.ts) so 'three/webgpu' stays out
+// of the shared boot-path chunk; the WebGPU adapter registers it before
+// this runs.
 function createParticleFieldNodeMaterial(
   particleField: MilkdropParticleFieldVisual,
   mesh: MilkdropRenderPayload['frameState']['mesh'],
   signals: MilkdropRenderPayload['frameState']['signals'] | null,
   alphaMultiplier: number,
 ) {
+  const { NodeMaterial, TSL } = getWebGpuHelperMaterialsSync();
+  const {
+    attribute,
+    cameraProjectionMatrix,
+    modelViewMatrix,
+    positionGeometry,
+    smoothstep,
+    uniform,
+    uv,
+    varying,
+    vec3,
+    vec4,
+  } = TSL;
   const state = makeParticleFieldUniforms(
     particleField,
     mesh,
@@ -321,7 +326,7 @@ function isParticleFieldMaterialForBackend(
   backend: 'webgl' | 'webgpu',
 ) {
   return backend === 'webgpu'
-    ? material instanceof NodeMaterial
+    ? isWebGpuNodeMaterial(material)
     : material instanceof ShaderMaterial;
 }
 

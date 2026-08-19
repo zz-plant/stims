@@ -8,8 +8,6 @@ import {
   type ShaderMaterial,
   Vector3,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial } from 'three/webgpu';
 import {
   disposeGeometry,
   disposeMaterial,
@@ -19,16 +17,16 @@ import {
   markSharedGeometry,
   setGeometryBoundingSphere,
 } from '../renderer-adapter-shared';
-import {
-  createProceduralCustomWaveMaterial,
-  createProceduralWaveMaterial,
-} from '../renderer-backends/webgpu-procedural-materials';
 import type {
   MilkdropGpuInteractionTransform,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
 } from '../types';
 import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 const PROCEDURAL_WAVE_BOUNDS_RADIUS = Math.SQRT2 * 2.2;
 const PROJECTM_STEREO_OFFSET = 32 / 512;
@@ -242,13 +240,14 @@ function ensureProceduralWaveObject(
   object: Line | undefined,
   wave: MilkdropProceduralWaveVisual,
 ) {
+  const { createProceduralWaveMaterial } = getWebGpuHelperMaterialsSync();
   const next =
     object ??
     new Line(
       createProceduralWaveObjectGeometry(getProceduralWaveRenderCount(wave)),
       createProceduralWaveMaterial(),
     );
-  if (!(next.material instanceof NodeMaterial)) {
+  if (!isWebGpuNodeMaterial(next.material)) {
     disposeMaterial(next.material);
     next.material = createProceduralWaveMaterial();
   }
@@ -363,6 +362,7 @@ export function syncProceduralCustomWaveObject(
   wave: MilkdropProceduralCustomWaveVisual,
   interaction?: MilkdropGpuInteractionTransform | null,
 ) {
+  const { createProceduralCustomWaveMaterial } = getWebGpuHelperMaterialsSync();
   const next =
     object ??
     new Line(
@@ -371,7 +371,7 @@ export function syncProceduralCustomWaveObject(
     );
   const fieldProgramSignature = wave.fieldProgram?.signature ?? 'default';
   if (
-    !(next.material instanceof NodeMaterial) ||
+    !isWebGpuNodeMaterial(next.material) ||
     next.material.userData.fieldProgramSignature !== fieldProgramSignature
   ) {
     disposeMaterial(next.material);

@@ -1,3 +1,7 @@
+// Side-effect import: warms the WebGPU helper-material chunk on
+// WebGPU-capable browsers before the adapter needs it (and never on
+// browsers without WebGPU). See webgpu-materials-prefetch.ts.
+import './renderer-helpers/webgpu-materials-prefetch.ts';
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
 import { createMilkdropWebGLRendererAdapter } from './renderer-adapter-webgl.ts';
 import type { MilkdropRendererAdapter } from './renderer-types.ts';

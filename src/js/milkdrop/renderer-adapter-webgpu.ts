@@ -8,6 +8,11 @@ import {
   createWebGPUBatchingLayer,
 } from './renderer-adapter-webgpu-batching.ts';
 import { createNativeWebGpuShapeBatchMaterialFactory } from './renderer-backends/webgpu-batching-materials.ts';
+// Side-effect import: registers the shared renderer helpers' WebGPU material
+// toolkit (NodeMaterial/TSL + procedural factories) at module scope, so it is
+// synchronously available before this adapter constructs any helper material.
+// See renderer-helpers/webgpu-materials-loader.ts.
+import './renderer-backends/webgpu-procedural-materials.ts';
 import { resolveMilkdropRendererExecutionPlan } from './renderer-execution-plan.ts';
 import {
   applyNativeWebGpuMaterialCompatibilityFlags,
