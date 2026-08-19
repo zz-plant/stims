@@ -280,7 +280,7 @@ export function useWorkspaceShellOrchestration({
   );
 
   const handleVisualSearch = useCallback(async () => {
-    updatePanel(routeState.panel === 'visualsearch' ? null : 'visualsearch');
+    updatePanel(routeState.panel === 'finder' ? null : 'finder');
   }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {

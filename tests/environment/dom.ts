@@ -52,6 +52,13 @@ export function installDomEnvironment() {
   defineGlobal('Event', windowInstance.Event);
   defineGlobal('CustomEvent', windowInstance.CustomEvent);
   defineGlobal('DOMParser', windowInstance.DOMParser);
+  // Components construct these bare (`new ResizeObserver(...)`) rather than
+  // behind a `typeof` guard, because in a browser they always exist. happy-dom
+  // implements both but only hangs them off the window, so without hoisting
+  // them here any component that measures itself — the virtualized browse
+  // sheet, the preview-batching preset grid — throws ReferenceError on mount.
+  defineGlobal('ResizeObserver', windowInstance.ResizeObserver);
+  defineGlobal('IntersectionObserver', windowInstance.IntersectionObserver);
 
   (
     windowInstance as unknown as { SyntaxError: typeof SyntaxError }

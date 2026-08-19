@@ -165,7 +165,6 @@ export default defineConfig({
             // eagerly-fetched vendor-other chunk that the entry graph pulls.
             if (id.includes('/meyda/')) return 'vendor-meyda';
             if (id.includes('/comlink/')) return 'vendor-comlink';
-            if (id.includes('/stats-gl/')) return 'vendor-stats-gl';
             // The Strudel live-coding stack is behind ?strudel=1 and its
             // bridge lazy-imports @strudel/web — but without this carve-out
             // its whole dependency tree (core/tonal/superdough/…) landed in

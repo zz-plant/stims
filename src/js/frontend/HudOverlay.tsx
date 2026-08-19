@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import { useEngine, useEngineSnapshot } from './engine-context.tsx';
 import { UiIcon } from './UiIcon.tsx';
 
 /**
- * On-canvas debug HUD, mounted only for `?debug=hud`.
+ * On-canvas debug HUD, mounted for `?debug=hud` (and its `?stats=1` alias).
+ *
+ * This is the *only* performance/diagnostic surface. `?stats=1` used to open a
+ * second, unrelated floating panel backed by the stats-gl vendor chunk, which
+ * answered the same question ("is it running fast?") in a different visual
+ * language and could be on screen at the same time as this one. That
+ * implementation is gone; the flag now opens this HUD.
  *
  * Every number here is read from a real source — measured frames, the
  * adaptive-quality controller, the live audio energy on the engine snapshot,
@@ -91,12 +98,48 @@ function summarizeLowering(
   };
 }
 
+/**
+ * Persisted opt-in inherited from the retired stats overlay. `?stats=1` was
+ * sticky across reloads — which is what makes it usable in agent mode, where
+ * the page reloads between steps — so the alias keeps that behaviour instead of
+ * silently becoming a one-shot flag.
+ */
+const HUD_STORAGE_KEY = 'stims:debug:hud';
+
+/**
+ * Resolves the HUD's visibility from the URL and the persisted flag.
+ *
+ * `?debug=hud` is the primary spelling and is not sticky. `?stats=1` / `?stats=0`
+ * write through to storage so the setting survives a reload.
+ */
+export function shouldEnableDebugHud({
+  search = typeof window !== 'undefined' ? window.location.search : '',
+  storageValue,
+}: {
+  search?: string;
+  storageValue?: string | null;
+} = {}): boolean {
+  const params = parseURLParams(search);
+  if (params.flags.debug === 'hud') return true;
+  if (params.stats === '1') return true;
+  if (params.stats === '0') return false;
+  return storageValue === '1';
+}
+
 function useHudEnabled(): boolean {
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const debug = parseURLParams().flags.debug;
-    setEnabled(debug === 'hud');
+    const storage = getBrowserStorage();
+    const stats = parseURLParams().stats;
+    if (stats === '1' || stats === '0') {
+      storage?.setItem(HUD_STORAGE_KEY, stats);
+    }
+    setEnabled(
+      shouldEnableDebugHud({
+        storageValue: storage?.getItem(HUD_STORAGE_KEY) ?? null,
+      }),
+    );
   }, []);
   return enabled;
 }

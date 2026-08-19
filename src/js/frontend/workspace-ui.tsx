@@ -9,10 +9,7 @@ import { WorkspaceToast } from './WorkspaceToast.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 
 export { PresetArtwork } from './PresetArtwork.tsx';
-export {
-  PresetShelfSection,
-  SkeletonPresetCard,
-} from './PresetShelfSection.tsx';
+export { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 export { UiIcon } from './UiIcon.tsx';
 export { WorkspaceToast } from './WorkspaceToast.tsx';
 

@@ -10,8 +10,13 @@ export type PanelState =
   | 'browse'
   | 'editor'
   | 'refine'
-  | 'audiomatch'
-  | 'visualsearch'
+  /* One finder panel. It was two ('audiomatch'/'visualsearch') back when the
+     two seeds were separate panels; they merged, but both route ids stayed,
+     so every consumer had to test for both. Neither was ever URL-addressable
+     (url-params' VALID_PANELS excludes them), so collapsing them is internal
+     only — no link or saved shortcut changes meaning. The seed (sound vs
+     look) is panel state now, which is where it belongs. */
+  | 'finder'
   | 'capture'
   | 'settings'
   | 'synthesize'

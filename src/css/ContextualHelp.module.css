@@ -1,12 +1,6 @@
 .toast {
-  position: fixed;
-  bottom: calc(
-    var(--mobile-bar-height, 86px) +
-    env(safe-area-inset-bottom, 0px) +
-    8px
-  );
-  left: 50%;
-  z-index: var(--z-toast);
+  /* Positioning lives on .stims-shell__toast-stack, which anchors this and
+     the audio-match toast together so they can no longer overlap. */
   max-width: min(340px, calc(100vw - 32px));
   padding: 12px 16px;
   border-radius: 14px;
@@ -22,25 +16,20 @@
   line-height: 1.45;
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
-  transform: translateX(-50%);
   animation: help-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   pointer-events: none;
 }
 
+/* The -50% centring the old rules carried here is gone: the stack centres
+   this now, so the animation only needs to travel on Y. */
 @keyframes help-enter {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(12px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@media (width >= 768px) {
-  .toast {
-    bottom: 24px;
+    transform: translateY(0);
   }
 }
 

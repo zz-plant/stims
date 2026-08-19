@@ -12,7 +12,6 @@ import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
-import { createStatsOverlay } from '../core/stats-overlay.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -147,7 +146,6 @@ export function createMilkdropExperience({
   const signalTracker = createMilkdropSignalTracker();
   const capturedVideoReactivityTracker =
     createMilkdropCapturedVideoReactivityTracker();
-  const statsOverlay = createStatsOverlay();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
     initialCompiled: defaultPreset,
@@ -918,7 +916,6 @@ export function createMilkdropExperience({
     emitChange,
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
-    statsOverlay,
     // setLiveField/applyFields drive the running VM directly (Tune drags,
     // MIDI, the agent API); omitting vm here made them throw.
     vm,
@@ -954,14 +951,7 @@ function buildExperienceController(deps: Record<string, any>) {
     },
 
     openTab(
-      _tab:
-        | 'browse'
-        | 'editor'
-        | 'inspector'
-        | 'refine'
-        | 'audiomatch'
-        | 'visualsearch'
-        | 'blend',
+      _tab: 'browse' | 'editor' | 'inspector' | 'refine' | 'finder' | 'blend',
     ) {
       deps.emitChange();
     },
@@ -1091,7 +1081,6 @@ function buildExperienceController(deps: Record<string, any>) {
         // renderer finishes booting (e.g. a superseded mount).
         const renderer = (handle as { renderer?: unknown } | null)?.renderer;
         if (!renderer || !deps.lifetime.isActive()) return;
-        void deps.statsOverlay.init(renderer);
         // The pooled renderer handle keeps its identity across a device-loss
         // recovery, but the underlying renderer (and possibly the backend —
         // WebGPU can come back as WebGL) does not. The adapter and material
@@ -1116,14 +1105,12 @@ function buildExperienceController(deps: Record<string, any>) {
     },
     update(frame: unknown, options?: unknown) {
       const result = deps.frameLoop.update(frame, options);
-      deps.statsOverlay.update();
       return result;
     },
 
     dispose() {
       rendererLifecycleUnsubscribe?.();
       rendererLifecycleUnsubscribe = null;
-      deps.statsOverlay.dispose();
       deps.lifetime.dispose();
       deps.clearDebugSnapshot?.('milkdrop');
       deps.disposeSessionSubscription?.();
