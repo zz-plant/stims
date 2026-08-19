@@ -473,7 +473,8 @@
    chip would glare against the video. Because the surface is
    theme-independent, its ink has to be too — this literal is deliberate, not
    an un-tokenized leftover. Do not swap it for --ctl-ink: that token is
-   near-black in light theme, which lands at 1.32:1 on this background. */
+   near-black in light theme, which lands at 1.32:1 on this background.
+   guard-allow-hex: theme-independent surface, so the ink is too. */
 :global(html.light) .handle {
   background: rgba(8, 14, 22, 0.92);
   color: #f7f4eb;

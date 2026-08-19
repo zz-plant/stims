@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -15,6 +16,7 @@ import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
 import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
+import { writeStored } from './safe-storage.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -55,6 +57,19 @@ function readSortMode(): SortMode {
   }
 }
 
+/**
+ * Grid is the default: presets are picked by how they look, and the 54px list
+ * row can only show a thumbnail too small to judge. The list view stays for
+ * scanning a long catalog by name.
+ */
+function readGridView(): boolean {
+  try {
+    return (localStorage.getItem('stims:browse-view') ?? 'grid') === 'grid';
+  } catch {
+    return true;
+  }
+}
+
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
@@ -82,7 +97,7 @@ export function BrowseSheetPanel({
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const deferredSearch = useDeferredValue(localSearch);
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
-  const [gridView, setGridView] = useState(false);
+  const [gridView, setGridView] = useState(readGridView);
   const resultsRef = useRef<HTMLElement | null>(null);
 
   // Wrapper for PresetGrid — only passes presetId and audioSource
@@ -493,7 +508,21 @@ export function BrowseSheetPanel({
           type="button"
           className={gridView ? 'ctl-chip ctl-chip--active' : 'ctl-chip'}
           aria-pressed={gridView}
-          onClick={() => setGridView((g) => !g)}
+          onClick={() =>
+            setGridView((g) => {
+              const next = !g;
+              try {
+                localStorage.setItem(
+                  'stims:browse-view',
+                  next ? 'grid' : 'list',
+                );
+              } catch {
+                // Private-mode storage failure just means the choice is
+                // session-only; the toggle still works.
+              }
+              return next;
+            })
+          }
         >
           Grid
         </button>
@@ -604,9 +633,7 @@ export function BrowseSheetPanel({
               const next = e.target.value as SortMode;
               setSortMode(next);
               if (next === 'random') setRandomSeed(Date.now());
-              try {
-                localStorage.setItem('stims:browse-sort', next);
-              } catch {}
+              writeStored('stims:browse-sort', next);
             }}
           >
             <option value="relevance">Recommended</option>
@@ -707,6 +734,9 @@ export function BrowseSheetPanel({
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const entry = sorted[virtualRow.index];
                 if (!entry) return null;
+                // Titles carry the author chain inline, so the byline would
+                // otherwise repeat it verbatim on the line below.
+                const display = splitPresetDisplay(entry.title, entry.author);
                 return (
                   <li
                     key={entry.id}
@@ -746,10 +776,12 @@ export function BrowseSheetPanel({
                         />
                       </span>
                       <span className="ctl-preset__copy">
-                        <span className="ctl-preset__title">{entry.title}</span>
+                        <span className="ctl-preset__title">
+                          {display.title}
+                        </span>
                         <span className="ctl-preset__meta">
                           {describePresetMood(entry)}
-                          {entry.author ? ` · ${entry.author}` : null}
+                          {display.byline ? ` · ${display.byline}` : null}
                         </span>
                       </span>
                     </button>

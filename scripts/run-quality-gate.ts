@@ -150,6 +150,12 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:cache-bounds'],
       },
       {
+        // Diff-scoped, so this gates new and changed code without demanding a
+        // repo-wide cleanup first.
+        label: 'Banned pattern guard (changed files)',
+        cmd: ['bun', 'run', 'check:guard-registry'],
+      },
+      {
         label: 'TypeScript typecheck',
         cmd: ['bun', 'run', 'typecheck'],
       },
