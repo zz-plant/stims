@@ -107,6 +107,12 @@ import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
 import { numberScrubExtension } from './editor-number-scrub.ts';
 import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
+import {
+  type AssignedVariable,
+  filterVariables,
+  nextOccurrence,
+  scanAssignedVariables,
+} from './editor-variable-jump';
 
 export { computeAstDiagnostics, mergeDiagnostics };
 
@@ -621,6 +627,7 @@ function createEditorView({
   isChangeSuppressed,
   onQuickFixDiagnostic,
   onEscapeBlur,
+  onJumpToVariable,
 }: {
   parent: HTMLElement;
   onDocChange: (source: string) => void;
@@ -630,6 +637,8 @@ function createEditorView({
   /** Called when Escape leaves the editor so the panel can park focus on a
    * sensible control instead of dropping it on <body>. */
   onEscapeBlur: () => void;
+  /** Opens the panel's "Jump to variable" popover (Cmd/Ctrl+J). */
+  onJumpToVariable: () => void;
 }) {
   let debounceId: number | null = null;
   let view: EditorView;
@@ -699,6 +708,13 @@ function createEditorView({
             run: () => flushDocChange(),
           },
           { key: 'Mod-/', run: toggleComment },
+          {
+            key: 'Mod-j',
+            run: () => {
+              onJumpToVariable();
+              return true;
+            },
+          },
           ...defaultEditorKeymap,
           ...historyEditorKeymap,
           indentWithTabKeybinding,
@@ -1115,7 +1131,20 @@ export class EditorPanel {
       document.removeEventListener('keydown', dismissMenuOnEscape, true);
     };
 
-    toolbar.append(applyButton, revertButton, undoRedo, spacer, menuWrap);
+    const jumpButton = this.createButton('Jump', {
+      ariaLabel: 'Jump to variable (Cmd/Ctrl+J)',
+      onClick: () => this.openVariableJump(),
+    });
+    jumpButton.dataset.action = 'editor-jump-variable';
+
+    toolbar.append(
+      applyButton,
+      revertButton,
+      undoRedo,
+      jumpButton,
+      spacer,
+      menuWrap,
+    );
 
     this.note = document.createElement('div');
     this.note.className = 'stims-editor__note';
@@ -1165,6 +1194,7 @@ export class EditorPanel {
       // Escape out of the code lands on the primary action rather than
       // dropping focus on <body>.
       onEscapeBlur: () => applyButton.focus(),
+      onJumpToVariable: () => this.openVariableJump(),
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
@@ -1347,6 +1377,158 @@ export class EditorPanel {
 
   setDeleteEnabled(enabled: boolean) {
     this.deleteButton.hidden = !enabled;
+  }
+
+  // ── Jump to variable (Cmd/Ctrl+J) ─────────────────────────────
+  // Scrubbing a value is instant once you're on its line; finding that line
+  // in a few hundred per-frame equations was the editor's dominant time
+  // sink. The popover lists the doc's assignment targets (most-assigned
+  // first), fuzzy-filters, and Enter jumps — repeatedly, cycling through
+  // every line that assigns the chosen variable.
+  private variableJumpEl: HTMLDivElement | null = null;
+  private variableJumpInput: HTMLInputElement | null = null;
+  private variableJumpMatches: AssignedVariable[] = [];
+  private variableJumpActive = 0;
+
+  private openVariableJump(): void {
+    if (this.variableJumpEl) {
+      this.variableJumpInput?.focus();
+      this.variableJumpInput?.select();
+      return;
+    }
+    const popover = document.createElement('div');
+    popover.className = 'stims-editor__jump';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'stims-editor__jump-input';
+    input.placeholder = 'Jump to variable…';
+    input.setAttribute('aria-label', 'Jump to variable');
+    const list = document.createElement('ul');
+    list.className = 'stims-editor__jump-list';
+    list.setAttribute('role', 'listbox');
+    popover.append(input, list);
+    this.stage.appendChild(popover);
+    this.variableJumpEl = popover;
+    this.variableJumpInput = input;
+
+    const variables = scanAssignedVariables(this.editor.state.doc.toString());
+    const render = () => {
+      this.variableJumpMatches = filterVariables(variables, input.value).slice(
+        0,
+        10,
+      );
+      this.variableJumpActive = 0;
+      list.replaceChildren();
+      if (this.variableJumpMatches.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'stims-editor__jump-empty';
+        empty.textContent = 'No assignments match';
+        list.appendChild(empty);
+        return;
+      }
+      this.variableJumpMatches.forEach((variable, index) => {
+        const item = document.createElement('li');
+        item.className = 'stims-editor__jump-item';
+        item.setAttribute('role', 'option');
+        item.setAttribute(
+          'aria-selected',
+          String(index === this.variableJumpActive),
+        );
+        item.dataset.active = String(index === this.variableJumpActive);
+        const name = document.createElement('span');
+        name.textContent = variable.name;
+        const count = document.createElement('span');
+        count.className = 'stims-editor__jump-count';
+        count.textContent =
+          variable.occurrences.length === 1
+            ? 'line ' + String(variable.occurrences[0].line)
+            : String(variable.occurrences.length) + '×';
+        item.append(name, count);
+        item.addEventListener('mousedown', (event) => {
+          // mousedown, not click: keeps focus in the input so the popover
+          // survives for cycling.
+          event.preventDefault();
+          this.variableJumpActive = index;
+          this.jumpToActiveVariable();
+        });
+        list.appendChild(item);
+      });
+    };
+
+    const setActive = (index: number) => {
+      const max = this.variableJumpMatches.length;
+      if (max === 0) return;
+      this.variableJumpActive = ((index % max) + max) % max;
+      [...list.children].forEach((child, i) => {
+        const active = i === this.variableJumpActive;
+        (child as HTMLElement).dataset.active = String(active);
+        child.setAttribute('aria-selected', String(active));
+      });
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActive(this.variableJumpActive + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActive(this.variableJumpActive - 1);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        this.jumpToActiveVariable();
+      } else if (event.key === 'Escape') {
+        // Consume it: the document-level handler would close the panel.
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeVariableJump();
+        this.editor.focus();
+      }
+    });
+    input.addEventListener('blur', () => {
+      // Deferred so a mousedown on a list item runs first.
+      window.setTimeout(() => {
+        if (!popover.contains(document.activeElement)) {
+          this.closeVariableJump();
+        }
+      }, 0);
+    });
+
+    render();
+    input.focus();
+  }
+
+  /** Jump the editor cursor to the active match's next occurrence (cycles),
+   * keeping the popover open so repeated Enter walks every assignment. */
+  private jumpToActiveVariable(): void {
+    const variable = this.variableJumpMatches[this.variableJumpActive];
+    if (!variable) return;
+    const doc = this.editor.state.doc;
+    const head = this.editor.state.selection.main.head;
+    const cursorLine = doc.lineAt(head);
+    const occurrence = nextOccurrence(
+      variable.occurrences.filter((o) => o.line <= doc.lines),
+      cursorLine.number,
+      head - cursorLine.from,
+    );
+    if (!occurrence) return;
+    const line = doc.line(occurrence.line);
+    const anchor = Math.min(line.from + occurrence.column, line.to);
+    this.editor.dispatch({
+      selection: {
+        anchor,
+        head: Math.min(anchor + variable.name.length, line.to),
+      },
+      scrollIntoView: true,
+    });
+  }
+
+  private closeVariableJump(): void {
+    this.variableJumpEl?.remove();
+    this.variableJumpEl = null;
+    this.variableJumpInput = null;
+    this.variableJumpMatches = [];
+    this.variableJumpActive = 0;
   }
 
   private createButton(
@@ -1984,6 +2166,7 @@ export class EditorPanel {
   }
 
   dispose() {
+    this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
     this.disposeMidiListener?.();
