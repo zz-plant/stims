@@ -668,6 +668,13 @@ export function useWorkspaceSessionState({
     setTransitionMode: (mode: 'blend' | 'cut') => {
       engineRef.current?.setTransitionMode(mode);
     },
+    startManualCrossfade: () => {
+      engineRef.current?.startManualCrossfade();
+    },
+    setCrossfade: (position: number) => {
+      engineRef.current?.setCrossfade(position);
+    },
+    getCrossfade: () => engineRef.current?.getCrossfade() ?? null,
     setBlendDuration: (value: number) => {
       engineRef.current?.setBlendDuration(value);
     },

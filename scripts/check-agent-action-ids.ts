@@ -51,7 +51,18 @@ function logInfo(msg: string) {
 //   The dock is for things you reach for mid-performance; these are settings
 //   you change once, so they get a palette row (and a Settings control) but
 //   no permanent dock slot.
+// - 'queue-take': the cue monitor owns this verb with its own Take button,
+//   which is a larger and better-placed target than a dock menu row would be;
+//   the palette row exists so automation and keyboard users can reach it.
+// - 'queue-skip', 'queue-fade': same as queue-take — the cue monitor owns
+//   these with its own buttons, right next to the preview they act on. The
+//   palette rows exist so automation and keyboard users can reach them.
+// - 'queue-clear': queue management, not a mid-performance move.
 const PALETTE_ONLY_EXEMPT = new Set([
+  'queue-take',
+  'queue-skip',
+  'queue-fade',
+  'queue-clear',
   'toggle-autoplay',
   'open-shortcuts',
   'cycle-theme',

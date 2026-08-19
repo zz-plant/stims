@@ -35,6 +35,10 @@ const COMMENT_START_RE = /^\s*(?:\/\/|\*|\/\*)/;
 const ALLOWED: Record<string, string> = {
   'src/js/milkdrop/compiler/eel-function-table.ts':
     'GPU_FIELD_FUNCTION_NAMES is derived once from the fixed, finite EEL_FUNCTIONS table at module load — it never grows at runtime.',
+  'src/js/frontend/perform-pins.ts':
+    'PINNABLE_BY_TARGET is a lookup index over the fixed PINNABLE_FIELDS literal, built once at module load — it is a table, not a cache.',
+  'src/js/frontend/PerformSurface.tsx':
+    'The only container is a Set derived inside a render/poll callback to de-duplicate the current modulator targets; it is rebuilt from scratch each time and never accumulates.',
 };
 
 type DiffLine = { kind: 'file' | 'hunk' | 'added' | 'other'; text: string };

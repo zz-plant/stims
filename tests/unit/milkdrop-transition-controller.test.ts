@@ -144,3 +144,139 @@ describe('milkdrop transition controller', () => {
     );
   });
 });
+
+describe('hand-driven crossfade', () => {
+  test('cover opacity follows the fader instead of a clock', () => {
+    const controller = createMilkdropTransitionController();
+    const payload = blendPayload();
+    controller.beginManual(payload);
+    expect(controller.getPhase()).toBe('manual');
+
+    // Time passing on its own must move nothing: this fade is a gesture.
+    expect(controller.tick({ ...tickDefaults, now: 1000 })?.alpha).toBeCloseTo(
+      1,
+      5,
+    );
+    expect(controller.tick({ ...tickDefaults, now: 9000 })?.alpha).toBeCloseTo(
+      1,
+      5,
+    );
+
+    controller.setManualPosition(0.25);
+    expect(controller.tick({ ...tickDefaults, now: 9100 })?.alpha).toBeCloseTo(
+      0.75,
+      5,
+    );
+
+    // A fader can go backwards; a timed blend cannot.
+    controller.setManualPosition(0.1);
+    expect(controller.tick({ ...tickDefaults, now: 9200 })?.alpha).toBeCloseTo(
+      0.9,
+      5,
+    );
+  });
+
+  test('clamps overshoot from pointer and MIDI input', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+
+    controller.setManualPosition(-3);
+    expect(controller.getManualPosition()).toBe(0);
+    controller.setManualPosition(4);
+    expect(controller.getManualPosition()).toBe(1);
+  });
+
+  test('settles once the fader completes the switch', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.setManualPosition(1);
+
+    expect(controller.tick({ ...tickDefaults, now: 1000 })).toBeNull();
+    expect(controller.getPhase()).toBe('idle');
+  });
+
+  test('refuses to reveal a deck whose shaders have not warmed', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    // Pushed all the way over, but the incoming preset is not presentable:
+    // the cover holds at the floor rather than showing pass-through styling.
+    controller.setManualPosition(1);
+
+    const held = controller.tick({
+      now: 1000,
+      canBlendThisFrame: true,
+      presentable: false,
+    });
+    expect(held?.alpha).toBeCloseTo(0.35, 5);
+
+    // Once it warms, the same fader position completes the switch.
+    expect(controller.tick({ ...tickDefaults, now: 1100 })).toBeNull();
+    expect(controller.getPhase()).toBe('idle');
+  });
+
+  test('gives up on the hold rather than wedging the fade forever', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.setManualPosition(1);
+
+    controller.tick({ now: 1000, canBlendThisFrame: true, presentable: false });
+    // Past the cap, a swap that never becomes presentable must not leave the
+    // performer unable to finish the gesture.
+    expect(
+      controller.tick({
+        now: 4000,
+        canBlendThisFrame: true,
+        presentable: false,
+      }),
+    ).toBeNull();
+    expect(controller.getPhase()).toBe('idle');
+  });
+
+  test('a suspended frame holds position instead of snapping', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.setManualPosition(0.4);
+
+    // Workload spike: no cover this frame...
+    expect(
+      controller.tick({
+        now: 1000,
+        canBlendThisFrame: false,
+        presentable: true,
+      }),
+    ).toBeNull();
+    // ...and the gesture resumes exactly where the hand left it.
+    expect(controller.tick({ ...tickDefaults, now: 1100 })?.alpha).toBeCloseTo(
+      0.6,
+      5,
+    );
+  });
+});
+
+describe('manual fades survive the duplicate begin', () => {
+  test('a timed begin cannot replace a hand-driven fade in progress', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.setManualPosition(0.3);
+
+    // One preset switch calls beginPresetTransition twice — navigation
+    // controller and editor-session subscriber. The second call must not
+    // take the fader out of the performer's hand.
+    controller.begin(blendPayload(), 2);
+
+    expect(controller.getPhase()).toBe('manual');
+    expect(controller.getManualPosition()).toBe(0.3);
+    expect(controller.tick({ ...tickDefaults, now: 1000 })?.alpha).toBeCloseTo(
+      0.7,
+      5,
+    );
+  });
+
+  test('a cut cannot silently cancel a hand-driven fade either', () => {
+    const controller = createMilkdropTransitionController();
+    controller.beginManual(blendPayload());
+    controller.begin(null, 0);
+
+    expect(controller.getPhase()).toBe('manual');
+  });
+});

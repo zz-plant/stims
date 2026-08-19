@@ -26,6 +26,7 @@ import {
   createMilkdropBackendFailover,
   describeWebglFallback,
 } from './runtime/backend-fallback';
+import { createMilkdropBeatClock } from './runtime/beat-clock.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
@@ -46,6 +47,7 @@ import {
   buildMilkdropInputSignalOverrides as buildMilkdropInputSignalOverridesImpl,
   getMilkdropDetailScale as getMilkdropDetailScaleImpl,
 } from './runtime/interaction-response';
+import { AUTO_ADVANCE_TEMPO_CONFIDENCE } from './runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
@@ -106,6 +108,15 @@ export function createMilkdropExperience({
     audioBass: number;
     audioMid: number;
     audioTreble: number;
+    /**
+     * Estimated tempo, already adjudicated: a whole number of BPM when the
+     * beat clock is confident, null otherwise. One field rather than a
+     * value plus a confidence, so the "is this trustworthy" rule lives here
+     * instead of being re-decided by every consumer — and rounded, because
+     * the raw median jitters by fractions of a BPM and every change of this
+     * field republishes the engine snapshot to the UI.
+     */
+    tempoBpm: number | null;
     autoplay: boolean;
     transitionMode: 'blend' | 'cut';
     blendDuration: number;
@@ -307,6 +318,14 @@ export function createMilkdropExperience({
     selectPreset: (presetId) => navigation.selectPreset(presetId),
     setAutoplay: (enabled) => setAutoplayEnabled(enabled),
     startupSettled: () => startupSettled,
+    getTransition: () => ({
+      phase: transitionController.getPhase(),
+      crossfade:
+        transitionController.getPhase() === 'manual'
+          ? transitionController.getManualPosition()
+          : null,
+      events: transitionController.getEvents(),
+    }),
     startTraceCapture: (options) => {
       if (!traceRecorder) {
         throw new Error('Trace capture requires agent mode (?agent=true).');
@@ -358,23 +377,37 @@ export function createMilkdropExperience({
   const updateAgentDebugSnapshot = (force = false) =>
     presentationController.updateAgentDebugSnapshot(force);
 
-  const buildSnapshot = (): MilkdropExperienceSnapshot => ({
-    activePresetId,
-    backend: activeBackend,
-    status: lastStatusMessage,
-    adaptiveQuality: adaptiveQualityState,
-    catalogEntries: catalogCoordinator.getCatalogEntries(),
-    sessionState: session.getState(),
-    audioEnergy: signalTracker.getLatestAudioEnergy(),
-    // Three primitives rather than an object: the snapshot equality check is
-    // per-field ===, and a fresh object every frame would defeat it.
-    audioBass: signalTracker.getLatestAudioBands().bass,
-    audioMid: signalTracker.getLatestAudioBands().mid,
-    audioTreble: signalTracker.getLatestAudioBands().treble,
-    autoplay,
-    transitionMode,
-    blendDuration,
-  });
+  // Tempo/bar tracking lives at runtime scope, not inside the frame loop:
+  // the snapshot below is built before the frame loop exists, and tempo is
+  // read by the UI as well as by the quantized advance.
+  const beatClock = createMilkdropBeatClock();
+
+  const buildSnapshot = (): MilkdropExperienceSnapshot => {
+    // One read per snapshot: `snapshot()` allocates, and buildSnapshot runs
+    // every frame while audio plays.
+    const beat = beatClock.snapshot(performance.now());
+    return {
+      activePresetId,
+      backend: activeBackend,
+      status: lastStatusMessage,
+      adaptiveQuality: adaptiveQualityState,
+      catalogEntries: catalogCoordinator.getCatalogEntries(),
+      sessionState: session.getState(),
+      audioEnergy: signalTracker.getLatestAudioEnergy(),
+      // Three primitives rather than an object: the snapshot equality check is
+      // per-field ===, and a fresh object every frame would defeat it.
+      audioBass: signalTracker.getLatestAudioBands().bass,
+      audioMid: signalTracker.getLatestAudioBands().mid,
+      audioTreble: signalTracker.getLatestAudioBands().treble,
+      tempoBpm:
+        beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
+          ? Math.round(beat.bpm)
+          : null,
+      autoplay,
+      transitionMode,
+      blendDuration,
+    };
+  };
 
   const runtimeSignalHub = createMilkdropRuntimeSignalHub({
     getSnapshot: buildSnapshot,
@@ -578,6 +611,9 @@ export function createMilkdropExperience({
     }
   };
 
+  /** Set by `startManualCrossfade()` and consumed by the next switch. */
+  let pendingManualCrossfade = false;
+
   /**
    * Starts the crossfade into a preset that is about to be applied.
    *
@@ -587,12 +623,33 @@ export function createMilkdropExperience({
    * down to a second copy of `MAX_BLEND_WORKLOAD` in the controller.
    */
   const beginPresetTransition = () => {
+    // A hand-driven crossfade is a gesture, not a persisted mode: it applies
+    // to the one switch that armed it and then clears. Making it a third
+    // `transitionMode` would let it be saved to preferences, and a user who
+    // ended a session mid-fader would come back to a visualizer that never
+    // completes a preset change on its own.
+    const manual = pendingManualCrossfade;
+    pendingManualCrossfade = false;
+
     const canBlend =
-      transitionMode === 'blend' &&
-      blendDuration > 0 &&
+      (manual || transitionMode === 'blend') &&
+      (manual || blendDuration > 0) &&
       estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
     const nextBlendState = canBlend ? cloneBlendState(currentFrameState) : null;
-    transitionController.begin(nextBlendState, blendDuration);
+    if (manual && nextBlendState) {
+      transitionController.beginManual(nextBlendState);
+    } else {
+      if (manual) {
+        // The workload gate refused: drawing two layers over a frame this
+        // heavy is what it exists to prevent. The switch still happens, but
+        // a requested fade that silently became a cut leaves the performer
+        // holding a fader that never appeared.
+        setOverlayStatus(
+          'Too much on screen to crossfade — switched instantly.',
+        );
+      }
+      transitionController.begin(nextBlendState, blendDuration);
+    }
     if (nextBlendState) {
       adapter?.saveFeedbackFrame?.();
     }
@@ -749,6 +806,7 @@ export function createMilkdropExperience({
     },
   });
   const frameLoop = createMilkdropExperienceFrameLoop({
+    beatClock,
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getActiveBackend: () => activeBackend,
@@ -894,6 +952,15 @@ export function createMilkdropExperience({
     setAutoplay: setAutoplayEnabled,
     getTransitionMode: () => transitionMode,
     setTransitionMode,
+    startManualCrossfade: () => {
+      pendingManualCrossfade = true;
+    },
+    setCrossfade: (position: number) =>
+      transitionController.setManualPosition(position),
+    getCrossfade: () =>
+      transitionController.getPhase() === 'manual'
+        ? transitionController.getManualPosition()
+        : null,
     getBlendDuration: () => blendDuration,
     setBlendDuration: setBlendDurationValue,
     attachmentController,
@@ -971,6 +1038,29 @@ function buildExperienceController(deps: Record<string, any>) {
     },
     setTransitionMode(mode: 'blend' | 'cut') {
       deps.setTransitionMode(mode);
+    },
+
+    /**
+     * Arms the next preset switch to be crossfaded by hand rather than on a
+     * timer. Call immediately before selecting the preset; it applies to that
+     * one switch only.
+     *
+     * Known limit, worth stating plainly: the outgoing side of the fade is a
+     * saved frame, not a second live pipeline (see `cloneBlendState`). Riding
+     * a fade of a second or two looks right; parking the fader at halfway for
+     * eight bars shows a still image of where the outgoing preset stopped.
+     */
+    startManualCrossfade() {
+      deps.startManualCrossfade();
+    },
+    /** Moves a hand-driven crossfade. 0 holds the outgoing preset, 1 completes
+     * the switch. Out-of-range values clamp. */
+    setCrossfade(position: number) {
+      deps.setCrossfade(position);
+    },
+    /** Current fader position, or null when no hand-driven fade is running. */
+    getCrossfade(): number | null {
+      return deps.getCrossfade();
     },
     getBlendDuration() {
       return deps.getBlendDuration();

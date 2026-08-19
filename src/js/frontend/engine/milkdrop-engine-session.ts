@@ -414,6 +414,20 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    /** Arms the next preset switch to be crossfaded by hand. Applies to that
+     * one switch; see the runtime for the outgoing-side limitation. */
+    startManualCrossfade() {
+      experience?.startManualCrossfade();
+    },
+
+    setCrossfade(position: number) {
+      experience?.setCrossfade(position);
+    },
+
+    getCrossfade(): number | null {
+      return experience?.getCrossfade() ?? null;
+    },
+
     setBlendDuration(value: number) {
       experience?.setBlendDuration(value);
       emit();

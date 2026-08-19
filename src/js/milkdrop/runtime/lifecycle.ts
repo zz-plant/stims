@@ -1,8 +1,4 @@
-import type {
-  MilkdropBlendState,
-  MilkdropFrameState,
-  MilkdropPostVisual,
-} from '../types.ts';
+import type { MilkdropFrameState, MilkdropPostVisual } from '../types.ts';
 
 export function shouldAutoAdvancePreset({
   autoplay,
@@ -42,6 +38,111 @@ export function shouldPrepareNextPreset(args: {
     ...args,
     now: args.now + AUTO_ADVANCE_PREPARE_LEAD_MS,
   });
+}
+
+/**
+ * How long an armed advance waits for a downbeat before settling for any
+ * beat. Roughly eight beats at 120 BPM — long enough to see a bar line, short
+ * enough that the wait is never the thing you notice.
+ */
+export const AUTO_ADVANCE_BEAT_WINDOW_MS = 4000;
+
+/**
+ * Hard cap on the whole wait. Past this the switch fires with no beat at all,
+ * so ambient material, silence, and a failed onset detector all degrade to
+ * the old wall-clock behaviour instead of pinning the same preset forever.
+ */
+export const AUTO_ADVANCE_BEAT_TIMEOUT_MS = 8000;
+
+/** Tempo agreement below which bar position is not trustworthy enough to
+ * wait for. Without it a misfiring detector invents downbeats and the
+ * "quantized" switch lands somewhere arbitrary with extra latency. */
+export const AUTO_ADVANCE_TEMPO_CONFIDENCE = 0.6;
+
+/**
+ * Turns the dwell predicate into a musical one.
+ *
+ * `shouldAutoAdvancePreset` answers "has this preset been up long enough",
+ * which is a timer, and a timer lands cuts mid-bar — the single biggest
+ * reason unattended playback reads as shuffled rather than performed. This
+ * gate keeps that predicate as the *arming* condition and then holds the
+ * switch until the music offers a place to put it.
+ *
+ * Firing is free of side effects: the caller still owns the advance, so an
+ * in-flight latch, prefetch state, and the transition policy are unchanged.
+ * The 8s prepare lead means the incoming preset is already compiled and warm
+ * before this gate ever arms, which is what makes waiting for a downbeat
+ * affordable — there is nothing left to load when the moment arrives.
+ */
+export function createAutoAdvanceGate({
+  beatWindowMs = AUTO_ADVANCE_BEAT_WINDOW_MS,
+  timeoutMs = AUTO_ADVANCE_BEAT_TIMEOUT_MS,
+}: {
+  beatWindowMs?: number;
+  timeoutMs?: number;
+} = {}) {
+  let armedAt: number | null = null;
+
+  return {
+    /**
+     * Call every frame. Returns true on the single frame the advance should
+     * fire. `due` is the dwell predicate; `beat` is true only on the frame a
+     * beat is detected (the caller supplies the rising edge); `downbeat` and
+     * `tempoConfident` come from the beat clock.
+     */
+    update({
+      due,
+      now,
+      beat,
+      downbeat,
+      tempoConfident,
+    }: {
+      due: boolean;
+      now: number;
+      beat: boolean;
+      downbeat: boolean;
+      tempoConfident: boolean;
+    }): boolean {
+      if (!due) {
+        armedAt = null;
+        return false;
+      }
+
+      if (armedAt === null) {
+        armedAt = now;
+      }
+      const waited = now - armedAt;
+
+      if (waited >= timeoutMs) {
+        armedAt = null;
+        return true;
+      }
+
+      if (!beat) {
+        return false;
+      }
+
+      // Inside the window, hold out for a bar line — but only while the
+      // tempo estimate is worth holding out for. With no confident tempo
+      // there is no bar to wait for, so the next beat is the best moment
+      // available and waiting longer would only add latency.
+      const wanted = !tempoConfident || downbeat || waited >= beatWindowMs;
+      if (wanted) {
+        armedAt = null;
+        return true;
+      }
+      return false;
+    },
+
+    /** True while a switch is due and waiting for its moment. */
+    isArmed: () => armedAt !== null,
+
+    /** Drops any pending arm — used when the caller switches for another
+     * reason (manual next, failure recovery) and the wait is now moot. */
+    reset() {
+      armedAt = null;
+    },
+  };
 }
 
 // Per-frame blend alpha lives in runtime/transition-controller.ts now: the
