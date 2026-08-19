@@ -16,6 +16,7 @@ import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types';
+import type { MilkdropBeatClock } from './beat-clock.ts';
 import { applyMilkdropCapturedVideoFrameState } from './captured-video-frame.ts';
 import {
   type CapturedVideoSignals,
@@ -28,7 +29,9 @@ import {
   getMilkdropDetailScale,
 } from './interaction-response.ts';
 import {
+  AUTO_ADVANCE_TEMPO_CONFIDENCE,
   buildRenderFrameState,
+  createAutoAdvanceGate,
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
@@ -63,6 +66,7 @@ export function createMilkdropExperienceFrameLoop({
   capturedVideoOverlay,
   getFreezeFrame,
   traceRecorder,
+  beatClock,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
   getAdapter: () => {
@@ -152,11 +156,19 @@ export function createMilkdropExperienceFrameLoop({
   getFreezeFrame: () => boolean;
   /** Agent-mode live trace capture; absent outside agent mode. */
   traceRecorder?: MilkdropTraceRecorder | null;
+  /** Tempo/bar tracking. Owned by the runtime so its snapshot can publish
+   * tempo without reaching into the frame loop. */
+  beatClock: MilkdropBeatClock;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   /** True while an autoplay advance is between trigger and transition. */
   let autoAdvanceInFlight = false;
   let consecutiveFrameFailures = 0;
+  const autoAdvanceGate = createAutoAdvanceGate();
+  // `signals.beat` is a level, not an edge: it holds at 1 for as long as the
+  // tracker considers the frame a beat, so feeding it straight to the clock
+  // would count one kick several times and halve the estimated interval.
+  let beatWasHigh = false;
   const getCurrentFrameWorkload = () =>
     estimateFrameBlendWorkload(blendWorkloadFrameState);
 
@@ -166,6 +178,8 @@ export function createMilkdropExperienceFrameLoop({
   };
 
   return {
+    /** True while an autoplay advance is waiting for a musical landing. */
+    isAutoAdvanceArmed: () => autoAdvanceGate.isArmed(),
     update(
       frame: ToyRuntimeFrame,
       options?: {
@@ -178,13 +192,19 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      // Hidden tabs skip frames to spare the GPU — except in agent mode,
-      // where automation (headless capture, browser-pane QA) drives frames
-      // deliberately and a silent skip reads as a frozen/black canvas.
+      // Hidden tabs skip frames to spare the GPU — with two exceptions:
+      // agent mode, where automation (headless capture, browser-pane QA)
+      // drives frames deliberately and a silent skip reads as a frozen/black
+      // canvas; and an open picture-in-picture window, which is a LIVE
+      // `canvas.captureStream()` of the stage (picture-in-picture-service.ts).
+      // Switching tabs is precisely when PiP earns its keep, and that is also
+      // exactly when `document.hidden` flips — so pausing here froze the one
+      // surface the user had deliberately popped out to keep watching.
       if (
         typeof document !== 'undefined' &&
         document.hidden &&
-        document.documentElement.dataset.agentMode !== 'true'
+        document.documentElement.dataset.agentMode !== 'true' &&
+        document.pictureInPictureElement === null
       ) {
         setCurrentFrameState(null);
         return;
@@ -238,6 +258,14 @@ export function createMilkdropExperienceFrameLoop({
           signals,
         );
 
+        const beatIsHigh = (signals.beat ?? 0) >= 1;
+        const beatEdge = beatIsHigh && !beatWasHigh;
+        beatWasHigh = beatIsHigh;
+        if (beatEdge) {
+          beatClock.noteBeat(frameStartAt);
+        }
+        const beatSnapshot = beatClock.snapshot(frameStartAt);
+
         const autoAdvanceArgs = {
           autoplay: getAutoplay(),
           catalogSize: catalogCoordinator.getCatalogEntries().length,
@@ -245,7 +273,17 @@ export function createMilkdropExperienceFrameLoop({
           lastPresetSwitchAt: getLastPresetSwitchAt(),
           blendDuration: getBlendDuration(),
         };
-        if (!autoAdvanceInFlight && shouldAutoAdvancePreset(autoAdvanceArgs)) {
+        // The dwell predicate only arms the advance now; the gate decides
+        // which frame it actually lands on, so cuts fall on the music.
+        const autoAdvanceDue = autoAdvanceGate.update({
+          due: shouldAutoAdvancePreset(autoAdvanceArgs),
+          now: frameStartAt,
+          beat: beatEdge,
+          downbeat: beatClock.isDownbeat(),
+          tempoConfident:
+            beatSnapshot.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE,
+        });
+        if (!autoAdvanceInFlight && autoAdvanceDue) {
           // In-flight latch: lastPresetSwitchAt only moves once the switch
           // reaches beginPresetTransition (after fetch + compile), so without
           // it this branch fired selectRandomPreset on EVERY frame of that
@@ -291,8 +329,13 @@ export function createMilkdropExperienceFrameLoop({
         // Per-frame gates stay with the caller (they read live quality and
         // workload); the controller owns the clock, so a gated frame
         // suspends the blend instead of letting wall time race past it.
+        // A hand-driven crossfade is a gesture the user is actively making,
+        // so the transition-mode preference does not gate it — they asked for
+        // this fade explicitly. The quality and workload gates still apply:
+        // those are about whether the machine can draw two layers right now.
         const canBlendThisFrame =
-          getTransitionMode() === 'blend' &&
+          (getTransitionMode() === 'blend' ||
+            transitionController.getPhase() === 'manual') &&
           frame.performance.shaderQuality !== 'low' &&
           getCurrentFrameWorkload() < 900;
         const activeBlendState = transitionController.tick({

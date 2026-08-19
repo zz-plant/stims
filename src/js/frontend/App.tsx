@@ -62,9 +62,10 @@ import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
+import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
-import { MidiPerformanceHud } from './MidiPerformanceHud.tsx';
+import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
 
 const NewHomePage = lazy(() =>
   import('./NewHomePage.tsx').then((m) => ({
@@ -483,6 +484,12 @@ function StimsWorkspaceAppShell() {
           ]
         : []),
       {
+        id: 'perform-pin',
+        label: 'Pin a parameter to the stage',
+        keywords: ['perform', 'fader', 'control', 'surface'],
+        run: () => openPerformPicker(),
+      },
+      {
         id: 'queue-add',
         label: 'Add this preset to the queue',
         keywords: ['cue', 'crate', 'next', 'setlist'],
@@ -493,7 +500,9 @@ function StimsWorkspaceAppShell() {
             return;
           }
           uiRef.current.presetQueue.add(presetId);
-          uiRef.current.setStatusMessage('Queued. It shows in the cue monitor.');
+          uiRef.current.setStatusMessage(
+            'Queued. It shows in the cue monitor.',
+          );
         },
       },
       {
@@ -507,6 +516,43 @@ function StimsWorkspaceAppShell() {
             return;
           }
           uiRef.current.setRouteState((current) => ({ ...current, presetId }));
+        },
+      },
+      {
+        id: 'queue-skip',
+        label: 'Skip the cued preset',
+        keywords: ['cue', 'drop', 'pass'],
+        run: () => {
+          const next = uiRef.current.presetQueue.presetIds[0];
+          if (!next) {
+            uiRef.current.setStatusMessage('Nothing is cued.');
+            return;
+          }
+          uiRef.current.presetQueue.remove(next);
+        },
+      },
+      {
+        id: 'queue-fade',
+        label: 'Crossfade to the cued preset by hand',
+        keywords: ['cue', 'fader', 'blend', 'mix'],
+        run: () => {
+          const next = uiRef.current.presetQueue.presetIds[0];
+          if (!next) {
+            uiRef.current.setStatusMessage('Nothing is cued.');
+            return;
+          }
+          if (next === engineSnapshotRef.current?.activePresetId) {
+            uiRef.current.setStatusMessage(
+              'That preset is already on the stage.',
+            );
+            return;
+          }
+          uiRef.current.presetQueue.remove(next);
+          engineBridgeRef.current.startManualCrossfade();
+          uiRef.current.setRouteState((current) => ({
+            ...current,
+            presetId: next,
+          }));
         },
       },
       {
@@ -622,6 +668,10 @@ function StimsWorkspaceAppShell() {
         engineBridgeRef.current.handlePresetSelection(presetId),
       setField: (key, value) =>
         engineBridgeRef.current.updateFieldLive(key, value),
+      setCrossfade: (position) =>
+        engineBridgeRef.current.setCrossfade(position),
+      pinParameter: (field) => pinTarget(field),
+      unpinParameter: (field) => unpinTarget(field),
       getStageCanvas: () =>
         uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
     });
@@ -1357,7 +1407,7 @@ function StimsWorkspaceAppShell() {
       </div>
 
       <SyncSessionBridge />
-      <MidiPerformanceHud />
+      <LiveParameterHud />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

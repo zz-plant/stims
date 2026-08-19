@@ -6,6 +6,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/StageControls.module.css';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import {
   getAudioEnergy,
@@ -16,6 +17,7 @@ import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
+import { openPerformPicker } from './perform-pins.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import {
@@ -107,12 +109,28 @@ export function StageControls({
     engineSnapshot?.blendDuration ?? 2,
   );
 
-  const presetTitle =
-    engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '';
-  const presetAuthor =
-    engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? '';
+  // MilkDrop titles carry the author chain inline ("Krash & Rovastar -
+  // Cerebral Demons"), so 93% of the catalog would print the credit twice in
+  // the one always-visible strip of chrome — once in full, once truncated.
+  // splitPresetDisplay peels the chain off for the byline slot.
+  const { title: presetTitle, byline: presetAuthor } = splitPresetDisplay(
+    engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '',
+    engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? undefined,
+  );
   const currentPresetId =
     engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
+
+  // Shared by the dock item and the palette's `queue-add`: the verb must not
+  // mean different things depending on which surface invoked it.
+  const queueCurrentPreset = () => {
+    const presetId = engineSnapshot?.activePresetId ?? currentPresetId;
+    if (!presetId) {
+      ui.setStatusMessage('No preset to queue yet.');
+      return;
+    }
+    ui.presetQueue.add(presetId);
+    ui.setStatusMessage('Queued. It shows in the cue monitor.');
+  };
   // favoritePresets is the store-derived list, so it stays fresh across
   // toggles even if the selectedPreset entry object is a stale snapshot.
   const presetSaved =
@@ -317,6 +335,21 @@ export function StageControls({
       actionId: 'find-similar',
       action: () => run(() => togglePanel(menuSurface, 'finder')),
       active: panel === 'finder',
+    },
+    {
+      icon: 'sliders' as const,
+      label: 'Performance controls',
+      actionId: 'perform-pin',
+      action: () => run(() => openPerformPicker()),
+    },
+    {
+      // Queueing is a mid-set verb — you spot something while browsing and
+      // want it next, without taking it now. The cue monitor is where the
+      // result shows up.
+      icon: 'bookmark' as const,
+      label: 'Queue this preset',
+      actionId: 'queue-add',
+      action: () => run(() => queueCurrentPreset()),
     },
     {
       icon: 'sparkles' as const,

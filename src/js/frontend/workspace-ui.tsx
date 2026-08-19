@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { parseURLParams } from '../core/url-params.ts';
 import { CueMonitor } from './CueMonitor.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
+import { PerformSurface } from './PerformSurface.tsx';
 import { StageControls } from './StageControls.tsx';
 import { StageWarpGizmo } from './StageWarpGizmo.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
@@ -66,8 +67,10 @@ export function WorkspaceStagePanel({
         {/* Only while the editor is open — it renders its own null otherwise.
             The handle is the one thing on this layer that takes the pointer. */}
         {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
-        {/* Renders itself away when the queue is empty. */}
+        {/* Both render themselves away when empty — an unpinned visitor with
+            no queue sees neither. */}
         {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
+        {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
             buttons stay in the tab order and accessibility tree without it */}
         <div className="stims-shell__stage-hero" inert={liveMode}>

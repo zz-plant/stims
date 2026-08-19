@@ -178,6 +178,7 @@ export function coarseEngineSnapshotEqual(
     prev.adaptiveQuality === snap.adaptiveQuality &&
     prev.catalogEntries === snap.catalogEntries &&
     prev.sessionState === snap.sessionState &&
+    prev.tempoBpm === snap.tempoBpm &&
     prev.autoplay === snap.autoplay &&
     prev.transitionMode === snap.transitionMode &&
     prev.blendDuration === snap.blendDuration
@@ -296,6 +297,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setQualityPreset: sessionState.setQualityPreset,
       setAutoplay: sessionState.setAutoplay,
       setTransitionMode: sessionState.setTransitionMode,
+      startManualCrossfade: sessionState.startManualCrossfade,
+      setCrossfade: sessionState.setCrossfade,
+      getCrossfade: sessionState.getCrossfade,
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
       updateFieldLive: sessionState.updateFieldLive,
@@ -347,6 +351,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setQualityPreset,
       sessionState.setAutoplay,
       sessionState.setTransitionMode,
+      sessionState.startManualCrossfade,
+      sessionState.setCrossfade,
+      sessionState.getCrossfade,
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
       sessionState.updateFieldLive,

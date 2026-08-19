@@ -78,6 +78,11 @@ export interface EngineContextValue {
   setQualityPreset: (presetId: string) => void;
   setAutoplay: (enabled: boolean) => void;
   setTransitionMode: (mode: 'blend' | 'cut') => void;
+  /** Arms the next preset switch to be crossfaded by hand, then driven with
+   * `setCrossfade`. One switch only — it is a gesture, not a mode. */
+  startManualCrossfade: () => void;
+  setCrossfade: (position: number) => void;
+  getCrossfade: () => number | null;
   setBlendDuration: (value: number) => void;
   updateEditorSource: (source: string) => void;
   /** Applies a field to the live VM without recompiling (instant drag

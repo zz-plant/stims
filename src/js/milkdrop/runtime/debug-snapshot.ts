@@ -100,6 +100,20 @@ export type MilkdropAgentDriverHandle = {
    * `bun run lab:replay -- --replay <file>`; null if nothing was recorded. */
   stopTraceCapture: () => TraceFile | null;
   getTraceCaptureState: () => MilkdropTraceRecorderState;
+  /**
+   * Transition state: phase, the controller's event ring buffer, and the
+   * hand-driven fader position when one is running.
+   *
+   * The event log has existed since the controller was extracted and was
+   * reachable from nothing — so "why did that switch cut instead of
+   * blending" was unanswerable from a live session, which is exactly the
+   * question a workload-gated crossfade raises.
+   */
+  getTransition: () => {
+    phase: string;
+    crossfade: number | null;
+    events: ReadonlyArray<{ at: number; event: string; detail?: string }>;
+  };
 };
 
 export function registerAgentMilkdropRuntimeDebugHandle({
@@ -115,6 +129,7 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   startTraceCapture,
   stopTraceCapture,
   getTraceCaptureState,
+  getTransition,
 }: {
   isAgentMode: () => boolean;
   getRuntime: () => ToyRuntimeInstance | null;
@@ -137,6 +152,7 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   }) => MilkdropTraceRecorderState;
   stopTraceCapture: () => TraceFile | null;
   getTraceCaptureState: () => MilkdropTraceRecorderState;
+  getTransition: MilkdropAgentDriverHandle['getTransition'];
 }) {
   if (typeof window === 'undefined' || !isAgentMode()) {
     return;
@@ -158,5 +174,6 @@ export function registerAgentMilkdropRuntimeDebugHandle({
     startTraceCapture,
     stopTraceCapture,
     getTraceCaptureState,
+    getTransition,
   };
 }

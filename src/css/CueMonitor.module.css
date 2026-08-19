@@ -1,0 +1,201 @@
+/* Cue monitor — the off-air deck.
+ *
+ * Deliberately opaque and flat: it sits over a moving canvas, and a
+ * translucent panel would let the stage read through the one surface whose
+ * whole job is to show a DIFFERENT preset. Two accents only (cool for the
+ * cue's own chrome, warm for the committing action), matching the rest of
+ * the shell's chrome. */
+
+.cue {
+  position: absolute;
+  right: 16px;
+  /* Clear of the transport dock, which is fixed to the bottom edge. */
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  z-index: var(--z-dropdown);
+  display: grid;
+  gap: 8px;
+  width: 208px;
+  padding: 10px;
+  border: 1px solid var(--stims-border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 8px 24px var(--stims-shadow-34);
+  color: var(--text-color);
+  pointer-events: auto;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stims-cool, #77c9ff);
+}
+
+.tempo {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.screen {
+  position: relative;
+  /* Not `place-items: center` — that makes the pool's canvas take its
+     intrinsic 128x128 size instead of filling the box, so a square tile
+     overflowed a 16:9 frame. The placeholder is centred by absolute
+     positioning instead. */
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 8px;
+  /* Black, not transparent: an engine tile that has not painted yet should
+     read as a dark screen, not as a hole punched through to the stage. This
+     is a video letterbox behind a rendered canvas — it is the absence of
+     picture in both themes, not a themed surface.
+     guard-allow-hex: letterbox behind a canvas, theme-independent. */
+  background: #000;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* The pool owns the canvas element and only ever appends it here, so the
+   fit rules have to live with the container rather than on the element. */
+.screen canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title,
+.author {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.author {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.take,
+.skip {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Warm accent marks the one control that changes what the audience sees.
+   --stims-focus-95 is defined once and does not vary by theme, so the ink on
+   it cannot either: --bg-color would land cream-on-coral in light theme
+   (~2.4:1). This literal is ~6:1 on the accent in both themes.
+   guard-allow-hex: theme-independent accent surface, so the ink is too. */
+.take {
+  border-color: var(--stims-focus-95, #f47a54);
+  background: var(--stims-focus-95, #f47a54);
+  color: #1a0d08;
+}
+
+.take:hover {
+  filter: brightness(1.08);
+}
+
+.skip {
+  border-color: var(--stims-border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.skip:hover {
+  border-color: var(--stims-white-12);
+  color: var(--text-color);
+}
+
+.take:focus-visible,
+.skip:focus-visible {
+  outline: 2px solid var(--stims-focus-95, #f47a54);
+  outline-offset: 2px;
+}
+
+.remaining {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Phones: the dock and the stage gestures own the bottom-right corner, and a
+   208px card there covers a meaningful share of a small stage. */
+@media (max-width: 640px) {
+  .cue {
+    right: 8px;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    width: 148px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .take:hover {
+    filter: none;
+  }
+}
+
+/* Hand-driven crossfade. Only present while a fade is actually running, so
+   the panel does not carry a dead control the rest of the time. */
+.fader {
+  display: grid;
+  gap: 4px;
+}
+
+.faderLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stims-cool, #77c9ff);
+}
+
+.fader input[type="range"] {
+  width: 100%;
+  accent-color: var(--stims-focus-95, #f47a54);
+}
