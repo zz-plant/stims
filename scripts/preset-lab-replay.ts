@@ -519,11 +519,26 @@ async function main() {
     }
 
     // Live traces were recorded in a browser (V8); Bun (JSC) transcendentals
-    // differ by ~1 ulp, so cross-engine replay verifies within a tight
+    // differ across engines, so cross-engine replay verifies within a
     // tolerance rather than digest-exact. Synthetic traces (recorded by this
-    // CLI) stay bit-for-bit.
+    // CLI) stay bit-for-bit. 1e-4 default calibrated against two presets: a
+    // light one drifted ~1 ulp (1e-6 would suffice), but a transcendental-
+    // heavy one (many chained sin/cos/pow per frame) drifted up to ~5e-5 on
+    // legitimately-agreeing values — 1e-6 reported false divergences there.
+    // Still tight enough to catch a real bug: a 100%-magnitude error (a
+    // wrongly-defaulted field, say) fails at any tolerance under ~1.
+    //
+    // CAVEAT — a divergence this tolerance can't explain (an exact 2x, an
+    // integer step, not a fractional drift) usually isn't cross-engine noise
+    // at all: it means the CLI's local preset-source read (loadPresetSource)
+    // compiled to different baked-in field defaults than whatever the live
+    // session's catalog fetch actually served — a preset-source-fidelity gap
+    // between the live app and this harness, not a replay bug. Confirmed
+    // case: yin-385-magic-ride-distance-based-hue's gammaadj compiled to 1
+    // from a local file read but was 2 in a live capture. Investigate the
+    // preset import/compile path, not the tolerance, when you see this.
     if (trace.source === 'live') {
-      const liveTolerance = get('--tolerance') ? tolerance : 1e-6;
+      const liveTolerance = get('--tolerance') ? tolerance : 1e-4;
       console.log(
         `(live trace: ${trace.frameCount} frames of ${trace.presetId}; cross-engine replay, tolerance ${liveTolerance})`,
       );

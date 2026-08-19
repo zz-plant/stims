@@ -10,6 +10,7 @@ import { runTrace } from '../../scripts/preset-lab-replay.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { DEFAULT_MILKDROP_PRESET_SOURCE } from '../../src/js/milkdrop/runtime/default-preset.ts';
 import { createMilkdropTraceRecorder } from '../../src/js/milkdrop/runtime/trace-recorder.ts';
+import { reviveInputArrays } from '../../src/js/milkdrop/trace-capture.ts';
 import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
@@ -131,6 +132,71 @@ describe('milkdrop trace recorder', () => {
     expect(state.autoStopped).toBe(true);
     expect(state.frameCount).toBe(1);
     expect(recorder.stop()?.presetId).toBe(PRESET_ID);
+  });
+
+  test('stereo and float-waveform signal arrays survive record -> stop -> revive byte-for-byte', () => {
+    // The live frame loop's merged signals can carry stereo/float analyser
+    // arrays (waveformDataL/R, waveformFloatData*) beyond the mono bytes
+    // stored as first-class FrameInputs fields — runtime-signals.ts assigns
+    // them onto the same signals object the VM steps with. Verified here at
+    // the record/revive boundary directly (independent of which preset/wave
+    // mode actually reads them), since that's the exact contract at risk:
+    // any typed-array field, by name, must round-trip through the JSON
+    // snapshot without being silently dropped like the plain-number fields.
+    const vm = makeVm();
+    const recorder = createMilkdropTraceRecorder({ vm });
+    recorder.start();
+
+    const mono = syntheticBytes(0);
+    const waveformDataL = new Uint8Array([10, 20, 30, 255]);
+    const waveformDataR = new Uint8Array([1, 2, 3, 4]);
+    const waveformFloatData = new Float32Array([-1, -0.5, 0, 0.5, 1]);
+    const signals = {
+      ...syntheticSignals(0, mono, mono),
+      waveformDataL,
+      waveformDataR,
+      waveformFloatData,
+      // A non-array typed field the harness must still capture as a plain
+      // number (not accidentally swept into the arrays bucket).
+      percussiveRatio: 0.42,
+    } as unknown as MilkdropRuntimeSignals;
+
+    recorder.recordFrame({
+      time: 0,
+      deltaMs: 16,
+      frequencyData: mono,
+      waveformData: mono,
+      signals,
+      frameState: vm.step(signals),
+    });
+    const trace = recorder.stop();
+
+    const recordedArrays = trace?.inputs?.[0]?.arrays;
+    expect(recordedArrays?.waveformDataL).toEqual({
+      type: 'u8',
+      values: [10, 20, 30, 255],
+    });
+    expect(recordedArrays?.waveformDataR).toEqual({
+      type: 'u8',
+      values: [1, 2, 3, 4],
+    });
+    expect(recordedArrays?.waveformFloatData?.type).toBe('f32');
+    expect(recordedArrays?.waveformFloatData?.values).toEqual([
+      -1, -0.5, 0, 0.5, 1,
+    ]);
+    expect(trace?.inputs?.[0]?.signals?.percussiveRatio).toBe(0.42);
+    // Plain numeric fields must not leak into the arrays bucket.
+    expect(recordedArrays?.percussiveRatio).toBeUndefined();
+
+    const revived = reviveInputArrays(recordedArrays ?? {});
+    expect(revived.waveformDataL).toBeInstanceOf(Uint8Array);
+    expect(Array.from(revived.waveformDataL as Uint8Array)).toEqual([
+      10, 20, 30, 255,
+    ]);
+    expect(revived.waveformFloatData).toBeInstanceOf(Float32Array);
+    expect(Array.from(revived.waveformFloatData as Float32Array)).toEqual([
+      -1, -0.5, 0, 0.5, 1,
+    ]);
   });
 
   test('stop without frames returns null', () => {
