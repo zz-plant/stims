@@ -604,20 +604,6 @@ export function BrowseSheetPanel({
         </section>
       ) : null}
 
-      {catalogReady && gridView ? (
-        // `sorted`, not `browseEntries`: the grid follows the sort dropdown
-        // like the list does. It takes the full result set — offscreen tiles
-        // are free via content-visibility, so the grid scrolls the whole
-        // catalog without pagination.
-        <PresetGrid
-          catalogEntries={sorted}
-          presetPreviews={presetPreviews}
-          requestPresetPreviews={engine.requestPresetPreviews}
-          routeState={ui.routeState}
-          setRouteState={setPresetRouteState}
-        />
-      ) : null}
-
       <section ref={resultsRef} className="ctl-browse-results">
         <div className="ctl-resultbar">
           <p className="ctl-readout" aria-live="polite">
@@ -646,10 +632,24 @@ export function BrowseSheetPanel({
           </select>
         </div>
 
+        {/* Both views roam with a roving tabindex, but the grid adds a
+            horizontal axis — advertising only ↑↓ there understates it. */}
         <p className="ctl-keyboard-hint">
-          <kbd>↑</kbd>
-          <kbd>↓</kbd> browse · <kbd>Home</kbd>
-          <kbd>End</kbd> jump
+          {gridView ? (
+            <>
+              <kbd>←</kbd>
+              <kbd>↑</kbd>
+              <kbd>↓</kbd>
+              <kbd>→</kbd> browse · <kbd>Home</kbd>
+              <kbd>End</kbd> jump
+            </>
+          ) : (
+            <>
+              <kbd>↑</kbd>
+              <kbd>↓</kbd> browse · <kbd>Home</kbd>
+              <kbd>End</kbd> jump
+            </>
+          )}
         </p>
 
         {!catalogReady && !catalogError ? (
@@ -690,6 +690,22 @@ export function BrowseSheetPanel({
             catalog={catalog}
             currentPresetId={currentPresetId}
             onSelect={(presetId) => engine.handlePresetSelection(presetId)}
+          />
+        ) : null}
+
+        {catalogReady && gridView && sorted.length > 0 ? (
+          // `sorted`, not `browseEntries`: the grid follows the sort dropdown
+          // like the list does. Renders inside .ctl-browse-results (below the
+          // result count and sort control) rather than above it — the grid is
+          // the default view, so with the bar underneath the whole result set
+          // the count and sort were pushed off-screen behind ~2.5k tiles.
+          <PresetGrid
+            catalogEntries={sorted}
+            presetPreviews={presetPreviews}
+            requestPresetPreviews={engine.requestPresetPreviews}
+            routeState={ui.routeState}
+            setRouteState={setPresetRouteState}
+            currentPresetId={currentPresetId}
           />
         ) : null}
 
@@ -743,6 +759,11 @@ export function BrowseSheetPanel({
                     data-preset-index={virtualRow.index}
                     className="ctl-preset"
                     data-active={String(entry.id === currentPresetId)}
+                    // Only ~15 <li> exist at a time; without these a screen
+                    // reader announces "list, 15 items" for the full result
+                    // set however large it actually is.
+                    aria-setsize={sorted.length}
+                    aria-posinset={virtualRow.index + 1}
                     style={{
                       position: 'absolute',
                       top: 0,

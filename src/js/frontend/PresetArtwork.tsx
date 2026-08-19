@@ -13,6 +13,19 @@ type PresetArtworkTone =
   | 'classic'
   | 'instant';
 
+/**
+ * Static thumbnail URLs that already 404'd this session.
+ *
+ * Many presets legitimately have no preview PNG in R2, and `imageError` is
+ * component-local: both browse views are virtualized now, so a tile scrolled
+ * out of view unmounts and the next scroll back re-requests — and re-404s —
+ * the same missing file. Module scope outlives those unmounts, so a known
+ * miss renders the mood fallback immediately instead of re-fetching.
+ * Only ever populated for the static R2 path; runtime snapshot blobs are
+ * per-render and must not be cached here.
+ */
+const missingStaticThumbnails = new Set<string>();
+
 function getPresetArtworkTone(entry: PresetCatalogEntry): PresetArtworkTone {
   const mood = describePresetMood(entry);
 
@@ -54,15 +67,20 @@ export function PresetArtwork({
   const runtimeImage =
     preview?.status === 'ready' && preview.imageUrl ? preview.imageUrl : null;
   const imageUrl = runtimeImage ?? staticThumbUrl;
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(() =>
+    // Seed from the session-wide miss set so a preset known to have no
+    // thumbnail never re-requests it on each scroll-back.
+    runtimeImage ? false : missingStaticThumbnails.has(staticThumbUrl),
+  );
 
   // Swapping to a new source (runtime snapshot, or another preset) clears
-  // any error the previous thumbnail hit.
+  // any error the previous thumbnail hit — unless the new source is itself
+  // a known miss.
   const previousImageUrlRef = useRef(imageUrl);
   useEffect(() => {
     if (previousImageUrlRef.current !== imageUrl) {
       previousImageUrlRef.current = imageUrl;
-      setImageError(false);
+      setImageError(missingStaticThumbnails.has(imageUrl));
     }
   }, [imageUrl]);
 
@@ -84,7 +102,12 @@ export function PresetArtwork({
         decoding="async"
         width={220}
         height={180}
-        onError={() => setImageError(true)}
+        onError={() => {
+          // Only the static R2 path is worth remembering; runtime snapshot
+          // object URLs are per-render and would leak entries forever.
+          if (!runtimeImage) missingStaticThumbnails.add(staticThumbUrl);
+          setImageError(true);
+        }}
         style={imageError ? { display: 'none' } : undefined}
       />
       {imageError ? (
