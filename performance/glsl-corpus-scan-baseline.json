@@ -1,0 +1,4882 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-19T18:19:08.080Z",
+  "validatorVersion": "Glslang Version: 11:16.5.0",
+  "failures": [
+    {
+      "id": "amandio-c-fume",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'assign' :  l-value required \"xlat_mutablen\" (can't modify a uniform)"
+    },
+    {
+      "id": "flexi-can-t-think-of-mosaic-cages",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"xlat_mutablen\" (can't modify a uniform)"
+    },
+    {
+      "id": "lit-claw-explorers-grid-i-don-t-have-either-a-belfry-or-bats-bitch",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"xlat_mutablen1\" (can't modify a uniform)"
+    },
+    {
+      "id": "martin-adrift-on-a-dead-planet-lard-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:511: 'dot' : no matching overloaded function found"
+    },
+    {
+      "id": "martin-adrift-on-a-dead-planet-lite",
+      "stage": "warp",
+      "detail": "ERROR: 0:511: 'dot' : no matching overloaded function found"
+    },
+    {
+      "id": "martin-alien-grand-theft-water",
+      "stage": "composite",
+      "detail": "ERROR: 0:400: 'dFdx' : required extension not requested: GL_OES_standard_derivatives"
+    },
+    {
+      "id": "martin-elusive-impressions-mix1",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"n\" (can't modify a uniform)"
+    },
+    {
+      "id": "martin-invasion",
+      "stage": "composite",
+      "detail": "ERROR: 0:373: 'dFdx' : required extension not requested: GL_OES_standard_derivatives"
+    },
+    {
+      "id": "cotc-suksma-passive-probabilistic-roaming-coin-gods",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-passive-probabilistic-roaming-coin-gods",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-phat-zyl",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-291",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-291",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-10b",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-beta106i-brilliance-space-time-breaking-mash0000-it-s-2009-and-you-haven-t-replaced-your-an",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-131",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-martin-tiger-no5-random-color-metal",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'assign' :  l-value required \"b0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-martin-tiger-no5-random-color-metal",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-eos-angels-of-decay-19-hexocollie-6",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-eos-angels-of-decay-19-hexocollie-6",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-isosceles-mashup25",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-hexocollie-flexi-adamfx-",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-hexocollie-flexi-adamfx-",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-5-5",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-5-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-geiss-and-zylot-aurora-industrialis",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-geiss-and-zylot-aurora-industrialis",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-daryl-feels-my-hellish-lonliness",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-daryl-feels-my-hellish-lonliness",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'tex2D' : can't use function syntax on variable"
+    },
+    {
+      "id": "cotc-mashup-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-flexi-and",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-zylot-visionarie-geiss-aspect-ratio-fix-mash0000-infinitely-dense-massless-particle",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-adam-martin-geiss-come-into-my-closet-of-rot",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-adam-martin-geiss-come-into-my-closet-of-rot",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-isosceles-mashup24",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2-amazing-mas",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2-amazing-mas",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-jim-geiss-bass-zoom-symmetry-mash0000-the-god-damn-pen-is-rrrroyal-blue",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-three-kinds-of-amphetamines-mash0000-jester-od-s-on-back-alley-clown-juice",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"b0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-aderassi-phat-zylot6",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-jim-geiss-inverse-bass-zoom-mash0000-aim-your-scream-toward-the-avalanche",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-diffusion-effect-warp",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-tadpole-hunter-mash0000-humiliate-the-god-with-spencer",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-tadpole-hunter-mash0000-humiliate-the-god-with-spencer",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'l' : undeclared identifier"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-10c",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-halfbreak-caramelize-serpentine",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-halfbreak-caramelize-serpentine",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: 'assign' :  l-value required \"b0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-halfbreak-flexi-and-goody-geiss-benski-sparkly-lsb-feedback",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-halfbreak-flexi-and-goody-geiss-benski-sparkly-lsb-feedback",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-bmelgren-hungry-orbits-mash0000-sir-i-can-t-help-you-over-here-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-11b",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-geiss-game-of-life-4",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-luxxx-geiss-game-of-life-4",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-130",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-130",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-ripples-warp",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-eos-martin-rovastar-halcyon-jelly-skin",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-eos-martin-rovastar-halcyon-jelly-skin",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hexcollie-flexi-n-geiss-caught-in-the-vortex-of-the-mystery-pill",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hexcollie-flexi-n-geiss-caught-in-the-vortex-of-the-mystery-pill",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-halfbreak-last-in-nebula",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-halfbreak-last-in-nebula",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-isosceles-mashup02",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-isosceles-mashup02",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rovastar-unchained-life-after-pie-remix-girl-powa",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rovastar-unchained-life-after-pie-remix-girl-powa",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-melodic-pulsing-leds-mash0000-vegas-doesn-t-make-life-less-pointless",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-melodic-pulsing-leds-mash0000-vegas-doesn-t-make-life-less-pointless",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  cannot convert from ' const float' to ' temp mediump 3-component vector of float'"
+    },
+    {
+      "id": "cotc-a-bit-storm-effected-by-adamfx-2-shadowharlequin-bit-storm-ft-dancing-petals",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-bit-storm-effected-by-adamfx-2-shadowharlequin-bit-storm-ft-dancing-petals",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-155",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-155",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-157",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-157",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tripgnosis-acid-astralmatics",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tripgnosis-acid-astralmatics",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  cannot convert from ' const float' to ' temp mediump 3-component vector of float'"
+    },
+    {
+      "id": "cotc-suksma-hypnocinagenic-drift",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-hypnocinagenic-drift",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-geiss-witchcraft-glow-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-234",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-234",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-fig-leaves-can-t-cover-that-much",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-fig-leaves-can-t-cover-that-much",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tripgnosis-diffused-mana-pattern-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-diffused-mana-pattern-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-cuneinformal-basilihistrionix",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-cuneinformal-basilihistrionix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-zylot-and-fishbrain-i-am-the-witch",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tripgnosis-astral-calculations-5",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tripgnosis-astral-calculations-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-the-ng-martin-flexi-witchcraft-when-lines-get-desperate-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-the-ng-martin-flexi-witchcraft-when-lines-get-desperate-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame-roam2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame-roam2",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-descentive-maxhorroral-fences",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-descentive-maxhorroral-fences",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-indecision-about-how-to-die-decision-made",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-indecision-about-how-to-die-decision-made",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-martin-grafitti-tagging-witchcraft-must-be-overrated-demonlord-shaders-lamp",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-martin-grafitti-tagging-witchcraft-must-be-overrated-demonlord-shaders-lamp",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-repressed-americans-certain-of-spectral-diffucktion",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-repressed-americans-certain-of-spectral-diffucktion",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tripgnosis-neon-algebra",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-neon-algebra",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-aderassi-bdrv-adamfx-n-flexi-it-s-a-start",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"ac\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-01",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-01",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-03",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-03",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-05",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-05",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-02",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-02",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-04",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-04",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-on",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-on",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-amandio-c-sierpinsky-s-triangle",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'float2x2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-wolfram-s-rule-110-rise-of-the-log-attack",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-wolfram-s-rule-110-rise-of-the-log-attack",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-110-so-call-the-police",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-110-so-call-the-police",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-wolfram-s-rule-90-rise-of-the-log-attack",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-wolfram-s-rule-90-rise-of-the-log-attack",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-110-satanic-teleprompter-05",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-disruptor-wolfram-s-rule-110-satanic-teleprompter-05",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors2",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-enough-strange-candles-to-lay",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-enough-strange-candles-to-lay",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'float2x2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy2",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-squasm-minor-plot-frugal-koonut-kalifee",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-squasm-minor-plot-frugal-koonut-kalifee",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-camden-defib-lancaster-tucker-s-neck",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-camden-defib-lancaster-tucker-s-neck",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-frustratingly-incomplete-wasteland",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-frustratingly-incomplete-wasteland",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'float2x2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-no-i-don-t-know-what-the-hell-it-is-but-i-m-eating-it-for-mind-lunch-demonlard-axed-",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-no-i-don-t-know-what-the-hell-it-is-but-i-m-eating-it-for-mind-lunch-demonlard-axed-",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-salvia-with-chip-harris-culminatorics",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-salvia-with-chip-harris-culminatorics",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-estrangedaholic-grandfather-cloques",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"cntr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-bdrv-al-eos-pulsecubebdrv-etal-rmxmix-25-qabalistic-space-invading-homo-nutrient-mouth-swis",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'assign' :  l-value required \"olduv\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-bdrv-al-eos-pulsecubebdrv-etal-rmxmix-25-qabalistic-space-invading-homo-nutrient-mouth-swis",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-gapes-to-spelunkcide-dada-hate-art-isn-t-art",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-gapes-to-spelunkcide-dada-hate-art-isn-t-art",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-rovastar-loadus-geiss-tone-mapped-fractaldrop-4-jelly-v5",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rovastar-loadus-geiss-tone-mapped-fractaldrop-4-jelly-v5",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-fishbrain-submarine-exp-ame-med",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-j",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-j",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-movement-within-the-trout-i-love-you-i-thank-you-it-meant-everything-don-t-forget",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-esotic-krash-rolly-poly",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-nicklepenultim-roam",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-nicklepenultim-roam",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-nicklepenultim",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-nicklepenultim",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-nicklepenultim-the-skuzzmuppet",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-nicklepenultim-the-skuzzmuppet",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-camel-llama",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-at-the-root-of-open-the-graves",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"speed\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-at-the-root-of-open-the-graves",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-goody-on-mushrooms-hexcollie-n-fyornulis-cellsmosis-acid-angelated",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit08",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit08",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit09",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit09",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit05",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-eos-multisphere-01-b-phat-ra-mix-nexus-roams-falling-through-9-time",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-eos-multisphere-01-b-phat-ra-mix-nexus-roams-falling-through-9-time",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-foldrinymicull",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-foldrinymicull",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit02",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit02",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rova",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rova",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit03",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-rarity-isosceles-edit03",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-162",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-raritys-isosceles-edit-11",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-truth-raritys-isosceles-edit-11",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-adamfx-2-aderrasi-airhandler-last-breath-calm-ilusional-discontent2",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"trail_decay\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-168",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-evet-waterrgate",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-evet-waterrgate",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-hypesurrealism",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tripgnosis-hypesurrealism",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-29",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-plasma",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-plasma",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tripgnosis-flameorb",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-flameorb",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'max' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-380",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-380",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-betelguese3",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-foolish-mash",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-foolish-mash",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-royal-mashup-395",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-395",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-royal-mashup-377",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-377",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-suksma-dark-one-clouds-das-yi-hyper-phosphene-ejaculate",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dark-one-clouds-das-yi-hyper-phosphene-ejaculate",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-lights-in-the-sky",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-lights-in-the-sky",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 3-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'l' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-farming-equipment-ice-shower",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-farming-equipment-ice-shower",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami",
+      "stage": "warp",
+      "detail": "ERROR: 0:279: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami",
+      "stage": "composite",
+      "detail": "ERROR: 0:346: 'assign' :  l-value required \"uvc\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear",
+      "stage": "composite",
+      "detail": "ERROR: 0:341: 'assign' :  l-value required \"uv_echo2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-phairess-weale-mrt-flx",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'float2x2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-phairess-weale-mrt-flx",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-penattrition-geiss-crossfire-shaders",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-40",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-40",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-undulate-harque-auto-thef",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-auto-thef",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-undulate-harque-zing",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-zing",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-circle-of-the-taeyrunts-phairess-imbularse-deign-offal",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geite-spooksville-roams",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geite-spooksville-roams",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-undulate-harque-pain-tthe",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-pain-tthe",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hypra-a-astral-hypra-a-plane-fairlly-amazing-bullshit",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hypra-a-astral-hypra-a-plane-fairlly-amazing-bullshit",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-gentlekid-cosmic-dust-2-digital-data-loss",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-gentlekid-cosmic-dust-2-digital-data-loss",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-do-the-wave-v2-minimal-ps2-blur",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-accredited-omniversidioty",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-accredited-omniversidioty",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-lux-geiss-spacefurnace",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-bass-spectre-ps2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-bass-spectre-ps2",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2b",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2b",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-geiss-witchcraft-grow-mix-2-a-a",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-fishbrain-geiss-witchcraft-grow-mix-2-a-a",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-electric-storm-half-digital-2-fiesta-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-electric-storm-half-digital-2-fiesta-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-awareness-implodes-disappears",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"trail_decay\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-awareness-implodes-disappears",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-tiny-reaction-diffusion-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-tiny-reaction-diffusion-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-race-for-hot-dog-log-smell-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-race-for-hot-dog-log-smell-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-mig-091b",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-mig-091b",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-motion-blur-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-goody-vertigo-revisited",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-mig-oscilloscope021",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-tokamak-plus-painterly",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cepia-dither",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-geiss-cepia-dither",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2-contact-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2-contact-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-s-fatal-color-attraction-ps2-0",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"trail_decay\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-evet-lovegates",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-broken-beat-machina-i",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-broken-beat-machina-i",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-laplacian-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"trail_decay\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-cosmic-dust-2-laplacian-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  cannot convert from ' const float' to ' temp mediump 3-component vector of float'"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-downpour-x-spectre-ps2",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-14",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-jewelsmoke",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-evet-jewelsmoke",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-mig-036version3",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-mig-036version3",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-deconstrue-orbaet",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-deconstrue-orbaet",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-another-kind-of-groove",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-another-kind-of-groove",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-g-martin-m-m-w-mu-wp-m-c-m-getting-beat-isn-t-embarrassing-it-s-no-one-cares",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-g-martin-m-m-w-mu-wp-m-c-m-getting-beat-isn-t-embarrassing-it-s-no-one-cares",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-xtramartin-3",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-xtramartin-3",
+      "stage": "composite",
+      "detail": "ERROR: 0:345: 'assign' :  l-value required \"z1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-trapstract",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-trapstract",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-flashburn-roams-use-fishing-line-to-keep-the-spiral-plates-from-touching",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-flashburn-roams-use-fishing-line-to-keep-the-spiral-plates-from-touching",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-suksma-goody-fed-other-artists-blarfff-throwing-up-cubes",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-never-churchmouth",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-never-churchmouth",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-water-your-pet-goldfish-i",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-flaring-squamoid-mode-placement",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-flaring-squamoid-mode-placement",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-absinthe-with-mc-escher",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-luxxx-absinthe-with-mc-escher",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-badballz",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-never-throck",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-never-throck",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-when-the-first-aliens-came-b",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-when-the-first-aliens-came-b",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-flexi-orb-others-i-ve-had-it-with-this-g-tree",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-geiss-flexi-orb-others-i-ve-had-it-with-this-g-tree",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-circles007b",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-serge-circles007b",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace000",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace000",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-158-002",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-serge-158-002",
+      "stage": "composite",
+      "detail": "ERROR: 0:343: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-pendulum-in-brass-ps2",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-martin-pendulum-in-brass-ps2",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-pendulum-in-brass-ps3",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-martin-pendulum-in-brass-ps3",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001b",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001b",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-e",
+      "stage": "warp",
+      "detail": "ERROR: 0:270: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-e",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001c",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-serge-martin-crystal-palace001c",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-uhnfareknesce-roosta-conflarian",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-uhnfareknesce-roosta-conflarian",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-jc-lovely-bones",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-288",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-288",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-x-warp-harsh-klive",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hexcollie-x-warp-harsh-klive",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-heartbleeding-emocore-will-get-the-rest-of-you",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-as-for-me-i-take-medicines2",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-need-desire-remix",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-aurora-totalis",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-101",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-316",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-215",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'assign' :  l-value required \"xfer\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-215",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-orb-blade",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-orb-blade",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-hexcollie-shifter-martin-anime-vs-the-stalion-mang",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire-geiss-a",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire-geiss-a",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-ripple-effect-again",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-ripple-effect-again",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-cantstop-adamfx-2-flexi-geiss-fishbrain-swelling-spiral-work-with-lines-deamon-lord-eos-hex",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-3",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-3",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"shadow_offset\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-rippling-leopard-skin",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-rippling-leopard-skin",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-shifter-etw",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-shifter-etw",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-hexcollie-julian-shader-wars4",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-julian-shader-wars4",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-mig-colorful9",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-mig-colorful9",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup-yay3",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup-yay3",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-isosceles-mashup01",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-bdrv-flexi-geiss-shifter-hypno-swirl-mashup-38-coral-trance-rmx",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-bdrv-flexi-geiss-shifter-hypno-swirl-mashup-38-coral-trance-rmx",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-luxxx-inhale-this-golden-rate-tax-stamp-for-025-credits-off",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-luxxx-inhale-this-golden-rate-tax-stamp-for-025-credits-off",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-dark-tides-eos-phat-whisps-of-doom-mix-mash0000-salt-dunes-time-lapse",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-aderrasi-airhandler-last-breath-angel-evolution-mash0000-your-mints-have-arrived-sir",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-ripples",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-3-janky-ripples",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-10",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-127",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-simple-squamous-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-geiss-reaction-diffusion-simple-squamous-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-aderassi-phat-zylot4-isosceles-e",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-9",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-9",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-lackstastique-j4",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-gaseous-lives",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-gaseous-lives",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-molten-glass",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-molten-glass",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-11-crossfire-composite",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-eos-particle-daemon-forge-mash0000-the-itchy-and-scratchy-show-meets-the-adam-s-family",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-bmelgren-unchained-ambrosia-myth-spinning-rain-mix-mash0000-fucked-up-dreams-about-a",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hexcollie-julian-shader-wars3",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-julian-shader-wars3",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-orb-acid-cycle",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-orb-acid-cycle",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-multi-layer-1",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs-and-hentai-succubi",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"ret7\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs-and-hentai-succubi",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-eso-demon-released-by-ad",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-eso-demon-released-by-ad",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx-a",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx-a",
+      "stage": "composite",
+      "detail": "ERROR: 0:341: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-g-thea-ceo-m-zylo-v-w-27su-om-wp-xxx-c-stah-j5-heiyin-taiyang",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-g-thea-ceo-m-zylo-v-w-27su-om-wp-xxx-c-stah-j5-heiyin-taiyang",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-zen-gardens",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'colorScale' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-zen-gardens",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-multi-layer-3-pig-jembe-acid-wretch",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-geiss-skin-dots-multi-layer-3-pig-jembe-acid-wretch",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-luxxx-my-soul-i",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-my-soul-i",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rce-ordinary-want-nevermore-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rce-ordinary-want-nevermore-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-leaving-colors-crazy-cogitations-centrifuge-collapsing-cosmos-creation-oh-thats-still",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-youtube-pqswlhvukk8-something-else-dumb",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-youtube-pqswlhvukk8-something-else-dumb",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-no-grip-chute-reinvents-terror",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-no-grip-chute-reinvents-terror",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-loading-doctor",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-loading-doctor",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-moistened-gills-in-latent-galaxy-raggy",
+      "stage": "warp",
+      "detail": "ERROR: 0:3: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-suksma-moistened-gills-in-latent-galaxy-raggy",
+      "stage": "composite",
+      "detail": "ERROR: 0:3: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-men-in-reverse-in-reverse-time-born-to-breath-not-much-else",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-men-in-reverse-in-reverse-time-born-to-breath-not-much-else",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-feeling-ignore",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-feeling-ignore",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-everyone-knows-your-alleged-secret-none-care-but-to-whisper-and-laugh-and-quickly-mo",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-everyone-knows-your-alleged-secret-none-care-but-to-whisper-and-laugh-and-quickly-mo",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-eos-fishbrain-flexi-fvese-geiss-rovastar-shifter-stonecraft-mashup-19-paranormal",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-eos-fishbrain-flexi-fvese-geiss-rovastar-shifter-stonecraft-mashup-19-paranormal",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-414",
+      "stage": "warp",
+      "detail": "ERROR: 0:270: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-fishbrain-geiss-unchained-others-plaidcraft",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-flexi-fishbrain-geiss-unchained-others-plaidcraft",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-feeling-retry",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-feeling-retry",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-witchcraft-unleashed-01-stepping-into-it",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-witchcraft-unleashed-01-stepping-into-it",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_x\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-423",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-identity-killing-petting-colon-gonad-type8",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-identity-killing-petting-colon-gonad-type8",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-flexi-geiss-martin-shifter-stonecraft-martin-s-metallics",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-rechivalrizing-tents",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-rechivalrizing-tents",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-purple-9-d-rubber-coins-embossed-with-cataverses",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-witchcraft-unleashed-00-the-template",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-witchcraft-unleashed-00-the-template",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-stitchcraft-n",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-flexi-stitchcraft-n",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-circular-unlogic",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-429",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-g-martin-m-m-w-fishbrain-wp-m-c-m-tanked-on-pure-neoepinephrine",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-g-martin-m-m-w-fishbrain-wp-m-c-m-tanked-on-pure-neoepinephrine",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-identity-killing-petting-colon-gonad-type9",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-identity-killing-petting-colon-gonad-type9",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"m2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-feeling-abort",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-feeling-abort",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' temp mediump 2-component vector of float' and a right operand of type ' temp mediump 4-compon"
+    },
+    {
+      "id": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-astralacid",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"xfer\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-astralacid",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-dense",
+      "stage": "composite",
+      "detail": "ERROR: 0:344: 'lum' : can't use function syntax on variable"
+    },
+    {
+      "id": "cotc-serge-adam-eatit-mashup-fx-2-martin001",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'assign' :  l-value required \"uv_m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-serge-adam-eatit-mashup-fx-2-martin001",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-witchcraft-metropolish-remix-motor-up-pre-air-filter-cyclone-argon-tweecer",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"uvm\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-halfbreak-tonymilkdrop-beautiful-sepia-mashmash",
+      "stage": "warp",
+      "detail": "ERROR: 0:267: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-halfbreak-tonymilkdrop-beautiful-sepia-mashmash",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-her-sideways-crawl-through-your-bank-accounts",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-her-sideways-crawl-through-your-bank-accounts",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-midgitstraights-of-majillaen-gunthree-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-midgitstraights-of-majillaen-gunthree-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-swellin1",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-glowing",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tripgnosis-triadular",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-twist-fiber-wrap-cut-circulation",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'float2x2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-twist-fiber-wrap-cut-circulation",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku-yaqui-graph",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku-yaqui-graph",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-fishbrain-witchcraft-phugly-megalopolish-remix",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-fishbrain-witchcraft-phugly-megalopolish-remix",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-s-portfolio-acid-angel",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-waltra-monodream",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-true-meaning-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-true-meaning-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-the-psyched-out-about-loop-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-the-psyched-out-about-loop-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:341: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-an-excuse-taken-back-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-an-excuse-taken-back-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-have-you-listened-anyway-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-have-you-listened-anyway-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-priming-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-priming-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:341: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-flexi-geiss-tokamak-fractal-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-flexi-geiss-tokamak-fractal-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:343: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-salutatorian-s-teat",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"cntr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-salutatorian-s-teat",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-fickle-will-dive-fed-shd",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-fickle-will-dive-fed-shd",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit2",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"cntr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit2",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-fed-shd",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-fed-shd",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-distort-crops-of-horror-torture-blackode",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-distort-crops-of-horror-torture-blackode",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-flaming-bag-of-wisconsin-i-being-the-last-thing-you-remember-is-the-last-thing-i-rem",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-flaming-bag-of-wisconsin-i-being-the-last-thing-you-remember-is-the-last-thing-i-rem",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-distort-crops-of-horror-torture",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-distort-crops-of-horror-torture",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-downpour",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-downpour",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-the-ng-stahlregen-boz-eos-geiss-phat-rovastar-zylot-flexi-martin-fishbrain-machine-code-in-",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'assign' :  l-value required \"trail_decay\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-the-ng-stahlregen-boz-eos-geiss-phat-rovastar-zylot-flexi-martin-fishbrain-machine-code-in-",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-geiss-neon-pulse-glow-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-stahlregen-jewelry-tiles",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-stahlregen-jewelry-tiles",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"uv_o\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spec",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"b0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spec",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-flexi-geiss-bipolar-vs-reaction-diffusion-mirror-scoped-phat-s-reflecto",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-flexi-geiss-bipolar-vs-reaction-diffusion-mirror-scoped-phat-s-reflecto",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-bdrv-aderrasi-accelerator-orbital-migraine-bdrv-et-al-rmx8-sorry-to-hear-you-re-not-liking-",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-bdrv-aderrasi-accelerator-orbital-migraine-bdrv-et-al-rmx8-sorry-to-hear-you-re-not-liking-",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-cope-flexi-julia-set-strange-days-bdrv2",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'c' : undeclared identifier"
+    },
+    {
+      "id": "cotc-cope-flexi-julia-set-strange-days-bdrv2",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself",
+      "stage": "warp",
+      "detail": "ERROR: 0:285: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself",
+      "stage": "composite",
+      "detail": "ERROR: 0:353: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain",
+      "stage": "warp",
+      "detail": "ERROR: 0:289: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain",
+      "stage": "composite",
+      "detail": "ERROR: 0:357: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac",
+      "stage": "warp",
+      "detail": "ERROR: 0:284: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac",
+      "stage": "composite",
+      "detail": "ERROR: 0:352: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-tunnel-race-meta-mash-for-rats",
+      "stage": "warp",
+      "detail": "ERROR: 0:287: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-martin-tunnel-race-meta-mash-for-rats",
+      "stage": "composite",
+      "detail": "ERROR: 0:355: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-xtramartin-459",
+      "stage": "warp",
+      "detail": "ERROR: 0:286: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+    },
+    {
+      "id": "cotc-xtramartin-459",
+      "stage": "composite",
+      "detail": "ERROR: 0:352: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-hardcore-mix-2-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:286: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+    },
+    {
+      "id": "cotc-martin-hardcore-mix-2-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:352: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen-aderrasi-geiss-unchained-zyl",
+      "stage": "warp",
+      "detail": "ERROR: 0:285: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen-aderrasi-geiss-unchained-zyl",
+      "stage": "composite",
+      "detail": "ERROR: 0:352: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-tunnel-race-meta-mash-disciple",
+      "stage": "warp",
+      "detail": "ERROR: 0:291: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-tunnel-race-meta-mash-disciple",
+      "stage": "composite",
+      "detail": "ERROR: 0:359: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-hardcore-mix-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:286: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump float' and a right operand of type ' const int' (or there is no acceptable conve"
+    },
+    {
+      "id": "cotc-martin-hardcore-mix-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:352: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen",
+      "stage": "warp",
+      "detail": "ERROR: 0:283: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen",
+      "stage": "composite",
+      "detail": "ERROR: 0:351: 'assign' :  l-value required \"uvo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-sewn-to-slavish-memes",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-sewn-to-slavish-memes",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+    },
+    {
+      "id": "cotc-suksma-mundane-side-of-eden",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-mundane-side-of-eden",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-orb-waaa-lamersass-remix-4",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-orb-waaa-lamersass-remix-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-never-poo",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-orb-waaa-lamersass-remix-3",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-goody-ego-decontructor",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uvm\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-woven-beads-ps2-0",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  cannot convert from ' const float' to ' temp mediump 3-component vector of float'"
+    },
+    {
+      "id": "cotc-goody-woven-beads",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  cannot convert from ' const float' to ' temp mediump 3-component vector of float'"
+    },
+    {
+      "id": "cotc-amandio-c-moving-ripple-intraphereonts-pad-urn",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-amandio-c-moving-ripple-reproducing-the-end-feeling-of-doing-anything-in-the-mind",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-amandio-c-typhoon-season-inside-eid-sdi",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-amandio-c-typhoon-season-inside-eid-sdi",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-524",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-524",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"rad_hq\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-orb-waaa-lamersass-remix-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-505",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-505",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-orb-waaa-lamersass-remix-1",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-509",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-509",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-evet-mindmelt-responsive-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-evet-mindmelt-responsive-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-276",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-royal-mashup-385-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-orb-cloud-burst",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-orb-cloud-burst",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'max' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-goody-amandio-c-final-hour-eclipse-shader-rmx-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"stretch\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-amandio-c-final-hour-eclipse-shader-rmx-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-444",
+      "stage": "warp",
+      "detail": "ERROR: 0:276: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-444",
+      "stage": "composite",
+      "detail": "ERROR: 0:343: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-suksma-type-o-negative-world-coming-down",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-fishbrain-betelguese-hyperdrive-remix",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-evet-fishbrain-betelguese-hyperdrive-remix",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-376",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-time-is-a-prison",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-time-is-a-prison",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-apparitions-tear-at-your-b",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-apparitions-tear-at-your-b",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-var-eos-geiss-goody-god-parasite-dissonance-palms-your-soul",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-var-eos-geiss-goody-god-parasite-dissonance-palms-your-soul",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-custom1",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-276-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-royal-mashup-381",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-381",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-tripgnosis-firestar",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-tripgnosis-firestar",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dark-one-clouds-i-forcibly-shoved-the-crowbar-down-my-skeletal-remain",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-dark-one-clouds-i-forcibly-shoved-the-crowbar-down-my-skeletal-remain",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-betelguese3-aa",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-fishbrain-betelguese3-aa",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-382",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-382",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-fishbrain-hexcollie-martin-bioluminescent-aerodynamic-poltergeist",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-fishbrain-hexcollie-martin-bioluminescent-aerodynamic-poltergeist",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fishbrain-david-bowie-cpe",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"sam\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-orb-waaa-jelly-5-55",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-59",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-85",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-405",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-405",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-83",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-83",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-58",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-96",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-surge",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-waltra-furry-synthesis-isosceles-edit2",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-waltra-furry-synthesis-isosceles-edit2",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-last-thing-i-remember-was-reading-tombstones",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-rovastar-geiss-hyperkaleidoscope-glow-2-multitonal",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-rovastar-geiss-hyperkaleidoscope-glow-2-multitonal",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'c' : undeclared identifier"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams",
+      "stage": "composite",
+      "detail": "ERROR: 0:341: 'assign' :  l-value required \"uv_echo2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-as-for-me-i-take-medicines",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-amaz-inge",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-amaz-inge",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-circle-of-the-taeyrunts",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ret2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-undulate-harque-brit-tlee",
+      "stage": "warp",
+      "detail": "ERROR: 0:8: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-undulate-harque-brit-tlee",
+      "stage": "composite",
+      "detail": "ERROR: 0:8: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-extreme-paranoia-and-fear-unleash-in-spontaneous-suicide-flails-slapping-the-elite-roam3",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-extreme-paranoia-and-fear-unleash-in-spontaneous-suicide-flails-slapping-the-elite",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-hordes-and-legions-of-unborn",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-hordes-and-legions-of-unborn",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-confetti-manslut",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-confetti-manslut",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-in-the-passenger-seat-with-a-head-full-of-acid-ps2-0",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"crisp\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-flukerication-machinist",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-flukerication-machinist",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-actually-i-didn-t-eat-last-night",
+      "stage": "warp",
+      "detail": "ERROR: 0:3: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-suksma-actually-i-didn-t-eat-last-night",
+      "stage": "composite",
+      "detail": "ERROR: 0:3: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-suksma-and-i-will-have-salmon-for-dinner",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-and-i-will-have-salmon-for-dinner",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-barnacle-coated-hemoclubbin",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-barnacle-coated-hemoclubbin",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"lum\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies2",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-cad-bury-chalk-let-egz-demonlord-i-am-aware-of-the-fools-i-follow-there-s-nothing-be",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-cad-bury-chalk-let-egz-demonlord-i-am-aware-of-the-fools-i-follow-there-s-nothing-be",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-eos-pointfield-07-insek-mash0000-shiny-bladed-homicide-machine-at-dusk",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-waltra-galactic-super-perspective",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv_m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-waltra-galactic-super-perspective",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"crisp\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-soma-in-pink",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-soma-in-pink",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-passive-probabilistic-roaming",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-passive-probabilistic-roaming",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-220",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-220",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-beta106i-burning-form-seething-mass-mash0000-fire-paint-easter-egg-internals-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-103",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-174",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-104",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-ritually-invoking-the-irrational-slaves",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-ritually-invoking-the-irrational-slaves",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-102",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-62",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-62",
+      "stage": "composite",
+      "detail": "ERROR: 0:343: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-flexi-space-voyage-organic-aftermath-1",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-waltra-time-travel",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-waltra-time-travel",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"crisp\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-eos-geiss-krash-pieturp-zylot-dandelion-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'assign' :  l-value required \"v\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-eos-geiss-krash-pieturp-zylot-dandelion-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-isosceles-mashup23",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-isosceles-mashup23",
+      "stage": "composite",
+      "detail": "ERROR: 0:335: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-317",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-need-transcendance-remix",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-141",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-141",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-19",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-146",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-310",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-367",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-170",
+      "stage": "warp",
+      "detail": "ERROR: 0:270: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-170",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-370",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-13",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-307",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-312",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-345",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-345",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-308",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-372",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-368",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-313",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-318",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-fed-s-spectro-2",
+      "stage": "warp",
+      "detail": "ERROR: 0:257: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fed-s-spectro-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-16",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-goody-need",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-314",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-338",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-338",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-103",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-102",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-99",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-315",
+      "stage": "composite",
+      "detail": "ERROR: 0:336: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-rovastar-stahlregen-touchdown-on-jelly-planet-bccn-v4",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-zylot-rays-burst",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"dd\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-zylot-rays-burst",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-zylot-the-collective-unconcious-jelly-5-5",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-zylot-the-collective-unconcious-jelly-5-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-bass-pulsing-ps2",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-bass-pulsing-ps2",
+      "stage": "composite",
+      "detail": "ERROR: 0:326: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-sparkling",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-sparkling",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'lum' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-eckshack-s-eyeball-floater-mix-plastic",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-stahlregen-pulse-dark",
+      "stage": "composite",
+      "detail": "ERROR: 0:325: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-rovastar-goody-geiss-rism-1982-gremlin-pinto-hybrid-440-block-2000-watts-obscura-bla",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-rovastar-goody-geiss-rism-1982-gremlin-pinto-hybrid-440-block-2000-watts-obscura-bla",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-stahlregen-esotic-idiot24-7-rozzer-zylot-digital-heartbeat-3",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-rovastar-explosive-minds-kay",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-stahlregen-hypnotron-v-0-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"hue_plus\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-484",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-484",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-270",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-270",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"uvm\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-orb-lazer-ride",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-orb-lazer-ride",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-160",
+      "stage": "warp",
+      "detail": "ERROR: 0:272: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-160",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-royal-mashup-183",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-183",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-martin-sphery-tales-slow-version",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-sphery-tales-slow-version",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-sphery-tales",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-sphery-tales",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-martin-lock-and-release",
+      "stage": "warp",
+      "detail": "ERROR: 0:270: '' :  syntax error, unexpected IDENTIFIER, expecting COMMA or SEMICOLON"
+    },
+    {
+      "id": "cotc-martin-lock-and-release",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-shifter-glassworms-flare-jelly-5-5",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1-isosceles-edit1",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1-isosceles-edit1",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-martin-diabolo-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-diabolo-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-martin-diabolo",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-martin-diabolo",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk",
+      "stage": "warp",
+      "detail": "ERROR: 0:274: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk",
+      "stage": "composite",
+      "detail": "ERROR: 0:342: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink",
+      "stage": "warp",
+      "detail": "ERROR: 0:273: 'ofs' :  left of '[' is not of type array, matrix, or vector"
+    },
+    {
+      "id": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink",
+      "stage": "composite",
+      "detail": "ERROR: 0:340: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "stage": "warp",
+      "detail": "ERROR: 0:271: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-evet-ball-lightning-1-isosceles-edit2",
+      "stage": "composite",
+      "detail": "ERROR: 0:339: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: '*' :  wrong operand types: no operation '*' exists that takes a left-hand operand of type ' temp mediump 4-component vector of float' and a right operand of type ' smooth in mediump 2-c"
+    },
+    {
+      "id": "cotc-royal-mashup-115",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2-border-mix",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2-border-mix",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-190",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-190",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-189",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-189",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-tripgnosis-firesticks-isosceles-edit04",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'assign' :  l-value required \"xfer\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-455",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-228",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'assign' :  l-value required \"t\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-228",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-flowwerpowwer",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"ang2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-192",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-royal-mashup-192",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-22",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-flexi-s-reflections-phat-s-r",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-flexi-s-reflections-phat-s-r",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-34",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-royal-mashup-21",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'GetPixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-royal-mashup-21",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-water-cooled-red-uranium-vs-dotes-here-have-a-hoho-flacc-grey-budget-never-ending-ba",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killphreqs-mix4-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killphreqs-mix4-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"hue_shader_plus\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-you-can-buy-hate-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:270: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-you-can-buy-hate-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-ed-geining-hateops-flx-if-it-is-selfish-to-have-your-focus-then-i-am-an-ever-unsatis",
+      "stage": "warp",
+      "detail": "ERROR: 0:275: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-ed-geining-hateops-flx-if-it-is-selfish-to-have-your-focus-then-i-am-an-ever-unsatis",
+      "stage": "composite",
+      "detail": "ERROR: 0:343: 'assign' :  l-value required \"base\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-bleeding-like-a-horsey",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-bleeding-like-a-horsey",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-roams-proph",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-roams-proph",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-roams",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-roams",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-offx-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-offx-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: '+' :  wrong operand types: no operation '+' exists that takes a left-hand operand of type ' uniform mediump 4-component vector of float' and a right operand of type ' temp mediump 2-com"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-roam3",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-roam3",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-starin-at-sports-carscryin-schnig-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-starin-at-sports-carscryin-schnig-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-j4-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-thinkin-bout-u",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-thinkin-bout-u",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff",
+      "stage": "warp",
+      "detail": "ERROR: 0:258: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-orb",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-orb",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc-signal-propagation-rhythm",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc-signal-propagation-rhythm",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills-rce-beats",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills-rce-beats",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-orb-extreme-elegance",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-orb-extreme-elegance",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-stenter-phi",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-stenter-phi",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-j4-2",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-luxxx-wip",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-wip",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'assign' :  l-value required \"txr\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-bleeding-like-a-horsey-roams-i-just-got-through-watching-planet-bboy-and-boy-do-i-feel-emba",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-bleeding-like-a-horsey-roams-i-just-got-through-watching-planet-bboy-and-boy-do-i-feel-emba",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'assign' :  l-value required \"uv2\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getpixel' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
+      "stage": "composite",
+      "detail": "ERROR: 0:333: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-drugsincombat-reactive-molecule-v-05a",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-drugsincombat-reactive-molecule-v-05a",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-pacific-heights-flacc-roams-higher-self-lower-self-battles",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-pacific-heights-flacc-roams-higher-self-lower-self-battles",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-duncan-dodo-boid-dna-kodak-whore",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc-choilan-duncan-dodo-boid-dna-kodak-whore",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-j4-flacc-bryan-fnord-kool-aid",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv_m\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-j4-flacc-bryan-fnord-kool-aid",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-luxxx-wip-isosceles-edit",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-luxxx-wip-isosceles-edit",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss",
+      "stage": "warp",
+      "detail": "ERROR: 0:266: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss",
+      "stage": "composite",
+      "detail": "ERROR: 0:334: 'assign' :  l-value required \"shadow_offset\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"uv0\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killgaia-mix2",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'assign' :  l-value required \"uv1\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killgaia-mix2",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'assign' :  l-value required \"hue_shader_plus\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-holiday-hidden-in-plain-sight-clown",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-geiss-dotes-holiday-hidden-in-plain-sight-clown",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist",
+      "stage": "composite",
+      "detail": "ERROR: 0:328: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: '=' :  cannot convert from ' temp mediump 2-component vector of float' to ' temp mediump float'"
+    },
+    {
+      "id": "cotc-suksma-mtn-flx-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-krash-rovastar-rainbow-orb-2-peacock-bmelgren-s-compelling-vision",
+      "stage": "warp",
+      "detail": "ERROR: 0:259: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-one-too-many-days-under-the-iron-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-one-too-many-days-under-the-iron-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:268: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:338: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam2",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam2",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed",
+      "stage": "warp",
+      "detail": "ERROR: 0:269: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed",
+      "stage": "composite",
+      "detail": "ERROR: 0:337: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-undermines-him-in-the-subtlest-ways-mega-schoob-1d-serial-flashline-projection-creator",
+      "stage": "warp",
+      "detail": "ERROR: 0:262: 'a' : undeclared identifier"
+    },
+    {
+      "id": "cotc-undermines-him-in-the-subtlest-ways-mega-schoob-1d-serial-flashline-projection-creator",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam3",
+      "stage": "warp",
+      "detail": "ERROR: 0:260: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam3",
+      "stage": "composite",
+      "detail": "ERROR: 0:327: 'assign' :  l-value required \"uv_echo\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-incantation-onward-to-golgotha-christening-the-afterbirth-fla",
+      "stage": "warp",
+      "detail": "ERROR: 0:4: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-incantation-onward-to-golgotha-christening-the-afterbirth-fla",
+      "stage": "composite",
+      "detail": "ERROR: 0:4: 'output' : Reserved word."
+    },
+    {
+      "id": "cotc-orb-inferno-burnt-to-a-crisp-ngdbthzs-avoid-homozoidne",
+      "stage": "warp",
+      "detail": "ERROR: 0:264: 'assign' :  l-value required \"error\" (can't modify a uniform)"
+    },
+    {
+      "id": "cotc-orb-inferno-burnt-to-a-crisp-ngdbthzs-avoid-homozoidne",
+      "stage": "composite",
+      "detail": "ERROR: 0:332: 'getblur3' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-roams-drugs-stretch-time-wave-packe",
+      "stage": "warp",
+      "detail": "ERROR: 0:263: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-roams-drugs-stretch-time-wave-packe",
+      "stage": "composite",
+      "detail": "ERROR: 0:331: 'd' : undeclared identifier"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc",
+      "stage": "warp",
+      "detail": "ERROR: 0:261: 'getblur2' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc",
+      "stage": "composite",
+      "detail": "ERROR: 0:330: 'getblur1' : no matching overloaded function found"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc-roam3",
+      "stage": "warp",
+      "detail": "ERROR: 0:265: 'scalar swizzle' : not supported with this profile: es"
+    },
+    {
+      "id": "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc-roam3",
+      "stage": "composite",
+      "detail": "ERROR: 0:329: 'assign' :  l-value required \"srad\" (can't modify a uniform)"
+    }
+  ]
+}

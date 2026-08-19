@@ -136,6 +136,7 @@
     "lab:visual": "bun run scripts/preset-lab-visual.ts",
     "lab:profile": "bun run scripts/preset-lab-profile.ts",
     "lab:nan-sweep": "bun run scripts/preset-lab-nan-sweep.ts",
+    "lab:glsl-corpus-scan": "bun run scripts/preset-lab-glsl-corpus-scan.ts",
     "lab:replay": "bun run scripts/preset-lab-replay.ts",
     "lab:gpu-differential": "bun run scripts/preset-lab-gpu-differential.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
