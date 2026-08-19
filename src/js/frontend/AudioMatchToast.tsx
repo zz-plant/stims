@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
-const AUTO_DISMISS_MS = 6000;
+// Modest bump from an earlier, uncommented 6000: this is the passive-glance
+// budget once a match has already appeared (hover/focus pauses it, so this
+// only matters when the toast is ignored), not the search time behind it —
+// the search itself can still take a few seconds even with the front-loaded
+// polling schedule in App.tsx, so a slightly longer dwell gives a user who
+// glances back after the toast finally showed up more room to catch it.
+const AUTO_DISMISS_MS = 8000;
 
 export function AudioMatchToast({
   match,

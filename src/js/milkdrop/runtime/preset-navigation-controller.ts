@@ -339,6 +339,12 @@ export function createMilkdropPresetNavigationController({
       const favoriteWeight = entry.isFavorite ? 6 : 0;
       const historyBonus =
         entry.historyIndex !== undefined && entry.historyIndex >= 0 ? 3 : 0;
+      // 5 minutes: long enough that a preset shown near the start of a
+      // shuffle session has fully rotated out of "recent" by the time a
+      // typical autoplay interval (well under 5 minutes) would risk
+      // resurfacing it, short enough that it doesn't bias variety across an
+      // entire long session — only against picking the same handful of
+      // presets back-to-back.
       const recentPenalty =
         entry.lastOpenedAt && entry.lastOpenedAt > Date.now() - 300_000
           ? -4

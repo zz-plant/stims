@@ -27,7 +27,19 @@ import type { CommandAction } from './command-palette-registry.ts';
 
 const STATUS_LOG_LIMIT = 20;
 const EVENT_LOG_LIMIT = 100;
+// How long run() waits for a post-commit notification before reporting
+// settled:false. Most actions (panel toggles, transitions, preset selection)
+// commit well under 100ms — 1s is slack for a slow panel chunk download or a
+// preset compile, not a number tuned against a measured p99. A false
+// settled:false here just means the caller re-checks getState() themselves;
+// it does not mean the action failed, so this errs toward "generous enough
+// to rarely matter" rather than "tight enough to catch every straggler".
 const RUN_SETTLE_TIMEOUT_MS = 1000;
+// Default budget for waitFor(predicate). Generous relative to
+// RUN_SETTLE_TIMEOUT_MS on purpose: a caller waiting on a specific predicate
+// (e.g. "audio is live") may legitimately be waiting through several
+// discrete state transitions, not one commit — a boot sequence or a preset
+// switch under load can take longer than 1s while still being correct.
 const DEFAULT_WAIT_TIMEOUT_MS = 5000;
 
 export interface AgentStatusEntry {

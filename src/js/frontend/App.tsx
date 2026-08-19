@@ -126,6 +126,13 @@ const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
 );
 
+// The one "is there real audio" cutoff for getAudioEnergy()/rms readings,
+// shared by the audio-match search below and the quiet-audio coaching nudge.
+// These used to disagree (0.02 vs 0.04) despite reading the same signal —
+// 0.04 is the value audio-matcher.ts already uses internally for its own
+// beatIntensity gate, so it's the canonical threshold, not an arbitrary pick.
+const QUIET_AUDIO_RMS_THRESHOLD = 0.04;
+
 // Rendered while a lazy panel chunk downloads. On a cold cache that can take
 // seconds, and an empty sheet reads as broken — announce and show progress.
 function PanelLoadingFallback() {
@@ -839,7 +846,7 @@ function StimsWorkspaceAppShell() {
     }
 
     const inspectAudioEnergy = () => {
-      if (getAudioEnergy() < 0.04) {
+      if (getAudioEnergy() < QUIET_AUDIO_RMS_THRESHOLD) {
         if (quietAtRef.current === null) {
           quietAtRef.current = performance.now();
         } else if (
@@ -1018,6 +1025,16 @@ function StimsWorkspaceAppShell() {
   // silence (the stream hasn't produced audio yet), so poll until the signal
   // is audible, then run one vector search and offer the top match. One
   // search per source start keeps the Vectorize endpoint cold-path cheap.
+  //
+  // Front-loaded schedule, not a flat interval: most sources go audible
+  // within a second or two (silence past that point means something's
+  // actually wrong, not "still warming up"), so polling fast early catches
+  // the common case quickly while a flat 2000ms×8 schedule made every
+  // listener wait up to 16s even when the signal was ready in 1s. Total
+  // worst case is ~8.4s, matching AUDIO_MATCH_QUIET_RMS below (the same
+  // "is there real audio" cutoff the quiet-audio coaching nudge uses, so
+  // the two features agree on what counts as silence).
+  const AUDIO_MATCH_RETRY_SCHEDULE_MS = [400, 400, 800, 800, 1200, 1600, 2000];
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
     if (!engineSnapshot?.audioActive) {
@@ -1025,20 +1042,21 @@ function StimsWorkspaceAppShell() {
       return;
     }
     const controller = new AbortController();
-    const MAX_ATTEMPTS = 8;
-    const RETRY_MS = 2000;
     let attempts = 0;
     let retryTimer: number | null = null;
 
     const tryMatch = () => {
       if (controller.signal.aborted) return;
-      attempts += 1;
       const audioEnergy = engineSnapshotRef.current?.audioEnergy;
       const profile = buildAudioProfile({ audioEnergy });
-      if (profile.rms < 0.02) {
-        if (attempts < MAX_ATTEMPTS) {
-          retryTimer = window.setTimeout(tryMatch, RETRY_MS);
+      if (profile.rms < QUIET_AUDIO_RMS_THRESHOLD) {
+        if (attempts < AUDIO_MATCH_RETRY_SCHEDULE_MS.length) {
+          retryTimer = window.setTimeout(
+            tryMatch,
+            AUDIO_MATCH_RETRY_SCHEDULE_MS[attempts],
+          );
         }
+        attempts += 1;
         return;
       }
       void searchByAudioProfile(profile, controller.signal).then((results) => {

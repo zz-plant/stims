@@ -9,7 +9,11 @@ import { SyncRoomCreateResponseSchema } from '../core/edge-contracts.ts';
 const SYNC_BASE = 'https://stims-sync.kanavj.workers.dev';
 const HOST_KEY_STORAGE_PREFIX = 'stims-sync-host-key:';
 const RECONNECT_BASE_DELAY_MS = 1000;
-const RECONNECT_MAX_DELAY_MS = 15000;
+// Capped lower than a "give up gracefully" backoff would normally go: for a
+// watch-together session, staying in sync IS the feature, so once backoff
+// climbs a viewer shouldn't sit more than ~8s between attempts. Schedule:
+// 1s, 2s, 4s, 8s, 8s, 8s… (was capped at 15s).
+const RECONNECT_MAX_DELAY_MS = 8000;
 
 export type SyncRole = 'host' | 'viewer';
 

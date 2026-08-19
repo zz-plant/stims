@@ -116,12 +116,17 @@ export function BrowseSheetPanel({
     setLocalSearch(searchQuery);
   }, [searchQuery]);
 
-  // Debounce sync from localSearch to global searchQuery
+  // Debounce sync from localSearch to global searchQuery. This does NOT gate
+  // the visible filter — `deferredSearch` (useDeferredValue above) already
+  // keeps the list responsive to every keystroke at React's own pace. This
+  // timer only paces writes to the global route/URL state, so typing fast
+  // doesn't thrash history/URL updates; 80ms (was 150ms, uncommented) is
+  // still comfortably above a keystroke's cadence for that purpose alone.
   useEffect(() => {
     if (localSearch === searchQuery) return;
     const timer = setTimeout(() => {
       ui.setSearchQuery(localSearch);
-    }, 150);
+    }, 80);
     return () => clearTimeout(timer);
   }, [localSearch, searchQuery, ui]);
 
