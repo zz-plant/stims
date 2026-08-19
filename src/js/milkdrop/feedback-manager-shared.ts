@@ -315,6 +315,16 @@ function getSharedAuxTextures(): SharedAuxTextureMap {
  */
 const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         uniform vec4 aspect;
+        // (width, height, 1/width, 1/height) of the feedback texture custom
+        // shader bodies sample — MilkDrop's texsize builtin. Neighbor-tap
+        // shaders read texsize.zw as the one-texel offset (see the WebGPU/TSL
+        // backend's texsize comment for why this must be the feedback
+        // texture's own size, not the viewport). Without this declaration,
+        // extractReferencedPerFrameVariables below auto-declares any custom
+        // shader body that references texsize as \`uniform float texsize\` —
+        // wrong type, and a compile error the instant a body does
+        // \`texsize.zw\`.
+        uniform vec4 texsize;
         uniform vec4 _qa;
         uniform vec4 _qb;
         uniform vec4 _qc;
@@ -1111,8 +1121,29 @@ function extractReferencedPerFrameVariables(
     MILKDROP_FEEDBACK_WARP_HELPER,
   ];
   for (const template of templates) {
-    for (const match of stripShaderComments(template).matchAll(
-      /\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gu,
+    const clean = stripShaderComments(template);
+    // Only global-scope declarations count as "already available" — a blind
+    // scan of every identifier in the template text previously also picked
+    // up helper functions' own local variables (e.g. noise()'s own
+    // `float d = hash(...)`), which then silently blocked a fresh
+    // declaration for an injected body's unrelated `d` scratch variable,
+    // producing "undeclared identifier" instead (~111/975 corpus-scan
+    // failures shared this one collision).
+    for (const match of clean.matchAll(
+      /\b(?:uniform|varying|attribute)\s+(?:highp|mediump|lowp\s+)?\w+\s+([a-zA-Z_][a-zA-Z0-9_]*)/gu,
+    )) {
+      declared.add(match[1]);
+    }
+    for (const match of clean.matchAll(
+      /#define\s+([a-zA-Z_][a-zA-Z0-9_]*)/gu,
+    )) {
+      declared.add(match[1]);
+    }
+    // Function definitions at file scope, so a preset body that happens to
+    // share a name with a helper (rare, but a real collision is a compile
+    // error either way) doesn't get a duplicate declaration.
+    for (const match of clean.matchAll(
+      /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/gu,
     )) {
       declared.add(match[1]);
     }
@@ -1145,6 +1176,176 @@ function extractReferencedPerFrameVariables(
     }
   }
   return [...found].sort();
+}
+
+/** Sizes of the multi-component builtins a scratch variable's first
+ * assignment might swizzle off of (e.g. `d = texsize.zw * 8.0`) — used to
+ * infer that variable's own type below. */
+const MILKDROP_KNOWN_VECTOR_SIZES: Record<string, number> = {
+  aspect: 4,
+  _qa: 4,
+  _qb: 4,
+  _qc: 4,
+  _qd: 4,
+  _qe: 4,
+  _qf: 4,
+  _qg: 4,
+  _qh: 4,
+  rand_preset: 4,
+  texsize: 4,
+  colorScale: 3,
+  tint: 3,
+  texelSize: 2,
+  overlayTextureScale: 2,
+  overlayTextureOffset: 2,
+  warpTextureScale: 2,
+  warpTextureOffset: 2,
+};
+
+/** Declaration for one name extractReferencedPerFrameVariables found: either
+ * a genuine per-frame register (VM-driven, read by the shader, declared as a
+ * `uniform`) or a scratch variable the injected body itself initializes
+ * before ever reading (declared as a plain global — GLSL has no local-var
+ * hoisting requirement here, and each fragment invocation gets its own copy). */
+type MilkdropPerFrameDeclaration = {
+  name: string;
+  isLocalScratch: boolean;
+  type: 'float' | 'vec2' | 'vec3' | 'vec4';
+};
+
+/**
+ * A name extractReferencedPerFrameVariables finds is a genuine per-frame
+ * *register* — MilkDrop's `trelx`/`tele`/`vshift`-style globals, written by
+ * per_frame EEL code and only ever read here — only if the shader body reads
+ * it before (or without) ever assigning to it. When the FIRST occurrence is
+ * an assignment (`name = …` or `name.xyz = …`), the preset author is using
+ * `name` as their own scratch variable (e.g. `col`, `light_pos`, `plastic`
+ * in cotc-suksma-mtn-flx-flacc) — declaring that `uniform` makes every
+ * assignment to it a compile error ("can't modify a uniform"), which was the
+ * single largest class of GLSL corpus scan failures (~360/975).
+ *
+ * Type is inferred from how the variable is first used, in priority order:
+ * a direct `name = vecN(...)` constructor; the widest single-component
+ * swizzle ever assigned to it (`name.z = …` implies at least vec3); a
+ * swizzle applied to a known multi-component builtin on its first
+ * assignment's right-hand side (`texsize.zw` implies vec2). Defaults to
+ * float, which is always safe for genuinely scalar scratch registers and no
+ * worse than the previous "uniform float" default otherwise.
+ */
+function classifyPerFrameVariable(
+  name: string,
+  fragments: Array<string | null>,
+): MilkdropPerFrameDeclaration {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const occurrence = new RegExp(
+    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*(=(?!=))?`,
+    'gu',
+  );
+  let firstIsAssignment: boolean | null = null;
+  let widestComponentIndex = -1;
+  let constructorSize: number | null = null;
+  const componentIndex: Record<string, number> = {
+    x: 0,
+    y: 1,
+    z: 2,
+    w: 3,
+    r: 0,
+    g: 1,
+    b: 2,
+    a: 3,
+  };
+
+  for (const fragment of fragments) {
+    if (!fragment) {
+      continue;
+    }
+    const clean = stripShaderComments(fragment);
+    for (const match of clean.matchAll(occurrence)) {
+      const swizzle = match[1];
+      const isAssignment = match[2] === '=';
+      if (firstIsAssignment === null) {
+        firstIsAssignment = isAssignment;
+      }
+      if (!isAssignment) {
+        continue;
+      }
+      if (swizzle) {
+        for (const component of swizzle) {
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            componentIndex[component] ?? -1,
+          );
+        }
+        continue;
+      }
+      // Bare `name = …` — check the right-hand side for a direct vecN(...)
+      // constructor, else a swizzle off a known multi-component identifier.
+      const restFrom = match.index + match[0].length;
+      const statementEnd = clean.indexOf(';', restFrom);
+      const rhs = clean.slice(
+        restFrom,
+        statementEnd === -1 ? undefined : statementEnd,
+      );
+      const constructorMatch = rhs.match(/^\s*vec([234])\s*\(/u);
+      if (constructorMatch) {
+        constructorSize = Math.max(
+          constructorSize ?? 0,
+          Number(constructorMatch[1]),
+        );
+        continue;
+      }
+      for (const knownMatch of rhs.matchAll(
+        /\b([a-zA-Z_][a-zA-Z0-9_]*)\.([xyzwrgba]{1,4})\b/gu,
+      )) {
+        const knownSize = MILKDROP_KNOWN_VECTOR_SIZES[knownMatch[1]];
+        if (knownSize) {
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            knownMatch[2].length - 1,
+          );
+        }
+      }
+      // A swizzle directly off an inline constructor call — e.g. the
+      // translated-statement emitter's own texsize expansion,
+      // `vec4(1.0 / texelSize, texelSize).zw` — carries the same size
+      // signal as a named-identifier swizzle but the regex above requires a
+      // bare identifier before the dot, so it won't match a `)` there.
+      for (const inlineMatch of rhs.matchAll(/\)\.([xyzwrgba]{1,4})\b/gu)) {
+        widestComponentIndex = Math.max(
+          widestComponentIndex,
+          inlineMatch[1].length - 1,
+        );
+      }
+    }
+  }
+
+  if (!firstIsAssignment) {
+    return { name, isLocalScratch: false, type: 'float' };
+  }
+  const inferredSize = constructorSize ?? widestComponentIndex + 1;
+  const type =
+    inferredSize >= 4
+      ? 'vec4'
+      : inferredSize === 3
+        ? 'vec3'
+        : inferredSize === 2
+          ? 'vec2'
+          : 'float';
+  return { name, isLocalScratch: true, type };
+}
+
+function buildPerFrameVariableDeclarations(
+  names: string[],
+  fragments: Array<string | null>,
+): string {
+  return names
+    .map((name) => {
+      const decl = classifyPerFrameVariable(name, fragments);
+      return decl.isLocalScratch
+        ? `${decl.type} ${decl.name};\n`
+        : `uniform float ${decl.name};\n`;
+    })
+    .join('');
 }
 
 export function assembleMilkdropDirectFragmentShaders(
@@ -1182,17 +1383,30 @@ export function assembleMilkdropDirectFragmentShaders(
       )
     : null;
 
+  const warpFragments = [warpGlobals, warpBody];
+  const compFragments = [cleanCompBody];
   const perFrameVariables = extractReferencedPerFrameVariables([
-    warpGlobals,
-    warpBody,
-    cleanCompBody,
+    ...warpFragments,
+    ...compFragments,
   ]);
-  const perFrameVariableDeclarations = perFrameVariables
-    .map((name) => `uniform float ${name};\n`)
-    .join('');
+  // Declarations are built per-stage (from only that stage's own fragments)
+  // rather than sharing one declaration block across both assembled
+  // shaders: a name classified as local scratch in warp could legitimately
+  // be a genuine read-only per-frame register in comp (or vice versa), and
+  // a shared declaration would silently turn that stage's uniform read into
+  // an always-zero local instead of failing to compile — trading a loud
+  // compile error for a silent visual bug.
+  const warpPerFrameVariableDeclarations = buildPerFrameVariableDeclarations(
+    perFrameVariables,
+    warpFragments,
+  );
+  const compPerFrameVariableDeclarations = buildPerFrameVariableDeclarations(
+    perFrameVariables,
+    compFragments,
+  );
 
   const warp =
-    perFrameVariableDeclarations +
+    warpPerFrameVariableDeclarations +
     buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
     injectDirectShaderGlsl(
       MILKDROP_WARP_FRAGMENT_SHADER,
@@ -1203,7 +1417,7 @@ export function assembleMilkdropDirectFragmentShaders(
 
   // Build composite shader: warp section kept empty since warp runs separate
   const composite =
-    perFrameVariableDeclarations +
+    compPerFrameVariableDeclarations +
     buildCustomSamplerUniformDeclarations([cleanCompBody]) +
     injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
@@ -1508,6 +1722,14 @@ class SharedMilkdropFeedbackManager
             1 / Math.max(1, this.targets[0].height),
           ),
         },
+        texsize: {
+          value: new Vector4(
+            this.targets[0].width,
+            this.targets[0].height,
+            1 / Math.max(1, this.targets[0].width),
+            1 / Math.max(1, this.targets[0].height),
+          ),
+        },
         warpTextureSource: { value: 0 },
         warpTextureSampleDimension: { value: 0 },
         warpTextureAmount: { value: 0 },
@@ -1726,6 +1948,14 @@ class SharedMilkdropFeedbackManager
             1 / Math.max(1, this.sceneTarget.height),
           ),
         },
+        texsize: {
+          value: new Vector4(
+            this.sceneTarget.width,
+            this.sceneTarget.height,
+            1 / Math.max(1, this.sceneTarget.width),
+            1 / Math.max(1, this.sceneTarget.height),
+          ),
+        },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -1753,6 +1983,12 @@ class SharedMilkdropFeedbackManager
     this.warpMaterial.uniforms.warpTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.currentTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.texelSize.value.set(
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
+    this.warpMaterial.uniforms.texsize.value.set(
+      this.readTarget.width,
+      this.readTarget.height,
       1 / this.readTarget.width,
       1 / this.readTarget.height,
     );
@@ -2079,6 +2315,12 @@ class SharedMilkdropFeedbackManager
       1 / this.readTarget.width,
       1 / this.readTarget.height,
     );
+    wu.texsize.value.set(
+      this.readTarget.width,
+      this.readTarget.height,
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
     if (warpTextureName) {
       wu[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[warpTextureName].fileName,
@@ -2351,6 +2593,12 @@ class SharedMilkdropFeedbackManager
       this.blurHTargets[level].setSize(levelWidth, levelHeight);
     }
     this.compositeMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
+    );
+    this.compositeMaterial.uniforms.texsize.value.set(
+      Math.max(1, feedbackWidth),
+      Math.max(1, feedbackHeight),
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
     );
