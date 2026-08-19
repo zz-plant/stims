@@ -25,6 +25,19 @@ function fakeHandle(
     selectPreset: async () => {},
     setAutoplay: () => {},
     startupSettled: async () => {},
+    startTraceCapture: () => ({
+      recording: true,
+      presetId: null,
+      frameCount: 0,
+      autoStopped: false,
+    }),
+    stopTraceCapture: () => null,
+    getTraceCaptureState: () => ({
+      recording: false,
+      presetId: null,
+      frameCount: 0,
+      autoStopped: false,
+    }),
     ...overrides,
   };
 }

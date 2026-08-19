@@ -11,8 +11,8 @@ import type {
   ToyRuntimeInstance,
 } from '../../core/toy-runtime';
 import type {
-  MilkdropCapturedVideoReactiveState,
   MilkdropBlendState,
+  MilkdropCapturedVideoReactiveState,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types';
@@ -32,8 +32,9 @@ import {
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
-import type { MilkdropTransitionController } from './transition-controller.ts';
 import { estimateFrameBlendWorkload } from './session.ts';
+import type { MilkdropTraceRecorder } from './trace-recorder.ts';
+import type { MilkdropTransitionController } from './transition-controller.ts';
 
 export function createMilkdropExperienceFrameLoop({
   getRuntime,
@@ -61,6 +62,7 @@ export function createMilkdropExperienceFrameLoop({
   setPostprocessingPipeline,
   capturedVideoOverlay,
   getFreezeFrame,
+  traceRecorder,
 }: {
   getRuntime: () => ToyRuntimeInstance | null;
   getAdapter: () => {
@@ -148,6 +150,8 @@ export function createMilkdropExperienceFrameLoop({
     }) => void;
   };
   getFreezeFrame: () => boolean;
+  /** Agent-mode live trace capture; absent outside agent mode. */
+  traceRecorder?: MilkdropTraceRecorder | null;
 }) {
   let blendWorkloadFrameState: MilkdropFrameState | null = null;
   /** True while an autoplay advance is between trigger and transition. */
@@ -261,8 +265,20 @@ export function createMilkdropExperienceFrameLoop({
           navigation.prepareNextRandomPreset();
         }
 
+        const rawFrameState = vm.step(signals);
+        // Capture before the interaction response: replay re-runs vm.step
+        // only, and the response mutates the frame state in place.
+        traceRecorder?.recordFrame({
+          time: frame.time,
+          deltaMs: frame.deltaMs,
+          frequencyData: frame.frequencyData,
+          waveformData: frame.waveformData,
+          signals,
+          frameState: rawFrameState,
+          detailScale: detailScale * adaptiveDensityMultiplier,
+        });
         const currentFrameState = applyMilkdropInteractionResponse(
-          vm.step(signals),
+          rawFrameState,
           frame.input,
           activeBackend,
         );

@@ -14,10 +14,17 @@
  *   bun run lab:replay -- --replay trace.json          # verified or first-divergence report
  *   bun run lab:replay -- --replay trace.json --dump 5 # also print state at frame 5
  *
- * Scope: CPU tier (the production JIT-backed VM). The trace format is
- * deliberately runtime-agnostic — a browser capture hook or a GPU-tier
- * replayer can emit/consume the same shape later (see the EEL consolidation
- * roadmap, item 3).
+ * Live browser captures produce the same TraceFile shape via the agent-mode
+ * handle (window.__milkdropRuntimeDebug.startTraceCapture/stopTraceCapture,
+ * see src/js/milkdrop/runtime/trace-recorder.ts); those traces carry the
+ * fully merged per-frame signals and replay through the VM directly,
+ * bypassing the signal tracker.
+ *
+ * GPU tier: `--replay trace.json --tier gpu` drives the same trace through
+ * the compute-VM (vm-gpu.ts) on an ACTUAL GPU — headless Chromium WebGPU,
+ * full VM stepped in-page via stepAsync — and diffs its per-frame VmState
+ * against the CPU replay within f32 tolerance (exact digests are
+ * meaningless across f32/f64). Same first-divergent-frame report, exit 1.
  */
 
 import fs from 'node:fs';
@@ -25,7 +32,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import { createMilkdropSignalTracker } from '../src/js/milkdrop/runtime-signals.ts';
+import {
+  captureFrame,
+  type FrameCapture,
+  type FrameInputs,
+  reviveInputArrays,
+  type TraceFile,
+} from '../src/js/milkdrop/trace-capture.ts';
+import type { MilkdropRuntimeSignals } from '../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../src/js/milkdrop/vm.ts';
+import {
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  type MilkdropWebGpuOptimizationFlags,
+} from '../src/js/milkdrop/webgpu-optimization-flags.ts';
+import { ensureDevServer } from './dev-server.ts';
 import {
   fillScenarioSpectrum,
   fillScenarioWaveform,
@@ -36,37 +56,7 @@ import { loadPresetSource } from './preset-lab-reactivity.ts';
 
 const DEFAULT_FRAMES = 240;
 const FPS = 60;
-
-type FrameInputs = {
-  time: number;
-  deltaMs: number;
-  /** Spectrum/waveform bytes; stored as plain arrays for JSON portability. */
-  frequencyData: number[];
-  waveformData: number[];
-};
-
-type FrameCapture = {
-  /** FNV-1a digest over sorted variables + geometry. */
-  digest: string;
-  /** Full variable snapshot, kept so divergences can be named precisely.
-   * Compact (golden) traces keep it only on checkpoint frames. */
-  variables?: Record<string, number>;
-  geometry?: { mainWave: number; customWaves: number; shapes: number };
-};
-
-type TraceFile = {
-  version: 1;
-  presetId: string;
-  capturedAt: string;
-  fps: number;
-  scenario: string;
-  frameCount: number;
-  /** Raw recorded inputs; null for synthetic traces, whose inputs are
-   * regenerated from (scenario, frameCount) on replay. Live browser
-   * captures must always store inputs. */
-  inputs: FrameInputs[] | null;
-  frames: FrameCapture[];
-};
+const GPU_REPLAY_PORT = 5198;
 
 export type { FrameCapture, FrameInputs, TraceFile };
 
@@ -74,69 +64,51 @@ function repoRootFromScript() {
   return path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 }
 
-function fnv1a(text: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
-
-function positionsChecksum(positions: ArrayLike<number>): number {
-  let sum = 0;
-  for (let index = 0; index < positions.length; index += 1) {
-    const value = positions[index] as number;
-    if (Number.isFinite(value)) {
-      sum += value * (1 + (index % 7));
-    }
-  }
-  // Round so a JSON round-trip of the checksum compares exactly.
-  return Math.round(sum * 1e6) / 1e6;
-}
-
-function captureFrame(frameState: {
-  variables: Record<string, unknown>;
-  mainWave: { positions: ArrayLike<number> };
-  customWaves: Array<{ positions: ArrayLike<number> }>;
-  shapes: Array<{ x: number; y: number; radius: number; rotation: number }>;
-}): FrameCapture {
-  const variables: Record<string, number> = {};
-  for (const key of Object.keys(frameState.variables).sort()) {
-    const value = frameState.variables[key];
-    if (typeof value === 'number') {
-      variables[key] = value;
-    }
-  }
-  let shapesSum = 0;
-  for (const shape of frameState.shapes) {
-    shapesSum += shape.x + shape.y * 3 + shape.radius * 7 + shape.rotation;
-  }
-  let customWavesSum = 0;
-  for (const wave of frameState.customWaves) {
-    customWavesSum += positionsChecksum(wave.positions);
-  }
-  const geometry = {
-    mainWave: positionsChecksum(frameState.mainWave.positions),
-    customWaves: Math.round(customWavesSum * 1e6) / 1e6,
-    shapes: Math.round(shapesSum * 1e6) / 1e6,
-  };
-  const digest = fnv1a(JSON.stringify([variables, geometry]));
-  return { digest, variables, geometry };
-}
+export type ReplayVmOptions = {
+  /** Backend semantics to replay under; a WebGPU-recorded trace has empty
+   * CPU-visual wave/mesh arrays (procedural descriptors carry them), so the
+   * replay VM must be routed the same way. Defaults to 'webgl'. */
+  backend?: 'webgl' | 'webgpu';
+  webgpuFlags?: Partial<MilkdropWebGpuOptimizationFlags>;
+};
 
 export function runTrace(
   raw: string,
   presetId: string,
   inputs: FrameInputs[],
+  options: ReplayVmOptions = {},
 ): FrameCapture[] {
   const compiled = compileMilkdropPresetSource(raw, { id: presetId });
-  const vm = createMilkdropVM(compiled);
+  const vm = createMilkdropVM(compiled, {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    ...options.webgpuFlags,
+  });
+  vm.setRenderBackend(options.backend ?? 'webgl');
   const tracker = createMilkdropSignalTracker();
   const frequencyData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const waveformData = new Uint8Array(PRESET_LAB_SPECTRUM_BINS);
   const frames: FrameCapture[] = [];
   for (const frame of inputs) {
+    // Live captures store the fully merged signal environment the VM stepped
+    // with; the tracker's live smoothing state cannot be rebuilt from bytes,
+    // so replay feeds those signals to the VM directly. The raw byte arrays
+    // are reattached from the recorded inputs — wave geometry reads
+    // signals.waveformData/frequencyData, which JSON snapshots drop.
+    if (frame.signals) {
+      if (frame.detailScale !== undefined) {
+        vm.setDetailScale(frame.detailScale);
+      }
+      const signals = {
+        ...frame.signals,
+        ...(frame.arrays ? reviveInputArrays(frame.arrays) : null),
+        frequencyData: new Uint8Array(frame.frequencyData),
+        waveformData: new Uint8Array(frame.waveformData),
+      };
+      frames.push(
+        captureFrame(vm.step(signals as unknown as MilkdropRuntimeSignals)),
+      );
+      continue;
+    }
     frequencyData.set(frame.frequencyData);
     waveformData.set(frame.waveformData);
     const signals = tracker.update({
@@ -236,6 +208,180 @@ export function traceInputs(trace: TraceFile): FrameInputs[] {
   );
 }
 
+/** Loose f32-vs-f64 comparison for the GPU tier. The compute VM stores state
+ * as f32 and re-reads it every frame, so drift against the f64 CPU replay is
+ * expected; the divergences this tier-diff exists to catch — wrong guard or
+ * operator semantics — are orders of magnitude, not ulps. */
+function closeEnough(cpu: number, gpu: number, tolerance: number): boolean {
+  if (!Number.isFinite(cpu) || !Number.isFinite(gpu)) {
+    return cpu === gpu;
+  }
+  const diff = Math.abs(cpu - gpu);
+  return (
+    diff <= tolerance + 5 * tolerance * Math.max(Math.abs(cpu), Math.abs(gpu))
+  );
+}
+
+/** Tolerance-based cross-tier diff: first frame where any variable or
+ * geometry checksum moves beyond `tolerance`, or null. Digests are ignored
+ * (exact equality across f32/f64 tiers is meaningless). */
+export function compareTiers(
+  cpuFrames: FrameCapture[],
+  gpuFrames: FrameCapture[],
+  tolerance: number,
+  labels: [string, string] = ['cpu', 'gpu'],
+): { frame: number; details: string[] } | null {
+  const [leftLabel, rightLabel] = labels;
+  for (let index = 0; index < cpuFrames.length; index += 1) {
+    const cpu = cpuFrames[index] as FrameCapture;
+    const gpu = gpuFrames[index];
+    if (!gpu?.variables || !gpu.geometry || !cpu.variables || !cpu.geometry) {
+      return { frame: index, details: ['  (missing frame or snapshot)'] };
+    }
+    const details: string[] = [];
+    const keys = new Set([
+      ...Object.keys(cpu.variables),
+      ...Object.keys(gpu.variables),
+    ]);
+    for (const key of [...keys].sort()) {
+      const cpuValue = cpu.variables[key] ?? 0;
+      const gpuValue = gpu.variables[key] ?? 0;
+      if (!closeEnough(cpuValue, gpuValue, tolerance)) {
+        details.push(
+          `  variables.${key}: ${leftLabel}=${cpuValue} ${rightLabel}=${gpuValue}`,
+        );
+      }
+    }
+    for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
+      if (!closeEnough(cpu.geometry[field], gpu.geometry[field], tolerance)) {
+        details.push(
+          `  geometry.${field}: ${leftLabel}=${cpu.geometry[field]} ${rightLabel}=${gpu.geometry[field]}`,
+        );
+      }
+    }
+    if (details.length > 0) {
+      return { frame: index, details };
+    }
+  }
+  return null;
+}
+
+/** Replays a trace through the full VM with the compute-VM per-frame program
+ * running on an actual GPU (headless Chromium WebGPU), returning per-frame
+ * captures. The whole VM graph is imported into the page from the Vite dev
+ * server so page and CLI share one implementation. */
+async function runGpuTrace(
+  raw: string,
+  presetId: string,
+  inputs: FrameInputs[],
+  webgpuFlags?: Partial<MilkdropWebGpuOptimizationFlags>,
+): Promise<FrameCapture[]> {
+  const { chromium } = await import('playwright');
+  const server = await ensureDevServer(GPU_REPLAY_PORT, process.cwd());
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--use-gl=angle', '--enable-gpu', '--ignore-gpu-blocklist'],
+  });
+  try {
+    const page = await browser.newPage();
+    // navigator.gpu is hidden on about:blank in Playwright Chromium — the
+    // probe (and everything else) must run after a real page load.
+    await page.goto(`http://127.0.0.1:${GPU_REPLAY_PORT}/?agent=true`, {
+      waitUntil: 'domcontentloaded',
+    });
+    const gpuAvailable = await page.evaluate(() => 'gpu' in navigator);
+    if (!gpuAvailable) {
+      throw new Error('navigator.gpu unavailable in this Chromium.');
+    }
+
+    const result = (await page.evaluate(
+      async ({ raw, presetId, inputs, webgpuFlags }) => {
+        try {
+          // Dev-server-relative specifiers, kept dynamic so the CLI's own
+          // typecheck doesn't try to resolve them as Node modules.
+          const modulePath = (name: string) => `/src/js/milkdrop/${name}.ts`;
+          const [
+            compilerModule,
+            vmModule,
+            signalsModule,
+            captureModule,
+            flagsModule,
+          ] = await Promise.all([
+            import(modulePath('compiler')),
+            import(modulePath('vm')),
+            import(modulePath('runtime-signals')),
+            import(modulePath('trace-capture')),
+            import(modulePath('webgpu-optimization-flags')),
+          ]);
+          const adapter = await navigator.gpu.requestAdapter();
+          if (!adapter) {
+            return { error: 'no WebGPU adapter' };
+          }
+          const device = await adapter.requestDevice();
+
+          const compiled = compilerModule.compileMilkdropPresetSource(raw, {
+            id: presetId,
+          });
+          const vm = vmModule.createMilkdropVM(compiled);
+          vm.setWebGpuOptimizationFlags({
+            ...flagsModule.DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+            ...(webgpuFlags ?? null),
+            gpuComputeVM: true,
+          });
+          vm.setRenderBackend('webgpu');
+          if (!vm.setGpuDevice(device)) {
+            return {
+              error:
+                'per-frame program is not GPU-executable (gpuExecutable: false) — the compute VM would silently run the CPU path.',
+            };
+          }
+          const tracker = signalsModule.createMilkdropSignalTracker();
+          const frames: unknown[] = [];
+          for (const frame of inputs) {
+            let signals: Record<string, unknown>;
+            if (frame.signals) {
+              if (frame.detailScale !== undefined) {
+                vm.setDetailScale(frame.detailScale);
+              }
+              signals = {
+                ...frame.signals,
+                ...(frame.arrays
+                  ? captureModule.reviveInputArrays(frame.arrays)
+                  : null),
+                frequencyData: new Uint8Array(frame.frequencyData),
+                waveformData: new Uint8Array(frame.waveformData),
+              };
+            } else {
+              signals = tracker.update({
+                time: frame.time,
+                deltaMs: frame.deltaMs,
+                analyser: null,
+                frequencyData: new Uint8Array(frame.frequencyData),
+                waveformData: new Uint8Array(frame.waveformData),
+              });
+            }
+            // biome-ignore lint/suspicious/noExplicitAny: cross-module page eval
+            const frameState = await vm.stepAsync(signals as any);
+            frames.push(captureModule.captureFrame(frameState));
+          }
+          return { frames };
+        } catch (error) {
+          return { error: String(error) };
+        }
+      },
+      { raw, presetId, inputs, webgpuFlags: webgpuFlags ?? null },
+    )) as { frames?: FrameCapture[]; error?: string };
+
+    if (result.error || !result.frames) {
+      throw new Error(`GPU replay failed: ${result.error ?? 'no frames'}`);
+    }
+    return result.frames;
+  } finally {
+    await browser.close();
+    server.close();
+  }
+}
+
 const GOLDEN_CHECKPOINT_EVERY = 30;
 
 function compactFrames(frames: FrameCapture[]): FrameCapture[] {
@@ -244,7 +390,7 @@ function compactFrames(frames: FrameCapture[]): FrameCapture[] {
   );
 }
 
-function main() {
+async function main() {
   const repoRoot = repoRootFromScript();
   const args = process.argv.slice(2);
   const get = (flag: string) => {
@@ -258,6 +404,8 @@ function main() {
   const frameCount = Number(get('--frames') ?? DEFAULT_FRAMES);
   const scenario = (get('--scenario') ?? 'full-mix') as PresetLabScenario;
   const dumpFrame = get('--dump');
+  const tier = get('--tier') ?? 'cpu';
+  const tolerance = Number(get('--tolerance') ?? 1e-3);
 
   if (recordPath) {
     if (!presetId) {
@@ -290,7 +438,50 @@ function main() {
       fs.readFileSync(path.resolve(replayPath), 'utf8'),
     ) as TraceFile;
     const source = loadPresetSource(repoRoot, { presetId: trace.presetId });
-    const replayed = runTrace(source.raw, trace.presetId, traceInputs(trace));
+    const inputs = traceInputs(trace);
+
+    if (tier === 'gpu') {
+      // GPU tier: diff the compute-VM replay against a fresh CPU replay of
+      // the same inputs (NOT the recorded digests — those are f64-exact).
+      // Both sides run under webgpu backend semantics so the procedural
+      // wave/mesh routing is identical and the diff isolates the per-frame
+      // program execution (CPU JIT vs GPU compute).
+      const cpuFrames = runTrace(source.raw, trace.presetId, inputs, {
+        backend: 'webgpu',
+        webgpuFlags: trace.webgpuFlags,
+      });
+      const gpuFrames = await runGpuTrace(
+        source.raw,
+        trace.presetId,
+        inputs,
+        trace.webgpuFlags,
+      );
+      const divergence = compareTiers(cpuFrames, gpuFrames, tolerance);
+      if (divergence) {
+        console.error(
+          `✗ GPU tier DIVERGED from CPU at frame ${divergence.frame}/${cpuFrames.length} (tolerance ${tolerance})`,
+        );
+        console.error(
+          divergence.details.slice(0, 20).join('\n') +
+            (divergence.details.length > 20
+              ? `\n  … ${divergence.details.length - 20} more differing fields`
+              : ''),
+        );
+        process.exit(1);
+      }
+      console.log(
+        `✔ GPU tier verified: ${cpuFrames.length} frames of ${trace.presetId} match the CPU replay within tolerance ${tolerance}.`,
+      );
+      return;
+    }
+    if (tier !== 'cpu') {
+      console.error(`Unknown --tier "${tier}" (expected cpu or gpu).`);
+      process.exit(1);
+    }
+    const replayed = runTrace(source.raw, trace.presetId, inputs, {
+      backend: trace.backend,
+      webgpuFlags: trace.webgpuFlags,
+    });
 
     if (dumpFrame !== undefined) {
       const index = Number(dumpFrame);
@@ -299,6 +490,32 @@ function main() {
         console.log(`state at frame ${index}:`);
         console.log(JSON.stringify(frame, null, 2));
       }
+    }
+
+    // Live traces were recorded in a browser (V8); Bun (JSC) transcendentals
+    // differ by ~1 ulp, so cross-engine replay verifies within a tight
+    // tolerance rather than digest-exact. Synthetic traces (recorded by this
+    // CLI) stay bit-for-bit.
+    if (trace.source === 'live') {
+      const liveTolerance = get('--tolerance') ? tolerance : 1e-6;
+      console.log(
+        `(live trace: ${trace.frameCount} frames of ${trace.presetId}; cross-engine replay, tolerance ${liveTolerance})`,
+      );
+      const divergence = compareTiers(trace.frames, replayed, liveTolerance, [
+        'recorded',
+        'replayed',
+      ]);
+      if (divergence) {
+        console.error(
+          `✗ DIVERGED at frame ${divergence.frame}/${trace.frames.length} (tolerance ${liveTolerance})`,
+        );
+        console.error(divergence.details.slice(0, 20).join('\n'));
+        process.exit(1);
+      }
+      console.log(
+        `✔ live replay verified: ${trace.frames.length} frames of ${trace.presetId} match within tolerance ${liveTolerance}.`,
+      );
+      return;
     }
 
     const divergence = compareReplay(trace, replayed);
@@ -323,11 +540,12 @@ function main() {
   console.error(
     'Usage:\n' +
       '  bun run lab:replay -- --preset <id> --record trace.json [--frames N] [--scenario full-mix]\n' +
-      '  bun run lab:replay -- --replay trace.json [--dump <frame>]',
+      '  bun run lab:replay -- --replay trace.json [--dump <frame>]\n' +
+      '  bun run lab:replay -- --replay trace.json --tier gpu [--tolerance 1e-3]',
   );
   process.exit(1);
 }
 
 if (import.meta.main) {
-  main();
+  await main();
 }

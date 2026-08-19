@@ -27,6 +27,8 @@ bun run setup:codex             # install + quick-check if not
 | Measure preset visuals + pixel reactivity | `bun run lab:visual -- --preset <id>` | 1–3 min |
 | Sweep whole corpus for NaN/compile/step failures (no browser) | `bun run lab:nan-sweep` | ~5–10 min |
 | Record/replay a deterministic VM trace, bisect semantic drift | `bun run lab:replay -- --preset <id> --record t.json` | seconds |
+| Diff a trace's compute-VM (GPU) replay against CPU, first divergent frame | `bun run lab:replay -- --replay t.json --tier gpu` | ~1 min |
+| Capture a live-session trace for headless replay (agent mode) | `__milkdropRuntimeDebug.startTraceCapture()` / `stopTraceCapture()` in `?agent=true` | — |
 | Audit preset flash-risk against WCAG 2.3.1 (the real instrument) | `bun run lab:flash-audit -- --count=50 --beat-pulse` | ~12min |
 | Eyeball one preset's relative flash activity (placeholder heuristic, not a WCAG check) | `bun run lab:flash-risk -- --preset <id>` | ~10s |
 
