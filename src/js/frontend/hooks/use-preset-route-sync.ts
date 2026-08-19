@@ -25,13 +25,20 @@ export function usePresetRouteSync({
       return;
     }
 
-    const shareableActivePresetId = resolvePresetId(
-      engineSnapshot.catalogEntries,
-      engineSnapshot.activePresetId,
-    );
-    if (!shareableActivePresetId) {
-      return;
-    }
+    // `activePresetId` is the id of a preset the engine actually compiled and
+    // applied (`compiled.source.id`), so it is already canonical. The catalog
+    // pass only normalizes it further when an entry exists; falling back to
+    // the engine's own id matters because the runtime catalog can legitimately
+    // be empty here (it hydrates lazily — a session that never opens Browse
+    // keeps `catalogEntries: []`). Requiring a catalog hit meant the URL
+    // silently stopped tracking the engine in exactly those sessions, so
+    // autoplay advanced the visuals while the address bar stayed on whatever
+    // preset the visitor last navigated to — an unshareable, stale link.
+    const shareableActivePresetId =
+      resolvePresetId(
+        engineSnapshot.catalogEntries,
+        engineSnapshot.activePresetId,
+      ) ?? engineSnapshot.activePresetId;
 
     if (pendingPresetIdRef.current) {
       if (shareableActivePresetId === pendingPresetIdRef.current) {
