@@ -1,12 +1,14 @@
 import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types.ts';
+import type { TraceFile } from '../trace-capture.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types.ts';
 import type { MilkdropRuntimePerformanceSnapshot } from './performance-tracker.ts';
+import type { MilkdropTraceRecorderState } from './trace-recorder.ts';
 
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
   const {
@@ -85,6 +87,15 @@ export type MilkdropAgentDriverHandle = {
    * have its choice silently overwritten (or vice versa) — see the
    * comment at its definition in runtime.ts. */
   startupSettled: () => Promise<void>;
+  /** Live trace capture (see runtime/trace-recorder.ts). start RESETS the
+   * running VM so the trace replays deterministically from frame 0. */
+  startTraceCapture: (options?: {
+    maxFrames?: number;
+  }) => MilkdropTraceRecorderState;
+  /** Ends the capture and returns the TraceFile JSON for
+   * `bun run lab:replay -- --replay <file>`; null if nothing was recorded. */
+  stopTraceCapture: () => TraceFile | null;
+  getTraceCaptureState: () => MilkdropTraceRecorderState;
 };
 
 export function registerAgentMilkdropRuntimeDebugHandle({
@@ -97,6 +108,9 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   selectPreset,
   setAutoplay,
   startupSettled,
+  startTraceCapture,
+  stopTraceCapture,
+  getTraceCaptureState,
 }: {
   isAgentMode: () => boolean;
   getRuntime: () => ToyRuntimeInstance | null;
@@ -111,6 +125,11 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   selectPreset: (presetId: string) => Promise<void>;
   setAutoplay: (enabled: boolean) => void;
   startupSettled: () => Promise<void>;
+  startTraceCapture: (options?: {
+    maxFrames?: number;
+  }) => MilkdropTraceRecorderState;
+  stopTraceCapture: () => TraceFile | null;
+  getTraceCaptureState: () => MilkdropTraceRecorderState;
 }) {
   if (typeof window === 'undefined' || !isAgentMode()) {
     return;
@@ -129,5 +148,8 @@ export function registerAgentMilkdropRuntimeDebugHandle({
     getState,
     getAdaptiveQuality,
     getPerformance,
+    startTraceCapture,
+    stopTraceCapture,
+    getTraceCaptureState,
   };
 }

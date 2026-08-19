@@ -59,6 +59,7 @@ import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
+import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
@@ -168,6 +169,15 @@ export function createMilkdropExperience({
   let transitionMode = preferredTransitionMode;
   let preferredQualityPresetId = quality.activeQuality.id;
   const agentModeEnabled = isAgentMode();
+  // Live trace capture is an agent-mode diagnostic; keep the per-frame hook
+  // out of normal sessions entirely.
+  const traceRecorder = agentModeEnabled
+    ? createMilkdropTraceRecorder({
+        vm,
+        getBackend: () => activeBackend,
+        getWebGpuFlags: () => ({ ...webgpuOptimizationFlags }),
+      })
+    : null;
   let lastPresetSwitchAt = performance.now();
   let lastStatusMessage: string | null = null;
   let disposeKeyboardShortcuts: (() => void) | null = null;
@@ -293,6 +303,20 @@ export function createMilkdropExperience({
     selectPreset: (presetId) => navigation.selectPreset(presetId),
     setAutoplay: (enabled) => setAutoplayEnabled(enabled),
     startupSettled: () => startupSettled,
+    startTraceCapture: (options) => {
+      if (!traceRecorder) {
+        throw new Error('Trace capture requires agent mode (?agent=true).');
+      }
+      return traceRecorder.start(options);
+    },
+    stopTraceCapture: () => traceRecorder?.stop() ?? null,
+    getTraceCaptureState: () =>
+      traceRecorder?.getState() ?? {
+        recording: false,
+        presetId: null,
+        frameCount: 0,
+        autoStopped: false,
+      },
   });
 
   const backendFailover = createMilkdropBackendFailover({
@@ -747,6 +771,7 @@ export function createMilkdropExperience({
     },
     capturedVideoOverlay,
     getFreezeFrame: () => isFreezeFrameActive(),
+    traceRecorder,
   });
 
   _disposeSessionSubscription = session.subscribe((state) => {
