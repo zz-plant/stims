@@ -65,6 +65,38 @@ function audioWorkletTransform() {
 // local dist (~270MB of images) and slows local deploys. CI never has them
 // (the directory is gitignored), so pruning makes local builds match CI.
 // Local `vite preview` will 404 preview images — PresetArtwork falls back.
+// App.tsx statically imports the full app-shell/chrome CSS (every panel's
+// styles, ~130KB+51KB minified) so Vite bundles it into one graph-wide
+// stylesheet and auto-injects it as a plain blocking `<link rel="stylesheet"
+// crossorigin>` — render-blocking on every visit, including the bare launch
+// screen, which only needs a sliver of it. The hand-authored stylesheets in
+// index.html already avoid this via the media="print"/onload swap trick;
+// this extends the same treatment to Vite's own output so both follow one
+// convention instead of one being deferred and the other not. Scoped to the
+// main app entry only (crossorigin is the marker Vite's own injected links
+// carry that the hand-authored ones don't) — certify/performance are plain
+// content pages with no splash-covered boot sequence to protect.
+function deferAppShellStylesheets() {
+  return {
+    name: 'defer-app-shell-stylesheets',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (ctx.path !== '/index.html') {
+          return html;
+        }
+        return html.replace(
+          /<link rel="stylesheet" crossorigin href="([^"]+)">/g,
+          (_match, href) =>
+            `<link rel="stylesheet" crossorigin href="${href}" media="print" onload="this.media='all'">` +
+            `<noscript><link rel="stylesheet" crossorigin href="${href}" /></noscript>`,
+        );
+      },
+    },
+  };
+}
+
 function prunePreviewsFromDist() {
   return {
     name: 'prune-previews-from-dist',
@@ -79,7 +111,12 @@ function prunePreviewsFromDist() {
 }
 
 export default defineConfig({
-  plugins: [react(), audioWorkletTransform(), prunePreviewsFromDist()],
+  plugins: [
+    react(),
+    audioWorkletTransform(),
+    deferAppShellStylesheets(),
+    prunePreviewsFromDist(),
+  ],
   resolve: {
     dedupe: ['react', 'react-dom', 'three'],
   },
