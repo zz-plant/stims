@@ -6,14 +6,11 @@ import {
   type ShaderMaterial,
   Vector3,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial } from 'three/webgpu';
 import { disposeGeometry } from '../../utils/three/three-dispose';
 import {
   markSharedGeometry,
   setGeometryBoundingSphere,
 } from '../renderer-adapter-shared';
-import { createProceduralMotionVectorMaterial } from '../renderer-backends/webgpu-procedural-materials';
 import type { MilkdropRenderPayload } from '../types';
 import type { ProceduralFieldVisualWithSignals } from './procedural-field-uniforms';
 import {
@@ -21,6 +18,10 @@ import {
   syncProceduralFieldUniforms,
   syncProceduralInteractionUniforms,
 } from './procedural-field-uniforms';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 const PROCEDURAL_MOTION_VECTOR_BOUNDS_RADIUS = Math.SQRT2 * 2.35;
 const proceduralMotionVectorGeometryCache = new Map<string, BufferGeometry>();
@@ -125,14 +126,15 @@ export function renderMotionVectors({
     const fieldProgramSignature =
       proceduralField.program?.signature ?? 'default';
     if (
-      !(proceduralObject.material instanceof NodeMaterial) ||
+      !isWebGpuNodeMaterial(proceduralObject.material) ||
       proceduralObject.material.userData.fieldProgramSignature !==
         fieldProgramSignature
     ) {
       proceduralObject.material.dispose();
-      proceduralObject.material = createProceduralMotionVectorMaterial(
-        proceduralField.program,
-      );
+      proceduralObject.material =
+        getWebGpuHelperMaterialsSync().createProceduralMotionVectorMaterial(
+          proceduralField.program,
+        );
     }
     proceduralObject.geometry = getProceduralMotionVectorGeometry(
       proceduralField.countX,

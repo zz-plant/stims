@@ -14,14 +14,16 @@ import {
   LineLoop as ThreeLineLoop,
   Mesh as ThreeMesh,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial, TSL } from 'three/webgpu';
 import type {
   MilkdropBackendBehavior,
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropShapeVisual } from '../types';
 import { MILKDROP_THICK_SHAPE_PASS_OFFSET } from './primitive-rasterization-metrics';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 type MilkdropRenderBackend = 'webgl' | 'webgpu';
 
@@ -135,33 +137,35 @@ function syncShapeShaderUniforms(
   material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
 }
 
-// The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder throws
-// on plain ShaderMaterial), while the WebGL path keeps the original GLSL
-// ShaderMaterial — this helper runs on both backends, mirroring the pattern
-// in particle-field-renderer.ts.
-const {
-  cameraProjectionMatrix,
-  clamp: tslClamp,
-  float,
-  fract,
-  mix,
-  modelViewMatrix,
-  positionGeometry,
-  texture: tslTexture,
-  uniform,
-  vec2,
-  vec4,
-} = TSL;
-
 function toLinearColor(color: { r: number; g: number; b: number }) {
   return new Color(color.r, color.g, color.b).convertSRGBToLinear();
 }
 
+// The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder throws
+// on plain ShaderMaterial), while the WebGL path keeps the original GLSL
+// ShaderMaterial — this helper runs on both backends, mirroring the pattern
+// in particle-field-renderer.ts. NodeMaterial/TSL come from the lazy toolkit
+// (webgpu-materials-loader.ts) so 'three/webgpu' stays out of the shared
+// boot-path chunk; the WebGPU adapter registers it before this runs.
 function createShapeFillNodeMaterial(
   shape: MilkdropShapeVisual,
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
+  const { NodeMaterial, TSL } = getWebGpuHelperMaterialsSync();
+  const {
+    cameraProjectionMatrix,
+    clamp: tslClamp,
+    float,
+    fract,
+    mix,
+    modelViewMatrix,
+    positionGeometry,
+    texture: tslTexture,
+    uniform,
+    vec2,
+    vec4,
+  } = TSL;
   const uniforms = {
     primaryColor: uniform(toLinearColor(shape.color)),
     secondaryColor: uniform(
@@ -218,7 +222,7 @@ function isShapeFillShaderMaterialForBackend(
   backend: MilkdropRenderBackend,
 ) {
   return backend === 'webgpu'
-    ? material instanceof NodeMaterial
+    ? isWebGpuNodeMaterial(material)
     : material instanceof ShaderMaterial;
 }
 
