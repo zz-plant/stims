@@ -1,3 +1,22 @@
+/**
+ * Renders a preset with the real native projectM library and stages a
+ * candidate reference image.
+ *
+ * Capture stage of the parity pipeline (capture -> diff -> promote), and the
+ * only step that produces ground truth. Builds and runs the checked-in
+ * SDL2/projectM harness against an upstream preset fixture (macOS + Homebrew
+ * projectM/SDL2 only), converts the captured PPM frame to PNG, and writes a
+ * metadata sidecar recording preset/library/harness SHA-256s, projectM and SDL
+ * versions, OpenGL vendor/renderer/version, and the macOS version.
+ *
+ *   bun run parity:capture:projectm-native -- --preset <id> [--frames 300]
+ *
+ * Output lands in a review-only directory (`--output`, default
+ * screenshots/parity/native-projectm) marked promotionStatus
+ * 'review-required'; promote-projectm-reference.ts is what turns it into a
+ * certified reference. Other flags: `--fixture-root`, `--width`/`--height`,
+ * `--fps`, `--projectm-prefix`, `--sdl-prefix`.
+ */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

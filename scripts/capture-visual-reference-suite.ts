@@ -1,3 +1,20 @@
+/**
+ * Captures Stims screenshots for every preset in the visual reference
+ * manifest.
+ *
+ * Capture stage of the parity pipeline (capture -> diff -> promote). Ensures
+ * the dev server is up, then fans play-toy child processes across the manifest
+ * presets using each preset's warmup/capture-offset timing, viewport and
+ * required backend, writing canvas PNGs plus debug snapshots into the parity
+ * artifact directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts
+ * consume.
+ *
+ *   bun run parity:capture -- [--preset <id>]... [--output <dir>] [--port <n>]
+ *
+ * `--force-webgl`/`--force-webgpu` override the manifest's required backend
+ * (mutually exclusive), `--concurrency <n>` sizes the worker pool, and
+ * `--no-headless` shows the browser.
+ */
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import { ensureDevServer } from './dev-server.ts';

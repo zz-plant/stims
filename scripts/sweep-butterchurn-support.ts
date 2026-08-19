@@ -1,3 +1,18 @@
+/**
+ * Compiles every bundled Butterchurn preset and tallies its WebGL and WebGPU
+ * support status.
+ *
+ * Headless corpus census, no browser involved: each preset is run through the
+ * MilkDrop compiler and the results are aggregated into per-backend
+ * supported/partial/unsupported counts plus frequency tables of unknown preset
+ * fields, evidence codes and unsupported features, with the top 50 unknown
+ * fields highlighted as the blockers worth fixing first.
+ *
+ *   bun run sweep:butterchurn
+ *
+ * Takes no flags; prints the summary and writes
+ * screenshots/butterchurn-support-sweep/summary.json.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

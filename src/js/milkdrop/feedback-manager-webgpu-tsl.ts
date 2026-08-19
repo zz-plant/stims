@@ -1,6 +1,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {
+  LinearSRGBColorSpace,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -349,13 +350,15 @@ function createPresentOutputNode(
       ).rgb;
       const blurred = top.add(bottom).add(left).add(right).div(4);
       const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
-      const bloomMask = smoothstep(
-        uniforms.postBloomThreshold.sub(0.05),
-        uniforms.postBloomThreshold.add(0.05),
-        lum,
+      // UnrealBloom-style luminosity high-pass: add only the ABOVE-THRESHOLD
+      // portion of the blurred neighborhood. Adding the full blurred color
+      // under a threshold mask washed uniformly bright frames (noisevol comp
+      // marble) toward white — ~40% clipped pixels vs ~1% on WebGL.
+      const excess = max(lum.sub(uniforms.postBloomThreshold), 0).div(
+        max(lum, 0.0001),
       );
       base.assign(
-        base.add(blurred.mul(uniforms.postBloomStrength).mul(bloomMask)),
+        base.add(blurred.mul(excess).mul(uniforms.postBloomStrength)),
       );
     });
 
@@ -2484,16 +2487,30 @@ function createCompositeOutputNode(
     color.assign(gammaAdjusted);
 
     // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
-    // Only pointwise film grain runs in-pass. The old in-pass bloom,
-    // chromatic aberration, and afterimage nodes sampled internalTex /
-    // previousTex — the PRE-COMP internal image — so whenever the
-    // postprocessing profile enabled them they replaced comp-program output
-    // channels with internal-image pixels (chroma alone turned every
-    // grayscale comp preset green by zeroing R/B; afterimage buried up to
-    // 90% of the comp output). Bloom and chroma now run in the present pass
-    // over the COMPOSITED frame; afterimage is intentionally not applied on
-    // this backend until it has a proper display-frame accumulator.
+    // Only pointwise effects run in-pass. The old in-pass bloom, chromatic
+    // aberration, and afterimage nodes sampled internalTex / previousTex —
+    // the PRE-COMP internal image — so whenever the postprocessing profile
+    // enabled them they replaced comp-program output channels with
+    // internal-image pixels (chroma alone turned every grayscale comp preset
+    // green by zeroing R/B). Bloom and chroma now run in the present pass
+    // over the COMPOSITED frame.
     color.assign(applyPostFilmGrainNode(uniforms)(color));
+
+    // Afterimage accumulator (THREE.AfterimagePass semantics): the history
+    // texture is last frame's composited display frame — the retired half of
+    // the display ping-pong, never the feedback chain. The max() is
+    // pointwise, so it is safe in-pass; inserting a separate pass between
+    // composite and present trips a Dawn TextureBinding|RenderAttachment
+    // synchronization-scope error. Runs before the present pass's bloom and
+    // chroma (WebGL orders bloom before afterimage; the trails there don't
+    // re-bloom either, so the visible difference is negligible).
+    If(step(0.0001, uniforms.postAfterimageDamp), () => {
+      const history = uniforms.displayHistoryTex.sample(baseUv).rgb;
+      const damped = history
+        .mul(uniforms.postAfterimageDamp)
+        .mul(step(vec3(0.1), history));
+      color.assign(max(color, damped));
+    });
 
     return vec4(max(color, vec3(0)), 1);
   })();
@@ -2513,8 +2530,12 @@ function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
       const hashed = fract(
         sin(dot(resolutionNoise, vec2(12.9898, 78.233))).mul(43758.5453),
       );
-      const grain = hashed.mul(2).sub(1).mul(amount);
-      outColor.assign(baseColor.add(grain));
+      // FilmPass semantics (three's FilmShader): multiplicative grain scaled
+      // by the pixel itself — base * (1 + intensity * clamp(0.1 + noise)).
+      // The old additive ±amount grain stamped a visible dot field over
+      // bright frames that WebGL's FilmPass never shows.
+      const grain = clamp(hashed.add(0.1), 0, 1).mul(amount);
+      outColor.assign(baseColor.mul(grain.add(1)));
     });
 
     return outColor;
@@ -2573,7 +2594,10 @@ class WebGPUMilkdropFeedbackManager
   };
   readonly sceneTarget: RenderTarget;
   readonly targets: [RenderTarget, RenderTarget];
-  readonly displayTarget: RenderTarget;
+  // Display frames ping-pong so the composite pass can sample last frame's
+  // composited output (afterimage history) while writing this frame's.
+  readonly displayTargets: [RenderTarget, RenderTarget];
+  private displayIndex = 0;
   readonly blurTarget: RenderTarget;
   readonly blurScene = new Scene();
   readonly profile: FeedbackBackendProfile;
@@ -2583,7 +2607,16 @@ class WebGPUMilkdropFeedbackManager
   lastBlurKernelSigma = -1;
   currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
-  private savedFrameTarget: RenderTarget | null = null;
+  // Saved frames ping-pong too: the present material keeps savedTex bound
+  // even when transitionAlpha=0 skips the dissolve branch, so rendering the
+  // present scene INTO the texture savedTex points at trips Dawn's
+  // TextureBinding|RenderAttachment same-scope validation on every save
+  // after the first.
+  private savedFrameTargets: [RenderTarget | null, RenderTarget | null] = [
+    null,
+    null,
+  ];
+  private savedFrameIndex = 0;
   private lastRenderer: FeedbackRendererLike | null = null;
   private compositeSwapRevision = 0;
   // Warm-up materials from the previous preset swap. They are kept alive
@@ -2626,11 +2659,10 @@ class WebGPUMilkdropFeedbackManager
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
     ];
-    this.displayTarget = createFeedbackRenderTarget(
-      width,
-      height,
-      this.feedbackResolutionScale,
-    );
+    this.displayTargets = [
+      createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
+      createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
+    ];
     this.blurTarget = createFeedbackRenderTarget(
       width,
       height,
@@ -2650,11 +2682,17 @@ class WebGPUMilkdropFeedbackManager
       1 / Math.max(1, this.targets[0].width),
       1 / Math.max(1, this.targets[0].height),
     );
+    // MilkDrop's texsize is the size of the MAIN (feedback) texture the
+    // shaders sample, not the viewport. The feedback targets run at a
+    // resolution scale, and neighbor-tap shaders (game-of-life style CA
+    // warp bodies do `uv + texsize.zw`) need EXACT one-texel offsets — a
+    // viewport-derived texsize made every tap land ~0.95 texels off and the
+    // linear filter averaged the cells dead.
     uniforms.texsize.value.set(
-      width,
-      height,
-      1 / Math.max(1, width),
-      1 / Math.max(1, height),
+      this.targets[0].width,
+      this.targets[0].height,
+      1 / Math.max(1, this.targets[0].width),
+      1 / Math.max(1, this.targets[0].height),
     );
 
     // The feedback-blend and composite materials share one uniform bag, so
@@ -2679,7 +2717,9 @@ class WebGPUMilkdropFeedbackManager
     blurMaterial.needsUpdate = true;
     this.blurMaterial = Object.assign(blurMaterial, { uniforms: blurUniforms });
 
-    const presentUniforms = createPresentUniforms(this.displayTarget.texture);
+    const presentUniforms = createPresentUniforms(
+      this.displayTargets[0].texture,
+    );
     const presentMaterial = new NodeMaterial();
     presentMaterial.outputNode = createPresentOutputNode(presentUniforms);
     presentMaterial.needsUpdate = true;
@@ -2718,22 +2758,24 @@ class WebGPUMilkdropFeedbackManager
   }
 
   saveCurrentFrame(): void {
-    if (!this.savedFrameTarget) {
-      this.savedFrameTarget = createFeedbackRenderTarget(
+    let target = this.savedFrameTargets[this.savedFrameIndex];
+    if (!target) {
+      target = createFeedbackRenderTarget(
         this.viewportWidth,
         this.viewportHeight,
         this.currentFeedbackResolutionScale,
       );
+      this.savedFrameTargets[this.savedFrameIndex] = target;
     }
     const renderer = this.lastRenderer;
     if (!renderer?.setRenderTarget) return;
-    renderer.setRenderTarget(this.savedFrameTarget);
+    renderer.setRenderTarget(target);
     const oldAlpha = this.presentMaterial.uniforms.transitionAlpha.value;
     this.presentMaterial.uniforms.transitionAlpha.value = 0;
     renderer.render(this.presentScene, this.camera);
     this.presentMaterial.uniforms.transitionAlpha.value = oldAlpha;
-    this.presentMaterial.uniforms.savedTex.value =
-      this.savedFrameTarget.texture;
+    this.presentMaterial.uniforms.savedTex.value = target.texture;
+    this.savedFrameIndex = 1 - this.savedFrameIndex;
   }
 
   applyPostprocessingProfile(
@@ -2752,8 +2794,8 @@ class WebGPUMilkdropFeedbackManager
     presentUniforms.postBloomThreshold.value = profile?.bloomThreshold ?? 0.85;
     presentUniforms.postBloomRadius.value = profile?.bloomRadius ?? 0.5;
     presentUniforms.postTexelSize.value.set(
-      1 / Math.max(1, this.displayTarget.width),
-      1 / Math.max(1, this.displayTarget.height),
+      1 / Math.max(1, this.displayTargets[0].width),
+      1 / Math.max(1, this.displayTargets[0].height),
     );
     uniforms.postFilmGrainAmount.value = enabled
       ? (profile?.filmNoise ?? 0)
@@ -2761,12 +2803,11 @@ class WebGPUMilkdropFeedbackManager
     presentUniforms.postChromaticAberration.value = enabled
       ? (profile?.chromaOffset ?? 0)
       : 0;
-    // Afterimage is intentionally NOT applied on this backend: the old
-    // implementation mixed the comp output with the raw feedback texture
-    // (replacing up to 90% of it); a faithful display-frame accumulator
-    // needs an extra ping-pong pass, which currently trips a renderer
-    // encoder hazard. Tracked in the noisevol color-divergence notes.
-    uniforms.postAfterimageDamp.value = 0;
+    // Afterimage accumulates over the display ping-pong inside the composite
+    // pass (see createCompositeOutputNode) — never over the feedback chain.
+    uniforms.postAfterimageDamp.value = enabled
+      ? Math.max(profile?.afterimageDamp ?? 0, 0)
+      : 0;
   }
 
   private async warmAndSwapCompositeNodes(
@@ -3084,29 +3125,63 @@ class WebGPUMilkdropFeedbackManager
     renderer.render(this.feedbackBlendScene, this.camera);
 
     // Display frame: comp program + post effects over the internal frame.
-    // Never fed back — MilkDrop's comp output is display-only.
+    // Never fed back — MilkDrop's comp output is display-only. The display
+    // targets ping-pong: the composite samples the retired half as the
+    // afterimage history while writing the other.
     this.compositeMaterial.uniforms.internalTex.value =
       this.writeTarget.texture;
     this.compositeMaterial.uniforms.warpTex.value = this.writeTarget.texture;
-    renderer.setRenderTarget(this.displayTarget);
+    // Ping-pong only while the afterimage accumulator is active: alternating
+    // the render target and the present's currentTex binding every frame
+    // churns bind groups for nothing when the history is never read.
+    const afterimageActive =
+      (this.compositeMaterial.uniforms.postAfterimageDamp.value as number) >
+      0.0001;
+    const writeIndex = afterimageActive ? this.displayIndex : 0;
+    const displayWrite = this.displayTargets[writeIndex];
+    const displayHistory = this.displayTargets[1 - writeIndex];
+    this.compositeMaterial.uniforms.displayHistoryTex.value =
+      displayHistory.texture;
+    renderer.setRenderTarget(displayWrite);
     renderer.render(this.compositeScene, this.camera);
+    this.presentMaterial.uniforms.currentTex.value = displayWrite.texture;
+    if (afterimageActive) {
+      this.displayIndex = 1 - this.displayIndex;
+    }
 
     // The WebGL feedback path presents through toneMapped=false
-    // ShaderMaterials, so its output is never ACES-tone-mapped. The WebGPU
-    // common renderer tone-maps every output-target render regardless of the
-    // material flag, so suspend the renderer's tone mapping around the present
-    // to match WebGL's luminance (ACES would brighten the frame).
+    // ShaderMaterials, so its output is never ACES-tone-mapped and never gets
+    // an output color-space encode (raw ShaderMaterials skip the
+    // colorspace_fragment chunk). The WebGPU common renderer applies BOTH to
+    // every output-target render regardless of material flags — the
+    // linear→sRGB encode alone lifted geiss-game-of-life from ~14 to ~49
+    // mean luminance vs WebGL. Suspend tone mapping AND the output
+    // color-space transform around the present to match WebGL's luminance.
     const toneMappedRenderer = renderer as FeedbackRendererLike & {
       toneMapping?: number;
+      outputColorSpace?: string;
     };
     const savedToneMapping = toneMappedRenderer.toneMapping ?? 0;
     if (savedToneMapping !== 0) {
       toneMappedRenderer.toneMapping = 0;
     }
+    const savedOutputColorSpace = toneMappedRenderer.outputColorSpace;
+    if (
+      savedOutputColorSpace !== undefined &&
+      savedOutputColorSpace !== LinearSRGBColorSpace
+    ) {
+      toneMappedRenderer.outputColorSpace = LinearSRGBColorSpace;
+    }
     renderer.setRenderTarget(null);
     renderer.render(this.presentScene, this.camera);
     if (savedToneMapping !== 0) {
       toneMappedRenderer.toneMapping = savedToneMapping;
+    }
+    if (
+      savedOutputColorSpace !== undefined &&
+      savedOutputColorSpace !== LinearSRGBColorSpace
+    ) {
+      toneMappedRenderer.outputColorSpace = savedOutputColorSpace;
     }
     this.swap();
     return true;
@@ -3135,13 +3210,15 @@ class WebGPUMilkdropFeedbackManager
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
-    this.displayTarget.setSize(feedbackWidth, feedbackHeight);
+    this.displayTargets.forEach((target) =>
+      target.setSize(feedbackWidth, feedbackHeight),
+    );
     this.blurTarget.setSize(feedbackWidth, feedbackHeight);
     this.compositeMaterial.uniforms.blur1Tex.value = this.blurTarget.texture;
     this.compositeMaterial.uniforms.blur2Tex.value = this.blurTarget.texture;
     this.compositeMaterial.uniforms.blur3Tex.value = this.blurTarget.texture;
-    if (this.savedFrameTarget) {
-      this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
+    for (const target of this.savedFrameTargets) {
+      target?.setSize(feedbackWidth, feedbackHeight);
     }
     this.compositeMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
@@ -3151,11 +3228,13 @@ class WebGPUMilkdropFeedbackManager
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
     );
+    // Feedback-target size, not viewport — see the constructor note on
+    // one-texel neighbor taps.
     this.compositeMaterial.uniforms.texsize.value.set(
-      width,
-      height,
-      1 / Math.max(1, width),
-      1 / Math.max(1, height),
+      feedbackWidth,
+      feedbackHeight,
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
     );
   }
 
@@ -3176,10 +3255,12 @@ class WebGPUMilkdropFeedbackManager
     }
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
-    this.displayTarget.dispose();
+    this.displayTargets.forEach((target) => target.dispose());
     this.blurTarget.dispose();
-    this.savedFrameTarget?.dispose();
-    this.savedFrameTarget = null;
+    for (const target of this.savedFrameTargets) {
+      target?.dispose();
+    }
+    this.savedFrameTargets = [null, null];
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.feedbackBlendMaterial);
     disposeMaterial(this.presentMaterial);

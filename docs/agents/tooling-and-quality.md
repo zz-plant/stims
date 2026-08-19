@@ -151,6 +151,20 @@ For Markdown-only edits, you can skip typecheck/tests unless the change modifies
 
 ## Quick CLI reference for agents
 
+This section lists the commands used most often — it is a shortlist, not the full set. The repo has 127 scripts; start here when you don't already know the name:
+
+```bash
+# Every script, grouped by namespace, each with a one-line purpose
+bun run help
+
+# Same index as {name, command, purpose} records, for tooling
+bun run help --json
+```
+
+Purpose lines come from the docblock atop each script file, so the index cannot drift from the code (`bun run check:script-docs` enforces that every script has one). Namespaces that this page does not otherwise cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`.
+
+To drive a running visualizer, use the agent API rather than DOM scraping — see [`browser-automation.md`](./browser-automation.md), plus `bun run ctl` (one-shot CLI) and `bun run mcp` (MCP server).
+
 Common commands to keep nearby while implementing:
 
 ### Development
@@ -171,8 +185,8 @@ bun run dev
 # Specifically test the MilkDrop visualizer
 bun run play:toy milkdrop
 
-# Discover every package.json script, grouped by namespace with one-line purpose
-bun run scripts:list
+# Diagnose a machine that can't build/test/deploy
+bun run doctor
 ```
 
 ### During implementation (iterate-test-verify loop)

@@ -206,29 +206,40 @@ export function createMilkdropPostprocessingComposer({
   const lowPower = getDevicePerformanceProfile().lowPower;
   const downscaleBloom = mobile || lowPower;
 
+  // Bloom and afterimage are created lazily on the first profile that needs
+  // them (they allocate render targets, so don't pay for presets that never
+  // enable them) — but they MUST be creatable after construction: profiles
+  // are per-preset and audio-driven, and the composer is usually built on an
+  // early quiet frame whose profile zeroes both. The old create-only-at-
+  // construction gating silently dropped afterimage (and bloom) for the rest
+  // of the session.
   let bloomPass: UnrealBloomPass | undefined;
-  if (profile.bloomStrength > 0) {
+  const ensureBloomPass = (nextProfile: MilkdropPostprocessingProfile) => {
+    if (bloomPass || nextProfile.bloomStrength <= 0) return;
     const bloomSize = downscaleBloom
-      ? new Vector2(Math.round(size.x / 2), Math.round(size.y / 2))
-      : new Vector2(size.x, size.y);
+      ? new Vector2(Math.round(lastSize.x / 2), Math.round(lastSize.y / 2))
+      : new Vector2(lastSize.x, lastSize.y);
     bloomPass = new UnrealBloomPass(
       bloomSize,
-      profile.bloomStrength,
-      profile.bloomRadius,
-      profile.bloomThreshold,
+      nextProfile.bloomStrength,
+      nextProfile.bloomRadius,
+      nextProfile.bloomThreshold,
     );
-    composer.addPass(bloomPass);
-  }
+    composer.insertPass(bloomPass, composer.passes.indexOf(filmPass));
+  };
 
   const filmPass = new FilmPass() as FilmPassWithUniforms;
   composer.addPass(filmPass);
 
   let afterimagePass: AfterimagePass | undefined;
-  if (profile.afterimageDamp > 0) {
-    afterimagePass = new AfterimagePass(Math.max(profile.afterimageDamp, 0));
+  const ensureAfterimagePass = (nextProfile: MilkdropPostprocessingProfile) => {
+    if (afterimagePass || nextProfile.afterimageDamp <= 0) return;
+    afterimagePass = new AfterimagePass(
+      Math.max(nextProfile.afterimageDamp, 0),
+    );
     afterimagePass.enabled = true;
-    composer.addPass(afterimagePass);
-  }
+    composer.insertPass(afterimagePass, composer.passes.indexOf(chromaPass));
+  };
 
   const chromaPass = new ShaderPass(MILKDROP_POSTPROCESSING_SHADER);
   setUniformValue(
@@ -249,6 +260,8 @@ export function createMilkdropPostprocessingComposer({
   chromaPass.material.uniforms.resolution?.value?.set?.(size.x, size.y);
 
   const applyProfile = (nextProfile: MilkdropPostprocessingProfile) => {
+    ensureBloomPass(nextProfile);
+    ensureAfterimagePass(nextProfile);
     if (bloomPass) {
       bloomPass.strength = nextProfile.bloomStrength;
       bloomPass.radius = nextProfile.bloomRadius;
@@ -315,8 +328,13 @@ export function createMilkdropPostprocessingComposer({
 
   return {
     composer,
-    bloomPass,
-    afterimagePass,
+    // Getters: both passes can come into existence on a later applyProfile.
+    get bloomPass() {
+      return bloomPass;
+    },
+    get afterimagePass() {
+      return afterimagePass;
+    },
     filmPass,
     chromaPass,
     applyProfile,

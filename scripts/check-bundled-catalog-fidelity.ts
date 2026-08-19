@@ -1,3 +1,11 @@
+/**
+ * Verifies the bundled preset catalog's fidelity fields still match the
+ * measured visual results manifest.
+ *
+ * Rebuilds the catalog document from the measured results and compares it to
+ * the checked-in file; on drift it exits non-zero and points at
+ * `bun run parity:sync-catalog` to regenerate.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import {

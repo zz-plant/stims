@@ -385,14 +385,19 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       const source =
         manager.compositeMaterial.outputNode.node.shaderNode?.jsFunc?.toString() ??
         '';
-      // The composite node still computes gamma, then it runs the WebGPU
-      // post-processing pass before returning the final color.
+      // The composite node still computes gamma, then runs the pointwise
+      // post effects: film grain and the display-frame afterimage
+      // accumulator (which samples the display ping-pong history, never the
+      // feedback chain). Bloom and chromatic aberration moved to the PRESENT
+      // pass over the composited frame — their old in-pass versions sampled
+      // the pre-comp internal image and corrupted comp-program output.
       const gammaIndex = source.indexOf('gammaAdjusted');
       expect(gammaIndex).toBeGreaterThanOrEqual(0);
-      expect(source).toContain('applyPostBloomNode');
       expect(source).toContain('applyPostFilmGrainNode');
-      expect(source).toContain('applyPostAfterimageNode');
-      expect(source).toContain('applyPostChromaticAberration');
+      expect(source).toContain('displayHistoryTex');
+      expect(source).toContain('postAfterimageDamp');
+      expect(source).not.toContain('applyPostBloomNode');
+      expect(source).not.toContain('applyPostChromaticAberration');
     } finally {
       manager.dispose();
     }

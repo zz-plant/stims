@@ -19,6 +19,19 @@ In practice:
 - reach for `.agent/skills/*/SKILL.md` first,
 - open the matching `.agent/workflows/*.md` when the task spans multiple phases or needs a more explicit runbook.
 
+## Before either: check the script index
+
+Skills and workflows are curated, so they name only the commands their author needed. The repo ships **127 scripts**, and the tables on this page are not an inventory of them.
+
+```bash
+bun run help          # every script, grouped by namespace, with a one-line purpose
+bun run help --json   # {name, command, purpose} records
+```
+
+Purpose lines are generated from the docblock atop each script file, so the index tracks the code rather than drifting from it; `bun run check:script-docs` (part of `bun run check`) fails when a script has no summary. If a skill on this page doesn't mention a capability, check the index before concluding the repo lacks it — whole namespaces (`parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`) are absent from the skill tables by omission, not because they don't exist.
+
+For driving a running visualizer, see [`browser-automation.md`](./browser-automation.md) — `__stims_agent`, `bun run ctl`, and `bun run mcp` replace DOM scraping and sleep-poll loops.
+
 ## Delegation guidance
 
 When the work may be split across multiple agents, start with [`agent-handoffs.md`](./agent-handoffs.md) before assigning ownership. Use these boundaries:

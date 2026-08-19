@@ -1,3 +1,13 @@
+/**
+ * Drives a toy in headless Chromium and captures a screenshot plus frame-timing
+ * metrics, the shared engine behind the browser QA and parity tooling.
+ *
+ * Boots (or reuses) the dev server, loads the toy in agent mode with demo
+ * audio, and records FPS/frame-cost samples, the actual backend, and any
+ * WebGPU-to-WebGL fallback. Flags include `--preset`, `--port`, `--duration`,
+ * `--width`/`--height`, `--audio`, `--renderer-profile`, `--catalog-mode`,
+ * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, and `--output`.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import {

@@ -1,3 +1,12 @@
+/**
+ * Diagnoses whether this machine's dev environment can build, test, and deploy
+ * the visualizer.
+ *
+ * Reports Bun, tsc, Biome, Playwright, and Wrangler availability plus the
+ * bundled MilkDrop catalog, then launches headless Chromium to classify the
+ * advisory visual-verification tier (GPU vs. software rendering vs. no
+ * browser). Exits non-zero when any counted check fails.
+ */
 import { $ } from 'bun';
 
 console.log('🩺 Running Stims Dev Environment Doctor...\n');

@@ -401,22 +401,70 @@ describe('wgsl program compilation', () => {
     expect(result.wgslCode).not.toContain('var reg_t5');
   });
 
-  test('megabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+  test('megabuf reads bind a storage array and stay gpu-executable', () => {
     const result = compileProgramToWgsl(
       block([statement('q1', call('megabuf', [literal(4)]))]),
     );
-    expect(result.gpuExecutable).toBe(false);
-    expect(result.unsupportedFeatures).toContain('megabuf');
-    expect(result.wgslCode).not.toContain('megabuf[');
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.usesMegabuf).toBe(true);
+    expect(result.writesMegabuf).toBe(false);
+    expect(result.unsupportedFeatures).toEqual([]);
+    expect(result.wgslCode).toContain(
+      '@group(0) @binding(2) var<storage, read_write> megabuf: array<f32, 1048576>;',
+    );
+    expect(result.wgslCode).toContain(
+      'state.q1 = milkdropFinite(milkdropMegabufRead(4));',
+    );
+    // The read helper must reject a NaN index like the CPU (Math.trunc(NaN)
+    // misses the bounds check) instead of collapsing it onto slot 0.
+    expect(result.wgslCode).toContain('index == index');
   });
 
-  test('gmegabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+  test('gmegabuf programs bind their own storage array at binding 3', () => {
     const result = compileProgramToWgsl(
       block([statement('q1', call('gmegabuf', [literal(4)]))]),
     );
-    expect(result.gpuExecutable).toBe(false);
-    expect(result.unsupportedFeatures).toContain('gmegabuf');
-    expect(result.wgslCode).not.toContain('gmegabuf[');
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.usesGmegabuf).toBe(true);
+    expect(result.usesMegabuf).toBe(false);
+    expect(result.wgslCode).toContain(
+      '@group(0) @binding(3) var<storage, read_write> gmegabuf: array<f32, 1048576>;',
+    );
+    expect(result.wgslCode).not.toContain('@binding(2)');
+    expect(result.wgslCode).toContain('milkdropGmegabufRead(4)');
+  });
+
+  test('megabuf stores compile to the bounds-checked write helper', () => {
+    const result = compileProgramToWgsl(
+      block([
+        {
+          target: 'megabuf',
+          targetExpression: {
+            type: 'identifier' as const,
+            name: 'q2',
+          },
+          expression: { type: 'identifier' as const, name: 'bass' },
+          source: 'megabuf(q2)=bass;',
+          line: 1,
+        },
+      ]),
+    );
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.writesMegabuf).toBe(true);
+    expect(result.wgslCode).toContain(
+      'milkdropMegabufWrite(state.q2, signals.bass);',
+    );
+    // The index expression's identifiers must reach the state struct.
+    expect(result.fieldKeys).toContain('q2');
+  });
+
+  test('a variable merely prefixed with megabuf stays an ordinary state field', () => {
+    const result = compileProgramToWgsl(
+      block([statement('megabufx', literal(1))]),
+    );
+    expect(result.usesMegabuf).toBe(false);
+    expect(result.wgslCode).toContain('state.megabufx = milkdropFinite(1);');
+    expect(result.wgslCode).not.toContain('@binding(2)');
   });
 
   test('default state fields always included', () => {
@@ -515,6 +563,42 @@ describe('wgsl program compilation', () => {
     );
     expect(result.wgslCode).not.toContain('fn rand()');
     expect(result.wgslCode).not.toContain('rand_state');
+  });
+
+  test('a program that reassigns a signal name reads its own value afterward', () => {
+    // Stock MilkDrop idiom (martin-the-bridge-of-khazad-dum): `vol = ...;
+    // vol_ = vol_ * k + (1-k) * vol;`. The CPU tiers' env mirrors an
+    // assignment (`e[target] = _v`) so every later read of `vol` in the
+    // same frame sees the computed value, not the raw audio signal — found
+    // via bun run lab:replay --tier gpu diverging on this exact preset.
+    const result = compileProgramToWgsl(
+      block([
+        statement('vol', binary('/', ident('bass'), literal(1.5))),
+        statement('vol_', ident('vol')),
+      ]),
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol = milkdropFinite(milkdropDiv(signals.bass, 1.5));',
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol_ = milkdropFinite(state.vol);',
+    );
+    expect(result.wgslCode).not.toContain('milkdropFinite(signals.vol)');
+  });
+
+  test('a read of a signal name BEFORE its assignment still sees the raw signal', () => {
+    const result = compileProgramToWgsl(
+      block([
+        statement('mirror', ident('vol')),
+        statement('vol', binary('/', ident('bass'), literal(1.5))),
+      ]),
+    );
+    expect(result.wgslCode).toContain(
+      'state.mirror = milkdropFinite(signals.vol);',
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol = milkdropFinite(milkdropDiv(signals.bass, 1.5));',
+    );
   });
 });
 

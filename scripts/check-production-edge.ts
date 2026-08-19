@@ -1,3 +1,12 @@
+/**
+ * Verifies the deployed site's edge is reachable and not gated behind a
+ * Cloudflare challenge.
+ *
+ * Fetches / and /milkdrop/ on the base URL (first argument, default
+ * https://toil.fyi) and fails on cf-mitigated challenges, interstitial bodies,
+ * or 4xx/5xx. DNS-only failures warn instead of failing unless
+ * STRICT_DNS_FAILURES=1.
+ */
 export {};
 
 const baseUrl = (process.argv[2] || 'https://toil.fyi').replace(/\/$/, '');

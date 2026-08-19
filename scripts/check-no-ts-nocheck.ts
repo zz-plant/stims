@@ -1,3 +1,10 @@
+/**
+ * Fails the build if any @ts-nocheck directive is present under src/, scripts/,
+ * or tests/.
+ *
+ * Scans every .ts/.tsx/.js/.jsx file and prints each offending file, line
+ * number, and line before exiting 1.
+ */
 import { Glob } from 'bun';
 
 const directories = ['src', 'scripts', 'tests'];

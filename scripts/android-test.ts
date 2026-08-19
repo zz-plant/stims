@@ -1,4 +1,14 @@
 #!/usr/bin/env bun
+/**
+ * Runs the visualizer on a real Android phone over ADB and reports its device
+ * diagnostics.
+ *
+ * Starts a LAN-visible Vite dev server, connects to the handset (pass an
+ * `ip[:port]` argument for wireless ADB, otherwise USB), reverse-forwards the
+ * dev port, opens Chrome on the device, and attaches over CDP to log user
+ * agent, WebGPU adapter, hardware concurrency/memory, resolved device tier and
+ * quality preset, a 2s FPS sample, and live telemetry.
+ */
 import { $ } from 'bun';
 // @ts-expect-error - resolved at runtime via vite
 import { createServer } from 'vite';

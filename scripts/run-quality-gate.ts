@@ -1,5 +1,8 @@
 /**
- * Quality gate modes:
+ * Runs the repo quality gate — lint, typecheck, guard scripts, and tests — in
+ * one of three progressively broader modes.
+ *
+ * Modes:
  *
  * - `quick`  — lint + typecheck only, no tests (~10s). Use constantly during
  *              development to catch type/style errors early.
@@ -125,6 +128,10 @@ export function buildGatePlan(
       {
         label: 'Doc reference check',
         cmd: ['bun', 'run', 'check:doc-references'],
+      },
+      {
+        label: 'Script docblock coverage',
+        cmd: ['bun', 'run', 'check:script-docs'],
       },
       {
         label: 'Authoring examples and reference',

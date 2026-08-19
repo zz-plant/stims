@@ -1,7 +1,10 @@
-// Queries the stims_telemetry Analytics Engine dataset via Cloudflare's SQL API
-// and prints a few aggregate reports. AE is currently write-only (see
-// functions/api/telemetry.ts) — this is the read half.
-//
+/**
+ * Queries the stims_telemetry Analytics Engine dataset via Cloudflare's SQL API
+ * and prints aggregate usage reports.
+ *
+ * AE is otherwise write-only (see functions/api/telemetry.ts) — this is the
+ * read half. `--days=<n>` sets the lookback window (default 7).
+ */
 // Requires CLOUDFLARE_API_TOKEN (Account Analytics:Read) and
 // CLOUDFLARE_ACCOUNT_ID, the same env vars wrangler itself uses.
 //

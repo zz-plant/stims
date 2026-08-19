@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+/**
+ * Produces the production bundle by installing dependencies if needed and
+ * running `bunx vite build`.
+ *
+ * `--reuse` (or STIMS_REUSE_DIST=1, or CF_PAGES=1) skips the Vite rebuild when
+ * dist/index.html and dist/.vite/manifest.json already exist. Bun is required.
+ */
 
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

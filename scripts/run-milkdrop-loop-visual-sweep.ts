@@ -1,3 +1,20 @@
+/**
+ * Sweeps every catalog preset that uses loop or while control flow, looking for
+ * blank, frozen or slow rendering.
+ *
+ * Compiles the bundled catalog to find presets containing loop/while
+ * statements, then loads each one at /?agent=true in Playwright, samples two
+ * canvas frames and the frame rate, and classifies the preset as
+ * runtime-regression (load or console errors), visual-regression (blank,
+ * spatially uniform or static output), performance-regression (below 30fps) or
+ * pass, ranked by severity into summary.json and an HTML report.
+ *
+ *   bun run sweep:milkdrop-loops -- [--renderer webgl|webgpu] [--preset <id>]...
+ *
+ * Other flags: `--output` (default screenshots/loop-preset-sweep), `--port`
+ * (default 5192), `--settle-ms`, `--frame-sample-ms`, `--concurrency` and
+ * `--no-headless`.
+ */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

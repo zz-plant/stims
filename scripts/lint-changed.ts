@@ -1,3 +1,11 @@
+/**
+ * Lints only the files touched since HEAD with Biome, for a fast pre-commit
+ * and mid-edit check instead of a whole-repo pass.
+ *
+ * Scans modified plus untracked JS/TS/JSON/CSS/HTML files (skipping dist/ and
+ * node_modules/, and paths deleted on disk). `--staged` narrows the scan to
+ * the git index so the pre-commit hook gates only what is being committed.
+ */
 import { $ } from 'bun';
 
 // --staged narrows to the index: the pre-commit hook must gate what is being

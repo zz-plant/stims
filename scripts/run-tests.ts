@@ -1,3 +1,10 @@
+/**
+ * Runs the test suite by profile, mapping each profile to the test categories
+ * it covers and executing slow or serial categories in their own passes.
+ *
+ * `--profile <name>` selects a profile (default `fast`), `--changed` runs only
+ * tests affected by uncommitted changes, and `--watch` re-runs on edit.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

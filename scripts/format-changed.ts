@@ -1,3 +1,11 @@
+/**
+ * Formats only the files touched since HEAD with `biome format --write`, then
+ * re-stages them so the formatted text is what gets committed.
+ *
+ * Covers modified plus untracked JS/TS/JSON/CSS/HTML files (skipping dist/ and
+ * node_modules/). `--staged` narrows the scan to the git index for pre-commit
+ * hook use.
+ */
 import { $ } from 'bun';
 
 const stagedOnly = process.argv.includes('--staged');

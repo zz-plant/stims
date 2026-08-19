@@ -1,3 +1,13 @@
+/**
+ * Validates the bundled MilkDrop catalog: every entry's required fields, the
+ * preset file on disk, and its preview image.
+ *
+ * Each preset must carry id/title/file/tags, a `supports` object with boolean
+ * webgl and webgpu, and a known expectedFidelityClass; presets marked
+ * `preview: true` must have a PNG present and must not appear in
+ * preview-failures.json (advisory only while that file has uncommitted changes
+ * from an in-flight preview batch). Exits non-zero on any error.
+ */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

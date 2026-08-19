@@ -1,8 +1,12 @@
-// Publishes preset preview PNGs to the stims-static R2 bucket, which the site
-// Worker serves at /milkdrop-presets/previews/*. Previews are generated
-// artifacts (scripts/generate-thumbnails.ts) and no longer ship in git or the
-// deploy bundle — run this after regenerating them.
-//
+/**
+ * Publishes preset preview PNGs to the stims-static R2 bucket, which the site
+ * Worker serves at /milkdrop-presets/previews/*.
+ *
+ * Previews are generated artifacts (scripts/generate-thumbnails.ts) and no
+ * longer ship in git or the deploy bundle — run this after regenerating them.
+ * Pass filenames to upload a subset; otherwise every PNG is uploaded, 12 at a
+ * time.
+ */
 // Usage:
 //   BACKFILL_TOKEN=<token> bun run scripts/sync-previews-r2.ts            # all previews
 //   BACKFILL_TOKEN=<token> bun run scripts/sync-previews-r2.ts a.png b.png # specific files
