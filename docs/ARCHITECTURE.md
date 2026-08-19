@@ -112,7 +112,7 @@ Legacy aliases still read on boot: `panel` (`looks` → `browse`), `preview` →
 Read-only QA / override params:
 - `renderer` — `webgl` | `webgpu` | `auto`
 - `corpus` — deterministic corpus override (e.g. `certification`)
-- `stats` — `1` | `0` (stats-gl overlay)
+- `stats` — `1` | `0` (legacy alias for the debug HUD; `1` persists it, `0` clears it)
 - `tv` / `tvMode` — smart-TV override
 - `maxPixelRatio`, `particleBudget`, `shaderQuality`, `lockQualityStep`, `powerSaver`
 - `mockAudio`, `mockFrequency`

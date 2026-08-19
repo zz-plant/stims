@@ -4,6 +4,8 @@
 // ranking logic is unit-testable and App can type its action list against
 // CommandAction without importing the component.
 
+import { FIELD_PENALTY, scoreFields, toMatchField } from './preset-matching.ts';
+
 /** A runnable command shown in the palette. Supplied by App as props. */
 export type CommandAction = {
   /** Stable unique id, e.g. 'open-browse' or 'transition-1s'. */
@@ -29,63 +31,38 @@ export type PaletteResult =
   | { kind: 'preset'; id: string; preset: PalettePresetResult; score: number };
 
 /**
- * Case-insensitive fuzzy-ish score for `query` against `text`.
+ * Case-insensitive tiered score for `query` against a single `text`.
  * Returns null on no match. Higher is better:
  *   - exact match > prefix > word-start substring > substring > subsequence
  *   - shorter targets rank slightly higher (tighter match)
+ *
+ * Kept as a one-field call into the shared matcher so the palette and the
+ * browse filter rank the same query identically.
  */
 export function scoreMatch(query: string, text: string): number | null {
-  const q = query.trim().toLowerCase();
-  const t = text.toLowerCase();
-  if (q.length === 0) return 0;
-  if (q.length > t.length) return null;
-
-  if (t === q) return 1000 - t.length * 0.01;
-
-  const idx = t.indexOf(q);
-  if (idx === 0) return 800 - t.length * 0.01;
-  if (idx > 0) {
-    const wordStart = t[idx - 1] === ' ' || t[idx - 1] === '-';
-    return (wordStart ? 600 : 400) - idx - t.length * 0.01;
-  }
-
-  // Subsequence: every query char appears in order. Penalize total gap so
-  // tighter clusters ('brw' -> 'browse') beat scattered hits.
-  let ti = 0;
-  let firstHit = -1;
-  let lastHit = -1;
-  for (const ch of q) {
-    const found = t.indexOf(ch, ti);
-    if (found === -1) return null;
-    if (firstHit === -1) firstHit = found;
-    lastHit = found;
-    ti = found + 1;
-  }
-  const spread = lastHit - firstHit + 1;
-  return 200 - (spread - q.length) * 2 - firstHit - t.length * 0.01;
+  return scoreFields(query, [toMatchField(text)]);
 }
 
 function scoreAction(query: string, action: CommandAction): number | null {
-  let best = scoreMatch(query, action.label);
-  for (const keyword of action.keywords ?? []) {
-    const s = scoreMatch(query, keyword);
-    // Keyword hits rank a notch under equivalent label hits.
-    if (s !== null && (best === null || s - 50 > best)) best = s - 50;
-  }
-  return best;
+  // Keyword hits rank a notch under equivalent label hits.
+  return scoreFields(query, [
+    toMatchField(action.label),
+    ...(action.keywords ?? []).map((keyword) =>
+      toMatchField(keyword, FIELD_PENALTY.keyword),
+    ),
+  ]);
 }
 
 function scorePreset(
   query: string,
   preset: PalettePresetResult,
 ): number | null {
-  const titleScore = scoreMatch(query, preset.title);
-  const authorScore = preset.author ? scoreMatch(query, preset.author) : null;
-  if (titleScore === null && authorScore === null) return null;
-  return Math.max(
-    titleScore ?? Number.NEGATIVE_INFINITY,
-    (authorScore ?? Number.NEGATIVE_INFINITY) - 50,
-  );
+  // Multi-token queries AND across these fields, so "geiss dream" finds a
+  // Geiss-authored preset titled Dream — the browse filter always did.
+  return scoreFields(query, [
+    toMatchField(preset.title, FIELD_PENALTY.title),
+    toMatchField(preset.author ?? '', FIELD_PENALTY.author),
+  ]);
 }
 
 export type BuildPaletteResultsInput = {

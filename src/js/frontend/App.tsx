@@ -1220,15 +1220,13 @@ function StimsWorkspaceAppShell() {
             />
           ) : null}
           {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
-          {/* One panel, two seeds. Both ids stay routable so existing deep
-              links and the user's saved shortcuts keep working; they just
-              open the same panel on a different tab. */}
-          {ui.routeState.panel === 'audiomatch' ||
-          ui.routeState.panel === 'visualsearch' ? (
+          {/* One panel, one route state. The seed it opens on is derived from
+              whether there is audio to profile — the panel itself still has
+              the last word (a remembered mode wins, and 'sound' falls back to
+              'look' when nothing is audible). */}
+          {ui.routeState.panel === 'finder' ? (
             <PresetFinderPanel
-              initialMode={
-                ui.routeState.panel === 'visualsearch' ? 'look' : 'sound'
-              }
+              initialMode={engineSnapshot?.audioActive ? 'sound' : 'look'}
               onClose={() => ui.updatePanel(null)}
             />
           ) : null}
@@ -1250,18 +1248,23 @@ function StimsWorkspaceAppShell() {
         </div>
       ) : null}
 
-      {/* Rendered regardless of open panels: the browse/editor hints fire
+      {/* Both bottom-centre notifications share one anchor so they stack
+          instead of overlapping. The stack is column-reverse, so the
+          actionable audio match sits below the passive hint — nearest the
+          controls, and never covered by it.
+          Rendered regardless of open panels: the browse/editor hints fire
           exactly when those panels open, so unmounting on panel-open made
           them unreachable. */}
-      <ContextualHelp hint={visibleHint} />
+      <div className="stims-shell__toast-stack">
+        <ContextualHelp hint={visibleHint} />
+        <AudioMatchToast
+          match={audioMatch}
+          onSelect={engine.handlePresetSelection}
+          onDismiss={() => setAudioMatch(null)}
+        />
+      </div>
 
       <SyncSessionBridge />
-
-      <AudioMatchToast
-        match={audioMatch}
-        onSelect={engine.handlePresetSelection}
-        onDismiss={() => setAudioMatch(null)}
-      />
       <MidiPerformanceHud />
       <CommandPalette
         open={paletteOpen}

@@ -54,7 +54,7 @@ export interface HarnessURLParams {
 }
 
 export interface FlagURLParams {
-  /** `?debug=hud` mounts the on-canvas debug HUD. */
+  /** `?debug=hud` mounts the on-canvas debug HUD (the only diagnostic surface). */
   debug: string | null;
   /** `?liveTiles` renders catalog tiles with live engine instances. */
   liveTiles: boolean;
@@ -87,6 +87,11 @@ export interface ParsedURLParams {
   seed: number | null;
   performance: PerformanceURLParams;
   audioMock: MockAudioURLParams;
+  /**
+   * Legacy alias for the debug HUD. `?stats=1` used to open a separate
+   * stats-gl panel; it now enables (and persists) the same HUD as
+   * `?debug=hud`, and `?stats=0` clears the persisted opt-in.
+   */
   stats: '1' | '0' | null;
   tvOverride: string | null;
   flags: FlagURLParams;

@@ -56,6 +56,21 @@ describe('buildPaletteResults frecency', () => {
     expect(prefixQuery[0].id).toBe('action:a');
   });
 
+  test('preset rows AND multi-token queries across title and author', () => {
+    // Shared matcher behavior: browse has always matched "geiss dream" this
+    // way, and the palette now agrees.
+    const presets = [
+      { id: 'dream', title: 'Dreamcatcher', author: 'Geiss' },
+      { id: 'other', title: 'Dreamcatcher', author: 'Rovastar' },
+    ];
+    const results = buildPaletteResults({
+      query: 'geiss dream',
+      actions: [],
+      presets,
+    });
+    expect(results.map((r) => r.id)).toEqual(['preset:dream']);
+  });
+
   test('unused results are unaffected (zero boost)', () => {
     const withCounts = buildPaletteResults({
       query: '',

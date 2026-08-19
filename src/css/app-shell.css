@@ -2548,11 +2548,37 @@ body[data-page="workspace"][data-live="true"] {
   }
 }
 
-.stims-shell__audio-match {
+/* One anchor for the bottom-centre notifications.
+   The audio-match toast and the contextual hint used to each position
+   themselves fixed at bottom-centre, 22px apart — close enough that the
+   ~44px hint overlapped the match toast, and since the hint carried the
+   higher z-index, a passive tip covered the one toast you can actually
+   click. Stacking them in a shared column means they can't collide at all,
+   and the ordering is explicit: the actionable toast sits lowest, nearest
+   the controls. Only the children take the pointer; the column itself must
+   not swallow clicks aimed at the stage behind it. */
+.stims-shell__toast-stack {
   position: fixed;
-  bottom: 72px;
+  bottom: calc(
+    var(--mobile-bar-height, 86px) +
+    env(safe-area-inset-bottom, 0px) +
+    8px
+  );
   left: 50%;
   transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.stims-shell__toast-stack > * {
+  pointer-events: auto;
+}
+
+.stims-shell__audio-match {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2560,7 +2586,6 @@ body[data-page="workspace"][data-live="true"] {
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.96);
-  z-index: var(--z-nav);
   font-size: 0.82rem;
   animation: fade-in 0.3s ease;
 }
@@ -3650,21 +3675,26 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   font-variant-numeric: tabular-nums;
 }
 
-.stims-finder__info {
+/* Name + secondary line for any selectable preset control (PresetIdentity).
+   Sized here once; a surface that needs different metrics overrides in its
+   own block, as the grid tile does below. */
+.stims-preset-identity {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 2px;
 }
 
-.stims-finder__name {
+.stims-preset-identity__title {
   font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
+  color: var(--stims-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.stims-finder__meta {
+.stims-preset-identity__subtitle {
   font-size: var(--text-xs);
   color: var(--stims-muted);
 }
@@ -3752,20 +3782,14 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   border-radius: 0;
 }
 
-.stims-preset-grid__meta {
-  display: flex;
-  flex-direction: column;
+/* The tile's caption sits under full-bleed art, so it carries the padding the
+   card itself cannot; its title is a size smaller than a list row's. */
+.stims-preset-grid__item .stims-preset-identity {
   padding: var(--space-xs, 4px) var(--space-sm, 8px);
-  gap: 2px;
 }
 
-.stims-preset-grid__title {
+.stims-preset-grid__item .stims-preset-identity__title {
   font-size: var(--text-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--stims-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .stims-preset-grid__spacer {

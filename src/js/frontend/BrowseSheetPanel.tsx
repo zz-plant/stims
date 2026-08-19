@@ -13,8 +13,8 @@ import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
-import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { runPresetPromoteTransition } from './promote-transition.ts';
+import { SkeletonPresetCard } from './SkeletonPresetCard.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {

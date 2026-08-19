@@ -18,6 +18,15 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import {
+  FIELD_PENALTY,
+  type MatchField,
+  matchesFields,
+  normalizeMatchText,
+  type ScoreFieldsOptions,
+  scoreFields,
+  toMatchField,
+} from './preset-matching.ts';
 
 /** Stims' own repository — surfaced on the launch screen and in credits. */
 export const STIMS_REPO_URL = 'https://github.com/zz-plant/stims';
@@ -82,10 +91,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
       return 'Edit preset code';
     case 'refine':
       return 'Refine with AI';
-    // Both ids open the same finder panel, so they share its title rather
-    // than keeping the two names the two old panels had.
-    case 'audiomatch':
-    case 'visualsearch':
+    case 'finder':
       return 'Find a preset';
     case 'synthesize':
       return 'Generate with AI';
@@ -176,30 +182,29 @@ export function prettifyCollectionTag(collectionTag: string) {
     .join(' ');
 }
 
-function normalizeSearchText(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, ' ')
-    .trim();
+const normalizeSearchText = normalizeMatchText;
+
+/**
+ * True when the browse filter should keep this entry for `query`.
+ *
+ * Thin boolean over the shared scorer, so the browse filter and the command
+ * palette agree about what matches. `scorePresetEntry` gives the same answer
+ * with ordering attached.
+ */
+export function matchesPreset(entry: PresetCatalogEntry, query: string) {
+  return matchesFields(query, getPresetMatchFields(entry));
 }
 
-export function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  const searchIndex = getPresetSearchIndex(entry);
-  if (searchIndex.includes(normalizedQuery)) {
-    return true;
-  }
-
-  const queryTokens = normalizedQuery.split(/\s+/u).filter(Boolean);
-  if (queryTokens.length === 0) {
-    return true;
-  }
-
-  return queryTokens.every((token) => searchIndex.includes(token));
+/**
+ * Relevance score for one catalog entry, or null when it does not match.
+ * Same tiers the command palette ranks with.
+ */
+export function scorePresetEntry(
+  entry: PresetCatalogEntry,
+  query: string,
+  options?: ScoreFieldsOptions,
+) {
+  return scoreFields(query, getPresetMatchFields(entry), options);
 }
 
 export type BrowseSortMode =
@@ -391,22 +396,38 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
   return normalizeSearchText(rawTerms);
 }
 
-const presetSearchIndexCache = new WeakMap<PresetCatalogEntry, string>();
+const presetMatchFieldsCache = new WeakMap<PresetCatalogEntry, MatchField[]>();
 
-function getPresetSearchIndex(entry: PresetCatalogEntry) {
-  const cached = presetSearchIndexCache.get(entry);
+/**
+ * The fields a typed query is matched against, weighted so a title hit
+ * outranks the same hit on an author, tag or semantic term.
+ *
+ * searchTerms are included here (the query-matching path) and deliberately
+ * kept out of buildPresetSearchIndex: describePresetMood reads that index, and
+ * semantic terms like "dark" or "fire" would re-bucket preset moods.
+ */
+function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
+  const cached = presetMatchFieldsCache.get(entry);
   if (cached !== undefined) {
     return cached;
   }
-  // searchTerms are appended here (the query-matching path) and deliberately
-  // kept out of buildPresetSearchIndex: describePresetMood reads that index,
-  // and semantic terms like "dark" or "fire" would re-bucket preset moods.
-  const semanticTerms = entry.searchTerms?.length
-    ? ` ${normalizeSearchText(entry.searchTerms.join(' '))}`
-    : '';
-  const searchIndex = buildPresetSearchIndex(entry) + semanticTerms;
-  presetSearchIndexCache.set(entry, searchIndex);
-  return searchIndex;
+  const tags = entry.tags ?? [];
+  const fields: MatchField[] = [
+    toMatchField(entry.title ?? '', FIELD_PENALTY.title),
+    toMatchField(entry.author ?? '', FIELD_PENALTY.author),
+    toMatchField(entry.id, FIELD_PENALTY.id),
+    ...tags.map((tag) => toMatchField(tag, FIELD_PENALTY.tag)),
+    ...tags
+      .filter((tag) => tag.startsWith('collection:'))
+      .map((tag) =>
+        toMatchField(prettifyCollectionTag(tag), FIELD_PENALTY.tag),
+      ),
+    ...(entry.searchTerms ?? []).map((term) =>
+      toMatchField(term, FIELD_PENALTY.semantic),
+    ),
+  ].filter((field) => field.text.length > 0);
+  presetMatchFieldsCache.set(entry, fields);
+  return fields;
 }
 
 const moodCache = new Map<string, string>();

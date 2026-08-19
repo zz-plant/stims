@@ -10,7 +10,7 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
-import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetIdentity } from './PresetIdentity.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -247,19 +247,19 @@ export function PresetFinderPanel({
                     onClose();
                   }}
                 >
-                  {result.entry ? (
-                    <PresetArtwork entry={result.entry} compact />
-                  ) : (
-                    <span className="stims-finder__rank">{index + 1}</span>
-                  )}
-                  <span className="stims-finder__info">
-                    <span className="stims-finder__name">{result.title}</span>
-                    <span className="stims-finder__meta">
-                      {result.entry?.author
+                  <PresetIdentity
+                    entry={result.entry}
+                    title={result.title}
+                    subtitle={
+                      result.entry?.author
                         ? `by ${result.entry.author}`
-                        : 'Unknown author'}
-                    </span>
-                  </span>
+                        : 'Unknown author'
+                    }
+                    compact
+                    artFallback={
+                      <span className="stims-finder__rank">{index + 1}</span>
+                    }
+                  />
                 </button>
               </li>
             ))

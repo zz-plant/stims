@@ -315,16 +315,8 @@ export function StageControls({
       icon: 'eye' as const,
       label: 'Find similar',
       actionId: 'find-similar',
-      action: () =>
-        run(() => {
-          const target = engineSnapshot?.audioActive
-            ? 'audiomatch'
-            : 'visualsearch';
-          ui.updatePanel(
-            panel === 'audiomatch' || panel === 'visualsearch' ? null : target,
-          );
-        }),
-      active: panel === 'audiomatch' || panel === 'visualsearch',
+      action: () => run(() => togglePanel(menuSurface, 'finder')),
+      active: panel === 'finder',
     },
     {
       icon: 'sparkles' as const,

@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
-import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetIdentity } from './PresetIdentity.tsx';
 
 /**
  * One tile, memoized: an audition (hover) state change on the grid must only
@@ -43,7 +43,7 @@ const GridTile = memo(function GridTile({
       onBlur={() => onAuditionEnd(entry.id)}
       onClick={() => onOpen(entry.id)}
     >
-      <PresetArtwork entry={entry} preview={preview} audition={audition} />
+      <PresetIdentity entry={entry} preview={preview} audition={audition} />
       {variants > 0 ? (
         <span
           className="stims-preset-grid__variants"
@@ -52,9 +52,6 @@ const GridTile = memo(function GridTile({
           +{variants}
         </span>
       ) : null}
-      <div className="stims-preset-grid__meta">
-        <span className="stims-preset-grid__title">{entry.title}</span>
-      </div>
     </button>
   );
 });
