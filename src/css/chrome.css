@@ -612,29 +612,32 @@ html.light .stims-shell {
     outline-offset: 2px;
   }
 
-  /* ── Preset rows ───────────────────────────────────────────────────
-     Virtualized (BrowseSheetPanel.tsx, @tanstack/react-virtual): only
-     the rows within the scroll viewport plus a small overscan exist as
-     real DOM nodes, so the list stays cheap to render regardless of
-     catalog size. .ctl-presets-scroll is the dedicated scroll region —
-     it needs an explicit bounded height, which it gets from the
-     [data-fill="true"] flex-column chain set up in App.tsx (Browse
-     opts into fillBody the same way the editor already does) down
-     through .ctl-browse-results. .ctl-presets itself is sized to the
+  /* ── Preset rows and tiles ─────────────────────────────────────────
+     BOTH browse views are virtualized (BrowseSheetPanel.tsx for the
+     list, PresetGrid.tsx for the grid, both via @tanstack/react-virtual):
+     only the rows within the scroll viewport plus a small overscan exist
+     as real DOM nodes, so browsing stays cheap regardless of catalog
+     size. .ctl-presets-scroll / .stims-preset-grid-scroll are the
+     dedicated scroll regions — each needs an explicit bounded height,
+     which it gets from the [data-fill="true"] flex-column chain set up
+     in App.tsx (Browse opts into fillBody the same way the editor
+     already does) down through .ctl-browse-results. The chain is not
+     scoped to one view: the grid needs the same bounded region, and
+     scoping it to [data-view="list"] left the grid scrolling the whole
+     sheet body with an unbounded container the virtualizer can't
+     measure. .ctl-presets / .stims-preset-grid are sized to their
      virtualizer's reported total content height (inline style) and each
-     .ctl-preset row is absolutely positioned at its reported offset
-     (also inline) — position/gap here are just the positioning context
-     and containing-block, not real layout participants. ─────────────── */
-  [data-fill="true"] > .stims-shell__sheet-panel--browse[data-view="list"] {
+     row is absolutely positioned at its reported offset (also inline) —
+     position/gap here are just the positioning context and
+     containing-block, not real layout participants. ─────────────────── */
+  [data-fill="true"] > .stims-shell__sheet-panel--browse {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
   }
 
-  [data-fill="true"]
-    .stims-shell__sheet-panel--browse[data-view="list"]
-    .ctl-browse-results {
+  [data-fill="true"] .stims-shell__sheet-panel--browse .ctl-browse-results {
     flex: 1;
     display: flex;
     flex-direction: column;

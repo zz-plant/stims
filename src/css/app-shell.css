@@ -3735,21 +3735,29 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 }
 
 /* ── Preset Grid View ─────────────────────────────────────────────── */
-.stims-preset-grid {
-  display: grid;
-  /* Reflow with the resizable panel instead of stretching a fixed 3-up. */
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: var(--space-sm, 8px);
+/* Dedicated scroll region for the virtualized grid — the virtualizer needs a
+   bounded, measurable scroll element, which it gets from the
+   [data-fill="true"] flex chain in chrome.css. */
+.stims-preset-grid-scroll {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-xs, 4px) 0;
+  width: 100%;
+}
+
+/* Sized to the virtualizer's total content height; rows inside are absolutely
+   positioned at their measured offsets and carry the grid-template-columns
+   (column count is derived in PresetGrid.tsx to match what `auto-fill`
+   with minmax(132px, 1fr) would have chosen at this width). */
+.stims-preset-grid {
+  position: relative;
   width: 100%;
 }
 
 .stims-preset-grid__item {
   position: relative;
-  /* Virtualization: skip layout/paint for offscreen tiles. The intrinsic
-     size must match a real tile (4:3 art + meta row) or scroll jumps. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 132px;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -3774,6 +3782,14 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-preset-grid__item:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 2px;
+}
+
+/* The grid is the default browse view, and until this it was the only one
+   that gave no indication which preset is currently playing — the list row
+   has had .ctl-preset[data-active] for a while. */
+.stims-preset-grid__item[data-active="true"] {
+  border-color: var(--stims-accent);
+  box-shadow: inset 0 0 0 1px var(--stims-accent);
 }
 
 .stims-preset-grid__item .stims-shell__preset-art {
