@@ -1,3 +1,7 @@
+import {
+  MILKDROP_GMEGABUF_SIZE,
+  MILKDROP_MEGABUF_SIZE,
+} from '../expression-jit.ts';
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,
@@ -7,6 +11,11 @@ import {
   MILKDROP_WGSL_SIGNAL_ALIAS_MAP,
   MILKDROP_WGSL_SIGNAL_FIELDS,
 } from '../wgsl-signal-layout.ts';
+import {
+  EEL_BINARY_OPERATORS,
+  EEL_UNARY_OPERATORS,
+  emitEelCallWgslVm,
+} from './eel-function-table.ts';
 import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from './wgsl-eel-helpers.ts';
 
 const WGSL_IDENTIFIER_MAP = new Map<string, string>([
@@ -271,63 +280,18 @@ function buildWgslExpression(
         expression.operand,
         overwrittenConstants,
       );
-      switch (expression.operator) {
-        case '+':
-          return operand;
-        case '-':
-          return `(-${operand})`;
-        case '!':
-          return `select(1.0f, 0.0f, abs(${operand}) > 0.00001f)`;
-      }
-      return '0.0f';
+      return (
+        EEL_UNARY_OPERATORS[expression.operator]?.wgslVm?.(operand) ?? '0.0f'
+      );
     }
 
     case 'binary': {
       const left = buildWgslExpression(expression.left, overwrittenConstants);
       const right = buildWgslExpression(expression.right, overwrittenConstants);
-      switch (expression.operator) {
-        case '+':
-          return `(${left} + ${right})`;
-        case '-':
-          return `(${left} - ${right})`;
-        case '*':
-          return `(${left} * ${right})`;
-        case '/':
-          // milkdropDiv semantics: exact-zero guard only. A tolerance guard
-          // (abs > 1e-6) zeroed divisions by tiny-but-nonzero values that the
-          // CPU tiers compute as large finite results.
-          return `milkdropDiv(${left}, ${right})`;
-        case '%':
-          return `milkdropIntMod(${left}, ${right})`;
-        case '^':
-          // Raw pow + finite clamp, matching the CPU tiers (l ** r with
-          // Number.isFinite fallback to 0) and the field-program WGSL emitter.
-          // The old max(0, base) clamp turned (-2)^0 into pow(0,0)=1 by luck
-          // but every other negative-base case into pow(0,y), diverging from
-          // both CPU and the other GPU tier.
-          return `milkdropPow(${left}, ${right})`;
-        case '|':
-          return `f32(i32(${left}) | i32(${right}))`;
-        case '&':
-          return `f32(i32(${left}) & i32(${right}))`;
-        case '<':
-          return `select(0.0f, 1.0f, ${left} < ${right})`;
-        case '<=':
-          return `select(0.0f, 1.0f, ${left} <= ${right})`;
-        case '>':
-          return `select(0.0f, 1.0f, ${left} > ${right})`;
-        case '>=':
-          return `select(0.0f, 1.0f, ${left} >= ${right})`;
-        case '==':
-          return `select(0.0f, 1.0f, ${left} == ${right})`;
-        case '!=':
-          return `select(0.0f, 1.0f, ${left} != ${right})`;
-        case '&&':
-          return `select(0.0f, 1.0f, abs(${left}) > 0.00001f && abs(${right}) > 0.00001f)`;
-        case '||':
-          return `select(0.0f, 1.0f, abs(${left}) > 0.00001f || abs(${right}) > 0.00001f)`;
-      }
-      return '0.0f';
+      return (
+        EEL_BINARY_OPERATORS[expression.operator]?.wgslVm?.(left, right) ??
+        '0.0f'
+      );
     }
 
     case 'call': {
@@ -336,123 +300,7 @@ function buildWgslExpression(
       );
       const name = expression.name.toLowerCase();
 
-      switch (name) {
-        case 'sin':
-          return `sin(${args[0] ?? '0.0f'})`;
-        case 'cos':
-          return `cos(${args[0] ?? '0.0f'})`;
-        case 'tan':
-          return `tan(${args[0] ?? '0.0f'})`;
-        case 'asin':
-          return `asin(clamp(${args[0] ?? '0.0f'}, -1.0f, 1.0f))`;
-        case 'acos':
-          return `acos(clamp(${args[0] ?? '0.0f'}, -1.0f, 1.0f))`;
-        case 'atan':
-          return `atan(${args[0] ?? '0.0f'})`;
-        case 'abs':
-          return `abs(${args[0] ?? '0.0f'})`;
-        case 'sqrt':
-          return `milkdropSqrt(${args[0] ?? '0.0f'})`;
-        case 'pow':
-          return `milkdropPow(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
-        case 'mod':
-        case 'fmod': {
-          const a = args[0] ?? '0.0f';
-          const b = args[1] ?? '1.0f';
-          return `milkdropMod(${a}, ${b})`;
-        }
-        case 'min':
-          return args.length >= 2
-            ? `min(${args[0]}, ${args[1]})`
-            : (args[0] ?? '0.0f');
-        case 'max':
-          return args.length >= 2
-            ? `max(${args[0]}, ${args[1]})`
-            : (args[0] ?? '0.0f');
-        case 'mix':
-        case 'lerp':
-          return `mix(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'}, ${args[2] ?? '0.0f'})`;
-        case 'floor':
-          return `floor(${args[0] ?? '0.0f'})`;
-        case 'int':
-          return `sign(${args[0] ?? '0.0f'}) * floor(abs(${args[0] ?? '0.0f'}))`;
-        case 'ceil':
-          return `ceil(${args[0] ?? '0.0f'})`;
-        case 'sqr': {
-          const value = args[0] ?? '0.0f';
-          return `(${value} * ${value})`;
-        }
-        case 'clamp':
-          return `clamp(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'}, ${args[2] ?? '1.0f'})`;
-        case 'step':
-          return `select(0.0f, 1.0f, ${args[1] ?? '0.0f'} >= ${args[0] ?? '0.0f'})`;
-        case 'smoothstep': {
-          const edge0 = args[0] ?? '0.0f';
-          const edge1 = args[1] ?? '1.0f';
-          const value = args[2] ?? '0.0f';
-          return `smoothstep(${edge0}, ${edge1}, ${value})`;
-        }
-        case 'log':
-          // max(0)+finite-clamp (log(0) -> 0), matching the CPU tiers; the
-          // old 1e-6 floor returned -13.8 where every other tier returns 0.
-          return `milkdropLog(${args[0] ?? '0.0f'})`;
-        case 'log10':
-          return `milkdropLog10(${args[0] ?? '0.0f'})`;
-        case 'exp':
-          return `exp(${args[0] ?? '0.0f'})`;
-        case 'sigmoid': {
-          const value = args[0] ?? '0.0f';
-          const slope = args[1] ?? '1.0f';
-          return `(1.0f / (1.0f + exp(-(${value}) * (${slope}))))`;
-        }
-        case 'sign':
-          return `sign(${args[0] ?? '0.0f'})`;
-        case 'bor':
-          return `select(0.0f, 1.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f || abs(${args[1] ?? '0.0f'}) > 0.00001f)`;
-        case 'band':
-          return `select(0.0f, 1.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f && abs(${args[1] ?? '0.0f'}) > 0.00001f)`;
-        case 'bnot':
-          return `select(1.0f, 0.0f, abs(${args[0] ?? '0.0f'}) > 0.00001f)`;
-        case 'atan2':
-          return `atan2(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
-        case 'saturate':
-          return `saturate(${args[0] ?? '0.0f'})`;
-        case 'ddx':
-          return `dpdx(${args[0] ?? '0.0f'})`;
-        case 'ddy':
-          return `dpdy(${args[0] ?? '0.0f'})`;
-        case 'mul':
-          return `(${args[0] ?? '0.0f'} * ${args[1] ?? '0.0f'})`;
-        case 'frac': {
-          const value = args[0] ?? '0.0f';
-          return `(${value} - floor(${value}))`;
-        }
-        case 'if':
-          return `select(f32(${args[2] ?? '0.0f'}), f32(${args[1] ?? '0.0f'}), abs(${args[0] ?? '0.0f'}) > 0.00001f)`;
-        case 'above':
-          return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) > (${args[1] ?? '0.0f'}))`;
-        case 'below':
-          return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) < (${args[1] ?? '0.0f'}))`;
-        case 'equal':
-          // equal() is close-factor equality (MILKDROP_EEL_CLOSE_FACTOR),
-          // like the interpreter/JIT — only the == operator compares exactly.
-          return `milkdropEqual(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
-        case 'megabuf':
-        case 'gmegabuf':
-          // Megabuffer programs are classified for CPU fallback. Returning a
-          // scalar placeholder keeps diagnostic WGSL valid and prevents an
-          // undeclared storage array from reaching pipeline creation.
-          return '0.0f';
-        case 'rand':
-          return 'rand()';
-        case 'randint':
-          return `floor(rand() * max(0.0f, ${args[0] ?? '1.0f'}))`;
-        case 'exec2':
-        case 'exec3':
-          return args[args.length - 1] ?? '0.0f';
-        default:
-          return '0.0f';
-      }
+      return emitEelCallWgslVm(name, args) ?? '0.0f';
     }
   }
 }
@@ -482,6 +330,10 @@ export type WgslProgramCompilation = {
   usesRandom: boolean;
   usesMegabuf: boolean;
   usesGmegabuf: boolean;
+  /** True when the program assigns into the buffer (statement target form).
+   * Read-only programs skip the post-dispatch guest-memory readback. */
+  writesMegabuf: boolean;
+  writesGmegabuf: boolean;
   gpuExecutable: boolean;
   unsupportedFeatures: Array<'megabuf' | 'gmegabuf'>;
   fieldKeys: string[];
@@ -494,12 +346,16 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
   usesRandom: boolean;
   usesMegabuf: boolean;
   usesGmegabuf: boolean;
+  writesMegabuf: boolean;
+  writesGmegabuf: boolean;
 } {
   const fieldKeys = new Set<string>();
   const registerKeys = new Set<string>();
   let usesRandom = false;
   let usesMegabuf = false;
   let usesGmegabuf = false;
+  let writesMegabuf = false;
+  let writesGmegabuf = false;
 
   const collectFromExpression = (expression: MilkdropExpressionNode) => {
     switch (expression.type) {
@@ -548,11 +404,21 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
   const collectFromStatements = (stmts: MilkdropCompiledStatement[]) => {
     for (const statement of stmts) {
       collectFromExpression(statement.expression);
+      // Buffer-store targets carry the index in targetExpression — the
+      // identifiers it reads must reach the state struct too.
+      if (statement.targetExpression) {
+        collectFromExpression(statement.targetExpression);
+      }
       const target = statement.target.toLowerCase();
-      if (target.startsWith('megabuf')) {
-        usesMegabuf = true;
-      } else if (target.startsWith('gmegabuf')) {
+      // Exact names only: the statement parser normalizes buffer stores to
+      // target 'megabuf'/'gmegabuf' + targetExpression; a preset variable
+      // that merely starts with the prefix is an ordinary state field.
+      if (target === 'gmegabuf') {
         usesGmegabuf = true;
+        writesGmegabuf = true;
+      } else if (target === 'megabuf') {
+        usesMegabuf = true;
+        writesMegabuf = true;
       } else if (isRegisterIdentifier(target)) {
         registerKeys.add(target);
         fieldKeys.add(target);
@@ -579,7 +445,39 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
     usesRandom,
     usesMegabuf,
     usesGmegabuf,
+    writesMegabuf,
+    writesGmegabuf,
   };
+}
+
+/** Guest-memory access helpers (docs/architecture/eel-guest-memory.md).
+ * Emitted here rather than in wgsl-eel-helpers.ts because they reference the
+ * module-scope storage arrays, which only this emitter declares. The index
+ * guard mirrors the CPU JIT exactly: a NaN/Inf index must MISS the bounds
+ * check (Math.trunc(NaN) is NaN and fails `>= 0`), whereas milkdropTruncInt
+ * alone would collapse NaN onto slot 0. */
+function buildGuestBufferWgsl(
+  fnSuffix: 'Megabuf' | 'Gmegabuf',
+  varName: string,
+  sizeFloats: number,
+): string {
+  return /* wgsl */ `
+fn milkdrop${fnSuffix}Read(index: f32) -> f32 {
+  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let i = milkdropTruncInt(index);
+  if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
+    return ${varName}[u32(i)];
+  }
+  return 0.0f;
+}
+fn milkdrop${fnSuffix}Write(index: f32, value: f32) {
+  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let i = milkdropTruncInt(index);
+  if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
+    ${varName}[u32(i)] = milkdropFinite(value);
+  }
+}
+`;
 }
 
 const DEFAULT_MILKDROP_STATE_FIELDS = new Set([
@@ -644,11 +542,13 @@ function buildWgslProgram(
     fieldKeys: string[];
     registerKeys: string[];
     usesRandom: boolean;
+    usesMegabuf?: boolean;
+    usesGmegabuf?: boolean;
     enableF16?: boolean;
     enableSubgroups?: boolean;
   } = { fieldKeys: [], registerKeys: [], usesRandom: false },
 ): string {
-  const { fieldKeys, usesRandom } = options;
+  const { fieldKeys, usesRandom, usesMegabuf, usesGmegabuf } = options;
   const seenFields = new Set<string>([...fieldKeys, 'pi', 'e']);
 
   if (usesRandom) {
@@ -683,6 +583,15 @@ function buildWgslProgram(
       statement.expression,
       overwrittenConstants,
     );
+    // Guest-memory stores route through the buffer helpers (which own the
+    // index guard and the value finite-clamp).
+    if (target === 'gmegabuf' || target === 'megabuf') {
+      const index = statement.targetExpression
+        ? buildWgslExpression(statement.targetExpression, overwrittenConstants)
+        : '0.0f';
+      const fnSuffix = target === 'gmegabuf' ? 'Gmegabuf' : 'Megabuf';
+      return `  milkdrop${fnSuffix}Write(${index}, ${expression});`;
+    }
     // Registers and ordinary fields are both plain members of VmState, so they
     // are written the same way; the branch that used to distinguish them
     // returned identical strings.
@@ -695,7 +604,23 @@ function buildWgslProgram(
   const body = [
     `@group(0) @binding(0) var<storage, read_write> state: VmState;`,
     `@group(0) @binding(1) var<storage, read> signals: VmSignals;`,
+    ...(usesMegabuf
+      ? [
+          `@group(0) @binding(2) var<storage, read_write> megabuf: array<f32, ${MILKDROP_MEGABUF_SIZE}>;`,
+        ]
+      : []),
+    ...(usesGmegabuf
+      ? [
+          `@group(0) @binding(3) var<storage, read_write> gmegabuf: array<f32, ${MILKDROP_GMEGABUF_SIZE}>;`,
+        ]
+      : []),
     MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE,
+    ...(usesMegabuf
+      ? [buildGuestBufferWgsl('Megabuf', 'megabuf', MILKDROP_MEGABUF_SIZE)]
+      : []),
+    ...(usesGmegabuf
+      ? [buildGuestBufferWgsl('Gmegabuf', 'gmegabuf', MILKDROP_GMEGABUF_SIZE)]
+      : []),
     randomFn,
     `@compute @workgroup_size(1)`,
     `fn main() {`,
@@ -716,8 +641,15 @@ export function compileProgramToWgsl(
   block: MilkdropProgramBlock,
   options?: { enableF16?: boolean; enableSubgroups?: boolean },
 ): WgslProgramCompilation {
-  const { fieldKeys, registerKeys, usesRandom, usesMegabuf, usesGmegabuf } =
-    collectStatementFields(block.statements);
+  const {
+    fieldKeys,
+    registerKeys,
+    usesRandom,
+    usesMegabuf,
+    usesGmegabuf,
+    writesMegabuf,
+    writesGmegabuf,
+  } = collectStatementFields(block.statements);
 
   const sortedFields = [
     ...new Set([...fieldKeys, ...DEFAULT_MILKDROP_STATE_FIELDS]),
@@ -732,6 +664,8 @@ export function compileProgramToWgsl(
     fieldKeys: allFieldKeysForStruct,
     registerKeys,
     usesRandom,
+    usesMegabuf,
+    usesGmegabuf,
     enableF16: options?.enableF16,
     enableSubgroups: options?.enableSubgroups,
   });
@@ -746,9 +680,10 @@ export function compileProgramToWgsl(
   const structFieldKeys = [
     ...new Set([...allFieldKeysForStruct, 'pi', 'e']),
   ].sort();
+  // Guest-memory programs execute on the GPU via storage-buffer bindings
+  // (docs/architecture/eel-guest-memory.md); nothing is classified for CPU
+  // fallback anymore. The field stays so harnesses keep a stable shape.
   const unsupportedFeatures: Array<'megabuf' | 'gmegabuf'> = [];
-  if (usesMegabuf) unsupportedFeatures.push('megabuf');
-  if (usesGmegabuf) unsupportedFeatures.push('gmegabuf');
 
   return {
     wgslCode,
@@ -767,7 +702,9 @@ export function compileProgramToWgsl(
     usesRandom,
     usesMegabuf,
     usesGmegabuf,
-    gpuExecutable: unsupportedFeatures.length === 0,
+    writesMegabuf,
+    writesGmegabuf,
+    gpuExecutable: true,
     unsupportedFeatures,
     fieldKeys: structFieldKeys,
     registerKeys,

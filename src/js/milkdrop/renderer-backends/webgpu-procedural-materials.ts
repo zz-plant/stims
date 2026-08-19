@@ -1,6 +1,11 @@
 import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
+import {
+  EEL_BINARY_OPERATORS,
+  EEL_UNARY_OPERATORS,
+  emitEelCallWgslField,
+} from '../compiler/eel-function-table.ts';
 import { MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE } from '../compiler/wgsl-eel-helpers';
 import {
   MILKDROP_CUSTOM_WAVE_Z,
@@ -318,10 +323,9 @@ function buildGpuFieldExpressionWgslSource(
         registerInputs,
         temporaries,
       );
-      if (expression.operator === '!') {
-        return `select(1.0, 0.0, milkdropBool(${operand}) > 0.5)`;
-      }
-      return `(${expression.operator}${operand})`;
+      return (
+        EEL_UNARY_OPERATORS[expression.operator]?.wgslField?.(operand) ?? '0.0'
+      );
     }
     case 'binary': {
       const left = buildGpuFieldExpressionWgslSource(
@@ -334,106 +338,21 @@ function buildGpuFieldExpressionWgslSource(
         registerInputs,
         temporaries,
       );
-      switch (expression.operator) {
-        case '^':
-          // Finite-clamped like the CPU JIT: pow on a negative base with a
-          // fractional exponent is NaN, which the CPU tier zeroes.
-          return `milkdropPow(${left}, ${right})`;
-        case '%':
-          // EEL '%' is C-style truncated INTEGER modulo (matching the CPU
-          // JIT), not float floor-mod — the tier-differential census showed
-          // this as the largest CPU/GPU divergence class. Float mod stays
-          // available through the mod()/fmod() calls below.
-          return `milkdropIntMod(${left}, ${right})`;
-        case '|':
-          return `milkdropBitOr(${left}, ${right})`;
-        case '&':
-          return `milkdropBitAnd(${left}, ${right})`;
-        case '<':
-        case '<=':
-        case '>':
-        case '>=':
-        case '==':
-        case '!=':
-          return `select(0.0, 1.0, ${left} ${expression.operator} ${right})`;
-        case '&&':
-          return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 && milkdropBool(${right}) > 0.5)`;
-        case '||':
-          return `select(0.0, 1.0, milkdropBool(${left}) > 0.5 || milkdropBool(${right}) > 0.5)`;
-        case '/':
-          // Zero-guarded like the CPU JIT; unguarded f32 division let
-          // Inf/NaN escape into feedback state on the GPU tier only.
-          return `milkdropDiv(${left}, ${right})`;
-        default:
-          return `(${left} ${expression.operator} ${right})`;
-      }
+      return (
+        EEL_BINARY_OPERATORS[expression.operator]?.wgslField?.(left, right) ??
+        `(${left} ${expression.operator} ${right})`
+      );
     }
     case 'call': {
       const args = expression.args.map((arg) =>
         buildGpuFieldExpressionWgslSource(arg, registerInputs, temporaries),
       );
-      switch (expression.name) {
-        case 'mod':
-        case 'fmod':
-          return `milkdropMod(${args[0]}, ${args[1]})`;
-        case 'mix':
-        case 'lerp':
-          return `mix(${args[0]}, ${args[1]}, ${args[2]})`;
-        case 'int':
-          // EEL int() truncates toward zero (CPU JIT: Math.trunc); floor()
-          // diverged by one for negative values.
-          return `trunc(${args[0]})`;
-        case 'sqr':
-          return `((${args[0]}) * (${args[0]}))`;
-        case 'sigmoid':
-          return `milkdropSigmoid(${args[0]}, ${args[1]})`;
-        case 'sign':
-          return `sign(${args[0]})`;
-        case 'bor':
-          return `select(0.0, 1.0, milkdropBool(${args[0]}) > 0.5 || milkdropBool(${args[1]}) > 0.5)`;
-        case 'band':
-          return `select(0.0, 1.0, milkdropBool(${args[0]}) > 0.5 && milkdropBool(${args[1]}) > 0.5)`;
-        case 'bnot':
-          return `select(1.0, 0.0, milkdropBool(${args[0]}) > 0.5)`;
-        case 'atan2':
-          return `atan2(${args[0]}, ${args[1]})`;
-        // Domain-guarded like the CPU JIT (sqrt(max(0,x)),
-        // asin/acos(clamp(-1,1))): the raw WGSL builtins return NaN outside
-        // their domain, which the CPU tier never produces.
-        case 'sqrt':
-          return `milkdropSqrt(${args[0]})`;
-        case 'asin':
-          return `milkdropAsin(${args[0]})`;
-        case 'acos':
-          return `milkdropAcos(${args[0]})`;
-        case 'log':
-          return `milkdropLog(${args[0]})`;
-        case 'log10':
-          return `milkdropLog10(${args[0]})`;
-        case 'pow':
-          return `milkdropPow(${args[0]}, ${args[1]})`;
-        case 'atan':
-          return args.length === 2
-            ? `atan2(${args[0]}, ${args[1]})`
-            : `atan(${args[0]})`;
-        case 'frac':
-          return `milkdropFrac(${args[0]})`;
-        case 'if':
-          return `milkdropIf(${args[0]}, ${args[1]}, ${args[2]})`;
-        case 'above':
-          return `milkdropAbove(${args[0]}, ${args[1]})`;
-        case 'below':
-          return `milkdropBelow(${args[0]}, ${args[1]})`;
-        case 'equal':
-          return `milkdropEqual(${args[0]}, ${args[1]})`;
-        case 'rand':
-          return `milkdropRand(${args[0]}, signalTimeValue)`;
-        case 'exec2':
-        case 'exec3':
-          return args[args.length - 1] ?? '0.0';
-        default:
-          return `${expression.name}(${args.join(', ')})`;
-      }
+      // Every planner-allowlisted call has a wgslField renderer in the shared
+      // table; the passthrough fallback is defensive only.
+      return (
+        emitEelCallWgslField(expression.name, args) ??
+        `${expression.name}(${args.join(', ')})`
+      );
     }
   }
 }

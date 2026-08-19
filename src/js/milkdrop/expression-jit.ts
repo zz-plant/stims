@@ -3,6 +3,11 @@ import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,
 } from './common-types.ts';
+import {
+  EEL_BINARY_OPERATORS,
+  EEL_UNARY_OPERATORS,
+  emitEelCallJs,
+} from './compiler/eel-function-table.ts';
 import { evaluateMilkdropExpression } from './expression.ts';
 import { aliasMap } from './field-normalization.ts';
 
@@ -89,103 +94,57 @@ function compileNode(
     }
     case 'unary': {
       const x = compileNode(node.operand, context);
-      switch (node.operator) {
-        case '+':
-          return `(+(${x}))`;
-        case '-':
-          return `(-(${x}))`;
-        case '!':
-          return `(Math.abs(${x}) > 0.00001 ? 0 : 1)`;
-      }
-      return '(0)';
+      return EEL_UNARY_OPERATORS[node.operator]?.jit?.(x) ?? '(0)';
     }
     case 'binary': {
-      const l = compileNode(node.left, context);
-      const r = compileNode(node.right, context);
-      switch (node.operator) {
-        case '=': {
-          // Assignment nested inside an expression: lvalue = rvalue, and the
-          // expression's value is the (finite-clamped) rvalue. This used to
-          // splice the statement-form store (`if (...) { ... }`, trailing
-          // semicolons, writes through the statement-level `_v`) into a comma
-          // expression — a SyntaxError for register/local/megabuf targets, a
-          // stale-`_v` write for the rest, and it never mirrored the value
-          // into `e`, which is where every identifier read resolves. All
-          // three fixed by emitting a pure expression store against a fresh
-          // temporary, matching the statement path's semantics (including
-          // MilkDrop's never-let-NaN-escape clamp).
-          const rvalue = r;
-          const tempVar = nextTemporary(context);
-          const clamped = `${tempVar} = (${rvalue}), ${tempVar} = Number.isFinite(${tempVar}) ? ${tempVar} : 0`;
-          if (node.left.type === 'identifier') {
-            const store = compileStoreExpression(node.left.name, tempVar);
-            return `(${clamped}, ${store}, ${tempVar})`;
-          }
-          if (
-            node.left.type === 'call' &&
-            (node.left.name.toLowerCase() === 'megabuf' ||
-              node.left.name.toLowerCase() === 'gmegabuf')
-          ) {
-            const buffer = node.left.name.toLowerCase();
-            const size =
-              buffer === 'megabuf'
-                ? MILKDROP_MEGABUF_SIZE
-                : MILKDROP_GMEGABUF_SIZE;
-            const index = nextTemporary(context);
-            const indexSource = node.left.args[0]
-              ? compileNode(node.left.args[0], context)
-              : '0';
-            const bufferName = buffer === 'megabuf' ? 'mb' : 'gb';
-            return `(${clamped}, ${index} = Math.trunc(${indexSource}), (${index} >= 0 && ${index} < ${size} ? ${bufferName}[${index}] = ${tempVar} : 0), ${tempVar})`;
-          }
-          // Invalid assignment target, just return rvalue
-          return `(${rvalue})`;
-        }
-        case '+':
-          return `((${l}) + (${r}))`;
-        case '-':
-          return `((${l}) - (${r}))`;
-        case '*':
-          return `((${l}) * (${r}))`;
-        case '/': {
-          // Operands land in temporaries: the old template spliced `r` twice
-          // (side effects like a nested assignment ran twice) and evaluated
-          // it before `l` (opposite of the interpreter and EEL).
-          const lTemp = nextTemporary(context);
-          const rTemp = nextTemporary(context);
-          return `(${lTemp} = (${l}), ${rTemp} = (${r}), ${rTemp} === 0 ? 0 : ${lTemp} / ${rTemp})`;
-        }
-        case '%': {
-          const aTemp = nextTemporary(context);
-          const bTemp = nextTemporary(context);
-          return `(${aTemp} = Math.trunc(${l}) || 0, ${bTemp} = Math.trunc(${r}) || 0, ${bTemp} === 0 ? 0 : ${aTemp} % ${bTemp})`;
-        }
-        case '^': {
-          const vTemp = nextTemporary(context);
-          return `(${vTemp} = (${l}) ** (${r}), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
-        }
-        case '|':
-          return `((Math.trunc(${l})||0) | (Math.trunc(${r})||0))`;
-        case '&':
-          return `((Math.trunc(${l})||0) & (Math.trunc(${r})||0))`;
-        case '<':
-          return `((${l}) < (${r}) ? 1 : 0)`;
-        case '<=':
-          return `((${l}) <= (${r}) ? 1 : 0)`;
-        case '>':
-          return `((${l}) > (${r}) ? 1 : 0)`;
-        case '>=':
-          return `((${l}) >= (${r}) ? 1 : 0)`;
-        case '==':
-          return `((${l}) === (${r}) ? 1 : 0)`;
-        case '!=':
-          return `((${l}) !== (${r}) ? 1 : 0)`;
-        case '&&':
-          return `((Math.abs(${l}) > 0.00001 && Math.abs(${r}) > 0.00001) ? 1 : 0)`;
-        case '||':
-          return `((Math.abs(${l}) > 0.00001 || Math.abs(${r}) > 0.00001) ? 1 : 0)`;
+      if (node.operator !== '=') {
+        const l = compileNode(node.left, context);
+        const r = compileNode(node.right, context);
+        return (
+          EEL_BINARY_OPERATORS[node.operator]?.jit?.(l, r, {
+            temp: () => nextTemporary(context),
+          }) ?? '(0)'
+        );
       }
-      return '(0)';
+      const r = compileNode(node.right, context);
+      {
+        // Assignment nested inside an expression: lvalue = rvalue, and the
+        // expression's value is the (finite-clamped) rvalue. This used to
+        // splice the statement-form store (`if (...) { ... }`, trailing
+        // semicolons, writes through the statement-level `_v`) into a comma
+        // expression — a SyntaxError for register/local/megabuf targets, a
+        // stale-`_v` write for the rest, and it never mirrored the value
+        // into `e`, which is where every identifier read resolves. All
+        // three fixed by emitting a pure expression store against a fresh
+        // temporary, matching the statement path's semantics (including
+        // MilkDrop's never-let-NaN-escape clamp).
+        const rvalue = r;
+        const tempVar = nextTemporary(context);
+        const clamped = `${tempVar} = (${rvalue}), ${tempVar} = Number.isFinite(${tempVar}) ? ${tempVar} : 0`;
+        if (node.left.type === 'identifier') {
+          const store = compileStoreExpression(node.left.name, tempVar);
+          return `(${clamped}, ${store}, ${tempVar})`;
+        }
+        if (
+          node.left.type === 'call' &&
+          (node.left.name.toLowerCase() === 'megabuf' ||
+            node.left.name.toLowerCase() === 'gmegabuf')
+        ) {
+          const buffer = node.left.name.toLowerCase();
+          const size =
+            buffer === 'megabuf'
+              ? MILKDROP_MEGABUF_SIZE
+              : MILKDROP_GMEGABUF_SIZE;
+          const index = nextTemporary(context);
+          const indexSource = node.left.args[0]
+            ? compileNode(node.left.args[0], context)
+            : '0';
+          const bufferName = buffer === 'megabuf' ? 'mb' : 'gb';
+          return `(${clamped}, ${index} = Math.trunc(${indexSource}), (${index} >= 0 && ${index} < ${size} ? ${bufferName}[${index}] = ${tempVar} : 0), ${tempVar})`;
+        }
+        // Invalid assignment target, just return rvalue
+        return `(${rvalue})`;
+      }
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -196,108 +155,10 @@ function compileNode(
         return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
       }
       const args = node.args.map((arg) => compileNode(arg, context));
-      switch (name) {
-        case 'sin':
-          return `Math.sin(${args[0] ?? '0'})`;
-        case 'cos':
-          return `Math.cos(${args[0] ?? '0'})`;
-        case 'tan':
-          return `Math.tan(${args[0] ?? '0'})`;
-        case 'asin':
-          return `Math.asin(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
-        case 'acos':
-          return `Math.acos(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
-        case 'atan':
-          return `Math.atan(${args[0] ?? '0'})`;
-        case 'abs':
-          return `Math.abs(${args[0] ?? '0'})`;
-        case 'sqrt':
-          return `Math.sqrt(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'pow': {
-          const vTemp = nextTemporary(context);
-          return `(${vTemp} = (${args[0] ?? '0'}) ** (${args[1] ?? '0'}), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
-        }
-        case 'mod':
-        case 'fmod': {
-          const aTemp = nextTemporary(context);
-          const bTemp = nextTemporary(context);
-          return `(${aTemp} = ${args[0] ?? '0'}, ${bTemp} = ${args[1] ?? '0'}, ${bTemp} === 0 ? 0 : ${aTemp} % ${bTemp})`;
-        }
-        case 'min':
-          return `Math.min(${args.join(',') || '0'})`;
-        case 'max':
-          return `Math.max(${args.join(',') || '0'})`;
-        case 'mix':
-        case 'lerp':
-          return `((${args[0] ?? '0'}) + ((${args[1] ?? '0'}) - (${args[0] ?? '0'})) * (${args[2] ?? '0'}))`;
-        case 'floor':
-          return `Math.floor(${args[0] ?? '0'})`;
-        case 'int':
-          return `(Math.trunc(${args[0] ?? '0'})||0)`;
-        case 'ceil':
-          return `Math.ceil(${args[0] ?? '0'})`;
-        case 'sqr': {
-          const sTemp = nextTemporary(context);
-          return `(${sTemp} = ${args[0] ?? '0'}, ${sTemp} * ${sTemp})`;
-        }
-        case 'clamp':
-          return `Math.min(Math.max(${args[0] ?? '0'}, ${args[1] ?? '0'}), ${args[2] ?? '1'})`;
-        case 'step':
-          return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
-        case 'smoothstep':
-          return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
-        // Finite-clamped like the interpreter: log(0) is -Infinity, which the
-        // statement-level store clamp would zero anyway, but inside an
-        // expression it flipped comparisons relative to the analysis
-        // evaluator (above(log10(x), y) style). Clamp at the source so both
-        // tiers agree everywhere.
-        case 'log': {
-          const temp = nextTemporary(context);
-          return `(${temp} = Math.log(Math.max(0, ${args[0] ?? '0'})), Number.isFinite(${temp}) ? ${temp} : 0)`;
-        }
-        case 'log10': {
-          const temp = nextTemporary(context);
-          return `(${temp} = Math.log10(Math.max(0, ${args[0] ?? '0'})), Number.isFinite(${temp}) ? ${temp} : 0)`;
-        }
-        case 'exp':
-          return `Math.exp(${args[0] ?? '0'})`;
-        case 'sigmoid':
-          return `(1 / (1 + Math.exp(-(${args[0] ?? '0'}) * (${args[1] ?? '1'}))))`;
-        case 'sign':
-          return `(Math.sign(${args[0] ?? '0'})||0)`;
-        case 'bor':
-          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 || Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
-        case 'band':
-          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 && Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
-        case 'bnot':
-          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? 0 : 1)`;
-        case 'atan2':
-          return `Math.atan2(${args[0] ?? '0'}, ${args[1] ?? '0'})`;
-        case 'frac': {
-          // Temp for the same reason as '/': the argument string must not be
-          // spliced twice, or its side effects run twice.
-          const temp = nextTemporary(context);
-          return `(${temp} = (${args[0] ?? '0'}), ${temp} - Math.floor(${temp}))`;
-        }
-        case 'if':
-          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
-        case 'above':
-          return `((${args[0] ?? '0'}) > (${args[1] ?? '0'}) ? 1 : 0)`;
-        case 'below':
-          return `((${args[0] ?? '0'}) < (${args[1] ?? '0'}) ? 1 : 0)`;
-        case 'equal':
-          return `(Math.abs((${args[0] ?? '0'}) - (${args[1] ?? '0'})) <= 0.00001 ? 1 : 0)`;
-        case 'rand':
-          return `(rnd() * (${args[0] ?? '1'}))`;
-        case 'randint':
-          return `Math.floor(rnd() * (${args[0] ?? '1'}))`;
-        case 'exec2':
-        case 'exec3':
-          return args.length > 0
-            ? `(${args.map((arg) => `(${arg})`).join(', ')})`
-            : '(0)';
-      }
-      return '(0)';
+      return (
+        emitEelCallJs(name, args, { temp: () => nextTemporary(context) }) ??
+        '(0)'
+      );
     }
   }
 }

@@ -2,6 +2,14 @@ import {
   MILKDROP_INTRINSIC_FUNCTION_NAMES,
   MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
 } from './builtin-docs';
+import {
+  EEL_BINARY_OPERATORS,
+  EEL_UNARY_OPERATORS,
+  type EelEvalHelpers,
+  evaluateEelCall,
+  MILKDROP_EEL_CLOSE_FACTOR,
+  toMilkdropInt,
+} from './compiler/eel-function-table.ts';
 import { resolveMilkdropIdentifier } from './field-normalization';
 import type {
   MilkdropCompiledStatement,
@@ -51,7 +59,7 @@ const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
 // The names live in `builtin-docs.ts` (the single source of truth shared with
 // the editor's highlighter, autocomplete, and hover docs); these sets remain
 // the authoritative interface for what the compiler accepts. Every name must
-// have a case in `evaluateMilkdropExpression`'s call switch below.
+// have an entry in `compiler/eel-function-table.ts`.
 export const MILKDROP_INTRINSIC_IDENTIFIERS = new Set(
   MILKDROP_INTRINSIC_IDENTIFIER_NAMES,
 );
@@ -60,12 +68,9 @@ export const MILKDROP_INTRINSIC_FUNCTIONS = new Set(
   MILKDROP_INTRINSIC_FUNCTION_NAMES,
 );
 
-/** NS-EEL treats values within this distance of zero as false. */
-export const MILKDROP_EEL_CLOSE_FACTOR = 0.00001;
-
-function toMilkdropInt(value: number) {
-  return Number.isFinite(value) ? Math.trunc(value) : 0;
-}
+// The close factor and int conversion now live in the shared operator table;
+// re-exported here because this module has always been their public home.
+export { MILKDROP_EEL_CLOSE_FACTOR };
 
 function createDiagnostic(
   line: number,
@@ -537,13 +542,7 @@ class ExpressionParser {
   }
 }
 
-type EvalHelpers = {
-  nextRandom?: () => number;
-  megabuf?: (index: number) => number;
-  gmegabuf?: (index: number) => number;
-  megabufWrite?: (index: number, value: number) => void;
-  gmegabufWrite?: (index: number, value: number) => void;
-};
+type EvalHelpers = EelEvalHelpers;
 
 export function evaluateMilkdropExpression(
   node: MilkdropExpressionNode,
@@ -569,15 +568,7 @@ export function evaluateMilkdropExpression(
     }
     case 'unary': {
       const value = evaluateMilkdropExpression(node.operand, env, helpers);
-      switch (node.operator) {
-        case '+':
-          return value;
-        case '-':
-          return -value;
-        case '!':
-          return Math.abs(value) > MILKDROP_EEL_CLOSE_FACTOR ? 0 : 1;
-      }
-      return 0;
+      return EEL_UNARY_OPERATORS[node.operator]?.interp?.(value) ?? 0;
     }
     case 'binary': {
       // Assignment is handled specially to allow side effects on LHS
@@ -622,42 +613,7 @@ export function evaluateMilkdropExpression(
         return Math.abs(right) > MILKDROP_EEL_CLOSE_FACTOR ? 1 : 0;
       }
       const right = evaluateMilkdropExpression(node.right, env, helpers);
-      switch (node.operator) {
-        case '+':
-          return left + right;
-        case '-':
-          return left - right;
-        case '*':
-          return left * right;
-        case '/':
-          return right === 0 ? 0 : left / right;
-        case '%': {
-          const leftInt = toMilkdropInt(left);
-          const rightInt = toMilkdropInt(right);
-          return rightInt === 0 ? 0 : leftInt % rightInt;
-        }
-        case '^': {
-          const res = left ** right;
-          return Number.isFinite(res) ? res : 0;
-        }
-        case '|':
-          return toMilkdropInt(left) | toMilkdropInt(right);
-        case '&':
-          return toMilkdropInt(left) & toMilkdropInt(right);
-        case '<':
-          return left < right ? 1 : 0;
-        case '<=':
-          return left <= right ? 1 : 0;
-        case '>':
-          return left > right ? 1 : 0;
-        case '>=':
-          return left >= right ? 1 : 0;
-        case '==':
-          return left === right ? 1 : 0;
-        case '!=':
-          return left !== right ? 1 : 0;
-      }
-      return 0;
+      return EEL_BINARY_OPERATORS[node.operator]?.interp?.(left, right) ?? 0;
     }
     case 'call': {
       const lazyName = node.name.toLowerCase();
@@ -678,131 +634,7 @@ export function evaluateMilkdropExpression(
       const args = node.args.map((arg) =>
         evaluateMilkdropExpression(arg, env, helpers),
       );
-      const name = lazyName;
-      switch (name) {
-        case 'sin':
-          return Math.sin(args[0] ?? 0);
-        case 'cos':
-          return Math.cos(args[0] ?? 0);
-        case 'tan':
-          return Math.tan(args[0] ?? 0);
-        case 'asin':
-          return Math.asin(Math.min(1, Math.max(-1, args[0] ?? 0)));
-        case 'acos':
-          return Math.acos(Math.min(1, Math.max(-1, args[0] ?? 0)));
-        case 'atan':
-          return Math.atan(args[0] ?? 0);
-        case 'abs':
-          return Math.abs(args[0] ?? 0);
-        case 'sqrt':
-          return Math.sqrt(Math.max(0, args[0] ?? 0));
-        case 'pow': {
-          const res = (args[0] ?? 0) ** (args[1] ?? 0);
-          return Number.isFinite(res) ? res : 0;
-        }
-        case 'mod':
-        case 'fmod': {
-          const left = args[0] ?? 0;
-          const right = args[1] ?? 0;
-          return right === 0 ? 0 : left % right;
-        }
-        case 'min':
-          return Math.min(...args);
-        case 'max':
-          return Math.max(...args);
-        case 'mix':
-        case 'lerp': {
-          const start = args[0] ?? 0;
-          const end = args[1] ?? 0;
-          const amount = args[2] ?? 0;
-          return start + (end - start) * amount;
-        }
-        case 'floor':
-          return Math.floor(args[0] ?? 0);
-        case 'int':
-          return toMilkdropInt(args[0] ?? 0);
-        case 'ceil':
-          return Math.ceil(args[0] ?? 0);
-        case 'sqr': {
-          const value = args[0] ?? 0;
-          return value * value;
-        }
-        case 'clamp':
-          return Math.min(Math.max(args[0] ?? 0, args[1] ?? 0), args[2] ?? 1);
-        case 'step':
-          return (args[1] ?? 0) < (args[0] ?? 0) ? 0 : 1;
-        case 'smoothstep': {
-          const edge0 = args[0] ?? 0;
-          const edge1 = args[1] ?? 1;
-          const value = args[2] ?? 0;
-          if (edge0 === edge1) {
-            return value < edge0 ? 0 : 1;
-          }
-          const t = Math.min(Math.max((value - edge0) / (edge1 - edge0), 0), 1);
-          return t * t * (3 - 2 * t);
-        }
-        case 'log': {
-          const res = Math.log(Math.max(0, args[0] ?? 0));
-          return Number.isFinite(res) ? res : 0;
-        }
-        case 'log10': {
-          const res = Math.log10(Math.max(0, args[0] ?? 0));
-          return Number.isFinite(res) ? res : 0;
-        }
-        case 'exp':
-          return Math.exp(args[0] ?? 0);
-        case 'sigmoid': {
-          const value = args[0] ?? 0;
-          const slope = args[1] ?? 1;
-          return 1 / (1 + Math.exp(-value * slope));
-        }
-        case 'sign':
-          return Math.sign(args[0] ?? 0) || 0;
-        case 'bor':
-          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR ||
-            Math.abs(args[1] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
-            ? 1
-            : 0;
-        case 'band':
-          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR &&
-            Math.abs(args[1] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
-            ? 1
-            : 0;
-        case 'bnot':
-          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR ? 0 : 1;
-        case 'atan2':
-          return Math.atan2(args[0] ?? 0, args[1] ?? 0);
-        case 'frac': {
-          const value = args[0] ?? 0;
-          return value - Math.floor(value);
-        }
-        case 'if':
-          return Math.abs(args[0] ?? 0) > MILKDROP_EEL_CLOSE_FACTOR
-            ? (args[1] ?? 0)
-            : (args[2] ?? 0);
-        case 'above':
-          return (args[0] ?? 0) > (args[1] ?? 0) ? 1 : 0;
-        case 'below':
-          return (args[0] ?? 0) < (args[1] ?? 0) ? 1 : 0;
-        case 'equal':
-          return Math.abs((args[0] ?? 0) - (args[1] ?? 0)) <=
-            MILKDROP_EEL_CLOSE_FACTOR
-            ? 1
-            : 0;
-        case 'rand':
-          return (helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1);
-        case 'randint':
-          return Math.floor((helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1));
-        case 'megabuf':
-          return helpers.megabuf?.(args[0] ?? 0) ?? 0;
-        case 'gmegabuf':
-          return helpers.gmegabuf?.(args[0] ?? 0) ?? 0;
-        case 'exec2':
-        case 'exec3':
-          return args[args.length - 1] ?? 0;
-        default:
-          return 0;
-      }
+      return evaluateEelCall(lazyName, args, helpers);
     }
   }
 }

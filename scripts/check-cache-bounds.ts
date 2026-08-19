@@ -32,7 +32,10 @@ const COMMENT_START_RE = /^\s*(?:\/\/|\*|\/\*)/;
 
 // Allowlist entries: `path: reason`. A container listed here is presumed
 // bounded for a documented reason and never flagged.
-const ALLOWED: Record<string, string> = {};
+const ALLOWED: Record<string, string> = {
+  'src/js/milkdrop/compiler/eel-function-table.ts':
+    'GPU_FIELD_FUNCTION_NAMES is derived once from the fixed, finite EEL_FUNCTIONS table at module load — it never grows at runtime.',
+};
 
 type DiffLine = { kind: 'file' | 'hunk' | 'added' | 'other'; text: string };
 
