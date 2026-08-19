@@ -468,9 +468,15 @@
   justify-content: center;
 }
 
+/* The reveal handle is the one chrome element that stays dark-surfaced in
+   BOTH themes: it floats directly over the visualizer stage, where a cream
+   chip would glare against the video. Because the surface is
+   theme-independent, its ink has to be too — this literal is deliberate, not
+   an un-tokenized leftover. Do not swap it for --ctl-ink: that token is
+   near-black in light theme, which lands at 1.32:1 on this background. */
 :global(html.light) .handle {
   background: rgba(8, 14, 22, 0.92);
-  color: var(--ctl-ink);
+  color: #f7f4eb;
   border-color: var(--ctl-line-strong);
 }
 
