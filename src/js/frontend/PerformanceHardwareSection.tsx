@@ -5,8 +5,8 @@ import type {
   MidiDeviceInfo,
 } from '../core/services/webmidi-controller.ts';
 import { webMidiService } from '../core/services/webmidi-controller.ts';
-import { isFieldShadowedByEquations } from '../milkdrop/formatter.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { describeParameterState } from './parameter-state.ts';
 
 export function PerformanceHardwareSection() {
   const { engineSnapshot } = useEngineSnapshot();
@@ -231,9 +231,14 @@ function MidiDeviceRow({
     // Whether the active preset's own per_frame/per_pixel equations
     // reassign this target every frame, silently overwriting whatever
     // value this binding writes. null = no preset loaded yet, so there's
-    // nothing meaningful to report.
+    // nothing meaningful to report. Shares parameter-state.ts with the
+    // performance HUD so the two surfaces cannot disagree about a binding.
     shadowed: activeSource
-      ? isFieldShadowedByEquations(activeSource, binding.target)
+      ? describeParameterState({
+          target: binding.target,
+          source: activeSource,
+          midiBound: true,
+        }).overridden
       : null,
   }));
 

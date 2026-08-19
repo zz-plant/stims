@@ -23,7 +23,7 @@ import type { MilkdropBlendState } from '../types.ts';
  * event log that debugging kept wanting.
  */
 
-export type MilkdropTransitionPhase = 'idle' | 'blending';
+export type MilkdropTransitionPhase = 'idle' | 'blending' | 'manual';
 
 export type MilkdropTransitionEvent = {
   at: number;
@@ -53,6 +53,11 @@ export function createMilkdropTransitionController() {
   let elapsedSeconds = 0;
   let holdSeconds = 0;
   let lastTickAt: number | null = null;
+  /** Hand-driven deck position, 0 = outgoing preset, 1 = incoming. */
+  let manualPosition = 0;
+  /** When the hand-driven fade first hit the presentable floor. Wall clock,
+   * not sim time: there is no blend clock to charge it against. */
+  let manualHoldStartedAt: number | null = null;
   const events: MilkdropTransitionEvent[] = [];
 
   const record = (event: string, detail?: string) => {
@@ -76,6 +81,8 @@ export function createMilkdropTransitionController() {
     elapsedSeconds = 0;
     holdSeconds = 0;
     lastTickAt = null;
+    manualPosition = 0;
+    manualHoldStartedAt = null;
   };
 
   return {
@@ -86,6 +93,16 @@ export function createMilkdropTransitionController() {
      * point for both so the event log sees every switch.
      */
     begin(nextBlendState: MilkdropBlendState | null, seconds: number) {
+      if (phase === 'manual') {
+        // A preset switch reaches this controller twice — once from the
+        // navigation controller and once from the editor-session subscriber
+        // (the event log shows the pair, ~2ms apart). A hand-driven fade is
+        // started by the first of those, so without this the second call
+        // would immediately replace it with a timed blend or a cut and the
+        // fader would vanish from under the performer's hand.
+        record('begin-ignored', 'manual fade in progress');
+        return;
+      }
       if (nextBlendState && seconds > 0) {
         phase = 'blending';
         blendState = nextBlendState;
@@ -109,6 +126,41 @@ export function createMilkdropTransitionController() {
      * it left off instead of jumping. `presentable` reports whether the
      * renderer considers the incoming preset fully styled.
      */
+    /**
+     * Starts a hand-driven crossfade instead of a timed one.
+     *
+     * The timed blend picks a duration up front and runs it to completion,
+     * which is the one thing no mixer does — a performer rides the fade and
+     * watches. Position is supplied per gesture by `setManualPosition`; the
+     * controller keeps ownership of everything that made the timed path
+     * correct, above all the presentable hold: you cannot fade to a deck
+     * whose shaders have not warmed, however hard you push the fader.
+     */
+    beginManual(nextBlendState: MilkdropBlendState) {
+      phase = 'manual';
+      blendState = nextBlendState;
+      durationSeconds = 0;
+      elapsedSeconds = 0;
+      holdSeconds = 0;
+      lastTickAt = null;
+      manualPosition = 0;
+      manualHoldStartedAt = null;
+      record('manual-started');
+    },
+
+    /**
+     * Moves the hand-driven fade. 0 holds the outgoing preset, 1 completes
+     * the switch. Values outside that range clamp rather than throw: this is
+     * driven by pointer and MIDI input, where overshoot is normal.
+     */
+    setManualPosition(position: number) {
+      if (phase !== 'manual') return;
+      manualPosition = Math.min(1, Math.max(0, position));
+    },
+
+    /** Current hand-driven position, for rendering the fader itself. */
+    getManualPosition: () => manualPosition,
+
     tick({
       now,
       canBlendThisFrame,
@@ -118,6 +170,43 @@ export function createMilkdropTransitionController() {
       canBlendThisFrame: boolean;
       presentable: boolean;
     }): MilkdropBlendState | null {
+      if (phase === 'manual' && blendState) {
+        if (!canBlendThisFrame) {
+          // Suspended mid-gesture (workload spike, quality drop). The
+          // position is held by the caller's input, not by a clock, so
+          // there is nothing to give back — just render without the cover
+          // and pick the gesture up on the next unsuspended frame.
+          return null;
+        }
+        // Cover opacity is the inverse of deck position: 1 is fully the
+        // outgoing preset.
+        let manualAlpha = 1 - manualPosition;
+        if (manualAlpha <= PRESENTABLE_HOLD_ALPHA && !presentable) {
+          if (manualHoldStartedAt === null) {
+            manualHoldStartedAt = now;
+            record('reveal-held', 'shader swap pending');
+          }
+          // Same cap as the timed path, for the same reason: a wedged swap
+          // must not make the fade impossible to finish. Wall clock here,
+          // since a hand-driven fade has no blend clock of its own.
+          if (
+            now - manualHoldStartedAt <=
+            PRESENTABLE_HOLD_MAX_SECONDS * 1000
+          ) {
+            manualAlpha = PRESENTABLE_HOLD_ALPHA;
+          }
+        } else if (manualHoldStartedAt !== null && presentable) {
+          record('reveal-released', 'manual');
+          manualHoldStartedAt = null;
+        }
+        if (manualAlpha <= 0) {
+          settle('manual-completed');
+          return null;
+        }
+        blendState.alpha = manualAlpha;
+        return blendState;
+      }
+
       if (phase !== 'blending' || !blendState) {
         return null;
       }

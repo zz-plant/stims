@@ -270,7 +270,9 @@ export interface AgentGlobal {
   getEvents: (sinceSeq?: number) => AgentEvent[];
   /**
    * Run a command-palette action — or a targeted verb — by stable id.
-   * Targeted verbs: 'select-preset' {id}, 'set-field' {key, value}.
+   * Targeted verbs: 'select-preset' {id}, 'set-field' {key, value},
+   * 'crossfade' {position}, 'pin-parameter' {field},
+   * 'unpin-parameter' {field}.
    * Resolves after the next state commit (or a 1s settle window).
    */
   run: (
@@ -302,6 +304,12 @@ export interface AgentStateProviders {
   getTelemetry: () => AgentTelemetry;
   selectPreset: (presetId: string) => void;
   setField: (key: string, value: number) => void;
+  /** Moves a hand-driven crossfade, 0 (outgoing) to 1 (incoming). */
+  setCrossfade: (position: number) => void;
+  /** Pin/unpin a parameter on the performance surface. Returns false for a
+   * field the surface has no range for. */
+  pinParameter: (field: string) => boolean;
+  unpinParameter: (field: string) => boolean;
   getStageCanvas: () => HTMLCanvasElement | null;
 }
 
@@ -351,13 +359,44 @@ export function installAgentStateGlobal(
       providers.setField(key, value);
       return null;
     }
+    if (actionId === 'crossfade') {
+      const position = params?.position;
+      if (typeof position !== 'number' || !Number.isFinite(position)) {
+        return {
+          ok: false,
+          error: 'crossfade requires params.position (number, 0-1).',
+        };
+      }
+      providers.setCrossfade(position);
+      return null;
+    }
+    if (actionId === 'pin-parameter' || actionId === 'unpin-parameter') {
+      const field = params?.field;
+      if (typeof field !== 'string' || !field) {
+        return {
+          ok: false,
+          error: `${actionId} requires params.field (string).`,
+        };
+      }
+      const applied =
+        actionId === 'pin-parameter'
+          ? providers.pinParameter(field)
+          : providers.unpinParameter(field);
+      if (!applied) {
+        return {
+          ok: false,
+          error: `"${field}" is not a pinnable parameter.`,
+        };
+      }
+      return null;
+    }
     const action = providers
       .getActions()
       .find((candidate) => candidate.id === actionId);
     if (!action) {
       return {
         ok: false,
-        error: `Unknown action "${actionId}". Use listActions() for palette actions; targeted verbs are "select-preset" and "set-field".`,
+        error: `Unknown action "${actionId}". Use listActions() for palette actions; targeted verbs are "select-preset", "set-field", "crossfade", "pin-parameter" and "unpin-parameter".`,
       };
     }
     action.run();
