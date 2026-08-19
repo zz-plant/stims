@@ -33,6 +33,7 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { decidePresetRoutePush } from './preset-route-push.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -137,6 +138,11 @@ export function useWorkspaceSessionState({
   // `activePresetId`, which re-runs the load effect; without this the effect
   // would keep re-requesting the preset that just failed, forever.
   const failedPresetIdsRef = useRef<Set<string>>(new Set());
+  // The resolved route preset id the route -> engine effect last acted on.
+  // Distinguishes "the route changed, push it to the engine" from "the engine
+  // moved on its own and this effect is only re-running because of it" — see
+  // the guard in that effect.
+  const handledRouteRequestRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
 
   // The landing page is the pitch for a visuals product and contained no
@@ -453,40 +459,51 @@ export function useWorkspaceSessionState({
         routePresetId)
       : null;
 
-    if (!engineRef.current?.isMounted()) {
-      if (requestedPresetId) {
-        log.log(`engine not mounted, deferring preset ${requestedPresetId}`);
+    // Every branch below is decided by `decidePresetRoutePush` so the rules
+    // (especially the engine-moved guard that stops the route and the engine
+    // fighting over the address bar) are unit-testable in isolation.
+    const decision = decidePresetRoutePush({
+      engineMounted: Boolean(engineRef.current?.isMounted()),
+      requestedPresetId,
+      activePresetId: engineSnapshot?.activePresetId,
+      handledRouteRequestId: handledRouteRequestRef.current,
+      pendingPresetId: pendingPresetIdRef.current,
+      hasFailed: requestedPresetId
+        ? failedPresetIdsRef.current.has(requestedPresetId)
+        : false,
+    });
+
+    if (decision !== 'load') {
+      if (decision === 'engine-not-mounted') {
+        if (requestedPresetId) {
+          log.log(`engine not mounted, deferring preset ${requestedPresetId}`);
+        }
+        // Nothing was handled while unmounted; let the request through again
+        // once the engine mounts.
+        handledRouteRequestRef.current = null;
+      } else if (decision === 'no-request') {
+        handledRouteRequestRef.current = null;
+      } else if (decision === 'already-active') {
+        pendingPresetIdRef.current = null;
+        handledRouteRequestRef.current = requestedPresetId;
+      } else if (decision === 'engine-moved') {
+        // Deliberately NOT clearing pendingPresetIdRef: it is already null on
+        // an engine-initiated move, and usePresetRouteSync needs it null to
+        // publish the engine's new id to the URL.
+        log.log(
+          `engine moved to ${engineSnapshot?.activePresetId ?? 'none'} on its own; not re-pushing route preset ${requestedPresetId}`,
+        );
       }
       return;
     }
-
-    if (!requestedPresetId) {
-      return;
-    }
-
-    // Already tried this one and it timed out or failed; the fallback is on
-    // screen. Re-requesting it would loop.
-    if (failedPresetIdsRef.current.has(requestedPresetId)) {
-      return;
-    }
-
-    if (requestedPresetId === engineSnapshot?.activePresetId) {
-      pendingPresetIdRef.current = null;
-      return;
-    }
-
-    // This effect re-runs whenever the engine snapshot changes — notably when
-    // `catalogEntries` lands, which on slower devices happens well before
-    // `activePresetId` catches up. Without an in-flight check the same preset
-    // gets requested again while the first request is still compiling, and the
-    // navigation controller discards the earlier one as `superseded` after it
-    // has already paid for the fetch and compile. The ref is always cleared on
-    // success, failure, or the 10s timeout below, so this cannot wedge.
-    if (pendingPresetIdRef.current === requestedPresetId) {
+    // `decision === 'load'` already implies this, but the compiler cannot see
+    // through the helper; this keeps the rest of the effect non-null.
+    if (!requestedPresetId || !engineRef.current) {
       return;
     }
 
     pendingPresetIdRef.current = requestedPresetId;
+    handledRouteRequestRef.current = requestedPresetId;
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
