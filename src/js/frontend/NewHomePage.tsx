@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
@@ -333,6 +333,7 @@ function Actions({
   isStarting,
   onBrowsePresets,
 }: ActionsProps) {
+  const engineStatusId = useId();
   return (
     <div className="stims-shell__launch-actions-minimal">
       {resume ? (
@@ -343,6 +344,7 @@ function Actions({
           className="stims-shell__launch-cta"
           disabled={!isEngineReady || isStarting}
           aria-busy={isStarting}
+          aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onResume}
         >
           {isStarting
@@ -357,11 +359,26 @@ function Actions({
           className="stims-shell__launch-cta"
           disabled={!isEngineReady || isStarting}
           aria-busy={isStarting}
+          aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onPlayDemo}
         >
           {isStarting ? 'Starting…' : 'Play demo'}
         </button>
       )}
+      {/* Buttons above go disabled the instant this page mounts if the
+          catalog fetch failed (see engineReady in workspace-shell-hooks.ts);
+          without this, a disabled primary CTA with no visible reason reads
+          as broken rather than transient. Mirrors the same message
+          AudioSourcePanel already shows for its own source buttons. */}
+      {!isEngineReady ? (
+        <p
+          id={engineStatusId}
+          className="stims-shell__launch-status"
+          aria-live="polite"
+        >
+          Audio engine is starting. This will unlock in a moment.
+        </p>
+      ) : null}
       <button
         type="button"
         className="stims-shell__launch-secondary"
