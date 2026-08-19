@@ -28,8 +28,11 @@ import {
 import { saveLastSession } from '../core/state/last-session-store.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
-  applyTheme,
   getActiveThemePreference,
+  setThemePreference,
+  startThemeSync,
+  subscribeToThemePreference,
+  type ThemeChoice,
 } from '../core/theme-preferences.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
@@ -72,6 +75,7 @@ const NewHomePage = lazy(() =>
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
+import { readStored, writeStored } from './safe-storage.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
@@ -209,6 +213,12 @@ function StimsWorkspaceAppShell() {
   );
 
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // Drives the palette's theme row label, so it names the current choice.
+  const themeChoice = useSyncExternalStore(
+    subscribeToThemePreference,
+    () => getActiveThemePreference().theme,
+    () => 'dark' as ThemeChoice,
+  );
   const [showCredits, setShowCredits] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
@@ -408,6 +418,41 @@ function StimsWorkspaceAppShell() {
         run: () => togglePanel(paletteSurface, 'settings'),
       },
       {
+        id: 'open-shortcuts',
+        label: 'Keyboard shortcuts',
+        shortcutHint: '?',
+        keywords: ['help', 'keys', 'bindings'],
+        run: () => setShowShortcuts(true),
+      },
+      {
+        // Cycles rather than offering three entries: the palette is a list you
+        // scan, and three near-identical theme rows cost more attention than
+        // the one extra press cycling costs.
+        id: 'cycle-theme',
+        label: `Theme: ${themeChoice === 'system' ? 'match system' : themeChoice}`,
+        keywords: ['dark', 'light', 'appearance', 'contrast'],
+        run: () => {
+          const order: ThemeChoice[] = ['dark', 'light', 'system'];
+          const next = order[(order.indexOf(themeChoice) + 1) % order.length];
+          setThemePreference({ theme: next });
+          ui.setStatusMessage(
+            `Theme: ${next === 'system' ? 'match system' : next}`,
+          );
+        },
+      },
+      {
+        // The reason this is worth a palette slot when the other graphics
+        // settings are not: it is the one people reach for mid-playback, when
+        // a preset is chugging and Settings is three interactions away.
+        id: 'use-webgl',
+        label: 'Switch renderer to WebGL',
+        keywords: ['backend', 'webgpu', 'compatibility', 'slow', 'performance'],
+        run: () => {
+          setCompatibilityMode(true);
+          ui.setStatusMessage('Renderer set to WebGL. Reload to apply.');
+        },
+      },
+      {
         id: 'toggle-fullscreen',
         label: isFullscreen ? 'Exit full screen' : 'Full screen',
         shortcutHint: 'F',
@@ -437,6 +482,42 @@ function StimsWorkspaceAppShell() {
             } satisfies CommandAction,
           ]
         : []),
+      {
+        id: 'queue-add',
+        label: 'Add this preset to the queue',
+        keywords: ['cue', 'crate', 'next', 'setlist'],
+        run: () => {
+          const presetId = engineSnapshotRef.current?.activePresetId ?? null;
+          if (!presetId) {
+            uiRef.current.setStatusMessage('No preset to queue yet.');
+            return;
+          }
+          uiRef.current.presetQueue.add(presetId);
+          uiRef.current.setStatusMessage('Queued. It shows in the cue monitor.');
+        },
+      },
+      {
+        id: 'queue-take',
+        label: 'Take the cued preset',
+        keywords: ['cue', 'next', 'play'],
+        run: () => {
+          const presetId = uiRef.current.presetQueue.popNext();
+          if (!presetId) {
+            uiRef.current.setStatusMessage('Nothing is cued.');
+            return;
+          }
+          uiRef.current.setRouteState((current) => ({ ...current, presetId }));
+        },
+      },
+      {
+        id: 'queue-clear',
+        label: 'Clear the queue',
+        keywords: ['cue', 'crate', 'empty'],
+        run: () => {
+          uiRef.current.presetQueue.clear();
+          uiRef.current.setStatusMessage('Queue cleared.');
+        },
+      },
       {
         id: 'toggle-autoplay',
         label: 'Toggle autoplay',
@@ -497,7 +578,7 @@ function StimsWorkspaceAppShell() {
           ]
         : []),
     ],
-    [liveMode, isFullscreen, hostingWatchParty],
+    [liveMode, isFullscreen, hostingWatchParty, themeChoice],
   );
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,
@@ -924,15 +1005,11 @@ function StimsWorkspaceAppShell() {
         setShowRotateHint(false);
         return;
       }
-      try {
-        if (localStorage.getItem('stims:rotate-hint-dismissed') === 'true') {
-          setShowRotateHint(false);
-          return;
-        }
-      } catch {}
-      try {
-        localStorage.setItem('stims:rotate-hint-dismissed', 'true');
-      } catch {}
+      if (readStored('stims:rotate-hint-dismissed') === 'true') {
+        setShowRotateHint(false);
+        return;
+      }
+      writeStored('stims:rotate-hint-dismissed', 'true');
       setShowRotateHint(true);
       hideTimer = window.setTimeout(() => setShowRotateHint(false), 4200);
     };
@@ -948,16 +1025,12 @@ function StimsWorkspaceAppShell() {
 
   const updateThumbMode = useCallback((enabled: boolean) => {
     setThumbMode(enabled);
-    try {
-      localStorage.setItem('stims:mobile-thumb-mode', String(enabled));
-    } catch {}
+    writeStored('stims:mobile-thumb-mode', String(enabled));
   }, []);
 
   const updateHapticsEnabled = useCallback((enabled: boolean) => {
     setHapticsEnabled(enabled);
-    try {
-      localStorage.setItem('stims:mobile-haptics', String(enabled));
-    } catch {}
+    writeStored('stims:mobile-haptics', String(enabled));
   }, []);
 
   const handleInstallApp = useCallback(() => {
@@ -1120,14 +1193,33 @@ function StimsWorkspaceAppShell() {
       window.removeEventListener('stims:credits:open', handleOpenCredits);
   }, []);
 
-  useEffect(() => {
-    const preference = getActiveThemePreference();
-    applyTheme(preference.theme);
-  }, []);
+  // Paints the stored choice and keeps painting it: preference changes from
+  // Settings or the palette, and — when the choice is "system" — OS theme
+  // flips, without a reload.
+  useEffect(() => startThemeSync(), []);
 
   useEffect(() => {
     applyAccessibility(getActiveAccessibilityPreference());
   }, []);
+
+  // Uncommitted editor edits live only in the session — there is no draft
+  // persistence — so a reload or a closed tab loses them outright. The
+  // session has tracked a `dirty` flag all along and nothing read it; this
+  // is the one place where losing work is silent and irreversible.
+  // Deliberately scoped to the editor being dirty: a beforeunload prompt on
+  // an idle visualizer would be pure nuisance.
+  const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
+  useEffect(() => {
+    if (!editorDirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Browsers show their own copy and ignore any string we return; the
+      // assignment is only here because older engines still gate on it.
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [editorDirty]);
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');

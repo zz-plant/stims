@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   applyAccessibility,
   getActiveAccessibilityPreference,
@@ -18,6 +18,12 @@ import {
   type ShaderQuality,
 } from '../core/state/performance-settings-store.ts';
 import type { PowerSaverMode } from '../core/state/power-saver-store.ts';
+import {
+  getActiveThemePreference,
+  setThemePreference,
+  subscribeToThemePreference,
+  type ThemeChoice,
+} from '../core/theme-preferences.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
@@ -485,6 +491,20 @@ export function SettingsSheetPanel({
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
+  // Read straight from the theme store rather than threading two more props
+  // through App: it is a module singleton with its own subscribe, and the
+  // snapshot is a primitive, so there is nothing for a prop to add.
+  const themeChoice = useSyncExternalStore(
+    subscribeToThemePreference,
+    () => getActiveThemePreference().theme,
+    () => 'dark' as ThemeChoice,
+  );
+  const onThemeChange = (theme: ThemeChoice) => {
+    setThemePreference({ theme });
+    ui.setStatusMessage(
+      `Theme: ${theme === 'system' ? 'match system' : theme}`,
+    );
+  };
   const motionPreference = ui.motionPreference;
   const qualityPreset = ui.qualityPreset;
   const renderPreferences = ui.renderPreferences;
@@ -771,6 +791,32 @@ export function SettingsSheetPanel({
             onOpenShortcuts={onOpenShortcuts}
             onOpenCredits={onOpenCredits}
           />
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Appearance</h3>
+            </div>
+            <div className="ctl-row">
+              <span className="ctl-row__text">
+                <label className="ctl-row__label" htmlFor="theme-choice">
+                  Theme
+                </label>
+                <span className="ctl-row__hint">
+                  Applies to the controls and panels. The visuals themselves
+                  always play on a dark stage.
+                </span>
+              </span>
+              <select
+                id="theme-choice"
+                className="ctl-select ctl-select--auto"
+                value={themeChoice}
+                onChange={(e) => onThemeChange(e.target.value as ThemeChoice)}
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="system">Match system</option>
+              </select>
+            </div>
+          </section>
           <section className="ctl-section">
             <div className="ctl-section__head">
               <h3 className="ctl-section__title">On this device</h3>

@@ -59,7 +59,7 @@ import {
 import { tags } from '@lezer/highlight';
 import { webMidiService } from '../../core/services/webmidi-controller.ts';
 import {
-  getActiveThemePreference,
+  resolveTheme,
   subscribeToThemePreference,
 } from '../../core/theme-preferences';
 import { renderIconSvg } from '../../ui/icon-library.ts';
@@ -671,9 +671,7 @@ function createEditorView({
         history(),
         createMilkdropLanguage(),
         oneDarkTheme,
-        syntaxThemeCompartment.of(
-          syntaxHighlightStyleForTheme(getActiveThemePreference().theme),
-        ),
+        syntaxThemeCompartment.of(syntaxHighlightStyleForTheme(resolveTheme())),
         createEditorTheme(),
         bracketMatching(),
         closeBrackets(),
@@ -768,10 +766,12 @@ function createEditorView({
     onEscapeBlur();
   });
 
-  const unsubscribeTheme = subscribeToThemePreference(({ theme }) => {
+  // resolveTheme(), not the raw choice: "system" is a preference, not a
+  // palette, and CodeMirror needs the one actually being painted.
+  const unsubscribeTheme = subscribeToThemePreference((preference) => {
     view.dispatch({
       effects: syntaxThemeCompartment.reconfigure(
-        syntaxHighlightStyleForTheme(theme),
+        syntaxHighlightStyleForTheme(resolveTheme(preference)),
       ),
     });
   });

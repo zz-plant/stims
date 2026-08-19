@@ -256,7 +256,13 @@ export function createMilkdropEngineAdapter() {
         experience.setActiveCollectionTag(intent.collectionTag);
       }
       if (intent.panel) {
-        experience.openTab(intent.panel);
+        // openTab is a no-op the runtime keeps only so the experience surface
+        // stays uniform — the shell owns panel routing. Its hand-written tab
+        // union has drifted from PanelState more than once, so narrow here
+        // rather than keep widening it there.
+        experience.openTab(
+          intent.panel as Parameters<typeof experience.openTab>[0],
+        );
       }
 
       emit();

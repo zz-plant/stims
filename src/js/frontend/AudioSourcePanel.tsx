@@ -6,6 +6,12 @@ import {
   isMobileDevice,
   openExternalBrowserIntent,
 } from '../utils/browser/device-detect.ts';
+import {
+  AUDIO_FILE_ACCEPT,
+  canProbablyPlay,
+  createFileAudioStream,
+  type FileAudioHandle,
+} from './file-audio.ts';
 import { ShaderIdenticon } from './ShaderIdenticon.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -54,6 +60,65 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubeTransport = ui.youtubeTransport;
   const youtubeTransportControls = ui.youtubeTransportControls;
   const youtubeUrl = ui.youtubeUrl;
+
+  const fileCardId = `${sourcePanelId}-file-card`;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileHandleRef = useRef<FileAudioHandle | null>(null);
+  const [fileState, setFileState] = useState<{
+    name: string;
+    error: string | null;
+    loading: boolean;
+  } | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  // One handle at a time: picking a second track must tear the first one's
+  // graph down, or both keep playing into the analyser at once.
+  const playFile = async (file: File) => {
+    if (!canProbablyPlay(file)) {
+      setFileState({
+        name: file.name,
+        error: `This browser can't play ${file.type || 'that file type'}.`,
+        loading: false,
+      });
+      return;
+    }
+    setFileState({ name: file.name, error: null, loading: true });
+    fileHandleRef.current?.dispose();
+    fileHandleRef.current = null;
+    try {
+      const handle = await createFileAudioStream(file);
+      fileHandleRef.current = handle;
+      // Commit the route *and* pass it as launchState, the same way the
+      // Strudel bridge starts a stream source. Calling startAudioSource
+      // alone leaves routeState.audioSource null, so the engine snapshot
+      // never reports the source and nothing downstream reacts to it.
+      const nextRoute = { ...ui.routeState, audioSource: 'file' as const };
+      ui.commitRoute(nextRoute);
+      await engine.startAudioSource({
+        source: 'file',
+        stream: handle.stream,
+        launchState: nextRoute,
+      });
+      setFileState({ name: handle.name, error: null, loading: false });
+      ui.setStatusMessage(`Playing ${handle.name}`);
+    } catch (error) {
+      fileHandleRef.current?.dispose();
+      fileHandleRef.current = null;
+      setFileState({
+        name: file.name,
+        error: error instanceof Error ? error.message : 'Could not play file.',
+        loading: false,
+      });
+    }
+  };
+
+  useEffect(
+    () => () => {
+      fileHandleRef.current?.dispose();
+      fileHandleRef.current = null;
+    },
+    [],
+  );
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
@@ -375,6 +440,66 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             </select>
           </label>
         ) : null}
+        <button
+          type="button"
+          // No hardcoded id: this panel mounts twice at once (home + Settings),
+          // so the sibling cards' fixed ids are already duplicated in the DOM.
+          // The data-attribute is the automation hook here, matching
+          // data-demo-audio-btn — which exists for exactly this reason.
+          id={fileCardId}
+          data-file-audio-btn="true"
+          className="stims-shell__source-card"
+          data-drag-active={dragActive || undefined}
+          disabled={!engineReady || fileState?.loading}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragActive(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file) void playFile(file);
+          }}
+        >
+          <div className="stims-shell__source-card-header">
+            <span className="stims-shell__source-card-kicker">Your music</span>
+            <ShaderIdenticon
+              seed="audio-file-source"
+              size={28}
+              mode="3d-polyhedron"
+            />
+          </div>
+          <strong>Audio file</strong>
+          <span>
+            {fileState?.loading
+              ? 'Loading…'
+              : fileState?.error
+                ? fileState.error
+                : fileState
+                  ? `Playing ${fileState.name}`
+                  : 'Pick a track, or drop one here'}
+          </span>
+        </button>
+        {/* Outside the button: a file input nested in a button swallows the
+            click that is meant to open the picker. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={AUDIO_FILE_ACCEPT}
+          className="stims-shell__sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Clear so re-picking the same file fires change again.
+            event.target.value = '';
+            if (file) void playFile(file);
+          }}
+        />
         {canCaptureDisplayAudio ? (
           <button
             type="button"

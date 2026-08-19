@@ -33,6 +33,7 @@ export function readSessionRouteStateFromSearch(
     agentMode: parsed.routing.agentMode,
     previewMode: parsed.routing.previewMode,
     invalidExperienceSlug: parsed.routing.invalidExperienceSlug,
+    invalidPanel: parsed.routing.invalidPanel,
     youtubeVideoId: parsed.routing.youtubeVideoId,
     youtubeStartSeconds: parsed.routing.youtubeStartSeconds,
   };

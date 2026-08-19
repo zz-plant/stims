@@ -47,7 +47,16 @@ function logInfo(msg: string) {
  *   (confirmed: no "autoplay" occurrence in the file); autoplay is only
  *   toggled via the command palette / keyboard shortcut.
  */
-const PALETTE_ONLY_EXEMPT = new Set(['toggle-autoplay']);
+// - 'open-shortcuts', 'cycle-theme', 'use-webgl': preference-level commands.
+//   The dock is for things you reach for mid-performance; these are settings
+//   you change once, so they get a palette row (and a Settings control) but
+//   no permanent dock slot.
+const PALETTE_ONLY_EXEMPT = new Set([
+  'toggle-autoplay',
+  'open-shortcuts',
+  'cycle-theme',
+  'use-webgl',
+]);
 
 /**
  * Dock data-action ids that are deliberately dock-only — no palette action
@@ -70,18 +79,20 @@ function extractPaletteActionIds(source: string): string[] {
       `Could not find "${startMarker}" in ${APP_PATH}. The paletteActions useMemo may have moved or been renamed — update this script's boundary marker.`,
     );
   }
-  // Bound the scan to the useMemo's closing deps array, i.e. the useMemo's
-  // closing `);` — find the first `\n  );` after the start that is followed
-  // (within a short window) by the deps-array line, so we don't accidentally
-  // run past this block into unrelated code.
-  const depsMarker = '[liveMode, isFullscreen, hostingWatchParty],\n  );';
-  const depsIdx = source.indexOf(depsMarker, startIdx);
-  if (depsIdx === -1) {
+  // Bound the scan to the useMemo's own closing `],\n    [deps],\n  );`.
+  // This used to match the literal deps array, which meant that adding one
+  // dependency — an ordinary edit — broke the check with a confusing
+  // "block may have been restructured" error. Match the *shape* instead: the
+  // first deps array at the useMemo's indentation, whatever it contains.
+  const depsPattern = /\n {4}\[[^\]]*\],\n {2}\);/;
+  const rest = source.slice(startIdx);
+  const depsMatch = depsPattern.exec(rest);
+  if (!depsMatch) {
     throw new Error(
-      `Could not find the paletteActions useMemo's closing deps array ("${depsMarker.split('\n')[0]}...") after its start in ${APP_PATH}. The block may have been restructured — update this script's boundary marker.`,
+      `Could not find the paletteActions useMemo's closing deps array after its start in ${APP_PATH}. The block may have been restructured — update this script's boundary pattern.`,
     );
   }
-  const block = source.slice(startIdx, depsIdx);
+  const block = rest.slice(0, depsMatch.index);
 
   const ids: string[] = [];
   const idPattern = /id:\s*'([a-z0-9-]+)'/g;

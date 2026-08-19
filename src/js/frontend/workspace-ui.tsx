@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { parseURLParams } from '../core/url-params.ts';
+import { CueMonitor } from './CueMonitor.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { StageControls } from './StageControls.tsx';
 import { StageWarpGizmo } from './StageWarpGizmo.tsx';
@@ -38,6 +39,7 @@ export function WorkspaceStagePanel({
   const presetTransition = usePresetTransition();
   const missingRequestedPreset = engine.missingRequestedPreset;
   const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
+  const invalidPanel = ui.routeState.invalidPanel;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
   const _audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
@@ -64,11 +66,27 @@ export function WorkspaceStagePanel({
         {/* Only while the editor is open — it renders its own null otherwise.
             The handle is the one thing on this layer that takes the pointer. */}
         {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
+        {/* Renders itself away when the queue is empty. */}
+        {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
             buttons stay in the tab order and accessibility tree without it */}
         <div className="stims-shell__stage-hero" inert={liveMode}>
           {launchPanel}
         </div>
+        {/* An unrecognized ?tool= used to be dropped silently, landing you on
+            the stage with no idea the link had asked for anything. Name the
+            value back, the same way an unknown experience slug does. */}
+        {!invalidExperienceSlug && invalidPanel ? (
+          <div className="active-toy-status is-error">
+            <div className="active-toy-status__content">
+              <h2>Unknown panel</h2>
+              <p>
+                This link asked for a panel called "{invalidPanel}", which
+                doesn't exist. Everything else in the link still loaded.
+              </p>
+            </div>
+          </div>
+        ) : null}
         {invalidExperienceSlug ? (
           <div className="active-toy-status is-error">
             <div className="active-toy-status__content">

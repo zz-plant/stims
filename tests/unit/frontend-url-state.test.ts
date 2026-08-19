@@ -22,6 +22,7 @@ describe('frontend url state', () => {
       agentMode: true,
       previewMode: false,
       invalidExperienceSlug: null,
+      invalidPanel: null,
       youtubeVideoId: null,
       youtubeStartSeconds: null,
     });

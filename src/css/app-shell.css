@@ -3809,3 +3809,11 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   font-weight: var(--font-weight-medium);
   pointer-events: none;
 }
+
+/* Drop target feedback for the audio-file source card. Only the border and
+   ground shift — the card must not resize mid-drag, or it slips out from
+   under the pointer that is hovering it. */
+.stims-shell__source-card[data-drag-active] {
+  border-color: var(--stims-accent);
+  background: var(--stims-panel-strong);
+}
