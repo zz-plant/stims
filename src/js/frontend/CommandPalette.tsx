@@ -55,6 +55,40 @@ export type CommandPaletteProps = {
   maxResults?: number;
 };
 
+const USE_COUNT_STORAGE_KEY = 'stims:palette-frecency:v1';
+const USE_COUNT_LIMIT = 200;
+
+function readPaletteUseCounts(): Record<string, number> {
+  try {
+    const raw = window.localStorage.getItem(USE_COUNT_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, number>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function recordPaletteUse(resultId: string): void {
+  try {
+    const counts = readPaletteUseCounts();
+    counts[resultId] = (counts[resultId] ?? 0) + 1;
+    // Bounded: keep the most-used entries so the blob can't grow forever
+    // (preset ids alone number in the thousands).
+    const entries = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, USE_COUNT_LIMIT);
+    window.localStorage.setItem(
+      USE_COUNT_STORAGE_KEY,
+      JSON.stringify(Object.fromEntries(entries)),
+    );
+  } catch {
+    // Private mode / quota — frecency just doesn't accumulate.
+  }
+}
+
 function optionDomId(index: number) {
   return `stims-cmdk-option-${index}`;
 }
@@ -91,6 +125,11 @@ export function CommandPalette({
     }
   }, [open]);
 
+  // Frecency: bounded boost from per-result use counts, so repeat workflows
+  // surface within a character or two. Read once per open — a palette
+  // session's own runs shouldn't reshuffle the list mid-flight.
+  const useCounts = useMemo(() => (open ? readPaletteUseCounts() : {}), [open]);
+
   const results: PaletteResult[] = useMemo(
     () =>
       buildPaletteResults({
@@ -99,8 +138,9 @@ export function CommandPalette({
         presets,
         searchPresets,
         limit: maxResults,
+        useCounts,
       }),
-    [query, actions, presets, searchPresets, maxResults],
+    [query, actions, presets, searchPresets, maxResults, useCounts],
   );
 
   // Clamp the highlight when the result list shrinks under it.
@@ -116,6 +156,7 @@ export function CommandPalette({
   if (!open) return null;
 
   const runResult = (result: PaletteResult) => {
+    recordPaletteUse(result.id);
     // Close first so a command that opens another dialog isn't fighting this
     // one's focus trap/restore for the same tick.
     onClose();
