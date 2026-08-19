@@ -1156,6 +1156,14 @@ body[data-page="workspace"][data-live="true"] {
     gap: 12px;
   }
 
+  .stims-shell__launch-status {
+    width: 100%;
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
   @media (max-width: 480px) {
     .stims-shell__launch-actions-minimal {
       width: 100%;
