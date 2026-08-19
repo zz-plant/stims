@@ -1,16 +1,13 @@
 import {
   type Camera,
   Color,
-  DataTexture,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
-  RGBAFormat,
   Scene,
   ShaderMaterial,
   type Texture,
-  UnsignedByteType,
   Vector2,
   Vector4,
   type WebGLRenderTarget,
@@ -46,7 +43,6 @@ import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
 import {
   AUX_TEXTURE_SPECS,
   type AuxTextureName,
-  configureMilkdropTexture,
   getSharedMilkdropTexture,
   resolveAuxTextureName,
 } from './feedback-texture-utils.ts';
@@ -55,7 +51,6 @@ import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
-import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -284,33 +279,29 @@ const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
-const sharedMilkdropTexturePlaceholder = (() => {
-  const texture = new DataTexture(
-    new Uint8Array([128, 128, 128, 255]),
-    1,
-    1,
-    RGBAFormat,
-    UnsignedByteType,
-  );
-  texture.needsUpdate = true;
-  return configureMilkdropTexture(texture);
-})();
-const sharedMilkdropNativeNoiseTexture = createMilkdropNoiseTexture();
-
-function getSharedMilkdropTexturePlaceholder() {
-  return sharedMilkdropTexturePlaceholder;
-}
-
+// The built-in aux samplers (noise/perlin/simplex/voronoi/aura/caustics/
+// pattern/fractal) used to be backed by a procedural RGB-independent noise
+// texture (noise/perlin/simplex) or a flat gray placeholder (the rest) —
+// none of them loaded the real asset PNGs at all. sampleAuxTexture's
+// dimension>=0.5 branch (atlasSliceUv / slice blending) already assumes an
+// 8x8 depth-atlas layout, and the PNGs in public/textures ARE laid out that
+// way (the same files WebGPU's Data3DTexture path decodes tile-by-tile via
+// buildAtlasVolumeData) — so tex3D() sampling only needs the loaded PNG
+// itself as a plain 2D texture, no atlas-building step required. Routing
+// through the real assets here is what makes noisevol-style presets read as
+// the intended grayscale marble instead of full-RGB confetti (WebGPU
+// already samples the same PNGs via its native Data3DTexture path).
 function getSharedAuxTextures(): SharedAuxTextureMap {
+  const auxTextures = {} as Record<AuxTextureName, Texture>;
+  for (const name of Object.keys(AUX_TEXTURE_SPECS) as AuxTextureName[]) {
+    const spec = AUX_TEXTURE_SPECS[name];
+    auxTextures[name] = getSharedMilkdropTexture(
+      spec.fileName,
+      spec.colorTexture,
+    );
+  }
   return {
-    noise: sharedMilkdropNativeNoiseTexture,
-    perlin: sharedMilkdropNativeNoiseTexture,
-    simplex: sharedMilkdropNativeNoiseTexture,
-    voronoi: getSharedMilkdropTexturePlaceholder(),
-    aura: getSharedMilkdropTexturePlaceholder(),
-    caustics: getSharedMilkdropTexturePlaceholder(),
-    pattern: getSharedMilkdropTexturePlaceholder(),
-    fractal: getSharedMilkdropTexturePlaceholder(),
+    ...auxTextures,
     video: getSharedMilkdropCapturedVideoTexture(),
   };
 }
