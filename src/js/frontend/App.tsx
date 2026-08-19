@@ -990,18 +990,28 @@ function StimsWorkspaceAppShell() {
   // stats, capture them on demand, never on the switch path.
 
   useEffect(() => {
-    const presetId = engineSnapshot?.activePresetId;
-    const title = engine.selectedPreset?.title;
+    // Same pairing rule as the last-session save below: id and title must
+    // come off one compiled preset, or history entries name the wrong thing.
+    const activeCompiled = engineSnapshot?.sessionState?.activeCompiled;
+    const presetId = activeCompiled?.source.id;
+    const title = activeCompiled?.title;
     if (!presetId || !title) return;
     setSessionHistory((current) => {
       if (current[0]?.presetId === presetId) return current;
       return [{ presetId, title, at: Date.now() }, ...current].slice(0, 50);
     });
-  }, [engineSnapshot?.activePresetId, engine.selectedPreset?.title]);
+  }, [engineSnapshot?.sessionState?.activeCompiled]);
 
   useEffect(() => {
-    const presetId = engineSnapshot?.activePresetId;
-    const presetTitle = engine.selectedPreset?.title;
+    // Both fields come off the SAME compiled preset — the one actually on
+    // screen — so the stored pair can never mix one preset's id with
+    // another's name. Reading the id from the engine snapshot and the title
+    // from `engine.selectedPreset` (which is route-derived) used to persist
+    // exactly that mismatch whenever the route and the engine were briefly
+    // out of step, and the "Welcome back" card then named the wrong preset.
+    const activeCompiled = engineSnapshot?.sessionState?.activeCompiled;
+    const presetId = activeCompiled?.source.id;
+    const presetTitle = activeCompiled?.title;
     const source = currentAudioSource;
     if (!presetId || !presetTitle || !engineSnapshot?.audioActive) return;
     // 'file' sources can't be resumed — there's no persisted handle to reopen.
@@ -1015,9 +1025,8 @@ function StimsWorkspaceAppShell() {
     }
     saveLastSession({ presetId, presetTitle, source });
   }, [
-    engineSnapshot?.activePresetId,
+    engineSnapshot?.sessionState?.activeCompiled,
     engineSnapshot?.audioActive,
-    engine.selectedPreset?.title,
     currentAudioSource,
   ]);
 
