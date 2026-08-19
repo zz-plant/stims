@@ -7,6 +7,7 @@ import type {
   MilkdropGpuFieldProgramDescriptor,
   MilkdropGpuFieldStatement,
 } from '../compiler-types.ts';
+import { GPU_FIELD_FUNCTION_NAMES } from './eel-function-table.ts';
 
 const GPU_FIELD_STATE_IDENTIFIERS = new Set([
   'x',
@@ -55,47 +56,9 @@ const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
   ['aspecty', 'aspectY'],
 ]);
 
-const GPU_FIELD_FUNCTIONS = new Set([
-  'sin',
-  'cos',
-  'tan',
-  'asin',
-  'acos',
-  'atan',
-  'abs',
-  'sqrt',
-  'pow',
-  'mod',
-  'fmod',
-  'min',
-  'max',
-  'mix',
-  'lerp',
-  'floor',
-  'int',
-  'ceil',
-  'sqr',
-  'clamp',
-  'step',
-  'smoothstep',
-  'log',
-  'log10',
-  'exp',
-  'sigmoid',
-  'sign',
-  'bor',
-  'band',
-  'bnot',
-  'atan2',
-  'frac',
-  'rand',
-  'if',
-  'above',
-  'below',
-  'equal',
-  'exec2',
-  'exec3',
-]);
+// Which calls may lower to the GPU field path is derived from the shared
+// declarative table: exactly the entries with a `wgslField` renderer.
+const GPU_FIELD_FUNCTIONS = GPU_FIELD_FUNCTION_NAMES;
 
 type LowerGpuFieldProgramOptions = {
   additionalStateIdentifiers?: Iterable<string>;
