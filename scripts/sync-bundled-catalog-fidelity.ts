@@ -1,3 +1,18 @@
+/**
+ * Rewrites the bundled preset catalog's fidelity and certification fields from
+ * the measured visual results.
+ *
+ * Tail of the parity pipeline (capture -> diff -> promote -> sync). For every
+ * preset in public/milkdrop-presets/catalog.json it copies the measured
+ * fidelity class, visual evidence tier, certification status and backends out
+ * of the measured-visual-results manifest; presets with no measured result are
+ * pinned to partial/runtime/uncertified with an explanatory reason.
+ *
+ *   bun run parity:sync-catalog -- [--generated-at YYYY-MM-DD]
+ *
+ * `--generated-at` pins the catalog's generatedAt stamp so the rewrite is
+ * reproducible in tests and CI.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MilkdropBundledCatalogEntry } from '../src/js/milkdrop/catalog-types.ts';

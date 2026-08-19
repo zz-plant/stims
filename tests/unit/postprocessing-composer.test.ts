@@ -6,6 +6,9 @@ import { importFresh } from '../test-helpers.ts';
 class MockEffectComposer {
   readonly renderer: unknown;
   readonly passes: unknown[] = [];
+  insertPass(pass: unknown, index: number) {
+    this.passes.splice(index, 0, pass);
+  }
   readonly setSize = mock((width: number, height: number) => {
     this.size.set(width, height);
   });

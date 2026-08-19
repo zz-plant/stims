@@ -9,11 +9,26 @@ bun run setup:codex --status   # is the repo ready?
 bun run setup:codex             # install + quick-check if not
 ```
 
+## Finding a command
+
+This repo has **127 scripts**. The tables below are a shortlist, not an inventory — never conclude a capability is missing because it isn't listed here.
+
+```bash
+bun run help                 # every script, grouped by namespace, with a one-line purpose
+bun run help --json          # same index as {name, command, purpose} records
+```
+
+Each purpose line is generated from the docblock atop the script's file, so the index cannot drift from the code. `bun run check` fails if a script has no docblock summary (`bun run check:script-docs`).
+
+Namespaces worth knowing before you hand-roll something: `lab:` (preset measurement), `parity:` (MilkDrop reference capture → diff → promote), `sweep:` (batch corpus runs), `perf:` / `bench:` / `profile:` (performance), `catalog:` (preset curation), `check:` (guards), `generate:` (idempotent artifacts, most take `--check`), `site:` / `preview:` (deploy).
+
 ## Daily commands
 
 | Intent | Command | Time |
 |--------|---------|------|
 | Start dev server | `bun run dev` | — |
+| Find the right script | `bun run help` | < 2s |
+| Diagnose a broken environment | `bun run doctor` | < 30s |
 | Fast syntax/lint/type check | `bun run check:quick` | < 30s |
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
@@ -31,6 +46,39 @@ bun run setup:codex             # install + quick-check if not
 | Capture a live-session trace for headless replay (agent mode) | `__milkdropRuntimeDebug.startTraceCapture()` / `stopTraceCapture()` in `?agent=true` | — |
 | Audit preset flash-risk against WCAG 2.3.1 (the real instrument) | `bun run lab:flash-audit -- --count=50 --beat-pulse` | ~12min |
 | Eyeball one preset's relative flash activity (placeholder heuristic, not a WCAG check) | `bun run lab:flash-risk -- --preset <id>` | ~10s |
+
+## Driving the running visualizer
+
+Don't scrape the DOM or hand-roll sleep-and-poll loops — there is a first-class agent API, installed in **all** modes by `src/js/frontend/agent-state.ts`:
+
+| Intent | Entry point |
+|--------|-------------|
+| Read engine/preset/audio/fps state as one JSON snapshot | `__stims_agent.getState()` |
+| Wait for a condition instead of sleeping | `await __stims_agent.waitFor((s) => s.engineState === 'live')` |
+| Run a command-palette action by stable id | `await __stims_agent.run('audio-demo')` — `listActions()` enumerates ~21 |
+| Verify an effect after a transient toast vanished | `getState().statusLog` / `getEvents(sinceSeq)` |
+| Assert the canvas is actually animating | `__stims_agent.captureStats()` twice, check `motionEstimate` |
+| Drive a session from the shell, no MCP client | `bun run ctl` |
+| Expose these surfaces to an MCP client | `bun run mcp` |
+
+Full reference: [`docs/agents/browser-automation.md`](../docs/agents/browser-automation.md). Useful URL flags: `?agent=true` (keeps rendering while the tab reports hidden — a Browser-pane tab always does, and without it the canvas goes black and reads as a shader failure), `?renderer=webgl`, `?mockAudio=1`, `?lockQualityStep=`.
+
+## Heavier instruments
+
+Reach for these before inventing a measurement; each one already exists.
+
+| Intent | Command |
+|--------|---------|
+| Capture → diff → promote a MilkDrop parity reference | `bun run parity:capture`, `parity:diff`, `parity:promote-result` |
+| Diff every certified reference against latest captures | `bun run parity:suite` |
+| Frame-time budget across the certification corpus | `bun run perf:certification-corpus` (`perf:low-resource` for throttled) |
+| Per-frame benchmark vs Butterchurn | `bun run bench:butterchurn` |
+| Which variable diverged from Butterchurn, on which frame | `bun run trace:butterchurn` |
+| Profile a single frame's cost | `bun run profile:frame` |
+| Find presets that render blank/frozen/slow | `bun run sweep:milkdrop-loops` |
+| Tally WebGL/WebGPU support across bundled presets | `bun run sweep:butterchurn` |
+| Screenshot-diff the workspace UI | `bun run ui:diff` |
+| Give a human (or a GPU-less agent) a real live URL | `bun run preview:deploy` |
 
 ## Where things live
 

@@ -1,3 +1,12 @@
+/**
+ * Regenerates the site's static SEO surface: sitemaps, robots.txt, OG and icon
+ * images, and the preset-meta map.
+ *
+ * Sitemap chunk 1 holds the hand-written app routes and presets start at chunk
+ * 2, 1000 URLs apiece. Also renders the OG/icon PNGs via sharp, the hero
+ * screenshots, and the generated route pages under public/toys, tags, moods,
+ * capabilities, and discover. Idempotent — rerun after catalog changes.
+ */
 import { execFile } from 'node:child_process';
 import {
   mkdir,

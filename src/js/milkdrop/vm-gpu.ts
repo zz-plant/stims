@@ -4,6 +4,10 @@ import {
   compileProgramToWgsl,
   type WgslProgramCompilation,
 } from './compiler/wgsl-generator';
+import {
+  MILKDROP_GMEGABUF_SIZE,
+  MILKDROP_MEGABUF_SIZE,
+} from './expression-jit';
 import type { MilkdropProgramBlock, MilkdropRuntimeSignals } from './types';
 import { createVmBufferManager } from './vm/buffer-manager';
 import { syncSignalEnvironment } from './vm/shared';
@@ -77,20 +81,38 @@ function getOrCreatePipeline(
     code: program.wgslCode,
   });
 
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: { type: 'storage' as const },
-      },
-      {
-        binding: 1,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: { type: 'read-only-storage' as const },
-      },
-    ],
-  });
+  // Megabuffer bindings exist only when the program touches them, so the
+  // explicit layout must match the module's conditional declarations.
+  // (Explicit rather than layout:'auto' — see the gpu-differential harness:
+  // 'auto' prunes bindings a program doesn't statically reach and silently
+  // zeroes the dispatch.)
+  const entries = [
+    {
+      binding: 0,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: { type: 'storage' as const },
+    },
+    {
+      binding: 1,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: { type: 'read-only-storage' as const },
+    },
+  ];
+  if (program.usesMegabuf) {
+    entries.push({
+      binding: 2,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: { type: 'storage' as const },
+    });
+  }
+  if (program.usesGmegabuf) {
+    entries.push({
+      binding: 3,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: { type: 'storage' as const },
+    });
+  }
+  const bindGroupLayout = device.createBindGroupLayout({ entries });
 
   const pipeline = device.createComputePipeline({
     label: 'milkdrop-vm-pipeline',
@@ -137,12 +159,78 @@ export function createGpuVmRunner() {
   let randReadbackBuffer: GPUBuffer | null = null;
   const signalData = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
 
+  // Guest-memory mirrors. The CPU Float32Arrays passed to init() stay the
+  // canonical copy (per-pixel and custom-wave programs still run on the CPU
+  // and read/write them mid-frame); the GPU buffers are re-uploaded on every
+  // syncState and copied back after each dispatch that can write them.
+  let megabufBuffer: GPUBuffer | null = null;
+  let gmegabufBuffer: GPUBuffer | null = null;
+  let megabufReadback: GPUBuffer | null = null;
+  let gmegabufReadback: GPUBuffer | null = null;
+  let cpuMegabuf: Float32Array | null = null;
+  let cpuGmegabuf: Float32Array | null = null;
+
+  function destroyGuestMemoryBuffers() {
+    for (const buffer of [
+      megabufBuffer,
+      gmegabufBuffer,
+      megabufReadback,
+      gmegabufReadback,
+    ]) {
+      buffer?.destroy();
+    }
+    megabufBuffer = null;
+    gmegabufBuffer = null;
+    megabufReadback = null;
+    gmegabufReadback = null;
+    cpuMegabuf = null;
+    cpuGmegabuf = null;
+  }
+
+  function createGuestMemoryBuffer(
+    gpuDevice: GPUDevice,
+    label: string,
+    sizeFloats: number,
+    wantReadback: boolean,
+  ): { storage: GPUBuffer; readback: GPUBuffer | null } {
+    const sizeBytes = sizeFloats * 4;
+    return {
+      storage: gpuDevice.createBuffer({
+        label,
+        size: sizeBytes,
+        usage:
+          GPUBufferUsage.STORAGE |
+          GPUBufferUsage.COPY_SRC |
+          GPUBufferUsage.COPY_DST,
+      }),
+      // Read-only programs never need their guest memory copied back, so
+      // skip the 4 MiB staging allocation entirely.
+      readback: wantReadback
+        ? gpuDevice.createBuffer({
+            label: `${label}-readback`,
+            size: sizeBytes,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+          })
+        : null,
+    };
+  }
+
+  function uploadGuestMemory(gpuDevice: GPUDevice) {
+    if (megabufBuffer && cpuMegabuf) {
+      gpuDevice.queue.writeBuffer(megabufBuffer, 0, cpuMegabuf);
+    }
+    if (gmegabufBuffer && cpuGmegabuf && cpuGmegabuf.length > 0) {
+      gpuDevice.queue.writeBuffer(gmegabufBuffer, 0, cpuGmegabuf);
+    }
+  }
+
   function init(
     gpuDevice: GPUDevice,
     block: MilkdropProgramBlock,
     initialState: Record<string, number>,
     initialRandomState: number,
     initialRegisters: Record<string, number> = {},
+    guestMemory: { megabuf?: Float32Array; gmegabuf?: Float32Array } = {},
   ) {
     device = gpuDevice;
     clearGpuVmCaches();
@@ -196,6 +284,35 @@ export function createGpuVmRunner() {
       });
     }
 
+    destroyGuestMemoryBuffers();
+    if (compilation.usesMegabuf) {
+      cpuMegabuf =
+        guestMemory.megabuf ?? new Float32Array(MILKDROP_MEGABUF_SIZE);
+      const created = createGuestMemoryBuffer(
+        gpuDevice,
+        'milkdrop-vm-megabuf',
+        MILKDROP_MEGABUF_SIZE,
+        compilation.writesMegabuf,
+      );
+      megabufBuffer = created.storage;
+      megabufReadback = created.readback;
+    }
+    if (compilation.usesGmegabuf) {
+      cpuGmegabuf =
+        guestMemory.gmegabuf && guestMemory.gmegabuf.length > 0
+          ? guestMemory.gmegabuf
+          : new Float32Array(MILKDROP_GMEGABUF_SIZE);
+      const created = createGuestMemoryBuffer(
+        gpuDevice,
+        'milkdrop-vm-gmegabuf',
+        MILKDROP_GMEGABUF_SIZE,
+        compilation.writesGmegabuf,
+      );
+      gmegabufBuffer = created.storage;
+      gmegabufReadback = created.readback;
+    }
+    uploadGuestMemory(gpuDevice);
+
     populateSignalData(signalData, {
       time: 0,
       frame: 0,
@@ -216,6 +333,12 @@ export function createGpuVmRunner() {
           binding: 1,
           resource: { buffer: currentSignalBuffer },
         },
+        ...(megabufBuffer
+          ? [{ binding: 2, resource: { buffer: megabufBuffer } }]
+          : []),
+        ...(gmegabufBuffer
+          ? [{ binding: 3, resource: { buffer: gmegabufBuffer } }]
+          : []),
       ],
     });
     return true;
@@ -273,11 +396,60 @@ export function createGpuVmRunner() {
     pass.dispatchWorkgroups(1);
     pass.end();
 
+    // Copy guest memory to the readback buffers in the same submission so
+    // buffer writes made by this dispatch are visible to the CPU tiers
+    // (per-pixel programs read megabuf on the CPU later in the frame).
+    if (megabufBuffer && megabufReadback && activeCompilation.writesMegabuf) {
+      commandEncoder.copyBufferToBuffer(
+        megabufBuffer,
+        0,
+        megabufReadback,
+        0,
+        MILKDROP_MEGABUF_SIZE * 4,
+      );
+    }
+    if (
+      gmegabufBuffer &&
+      gmegabufReadback &&
+      activeCompilation.writesGmegabuf
+    ) {
+      commandEncoder.copyBufferToBuffer(
+        gmegabufBuffer,
+        0,
+        gmegabufReadback,
+        0,
+        MILKDROP_GMEGABUF_SIZE * 4,
+      );
+    }
+
     device.queue.submit([commandEncoder.finish()]);
 
     await device.queue.onSubmittedWorkDone();
 
-    const storedValues = await bufferManager.readState();
+    if (megabufReadback && cpuMegabuf && activeCompilation.writesMegabuf) {
+      await megabufReadback.mapAsync(GPUMapMode.READ);
+      cpuMegabuf.set(
+        new Float32Array(
+          megabufReadback.getMappedRange(),
+          0,
+          cpuMegabuf.length,
+        ),
+      );
+      megabufReadback.unmap();
+    }
+    if (gmegabufReadback && cpuGmegabuf && activeCompilation.writesGmegabuf) {
+      await gmegabufReadback.mapAsync(GPUMapMode.READ);
+      cpuGmegabuf.set(
+        new Float32Array(
+          gmegabufReadback.getMappedRange(),
+          0,
+          cpuGmegabuf.length,
+        ),
+      );
+      gmegabufReadback.unmap();
+    }
+
+    const storedValues = await bufferManager.readState(device);
     const registers: Record<string, number> = {};
     for (const key of activeCompilation.registerKeys) {
       registers[key] = storedValues[key] ?? 0;
@@ -328,6 +500,9 @@ export function createGpuVmRunner() {
       return;
     }
     bufferManager.writeState(device, { ...state, ...registers }, randomState);
+    // The CPU mirror may have been written by CPU-tier programs (per-pixel,
+    // custom waves) since the last dispatch — it is canonical between frames.
+    uploadGuestMemory(device);
   }
 
   function dispose() {
@@ -340,6 +515,7 @@ export function createGpuVmRunner() {
       randReadbackBuffer.destroy();
       randReadbackBuffer = null;
     }
+    destroyGuestMemoryBuffers();
     pipeline = null;
     bindGroup = null;
     stateBuffer = null;

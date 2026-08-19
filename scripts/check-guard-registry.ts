@@ -1,3 +1,12 @@
+/**
+ * Blocks banned patterns in changed `src/js/` source files before they land.
+ *
+ * Scans staged files (falling back to unstaged edits) for whole-file TypeScript
+ * suppression directives, silent empty catch blocks, hardcoded hex colors in
+ * frontend JSX, and `console.log`,
+ * pointing offenders at the design tokens and debug-snapshot systems instead.
+ * Exits non-zero on any hit.
+ */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

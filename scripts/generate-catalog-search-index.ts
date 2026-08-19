@@ -1,3 +1,11 @@
+/**
+ * Precompiles per-preset browse search terms from the catalog into
+ * public/milkdrop-presets/search-index.json.
+ *
+ * Terms come from title, author, tags, and collection labels, plus synthetic
+ * aliases for Rovastar and classic-MilkDrop lineage. Skips work when the
+ * existing index is newer than catalog.json.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 

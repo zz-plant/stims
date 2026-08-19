@@ -81,6 +81,7 @@
     "check:agent-action-ids": "bun run scripts/check-agent-action-ids.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
+    "check:script-docs": "bun run scripts/scripts-list.ts --check",
     "check:authoring-examples": "bun run scripts/check-authoring-examples.ts",
     "check:authoring-docs": "bun run scripts/check-authoring-examples.ts && bun run scripts/generate-authoring-reference.ts --check",
     "docs:authoring-reference": "bun run scripts/generate-authoring-reference.ts",

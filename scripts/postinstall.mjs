@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+/**
+ * Runs post-install setup: the resvg WASM sync, Husky hooks, and the
+ * Cloudflare Pages build of dist/.
+ *
+ * Each step is skipped where it does not apply — STIMS_SKIP_POSTINSTALL_BUILD=1
+ * disables the WASM sync and the Pages build, and hooks are skipped in CI or
+ * when Bun is not the installer.
+ */
 
 import { execSync } from 'node:child_process';
 

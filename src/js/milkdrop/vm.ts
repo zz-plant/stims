@@ -294,17 +294,25 @@ class MilkdropPresetVM implements MilkdropVM {
     this.webgpuOptimizationFlags = { ...flags };
   }
 
-  setGpuDevice(device: GPUDevice | null) {
+  /** Returns whether the GPU compute runner is active afterwards — false
+   * when disabled, or when the per-frame program is not GPU-executable
+   * (stepAsync then silently runs the CPU path, which differential
+   * harnesses must be able to detect). */
+  setGpuDevice(device: GPUDevice | null): boolean {
     if (!device || !this.webgpuOptimizationFlags.gpuComputeVM) {
       this.gpuRunner.dispose();
-      return;
+      return false;
     }
-    this.gpuRunner.init(
+    return this.gpuRunner.init(
       device,
       this.preset.ir.programs.perFrame,
       this.state,
       this.randomState,
       this.registers,
+      // Guest memory: the runner mirrors these into storage buffers and
+      // copies GPU writes back after each dispatch, so the CPU tiers keep
+      // seeing one coherent megabuf/gmegabuf.
+      { megabuf: this.megabuf, gmegabuf: this.gmegabuf },
     );
   }
 

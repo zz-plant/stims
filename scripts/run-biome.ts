@@ -1,3 +1,11 @@
+/**
+ * Runs Biome over the repo's explicit target list of source dirs and config
+ * files, so lint/format coverage stays identical across every entry point.
+ *
+ * Usage: `bun scripts/run-biome.ts <check|lint|format> [extra biome args...]`
+ * (e.g. `--write`); extra args are forwarded to Biome and its exit code is
+ * propagated.
+ */
 import { $ } from 'bun';
 
 const args = process.argv.slice(2);

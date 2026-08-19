@@ -1356,9 +1356,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState,
       );
       this.feedback.applyCompositeState(compositeState);
-      this.feedback.applyPostprocessingProfile?.(
-        payload.frameState.post.postprocessingProfile,
-      );
+      // Shader presets get NO heuristic postprocessing profile on any
+      // backend. On WebGL the app-level composer is disposed for shader
+      // presets and the WebGL feedback manager never implemented
+      // applyPostprocessingProfile, so the profile suite (bloom, afterimage,
+      // film grain, chroma offset) silently never applied there — WebGL's
+      // clean output is the visual reference. Feeding the profile to the
+      // WebGPU manager made bright comp presets measurably brighter than
+      // WebGL (bloom + grain + afterimage stack). MilkDrop-native post
+      // effects (echo, vignette, gamma, …) still flow through
+      // applyCompositeState above. The WebGPU manager keeps a working
+      // display-frame afterimage/bloom/grain implementation behind
+      // applyPostprocessingProfile for when profiles are deliberately
+      // (re)enabled on both backends.
+      this.feedback.applyPostprocessingProfile?.(null);
       const audioTex = this.audioTexture.getTexture();
       if (this.feedback.setAudioTexture) {
         this.feedback.setAudioTexture(audioTex);

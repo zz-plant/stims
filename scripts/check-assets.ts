@@ -1,4 +1,12 @@
 #!/usr/bin/env bun
+/**
+ * Validates the PNGs in docs/assets against their expected dimensions and
+ * quality floor.
+ *
+ * Reads each PNG header directly to reject wrong sizes, indexed color, low bit
+ * depth, and undersized files that signal posterization or truncation; also
+ * requires a valid source.svg. Exits 1 on any failure.
+ */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 

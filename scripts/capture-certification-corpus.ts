@@ -1,3 +1,21 @@
+/**
+ * Captures Stims screenshots for every preset in the certification corpus
+ * manifest.
+ *
+ * Capture stage of the parity pipeline (capture -> diff -> promote), the
+ * broader sibling of parity:capture. Ensures the dev server is up, then fans
+ * play-toy child processes across the corpus, each preset rendered on its
+ * required backend through SwiftShader for determinism, writing canvas PNGs
+ * plus debug snapshots into the parity artifact directory.
+ *
+ *   bun run parity:capture:corpus -- [--group <group>] [--preset <id>]...
+ *
+ * `--group` narrows to one corpus group (bundled-shipped, local-custom-shape,
+ * parity-corpus, projectm-upstream) — parity:capture:bundled is this script
+ * pinned to bundled-shipped. Also accepts `--output`, `--port`, `--duration`
+ * (default 1500ms), `--viewport-width`/`--viewport-height`, `--concurrency`
+ * and `--no-headless`.
+ */
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';

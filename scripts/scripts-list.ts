@@ -3,8 +3,9 @@
  * Lists package.json scripts grouped by namespace, pulling each script's
  * one-line purpose from the docblock atop its target file.
  *
- * Run with `bun run scripts:list` (alias `bun run help`). `--json` emits a
- * machine-readable group map for tooling.
+ * Run with `bun run scripts:list` (alias `bun run help`). `--json` emits the
+ * same index as `{name, command, purpose}` records for tooling and agents;
+ * `--check` fails when any script's target file lacks a docblock summary.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -52,18 +53,51 @@ function scriptPurpose(command: string): string | null {
   } catch {
     return null;
   }
-  const lines = text.split(/\r?\n/u).slice(0, 30);
-  const start = lines.findIndex((line) => line.trimStart().startsWith('/**'));
+  const lines = text.split(/\r?\n/u);
+
+  // The block must be file-level, so only look for its opener near the top —
+  // otherwise a docblock documenting some interior constant gets read as the
+  // script's summary. Its *closer* may be anywhere: the most thoroughly
+  // documented scripts have the longest headers, and bounding the search
+  // window silently dropped exactly those.
+  const start = lines
+    .slice(0, 30)
+    .findIndex((line) => line.trimStart().startsWith('/**'));
   if (start === -1) return null;
-  const block = lines.slice(start).join('\n');
-  const end = block.indexOf('*/');
-  if (end === -1) return null;
-  const summary = block
-    .slice(0, end)
-    .split(/\r?\n/u)
-    .map((line) => line.replace(/^\s*\/?\*+\s?/u, '').trim())
-    .find((line) => line.length > 3 && !line.startsWith('@'));
-  return summary ?? null;
+
+  // Only the first paragraph is needed, so stop at the blank line that ends it
+  // rather than requiring the whole block to be in view.
+  let paragraph = '';
+  for (const raw of lines.slice(start)) {
+    const line = raw
+      .replace(/^\s*\/?\*+\s?/u, '')
+      .replace(/\*\/.*$/u, '')
+      .trim();
+    const done = raw.includes('*/');
+    if (line.startsWith('@')) break;
+    if (line.length === 0) {
+      if (paragraph) break;
+      if (done) break;
+      continue;
+    }
+    paragraph += (paragraph ? ' ' : '') + line;
+    if (done) break;
+  }
+
+  // Drop a leading `some-script[.ts] — ` restatement; the name is already the
+  // first column of the row.
+  const base = match[1].replace(/\.(?:ts|mjs|js)$/u, '');
+  const selfRef = new RegExp(`^${base}(?:\\.(?:ts|mjs|js))?\\s*[—–-]\\s*`, 'u');
+  const summary = paragraph
+    .replace(selfRef, '')
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+  if (summary.length <= 3) return null;
+
+  // First sentence only — keep the padded column scannable.
+  const sentence = /^(.+?[.!?])(?:\s|$)/u.exec(summary);
+  return sentence ? sentence[1] : summary;
 }
 
 const bare: Array<[string, string]> = [];
@@ -85,26 +119,78 @@ for (const [name, command] of Object.entries(pkg.scripts ?? {})) {
 const pad = (list: Array<[string, string]>) => {
   const width = Math.max(...list.map(([name]) => name.length));
   return list.map(([name, command]) => {
-    const purpose = scriptPurpose(command);
+    const purpose = summarize(command);
     return `  ${name.padEnd(width)}  ${purpose ?? command}`;
   });
 };
 
-if (process.argv.includes('--json')) {
+const scriptCount =
+  bare.length + [...groups.values()].reduce((n, g) => n + g.length, 0);
+
+const targetFile = (command: string) =>
+  command.match(/scripts\/([^\s/]+\.(?:ts|mjs|js))/u)?.[1] ?? null;
+
+// Several names point at one script and differ only by flags (`test:corpus` vs
+// `test:fast`). They'd otherwise render as identical rows, so the flags — the
+// only thing that distinguishes them — get appended.
+const fileUsage = new Map<string, number>();
+for (const [, command] of [...bare, ...[...groups.values()].flat()]) {
+  const file = targetFile(command);
+  if (file) fileUsage.set(file, (fileUsage.get(file) ?? 0) + 1);
+}
+
+function summarize(command: string): string | null {
+  const purpose = scriptPurpose(command);
+  if (!purpose) return null;
+  const file = targetFile(command);
+  if (!file || (fileUsage.get(file) ?? 0) < 2) return purpose;
+  const args = command.slice(command.indexOf(file) + file.length).trim();
+  if (!args) return purpose;
+  const shown = args.length > 48 ? `${args.slice(0, 47).trimEnd()}…` : args;
+  return `${purpose} [${shown}]`;
+}
+
+const describe = ([name, command]: [string, string]) => ({
+  name,
+  command,
+  purpose: summarize(command),
+});
+
+if (process.argv.includes('--check')) {
+  // A script whose target file has no docblock shows its raw shell command in
+  // the listing, which is exactly the discoverability gap this index exists to
+  // close. Fail so the gap is fixed at the source rather than accumulating.
+  const undocumented = [...bare, ...[...groups.values()].flat()]
+    .filter(([, command]) => /scripts\/[^\s/]+\.(?:ts|mjs|js)/u.test(command))
+    .filter(([, command]) => scriptPurpose(command) === null)
+    .map(([name]) => name);
+
+  if (undocumented.length > 0) {
+    console.error(
+      `${undocumented.length} script(s) have no docblock summary, so \`bun run help\` shows their raw command:\n`,
+    );
+    for (const name of undocumented) console.error(`  ${name}`);
+    console.error(
+      '\nAdd a `/** … */` block atop the target file in scripts/. The first paragraph becomes the summary.',
+    );
+    process.exit(1);
+  }
+  console.log(`All ${scriptCount} scripts resolve to a docblock summary.`);
+} else if (process.argv.includes('--json')) {
   const json: Record<string, unknown> = {
-    bare: Object.fromEntries(bare),
+    bare: bare.map(describe),
     groups: Object.fromEntries(
       [...groups].map(([prefix, entries]) => [
         prefix,
-        Object.fromEntries(entries),
+        { note: PREFIX_NOTES[prefix] ?? null, scripts: entries.map(describe) },
       ]),
     ),
   };
   console.log(JSON.stringify(json, null, 2));
 } else {
-  const total =
-    bare.length + [...groups.values()].reduce((n, g) => n + g.length, 0);
-  console.log(`Stims scripts (${total}) — run any with \`bun run <name>\`.\n`);
+  console.log(
+    `Stims scripts (${scriptCount}) — run any with \`bun run <name>\`.\n`,
+  );
 
   console.log('Top-level:');
   console.log(pad(bare).join('\n'));

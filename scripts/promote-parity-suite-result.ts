@@ -1,3 +1,19 @@
+/**
+ * Promotes a parity suite report for one preset into the measured visual
+ * results manifest.
+ *
+ * Final promote stage of the parity pipeline (capture -> diff -> promote).
+ * Reads <output>/suite/<preset>.json, refuses the promotion unless the report
+ * still matches the current native projectM reference identity (image and
+ * metadata SHA-256s) and the manifest's title, backend and tolerance, then
+ * records the derived fidelity class — exact for a zero mismatch ratio,
+ * near-exact for a pass, fallback otherwise — as the preset's measured result.
+ *
+ *   bun run parity:promote-result -- --preset <id> [--output <dir>]
+ *
+ * Run parity:suite first; parity:sync-catalog afterwards to push the new
+ * fidelity class into the shipped catalog.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import type {

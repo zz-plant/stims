@@ -1,3 +1,20 @@
+/**
+ * Measures per-preset frame times across the certification corpus against a
+ * 16.7ms budget.
+ *
+ * Perf arm of the certification pipeline: drives each corpus preset through a
+ * shared play-toy browser session with perf capture on, then writes a report
+ * per preset plus a summary recording frame-time stats, the over-budget delta,
+ * the backend actually used, renderer fallbacks and console errors.
+ *
+ *   bun run perf:certification-corpus -- [--group <group>] [--preset <id>]...
+ *
+ * `--cpu-throttle <rate>` applies CDP CPU throttling (perf:low-resource is this
+ * script at 4x throttle, compatibility renderer and a 1280x720 stage),
+ * `--lock-quality-step` pins adaptive quality so deltas are attributable to
+ * code, and `--warmup`/`--duration` size the sampling window. `--strict` exits
+ * non-zero when any preset misses the budget or errors.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';

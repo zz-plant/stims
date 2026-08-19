@@ -502,6 +502,11 @@ export function createCompositeUniforms(
     postFilmGrainAmount: uniform(0),
     postChromaticAberration: uniform(0),
     postAfterimageDamp: uniform(0),
+    // Last frame's COMPOSITED display frame (afterimage included) — the
+    // manager rebinds this to the retired half of the display ping-pong every
+    // frame. Never a feedback/internal texture: sampling those here is what
+    // caused the noisevol green-screen corruption.
+    displayHistoryTex: texture(shared2DPlaceholderRGBA),
     texelSize: uniform(new Vector2(1, 1)),
     texsize: uniform(new Vector4(1, 1, 1, 1)),
     // Butterchurn bodies reference per-preset random constants as

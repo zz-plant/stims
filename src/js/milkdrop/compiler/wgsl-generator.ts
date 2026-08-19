@@ -270,6 +270,17 @@ function buildWgslExpression(
       }
       const signalField = MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(name);
       if (signalField !== undefined) {
+        // Signal-named identifiers (vol, bass, ...) are read-write on every
+        // CPU tier: the per-statement env mirror (`e[target] = _v`) makes a
+        // program's own assignment to e.g. `vol` visible to every read that
+        // follows it in program order, shadowing the raw audio signal for
+        // the rest of the frame. `vol = (bass+mid+treb)/1.5; vol_ = ...vol`
+        // is a stock MilkDrop idiom (martin-the-bridge-of-khazad-dum) that
+        // depends on this — without it the GPU tier silently reads stale
+        // audio instead of the computed value.
+        if (overwrittenConstants.has(name)) {
+          return `state.${escapeWgslFieldName(name)}`;
+        }
         return `signals.${signalField}`;
       }
       return `state.${escapeWgslFieldName(toWgslIdentifier(expression.name))}`;
@@ -569,13 +580,14 @@ function buildWgslProgram(
 
   const randomFn = usesRandom ? WGSL_RANDOM_FN : '';
 
+  // Grows in program order, not precomputed over the whole block: a read of
+  // `vol` before its first assignment this frame must still see the raw
+  // signal (matching the CPU env, which has no own `vol` property until the
+  // assignment statement runs); only reads AFTER an assignment switch to
+  // state. Self-referencing statements (`vol_ = vol_ * k + ...`) must not
+  // see their own target added yet while compiling their own RHS, so the
+  // target is added only after that statement's expression is built.
   const overwrittenConstants = new Set<string>();
-  for (const statement of statements) {
-    const target = statement.target.toLowerCase();
-    if (WGSL_IDENTIFIER_MAP.has(target)) {
-      overwrittenConstants.add(target);
-    }
-  }
 
   const statementLines = statements.map((statement) => {
     const target = statement.target.toLowerCase();
@@ -583,6 +595,12 @@ function buildWgslProgram(
       statement.expression,
       overwrittenConstants,
     );
+    if (
+      WGSL_IDENTIFIER_MAP.has(target) ||
+      MILKDROP_WGSL_SIGNAL_ALIAS_MAP.has(target)
+    ) {
+      overwrittenConstants.add(target);
+    }
     // Guest-memory stores route through the buffer helpers (which own the
     // index guard and the value finite-clamp).
     if (target === 'gmegabuf' || target === 'megabuf') {

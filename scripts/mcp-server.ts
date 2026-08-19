@@ -1,3 +1,15 @@
+/**
+ * Stdio MCP server exposing this repo's visualizer capabilities to agents.
+ *
+ * Tools cover long-lived headless browser sessions (start_agent_session,
+ * session_capture_frame/switch_preset/watch/describe_frame/compare),
+ * preset editing and inspection (session_get_preset_source, session_apply_source,
+ * session_set_fields, session_tweak, session_vibe, inspect_eel_ast,
+ * inspect_preset_lowerer), MIDI control, toy screenshots and health checks,
+ * preview galleries, quality gates (run_quality_gate), and the live-performance
+ * tools from mcp-performance-tools.ts (session_play_pattern, session_bind,
+ * session_macro, session_scene, session_listen). Launched via `bun run mcp`.
+ */
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';

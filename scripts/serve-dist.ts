@@ -1,3 +1,10 @@
+/**
+ * Serves the built dist/ directory over HTTP for local production smoke tests.
+ *
+ * Bun server on PORT (default 8000) with directory index resolution, path
+ * traversal guards, ETag/Last-Modified 304s, cached gzip for text assets, and
+ * hashed-filename immutable caching. Exits if dist/ is missing.
+ */
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
