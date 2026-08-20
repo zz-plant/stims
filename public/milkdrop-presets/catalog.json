@@ -1451,7 +1451,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 43
+      "curatedRank": 43,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0018589999064437476,
+        "maxLuminanceDelta": 0.0009067132196134497,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-happy-drops",
@@ -2843,7 +2850,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 79
+      "curatedRank": 79,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0008555935338064903,
+        "maxLuminanceDelta": 0.0007671608456901893,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "158",
@@ -4269,7 +4283,14 @@
           "duplicatePenalty": 0.3
         }
       },
-      "curatedRank": 1698
+      "curatedRank": 1698,
+      "sensoryProfile": {
+        "flashRiskLevel": "medium",
+        "maxTransitionsPerSecondEstimate": 2,
+        "meanLuminance": 0.02699241105304282,
+        "maxLuminanceDelta": 0.004201617054182731,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye4",
@@ -5706,7 +5727,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 122
+      "curatedRank": 122,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.009069614929081718,
+        "maxLuminanceDelta": 0.0014317253428530003,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "aderrasi-contortion-wide-twist-mix",
@@ -11421,7 +11449,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 226
+      "curatedRank": 226,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0014719744180420303,
+        "maxLuminanceDelta": 0.00023219034609734331,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "eo-s-repeater-13-definitive",
@@ -12832,7 +12867,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 252
+      "curatedRank": 252,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00008210771724413184,
+        "maxLuminanceDelta": 0.00010875875766449575,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "flexi-geiss-tokamak-mindblob-2-0",
@@ -14232,7 +14274,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1456
+      "curatedRank": 1456,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.005247462925127708,
+        "maxLuminanceDelta": 0.0014704888301765046,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "flexi-milkcore-martin-s-ripple-on-water-insertion",
@@ -15675,7 +15724,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 297
+      "curatedRank": 297,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.006969676409315226,
+        "maxLuminanceDelta": 0.00011129365950038791,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "flexi-layered-boz-buckwild",
@@ -17118,7 +17174,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 322
+      "curatedRank": 322,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0006014701817081163,
+        "maxLuminanceDelta": 0.00008680595681636817,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "flexi-the-bouncer-and-the-crasher-random-mashup-2",
@@ -18548,7 +18611,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 346
+      "curatedRank": 346,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0043310101079031054,
+        "maxLuminanceDelta": 0.00028106499837371175,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-flexi-martin-disconnected",
@@ -19948,7 +20018,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 358
+      "curatedRank": 358,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.018290874255160638,
+        "maxLuminanceDelta": 0.00035492756247236073,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-bipolar-1",
@@ -21398,7 +21475,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 372
+      "curatedRank": 372,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.015407931343209426,
+        "maxLuminanceDelta": 0.0012855568177640474,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-confetti-kaleidoscope-mix",
@@ -22858,7 +22942,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1507
+      "curatedRank": 1507,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.003336913080214045,
+        "maxLuminanceDelta": 0.0009239034036973681,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-diffuser-red-mix",
@@ -24313,7 +24404,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1526
+      "curatedRank": 1526,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00013194724768559772,
+        "maxLuminanceDelta": 0.0001689349593866115,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-inkblot",
@@ -25769,7 +25867,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1551
+      "curatedRank": 1551,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.009890336907692048,
+        "maxLuminanceDelta": 0.008894041330895797,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-motion-blur-2-stahl-s-neon-jelly-2-rmx",
@@ -27172,7 +27277,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1562
+      "curatedRank": 1562,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0025523079883122603,
+        "maxLuminanceDelta": 0.0008150944234834994,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "geiss-rose-4-lsb-mix",
@@ -30060,7 +30172,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 439
+      "curatedRank": 439,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0019557677157798635,
+        "maxLuminanceDelta": 0.0002429075136327734,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "goody-aurora-totalis",
@@ -31430,7 +31549,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 465
+      "curatedRank": 465,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.009624975202688209,
+        "maxLuminanceDelta": 0.00429452519138531,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "hexcollie-bdrv-n-unchained-the-hive",
@@ -32849,7 +32975,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 492
+      "curatedRank": 492,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.002835937032327531,
+        "maxLuminanceDelta": 0.0005318875521623852,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "krash-eo-s-photographic-sentinel",
@@ -34180,7 +34313,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 519
+      "curatedRank": 519,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00399235344297069,
+        "maxLuminanceDelta": 0.0016477629911299777,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "luxxx-makes-me-cry-five-makes-me-cry-so-lick-my-tears-and-get-real-high",
@@ -35604,7 +35744,14 @@
           "duplicatePenalty": 0.3
         }
       },
-      "curatedRank": 1715
+      "curatedRank": 1715,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.01691722104614077,
+        "maxLuminanceDelta": 0.0049123300531163485,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup",
@@ -37033,7 +37180,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 573
+      "curatedRank": 573,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.005482147889658306,
+        "maxLuminanceDelta": 0.0006246151928683272,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "orb-pastel-primer",
@@ -38466,7 +38620,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 600
+      "curatedRank": 600,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0007994625270461717,
+        "maxLuminanceDelta": 0.00017177144936759742,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "phat-zylot-eo-s-rainbow-bubble-mid3-fuck-me-dood-flash",
@@ -41253,7 +41414,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 651
+      "curatedRank": 651,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00013854570735991523,
+        "maxLuminanceDelta": 0.0001534594397529686,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "rovastar-loadus-geiss-fractaldrop-insanity-mix",
@@ -42709,7 +42877,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 55
+      "curatedRank": 55,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.04734893837387332,
+        "maxLuminanceDelta": 0.0016383481731985625,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "rovastar-explosive-minds",
@@ -44165,7 +44340,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 704
+      "curatedRank": 704,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.004990512027225984,
+        "maxLuminanceDelta": 0.00014688456732952357,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "rovastar-tripmaker-space-trip-mix",
@@ -45584,7 +45766,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 729
+      "curatedRank": 729,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.008940749295834622,
+        "maxLuminanceDelta": 0.0002608278205221324,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "shreyas-carnival",
@@ -46997,7 +47186,14 @@
           "duplicatePenalty": 0.3
         }
       },
-      "curatedRank": 1730
+      "curatedRank": 1730,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00336080587837399,
+        "maxLuminanceDelta": 0.005388401699712138,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "stahlregen-aderrasi-martin-rocke-rovastar-charmed-spun-sugar",
@@ -48435,7 +48631,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 777
+      "curatedRank": 777,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.008912603919602673,
+        "maxLuminanceDelta": 0.003082498245542157,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "tag-cradle-of-life-remix-of-yin-315",
@@ -49843,7 +50046,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 802
+      "curatedRank": 802,
+      "sensoryProfile": {
+        "flashRiskLevel": "medium",
+        "maxTransitionsPerSecondEstimate": 3,
+        "meanLuminance": 0.01853156301902193,
+        "maxLuminanceDelta": 0.02057726562088752,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "unchained-custom-gramatix-remix",
@@ -51296,7 +51506,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 828
+      "curatedRank": 828,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.01926620423925692,
+        "maxLuminanceDelta": 0.0032030516899238756,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "unchained-subjective-experience-of-the-manifold",
@@ -52695,7 +52912,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 852
+      "curatedRank": 852,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.18647908207926475,
+        "maxLuminanceDelta": 0.012219472584457906,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "zylot-heaven-bloom-nz",
@@ -58398,7 +58622,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 924
+      "curatedRank": 924,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.002497862890999387,
+        "maxLuminanceDelta": 0.0007850637848312885,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "mig-oscilloscope005",
@@ -59773,7 +60004,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1415
+      "curatedRank": 1415,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.00014396050131404642,
+        "maxLuminanceDelta": 0.00009937496464168684,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "amandio-c-new-life",
@@ -61162,7 +61400,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 973
+      "curatedRank": 973,
+      "sensoryProfile": {
+        "flashRiskLevel": "high",
+        "maxTransitionsPerSecondEstimate": 5,
+        "meanLuminance": 0.019849349417262803,
+        "maxLuminanceDelta": 0.04545382149805806,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "beta106i-airhandler-last-breath-crab-handler",
@@ -62560,7 +62805,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1001
+      "curatedRank": 1001,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0006638169460348004,
+        "maxLuminanceDelta": 0.000605262129200815,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "cope-soar-v2-0",
@@ -63976,7 +64228,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1027
+      "curatedRank": 1027,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.020351735471363184,
+        "maxLuminanceDelta": 0.004529959082879143,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "fishbrain-crystal-glasses",
@@ -81139,7 +81398,14 @@
           "duplicatePenalty": 0
         }
       },
-      "curatedRank": 1322
+      "curatedRank": 1322,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.002112033220369737,
+        "maxLuminanceDelta": 0.00038127318421648604,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "shifter-escape-the-worm-eo-s-phat-5362",
@@ -82521,7 +82787,14 @@
           "duplicatePenalty": 0.3
         }
       },
-      "curatedRank": 1776
+      "curatedRank": 1776,
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.0007904729189004877,
+        "maxLuminanceDelta": 0.00042079945450500467,
+        "measuredAt": "2026-08-20T02:30:10.318Z"
+      }
     },
     {
       "id": "stahlregen-spiral-hundertwasser-2-painterly",
