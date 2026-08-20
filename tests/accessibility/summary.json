@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-19T01:15:43.264Z",
-  "target": "https://toil.fyi",
+  "timestamp": "2026-08-20T01:28:20.978Z",
+  "target": "http://localhost:5174",
   "checklist": {
-    "issues": 0,
+    "issues": 41,
     "passed": true,
     "critical": true
   }

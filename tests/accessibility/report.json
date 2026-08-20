@@ -1,14 +1,381 @@
 {
-  "timestamp": "2026-06-19T01:15:43.264Z",
-  "target": "https://toil.fyi",
+  "timestamp": "2026-08-20T01:28:20.978Z",
+  "target": "http://localhost:5174",
   "states": [
     "home",
     "browse",
     "settings",
     "editor"
   ],
-  "total": 0,
+  "skippedStates": [],
+  "total": 41,
   "critical": 0,
-  "minor": 0,
-  "issues": []
+  "minor": 41,
+  "issues": [
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=69, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=222, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=185, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=144, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=129, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=128, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=164, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=140, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "home"
+    },
+    {
+      "type": "new-window-warning",
+      "severity": "usability",
+      "element": "a",
+      "selector": "stims-shell__launch-meta-link",
+      "suggestion": "Warn users when links open in a new window",
+      "state": "home"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=69, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=222, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=185, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=144, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=129, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=128, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=164, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=140, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "browse"
+    },
+    {
+      "type": "new-window-warning",
+      "severity": "usability",
+      "element": "a",
+      "selector": "stims-shell__launch-meta-link",
+      "suggestion": "Warn users when links open in a new window",
+      "state": "browse"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=69, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=222, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=185, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=144, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=129, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=128, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=164, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=140, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "settings"
+    },
+    {
+      "type": "new-window-warning",
+      "severity": "usability",
+      "element": "a",
+      "selector": "stims-shell__launch-meta-link",
+      "suggestion": "Warn users when links open in a new window",
+      "state": "settings"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "div",
+      "selector": "_seam_1njag_231",
+      "attributes": "width=12, height=1080",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "selector": "stims-editor__dock-toggle",
+      "attributes": "width=17, height=44",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "selector": "stims-editor__state-chip",
+      "attributes": "width=22, height=44",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "selector": "stims-editor__slider-btn",
+      "attributes": "width=18, height=44",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "selector": "stims-editor__mod-mode",
+      "attributes": "width=18, height=44",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=69, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=222, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=185, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=144, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=129, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=128, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=164, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "selector": "a",
+      "attributes": "width=140, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px (WCAG 2.5.5 target size)",
+      "state": "editor"
+    },
+    {
+      "type": "new-window-warning",
+      "severity": "usability",
+      "element": "a",
+      "selector": "stims-shell__launch-meta-link",
+      "suggestion": "Warn users when links open in a new window",
+      "state": "editor"
+    }
+  ]
 }
