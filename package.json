@@ -166,8 +166,9 @@
     "@types/node": "^22.0.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
-    "@types/three": "^0.183.1",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "6.0.5",
+    "@webgpu/types": "^0.1.72",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^17.3.9",
@@ -178,7 +179,8 @@
     "sharp": "^0.35.2",
     "typescript": "^6.0.3",
     "vite": "8.0.16",
-    "wrangler": "^4.123.0"
+    "wrangler": "^4.123.0",
+    "zod": "4.4.3"
   },
   "engines": {
     "node": "^22",
@@ -202,8 +204,7 @@
     "meyda": "^5.6.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "three": "0.185.1",
-    "zod": "4.4.3"
+    "three": "0.185.1"
   },
   "overrides": {
     "nanoid": "^3.3.17",
