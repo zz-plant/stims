@@ -53,4 +53,101 @@ describe('VM golden traces', () => {
       ).toBe(true);
     });
   }
+
+  /**
+   * The gate's own regression guard.
+   *
+   * Both halves of the bargain, because each without the other is worthless.
+   *
+   * Portability: preset state is computed with `Math.sin`/`cos`/`exp`/`pow`,
+   * which ECMA-262 permits to be implementation-defined approximations and
+   * which differ by a few ULP across engine, platform libm and CPU
+   * architecture. Perturbing every transcendental by 1 ULP is what a foreign
+   * libm looks like from here. This gate has twice been pinned to whichever
+   * machine recorded the traces — first bit-for-bit, then via a
+   * digest-mismatch escalation that compared the replay's variables against
+   * the `undefined` a compact frame does not store, and so reported every
+   * variable as moved. Both times it was green for its author and red for
+   * everyone else.
+   *
+   * Sensitivity: a tolerance is only legitimate while the gate still bites,
+   * so a deliberate 0.1% semantics change must still be caught in every
+   * witness.
+   */
+  describe('stays portable without going blind', () => {
+    const originalMath = {
+      sin: Math.sin,
+      cos: Math.cos,
+      exp: Math.exp,
+      pow: Math.pow,
+      log: Math.log,
+      tan: Math.tan,
+      atan2: Math.atan2,
+    };
+    const scratch = new ArrayBuffer(8);
+    const asFloat = new Float64Array(scratch);
+    const asBits = new BigUint64Array(scratch);
+    /** The next representable double away from zero: a 1-ULP perturbation. */
+    const nextUp = (value: number) => {
+      if (!Number.isFinite(value) || value === 0) {
+        return value;
+      }
+      asFloat[0] = value;
+      asBits[0] += 1n;
+      return asFloat[0];
+    };
+
+    // Built BEFORE Math is patched: buildScenarioInputs synthesises the
+    // spectrum with Math.sin, so patching first would perturb the stimulus
+    // rather than the VM — a different and much larger test.
+    const cases = traceFiles.map((name) => {
+      const trace = JSON.parse(
+        readFileSync(join(tracesDir, name), 'utf8'),
+      ) as TraceFile;
+      return {
+        name,
+        trace,
+        raw: loadPresetSource(repoRoot, { presetId: trace.presetId }).raw,
+        inputs: traceInputs(trace),
+      };
+    });
+
+    const divergedUnder = (patch: (original: typeof originalMath) => void) => {
+      try {
+        patch({ ...originalMath });
+        return cases
+          .filter(
+            (entry) =>
+              compareReplay(
+                entry.trace,
+                runTrace(entry.raw, entry.trace.presetId, entry.inputs),
+              ) !== null,
+          )
+          .map((entry) => entry.name);
+      } finally {
+        Object.assign(Math, originalMath);
+      }
+    };
+
+    test('replays clean under a foreign libm (1-ULP transcendentals)', () => {
+      expect(
+        divergedUnder((original) => {
+          Math.sin = (x) => nextUp(original.sin(x));
+          Math.cos = (x) => nextUp(original.cos(x));
+          Math.exp = (x) => nextUp(original.exp(x));
+          Math.log = (x) => nextUp(original.log(x));
+          Math.tan = (x) => nextUp(original.tan(x));
+          Math.pow = (a, b) => nextUp(original.pow(a, b));
+          Math.atan2 = (a, b) => nextUp(original.atan2(a, b));
+        }),
+      ).toEqual([]);
+    });
+
+    test('still catches a 0.1% semantics change in every witness', () => {
+      const diverged = divergedUnder((original) => {
+        Math.sin = (x) => original.sin(x) * 1.001;
+      });
+      expect(diverged.sort()).toEqual([...traceFiles].sort());
+    });
+  });
 });
