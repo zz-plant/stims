@@ -1,3 +1,23 @@
+/**
+ * Turns whatever the user is playing into the per-frame signals presets react to.
+ *
+ * Owns audio capture and analysis end to end: source acquisition (microphone,
+ * tab, file, demo), the `FrequencyAnalyser` that runs FFT work in an
+ * AudioWorklet off the main thread, and the derived band levels, transients and
+ * envelopes the VM reads each frame.
+ *
+ * Most of the size here is not DSP — it is the failure surface. Audio access is
+ * the least reliable part of the product: permissions get denied, in-app
+ * browsers lie about support, devices vanish mid-session, and autoplay policy
+ * blocks the context until a user gesture. `classifyAudioAccessError` and the
+ * registration helpers exist so those cases become explainable UI states rather
+ * than a silent black canvas, and so contexts and streams are released on
+ * teardown instead of leaking.
+ *
+ * Smoothing and timing are the tuning-sensitive part: presets inherit whatever
+ * jitter this module passes through. Measure changes with
+ * `bun run lab:reactivity` rather than judging by eye.
+ */
 import type { MeydaAudioFeature, MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';

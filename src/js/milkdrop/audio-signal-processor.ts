@@ -1,3 +1,16 @@
+/**
+ * Adapts raw analyser output into the named signals presets actually read.
+ *
+ * Sits between `core/audio-handler.ts` and the VM, deriving the bass/mid/treb
+ * levels, their attenuated variants, and the harmonic/percussive split that
+ * MilkDrop equations reference by name. Also provides synthetic beat data so
+ * demo mode and headless tests can run a preset with no real audio present.
+ *
+ * These signals are the entire vocabulary a preset has for "what is the music
+ * doing", so smoothing choices here are visible in every preset at once — a
+ * change that makes one preset feel snappier can make another strobe. Measure
+ * with `bun run lab:reactivity` across several presets, never one.
+ */
 import type { FrequencyAnalyser } from '../core/audio-handler';
 import {
   createHarmonicPercussiveAnalyser,

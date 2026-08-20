@@ -39,6 +39,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 
 ## Where to look first
 
+- New here? Start with the onboarding map: [`docs/ONBOARDING.md`](./docs/ONBOARDING.md)
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)

@@ -5,7 +5,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
-import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import {
+  type DevServerHandle,
+  isResponsive,
+  startDevServer,
+} from './dev-server.ts';
 import { WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
 
 const chromiumPath = chromium.executablePath();
@@ -34,18 +38,28 @@ async function stopDevServerInstance() {
   await server?.stop();
 }
 
+/**
+ * Re-checks the shared dev server before each test and restarts it if it has
+ * stopped answering.
+ *
+ * The probe must be bounded. This used to call bare `fetch`, which hangs
+ * indefinitely when vite is alive-but-wedged rather than dead — the socket is
+ * accepted and no response ever arrives. Because every test starts here, the
+ * hang landed before any navigation or logging, so the suite reported only
+ * "timed out after 180000ms" against whichever test drew the short straw,
+ * with no clue where it stopped. Which test that was moved between runs,
+ * which is what made it look like flakiness rather than a fixed bug.
+ */
 async function ensureDevServer() {
   if (!devServer) {
     await startDevServerInstance();
     return;
   }
-  try {
-    const response = await fetch(`http://127.0.0.1:${TEST_PORT}/`);
-    if (!response.ok) throw new Error('server not ready');
-  } catch {
-    await stopDevServerInstance();
-    await startDevServerInstance();
+  if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
+    return;
   }
+  await stopDevServerInstance();
+  await startDevServerInstance();
 }
 
 async function createMobilePage() {

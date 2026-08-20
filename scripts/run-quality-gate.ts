@@ -134,6 +134,14 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:script-docs'],
       },
       {
+        label: 'Module docblock coverage',
+        cmd: ['bun', 'run', 'check:module-docs'],
+      },
+      {
+        label: 'Guardrails doc freshness',
+        cmd: ['bun', 'run', 'check:guardrails-doc'],
+      },
+      {
         label: 'Authoring examples and reference',
         cmd: ['bun', 'run', 'check:authoring-docs'],
       },

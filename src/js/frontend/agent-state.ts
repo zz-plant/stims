@@ -1,22 +1,24 @@
-// Machine-readable app state for automation (agents, e2e, MCP sessions).
-//
-// Design, learned by driving the app as an agent:
-// - Feedback is transient (toasts evaporate) → status ring buffer + typed
-//   event log with sequence numbers, so effects are verifiable after the
-//   fact and causality is assertable ("my action produced these events").
-// - State reads in the same tick as an action are stale (React commit lag)
-//   → run() resolves after the next post-commit notification, and
-//   waitFor(predicate) replaces sleep-and-repoll loops entirely.
-// - Labels change; ids don't → run(id, params) executes command-palette
-//   actions plus targeted verbs (select-preset, set-field) by stable id.
-// - "Is anything actually rendering?" needs pixels → captureStats() reuses
-//   the visual-search frame-stats readback (on demand only: reading back a
-//   WebGPU canvas can stall the main thread — never call it per-frame).
-//
-// Installed as `window.__stims_agent` by App in all modes. The
-// `data-engine-state` attribute on <body> ('booting' | 'ready' | 'live')
-// is the selector-waitable companion, also owned by App.
-// Full usage guide: docs/agents/browser-automation.md.
+/**
+ * Machine-readable app state for automation (agents, e2e, MCP sessions).
+ *
+ * Design, learned by driving the app as an agent:
+ * - Feedback is transient (toasts evaporate) → status ring buffer + typed
+ *   event log with sequence numbers, so effects are verifiable after the
+ *   fact and causality is assertable ("my action produced these events").
+ * - State reads in the same tick as an action are stale (React commit lag)
+ *   → run() resolves after the next post-commit notification, and
+ *   waitFor(predicate) replaces sleep-and-repoll loops entirely.
+ * - Labels change; ids don't → run(id, params) executes command-palette
+ *   actions plus targeted verbs (select-preset, set-field) by stable id.
+ * - "Is anything actually rendering?" needs pixels → captureStats() reuses
+ *   the visual-search frame-stats readback (on demand only: reading back a
+ *   WebGPU canvas can stall the main thread — never call it per-frame).
+ *
+ * Installed as `window.__stims_agent` by App in all modes. The
+ * `data-engine-state` attribute on <body> ('booting' | 'ready' | 'live')
+ * is the selector-waitable companion, also owned by App.
+ * Full usage guide: docs/agents/browser-automation.md.
+ */
 
 import {
   extractFrameStats,

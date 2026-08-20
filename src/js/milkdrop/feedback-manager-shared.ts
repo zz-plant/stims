@@ -1,3 +1,22 @@
+/**
+ * The frame-feedback pipeline's backend-independent half.
+ *
+ * MilkDrop's signature look comes from feeding each rendered frame back in as a
+ * texture for the next one, warped and faded. This module owns the parts of
+ * that pipeline both backends share: blur chain sizing, composite uniform
+ * state, and assembly of the fragment shaders a preset's warp and composite
+ * source compiles into.
+ *
+ * `feedback-manager-webgl.ts` and `feedback-manager-webgpu*.ts` build the
+ * API-specific resources on top. Prefer adding here — the two backends must
+ * produce identical pixels, and shared code is the cheapest way to keep that
+ * true.
+ *
+ * Feedback is stateful across frames, so errors here compound rather than
+ * flicker: a small mistake in blur sizing or fade is invisible on frame one and
+ * obvious by frame two hundred. Check with `bun run lab:visual`, which runs
+ * long enough for accumulation to show.
+ */
 import {
   type Camera,
   Color,

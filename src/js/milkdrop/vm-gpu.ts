@@ -1,3 +1,18 @@
+/**
+ * Runs preset equations as WebGPU compute passes instead of on the CPU.
+ *
+ * The GPU tier of the expression runtime. Programs are lowered to WGSL by
+ * `compiler/wgsl-generator.ts`, then dispatched as compute work with the same
+ * `megabuf`/`gmegabuf` scratch space the CPU VM uses, so per-vertex evaluation
+ * scales past what the JIT can do on one thread.
+ *
+ * The CPU VM in `vm.ts` is the reference. This tier is expected to reproduce
+ * its numbers, and where it cannot — floating-point ordering, precision, or an
+ * unsupported construct — the runtime is expected to fall back rather than
+ * render something different. `bun run lab:replay -- --replay <trace> --tier gpu`
+ * reports the first frame where the two disagree, which is the fastest way to
+ * find out that a change here changed behavior.
+ */
 /* global GPUDevice, GPUComputePipeline, GPUBindGroup, GPUBuffer, GPUBindGroupLayout, GPUCommandEncoder, GPUComputePassEncoder */
 
 import {

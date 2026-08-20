@@ -1,3 +1,21 @@
+/**
+ * Assembles the compiled intermediate representation a preset runs from.
+ *
+ * Everything upstream (parsing, shader analysis, field lowering) produces
+ * fragments; this module is where they become one `MilkdropPresetIR` and where
+ * the preset's *compatibility verdict* is decided — which backends can run it,
+ * which features degrade, and the fidelity class the parity pipeline reports.
+ *
+ * `createMilkdropIr` takes its analysis passes as injected helpers rather than
+ * importing them. That keeps the assembly order readable in one place and lets
+ * the compiler tests drive individual passes without standing up the whole
+ * front end.
+ *
+ * A blocked construct here is not a crash: it is recorded as a degradation
+ * reason and the preset still runs with that feature disabled. Presets in the
+ * wild routinely use constructs no backend supports, and refusing to load them
+ * would be worse than rendering them imperfectly.
+ */
 import type {
   MilkdropDegradationReason,
   MilkdropDiagnostic,
