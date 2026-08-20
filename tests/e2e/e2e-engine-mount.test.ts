@@ -312,6 +312,36 @@ browserTest(
   { timeout: 240000 },
 );
 
+/**
+ * Opens the home page's audio-source disclosure.
+ *
+ * The alternatives to the primary CTA (mic, tab, file, YouTube) now sit
+ * behind a `<details>` so "Play demo" ranks above them, which means a real
+ * user opens it before choosing mic — and a click on a collapsed
+ * descendant does nothing. No-op when already open, or where the controls
+ * render without the disclosure (the Settings panel).
+ */
+async function openAudioSourceDisclosure(page: import('playwright').Page) {
+  const details = page.locator('details.stims-shell__launch-source-minimal');
+  // Wait for it rather than probing once: callers navigate with
+  // `domcontentloaded`, and the home page is a lazy chunk, so an immediate
+  // count() returns 0 and the disclosure silently stays shut — which then
+  // fails much later as "element is not visible" on the button inside it.
+  try {
+    await details.first().waitFor({ state: 'attached', timeout: 15000 });
+  } catch {
+    return; // Surfaces without the disclosure (e.g. the Settings panel).
+  }
+  const first = details.first();
+  const alreadyOpen = await first.evaluate(
+    (el) => (el as HTMLDetailsElement).open,
+  );
+  if (!alreadyOpen) {
+    await first.locator('summary').click();
+    await page.waitForTimeout(150);
+  }
+}
+
 async function verifySmartphoneMicrophoneAccess({
   returningUser,
 }: {
@@ -385,6 +415,7 @@ async function verifySmartphoneMicrophoneAccess({
     // audio (observed deterministically on the iPhone 13 emulation). Scroll
     // the card into view and wait for its rect to hold still across two
     // polls before tapping.
+    await openAudioSourceDisclosure(page);
     const micButton = page.locator('#start-audio-btn');
     await micButton.scrollIntoViewIfNeeded();
     await page.waitForFunction(
@@ -528,6 +559,7 @@ browserTest(
       });
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
+      await openAudioSourceDisclosure(page);
       await page.locator('#use-demo-audio-card').click();
 
       await page.waitForFunction(
@@ -612,6 +644,7 @@ browserTest(
         waitUntil: 'domcontentloaded',
       });
       await page.waitForSelector('#stims-main', { timeout: 30000 });
+      await openAudioSourceDisclosure(page);
       await page.locator('#use-demo-audio-card').click();
 
       await page.waitForFunction(

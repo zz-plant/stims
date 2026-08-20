@@ -570,6 +570,15 @@ html.light .stims-editor {
   height: auto;
 }
 
+/* Holds the tablist and the collapse toggle side by side. The toggle used to
+   live inside .stims-editor__tabs, but a role="tablist" may only contain
+   tabs; it moved out and this row took over the flex layout so the toggle's
+   `margin-left: auto` still pushes it to the right edge. */
+.stims-editor__tabrow {
+  display: flex;
+  align-items: stretch;
+}
+
 .stims-editor__tabs {
   display: flex;
   align-items: stretch;

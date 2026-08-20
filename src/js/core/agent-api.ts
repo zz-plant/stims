@@ -99,6 +99,24 @@ if (typeof window !== 'undefined') {
   state.isAgentMode = readAgentModeFromURL();
 }
 
+/**
+ * Reveals a control that is inside a collapsed `<details>` before clicking it.
+ *
+ * The home page's alternative audio sources (mic, tab, file, YouTube) now sit
+ * behind a disclosure so the primary CTA can rank above them. `.click()` on a
+ * `display:none` descendant does nothing, so every automation path that
+ * targets those buttons by id — this API, and the e2e suite — has to open
+ * the disclosure the same way a person would. Walking ancestors keeps that
+ * true if the markup is nested differently later.
+ */
+function revealForClick(element: HTMLElement): void {
+  let node: HTMLElement | null = element.parentElement;
+  while (node) {
+    if (node instanceof HTMLDetailsElement) node.open = true;
+    node = node.parentElement;
+  }
+}
+
 export function initAgentAPI(): StimAPI {
   const api: StimAPI = {
     getState: () => ({ ...state }),
@@ -115,6 +133,7 @@ export function initAgentAPI(): StimAPI {
         throw new Error('Demo audio button not found');
       }
 
+      revealForClick(demoBtn);
       demoBtn.click();
       await waitForAudioActive();
     },
@@ -128,6 +147,7 @@ export function initAgentAPI(): StimAPI {
         throw new Error('Microphone button not found');
       }
 
+      revealForClick(micBtn);
       micBtn.click();
       await waitForAudioActive();
     },

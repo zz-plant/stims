@@ -20,13 +20,11 @@
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import pixelmatch from 'pixelmatch';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { resolveAgentChromiumArgs } from './browser-launch.ts';
-import {
-  computeChangedPixelRatio,
-  type RawImage,
-} from './preset-lab-metrics.ts';
+import type { RawImage } from './preset-lab-metrics.ts';
 
 const DEFAULT_OUTPUT = './screenshots/ui-diff';
 const DEFAULT_BASELINE = './screenshots/ui-diff-baseline';
@@ -175,6 +173,17 @@ async function decodePng(buffer: Buffer): Promise<RawImage> {
   };
 }
 
+/** RGBA, which is what pixelmatch requires. */
+async function decodeRgba(
+  buffer: Buffer,
+): Promise<{ data: Buffer; width: number; height: number }> {
+  const { data, info } = await sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return { data, width: info.width, height: info.height };
+}
+
 type DiffVerdict =
   | 'baseline-created'
   | 'unchanged'
@@ -210,7 +219,52 @@ async function diffAgainstBaseline(
     return { verdict: 'size-mismatch', changedPixelRatio: 1 };
   }
 
-  const changedPixelRatio = computeChangedPixelRatio(baseline, current);
+  // pixelmatch rather than the raw per-channel comparison used elsewhere in
+  // the lab. These captures are UI, not shader output: text and borders
+  // re-rasterize with slightly different anti-aliasing between runs and
+  // machines, and a flat |Δchannel| > 4 test counts every one of those edge
+  // pixels as changed. That is how a visual gate accumulates diffs nobody
+  // believes, and a gate people override on sight is worse than none.
+  // pixelmatch compares in YIQ (perceptual) and, with includeAA false,
+  // classifies anti-aliased pixels and excludes them.
+  //
+  // preset-lab-visual.ts keeps computeChangedPixelRatio deliberately: its
+  // motion series wants literal pixel churn between frames of a shader,
+  // where "perceptually similar" is exactly the wrong question.
+  const [currentRgba, baselineRgba] = await Promise.all([
+    decodeRgba(screenshotBuffer),
+    decodeRgba(baselineBuffer),
+  ]);
+  const diffOutput = Buffer.alloc(currentRgba.data.length);
+  const changedPixels = pixelmatch(
+    baselineRgba.data,
+    currentRgba.data,
+    diffOutput,
+    currentRgba.width,
+    currentRgba.height,
+    { threshold: 0.1, includeAA: false },
+  );
+  const totalPixels = currentRgba.width * currentRgba.height;
+  const changedPixelRatio = totalPixels === 0 ? 0 : changedPixels / totalPixels;
+
+  // A ratio alone says something moved but never what. Writing the mask on a
+  // real change turns triage from "re-run it locally and squint" into
+  // opening one file.
+  if (changedPixelRatio > CHANGED_RATIO_THRESHOLD) {
+    await mkdir(OUTPUT_DIR, { recursive: true });
+    await writeFile(
+      path.join(OUTPUT_DIR, `${component}-${width}-diff.png`),
+      await sharp(diffOutput, {
+        raw: {
+          width: currentRgba.width,
+          height: currentRgba.height,
+          channels: 4,
+        },
+      })
+        .png()
+        .toBuffer(),
+    );
+  }
   return {
     verdict:
       changedPixelRatio > CHANGED_RATIO_THRESHOLD ? 'changed' : 'unchanged',

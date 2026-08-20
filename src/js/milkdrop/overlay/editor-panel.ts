@@ -664,6 +664,13 @@ function createEditorView({
     state: EditorState.create({
       doc: '',
       extensions: [
+        // CodeMirror's editable surface is a role="textbox" with no name of
+        // its own, so a screen reader announced it as an unlabelled edit
+        // field (axe: aria-input-field-name). The dialog title does not
+        // carry over — the control needs its own name.
+        EditorView.contentAttributes.of({
+          'aria-label': 'MilkDrop preset code',
+        }),
         lineNumbers(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
@@ -1349,8 +1356,15 @@ export class EditorPanel {
       dock.dataset.open = String(open);
       dockToggle.textContent = open ? '▾' : '▴';
     });
-    tabs.appendChild(dockToggle);
-    dock.append(tabs, dockBody);
+    // Sibling of the tablist, not a child of it. A `role="tablist"` may only
+    // contain tabs, so putting the collapse button inside made every child
+    // suspect to assistive tech (axe: aria-required-children) and put a
+    // non-tab in the arrow-key roving order. A flex row keeps the same
+    // visual arrangement.
+    const tabRow = document.createElement('div');
+    tabRow.className = 'stims-editor__tabrow';
+    tabRow.append(tabs, dockToggle);
+    dock.append(tabRow, dockBody);
 
     this.element.append(statusBar, toolbar, this.stage, this.problems, dock);
 
