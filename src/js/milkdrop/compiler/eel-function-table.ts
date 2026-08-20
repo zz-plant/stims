@@ -89,7 +89,34 @@ export type EelUnaryOperatorSpec = {
   wgslField?: (value: string) => string;
 };
 
-const finiteOrZero = (value: number) => (Number.isFinite(value) ? value : 0);
+/**
+ * Largest magnitude an f32 can hold, as the exclusive bound every tier's
+ * finite clamp compares against.
+ *
+ * It must be ONE constant. The clamp only keeps the CPU and GPU tiers in
+ * agreement because they test the same threshold, and this value was
+ * previously retyped at eleven sites across five files — including inside a
+ * WGSL template string, where no type checker would ever catch a drifted
+ * digit. Divergence here is invisible until a preset lands in the gap.
+ */
+export const EEL_F32_MAX = 3.402823e38;
+
+/**
+ * `EEL_F32_MAX` as a WGSL float literal, derived rather than retyped so the
+ * shader text and the JS comparisons cannot drift apart. Plain interpolation
+ * is not enough: `String(EEL_F32_MAX)` is `3.402823e+38`, and the emitted
+ * prelude is asserted verbatim by tests/unit/wgsl-generator.test.ts.
+ */
+export const EEL_F32_MAX_WGSL = EEL_F32_MAX.toExponential().replace('e+', 'e');
+
+/**
+ * MilkDrop's never-let-NaN-escape clamp. Every tier applies it at a value
+ * store (JIT `_v`, WGSL `milkdropFinite`, the interpreter's assignment
+ * path) because expression state persists across frames — one unclamped
+ * Infinity poisons that variable for the rest of the preset's lifetime.
+ */
+export const finiteOrZero = (value: number) =>
+  Number.isFinite(value) ? value : 0;
 
 export const EEL_BINARY_OPERATORS: Record<string, EelBinaryOperatorSpec> = {
   '+': {
@@ -302,6 +329,21 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
     jit: (a) => `Math.sqrt(Math.max(0, ${a[0]}))`,
     wgslVm: (a) => `milkdropSqrt(${a[0]})`,
     wgslField: (a) => `milkdropSqrt(${a[0]})`,
+  },
+  // ns-eel's reciprocal square root. MilkDrop's implementation is the
+  // Quake-style fast approximation; we use the exact reciprocal, which is
+  // strictly closer to the ideal and keeps every tier bit-comparable. A
+  // non-positive input gives 1/0 = Infinity, which the usual finite clamp
+  // turns into 0.
+  invsqrt: {
+    defaults: [0],
+    interp: (a) => finiteOrZero(1 / Math.sqrt(Math.max(0, a[0]))),
+    jit: (a, ctx) => {
+      const vTemp = ctx.temp();
+      return `(${vTemp} = 1 / Math.sqrt(Math.max(0, ${a[0]})), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
+    },
+    wgslVm: (a) => `milkdropInvSqrt(${a[0]})`,
+    wgslField: (a) => `milkdropInvSqrt(${a[0]})`,
   },
   pow: {
     defaults: [0, 0],

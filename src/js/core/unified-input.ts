@@ -123,6 +123,64 @@ const KEYBOARD_GESTURE_SCALE_RATE = 0.9; // log-scale units per second
 const KEYBOARD_GESTURE_ROTATION_RATE = 1.2; // radians per second
 const KEYBOARD_GESTURE_RELEASE_MS = 400;
 
+/**
+ * True when a focused canvas swallows `key` before the document-level
+ * shortcuts can see it.
+ *
+ * handleKeyDown() below stopPropagation()s every pointer, gesture and
+ * performance key, deliberately, so one keystroke cannot fire both a canvas
+ * behavior and a shell shortcut. The cost is that any shell shortcut sharing
+ * one of these letters silently does nothing while the canvas holds focus —
+ * which is invisible when reading shortcut-registry.ts alone. Exported so
+ * that registry can be tested against it.
+ */
+/** Shared empty set, so clearing the reservation allocates nothing. */
+export const NO_RESERVED_KEYS: ReadonlySet<string> = Object.freeze(
+  new Set<string>(),
+) as ReadonlySet<string>;
+
+let resolveReservedShellKeys: () => ReadonlySet<string> = () =>
+  NO_RESERVED_KEYS;
+
+/**
+ * Declares the keys the application shell has bound to its own shortcuts, so
+ * a focused canvas stops swallowing them.
+ *
+ * The canvas takes its pointer, gesture and performance keys with
+ * preventDefault() + stopPropagation() to stop one keystroke doing two
+ * things. That is right for keys only it uses, but six of them were also
+ * documented shell shortcuts — Space, S, E, A and both arrows — and the
+ * canvas focuses itself on pointerdown, so a single click on the stage left
+ * Settings, the editor, save and preset navigation silently dead while the
+ * shortcuts dialog still advertised them. Keys named here are left entirely
+ * to the shell: not consumed, and not fed to the performance actions either,
+ * so the keystroke still does exactly one thing.
+ *
+ * Passed as a resolver rather than a list because bindings are rebindable.
+ */
+export function setReservedShellKeys(
+  resolver: () => ReadonlySet<string>,
+): void {
+  resolveReservedShellKeys = resolver;
+}
+
+/** True when the shell owns this key and the canvas must not touch it. */
+export function isReservedByShell(key: string): boolean {
+  const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
+  return resolveReservedShellKeys().has(lower);
+}
+
+export function isCanvasConsumedKey(key: string): boolean {
+  // Accept both spellings of the space bar: KeyboardEvent.key reports ' ',
+  // while shortcut specs write it as 'Space'.
+  const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
+  return (
+    KEYBOARD_POINTER_KEYS.has(lower) ||
+    KEYBOARD_GESTURE_KEYS.has(lower) ||
+    Object.values(PERFORMANCE_ACTION_KEYS).some((keys) => keys.includes(lower))
+  );
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
@@ -371,18 +429,15 @@ export function createUnifiedInput({
     if (!keyboardEnabled) return;
     if (isTextInput(document.activeElement)) return;
     const lowerKey = event.key.toLowerCase();
+    // The shell owns this chord; leave the event completely untouched so its
+    // shortcut runs and nothing here double-acts on the same press.
+    if (isReservedByShell(lowerKey)) return;
     keyState.add(lowerKey);
     // Consume keys this surface handles. Space/e/x/q/z/r/1-3 and the
     // movement arrows all collide with document-level shell shortcuts
     // (stop audio, open editor, quick-select, previous/next preset) — without
     // this, one keystroke on a focused canvas fires both behaviors.
-    if (
-      KEYBOARD_POINTER_KEYS.has(lowerKey) ||
-      KEYBOARD_GESTURE_KEYS.has(lowerKey) ||
-      Object.values(PERFORMANCE_ACTION_KEYS).some((keys) =>
-        keys.includes(lowerKey),
-      )
-    ) {
+    if (isCanvasConsumedKey(lowerKey)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -403,6 +458,8 @@ export function createUnifiedInput({
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
+    // Deleting unconditionally (rather than mirroring the keydown guard) so a
+    // key reserved mid-press cannot stay stuck in the held set.
     keyState.delete(event.key.toLowerCase());
     scheduleFrame();
   };

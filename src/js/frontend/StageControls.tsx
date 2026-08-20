@@ -18,14 +18,17 @@ import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
 import { openPerformPicker } from './perform-pins.ts';
+import { ariaKeyShortcutsFor, shortcutHintFor } from './shortcut-registry.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import {
   endWatchParty,
   openRecordPanel,
+  presentToExternalDisplayAction,
   setTransition,
   startAudioSource,
   startOrCopyWatchPartyAction,
+  toggleCameraAction,
   togglePanel,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -391,6 +394,22 @@ export function StageControls({
   // rows of menuitemradio options rather than single-action items.
   const utilityItems: MenuItem[] = [
     {
+      icon: 'image' as const,
+      label: 'Camera as video input',
+      actionId: 'toggle-camera',
+      action: () => run(() => toggleCameraAction(ui.setStatusMessage)),
+      separatorBefore: true,
+    },
+    {
+      // Sends the watch-party link, not a video stream: the external display
+      // renders the show itself and follows this tab's preset changes.
+      icon: 'expand' as const,
+      label: 'Show on second screen or cast',
+      actionId: 'external-display',
+      action: () =>
+        run(() => presentToExternalDisplayAction(ui.setStatusMessage)),
+    },
+    {
       icon: 'link' as const,
       label: 'Share link',
       actionId: 'share-link',
@@ -459,18 +478,15 @@ export function StageControls({
           },
         ]
       : []),
-    // Discoverability for the palette: keyboard users find ⌘K, pointer users
-    // find this. Hidden when App doesn't wire the palette (e.g. harnesses).
+    // Discoverability for the palette: keyboard users find Cmd+K, pointer
+    // users find this. Hidden when App doesn't wire the palette (e.g.
+    // harnesses). The key itself is rendered from the registry alongside every
+    // other menu item, so it is not spelled into the label here.
     ...(onOpenPalette
       ? [
           {
             icon: 'sparkles' as const,
-            label: `Command palette (${
-              typeof navigator !== 'undefined' &&
-              /Mac|iPhone|iPad/.test(navigator.platform)
-                ? '⌘K'
-                : 'Ctrl+K'
-            })`,
+            label: 'Command palette',
             actionId: 'open-palette',
             action: () => run(onOpenPalette),
             separatorBefore: true,
@@ -478,6 +494,23 @@ export function StageControls({
         ]
       : []),
   ];
+
+  /** "Previous" -> "Previous (P)", and just "Previous" when unbound. */
+  const withHint = (label: string, actionId: string) => {
+    const hint = shortcutHintFor(actionId);
+    return hint ? `${label} (${hint})` : label;
+  };
+
+  /**
+   * The dock menu lists the same actions the command palette does, so it
+   * teaches the same keys. Resolved per render through the registry rather
+   * than baked in, so a rebind is reflected here too.
+   */
+  const MenuHint = ({ actionId }: { actionId: string }) => {
+    const hint = shortcutHintFor(actionId);
+    if (!hint) return null;
+    return <kbd className={styles.menuHint}>{hint}</kbd>;
+  };
 
   const renderMenuItem = (item: MenuItem) => (
     <div key={item.label}>
@@ -498,6 +531,13 @@ export function StageControls({
             })}
         className={styles.menuItem}
         data-active={String(item.active ?? false)}
+        // Naming the item explicitly keeps the visible key out of the
+        // accessible name ("Browse presets", not "Browse presets B"), and
+        // aria-keyshortcuts is what announces the key instead.
+        aria-label={item.label}
+        aria-keyshortcuts={
+          item.actionId ? ariaKeyShortcutsFor(item.actionId) : undefined
+        }
         onClick={item.action}
       >
         <UiIcon
@@ -505,6 +545,7 @@ export function StageControls({
           className="stims-icon-slot stims-icon-slot--sm"
         />
         <span>{item.label}</span>
+        {item.actionId ? <MenuHint actionId={item.actionId} /> : null}
       </button>
     </div>
   );
@@ -541,7 +582,8 @@ export function StageControls({
             className={styles.navBtn}
             data-action="previous-preset"
             aria-label="Previous preset"
-            title="Previous"
+            title={withHint('Previous', 'previous-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor('previous-preset')}
             onClick={handlePrevious}
           >
             <UiIcon
@@ -554,7 +596,8 @@ export function StageControls({
             className={styles.navBtn}
             data-action="next-preset"
             aria-label="Shuffle to random preset"
-            title="Surprise me"
+            title={withHint('Surprise me', 'next-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor('next-preset')}
             onClick={handleShuffle}
           >
             <UiIcon
@@ -569,6 +612,8 @@ export function StageControls({
             data-action="open-browse"
             data-active={String(panel === 'browse')}
             aria-label="Browse presets"
+            title={withHint('Browse presets', 'open-browse')}
+            aria-keyshortcuts={ariaKeyShortcutsFor('open-browse')}
             onClick={handleBrowse}
           >
             <span className={styles.titleText}>{presetTitle}</span>
@@ -589,7 +634,11 @@ export function StageControls({
               data-saved={String(presetSaved)}
               aria-pressed={presetSaved}
               aria-label={presetSaved ? 'Remove from saved' : 'Save preset'}
-              title={presetSaved ? 'Remove from saved' : 'Save preset'}
+              title={withHint(
+                presetSaved ? 'Remove from saved' : 'Save preset',
+                'save-preset',
+              )}
+              aria-keyshortcuts={ariaKeyShortcutsFor('save-preset')}
               onClick={handleToggleSave}
             >
               <UiIcon

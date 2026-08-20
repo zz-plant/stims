@@ -1,7 +1,7 @@
 /* global GPUAdapter, GPUDevice */
 import {
   ACESFilmicToneMapping,
-  SRGBColorSpace,
+  type SRGBColorSpace,
   type WebGLRenderer,
 } from 'three';
 import {
@@ -9,11 +9,6 @@ import {
   isMobileDevice,
 } from '../utils/browser/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
-import {
-  FallbackEvent,
-  FallbackState,
-  FallbackStateMachine,
-} from './fallback-state.ts';
 import { resolveGpuPowerPreference } from './power-state.ts';
 import {
   getRendererCapabilities,
@@ -36,6 +31,7 @@ import { isAgentMode } from './url-params.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
+import { resolveOutputColorSpace } from './wide-gamut.ts';
 
 export type RendererInitResult = {
   renderer: WebGLRenderer | WebGPURenderer;
@@ -120,14 +116,9 @@ export async function initRenderer(
     renderScale: createRenderScale(1),
   },
 ): Promise<RendererInitResult | null> {
-  const stateMachine = new FallbackStateMachine(FallbackState.Initial);
-
   if (!ensureWebGL()) {
-    stateMachine.transition(FallbackEvent.FAIL_BACKEND);
     return null;
   }
-
-  stateMachine.transition(FallbackEvent.CHECK_WEBGL);
 
   const {
     antialias = !isMobileUserAgent,
@@ -168,7 +159,10 @@ export async function initRenderer(
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = SRGBColorSpace;
+    // sRGB unless the user opted into wide gamut AND the display can show it
+    // (see core/wide-gamut.ts — default off, and it changes every colour).
+    renderer.outputColorSpace =
+      resolveOutputColorSpace() as typeof SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
     return {
@@ -256,8 +250,6 @@ export async function initRenderer(
     hasWebGL: true,
   });
 
-  stateMachine.transition(FallbackEvent.START_PROBE_WEBGPU);
-
   if (plan.backend === 'webgpu' && capabilities?.adapter) {
     const adapter = capabilities.adapter;
     let device = capabilities.device;
@@ -279,7 +271,6 @@ export async function initRenderer(
         );
       } catch (error) {
         teardownAbort();
-        stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
         return fallbackToWebGL(
           getRendererFallbackReasonMessage(
             RENDERER_FALLBACK_REASON_CODES.noDevice,
@@ -291,7 +282,6 @@ export async function initRenderer(
 
     if (!device) {
       teardownAbort();
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL('WebGPU device request returned no device.');
     }
 
@@ -333,7 +323,6 @@ export async function initRenderer(
           );
         } catch (error) {
           disposeTimedOutRenderer();
-          stateMachine.transition(FallbackEvent.TIMEOUT_WEBGPU);
           teardownAbort();
           void initPromise
             .then(() => {
@@ -348,7 +337,6 @@ export async function initRenderer(
             .catch((error: unknown) => {
               console.warn('WebGPU renderer init timed out.', error);
             });
-          stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
           return fallbackToWebGL(
             getRendererFallbackReasonMessage(
               RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
@@ -357,12 +345,10 @@ export async function initRenderer(
           );
         }
       }
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       teardownAbort();
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       teardownAbort();
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuRendererCreationFailed,
@@ -372,7 +358,6 @@ export async function initRenderer(
     }
   }
 
-  stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
   return fallbackToWebGL(
     plan.reasonMessage ??
       getRendererFallbackReasonMessage(

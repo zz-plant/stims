@@ -760,3 +760,82 @@ describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => 
     ).toContain('texture2D(blur1Tex, sampleUv(vUv, textureWrap)).rgb');
   });
 });
+
+// ─── MilkDrop 2 preamble helpers ────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — MilkDrop 2 helpers', () => {
+  // MilkDrop 2 ships GetPixel/GetBlurN in its shader preamble, so preset
+  // bodies call them without defining them. They were unimplemented here,
+  // which failed the whole program to compile and rendered the preset black —
+  // 511 presets, the entire projectm-cream-of-the-crop library.
+  test('GetPixel samples the main texture', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv)')).toBe(
+      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz);',
+    );
+  });
+
+  test('GetBlur1/2/3 sample their blur texture through scale and bias', () => {
+    expect(emitShaderExpression('ret = GetBlur1(uv)')).toContain(
+      '(texture2D(blur1Tex, sampleUv(vUv, textureWrap)).xyz * scale1 + bias1)',
+    );
+    expect(emitShaderExpression('ret = GetBlur2(uv)')).toContain(
+      '(texture2D(blur2Tex, sampleUv(vUv, textureWrap)).xyz * scale2 + bias2)',
+    );
+    expect(emitShaderExpression('ret = GetBlur3(uv)')).toContain(
+      '(texture2D(blur3Tex, sampleUv(vUv, textureWrap)).xyz * scale3 + bias3)',
+    );
+  });
+
+  test('GetBlur0 is an alias for the unblurred main sample', () => {
+    expect(emitShaderExpression('ret = GetBlur0(uv)')).toBe(
+      emitShaderExpression('ret = GetPixel(uv)'),
+    );
+  });
+
+  test('helper names are case-insensitive, as MilkDrop writes them', () => {
+    expect(emitShaderExpression('ret = getblur1(uv)')).toBe(
+      emitShaderExpression('ret = GetBlur1(uv)'),
+    );
+  });
+});
+
+// ─── HLSL scalar promotion ──────────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — scalar promotion', () => {
+  // HLSL broadcasts a scalar across every component on assignment; GLSL
+  // rejects it outright. `ret` is vec3 in both stage templates.
+  test('a scalar assigned to ret is broadcast, not rejected', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv).x')).toBe(
+      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz.x);',
+    );
+  });
+
+  test('a vector assigned to ret still round-trips through the constructor', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv)')).toContain('ret = vec3(');
+  });
+});
+
+// ─── texsize resolution ─────────────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — texsize', () => {
+  // Statement-emitted programs never pass through the raw-text rewrite chain,
+  // so texsize identifiers reached the shader bare and were auto-declared as
+  // `uniform float` — making every `texsize.xy` a scalar swizzle error.
+  test('texsize resolves to the feedback target size as a vec4', () => {
+    expect(emitShaderExpression('x = texsize.xy')).toContain(
+      'vec4(1.0 / texelSize, texelSize).xy',
+    );
+  });
+
+  test('noise texsize resolves to the bundled 256x256 size', () => {
+    expect(emitShaderExpression('x = texsize_noise_lq.zw')).toContain(
+      'vec4(256.0, 256.0, 0.00390625, 0.00390625).zw',
+    );
+  });
+
+  test('an unknown custom-texture texsize falls back to the substitute size', () => {
+    expect(emitShaderExpression('x = texsize_mcode1.xy')).toContain(
+      'vec4(640.0, 640.0, 0.0015625, 0.0015625).xy',
+    );
+  });
+});

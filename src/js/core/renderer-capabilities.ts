@@ -1,3 +1,21 @@
+/**
+ * Decides what this device can actually render, and at what tier.
+ *
+ * Probes the GPU (adapter, features, limits, worker support, battery and
+ * performance profile) and resolves it into a `RendererCapabilities` verdict:
+ * which backend to use, which WebGPU tier is safe, and which optimizations to
+ * enable. The renderer, quality controller and fallback machinery all read that
+ * verdict rather than probing independently.
+ *
+ * Probing must never be the reason nothing renders. Every path resolves to a
+ * usable answer — WebGL2 is the floor — because a device that reports oddly is
+ * far more common than a device that genuinely cannot draw.
+ *
+ * The contract this participates in, including how `renderScale` propagates and
+ * how backends fall back, is specified in
+ * `docs/architecture/fallback-state-machine.md`. Read it before changing
+ * detection: the state machine has more edges than it looks.
+ */
 /* global GPUAdapter, GPUDevice, GPU */
 
 import {

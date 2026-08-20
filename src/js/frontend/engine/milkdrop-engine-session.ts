@@ -1,3 +1,20 @@
+/**
+ * The single seam between the React workspace and the imperative engine.
+ *
+ * `createMilkdropEngineAdapter` builds the object `frontend/` calls to mount,
+ * drive and tear down a visualizer session. React never reaches into
+ * `milkdrop/` directly; every crossing goes through here, and
+ * `bun run check:architecture` enforces that.
+ *
+ * The boundary is worth defending. On one side is declarative UI that
+ * re-renders freely; on the other is a stateful engine holding GPU resources
+ * and a frame loop. Keeping the crossing narrow is what stops React's render
+ * cycle from driving GPU lifetime — the class of bug where a re-render silently
+ * disposes a live context.
+ *
+ * Add capability by widening the adapter's vocabulary deliberately, not by
+ * importing engine internals into a component.
+ */
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
 import {
   DEFAULT_QUALITY_PRESETS,

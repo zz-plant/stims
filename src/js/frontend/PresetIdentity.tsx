@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -41,6 +42,13 @@ export function PresetIdentity({
   /** Stands in for the artwork when there is no entry to draw. */
   artFallback?: ReactNode;
 }) {
+  // MilkDrop titles carry the author chain inline ("Shifter - Snakeskin"), so
+  // rendering the raw title spends a narrow tile label on a credit that
+  // belongs in the subtitle. An explicit title/subtitle from the caller always
+  // wins.
+  const entryDisplay = entry
+    ? splitPresetDisplay(entry.title, entry.author)
+    : null;
   return (
     <>
       {entry ? (
@@ -55,10 +63,12 @@ export function PresetIdentity({
       )}
       <span className="stims-preset-identity">
         <span className="stims-preset-identity__title">
-          {title ?? entry?.title}
+          {title ?? entryDisplay?.title}
         </span>
-        {subtitle ? (
-          <span className="stims-preset-identity__subtitle">{subtitle}</span>
+        {(subtitle ?? entryDisplay?.byline) ? (
+          <span className="stims-preset-identity__subtitle">
+            {subtitle ?? entryDisplay?.byline}
+          </span>
         ) : null}
       </span>
     </>

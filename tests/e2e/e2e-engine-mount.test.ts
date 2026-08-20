@@ -6,7 +6,11 @@ import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium, devices } from 'playwright';
 import { writeAgentFailureArtifact } from './agent-api.ts';
-import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import {
+  type DevServerHandle,
+  isResponsive,
+  startDevServer,
+} from './dev-server.ts';
 import {
   HEADLESS,
   WEBGL_RENDERER_ARGS as RENDERER_ARGS,
@@ -18,7 +22,7 @@ import {
  * product regression. Skip instead, matching agent-integration.
  */
 const hasChromium = fs.existsSync(chromium.executablePath());
-const browserTest = hasChromium ? test : test.skip;
+const baseBrowserTest = hasChromium ? test : test.skip;
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -142,6 +146,44 @@ async function stopServer() {
   const server = devServer;
   devServer = null;
   await server?.stop();
+}
+
+/**
+ * Re-checks the shared dev server before each test, restarting it when it has
+ * stopped answering.
+ *
+ * This suite used to start vite once in `beforeAll` and assume it survived the
+ * whole file. It does not always: the run launches a fresh Chromium per test
+ * against a dev server that stays up for minutes, and when vite dies partway
+ * the remaining tests fail with a bare `ERR_CONNECTION_REFUSED` naming only
+ * the URL — a message that describes the symptom and hides the cause. The
+ * probe is bounded (see isResponsive) so a wedged server is treated the same
+ * as a dead one instead of hanging the test that found it.
+ */
+async function ensureDevServer() {
+  if (!devServer) {
+    await startServer();
+    return;
+  }
+  if (await isResponsive(SERVER_URL)) return;
+  await stopServer();
+  await startServer();
+}
+
+/** Wraps every browser test so the server guard above cannot be forgotten. */
+function browserTest(
+  name: string,
+  body: () => Promise<void>,
+  options?: Parameters<typeof test>[2],
+) {
+  return baseBrowserTest(
+    name,
+    async () => {
+      await ensureDevServer();
+      await body();
+    },
+    options,
+  );
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });
@@ -312,6 +354,36 @@ browserTest(
   { timeout: 240000 },
 );
 
+/**
+ * Opens the home page's audio-source disclosure.
+ *
+ * The alternatives to the primary CTA (mic, tab, file, YouTube) now sit
+ * behind a `<details>` so "Play demo" ranks above them, which means a real
+ * user opens it before choosing mic — and a click on a collapsed
+ * descendant does nothing. No-op when already open, or where the controls
+ * render without the disclosure (the Settings panel).
+ */
+async function openAudioSourceDisclosure(page: import('playwright').Page) {
+  const details = page.locator('details.stims-shell__launch-source-minimal');
+  // Wait for it rather than probing once: callers navigate with
+  // `domcontentloaded`, and the home page is a lazy chunk, so an immediate
+  // count() returns 0 and the disclosure silently stays shut — which then
+  // fails much later as "element is not visible" on the button inside it.
+  try {
+    await details.first().waitFor({ state: 'attached', timeout: 15000 });
+  } catch {
+    return; // Surfaces without the disclosure (e.g. the Settings panel).
+  }
+  const first = details.first();
+  const alreadyOpen = await first.evaluate(
+    (el) => (el as HTMLDetailsElement).open,
+  );
+  if (!alreadyOpen) {
+    await first.locator('summary').click();
+    await page.waitForTimeout(150);
+  }
+}
+
 async function verifySmartphoneMicrophoneAccess({
   returningUser,
 }: {
@@ -385,12 +457,13 @@ async function verifySmartphoneMicrophoneAccess({
     // audio (observed deterministically on the iPhone 13 emulation). Scroll
     // the card into view and wait for its rect to hold still across two
     // polls before tapping.
-    const micButton = page.locator('#start-audio-btn');
+    await openAudioSourceDisclosure(page);
+    const micButton = page.locator('[data-mic-audio-btn]');
     await micButton.scrollIntoViewIfNeeded();
     await page.waitForFunction(
       () => {
         const btn = document.querySelector(
-          '#start-audio-btn',
+          '[data-mic-audio-btn]',
         ) as HTMLButtonElement | null;
         if (!btn || btn.disabled) return false;
         const r = btn.getBoundingClientRect();
@@ -528,7 +601,10 @@ browserTest(
       });
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
-      await page.locator('#use-demo-audio-card').click();
+      await openAudioSourceDisclosure(page);
+      await page
+        .locator('.stims-shell__source-card[data-demo-audio-btn]')
+        .click();
 
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
@@ -612,7 +688,10 @@ browserTest(
         waitUntil: 'domcontentloaded',
       });
       await page.waitForSelector('#stims-main', { timeout: 30000 });
-      await page.locator('#use-demo-audio-card').click();
+      await openAudioSourceDisclosure(page);
+      await page
+        .locator('.stims-shell__source-card[data-demo-audio-btn]')
+        .click();
 
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',

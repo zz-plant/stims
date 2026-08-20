@@ -366,7 +366,10 @@ export function SidePanel({
             className={styles.closeBtn}
             onClick={startClose}
             aria-label="Close"
-            title="Close"
+            // Esc closes every panel and is in the shortcut registry, but the
+            // one control for it advertised nothing.
+            title="Close (Esc)"
+            aria-keyshortcuts="Escape"
           >
             <UiIcon
               name="close"

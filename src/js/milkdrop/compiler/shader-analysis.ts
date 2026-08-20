@@ -1,3 +1,27 @@
+/**
+ * Recognises what a preset's shader source is trying to do, so it can be re-expressed.
+ *
+ * Preset shaders cannot be handed to the GPU as written: they are
+ * HLSL-flavored, target a fixed-function pipeline that no longer exists, and
+ * must run on two backends whose shading languages differ. This module reads
+ * the parsed shader AST and extracts a structured description — samplers, UV
+ * transforms, tint and blend modes, the scalar controls a preset animates —
+ * that `shader-analysis-glsl.ts` and the WebGPU TSL path can each realise in
+ * their own language.
+ *
+ * That is why so much of this file is pattern recognition with names like
+ * `isShaderSolarizeSampleExpression`. Each predicate exists because real
+ * presets write that exact shape and the original renderer produced a
+ * particular result. There is no specification to consult; the corpus is the
+ * specification.
+ *
+ * Consequences worth knowing before editing:
+ * - Unrecognised constructs degrade, they do not throw. A preset that renders
+ *   imperfectly beats one that refuses to load.
+ * - A "simplification" that collapses two predicates usually breaks a preset
+ *   nobody in the review has heard of. Run `bun run lab:glsl-corpus-scan` and
+ *   `bun run parity:suite`; the corpus is the only witness that matters.
+ */
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
@@ -43,6 +67,9 @@ import {
   isShaderSolarizeSampleExpression,
   isShaderUvIdentifier,
   MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
   normalizeShaderSamplerName,
   normalizeShaderSyntax,
   normalizeShaderTextureBlendMode,
@@ -101,22 +128,19 @@ export function normalizeHlslToGlsl(shaderText: string): string {
     )
     .replace(
       /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
-      'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
+      MILKDROP_TEXSIZE_NOISE_GLSL,
     )
     .replace(
       /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
-      'vec4(1.0 / texelSize, texelSize)',
+      MILKDROP_TEXSIZE_MAIN_GLSL,
     )
     // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
     // uniform behind them — MilkDrop injects them at runtime, this pipeline
     // does not — so any identifier left after the specific rewrites above
     // would reach the GLSL undeclared and fail to compile. Every bundled
     // substitute texture is 640x640 (xy = size, zw = 1/size).
-    .replace(
-      /\btexsize_[A-Za-z0-9_]+\b/giu,
-      'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
-    )
-    .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+    .replace(/\btexsize_[A-Za-z0-9_]+\b/giu, MILKDROP_TEXSIZE_SUBSTITUTE_GLSL)
+    .replace(/\btexsize\b/giu, MILKDROP_TEXSIZE_MAIN_GLSL)
     .replace(/\buv_orig\b/giu, 'vUv')
     .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
     .replace(/\bhue_secondary\b/giu, 'vec3(tint)')

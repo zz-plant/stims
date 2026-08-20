@@ -1,8 +1,21 @@
+/**
+ * WebGPU materials for the procedurally generated visuals.
+ *
+ * Builds the node-based materials the WebGPU backend uses for procedural waves,
+ * particle fields and motion vectors — the visuals whose geometry is generated
+ * per frame from VM state rather than authored.
+ *
+ * Each material here has a WebGL counterpart under `renderer-helpers/`, and the
+ * pair is expected to produce the same image. When adding a visual, add both
+ * sides together; a backend-only visual becomes a silent difference on hardware
+ * the author does not have.
+ */
 import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   EEL_BINARY_OPERATORS,
+  EEL_F32_MAX,
   EEL_UNARY_OPERATORS,
   emitEelCallWgslField,
 } from '../compiler/eel-function-table.ts';
@@ -296,7 +309,12 @@ function buildGpuFieldRegisterCallArgs(
 }
 
 function formatWgslFloat(value: number) {
-  if (!Number.isFinite(value)) {
+  // The f32 bound, not just f64 finiteness: WGSL rejects an abstract-float
+  // literal it cannot represent as f32, so emitting a preset's `1e39` aborts
+  // the whole shader (black frame) instead of producing one bad pixel. Zero
+  // is also what `milkdropFinite` yields for that magnitude, so this keeps
+  // the GPU tier on the CPU tiers' semantics rather than inventing a third.
+  if (!Number.isFinite(value) || Math.abs(value) >= EEL_F32_MAX) {
     return '0.0';
   }
   const text = value.toString();

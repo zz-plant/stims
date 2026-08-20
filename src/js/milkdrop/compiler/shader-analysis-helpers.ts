@@ -1,3 +1,19 @@
+/**
+ * The predicate and extraction vocabulary `shader-analysis.ts` is written in.
+ *
+ * Split out so the analysis pass reads as a sequence of decisions rather than a
+ * wall of AST matching. Everything here is small, pure and individually
+ * testable: does this expression sample the main texture, is this identifier a
+ * UV, what blend mode does this text name, what scalar does this control
+ * resolve to.
+ *
+ * Each helper encodes an observed MilkDrop behavior, so they are more specific
+ * than they look — `isIdentityTextureSampleExpression` matches the shapes real
+ * presets write, not every expression that is mathematically an identity.
+ * Widening one to be "more correct" is how presets that used to render start
+ * rendering differently. Add a case beside the existing ones instead, and cover
+ * it in `tests/unit/milkdrop-compiler.test.ts`.
+ */
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
@@ -170,6 +186,25 @@ export const MILKDROP_SIGNAL_NAME_ALIASES: Record<string, string> = {
  * normalizer and the composite emitter. */
 export const MILKDROP_RAND_FRAME_GLSL =
   'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))';
+
+/**
+ * `texsize*` substitutions, shared by the raw-text rewrite chain
+ * (shader-analysis.ts) and the statement emitter (shader-analysis-glsl.ts) so
+ * the two cannot drift — the same reason MILKDROP_SIGNAL_NAME_ALIASES is
+ * shared. Each is a vec4 whose xy is the size and zw the reciprocal.
+ */
+/** Main/feedback/blur textures: the live feedback target size. */
+export const MILKDROP_TEXSIZE_MAIN_GLSL = 'vec4(1.0 / texelSize, texelSize)';
+/** The bundled noise/noisevol textures are 256². */
+export const MILKDROP_TEXSIZE_NOISE_GLSL =
+  'vec4(256.0, 256.0, 0.00390625, 0.00390625)';
+/**
+ * Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no uniform
+ * behind them — MilkDrop injects them at runtime, this pipeline does not — and
+ * every bundled substitute texture is 640².
+ */
+export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
+  'vec4(640.0, 640.0, 0.0015625, 0.0015625)';
 
 /**
  * Builds the `\bname\b → signal*` replacement chain the raw-text normalizer

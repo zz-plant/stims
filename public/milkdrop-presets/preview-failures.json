@@ -1,6 +1,18 @@
 [
   {
-    "presetId": "phat-zylot-eo-s-work-with-lines-alt",
-    "reason": "black frame (mean=1.7, max=32)"
+    "presetId": "eo-s-repeater-08-rave-on-a-lot-of-acid-and-some-k",
+    "reason": "black frame (mean=0.4, max=145)"
+  },
+  {
+    "presetId": "martin-axon3",
+    "reason": "black frame (mean=0.4, max=5)"
+  },
+  {
+    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations",
+    "reason": "black frame (mean=0.5, max=5)"
+  },
+  {
+    "presetId": "shifter-digi",
+    "reason": "black frame (mean=0.2, max=13)"
   }
 ]

@@ -1,3 +1,18 @@
+/**
+ * Compiles parsed EEL2 program blocks into JavaScript functions.
+ *
+ * The per-frame and per-vertex blocks run for every frame — and per-vertex runs
+ * once per mesh point — so tree-walking them is too slow at mesh resolutions
+ * real presets use. This module lowers a block to a single `new Function` and
+ * memoises it per block object.
+ *
+ * Two constraints shape the code. First, output must match the interpreter in
+ * `expression.ts` exactly, including MilkDrop's non-obvious arithmetic edge
+ * cases; the JIT is an optimisation, never a second dialect. Second, a strict
+ * Content-Security-Policy can forbid `new Function`, so the module probes for
+ * it once and degrades to an interpreter-backed path rather than failing to
+ * load — deliberately slower, and covered by tests/unit/eel-csp-fallback.test.ts.
+ */
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,
@@ -155,10 +170,18 @@ function compileNode(
         return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
       }
       const args = node.args.map((arg) => compileNode(arg, context));
-      return (
-        emitEelCallJs(name, args, { temp: () => nextTemporary(context) }) ??
-        '(0)'
-      );
+      const emitted = emitEelCallJs(name, args, {
+        temp: () => nextTemporary(context),
+      });
+      if (emitted !== null) {
+        return emitted;
+      }
+      // Unknown function: the value is 0, but the arguments still run. The
+      // interpreter evaluates every argument before dispatch, so an
+      // assignment nested in one (`a = nosuchfn(q1 = 1)`) writes q1 there;
+      // dropping the compiled args here made the tiers disagree on which
+      // variables exist. Keep them in a comma expression.
+      return args.length > 0 ? `(${args.join(', ')}, 0)` : '(0)';
     }
   }
 }
@@ -515,6 +538,14 @@ export async function prewarmMilkdropPrograms(
   // Best-effort warm-up: partially-shaped IR (test doubles, presets stripped
   // by a compile fallback) just skips instead of throwing mid-load.
   if (!ir?.programs) {
+    return;
+  }
+  // Nothing to pre-warm without the JIT: buildInterpretedProgram just closes
+  // over the block, so the cost this function exists to move off the first
+  // frame does not exist on the CSP tier. Running anyway spent a setTimeout
+  // round-trip per block — pure added startup latency for the users already
+  // on the slower tier.
+  if (!isJitAvailable()) {
     return;
   }
   const blocks: MilkdropProgramBlock[] = [

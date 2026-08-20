@@ -32,6 +32,7 @@ import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   writeFileSync,
@@ -42,6 +43,7 @@ import sharp from 'sharp';
 import { ensureDevServer } from './dev-server.ts';
 
 const OUTPUT_DIR = 'public/milkdrop-presets/previews';
+const LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
 const PREVIEW_W = 480;
 const PREVIEW_H = 270;
 const DEFAULT_LIMIT = 50;
@@ -55,6 +57,8 @@ const DEFAULT_PORT = 5173;
 // so checkpoints start at 15 frames and sample finely early on.
 const MIN_FRAMES = 15;
 const MAX_FRAMES = 600;
+/** Checkpoints without a better frame before the search is considered done. */
+const PLATEAU_CHECKPOINTS = 3;
 const MAX_RETRIES = 1;
 // Generous under load: 8 workers can stampede compiles + Vite transforms,
 // especially while every page boots at once.
@@ -118,20 +122,59 @@ function parseArgs() {
   return args;
 }
 
+/**
+ * Every preset the app can browse, main catalog plus the bundled libraries.
+ *
+ * The libraries (projectm-cream-of-the-crop, projectm-upstream) carry their
+ * own catalog.json and are ~a third of the browsable catalog, but this script
+ * only ever read the root catalog — so those presets could never get a
+ * preview, and browse rendered them as empty tiles. PresetArtwork resolves
+ * preview art by convention (`previews/{id}.png`), so a generated file is all
+ * they need; no catalog entry has to change.
+ */
+async function loadAllCatalogEntries(): Promise<PresetEntry[]> {
+  // Libraries are discovered by directory, matching loadCatalogEntries in
+  // preset-lab-reactivity.ts, so a newly vendored library needs no edit here.
+  const librariesRoot = new URL(`../${LIBRARIES_DIR}/`, import.meta.url);
+  const libraryCatalogs = existsSync(librariesRoot)
+    ? readdirSync(librariesRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => new URL(`${entry.name}/catalog.json`, librariesRoot))
+    : [];
+  const catalogUrls = [
+    new URL('../public/milkdrop-presets/catalog.json', import.meta.url),
+    ...libraryCatalogs,
+  ];
+  const entries: PresetEntry[] = [];
+  const seen = new Set<string>();
+  for (const url of catalogUrls) {
+    if (!existsSync(url)) continue;
+    const data = await Bun.file(url).json();
+    if (!Array.isArray(data.presets)) continue;
+    for (const preset of data.presets as PresetEntry[]) {
+      if (seen.has(preset.id)) continue;
+      seen.add(preset.id);
+      entries.push(preset);
+    }
+  }
+  return entries;
+}
+
+/**
+ * `preview` is an opt-OUT flag: it is `true` on all but one root-catalog entry
+ * and absent entirely on library entries, so only an explicit `false` skips.
+ */
+function wantsPreview(preset: PresetEntry): boolean {
+  return preset.preview !== false;
+}
+
 async function getPresets(filter: {
   count?: number;
   ids?: string[];
   all?: boolean;
   force?: boolean;
 }): Promise<PresetEntry[]> {
-  const catalogPath = new URL(
-    '../public/milkdrop-presets/catalog.json',
-    import.meta.url,
-  );
-  const data = await Bun.file(catalogPath).json();
-  const all = Array.isArray(data.presets)
-    ? (data.presets as PresetEntry[])
-    : [];
+  const all = await loadAllCatalogEntries();
 
   if (filter.ids) {
     const idSet = new Set(filter.ids);
@@ -146,11 +189,13 @@ async function getPresets(filter: {
 
   const limit = filter.count ?? DEFAULT_LIMIT;
   if (filter.force) {
-    return all.filter((p) => p.preview).slice(0, limit);
+    return all.filter(wantsPreview).slice(0, limit);
   }
 
   return all
-    .filter((p) => p.preview && !existsSync(join(OUTPUT_DIR, `${p.id}.png`)))
+    .filter(
+      (p) => wantsPreview(p) && !existsSync(join(OUTPUT_DIR, `${p.id}.png`)),
+    )
     .slice(0, limit);
 }
 
@@ -299,7 +344,7 @@ class RenderSession {
     let failure = 'unknown';
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       const capture = await page.evaluate(
-        ({ minFrames, maxFrames, beatPulse }) => {
+        ({ minFrames, maxFrames, beatPulse, plateauCheckpoints }) => {
           const step = window.__STIMS_AGENT_RENDER_FRAMES__;
           if (typeof step !== 'function') {
             return { error: 'render hook missing' };
@@ -370,16 +415,22 @@ class RenderSession {
 
           // A good preview frame has visible structure and isn't blown out.
           // Feedback presets go black → structured → saturated white as sim
-          // time accumulates, so capture the first good checkpoint and keep
-          // the best-scoring frame as a fallback. Thresholds mirror the
-          // authoritative badFrameReason() checks on the Node side.
-          const isGood = (s: { mean: number; max: number; std: number }) =>
+          // time accumulates, so keep sampling and hold the BEST frame.
+          //
+          // This used to stop at the first frame clearing `isGood`, whose bar
+          // was mean >= 0.4 out of 255 — a nearly-black frame with a handful
+          // of lit pixels ended the search on the spot, long before a feedback
+          // preset had drawn anything. Measured over the shipped set that left
+          // a median luminance of 17/255 with 27% of thumbnails effectively
+          // black. Structure (std) is what actually makes a thumbnail
+          // readable, so it drives the score, scaled down for frames that are
+          // technically lit but almost empty, and zeroed at both failure ends.
+          const acceptable = (s: { mean: number; max: number; std: number }) =>
             s.max >= 32 && s.mean >= 0.4 && s.mean <= 240 && s.std >= 2.5;
-          const score = (s: { mean: number; max: number; std: number }) =>
-            (s.max >= 32 && s.mean >= 0.4 ? 2 : 0) +
-            (s.mean <= 240 ? 1 : 0) +
-            (s.std >= 2.5 ? 2 : 0) +
-            Math.min(s.std, 50) / 100;
+          const score = (s: { mean: number; max: number; std: number }) => {
+            if (s.max < 32 || s.mean > 240) return 0;
+            return s.std * Math.min(1, s.mean / 8);
+          };
 
           let rendered = 0;
           const pump = (n: number) => {
@@ -396,6 +447,12 @@ class RenderSession {
             dataUrl: string;
             framesUsed: number;
           } | null = null;
+          // Stop once the image has stopped getting better rather than at the
+          // first passable frame — but only after one acceptable frame exists,
+          // so a slow-blooming preset is never abandoned while still black.
+          // Running the full budget for every preset would be correct and far
+          // too slow across ~2,700 of them; a plateau is the cheap equivalent.
+          let sinceImprovement = 0;
           for (;;) {
             const s = snapshot();
             const sc = score(s);
@@ -405,14 +462,22 @@ class RenderSession {
                 dataUrl: full.toDataURL('image/png'),
                 framesUsed: rendered,
               };
+              sinceImprovement = 0;
+            } else {
+              sinceImprovement += 1;
             }
-            if (isGood(s) || rendered >= maxFrames) break;
+            const settled =
+              sinceImprovement >= plateauCheckpoints && best.score > 0;
+            if (settled || rendered >= maxFrames) break;
             // Sample finely while saturation risk is highest, then coarsen.
             const stride = rendered < 60 ? 15 : rendered < 120 ? 30 : 60;
             if (!pump(stride)) {
               return { error: 'render hook returned null (audio active?)' };
             }
           }
+          // `acceptable` stays the shared definition of a usable frame; the
+          // Node side re-checks it authoritatively before writing.
+          void acceptable;
           return {
             dataUrl: best.dataUrl,
             rendered,
@@ -423,6 +488,7 @@ class RenderSession {
           minFrames: MIN_FRAMES,
           maxFrames: MAX_FRAMES,
           beatPulse: this.beatPulse,
+          plateauCheckpoints: PLATEAU_CHECKPOINTS,
         },
       );
 
@@ -601,12 +667,7 @@ async function main() {
   const queue = [...presets];
   // Full catalog, not just the queue: the sacrificial boot preset must
   // differ from the target even when rendering a single id.
-  const catalogData = await Bun.file(
-    new URL('../public/milkdrop-presets/catalog.json', import.meta.url),
-  ).json();
-  const catalogIds = (
-    Array.isArray(catalogData.presets) ? catalogData.presets : []
-  ).map((p: PresetEntry) => p.id);
+  const catalogIds = (await loadAllCatalogEntries()).map((p) => p.id);
   const workers = Array.from({ length: concurrency }, (_, i) =>
     worker(
       browser,

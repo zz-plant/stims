@@ -99,6 +99,43 @@ if (typeof window !== 'undefined') {
   state.isAgentMode = readAgentModeFromURL();
 }
 
+/**
+ * Reveals a control that is inside a collapsed `<details>` before clicking it.
+ *
+ * The home page's alternative audio sources (mic, tab, file, YouTube) now sit
+ * behind a disclosure so the primary CTA can rank above them. `.click()` on a
+ * `display:none` descendant does nothing, so every automation path that
+ * targets those buttons by id — this API, and the e2e suite — has to open
+ * the disclosure the same way a person would. Walking ancestors keeps that
+ * true if the markup is nested differently later.
+ */
+function revealForClick(element: HTMLElement): void {
+  let node: HTMLElement | null = element.parentElement;
+  while (node) {
+    if (node instanceof HTMLDetailsElement) node.open = true;
+    node = node.parentElement;
+  }
+}
+
+/**
+ * Picks the on-screen match when a control legitimately appears more than
+ * once.
+ *
+ * AudioSourcePanel renders in both the home page and the Settings sheet, and
+ * both are mounted at the same time whenever Settings is open — so these
+ * selectors match twice. `querySelector` alone returns the first in document
+ * order, which is the home copy, i.e. the one *behind* the panel the user is
+ * actually looking at. Preferring a visible match makes the automation act on
+ * the surface in front of the user; falling back to the first keeps the
+ * previous behaviour when everything is hidden (a collapsed disclosure, which
+ * revealForClick then opens).
+ */
+function findClickTarget(selector: string): HTMLElement | null {
+  const matches = [...document.querySelectorAll<HTMLElement>(selector)];
+  if (matches.length === 0) return null;
+  return matches.find((el) => el.offsetParent !== null) ?? matches[0];
+}
+
 export function initAgentAPI(): StimAPI {
   const api: StimAPI = {
     getState: () => ({ ...state }),
@@ -107,27 +144,31 @@ export function initAgentAPI(): StimAPI {
     },
 
     enableDemoAudio: async () => {
-      const demoBtn = document.querySelector(
-        '[data-demo-audio-btn], #use-demo-audio',
-      ) as HTMLButtonElement;
+      // The id is a fallback for the home CTA only; the data attribute is
+      // the contract and is what both AudioSourcePanel copies carry.
+      const demoBtn = findClickTarget('[data-demo-audio-btn], #use-demo-audio');
 
       if (!demoBtn) {
         throw new Error('Demo audio button not found');
       }
 
+      revealForClick(demoBtn);
       demoBtn.click();
       await waitForAudioActive();
     },
 
     enableMicrophone: async () => {
-      const micBtn = document.querySelector(
-        '[data-mic-audio-btn], #start-audio-btn',
-      ) as HTMLButtonElement;
+      // data-mic-audio-btn was referenced here long before anything set it,
+      // so this had been silently falling through to #start-audio-btn — a
+      // duplicated id that resolved to whichever copy came first in the DOM.
+      // The attribute now exists on the mic card itself.
+      const micBtn = findClickTarget('[data-mic-audio-btn], #start-audio-btn');
 
       if (!micBtn) {
         throw new Error('Microphone button not found');
       }
 
+      revealForClick(micBtn);
       micBtn.click();
       await waitForAudioActive();
     },

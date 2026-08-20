@@ -1,3 +1,17 @@
+/**
+ * Lowers compiled EEL2 program blocks to WGSL compute shaders.
+ *
+ * The counterpart to `expression-jit.ts`: where the JIT emits JavaScript for
+ * the CPU tier, this emits WGSL for the GPU tier that `vm-gpu.ts` dispatches,
+ * including the `megabuf`/`gmegabuf` scratch bindings presets expect.
+ *
+ * The hard part is not translation but agreement. WGSL is stricter than
+ * JavaScript about types, and its floating-point behavior differs in exactly
+ * the places EEL2 is loosest — integer coercion, division by zero, and
+ * evaluation order. Every construct emitted here must reproduce what the
+ * interpreter in `expression.ts` produces, or the two tiers silently disagree.
+ * `bun run lab:replay --tier gpu` is how that gets checked.
+ */
 import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
@@ -13,6 +27,8 @@ import {
 } from '../wgsl-signal-layout.ts';
 import {
   EEL_BINARY_OPERATORS,
+  EEL_F32_MAX,
+  EEL_F32_MAX_WGSL,
   EEL_UNARY_OPERATORS,
   emitEelCallWgslVm,
 } from './eel-function-table.ts';
@@ -245,7 +261,12 @@ function buildWgslExpression(
 ): string {
   switch (expression.type) {
     case 'literal':
-      return Number.isFinite(expression.value)
+      // f32 range, not f64 finiteness — see formatWgslFloat in
+      // renderer-backends/webgpu-procedural-materials.ts: an f32-unrepresentable
+      // literal is a WGSL shader-creation error, and 0.0 is what
+      // milkdropFinite gives that magnitude on every other path.
+      return Number.isFinite(expression.value) &&
+        Math.abs(expression.value) < EEL_F32_MAX
         ? expression.value.toString()
         : '0.0';
 
@@ -474,7 +495,7 @@ function buildGuestBufferWgsl(
 ): string {
   return /* wgsl */ `
 fn milkdrop${fnSuffix}Read(index: f32) -> f32 {
-  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let finiteIndex = index == index && abs(index) < ${EEL_F32_MAX_WGSL};
   let i = milkdropTruncInt(index);
   if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
     return ${varName}[u32(i)];
@@ -482,7 +503,7 @@ fn milkdrop${fnSuffix}Read(index: f32) -> f32 {
   return 0.0f;
 }
 fn milkdrop${fnSuffix}Write(index: f32, value: f32) {
-  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let finiteIndex = index == index && abs(index) < ${EEL_F32_MAX_WGSL};
   let i = milkdropTruncInt(index);
   if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
     ${varName}[u32(i)] = milkdropFinite(value);
