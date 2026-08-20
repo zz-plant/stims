@@ -678,4 +678,66 @@ describe('createAdaptiveQualityController', () => {
     locked.notePresetApplied();
     expect(locked.getState().qualityStep).toBe(2);
   });
+
+  test('a burst of preset switches does not ratchet quality down', () => {
+    // Reported as "swiping through presets too quickly makes the rendering
+    // break". It was not a rendering bug: the switch pre-degrade is charged
+    // per switch, but earning a step back needs RECOVER_THRESHOLD_SAMPLES
+    // *consecutive* under-budget frames, and every switch resets that
+    // counter. Stacking took a constrained device from `full` to `minimal` in
+    // four switches — density 1 -> 0.55, feedback resolution 1 -> 0.52 — on
+    // frames that were never once over budget.
+    const healthy = { frameMs: 8, cadenceMs: 16.7, gpuMs: 4 };
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+    for (let index = 0; index < 40; index += 1) {
+      controller.recordFrame(healthy);
+    }
+    const settled = controller.getState().qualityStep;
+
+    controller.notePresetApplied();
+    const afterFirstSwitch = controller.getState().qualityStep;
+    // The single-switch warm-up pre-pay is deliberate and still happens.
+    expect(afterFirstSwitch).toBe(settled + 1);
+
+    // Seven more switches at a swipe cadence, every frame healthy.
+    for (let swipe = 0; swipe < 7; swipe += 1) {
+      controller.notePresetApplied();
+      for (let frame = 0; frame < 12; frame += 1) {
+        controller.recordFrame(healthy);
+      }
+    }
+    expect(controller.getState().qualityStep).toBe(afterFirstSwitch);
+
+    // And it still recovers once the swiping stops.
+    for (let frame = 0; frame < 400; frame += 1) {
+      controller.recordFrame(healthy);
+    }
+    expect(controller.getState().qualityStep).toBe(settled);
+
+    // Recovery re-arms the pre-pay, so a later switch is covered again.
+    controller.notePresetApplied();
+    expect(controller.getState().qualityStep).toBe(settled + 1);
+  });
+
+  test('genuine sustained pressure still walks down past the pre-pay', () => {
+    // The guard above must not blunt the real controller: a device that is
+    // actually over budget still has to keep stepping down.
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+    for (let index = 0; index < 40; index += 1) {
+      controller.recordFrame({ frameMs: 8, cadenceMs: 16.7, gpuMs: 4 });
+    }
+    const settled = controller.getState().qualityStep;
+
+    controller.notePresetApplied();
+    for (let frame = 0; frame < 200; frame += 1) {
+      controller.recordFrame({ frameMs: 45, cadenceMs: 45, gpuMs: 40 });
+    }
+    expect(controller.getState().qualityStep).toBeGreaterThan(settled + 1);
+  });
 });
