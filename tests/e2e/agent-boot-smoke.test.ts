@@ -14,9 +14,13 @@
  * nothing threw, all through the same API documented in
  * docs/agents/browser-automation.md.
  */
-import { afterAll, beforeAll, expect, test } from 'bun:test';
-import fs from 'node:fs';
+import { afterAll, beforeAll, expect } from 'bun:test';
 import { chromium } from 'playwright';
+import {
+  hasChromium,
+  localOnlyBrowserTest,
+  requiredBrowserTest,
+} from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import {
   HEADLESS,
@@ -24,11 +28,10 @@ import {
   WEBGL_RENDERER_ARGS,
 } from './webgl-launch.ts';
 
-const hasChromium = fs.existsSync(chromium.executablePath());
-const browserTest = hasChromium ? test : test.skip;
+const browserTest = requiredBrowserTest;
 /** WebGPU is a hardware capability CI's SwiftShader runner does not have —
  * matches webgpu-engine-mount.test.ts's own skip policy. */
-const localWebGpuTest = hasChromium ? test.skipIf(!!process.env.CI) : test.skip;
+const localWebGpuTest = localOnlyBrowserTest;
 
 const TEST_PORT = 5186;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
