@@ -1,3 +1,15 @@
+/**
+ * Composes the workspace: which surfaces exist and when each is shown.
+ *
+ * The top-level React component for the product. It assembles the stage,
+ * browse, editor, settings and capture surfaces, wires them to URL state, and
+ * decides layout across breakpoints and modes.
+ *
+ * It is long because it is a composition root — the density is wiring, not
+ * algorithm, and the individual panels own their own logic. Rendering work
+ * belongs behind the engine adapter, not here; this file should stay
+ * declarative enough to read top to bottom.
+ */
 import {
   lazy,
   Suspense,

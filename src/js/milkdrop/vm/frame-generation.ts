@@ -1,3 +1,16 @@
+/**
+ * Produces the per-frame state bundle the renderer consumes.
+ *
+ * After the per-frame program runs, this module assembles the resulting
+ * `MilkdropFrameState`: resolved colors, wave visuals, and the default signal
+ * environment a preset starts each frame from.
+ *
+ * `defaultSignalEnv` is effectively the contract for what variables exist
+ * before a preset's own equations run. Presets read variables they never set
+ * and rely on MilkDrop's starting values, so adding, renaming or re-defaulting
+ * anything here can change how existing presets look without touching their
+ * source. Treat it as a compatibility surface.
+ */
 import type {
   MilkdropColor,
   MilkdropFrameState,

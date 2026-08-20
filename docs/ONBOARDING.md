@@ -98,7 +98,15 @@ Corollary: **a preset that "looks right" is not evidence.** `docs/evidence/` and
 
 Discovery is solved. `bun run help` lists every script with a one-line purpose generated from its file's docblock, so the index cannot drift from the code (`bun run check:script-docs` enforces it).
 
-What is *not* solved is **knowing which instrument answers your question.** These are all real, all different, and choosing wrong costs an afternoon:
+What is *not* solved is **knowing which instrument answers your question.** `bun run help --for "<symptom>"` routes from a symptom to the instrument:
+
+```bash
+bun run help --for "my preset looks wrong"      # → parity:capture, parity:diff
+bun run help --for "webgpu and webgl differ"    # → lab:gpu-differential
+bun run help --for "the visualizer is slow"     # → perf:certification-corpus
+```
+
+The underlying table, which is worth internalising:
 
 | Question | Instrument |
 | --- | --- |
@@ -123,7 +131,7 @@ Internalizing this table is weeks of tacit knowledge. It is also the single high
 
 **Audio** — `src/js/core/audio-handler.ts` (~1,860 lines) plus AudioWorklet processors extracting bands, transients, and envelopes that feed the VM every frame. Ordinary Web Audio knowledge transfers; the subtlety is timing and smoothing, not API surface.
 
-**The 25 `check:*` guards** — `no-ts-nocheck`, `css-tokens`, `agent-action-ids`, `script-docs`, `readme-claims`, `cache-bounds`, `stale-paths`, `doc-references`, `duplicate-css`, `unused-exports`, and more. These encode the repo's unwritten rules. You will mostly discover them by tripping them. **This is fine** — they are mechanical, fast, and their messages point at the fix. Run `bun run check:quick` early and often so you trip them in seconds rather than at PR time.
+**The `check:*` guards** — `no-ts-nocheck`, `css-tokens`, `agent-action-ids`, `script-docs`, `module-docs`, `readme-claims`, `cache-bounds`, `stale-paths`, `doc-references`, `duplicate-css`, `unused-exports`, and more. These encode the repo's unwritten rules, and they used to be discoverable only by tripping them. They are now listed with their rationale in [`GUARDRAILS.md`](./GUARDRAILS.md), generated from the guards themselves. Read it once; run `bun run check:quick` early and often so anything you still trip costs seconds rather than a PR cycle.
 
 ---
 
@@ -166,3 +174,5 @@ You cannot shortcut any layer by reading harder, because the ground truth is not
 | Test suites and profiles | `docs/TESTING.md` |
 | What's being worked on | `docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md` |
 | Every script, with purpose | `bun run help` |
+| The right script for a symptom | `bun run help --for "<symptom>"` |
+| Every rule the repo enforces | `docs/GUARDRAILS.md` |
