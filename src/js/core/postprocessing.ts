@@ -7,6 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import type { RendererBackend } from './renderer-capabilities';
 
 export type MilkdropPostprocessingProfile = {
@@ -60,6 +61,8 @@ function setUniformValue(
   return true;
 }
 
+import { CAS_GLSL_SNIPPET } from './shaders/cas.ts';
+
 const MILKDROP_POSTPROCESSING_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
@@ -69,6 +72,7 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     saturation: { value: 1 },
     contrast: { value: 1 },
     pulseWarp: { value: 0 },
+    casSharpness: { value: 0.25 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -86,12 +90,15 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     uniform float saturation;
     uniform float contrast;
     uniform float pulseWarp;
+    uniform float casSharpness;
     varying vec2 vUv;
 
     vec3 applySaturation(vec3 color, float amount) {
       float luminance = dot(color, vec3(0.299, 0.587, 0.114));
       return mix(vec3(luminance), color, amount);
     }
+
+    ${CAS_GLSL_SNIPPET}
 
     void main() {
       vec2 centeredUv = vUv - vec2(0.5);
@@ -107,6 +114,12 @@ const MILKDROP_POSTPROCESSING_SHADER = {
         baseColor.a
       );
 
+      // Contrast-Adaptive Sharpening for edge reconstruction on downscaled/feedback buffers
+      vec3 sharpenedColor = applyContrastAdaptiveSharpening(tDiffuse, warpedUv, resolution, casSharpness);
+      if (chromaOffset != 0.0) {
+        sharpenedColor = mix(sharpenedColor, chromaColor.rgb, 0.5);
+      }
+
       float vignetteRadius = clamp(1.0 - vignetteStrength * 0.65, 0.15, 1.0);
       float vignette = smoothstep(
         vignetteRadius,
@@ -114,7 +127,7 @@ const MILKDROP_POSTPROCESSING_SHADER = {
         radius
       );
 
-      vec3 color = mix(chromaColor.rgb, chromaColor.rgb * vignette, vignetteStrength);
+      vec3 color = mix(sharpenedColor, sharpenedColor * vignette, vignetteStrength);
       color = applySaturation(color, saturation);
       color = (color - 0.5) * contrast + 0.5;
       gl_FragColor = vec4(color, chromaColor.a);
@@ -190,30 +203,43 @@ export function createMilkdropPostprocessingComposer({
 
   const size = renderer.getSize(new Vector2());
   const mobile = isMobileDevice();
+  const lowPower = getDevicePerformanceProfile().lowPower;
+  const downscaleBloom = mobile || lowPower;
 
+  // Bloom and afterimage are created lazily on the first profile that needs
+  // them (they allocate render targets, so don't pay for presets that never
+  // enable them) — but they MUST be creatable after construction: profiles
+  // are per-preset and audio-driven, and the composer is usually built on an
+  // early quiet frame whose profile zeroes both. The old create-only-at-
+  // construction gating silently dropped afterimage (and bloom) for the rest
+  // of the session.
   let bloomPass: UnrealBloomPass | undefined;
-  if (profile.bloomStrength > 0) {
-    const bloomSize = mobile
-      ? new Vector2(Math.round(size.x / 2), Math.round(size.y / 2))
-      : new Vector2(size.x, size.y);
+  const ensureBloomPass = (nextProfile: MilkdropPostprocessingProfile) => {
+    if (bloomPass || nextProfile.bloomStrength <= 0) return;
+    const bloomSize = downscaleBloom
+      ? new Vector2(Math.round(lastSize.x / 2), Math.round(lastSize.y / 2))
+      : new Vector2(lastSize.x, lastSize.y);
     bloomPass = new UnrealBloomPass(
       bloomSize,
-      profile.bloomStrength,
-      profile.bloomRadius,
-      profile.bloomThreshold,
+      nextProfile.bloomStrength,
+      nextProfile.bloomRadius,
+      nextProfile.bloomThreshold,
     );
-    composer.addPass(bloomPass);
-  }
+    composer.insertPass(bloomPass, composer.passes.indexOf(filmPass));
+  };
 
   const filmPass = new FilmPass() as FilmPassWithUniforms;
   composer.addPass(filmPass);
 
   let afterimagePass: AfterimagePass | undefined;
-  if (profile.afterimageDamp > 0) {
-    afterimagePass = new AfterimagePass(Math.max(profile.afterimageDamp, 0));
+  const ensureAfterimagePass = (nextProfile: MilkdropPostprocessingProfile) => {
+    if (afterimagePass || nextProfile.afterimageDamp <= 0) return;
+    afterimagePass = new AfterimagePass(
+      Math.max(nextProfile.afterimageDamp, 0),
+    );
     afterimagePass.enabled = true;
-    composer.addPass(afterimagePass);
-  }
+    composer.insertPass(afterimagePass, composer.passes.indexOf(chromaPass));
+  };
 
   const chromaPass = new ShaderPass(MILKDROP_POSTPROCESSING_SHADER);
   setUniformValue(
@@ -234,14 +260,22 @@ export function createMilkdropPostprocessingComposer({
   chromaPass.material.uniforms.resolution?.value?.set?.(size.x, size.y);
 
   const applyProfile = (nextProfile: MilkdropPostprocessingProfile) => {
+    ensureBloomPass(nextProfile);
+    ensureAfterimagePass(nextProfile);
     if (bloomPass) {
       bloomPass.strength = nextProfile.bloomStrength;
       bloomPass.radius = nextProfile.bloomRadius;
       bloomPass.threshold = nextProfile.bloomThreshold;
+      // UnrealBloom is ~11 full-screen passes even at zero strength; disable
+      // it (and the film pass) outright when the profile zeroes them, the
+      // same way afterimage is gated below.
+      bloomPass.enabled = nextProfile.bloomStrength > 0;
     }
     setUniformValue(filmPass.uniforms, 'nIntensity', nextProfile.filmNoise);
     setUniformValue(filmPass.uniforms, 'sIntensity', nextProfile.filmScanlines);
     setUniformValue(filmPass.uniforms, 'sCount', nextProfile.filmScanlineCount);
+    filmPass.enabled =
+      nextProfile.filmNoise > 0 || nextProfile.filmScanlines > 0;
     if (afterimagePass) {
       afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
       afterimagePass.enabled = nextProfile.afterimageDamp > 0;
@@ -294,8 +328,13 @@ export function createMilkdropPostprocessingComposer({
 
   return {
     composer,
-    bloomPass,
-    afterimagePass,
+    // Getters: both passes can come into existence on a later applyProfile.
+    get bloomPass() {
+      return bloomPass;
+    },
+    get afterimagePass() {
+      return afterimagePass;
+    },
     filmPass,
     chromaPass,
     applyProfile,

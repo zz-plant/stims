@@ -20,11 +20,19 @@
       "!/screenshots/*",
       "!/og/*",
       "!/textures/*",
-      "!/milkdrop-presets/*",
+      // Previews are served from R2 by the Worker; the rest of the preset
+      // corpus (.milk sources, catalogs, engine libraries) stays on assets.
+      "!/milkdrop-presets/*.milk",
+      "!/milkdrop-presets/*.json",
+      "!/milkdrop-presets/butterchurn/*",
+      "!/milkdrop-presets/libraries/*",
       "!/robots.txt",
       "!/sitemap*.xml",
       "!/manifest.json",
       "!/favicon.ico",
+      // Read by the OG middleware through the ASSETS binding; direct hits do
+      // not need the Worker.
+      "!/preset-meta.json",
       "!/llms.txt",
       "!/llms-full.txt",
       "!/openapi.json",
@@ -33,6 +41,25 @@
   },
   "placement": { "mode": "smart" },
   "ai": { "binding": "AI" },
+  // Telemetry sink for /api/telemetry — without this binding every client
+  // data point is silently dropped.
+  "analytics_engine_datasets": [
+    { "binding": "STIMS_TELEMETRY", "dataset": "stims_telemetry" }
+  ],
+  // Semantic preset search; /api/visual-search falls back to a brute-force
+  // D1 cosine scan when this binding is absent.
+  "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "stims-presets" }],
+  // Per-IP limiter for the Workers AI endpoints (open-beta ratelimit binding).
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "AI_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 20, "period": 60 }
+      }
+    ]
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -44,6 +71,10 @@
     {
       "binding": "GALLERY_R2",
       "bucket_name": "stims-gallery"
+    },
+    {
+      "binding": "STATIC_R2",
+      "bucket_name": "stims-static"
     }
   ],
   "workers_dev": true,

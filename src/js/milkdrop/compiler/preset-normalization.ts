@@ -109,6 +109,59 @@ export function normalizeString(rawValue: string) {
   return trimmed;
 }
 
+/**
+ * Recognizes non-standard / modded / metadata preset fields that carry no
+ * engine semantics (Milkdrop2 `sz*` string metadata and `@key=value` credit
+ * lines). They are retained in the AST metadata instead of being flagged as
+ * unknown blocking constructs.
+ */
+export function isMilkdropMetadataFieldKey(field: MilkdropPresetField) {
+  const rawKey = field.key.trim().toLowerCase();
+  if (rawKey.startsWith('@')) {
+    return true;
+  }
+  return /^sz[a-z0-9_]*$/u.test(normalizeFieldSuffix(field.key));
+}
+
+/**
+ * Maps a recognized metadata field onto a canonical metadata key. Standard
+ * credit fields fold onto `title`/`author`/`description`; anything else is
+ * kept under a `meta_*` key so it round-trips without degrading fidelity.
+ */
+export function resolveMilkdropMetadataKey(
+  field: MilkdropPresetField,
+): string | null {
+  const rawKey = field.key.trim().toLowerCase();
+  if (rawKey.startsWith('@')) {
+    const word = rawKey.replace(/^@+/u, '').replace(/[^a-z0-9_]+/gu, '_');
+    if (word === 'title' || word === 'name') {
+      return 'title';
+    }
+    if (word === 'author') {
+      return 'author';
+    }
+    if (word === 'comment' || word === 'description' || word === 'desc') {
+      return 'description';
+    }
+    return `meta_${word || 'field'}`;
+  }
+  const normalized = normalizeFieldSuffix(field.key);
+  if (normalized.startsWith('sz')) {
+    const word = normalized.slice(2);
+    if (word === 'title') {
+      return 'title';
+    }
+    if (word === 'author') {
+      return 'author';
+    }
+    if (word === 'comment') {
+      return 'description';
+    }
+    return `meta_${normalized}`;
+  }
+  return null;
+}
+
 export function normalizeShaderFieldChunk(rawValue: string) {
   const normalized = normalizeString(rawValue).replace(/^`+/u, '').trim();
   if (

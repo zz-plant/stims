@@ -80,8 +80,8 @@ canvas {
 body,
 html {
   padding: 0;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: calc(16px * var(--tv-scale-multiplier));
+  font-family: var(--font-family-base);
+  font-size: calc(16px * var(--tv-scale-multiplier) * var(--ui-scale));
   background:
     radial-gradient(
       circle at 15% 0%,
@@ -908,8 +908,6 @@ header.hero,
 }
 
 .cta-button,
-.control-panel__eyebrow,
-.control-panel__stage-label,
 .control-panel__label,
 .eyebrow {
   font-family: var(--font-family-mono);
@@ -920,9 +918,7 @@ header.hero,
   text-transform: uppercase;
 }
 
-.eyebrow,
-.control-panel__eyebrow,
-.control-panel__stage-label {
+.eyebrow {
   letter-spacing: 0.15em;
   font-size: 0.72rem;
 }
@@ -1006,11 +1002,9 @@ header.hero::after {
   border-radius: 18px;
 }
 
-@supports (container-type: inline-size) {
-  @container home-hero (max-width: 900px) {
-    .hero-cta-row .cta-button.primary {
-      grid-column: auto;
-    }
+@container home-hero (max-width: 900px) {
+  .hero-cta-row .cta-button.primary {
+    grid-column: auto;
   }
 }
 

@@ -64,4 +64,14 @@ describe('preset id resolution', () => {
       ),
     ).toBeNull();
   });
+
+  // Why use-preset-route-sync falls back to the engine's own activePresetId
+  // instead of treating a null here as "do not publish": the runtime catalog
+  // hydrates lazily, so a session that never opens Browse resolves every id
+  // against an empty array. Gating the engine -> URL sync on this made the
+  // address bar silently stop tracking the engine in exactly those sessions.
+  test('cannot resolve anything against an empty catalog', () => {
+    expect(resolvePresetId([], 'geiss-casino')).toBeNull();
+    expect(resolvePresetCatalogEntry([], 'geiss-casino')).toBeNull();
+  });
 });

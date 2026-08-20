@@ -1,8 +1,29 @@
+/**
+ * Compiles parsed EEL2 program blocks into JavaScript functions.
+ *
+ * The per-frame and per-vertex blocks run for every frame — and per-vertex runs
+ * once per mesh point — so tree-walking them is too slow at mesh resolutions
+ * real presets use. This module lowers a block to a single `new Function` and
+ * memoises it per block object.
+ *
+ * Two constraints shape the code. First, output must match the interpreter in
+ * `expression.ts` exactly, including MilkDrop's non-obvious arithmetic edge
+ * cases; the JIT is an optimisation, never a second dialect. Second, a strict
+ * Content-Security-Policy can forbid `new Function`, so the module probes for
+ * it once and degrades to an interpreter-backed path rather than failing to
+ * load — deliberately slower, and covered by tests/unit/eel-csp-fallback.test.ts.
+ */
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,
   MilkdropProgramBlock,
 } from './common-types.ts';
+import {
+  EEL_BINARY_OPERATORS,
+  EEL_UNARY_OPERATORS,
+  emitEelCallJs,
+} from './compiler/eel-function-table.ts';
+import { evaluateMilkdropExpression } from './expression.ts';
 import { aliasMap } from './field-normalization.ts';
 
 /**
@@ -74,8 +95,11 @@ function compileNode(
       return String(node.value);
     case 'identifier': {
       const name = node.name.toLowerCase();
-      if (name === 'pi') return 'Math.PI';
-      if (name === 'e') return 'Math.E';
+      // Env-first like the interpreter: pi/e are ordinary prepopulated EEL
+      // variables and preset assignments to them must stick (see
+      // expression.ts identifier resolution for the rationale).
+      if (name === 'pi') return '(e["pi"] ?? Math.PI)';
+      if (name === 'e') return '(e["e"] ?? Math.E)';
       const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
       const aliased = aliasMap[normalized] || normalized;
       if (aliased !== node.name) {
@@ -85,90 +109,57 @@ function compileNode(
     }
     case 'unary': {
       const x = compileNode(node.operand, context);
-      switch (node.operator) {
-        case '+':
-          return `(+(${x}))`;
-        case '-':
-          return `(-(${x}))`;
-        case '!':
-          return `(Math.abs(${x}) > 0.00001 ? 0 : 1)`;
-      }
-      return '(0)';
+      return EEL_UNARY_OPERATORS[node.operator]?.jit?.(x) ?? '(0)';
     }
     case 'binary': {
-      const l = compileNode(node.left, context);
-      const r = compileNode(node.right, context);
-      switch (node.operator) {
-        case '=': {
-          // Assignment: lvalue = rvalue; returns rvalue
-          const rvalue = r;
-          let assignment = '';
-          if (node.left.type === 'identifier') {
-            const target = node.left.name;
-            const statement: MilkdropCompiledStatement = {
-              target,
-              expression: node.right,
-              line: 0,
-              source: '',
-            };
-            assignment = compileStore(statement, context);
-          } else if (
-            node.left.type === 'call' &&
-            (node.left.name.toLowerCase() === 'megabuf' ||
-              node.left.name.toLowerCase() === 'gmegabuf')
-          ) {
-            const buffer = node.left.name.toLowerCase();
-            const size =
-              buffer === 'megabuf'
-                ? MILKDROP_MEGABUF_SIZE
-                : MILKDROP_GMEGABUF_SIZE;
-            const index = nextTemporary(context);
-            const indexSource = node.left.args[0]
-              ? compileNode(node.left.args[0], context)
-              : '0';
-            assignment = `${index} = Math.trunc(${indexSource}); if (${index} >= 0 && ${index} < ${size}) { ${buffer === 'megabuf' ? 'mb' : 'gb'}[${index}] = ${rvalue}; }`;
-          }
-          if (assignment) {
-            const tempVar = nextTemporary(context);
-            return `(${tempVar} = ${rvalue}, ${assignment}, ${tempVar})`;
-          }
-          // Invalid assignment target, just return rvalue
-          return `(${rvalue})`;
-        }
-        case '+':
-          return `((${l}) + (${r}))`;
-        case '-':
-          return `((${l}) - (${r}))`;
-        case '*':
-          return `((${l}) * (${r}))`;
-        case '/':
-          return `(((${r}) === 0) ? 0 : (${l}) / (${r}))`;
-        case '%':
-          return `((function(a,b){var ai=Math.trunc(a)||0,bi=Math.trunc(b)||0;return bi===0?0:ai%bi})(${l},${r}))`;
-        case '^':
-          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${l},${r}))`;
-        case '|':
-          return `((Math.trunc(${l})||0) | (Math.trunc(${r})||0))`;
-        case '&':
-          return `((Math.trunc(${l})||0) & (Math.trunc(${r})||0))`;
-        case '<':
-          return `((${l}) < (${r}) ? 1 : 0)`;
-        case '<=':
-          return `((${l}) <= (${r}) ? 1 : 0)`;
-        case '>':
-          return `((${l}) > (${r}) ? 1 : 0)`;
-        case '>=':
-          return `((${l}) >= (${r}) ? 1 : 0)`;
-        case '==':
-          return `((${l}) === (${r}) ? 1 : 0)`;
-        case '!=':
-          return `((${l}) !== (${r}) ? 1 : 0)`;
-        case '&&':
-          return `((Math.abs(${l}) > 0.00001 && Math.abs(${r}) > 0.00001) ? 1 : 0)`;
-        case '||':
-          return `((Math.abs(${l}) > 0.00001 || Math.abs(${r}) > 0.00001) ? 1 : 0)`;
+      if (node.operator !== '=') {
+        const l = compileNode(node.left, context);
+        const r = compileNode(node.right, context);
+        return (
+          EEL_BINARY_OPERATORS[node.operator]?.jit?.(l, r, {
+            temp: () => nextTemporary(context),
+          }) ?? '(0)'
+        );
       }
-      return '(0)';
+      const r = compileNode(node.right, context);
+      {
+        // Assignment nested inside an expression: lvalue = rvalue, and the
+        // expression's value is the (finite-clamped) rvalue. This used to
+        // splice the statement-form store (`if (...) { ... }`, trailing
+        // semicolons, writes through the statement-level `_v`) into a comma
+        // expression — a SyntaxError for register/local/megabuf targets, a
+        // stale-`_v` write for the rest, and it never mirrored the value
+        // into `e`, which is where every identifier read resolves. All
+        // three fixed by emitting a pure expression store against a fresh
+        // temporary, matching the statement path's semantics (including
+        // MilkDrop's never-let-NaN-escape clamp).
+        const rvalue = r;
+        const tempVar = nextTemporary(context);
+        const clamped = `${tempVar} = (${rvalue}), ${tempVar} = Number.isFinite(${tempVar}) ? ${tempVar} : 0`;
+        if (node.left.type === 'identifier') {
+          const store = compileStoreExpression(node.left.name, tempVar);
+          return `(${clamped}, ${store}, ${tempVar})`;
+        }
+        if (
+          node.left.type === 'call' &&
+          (node.left.name.toLowerCase() === 'megabuf' ||
+            node.left.name.toLowerCase() === 'gmegabuf')
+        ) {
+          const buffer = node.left.name.toLowerCase();
+          const size =
+            buffer === 'megabuf'
+              ? MILKDROP_MEGABUF_SIZE
+              : MILKDROP_GMEGABUF_SIZE;
+          const index = nextTemporary(context);
+          const indexSource = node.left.args[0]
+            ? compileNode(node.left.args[0], context)
+            : '0';
+          const bufferName = buffer === 'megabuf' ? 'mb' : 'gb';
+          return `(${clamped}, ${index} = Math.trunc(${indexSource}), (${index} >= 0 && ${index} < ${size} ? ${bufferName}[${index}] = ${tempVar} : 0), ${tempVar})`;
+        }
+        // Invalid assignment target, just return rvalue
+        return `(${rvalue})`;
+      }
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -179,90 +170,42 @@ function compileNode(
         return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
       }
       const args = node.args.map((arg) => compileNode(arg, context));
-      switch (name) {
-        case 'sin':
-          return `Math.sin(${args[0] ?? '0'})`;
-        case 'cos':
-          return `Math.cos(${args[0] ?? '0'})`;
-        case 'tan':
-          return `Math.tan(${args[0] ?? '0'})`;
-        case 'asin':
-          return `Math.asin(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
-        case 'acos':
-          return `Math.acos(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
-        case 'atan':
-          return `Math.atan(${args[0] ?? '0'})`;
-        case 'abs':
-          return `Math.abs(${args[0] ?? '0'})`;
-        case 'sqrt':
-          return `Math.sqrt(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'pow':
-          return `((function(a,b){var v=a**b;return Number.isFinite(v)?v:0})(${args[0] ?? '0'},${args[1] ?? '0'}))`;
-        case 'mod':
-        case 'fmod':
-          return `((${args[1] ?? '0'}) === 0 ? 0 : (${args[0] ?? '0'}) % (${args[1] ?? '0'}))`;
-        case 'min':
-          return `Math.min(${args.join(',') || '0'})`;
-        case 'max':
-          return `Math.max(${args.join(',') || '0'})`;
-        case 'mix':
-        case 'lerp':
-          return `((function(a,b,c){return a+(b-a)*c})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '0'}))`;
-        case 'floor':
-          return `Math.floor(${args[0] ?? '0'})`;
-        case 'int':
-          return `(Math.trunc(${args[0] ?? '0'})||0)`;
-        case 'ceil':
-          return `Math.ceil(${args[0] ?? '0'})`;
-        case 'sqr':
-          return `((function(v){return v*v})(${args[0] ?? '0'}))`;
-        case 'clamp':
-          return `((function(v,lo,hi){return Math.min(Math.max(v,lo),hi)})(${args[0] ?? '0'},${args[1] ?? '0'},${args[2] ?? '1'}))`;
-        case 'step':
-          return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
-        case 'smoothstep':
-          return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
-        case 'log':
-          return `Math.log(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'log10':
-          return `Math.log10(Math.max(0, ${args[0] ?? '0'}))`;
-        case 'exp':
-          return `Math.exp(${args[0] ?? '0'})`;
-        case 'sigmoid':
-          return `(1 / (1 + Math.exp(-(${args[0] ?? '0'}) * (${args[1] ?? '1'}))))`;
-        case 'sign':
-          return `(Math.sign(${args[0] ?? '0'})||0)`;
-        case 'bor':
-          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 || Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
-        case 'band':
-          return `((Math.abs(${args[0] ?? '0'}) > 0.00001 && Math.abs(${args[1] ?? '0'}) > 0.00001) ? 1 : 0)`;
-        case 'bnot':
-          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? 0 : 1)`;
-        case 'atan2':
-          return `Math.atan2(${args[0] ?? '0'}, ${args[1] ?? '0'})`;
-        case 'frac':
-          return `((${args[0] ?? '0'}) - Math.floor(${args[0] ?? '0'}))`;
-        case 'if':
-          return `(Math.abs(${args[0] ?? '0'}) > 0.00001 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
-        case 'above':
-          return `((${args[0] ?? '0'}) > (${args[1] ?? '0'}) ? 1 : 0)`;
-        case 'below':
-          return `((${args[0] ?? '0'}) < (${args[1] ?? '0'}) ? 1 : 0)`;
-        case 'equal':
-          return `(Math.abs((${args[0] ?? '0'}) - (${args[1] ?? '0'})) <= 0.00001 ? 1 : 0)`;
-        case 'rand':
-          return `(rnd() * (${args[0] ?? '1'}))`;
-        case 'randint':
-          return `Math.floor(rnd() * (${args[0] ?? '1'}))`;
-        case 'exec2':
-        case 'exec3':
-          return args.length > 0
-            ? `(${args.map((arg) => `(${arg})`).join(', ')})`
-            : '(0)';
+      const emitted = emitEelCallJs(name, args, {
+        temp: () => nextTemporary(context),
+      });
+      if (emitted !== null) {
+        return emitted;
       }
-      return '(0)';
+      // Unknown function: the value is 0, but the arguments still run. The
+      // interpreter evaluates every argument before dispatch, so an
+      // assignment nested in one (`a = nosuchfn(q1 = 1)`) writes q1 there;
+      // dropping the compiled args here made the tiers disagree on which
+      // variables exist. Keep them in a comma expression.
+      return args.length > 0 ? `(${args.join(', ')}, 0)` : '(0)';
     }
   }
+}
+
+/**
+ * Expression-position twin of {@link compileStore} + the statement path's
+ * `e` mirror: a single comma-safe expression that stores `valueVar` into the
+ * engine-facing map (locals/registers/state) and into `e`, where identifier
+ * reads resolve. Must stay semantically aligned with compileStore and
+ * compileStatementSource.
+ */
+function compileStoreExpression(target: string, valueVar: string) {
+  const rawKey = JSON.stringify(target);
+  const normalized = target.toLowerCase();
+  const registerMatch = normalized.match(REGISTER_PATTERN);
+  const normalizedKey = JSON.stringify(normalized);
+
+  const mirror =
+    registerMatch?.[1] === 'q'
+      ? `r[${normalizedKey}] = ${valueVar}`
+      : registerMatch
+        ? `(l !== null ? l[${rawKey}] = ${valueVar} : r[${normalizedKey}] = ${valueVar})`
+        : `(l !== null ? l[${rawKey}] = ${valueVar} : s[${rawKey}] = ${valueVar})`;
+  return `${mirror}, e[${rawKey}] = ${valueVar}`;
 }
 
 function compileStore(
@@ -373,6 +316,159 @@ function compileProgramSource(block: MilkdropProgramBlock) {
 const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
 
 /**
+ * Whether `new Function` codegen is permitted. A strict Content-Security-
+ * Policy without 'unsafe-eval' (extensions, embedded iframes, some
+ * enterprise deployments) makes it throw — probed once, and the whole VM
+ * then runs on the interpreter-backed fallback below instead of dying.
+ */
+let jitAvailable: boolean | null = null;
+
+function isJitAvailable(): boolean {
+  if (jitAvailable === null) {
+    try {
+      new Function('');
+      jitAvailable = true;
+    } catch {
+      jitAvailable = false;
+    }
+  }
+  return jitAvailable;
+}
+
+/** Test seam: force (or reset with null) the CSP probe result. */
+export function __setJitAvailableForTests(value: boolean | null): void {
+  jitAvailable = value;
+}
+
+/**
+ * Interpreter-backed MilkdropProgramFn with the JIT's exact store contract:
+ * per-statement finite clamp, q registers mirrored into the register bank,
+ * other targets mirrored into locals (when active) or state, megabuf
+ * bounds-checked writes, and the same loop/while iteration caps. Nested
+ * assignments inside expressions reach the mirrors through the env proxy —
+ * the interpreter writes them to the env, and the proxy fans them out the
+ * way compileStoreExpression's generated code does.
+ *
+ * Slower than the JIT by design; it exists so CSP environments degrade to
+ * correct-but-slower instead of broken. Parity with the JIT is pinned by
+ * tests/unit/eel-csp-fallback.test.ts.
+ */
+function buildInterpretedProgram(
+  block: MilkdropProgramBlock,
+): MilkdropProgramFn {
+  return (e, s, r, l, mb, gb, rnd) => {
+    const mirroredEnv = new Proxy(e, {
+      set(target, property, value) {
+        if (typeof property === 'string') {
+          const normalized = property.toLowerCase();
+          const registerMatch = normalized.match(REGISTER_PATTERN);
+          if (registerMatch?.[1] === 'q') {
+            r[normalized] = value as number;
+          } else if (registerMatch) {
+            if (l !== null) l[property] = value as number;
+            else r[normalized] = value as number;
+          } else if (l !== null) {
+            l[property] = value as number;
+          } else {
+            s[property] = value as number;
+          }
+        }
+        target[property as string] = value as number;
+        return true;
+      },
+    });
+    const helpers = {
+      nextRandom: rnd,
+      megabuf: (index: number) =>
+        index >= 0 && index < MILKDROP_MEGABUF_SIZE ? (mb[index] as number) : 0,
+      gmegabuf: (index: number) =>
+        index >= 0 && index < MILKDROP_GMEGABUF_SIZE
+          ? (gb[index] as number)
+          : 0,
+      megabufWrite: (index: number, value: number) => {
+        if (index >= 0 && index < MILKDROP_MEGABUF_SIZE) mb[index] = value;
+      },
+      gmegabufWrite: (index: number, value: number) => {
+        if (index >= 0 && index < MILKDROP_GMEGABUF_SIZE) gb[index] = value;
+      },
+    };
+    let guard = 0;
+    const run = (statements: readonly MilkdropCompiledStatement[]) => {
+      for (const statement of statements) {
+        if (!statement) continue;
+        if (statement.control) {
+          const { kind, body } = statement.control;
+          if (kind === 'loop') {
+            const rawCount = statement.control.count
+              ? evaluateMilkdropExpression(
+                  statement.control.count,
+                  mirroredEnv,
+                  helpers,
+                )
+              : MILKDROP_LOOP_ITERATION_CAP;
+            const count = Math.min(
+              MILKDROP_LOOP_ITERATION_CAP,
+              Math.max(0, Math.trunc(rawCount) || 0),
+            );
+            for (
+              let index = 0;
+              index < count && guard < MILKDROP_LOOP_ITERATION_CAP;
+              index += 1, guard += 1
+            ) {
+              run(body);
+            }
+          } else {
+            while (guard < MILKDROP_LOOP_ITERATION_CAP) {
+              const condition = statement.control.condition
+                ? evaluateMilkdropExpression(
+                    statement.control.condition,
+                    mirroredEnv,
+                    helpers,
+                  )
+                : 1;
+              if (condition === 0) break;
+              guard += 1;
+              run(body);
+            }
+          }
+          continue;
+        }
+
+        let value = evaluateMilkdropExpression(
+          statement.expression,
+          mirroredEnv,
+          helpers,
+        );
+        if (!Number.isFinite(value)) value = 0;
+
+        if (statement.target === 'megabuf' || statement.target === 'gmegabuf') {
+          const index = Math.trunc(
+            statement.targetExpression
+              ? evaluateMilkdropExpression(
+                  statement.targetExpression,
+                  mirroredEnv,
+                  helpers,
+                )
+              : 0,
+          );
+          const buffer = statement.target === 'megabuf' ? mb : gb;
+          const size =
+            statement.target === 'megabuf'
+              ? MILKDROP_MEGABUF_SIZE
+              : MILKDROP_GMEGABUF_SIZE;
+          if (index >= 0 && index < size) buffer[index] = value;
+          e[statement.target] = value;
+          continue;
+        }
+
+        mirroredEnv[statement.target] = value;
+      }
+    };
+    run(block.statements);
+  };
+}
+
+/**
  * Compiles a program block into a single callable, memoised per block.
  */
 export function compileMilkdropProgram(
@@ -386,17 +482,96 @@ export function compileMilkdropProgram(
   const compiled =
     block.statements.length === 0
       ? NO_OP
-      : (new Function(
-          'e',
-          's',
-          'r',
-          'l',
-          'mb',
-          'gb',
-          'rnd',
-          compileProgramSource(block),
-        ) as MilkdropProgramFn);
+      : isJitAvailable()
+        ? (new Function(
+            'e',
+            's',
+            'r',
+            'l',
+            'mb',
+            'gb',
+            'rnd',
+            compileProgramSource(block),
+          ) as MilkdropProgramFn)
+        : buildInterpretedProgram(block);
 
   compiledPrograms.set(block, compiled);
   return compiled;
+}
+
+/**
+ * Pre-warms the per-block JIT cache for every program in a compiled preset,
+ * yielding to the event loop between blocks.
+ *
+ * Without this, all `new Function` parse/compile work lands inside the first
+ * rendered frame of a newly applied preset — one long task mid-blend that
+ * visibly stalls playback on mobile (hundreds of ms for equation-heavy
+ * presets, measured on a Galaxy S22). Compiling block-by-block ahead of the
+ * swap splits that into frame-sized slices; the swap then finds every block
+ * already cached.
+ *
+ * `shouldAbort` lets a superseded preset load stop wasting main-thread time.
+ */
+export async function prewarmMilkdropPrograms(
+  ir: {
+    programs: {
+      init: MilkdropProgramBlock;
+      perFrame: MilkdropProgramBlock;
+      perPixel: MilkdropProgramBlock;
+    };
+    customWaves: Array<{
+      programs: {
+        init: MilkdropProgramBlock;
+        perFrame: MilkdropProgramBlock;
+        perPoint: MilkdropProgramBlock;
+      };
+    }>;
+    customShapes: Array<{
+      programs: {
+        init: MilkdropProgramBlock;
+        perFrame: MilkdropProgramBlock;
+      };
+    }>;
+  },
+  shouldAbort?: () => boolean,
+): Promise<void> {
+  // Best-effort warm-up: partially-shaped IR (test doubles, presets stripped
+  // by a compile fallback) just skips instead of throwing mid-load.
+  if (!ir?.programs) {
+    return;
+  }
+  // Nothing to pre-warm without the JIT: buildInterpretedProgram just closes
+  // over the block, so the cost this function exists to move off the first
+  // frame does not exist on the CSP tier. Running anyway spent a setTimeout
+  // round-trip per block — pure added startup latency for the users already
+  // on the slower tier.
+  if (!isJitAvailable()) {
+    return;
+  }
+  const blocks: MilkdropProgramBlock[] = [
+    ir.programs.init,
+    ir.programs.perFrame,
+    ir.programs.perPixel,
+  ];
+  for (const wave of ir.customWaves ?? []) {
+    blocks.push(wave.programs.init, wave.programs.perFrame);
+    blocks.push(wave.programs.perPoint);
+  }
+  for (const shape of ir.customShapes ?? []) {
+    blocks.push(shape.programs.init, shape.programs.perFrame);
+  }
+
+  const yieldToEventLoop = () =>
+    new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  for (const block of blocks) {
+    if (shouldAbort?.()) {
+      return;
+    }
+    if (block.statements.length === 0) {
+      continue;
+    }
+    compileMilkdropProgram(block);
+    await yieldToEventLoop();
+  }
 }

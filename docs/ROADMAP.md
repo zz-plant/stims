@@ -14,41 +14,16 @@ Stims is building a browser-native studio around audio-reactive, MilkDrop-inspir
 
 - Searchable imported preset catalog with previews, collections, favorites, queues, history, and deep links.
 - Direct `.milk` import/export and a live CodeMirror authoring environment.
-- WebGL2 compatibility baseline plus a guarded WebGPU execution path.
+- WebGL2 compatibility baseline plus a guarded WebGPU execution path. Measured visual evidence is currently captured on the WebGPU path (the reference-capture backend); WebGL2 — the baseline most users actually run — lacks the same measured evidence and is tracked as a gap, not claimed.
 - Multi-source browser audio with off-main-thread analysis.
 - Browser canvas recording beta.
 - Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
 
 See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
-## Now: trustworthy library and proof loop
+## Now: studio loop first, proof loop as a maintained floor
 
-### Expand measured preset coverage
-
-- Complete the checked-in reference and diff loop for the four bundled proof presets.
-- Fix renderer behavior by subsystem: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
-- Promote results only after the requested backend and reference provenance are verified.
-- Surface clear visual-evidence and fallback labels in the browsing and inspector workflows.
-
-Exit criteria:
-
-- every featured preset has current measured evidence;
-- public compatibility wording is generated or guarded against tracked sources of truth; and
-- unsupported or fallback behavior is visible rather than silent.
-
-### Make the large catalog useful
-
-- Improve preview reliability and cold-load behavior.
-- Rank by visual quality, evidence, performance, author, mood, and session relevance instead of relying on preset count.
-- Make queue, favorites, recent history, and shareable filtered views coherent on desktop and mobile.
-- Treat semantic and audio-profile matching as optional enhancements, never as blockers for local search.
-
-Exit criteria:
-
-- a first-time user can find a strong preset without understanding MilkDrop naming conventions; and
-- low-confidence or expensive presets do not dominate default recommendations.
-
-## Next: authoring and creator workflow
+The proof loop below is a floor, not a frontier: it stays green and does not grow. New evidence infrastructure ships only when a studio workflow needs it. The immediate work is the studio loop — browse → edit → compare → save → share → record.
 
 ### Remix studio
 
@@ -71,8 +46,47 @@ Exit criteria:
 
 Exit criteria:
 
-- “1080p” and “4K” describe measured render output rather than canvas container dimensions; and
+- "1080p" and "4K" describe measured render output rather than canvas container dimensions; and
 - exported audio-video files remain synchronized over a documented test duration.
+
+### Make the large catalog useful
+
+- Improve preview reliability and cold-load behavior.
+- Rank by visual quality, evidence, performance, author, mood, and session relevance instead of relying on preset count.
+- Make queue, favorites, recent history, and shareable filtered views coherent on desktop and mobile.
+- Treat semantic and audio-profile matching as optional enhancements, never as blockers for local search.
+
+Exit criteria:
+
+- a first-time user can find a strong preset without understanding MilkDrop naming conventions; and
+- low-confidence or expensive presets do not dominate default recommendations.
+
+### Proof floor — maintained, not expanded
+
+- Keep the checked-in reference and diff loop green for the bundled proof presets.
+- Fix renderer behavior by subsystem when measured evidence regresses: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
+- Promote results only after the requested backend and reference provenance are verified.
+- Surface clear visual-evidence and fallback labels in the browsing and inspector workflows.
+
+Exit criteria:
+
+- every featured preset has current measured evidence;
+- public compatibility wording is generated or guarded against tracked sources of truth; and
+- unsupported or fallback behavior is visible rather than silent.
+
+### Flash-safety measurement
+
+The bundled preset corpus was imported from the community without any photosensitive-seizure safety review. A real WCAG 2.3.1-grounded measurement tool now exists (`scripts/flash-analysis.ts` + `scripts/analyze-preset-flash.ts`, unit-tested, corpus-sampling built in) alongside the earlier placeholder-threshold tool (`bun run lab:flash-risk`). Sample runs report zero presets over threshold, and that zero has since been *explained* rather than left ambiguous: stage-by-stage measurement on rendered output confirmed capture sees full-amplitude change, the area floor is genuinely crossed (26.8–29.7% of a 10° window), and what stops a flash registering is directional incoherence — ~14% of the field brightening while ~13% darkens in the same frame. MilkDrop's texture-in-motion aesthetic does not produce the coherent field-wide oscillation WCAG's general flash threshold describes. The WCAG red-flash criterion is now implemented and unit-tested (`flash-analysis.ts`), but not yet run at corpus scale. One gate remains before this is a safety claim: every measurement used the synthetic preview waveform rather than real high-energy audio. See [`SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md#layer-0--safety-first-sample-run-complete).
+
+Exit criteria:
+
+- the audit tool's apparent resource-exhaustion pattern (timeouts clustering late in a long run) is fixed and a full-corpus run completes without a large unmeasured tail;
+- a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
+- a default-on flash-rate cap ships as a visible safety control, not a buried setting.
+
+## Next: compatibility depth beyond the floor
+
+These deepen the compatibility lane only after the studio loop above is stable.
 
 ## Later: platform expansion
 
@@ -82,17 +96,17 @@ These workstreams begin only after their prerequisite user flows and proof contr
 | --- | --- |
 | Stims-native WebGPU preset lane | Stable backend contract, performance telemetry, and a format that produces visuals unavailable to the classic compatibility lane. |
 | Embeddable package or Web Component | Lifecycle, audio, preset, resize, and cleanup APIs proven inside the product and integration tests. |
-| MIDI/VJ hardware workflow | The current beta wiring gains persistent mappings, device QA, and recovery behavior. |
 | Real stem-aware reactivity | On-device separation with measured latency, resource budgets, privacy posture, and populated runtime signals. |
 | Community catalog and sync | Stable preset identity, provenance, moderation, versioning, and local-first failure behavior. |
 | Multi-display or venue output | Deterministic timing, remote recovery, and a supported transport contract. |
 
 ## Research, not roadmap commitments
 
-- WebXR immersive stages;
 - neural audio-to-visual generation;
 - Gaussian-splat or latent rendering;
 - DMX, Art-Net, NDI, or Syphon bridges; and
 - a general plugin marketplace.
 
 Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.
+
+AI-assisted authoring — text/image-to-preset generation, blending, and diff-inspectable assisted edits in the editor — is studio scope and already wired to the Remix workflow. It is distinct from "neural audio-to-visual generation" above, which is the unbuilt research direction.

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tile Lab — multi-instance micro-render experiment</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0c0c10;
+        color: #d8d8de;
+        font: 13px/1.5 ui-monospace, monospace;
+      }
+      #hud {
+        padding: 10px 14px;
+        white-space: pre;
+        border-bottom: 1px solid #26262e;
+      }
+      #grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px;
+      }
+      .tile {
+        width: 128px;
+      }
+      .tile canvas {
+        width: 128px;
+        height: 128px;
+        display: block;
+        background: #000;
+        border: 1px solid #26262e;
+      }
+      .tile .label {
+        font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.7;
+      }
+      .tile .stat {
+        font-size: 10px;
+        color: #7fb2ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud">booting…</div>
+    <div id="grid"></div>
+    <script type="module" src="./tile-lab.ts"></script>
+  </body>
+</html>

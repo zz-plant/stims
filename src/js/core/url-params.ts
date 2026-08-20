@@ -1,4 +1,21 @@
-export type PanelState = 'browse' | 'capture' | 'editor' | 'settings' | null;
+/**
+ * Canonical panel and audio-source unions.
+ *
+ * These live in core rather than frontend/contracts.ts because core cannot
+ * import from frontend, and both files used to declare their own copy. The
+ * copies had already drifted — this one was missing 'refine', 'finder', and
+ * 'synthesize', which is precisely why those panels were not URL-addressable.
+ * frontend/contracts.ts re-exports these; do not reintroduce a second union.
+ */
+export type PanelState =
+  | 'browse'
+  | 'capture'
+  | 'editor'
+  | 'finder'
+  | 'refine'
+  | 'settings'
+  | 'synthesize'
+  | null;
 export type AudioSource = 'demo' | 'file' | 'microphone' | 'tab' | 'youtube';
 export type RequestedRenderer = 'webgl' | 'webgpu' | 'auto' | null;
 
@@ -10,6 +27,20 @@ export interface RoutingURLParams {
   agentMode: boolean;
   previewMode: boolean;
   invalidExperienceSlug: string | null;
+  /** A ?tool=/?panel= value that matched no known panel, for shell feedback. */
+  invalidPanel: string | null;
+  /**
+   * YouTube video the link was shared with. Without this, `audio=youtube`
+   * restores the source mode but leaves the user staring at an empty input.
+   */
+  youtubeVideoId: string | null;
+  /** Start offset in seconds for {@link youtubeVideoId}. */
+  youtubeStartSeconds: number | null;
+  /**
+   * Watch-together room name from `?sync=`. Consumed by the sync bridge, not
+   * part of canonical session state; it survives as a preserved unknown param.
+   */
+  syncRoom: string | null;
 }
 
 export interface PerformanceURLParams {
@@ -22,6 +53,12 @@ export interface PerformanceURLParams {
    * frame time for visual quality, which hides both wins and regressions.
    */
   lockedQualityStep: number | null;
+  /**
+   * Forces the power-saver mode (`auto`/`on`/`off`) for this session, so a QA
+   * link can pin the frame cap instead of waiting for a laptop to discharge.
+   * Left as a raw string; `power-saver-store` owns the normalization.
+   */
+  powerSaver: string | null;
 }
 
 export interface MockAudioURLParams {
@@ -29,19 +66,19 @@ export interface MockAudioURLParams {
   frequency: number | null;
 }
 
-export interface OverlayURLParams {
-  autoplay: string | null;
-  blend: string | null;
-  transition: string | null;
-}
-
 export interface HarnessURLParams {
   component: string | null;
   props: string | null;
-  mockBackend: string | null;
-  mockPresetId: string | null;
-  mockAudioActive: boolean;
   grid: string | null;
+}
+
+export interface FlagURLParams {
+  /** `?debug=hud` mounts the on-canvas debug HUD (the only diagnostic surface). */
+  debug: string | null;
+  /** `?liveTiles` renders catalog tiles with live engine instances. */
+  liveTiles: boolean;
+  /** `?strudel` mounts the Strudel live-coding lab. */
+  strudel: boolean;
 }
 
 export interface WebGpuFlagURLParams {
@@ -60,20 +97,41 @@ export interface ParsedURLParams {
   routing: RoutingURLParams;
   renderer: RequestedRenderer;
   corpus: string | null;
+  /**
+   * `?seed=<integer>` — makes autoplay's weighted random preset pick
+   * reproducible. Without it a flaky "shuffle crashed on some preset" is
+   * unreproducible; with it, CI/an agent can replay the exact sequence to
+   * bisect which pick triggered the failure. See core/deterministic-random.ts.
+   */
+  seed: number | null;
   performance: PerformanceURLParams;
   audioMock: MockAudioURLParams;
+  /**
+   * Legacy alias for the debug HUD. `?stats=1` used to open a separate
+   * stats-gl panel; it now enables (and persists) the same HUD as
+   * `?debug=hud`, and `?stats=0` clears the persisted opt-in.
+   */
   stats: '1' | '0' | null;
   tvOverride: string | null;
-  overlay: OverlayURLParams;
+  flags: FlagURLParams;
   harness: HarnessURLParams;
   webgpuFlags: WebGpuFlagURLParams;
 }
 
+/**
+ * Every panel is addressable. 'refine', 'finder', and 'synthesize' were
+ * missing here for no reason anyone recorded — they simply never got added as
+ * they shipped — which meant the AI panels, the newest capability in the app,
+ * could not be linked, bookmarked, or restored across a reload.
+ */
 const VALID_PANELS = new Set<Exclude<PanelState, null>>([
   'browse',
   'capture',
   'editor',
+  'finder',
+  'refine',
   'settings',
+  'synthesize',
 ]);
 
 const VALID_AUDIO_SOURCES = new Set<AudioSource>([
@@ -192,6 +250,14 @@ function resolveSearchParams(
   return new URLSearchParams();
 }
 
+/** YouTube ids are exactly 11 URL-safe base64 characters. */
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+
+function normalizeYouTubeVideoId(value: unknown): string | null {
+  const str = readParamValue(value)?.trim() ?? '';
+  return YOUTUBE_ID_PATTERN.test(str) ? str : null;
+}
+
 function parseNumberParam(val: string | null): number | null {
   if (!val) return null;
   const num = Number(val);
@@ -241,6 +307,19 @@ export function parseURLParams(
         VALID_PANELS,
         LEGACY_PANEL_ALIASES,
       ),
+      // A misspelled ?tool= used to normalize to null and drop you on the
+      // stage with no explanation. Keep the rejected value so the shell can
+      // say which name it did not recognize.
+      invalidPanel: (() => {
+        const requested = readParamValue(get('tool') ?? get('panel'))
+          ?.trim()
+          .toLowerCase();
+        if (!requested) return null;
+        const mapped = LEGACY_PANEL_ALIASES[requested] ?? requested;
+        return VALID_PANELS.has(mapped as Exclude<PanelState, null>)
+          ? null
+          : requested;
+      })(),
       audioSource: normalizeEnum(
         get('audio'),
         VALID_AUDIO_SOURCES,
@@ -252,14 +331,22 @@ export function parseURLParams(
         legacyExperience && legacyExperience !== 'milkdrop'
           ? legacyExperience
           : null,
+      youtubeVideoId: normalizeYouTubeVideoId(params.get('yt')),
+      youtubeStartSeconds: (() => {
+        const seconds = parseNumberParam(get('t'));
+        return seconds != null && seconds > 0 ? Math.floor(seconds) : null;
+      })(),
+      syncRoom: get('sync')?.trim() || null,
     },
     renderer,
     corpus: get('corpus')?.trim() || null,
+    seed: parseNumberParam(get('seed')),
     performance: {
       maxPixelRatio: parseNumberParam(get('maxPixelRatio')),
       particleBudget: parseNumberParam(get('particleBudget')),
       shaderQuality: get('shaderQuality')?.trim() || null,
       lockedQualityStep: parseNumberParam(get('lockQualityStep')),
+      powerSaver: get('powerSaver')?.trim() || null,
     },
     audioMock: {
       type: get('mockAudio')?.trim() || null,
@@ -267,17 +354,14 @@ export function parseURLParams(
     },
     stats,
     tvOverride: tvRaw?.trim() || null,
-    overlay: {
-      autoplay: get('autoplay')?.trim() || null,
-      blend: get('blend')?.trim() || null,
-      transition: get('transition')?.trim() || null,
+    flags: {
+      debug: get('debug')?.trim() || null,
+      liveTiles: params.has('liveTiles'),
+      strudel: params.has('strudel'),
     },
     harness: {
       component: get('component')?.trim() || null,
       props: get('props') || null,
-      mockBackend: get('mockBackend')?.trim() || null,
-      mockPresetId: get('mockPresetId')?.trim() || null,
-      mockAudioActive: get('mockAudioActive') === 'true',
       grid: get('grid')?.trim() || null,
     },
     webgpuFlags: {
@@ -322,6 +406,12 @@ export function getPerformanceOverrideParams(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): PerformanceURLParams {
   return parseURLParams(input).performance;
+}
+
+export function getPowerSaverOverride(
+  input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
+): string | null {
+  return parseURLParams(input).performance.powerSaver;
 }
 
 export function getMockAudioParams(

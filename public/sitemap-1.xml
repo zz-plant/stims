@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-08-04</lastmod>
+    <lastmod>2026-08-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,13 +13,167 @@
   </url>
   <url>
     <loc>https://toil.fyi/performance/</loc>
-    <lastmod>2026-08-05</lastmod>
+    <lastmod>2026-08-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/performance.png</image:loc>
       <image:title>Compatibility and Performance | Stims</image:title>
       <image:caption>Guide to browser support, lighter visual modes, and what to expect on older devices.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/audio-reactive</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Audio Reactive Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Audio Reactive MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/ambient</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Ambient Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Ambient MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/fractal</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Fractal Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Fractal MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/geometric</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Geometric Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Geometric MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/hall-of-fame</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Hall Of Fame Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Hall Of Fame MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/neon</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Neon Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Neon MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/particles</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Particles Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Particles MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/psychedelic</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Psychedelic Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Psychedelic MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/retro</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Retro Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Retro MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/space</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Space Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Space MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/trippy</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Trippy Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Trippy MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/tunnel</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Tunnel Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Tunnel MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/waveform</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Waveform Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Waveform MilkDrop visualizers running live in the browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/discover/webgpu-showcase</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Webgpu Showcase Music Visualizers | Stims</image:title>
+      <image:caption>Sound-reactive Webgpu Showcase MilkDrop visualizers running live in the browser.</image:caption>
     </image:image>
   </url>
 </urlset>

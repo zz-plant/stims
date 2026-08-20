@@ -1,8 +1,7 @@
 import {
-  isInAppBrowser,
-  isMobileDevice,
-} from '../../utils/browser/device-detect.ts';
-import { getDisplayRefreshRate } from '../device-profile.ts';
+  getDisplayRefreshRate,
+  getHardwareSignals,
+} from '../device-profile.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -45,6 +44,9 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   averageRenderMs: number | null;
   averageGpuMs: number | null;
   sampleCount: number;
+  jankCount: number;
+  frameVarianceMs2: number | null;
+  thermalState: 'nominal' | 'elevated' | 'throttling';
   rollingAverageFrameMs: number | null;
   rollingWindowSize: number;
   adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
@@ -54,6 +56,16 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
 export type AdaptiveQualityController = {
   getState: () => AdaptiveQualityState;
   recordFrame: (sample: AdaptiveQualitySample) => AdaptiveQualityState;
+  setQualityStep: (step: number) => AdaptiveQualityState;
+  /**
+   * Tells the controller a preset was just applied. Clears in-flight
+   * pressure evidence (the compile + feedback warm-up spike resolves on its
+   * own, and letting it demote the step forces a needless degrade→recover
+   * round trip), and on constrained profiles pre-degrades one step so the
+   * warm-up renders at reduced resolution instead of dropping frames first —
+   * the existing headroom-recovery path walks it back up.
+   */
+  notePresetApplied: () => AdaptiveQualityState;
   subscribe: (subscriber: (state: AdaptiveQualityState) => void) => () => void;
 };
 
@@ -89,42 +101,55 @@ const QUALITY_STEPS: readonly QualityStep[] = [
   },
   {
     id: 'balanced',
-    renderScaleMultiplier: 0.94,
-    maxPixelRatioMultiplier: 0.96,
-    densityMultiplier: 0.92,
-    feedbackResolutionMultiplier: 0.9,
+    renderScaleMultiplier: 0.96,
+    maxPixelRatioMultiplier: 0.98,
+    densityMultiplier: 0.88,
+    feedbackResolutionMultiplier: 0.88,
   },
   {
     id: 'reduced',
-    renderScaleMultiplier: 0.88,
-    maxPixelRatioMultiplier: 0.92,
-    densityMultiplier: 0.82,
-    feedbackResolutionMultiplier: 0.8,
+    renderScaleMultiplier: 0.92,
+    maxPixelRatioMultiplier: 0.94,
+    densityMultiplier: 0.78,
+    feedbackResolutionMultiplier: 0.78,
   },
   {
     id: 'low',
-    renderScaleMultiplier: 0.8,
-    maxPixelRatioMultiplier: 0.86,
-    densityMultiplier: 0.72,
-    feedbackResolutionMultiplier: 0.68,
+    renderScaleMultiplier: 0.84,
+    maxPixelRatioMultiplier: 0.88,
+    densityMultiplier: 0.68,
+    feedbackResolutionMultiplier: 0.65,
   },
   {
     id: 'minimal',
-    renderScaleMultiplier: 0.72,
+    renderScaleMultiplier: 0.75,
     maxPixelRatioMultiplier: 0.8,
-    densityMultiplier: 0.6,
-    feedbackResolutionMultiplier: 0.56,
+    densityMultiplier: 0.55,
+    feedbackResolutionMultiplier: 0.52,
   },
 ] as const;
 
+const STEADY_REPUBLISH_INTERVAL_SAMPLES = 60;
 const EMA_ALPHA = 0.18;
-const MIN_WARMUP_SAMPLES = 12;
-const DEGRADE_THRESHOLD_SAMPLES = 6;
-const RECOVER_THRESHOLD_SAMPLES = 30;
-const ENHANCE_THRESHOLD_SAMPLES = 60;
+const MIN_WARMUP_SAMPLES = 24;
+const DEGRADE_THRESHOLD_SAMPLES = 12;
+const RECOVER_THRESHOLD_SAMPLES = 18;
+const ENHANCE_THRESHOLD_SAMPLES = 36;
 const RESET_THRESHOLD_SAMPLES = 3;
-const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 3;
+const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 6;
 const ROLLING_WINDOW_MS = 5000;
+/**
+ * Cadence that still counts as "presenting on target" when looking for
+ * headroom. This must be >= 1: a session presenting perfectly at vsync has
+ * `cadenceMs === frameBudgetMs`, so requiring cadence to be *faster* than
+ * the budget (the old `* 0.9`) made headroom unreachable on exactly the
+ * displays most people use — 16.67ms measured against a 15.0ms bar on
+ * 60Hz, 8.33 against 7.5 on 120Hz. Quality could then only ever ratchet
+ * down, and one transient spike stranded the session at reduced quality
+ * for good. The degrade side treats > 1.10 as pressure, so 1.05 leaves a
+ * small dead band between "recovering" and "degrading".
+ */
+const CADENCE_AT_TARGET_RATIO = 1.05;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -145,6 +170,12 @@ export function getAdaptiveQualityDisplayRefreshRate(): number {
 }
 
 function estimateFrameBudgetMs(): number {
+  // Mobile displays (especially high-refresh 120Hz/144Hz panels) target 60Hz
+  // (16.67ms) to preserve battery life and prevent rapid thermal throttling.
+  if (getHardwareSignals().isMobile) {
+    return 1000 / 60;
+  }
+
   // Budget against at most a 120Hz cadence: a 144-240Hz panel that presents at
   // panel rate would otherwise get a 4-7ms budget, read every frame as
   // over-budget, and pin the controller into permanent degradation.
@@ -157,16 +188,33 @@ function buildHeuristicProfile(
   capabilities: WebGPUCapabilitySummary | null,
 ) {
   const frameBudgetMs = estimateFrameBudgetMs();
+  const signals = getHardwareSignals();
 
   if (backend === 'webgl') {
+    const isDesktopHighEnd =
+      !signals.isMobile &&
+      !signals.isSmartTv &&
+      (signals.hardwareConcurrency === null ||
+        signals.hardwareConcurrency >= 6);
+    const reasons = [
+      isDesktopHighEnd
+        ? 'Desktop WebGL sessions start from full quality with coarse frame monitoring.'
+        : 'WebGL fallback sessions start from a conservative adaptive quality step.',
+      'Coarse CPU frame timing is used because GPU timing is unavailable.',
+    ];
+    let initialStep = isDesktopHighEnd ? 1 : 2;
+    if (signals.isSmartTv) {
+      reasons.push(
+        'Smart TV hardware operates from a conservative initial quality step.',
+      );
+      initialStep = Math.max(initialStep, 3);
+    }
     return {
       frameBudgetMs,
-      initialStep: 2,
+      initialStep,
+      floorStep: 0,
       profile: 'fallback-webgl',
-      reasons: [
-        'WebGL fallback sessions start from a conservative adaptive quality step.',
-        'Coarse CPU frame timing is used because GPU timing is unavailable.',
-      ],
+      reasons,
     };
   }
 
@@ -174,6 +222,7 @@ function buildHeuristicProfile(
     return {
       frameBudgetMs,
       initialStep: 3,
+      floorStep: 0,
       profile: 'fallback-webgpu',
       reasons: ['No WebGPU capability snapshot was available for adaptation.'],
     };
@@ -186,6 +235,13 @@ function buildHeuristicProfile(
       : capabilities.performanceTier === 'enhanced'
         ? 1
         : 2;
+
+  if (signals.isSmartTv) {
+    reasons.push(
+      'Smart TV hardware operates from a conservative initial quality step.',
+    );
+    initialStep = Math.max(initialStep, 2);
+  }
 
   // 'ultra' and 'hi-fi' are both top-tier recommendations; production code
   // emits 'ultra' for high-end desktops, so treating only 'hi-fi' as top-tier
@@ -201,7 +257,10 @@ function buildHeuristicProfile(
     reasons.push('float32 blendable attachments are unavailable.');
     initialStep += 1;
   }
-  if (!capabilities.features.float32Filterable) {
+  if (
+    !capabilities.features.float32Filterable &&
+    !capabilities.features.shaderF16
+  ) {
     reasons.push('float32 filterable textures are unavailable.');
     initialStep += 1;
   }
@@ -223,12 +282,24 @@ function buildHeuristicProfile(
     );
   }
 
-  if (isMobileDevice()) {
-    initialStep = Math.max(initialStep, 2);
+  let floorStep = 0;
+  if (signals.isMobile) {
+    const isFlagshipMobile =
+      (capabilities.performanceTier === 'high-end' ||
+        capabilities.performanceTier === 'enhanced') &&
+      (signals.hardwareConcurrency ?? 0) >= 6;
+    // Flagship mobile starts at 'full' (step 1), never 'ultra' (step 0): the
+    // render/pixel-ratio caps already bound the effective resolution, and the
+    // per-pixel multipliers above 1.0 buy nothing while the phone's single
+    // CPU core pays for the extra mesh/wave density and feedback fill.
+    floorStep = isFlagshipMobile ? 1 : 2;
+    initialStep = Math.max(initialStep, floorStep);
     reasons.push(
-      'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+      isFlagshipMobile
+        ? 'Flagship mobile sessions start from full quality with adaptive throttling headroom.'
+        : 'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
     );
-  } else if (isInAppBrowser()) {
+  } else if (signals.isInAppBrowser) {
     initialStep = Math.max(initialStep, 2);
     reasons.push(
       'In-app webview sessions start from balanced quality for steadier sustained performance.',
@@ -240,6 +311,7 @@ function buildHeuristicProfile(
   return {
     frameBudgetMs,
     initialStep,
+    floorStep,
     profile: capabilities.performanceTier,
     reasons,
   };
@@ -256,6 +328,9 @@ function buildState({
   averageCadenceMs,
   averageRenderMs,
   averageGpuMs,
+  jankCount,
+  frameVarianceMs2,
+  thermalState,
   rollingAverageFrameMs,
   rollingWindowSize,
   sampleCount,
@@ -272,6 +347,9 @@ function buildState({
   averageCadenceMs: number | null;
   averageRenderMs: number | null;
   averageGpuMs: number | null;
+  jankCount: number;
+  frameVarianceMs2: number | null;
+  thermalState: 'nominal' | 'elevated' | 'throttling';
   rollingAverageFrameMs: number | null;
   rollingWindowSize: number;
   sampleCount: number;
@@ -293,6 +371,9 @@ function buildState({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    jankCount,
+    frameVarianceMs2,
+    thermalState,
     rollingAverageFrameMs,
     rollingWindowSize,
     adaptation,
@@ -302,6 +383,12 @@ function buildState({
     densityMultiplier: step.densityMultiplier,
     feedbackResolutionMultiplier: step.feedbackResolutionMultiplier,
   } satisfies AdaptiveQualityState;
+}
+
+let activeAdaptiveQualityController: AdaptiveQualityController | null = null;
+
+export function getActiveAdaptiveQualityController(): AdaptiveQualityController | null {
+  return activeAdaptiveQualityController;
 }
 
 export function createAdaptiveQualityController({
@@ -344,12 +431,52 @@ export function createAdaptiveQualityController({
   let rollingFrameTimesIndex = 0;
   let rollingFrameTimesFilled = false;
 
+  /**
+   * Drops the pre-change evidence a quality change invalidates. The ~5s
+   * rolling window is the one that matters: without this it still holds
+   * frames rendered at the *old* step, so `rollingFramePressure` stays true
+   * and re-degrades three samples later purely because the average hasn't
+   * caught up yet — not because the new step is actually too slow. After
+   * the reset, a re-degrade only fires on frames measured *after* the
+   * change, which is a real signal even at a small sample count, not a
+   * stale one. Deliberately fast: sustained genuine pressure should still
+   * walk down multiple steps in quick succession.
+   *
+   * The EMAs are left alone. `consecutiveOverBudget`/`consecutiveUnderBudget`
+   * are reset by each branch already, and nulling the EMAs would blank
+   * `averageFrameMs`/`averageRenderMs` in the published state that the perf
+   * HUD and telemetry read.
+   *
+   * `rollingAverageFrameMs` is also left as-is here rather than nulled: the
+   * sum/count bookkeeping below only ever covers samples at or after
+   * `rollingFrameTimesIndex`, so the stale array contents this clears are
+   * already excluded from the next average regardless. Nulling it here would
+   * only wipe the number that just justified this decision — this function
+   * runs before the degrade branch builds its "rolling average exceeded
+   * budget" reason string, so that message would report `undefined`. The
+   * next recorded frame naturally overwrites it with a fresh, small-sample
+   * average.
+   */
+  let rollingFrameTimesSqSum = 0;
+
+  function resetRollingWindowAfterStepChange() {
+    rollingFrameTimes.fill(0);
+    rollingFrameTimesSum = 0;
+    rollingFrameTimesSqSum = 0;
+    rollingFrameTimesIndex = 0;
+    rollingFrameTimesFilled = false;
+    consecutiveRollingOverBudget = 0;
+  }
+
   function pushRollingFrameTime(frameMs: number) {
     if (rollingFrameTimesFilled) {
-      rollingFrameTimesSum -= rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
+      const oldVal = rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
+      rollingFrameTimesSum -= oldVal;
+      rollingFrameTimesSqSum -= oldVal * oldVal;
     }
     rollingFrameTimes[rollingFrameTimesIndex] = frameMs;
     rollingFrameTimesSum += frameMs;
+    rollingFrameTimesSqSum += frameMs * frameMs;
     rollingFrameTimesIndex = (rollingFrameTimesIndex + 1) % rollingWindowSize;
     if (rollingFrameTimesIndex === 0) {
       rollingFrameTimesFilled = true;
@@ -358,6 +485,39 @@ export function createAdaptiveQualityController({
       ? rollingWindowSize
       : rollingFrameTimesIndex;
     rollingAverageFrameMs = count > 0 ? rollingFrameTimesSum / count : null;
+  }
+
+  let jankCount = 0;
+  let frameVarianceMs2: number | null = null;
+  let thermalState: 'nominal' | 'elevated' | 'throttling' = 'nominal';
+
+  function computeFrameVariance(): number | null {
+    const count = rollingFrameTimesFilled
+      ? rollingWindowSize
+      : rollingFrameTimesIndex;
+    if (count < 2 || rollingAverageFrameMs === null) return null;
+    const meanSq = rollingFrameTimesSqSum / count;
+    const varVal = meanSq - rollingAverageFrameMs * rollingAverageFrameMs;
+    return varVal < 0 ? 0 : varVal;
+  }
+
+  function updateThermalState() {
+    const varMs2 = computeFrameVariance();
+    frameVarianceMs2 = varMs2;
+    const sqBudget = heuristic.frameBudgetMs * heuristic.frameBudgetMs;
+    if (
+      consecutiveOverBudget >= 5 ||
+      (varMs2 !== null && varMs2 > sqBudget * 0.4)
+    ) {
+      thermalState = 'throttling';
+    } else if (
+      consecutiveOverBudget >= 2 ||
+      (varMs2 !== null && varMs2 > sqBudget * 0.15)
+    ) {
+      thermalState = 'elevated';
+    } else {
+      thermalState = 'nominal';
+    }
   }
 
   let state = buildState({
@@ -372,6 +532,9 @@ export function createAdaptiveQualityController({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    jankCount,
+    frameVarianceMs2,
+    thermalState,
     rollingAverageFrameMs,
     rollingWindowSize,
     adaptation,
@@ -388,6 +551,7 @@ export function createAdaptiveQualityController({
   });
 
   const publish = () => {
+    updateThermalState();
     state = buildState({
       backend,
       timingMode,
@@ -400,6 +564,9 @@ export function createAdaptiveQualityController({
       averageRenderMs,
       averageGpuMs,
       sampleCount,
+      jankCount,
+      frameVarianceMs2,
+      thermalState,
       rollingAverageFrameMs,
       rollingWindowSize,
       adaptation,
@@ -409,8 +576,27 @@ export function createAdaptiveQualityController({
     return state;
   };
 
-  return {
+  const controller: AdaptiveQualityController = {
     getState: () => state,
+    setQualityStep: (step: number) => {
+      const targetStep = Math.min(
+        Math.max(Math.round(step), 0),
+        QUALITY_STEPS.length - 1,
+      );
+      qualityStep = targetStep;
+      adaptation = 'steady';
+      consecutiveOverBudget = 0;
+      consecutiveUnderBudget = 0;
+      resetRollingWindowAfterStepChange();
+      state = {
+        ...state,
+        reasons: [
+          ...heuristic.reasons,
+          `Quality step manually set to ${QUALITY_STEPS[targetStep].id}.`,
+        ],
+      };
+      return publish();
+    },
     recordFrame: ({
       frameMs,
       cadenceMs,
@@ -422,6 +608,9 @@ export function createAdaptiveQualityController({
       }
 
       sampleCount += 1;
+      if (frameMs > heuristic.frameBudgetMs * 1.5) {
+        jankCount += 1;
+      }
       averageFrameMs = updateEma(averageFrameMs, frameMs);
       pushRollingFrameTime(frameMs);
       if (
@@ -452,26 +641,52 @@ export function createAdaptiveQualityController({
         return state;
       }
 
+      if (sampleCount === MIN_WARMUP_SAMPLES) {
+        // On completing warmup, seed EMAs with the settled post-warmup frame
+        // and reset the rolling window so startup compilation spikes don't falsely
+        // trigger immediate degradation.
+        averageFrameMs = frameMs;
+        averageRenderMs =
+          typeof renderMs === 'number' && Number.isFinite(renderMs)
+            ? renderMs
+            : null;
+        averageCadenceMs =
+          typeof cadenceMs === 'number' && Number.isFinite(cadenceMs)
+            ? cadenceMs
+            : null;
+        averageGpuMs =
+          supportsGpuTimestamps &&
+          typeof gpuMs === 'number' &&
+          Number.isFinite(gpuMs)
+            ? gpuMs
+            : null;
+        consecutiveOverBudget = 0;
+        consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
+      }
+
       const renderPressure =
         averageRenderMs !== null &&
-        averageRenderMs > heuristic.frameBudgetMs * 0.82;
+        averageRenderMs > heuristic.frameBudgetMs * 0.9;
       const gpuPressure =
-        averageGpuMs !== null && averageGpuMs > heuristic.frameBudgetMs * 0.82;
+        averageGpuMs !== null && averageGpuMs > heuristic.frameBudgetMs * 0.9;
       const framePressure =
         averageFrameMs !== null &&
-        averageFrameMs > heuristic.frameBudgetMs * 1.08;
+        averageFrameMs > heuristic.frameBudgetMs * 1.1;
       const cadencePressure =
         averageCadenceMs !== null &&
-        averageCadenceMs > heuristic.frameBudgetMs * 1.08;
+        averageCadenceMs > heuristic.frameBudgetMs * 1.12 &&
+        (averageFrameMs === null ||
+          averageFrameMs > heuristic.frameBudgetMs * 0.85);
       const hasHeadroom =
         averageFrameMs !== null &&
-        averageFrameMs < heuristic.frameBudgetMs * 0.72 &&
+        averageFrameMs < heuristic.frameBudgetMs * 0.75 &&
         (averageCadenceMs === null ||
-          averageCadenceMs < heuristic.frameBudgetMs * 0.9) &&
+          averageCadenceMs <=
+            heuristic.frameBudgetMs * CADENCE_AT_TARGET_RATIO) &&
         (averageRenderMs === null ||
-          averageRenderMs < heuristic.frameBudgetMs * 0.55) &&
-        (averageGpuMs === null ||
-          averageGpuMs < heuristic.frameBudgetMs * 0.55);
+          averageRenderMs < heuristic.frameBudgetMs * 0.7) &&
+        (averageGpuMs === null || averageGpuMs < heuristic.frameBudgetMs * 0.7);
       const rollingFramePressure =
         rollingAverageFrameMs !== null &&
         rollingAverageFrameMs > heuristic.frameBudgetMs;
@@ -481,7 +696,20 @@ export function createAdaptiveQualityController({
         consecutiveRollingOverBudget = 0;
       }
 
-      if (renderPressure || gpuPressure || framePressure || cadencePressure) {
+      // Check if current frame is an isolated transient spike/outlier
+      // (e.g., GC pause or compositor hitch where single frameMs > 2x budget, but GPU & render time are normal and rolling window is calm)
+      const isTransientHitch =
+        frameMs > heuristic.frameBudgetMs * 2.0 &&
+        (averageRenderMs === null ||
+          averageRenderMs <= heuristic.frameBudgetMs * 0.9) &&
+        (averageGpuMs === null ||
+          averageGpuMs <= heuristic.frameBudgetMs * 0.9) &&
+        !rollingFramePressure;
+
+      if (
+        !isTransientHitch &&
+        (renderPressure || gpuPressure || framePressure || cadencePressure)
+      ) {
         consecutiveOverBudget += 1;
         consecutiveUnderBudget = 0;
       } else if (hasHeadroom) {
@@ -505,7 +733,7 @@ export function createAdaptiveQualityController({
         adaptation = 'degraded';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
-        consecutiveRollingOverBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
@@ -531,6 +759,7 @@ export function createAdaptiveQualityController({
         adaptation = 'recovering';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
@@ -544,13 +773,14 @@ export function createAdaptiveQualityController({
       if (
         stepLock === null &&
         consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
-        qualityStep > 0 &&
+        qualityStep > heuristic.floorStep &&
         (heuristic.profile === 'high-end' || heuristic.profile === 'enhanced')
       ) {
         qualityStep -= 1;
         adaptation = 'enhanced';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
         state = {
           ...state,
           reasons: [
@@ -569,7 +799,46 @@ export function createAdaptiveQualityController({
         adaptation = 'steady';
       }
 
+      // Steady frames never hit a publish() branch above, so without this the
+      // published state (telemetry, HUD, agent bridge) freezes on the last
+      // warmup snapshot — including startup-spike averages and a spurious
+      // thermalState — for the rest of the session. Republish about once a
+      // second so observers track the live EMAs without per-frame GC churn.
+      if (sampleCount % STEADY_REPUBLISH_INTERVAL_SAMPLES === 0) {
+        return publish();
+      }
+
       return state;
+    },
+    notePresetApplied: () => {
+      // A preset switch invalidates pressure evidence the same way a step
+      // change does: the frames behind the averages were rendered under the
+      // previous preset's workload.
+      consecutiveOverBudget = 0;
+      consecutiveUnderBudget = 0;
+      resetRollingWindowAfterStepChange();
+
+      const constrainedProfile =
+        heuristic.profile !== 'high-end' && heuristic.profile !== 'enhanced';
+      // The session-start warmup path (MIN_WARMUP_SAMPLES) already seeds the
+      // boot conservatively; the pre-degrade is for switches after that.
+      if (
+        stepLock === null &&
+        constrainedProfile &&
+        sampleCount >= MIN_WARMUP_SAMPLES &&
+        qualityStep < QUALITY_STEPS.length - 1
+      ) {
+        qualityStep += 1;
+        adaptation = 'degraded';
+        state = {
+          ...state,
+          reasons: [
+            ...heuristic.reasons,
+            'Preset switch: warming up at a reduced quality step.',
+          ],
+        };
+      }
+      return publish();
     },
     subscribe: (subscriber) => {
       subscribers.add(subscriber);
@@ -579,4 +848,6 @@ export function createAdaptiveQualityController({
       };
     },
   };
+  activeAdaptiveQualityController = controller;
+  return controller;
 }

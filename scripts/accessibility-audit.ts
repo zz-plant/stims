@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * Accessibility & Optimization Audit
  * Walks the DOM to detect common WCAG issues across home and panel states.
@@ -6,7 +7,8 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { chromium } from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
+import { chromium, type Page } from 'playwright';
 
 const TARGET_URL = process.env.TARGET_URL || 'http://localhost:5173';
 const OUTPUT_DIR = 'tests/accessibility';
@@ -27,6 +29,58 @@ interface Issue {
 interface LinkInfo {
   text: string;
   href: string;
+}
+
+/**
+ * axe-core over the same states the hand-written checks walk.
+ *
+ * The bespoke checks below encode product-specific rules (canvas fallbacks,
+ * live-region usage on the stage) that no generic engine knows about, and
+ * they stay. What they cannot do is keep up with the ARIA spec: this codebase
+ * shipped a `role="listbox"` containing a non-`option` button, and
+ * `aria-setsize` on a `role="button"`, within one week — both default axe
+ * rules (`aria-required-children`, `aria-allowed-attr`), both caught late by
+ * reading rather than by CI. For a product whose accessibility posture is a
+ * differentiator (flash safety, reduced motion, roving tabindex throughout),
+ * "asserted in CI" is a stronger claim than "we were careful".
+ *
+ * Scoped to the app shell: the visualizer canvas is a `<canvas>` with a
+ * text alternative and no internal semantics for axe to inspect, and colour
+ * contrast cannot be judged against arbitrary moving artwork behind
+ * translucent chrome — that is what the WCAG 2.3.1 flash audit is for.
+ */
+async function runAxeChecks(page: Page, stateName: string): Promise<Issue[]> {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
+    .disableRules([
+      // Judged per-frame by scripts/analyze-preset-flash.ts instead; axe
+      // would sample one arbitrary frame of a live shader and report noise.
+      'color-contrast',
+      // CodeMirror 6 puts tabindex="-1" on .cm-scroller and keeps the
+      // focusable control on .cm-content inside it, which is what actually
+      // handles arrow-key scrolling. axe sees only a scrollable element it
+      // cannot tab to. Verified by keyboard: focus lands on .cm-content and
+      // arrows scroll the document.
+      'scrollable-region-focusable',
+    ])
+    .analyze();
+
+  return results.violations.flatMap((violation) =>
+    violation.nodes.map((node) => ({
+      type: `axe:${violation.id}`,
+      // axe's own impact scale mapped onto this report's three tiers, so a
+      // violation can fail the run the same way a hand-written check does.
+      severity: (violation.impact === 'critical' ||
+      violation.impact === 'serious'
+        ? 'lifecycle'
+        : 'usability') as IssueSeverity,
+      element: node.html.slice(0, 200),
+      selector: node.target.join(' '),
+      attributes: violation.help,
+      suggestion: `${violation.description} (${violation.helpUrl})`,
+      state: stateName,
+    })),
+  );
 }
 
 function runDomChecks(stateName: string) {
@@ -276,9 +330,19 @@ function runDomChecks(stateName: string) {
     }
   });
 
-  // Check 12: Dialogs missing aria-modal
+  // Check 12: Modal dialogs missing aria-modal.
+  //
+  // Only *modal* ones. aria-modal defaults to false and a non-modal dialog is
+  // valid ARIA — the stage-anchored editor is deliberately one, because it
+  // sits beside the visualizer and leaves it interactive. Declaring
+  // aria-modal="true" there would tell a screen reader the rest of the page
+  // is inert when it is not, which is worse than the omission this check was
+  // flagging. SidePanel encodes the distinction itself
+  // (`aria-modal={stageAnchored ? undefined : 'true'}`), so trust the same
+  // signal rather than assuming every dialog traps the user.
   document.querySelectorAll('[role="dialog"]').forEach((dialog) => {
     if (isHidden(dialog)) return;
+    if (dialog.getAttribute('data-stage-anchored') === 'true') return;
     if (dialog.getAttribute('aria-modal') !== 'true') {
       issues.push({
         type: 'dialog-aria-modal',
@@ -297,7 +361,11 @@ function runDomChecks(stateName: string) {
 async function audit() {
   console.log('🔍 Running comprehensive accessibility audit...\n');
 
-  const browser = await chromium.launch({ headless: false });
+  // Headless by default so the audit can run in CI; set HEADFUL=1 to watch
+  // the run locally.
+  const browser = await chromium.launch({
+    headless: process.env.HEADFUL !== '1',
+  });
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },
     locale: 'en-US',
@@ -320,39 +388,70 @@ async function audit() {
     });
 
     const allIssues: Issue[] = [];
+    // What was genuinely audited, versus what the panel list hoped for.
+    const visitedStates: string[] = ['home'];
+    const skippedStates: string[] = [];
 
     // Home state
     const homeIssues = await page.evaluate(runDomChecks, 'home');
     allIssues.push(...homeIssues);
+    allIssues.push(...(await runAxeChecks(page, 'home')));
 
     // Panel states
-    const panels = [
-      { name: 'browse', label: 'Browse presets' },
-      { name: 'settings', label: 'Settings panel' },
-      { name: 'editor', label: 'Edit preset code' },
-    ];
+    // Reached by route rather than by clicking. The old version hunted for
+    // buttons by rendered text, which found only the ones that happen to be
+    // on screen with a visible label — settings and the editor live behind
+    // a "More actions" menu, so they were never opened, while the report
+    // still listed them as audited. `?tool=<panel>` is the same state the
+    // buttons produce (see url-state.ts) and does not depend on which
+    // chrome is currently visible or how it is labelled.
+    const panels = ['browse', 'settings', 'editor'];
 
     for (const panel of panels) {
-      const button = page.locator('button', { hasText: panel.label }).first();
-      const count = await button.count();
-      if (count > 0) {
-        await button.click();
-        await page.waitForTimeout(300);
-        const panelIssues = await page.evaluate(runDomChecks, panel.name);
-        allIssues.push(...panelIssues);
-        // Close panel if there's a close button
-        const closeButton = page.locator('button[aria-label="Close"]').first();
-        if ((await closeButton.count()) > 0) {
-          await closeButton.click();
-          await page.waitForTimeout(200);
-        }
+      const url = new URL(TARGET_URL);
+      url.searchParams.set('tool', panel);
+      // `?agent=true` is required, not cosmetic: on a cold visit the boot
+      // path rewrites the query to the startup preset and drops `tool`
+      // entirely, so a plain `?tool=browse` lands on the home screen. Agent
+      // mode preserves it — the same reason it is this repo's documented URL
+      // for browser QA.
+      url.searchParams.set('agent', 'true');
+      await page.goto(url.toString(), {
+        waitUntil: 'networkidle',
+        timeout: 30000,
+      });
+      await page.waitForTimeout(1200);
+
+      // Not every tool is a sheet panel — the editor mounts as a
+      // stage-anchored role="dialog" (see stageAnchoredToolOpen in App.tsx),
+      // so keying on the sheet class alone would have reported it as
+      // unreachable while it was in fact on screen.
+      const opened = await page.evaluate(
+        (name) =>
+          document.querySelector(`.stims-shell__sheet-panel--${name}`) !==
+            null || document.querySelector('[role="dialog"]') !== null,
+        panel,
+      );
+      if (!opened) {
+        skippedStates.push(panel);
+        console.warn(`⚠️  "?tool=${panel}" did not open a panel — NOT audited.`);
+        continue;
       }
+
+      const panelIssues = await page.evaluate(runDomChecks, panel);
+      allIssues.push(...panelIssues);
+      allIssues.push(...(await runAxeChecks(page, panel)));
+      visitedStates.push(panel);
     }
 
-    // Deduplicate across states
+    // Deduplicate within a state, not across them. The key used to omit
+    // `state`, so the same issue appearing in home and browse collapsed to
+    // whichever ran first — every finding was then attributed to `home`,
+    // making the report look like the panels were clean when they simply
+    // had not been credited.
     const seen = new Set<string>();
     const uniqueIssues = allIssues.filter((issue) => {
-      const key = `${issue.type}|${issue.selector || ''}|${issue.attributes || ''}|${issue.element}|${issue.suggestion}`;
+      const key = `${issue.state}|${issue.type}|${issue.selector || ''}|${issue.attributes || ''}|${issue.element}|${issue.suggestion}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -400,7 +499,9 @@ async function audit() {
     const report = {
       timestamp,
       target: TARGET_URL,
-      states: ['home', ...panels.map((p) => p.name)],
+      // What was actually audited — not the wish list.
+      states: visitedStates,
+      skippedStates,
       total: uniqueIssues.length,
       critical: majorIssues.length,
       minor: minorIssues.length,

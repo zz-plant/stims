@@ -31,6 +31,19 @@ Tests are grouped into three speed tiers. Use the right tier for your workflow.
 **Concurrency & Sharding:** The fast suite runs under `bun test --parallel`, which distributes test files across worker processes with work stealing (`STIMS_TEST_SHARDS=n` overrides the worker count; `n=1` forces a single in-process run).  
 **When to use:** Pre-commit, `bun run check`, any time you want confident signal without waiting.
 
+Two tests in this tier act as **execution-tier contracts** rather than
+ordinary unit coverage — treat a failure as a semantics divergence, not a
+flake:
+
+- `tests/unit/eel-tier-differential.test.ts` — seeded random EEL programs run
+  through both the analysis interpreter (`expression.ts`) and the runtime JIT
+  (`expression-jit.ts`); results must match. Required reading before editing
+  either file.
+- `tests/unit/gpu-field-tier-differential.test.ts` — lowered per-pixel
+  descriptors evaluated with the WGSL emitter's exact semantics
+  (`webgpu-procedural-materials.ts`) against the CPU JIT. The test's JS
+  reference evaluator and the WGSL helper functions must be kept in lockstep.
+
 Tests excluded from this tier:
 
 | File | Why excluded |
@@ -117,7 +130,7 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 
 ### Touching `src/js/core/renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts`
 
-- [ ] Fallback chain tested with WebGPU disabled (see `tests/unit/renderer-capabilities.test.js`)
+- [ ] Fallback chain tested with WebGPU disabled (see `tests/unit/renderer-capabilities.test.ts`)
 - [ ] `renderScale` propagation verified end-to-end (capability probe → renderer plan → query override → pooled renderers)
 - [ ] Audio worklet initialization validated on the fallback path
 - [ ] `bun run test:integration` passes locally if the shell or audio bridge was touched
@@ -136,7 +149,7 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 
 ### Touching shell or routing (`src/js/frontend/App.tsx`, `url-state.ts`, `workspace-hooks.ts`)
 
-- [ ] `tests/unit/app-shell.test.js` and `tests/unit/frontend-url-state.test.ts` pass
+- [ ] `tests/unit/app-shell.test.ts` and `tests/unit/frontend-url-state.test.ts` pass
 - [ ] `bun run test:integration` passes (integration harness exercises the full boot sequence)
 - [ ] URL state normalization tested for both legacy params (`experience`, `panel`) and canonical params (`tool`, `collection`)
 
@@ -163,4 +176,4 @@ happy-dom provides `window`, `document`, `navigator`, `localStorage`, and `reque
 - [`QA_PLAN.md`](./QA_PLAN.md) — high-value flows and manual smoke checklist
 - [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md) — feature-level verification mapping
 - [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) — artifact-capture and sign-off checklist for milestone refactors
-- [`RECURRING_FIX_PATTERNS_AUDIT_2026-05.md`](./RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) — root cause analysis for the recurring regression clusters
+- [`evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md`](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) — root cause analysis for the recurring regression clusters

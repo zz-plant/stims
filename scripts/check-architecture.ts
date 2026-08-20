@@ -1,3 +1,23 @@
+/**
+ * Layer rules for `src/js`, and the violation collector the tests assert on.
+ *
+ * The tree is layered `app` -> `frontend` -> `core`/`ui`/`utils`, with the
+ * `milkdrop` engine reachable only through its public seam. The rule that
+ * matters most in practice is that seam: React re-renders freely, while the
+ * engine holds GPU resources and a frame loop, so a component importing engine
+ * internals instead of going through the adapter is how a re-render ends up
+ * disposing a live context. `core`'s narrow allowlist into `utils` is the one
+ * deliberate exception, kept explicit so it cannot quietly grow.
+ *
+ * Note on what enforces what: `bun run check:architecture` runs
+ * dependency-cruiser, not this file. What ships here is the layer classifier
+ * and `collectArchitectureViolations`, exercised by
+ * `tests/unit/check-architecture.test.ts`. The CLI entry below is not wired to
+ * any package script, and currently reports `utils -> core` edges from
+ * `device-detect.ts` that dependency-cruiser's config permits. Reconciling the
+ * two rule sets is open work — until then, treat the dependency-cruiser config
+ * as the enforced contract and this module as the tested description of intent.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -16,7 +36,6 @@ type ArchitectureLayer =
   | 'ui'
   | 'utils'
   | 'data'
-  | 'toy'
   | 'milkdrop-public'
   | 'milkdrop';
 
@@ -45,7 +64,6 @@ export function classifyArchitectureLayer(
     return 'ui';
   }
   if (relative.startsWith('src/js/data/')) return 'data';
-  if (relative.startsWith('src/js/toys/')) return 'toy';
   if (relative.startsWith('src/js/milkdrop/public/')) {
     return 'milkdrop-public';
   }
@@ -127,16 +145,6 @@ export function isArchitectureDependencyAllowed({
   if (sourceLayer === 'ui') {
     return (
       targetLayer === 'ui' || targetLayer === 'core' || targetLayer === 'utils'
-    );
-  }
-
-  if (sourceLayer === 'toy') {
-    return (
-      targetLayer === 'toy' ||
-      targetLayer === 'core' ||
-      targetLayer === 'utils' ||
-      targetLayer === 'milkdrop-public' ||
-      targetLayer === 'milkdrop'
     );
   }
 

@@ -22,7 +22,64 @@ describe('frontend url state', () => {
       agentMode: true,
       previewMode: false,
       invalidExperienceSlug: null,
+      invalidPanel: null,
+      youtubeVideoId: null,
+      youtubeStartSeconds: null,
     });
+  });
+
+  test('reads a shared YouTube video and start offset', () => {
+    const state = readSessionRouteState(
+      'https://toil.fyi/?audio=youtube&yt=dQw4w9WgXcQ&t=42',
+    );
+
+    expect(state.youtubeVideoId).toBe('dQw4w9WgXcQ');
+    expect(state.youtubeStartSeconds).toBe(42);
+  });
+
+  test('rejects a malformed YouTube id rather than loading a broken embed', () => {
+    const state = readSessionRouteState('https://toil.fyi/?yt=not-an-id');
+
+    expect(state.youtubeVideoId).toBeNull();
+  });
+
+  test('round-trips the YouTube video through the canonical url', () => {
+    const url = buildCanonicalUrl(
+      {
+        presetId: null,
+        collectionTag: null,
+        panel: null,
+        audioSource: 'youtube',
+        agentMode: false,
+        youtubeVideoId: 'dQw4w9WgXcQ',
+        youtubeStartSeconds: 42,
+      },
+      'https://toil.fyi/',
+    );
+
+    expect(url.searchParams.get('yt')).toBe('dQw4w9WgXcQ');
+    expect(url.searchParams.get('t')).toBe('42');
+    expect(readSessionRouteState(url.toString()).youtubeVideoId).toBe(
+      'dQw4w9WgXcQ',
+    );
+  });
+
+  test('omits a start offset when no video is set', () => {
+    const search = buildSessionRouteSearch(
+      {
+        presetId: null,
+        collectionTag: null,
+        panel: null,
+        audioSource: 'demo',
+        agentMode: false,
+        youtubeVideoId: null,
+        youtubeStartSeconds: 42,
+      },
+      {},
+    );
+
+    expect(search.t).toBeUndefined();
+    expect(search.yt).toBeUndefined();
   });
 
   test('normalizes supported panel and audio aliases', () => {

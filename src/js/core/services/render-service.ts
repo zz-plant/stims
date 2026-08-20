@@ -62,6 +62,7 @@ export type RendererHandle = {
 type RendererPoolEntry = {
   handle: RendererHandle;
   inUse: boolean;
+  lastReleasedAt: number;
 };
 
 type RendererPoolLifecycle = {
@@ -71,6 +72,83 @@ type RendererPoolLifecycle = {
 
 const rendererPool: RendererPoolEntry[] = [];
 const rendererLifecycles = new WeakMap<RendererHandle, RendererPoolLifecycle>();
+export const DEFAULT_MAX_IDLE_RENDERERS = 2;
+let maxIdleRenderers = DEFAULT_MAX_IDLE_RENDERERS;
+
+function disposeRendererPoolEntry(entry: RendererPoolEntry) {
+  entry.handle.renderer.setAnimationLoop?.(null);
+  rendererLifecycles.get(entry.handle)?.release();
+  entry.handle.renderer.dispose?.();
+  detachCanvas(entry.handle.canvas);
+  const entryIndex = rendererPool.indexOf(entry);
+  if (entryIndex !== -1) {
+    rendererPool.splice(entryIndex, 1);
+  }
+}
+
+function trimIdleRendererPool() {
+  const idleEntries = rendererPool
+    .filter((entry) => !entry.inUse)
+    .sort((left, right) => left.lastReleasedAt - right.lastReleasedAt);
+  const excessIdleCount = idleEntries.length - maxIdleRenderers;
+  for (let index = 0; index < excessIdleCount; index += 1) {
+    disposeRendererPoolEntry(idleEntries[index]);
+  }
+}
+
+export function setMaxIdleRenderers(maximum: number) {
+  if (!Number.isInteger(maximum) || maximum < 0) {
+    throw new RangeError(
+      'Maximum idle renderer count must be a non-negative integer.',
+    );
+  }
+  maxIdleRenderers = maximum;
+  trimIdleRendererPool();
+}
+
+/**
+ * Emitted whenever a pooled renderer stops being the same live GPU renderer
+ * it was a moment ago: recreated after a WebGL context loss or a WebGPU
+ * device loss, disposed, or released back to the pool. Consumers that hold
+ * external state bound to the *specific* renderer instance need to know,
+ * because the facade keeps its identity across a swap while the underlying
+ * renderer does not.
+ */
+export type RendererLifecycleEvent = {
+  type: 'recreated' | 'disposed' | 'released';
+  handle: RendererHandle;
+};
+
+const rendererLifecycleSubscribers = new Set<
+  (event: RendererLifecycleEvent) => void
+>();
+
+export function subscribeToRendererLifecycle(
+  subscriber: (event: RendererLifecycleEvent) => void,
+) {
+  rendererLifecycleSubscribers.add(subscriber);
+  return () => rendererLifecycleSubscribers.delete(subscriber);
+}
+
+function notifyRendererLifecycle(event: RendererLifecycleEvent) {
+  rendererLifecycleSubscribers.forEach((subscriber) => {
+    try {
+      subscriber(event);
+    } catch (error) {
+      console.warn('Renderer lifecycle subscriber failed.', error);
+    }
+  });
+}
+
+/**
+ * The stage renderer: the first pooled renderer still checked out. Pool
+ * entries are appended in creation order and the workspace stage is the
+ * first renderer the app requests, so this is the one attached to the
+ * visible canvas even when preview tiles have checked out extra renderers.
+ */
+export function getActiveRendererHandle(): RendererHandle | null {
+  return rendererPool.find((entry) => entry.inUse)?.handle ?? null;
+}
 let activeQuality: QualityPreset = getActiveQualityPreset();
 let _activeRenderPreferences = getActiveRenderPreferences();
 let activeRuntimeControls: RendererRuntimeControls =
@@ -201,6 +279,10 @@ function createRendererFacade({
   let animationLoop: (() => void) | null = null;
   let animationFrameId: number | null = null;
   const overrides = new Map<PropertyKey, unknown>();
+  const boundMethodCache = new WeakMap<
+    object,
+    Map<PropertyKey, { source: unknown; bound: unknown }>
+  >();
 
   const cancelScheduledFrame = () => {
     if (animationFrameId === null) {
@@ -279,12 +361,39 @@ function createRendererFacade({
         };
       }
 
-      const value = Reflect.get(getRenderer() as object, property);
-      return typeof value === 'function' ? value.bind(getRenderer()) : value;
+      const target = getRenderer() as object;
+      const value = Reflect.get(target, property);
+      if (typeof value !== 'function') {
+        return value;
+      }
+      // Bound-method cache keyed by the live renderer instance: the frame
+      // loop reads renderer methods dozens of times per frame, and minting a
+      // fresh closure on each access both allocates and defeats V8's inline
+      // caches. Entries rebind automatically if the underlying method or the
+      // renderer instance changes.
+      let cache = boundMethodCache.get(target);
+      if (!cache) {
+        cache = new Map();
+        boundMethodCache.set(target, cache);
+      }
+      const entry = cache.get(property);
+      if (entry && entry.source === value) {
+        return entry.bound;
+      }
+      const bound = (value as (...args: unknown[]) => unknown).bind(target);
+      cache.set(property, { source: value, bound });
+      return bound;
     },
     set: (_target, property, value) => {
+      const target = getRenderer() as object;
+      if (
+        overrides.get(property) === value &&
+        Reflect.get(target, property) === value
+      ) {
+        return true;
+      }
       overrides.set(property, value);
-      Reflect.set(getRenderer() as object, property, value);
+      Reflect.set(target, property, value);
       return true;
     },
   });
@@ -433,6 +542,7 @@ async function createRendererHandle(
     observeActiveWebGpuDevice();
     observeActiveWebGLContext();
     reattachAnimationLoop?.();
+    notifyRendererLifecycle({ type: 'recreated', handle });
   };
 
   const WEBGPU_RECOVERY_MAX_ATTEMPTS = 3;
@@ -694,6 +804,7 @@ async function createRendererHandle(
       onDispose: () => {
         clearObservedWebGpuDevice();
         clearObservedWebGLContext();
+        notifyRendererLifecycle({ type: 'disposed', handle });
       },
       driveAnimationLoop: initResult.backend === 'webgpu',
     });
@@ -732,6 +843,7 @@ async function createRendererHandle(
       activeOptions = {};
       activeViewport = undefined;
       stopRendererAnimationLoop?.();
+      notifyRendererLifecycle({ type: 'released', handle });
     },
   };
 
@@ -791,10 +903,14 @@ export async function requestRenderer({
   const poolEntry: RendererPoolEntry = {
     handle,
     inUse: true,
+    lastReleasedAt: 0,
   };
 
   const releaseHandle = handle.release;
   handle.release = () => {
+    if (!poolEntry.inUse) {
+      return;
+    }
     releaseHandle();
     // Stop rendering and park the canvas, but keep the renderer itself
     // alive — the whole point of the pool is to let the next toy reuse it
@@ -805,7 +921,9 @@ export async function requestRenderer({
     // via resetRendererPool({ dispose: true }).
     handle.renderer.setAnimationLoop?.(null);
     poolEntry.inUse = false;
+    poolEntry.lastReleasedAt = performance.now();
     detachCanvas(handle.canvas);
+    trimIdleRendererPool();
   };
 
   rendererPool.push(poolEntry);
@@ -853,21 +971,22 @@ export async function prewarmRendererCapabilities() {
 
 export function resetRendererPool({
   dispose = false,
+  maxIdle = DEFAULT_MAX_IDLE_RENDERERS,
 }: {
   dispose?: boolean;
+  maxIdle?: number;
 } = {}) {
-  rendererPool.forEach((entry) => {
+  setMaxIdleRenderers(maxIdle);
+  for (const entry of [...rendererPool]) {
     entry.inUse = false;
-    rendererLifecycles.get(entry.handle)?.release();
+    entry.lastReleasedAt = performance.now();
     if (dispose) {
-      entry.handle.renderer.setAnimationLoop?.(null);
-      entry.handle.renderer.dispose?.();
-      detachCanvas(entry.handle.canvas);
+      disposeRendererPoolEntry(entry);
+    } else {
+      rendererLifecycles.get(entry.handle)?.release();
     }
-  });
-  if (dispose) {
-    rendererPool.splice(0, rendererPool.length);
   }
+  trimIdleRendererPool();
   activeQuality = getActiveQualityPreset();
   _activeRenderPreferences = getActiveRenderPreferences();
   resetRendererRuntimeControls();

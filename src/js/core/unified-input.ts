@@ -102,6 +102,85 @@ const PERFORMANCE_ACTION_KEYS = {
   remix: ['r'],
 } satisfies Record<keyof UnifiedPerformanceActions, string[]>;
 
+/** Keys the canvas consumes for the virtual pointer while focused. */
+const KEYBOARD_POINTER_KEYS = new Set([
+  'arrowleft',
+  'arrowright',
+  'arrowup',
+  'arrowdown',
+  'a',
+  'd',
+  'w',
+  's',
+]);
+
+/** Keyboard stand-in for the two-finger pinch/rotate gesture: = / - scale,
+    , / . rotate. Without this, gesture-driven preset signals (pinchDelta →
+    warp/zoom/video-echo) are unreachable without a touchscreen. */
+const KEYBOARD_GESTURE_KEYS = new Set(['=', '+', '-', '_', ',', '.']);
+
+const KEYBOARD_GESTURE_SCALE_RATE = 0.9; // log-scale units per second
+const KEYBOARD_GESTURE_ROTATION_RATE = 1.2; // radians per second
+const KEYBOARD_GESTURE_RELEASE_MS = 400;
+
+/**
+ * True when a focused canvas swallows `key` before the document-level
+ * shortcuts can see it.
+ *
+ * handleKeyDown() below stopPropagation()s every pointer, gesture and
+ * performance key, deliberately, so one keystroke cannot fire both a canvas
+ * behavior and a shell shortcut. The cost is that any shell shortcut sharing
+ * one of these letters silently does nothing while the canvas holds focus —
+ * which is invisible when reading shortcut-registry.ts alone. Exported so
+ * that registry can be tested against it.
+ */
+/** Shared empty set, so clearing the reservation allocates nothing. */
+export const NO_RESERVED_KEYS: ReadonlySet<string> = Object.freeze(
+  new Set<string>(),
+) as ReadonlySet<string>;
+
+let resolveReservedShellKeys: () => ReadonlySet<string> = () =>
+  NO_RESERVED_KEYS;
+
+/**
+ * Declares the keys the application shell has bound to its own shortcuts, so
+ * a focused canvas stops swallowing them.
+ *
+ * The canvas takes its pointer, gesture and performance keys with
+ * preventDefault() + stopPropagation() to stop one keystroke doing two
+ * things. That is right for keys only it uses, but six of them were also
+ * documented shell shortcuts — Space, S, E, A and both arrows — and the
+ * canvas focuses itself on pointerdown, so a single click on the stage left
+ * Settings, the editor, save and preset navigation silently dead while the
+ * shortcuts dialog still advertised them. Keys named here are left entirely
+ * to the shell: not consumed, and not fed to the performance actions either,
+ * so the keystroke still does exactly one thing.
+ *
+ * Passed as a resolver rather than a list because bindings are rebindable.
+ */
+export function setReservedShellKeys(
+  resolver: () => ReadonlySet<string>,
+): void {
+  resolveReservedShellKeys = resolver;
+}
+
+/** True when the shell owns this key and the canvas must not touch it. */
+export function isReservedByShell(key: string): boolean {
+  const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
+  return resolveReservedShellKeys().has(lower);
+}
+
+export function isCanvasConsumedKey(key: string): boolean {
+  // Accept both spellings of the space bar: KeyboardEvent.key reports ' ',
+  // while shortcut specs write it as 'Space'.
+  const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
+  return (
+    KEYBOARD_POINTER_KEYS.has(lower) ||
+    KEYBOARD_GESTURE_KEYS.has(lower) ||
+    Object.values(PERFORMANCE_ACTION_KEYS).some((keys) => keys.includes(lower))
+  );
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
@@ -349,7 +428,19 @@ export function createUnifiedInput({
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
     if (isTextInput(document.activeElement)) return;
-    keyState.add(event.key.toLowerCase());
+    const lowerKey = event.key.toLowerCase();
+    // The shell owns this chord; leave the event completely untouched so its
+    // shortcut runs and nothing here double-acts on the same press.
+    if (isReservedByShell(lowerKey)) return;
+    keyState.add(lowerKey);
+    // Consume keys this surface handles. Space/e/x/q/z/r/1-3 and the
+    // movement arrows all collide with document-level shell shortcuts
+    // (stop audio, open editor, quick-select, previous/next preset) — without
+    // this, one keystroke on a focused canvas fires both behaviors.
+    if (isCanvasConsumedKey(lowerKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (!event.repeat) {
       const now =
         typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -367,6 +458,8 @@ export function createUnifiedInput({
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (!keyboardEnabled) return;
+    // Deleting unconditionally (rather than mirroring the keydown guard) so a
+    // key reserved mid-press cannot stay stuck in the held set.
     keyState.delete(event.key.toLowerCase());
     scheduleFrame();
   };
@@ -406,6 +499,55 @@ export function createUnifiedInput({
       9998,
       'keyboard',
     );
+  };
+
+  let keyboardGestureScale = 1;
+  let keyboardGestureRotation = 0;
+  let keyboardGestureActive = false;
+  let keyboardGestureIdleMs = 0;
+
+  // Two-finger gesture stand-in: while = / - / , / . are held the synthetic
+  // gesture accumulates like a pinch in progress; releasing the keys for
+  // KEYBOARD_GESTURE_RELEASE_MS "lifts the fingers" and resets the anchor.
+  const updateKeyboardGesture = (deltaMs: number): UnifiedGesture | null => {
+    if (!keyboardEnabled) {
+      keyboardGestureActive = false;
+      return null;
+    }
+    const zoomIn = keyState.has('=') || keyState.has('+');
+    const zoomOut = keyState.has('-') || keyState.has('_');
+    const rotateLeft = keyState.has(',');
+    const rotateRight = keyState.has('.');
+    const engaged = zoomIn || zoomOut || rotateLeft || rotateRight;
+
+    if (engaged) {
+      keyboardGestureActive = true;
+      keyboardGestureIdleMs = 0;
+      const boost = keyState.has('shift') ? keyboardBoost : 1;
+      const scaleRate = (KEYBOARD_GESTURE_SCALE_RATE * boost * deltaMs) / 1000;
+      if (zoomIn) keyboardGestureScale *= Math.exp(scaleRate);
+      if (zoomOut) keyboardGestureScale *= Math.exp(-scaleRate);
+      keyboardGestureScale = clamp(keyboardGestureScale, 0.2, 5);
+      const rotationRate =
+        (KEYBOARD_GESTURE_ROTATION_RATE * boost * deltaMs) / 1000;
+      if (rotateLeft) keyboardGestureRotation -= rotationRate;
+      if (rotateRight) keyboardGestureRotation += rotationRate;
+    } else if (keyboardGestureActive) {
+      keyboardGestureIdleMs += deltaMs;
+      if (keyboardGestureIdleMs > KEYBOARD_GESTURE_RELEASE_MS) {
+        keyboardGestureActive = false;
+        keyboardGestureScale = 1;
+        keyboardGestureRotation = 0;
+      }
+    }
+
+    if (!keyboardGestureActive) return null;
+    return {
+      pointerCount: 2,
+      scale: keyboardGestureScale,
+      rotation: keyboardGestureRotation,
+      translation: { x: 0, y: 0 },
+    };
   };
 
   const updateGamepadPointer = (deltaMs: number) => {
@@ -592,7 +734,11 @@ export function createUnifiedInput({
 
     const summary = getPointerSummary(pointers);
     const activeSummary = getPointerSummary(activePointerList);
-    const gesture = getGesture(activePointerList, activeSummary);
+    // Run the keyboard gesture every frame so its release timer decays even
+    // while real pointers take precedence.
+    const keyboardGesture = updateKeyboardGesture(deltaMs);
+    const gesture =
+      getGesture(activePointerList, activeSummary) ?? keyboardGesture;
     const primary = pointers[0] ?? null;
     const pressed =
       activePointerList.length > 0 || keyboardPressed || gamepadPressed;

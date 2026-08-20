@@ -1,3 +1,13 @@
+/**
+ * Asserts the shipped SEO surface still matches what `generate:seo` would
+ * produce.
+ *
+ * Checks canonical/OG/Twitter/JSON-LD tags and crawlable links in the HTML
+ * entry points, the milkdrop alias redirect, robots.txt, the sitemap index and
+ * chunk (including image entries), the web manifest's icons and screenshots,
+ * the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
+ * Failures exit non-zero and point at `bun run generate:seo`.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -44,7 +54,9 @@ const requiredInIndexHtml = [
 ];
 
 const requiredHomepageCrawlLinks = [
-  '<nav class="stims-crawl-links" aria-label="Crawlable site links">',
+  // `inert` is load-bearing: crawlers read the links from the HTML source,
+  // while keyboard/AT users must not tab through 8 invisible links.
+  '<nav class="stims-crawl-links" aria-label="Crawlable site links" inert>',
   '<a href="/">Visualizer</a>',
   '<a href="/performance/">Compatibility and performance</a>',
 ];
@@ -367,6 +379,26 @@ export async function runSeoChecks(rootDir = repoRoot) {
         (screenshot) => screenshot.src === '/screenshots/hero-narrow.png',
       ) === true,
     details: 'public/manifest.json',
+  });
+
+  const oembedExists = await fs
+    .stat(path.join(rootDir, 'functions/api/oembed.ts'))
+    .then(() => true)
+    .catch(() => false);
+  results.push({
+    name: 'oEmbed 1.0 provider endpoint exists',
+    passed: oembedExists,
+    details: 'functions/api/oembed.ts',
+  });
+
+  const feedExists = await fs
+    .stat(path.join(rootDir, 'functions/api/feed.ts'))
+    .then(() => true)
+    .catch(() => false);
+  results.push({
+    name: 'JSON Feed 1.1 endpoint exists',
+    passed: feedExists,
+    details: 'functions/api/feed.ts',
   });
 
   return results;

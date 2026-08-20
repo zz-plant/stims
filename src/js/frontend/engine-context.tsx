@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, useContext } from 'react';
+import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
+import type { MilkdropEditorSessionState } from '../milkdrop/runtime-types.ts';
 import type { CanvasVideoExportRuntime } from '../utils/media/canvas-video-exporter.ts';
 import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
@@ -45,7 +47,7 @@ export interface EngineContextValue {
   duplicatePreset: () => Promise<void>;
   deleteActivePreset: () => Promise<void>;
   getVideoExportRuntime: () => CanvasVideoExportRuntime | null;
-  importPresetFiles: (files: FileList | null) => Promise<void>;
+  importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   requestPresetPreviews: (presetIds: string[]) => Promise<void>;
   pausePreview: () => void;
   resumePreview: () => void;
@@ -76,10 +78,32 @@ export interface EngineContextValue {
   setQualityPreset: (presetId: string) => void;
   setAutoplay: (enabled: boolean) => void;
   setTransitionMode: (mode: 'blend' | 'cut') => void;
+  /** Arms the next preset switch to be crossfaded by hand, then driven with
+   * `setCrossfade`. One switch only — it is a gesture, not a mode. */
+  startManualCrossfade: () => void;
+  setCrossfade: (position: number) => void;
+  getCrossfade: () => number | null;
   setBlendDuration: (value: number) => void;
   updateEditorSource: (source: string) => void;
+  /** Applies a field to the live VM without recompiling (instant drag
+   * feedback); the editor commits to source on release. */
+  updateFieldLive: (key: string, value: number) => void;
+  /** Awaitable live-edit surface used by the agent bridge: resolves with the
+   * resulting compile so a caller can see diagnostics instead of guessing. */
+  applyEditorSourceAwaited: (
+    source: string,
+  ) => Promise<MilkdropEditorSessionState | null>;
+  applyEditorFieldsAwaited: (
+    updates: Record<string, string | number>,
+  ) => Promise<MilkdropEditorSessionState | null>;
+  getEditorSessionState: () => MilkdropEditorSessionState | null;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;
+  /**
+   * The active preset's compiled IR, or null before the engine mounts.
+   * Read-only debug surface (see HudOverlay) — not a render path.
+   */
+  getActiveCompiledPreset: () => MilkdropCompiledPreset | null;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);
@@ -102,8 +126,8 @@ export function EngineProvider({
   children: ReactNode;
 }) {
   return (
-    <EngineSnapshotCtx.Provider value={snapshot}>
-      <EngineCtx.Provider value={data}>{children}</EngineCtx.Provider>
-    </EngineSnapshotCtx.Provider>
+    <EngineSnapshotCtx value={snapshot}>
+      <EngineCtx value={data}>{children}</EngineCtx>
+    </EngineSnapshotCtx>
   );
 }

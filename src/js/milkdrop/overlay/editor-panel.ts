@@ -13,7 +13,9 @@ import {
   history,
   historyKeymap,
   indentWithTab,
+  redo,
   toggleComment,
+  undo,
 } from '@codemirror/commands';
 import {
   bracketMatching,
@@ -29,7 +31,13 @@ import {
   search,
   searchKeymap,
 } from '@codemirror/search';
-import { Compartment, EditorState, Prec } from '@codemirror/state';
+import {
+  Compartment,
+  EditorState,
+  Prec,
+  StateEffect,
+  StateField,
+} from '@codemirror/state';
 import {
   oneDarkHighlightStyle,
   oneDarkTheme,
@@ -38,6 +46,8 @@ import type { KeyBinding } from '@codemirror/view';
 import {
   crosshairCursor,
   EditorView,
+  GutterMarker,
+  gutter,
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
@@ -47,227 +57,80 @@ import {
   rectangularSelection,
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
+import { webMidiService } from '../../core/services/webmidi-controller.ts';
 import {
-  getActiveThemePreference,
+  resolveTheme,
   subscribeToThemePreference,
 } from '../../core/theme-preferences';
 import { renderIconSvg } from '../../ui/icon-library.ts';
-import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
-import { parseMilkdropPreset } from '../preset-parser';
+import {
+  MILKDROP_BUILTIN_DOCS,
+  MILKDROP_FUNCTION_SNIPPET_TEMPLATES,
+} from '../builtin-docs';
+import {
+  computeMidiGutterInfo,
+  findMilkdropEquationLine,
+  getFieldOverwriteKind,
+  isFieldShadowedByEquations,
+  type MidiGutterEntry,
+  readMilkdropField,
+  upsertMilkdropFields,
+} from '../formatter';
+import {
+  COLOR_GROUPS,
+  CONTROL_SECTIONS,
+  type ColorGroupConfig,
+  channelsToHex,
+  clamp01,
+  ENUM_CONTROLS,
+  type EnumControlConfig,
+  formatControlValue,
+  hexToChannels,
+  positionToValue,
+  RANGE_CONTROLS,
+  type RangeControlConfig,
+  SCALAR_CONTROLS,
+  type ScalarControlConfig,
+  TOGGLE_CONTROLS,
+  type ToggleControlConfig,
+  valueToPosition,
+} from '../preset-controls.ts';
+import {
+  MODULATION_SOURCES,
+  type Modulation,
+  type ModulationMode,
+  type ModulationSource,
+  readModulation,
+  writeModulation,
+} from '../preset-modulation.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
+import { numberScrubExtension } from './editor-number-scrub.ts';
+import { computeAstDiagnostics, mergeDiagnostics } from './editor-parser';
+import {
+  type AssignedVariable,
+  filterVariables,
+  nextOccurrence,
+  scanAssignedVariables,
+} from './editor-variable-jump';
+
+export { computeAstDiagnostics, mergeDiagnostics };
+
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
 import { computeSourceDiff } from './source-diff.ts';
 
-export type SliderConfig = {
-  label: string;
-  key: string;
-  min: number;
-  max: number;
-  step: number;
-  defaultValue: number;
-};
-
-export const DEFAULT_EDITOR_SLIDERS: SliderConfig[] = [
-  {
-    label: 'Zoom',
-    key: 'zoom',
-    min: 0.2,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Warp',
-    key: 'warp',
-    min: 0.0,
-    max: 10.0,
-    step: 0.05,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Rot',
-    key: 'rot',
-    min: -1.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Decay',
-    key: 'decay',
-    min: 0.8,
-    max: 1.0,
-    step: 0.005,
-    defaultValue: 0.98,
-  },
-  {
-    label: 'Center X',
-    key: 'cx',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.5,
-  },
-  {
-    label: 'Center Y',
-    key: 'cy',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.5,
-  },
-  {
-    label: 'Scale X',
-    key: 'sx',
-    min: 0.1,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Scale Y',
-    key: 'sy',
-    min: 0.1,
-    max: 3.0,
-    step: 0.01,
-    defaultValue: 1.0,
-  },
-  {
-    label: 'Shift X',
-    key: 'dx',
-    min: -0.5,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Shift Y',
-    key: 'dy',
-    min: -0.5,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.0,
-  },
-  {
-    label: 'Wave Alpha',
-    key: 'wave_a',
-    min: 0.0,
-    max: 1.0,
-    step: 0.01,
-    defaultValue: 0.8,
-  },
-  {
-    label: 'Border Size',
-    key: 'ob_size',
-    min: 0.0,
-    max: 0.5,
-    step: 0.01,
-    defaultValue: 0.01,
-  },
-];
-
-export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
-  const diagnostics: MilkdropDiagnostic[] = [];
-
-  const presetResult = parseMilkdropPreset(source);
-  diagnostics.push(...presetResult.diagnostics);
-
-  const lines = source.split(/\r?\n/u);
-  lines.forEach((lineText, lineIdx) => {
-    const lineNumber = lineIdx + 1;
-    const trimmed = lineText.trim();
-    if (
-      !trimmed ||
-      trimmed.startsWith('//') ||
-      trimmed.startsWith('#') ||
-      trimmed.startsWith(';')
-    ) {
-      return;
-    }
-    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-      return;
-    }
-
-    let parenDepth = 0;
-    for (let i = 0; i < trimmed.length; i += 1) {
-      const char = trimmed[i];
-      if (char === '(') {
-        parenDepth += 1;
-      } else if (char === ')') {
-        parenDepth -= 1;
-        if (parenDepth < 0) {
-          diagnostics.push({
-            severity: 'error',
-            code: 'unmatched_closing_paren',
-            line: lineNumber,
-            message: `Unmatched closing parenthesis ')' at line ${lineNumber}.`,
-          });
-          parenDepth = 0;
-        }
-      }
-    }
-    if (parenDepth > 0) {
-      diagnostics.push({
-        severity: 'error',
-        code: 'unclosed_paren',
-        line: lineNumber,
-        message: `Unclosed parenthesis '(' at line ${lineNumber}.`,
-      });
-    }
-
-    const equalsIdx = trimmed.indexOf('=');
-    if (equalsIdx > 0) {
-      const key = trimmed.slice(0, equalsIdx).trim().toLowerCase();
-      const val = trimmed.slice(equalsIdx + 1).trim();
-
-      const isEquationKey =
-        key.startsWith('per_frame') ||
-        key.startsWith('per_pixel') ||
-        key.startsWith('wave_') ||
-        key.startsWith('shape_') ||
-        key === 'warp' ||
-        key === 'comp';
-
-      if (isEquationKey && val) {
-        const statements = val.split(';');
-        statements.forEach((stmt) => {
-          const s = stmt.trim();
-          if (!s) return;
-          if (s.includes('=')) {
-            const res = parseMilkdropStatement(s, lineNumber);
-            diagnostics.push(...res.diagnostics);
-          } else {
-            const res = parseMilkdropExpression(s, lineNumber);
-            diagnostics.push(...res.diagnostics);
-          }
-        });
-      } else if (val && /^[0-9A-Za-z_+\-*/\s().]+$/u.test(val)) {
-        const res = parseMilkdropExpression(val, lineNumber);
-        diagnostics.push(...res.diagnostics);
-      }
-    }
-  });
-
-  return mergeDiagnostics(diagnostics, []);
-}
-
-export function mergeDiagnostics(
-  primary: MilkdropDiagnostic[],
-  secondary: MilkdropDiagnostic[],
-): MilkdropDiagnostic[] {
-  const map = new Map<string, MilkdropDiagnostic>();
-  [...primary, ...secondary].forEach((diag) => {
-    const key = `${diag.line ?? 0}:${diag.code ?? ''}:${diag.message}`;
-    if (!map.has(key)) {
-      map.set(key, diag);
-    }
-  });
-  return Array.from(map.values());
-}
+/**
+ * Kept as the module's public names because tests, the MIDI layer and the MCP
+ * tools address the Tune pane through them; the declarations themselves now
+ * live in preset-controls.ts alongside the scale maths.
+ */
+export type SliderConfig = ScalarControlConfig;
+export const DEFAULT_EDITOR_SLIDERS: ScalarControlConfig[] = SCALAR_CONTROLS;
+export const DEFAULT_EDITOR_COLOR_GROUPS: ColorGroupConfig[] = COLOR_GROUPS;
+export type { ColorGroupConfig };
 
 type EditorSnippet = {
   label: string;
@@ -399,14 +262,20 @@ const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
 const indentWithTabKeybinding = indentWithTab as KeyBinding;
 
-const EDITOR_FLOW_TIPS = [
-  'Queued edits patch the stage after 120ms of calm typing.',
-  'Cmd/Ctrl+Enter punches the current draft in immediately.',
-  'Compiler errors keep the last stable frame visible while you recover.',
-] as const;
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/gu, '&amp;')
+    .replace(/</gu, '&lt;')
+    .replace(/>/gu, '&gt;');
+}
 
 export type EditorPanelCallbacks = {
   onEditorSourceChange: (source: string) => void;
+  /** Live feedback for a numeric field during a drag: applied to the running
+   * VM without a recompile. The value is committed to the source separately
+   * (on release), so the runtime staying absent only degrades to the old
+   * compile-only behavior. */
+  onLiveFieldChange?: (key: string, value: number) => void;
   onRevertToActive: () => void;
   onDuplicatePreset: () => void;
   onExport: () => void;
@@ -459,95 +328,89 @@ function toLintDiagnostics(
     });
 }
 
+// ── MIDI gutter markers ───────────────────────────────────────────
+// A filled diamond marks a line MIDI/MCP is actively driving; a hollow
+// one marks a binding the preset's own per_frame/per_pixel equations
+// reassign every frame, so the knob has no visible effect. See
+// isFieldShadowedByEquations in formatter.ts for why that happens.
+const setMidiGutterInfo = StateEffect.define<MidiGutterEntry[]>();
+
+const midiGutterField = StateField.define<MidiGutterEntry[]>({
+  create: () => [],
+  update(value, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(setMidiGutterInfo)) {
+        return effect.value;
+      }
+    }
+    return value;
+  },
+});
+
+class MidiGutterMarker extends GutterMarker {
+  constructor(
+    private readonly status: MidiGutterEntry['status'],
+    private readonly target: string,
+  ) {
+    super();
+  }
+
+  eq(other: MidiGutterMarker): boolean {
+    return other.status === this.status && other.target === this.target;
+  }
+
+  toDOM(): Node {
+    const span = document.createElement('span');
+    span.className = `cm-midi-gutter-marker cm-midi-gutter-marker--${this.status}`;
+    span.textContent = this.status === 'live' ? '◆' : '◇';
+    span.title =
+      this.status === 'live'
+        ? `MIDI/MCP is driving ${this.target}.`
+        : `MIDI/MCP is bound to ${this.target}, but this preset's own equations reassign it every frame — the binding has no visible effect.`;
+    return span;
+  }
+}
+
+function midiGutterExtension() {
+  return [
+    midiGutterField,
+    gutter({
+      class: 'cm-midi-gutter',
+      lineMarker(view, line) {
+        const entries = view.state.field(midiGutterField);
+        if (entries.length === 0) return null;
+        const lineNumber = view.state.doc.lineAt(line.from).number;
+        const entry = entries.find((e) => e.line === lineNumber);
+        return entry ? new MidiGutterMarker(entry.status, entry.target) : null;
+      },
+      lineMarkerChange: (update) =>
+        update.startState.field(midiGutterField) !==
+        update.state.field(midiGutterField),
+    }),
+  ];
+}
+
 // Multi-argument functions get a snippet template so accepting the
 // completion drops in placeholder args the user can Tab through, instead of
-// leaving them to hand-type parens and commas.
-const FUNCTION_SNIPPET_TEMPLATES: Record<string, string> = {
-  atan2: 'atan2(#{y}, #{x})',
-  pow: 'pow(#{x}, #{y})',
-  mod: 'mod(#{x}, #{y})',
-  clamp: 'clamp(#{x}, #{min}, #{max})',
-  step: 'step(#{threshold}, #{x})',
-  smoothstep: 'smoothstep(#{min}, #{max}, #{x})',
-  sigmoid: 'sigmoid(#{x}, #{k})',
-  if: 'if(#{cond}, #{then}, #{else})',
-  above: 'above(#{a}, #{b})',
-  below: 'below(#{a}, #{b})',
-  equal: 'equal(#{a}, #{b})',
-  min: 'min(#{a}, #{b})',
-  max: 'max(#{a}, #{b})',
-  mix: 'mix(#{a}, #{b}, #{t})',
-  lerp: 'lerp(#{a}, #{b}, #{t})',
-};
+// leaving them to hand-type parens and commas. Derived from the params
+// declared in the shared builtin table.
+const FUNCTION_SNIPPET_TEMPLATES: Readonly<Record<string, string>> =
+  MILKDROP_FUNCTION_SNIPPET_TEMPLATES;
 
-const MILKDROP_BUILTIN_OPTIONS: Array<{
+// Autocomplete options and hover docs derive from the shared builtin table in
+// builtin-docs.ts, so the editor always offers exactly what the compiler and
+// VM accept (all intrinsic functions, runtime signals, q1..q32/t1..t32,
+// per-frame state, constants). Exported for the derivation test in
+// tests/unit/milkdrop-builtin-docs.test.ts.
+export const MILKDROP_BUILTIN_OPTIONS: Array<{
   label: string;
   type: string;
   detail?: string;
-}> = [
-  { label: 'sin', type: 'function', detail: 'sine' },
-  { label: 'cos', type: 'function', detail: 'cosine' },
-  { label: 'tan', type: 'function' },
-  { label: 'asin', type: 'function' },
-  { label: 'acos', type: 'function' },
-  { label: 'atan', type: 'function' },
-  { label: 'atan2', type: 'function' },
-  { label: 'abs', type: 'function' },
-  { label: 'sqrt', type: 'function' },
-  { label: 'pow', type: 'function' },
-  { label: 'mod', type: 'function' },
-  { label: 'floor', type: 'function', detail: 'round down' },
-  { label: 'ceil', type: 'function', detail: 'round up' },
-  { label: 'sqr', type: 'function', detail: 'x*x' },
-  { label: 'clamp', type: 'function', detail: 'clamp(x, min, max)' },
-  { label: 'step', type: 'function' },
-  { label: 'smoothstep', type: 'function' },
-  { label: 'log', type: 'function' },
-  { label: 'exp', type: 'function' },
-  { label: 'sigmoid', type: 'function' },
-  { label: 'sign', type: 'function' },
-  { label: 'frac', type: 'function', detail: 'fractional part' },
-  { label: 'rand', type: 'function', detail: 'random 0-scale' },
-  { label: 'if', type: 'function', detail: 'if(cond, then, else)' },
-  { label: 'above', type: 'function' },
-  { label: 'below', type: 'function' },
-  { label: 'equal', type: 'function' },
-  { label: 'min', type: 'function' },
-  { label: 'max', type: 'function' },
-  { label: 'mix', type: 'function' },
-  { label: 'lerp', type: 'function' },
-  { label: 'bass', type: 'variable', detail: 'bass energy' },
-  { label: 'mid', type: 'variable', detail: 'mid energy' },
-  { label: 'treb', type: 'variable', detail: 'treble energy' },
-  { label: 'bass_att', type: 'variable', detail: 'bass with envelope' },
-  { label: 'mid_att', type: 'variable', detail: 'mid with envelope' },
-  { label: 'treb_att', type: 'variable', detail: 'treble with envelope' },
-  { label: 'beat', type: 'variable' },
-  { label: 'time', type: 'variable', detail: 'seconds' },
-  { label: 'frame', type: 'variable', detail: 'frame count' },
-  { label: 'fps', type: 'variable' },
-  { label: 'rms', type: 'variable' },
-  { label: 'vol', type: 'variable' },
-  { label: 'q1', type: 'variable', detail: 'persistent state' },
-  { label: 'q2', type: 'variable' },
-  { label: 'q3', type: 'variable' },
-  { label: 'q4', type: 'variable' },
-  { label: 'q5', type: 'variable' },
-  { label: 'q6', type: 'variable' },
-  { label: 'q7', type: 'variable' },
-  { label: 'q8', type: 'variable' },
-  { label: 'zoom', type: 'variable' },
-  { label: 'rot', type: 'variable' },
-  { label: 'warp', type: 'variable' },
-  { label: 'sx', type: 'variable' },
-  { label: 'sy', type: 'variable' },
-  { label: 'dx', type: 'variable' },
-  { label: 'dy', type: 'variable' },
-  { label: 'cx', type: 'variable' },
-  { label: 'cy', type: 'variable' },
-  { label: 'pi', type: 'constant' },
-  { label: 'e', type: 'constant' },
-];
+}> = MILKDROP_BUILTIN_DOCS.map((entry) => ({
+  label: entry.name,
+  type: entry.kind,
+  detail: entry.doc,
+}));
 
 // Keeps the dropdown grouped by kind (functions, then variables, then
 // constants) instead of letting fuzzy-match score interleave them; doc-derived
@@ -737,6 +600,23 @@ function createEditorTheme() {
       letterSpacing: '0.04em',
       opacity: 0.65,
     },
+    '.cm-midi-gutter': {
+      width: '14px',
+    },
+    '.cm-midi-gutter-marker': {
+      display: 'inline-block',
+      width: '100%',
+      textAlign: 'center',
+      fontSize: '0.72rem',
+      lineHeight: '1',
+      cursor: 'default',
+    },
+    '.cm-midi-gutter-marker--live': {
+      color: '#4ade80',
+    },
+    '.cm-midi-gutter-marker--shadowed': {
+      color: 'rgba(148, 163, 184, 0.55)',
+    },
   });
 }
 
@@ -746,12 +626,19 @@ function createEditorView({
   onBufferedEdit,
   isChangeSuppressed,
   onQuickFixDiagnostic,
+  onEscapeBlur,
+  onJumpToVariable,
 }: {
   parent: HTMLElement;
   onDocChange: (source: string) => void;
   onBufferedEdit: () => void;
   isChangeSuppressed: () => boolean;
   onQuickFixDiagnostic: (diagnostic: MilkdropDiagnostic) => void;
+  /** Called when Escape leaves the editor so the panel can park focus on a
+   * sensible control instead of dropping it on <body>. */
+  onEscapeBlur: () => void;
+  /** Opens the panel's "Jump to variable" popover (Cmd/Ctrl+J). */
+  onJumpToVariable: () => void;
 }) {
   let debounceId: number | null = null;
   let view: EditorView;
@@ -777,6 +664,13 @@ function createEditorView({
     state: EditorState.create({
       doc: '',
       extensions: [
+        // CodeMirror's editable surface is a role="textbox" with no name of
+        // its own, so a screen reader announced it as an unlabelled edit
+        // field (axe: aria-input-field-name). The dialog title does not
+        // carry over — the control needs its own name.
+        EditorView.contentAttributes.of({
+          'aria-label': 'MilkDrop preset code',
+        }),
         lineNumbers(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
@@ -784,9 +678,7 @@ function createEditorView({
         history(),
         createMilkdropLanguage(),
         oneDarkTheme,
-        syntaxThemeCompartment.of(
-          syntaxHighlightStyleForTheme(getActiveThemePreference().theme),
-        ),
+        syntaxThemeCompartment.of(syntaxHighlightStyleForTheme(resolveTheme())),
         createEditorTheme(),
         bracketMatching(),
         closeBrackets(),
@@ -800,6 +692,7 @@ function createEditorView({
         foldGutter(),
         indentOnInput(),
         lintGutter(),
+        midiGutterExtension(),
         // Editing MilkDrop presets means repeatedly touching aligned
         // per-channel triples (wave_r/g/b, shapecode_N_border_r/g/b, ...);
         // multi-cursor + column selection make that a single edit instead
@@ -807,6 +700,10 @@ function createEditorView({
         EditorState.allowMultipleSelections.of(true),
         rectangularSelection(),
         crosshairCursor(),
+        // Alt-drag a numeric literal to scrub it like a slider (Alt+Arrow
+        // Up/Down is the keyboard equivalent). Registered before the keymaps
+        // so its Prec.highest bindings resolve ahead of moveLineUp/copyLineUp.
+        numberScrubExtension(),
         keymap.of([
           ...closeBracketsKeymap,
           ...searchKeymap,
@@ -816,6 +713,13 @@ function createEditorView({
             run: () => flushDocChange(),
           },
           { key: 'Mod-/', run: toggleComment },
+          {
+            key: 'Mod-j',
+            run: () => {
+              onJumpToVariable();
+              return true;
+            },
+          },
           ...defaultEditorKeymap,
           ...historyEditorKeymap,
           indentWithTabKeybinding,
@@ -831,6 +735,14 @@ function createEditorView({
           if (!update.docChanged || isChangeSuppressed()) {
             return;
           }
+          // Two independent debounced timers restart on every keystroke, not
+          // one: onBufferedEdit's 80ms (above, in createEditorView's caller)
+          // repaints local UI (diagnostics, Tune controls) — cheap and wants
+          // to feel responsive. onDocChange 120ms below propagates the draft
+          // upstream to the actual preset recompile — heavier, and doesn't
+          // need to run more often than the local repaint. 120ms > 80ms is
+          // deliberate so the recompile settles just after the UI has
+          // already caught up, not simultaneously fighting it for the CPU.
           onBufferedEdit();
           if (debounceId !== null) {
             window.clearTimeout(debounceId);
@@ -845,10 +757,28 @@ function createEditorView({
     parent,
   });
 
-  const unsubscribeTheme = subscribeToThemePreference(({ theme }) => {
+  // Escape inside the code must never fall through to the document-level
+  // handler that closes the whole editor panel. CodeMirror's own listener is
+  // registered first, so its Escape bindings (snippet clear, search close,
+  // selection simplify) have already run — and preventDefault'ed — by the
+  // time this fires; when none of them claimed the key, Escape becomes
+  // "leave the editor": blur the content DOM and hand focus back to the
+  // panel. The listener dies with contentDOM on view.destroy().
+  view.contentDOM.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    view.contentDOM.blur();
+    onEscapeBlur();
+  });
+
+  // resolveTheme(), not the raw choice: "system" is a preference, not a
+  // palette, and CodeMirror needs the one actually being painted.
+  const unsubscribeTheme = subscribeToThemePreference((preference) => {
     view.dispatch({
       effects: syntaxThemeCompartment.reconfigure(
-        syntaxHighlightStyleForTheme(theme),
+        syntaxHighlightStyleForTheme(resolveTheme(preference)),
       ),
     });
   });
@@ -874,14 +804,35 @@ function createEditorView({
   };
 }
 
+/**
+ * Transient hint shown under a control while it is being dragged. It only
+ * appears on fields a preset's equations rewrite every frame — the readout is
+ * moving and the stage may not be, so the row says which. Relative equations
+ * (`cx = cx + sin(time)`) reload the base first, so a drag does move the
+ * stage; absolute equations discard it. Returns '' when nothing to warn about.
+ */
+function liveHintForFields(doc: string, keys: string[]): string {
+  for (const key of keys) {
+    const kind = getFieldOverwriteKind(doc, key);
+    if (kind === 'none') continue;
+    return kind === 'relative'
+      ? 'Overwritten every frame — this drag moves its base'
+      : "Overwritten every frame — this value won't stick";
+  }
+  return '';
+}
+
 export class EditorPanel {
   readonly element: HTMLElement;
 
   private readonly callbacks: EditorPanelCallbacks;
-  private readonly editorStatus: HTMLElement;
-  private readonly editorLiveBadge: HTMLElement;
-  private readonly editorSyncBadge: HTMLElement;
-  private readonly editorSafetyBadge: HTMLElement;
+  private readonly note: HTMLElement;
+  private readonly stateEl: HTMLElement;
+  private readonly stateLabel: HTMLElement;
+  private readonly safetyFlag: HTMLElement;
+  private readonly stage: HTMLElement;
+  private readonly problems: HTMLElement;
+  private readonly problemsCount: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
   private readonly editor: EditorView;
@@ -891,176 +842,374 @@ export class EditorPanel {
   private readonly setEditorDiagnostics: (
     diagnostics: MilkdropDiagnostic[],
   ) => void;
-  private readonly consoleHeaderLabel: HTMLElement;
+  private disposeMenuDismiss: (() => void) | null = null;
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
+  private bufferedEditDebounceId: number | null = null;
+  /** Identity of the preset the buffer currently belongs to, so a preset
+   * switch can be told apart from the session echoing back the user's own
+   * in-progress edits. */
+  private lastPresetId: string | null = null;
   private lastSessionState: MilkdropEditorSessionState | null = null;
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
-  private snapshots: Array<{ source: string; timestamp: number }> = [];
+  private snapshots: Array<{
+    source: string;
+    timestamp: number;
+    label: string;
+  }> = [];
+  private historyList: HTMLElement | null = null;
+  private assistPane: HTMLElement | null = null;
   private assistedEditContainer: HTMLElement | null = null;
+  // True while any AI-backed action (Refine, Explain, Quick-fix, Batch,
+  // Blend) has a request in flight. All of those share one /api endpoint
+  // family and one proposed-diff slot, so letting two run at once let a
+  // second response clobber the first proposal with no indication anything
+  // was lost.
+  private aiPending = false;
+  private refineBtn: HTMLButtonElement | null = null;
+  private explainBtn: HTMLButtonElement | null = null;
+  private batchButton: HTMLButtonElement | null = null;
+  private blendSubmitButton: HTMLButtonElement | null = null;
   private disposeDiagnosticsListener: (() => void) | null = null;
+  private disposeMidiListener: (() => void) | null = null;
   private sliderInputs: Map<
     string,
-    { input: HTMLInputElement; display: HTMLSpanElement; defaultValue: number }
+    {
+      input: HTMLInputElement;
+      display: HTMLSpanElement;
+      defaultValue: number;
+      learnButton: HTMLButtonElement;
+      liveHint: HTMLDivElement;
+      config: ScalarControlConfig;
+    }
   > = new Map();
+  private toggleInputs: Map<
+    string,
+    { button: HTMLButtonElement; config: ToggleControlConfig }
+  > = new Map();
+  private enumInputs: Map<
+    string,
+    { buttons: HTMLButtonElement[]; config: EnumControlConfig }
+  > = new Map();
+  private rangeInputs: Map<
+    string,
+    {
+      minInput: HTMLInputElement;
+      maxInput: HTMLInputElement;
+      readout: HTMLSpanElement;
+      liveHint: HTMLDivElement;
+      config: RangeControlConfig;
+    }
+  > = new Map();
+  private modulationRows: Map<
+    string,
+    {
+      row: HTMLElement;
+      sourceSelect: HTMLSelectElement;
+      modeButton: HTMLButtonElement;
+      depth: HTMLInputElement;
+      readout: HTMLSpanElement;
+      config: ScalarControlConfig;
+    }
+  > = new Map();
+  private colorInputs: Map<
+    string,
+    {
+      group: ColorGroupConfig;
+      swatch: HTMLInputElement;
+      hexLabel: HTMLSpanElement;
+      alphaInput: HTMLInputElement | null;
+      liveHint: HTMLDivElement;
+    }
+  > = new Map();
+  /** One entry per Tune control: the fields it writes and the chip reporting
+   * who currently owns them. */
+  private fieldStateCells: Array<{
+    chip: HTMLButtonElement;
+    keys: string[];
+    label: string;
+  }> = [];
+  private midiTargets: Set<string> = new Set();
+  // The slider whose "learn" button is currently armed, waiting for the
+  // next CC from any device — mirrors webMidiService.getLearnTarget() but
+  // scoped to "was it *this* editor's UI that armed it", so a learn
+  // started from the Performance hardware panel doesn't light up a slider.
+  private learningSliderKey: string | null = null;
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
     this.element = document.createElement('section');
-    this.element.className = 'milkdrop-overlay__tab-panel';
+    this.element.className = 'stims-editor';
+    this.element.setAttribute('aria-label', 'Preset code editor');
 
-    const editorTransport = document.createElement('div');
-    editorTransport.className = 'milkdrop-overlay__editor-transport';
-    const editorIntroCopy = document.createElement('div');
-    editorIntroCopy.className = 'milkdrop-overlay__editor-intro-copy';
-    const editorEyebrow = document.createElement('span');
-    editorEyebrow.className = 'milkdrop-overlay__editor-eyebrow';
-    editorEyebrow.textContent = 'Live code REPL';
-    const editorHeading = document.createElement('strong');
-    editorHeading.className = 'milkdrop-overlay__editor-heading';
-    editorHeading.textContent = 'Patch the active preset';
-    const editorSubheading = document.createElement('p');
-    editorSubheading.className = 'milkdrop-overlay__editor-subheading';
-    editorSubheading.textContent =
-      'Keep the stage running while you type. Cmd/Ctrl+Enter forces an instant punch-in.';
-    editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
-    const editorMeta = document.createElement('div');
-    editorMeta.className = 'milkdrop-overlay__editor-badges';
-    const editorShortcutBadge = document.createElement('span');
-    editorShortcutBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--shortcut';
-    editorShortcutBadge.textContent = 'Cmd/Ctrl+Enter';
-    this.editorLiveBadge = document.createElement('span');
-    this.editorLiveBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--live';
-    this.editorLiveBadge.textContent = 'Auto 120ms';
-    this.editorSyncBadge = document.createElement('span');
-    this.editorSyncBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
-    this.editorSyncBadge.textContent = 'Synced';
-    this.editorSafetyBadge = document.createElement('span');
-    this.editorSafetyBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--safety';
-    this.editorSafetyBadge.textContent = 'Safety net on';
-    editorMeta.append(
-      editorShortcutBadge,
-      this.editorLiveBadge,
-      this.editorSyncBadge,
-      this.editorSafetyBadge,
+    // ── Status line ───────────────────────────────────────────────
+    // One row replaces the old marketing header plus four static badges.
+    // The dot carries the buffer state; the flag only appears when the
+    // stage is showing something other than what the draft says.
+    const statusBar = document.createElement('div');
+    statusBar.className = 'stims-editor__status';
+
+    this.stateEl = document.createElement('span');
+    this.stateEl.className = 'stims-editor__state';
+    this.stateEl.dataset.state = 'synced';
+    const stateDot = document.createElement('span');
+    stateDot.className = 'stims-editor__dot';
+    this.stateLabel = document.createElement('span');
+    this.stateLabel.textContent = 'Synced';
+    this.stateEl.append(stateDot, this.stateLabel);
+
+    const flags = document.createElement('div');
+    flags.className = 'stims-editor__flags';
+    this.safetyFlag = document.createElement('span');
+    this.safetyFlag.className = 'stims-editor__flag stims-editor__flag--safety';
+    this.safetyFlag.hidden = true;
+    // The apply shortcut is also part of the Update button's accessible
+    // name, so the visual chip can stay decorative.
+    const shortcutHint = document.createElement('span');
+    shortcutHint.className = 'stims-editor__shortcut';
+    shortcutHint.textContent = '⌘/Ctrl+⏎';
+    shortcutHint.title = 'Apply the draft immediately';
+    shortcutHint.setAttribute('aria-hidden', 'true');
+    const scrubHint = document.createElement('span');
+    scrubHint.className = 'stims-editor__shortcut';
+    scrubHint.textContent = '⌥ drag number to scrub';
+    flags.append(this.safetyFlag, scrubHint, shortcutHint);
+    statusBar.append(this.stateEl, flags);
+
+    // ── Toolbar ───────────────────────────────────────────────────
+    // One primary action, one destructive-free secondary, undo/redo as a
+    // single segmented control, and everything preset-level behind an
+    // overflow menu. The old row gave nine buttons identical weight.
+    const toolbar = document.createElement('div');
+    toolbar.className = 'stims-editor__toolbar';
+
+    const applyButton = this.createButton('Update now', {
+      variant: 'primary',
+      title: 'Apply the draft now (Cmd/Ctrl+Enter)',
+      ariaLabel: 'Update now — apply the draft (Cmd/Ctrl+Enter)',
+      onClick: () => this.applyCurrentSource(),
+    });
+    applyButton.dataset.action = 'apply';
+
+    const revertButton = this.createButton('Reset', {
+      title: 'Reset draft to the active preset source',
+      ariaLabel: 'Reset draft to active preset source',
+      onClick: () => this.callbacks.onRevertToActive(),
+    });
+
+    // CodeMirror's history() extension already answers to Cmd/Ctrl+Z, but
+    // that was invisible outside the editor — no button, no way to tell
+    // undo is even possible without trying it.
+    const undoRedo = document.createElement('div');
+    undoRedo.className = 'stims-editor__pair';
+    undoRedo.append(
+      this.createButton('↶', {
+        variant: 'icon',
+        title: 'Undo (Cmd/Ctrl+Z)',
+        ariaLabel: 'Undo last edit',
+        onClick: () => {
+          undo(this.editor);
+          this.editor.focus();
+        },
+      }),
+      this.createButton('↷', {
+        variant: 'icon',
+        title: 'Redo (Cmd/Ctrl+Shift+Z)',
+        ariaLabel: 'Redo last undone edit',
+        onClick: () => {
+          redo(this.editor);
+          this.editor.focus();
+        },
+      }),
     );
-    editorTransport.append(editorIntroCopy, editorMeta);
 
-    this.editorStatus = document.createElement('div');
-    this.editorStatus.className = 'milkdrop-overlay__editor-status';
-    this.editorStatus.textContent = '';
-    this.editorStatus.hidden = true;
+    const spacer = document.createElement('div');
+    spacer.className = 'stims-editor__spacer';
 
-    const editorActions = document.createElement('div');
-    editorActions.className = 'milkdrop-overlay__editor-actions';
+    const menuWrap = document.createElement('div');
+    menuWrap.className = 'stims-editor__menu-wrap';
+    const menu = document.createElement('div');
+    menu.className = 'stims-editor__menu';
+    menu.hidden = true;
+    menu.setAttribute('role', 'menu');
+    const visibleMenuItems = (): HTMLButtonElement[] =>
+      Array.from(
+        menu.querySelectorAll<HTMLButtonElement>('.stims-editor__menu-item'),
+      ).filter((item) => !item.hidden);
+    const menuButton = this.createButton('⋯', {
+      variant: 'icon',
+      title: 'Preset actions',
+      ariaLabel: 'Preset actions',
+      onClick: () => {
+        menu.hidden = !menu.hidden;
+        menuButton.setAttribute('aria-expanded', String(!menu.hidden));
+        // Standard menu-button contract: opening the menu moves focus to
+        // its first item so arrow keys work immediately.
+        if (!menu.hidden) visibleMenuItems()[0]?.focus();
+      },
+    });
+    menuButton.setAttribute('aria-haspopup', 'menu');
+    menuButton.setAttribute('aria-expanded', 'false');
 
-    const applyButton = document.createElement('button');
-    applyButton.type = 'button';
-    applyButton.className = 'milkdrop-overlay__editor-apply';
-    applyButton.textContent = 'Update now';
-    applyButton.addEventListener('click', () => this.applyCurrentSource());
-    editorActions.appendChild(applyButton);
-
-    const revertButton = document.createElement('button');
-    revertButton.type = 'button';
-    revertButton.textContent = 'Reset draft';
-    revertButton.setAttribute(
-      'aria-label',
-      'Reset draft to active preset source',
+    const closeMenu = () => {
+      if (menu.hidden) return;
+      menu.hidden = true;
+      menuButton.setAttribute('aria-expanded', 'false');
+    };
+    const menuItem = (
+      label: string,
+      onClick: () => void,
+      tone?: 'danger',
+    ): HTMLButtonElement => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'stims-editor__menu-item';
+      item.setAttribute('role', 'menuitem');
+      // Menu items are reached with arrow keys, not Tab — the trigger is
+      // the single tab stop for the whole widget.
+      item.tabIndex = -1;
+      item.textContent = label;
+      if (tone) item.dataset.tone = tone;
+      item.addEventListener('click', () => {
+        closeMenu();
+        onClick();
+      });
+      return item;
+    };
+    // ArrowUp/ArrowDown/Home/End roving focus inside the open menu; the
+    // handled keys are consumed so nothing upstream scrolls or navigates.
+    menu.addEventListener('keydown', (event) => {
+      const items = visibleMenuItems();
+      if (items.length === 0) return;
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      let next: number;
+      switch (event.key) {
+        case 'ArrowDown':
+          next = index < 0 ? 0 : (index + 1) % items.length;
+          break;
+        case 'ArrowUp':
+          next =
+            index < 0
+              ? items.length - 1
+              : (index - 1 + items.length) % items.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = items.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      items[next].focus();
+    });
+    const menuSeparator = document.createElement('div');
+    menuSeparator.className = 'stims-editor__menu-sep';
+    this.deleteButton = menuItem(
+      'Delete preset',
+      () => this.callbacks.onDeletePreset(),
+      'danger',
     );
-    revertButton.addEventListener('click', () =>
-      this.callbacks.onRevertToActive(),
-    );
-    editorActions.appendChild(revertButton);
-
-    const duplicateButton = document.createElement('button');
-    duplicateButton.type = 'button';
-    duplicateButton.textContent = 'Remix';
-    duplicateButton.setAttribute(
-      'aria-label',
-      'Remix current preset (keeps its credit lineage)',
-    );
-    duplicateButton.addEventListener('click', () =>
-      this.callbacks.onDuplicatePreset(),
-    );
-    editorActions.appendChild(duplicateButton);
-
-    const importButton = document.createElement('button');
-    importButton.type = 'button';
-    importButton.textContent = 'Import';
-    importButton.setAttribute('aria-label', 'Import a preset');
-    importButton.addEventListener('click', () =>
-      this.callbacks.onRequestImport(),
-    );
-    editorActions.appendChild(importButton);
-
-    const exportButton = document.createElement('button');
-    exportButton.type = 'button';
-    exportButton.textContent = 'Export';
-    exportButton.setAttribute('aria-label', 'Export current preset');
-    exportButton.addEventListener('click', () => this.callbacks.onExport());
-    editorActions.appendChild(exportButton);
-
-    const importButton2 = document.createElement('button');
-    importButton2.type = 'button';
-    importButton2.textContent = 'Batch';
-    importButton2.title = 'Generate variations (Shift+Enter)';
-    importButton2.setAttribute('aria-label', 'Generate preset variations');
-    importButton2.addEventListener('click', () => this.handleBatchGenerate());
-    editorActions.appendChild(importButton2);
-
-    const blendButton = document.createElement('button');
-    blendButton.type = 'button';
-    blendButton.textContent = 'Blend';
-    blendButton.title = 'Blend with another preset';
-    blendButton.setAttribute('aria-label', 'Blend with another preset');
-    blendButton.addEventListener('click', () => this.handleBlend());
-    editorActions.appendChild(blendButton);
-
-    this.deleteButton = document.createElement('button');
-    this.deleteButton.type = 'button';
-    this.deleteButton.textContent = 'Delete';
     this.deleteButton.hidden = true;
-    this.deleteButton.addEventListener('click', () =>
-      this.callbacks.onDeletePreset(),
+    menu.append(
+      menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
+      menuItem('Import…', () => this.callbacks.onRequestImport()),
+      menuItem('Export', () => this.callbacks.onExport()),
+      menuSeparator,
+      this.deleteButton,
     );
-    editorActions.appendChild(this.deleteButton);
+    menuWrap.append(menuButton, menu);
 
-    const editorWorkbench = document.createElement('div');
-    editorWorkbench.className = 'milkdrop-overlay__editor-workbench';
-    const editorMain = document.createElement('div');
-    editorMain.className = 'milkdrop-overlay__editor-main';
+    // A menu that only closes by re-clicking its own trigger reads as stuck.
+    const dismissMenu = (event: MouseEvent) => {
+      if (!menuWrap.contains(event.target as Node)) closeMenu();
+    };
+    // Registered in the capture phase so an Escape aimed at the open menu is
+    // consumed before the document-level bubble handler that closes the whole
+    // editor panel — one press closes the menu, a second closes the panel.
+    // With the menu closed the key is left alone entirely.
+    const dismissMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || menu.hidden) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeMenu();
+      menuButton.focus();
+    };
+    document.addEventListener('pointerdown', dismissMenu);
+    document.addEventListener('keydown', dismissMenuOnEscape, true);
+    this.disposeMenuDismiss = () => {
+      document.removeEventListener('pointerdown', dismissMenu);
+      document.removeEventListener('keydown', dismissMenuOnEscape, true);
+    };
+
+    const jumpButton = this.createButton('Jump', {
+      ariaLabel: 'Jump to variable (Cmd/Ctrl+J)',
+      onClick: () => this.openVariableJump(),
+    });
+    jumpButton.dataset.action = 'editor-jump-variable';
+
+    toolbar.append(
+      applyButton,
+      revertButton,
+      undoRedo,
+      jumpButton,
+      spacer,
+      menuWrap,
+    );
+
+    this.note = document.createElement('div');
+    this.note.className = 'stims-editor__note';
+    this.note.textContent = '';
+    this.note.hidden = true;
+
+    // ── Stage: the code, and anything layered over it ─────────────
+    this.stage = document.createElement('div');
+    this.stage.className = 'stims-editor__stage';
     const editorHost = document.createElement('div');
-    editorHost.className = 'milkdrop-overlay__editor';
+    editorHost.className = 'stims-editor__code';
 
     const editorViewState = createEditorView({
       parent: editorHost,
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
       onBufferedEdit: () => {
+        // The flag must flip synchronously (commit logic reads it), but the
+        // diagnostics + control re-render below cost a full preset parse and
+        // dozens of whole-document scans — far too much to run undebounced on
+        // every keystroke. 80ms trailing keeps feedback near-instant at
+        // typing pauses without paying per character.
         this.hasBufferedEdits = true;
-        const currentDoc = this.editor.state.doc.toString();
-        const astDiag = computeAstDiagnostics(currentDoc);
-        const combined = mergeDiagnostics(
-          this.lastSessionState?.diagnostics ?? [],
-          astDiag,
-        );
-        this.setEditorDiagnostics(combined);
-        if (this.lastSessionState) {
-          this.renderSessionState({
-            ...this.lastSessionState,
-            source: currentDoc,
-            diagnostics: combined,
-          });
+        if (this.bufferedEditDebounceId !== null) {
+          window.clearTimeout(this.bufferedEditDebounceId);
         }
+        this.bufferedEditDebounceId = window.setTimeout(() => {
+          this.bufferedEditDebounceId = null;
+          const currentDoc = this.editor.state.doc.toString();
+          const astDiag = computeAstDiagnostics(currentDoc);
+          const combined = mergeDiagnostics(
+            this.lastSessionState?.diagnostics ?? [],
+            astDiag,
+          );
+          this.setEditorDiagnostics(combined);
+          if (this.lastSessionState) {
+            this.renderSessionState({
+              ...this.lastSessionState,
+              source: currentDoc,
+              diagnostics: combined,
+            });
+          }
+        }, 80);
       },
       isChangeSuppressed: () => this.suppressEditorChange,
       onQuickFixDiagnostic: (diagnostic) =>
         this.applyQuickFixForDiagnostic(diagnostic),
+      // Escape out of the code lands on the primary action rather than
+      // dropping focus on <body>.
+      onEscapeBlur: () => applyButton.focus(),
+      onJumpToVariable: () => this.openVariableJump(),
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
@@ -1068,227 +1217,156 @@ export class EditorPanel {
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
-    const editorBody = document.createElement('div');
-    editorBody.className = 'editor-body';
-    editorBody.appendChild(editorHost);
-    editorBody.appendChild(this.renderSliders());
-    editorMain.append(this.editorStatus, editorBody);
+    this.stage.append(this.note, editorHost);
 
-    const editorRail = document.createElement('div');
-    editorRail.className = 'milkdrop-overlay__editor-rail';
-
-    const editorCueSection = document.createElement('section');
-    editorCueSection.className = 'milkdrop-overlay__editor-section';
-    const editorCueLabel = document.createElement('span');
-    editorCueLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorCueLabel.textContent = 'Live cues';
-    const editorCueCopy = document.createElement('p');
-    editorCueCopy.className = 'milkdrop-overlay__editor-section-copy';
-    editorCueCopy.textContent =
-      'Drop safe reactive starter lines into the draft and shape them from there.';
-    const editorCueGrid = document.createElement('div');
-    editorCueGrid.className = 'milkdrop-overlay__editor-cue-grid';
-    EDITOR_CUES.forEach((cue) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__editor-cue';
-      const label = document.createElement('strong');
-      label.textContent = cue.label;
-      const description = document.createElement('span');
-      description.textContent = cue.description;
-      button.append(label, description);
-      button.addEventListener('click', () => this.insertSnippet(cue.snippet));
-      editorCueGrid.appendChild(button);
+    // ── Problems strip ────────────────────────────────────────────
+    // An IDE problems panel: pinned directly under the code, collapsible,
+    // and scrolling on its own so a noisy compile can't push the dock off
+    // screen. The old "Console" section sat ~2000px below the editor.
+    this.problems = document.createElement('section');
+    this.problems.className = 'stims-editor__problems';
+    this.problems.dataset.open = 'true';
+    const problemsHead = document.createElement('div');
+    problemsHead.className = 'stims-editor__problems-head';
+    const problemsToggle = document.createElement('button');
+    problemsToggle.type = 'button';
+    problemsToggle.className = 'stims-editor__problems-toggle';
+    problemsToggle.setAttribute('aria-expanded', 'true');
+    const problemsCaret = document.createElement('span');
+    problemsCaret.className = 'stims-editor__caret';
+    problemsCaret.textContent = '▾';
+    problemsCaret.setAttribute('aria-hidden', 'true');
+    const problemsLabel = document.createElement('span');
+    problemsLabel.className = 'stims-editor__legend';
+    problemsLabel.textContent = 'Problems';
+    this.problemsCount = document.createElement('span');
+    this.problemsCount.className = 'stims-editor__count';
+    this.problemsCount.textContent = 'clean';
+    problemsToggle.append(problemsCaret, problemsLabel, this.problemsCount);
+    problemsToggle.addEventListener('click', () => {
+      const open = this.problems.dataset.open !== 'true';
+      this.problems.dataset.open = String(open);
+      problemsToggle.setAttribute('aria-expanded', String(open));
     });
-    editorCueSection.append(editorCueLabel, editorCueCopy, editorCueGrid);
-
-    const editorQuickIdeas = document.createElement('div');
-    editorQuickIdeas.className =
-      'milkdrop-overlay__editor-quick-ideas milkdrop-overlay__editor-section';
-    const editorQuickIdeasLabel = document.createElement('span');
-    editorQuickIdeasLabel.className =
-      'milkdrop-overlay__editor-quick-ideas-label';
-    editorQuickIdeasLabel.textContent = 'Pattern moves';
-    const editorSnippetButtons = document.createElement('div');
-    editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
-    EDITOR_SNIPPETS.forEach((snippetConfig) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__editor-snippet';
-      const label = document.createElement('strong');
-      label.textContent = snippetConfig.label;
-      const description = document.createElement('span');
-      description.textContent = snippetConfig.description;
-      button.append(label, description);
-      button.addEventListener('click', () => {
-        this.insertSnippet(snippetConfig.snippet);
-      });
-      editorSnippetButtons.appendChild(button);
-    });
-    editorQuickIdeas.append(editorQuickIdeasLabel, editorSnippetButtons);
-
-    const editorTips = document.createElement('div');
-    editorTips.className =
-      'milkdrop-overlay__editor-tips milkdrop-overlay__editor-section';
-    const editorTipsLabel = document.createElement('span');
-    editorTipsLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorTipsLabel.textContent = 'Flow';
-    EDITOR_FLOW_TIPS.forEach((tip) => {
-      const item = document.createElement('div');
-      item.className = 'milkdrop-overlay__editor-tip';
-      item.textContent = tip;
-      editorTips.appendChild(item);
-    });
-    editorTips.prepend(editorTipsLabel);
-
-    const editorConsole = document.createElement('section');
-    editorConsole.className = 'milkdrop-overlay__editor-section';
-    const editorConsoleLabel = document.createElement('span');
-    editorConsoleLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    editorConsoleLabel.textContent = 'Console';
-    this.consoleHeaderLabel = editorConsoleLabel;
-    this.diagnosticsList = document.createElement('div');
-    this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     const quickFixBtn = this.renderQuickFix();
     this.quickFixBtn = quickFixBtn;
-    editorConsole.append(editorConsoleLabel, this.diagnosticsList, quickFixBtn);
+    problemsHead.append(problemsToggle, quickFixBtn);
+    const problemsBody = document.createElement('div');
+    problemsBody.className = 'stims-editor__problems-body';
+    this.diagnosticsList = document.createElement('div');
+    this.diagnosticsList.className = 'stims-editor__problems-list';
+    problemsBody.appendChild(this.diagnosticsList);
+    this.problems.append(problemsHead, problemsBody);
 
-    // ── AI refinement bar ──────────────────────────────
-    const refineSection = document.createElement('section');
-    refineSection.className = 'milkdrop-overlay__editor-section';
-    const refineLabel = document.createElement('span');
-    refineLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
-    refineLabel.textContent = 'Refine with AI';
-    const refineForm = document.createElement('div');
-    refineForm.className = 'milkdrop-overlay__refine-form';
-    const refineInput = document.createElement('input');
-    refineInput.type = 'text';
-    refineInput.placeholder = '"make it more blue" or "add a slow rotation"';
-    refineInput.className = 'milkdrop-overlay__refine-input';
-    const refineBtn = document.createElement('button');
-    refineBtn.type = 'button';
-    refineBtn.textContent = 'Refine';
-    refineBtn.className = 'milkdrop-overlay__refine-btn';
-    let refining = false;
-    refineBtn.addEventListener('click', async () => {
-      const instruction = refineInput.value.trim();
-      if (!instruction || refining) return;
-      refining = true;
-      refineBtn.textContent = '…';
-      refineBtn.disabled = true;
-      try {
-        const currentSource = this.editor.state.doc.toString();
-        const res = await fetch('/api/refine-preset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentSource, instruction }),
-        });
-        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
-        const json = await res.json();
+    // ── Dock ──────────────────────────────────────────────────────
+    // Four tabs replace six stacked rail sections. At this panel width
+    // stacking meant everything past the first section was unreachable;
+    // tabs make each tool one click away and give it the full width.
+    const dock = document.createElement('div');
+    dock.className = 'stims-editor__dock';
+    dock.dataset.open = 'true';
+    const tabs = document.createElement('div');
+    tabs.className = 'stims-editor__tabs';
+    tabs.setAttribute('role', 'tablist');
+    const dockBody = document.createElement('div');
+    dockBody.className = 'stims-editor__dock-body';
 
-        if (json.explanation) {
-          const explanationMsg = document.createElement('div');
-          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
-          explanationMsg.textContent = json.explanation;
-          const closeBtn = document.createElement('button');
-          closeBtn.textContent = '\u2715';
-          closeBtn.className = 'editor-explanation-close';
-          closeBtn.addEventListener('click', () => explanationMsg.remove());
-          explanationMsg.appendChild(closeBtn);
-          refineForm.appendChild(explanationMsg);
-        }
-
-        if (json.milkSource) {
-          this.proposeAssistedEdit(json.milkSource, 'Refine');
-          refineInput.value = '';
-        }
-        refining = false;
-        refineBtn.textContent = 'Refine';
-        refineBtn.disabled = false;
-      } catch (err) {
-        console.error('Refinement failed:', err);
-        refineBtn.textContent = 'Error';
-        refineBtn.classList.add('milkdrop-overlay__refine-btn--error');
-        setTimeout(() => {
-          refineBtn.classList.remove('milkdrop-overlay__refine-btn--error');
-          refineBtn.textContent = 'Refine';
-          refineBtn.disabled = false;
-          refining = false;
-        }, 2000);
+    const panes: Array<{ id: string; label: string; content: HTMLElement }> = [
+      { id: 'tune', label: 'Tune', content: this.renderSliders() },
+      { id: 'insert', label: 'Insert', content: this.renderInsertPane() },
+      { id: 'assist', label: 'Assist', content: this.renderAssistPane() },
+      { id: 'history', label: 'History', content: this.renderHistoryPane() },
+    ];
+    const tabButtons: HTMLButtonElement[] = [];
+    // Selection and roving tabindex move together: the selected tab is the
+    // tablist's single Tab stop, arrows move both focus and selection.
+    const selectTab = (tab: HTMLButtonElement) => {
+      // Selecting a tab in a collapsed dock should show it, not silently
+      // change a hidden selection.
+      dock.dataset.open = 'true';
+      dockToggle.textContent = '▾';
+      tabButtons.forEach((other, otherIndex) => {
+        const selected = other === tab;
+        other.setAttribute('aria-selected', String(selected));
+        other.tabIndex = selected ? 0 : -1;
+        panes[otherIndex].content.hidden = !selected;
+      });
+    };
+    panes.forEach((pane, index) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'stims-editor__tab';
+      tab.textContent = pane.label;
+      tab.id = `stims-editor-tab-${pane.id}`;
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', String(index === 0));
+      tab.setAttribute('aria-controls', `stims-editor-pane-${pane.id}`);
+      tab.tabIndex = index === 0 ? 0 : -1;
+      tab.dataset.pane = pane.id;
+      pane.content.classList.add('stims-editor__pane');
+      pane.content.id = `stims-editor-pane-${pane.id}`;
+      pane.content.setAttribute('role', 'tabpanel');
+      pane.content.setAttribute(
+        'aria-labelledby',
+        `stims-editor-tab-${pane.id}`,
+      );
+      pane.content.hidden = index !== 0;
+      tab.addEventListener('click', () => selectTab(tab));
+      tabButtons.push(tab);
+      tabs.appendChild(tab);
+      dockBody.appendChild(pane.content);
+    });
+    tabs.addEventListener('keydown', (event) => {
+      const current = tabButtons.indexOf(event.target as HTMLButtonElement);
+      // The dock toggle shares the strip but is not a tab; leave its keys
+      // (and any unhandled key) alone.
+      if (current === -1) return;
+      let next: number;
+      switch (event.key) {
+        case 'ArrowRight':
+          next = (current + 1) % tabButtons.length;
+          break;
+        case 'ArrowLeft':
+          next = (current - 1 + tabButtons.length) % tabButtons.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = tabButtons.length - 1;
+          break;
+        default:
+          return;
       }
+      event.preventDefault();
+      event.stopPropagation();
+      const tab = tabButtons[next];
+      selectTab(tab);
+      tab.focus();
     });
-    refineInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') refineBtn.click();
+
+    const dockToggle = document.createElement('button');
+    dockToggle.type = 'button';
+    dockToggle.className = 'stims-editor__dock-toggle';
+    dockToggle.textContent = '▾';
+    dockToggle.title = 'Collapse the dock to give the code more room';
+    dockToggle.setAttribute('aria-label', 'Toggle editor dock');
+    dockToggle.addEventListener('click', () => {
+      const open = dock.dataset.open !== 'true';
+      dock.dataset.open = String(open);
+      dockToggle.textContent = open ? '▾' : '▴';
     });
-    refineForm.append(refineInput, refineBtn);
+    // Sibling of the tablist, not a child of it. A `role="tablist"` may only
+    // contain tabs, so putting the collapse button inside made every child
+    // suspect to assistive tech (axe: aria-required-children) and put a
+    // non-tab in the arrow-key roving order. A flex row keeps the same
+    // visual arrangement.
+    const tabRow = document.createElement('div');
+    tabRow.className = 'stims-editor__tabrow';
+    tabRow.append(tabs, dockToggle);
+    dock.append(tabRow, dockBody);
 
-    const explainBtn = document.createElement('button');
-    explainBtn.type = 'button';
-    explainBtn.textContent = 'Explain';
-    explainBtn.className = 'milkdrop-overlay__refine-btn';
-    explainBtn.title = 'Explain what this preset does visually';
-    let explaining = false;
-    explainBtn.addEventListener('click', async () => {
-      if (explaining) return;
-      explaining = true;
-      explainBtn.textContent = '…';
-      explainBtn.disabled = true;
-      try {
-        const currentSource = this.editor.state.doc.toString();
-        const res = await fetch('/api/refine-preset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentSource,
-            instruction: 'explain this preset',
-          }),
-        });
-        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
-        const json = await res.json();
-
-        if (json.explanation) {
-          const explanationMsg = document.createElement('div');
-          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
-          explanationMsg.textContent = json.explanation;
-          const closeBtn = document.createElement('button');
-          closeBtn.textContent = '\u2715';
-          closeBtn.className = 'editor-explanation-close';
-          closeBtn.addEventListener('click', () => explanationMsg.remove());
-          explanationMsg.appendChild(closeBtn);
-          refineForm.appendChild(explanationMsg);
-        }
-        explaining = false;
-        explainBtn.textContent = 'Explain';
-        explainBtn.disabled = false;
-      } catch (err) {
-        console.error('Explanation failed:', err);
-        explainBtn.textContent = 'Error';
-        explainBtn.classList.add('milkdrop-overlay__refine-btn--error');
-        setTimeout(() => {
-          explainBtn.classList.remove('milkdrop-overlay__refine-btn--error');
-          explainBtn.textContent = 'Explain';
-          explainBtn.disabled = false;
-          explaining = false;
-        }, 2000);
-      }
-    });
-    refineForm.appendChild(explainBtn);
-    refineSection.append(refineLabel, refineForm);
-
-    editorRail.append(
-      editorCueSection,
-      editorQuickIdeas,
-      editorTips,
-      editorConsole,
-      refineSection,
-    );
-    editorWorkbench.append(editorMain, editorRail);
-    this.element.append(
-      editorTransport,
-      editorActions,
-      this.renderBlendInput(),
-      editorWorkbench,
-    );
+    this.element.append(statusBar, toolbar, this.stage, this.problems, dock);
 
     const diagnosticsListener = ((
       e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
@@ -1302,6 +1380,17 @@ export class EditorPanel {
         diagnosticsListener,
       );
     };
+
+    this.midiTargets = webMidiService.getEnabledTargets();
+    this.disposeMidiListener = webMidiService.onDevicesChanged(() => {
+      this.midiTargets = webMidiService.getEnabledTargets();
+      if (this.learningSliderKey && webMidiService.getLearnTarget() === null) {
+        this.learningSliderKey = null;
+      }
+      this.refreshMidiGutter();
+      this.refreshSliderMidiState();
+    });
+    this.refreshSliderMidiState();
   }
 
   setVisible(visible: boolean) {
@@ -1312,9 +1401,439 @@ export class EditorPanel {
     this.deleteButton.hidden = !enabled;
   }
 
+  // ── Jump to variable (Cmd/Ctrl+J) ─────────────────────────────
+  // Scrubbing a value is instant once you're on its line; finding that line
+  // in a few hundred per-frame equations was the editor's dominant time
+  // sink. The popover lists the doc's assignment targets (most-assigned
+  // first), fuzzy-filters, and Enter jumps — repeatedly, cycling through
+  // every line that assigns the chosen variable.
+  private variableJumpEl: HTMLDivElement | null = null;
+  private variableJumpInput: HTMLInputElement | null = null;
+  private variableJumpMatches: AssignedVariable[] = [];
+  private variableJumpActive = 0;
+
+  private openVariableJump(): void {
+    if (this.variableJumpEl) {
+      this.variableJumpInput?.focus();
+      this.variableJumpInput?.select();
+      return;
+    }
+    const popover = document.createElement('div');
+    popover.className = 'stims-editor__jump';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'stims-editor__jump-input';
+    input.placeholder = 'Jump to variable…';
+    input.setAttribute('aria-label', 'Jump to variable');
+    const list = document.createElement('ul');
+    list.className = 'stims-editor__jump-list';
+    list.setAttribute('role', 'listbox');
+    popover.append(input, list);
+    this.stage.appendChild(popover);
+    this.variableJumpEl = popover;
+    this.variableJumpInput = input;
+
+    const variables = scanAssignedVariables(this.editor.state.doc.toString());
+    const render = () => {
+      this.variableJumpMatches = filterVariables(variables, input.value).slice(
+        0,
+        10,
+      );
+      this.variableJumpActive = 0;
+      list.replaceChildren();
+      if (this.variableJumpMatches.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'stims-editor__jump-empty';
+        empty.textContent = 'No assignments match';
+        list.appendChild(empty);
+        return;
+      }
+      this.variableJumpMatches.forEach((variable, index) => {
+        const item = document.createElement('li');
+        item.className = 'stims-editor__jump-item';
+        item.setAttribute('role', 'option');
+        item.setAttribute(
+          'aria-selected',
+          String(index === this.variableJumpActive),
+        );
+        item.dataset.active = String(index === this.variableJumpActive);
+        const name = document.createElement('span');
+        name.textContent = variable.name;
+        const count = document.createElement('span');
+        count.className = 'stims-editor__jump-count';
+        count.textContent =
+          variable.occurrences.length === 1
+            ? 'line ' + String(variable.occurrences[0].line)
+            : String(variable.occurrences.length) + '×';
+        item.append(name, count);
+        item.addEventListener('mousedown', (event) => {
+          // mousedown, not click: keeps focus in the input so the popover
+          // survives for cycling.
+          event.preventDefault();
+          this.variableJumpActive = index;
+          this.jumpToActiveVariable();
+        });
+        list.appendChild(item);
+      });
+    };
+
+    const setActive = (index: number) => {
+      const max = this.variableJumpMatches.length;
+      if (max === 0) return;
+      this.variableJumpActive = ((index % max) + max) % max;
+      [...list.children].forEach((child, i) => {
+        const active = i === this.variableJumpActive;
+        (child as HTMLElement).dataset.active = String(active);
+        child.setAttribute('aria-selected', String(active));
+      });
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActive(this.variableJumpActive + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActive(this.variableJumpActive - 1);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        this.jumpToActiveVariable();
+      } else if (event.key === 'Escape') {
+        // Consume it: the document-level handler would close the panel.
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeVariableJump();
+        this.editor.focus();
+      }
+    });
+    input.addEventListener('blur', () => {
+      // Deferred so a mousedown on a list item runs first.
+      window.setTimeout(() => {
+        if (!popover.contains(document.activeElement)) {
+          this.closeVariableJump();
+        }
+      }, 0);
+    });
+
+    render();
+    input.focus();
+  }
+
+  /** Jump the editor cursor to the active match's next occurrence (cycles),
+   * keeping the popover open so repeated Enter walks every assignment. */
+  private jumpToActiveVariable(): void {
+    const variable = this.variableJumpMatches[this.variableJumpActive];
+    if (!variable) return;
+    const doc = this.editor.state.doc;
+    const head = this.editor.state.selection.main.head;
+    const cursorLine = doc.lineAt(head);
+    const occurrence = nextOccurrence(
+      variable.occurrences.filter((o) => o.line <= doc.lines),
+      cursorLine.number,
+      head - cursorLine.from,
+    );
+    if (!occurrence) return;
+    const line = doc.line(occurrence.line);
+    const anchor = Math.min(line.from + occurrence.column, line.to);
+    this.editor.dispatch({
+      selection: {
+        anchor,
+        head: Math.min(anchor + variable.name.length, line.to),
+      },
+      scrollIntoView: true,
+    });
+  }
+
+  private closeVariableJump(): void {
+    this.variableJumpEl?.remove();
+    this.variableJumpEl = null;
+    this.variableJumpInput = null;
+    this.variableJumpMatches = [];
+    this.variableJumpActive = 0;
+  }
+
+  private createButton(
+    label: string,
+    options: {
+      variant?: 'primary' | 'icon' | 'danger';
+      title?: string;
+      ariaLabel?: string;
+      onClick: () => void;
+    },
+  ): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = options.variant
+      ? `stims-editor__btn stims-editor__btn--${options.variant}`
+      : 'stims-editor__btn';
+    button.textContent = label;
+    if (options.title) button.title = options.title;
+    button.setAttribute('aria-label', options.ariaLabel ?? label);
+    button.addEventListener('click', options.onClick);
+    return button;
+  }
+
+  /** Insert pane: signal references and multi-line patterns. Both were
+   * separate rail sections with identical affordances — one grid of
+   * insertable code, grouped by whether it is a single reactive term or a
+   * whole move. */
+  private renderInsertPane(): HTMLElement {
+    const pane = document.createElement('div');
+
+    const build = (
+      legend: string,
+      hint: string,
+      entries: ReadonlyArray<{
+        label: string;
+        description: string;
+        snippet: string;
+      }>,
+    ) => {
+      const heading = document.createElement('span');
+      heading.className = 'stims-editor__legend';
+      heading.textContent = legend;
+      const copy = document.createElement('p');
+      copy.className = 'stims-editor__hint';
+      copy.textContent = hint;
+      const grid = document.createElement('div');
+      grid.className = 'stims-editor__inserts';
+      entries.forEach((entry) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'stims-editor__insert';
+        button.dataset.insert = entry.label;
+        const label = document.createElement('strong');
+        label.textContent = entry.label;
+        const description = document.createElement('span');
+        description.textContent = entry.description;
+        button.append(label, description);
+        button.addEventListener('click', () =>
+          this.insertSnippet(entry.snippet),
+        );
+        grid.appendChild(button);
+      });
+      pane.append(heading, copy, grid);
+    };
+
+    build(
+      'Signals',
+      'Reactive terms, inserted at the cursor as a working line.',
+      EDITOR_CUES,
+    );
+    const spacer = document.createElement('div');
+    spacer.style.height = '12px';
+    pane.appendChild(spacer);
+    build(
+      'Patterns',
+      'Complete moves you can shape from there.',
+      EDITOR_SNIPPETS,
+    );
+
+    return pane;
+  }
+
+  /** Assist pane: every AI-backed action in one place. They share a single
+   * proposal slot and a single pending flag, so grouping them makes the
+   * mutual exclusion visible instead of surprising. */
+  private renderAssistPane(): HTMLElement {
+    const pane = document.createElement('div');
+
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Every result arrives as a reviewable diff over the code — nothing is applied until you accept it.';
+
+    const form = document.createElement('div');
+    form.className = 'stims-editor__assist-form';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'stims-editor__assist-input';
+    input.placeholder = 'make it more blue · add a slow rotation';
+    input.setAttribute('aria-label', 'Describe the change you want');
+    const refineBtn = this.createButton('Refine', {
+      onClick: () => {
+        void this.runAssist({
+          button: refineBtn,
+          label: 'Refine',
+          instruction: input.value.trim(),
+          proposalLabel: 'Refine',
+          onApplied: () => {
+            input.value = '';
+          },
+        });
+      },
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') refineBtn.click();
+    });
+    form.append(input, refineBtn);
+
+    const actions = document.createElement('div');
+    actions.className = 'stims-editor__assist-actions';
+    const explainBtn = this.createButton('Explain', {
+      title: 'Explain what this preset does visually',
+      onClick: () => {
+        void this.runAssist({
+          button: explainBtn,
+          label: 'Explain',
+          instruction: 'explain this preset',
+        });
+      },
+    });
+    const variationsBtn = this.createButton('Variations', {
+      title: 'Generate preset variations',
+      onClick: () => this.handleBatchGenerate(),
+    });
+
+    const blend = document.createElement('div');
+    blend.className = 'stims-editor__blend';
+    blend.hidden = true;
+    const blendBtn = this.createButton('Blend…', {
+      title: 'Blend with another preset',
+      onClick: () => {
+        blend.hidden = !blend.hidden;
+        if (!blend.hidden) blendTextarea.focus();
+      },
+    });
+    actions.append(explainBtn, variationsBtn, blendBtn);
+
+    const blendTextarea = document.createElement('textarea');
+    blendTextarea.className = 'stims-editor__assist-textarea';
+    blendTextarea.placeholder = 'Paste a second preset source or preset ID';
+    blendTextarea.rows = 4;
+    blendTextarea.setAttribute('aria-label', 'Second preset to blend with');
+    const blendActions = document.createElement('div');
+    blendActions.className = 'stims-editor__assist-actions';
+    const blendSubmit = this.createButton('Blend', {
+      onClick: () => {
+        const sourceB = blendTextarea.value.trim();
+        if (!sourceB || this.aiPending) return;
+        this.doBlend(sourceB);
+        blend.hidden = true;
+        blendTextarea.value = '';
+      },
+    });
+    const blendCancel = this.createButton('Cancel', {
+      onClick: () => {
+        blend.hidden = true;
+        blendTextarea.value = '';
+      },
+    });
+    blendActions.append(blendSubmit, blendCancel);
+    blend.append(blendTextarea, blendActions);
+
+    this.refineBtn = refineBtn;
+    this.explainBtn = explainBtn;
+    this.batchButton = variationsBtn;
+    this.blendSubmitButton = blendSubmit;
+    this.assistPane = pane;
+
+    pane.append(hint, form, actions, blend);
+    return pane;
+  }
+
+  /** Shared plumbing for the two /api/refine-preset callers: pending state,
+   * transient error label, explanation card, and the proposed diff. */
+  private async runAssist(options: {
+    button: HTMLButtonElement;
+    label: string;
+    instruction: string;
+    proposalLabel?: string;
+    onApplied?: () => void;
+  }): Promise<void> {
+    if (!options.instruction || this.aiPending) return;
+    this.setRefinePending(true);
+    options.button.textContent = '…';
+    try {
+      const currentSource = this.editor.state.doc.toString();
+      const res = await fetch('/api/refine-preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentSource,
+          instruction: options.instruction,
+        }),
+      });
+      if (!res.ok) throw new Error(`Refine API: ${res.status}`);
+      const json = await res.json();
+
+      if (json.explanation) {
+        this.showExplanation(json.explanation);
+      }
+      if (options.proposalLabel && json.milkSource) {
+        this.proposeAssistedEdit(json.milkSource, options.proposalLabel);
+        options.onApplied?.();
+      }
+      options.button.textContent = options.label;
+      this.setRefinePending(false);
+    } catch (err) {
+      console.error(`${options.label} failed:`, err);
+      this.setRefinePending(false);
+      options.button.textContent = 'Error';
+      options.button.disabled = true;
+      options.button.classList.add('stims-editor__btn--error');
+      setTimeout(() => {
+        options.button.classList.remove('stims-editor__btn--error');
+        options.button.textContent = options.label;
+        options.button.disabled = false;
+      }, 2000);
+    }
+  }
+
+  private showExplanation(text: string) {
+    if (!this.assistPane) return;
+    this.assistPane.querySelector('.stims-editor__explanation')?.remove();
+    const card = document.createElement('div');
+    card.className = 'stims-editor__explanation';
+    card.textContent = text;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'stims-editor__explanation-close';
+    close.textContent = '✕';
+    close.setAttribute('aria-label', 'Dismiss explanation');
+    close.addEventListener('click', () => card.remove());
+    card.appendChild(close);
+    this.assistPane.appendChild(card);
+  }
+
+  private renderHistoryPane(): HTMLElement {
+    const pane = document.createElement('div');
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'A checkpoint is taken before each applied AI edit and before each restore.';
+    this.historyList = document.createElement('div');
+    this.historyList.className = 'stims-editor__history';
+    pane.append(hint, this.historyList);
+    this.renderHistorySnapshots();
+    return pane;
+  }
+
   setSessionState(state: MilkdropEditorSessionState) {
     const nextSource = state.source;
     const currentDoc = this.editor.state.doc.toString();
+
+    // A buffered draft belongs to the preset it was typed against. Holding on
+    // to it across a preset switch would leave the editor showing one preset
+    // while another renders, and the pending debounce would then commit the
+    // old preset's text as the new one's source.
+    const nextPresetId =
+      state.latestCompiled?.source.id ??
+      state.activeCompiled?.source.id ??
+      null;
+    const presetChanged =
+      nextPresetId !== null &&
+      this.lastPresetId !== null &&
+      nextPresetId !== this.lastPresetId;
+    if (presetChanged) {
+      this.hasBufferedEdits = false;
+      this.clearEditorDebounce();
+    }
+    if (nextPresetId !== null) {
+      this.lastPresetId = nextPresetId;
+    }
+
     const preserveBufferedDraft =
       this.hasBufferedEdits && nextSource !== currentDoc;
 
@@ -1385,61 +1904,61 @@ export class EditorPanel {
           latestWebgpuStatus !== 'supported'),
     );
     const shouldShowStatus = hasErrors || state.dirty || this.hasBufferedEdits;
+    // The status label already names the state and the problems strip
+    // already counts it, so the note only carries what neither says: what
+    // to do next.
     const baseStatus = hasErrors
-      ? `${errors.length} compile/syntax error${errors.length === 1 ? '' : 's'} in draft. The stage is holding the last good frame.`
+      ? 'Fix the errors below, or Reset to return to the active source.'
       : this.hasBufferedEdits
-        ? 'Typing… the next patch is queued. Press Cmd/Ctrl+Enter to punch it in immediately.'
+        ? 'Queued — Cmd/Ctrl+Enter punches it in now.'
         : state.dirty
-          ? 'Live patch applied. Keep shaping the draft or reset to return to the active source.'
+          ? 'Draft is live on stage. Reset returns to the saved source.'
           : '';
 
     if (hasErrors) {
-      this.editorStatus.innerHTML = `${renderIconSvg('warning', {
-        className: 'milkdrop-overlay__editor-status-icon',
-      })}${baseStatus}`;
+      this.note.innerHTML = `${renderIconSvg('warning', {
+        className: 'stims-editor__note-icon',
+      })}<span>${escapeHtml(baseStatus)}</span>`;
     } else {
-      this.editorStatus.textContent = baseStatus;
+      this.note.textContent = baseStatus;
     }
-    this.editorStatus.hidden = !shouldShowStatus;
-    if (hasErrors) {
-      this.editorStatus.classList.add('milkdrop-overlay__editor-status--error');
-    } else {
-      this.editorStatus.classList.remove(
-        'milkdrop-overlay__editor-status--error',
-      );
-    }
+    this.note.hidden = !shouldShowStatus;
+    this.note.classList.toggle('stims-editor__note--error', hasErrors);
 
-    this.editorLiveBadge.textContent = hasErrors
-      ? 'Last good frame'
-      : 'Auto 120ms';
-    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
-    this.editorLiveBadge.hidden = false;
-    this.editorSyncBadge.textContent = this.hasBufferedEdits
-      ? 'Queued'
-      : state.dirty
-        ? 'Draft live'
-        : 'Synced';
-    this.editorSyncBadge.dataset.tone =
-      this.hasBufferedEdits || state.dirty ? 'accent' : 'muted';
-    this.editorSyncBadge.hidden = false;
-    this.editorSafetyBadge.hidden = !hasErrors && !isDegraded;
-    this.editorSafetyBadge.textContent = hasErrors
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
-      : isDegraded
-        ? 'Showing a simpler preset'
-        : 'Stable';
-    this.editorSafetyBadge.dataset.tone = hasErrors
-      ? 'danger'
-      : isDegraded
-        ? 'warning'
-        : 'muted';
+    // The dot answers "is what I see on stage what I typed?" — the only
+    // question the old four badges were collectively trying to answer.
+    const state_ = hasErrors
+      ? 'error'
+      : this.hasBufferedEdits
+        ? 'queued'
+        : state.dirty
+          ? 'dirty'
+          : 'synced';
+    this.stateEl.dataset.state = state_;
+    this.stateLabel.textContent = hasErrors
+      ? 'Holding last good frame'
+      : this.hasBufferedEdits
+        ? 'Queued'
+        : state.dirty
+          ? 'Draft live'
+          : 'Synced';
 
-    if (this.consoleHeaderLabel) {
-      this.consoleHeaderLabel.textContent =
-        errors.length > 0 || warnings.length > 0
-          ? `Console (${errors.length} error${errors.length === 1 ? '' : 's'}, ${warnings.length} warning${warnings.length === 1 ? '' : 's'})`
-          : 'Console (Clean)';
-    }
+    // Fidelity degradation only. Error counts are the status label's and the
+    // problems strip's job — this flag reports the one thing neither can:
+    // the stage is rendering a simplified version of what compiled.
+    this.safetyFlag.hidden = !isDegraded;
+    this.safetyFlag.textContent = 'Simplified';
+    this.safetyFlag.dataset.tone = 'warning';
+    this.safetyFlag.title =
+      'This preset uses features the active backend cannot render at full fidelity.';
+
+    const problemTotal = errors.length + warnings.length;
+    this.problemsCount.textContent =
+      problemTotal === 0
+        ? 'clean'
+        : `${errors.length} err · ${warnings.length} warn`;
+    this.problemsCount.dataset.tone =
+      errors.length > 0 ? 'danger' : warnings.length > 0 ? 'warning' : 'muted';
 
     this.diagnosticsList.replaceChildren();
     const errorsForQuickFix = state.diagnostics.filter(
@@ -1470,48 +1989,45 @@ export class EditorPanel {
 
     if (consoleMessages.length === 0) {
       const item = document.createElement('div');
-      item.className =
-        'milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--info';
+      item.className = 'stims-editor__problems-empty';
       item.textContent =
-        'Console is clear. Try bass_att, beat_pulse, or time to push the scene around.';
+        'No problems. Try bass_att, beat_pulse, or time to push the scene around.';
       this.diagnosticsList.appendChild(item);
     } else {
       consoleMessages.slice(0, 15).forEach((diagnostic) => {
         const item = document.createElement('div');
-        item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
+        item.className = `stims-editor__problem stims-editor__problem--${diagnostic.severity}`;
 
+        // Severity as a fixed-width mono tag rather than a filled pill: the
+        // column reads as a log, and the tags stop competing with the code
+        // for attention. (These were inline styles before.)
         const severityTag = document.createElement('span');
-        severityTag.className = `milkdrop-overlay__diagnostic-tag milkdrop-overlay__diagnostic-tag--${diagnostic.severity}`;
-        severityTag.textContent = diagnostic.severity.toUpperCase();
-        severityTag.style.marginRight = '6px';
-        severityTag.style.fontWeight = 'bold';
-        severityTag.style.fontSize = '0.7rem';
-        severityTag.style.padding = '1px 5px';
-        severityTag.style.borderRadius = '4px';
-        if (diagnostic.severity === 'error') {
-          severityTag.style.background = 'rgba(239, 68, 68, 0.3)';
-          severityTag.style.color = '#fca5a5';
-        } else if (diagnostic.severity === 'warning') {
-          severityTag.style.background = 'rgba(245, 158, 11, 0.3)';
-          severityTag.style.color = '#fde68a';
+        severityTag.className = 'stims-editor__problem-tag';
+        severityTag.textContent = diagnostic.severity;
+
+        const hasLine = 'line' in diagnostic && Boolean(diagnostic.line);
+        if (hasLine) {
+          const lineTag = document.createElement('span');
+          lineTag.className = 'stims-editor__problem-line';
+          lineTag.textContent = `Line ${diagnostic.line}`;
+          item.append(severityTag, lineTag);
         } else {
-          severityTag.style.background = 'rgba(59, 130, 246, 0.3)';
-          severityTag.style.color = '#93c5fd';
+          item.append(severityTag);
         }
 
         const messageSpan = document.createElement('span');
-        messageSpan.textContent =
-          'line' in diagnostic && diagnostic.line
-            ? `Line ${diagnostic.line}: ${diagnostic.message}`
-            : diagnostic.message;
+        messageSpan.textContent = diagnostic.message;
+        item.appendChild(messageSpan);
 
-        item.append(severityTag, messageSpan);
-
-        if ('line' in diagnostic && diagnostic.line) {
+        if (hasLine && diagnostic.line) {
           const lineNum = diagnostic.line;
-          item.style.cursor = 'pointer';
-          item.title = 'Click to jump to line in editor';
-          item.addEventListener('click', () => {
+          item.classList.add('stims-editor__problem--jump');
+          item.title = 'Jump to this line';
+          // The row acts as a button, so it must be reachable and operable
+          // from the keyboard like one.
+          item.setAttribute('role', 'button');
+          item.tabIndex = 0;
+          const jumpToLine = () => {
             if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
               const line = this.editor.state.doc.line(lineNum);
               this.editor.dispatch({
@@ -1520,6 +2036,13 @@ export class EditorPanel {
               });
               this.editor.focus();
             }
+          };
+          item.addEventListener('click', jumpToLine);
+          item.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            event.stopPropagation();
+            jumpToLine();
           });
         }
         this.diagnosticsList.appendChild(item);
@@ -1527,13 +2050,162 @@ export class EditorPanel {
     }
 
     this.updateSlidersFromDoc();
+    this.updateColorsFromDoc();
+    this.updateTogglesFromDoc();
+    this.updateEnumsFromDoc();
+    this.updateRangesFromDoc();
+    this.updateModulationsFromDoc();
+    this.refreshMidiGutter();
+    this.refreshSliderMidiState();
+  }
+
+  private refreshMidiGutter(): void {
+    const entries =
+      this.midiTargets.size === 0
+        ? []
+        : computeMidiGutterInfo(
+            this.editor.state.doc.toString(),
+            this.midiTargets,
+          );
+    this.editor.dispatch({ effects: setMidiGutterInfo.of(entries) });
+  }
+
+  /** Keeps every Tune control's state chip and the sliders' "listening"
+   * learn-button state in sync with the buffer and webMidiService. Cheap
+   * enough to call on every doc change — there are under 20 controls. */
+  private refreshSliderMidiState(): void {
+    const doc = this.editor.state.doc.toString();
+
+    for (const cell of this.fieldStateCells) {
+      const driven = cell.keys.filter((key) =>
+        isFieldShadowedByEquations(doc, key),
+      );
+      const bound = cell.keys.filter((key) => this.midiTargets.has(key));
+      const state =
+        driven.length > 0 && bound.length > 0
+          ? 'shadowed'
+          : driven.length > 0
+            ? 'driven'
+            : bound.length > 0
+              ? 'bound'
+              : 'static';
+
+      cell.chip.dataset.state = state;
+      cell.chip.textContent =
+        state === 'static'
+          ? 'set'
+          : state === 'bound'
+            ? 'midi'
+            : state === 'driven'
+              ? 'eq'
+              : 'eq ⚠';
+      // Only the equation states have somewhere to jump to.
+      cell.chip.disabled = driven.length === 0;
+      cell.chip.title =
+        state === 'static'
+          ? `${cell.label} is a literal value in this preset — the control owns it.`
+          : state === 'bound'
+            ? `MIDI/MCP is driving ${bound.join(', ')}.`
+            : state === 'driven'
+              ? `This preset recomputes ${driven.join(', ')} every frame, so the control's value is overwritten. Click to jump to the equation.`
+              : `MIDI/MCP is bound to ${bound.join(', ')}, but this preset's own equations reassign ${driven.join(', ')} every frame — no visible effect. Click to jump to the equation.`;
+      cell.chip.setAttribute(
+        'aria-label',
+        `${cell.label} value source: ${state}`,
+      );
+    }
+
+    this.sliderInputs.forEach((item, key) => {
+      const armed = this.learningSliderKey === key;
+      item.learnButton.dataset.armed = armed ? 'true' : 'false';
+      item.learnButton.title = armed
+        ? `Listening… move a knob or fader to map it to ${key}.`
+        : `MIDI-learn ${key}: click, then move a knob or fader.`;
+    });
+    this.refreshLiveHintsFromDoc();
+  }
+
+  /**
+   * The transient overwrite hint, recomputed cheaply on every doc change and
+   * on focus. It only shows while a control is actually being edited: the
+   * readout is moving and the stage may not be, so the row says which. Blur
+   * listeners hide it; focus and doc changes (re)populate it.
+   */
+  private refreshLiveHintsFromDoc(): void {
+    const doc = this.editor.state.doc.toString();
+    const update = (
+      input: Element | null,
+      hint: HTMLDivElement,
+      keys: string[],
+    ) => {
+      const active = document.activeElement === input;
+      hint.textContent = active ? liveHintForFields(doc, keys) : '';
+      hint.hidden = !active || hint.textContent === '';
+    };
+    this.sliderInputs.forEach((item) => {
+      update(item.input, item.liveHint, [item.config.key]);
+    });
+    this.rangeInputs.forEach((item) => {
+      const active =
+        document.activeElement === item.minInput ||
+        document.activeElement === item.maxInput;
+      if (!active) {
+        item.liveHint.hidden = true;
+        item.liveHint.textContent = '';
+        return;
+      }
+      item.liveHint.textContent = liveHintForFields(doc, [
+        item.config.minKey,
+        item.config.maxKey,
+      ]);
+      item.liveHint.hidden = item.liveHint.textContent === '';
+    });
+    this.colorInputs.forEach((item) => {
+      const keys = [...item.group.rgb];
+      if (item.group.alpha) keys.push(item.group.alpha.key);
+      const active =
+        document.activeElement === item.swatch ||
+        document.activeElement === item.alphaInput;
+      if (!active) {
+        item.liveHint.hidden = true;
+        item.liveHint.textContent = '';
+        return;
+      }
+      item.liveHint.textContent = liveHintForFields(doc, keys);
+      item.liveHint.hidden = item.liveHint.textContent === '';
+    });
+  }
+
+  private toggleSliderLearn(key: string): void {
+    if (this.learningSliderKey === key) {
+      webMidiService.cancelLearn();
+      this.learningSliderKey = null;
+    } else {
+      webMidiService.beginLearn(key);
+      this.learningSliderKey = key;
+    }
+    this.refreshSliderMidiState();
   }
 
   dispose() {
+    this.closeVariableJump();
     this.disposeDiagnosticsListener?.();
     this.disposeDiagnosticsListener = null;
+    this.disposeMidiListener?.();
+    this.disposeMidiListener = null;
+    this.disposeMenuDismiss?.();
+    this.disposeMenuDismiss = null;
     this.clearEditorDebounce();
+    if (this.bufferedEditDebounceId !== null) {
+      window.clearTimeout(this.bufferedEditDebounceId);
+      this.bufferedEditDebounceId = null;
+    }
+    if (this.controlFlushTimer !== null) {
+      window.clearTimeout(this.controlFlushTimer);
+      this.controlFlushTimer = null;
+    }
     this.unsubscribeTheme();
+    this.discardAssistedEdit();
     this.editor.destroy();
     this.element.remove();
   }
@@ -1575,73 +2247,905 @@ export class EditorPanel {
     this.editor.focus();
   }
 
+  /**
+   * A control's state cell. Any MilkDrop field is either a literal the buffer
+   * owns or a value the preset's own equations rewrite every frame, and a
+   * control that cannot tell you which is lying about roughly half the
+   * catalog: the fader moves, the line changes, and the next frame overwrites
+   * it. The chip names the owner, and on a driven field it jumps to the
+   * equation doing the overwriting.
+   */
+  private createFieldStateChip(
+    keys: string[],
+    label: string,
+  ): HTMLButtonElement {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'stims-editor__state-chip';
+    chip.dataset.state = 'static';
+    chip.addEventListener('click', () => {
+      const doc = this.editor.state.doc.toString();
+      const driven = keys.find((key) => isFieldShadowedByEquations(doc, key));
+      const line = driven ? findMilkdropEquationLine(doc, driven) : null;
+      if (line === null) return;
+      const target = this.editor.state.doc.line(line);
+      this.editor.dispatch({
+        selection: { anchor: target.from },
+        scrollIntoView: true,
+      });
+      this.editor.focus();
+    });
+    this.fieldStateCells.push({ chip, keys, label });
+    return chip;
+  }
+
+  /** Tune pane. Each row is label + live value on one line, fader and its
+   * two controls on the next. In the old 140px column beside the code the
+   * label, value, MIDI dot, learn and reset controls all fought for the
+   * same line; at full panel width they no longer have to. */
   private renderSliders(): HTMLElement {
     const panel = document.createElement('div');
-    panel.className = 'editor-sliders';
-    panel.setAttribute('role', 'region');
+    panel.setAttribute('role', 'group');
     panel.setAttribute('aria-label', 'Parameter sliders');
 
-    const title = document.createElement('h4');
-    title.textContent = 'Tune';
-    title.className = 'editor-sliders__title';
-    title.title = 'Double-click any label to reset parameter to default';
-    panel.appendChild(title);
+    const hint = document.createElement('p');
+    hint.className = 'stims-editor__hint';
+    hint.textContent =
+      'Controls rewrite the matching line in the draft, so every move stays inspectable as code. The chip beside each one says whether the draft owns that value or the preset recomputes it per frame.';
+    panel.appendChild(hint);
 
     this.sliderInputs.clear();
+    this.colorInputs.clear();
+    this.toggleInputs.clear();
+    this.enumInputs.clear();
+    this.rangeInputs.clear();
+    this.modulationRows.clear();
+    this.fieldStateCells = [];
 
-    for (const s of DEFAULT_EDITOR_SLIDERS) {
-      const row = document.createElement('div');
-      row.className = 'editor-slider-row';
-
-      const label = document.createElement('label');
-      label.className = 'editor-slider-row__label';
-      label.textContent = s.label;
-      label.title = `Double-click to reset ${s.label} to ${s.defaultValue}`;
-      label.style.cursor = 'pointer';
-
-      label.addEventListener('dblclick', () => {
-        this.writeVariableToEditor(s.key, s.defaultValue);
-        const item = this.sliderInputs.get(s.key);
-        if (item) {
-          item.input.value = String(s.defaultValue);
-          item.display.textContent = s.defaultValue.toFixed(2);
-        }
-      });
-
-      const input = document.createElement('input');
-      input.type = 'range';
-      input.min = String(s.min);
-      input.max = String(s.max);
-      input.step = String(s.step);
-      input.className = 'editor-slider-row__input';
-
-      const val = this.readVariableFromEditor(s.key);
-      const initialVal = val !== null ? val : s.defaultValue;
-      input.value = String(initialVal);
-
-      const valDisplay = document.createElement('span');
-      valDisplay.className = 'editor-slider-row__value';
-      valDisplay.textContent = initialVal.toFixed(2);
-
-      input.addEventListener('input', () => {
-        const numVal = Number.parseFloat(input.value);
-        valDisplay.textContent = numVal.toFixed(2);
-        this.writeVariableToEditor(s.key, numVal);
-      });
-
-      this.sliderInputs.set(s.key, {
-        input,
-        display: valDisplay,
-        defaultValue: s.defaultValue,
-      });
-
-      row.appendChild(label);
-      row.appendChild(input);
-      row.appendChild(valDisplay);
-      panel.appendChild(row);
+    for (const section of CONTROL_SECTIONS) {
+      panel.appendChild(this.renderSection(section));
     }
 
     return panel;
+  }
+
+  /**
+   * One subject's controls, in whatever forms that subject needs.
+   *
+   * The pane used to be ordered by widget type — every fader, then every
+   * switch, then every mode, then every range, then every colour. That is a
+   * taxonomy of controls rather than of the thing being edited, and it split
+   * the main wave across four separate places: its mode under Modes, its
+   * colour under Colour, its four flags under Switches, and its volume
+   * fade-in under Ranges. Ordering by subject puts them back together, and
+   * widget type becomes just how each field happens to render.
+   */
+  private renderSection(
+    section: (typeof CONTROL_SECTIONS)[number],
+  ): HTMLElement {
+    const wrap = document.createElement('section');
+    wrap.className = 'stims-editor__section';
+    wrap.dataset.section = section.id;
+    wrap.setAttribute('aria-label', section.label);
+
+    const heading = this.createSubhead(section.label);
+    heading.title = section.hint;
+    wrap.appendChild(heading);
+
+    const enums = ENUM_CONTROLS.filter((c) => c.section === section.id);
+    const scalars = SCALAR_CONTROLS.filter((c) => c.section === section.id);
+    const colors = COLOR_GROUPS.filter((c) => c.section === section.id);
+    const toggles = TOGGLE_CONTROLS.filter((c) => c.section === section.id);
+    const ranges = RANGE_CONTROLS.filter((c) => c.section === section.id);
+
+    // Mode first: for the wave it decides what the rest of the section even
+    // means, and it is the one control here that is not a quantity.
+    for (const config of enums) {
+      wrap.appendChild(this.renderEnumControl(config));
+    }
+
+    if (colors.length > 0) {
+      const grid = document.createElement('div');
+      grid.className = 'stims-editor__colors';
+      for (const group of colors) {
+        grid.appendChild(this.renderColorGroup(group));
+      }
+      wrap.appendChild(grid);
+    }
+
+    if (scalars.length > 0) {
+      const grid = document.createElement('div');
+      grid.className = 'stims-editor__sliders';
+      for (const config of scalars) {
+        grid.appendChild(this.renderScalarControl(config));
+      }
+      wrap.appendChild(grid);
+    }
+
+    for (const config of ranges) {
+      wrap.appendChild(this.renderRangeControl(config));
+    }
+
+    // Switches last: they are the cheapest to scan and the least likely to
+    // be what someone opened the section for.
+    if (toggles.length > 0) {
+      const bank = document.createElement('div');
+      bank.className = 'stims-editor__toggle-bank';
+      for (const config of toggles) {
+        bank.appendChild(this.renderToggleControl(config));
+      }
+      wrap.appendChild(bank);
+    }
+
+    return wrap;
+  }
+
+  /**
+   * One scalar row: fader on its declared scale, live value in that scale's
+   * own units, MIDI-learn, reset, and a modulation control that writes the
+   * per_frame equation when a fader alone cannot reach the field.
+   */
+  private renderScalarControl(s: ScalarControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__slider';
+
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = s.label;
+    label.title = s.hint ?? `Double-click to reset ${s.label}`;
+
+    const valDisplay = document.createElement('span');
+    valDisplay.className = 'stims-editor__slider-value';
+
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+
+    // The input always spans 0..1; the scale maps that onto the field. Giving
+    // the input the field's own min/max would put the value back on a linear
+    // track and undo the whole point.
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = '0';
+    input.max = '1';
+    input.step = '0.001';
+    input.className = 'stims-editor__slider-input';
+    input.dataset.scale = s.scale;
+    // The label's title hint is hover-only; fold it into the fader's name.
+    input.setAttribute(
+      'aria-label',
+      s.hint ? `${s.label}. ${s.hint}` : s.label,
+    );
+
+    const applyValue = (value: number) => {
+      input.value = String(valueToPosition(value, s));
+      valDisplay.textContent = formatControlValue(value, s);
+      input.setAttribute('aria-valuetext', formatControlValue(value, s));
+    };
+
+    const resetToDefault = () => {
+      this.writeVariableToEditor(s.key, s.defaultValue);
+      applyValue(s.defaultValue);
+    };
+    label.addEventListener('dblclick', resetToDefault);
+
+    applyValue(this.readVariableFromEditor(s.key) ?? s.defaultValue);
+
+    input.addEventListener('input', () => {
+      let value = positionToValue(Number.parseFloat(input.value), s);
+      // Snap to the neutral value near the detent. Without it a ratio control
+      // can only reach exactly 1.0 by luck, and "no change" is the single
+      // most useful position on the track.
+      if (s.neutral !== undefined) {
+        const neutralPos = valueToPosition(s.neutral, s);
+        if (Math.abs(Number.parseFloat(input.value) - neutralPos) < 0.012) {
+          value = s.neutral;
+        }
+      }
+      const quantised = Number(
+        (Math.round(value / s.step) * s.step).toFixed(6),
+      );
+      valDisplay.textContent = formatControlValue(quantised, s);
+      // Live first: the running VM reflects the drag immediately. The doc
+      // write below still recompiles so the value persists into the source.
+      this.callbacks.onLiveFieldChange?.(s.key, quantised);
+      this.writeVariableToEditor(s.key, quantised);
+    });
+
+    const learnButton = document.createElement('button');
+    learnButton.type = 'button';
+    learnButton.className = 'stims-editor__slider-btn';
+    learnButton.textContent = '⏺';
+    learnButton.setAttribute('aria-label', `MIDI-learn ${s.label}`);
+    learnButton.addEventListener('click', () => this.toggleSliderLearn(s.key));
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'stims-editor__slider-btn';
+    resetButton.textContent = '↺';
+    resetButton.setAttribute('aria-label', `Reset ${s.label} to default`);
+    resetButton.title = `Reset to ${s.defaultValue}`;
+    resetButton.addEventListener('click', resetToDefault);
+
+    controls.append(input, learnButton, resetButton);
+
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
+    this.sliderInputs.set(s.key, {
+      input,
+      display: valDisplay,
+      defaultValue: s.defaultValue,
+      learnButton,
+      liveHint,
+      config: s,
+    });
+
+    // Shown only while the handle is held: the readout is moving and the
+    // stage may not be, and the permanent chip is too easy to miss mid-drag.
+    input.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    input.addEventListener('blur', () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
+    });
+
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, this.createFieldStateChip([s.key], s.label), valDisplay);
+
+    row.append(head, controls, liveHint, this.renderModulationRow(s));
+    return row;
+  }
+
+  /**
+   * The modulation control, folded under each scalar row.
+   *
+   * On a per-frame-heavy preset most of these fields are not literals — the
+   * fader above writes a value the next frame discards, which is what the
+   * `eq` chip reports. This is the control that actually reaches them: pick a
+   * signal and a depth and it writes the `per_frame_` equation, leaving the
+   * fader's value as the base the modulation swings around.
+   */
+  private renderModulationRow(s: ScalarControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__mod';
+
+    const sourceSelect = document.createElement('select');
+    sourceSelect.className = 'stims-editor__mod-select';
+    sourceSelect.setAttribute('aria-label', `${s.label} modulation source`);
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'No modulation';
+    sourceSelect.appendChild(none);
+    for (const source of MODULATION_SOURCES) {
+      const option = document.createElement('option');
+      option.value = source.key;
+      option.textContent = source.label;
+      option.title = source.hint;
+      // Option titles never show in most pickers; keep the hint in the
+      // accessible name instead.
+      option.setAttribute('aria-label', `${source.label}. ${source.hint}`);
+      sourceSelect.appendChild(option);
+    }
+
+    const modeButton = document.createElement('button');
+    modeButton.type = 'button';
+    modeButton.className = 'stims-editor__mod-mode';
+    // The glyph ('+' / '×') means nothing on its own; updateModulationsFromDoc
+    // keeps this name in sync with the current mode.
+    modeButton.setAttribute('aria-label', `${s.label} modulation mode`);
+
+    const depth = document.createElement('input');
+    depth.type = 'range';
+    depth.className = 'stims-editor__slider-input';
+    depth.min = '-1';
+    depth.max = '1';
+    depth.step = '0.01';
+    depth.setAttribute('aria-label', `${s.label} modulation depth`);
+
+    const readout = document.createElement('span');
+    readout.className = 'stims-editor__mod-readout';
+
+    const state = () => readModulation(this.editor.state.doc.toString(), s.key);
+
+    const commit = (next: Modulation | null) => {
+      const doc = this.editor.state.doc.toString();
+      const updated = writeModulation(doc, s.key, next);
+      if (updated === doc) return;
+      this.replaceDoc(updated);
+    };
+
+    const currentModulation = (): Modulation => {
+      const now = state();
+      if (now.kind === 'modulated') return now.modulation;
+      return {
+        // A new modulation swings around whatever the fader currently says,
+        // so switching one on does not jump the value.
+        base: this.readVariableFromEditor(s.key) ?? s.defaultValue,
+        depth: s.scale === 'ratio' ? 0.2 : 0.1,
+        mode: s.scale === 'ratio' ? 'multiply' : 'add',
+        source: 'bass_att',
+      };
+    };
+
+    sourceSelect.addEventListener('change', () => {
+      const value = sourceSelect.value;
+      if (!value) {
+        commit(null);
+      } else {
+        commit({
+          ...currentModulation(),
+          source: value as ModulationSource,
+        });
+      }
+      this.updateModulationsFromDoc();
+    });
+
+    modeButton.addEventListener('click', () => {
+      const now = state();
+      if (now.kind !== 'modulated') return;
+      const mode: ModulationMode =
+        now.modulation.mode === 'add' ? 'multiply' : 'add';
+      commit({ ...now.modulation, mode });
+      this.updateModulationsFromDoc();
+    });
+
+    depth.addEventListener('input', () => {
+      const now = state();
+      if (now.kind !== 'modulated') return;
+      commit({
+        ...now.modulation,
+        depth: Number.parseFloat(depth.value),
+      });
+    });
+
+    row.append(sourceSelect, modeButton, depth, readout);
+    this.modulationRows.set(s.key, {
+      row,
+      sourceSelect,
+      modeButton,
+      depth,
+      readout,
+      config: s,
+    });
+    return row;
+  }
+
+  private updateModulationsFromDoc(): void {
+    const doc = this.editor.state.doc.toString();
+    this.modulationRows.forEach((item, key) => {
+      const state = readModulation(doc, key);
+
+      if (state.kind === 'custom') {
+        // The preset wrote something richer than this control can express.
+        // Offering to "edit" it would mean silently replacing their code, so
+        // the row steps aside and points at the line instead.
+        item.row.dataset.state = 'custom';
+        item.sourceSelect.disabled = true;
+        item.modeButton.disabled = true;
+        item.depth.disabled = true;
+        item.sourceSelect.value = '';
+        item.readout.textContent = 'hand-written equation';
+        item.readout.title = `Line ${state.line}: ${state.text}`;
+        return;
+      }
+
+      item.sourceSelect.disabled = false;
+      if (state.kind === 'none') {
+        item.row.dataset.state = 'none';
+        item.sourceSelect.value = '';
+        item.modeButton.disabled = true;
+        item.depth.disabled = true;
+        item.modeButton.textContent = '+';
+        item.readout.textContent = '';
+        item.readout.title = '';
+        return;
+      }
+
+      const { modulation } = state;
+      item.row.dataset.state = 'on';
+      item.sourceSelect.value = modulation.source;
+      item.modeButton.disabled = false;
+      item.depth.disabled = false;
+      if (document.activeElement !== item.depth) {
+        item.depth.value = String(modulation.depth);
+      }
+      item.modeButton.textContent = modulation.mode === 'add' ? '+' : '×';
+      const modeHint =
+        modulation.mode === 'add'
+          ? 'Added to the base value. Click for multiply.'
+          : 'Scales the base value. Click for add.';
+      item.modeButton.title = modeHint;
+      item.modeButton.setAttribute(
+        'aria-label',
+        `${item.config.label} modulation mode: ${
+          modulation.mode === 'add' ? 'add' : 'multiply'
+        }. ${modeHint}`,
+      );
+      item.readout.textContent = `${modulation.depth >= 0 ? '+' : ''}${modulation.depth.toFixed(2)}`;
+      item.readout.title = `${item.config.label} = ${modulation.base} ${
+        modulation.mode === 'add' ? '+' : '×'
+      } ${modulation.depth} × ${modulation.source}`;
+    });
+  }
+
+  /** Single place that swaps the whole buffer and pushes it downstream, so
+   * equation edits and field edits commit through identical plumbing. */
+  private replaceDoc(next: string): void {
+    const doc = this.editor.state.doc.toString();
+    if (next === doc) return;
+    this.editor.dispatch({
+      changes: { from: 0, to: doc.length, insert: next },
+      scrollIntoView: false,
+    });
+    this.hasBufferedEdits = true;
+    if (this.lastSessionState) {
+      this.renderSessionState(this.lastSessionState);
+    }
+    this.flushEditorDocChange();
+  }
+
+  private createSubhead(text: string): HTMLElement {
+    const heading = document.createElement('h3');
+    heading.className = 'stims-editor__subhead';
+    heading.textContent = text;
+    return heading;
+  }
+
+  /**
+   * One boolean field. The format stores these as floats, so they arrived
+   * here as faders you had to drag to 1.000 to switch on.
+   */
+  private renderToggleControl(toggle: ToggleControlConfig): HTMLElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'stims-editor__toggle';
+    button.textContent = toggle.label;
+    button.title = toggle.hint;
+    // The hint is part of the accessible name, not just a hover tooltip.
+    button.setAttribute('aria-label', `${toggle.label}. ${toggle.hint}`);
+    button.setAttribute('role', 'switch');
+
+    button.addEventListener('click', () => {
+      const current = this.readVariableFromEditor(toggle.key);
+      const on = (current ?? toggle.defaultValue) >= 0.5;
+      this.writeVariableToEditor(toggle.key, on ? 0 : 1);
+      this.updateTogglesFromDoc();
+    });
+
+    this.toggleInputs.set(toggle.key, { button, config: toggle });
+
+    // The chip belongs on the switch itself: one the preset overwrites every
+    // frame looks identical to one that works.
+    const wrap = document.createElement('div');
+    wrap.className = 'stims-editor__toggle-wrap';
+    wrap.append(button, this.createFieldStateChip([toggle.key], toggle.label));
+    return wrap;
+  }
+
+  private updateTogglesFromDoc(): void {
+    this.toggleInputs.forEach((item, key) => {
+      const value =
+        this.readVariableFromEditor(key) ?? item.config.defaultValue;
+      const on = value >= 0.5;
+      item.button.dataset.on = on ? 'true' : 'false';
+      item.button.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+
+  /**
+   * A small-integer field that picks one of a fixed set. "Wave mode: 5" is
+   * not a number you can reason about, and as a fader it was a value you
+   * scrubbed past looking for the shape you wanted.
+   */
+  private renderEnumControl(config: EnumControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__enum';
+
+    const label = document.createElement('span');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = config.label;
+    label.title = config.hint;
+
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, this.createFieldStateChip([config.key], config.label));
+
+    const bank = document.createElement('div');
+    bank.className = 'stims-editor__segmented';
+    bank.setAttribute('role', 'radiogroup');
+    // The hint used to live only in the label's title, i.e. hover-only;
+    // folding it into the group name gives everyone the same information.
+    bank.setAttribute(
+      'aria-label',
+      config.hint ? `${config.label}. ${config.hint}` : config.label,
+    );
+
+    const defaultValue = Math.round(config.defaultValue);
+    const buttons: HTMLButtonElement[] = [];
+    for (const option of config.options) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'stims-editor__segment';
+      button.textContent = option.label;
+      if (option.hint) {
+        button.title = option.hint;
+        // Per-option hints were hover-only too.
+        button.setAttribute('aria-label', `${option.label}. ${option.hint}`);
+      } else {
+        button.title = `${config.label}: ${option.label}`;
+      }
+      button.setAttribute('role', 'radio');
+      button.setAttribute(
+        'aria-checked',
+        String(option.value === defaultValue),
+      );
+      button.addEventListener('click', () => {
+        this.writeVariableToEditor(config.key, option.value);
+        this.updateEnumsFromDoc();
+      });
+      buttons.push(button);
+      bank.appendChild(button);
+    }
+    // Roving tabindex: the checked radio (or the first, when the default
+    // matches no option) is the group's single Tab stop; updateEnumsFromDoc
+    // keeps this in sync with the doc afterwards.
+    const checkedIndex = config.options.findIndex(
+      (option) => option.value === defaultValue,
+    );
+    buttons.forEach((button, index) => {
+      button.tabIndex = index === Math.max(checkedIndex, 0) ? 0 : -1;
+    });
+
+    // Radio-group arrow keys: moving focus also selects, per the ARIA
+    // pattern (and matching how native radios behave).
+    bank.addEventListener('keydown', (event) => {
+      const current = buttons.indexOf(event.target as HTMLButtonElement);
+      if (current === -1) return;
+      let next: number;
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          next = (current + 1) % buttons.length;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          next = (current - 1 + buttons.length) % buttons.length;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = buttons.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.writeVariableToEditor(config.key, config.options[next].value);
+      this.updateEnumsFromDoc();
+      buttons[next].focus();
+    });
+
+    this.enumInputs.set(config.key, { buttons, config });
+    row.append(head, bank);
+    return row;
+  }
+
+  private updateEnumsFromDoc(): void {
+    this.enumInputs.forEach((item, key) => {
+      const value = Math.round(
+        this.readVariableFromEditor(key) ?? item.config.defaultValue,
+      );
+      const selectedIndex = item.config.options.findIndex(
+        (option) => option.value === value,
+      );
+      item.config.options.forEach((option, index) => {
+        const selected = option.value === value;
+        item.buttons[index].dataset.on = selected ? 'true' : 'false';
+        item.buttons[index].setAttribute(
+          'aria-checked',
+          selected ? 'true' : 'false',
+        );
+        // Keep the roving tab stop on the checked radio; if the doc holds a
+        // value outside the enum, fall back to the first option so the
+        // group stays Tab-reachable.
+        item.buttons[index].tabIndex =
+          index === Math.max(selectedIndex, 0) ? 0 : -1;
+      });
+    });
+  }
+
+  /**
+   * A field pair that is two ends of one thing — a blur pass's output range,
+   * or the loudness window the wave fades in across. Two faders that only
+   * make sense together become one control that shows the span directly.
+   */
+  private renderRangeControl(config: RangeControlConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__range';
+
+    const label = document.createElement('span');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = config.label;
+    label.title = config.hint;
+
+    const readout = document.createElement('span');
+    readout.className = 'stims-editor__slider-value';
+
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(
+      label,
+      this.createFieldStateChip([config.minKey, config.maxKey], config.label),
+      readout,
+    );
+
+    // Two overlaid range inputs rather than a custom-drawn track: keyboard
+    // support, focus handling and screen-reader semantics come for free, and
+    // each handle stays an independently addressable control.
+    const track = document.createElement('div');
+    track.className = 'stims-editor__range-track';
+
+    const makeHandle = (which: 'min' | 'max') => {
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = String(config.min);
+      input.max = String(config.max);
+      input.step = String(config.step);
+      input.className = 'stims-editor__range-input';
+      input.dataset.handle = which;
+      const boundName = `${config.label} ${which === 'min' ? 'lower' : 'upper'} bound`;
+      // The pair's hint otherwise lives only in the label's hover title.
+      input.setAttribute(
+        'aria-label',
+        config.hint ? `${boundName}. ${config.hint}` : boundName,
+      );
+      return input;
+    };
+
+    const minInput = makeHandle('min');
+    const maxInput = makeHandle('max');
+
+    const commit = () => {
+      // The handles may cross while dragging and are sorted on commit, which
+      // is far less frustrating than a hard stop that makes the handle you
+      // are dragging stick to the other one.
+      const low = Math.min(
+        Number.parseFloat(minInput.value),
+        Number.parseFloat(maxInput.value),
+      );
+      const high = Math.max(
+        Number.parseFloat(minInput.value),
+        Number.parseFloat(maxInput.value),
+      );
+      readout.textContent = `${low.toFixed(2)} – ${high.toFixed(2)}`;
+      this.callbacks.onLiveFieldChange?.(config.minKey, low);
+      this.callbacks.onLiveFieldChange?.(config.maxKey, high);
+      this.writeVariablesToEditor({
+        [config.minKey]: low,
+        [config.maxKey]: high,
+      });
+    };
+
+    minInput.addEventListener('input', commit);
+    maxInput.addEventListener('input', commit);
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'stims-editor__slider-btn';
+    resetButton.textContent = '↺';
+    resetButton.setAttribute('aria-label', `Reset ${config.label}`);
+    resetButton.title = `Reset to ${config.defaultMin} – ${config.defaultMax}`;
+    resetButton.addEventListener('click', () => {
+      this.writeVariablesToEditor({
+        [config.minKey]: config.defaultMin,
+        [config.maxKey]: config.defaultMax,
+      });
+      this.updateRangesFromDoc();
+    });
+
+    track.append(minInput, maxInput);
+
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__slider-row';
+    controls.append(track, resetButton);
+
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
+    this.rangeInputs.set(config.label, {
+      minInput,
+      maxInput,
+      readout,
+      liveHint,
+      config,
+    });
+    minInput.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    maxInput.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    const clearRangeHint = () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
+    };
+    minInput.addEventListener('blur', clearRangeHint);
+    maxInput.addEventListener('blur', clearRangeHint);
+    row.append(head, controls, liveHint);
+    return row;
+  }
+
+  private updateRangesFromDoc(): void {
+    this.rangeInputs.forEach((item) => {
+      const active = document.activeElement;
+      if (active === item.minInput || active === item.maxInput) return;
+      const low =
+        this.readVariableFromEditor(item.config.minKey) ??
+        item.config.defaultMin;
+      const high =
+        this.readVariableFromEditor(item.config.maxKey) ??
+        item.config.defaultMax;
+      item.minInput.value = String(low);
+      item.maxInput.value = String(high);
+      item.readout.textContent = `${low.toFixed(2)} – ${high.toFixed(2)}`;
+    });
+  }
+
+  /**
+   * One colour group. MilkDrop stores every colour as separate 0..1 scalars,
+   * so a preset's palette arrives as ~21 unrelated numbers; editing them as
+   * faders means guessing what (0.65, 0.20, 0.90) looks like and moving three
+   * controls to shift one hue.
+   */
+  private renderColorGroup(group: ColorGroupConfig): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'stims-editor__color';
+
+    const swatch = document.createElement('input');
+    swatch.type = 'color';
+    swatch.className = 'stims-editor__color-swatch';
+    swatch.setAttribute('aria-label', `${group.label} colour`);
+    swatch.title = group.hint;
+
+    const label = document.createElement('label');
+    label.className = 'stims-editor__slider-label';
+    label.textContent = group.label;
+
+    const hexLabel = document.createElement('span');
+    hexLabel.className = 'stims-editor__color-hex';
+
+    // Alpha rides with the colour rather than sitting rows away as its own
+    // fader: for four of these six groups alpha defaults to 0, so the swatch
+    // alone would be a colour you cannot see and cannot explain.
+    let alphaInput: HTMLInputElement | null = null;
+    const controls = document.createElement('div');
+    controls.className = 'stims-editor__color-controls';
+    controls.appendChild(swatch);
+
+    if (group.alpha) {
+      const alpha = group.alpha;
+      alphaInput = document.createElement('input');
+      alphaInput.type = 'range';
+      alphaInput.min = '0';
+      alphaInput.max = '1';
+      alphaInput.step = '0.01';
+      alphaInput.className = 'stims-editor__slider-input';
+      alphaInput.setAttribute('aria-label', `${group.label} alpha`);
+      alphaInput.addEventListener('input', () => {
+        const next = Number.parseFloat(alphaInput?.value ?? '0');
+        this.callbacks.onLiveFieldChange?.(alpha.key, next);
+        this.writeVariableToEditor(alpha.key, next);
+        this.updateColorHexLabel(group);
+      });
+      controls.appendChild(alphaInput);
+    }
+
+    swatch.addEventListener('input', () => {
+      const [r, g, b] = hexToChannels(swatch.value);
+      this.callbacks.onLiveFieldChange?.(group.rgb[0], r);
+      this.callbacks.onLiveFieldChange?.(group.rgb[1], g);
+      this.callbacks.onLiveFieldChange?.(group.rgb[2], b);
+      this.writeVariablesToEditor({
+        [group.rgb[0]]: r,
+        [group.rgb[1]]: g,
+        [group.rgb[2]]: b,
+      });
+      this.updateColorHexLabel(group);
+    });
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'stims-editor__slider-btn';
+    resetButton.textContent = '↺';
+    resetButton.setAttribute('aria-label', `Reset ${group.label} colour`);
+    resetButton.title = 'Reset to the MilkDrop default';
+    resetButton.addEventListener('click', () => {
+      const updates: Record<string, number> = {
+        [group.rgb[0]]: group.defaultRgb[0],
+        [group.rgb[1]]: group.defaultRgb[1],
+        [group.rgb[2]]: group.defaultRgb[2],
+      };
+      if (group.alpha) {
+        updates[group.alpha.key] = group.alpha.defaultValue;
+      }
+      this.writeVariablesToEditor(updates);
+      this.updateColorsFromDoc();
+    });
+    controls.appendChild(resetButton);
+
+    const keys = [...group.rgb];
+    if (group.alpha) keys.push(group.alpha.key);
+
+    const head = document.createElement('div');
+    head.className = 'stims-editor__control-head';
+    head.append(label, this.createFieldStateChip(keys, group.label), hexLabel);
+
+    row.append(head, controls);
+
+    const liveHint = document.createElement('div');
+    liveHint.className = 'stims-editor__live-hint';
+    liveHint.hidden = true;
+    liveHint.setAttribute('aria-hidden', 'true');
+
+    this.colorInputs.set(group.label, {
+      group,
+      swatch,
+      hexLabel,
+      alphaInput,
+      liveHint,
+    });
+    swatch.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    alphaInput?.addEventListener('focus', () => this.refreshLiveHintsFromDoc());
+    const clearColorHint = () => {
+      liveHint.hidden = true;
+      liveHint.textContent = '';
+    };
+    swatch.addEventListener('blur', clearColorHint);
+    alphaInput?.addEventListener('blur', clearColorHint);
+    row.append(liveHint);
+    return row;
+  }
+
+  private readColorChannels(group: ColorGroupConfig): {
+    rgb: [number, number, number];
+    alpha: number | null;
+  } {
+    const rgb = group.rgb.map((key, index) => {
+      const value = this.readVariableFromEditor(key);
+      return value === null ? group.defaultRgb[index] : value;
+    }) as [number, number, number];
+    const alpha = group.alpha
+      ? (this.readVariableFromEditor(group.alpha.key) ??
+        group.alpha.defaultValue)
+      : null;
+    return { rgb, alpha };
+  }
+
+  private updateColorHexLabel(group: ColorGroupConfig): void {
+    const item = this.colorInputs.get(group.label);
+    if (!item) return;
+    const { rgb, alpha } = this.readColorChannels(group);
+    item.hexLabel.textContent =
+      alpha === null
+        ? channelsToHex(rgb)
+        : `${channelsToHex(rgb)} · ${alpha.toFixed(2)}`;
+  }
+
+  private updateColorsFromDoc(): void {
+    this.colorInputs.forEach((item) => {
+      const active = document.activeElement;
+      if (active === item.swatch || active === item.alphaInput) {
+        return;
+      }
+      const { rgb, alpha } = this.readColorChannels(item.group);
+      item.swatch.value = channelsToHex(rgb);
+      if (item.alphaInput && alpha !== null) {
+        item.alphaInput.value = String(clamp01(alpha));
+      }
+      this.updateColorHexLabel(item.group);
+    });
   }
 
   private updateSlidersFromDoc() {
@@ -1649,38 +3153,37 @@ export class EditorPanel {
       if (document.activeElement === item.input) {
         return;
       }
-      const val = this.readVariableFromEditor(key);
-      const displayVal = val !== null ? val : item.defaultValue;
-      item.input.value = String(displayVal);
-      item.display.textContent = displayVal.toFixed(2);
+      const val = this.readVariableFromEditor(key) ?? item.defaultValue;
+      item.input.value = String(valueToPosition(val, item.config));
+      item.display.textContent = formatControlValue(val, item.config);
+      item.input.setAttribute(
+        'aria-valuetext',
+        formatControlValue(val, item.config),
+      );
     });
   }
 
   public readVariableFromEditor(variableName: string): number | null {
-    const doc = this.editor.state.doc.toString();
-    const regex = new RegExp(
-      `(?:^|\\n|;)\\s*${variableName}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`,
-      'i',
-    );
-    const match = doc.match(regex);
-    return match ? Number.parseFloat(match[1]) : null;
+    return readMilkdropField(this.editor.state.doc.toString(), variableName);
   }
 
   public writeVariableToEditor(variableName: string, value: number): void {
-    const doc = this.editor.state.doc.toString();
-    const formattedValue = value.toFixed(3);
-    const regex = new RegExp(
-      `((?:^|\\n|;)\\s*${variableName}\\s*=\\s*)-?\\d+(?:\\.\\d+)?`,
-      'i',
-    );
-    let newDoc: string;
+    this.writeVariablesToEditor({ [variableName]: value });
+  }
 
-    if (regex.test(doc)) {
-      newDoc = doc.replace(regex, `$1${formattedValue}`);
-    } else {
-      const prefix = doc.length === 0 || doc.endsWith('\n') ? '' : '\n';
-      newDoc = `${doc}${prefix}${variableName}=${formattedValue}\n`;
-    }
+  /**
+   * One transaction for a whole group — the four channels of a colour, both
+   * halves of an XY pair. Writing them one at a time dispatched four separate
+   * doc changes and four separate recompiles for a single swatch drag.
+   */
+  public writeVariablesToEditor(updates: Record<string, number>): void {
+    const doc = this.editor.state.doc.toString();
+    // Was a hand-rolled regex that only matched the canonical spelling and,
+    // on a miss, appended the new line to the very end of the buffer — i.e.
+    // inside [warp_shader] for any preset that has one, where the parser
+    // swallows it as shader text. upsertMilkdropFields knows the aliases and
+    // inserts ahead of the shader sections.
+    const newDoc = upsertMilkdropFields(doc, updates);
 
     if (newDoc !== doc) {
       this.editor.dispatch({
@@ -1691,8 +3194,32 @@ export class EditorPanel {
       if (this.lastSessionState) {
         this.renderSessionState(this.lastSessionState);
       }
-      this.flushEditorDocChange();
+      this.scheduleControlFlush();
     }
+  }
+
+  /**
+   * Throttled flush for continuous control input (slider/swatch drags).
+   * Flushing on every `input` event recompiled the preset per pointermove;
+   * leading + ~90ms trailing keeps the visual response immediate while
+   * bounding recompiles to ~11Hz for the duration of a drag.
+   */
+  private lastControlFlushAt = 0;
+  private controlFlushTimer: number | null = null;
+  private scheduleControlFlush(): void {
+    const now = performance.now();
+    const elapsed = now - this.lastControlFlushAt;
+    if (elapsed >= 90) {
+      this.lastControlFlushAt = now;
+      this.flushEditorDocChange();
+      return;
+    }
+    if (this.controlFlushTimer !== null) return;
+    this.controlFlushTimer = window.setTimeout(() => {
+      this.controlFlushTimer = null;
+      this.lastControlFlushAt = performance.now();
+      this.flushEditorDocChange();
+    }, 90 - elapsed);
   }
 
   // Every AI-assisted edit lands here instead of replacing the buffer:
@@ -1715,15 +3242,15 @@ export class EditorPanel {
     this.discardAssistedEdit();
 
     const container = document.createElement('div');
-    container.className = 'editor-assisted-diff';
+    container.className = 'stims-editor__proposal';
     const heading = document.createElement('div');
-    heading.className = 'editor-assisted-diff__head';
-    heading.textContent = `${label}: review the proposed change`;
+    heading.className = 'stims-editor__proposal-head';
+    heading.textContent = `${label} — review the proposed change`;
     const lines = document.createElement('pre');
-    lines.className = 'editor-assisted-diff__lines';
+    lines.className = 'stims-editor__proposal-lines';
     for (const line of computeSourceDiff(currentSource, nextSource)) {
       const row = document.createElement('span');
-      row.className = `editor-assisted-diff__line editor-assisted-diff__line--${line.kind}`;
+      row.className = `stims-editor__proposal-line stims-editor__proposal-line--${line.kind}`;
       const prefix =
         line.kind === 'add'
           ? '+ '
@@ -1737,10 +3264,10 @@ export class EditorPanel {
     }
 
     const actions = document.createElement('div');
-    actions.className = 'editor-assisted-diff__actions';
+    actions.className = 'stims-editor__proposal-actions';
     const applyBtn = document.createElement('button');
     applyBtn.type = 'button';
-    applyBtn.className = 'milkdrop-overlay__refine-btn';
+    applyBtn.className = 'stims-editor__btn stims-editor__btn--primary';
     applyBtn.textContent = 'Apply';
     applyBtn.addEventListener('click', () => {
       const sourceNow = this.editor.state.doc.toString();
@@ -1755,7 +3282,7 @@ export class EditorPanel {
         }, 6000);
         return;
       }
-      this.snapshots.push({ source: sourceNow, timestamp: Date.now() });
+      this.pushSnapshot(sourceNow, `Before ${label.toLowerCase()}`);
       this.editor.dispatch({
         changes: { from: 0, to: sourceNow.length, insert: nextSource },
       });
@@ -1765,7 +3292,7 @@ export class EditorPanel {
     });
     const discardBtn = document.createElement('button');
     discardBtn.type = 'button';
-    discardBtn.className = 'milkdrop-overlay__refine-btn';
+    discardBtn.className = 'stims-editor__btn';
     discardBtn.textContent = 'Discard';
     discardBtn.addEventListener('click', () => {
       container.remove();
@@ -1773,15 +3300,17 @@ export class EditorPanel {
     });
     actions.append(applyBtn, discardBtn);
     container.append(heading, lines, actions);
-    this.editor.dom.insertAdjacentElement('beforebegin', container);
+    // Layered over the code rather than pushed above it: the review happens
+    // where the change would land, and it can't grow the panel.
+    this.stage.appendChild(container);
     this.assistedEditContainer = container;
   }
 
   private renderQuickFix(): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'editor-quick-fix';
-    btn.textContent = '\u26A1 Fix with AI';
+    btn.className = 'stims-editor__btn stims-editor__fix';
+    btn.textContent = 'Fix with AI';
     btn.title = 'Send this error to the AI for automatic correction';
     btn.style.display = 'none';
     btn.addEventListener('click', () => this.handleQuickFix());
@@ -1794,6 +3323,7 @@ export class EditorPanel {
   }
 
   private applyQuickFixForDiagnostic(diag: MilkdropDiagnostic) {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     const instruction = `Fix this compiler error: "${diag.message}" at line ${diag.line}. Keep the preset style but fix the syntax or math.`;
 
@@ -1814,6 +3344,7 @@ export class EditorPanel {
   }
 
   private handleBatchGenerate() {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
     fetch('/api/batch-generate', {
@@ -1836,17 +3367,8 @@ export class EditorPanel {
       .catch(() => this.setRefinePending(false));
   }
 
-  private handleBlend() {
-    const container = this.element.querySelector(
-      '.editor-blend-input',
-    ) as HTMLElement | null;
-    if (container) {
-      container.style.display =
-        container.style.display === 'none' ? '' : 'none';
-    }
-  }
-
   private doBlend(sourceB: string) {
+    if (this.aiPending) return;
     const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
     fetch('/api/blend-presets', {
@@ -1864,47 +3386,82 @@ export class EditorPanel {
       .catch(() => this.setRefinePending(false));
   }
 
-  private renderBlendInput(): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'editor-blend-input';
-    container.style.display = 'none';
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'editor-blend-textarea';
-    textarea.placeholder = 'Paste second preset source or preset ID';
-    textarea.rows = 4;
-
-    const btnRow = document.createElement('div');
-    btnRow.style.display = 'flex';
-    btnRow.style.gap = '6px';
-
-    const submitBtn = document.createElement('button');
-    submitBtn.className = 'editor-blend-submit';
-    submitBtn.textContent = 'Blend';
-    submitBtn.addEventListener('click', () => {
-      const sourceB = textarea.value.trim();
-      if (!sourceB) return;
-      this.doBlend(sourceB);
-      container.style.display = 'none';
-      textarea.value = '';
+  private setRefinePending(pending: boolean) {
+    this.aiPending = pending;
+    // Refine/Explain manage their own button text ("…", "Error") locally,
+    // but every AI-backed action shares one proposed-diff slot, so a second
+    // request finishing while the first is still pending would silently
+    // clobber it. Disabling every AI trigger while one is in flight makes
+    // that impossible instead of racy.
+    [
+      this.refineBtn,
+      this.explainBtn,
+      this.quickFixBtn,
+      this.batchButton,
+      this.blendSubmitButton,
+    ].forEach((btn) => {
+      if (btn) btn.disabled = pending;
     });
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'editor-blend-cancel';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => {
-      container.style.display = 'none';
-      textarea.value = '';
-    });
-
-    btnRow.appendChild(submitBtn);
-    btnRow.appendChild(cancelBtn);
-    container.appendChild(textarea);
-    container.appendChild(btnRow);
-    return container;
   }
 
-  private setRefinePending(_pending: boolean) {
-    // noop: pending state tracked locally in the refine section
+  private pushSnapshot(source: string, label: string) {
+    this.snapshots.push({ source, timestamp: Date.now(), label });
+    // Cap history so a long editing session doesn't grow this unbounded;
+    // only the most recent checkpoints are ever useful to restore.
+    if (this.snapshots.length > 8) {
+      this.snapshots.splice(0, this.snapshots.length - 8);
+    }
+    this.renderHistorySnapshots();
   }
+
+  private renderHistorySnapshots() {
+    if (!this.historyList) return;
+    this.historyList.replaceChildren();
+    if (this.snapshots.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'stims-editor__history-empty';
+      empty.textContent = 'No checkpoints yet.';
+      this.historyList.appendChild(empty);
+      return;
+    }
+    [...this.snapshots].reverse().forEach((snapshot) => {
+      const row = document.createElement('div');
+      row.className = 'stims-editor__history-row';
+
+      const meta = document.createElement('span');
+      meta.className = 'stims-editor__history-meta';
+      meta.textContent = `${snapshot.label} · ${formatRelativeTime(snapshot.timestamp)}`;
+
+      const restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'stims-editor__btn';
+      restoreBtn.textContent = 'Restore';
+      restoreBtn.addEventListener('click', () => {
+        const currentSource = this.editor.state.doc.toString();
+        if (currentSource === snapshot.source) return;
+        this.pushSnapshot(currentSource, 'Before restore');
+        this.editor.dispatch({
+          changes: {
+            from: 0,
+            to: this.editor.state.doc.length,
+            insert: snapshot.source,
+          },
+        });
+        this.callbacks.onEditorSourceChange(snapshot.source);
+        this.editor.focus();
+      });
+
+      row.append(meta, restoreBtn);
+      this.historyList?.appendChild(row);
+    });
+  }
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return 'just now';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  return `${hours}h ago`;
 }

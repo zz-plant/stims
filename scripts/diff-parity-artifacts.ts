@@ -1,3 +1,21 @@
+/**
+ * Diffs one captured Stims frame against its projectM reference frame and
+ * writes per-pixel parity metrics.
+ *
+ * Diff stage of the parity pipeline (capture -> diff -> promote). Resolves a
+ * Stims/projectM artifact pair out of the parity artifact manifest, computes
+ * mismatch ratio, max channel delta, mean absolute error and RMSE, writes a
+ * JSON report plus an optional diff PNG, and appends a `parity-diff` entry to
+ * the manifest.
+ *
+ *   bun run parity:diff -- --preset <id> [--output ./screenshots/parity]
+ *
+ * `--stims-id`/`--projectm-id` pin explicit manifest entries instead of taking
+ * the latest pair, `--threshold` sets the per-channel mismatch cutoff (default
+ * 16), `--fail-threshold <0..1>` exits non-zero above a mismatch ratio, and
+ * `--no-diff-image` skips the PNG. Also exports computeParityDiffMetrics,
+ * loadImagePixels and writeDiffImage for run-parity-diff-suite.ts.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';

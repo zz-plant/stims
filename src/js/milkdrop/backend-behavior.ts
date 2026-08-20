@@ -21,7 +21,7 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
     currentFrameBoost: 0.1,
     feedbackSoftness: 0.12,
     sceneResolutionScale: 1,
-    feedbackResolutionScale: 1,
+    feedbackResolutionScale: 1.25,
     samples: 0,
   },
   useHalfFloatFeedback: true,
@@ -34,10 +34,10 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
 
 export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   feedbackProfile: {
-    currentFrameBoost: 0.15,
-    feedbackSoftness: 0.3,
+    currentFrameBoost: 0.1,
+    feedbackSoftness: 0.12,
     sceneResolutionScale: 1,
-    feedbackResolutionScale: 1,
+    feedbackResolutionScale: 1.25,
     samples: 0,
   },
   useHalfFloatFeedback: true,
@@ -50,8 +50,20 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
 
 export function getFeedbackBackendProfile(
   backend: 'webgl' | 'webgpu',
+  options?: { mobile?: boolean },
 ): FeedbackBackendProfile {
-  return backend === 'webgpu'
-    ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile
-    : WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
+  const behavior =
+    backend === 'webgpu'
+      ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR
+      : WEBGL_MILKDROP_BACKEND_BEHAVIOR;
+  if (options?.mobile) {
+    // Phones are fill-rate bound long before a feedback-alias bound matters:
+    // drop the supersampling base to 1.0 so the feedback passes rasterize at
+    // display resolution (adaptive throttling can still shrink them further).
+    return {
+      ...behavior.feedbackProfile,
+      feedbackResolutionScale: 1.0,
+    };
+  }
+  return behavior.feedbackProfile;
 }

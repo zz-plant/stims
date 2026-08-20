@@ -304,12 +304,12 @@ describe('milkdrop compiler shader GLSL emitter — math functions', () => {
 
   test('pow emits GLSL pow', () => {
     const glsl = emitShaderExpression('x = pow(2, 3)');
-    expect(glsl).toBe('x = pow(2.0, 3.0);');
+    expect(glsl).toBe('x = pow(max(0.0, 2.0), 3.0);');
   });
 
   test('sqrt emits GLSL sqrt', () => {
     const glsl = emitShaderExpression('x = sqrt(4)');
-    expect(glsl).toBe('x = sqrt(4.0);');
+    expect(glsl).toBe('x = sqrt(max(0.0, 4.0));');
   });
 
   test('clamp emits GLSL clamp', () => {
@@ -652,5 +652,190 @@ describe('milkdrop compiler shader GLSL emitter — round-trip', () => {
     const glsl = emitShaderExpression('ret = tex2d(sampler_main, uv).rgb');
     expect(glsl).toContain('texture2D(currentTex, sampleUv(');
     expect(glsl).toContain(', textureWrap)).rgb');
+  });
+});
+
+// ─── Extended HLSL Intrinsics ─────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — extended intrinsics', () => {
+  test('tex2Dlod unwraps the HLSL float4 coordinate into textureLod', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dlod(sampler_main, float4(uv, 0.0, 0.0, 2.0)).rgb',
+    );
+    expect(glsl).toContain(
+      'textureLod(currentTex, sampleUv(vec2(vUv, 0.0), textureWrap), 2.0).rgb',
+    );
+  });
+
+  test('tex2Dbias emits texture() with an explicit bias', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dbias(sampler_noise, float4(uv, 0.0, 0.0, 0.5)).rgb',
+    );
+    expect(glsl).toContain(
+      'texture(noiseTex, sampleUv(vec2(vUv, 0.0), textureWrap), 0.5000000000)',
+    );
+  });
+
+  test('tex2Dgrad emits textureGrad with explicit gradients', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex2Dgrad(sampler_main, uv, dFdx(vUv), dFdy(vUv)).rgb',
+    );
+    expect(glsl).toContain(
+      'textureGrad(currentTex, sampleUv(vUv, textureWrap), dFdx(vUv), dFdy(vUv))',
+    );
+  });
+
+  test('tex2Dlod on a sampler without a mip chain falls back to base mip', () => {
+    // fw_noise_lq is procedural; the fallback keeps the emit valid.
+    const glsl = emitShaderExpression(
+      'ret = tex2Dlod(sampler_fw_noise_lq, float4(uv, 0.0, 0.0, 2.0)).rgb',
+    );
+    expect(glsl).toContain('vec3(noise(');
+  });
+
+  test('emits the scalar/vector derivative and pow2 helpers', () => {
+    expect(emitShaderExpression('x = fwidth(bass)')).toContain(
+      'fwidth(signalBass)',
+    );
+    expect(emitShaderExpression('x = exp2(bass)')).toContain(
+      'exp2(signalBass)',
+    );
+    expect(emitShaderExpression('x = log2(bass)')).toContain(
+      'log2(max(signalBass, 0.000001))',
+    );
+    expect(emitShaderExpression('x = rsqrt(bass)')).toContain(
+      'inversesqrt(max(signalBass, 0.000001))',
+    );
+  });
+
+  test('emits the remaining math intrinsics with guarded domains', () => {
+    expect(emitShaderExpression('x = trunc(bass)')).toContain(
+      'trunc(signalBass)',
+    );
+    expect(emitShaderExpression('x = round(bass)')).toContain(
+      'round(signalBass)',
+    );
+    expect(
+      emitShaderExpression('x = reflect(vec3(0,1,0), vec3(0,1,0))'),
+    ).toContain('reflect(vec3(0.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0))');
+    expect(
+      emitShaderExpression('x = refract(vec3(0,1,0), vec3(0,1,0), 1.0)'),
+    ).toContain('refract(vec3(0.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0), 1.0)');
+    expect(emitShaderExpression('x = transpose(mat3(1))')).toContain(
+      'transpose(',
+    );
+  });
+
+  test('half*/int/bool constructors lower to GLSL built-ins', () => {
+    expect(emitShaderExpression('x = half(bass)')).toContain(
+      'float(signalBass)',
+    );
+    expect(emitShaderExpression('x = half2(bass, 1)')).toContain(
+      'vec2(signalBass, 1.0)',
+    );
+    expect(emitShaderExpression('x = half3(uv, 1.0)')).toContain(
+      'vec3(vUv, 1.0)',
+    );
+    expect(emitShaderExpression('x = int(bass)')).toContain('int(signalBass)');
+    expect(emitShaderExpression('x = bool(bass)')).toContain(
+      'bool(signalBass)',
+    );
+  });
+
+  test('routes perlin/glyph/organic aux samplers to their own source ids', () => {
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_perlin, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(9.0, 0, 0, 0).x');
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_glyph, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(12.0, 0, 0, 0).x');
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_organic, uv).rgb'),
+    ).toContain('sampleAuxTexture(vec4(13.0, 0, 0, 0).x');
+  });
+
+  test('keeps blur samplers on their dedicated blur textures', () => {
+    expect(
+      emitShaderExpression('ret = tex2d(sampler_blur1, uv).rgb'),
+    ).toContain('texture2D(blur1Tex, sampleUv(vUv, textureWrap)).rgb');
+  });
+});
+
+// ─── MilkDrop 2 preamble helpers ────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — MilkDrop 2 helpers', () => {
+  // MilkDrop 2 ships GetPixel/GetBlurN in its shader preamble, so preset
+  // bodies call them without defining them. They were unimplemented here,
+  // which failed the whole program to compile and rendered the preset black —
+  // 511 presets, the entire projectm-cream-of-the-crop library.
+  test('GetPixel samples the main texture', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv)')).toBe(
+      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz);',
+    );
+  });
+
+  test('GetBlur1/2/3 sample their blur texture through scale and bias', () => {
+    expect(emitShaderExpression('ret = GetBlur1(uv)')).toContain(
+      '(texture2D(blur1Tex, sampleUv(vUv, textureWrap)).xyz * scale1 + bias1)',
+    );
+    expect(emitShaderExpression('ret = GetBlur2(uv)')).toContain(
+      '(texture2D(blur2Tex, sampleUv(vUv, textureWrap)).xyz * scale2 + bias2)',
+    );
+    expect(emitShaderExpression('ret = GetBlur3(uv)')).toContain(
+      '(texture2D(blur3Tex, sampleUv(vUv, textureWrap)).xyz * scale3 + bias3)',
+    );
+  });
+
+  test('GetBlur0 is an alias for the unblurred main sample', () => {
+    expect(emitShaderExpression('ret = GetBlur0(uv)')).toBe(
+      emitShaderExpression('ret = GetPixel(uv)'),
+    );
+  });
+
+  test('helper names are case-insensitive, as MilkDrop writes them', () => {
+    expect(emitShaderExpression('ret = getblur1(uv)')).toBe(
+      emitShaderExpression('ret = GetBlur1(uv)'),
+    );
+  });
+});
+
+// ─── HLSL scalar promotion ──────────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — scalar promotion', () => {
+  // HLSL broadcasts a scalar across every component on assignment; GLSL
+  // rejects it outright. `ret` is vec3 in both stage templates.
+  test('a scalar assigned to ret is broadcast, not rejected', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv).x')).toBe(
+      'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz.x);',
+    );
+  });
+
+  test('a vector assigned to ret still round-trips through the constructor', () => {
+    expect(emitShaderExpression('ret = GetPixel(uv)')).toContain('ret = vec3(');
+  });
+});
+
+// ─── texsize resolution ─────────────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — texsize', () => {
+  // Statement-emitted programs never pass through the raw-text rewrite chain,
+  // so texsize identifiers reached the shader bare and were auto-declared as
+  // `uniform float` — making every `texsize.xy` a scalar swizzle error.
+  test('texsize resolves to the feedback target size as a vec4', () => {
+    expect(emitShaderExpression('x = texsize.xy')).toContain(
+      'vec4(1.0 / texelSize, texelSize).xy',
+    );
+  });
+
+  test('noise texsize resolves to the bundled 256x256 size', () => {
+    expect(emitShaderExpression('x = texsize_noise_lq.zw')).toContain(
+      'vec4(256.0, 256.0, 0.00390625, 0.00390625).zw',
+    );
+  });
+
+  test('an unknown custom-texture texsize falls back to the substitute size', () => {
+    expect(emitShaderExpression('x = texsize_mcode1.xy')).toContain(
+      'vec4(640.0, 640.0, 0.0015625, 0.0015625).xy',
+    );
   });
 });

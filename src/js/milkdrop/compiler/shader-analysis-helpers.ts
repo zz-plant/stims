@@ -1,3 +1,19 @@
+/**
+ * The predicate and extraction vocabulary `shader-analysis.ts` is written in.
+ *
+ * Split out so the analysis pass reads as a sequence of decisions rather than a
+ * wall of AST matching. Everything here is small, pure and individually
+ * testable: does this expression sample the main texture, is this identifier a
+ * UV, what blend mode does this text name, what scalar does this control
+ * resolve to.
+ *
+ * Each helper encodes an observed MilkDrop behavior, so they are more specific
+ * than they look — `isIdentityTextureSampleExpression` matches the shapes real
+ * presets write, not every expression that is mathematically an identity.
+ * Widening one to be "more correct" is how presets that used to render start
+ * rendering differently. Add a case beside the existing ones instead, and cover
+ * it in `tests/unit/milkdrop-compiler.test.ts`.
+ */
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
@@ -124,6 +140,91 @@ export function isShaderScalarValue(
 
 export function normalizeShaderCallName(value: string) {
   return normalizeMilkdropShaderCallName(value);
+}
+
+/**
+ * MilkDrop shader identifiers that map to runtime audio signals. Shared by
+ * the raw-text normalizer (shader-analysis.ts) and the GLSL composite emitter
+ * (shader-analysis-glsl.ts); both translate these aliases to `signal*`
+ * uniforms so there is one table instead of two hand-synced copies.
+ */
+export const MILKDROP_SIGNAL_NAME_ALIASES: Record<string, string> = {
+  time: 'signalTime',
+  bass: 'signalBass',
+  bass_att: 'signalBassAtt',
+  mid: 'signalMid',
+  mids: 'signalMid',
+  mid_att: 'signalMidAtt',
+  mids_att: 'signalMidAtt',
+  treb: 'signalTreb',
+  treble: 'signalTreb',
+  treb_att: 'signalTrebAtt',
+  treble_att: 'signalTrebAtt',
+  trebatt: 'signalTrebAtt',
+  trebleatt: 'signalTrebAtt',
+  percussive: 'signalPercussive',
+  harmonic: 'signalHarmonic',
+  percussive_ratio: 'signalPercussiveRatio',
+  percussiveratio: 'signalPercussiveRatio',
+  percussive_low: 'signalPercussiveLow',
+  percussivelow: 'signalPercussiveLow',
+  percussive_mid: 'signalPercussiveMid',
+  percussivemid: 'signalPercussiveMid',
+  percussive_high: 'signalPercussiveHigh',
+  percussivehigh: 'signalPercussiveHigh',
+  beat: 'signalBeat',
+  beat_pulse: 'signalBeatPulse',
+  progress: 'signalFrame',
+  frame: 'signalFrame',
+  fps: 'signalFps',
+  vol: 'signalEnergy',
+  vol_att: 'signalEnergy',
+  rms: 'signalEnergy',
+};
+
+/** MilkDrop's per-frame random vector, emitted identically by the warp-text
+ * normalizer and the composite emitter. */
+export const MILKDROP_RAND_FRAME_GLSL =
+  'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))';
+
+/**
+ * `texsize*` substitutions, shared by the raw-text rewrite chain
+ * (shader-analysis.ts) and the statement emitter (shader-analysis-glsl.ts) so
+ * the two cannot drift — the same reason MILKDROP_SIGNAL_NAME_ALIASES is
+ * shared. Each is a vec4 whose xy is the size and zw the reciprocal.
+ */
+/** Main/feedback/blur textures: the live feedback target size. */
+export const MILKDROP_TEXSIZE_MAIN_GLSL = 'vec4(1.0 / texelSize, texelSize)';
+/** The bundled noise/noisevol textures are 256². */
+export const MILKDROP_TEXSIZE_NOISE_GLSL =
+  'vec4(256.0, 256.0, 0.00390625, 0.00390625)';
+/**
+ * Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no uniform
+ * behind them — MilkDrop injects them at runtime, this pipeline does not — and
+ * every bundled substitute texture is 640².
+ */
+export const MILKDROP_TEXSIZE_SUBSTITUTE_GLSL =
+  'vec4(640.0, 640.0, 0.0015625, 0.0015625)';
+
+/**
+ * Builds the `\bname\b → signal*` replacement chain the raw-text normalizer
+ * applies. `\b` word boundaries keep `bass` from matching inside `bass_att`,
+ * so per-alias ordering is safe; keys are still emitted longest-first so the
+ * more specific alias wins when a name is a prefix of another.
+ */
+export function buildMilkdropSignalNameReplacements(text: string): string {
+  let result = text;
+  const aliases = Object.keys(MILKDROP_SIGNAL_NAME_ALIASES).sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const alias of aliases) {
+    const replacement = MILKDROP_SIGNAL_NAME_ALIASES[alias];
+    if (!replacement) {
+      continue;
+    }
+    result = result.replace(new RegExp(`\\b${alias}\\b`, 'giu'), replacement);
+  }
+  return result;
 }
 
 export function normalizeShaderSyntax(value: string) {
@@ -713,56 +814,78 @@ export function usesVolumeTextureControls(
   );
 }
 
+/**
+ * Scalar shader-control aliases → the control/expression field they write,
+ * plus the env keys they feed. Single source for both `isKnownShaderScalarKey`
+ * and the scalar-alias application switch, so the vocabulary cannot drift.
+ */
+export const MILKDROP_SHADER_SCALAR_ALIASES: Record<
+  string,
+  { target: string; envKeys?: readonly string[]; mirrorY?: boolean }
+> = {
+  warp: { target: 'warpScale', envKeys: ['warp', 'warp_scale'] },
+  warp_scale: { target: 'warpScale', envKeys: ['warp', 'warp_scale'] },
+  dx: { target: 'offsetX', envKeys: ['dx', 'offset_x', 'translate_x'] },
+  offset_x: { target: 'offsetX', envKeys: ['dx', 'offset_x', 'translate_x'] },
+  translate_x: {
+    target: 'offsetX',
+    envKeys: ['dx', 'offset_x', 'translate_x'],
+  },
+  dy: { target: 'offsetY', envKeys: ['dy', 'offset_y', 'translate_y'] },
+  offset_y: { target: 'offsetY', envKeys: ['dy', 'offset_y', 'translate_y'] },
+  translate_y: {
+    target: 'offsetY',
+    envKeys: ['dy', 'offset_y', 'translate_y'],
+  },
+  rot: { target: 'rotation', envKeys: ['rot', 'rotation'] },
+  rotation: { target: 'rotation', envKeys: ['rot', 'rotation'] },
+  zoom: { target: 'zoom', envKeys: ['zoom', 'scale'] },
+  scale: { target: 'zoom', envKeys: ['zoom', 'scale'] },
+  saturation: { target: 'saturation', envKeys: ['saturation', 'sat'] },
+  sat: { target: 'saturation', envKeys: ['saturation', 'sat'] },
+  contrast: { target: 'contrast', envKeys: ['contrast'] },
+  r: { target: 'colorScale.r', envKeys: ['r', 'red'] },
+  red: { target: 'colorScale.r', envKeys: ['r', 'red'] },
+  g: { target: 'colorScale.g', envKeys: ['g', 'green'] },
+  green: { target: 'colorScale.g', envKeys: ['g', 'green'] },
+  b: { target: 'colorScale.b', envKeys: ['b', 'blue'] },
+  blue: { target: 'colorScale.b', envKeys: ['b', 'blue'] },
+  hue: { target: 'hueShift', envKeys: ['hue', 'hue_shift'] },
+  hue_shift: { target: 'hueShift', envKeys: ['hue', 'hue_shift'] },
+  mix: { target: 'mixAlpha', envKeys: ['mix', 'feedback', 'feedback_alpha'] },
+  feedback: {
+    target: 'mixAlpha',
+    envKeys: ['mix', 'feedback', 'feedback_alpha'],
+  },
+  feedback_alpha: {
+    target: 'mixAlpha',
+    envKeys: ['mix', 'feedback', 'feedback_alpha'],
+  },
+  brighten: { target: 'brightenBoost', envKeys: ['brighten'] },
+  invert: { target: 'invertBoost', envKeys: ['invert'] },
+  solarize: { target: 'solarizeBoost', envKeys: ['solarize'] },
+  texture_amount: { target: 'textureLayer.amount' },
+  texture_mix: { target: 'textureLayer.amount' },
+  texture_scale: { target: 'textureLayer.scaleX', mirrorY: true },
+  texture_scale_x: { target: 'textureLayer.scaleX' },
+  texture_scale_y: { target: 'textureLayer.scaleY' },
+  texture_offset_x: { target: 'textureLayer.offsetX' },
+  texture_scroll_x: { target: 'textureLayer.offsetX' },
+  texture_offset_y: { target: 'textureLayer.offsetY' },
+  texture_scroll_y: { target: 'textureLayer.offsetY' },
+  warp_texture_amount: { target: 'warpTexture.amount' },
+  warp_texture_mix: { target: 'warpTexture.amount' },
+  warp_texture_scale: { target: 'warpTexture.scaleX', mirrorY: true },
+  warp_texture_scale_x: { target: 'warpTexture.scaleX' },
+  warp_texture_scale_y: { target: 'warpTexture.scaleY' },
+  warp_texture_offset_x: { target: 'warpTexture.offsetX' },
+  warp_texture_scroll_x: { target: 'warpTexture.offsetX' },
+  warp_texture_offset_y: { target: 'warpTexture.offsetY' },
+  warp_texture_scroll_y: { target: 'warpTexture.offsetY' },
+};
+
 export function isKnownShaderScalarKey(key: string) {
-  return new Set([
-    'warp',
-    'warp_scale',
-    'dx',
-    'offset_x',
-    'translate_x',
-    'dy',
-    'offset_y',
-    'translate_y',
-    'rot',
-    'rotation',
-    'zoom',
-    'scale',
-    'saturation',
-    'sat',
-    'contrast',
-    'r',
-    'red',
-    'g',
-    'green',
-    'b',
-    'blue',
-    'hue',
-    'hue_shift',
-    'mix',
-    'feedback',
-    'feedback_alpha',
-    'brighten',
-    'invert',
-    'solarize',
-    'texture_amount',
-    'texture_mix',
-    'texture_scale',
-    'texture_scale_x',
-    'texture_scale_y',
-    'texture_offset_x',
-    'texture_offset_y',
-    'texture_scroll_x',
-    'texture_scroll_y',
-    'warp_texture_amount',
-    'warp_texture_mix',
-    'warp_texture_scale',
-    'warp_texture_scale_x',
-    'warp_texture_scale_y',
-    'warp_texture_offset_x',
-    'warp_texture_offset_y',
-    'warp_texture_scroll_x',
-    'warp_texture_scroll_y',
-  ]).has(key);
+  return key in MILKDROP_SHADER_SCALAR_ALIASES;
 }
 
 export function isIdentityTextureSampleExpression(rawValue: string) {
@@ -924,6 +1047,12 @@ export function hasUnsupportedVolumeSample(
       );
     case 'call': {
       const callName = normalizeShaderCallName(node.name);
+      if (callName === 'samplenoisevolume') {
+        // Native shader bodies rewrite texture(sampler_noisevol*, vec3) to
+        // the sampleNoiseVolume atlas-slice helper; it is supported volume
+        // sampling, never an unsupported-volume construct.
+        return false;
+      }
       if (callName === 'tex3d') {
         const samplerArg = node.args[0];
         const source =
@@ -1007,6 +1136,70 @@ export type ShaderUvTransformAnalysis = {
   };
 };
 
+function broadcastScalarVectorResult(node: MilkdropShaderExpressionNode): {
+  values: [number, number];
+  expressions: [MilkdropExpressionNode | null, MilkdropExpressionNode | null];
+} | null {
+  const scalar = evaluateShaderScalarResult(
+    node,
+    { uv: { kind: 'vec2', value: [0, 0] } },
+    DEFAULT_MILKDROP_STATE,
+    {},
+  );
+  if (!scalar) {
+    return null;
+  }
+  return {
+    values: [scalar.value, scalar.value],
+    expressions: [scalar.expression, scalar.expression],
+  };
+}
+
+function negateExpression(
+  expression: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!expression) {
+    return null;
+  }
+  return { type: 'unary', operator: '-', operand: expression };
+}
+
+function combineScaleExpression(
+  left: MilkdropExpressionNode | null,
+  operator: '*' | '/',
+  right: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!right) {
+    return left;
+  }
+  if (!left) {
+    return operator === '/'
+      ? {
+          type: 'binary',
+          operator: '/',
+          left: createLiteralExpression(1),
+          right,
+        }
+      : right;
+  }
+  return { type: 'binary', operator, left, right };
+}
+
+function combineOffsetExpression(
+  left: MilkdropExpressionNode | null,
+  operator: '+' | '-' | '*' | '/',
+  right: MilkdropExpressionNode | null,
+): MilkdropExpressionNode | null {
+  if (!right) {
+    return left;
+  }
+  if (!left) {
+    // Zero offset scaled or divided stays zero; added/subtracted it is the term.
+    return operator === '*' || operator === '/' ? null : right;
+  }
+  return { type: 'binary', operator, left, right };
+}
+
 export function analyzeShaderUvTransform(
   node: MilkdropShaderExpressionNode,
 ): ShaderUvTransformAnalysis | null {
@@ -1030,13 +1223,14 @@ export function analyzeShaderUvTransform(
     (node.operator === '+' || node.operator === '-')
   ) {
     const base = analyzeShaderUvTransform(node.left);
-    const offset = evaluateShaderVectorResult(
-      node.right,
-      2,
-      { uv: { kind: 'vec2', value: [0, 0] } },
-      DEFAULT_MILKDROP_STATE,
-      {},
-    );
+    const offset =
+      evaluateShaderVectorResult(
+        node.right,
+        2,
+        { uv: { kind: 'vec2', value: [0, 0] } },
+        DEFAULT_MILKDROP_STATE,
+        {},
+      ) ?? broadcastScalarVectorResult(node.right);
     if (!base || !offset) {
       return null;
     }
@@ -1049,22 +1243,18 @@ export function analyzeShaderUvTransform(
       expressions: {
         scaleX: base.expressions.scaleX,
         scaleY: base.expressions.scaleY,
-        offsetX:
-          offset.expressions[0] && sign === -1
-            ? {
-                type: 'unary',
-                operator: '-',
-                operand: offset.expressions[0],
-              }
-            : (offset.expressions[0] ?? base.expressions.offsetX),
-        offsetY:
-          offset.expressions[1] && sign === -1
-            ? {
-                type: 'unary',
-                operator: '-',
-                operand: offset.expressions[1],
-              }
-            : (offset.expressions[1] ?? base.expressions.offsetY),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '+',
+          negateExpression(sign === -1 ? offset.expressions[0] : null) ??
+            offset.expressions[0],
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '+',
+          negateExpression(sign === -1 ? offset.expressions[1] : null) ??
+            offset.expressions[1],
+        ),
       },
     };
   }
@@ -1092,10 +1282,26 @@ export function analyzeShaderUvTransform(
         offsetX: base.offsetX * vector.values[0],
         offsetY: base.offsetY * vector.values[1],
         expressions: {
-          scaleX: vector.expressions[0] ?? base.expressions.scaleX,
-          scaleY: vector.expressions[1] ?? base.expressions.scaleY,
-          offsetX: base.expressions.offsetX,
-          offsetY: base.expressions.offsetY,
+          scaleX: combineScaleExpression(
+            base.expressions.scaleX,
+            '*',
+            vector.expressions[0],
+          ),
+          scaleY: combineScaleExpression(
+            base.expressions.scaleY,
+            '*',
+            vector.expressions[1],
+          ),
+          offsetX: combineOffsetExpression(
+            base.expressions.offsetX,
+            '*',
+            vector.expressions[0],
+          ),
+          offsetY: combineOffsetExpression(
+            base.expressions.offsetY,
+            '*',
+            vector.expressions[1],
+          ),
         },
       };
     }
@@ -1115,10 +1321,115 @@ export function analyzeShaderUvTransform(
       offsetX: base.offsetX * scalar.value,
       offsetY: base.offsetY * scalar.value,
       expressions: {
-        scaleX: scalar.expression ?? base.expressions.scaleX,
-        scaleY: scalar.expression ?? base.expressions.scaleY,
-        offsetX: base.expressions.offsetX,
-        offsetY: base.expressions.offsetY,
+        scaleX: combineScaleExpression(
+          base.expressions.scaleX,
+          '*',
+          scalar.expression,
+        ),
+        scaleY: combineScaleExpression(
+          base.expressions.scaleY,
+          '*',
+          scalar.expression,
+        ),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '*',
+          scalar.expression,
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '*',
+          scalar.expression,
+        ),
+      },
+    };
+  }
+
+  if (node.type === 'binary' && node.operator === '/') {
+    const leftBase = analyzeShaderUvTransform(node.left);
+    const rightBase = leftBase ? null : analyzeShaderUvTransform(node.right);
+    const base = leftBase ?? rightBase;
+    const divisorSide = leftBase ? node.right : rightBase ? node.left : null;
+    if (!base || !divisorSide) {
+      return null;
+    }
+
+    const vector = evaluateShaderVectorResult(
+      divisorSide,
+      2,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (vector) {
+      if (vector.values[0] === 0 || vector.values[1] === 0) {
+        return null;
+      }
+      return {
+        scaleX: base.scaleX / vector.values[0],
+        scaleY: base.scaleY / vector.values[1],
+        offsetX: base.offsetX / vector.values[0],
+        offsetY: base.offsetY / vector.values[1],
+        expressions: {
+          scaleX: combineScaleExpression(
+            base.expressions.scaleX,
+            '/',
+            vector.expressions[0],
+          ),
+          scaleY: combineScaleExpression(
+            base.expressions.scaleY,
+            '/',
+            vector.expressions[1],
+          ),
+          offsetX: combineOffsetExpression(
+            base.expressions.offsetX,
+            '/',
+            vector.expressions[0],
+          ),
+          offsetY: combineOffsetExpression(
+            base.expressions.offsetY,
+            '/',
+            vector.expressions[1],
+          ),
+        },
+      };
+    }
+
+    const scalar = evaluateShaderScalarResult(
+      divisorSide,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!scalar || scalar.value === 0) {
+      return null;
+    }
+    return {
+      scaleX: base.scaleX / scalar.value,
+      scaleY: base.scaleY / scalar.value,
+      offsetX: base.offsetX / scalar.value,
+      offsetY: base.offsetY / scalar.value,
+      expressions: {
+        scaleX: combineScaleExpression(
+          base.expressions.scaleX,
+          '/',
+          scalar.expression,
+        ),
+        scaleY: combineScaleExpression(
+          base.expressions.scaleY,
+          '/',
+          scalar.expression,
+        ),
+        offsetX: combineOffsetExpression(
+          base.expressions.offsetX,
+          '/',
+          scalar.expression,
+        ),
+        offsetY: combineOffsetExpression(
+          base.expressions.offsetY,
+          '/',
+          scalar.expression,
+        ),
       },
     };
   }

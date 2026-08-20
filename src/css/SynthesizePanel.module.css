@@ -4,6 +4,12 @@
   color: var(--ctl-ink, var(--stims-ink-strong));
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .heading {
   margin: 0 0 6px;
   font-size: 1.05rem;
@@ -110,6 +116,22 @@
   min-height: 1.5em;
   line-height: 1.5;
   color: var(--ctl-ink-2, var(--stims-ink));
+}
+
+.regenerateButton {
+  padding: 4px 10px;
+  border: 1px solid var(--stims-accent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.regenerateButton:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
 }
 
 .generateButton {

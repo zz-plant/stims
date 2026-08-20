@@ -11,23 +11,75 @@
  */
 
 import type { Object3D } from 'three';
-// @ts-expect-error - BundleGroup is exposed by the WebGPU entrypoint at runtime.
-import { BundleGroup as WebGpuBundleGroup } from 'three/webgpu';
 import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { shouldPrefetchWebGpuModules } from './webgpu-prefetch-policy.ts';
 
 type BundleGroupLike = Object3D & {
   needsUpdate: boolean;
   clear(): void;
 };
 
+type BundleGroupConstructor = new () => BundleGroupLike;
+
 export type MilkdropRenderBundleConfig = {
   /** Whether RenderBundle recording is enabled. */
   enabled: boolean;
 };
 
-export const DEFAULT_RENDER_BUNDLE_CONFIG: MilkdropRenderBundleConfig = {
+const DEFAULT_RENDER_BUNDLE_CONFIG: MilkdropRenderBundleConfig = {
   enabled: false,
 };
+
+// Lazy-loaded: a static `import 'three/webgpu'` here pulled the whole WebGPU
+// three.js bundle (600KB+) into the shared adapter-core chunk, which sits on
+// the boot path for WebGL-only browsers (Firefox, default Safari) that never
+// use it. The constructor is fetched on demand, and pre-fetched on
+// WebGPU-capable browsers so the WebGPU adapter can still build its
+// BundleGroup synchronously during construction.
+let webGpuBundleGroupCtor: BundleGroupConstructor | null = null;
+let webGpuBundleGroupCtorPromise: Promise<BundleGroupConstructor> | null = null;
+
+function loadWebGpuBundleGroupCtor(): Promise<BundleGroupConstructor> {
+  if (!webGpuBundleGroupCtorPromise) {
+    // @ts-expect-error - 'three/webgpu' resolves at runtime via the bundler but not under moduleResolution: "node".
+    webGpuBundleGroupCtorPromise = import('three/webgpu')
+      .then((module: { BundleGroup: BundleGroupConstructor }) => {
+        webGpuBundleGroupCtor = module.BundleGroup;
+        return module.BundleGroup;
+      })
+      .catch((error) => {
+        webGpuBundleGroupCtor = null;
+        webGpuBundleGroupCtorPromise = null;
+        throw error;
+      });
+  }
+  return webGpuBundleGroupCtorPromise;
+}
+
+// Pre-fetch so the ctor is resolved by the time the WebGPU adapter
+// constructs (construction waits on the renderer, which imports the same
+// module).
+//
+// Gated on the backend the app actually chose, not on `navigator.gpu`
+// alone: capability answers "can this browser do WebGPU", not "will this
+// session use it". Chrome exposes navigator.gpu, so `?renderer=webgl`, a
+// preset pinned to WebGL, and post-fallback reloads all still pulled the
+// whole 648KB three/webgpu bundle they can never execute — measured on a
+// production build with the renderer explicitly pinned to WebGL.
+//
+// Scheduled at real idle rather than immediately: this module is evaluated
+// during engine mount, when the critical path is still busy, and a 648KB
+// dynamic import there competes for bandwidth with the visuals the user is
+// waiting on.
+if (shouldPrefetchWebGpuModules()) {
+  scheduleIdleTask(
+    () => {
+      void loadWebGpuBundleGroupCtor().catch(() => {});
+    },
+    { idleTimeout: 3000, fallbackDelay: 1200 },
+  );
+}
 
 /**
  * Manages a Three.js BundleGroup for pre-recording static draw calls
@@ -35,7 +87,7 @@ export const DEFAULT_RENDER_BUNDLE_CONFIG: MilkdropRenderBundleConfig = {
  * bundled by the Three.js WebGPURenderer when the BundleGroup is
  * added to the scene.
  */
-export class MilkdropRenderBundleManager {
+class MilkdropRenderBundleManager {
   private config: MilkdropRenderBundleConfig;
   private bundleGroup: BundleGroupLike | null = null;
 
@@ -54,12 +106,35 @@ export class MilkdropRenderBundleManager {
     this.config = { ...this.config, ...config };
 
     if (this.config.enabled && !hadGroup) {
-      this.bundleGroup = new WebGpuBundleGroup() as BundleGroupLike;
-      this.bundleGroup.userData.stimsBundleKind = 'milkdrop-static';
       recordRendererOptimizationTelemetry({ counter: 'renderBundlesUsage' });
+      this.enableBundleGroup();
     } else if (!this.config.enabled && hadGroup) {
       this.bundleGroup = null;
     }
+  }
+
+  private enableBundleGroup() {
+    const ctor = webGpuBundleGroupCtor;
+    if (ctor) {
+      this.createBundleGroup(ctor);
+      return;
+    }
+    void loadWebGpuBundleGroupCtor()
+      .then((loadedCtor) => {
+        if (this.config.enabled) {
+          this.createBundleGroup(loadedCtor);
+        }
+      })
+      .catch(() => {
+        recordRendererOptimizationTelemetry({
+          counter: 'renderBundleUnavailable',
+        });
+      });
+  }
+
+  private createBundleGroup(ctor: BundleGroupConstructor) {
+    this.bundleGroup = new ctor() as BundleGroupLike;
+    this.bundleGroup.userData.stimsBundleKind = 'milkdrop-static';
   }
 
   /** Add a static object to the BundleGroup for bundled rendering. */
@@ -95,30 +170,6 @@ export class MilkdropRenderBundleManager {
   }
 }
 
-let sharedBundleManager: MilkdropRenderBundleManager | null = null;
-
-/**
- * Get or create the shared MilkDrop render bundle manager.
- */
-export function getMilkdropRenderBundleManager(
-  config?: Partial<MilkdropRenderBundleConfig>,
-): MilkdropRenderBundleManager {
-  if (!sharedBundleManager) {
-    sharedBundleManager = new MilkdropRenderBundleManager(config);
-  } else if (config) {
-    sharedBundleManager.setConfig(config);
-  }
-  return sharedBundleManager;
-}
-
-/**
- * Dispose the shared render bundle manager (for testing and cleanup).
- */
-export function disposeMilkdropRenderBundleManager() {
-  sharedBundleManager?.dispose();
-  sharedBundleManager = null;
-}
-
 export function createMilkdropStaticBundleGroup({
   enabled,
   objects,
@@ -142,8 +193,4 @@ export function createMilkdropStaticBundleGroup({
     manager.add(object);
   }
   return group;
-}
-
-export function isMilkdropBundleSupportAvailable() {
-  return Boolean(WebGpuBundleGroup);
 }

@@ -108,7 +108,7 @@ describe('README-derived MCP guidance', () => {
     const commands = await getReadmeDevCommands('dev');
 
     expect(commands).toContain('bun run dev');
-    expect(commands).toContain('bun run build');
+    expect(commands).toContain('bun run check');
   });
 
   test('returns an explicit lint fallback when README omits lint-only commands', async () => {

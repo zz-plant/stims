@@ -1,10 +1,16 @@
 import type { MotionPreference } from '../core/motion-preferences.ts';
+import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   describeQualityPresetImpact,
   type QualityPreset,
 } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
+import {
+  creditedHandles,
+  creditsHandle,
+  resolveHandleKey,
+} from '../milkdrop/preset-handles.ts';
 import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import type {
   AudioSource,
@@ -13,6 +19,18 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import {
+  FIELD_PENALTY,
+  type MatchField,
+  matchesFields,
+  normalizeMatchText,
+  type ScoreFieldsOptions,
+  scoreFields,
+  toMatchField,
+} from './preset-matching.ts';
+
+/** Stims' own repository — surfaced on the launch screen and in credits. */
+export const STIMS_REPO_URL = 'https://github.com/zz-plant/stims';
 
 export type StarterPreset = {
   key: string;
@@ -69,17 +87,15 @@ export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
 export function getToolLabel(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Browse';
+      return 'Browse presets';
     case 'editor':
-      return 'Edit';
+      return 'Edit preset code';
     case 'refine':
-      return 'Refine';
-    case 'audiomatch':
-      return 'Match my music';
-    case 'visualsearch':
-      return 'More like this';
+      return 'Refine with AI';
+    case 'finder':
+      return 'Find a preset';
     case 'synthesize':
-      return 'Generate';
+      return 'Generate with AI';
     case 'capture':
       return 'Record video';
     case 'settings':
@@ -99,6 +115,9 @@ export function getToolDescription(tool: Exclude<PanelState, null>) {
 }
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
+  'collection:hall-of-fame': 'Hall of Fame Masterpieces',
+  'collection:webgpu-showcase': 'WebGPU Ultra Showcase',
+  'collection:audio-reactive': 'Audio-Reactive Masterpieces',
   'collection:butterchurn': 'Butterchurn',
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
@@ -125,30 +144,18 @@ const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:touch-friendly': 'Touch Friendly',
 };
 
+/**
+ * Pages an author publishes under — their own home, not a place their files
+ * ended up.
+ *
+ * Most preset authors have no live page. Pointing their byline at a preset
+ * pack that merely redistributes their work implies "this is their site" and
+ * quietly credits the distributor, so those links are deliberately absent
+ * rather than approximated. An entry belongs here only when the author
+ * publishes there themselves.
+ */
 const AUTHOR_PROFILES: Record<string, string> = {
-  'ryan geiss': 'http://www.geisswerks.com/milkdrop/',
   geiss: 'http://www.geisswerks.com/milkdrop/',
-  _geiss: 'http://www.geisswerks.com/milkdrop/',
-  rovastar: 'https://sourceforge.net/projects/milkdrop2/',
-  'krash & rovastar': 'https://sourceforge.net/projects/milkdrop2/',
-  'eo.s.': 'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  'eo.s. + phat':
-    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  flexi: 'https://github.com/projectM-visualizer/projectm',
-  martin: 'https://github.com/projectM-visualizer/projectm',
-  aderrasi: 'https://github.com/projectM-visualizer/projectm',
-  orb: 'https://github.com/projectM-visualizer/projectm',
-  shifter: 'https://github.com/projectM-visualizer/projectm',
-  fishbrain: 'https://github.com/projectM-visualizer/projectm',
-  cope: 'https://github.com/projectM-visualizer/projectm',
-  unchained: 'https://github.com/projectM-visualizer/projectm',
-  suksma: 'https://github.com/projectM-visualizer/projectm',
-  'amandio c': 'https://github.com/projectM-visualizer/projectm',
-  stahlregen:
-    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
-  goody: 'https://github.com/projectM-visualizer/projectm',
-  hexcollie: 'https://github.com/projectM-visualizer/projectm',
-  adamfx: 'https://github.com/projectM-visualizer/projectm',
 };
 
 export function resolveAuthorUrl(
@@ -157,12 +164,11 @@ export function resolveAuthorUrl(
 ): string | undefined {
   if (explicitUrl) return explicitUrl;
   if (!author) return undefined;
-  const key = author.toLowerCase().trim();
-  if (AUTHOR_PROFILES[key]) return AUTHOR_PROFILES[key];
-  for (const [authorName, url] of Object.entries(AUTHOR_PROFILES)) {
-    if (key.includes(authorName)) return url;
-  }
-  return undefined;
+  // Only link a byline that resolves to exactly one author — a chain like
+  // "Flexi + Geiss" must not link the whole credit to one of its hands.
+  const handles = creditedHandles(author);
+  if (handles.length !== 1) return undefined;
+  return AUTHOR_PROFILES[resolveHandleKey(handles[0])];
 }
 
 export function prettifyCollectionTag(collectionTag: string) {
@@ -177,30 +183,29 @@ export function prettifyCollectionTag(collectionTag: string) {
     .join(' ');
 }
 
-function normalizeSearchText(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, ' ')
-    .trim();
+const normalizeSearchText = normalizeMatchText;
+
+/**
+ * True when the browse filter should keep this entry for `query`.
+ *
+ * Thin boolean over the shared scorer, so the browse filter and the command
+ * palette agree about what matches. `scorePresetEntry` gives the same answer
+ * with ordering attached.
+ */
+export function matchesPreset(entry: PresetCatalogEntry, query: string) {
+  return matchesFields(query, getPresetMatchFields(entry));
 }
 
-export function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  const searchIndex = getPresetSearchIndex(entry);
-  if (searchIndex.includes(normalizedQuery)) {
-    return true;
-  }
-
-  const queryTokens = normalizedQuery.split(/\s+/u).filter(Boolean);
-  if (queryTokens.length === 0) {
-    return true;
-  }
-
-  return queryTokens.every((token) => searchIndex.includes(token));
+/**
+ * Relevance score for one catalog entry, or null when it does not match.
+ * Same tiers the command palette ranks with.
+ */
+export function scorePresetEntry(
+  entry: PresetCatalogEntry,
+  query: string,
+  options?: ScoreFieldsOptions,
+) {
+  return scoreFields(query, getPresetMatchFields(entry), options);
 }
 
 export type BrowseSortMode =
@@ -220,6 +225,15 @@ export type BrowseSortMode =
  * `seed` only affects 'random': it keeps the shuffle stable across re-renders
  * so rows don't jump while the user scrolls.
  */
+function deterministicPresetHash(id: string, seed: number): number {
+  let hash = (seed | 0) ^ 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
 export function sortBrowseEntries(
   entries: PresetCatalogEntry[],
   sort: BrowseSortMode,
@@ -247,47 +261,108 @@ export function sortBrowseEntries(
           Number(Boolean(b.supports?.webgpu)) -
           Number(Boolean(a.supports?.webgpu)),
       );
-    case 'random':
-      return sorted.sort((a, b) =>
-        `${a.id}:${seed}`.localeCompare(`${b.id}:${seed}`),
+    case 'random': {
+      const hashes = new Map<string, number>();
+      for (let i = 0; i < sorted.length; i += 1) {
+        const id = sorted[i].id;
+        if (!hashes.has(id)) {
+          hashes.set(id, deterministicPresetHash(id, seed));
+        }
+      }
+      return sorted.sort(
+        (a, b) => (hashes.get(a.id) ?? 0) - (hashes.get(b.id) ?? 0),
       );
+    }
     default:
       return sorted;
   }
 }
 
-function isNicerAuthorCasing(candidate: string, current: string) {
-  if (candidate.length !== current.length) {
-    return candidate.length < current.length;
-  }
-  return /^[A-Z]/.test(candidate) && !/^[A-Z]/.test(current);
-}
-
 /**
- * Distinct author names for the "Browse by author" filter, folding
- * case/underscore variants of the same name (e.g. "Geiss" / "_Geiss") down
- * to one canonical display string per author.
+ * Distinct authors for the "Browse by author" filter.
+ *
+ * MilkDrop bylines are accretive credit chains, so the filter lists the
+ * individual handles credited across the catalog rather than the raw author
+ * strings. Listing the strings instead both split one author across spelling
+ * variants and buried anyone who mostly published in company — 102 catalog
+ * presets credit Phat, and only 5 name him alone.
  */
 export function getAuthorOptions(entries: PresetCatalogEntry[]): string[] {
   const byKey = new Map<string, string>();
   for (const entry of entries) {
-    const raw = entry.author?.trim();
-    if (!raw || raw.toLowerCase() === 'unknown') continue;
-    const key = raw.toLowerCase();
-    const current = byKey.get(key);
-    if (!current || isNicerAuthorCasing(raw, current)) {
-      byKey.set(key, raw);
+    for (const handle of creditedHandles(entry.author)) {
+      byKey.set(resolveHandleKey(handle), handle);
     }
   }
-  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+  return [...byKey.values()].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' }),
+  );
 }
 
+/** True when the entry's credit chain names this author anywhere in it. */
 export function matchesAuthor(
   entry: PresetCatalogEntry,
   author: string | null,
 ) {
   if (!author) return true;
-  return (entry.author ?? '').trim().toLowerCase() === author.toLowerCase();
+  return creditsHandle(entry.author, author);
+}
+
+/**
+ * The "Reduce flashing" filter, applied wherever presets are listed or
+ * shuffled into.
+ *
+ * Only *measured* high-risk presets are removed. An unmeasured preset stays
+ * in the list — hiding it would quietly shrink the catalog to whatever the
+ * lab has audited and imply everything remaining had been cleared, which is
+ * the opposite of what a partial audit means.
+ */
+export function passesFlashPreference(
+  entry: PresetCatalogEntry,
+  reduceFlashing: boolean,
+) {
+  if (!reduceFlashing) return true;
+  return !hiddenByFlashPreference(entry.sensoryProfile);
+}
+
+/** How many catalog entries each collection tag actually contains. */
+export function getCollectionCounts(
+  entries: PresetCatalogEntry[],
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    for (const tag of entry.tags ?? []) {
+      if (!tag.startsWith('collection:')) continue;
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Order the collection rail by how much each collection narrows the list.
+ *
+ * The curated order put the broadest collections first, and they are very
+ * broad: hall-of-fame, webgpu-showcase, audio-reactive and butterchurn each
+ * hold 77-98% of the 1787 entries, so picking one removes almost nothing.
+ * The genuinely selective collections — cream-of-the-crop (42),
+ * classic-milkdrop (12), rovastar-and-collaborators (6) — sat past the right
+ * edge of a rail that already overflowed by more than 2x, which meant the
+ * only chips a user could see without scrolling were the ones that barely
+ * filter.
+ *
+ * Nothing is removed; a collection someone curated stays reachable. This
+ * only decides which end of the rail earns the visible seats.
+ */
+export function sortCollectionsBySelectivity(
+  tags: string[],
+  counts: Map<string, number>,
+): string[] {
+  return [...tags].sort((a, b) => {
+    const byCount = (counts.get(a) ?? 0) - (counts.get(b) ?? 0);
+    // Stable within a tie so the curated order still shows through.
+    return byCount !== 0 ? byCount : tags.indexOf(a) - tags.indexOf(b);
+  });
 }
 
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
@@ -304,6 +379,9 @@ export function getCollectionTags(entries: PresetCatalogEntry[]) {
 
 export function getFeaturedCollectionTags(collectionTags: string[]) {
   const featuredHints = [
+    'collection:hall-of-fame',
+    'collection:webgpu-showcase',
+    'collection:audio-reactive',
     'collection:cream-of-the-crop',
     'collection:classic-milkdrop',
     'collection:vj-high-intensity',
@@ -376,16 +454,38 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
   return normalizeSearchText(rawTerms);
 }
 
-const presetSearchIndexCache = new WeakMap<PresetCatalogEntry, string>();
+const presetMatchFieldsCache = new WeakMap<PresetCatalogEntry, MatchField[]>();
 
-function getPresetSearchIndex(entry: PresetCatalogEntry) {
-  const cached = presetSearchIndexCache.get(entry);
+/**
+ * The fields a typed query is matched against, weighted so a title hit
+ * outranks the same hit on an author, tag or semantic term.
+ *
+ * searchTerms are included here (the query-matching path) and deliberately
+ * kept out of buildPresetSearchIndex: describePresetMood reads that index, and
+ * semantic terms like "dark" or "fire" would re-bucket preset moods.
+ */
+function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
+  const cached = presetMatchFieldsCache.get(entry);
   if (cached !== undefined) {
     return cached;
   }
-  const searchIndex = buildPresetSearchIndex(entry);
-  presetSearchIndexCache.set(entry, searchIndex);
-  return searchIndex;
+  const tags = entry.tags ?? [];
+  const fields: MatchField[] = [
+    toMatchField(entry.title ?? '', FIELD_PENALTY.title),
+    toMatchField(entry.author ?? '', FIELD_PENALTY.author),
+    toMatchField(entry.id, FIELD_PENALTY.id),
+    ...tags.map((tag) => toMatchField(tag, FIELD_PENALTY.tag)),
+    ...tags
+      .filter((tag) => tag.startsWith('collection:'))
+      .map((tag) =>
+        toMatchField(prettifyCollectionTag(tag), FIELD_PENALTY.tag),
+      ),
+    ...(entry.searchTerms ?? []).map((term) =>
+      toMatchField(term, FIELD_PENALTY.semantic),
+    ),
+  ].filter((field) => field.text.length > 0);
+  presetMatchFieldsCache.set(entry, fields);
+  return fields;
 }
 
 const moodCache = new Map<string, string>();
@@ -500,6 +600,10 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
   }
 
   return starterPresets;
+}
+
+export function isDocumentAudioActive(): boolean {
+  return document.body.dataset.audioActive === 'true';
 }
 
 export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
@@ -634,8 +738,16 @@ export function mapRuntimeCatalogEntry(
         : undefined,
     lastOpenedAt: entry.lastOpenedAt,
     expectedFidelityClass: entry.fidelityClass,
+    similarity: entry.similarity,
     fidelityTier: entry.fidelityTier,
     visualCertification: entry.visualCertification,
+    // The last of four hand-listed projections between catalog.json and a
+    // rendered row. Each builds a fresh object rather than spreading, so a
+    // field missing from any one of them disappears with no type error —
+    // which is exactly how the reactivity band shipped reading a field that
+    // never survived the trip.
+    quality: entry.quality,
+    sensoryProfile: entry.sensoryProfile,
     supports: {
       webgl: entry.supports.webgl.status === 'supported',
       webgpu: entry.supports.webgpu.status === 'supported',
@@ -735,4 +847,48 @@ export function getSettingsPresetOptions() {
 
 export function getQualityImpactSummary(preset: QualityPreset) {
   return describeQualityPresetImpact(preset);
+}
+
+export type ImageToPresetResponse = {
+  description?: string;
+  milkSource?: string;
+  presetId?: string;
+  title?: string;
+};
+
+export type ImageToPresetAction =
+  | {
+      kind: 'generated-source';
+      description: string;
+      source: string;
+      title: string;
+    }
+  | {
+      kind: 'preset-id';
+      description: string;
+      presetId: string;
+    };
+
+export function resolveImageToPresetAction(
+  data: ImageToPresetResponse,
+): ImageToPresetAction | null {
+  const description = data.description?.trim() || 'Generated from image.';
+  const source = data.milkSource?.trim();
+  if (source) {
+    return {
+      kind: 'generated-source',
+      description,
+      source,
+      title: data.title?.trim() || 'Image generated preset',
+    };
+  }
+  const presetId = data.presetId?.trim();
+  if (presetId) {
+    return {
+      kind: 'preset-id',
+      description,
+      presetId,
+    };
+  }
+  return null;
 }

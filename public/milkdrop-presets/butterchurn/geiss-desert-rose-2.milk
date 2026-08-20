@@ -1,19 +1,19 @@
 [preset00]
-fRating=5.000000
+fRating=0.000000
 fGammaAdj=1.900000
-fVideoEchoZoom=1.169000
+fVideoEchoZoom=1.169360
 nWaveMode=2.000000
 bAdditiveWaves=1.000000
 bWaveDots=1.000000
 bWaveThick=1.000000
-fWaveAlpha=0.274000
+fWaveAlpha=0.274263
 fWaveScale=2.827000
 fWaveSmoothing=0.090000
 fModWaveAlphaStart=0.830000
 fModWaveAlphaEnd=1.310000
 fWarpScale=3.138000
 fZoom=0.993000
-fWarp=0.000540
+fWarp=0.000536
 fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000
@@ -48,18 +48,29 @@ per_frame_16=wave_y = wave_y - 7 * dy_residual;
 per_frame_17=wave_mystery = 0.03 * time;
 
 [warp_shader]
-shader_body { 
+uniform sampler2D sampler_onefish;
+ shader_body { 
   vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_noise_lq, 
+    (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)
+  ).xyz - 0.5) / 256.0));
   vec4 tmpvar_2;
-  tmpvar_2 = texture (sampler_main, uv);
-  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
-    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
-  ) * 0.2));
-  ret_1 = (ret_1 - 0.02);
-  vec4 tmpvar_3;
-  tmpvar_3.w = 1.0;
-  tmpvar_3.xyz = ret_1;
-  ret = tmpvar_3.xyz;
+  tmpvar_2 = texture (sampler_onefish, (uv_orig * aspect.xy));
+  vec2 x_3;
+  x_3 = (uv - uv_orig);
+  ret_1 = (mix (ret_1, tmpvar_2.xyz, vec3(clamp (
+    (1.0 - (abs((
+      ((dot (tmpvar_2.xyz, vec3(0.32, 0.49, 0.29)) * 0.8) + 0.1)
+     - 
+      ((fract((time * 0.2)) * 0.5) + 0.25)
+    )) * 13.0))
+  , 0.0, 1.0))) * (0.97 + (0.03 * 
+    clamp ((sqrt(dot (x_3, x_3)) * 200.0), 0.0, 1.0)
+  )));
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
  }
 
 [comp_shader]

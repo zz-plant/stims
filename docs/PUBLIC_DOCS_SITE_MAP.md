@@ -18,8 +18,11 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
   - `guides/milkdrop-visualizer`
   - `guides/playing-toys`
   - `guides/audio-setup`
-  - `guides/accessibility`
+  - `guides/accessibility` *(planned public surface — content lives in [`docs/guides/accessibility.md`](./guides/accessibility.md) today, sourced from [`docs/SENSORY_ACCESSIBILITY.md`](./SENSORY_ACCESSIBILITY.md))*
   - `guides/performance`
+- **Create Presets** *(planned public surface — content lives in `docs/authoring/` today)*
+  - `create/learn` — the authoring curriculum (Tracks 0–8, live examples)
+  - `create/reference` — the generated language reference
 - **Browse**
   - `browse/overview`
   - `browse/featured`
@@ -27,13 +30,14 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
 
 ### Development tab
 
-Repository documentation is hubbed in [`docs/README.md`](./README.md) across 5 core developer tracks:
+Repository documentation is hubbed in [`docs/README.md`](./README.md) across 6 core developer tracks:
 
 1. **🚀 Getting Started**: `DEVELOPMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, `COMMIT_CONVENTIONS.md`
 2. **🏛️ Architecture & Engine**: `ARCHITECTURE.md`, `TECHNICAL_ACHIEVEMENTS.md`, `MILKDROP_PRESET_RUNTIME.md`, `WEBGPU_ARCHITECTURAL_REVAMP.md`
-3. **🎨 Preset Authoring**: `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
+3. **🎨 Preset Authoring**: `authoring/README.md` (curriculum), `authoring/reference.md` (generated language reference), `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
 4. **🤖 AI & Infrastructure**: `api.md`, `MCP_SERVER.md`
 5. **📊 Strategy & QA**: `ROADMAP.md`, `IMPLEMENTATION_STATUS.md`, `QA_PLAN.md`, `LINEAGE_AND_CREDITS.md`
+6. **♿ Accessibility & Sensory Research**: `SENSORY_ACCESSIBILITY.md`, `LITERATURE.md`
 
 - **Contributing**
   - `contributing/getting-started`
@@ -50,16 +54,16 @@ Repository documentation is hubbed in [`docs/README.md`](./README.md) across 5 c
 
 ## What each public page emphasizes
 
-- **Introduction**: MilkDrop-led value proposition, lineage framing, and quick links to launch + browse.
+- **Introduction**: MilkDrop-led value proposition and lineage framing, with quick links to launch and browse.
 - **Quickstart**: launch MilkDrop first, then explore the broader library from one browse surface.
 - **Browser support**: feature-level compatibility and troubleshooting for WebGL, microphone, and WebGPU.
-- **MilkDrop visualizer guide**: presets, blending, editor flow, import/export, and compatibility guardrails.
+- **MilkDrop visualizer guide**: presets, blending, the editor flow, import/export, and compatibility guardrails.
 - **Playing toys**: browse/launch flow, filters, badges, and the toy detail path.
 - **Audio setup**: microphone, demo audio, and tab-capture paths plus troubleshooting.
 - **Accessibility**: motion comfort defaults, reduced-motion handling, and fallback controls.
-- **Performance**: quality presets, persistent settings, and performance panel details.
+- **Performance**: quality presets, persistent settings, and the performance panel.
 - **Browse overview / toy pages**: one browse hub plus canonical toy detail pages instead of large taxonomy matrices.
-- **Contributing getting started**: quality checks, commit/PR expectations, and docs consistency guidance.
+- **Contributing getting started**: quality checks and commit/PR expectations.
 - **Competitive messaging handoff**: external-safe value propositions derived from internal battlecards, avoiding direct competitor callouts.
 
 ## Repo alignment checklist

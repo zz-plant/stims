@@ -16,33 +16,54 @@ permissions:
   contents: read
 
 jobs:
-  # Commit-message hygiene is enforced locally by the husky commit-msg hook
-  # (scripts/check-commit-msg.ts), and the former shader-parity job only
-  # re-ran tests/unit/ files that already run inside `bun run check` below —
-  # both CI jobs were duplicate enforcement and were removed to cut runner
-  # usage.
+  # Commit-message hygiene was left to the husky commit-msg hook alone, on the
+  # assumption that every commit passes through it. It does not: 20+ commits
+  # whose subjects this guard rejects are on main, including a run of GitHub
+  # web-editor "Update <file>.ts" commits, which never touch a local hook. This
+  # job is the backstop that assumption needed.
+  #
+  # PR-only and deliberately narrower than the hook: it gates the Conventional
+  # prefix and non-descriptive subjects — the rules that actually leaked — but
+  # waives the 72-char ceiling, which current practice breaks routinely on
+  # otherwise-good subjects. The hook still enforces length locally.
+  commit-messages:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The base..head range needs real history, not a depth-1 clone.
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      - name: Check commit subjects in this PR
+        run: |
+          bun run check:commit-msg -- \
+            --range "origin/${{ github.base_ref }}..HEAD" \
+            --allow-long-subjects
+
   check:
     name: Quality gate
     runs-on: ubuntu-latest
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
         with:
-          bun-version-file: .bun-version
-
-      - name: Cache bun install cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+          checkout: 'false'
 
       # Fails on high/critical advisories against the lockfile. Moderate and
       # below only report locally via `bun audit`; gate them here once the
@@ -71,46 +92,23 @@ jobs:
     # deterministic — same input, same shader text, same pixels — so it fails
     # for real reasons. It takes about 10s.
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
         with:
-          bun-version-file: .bun-version
-
-      - name: Cache bun install cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+          checkout: 'false'
 
       # The loop-preset visual sweep in tests/corpus/ launches headless
-      # Chromium, so the corpus is no longer browser-free. On an exact cache
-      # hit only the apt-installed system libraries are missing (the runner
-      # image doesn't guarantee them and they can't be cached), so skip the
-      # ~150 MB browser download and install just the deps.
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps chromium
+      # Chromium, so the corpus is no longer browser-free.
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       - name: Run parity corpus
         run: bun run test:corpus
@@ -122,27 +120,28 @@ jobs:
     # docs/DEPLOYMENT.md), which builds and deploys on push independently of
     # Actions. This job only proves the production bundle still builds.
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
         with:
-          bun-version-file: .bun-version
-
-      - name: Cache bun install cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+          checkout: 'false'
 
       - name: Build production bundle
         run: bun run build
+
+      # The budget guard needs dist/, so it runs here rather than in the
+      # quality gate (see the script's docblock). It was added with the lazy
+      # EditorPanel work and then never wired to anything, which left the
+      # startup payload unguarded against step-change regressions.
+      - name: Check bundle-size budget
+        run: bun run check:bundle-size
 
   integration:
     name: Browser end-to-end tests (${{ matrix.file }})
@@ -162,45 +161,21 @@ jobs:
           - chrome-visual-contract.test.ts
           - e2e-engine-mount.test.ts
     steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
         with:
-          bun-version-file: .bun-version
+          checkout: 'false'
 
-      - name: Cache bun install cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      # On an exact cache hit only the apt-installed system libraries are
-      # missing (the runner image doesn't guarantee them and they can't be
-      # cached), so skip the ~150 MB browser download and install just the
-      # deps.
-      - name: Install Playwright Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps chromium
-
-      - name: Install Playwright system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps chromium
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
 
       # engine-mount launches a headed browser for real canvas rendering, so
       # it needs a virtual display; xvfb ships with Playwright's --with-deps
@@ -208,3 +183,124 @@ jobs:
       - name: Run browser end-to-end tests
         run: xvfb-run -a bun test --preload=./tests/setup.ts --max-concurrency=1 tests/e2e/${{ matrix.file }}
 
+  visual-evidence:
+    name: Visual evidence (manual)
+    runs-on: ubuntu-latest
+    # No job here should ever legitimately run long: ui:diff + two
+    # lab:visual presets normally finish in a few minutes. Without this,
+    # a hang (confirmed: lab:visual silently hung after starting its
+    # second preset's dev server, no output, no crash) runs to GitHub's
+    # default 6-hour job timeout and burns that much billed runner time
+    # for nothing. Keep this well above normal runtime but far below "hours".
+    timeout-minutes: 20
+    # Manual-only, deliberately not part of ci-status or its `needs:` list.
+    # Captures + reports; asserts nothing on pixel content. The old e2e
+    # visual-regression test was removed from `integration` above because
+    # SwiftShader timing assertions on a shared runner flaked without ever
+    # catching a real rendering bug (see the `parity` job comment). This job
+    # sidesteps that by uploading evidence for a human/agent to look at
+    # instead of asserting pass/fail on it — run it on demand from a branch
+    # or PR when you want proof a visual change landed, without CI blocking
+    # on inherently noisy SwiftShader pixel/timing comparisons.
+    if: github.event_name == 'workflow_dispatch'
+    # Opts out of the workflow-level concurrency group (keyed on the shared
+    # ref, cancel-in-progress: true) with a group unique to this run. This
+    # job's own steps take longer than the gap between pushes on a busy
+    # main, and being sat in the shared group meant every dispatch got
+    # cancelled mid-capture by the next push before it could finish.
+    concurrency:
+      group: ci-visual-evidence-${{ github.run_id }}
+      cancel-in-progress: false
+    env:
+      # `secrets` isn't a valid context inside `if:` expressions, so the
+      # deploy step below checks these env vars instead.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      # A local composite action can't perform the first checkout (see the
+      # `check` job above for why) — this job skipped it and failed at
+      # action-resolution time before this fix.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Capture UI harness screenshots + baseline diff
+        run: bun run ui:diff
+        continue-on-error: true
+
+      - name: Capture bundled preset visuals (software rendering — no GPU on this runner)
+        timeout-minutes: 10
+        env:
+          STIMS_SOFTWARE_RENDER: '1'
+        run: |
+          bun run lab:visual -- \
+            --preset eos-glowsticks-v2-03-music \
+            --preset rovastar-parallel-universe
+        continue-on-error: true
+
+      - name: Upload visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-${{ github.sha }}
+          path: |
+            screenshots/ui-diff/
+            scratch/preset-lab/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Real deploy of a live URL (a Worker *version* preview, not production
+      # traffic — see docs/DEPLOYMENT.md), for anyone/anything that wants to
+      # look at the actual thing rather than a SwiftShader-rendered
+      # screenshot. Requires Cloudflare deploy credentials as repo secrets;
+      # skipped (not failed) when they aren't configured, so this stays safe
+      # on forks and doesn't block the rest of the job.
+      - name: Deploy live preview
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        run: |
+          bun run preview:deploy -- --json | tee preview-url.json
+          echo "### Live preview" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"- URL: " + (.url // "deploy failed — see job log")' preview-url.json >> "$GITHUB_STEP_SUMMARY"
+        continue-on-error: true
+
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [check, parity, build, integration, commit-messages]
+    if: always()
+    steps:
+      - name: Verify all required jobs passed
+        run: |
+          # commit-messages is pull_request-only, so it reports "skipped" on
+          # push/merge_group runs. Skipped is a pass here; only an actual
+          # failure should block.
+          commit_outcome="${{ needs['commit-messages'].result }}"
+          check_outcome="${{ needs.check.result }}"
+          parity_outcome="${{ needs.parity.result }}"
+          build_outcome="${{ needs.build.result }}"
+          integration_outcome="${{ needs.integration.result }}"
+
+          echo "Commit Messages: $commit_outcome"
+          echo "Quality Gate: $check_outcome"
+          echo "Parity Corpus: $parity_outcome"
+          echo "Production Build: $build_outcome"
+          echo "Integration Tests: $integration_outcome"
+
+          if [ "$commit_outcome" != "failure" ] && \
+             [ "$commit_outcome" != "cancelled" ] && \
+             [ "$check_outcome" = "success" ] && \
+             [ "$parity_outcome" = "success" ] && \
+             [ "$build_outcome" = "success" ] && \
+             [ "$integration_outcome" = "success" ]; then
+            echo "All CI jobs passed successfully."
+            exit 0
+          else
+            echo "One or more CI jobs failed or were cancelled."
+            exit 1
+          fi

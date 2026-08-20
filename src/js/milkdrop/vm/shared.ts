@@ -72,6 +72,7 @@ export type WaveBuilderState = {
   proceduralMainWaveFrames: MilkdropProceduralWaveVisual[];
   customWaveLocals: MutableState[];
   customWaveTAfterInit: MutableState[];
+  customWaveBaseLocalsPool: MutableState[];
   customWaveFrameIndex: 0 | 1;
   customWaveVisualFrames: [MilkdropWaveVisual[], MilkdropWaveVisual[]];
   proceduralCustomWaveFrames: [
@@ -93,15 +94,20 @@ export type CustomWaveChannelSample = {
   value2: number;
 };
 
+export type StaticMeshLattice = {
+  density: number;
+  aspectX: number;
+  aspectY: number;
+  gridX: Float32Array;
+  gridY: Float32Array;
+  milkdropX: Float32Array;
+  milkdropY: Float32Array;
+  rad: Float32Array;
+  ang: Float32Array;
+};
+
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
-  frameTransformCache: Map<number, { x: number; y: number }>;
-  /** Pool of reusable {x, y} objects for frameTransformCache entries,
-   * sized once to peak capacity and reused across frames to avoid
-   * per-frame allocation. */
-  transformCachePool: { x: number; y: number }[];
-  /** Number of pooled objects currently in use (0 after a reset). */
-  transformCachePoolIndex: number;
   pointScratch: MutableState;
   meshPoints: MeshFieldPoint[];
   motionVectorFrameIndex: 0 | 1;
@@ -115,6 +121,7 @@ export type GeometryBuilderState = {
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
   meshPositions?: Float32Array;
+  lattice?: StaticMeshLattice;
 };
 
 export type ShapeBuilderState = {
@@ -233,6 +240,11 @@ export function normalizeTransformCenterY(value: number) {
   return value;
 }
 
+export const SPEC_KEYS = Array.from(
+  { length: 32 },
+  (_, i) => `spec_${i}`,
+) as readonly string[];
+
 export function createDefaultSignalEnv(): MutableState {
   return {
     time: 0,
@@ -268,6 +280,20 @@ export function createDefaultSignalEnv(): MutableState {
     vol: 0,
     music: 0,
     weighted_energy: 0,
+    // Harmonic/percussive decomposition. Neutral defaults match the relative
+    // scale used by bass/mid/treb (1.0 = track average, 0.5 = an even split),
+    // so a preset reading them before any audio arrives sees "nothing
+    // unusual" rather than "silence".
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+    percussive_low: 1,
+    percussive_mid: 1,
+    percussive_high: 1,
+    percussive_ratio: 0.5,
     progress: 0,
     aspectx: 1,
     aspecty: 1,
@@ -277,10 +303,28 @@ export function createDefaultSignalEnv(): MutableState {
     meshy: 48,
     pi: Math.PI,
     e: Math.E,
-    ...Object.fromEntries(
-      Array.from({ length: 32 }, (_, i) => [`spec_${i}`, 0]),
-    ),
+    ...Object.fromEntries(SPEC_KEYS.map((key) => [key, 0])),
   };
+}
+
+type SpecBinBound = { low: number; end: number };
+const specBinBoundsCache = new Map<number, SpecBinBound[]>();
+
+function getSpecBinBounds(binCount: number): SpecBinBound[] {
+  const cached = specBinBoundsCache.get(binCount);
+  if (cached) return cached;
+  const maxBin = Math.max(1, Math.floor(binCount / 2));
+  const bounds: SpecBinBound[] = [];
+  for (let i = 0; i < 32; i += 1) {
+    const lowBin = Math.floor(maxBin ** (i / 32));
+    const highBin = Math.min(maxBin, Math.floor(maxBin ** ((i + 1) / 32)));
+    bounds.push({
+      low: lowBin,
+      end: Math.max(lowBin + 1, highBin),
+    });
+  }
+  specBinBoundsCache.set(binCount, bounds);
+  return bounds;
 }
 
 export function syncSignalEnvironment(
@@ -326,6 +370,16 @@ export function syncSignalEnvironment(
   targetEnv.vol = signals.vol;
   targetEnv.music = signals.music;
   targetEnv.weighted_energy = signals.weightedEnergy;
+  targetEnv.percussive = signals.percussive ?? 1;
+  targetEnv.harmonic = signals.harmonic ?? 1;
+  targetEnv.percussiveLow = signals.percussiveLow ?? 1;
+  targetEnv.percussiveMid = signals.percussiveMid ?? 1;
+  targetEnv.percussiveHigh = signals.percussiveHigh ?? 1;
+  targetEnv.percussiveRatio = signals.percussiveRatio ?? 0.5;
+  targetEnv.percussive_low = signals.percussiveLow ?? 1;
+  targetEnv.percussive_mid = signals.percussiveMid ?? 1;
+  targetEnv.percussive_high = signals.percussiveHigh ?? 1;
+  targetEnv.percussive_ratio = signals.percussiveRatio ?? 0.5;
   targetEnv.progress = signals.frame;
   targetEnv.signalTime = signals.time;
   targetEnv.signalFrame = signals.frame;
@@ -364,35 +418,25 @@ export function syncSignalEnvironment(
   const freqData = signals.frequencyData;
   if (freqData && freqData.length > 0) {
     const binCount = freqData.length;
-    const maxBin = Math.max(1, Math.floor(binCount / 2));
+    const bounds = getSpecBinBounds(binCount);
     for (let i = 0; i < 32; i += 1) {
-      const lowBin = Math.floor(maxBin ** (i / 32));
-      const highBin = Math.min(maxBin, Math.floor(maxBin ** ((i + 1) / 32)));
-      const end = Math.max(lowBin + 1, highBin);
+      const bound = bounds[i];
+      const lowBin = bound.low;
+      const end = bound.end;
       let sum = 0;
       let count = 0;
       for (let b = lowBin; b < end && b < binCount; b += 1) {
         sum += freqData[b] ?? 0;
         count += 1;
       }
-      targetEnv[`spec_${i}`] = count > 0 ? sum / count / 255 : 0;
+      targetEnv[SPEC_KEYS[i]] = count > 0 ? sum / count / 255 : 0;
     }
   } else {
     for (let i = 0; i < 32; i += 1) {
-      targetEnv[`spec_${i}`] = 0;
+      targetEnv[SPEC_KEYS[i]] = 0;
     }
   }
 }
-
-const DEFAULT_CUSTOM_WAVE_T_REGISTERS: Readonly<Record<string, number>> =
-  Object.freeze(
-    Object.fromEntries(
-      Array.from({ length: MAX_CUSTOM_WAVE_SLOTS }, (_, idx) => [
-        `t${idx + 1}`,
-        0,
-      ]),
-    ),
-  );
 
 export const CUSTOM_WAVE_PROPERTY_KEYS = Array.from(
   { length: 32 },
@@ -477,28 +521,34 @@ export const SHAPECODE_PROPERTY_KEYS = Array.from(
 export function seedCustomWaveFields(
   wave: MilkdropWaveDefinition,
   state: MutableState,
+  target?: MutableState,
 ): MutableState {
   const index = wave.index;
   const keys = CUSTOM_WAVE_PROPERTY_KEYS[index];
-  return {
-    enabled: wave.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0,
-    samples: wave.fields.samples ?? (keys ? state[keys.samples] : 64) ?? 64,
-    spectrum: wave.fields.spectrum ?? (keys ? state[keys.spectrum] : 0) ?? 0,
-    additive: wave.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0,
-    usedots: wave.fields.usedots ?? (keys ? state[keys.usedots] : 0) ?? 0,
-    scaling: wave.fields.scaling ?? (keys ? state[keys.scaling] : 1) ?? 1,
-    smoothing:
-      wave.fields.smoothing ?? (keys ? state[keys.smoothing] : 0.5) ?? 0.5,
-    mystery: wave.fields.mystery ?? (keys ? state[keys.mystery] : 0) ?? 0,
-    thick: wave.fields.thick ?? (keys ? state[keys.thick] : 1) ?? 1,
-    x: wave.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5,
-    y: wave.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5,
-    r: wave.fields.r ?? (keys ? state[keys.r] : 1) ?? 1,
-    g: wave.fields.g ?? (keys ? state[keys.g] : 1) ?? 1,
-    b: wave.fields.b ?? (keys ? state[keys.b] : 1) ?? 1,
-    a: wave.fields.a ?? (keys ? state[keys.a] : 0.4) ?? 0.4,
-    ...DEFAULT_CUSTOM_WAVE_T_REGISTERS,
-  };
+  const locals = target ?? ({} as MutableState);
+  locals.enabled = wave.fields.enabled ?? (keys ? state[keys.enabled] : 0) ?? 0;
+  locals.samples =
+    wave.fields.samples ?? (keys ? state[keys.samples] : 64) ?? 64;
+  locals.spectrum =
+    wave.fields.spectrum ?? (keys ? state[keys.spectrum] : 0) ?? 0;
+  locals.additive =
+    wave.fields.additive ?? (keys ? state[keys.additive] : 0) ?? 0;
+  locals.usedots = wave.fields.usedots ?? (keys ? state[keys.usedots] : 0) ?? 0;
+  locals.scaling = wave.fields.scaling ?? (keys ? state[keys.scaling] : 1) ?? 1;
+  locals.smoothing =
+    wave.fields.smoothing ?? (keys ? state[keys.smoothing] : 0.5) ?? 0.5;
+  locals.mystery = wave.fields.mystery ?? (keys ? state[keys.mystery] : 0) ?? 0;
+  locals.thick = wave.fields.thick ?? (keys ? state[keys.thick] : 1) ?? 1;
+  locals.x = wave.fields.x ?? (keys ? state[keys.x] : 0.5) ?? 0.5;
+  locals.y = wave.fields.y ?? (keys ? state[keys.y] : 0.5) ?? 0.5;
+  locals.r = wave.fields.r ?? (keys ? state[keys.r] : 1) ?? 1;
+  locals.g = wave.fields.g ?? (keys ? state[keys.g] : 1) ?? 1;
+  locals.b = wave.fields.b ?? (keys ? state[keys.b] : 1) ?? 1;
+  locals.a = wave.fields.a ?? (keys ? state[keys.a] : 0.4) ?? 0.4;
+  for (let t = 1; t <= MAX_CUSTOM_WAVE_SLOTS; t += 1) {
+    locals[`t${t}`] = 0;
+  }
+  return locals;
 }
 
 export function seedCustomShapeFields(

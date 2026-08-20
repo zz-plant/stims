@@ -4,33 +4,45 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
 } from '../../milkdrop/catalog-types.ts';
-import type {
-  PresetCatalogEntry,
-  PresetCatalogManifest,
-} from '../contracts.ts';
+import { scheduleIdleTask } from '../../utils/browser/idle-task.ts';
+import type { PresetCatalogEntry } from '../contracts.ts';
 import { reportLoadStatus } from '../load-status.ts';
 import { mapRuntimeCatalogEntry } from '../workspace-helpers.ts';
 
 const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
 
-async function loadStarterCatalog() {
-  const response = await fetch(STARTER_CATALOG_URL);
-  if (!response.ok) {
-    throw new Error(`Unable to load starter catalog (${response.status}).`);
+async function loadStarterCatalog(): Promise<PresetCatalogEntry[]> {
+  // Check if a catalog fetch was already initiated from app.ts; if so, use it.
+  // This avoids a duplicate network request when the promise is hoisted up
+  // from the module entry point.
+  const globalPromise =
+    typeof globalThis !== 'undefined'
+      ? (
+          globalThis as unknown as {
+            __stimsStarterCatalogPromise?: Promise<unknown>;
+          }
+        ).__stimsStarterCatalogPromise
+      : undefined;
+
+  let document: unknown;
+  if (globalPromise) {
+    document = await globalPromise;
+  } else {
+    const response = await fetch(STARTER_CATALOG_URL);
+    if (!response.ok) {
+      throw new Error(`Unable to load starter catalog (${response.status}).`);
+    }
+    document = await response.json();
   }
-  const document = (await response.json()) as PresetCatalogManifest;
-  return document.presets ?? [];
+
+  return (
+    (document as { presets: PresetCatalogEntry[] | undefined } | null)
+      ?.presets ?? []
+  );
 }
 
-const scheduleBackgroundTask = (callback: () => void) => {
-  if (typeof requestIdleCallback === 'function') {
-    const handle = requestIdleCallback(callback, { timeout: 2500 });
-    return () => cancelIdleCallback(handle);
-  }
-
-  const handle = setTimeout(callback, 1200);
-  return () => clearTimeout(handle);
-};
+const scheduleBackgroundTask = (callback: () => void) =>
+  scheduleIdleTask(callback, { idleTimeout: 2500, fallbackDelay: 1200 });
 
 export function useCatalogLoading() {
   const [fallbackCatalog, setFallbackCatalog] = useState<PresetCatalogEntry[]>(
@@ -108,7 +120,7 @@ export function useCatalogLoading() {
     setFullCatalogReady(false);
 
     void loadStarterCatalog()
-      .then((presets) => {
+      .then((presets: PresetCatalogEntry[]) => {
         if (cancelled) return;
         setFallbackCatalog(presets);
         setFallbackCatalogReady(true);
@@ -168,6 +180,15 @@ export function useCatalogLoading() {
   }, []);
 
   const hydrateFullCatalogNow = useEffectEvent(async () => {
+    // Idempotent once the full catalog has landed. Callers re-invoke this from
+    // effects that depend on the catalog arrays this function replaces (e.g.
+    // the deep-link hydration effect in workspace-hooks.ts keys on
+    // `fallbackCatalog`); every pass builds fresh array identities, so without
+    // this guard an id the full catalog still cannot resolve re-triggers those
+    // effects forever — a render loop that pinned a core at ~50 commits/sec.
+    if (fullCatalogReady) {
+      return;
+    }
     try {
       const mapped = await loadFullCatalog();
       setFallbackCatalog(mapped);

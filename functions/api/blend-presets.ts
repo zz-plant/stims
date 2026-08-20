@@ -1,3 +1,5 @@
+import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
+
 interface Env {
   AI: {
     run: (
@@ -5,21 +7,39 @@ interface Env {
       opts: { messages: Array<{ role: string; content: string }> },
     ) => Promise<{ response: string }>;
   };
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
+
   try {
     const { sourceA, sourceB, instruction } = (await request.json()) as {
-      sourceA: string;
-      sourceB: string;
+      sourceA?: string;
+      sourceB?: string;
       instruction?: string;
     };
+
+    if (!sourceA || !sourceB) {
+      return json({ error: 'sourceA and sourceB are required' }, 400);
+    }
 
     const defaultInstruction =
       instruction ||
@@ -65,7 +85,10 @@ Instruction: ${defaultInstruction}`,
 }
 
 function cleanSource(raw: string): string {
-  let s = raw.replace(/```[\w]*\n?/g, '').trim();
+  let s = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/```[\w]*\n?/g, '')
+    .trim();
   if (!s.includes('[preset00]')) s = `[preset00]\n${s}`;
   return s;
 }

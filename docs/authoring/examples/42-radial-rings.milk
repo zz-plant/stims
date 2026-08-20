@@ -1,0 +1,33 @@
+[preset00]
+// Pattern 4 from the coding guide: concentric rings pulsing outward.
+// rad*12 packs 12 rings into the radius; time*0.5 rotates the ring
+// pattern; ang (built-in angle from center) steers each pixel's push
+// along its own radial direction via cos(ang)/sin(ang).
+fRating=5
+fDecay=0.97
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_pixel_1=dr=0.01+0.02*sin(rad*12+time*0.5);
+per_pixel_2=dx=dx+dr*cos(ang)*0.6;
+per_pixel_3=dy=dy+dr*sin(-ang)*0.6;

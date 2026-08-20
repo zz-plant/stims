@@ -1,9 +1,17 @@
+import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';
 import {
   isInAppBrowser,
   isMobileDevice,
   openExternalBrowserIntent,
 } from '../utils/browser/device-detect.ts';
+import {
+  AUDIO_FILE_ACCEPT,
+  canProbablyPlay,
+  createFileAudioStream,
+  type FileAudioHandle,
+} from './file-audio.ts';
 import { ShaderIdenticon } from './ShaderIdenticon.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -11,6 +19,38 @@ import { useWorkspace } from './workspace-context.tsx';
 type AudioSourcePanelProps = {
   showHelp?: boolean;
 };
+
+/**
+ * One device enumeration per page, shared by every mount of this panel.
+ *
+ * This panel renders twice concurrently — once in the home hero, which stays
+ * mounted for the whole session, and once in Settings — so a per-instance
+ * effect asked the browser for the device list twice on every Settings open.
+ * enumerateDevices also prompts a permission-state check in some browsers,
+ * making the duplicate more than just wasted work.
+ */
+let audioInputsPromise: Promise<MediaDeviceInfo[]> | null = null;
+
+function listAudioInputs(): Promise<MediaDeviceInfo[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return Promise.resolve([]);
+  audioInputsPromise ??= navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) => devices.filter((d) => d.kind === 'audioinput'))
+    .catch(() => []);
+  return audioInputsPromise;
+}
+
+/** m:ss, or h:mm:ss once a video runs past an hour. */
+function formatPlaybackTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const paddedSeconds = String(seconds).padStart(2, '0');
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${paddedSeconds}`
+    : `${minutes}:${paddedSeconds}`;
+}
 
 export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const sourcePanelId = useId();
@@ -37,7 +77,68 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubeLoading = ui.youtubeLoading;
   const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
+  const youtubeTransport = ui.youtubeTransport;
+  const youtubeTransportControls = ui.youtubeTransportControls;
   const youtubeUrl = ui.youtubeUrl;
+
+  const fileCardId = `${sourcePanelId}-file-card`;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileHandleRef = useRef<FileAudioHandle | null>(null);
+  const [fileState, setFileState] = useState<{
+    name: string;
+    error: string | null;
+    loading: boolean;
+  } | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  // One handle at a time: picking a second track must tear the first one's
+  // graph down, or both keep playing into the analyser at once.
+  const playFile = async (file: File) => {
+    if (!canProbablyPlay(file)) {
+      setFileState({
+        name: file.name,
+        error: `This browser can't play ${file.type || 'that file type'}.`,
+        loading: false,
+      });
+      return;
+    }
+    setFileState({ name: file.name, error: null, loading: true });
+    fileHandleRef.current?.dispose();
+    fileHandleRef.current = null;
+    try {
+      const handle = await createFileAudioStream(file);
+      fileHandleRef.current = handle;
+      // Commit the route *and* pass it as launchState, the same way the
+      // Strudel bridge starts a stream source. Calling startAudioSource
+      // alone leaves routeState.audioSource null, so the engine snapshot
+      // never reports the source and nothing downstream reacts to it.
+      const nextRoute = { ...ui.routeState, audioSource: 'file' as const };
+      ui.commitRoute(nextRoute);
+      await engine.startAudioSource({
+        source: 'file',
+        stream: handle.stream,
+        launchState: nextRoute,
+      });
+      setFileState({ name: handle.name, error: null, loading: false });
+      ui.setStatusMessage(`Playing ${handle.name}`);
+    } catch (error) {
+      fileHandleRef.current?.dispose();
+      fileHandleRef.current = null;
+      setFileState({
+        name: file.name,
+        error: error instanceof Error ? error.message : 'Could not play file.',
+        loading: false,
+      });
+    }
+  };
+
+  useEffect(
+    () => () => {
+      fileHandleRef.current?.dispose();
+      fileHandleRef.current = null;
+    },
+    [],
+  );
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
@@ -46,15 +147,18 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
 
   useEffect(() => {
     if (mobileDevice) return;
-    if (!navigator.mediaDevices?.enumerateDevices) return;
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const inputs = devices.filter((d) => d.kind === 'audioinput');
+    let cancelled = false;
+    void listAudioInputs().then((inputs) => {
+      if (cancelled) return;
       setAudioDevices(inputs);
       if (!deviceInitRef.current && inputs.length > 0) {
         deviceInitRef.current = true;
         setSelectedDeviceId(inputs[0].deviceId);
       }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [mobileDevice]);
 
   const canCaptureDisplayAudio =
@@ -66,8 +170,37 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
     if (youtubeReady) {
       void onAudioStart('youtube');
     } else {
-      void engine.loadYouTubePreview(youtubeUrl, () => onAudioStart('youtube'));
+      // Deliberately NOT chaining capture onto the load: getDisplayMedia
+      // needs transient user activation, and by the time an async load
+      // finishes the Load click's activation may have expired (silent
+      // failure). The button morphs to "Start capture" in place, focus is
+      // still on it, so the deterministic path costs one Enter press.
+      void engine.loadYouTubePreview(youtubeUrl);
     }
+  };
+
+  // A pasted link that parses is a load request — start it without waiting
+  // for a Load click. Typed input still goes through the Load button. The
+  // default paste action is left alone so the field updates as usual.
+  const handleYoutubeUrlPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    if (youtubeLoading) {
+      return;
+    }
+    const pastedText = event.clipboardData.getData('text');
+    if (!pastedText.trim()) {
+      return;
+    }
+    const input = event.currentTarget;
+    const selectionStart = input.selectionStart ?? input.value.length;
+    const selectionEnd = input.selectionEnd ?? input.value.length;
+    const nextValue =
+      input.value.slice(0, selectionStart) +
+      pastedText +
+      input.value.slice(selectionEnd);
+    if (!parseYouTubeVideoReference(nextValue)) {
+      return;
+    }
+    void engine.loadYouTubePreview(nextValue);
   };
 
   const isAppBrowser = isInAppBrowser();
@@ -135,9 +268,11 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             onKeyDown={(e) =>
               onYoutubeUrlKeyDown(e, () => onAudioStart('youtube'))
             }
+            onPaste={handleYoutubeUrlPaste}
           />
           <button
-            id="load-youtube"
+            id={`${sourcePanelId}-load-youtube`}
+            data-youtube-load-btn="true"
             className="cta-button primary"
             type="button"
             disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
@@ -169,6 +304,58 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         >
           {youtubeFeedback}
         </p>
+        {youtubeTransport ? (
+          <fieldset
+            className="stims-shell__youtube-transport"
+            aria-label="YouTube playback"
+          >
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() => youtubeTransportControls.nudge(-10)}
+              aria-label="Back 10 seconds"
+            >
+              −10s
+            </button>
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() =>
+                youtubeTransport.paused
+                  ? youtubeTransportControls.play()
+                  : youtubeTransportControls.pause()
+              }
+            >
+              {youtubeTransport.paused ? 'Play' : 'Pause'}
+            </button>
+            <button
+              type="button"
+              className="stims-shell__transport-button"
+              onClick={() => youtubeTransportControls.nudge(10)}
+              aria-label="Forward 10 seconds"
+            >
+              +10s
+            </button>
+            <input
+              className="stims-shell__transport-scrubber"
+              type="range"
+              min={0}
+              max={Math.floor(youtubeTransport.durationSeconds)}
+              value={Math.floor(youtubeTransport.currentSeconds)}
+              aria-label="Seek"
+              aria-valuetext={formatPlaybackTime(
+                youtubeTransport.currentSeconds,
+              )}
+              onChange={(event) =>
+                youtubeTransportControls.seekTo(Number(event.target.value))
+              }
+            />
+            <span className="stims-shell__transport-time">
+              {formatPlaybackTime(youtubeTransport.currentSeconds)} /{' '}
+              {formatPlaybackTime(youtubeTransport.durationSeconds)}
+            </span>
+          </fieldset>
+        ) : null}
         {recentYouTubeVideos.length > 0 ? (
           <div className="stims-shell__youtube-recent">
             <div className="stims-shell__youtube-recent-header">
@@ -186,11 +373,21 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
                 <button
                   key={video.id}
                   type="button"
-                  className="stims-shell__chip"
+                  className="stims-shell__chip stims-shell__chip--media"
                   onClick={() => onLoadRecentYouTubeVideo(video.id)}
                 >
+                  {video.thumbnail ? (
+                    <img
+                      className="stims-shell__chip-thumb"
+                      src={video.thumbnail}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : null}
                   <span className="stims-shell__chip-copy">
                     <strong>{video.title}</strong>
+                    {video.author ? <span>{video.author}</span> : null}
                   </span>
                 </button>
               ))}
@@ -203,18 +400,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           className="stims-shell__youtube-preview"
           hidden
         >
-          <div id="workspace-youtube-player"></div>
+          <div data-youtube-player></div>
         </div>
       </div>
-      {!canCaptureDisplayAudio ? (
-        <p className="stims-shell__meta-copy">
-          Tab and YouTube capture need a desktop browser. Use the microphone to
-          react to whatever is playing nearby.
-        </p>
-      ) : null}
       <div className="stims-shell__source-grid">
         <button
-          id="use-demo-audio"
+          id={`${sourcePanelId}-use-demo-audio-card`}
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__source-card"
@@ -234,7 +425,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <span>Start with demo audio — no permission needed</span>
         </button>
         <button
-          id="start-audio-btn"
+          id={`${sourcePanelId}-start-audio-btn`}
+          data-mic-audio-btn="true"
           type="button"
           className="stims-shell__source-card"
           disabled={!engineReady}
@@ -273,10 +465,71 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             </select>
           </label>
         ) : null}
+        <button
+          type="button"
+          // No hardcoded id: this panel mounts twice at once (home + Settings),
+          // so the sibling cards' fixed ids are already duplicated in the DOM.
+          // The data-attribute is the automation hook here, matching
+          // data-demo-audio-btn — which exists for exactly this reason.
+          id={fileCardId}
+          data-file-audio-btn="true"
+          className="stims-shell__source-card"
+          data-drag-active={dragActive || undefined}
+          disabled={!engineReady || fileState?.loading}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragActive(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file) void playFile(file);
+          }}
+        >
+          <div className="stims-shell__source-card-header">
+            <span className="stims-shell__source-card-kicker">Your music</span>
+            <ShaderIdenticon
+              seed="audio-file-source"
+              size={28}
+              mode="3d-polyhedron"
+            />
+          </div>
+          <strong>Audio file</strong>
+          <span>
+            {fileState?.loading
+              ? 'Loading…'
+              : fileState?.error
+                ? fileState.error
+                : fileState
+                  ? `Playing ${fileState.name}`
+                  : 'Pick a track, or drop one here'}
+          </span>
+        </button>
+        {/* Outside the button: a file input nested in a button swallows the
+            click that is meant to open the picker. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={AUDIO_FILE_ACCEPT}
+          className="stims-shell__sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            // Clear so re-picking the same file fires change again.
+            event.target.value = '';
+            if (file) void playFile(file);
+          }}
+        />
         {canCaptureDisplayAudio ? (
           <button
             type="button"
-            id="use-tab-audio"
+            id={`${sourcePanelId}-use-tab-audio`}
+            data-tab-audio-btn="true"
             className="stims-shell__source-card"
             disabled={!engineReady}
             aria-describedby={!engineReady ? disabledDescription : undefined}

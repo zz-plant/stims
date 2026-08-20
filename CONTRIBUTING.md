@@ -39,6 +39,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 
 ## Where to look first
 
+- New here? Start with the onboarding map: [`docs/ONBOARDING.md`](./docs/ONBOARDING.md)
 - Current command/reference docs: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
@@ -62,10 +63,10 @@ Use these commands before opening a PR:
   bun run check:quick
   ```
 
-- Manifest/generated-artifact consistency check:
+- Catalog manifest consistency check:
 
   ```bash
-  bun run check:toys
+  bun run check:catalog-integrity
   ```
 
 - Run targeted tests:
@@ -109,11 +110,21 @@ When workflows or structure change, update docs in the same PR (including deploy
 - Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
 - Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.
 
-## MilkDrop product changes
+## Contributing presets
+
+Presets are contributions too — you don't need to touch engine code.
+
+1. **Learn or refresh**: the guided course lives at [`docs/authoring/README.md`](./docs/authoring/README.md); the generated language reference at [`docs/authoring/reference.md`](./docs/authoring/reference.md).
+2. **Author in the live editor** (`bun run dev`, then the Editor panel — or on the deployed site). Export produces a `.milk` file; Remix preserves credit lineage automatically.
+3. **Measure before you submit**: `bun run lab:reactivity -- --file path/to/your.milk` reports whether each variable actually reacts to audio — aim for a `reactive` verdict. (`bun run lab:visual` adds pixel-level verdicts but currently only accepts catalog `--preset` ids, so it runs after your preset lands in `public/milkdrop-presets/`.)
+4. **Submit**: open a PR adding the `.milk` file under `public/milkdrop-presets/` (the catalog gates in `bun run check` will validate it), or share it as a `#code=` URL from the editor. Credit any preset you remixed — multi-author titles are the community's convention, and `deriveRemixCredit` keeps lineage intact.
+
+## Product and runtime changes
 
 For product-facing work, keep these areas aligned together:
 
-- Root workspace and engine seam code in `assets/js/frontend/`, `assets/js/core/`, `assets/js/milkdrop/`, and `assets/js/toys/milkdrop-toy.ts`.
-- The shipped manifest entry in `assets/data/toys.json`.
-- Generated artifacts in `assets/js/data/toy-manifest.ts`, `public/toys.json`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md`.
+- Root workspace and engine seam code in `src/js/frontend/`, `src/js/core/`, and `src/js/milkdrop/`.
+- Edge functions, AI endpoints, and middleware in `functions/` and `functions/api/`.
+- Type contracts and ambient declarations in `src/types/`.
 - Tests in `tests/` where runtime behavior changed.
+- Run `bun run check` to verify all quality gates before opening a PR.

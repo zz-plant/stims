@@ -3,8 +3,11 @@ import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
 } from '../utils/browser/device-detect';
-import { getDevicePerformanceProfile } from './device-profile.ts';
-import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
+import {
+  getAdaptiveMaxPixelRatio,
+  getDevicePerformanceProfile,
+} from './device-profile.ts';
+import { getDefaultWebGpuInitTimeoutMs } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
@@ -34,6 +37,7 @@ export function getRendererBackendMaxPixelRatioCap({
   platformFamily?: 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'other';
 }) {
   if (isMobile) {
+    const isLowPower = getDevicePerformanceProfile().lowPower;
     if (
       browserFamily === 'safari' ||
       browserFamily === 'chrome' ||
@@ -42,10 +46,16 @@ export function getRendererBackendMaxPixelRatioCap({
       platformFamily === 'ios' ||
       platformFamily === 'android'
     ) {
-      return backend === 'webgpu' ? 1.2 : 1.0;
+      if (isLowPower) {
+        return backend === 'webgpu' ? 1.2 : 1.0;
+      }
+      // Measured on a Galaxy S22 (WebGPU, 'enhanced' tier): the old 1.2 cap
+      // rendered at ~43% of native and left over half the 60Hz frame budget
+      // idle. Capable phones get a higher ceiling; the adaptive controller
+      // still walks quality down if the device can't sustain it.
+      return backend === 'webgpu' ? 2.0 : 1.2;
     }
 
-    const isLowPower = getDevicePerformanceProfile().lowPower;
     if (isLowPower) {
       return backend === 'webgpu' ? 1.2 : 1.0;
     }
@@ -54,6 +64,14 @@ export function getRendererBackendMaxPixelRatioCap({
 
   const isLowPower = getDevicePerformanceProfile().lowPower;
   return backend === 'webgpu' ? 4 : isLowPower ? 1.75 : 2.5;
+}
+
+export function getConstrainedTextureDimensionCap(): number {
+  const profile = getDevicePerformanceProfile();
+  if (profile.lowPower) {
+    return 2048;
+  }
+  return 8192;
 }
 
 export type RendererViewport = {
@@ -81,7 +99,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   exposure: 1,
   antialias: true,
   alpha: false,
-  webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs: getDefaultWebGpuInitTimeoutMs(),
   forceRetryCapabilities: false,
   preserveDrawingBuffer: false,
 };
@@ -208,10 +226,13 @@ export function applyRendererSettings(
     browserFamily: currentDeviceEnv.browserFamily,
     platformFamily: currentDeviceEnv.platformFamily,
   });
+  // getAdaptiveMaxPixelRatio clamps low-power hardware to 1.25; renderer
+  // init applies it, and omitting it here let the first resize silently
+  // raise a low-power desktop back to the 1.75-4x backend cap.
   const effectiveMaxPixelRatio = Math.max(
     0.5,
     Math.min(
-      (merged.maxPixelRatio ?? 2) *
+      getAdaptiveMaxPixelRatio(merged.maxPixelRatio ?? 2) *
         (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
       backendPixelRatioCap,
     ),

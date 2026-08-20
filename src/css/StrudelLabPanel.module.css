@@ -9,7 +9,7 @@
   padding: 14px 16px 16px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: 12px;
-  background: #14100c;
+  background: var(--stims-panel-strong, #14100c);
   color: var(--stims-ink-strong, #fff8ef);
 }
 
@@ -47,7 +47,28 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
+}
+
+.synthOnlyLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--stims-muted, rgba(246, 239, 228, 0.74));
+  cursor: pointer;
+  user-select: none;
+}
+
+.synthOnlyLabel input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--stims-accent, #f47a54);
+}
+
+.synthOnlyLabel input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .title {
@@ -186,7 +207,7 @@
   padding: 6px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: 12px;
-  background: #14100c;
+  background: var(--stims-panel-strong, #14100c);
   cursor: grab;
   touch-action: none;
 }
@@ -235,7 +256,7 @@
   padding: 6px 14px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: var(--radius-round);
-  background: #14100c;
+  background: var(--stims-panel-strong, #14100c);
   color: var(--stims-cool, #77c9ff);
   font-size: 0.8rem;
   cursor: pointer;

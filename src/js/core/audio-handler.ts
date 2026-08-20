@@ -1,7 +1,28 @@
-import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
+/**
+ * Turns whatever the user is playing into the per-frame signals presets react to.
+ *
+ * Owns audio capture and analysis end to end: source acquisition (microphone,
+ * tab, file, demo), the `FrequencyAnalyser` that runs FFT work in an
+ * AudioWorklet off the main thread, and the derived band levels, transients and
+ * envelopes the VM reads each frame.
+ *
+ * Most of the size here is not DSP — it is the failure surface. Audio access is
+ * the least reliable part of the product: permissions get denied, in-app
+ * browsers lie about support, devices vanish mid-session, and autoplay policy
+ * blocks the context until a user gesture. `classifyAudioAccessError` and the
+ * registration helpers exist so those cases become explainable UI states rather
+ * than a silent black canvas, and so contexts and streams are released on
+ * teardown instead of leaking.
+ *
+ * Smoothing and timing are the tuning-sensitive part: presets inherit whatever
+ * jitter this module passes through. Measure changes with
+ * `bun run lab:reactivity` rather than judging by eye.
+ */
+import type { MeydaAudioFeature, MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
+import type { HarmonicPercussiveLevels } from '../utils/audio/harmonic-percussive.ts';
 import {
   createWaveformAutoGain,
   type FourBandTransientMetrics,
@@ -9,6 +30,11 @@ import {
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
+import {
+  type AudioEnergySnapshot,
+  type AudioReactivityInterpolator,
+  createAudioReactivityInterpolator,
+} from './audio-interpolator.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
@@ -37,6 +63,30 @@ const MEYDA_FEATURES = [
   'spectralFlatness',
   'spectralRolloff',
 ] satisfies MeydaAudioFeature[];
+
+// Meyda is only needed on the AnalyserNode fallback path (worklet-capable
+// browsers never reach updateSpectralFeatures), so it loads on demand instead
+// of shipping in the core chunk for every session.
+type MeydaModule = typeof import('meyda')['default'];
+let meydaInstance: MeydaModule | null = null;
+let meydaLoadFailed = false;
+let meydaLoadStarted = false;
+
+function requestMeyda(): MeydaModule | null {
+  if (meydaInstance || meydaLoadFailed || meydaLoadStarted) {
+    return meydaInstance;
+  }
+  meydaLoadStarted = true;
+  import('meyda')
+    .then((module) => {
+      meydaInstance = module.default;
+    })
+    .catch((error) => {
+      meydaLoadFailed = true;
+      logger.warn('Failed to load meyda for spectral features', error);
+    });
+  return null;
+}
 
 type SpectralFeatureSnapshot = {
   rms: number;
@@ -101,6 +151,7 @@ export class FrequencyAnalyser {
   private stereoBalance = 0;
   private stereoWidth = 0;
   private spectralFeatures: SpectralFeatureSnapshot | null = null;
+  private spectralFrameCounter = 0;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
     bass: new Array(this.historySize).fill(0),
@@ -111,7 +162,7 @@ export class FrequencyAnalyser {
   private historyCount = 0;
   private readonly sourceNode: MediaStreamAudioSourceNode;
   private readonly silentGain: GainNode;
-  private readonly workletNode?: AudioWorkletNode;
+  private workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
   private readonly analyserNodeL?: AnalyserNode;
   private readonly analyserNodeR?: AnalyserNode;
@@ -126,7 +177,10 @@ export class FrequencyAnalyser {
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
   private cachedBeatDetection: WorkletBeatDetection | null = null;
+  private cachedHarmonicPercussive: HarmonicPercussiveLevels | null = null;
   private readonly waveformAgc = createWaveformAutoGain();
+  private readonly interpolator: AudioReactivityInterpolator =
+    createAudioReactivityInterpolator();
   private waveformGain = 1;
   private normalizedWaveform: Uint8Array | null = null;
   private normalizedWaveformL: Uint8Array | null = null;
@@ -136,6 +190,7 @@ export class FrequencyAnalyser {
   private waveformFloatR: Float32Array | null = null;
   private timeDomainDataL: Float32Array | null = null;
   private timeDomainDataR: Float32Array | null = null;
+  private byteScratch: Uint8Array | null = null;
 
   private constructor({
     sourceNode,
@@ -170,110 +225,177 @@ export class FrequencyAnalyser {
     this.silentGain = silentGain;
 
     if (this.workletNode) {
-      this.workletNode.port.onmessage = (event: MessageEvent) => {
-        const {
-          frequencyData,
-          waveformData,
-          frequencyDataL,
-          frequencyDataR,
-          waveformDataL,
-          waveformDataR,
-          rms,
-          zeroCrossingRate,
-          spectralFlux,
-          spectralCrest,
-          stereoBalance,
-          stereoWidth,
-          timeDomainData,
-          energy,
-          energyAverages,
-          beatDetection,
-          transientMetrics,
-        } = event.data ?? {};
-        if (typeof rms === 'number') this.rms = rms;
-        if (typeof zeroCrossingRate === 'number')
-          this.zeroCrossingRate = zeroCrossingRate;
-        if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
-        if (typeof spectralCrest === 'number')
-          this.spectralCrest = spectralCrest;
-        if (typeof stereoBalance === 'number')
-          this.stereoBalance = stereoBalance;
-        if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
-        if (frequencyData) {
-          const nextFreq =
-            frequencyData instanceof Uint8Array
-              ? frequencyData
-              : new Uint8Array(frequencyData);
-          if (this.frequencyData.length !== nextFreq.length) {
-            this.frequencyData = new Uint8Array(nextFreq.length);
-            this.frequencyBinCount = nextFreq.length;
-          }
-          this.frequencyData.set(nextFreq);
-          this.dataVersion += 1;
-          if (energy && typeof energy.bass === 'number') {
-            this.cachedEnergy = energy;
-            this.energyVersion = this.dataVersion;
-          } else {
-            this.cachedEnergy = this.calculateMultiBandEnergy(
-              this.frequencyData,
-            );
-            this.energyVersion = this.dataVersion;
-          }
-          this.updateEnergyHistory(this.cachedEnergy);
-        }
-        if (energyAverages && typeof energyAverages.bass === 'number') {
-          this.cachedEnergyAverages = energyAverages;
-        }
-        if (
-          transientMetrics &&
-          typeof transientMetrics.subBassEnv === 'number'
-        ) {
-          this.cachedTransientMetrics = transientMetrics;
-        }
-        if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
-          this.cachedBeatDetection = beatDetection;
-        }
-        if (waveformData) {
-          const nextWave =
-            waveformData instanceof Uint8Array
-              ? waveformData
-              : new Uint8Array(waveformData);
-          if (this.waveformData.length !== nextWave.length) {
-            this.waveformData = new Uint8Array(nextWave.length);
-            this.waveformData.fill(128);
-          }
-          this.waveformData.set(nextWave);
-        }
-        if (frequencyDataL && frequencyDataR) {
-          this.frequencyDataL = toUint8Array(frequencyDataL);
-          this.frequencyDataR = toUint8Array(frequencyDataR);
-        } else {
-          this.frequencyDataL = null;
-          this.frequencyDataR = null;
-        }
-        if (waveformDataL && waveformDataR) {
-          this.waveformDataL = toUint8Array(waveformDataL);
-          this.waveformDataR = toUint8Array(waveformDataR);
-        } else {
-          this.waveformDataL = null;
-          this.waveformDataR = null;
-        }
-        if (timeDomainData) {
-          const nextTimeDomain =
-            timeDomainData instanceof Float32Array
-              ? timeDomainData
-              : new Float32Array(timeDomainData);
-          if (this.timeDomainData.length !== nextTimeDomain.length) {
-            this.timeDomainData = new Float32Array(nextTimeDomain.length);
-          }
-          this.timeDomainData.set(nextTimeDomain);
-          this.updateSpectralFeatures();
-        }
-        if (typeof rms === 'number') {
-          this.rms = rms;
-        }
-      };
+      this.wireWorkletMessagePort(this.workletNode);
     }
+  }
+
+  private wireWorkletMessagePort(workletNode: AudioWorkletNode) {
+    workletNode.port.onmessage = (event: MessageEvent) => {
+      const {
+        frequencyData,
+        waveformData,
+        frequencyDataL,
+        frequencyDataR,
+        waveformDataL,
+        waveformDataR,
+        rms,
+        zeroCrossingRate,
+        spectralFlux,
+        spectralCrest,
+        stereoBalance,
+        stereoWidth,
+        timeDomainData,
+        energy,
+        energyAverages,
+        beatDetection,
+        transientMetrics,
+        harmonicPercussive,
+      } = event.data ?? {};
+      if (typeof rms === 'number') this.rms = rms;
+      if (typeof zeroCrossingRate === 'number')
+        this.zeroCrossingRate = zeroCrossingRate;
+      if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
+      if (typeof spectralCrest === 'number') this.spectralCrest = spectralCrest;
+      if (typeof stereoBalance === 'number') this.stereoBalance = stereoBalance;
+      if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
+      if (frequencyData) {
+        const nextFreq =
+          frequencyData instanceof Uint8Array
+            ? frequencyData
+            : new Uint8Array(frequencyData);
+        if (this.frequencyData.length !== nextFreq.length) {
+          this.frequencyData = new Uint8Array(nextFreq.length);
+          this.frequencyBinCount = nextFreq.length;
+        }
+        this.frequencyData.set(nextFreq);
+        this.dataVersion += 1;
+        if (energy && typeof energy.bass === 'number') {
+          this.cachedEnergy = energy;
+          this.energyVersion = this.dataVersion;
+        } else {
+          this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
+          this.energyVersion = this.dataVersion;
+        }
+        this.updateEnergyHistory(this.cachedEnergy);
+        this.interpolator.pushSample(
+          { ...this.cachedEnergy, rms: this.rms },
+          typeof performance !== 'undefined' ? performance.now() : Date.now(),
+        );
+      }
+      if (energyAverages && typeof energyAverages.bass === 'number') {
+        this.cachedEnergyAverages = energyAverages;
+      }
+      if (transientMetrics && typeof transientMetrics.subBassEnv === 'number') {
+        this.cachedTransientMetrics = transientMetrics;
+      }
+      if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
+        this.cachedBeatDetection = beatDetection;
+      }
+      if (
+        harmonicPercussive &&
+        typeof harmonicPercussive.percussive === 'number'
+      ) {
+        this.cachedHarmonicPercussive = harmonicPercussive;
+      }
+      if (waveformData) {
+        const nextWave =
+          waveformData instanceof Uint8Array
+            ? waveformData
+            : new Uint8Array(waveformData);
+        if (this.waveformData.length !== nextWave.length) {
+          this.waveformData = new Uint8Array(nextWave.length);
+          this.waveformData.fill(128);
+        }
+        this.waveformData.set(nextWave);
+      }
+      if (frequencyDataL && frequencyDataR) {
+        this.frequencyDataL = toUint8Array(frequencyDataL);
+        this.frequencyDataR = toUint8Array(frequencyDataR);
+      } else {
+        this.frequencyDataL = null;
+        this.frequencyDataR = null;
+      }
+      if (waveformDataL && waveformDataR) {
+        this.waveformDataL = toUint8Array(waveformDataL);
+        this.waveformDataR = toUint8Array(waveformDataR);
+      } else {
+        this.waveformDataL = null;
+        this.waveformDataR = null;
+      }
+      if (timeDomainData) {
+        const nextTimeDomain =
+          timeDomainData instanceof Float32Array
+            ? timeDomainData
+            : new Float32Array(timeDomainData);
+        if (this.timeDomainData.length !== nextTimeDomain.length) {
+          this.timeDomainData = new Float32Array(nextTimeDomain.length);
+        }
+        this.timeDomainData.set(nextTimeDomain);
+        this.updateSpectralFeatures();
+      }
+      if (typeof rms === 'number') {
+        this.rms = rms;
+      }
+    };
+  }
+
+  public get engineType(): 'worklet' | 'analyser-node' {
+    return this.workletNode ? 'worklet' : 'analyser-node';
+  }
+
+  public getInterpolatedEnergy(timeMs?: number): AudioEnergySnapshot {
+    const nowMs =
+      timeMs ??
+      (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    return this.interpolator.sample(nowMs);
+  }
+
+  public async tryUpgradeToWorklet(context: AudioContext): Promise<boolean> {
+    if (this.workletNode || !context.audioWorklet?.addModule) {
+      return false;
+    }
+    try {
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+      await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
+      const workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        processorOptions: {
+          fftSize: this.frequencyBinCount * 2,
+          sampleRate: this.sampleRate,
+          messageEvery: this.frequencyBinCount >= 512 ? 4 : 2,
+        },
+      });
+      this.sourceNode.connect(workletNode);
+      workletNode.connect(this.silentGain);
+      this.wireWorkletMessagePort(workletNode);
+      this.workletNode = workletNode;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public attachAutomaticUpgradeListener(context: AudioContext): void {
+    if (typeof window === 'undefined' || this.workletNode) return;
+    const handler = () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('touchstart', handler);
+      void this.tryUpgradeToWorklet(context);
+    };
+    window.addEventListener('pointerdown', handler, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener('keydown', handler, { once: true, passive: true });
+    window.addEventListener('touchstart', handler, {
+      once: true,
+      passive: true,
+    });
   }
 
   static async create(
@@ -281,6 +403,8 @@ export class FrequencyAnalyser {
     stream: MediaStream,
     fftSize?: number,
     smoothingTimeConstant?: number,
+    /** Which two input channels feed the visuals on a multichannel device. */
+    channelPair?: [number, number],
   ): Promise<FrequencyAnalyser> {
     const sourceNode = context.createMediaStreamSource(stream);
     const silentGain = context.createGain();
@@ -321,11 +445,27 @@ export class FrequencyAnalyser {
       }
     }
 
-    const hasStereoTrack =
-      typeof stream.getAudioTracks === 'function' &&
-      stream
-        .getAudioTracks()
-        .some((track) => (track.getSettings().channelCount ?? 1) >= 2);
+    const trackChannelCount = Math.max(
+      1,
+      ...(typeof stream.getAudioTracks === 'function'
+        ? stream
+            .getAudioTracks()
+            .map((track) => track.getSettings().channelCount ?? 1)
+        : [1]),
+    );
+    const hasStereoTrack = trackChannelCount >= 2;
+    // Clamp the requested pair to what actually arrived, so asking for the
+    // cue bus on a device that only has two channels degrades to the main
+    // pair instead of connecting to a channel index that does not exist.
+    const [requestedLeft, requestedRight] = channelPair ?? [0, 1];
+    const leftChannel = Math.min(
+      Math.max(0, requestedLeft),
+      trackChannelCount - 1,
+    );
+    const rightChannel = Math.min(
+      Math.max(0, requestedRight),
+      trackChannelCount - 1,
+    );
     let analyserNodeL: AnalyserNode | undefined;
     let analyserNodeR: AnalyserNode | undefined;
     const analyserNode = workletNode
@@ -339,7 +479,7 @@ export class FrequencyAnalyser {
           sourceNode.connect(node);
 
           if (hasStereoTrack) {
-            const splitter = context.createChannelSplitter(2);
+            const splitter = context.createChannelSplitter(trackChannelCount);
             analyserNodeL = context.createAnalyser();
             analyserNodeR = context.createAnalyser();
             analyserNodeL.fftSize = effectiveFftSize;
@@ -349,8 +489,8 @@ export class FrequencyAnalyser {
               analyserNodeR.smoothingTimeConstant = smoothingTimeConstant;
             }
             sourceNode.connect(splitter);
-            splitter.connect(analyserNodeL, 0);
-            splitter.connect(analyserNodeR, 1);
+            splitter.connect(analyserNodeL, leftChannel);
+            splitter.connect(analyserNodeR, rightChannel);
           }
 
           return node;
@@ -373,7 +513,7 @@ export class FrequencyAnalyser {
       }
     }
 
-    return new FrequencyAnalyser({
+    const analyser = new FrequencyAnalyser({
       sourceNode,
       workletNode,
       analyserNode,
@@ -383,9 +523,23 @@ export class FrequencyAnalyser {
       silentGain,
       sampleRate,
     });
+
+    if (!workletNode) {
+      analyser.attachAutomaticUpgradeListener(context);
+    }
+
+    return analyser;
   }
 
   getFrequencyData() {
+    // With a worklet the message port already keeps frequencyData,
+    // timeDomainData, and the spectral snapshot fresh; running the analyser
+    // path too (possible after an automatic upgrade, which keeps the
+    // AnalyserNode alive) would duplicate the full time-domain read and the
+    // main-thread Meyda FFT every frame.
+    if (this.workletNode) {
+      return this.frequencyData;
+    }
     this.updateTimeDomainData();
     if (this.frequencyData.length > 0) {
       if (
@@ -427,6 +581,10 @@ export class FrequencyAnalyser {
 
   getWorkletBeatDetection(): WorkletBeatDetection | null {
     return this.workletNode ? this.cachedBeatDetection : null;
+  }
+
+  getHarmonicPercussiveLevels(): HarmonicPercussiveLevels | null {
+    return this.workletNode ? this.cachedHarmonicPercussive : null;
   }
 
   getWaveformData() {
@@ -647,10 +805,17 @@ export class FrequencyAnalyser {
     }
 
     if (typeof this.analyserNode.getByteTimeDomainData === 'function') {
-      const byteData = new Uint8Array(this.timeDomainData.length);
-      this.analyserNode.getByteTimeDomainData(byteData);
-      for (let i = 0; i < byteData.length; i += 1) {
-        this.timeDomainData[i] = (byteData[i] - 128) / 128;
+      if (
+        !this.byteScratch ||
+        this.byteScratch.length !== this.timeDomainData.length
+      ) {
+        this.byteScratch = new Uint8Array(this.timeDomainData.length);
+      }
+      this.analyserNode.getByteTimeDomainData(
+        this.byteScratch as Uint8Array<ArrayBuffer>,
+      );
+      for (let i = 0; i < this.byteScratch.length; i += 1) {
+        this.timeDomainData[i] = (this.byteScratch[i] - 128) / 128;
       }
     }
   }
@@ -660,10 +825,23 @@ export class FrequencyAnalyser {
       return;
     }
 
+    this.spectralFrameCounter = (this.spectralFrameCounter + 1) | 0;
+    // Meyda runs a full FFT on the main thread; once a snapshot exists,
+    // refreshing it every fourth frame keeps the spectral signals responsive
+    // without paying for the transform on every rendered frame.
+    if (this.spectralFeatures !== null && this.spectralFrameCounter % 4 !== 0) {
+      return;
+    }
+
+    const meyda = requestMeyda();
+    if (!meyda) {
+      return;
+    }
+
     try {
-      Meyda.bufferSize = this.timeDomainData.length;
-      Meyda.sampleRate = this.sampleRate;
-      const features = Meyda.extract(
+      meyda.bufferSize = this.timeDomainData.length;
+      meyda.sampleRate = this.sampleRate;
+      const features = meyda.extract(
         MEYDA_FEATURES,
         this.timeDomainData,
       ) as Partial<MeydaFeaturesObject> | null;
@@ -711,6 +889,15 @@ export class FrequencyAnalyser {
     this.historyCount = Math.min(this.historyCount + 1, this.historySize);
   }
 
+  private computeArrayAverage(arr: number[]): number {
+    if (this.historyCount === 0) return 0;
+    let total = 0;
+    for (let i = 0; i < this.historyCount; i += 1) {
+      total += arr[i] ?? 0;
+    }
+    return total / this.historyCount;
+  }
+
   getMultiBandEnergy(data?: Uint8Array) {
     if (data && data !== this.frequencyData) {
       return this.calculateMultiBandEnergy(data);
@@ -727,18 +914,10 @@ export class FrequencyAnalyser {
     if (this.workletNode && this.cachedEnergyAverages) {
       return this.cachedEnergyAverages;
     }
-    const avg = (arr: number[]) => {
-      if (this.historyCount === 0) return 0;
-      let total = 0;
-      for (let i = 0; i < this.historyCount; i += 1) {
-        total += arr[i] ?? 0;
-      }
-      return total / this.historyCount;
-    };
     return {
-      bass: avg(this.energyHistory.bass),
-      mid: avg(this.energyHistory.mid),
-      treble: avg(this.energyHistory.treble),
+      bass: this.computeArrayAverage(this.energyHistory.bass),
+      mid: this.computeArrayAverage(this.energyHistory.mid),
+      treble: this.computeArrayAverage(this.energyHistory.treble),
     };
   }
 
@@ -847,6 +1026,13 @@ export function classifyAudioAccessError(error: unknown): AudioAccessError {
 export type AudioInitOptions = {
   fftSize?: number;
   deviceId?: string;
+  /**
+   * Which two input channels drive the visuals, on an interface that carries
+   * more than two. Defaults to the first pair. A DJ mixer's cue bus is
+   * commonly channels 3/4, and previously there was no way to reach it —
+   * everything past the first pair was inaccessible.
+   */
+  channelPair?: [number, number];
   smoothingTimeConstant?: number;
   camera?: Camera;
   positional?: boolean;
@@ -874,11 +1060,18 @@ export type AudioInitOptions = {
   monitorInput?: boolean;
 };
 
+/** Ask for more than stereo so an audio interface's extra channels survive.
+ * `ideal` (never `exact`) — the browser clamps to whatever the device
+ * actually offers, and a hard constraint would fail outright on a laptop
+ * mic. */
+const MAX_REQUESTED_INPUT_CHANNELS = 8;
+
 export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
     echoCancellation: { ideal: false },
     noiseSuppression: { ideal: false },
     autoGainControl: { ideal: false },
+    channelCount: { ideal: MAX_REQUESTED_INPUT_CHANNELS },
   },
 };
 
@@ -1115,10 +1308,9 @@ function createProceduralDemoAudio() {
     stepIndex += 1;
   };
 
-  let intervalId: ReturnType<typeof setInterval> | null = setInterval(
-    scheduleStep,
-    stepMs,
-  );
+  // The interval is created once below, after the drum-patched step exists —
+  // starting one here just to clear and replace it churned a spare timer.
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
   // ── Drums ─────────────────────────────────────────────────────
   // Kick on beats 1 & 3. Hi-hat on every 8th note.
@@ -1134,6 +1326,12 @@ function createProceduralDemoAudio() {
   // Patch the scheduleStep to add drums.
   const originalSchedule = scheduleStep;
   const patchedStep = () => {
+    // A suspended context (hidden tab, autoplay block) plays nothing, but
+    // the throttled interval would still allocate 3-5 WebAudio nodes per
+    // step. Skip until it runs again.
+    if (context.state !== 'running') {
+      return;
+    }
     const now = context.currentTime;
     const beat = stepIndex; // snapshot before arp increments it
 
@@ -1170,9 +1368,6 @@ function createProceduralDemoAudio() {
     hat.stop(now + 0.08);
   };
 
-  if (intervalId !== null) {
-    clearInterval(intervalId);
-  }
   intervalId = setInterval(patchedStep, stepMs);
 
   // ── Sub drone ────────────────────────────────────────────────
@@ -1435,6 +1630,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       streamSource,
       fftSize,
       smoothingTimeConstant,
+      options.channelPair,
     );
 
     const cleanup = async () => {

@@ -1,3 +1,20 @@
+/**
+ * The single seam between the React workspace and the imperative engine.
+ *
+ * `createMilkdropEngineAdapter` builds the object `frontend/` calls to mount,
+ * drive and tear down a visualizer session. React never reaches into
+ * `milkdrop/` directly; every crossing goes through here, and
+ * `bun run check:architecture` enforces that.
+ *
+ * The boundary is worth defending. On one side is declarative UI that
+ * re-renders freely; on the other is a stateful engine holding GPU resources
+ * and a frame loop. Keeping the crossing narrow is what stops React's render
+ * cycle from driving GPU lifetime — the class of bug where a re-render silently
+ * disposes a live context.
+ *
+ * Add capability by widening the adapter's vocabulary deliberately, not by
+ * importing engine internals into a component.
+ */
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
@@ -148,9 +165,15 @@ export function createMilkdropEngineAdapter() {
   };
 
   const disposeRuntime = () => {
+    if (typeof window !== 'undefined') {
+      delete window.__STIMS_AGENT_RENDER_FRAMES__;
+    }
     unsubscribeExperience?.();
     unsubscribeExperience = null;
-    runtime?.dispose();
+    // The runtime may be torn down before the toy starter returns a fully
+    // formed instance (e.g. an engine that fails mid-start), so guard the
+    // method, not just the object.
+    runtime?.dispose?.();
     runtime = null;
     experience?.dispose();
     experience = null;
@@ -241,11 +264,22 @@ export function createMilkdropEngineAdapter() {
       runtime = startRuntime({ container: nextContainer });
       setCurrentToy('milkdrop');
 
+      if (intent.agentMode && typeof window !== 'undefined') {
+        window.__STIMS_AGENT_RENDER_FRAMES__ = (options) =>
+          runtime?.renderFrames?.(options) ?? null;
+      }
+
       if (intent.collectionTag) {
         experience.setActiveCollectionTag(intent.collectionTag);
       }
       if (intent.panel) {
-        experience.openTab(intent.panel);
+        // openTab is a no-op the runtime keeps only so the experience surface
+        // stays uniform — the shell owns panel routing. Its hand-written tab
+        // union has drifted from PanelState more than once, so narrow here
+        // rather than keep widening it there.
+        experience.openTab(
+          intent.panel as Parameters<typeof experience.openTab>[0],
+        );
       }
 
       emit();
@@ -265,33 +299,6 @@ export function createMilkdropEngineAdapter() {
     resumePreview() {
       if (runtime?.resumePreview) {
         runtime.resumePreview();
-      }
-    },
-
-    /** Pre-warm the WebGPU pipeline cache during idle time */
-    prewarmWebGpu() {
-      if (typeof window === 'undefined') return;
-      if ('requestIdleCallback' in window) {
-        (
-          window as { requestIdleCallback: (cb: IdleRequestCallback) => void }
-        ).requestIdleCallback(async () => {
-          try {
-            const { WebGPURenderer } = await import(
-              '../../core/webgpu-renderer.ts'
-            );
-            const canvas = document.createElement('canvas');
-            canvas.width = 1;
-            canvas.height = 1;
-            canvas.hidden = true;
-            document.body.appendChild(canvas);
-            const renderer = new WebGPURenderer({ canvas });
-            await renderer.init();
-            renderer.dispose();
-            canvas.remove();
-          } catch {
-            // WebGPU not available or pre-warm failed — nothing to do
-          }
-        });
       }
     },
 
@@ -424,6 +431,20 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    /** Arms the next preset switch to be crossfaded by hand. Applies to that
+     * one switch; see the runtime for the outgoing-side limitation. */
+    startManualCrossfade() {
+      experience?.startManualCrossfade();
+    },
+
+    setCrossfade(position: number) {
+      experience?.setCrossfade(position);
+    },
+
+    getCrossfade(): number | null {
+      return experience?.getCrossfade() ?? null;
+    },
+
     setBlendDuration(value: number) {
       experience?.setBlendDuration(value);
       emit();
@@ -433,8 +454,34 @@ export function createMilkdropEngineAdapter() {
       experience?.updateEditorSource(source);
     },
 
+    /** Applies source and resolves with the resulting compile, so callers can
+     * report real diagnostics instead of assuming success. */
+    async applyEditorSourceAwaited(source: string) {
+      return (await experience?.applyEditorSourceAwaited(source)) ?? null;
+    },
+
+    /** Applies a group of fields in one commit and resolves with the result. */
+    async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
+      return (await experience?.applyEditorFieldsAwaited(updates)) ?? null;
+    },
+
+    getEditorSessionState() {
+      return experience?.getEditorSessionState() ?? null;
+    },
+
     updateInspectorField(key: string, value: number) {
       experience?.updateInspectorField?.(key, value);
+    },
+
+    /** Applies a field to the running VM without a recompile, for instant
+     * drag feedback. The editor commits the value to the source on release. */
+    updateFieldLive(key: string, value: number) {
+      experience?.setLiveField?.(key, value);
+    },
+
+    /** Read-only debug accessor for the active preset's compiled IR. */
+    getActiveCompiledPreset() {
+      return experience?.getActiveCompiledPreset() ?? null;
     },
 
     async importPreset(target: FileList | File[] | string) {

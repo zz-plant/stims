@@ -47,10 +47,16 @@ These tools manage a persistent headless browser session so you can interact wit
 | `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
 | `session_describe_frame` | `sessionId`, optional `waitMs` | Preset info + screenshot path (no pixel analysis — use a vision model) |
 | `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` | Confirmation when new preset is rendered |
-| `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Applies the change via the inspector panel |
-| `session_apply_source` | `sessionId`, `source` (.milk code) | Applies modified preset source to the running visualizer |
+| `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Resolves the tweak against real field values, applies it in one commit, reports `from → to` per field plus diagnostics |
+| `session_apply_source` | `sessionId`, `source` (.milk code) | Applies source, **waits for the compile**, returns diagnostics with line numbers and whether the stage fell back |
+| `session_editor_state` | `sessionId` | Read-only: preset, error/warning counts, per-line diagnostics, dirty flag, fallback flag |
+| `session_set_fields` | `sessionId`, `fields` (name → value) | Sets several fields in ONE compile; returns the same diagnostics as `session_apply_source` |
 | `session_get_preset_source` | `presetId` or `sessionId` | Raw .milk source code from disk |
-| `session_get_inspector_values` | `sessionId` | All visible field names and current values from the inspector panel |
+| `session_get_inspector_values` | `sessionId`, optional `filter` | Live numeric field values from the compiled IR (no panel needs to be open) |
+| `session_midi_set` | `sessionId`, `target`, `value` | Sets a field (zoom, warp, q1, any preset variable) as the virtual "Claude (MCP)" MIDI device |
+| `session_midi_cc` | `sessionId`, `cc` (0-127), `value` (0-127) | Sends a raw CC value, resolved through the Claude device's current mapping |
+| `session_midi_bindings` | `sessionId` | CC→target mappings for every known device, keyed by device id |
+| `session_midi_devices` | `sessionId` | Known MIDI devices (physical + the virtual Claude channel) with connect state |
 | `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
 | `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
 | `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches all 43 presets by keyword relevance, returns screenshots of top 3 matches |
@@ -59,9 +65,143 @@ These tools manage a persistent headless browser session so you can interact wit
 **Natural language tweaks supported by `session_tweak`:**
 - Colors: "more blue", "more red", "more green", "warmer", "cooler"
 - Brightness: "brighter", "darker"
-- Motion: "more warp", "less warp", "more zoom", "faster", "slower"
-- Quality: "more saturation", "more contrast", "more decay" (trails)
-- Each maps to the appropriate MilkDrop field via the inspector panel
+- Motion: "more warp", "less warp", "more zoom", "faster", "slower", "more rot" / "spin faster", "less rot" / "spin slower"
+- Audio / Dynamics: "more wave", "less wave", "more beat" / "higher beat sensitivity", "less beat"
+- Quality: "more saturation", "more contrast", "more decay" (trails), "less decay"
+- Deltas resolve against the preset's compiled values; fields the preset does not define are reported as skipped rather than silently succeeding
+
+#### Reading back what an edit actually did
+
+A failed edit and a successful one look the same on screen. The editor session
+deliberately keeps rendering the **last good compile** when new source has
+errors, so the visuals keep moving either way — a screenshot cannot tell you
+which happened.
+
+Every live-editing tool therefore returns compile state, and flags the case
+that matters:
+
+```
+Source applied but DID NOT compile.
+preset: Cerebral Demons (krash-cerebral-demons)
+compile: 1 error(s), 0 warning(s)
+buffer: 10729 chars, dirty=true
+
+⚠ NOT RENDERING YOUR SOURCE. The compile failed, so the stage is still
+showing the last good compile ("Cerebral Demons"). Fix the errors below
+and re-apply.
+
+diagnostics:
+  error: line 3 — Unexpected character ";" in expression. (parse_error)
+```
+
+Rules of thumb:
+
+- Prefer `session_set_fields` over several `session_midi_set` calls. Separate
+  calls can interleave inside one compile window; a grouped call is one commit.
+- Call `session_editor_state` after an edit you did not make through these
+  tools (a UI interaction, an AI refine) to see where the buffer stands.
+- `renderingFallback` is the authoritative "my edit is not on screen" signal.
+  Do not infer success from a screenshot that still looks alive.
+
+### Live performance (Stdio-only, requires Playwright)
+
+These turn the session from something you inspect into something you play. The
+rest of the session tools make *step* changes; these add the audio half, give
+gestures duration, let movement continue on its own, and let you hear the
+result before deciding the next move.
+
+| Tool | Input | Output |
+|------|-------|--------|
+| `session_play_pattern` | `sessionId`, `code` (Strudel), optional `cps` | Plays a live-coded pattern as the session audio and drives the visuals with it. Calling it again replaces the running pattern — that is the live-coding loop |
+| `session_hush` | `sessionId` | Stops all patterns (audio only; the visualizer keeps rendering) |
+| `session_ramp` | `sessionId`, `targets` (map), `durationMs`, optional `curve`, `from` | Glides targets to new values over time, as one gesture. Returns when the gesture lands, so chained calls sequence a performance |
+| `session_bind` | `sessionId`, `target`, `depth`, `kind` (lfo/audio), + shape/rate/band options | Binds a target to continuous modulation — an LFO or the audio itself |
+| `session_unbind` | `sessionId`, optional `id`, `target` | Removes modulators and returns the target to its resting value |
+| `session_macro` | `sessionId`, `action` (define/run/list/delete), `name`, `steps`, `speed` | A named, saved sequence of the same verbs you perform by hand |
+| `session_scene` | `sessionId`, `action` (save/recall/list/delete), `name`, `durationMs`, `curve` | A named snapshot of every position plus active modulators; recall ramps into it |
+| `session_listen` | `sessionId`, optional `durationMs`, `intervalMs`, `includeSamples` | Measures the live signal — RMS, bass/mid/treble, coarse tempo, fps/backend |
+
+**Modulation composes with gestures rather than fighting them.** A modulator is
+an *offset*, not an override — each frame the target is set to
+
+```
+centre + Σ(depth × shaped source)
+```
+
+where `centre` is the position `session_ramp` and `session_midi_set` move. So a
+ramp can raise a parameter's resting value while an LFO keeps wobbling around
+it. Modulators never write back into the centre, which is what stops the
+resting value drifting on its own. Several may share a target; they sum, and
+`min`/`max` clamp the result.
+
+Modulation is deliberately frame-locked: when the page is not rendering there
+is nothing to modulate. A hidden or backgrounded tab suspends
+`requestAnimationFrame`, so `session_bind` reports a **stalled** warning rather
+than letting you believe three active modulators are doing something.
+
+**Macros and scenes are the performer's vocabulary**, persisted to
+localStorage so they outlive a reload. Macro steps are the same verbs as the
+live API (`ramp`, `set`, `waitMs`, `pattern`, `hush`, `bind`, `unbind`), so
+anything performed by hand can be recorded without translation. Scenes capture
+every target the runtime has driven plus the modulators running at the time,
+and restore the modulators *before* the ramp so the movement is already going
+as the parameters arrive.
+
+**Why these exist:**
+
+- **Audio was unreachable.** Strudel lived only in `StrudelLabPanel` behind
+  `?strudel=1`, so an agent could drive the visuals but could not play a note.
+- **`session_midi_set` is a jump cut.** It posts one value and returns.
+  `session_ramp` moves several targets together over bars, which is what a
+  build or a drop actually is. `curve: 'sine'` (the default) eases in and out
+  like a hand on a fader.
+- **`audioEnergy` telemetry is a frozen snapshot.** It only updates between
+  engine emissions, so polling it cannot tell silence from a stalled reading.
+  `session_listen` taps an AnalyserNode on the real audio graph, and labels its
+  `source` as `stream` or `telemetry` so a fallback reading is never mistaken
+  for a measurement.
+
+Both halves run through `window.__stims_live`
+(`src/js/frontend/live-performance.ts`), so a human at the devtools console
+drives the same runtime.
+
+### Performing a piece:
+
+```
+start_agent_session(headless=false)
+→ session_play_pattern(code='stack(s("bd*4"), s("hh*8").gain(.4))', cps=0.5)
+→ session_listen                       # confirm it is audible, check the tempo
+→ session_bind(target="zoom", depth=0.04, kind="audio", band="bass", attack=8)
+                                       # kick punches zoom, continuously
+→ session_bind(target="warp", depth=0.8, kind="lfo", cycles=0.25)
+                                       # slow breath, locked to the pattern
+→ session_ramp(targets={"warp": 2.4, "decay": 0.98}, durationMs=6000)   # build
+→ session_scene(action="save", name="peak")
+→ session_ramp(targets={"warp": 0.6}, durationMs=1200, curve="exp")     # drop
+→ session_scene(action="recall", name="peak", durationMs=4000)          # back up
+→ session_hush
+```
+
+`session_listen` after `session_play_pattern` is the loop that matters: it is
+the only way to know the pattern is actually reaching the analyser, and its
+tempo estimate independently confirms the `cps` you asked for.
+
+### Building a vocabulary:
+
+```
+session_macro(action="define", name="drop", steps=[
+  {"unbind": {"target": "warp"}},
+  {"ramp": {"targets": {"warp": 0.4, "decay": 0.9}, "durationMs": 900, "curve": "exp"}},
+  {"waitMs": 400},
+  {"bind": {"target": "warp", "depth": 0.6, "source": {"kind": "lfo", "cycles": 1}}},
+  {"ramp": {"targets": {"warp": 2.0}, "durationMs": 3000}}
+])
+→ session_macro(action="run", name="drop")
+→ session_macro(action="run", name="drop", speed=2)   # same shape, twice as fast
+```
+
+Define once, call by name for the rest of the set. `speed` scales every
+duration in the macro, so one definition covers the half-time version.
 
 ### Automation (Stdio-only)
 
@@ -73,6 +213,23 @@ These tools manage a persistent headless browser session so you can interact wit
 | `preview_gallery` | optional `query`, `count` (1-6), `duration` | Screenshots of multiple presets in sequence |
 | `test_toy_interactivity` | `slug` | Pass/fail with audio and error details |
 | `get_toy_health` | `slug` | HEALTHY/UNHEALTHY status |
+
+### Compiler inspection (Stdio-only)
+
+A preset that renders wrongly looks the same whether the parser misread an
+expression, the shader failed to lower, or the per-pixel block fell off the GPU
+path. These read the intermediate stages directly, so the cause is a lookup
+rather than a guess. Neither needs a browser.
+
+| Tool | Input | Output |
+|------|-------|--------|
+| `inspect_eel_ast` | `source` (EEL), optional `startLine` | Parsed AST statement tree (assignments, `loop`/`while` bodies, expressions) plus parser diagnostics |
+| `inspect_preset_lowerer` | `presetId` or `filePath`, optional `stage` | `summary` (default): shader lowering, GPU field lowering, diagnostics. `glsl` / `wgsl`: generated shader source. `uniforms`: shader controls and custom samplers |
+
+Note that `inspect_preset_lowerer`'s `lowered to GPU field: no` is common and is
+usually the answer to "why does this preset cost more per frame than it should"
+— the WebGPU field path silently falls back to the CPU transform when the
+per-pixel block cannot be lowered.
 
 ## Agent Workflow Examples
 
@@ -100,12 +257,34 @@ start_agent_session → session_vibe("dark purple storm")
 ### Inspect and modify a running visualizer:
 ```
 start_agent_session → session_get_state
-→ session_get_inspector_values
-→ session_tweak("faster motion")
+→ session_get_inspector_values(filter="wave")
+→ session_set_fields({ "wave_r": 0.9, "wave_g": 0.2, "wave_b": 0.6 })
 → session_describe_frame
 → session_compare
 → session_close
 ```
+
+### Edit preset code and confirm it compiled:
+```
+start_agent_session → session_get_preset_source
+→ session_apply_source(<edited .milk>)      # returns diagnostics, not a guess
+→ (if errors) fix the reported lines → session_apply_source again
+→ session_editor_state                      # confirm errorCount 0, no fallback
+→ session_capture_frame → session_close
+```
+Do not move on from `session_apply_source` without reading its output. When it
+reports `NOT RENDERING YOUR SOURCE`, the picture on screen is the *previous*
+preset and a screenshot will look perfectly healthy.
+
+### Perform live as a virtual MIDI device:
+```
+start_agent_session(headless=false) → session_midi_bindings (see what's mapped)
+→ session_midi_set("warp", 1.4) → session_midi_set("zoom", 1.05)
+→ session_midi_cc(1, 90) → session_capture_frame → session_close
+```
+`headless=false` opens a real, visible browser window — plug a physical
+controller into that same window's tab to co-perform alongside Claude, since
+both drive the engine through the same live-binding pipeline.
 
 ## Starting the Server
 

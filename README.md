@@ -6,19 +6,49 @@
 
 *Discover, inspect, remix, and record presets—with compatibility claims tied to measured evidence.*
 
+**▶ Try it live — [toil.fyi](https://toil.fyi). Opens in any WebGL2 browser. No account, no install.**
+
 [![Live Site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=for-the-badge&logo=cloudflare)](https://toil.fyi)
 [![GitHub Stars](https://img.shields.io/github/stars/zz-plant/stims?style=for-the-badge&logo=github)](https://github.com/zz-plant/stims/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/zz-plant/stims/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/zz-plant/stims/actions/workflows/ci.yml)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=for-the-badge&logo=bun)](https://bun.sh)
 [![WebGPU & WebGL2](https://img.shields.io/badge/graphics-WebGPU%20%7C%20WebGL2-00C7B7?style=for-the-badge&logo=webgpu)](https://toil.fyi)
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=for-the-badge)](./LICENSE)
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
+*1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · public domain (Unlicense)*
+
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
+
+<table>
+  <tr>
+    <td width="33%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
+    <td width="33%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Krash &amp; Rovastar — Cerebral Demons</sub></td>
+    <td align="center"><sub>Zylot — Crosshair Dimension</sub></td>
+    <td align="center"><sub>Martin — Neon Space PS3</sub></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
+    <td><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
+    <td><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Eo.S. — Starburst 05 Phasing</sub></td>
+    <td align="center"><sub>Aderrasi — Potion of Spirits</sub></td>
+    <td align="center"><sub>Orb — Radiation</sub></td>
+  </tr>
+</table>
+
+<sub>Recorded from the WebGL2 build with <a href="./scripts/generate-readme-clips.ts"><code>scripts/generate-readme-clips.ts</code></a>. Colors are reduced by GIF quantization; the live renderer is smoother and higher-contrast.</sub>
 
 </div>
 
-[Why Stims](#why-stims) · [What works today](#what-works-today) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
+[Why Stims](#why-stims) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Quick start](#quick-start) · [Documentation](#documentation)
 
 ## Why Stims
 
@@ -33,16 +63,45 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 
 ## What works today
 
+Everything here ships in the browser today — no account, no server, no converted preset format.
+
 | Capability | Current behavior |
 | --- | --- |
-| **1,791-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
+| **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
 | **Direct preset workflow** | Import and export `.milk` files without converting them into a Butterchurn-specific JSON format. |
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
 | **WebGL2 + guarded WebGPU** | WebGL2 is the compatibility baseline. WebGPU is additive and can fall back when a compiled preset needs unsupported behavior. |
-| **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`. See the limitations below. |
+| **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`; its evidence boundary is in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md). |
 | **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters. |
 | **Automation and proof tooling** | Headless session controls, deterministic capture scripts, projectM reference provenance, and image-diff reports support repeatable QA. |
+
+## How Stims differs from other MilkDrop-lineage projects
+
+Butterchurn and projectM are the projects most people arrive from, and both are
+good at what they were built for. Stims occupies a different slot: they are
+renderers you embed or run, while Stims is the workflow around one.
+
+| | Stims | Butterchurn | projectM |
+| --- | --- | --- | --- |
+| **Primary form** | A hosted browser app you use directly | An embeddable JS renderer | A native library and desktop/plugin player |
+| **Preset input** | `.milk` source, imported and exported as-is | Presets converted to a Butterchurn JSON format ahead of time | `.milk` source |
+| **Authoring** | In-session editor with completions, compiler diagnostics, and live `zoom`/`warp`/`rot`/`decay` controls | No built-in editor; authoring happens elsewhere | No built-in editor; authoring happens elsewhere |
+| **Discovery** | Search, filters, collections, previews, favorites, queues, history, deep links | Preset list supplied by the embedding app | Playlist files |
+| **Fidelity claims** | Per-preset labels that separate "compiles and runs" from "diffed against a projectM reference" | Broad practical compatibility, established over years of use | The reference implementation this repo diffs against |
+
+What that buys you in practice:
+
+- **Frames survive UI work.** Interacting with the workspace or switching tabs does not drop render frames.
+- **Complex presets stay smooth.** Per-pixel warp math is evaluated in bulk on the GPU rather than per-pixel on the CPU, so heavy presets hold near-flat frame cost.
+- **Rhythm and melody read separately.** Presets can react to percussive and harmonic energy bands independently — transients versus sustained tones — without claiming to separate instruments.
+- **Runs on weak hardware.** The renderer self-tunes resolution to hold a steady frame rate, from Smart TVs and Galaxy S22 to 4K MacBooks.
+- **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
+- **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
+
+### Frame-cost benchmark
+
+`bun run bench:butterchurn` re-measures frame cost against Butterchurn as a developer check, not a product claim (fairness controls are documented in the script header). The durable shape across runs: Stims stays near 1 ms per frame on every preset measured, while Butterchurn ranges wider — faster on simple presets, slower on complex ones. Frame cost is not visual fidelity; that oracle is the projectM reference workflow in the next section.
 
 ## Compatibility and evidence
 
@@ -62,14 +121,7 @@ Most catalog entries currently have runtime evidence only and should not be read
 
 ## Experimental foundations
 
-These components are useful engineering foundations, but they are not presented as finished product capabilities:
-
-- **Model-assisted generation beta:** the Generate panel can use a configured hosted model or a loopback OpenAI-compatible endpoint such as Ollama, then validates the returned MilkDrop source before loading it. Hosted availability, local browser configuration, and generated-result quality still need end-to-end proof; blending remains an optional edge API.
-- **Semantic and audio-profile search:** optional API-backed experiments supplement the local catalog search path.
-- **Stem signals:** the runtime reserves stem-oriented fields, but client-side stem separation is not implemented.
-- **MIDI beta:** workspace settings can connect the controller service to live preset parameters. Persistent mappings, recovery behavior, and device-backed verification remain open.
-- **XR experiment:** workspace settings can request an immersive session and attach it to the active renderer. Physical-headset visual behavior, spatial audio, and recovery are not yet certified.
-- **High-resolution recording beta:** the current implementation can request a native 4K render surface and compose an active audio track when the browser and renderer support them. Output codec, frame pacing, synchronization, and device coverage still require browser-backed proof.
+MIDI control, model-assisted generation, 4K recording, and percussive/harmonic audio signals are experimental: each is documented with its current evidence boundary in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md) and tracked in [docs/ROADMAP.md](./docs/ROADMAP.md). None is presented as a finished product capability.
 
 ## Technical foundations
 
@@ -113,7 +165,7 @@ Open `http://localhost:5173`.
 bun run check:quick   # Fast lint, types, metadata, and claim-drift checks
 bun run test          # Unit, integration, and compatibility test profiles
 bun run check         # Full PR gate
-bun run build         # Production bundle
+bun run build         # Production bundle build
 ```
 
 The quality gate verifies that the visible preset count matches the public catalog and rejects public README wording that promotes known experimental foundations as shipped features.
@@ -124,19 +176,26 @@ The repository includes Cloudflare Worker routes for generation, blending, visua
 
 ## Documentation
 
-| Track | Key documents |
-| --- | --- |
-| Architecture | [Overview](./docs/ARCHITECTURE.md) · [Technical Foundations](./docs/TECHNICAL_ACHIEVEMENTS.md) · [Preset Runtime](./docs/MILKDROP_PRESET_RUNTIME.md) |
-| Presets and proof | [Coding Guide](./docs/MILKDROP_CODING_GUIDE.md) · [Parity Plan](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Successor Workstreams](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) |
-| Development | [Setup](./docs/DEVELOPMENT.md) · [Testing](./docs/TESTING.md) · [Deployment](./docs/DEPLOYMENT.md) |
-| Project status | [Implementation Status](./docs/IMPLEMENTATION_STATUS.md) · [Roadmap](./docs/ROADMAP.md) · [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md) |
+Architecture, authoring, parity, and QA docs are indexed at [docs/README.md](./docs/README.md).
 
 ## Contributing
 
 Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), and include the tests and evidence appropriate to the surface you change.
 
-## Lineage and license
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=zz-plant/stims&type=Date)](https://star-history.com/#zz-plant/stims&Date)
+
+## Acknowledgments and lineage
+
+Stims is built with deep gratitude for the creative, mathematical, and technical giants whose work pioneered real-time audio visualization:
+
+- **Ryan Geiss & MilkDrop**: For creating the original MilkDrop visualizer, Winamp plugin, and per-pixel math expression language that defined an entire digital art form.
+- **Jordan Berg (`jberg`) & Butterchurn Contributors**: For pioneering web-based MilkDrop rendering in WebGL and establishing open-source web preset parsing patterns.
+- **Carmelo Piccione, Mischa Spiegelmock & projectM Maintainers**: For building and maintaining projectM, the open-source C++ reference implementation used as our gold-standard visual parity reference target.
+- **The MilkDrop Preset Author Community**: Gratitude to the authors whose math and artistic vision power the 1,787 catalog presets. The most-credited handles in the shipped catalog, counting every appearance in an accretive credit chain rather than only solo bylines, are *Geiss, Flexi, Martin, Rovastar, Eo.S., Stahlregen, Unchained, fiShbRaiN, Phat, Aderrasi, Shifter, Zylot, ORB, suksma, Cope, Goody, and Krash* — alongside roughly 120 more.
+- **Nullsoft & Winamp**: For providing the legendary software platform that brought music visualization to millions worldwide.
 
 Stims is an independent implementation. MilkDrop, Butterchurn, and projectM are credited as creative and technical lineage; no official affiliation is implied. See [Lineage and Credits](./docs/LINEAGE_AND_CREDITS.md).
 
-Licensed under the [MIT License](./LICENSE).
+Licensed under [the Unlicense](./LICENSE) — public domain.

@@ -10,6 +10,7 @@ import {
   type MilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlagsForBackend,
 } from '../webgpu-optimization-flags.ts';
+import { describeWebglFallback } from './backend-fallback.ts';
 
 export function createMilkdropExperienceAttachmentController({
   lifetime,
@@ -120,7 +121,7 @@ export function createMilkdropExperienceAttachmentController({
         ) {
           triggerWebglFallback({
             presetId: compiled.source.id,
-            reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            reason: describeWebglFallback(compiled),
             backend: nextBackend,
           });
           return;
@@ -163,6 +164,17 @@ export function createMilkdropExperienceAttachmentController({
         capturedVideoOverlay.attach(nextRuntime.toy.camera);
         setAdapter(nextAdapter);
         nextAdapter.attach();
+        // The adapter was built with the activeCompiled snapshot taken when
+        // rendererReady resolved. A preset requested at startup (e.g. the
+        // ?preset= URL) can apply to the VM during the async WebGPU adapter
+        // creation, before setAdapter above — that apply skips adapter.setPreset
+        // (getAdapter() is still null), so the adapter would render the loaded
+        // preset against the stale first-run descriptor plan. Re-sync the
+        // adapter with the current active compiled preset now that it's wired.
+        const attachedCompiled = activeCompiled();
+        if (attachedCompiled !== compiled) {
+          nextAdapter.setPreset(attachedCompiled);
+        }
         setAdaptiveQualityUnsubscribe(null);
         const adaptiveQualityController = resolveAdaptiveQualityController({
           backend: nextBackend,
@@ -210,7 +222,7 @@ export function createMilkdropExperienceAttachmentController({
           const compiled = activeCompiled();
           triggerWebglFallback({
             presetId: compiled.source.id,
-            reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+            reason: describeWebglFallback(compiled),
             backend: nextBackend,
           });
           return;

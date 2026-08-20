@@ -1,25 +1,37 @@
+/**
+ * The frame-feedback pipeline's backend-independent half.
+ *
+ * MilkDrop's signature look comes from feeding each rendered frame back in as a
+ * texture for the next one, warped and faded. This module owns the parts of
+ * that pipeline both backends share: blur chain sizing, composite uniform
+ * state, and assembly of the fragment shaders a preset's warp and composite
+ * source compiles into.
+ *
+ * `feedback-manager-webgl.ts` and `feedback-manager-webgpu*.ts` build the
+ * API-specific resources on top. Prefer adding here — the two backends must
+ * produce identical pixels, and shared code is the cheapest way to keep that
+ * true.
+ *
+ * Feedback is stateful across frames, so errors here compound rather than
+ * flicker: a small mistake in blur sizing or fade is invisible on frame one and
+ * obvious by frame two hundred. Check with `bun run lab:visual`, which runs
+ * long enough for accumulation to show.
+ */
 import {
   type Camera,
-  ClampToEdgeWrapping,
   Color,
-  DataTexture,
   Mesh,
-  NearestFilter,
   OrthographicCamera,
   PlaneGeometry,
   type RenderTarget,
-  RepeatWrapping,
-  RGBAFormat,
   Scene,
   ShaderMaterial,
-  SRGBColorSpace,
   type Texture,
-  TextureLoader,
-  UnsignedByteType,
   Vector2,
   Vector4,
   type WebGLRenderTarget,
 } from 'three';
+import { isAgentMode } from '../core/agent-api.ts';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import type {
@@ -40,27 +52,100 @@ import {
 } from './compiler/shader-analysis-glsl.ts';
 import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-execution-classification.ts';
 import {
+  MILKDROP_BLEND_DISSOLVE,
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
+import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
+import {
+  AUX_TEXTURE_SPECS,
+  type AuxTextureName,
+  getSharedMilkdropTexture,
+  resolveAuxTextureName,
+} from './feedback-texture-utils.ts';
 import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
-import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
+import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropShaderProgramPayload,
 } from './types';
 
+// Generated GLSL per shader-program payload. Payload objects are stable for
+// the lifetime of a compiled preset, so caching on identity turns the
+// per-frame "did the program change?" comparison into pure string identity.
+const generatedGlslCache = new WeakMap<object, string | null>();
+
+function getCachedGlslForShaderProgram(
+  program: {
+    statements: Parameters<typeof generateGlslFromShaderStatements>[0];
+  },
+  stage: 'warp' | 'comp',
+): string | null {
+  if (!generatedGlslCache.has(program)) {
+    generatedGlslCache.set(
+      program,
+      generateGlslFromShaderStatements(program.statements, stage) ?? null,
+    );
+  }
+  return generatedGlslCache.get(program) ?? null;
+}
+
+const BLUR_PASS_RADII = [2, 4, 8] as const;
+
+/**
+ * Per-level blur pyramid resolution, as a fraction of feedback resolution.
+ * MilkDrop 2 allocates its blur textures at 1/2, 1/4, 1/8 of the frame;
+ * level 0 was previously full-res here, doubling fill cost on both gaussian
+ * passes of the largest level for extra sharpness the reference never had.
+ */
+const BLUR_LEVEL_SCALES = [0.5, 0.25, 0.125] as const;
+
 const CACHED_BLUR_RANGES = [
   { scale: 1, bias: 0 },
   { scale: 1, bias: 0 },
   { scale: 1, bias: 0 },
 ];
+
+// Shared ShaderMaterial uniform defaults. The warp and composite materials
+// both carry the blur scale/bias range and the signal runtime; keeping them
+// as one spread keeps the two material tables from drifting.
+const BLUR_RANGE_UNIFORM_DEFAULTS = {
+  scale1: { value: 1 },
+  bias1: { value: 0 },
+  scale2: { value: 1 },
+  bias2: { value: 0 },
+  scale3: { value: 1 },
+  bias3: { value: 0 },
+} as const;
+
+const SIGNAL_UNIFORM_DEFAULTS = {
+  signalBass: { value: 0 },
+  signalMid: { value: 0 },
+  signalTreb: { value: 0 },
+  signalBassAtt: { value: 0 },
+  signalMidAtt: { value: 0 },
+  signalTrebAtt: { value: 0 },
+  // Neutral defaults mirror the CPU VM (vm/shared.ts): the relative
+  // energies sit at 1 and the ratio at 0.5 before any audio arrives.
+  signalPercussive: { value: 1 },
+  signalHarmonic: { value: 1 },
+  signalPercussiveLow: { value: 1 },
+  signalPercussiveMid: { value: 1 },
+  signalPercussiveHigh: { value: 1 },
+  signalPercussiveRatio: { value: 0.5 },
+  signalBeat: { value: 0 },
+  signalBeatPulse: { value: 0 },
+  signalEnergy: { value: 0 },
+  signalTime: { value: 0 },
+  signalFrame: { value: 0 },
+  signalFps: { value: 60 },
+} as const;
 
 export function resolveMilkdropBlurShaderRanges(
   variables: Readonly<Record<string, number>> | undefined,
@@ -111,158 +196,133 @@ export function resolveMilkdropBlurShaderRanges(
   return CACHED_BLUR_RANGES;
 }
 
-const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
-const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  perlin: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
-const AUX_TEXTURE_SPECS = {
-  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
-  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
-  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
-  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
-  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
-  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
-  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
-  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
-} as const satisfies Record<
-  keyof typeof MILKDROP_TEXTURE_FILES,
-  { fileName: string; colorTexture: boolean }
->;
+type CompositeStateUniformBag = Record<string, { value: unknown }>;
 
-type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
+/**
+ * Copies the composite-loop-facing slice of MilkdropFeedbackCompositeState
+ * onto a uniform bag. Shared by the WebGL ShaderMaterial bag and the WebGPU
+ * TSL uniform bag so the ~50 scalar/vector assignments cannot drift. Vector
+ * uniforms are assigned through the same .set/.setRGB call both materials
+ * expose. Texture targets (currentTex/previousTex) and backend-specific
+ * extras stay with each manager.
+ */
+export function applyCompositeUniformState(
+  uniforms: CompositeStateUniformBag,
+  state: MilkdropFeedbackCompositeState,
+  blurShaderRanges: readonly { scale: number; bias: number }[],
+) {
+  uniforms.scale1.value = blurShaderRanges[0].scale;
+  uniforms.bias1.value = blurShaderRanges[0].bias;
+  uniforms.scale2.value = blurShaderRanges[1].scale;
+  uniforms.bias2.value = blurShaderRanges[1].bias;
+  uniforms.scale3.value = blurShaderRanges[2].scale;
+  uniforms.bias3.value = blurShaderRanges[2].bias;
+  uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
+  uniforms.brighten.value = state.brighten;
+  uniforms.darken.value = state.darken;
+  uniforms.darkenCenter.value = state.darkenCenter;
+  uniforms.solarize.value = state.solarize;
+  uniforms.invert.value = state.invert;
+  uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
+  uniforms.gammaAdj.value = state.gammaAdj;
+  uniforms.textureWrap.value = state.textureWrap;
+  uniforms.decay.value = state.decay;
+  uniforms.warpScale.value = state.warpScale;
+  uniforms.offsetX.value = state.offsetX;
+  uniforms.offsetY.value = state.offsetY;
+  uniforms.rotation.value = state.rotation;
+  uniforms.zoomMul.value = state.zoomMul;
+  uniforms.saturation.value = state.saturation;
+  uniforms.contrast.value = state.contrast;
+  (
+    uniforms.colorScale.value as {
+      setRGB(r: number, g: number, b: number): void;
+    }
+  ).setRGB(state.colorScale.r, state.colorScale.g, state.colorScale.b);
+  uniforms.hueShift.value = state.hueShift;
+  uniforms.brightenBoost.value = state.brightenBoost;
+  uniforms.invertBoost.value = state.invertBoost;
+  uniforms.solarizeBoost.value = state.solarizeBoost;
+  uniforms.vignette.value = state.vignette ?? 0;
+  uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
+  (
+    uniforms.tint.value as { setRGB(r: number, g: number, b: number): void }
+  ).setRGB(state.tint.r, state.tint.g, state.tint.b);
+  uniforms.overlayTextureSource.value = state.overlayTextureSource;
+  uniforms.overlayTextureMode.value = state.overlayTextureMode;
+  uniforms.overlayTextureSampleDimension.value =
+    state.overlayTextureSampleDimension;
+  uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
+  uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
+  (
+    uniforms.overlayTextureScale.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.overlayTextureScale.x, state.overlayTextureScale.y);
+  (
+    uniforms.overlayTextureOffset.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.overlayTextureOffset.x, state.overlayTextureOffset.y);
+  uniforms.overlayTextureVolumeSliceZ.value = state.overlayTextureVolumeSliceZ;
+  uniforms.warpTextureSource.value = state.warpTextureSource;
+  uniforms.warpTextureSampleDimension.value = state.warpTextureSampleDimension;
+  uniforms.warpTextureAmount.value = state.warpTextureAmount;
+  (
+    uniforms.warpTextureScale.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.warpTextureScale.x, state.warpTextureScale.y);
+  (
+    uniforms.warpTextureOffset.value as {
+      set(x: number, y: number): void;
+    }
+  ).set(state.warpTextureOffset.x, state.warpTextureOffset.y);
+  uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+  uniforms.signalBass.value = state.signalBass;
+  uniforms.signalMid.value = state.signalMid;
+  uniforms.signalTreb.value = state.signalTreb;
+  uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
+  uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
+  uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+  applyHarmonicPercussiveUniforms(uniforms, state);
+  uniforms.signalBeat.value = state.signalBeat;
+  uniforms.signalBeatPulse.value = state.signalBeatPulse;
+  uniforms.signalEnergy.value = state.signalEnergy;
+  uniforms.signalTime.value = state.signalTime;
+  uniforms.signalFrame.value = state.signalFrame ?? 0;
+  uniforms.signalFps.value = state.signalFps ?? 60;
+}
+
+const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 
 type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
-type MilkdropTextureSampleMode = {
-  filter: 'linear' | 'nearest';
-  wrap: 'repeat' | 'clamp';
-};
-
-// Must be initialized before the placeholder-texture IIFE below runs at
-// module load — configureMilkdropTexture reads it as a default parameter.
-const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
-  filter: 'linear',
-  wrap: 'repeat',
-};
-
-const milkdropTextureLoader = new TextureLoader();
-const sharedMilkdropTextureCache = new Map<string, Texture>();
-const sharedMilkdropTexturePlaceholder = (() => {
-  const texture = new DataTexture(
-    new Uint8Array([128, 128, 128, 255]),
-    1,
-    1,
-    RGBAFormat,
-    UnsignedByteType,
-  );
-  texture.needsUpdate = true;
-  return configureMilkdropTexture(texture);
-})();
-const sharedMilkdropNativeNoiseTexture = createMilkdropNoiseTexture();
-
-function resolveTextureUrl(fileName: string) {
-  const baseUrl =
-    typeof import.meta.env.BASE_URL === 'string'
-      ? import.meta.env.BASE_URL
-      : '/';
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBaseUrl}textures/${fileName}`;
-}
-
-function configureMilkdropTexture(
-  texture: Texture,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const wrapMode =
-    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
-  texture.wrapS = wrapMode;
-  texture.wrapT = wrapMode;
-  if (sampleMode.filter === 'nearest') {
-    texture.minFilter = NearestFilter;
-    texture.magFilter = NearestFilter;
-  }
-  if (colorTexture) {
-    texture.colorSpace = SRGBColorSpace;
-  }
-  return texture;
-}
-
-function getSharedMilkdropTexture(
-  fileName: string,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
-  let texture = sharedMilkdropTextureCache.get(cacheKey);
-  if (!texture) {
-    texture = configureMilkdropTexture(
-      milkdropTextureLoader.load(resolveTextureUrl(fileName)),
-      colorTexture,
-      sampleMode,
-    );
-    sharedMilkdropTextureCache.set(cacheKey, texture);
-  }
-  return texture;
-}
-
-function getSharedMilkdropTexturePlaceholder() {
-  return sharedMilkdropTexturePlaceholder;
-}
-
+// The built-in aux samplers (noise/perlin/simplex/voronoi/aura/caustics/
+// pattern/fractal) used to be backed by a procedural RGB-independent noise
+// texture (noise/perlin/simplex) or a flat gray placeholder (the rest) —
+// none of them loaded the real asset PNGs at all. sampleAuxTexture's
+// dimension>=0.5 branch (atlasSliceUv / slice blending) already assumes an
+// 8x8 depth-atlas layout, and the PNGs in public/textures ARE laid out that
+// way (the same files WebGPU's Data3DTexture path decodes tile-by-tile via
+// buildAtlasVolumeData) — so tex3D() sampling only needs the loaded PNG
+// itself as a plain 2D texture, no atlas-building step required. Routing
+// through the real assets here is what makes noisevol-style presets read as
+// the intended grayscale marble instead of full-RGB confetti (WebGPU
+// already samples the same PNGs via its native Data3DTexture path).
 function getSharedAuxTextures(): SharedAuxTextureMap {
+  const auxTextures = {} as Record<AuxTextureName, Texture>;
+  for (const name of Object.keys(AUX_TEXTURE_SPECS) as AuxTextureName[]) {
+    const spec = AUX_TEXTURE_SPECS[name];
+    auxTextures[name] = getSharedMilkdropTexture(
+      spec.fileName,
+      spec.colorTexture,
+    );
+  }
   return {
-    noise: sharedMilkdropNativeNoiseTexture,
-    perlin: sharedMilkdropNativeNoiseTexture,
-    simplex: sharedMilkdropNativeNoiseTexture,
-    voronoi: getSharedMilkdropTexturePlaceholder(),
-    aura: getSharedMilkdropTexturePlaceholder(),
-    caustics: getSharedMilkdropTexturePlaceholder(),
-    pattern: getSharedMilkdropTexturePlaceholder(),
-    fractal: getSharedMilkdropTexturePlaceholder(),
+    ...auxTextures,
     video: getSharedMilkdropCapturedVideoTexture(),
   };
-}
-
-function resolveAuxTextureName(source: number) {
-  if (source < 0.5) {
-    return null;
-  }
-  if (source < 1.5) {
-    return 'noise';
-  }
-  if (source < 2.5) {
-    return 'simplex';
-  }
-  if (source < 3.5) {
-    return 'voronoi';
-  }
-  if (source < 4.5) {
-    return 'aura';
-  }
-  if (source < 5.5) {
-    return 'caustics';
-  }
-  if (source < 6.5) {
-    return 'pattern';
-  }
-  if (source < 7.5) {
-    return 'fractal';
-  }
-  if (source < 8.5) {
-    return null;
-  }
-  if (source < 9.5) {
-    return 'perlin';
-  }
-  return null;
 }
 
 /**
@@ -274,6 +334,16 @@ function resolveAuxTextureName(source: number) {
  */
 const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         uniform vec4 aspect;
+        // (width, height, 1/width, 1/height) of the feedback texture custom
+        // shader bodies sample — MilkDrop's texsize builtin. Neighbor-tap
+        // shaders read texsize.zw as the one-texel offset (see the WebGPU/TSL
+        // backend's texsize comment for why this must be the feedback
+        // texture's own size, not the viewport). Without this declaration,
+        // extractReferencedPerFrameVariables below auto-declares any custom
+        // shader body that references texsize as \`uniform float texsize\` —
+        // wrong type, and a compile error the instant a body does
+        // \`texsize.zw\`.
+        uniform vec4 texsize;
         uniform vec4 _qa;
         uniform vec4 _qb;
         uniform vec4 _qc;
@@ -326,6 +396,27 @@ const MILKDROP_SHADER_BUILTIN_DECLARATIONS = `
         #define slow_roam_cos (0.5 + 0.5 * cos(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
         #define slow_roam_sin (0.5 + 0.5 * sin(signalTime * vec4(0.005, 0.008, 0.013, 0.022)))
 `;
+
+const Q_VAR_NAMES: readonly (readonly [string, string, string, string])[] = [
+  ['q1', 'q2', 'q3', 'q4'],
+  ['q5', 'q6', 'q7', 'q8'],
+  ['q9', 'q10', 'q11', 'q12'],
+  ['q13', 'q14', 'q15', 'q16'],
+  ['q17', 'q18', 'q19', 'q20'],
+  ['q21', 'q22', 'q23', 'q24'],
+  ['q25', 'q26', 'q27', 'q28'],
+  ['q29', 'q30', 'q31', 'q32'],
+];
+const Q_UNIFORM_NAMES = [
+  '_qa',
+  '_qb',
+  '_qc',
+  '_qd',
+  '_qe',
+  '_qf',
+  '_qg',
+  '_qh',
+] as const;
 
 /**
  * Emulated 3D noise sampling for preset bodies transpiled from
@@ -417,8 +508,21 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
         }
+`;
 
+// The control-driven feedback warp is shared by the warp pass and the
+// feedback-blend pass, and by the WebGPU feedback node, so every stage warps
+// with identical math. The warp pass must not define its own variant here —
+// divergent formulas made the feedback chain and the fresh-scene sample
+// disagree and drove WebGL away from WebGPU.
+const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
+          // Zero warp + zero rotation is an identity polar round-trip; skip
+          // the atan/sin/cos entirely. Both inputs are uniform-driven, so the
+          // branch is coherent across the whole pass.
+          if (abs(amount) < 0.000001 && abs(rotationAmount) < 0.000001) {
+            return uv;
+          }
           vec2 centered = uv - 0.5;
           float radius = length(centered);
           float angle = atan(centered.y, centered.x);
@@ -466,6 +570,7 @@ const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform float warpTextureVolumeSliceZ;
         varying vec2 vUv;
 ${MILKDROP_AUX_SAMPLING_HELPERS}
+${MILKDROP_FEEDBACK_WARP_HELPER}
         void main() {
           vec2 centeredUv = vUv - 0.5;
           // Sampling coordinates must invert the intended image transform
@@ -519,9 +624,8 @@ ${MILKDROP_AUX_SAMPLING_HELPERS}
               clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
-          // MilkDrop applies decay only in the default warp path; a preset's
-          // own warp shader implements its fade (e.g. this frame minus 0.004).
-          previousColor *= mix(decay, 1.0, hasDirectWarp);
+          // Apply decay to the previous frame color so history dissipates over time.
+          previousColor *= decay;
           // With a direct warp shader, feedback is the warped previous frame
           // under this frame's geometry (MilkDrop clears to the warp output);
           // the legacy echo blend stays for control-driven presets.
@@ -606,6 +710,12 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalBassAtt;
         uniform float signalMidAtt;
         uniform float signalTrebAtt;
+        uniform float signalPercussive;
+        uniform float signalHarmonic;
+        uniform float signalPercussiveLow;
+        uniform float signalPercussiveMid;
+        uniform float signalPercussiveHigh;
+        uniform float signalPercussiveRatio;
         uniform float signalBeat;
         uniform float signalBeatPulse;
         uniform float signalEnergy;
@@ -704,7 +814,12 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           // image (warped feedback + geometry). This pass is display-only,
           // matching MilkDrop: nothing computed here feeds the next frame.
           vec3 color = texture2D(internalTex, sampleUv(vUv, textureWrap)).rgb;
-          color = hueRotate(color, hueShift);
+          // Uniform branch: skip the sin/cos + mat3 build when no hue shift
+          // is active (the common case) — mobile GPUs run transcendentals on
+          // a slow special-function unit.
+          if (abs(hueShift) > 0.0001) {
+            color = hueRotate(color, hueShift);
+          }
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
           color *= colorScale;
@@ -788,7 +903,12 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
             vec3 rightColor = texture2D(internalTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
-          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          // Uniform branch: gamma is 1.0 for most presets, and pow costs
+          // three log/exp pairs per pixel. Sibling effects above are already
+          // uniform-guarded; this was the one that wasn't.
+          if (abs(gammaAdj - 1.0) > 0.0001) {
+            color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          }
           gl_FragColor = vec4(color, 1.0);
         }
       `;
@@ -837,6 +957,12 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float signalBassAtt;
         uniform float signalMidAtt;
         uniform float signalTrebAtt;
+        uniform float signalPercussive;
+        uniform float signalHarmonic;
+        uniform float signalPercussiveLow;
+        uniform float signalPercussiveMid;
+        uniform float signalPercussiveHigh;
+        uniform float signalPercussiveRatio;
         uniform float signalBeat;
         uniform float signalBeatPulse;
         uniform float signalEnergy;
@@ -864,65 +990,9 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
         float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
         float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
 
-        vec2 sampleUv(vec2 uv, float wrap) {
-          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
-        }
-
-        vec4 sampleAuxTexture2d(float source, vec2 uv) {
-          if (source < 0.5) { return vec4(0.5, 0.5, 0.5, 1.0); }
-          if (source < 1.5) { return texture2D(noiseTex, uv); }
-          if (source < 2.5) { return texture2D(simplexTex, uv); }
-          if (source < 3.5) { return texture2D(voronoiTex, uv); }
-          if (source < 4.5) { return texture2D(auraTex, uv); }
-          if (source < 5.5) { return texture2D(causticsTex, uv); }
-          if (source < 6.5) { return texture2D(patternTex, uv); }
-          if (source < 7.5) { return texture2D(fractalTex, uv); }
-          if (source < 8.5) { return texture2D(videoTex, uv); }
-          if (source < 9.5) { return texture2D(perlinTex, uv); }
-          return vec4(0.5, 0.5, 0.5, 1.0);
-        }
-
-        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
-          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
-          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
-          vec2 tileSize = vec2(1.0 / gridSize);
-          float column = mod(sliceIndex, gridSize);
-          float row = floor(sliceIndex / gridSize);
-          return (vec2(column, row) + localUv) * tileSize;
-        }
-
-        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
-          vec2 wrappedUv = fract(uv);
-          if (sampleDimension < 0.5) { return sampleAuxTexture2d(source, wrappedUv); }
-          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          float wrappedSliceZ = fract(sliceZ);
-          float scaledSlice = wrappedSliceZ * sliceCount;
-          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
-          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
-          float sliceBlend = fract(scaledSlice);
-          float edgeMargin = 0.02;
-          if (sliceBlend < edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA)); }
-          if (sliceBlend > 1.0 - edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB)); }
-          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          return mix(sliceA, sliceB, sliceBlend);
-        }
+${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
-        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
-          vec2 centered = uv - 0.5;
-          float cosR = cos(rot);
-          float sinR = sin(rot);
-          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
-          float angle = atan(rotated.y, rotated.x);
-          float radius = length(rotated);
-          float power = 0.5 + sin(angle * 3.0) * 0.15;
-          radius = pow(radius, power - scale * 0.25);
-          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
-          angle += spiral + rot * 0.22;
-          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
-          return vec2(cos(angle), sin(angle)) * radius + 0.5;
-        }
-
+${MILKDROP_FEEDBACK_WARP_HELPER}
         vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
           float flipU = step(0.5, mod(orientation, 2.0));
           float flipV = step(1.5, mod(orientation, 4.0));
@@ -1010,10 +1080,297 @@ function buildCustomSamplerUniformDeclarations(
   return [...names].map((name) => `uniform sampler2D ${name};\n`).join('');
 }
 
+const MILKDROP_GLSL_RESERVED_WORDS = new Set(
+  `
+    attribute const uniform varying buffer shared
+    atomic_uint layout centroid flat smooth
+    in out inout invariant discard return
+    break continue do for while switch case default
+    if else struct void bool int uint float double
+    vec2 vec3 vec4 bvec2 bvec3 bvec4 ivec2 ivec3 ivec4 uvec2 uvec3 uvec4
+    mat2 mat3 mat4 mat2x2 mat2x3 mat2x4 mat3x2 mat3x3 mat3x4 mat4x2 mat4x3 mat4x4
+    sampler1D sampler2D sampler3D samplerCube sampler1DShadow sampler2DShadow
+    samplerCubeShadow sampler1DArray sampler2DArray sampler1DArrayShadow sampler2DArrayShadow
+    sampler2DMS sampler2DMSArray samplerCubeArray samplerCubeArrayShadow
+    isampler1D isampler2D isampler3D isamplerCube isampler1DArray isampler2DArray
+    usampler1D usampler2D usampler3D usamplerCube usampler1DArray usampler2DArray
+    precision highp mediump lowp
+    gl_FragColor gl_FragCoord gl_FragDepth gl_FrontFacing gl_PointCoord
+    gl_Position gl_PointSize gl_VertexID gl_InstanceID
+    true false
+    abs acos all any asin atan ceil clamp cos cross dFdx dFdy degrees determinant
+    distance dot equal exp exp2 faceforward floor fract fwidth greaterThan
+    greaterThanEqual inversesqrt isinf isnan length lessThan lessThanEqual log log2
+    matrixCompMult max min mix mod not notEqual outerProduct pow radians reflect
+    refract round sign sin sinh smoothstep sqrt step tan tanh transpose trunc
+  `
+    .split(/\s+/)
+    .filter(Boolean),
+);
+
+const MILKDROP_SWIZZLE_IDENTIFIER = /^[xyzw]{1,4}$/u;
+const MILKDROP_TYPE_DECLARATION =
+  /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\))/gu;
+
+function stripShaderComments(text: string): string {
+  return text.replace(/\/\/[^\n]*/gu, '').replace(/\/\*[\s\S]*?\*\//gu, '');
+}
+
+/**
+ * MilkDrop per-frame variables (`trelx`, `tele`, `vshift`, …) are shader
+ * globals in the reference engine: per_frame code writes them every frame and
+ * shader bodies read them. The WebGL templates declare q-registers, signals,
+ * and the built-in shader controls but not these arbitrary names, so a shader
+ * body that references one fails to compile (e.g. `trelx` in
+ * martin-alien-grand-theft-water). Collect the identifiers the injected
+ * bodies reference that the templates do not already provide, so they can be
+ * declared as `uniform float` and driven from the per-frame VM state.
+ */
+function extractReferencedPerFrameVariables(
+  fragments: Array<string | null>,
+): string[] {
+  const declared = new Set<string>(MILKDROP_GLSL_RESERVED_WORDS);
+  const templates = [
+    MILKDROP_WARP_FRAGMENT_SHADER,
+    MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+    MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER,
+    MILKDROP_SHADER_BUILTIN_DECLARATIONS,
+    MILKDROP_AUX_SAMPLING_HELPERS,
+    MILKDROP_NOISE_VOLUME_HELPERS,
+    MILKDROP_FEEDBACK_WARP_HELPER,
+  ];
+  for (const template of templates) {
+    const clean = stripShaderComments(template);
+    // Only global-scope declarations count as "already available" — a blind
+    // scan of every identifier in the template text previously also picked
+    // up helper functions' own local variables (e.g. noise()'s own
+    // `float d = hash(...)`), which then silently blocked a fresh
+    // declaration for an injected body's unrelated `d` scratch variable,
+    // producing "undeclared identifier" instead (~111/975 corpus-scan
+    // failures shared this one collision).
+    for (const match of clean.matchAll(
+      /\b(?:uniform|varying|attribute)\s+(?:highp|mediump|lowp\s+)?\w+\s+([a-zA-Z_][a-zA-Z0-9_]*)/gu,
+    )) {
+      declared.add(match[1]);
+    }
+    for (const match of clean.matchAll(
+      /#define\s+([a-zA-Z_][a-zA-Z0-9_]*)/gu,
+    )) {
+      declared.add(match[1]);
+    }
+    // Function definitions at file scope, so a preset body that happens to
+    // share a name with a helper (rare, but a real collision is a compile
+    // error either way) doesn't get a duplicate declaration.
+    for (const match of clean.matchAll(
+      /\b(?:void|bool|int|uint|float|double|vec[234]|bvec[234]|ivec[234]|uvec[234]|mat[234])\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/gu,
+    )) {
+      declared.add(match[1]);
+    }
+  }
+
+  const found = new Set<string>();
+  for (const fragment of fragments) {
+    if (!fragment) {
+      continue;
+    }
+    const clean = stripShaderComments(fragment);
+    const locals = new Set<string>();
+    for (const match of clean.matchAll(MILKDROP_TYPE_DECLARATION)) {
+      locals.add(match[1]);
+    }
+    for (const match of clean.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/gu)) {
+      const id = match[1];
+      const nextChar = clean[match.index + id.length];
+      if (
+        MILKDROP_SWIZZLE_IDENTIFIER.test(id) ||
+        id.startsWith('sampler_') ||
+        id.startsWith('_') ||
+        declared.has(id) ||
+        locals.has(id) ||
+        nextChar === '('
+      ) {
+        continue;
+      }
+      found.add(id);
+    }
+  }
+  return [...found].sort();
+}
+
+/** Sizes of the multi-component builtins a scratch variable's first
+ * assignment might swizzle off of (e.g. `d = texsize.zw * 8.0`) — used to
+ * infer that variable's own type below. */
+const MILKDROP_KNOWN_VECTOR_SIZES: Record<string, number> = {
+  aspect: 4,
+  _qa: 4,
+  _qb: 4,
+  _qc: 4,
+  _qd: 4,
+  _qe: 4,
+  _qf: 4,
+  _qg: 4,
+  _qh: 4,
+  rand_preset: 4,
+  texsize: 4,
+  colorScale: 3,
+  tint: 3,
+  texelSize: 2,
+  overlayTextureScale: 2,
+  overlayTextureOffset: 2,
+  warpTextureScale: 2,
+  warpTextureOffset: 2,
+};
+
+/** Declaration for one name extractReferencedPerFrameVariables found: either
+ * a genuine per-frame register (VM-driven, read by the shader, declared as a
+ * `uniform`) or a scratch variable the injected body itself initializes
+ * before ever reading (declared as a plain global — GLSL has no local-var
+ * hoisting requirement here, and each fragment invocation gets its own copy). */
+type MilkdropPerFrameDeclaration = {
+  name: string;
+  isLocalScratch: boolean;
+  type: 'float' | 'vec2' | 'vec3' | 'vec4';
+};
+
+/**
+ * A name extractReferencedPerFrameVariables finds is a genuine per-frame
+ * *register* — MilkDrop's `trelx`/`tele`/`vshift`-style globals, written by
+ * per_frame EEL code and only ever read here — only if the shader body reads
+ * it before (or without) ever assigning to it. When the FIRST occurrence is
+ * an assignment (`name = …` or `name.xyz = …`), the preset author is using
+ * `name` as their own scratch variable (e.g. `col`, `light_pos`, `plastic`
+ * in cotc-suksma-mtn-flx-flacc) — declaring that `uniform` makes every
+ * assignment to it a compile error ("can't modify a uniform"), which was the
+ * single largest class of GLSL corpus scan failures (~360/975).
+ *
+ * Type is inferred from how the variable is first used, in priority order:
+ * a direct `name = vecN(...)` constructor; the widest single-component
+ * swizzle ever assigned to it (`name.z = …` implies at least vec3); a
+ * swizzle applied to a known multi-component builtin on its first
+ * assignment's right-hand side (`texsize.zw` implies vec2). Defaults to
+ * float, which is always safe for genuinely scalar scratch registers and no
+ * worse than the previous "uniform float" default otherwise.
+ */
+function classifyPerFrameVariable(
+  name: string,
+  fragments: Array<string | null>,
+): MilkdropPerFrameDeclaration {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const occurrence = new RegExp(
+    `\\b${escaped}\\b(?:\\.([xyzwrgba]{1,4}))?\\s*(=(?!=))?`,
+    'gu',
+  );
+  let firstIsAssignment: boolean | null = null;
+  let widestComponentIndex = -1;
+  let constructorSize: number | null = null;
+  const componentIndex: Record<string, number> = {
+    x: 0,
+    y: 1,
+    z: 2,
+    w: 3,
+    r: 0,
+    g: 1,
+    b: 2,
+    a: 3,
+  };
+
+  for (const fragment of fragments) {
+    if (!fragment) {
+      continue;
+    }
+    const clean = stripShaderComments(fragment);
+    for (const match of clean.matchAll(occurrence)) {
+      const swizzle = match[1];
+      const isAssignment = match[2] === '=';
+      if (firstIsAssignment === null) {
+        firstIsAssignment = isAssignment;
+      }
+      if (!isAssignment) {
+        continue;
+      }
+      if (swizzle) {
+        for (const component of swizzle) {
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            componentIndex[component] ?? -1,
+          );
+        }
+        continue;
+      }
+      // Bare `name = …` — check the right-hand side for a direct vecN(...)
+      // constructor, else a swizzle off a known multi-component identifier.
+      const restFrom = match.index + match[0].length;
+      const statementEnd = clean.indexOf(';', restFrom);
+      const rhs = clean.slice(
+        restFrom,
+        statementEnd === -1 ? undefined : statementEnd,
+      );
+      const constructorMatch = rhs.match(/^\s*vec([234])\s*\(/u);
+      if (constructorMatch) {
+        constructorSize = Math.max(
+          constructorSize ?? 0,
+          Number(constructorMatch[1]),
+        );
+        continue;
+      }
+      for (const knownMatch of rhs.matchAll(
+        /\b([a-zA-Z_][a-zA-Z0-9_]*)\.([xyzwrgba]{1,4})\b/gu,
+      )) {
+        const knownSize = MILKDROP_KNOWN_VECTOR_SIZES[knownMatch[1]];
+        if (knownSize) {
+          widestComponentIndex = Math.max(
+            widestComponentIndex,
+            knownMatch[2].length - 1,
+          );
+        }
+      }
+      // A swizzle directly off an inline constructor call — e.g. the
+      // translated-statement emitter's own texsize expansion,
+      // `vec4(1.0 / texelSize, texelSize).zw` — carries the same size
+      // signal as a named-identifier swizzle but the regex above requires a
+      // bare identifier before the dot, so it won't match a `)` there.
+      for (const inlineMatch of rhs.matchAll(/\)\.([xyzwrgba]{1,4})\b/gu)) {
+        widestComponentIndex = Math.max(
+          widestComponentIndex,
+          inlineMatch[1].length - 1,
+        );
+      }
+    }
+  }
+
+  if (!firstIsAssignment) {
+    return { name, isLocalScratch: false, type: 'float' };
+  }
+  const inferredSize = constructorSize ?? widestComponentIndex + 1;
+  const type =
+    inferredSize >= 4
+      ? 'vec4'
+      : inferredSize === 3
+        ? 'vec3'
+        : inferredSize === 2
+          ? 'vec2'
+          : 'float';
+  return { name, isLocalScratch: true, type };
+}
+
+function buildPerFrameVariableDeclarations(
+  names: string[],
+  fragments: Array<string | null>,
+): string {
+  return names
+    .map((name) => {
+      const decl = classifyPerFrameVariable(name, fragments);
+      return decl.isLocalScratch
+        ? `${decl.type} ${decl.name};\n`
+        : `uniform float ${decl.name};\n`;
+    })
+    .join('');
+}
+
 export function assembleMilkdropDirectFragmentShaders(
   warpGlsl: string | null,
   compGlsl: string | null,
-): { warp: string; composite: string } {
+): { warp: string; composite: string; perFrameVariables: string[] } {
   const cleanWarpBody = warpGlsl
     ? (extractNativeShaderBody(warpGlsl) ?? warpGlsl)
     : null;
@@ -1027,15 +1384,6 @@ export function assembleMilkdropDirectFragmentShaders(
     warpGlobals = split.globals || null;
     warpBody = split.body || null;
   }
-
-  const warp =
-    buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
-    injectDirectShaderGlsl(
-      MILKDROP_WARP_FRAGMENT_SHADER,
-      warpBody,
-      null,
-      warpGlobals,
-    );
 
   const rawCompBody = compGlsl
     ? (extractNativeShaderBody(compGlsl) ?? compGlsl)
@@ -1054,8 +1402,41 @@ export function assembleMilkdropDirectFragmentShaders(
       )
     : null;
 
+  const warpFragments = [warpGlobals, warpBody];
+  const compFragments = [cleanCompBody];
+  const perFrameVariables = extractReferencedPerFrameVariables([
+    ...warpFragments,
+    ...compFragments,
+  ]);
+  // Declarations are built per-stage (from only that stage's own fragments)
+  // rather than sharing one declaration block across both assembled
+  // shaders: a name classified as local scratch in warp could legitimately
+  // be a genuine read-only per-frame register in comp (or vice versa), and
+  // a shared declaration would silently turn that stage's uniform read into
+  // an always-zero local instead of failing to compile — trading a loud
+  // compile error for a silent visual bug.
+  const warpPerFrameVariableDeclarations = buildPerFrameVariableDeclarations(
+    perFrameVariables,
+    warpFragments,
+  );
+  const compPerFrameVariableDeclarations = buildPerFrameVariableDeclarations(
+    perFrameVariables,
+    compFragments,
+  );
+
+  const warp =
+    warpPerFrameVariableDeclarations +
+    buildCustomSamplerUniformDeclarations([warpGlobals, warpBody]) +
+    injectDirectShaderGlsl(
+      MILKDROP_WARP_FRAGMENT_SHADER,
+      warpBody,
+      null,
+      warpGlobals,
+    );
+
   // Build composite shader: warp section kept empty since warp runs separate
   const composite =
+    compPerFrameVariableDeclarations +
     buildCustomSamplerUniformDeclarations([cleanCompBody]) +
     injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
@@ -1063,10 +1444,13 @@ export function assembleMilkdropDirectFragmentShaders(
       cleanCompBody,
     );
 
-  return { warp, composite };
+  return { warp, composite, perFrameVariables };
 }
 
-class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
+class SharedMilkdropFeedbackManager
+  extends MilkdropFeedbackManagerLifecycleBase<WebGLRenderTarget>
+  implements MilkdropFeedbackManager
+{
   readonly compositeScene = new Scene();
   readonly presentScene = new Scene();
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -1098,20 +1482,26 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     render(scene: Scene, camera: Camera): void;
     setRenderTarget?: (target: WebGLRenderTarget | null) => void;
   } | null = null;
-  readonly sceneResolutionScale: number;
-  readonly feedbackResolutionScale: number;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
-  adaptiveFeedbackResolutionMultiplier = 1;
-  currentFeedbackResolutionScale: number;
-  viewportWidth: number;
-  viewportHeight: number;
   private blurEnabled = false;
-  private adaptiveResizeFrameId: number | null = null;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
+  /** Bumped per shader swap so a stale async warm-up can't apply. */
+  private directShaderSwapRevision = 0;
+  /** True while the async warp/comp warm-up has landed the pass-through
+   * pair but not yet the preset's own shaders — the window the transition
+   * controller keeps covered. */
+  private directShaderSwapPending = false;
+
+  isDirectShaderSwapPending(): boolean {
+    return this.directShaderSwapPending;
+  }
+  /** Warm-up materials kept alive until the live materials share their
+   * programs; see setDirectShaderPrograms. */
+  private retiredWarmupMaterials: ShaderMaterial[] = [];
+  private perFrameShaderVariables: string[] = [];
   private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
-  private index = 0;
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
 
@@ -1120,13 +1510,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     height: number,
     behavior: MilkdropBackendBehavior,
   ) {
+    super(width, height, behavior.feedbackProfile);
     this.camera.position.z = 1;
-    this.viewportWidth = width;
-    this.viewportHeight = height;
     this.profile = behavior.feedbackProfile;
-    this.sceneResolutionScale = this.profile.sceneResolutionScale;
-    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
-    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
     this.halfFloatFeedback = behavior.useHalfFloatFeedback;
     this.sceneTarget = createWebGLFeedbackRenderTarget(width, height, {
@@ -1158,34 +1544,40 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     });
     this.blurTargets = [
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[0],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[1],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[2],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
     ];
     this.blurHTargets = [
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[0],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[1],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
       createWebGLFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        resolutionScale:
+          this.currentFeedbackResolutionScale * BLUR_LEVEL_SCALES[2],
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
@@ -1210,13 +1602,16 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float radius;
         varying vec2 vUv;
         void main() {
-          vec4 result = vec4(0.0);
-          float totalWeight = 0.0;
-          float r = radius;
-          for (float x = -8.0; x <= 8.0; x += 1.0) {
-            if (abs(x) > r) continue;
-            result += texture2D(sourceTex, vUv + vec2(x * texelSize.x, 0.0));
-            totalWeight += 1.0;
+          // Symmetric taps with an early break: the old -8..8 walk ran all
+          // 17 iterations (with a continue) even for the radius-2 pass.
+          vec4 result = texture2D(sourceTex, vUv);
+          float totalWeight = 1.0;
+          for (float x = 1.0; x <= 8.0; x += 1.0) {
+            if (x > radius) break;
+            vec2 offset = vec2(x * texelSize.x, 0.0);
+            result += texture2D(sourceTex, vUv + offset);
+            result += texture2D(sourceTex, vUv - offset);
+            totalWeight += 2.0;
           }
           gl_FragColor = result / totalWeight;
         }
@@ -1235,13 +1630,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float radius;
         varying vec2 vUv;
         void main() {
-          vec4 result = vec4(0.0);
-          float totalWeight = 0.0;
-          float r = radius;
-          for (float y = -8.0; y <= 8.0; y += 1.0) {
-            if (abs(y) > r) continue;
-            result += texture2D(sourceTex, vUv + vec2(0.0, y * texelSize.y));
-            totalWeight += 1.0;
+          // Symmetric taps with an early break; see the horizontal pass.
+          vec4 result = texture2D(sourceTex, vUv);
+          float totalWeight = 1.0;
+          for (float y = 1.0; y <= 8.0; y += 1.0) {
+            if (y > radius) break;
+            vec2 offset = vec2(0.0, y * texelSize.y);
+            result += texture2D(sourceTex, vUv + offset);
+            result += texture2D(sourceTex, vUv - offset);
+            totalWeight += 2.0;
           }
           gl_FragColor = result / totalWeight;
         }
@@ -1269,12 +1666,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
         audioTex: { value: null },
-        scale1: { value: 1 },
-        bias1: { value: 0 },
-        scale2: { value: 1 },
-        bias2: { value: 0 },
-        scale3: { value: 1 },
-        bias3: { value: 0 },
+        ...BLUR_RANGE_UNIFORM_DEFAULTS,
         warpScale: { value: 1 },
         zoom: { value: 1.02 },
         zoomMul: { value: 1 },
@@ -1289,18 +1681,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureOffset: { value: new Vector2(0, 0) },
         warpTextureVolumeSliceZ: { value: 0 },
         hasDirectWarp: { value: 0 },
-        signalBass: { value: 0 },
-        signalMid: { value: 0 },
-        signalTreb: { value: 0 },
-        signalBassAtt: { value: 0 },
-        signalMidAtt: { value: 0 },
-        signalTrebAtt: { value: 0 },
-        signalBeat: { value: 0 },
-        signalBeatPulse: { value: 0 },
-        signalEnergy: { value: 0 },
-        signalTime: { value: 0 },
-        signalFrame: { value: 0 },
-        signalFps: { value: 60 },
+        ...SIGNAL_UNIFORM_DEFAULTS,
         aspect: { value: new Vector4(1, 1, 1, 1) },
         _qa: { value: new Vector4() },
         _qb: { value: new Vector4() },
@@ -1360,6 +1741,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             1 / Math.max(1, this.targets[0].height),
           ),
         },
+        texsize: {
+          value: new Vector4(
+            this.targets[0].width,
+            this.targets[0].height,
+            1 / Math.max(1, this.targets[0].width),
+            1 / Math.max(1, this.targets[0].height),
+          ),
+        },
         warpTextureSource: { value: 0 },
         warpTextureSampleDimension: { value: 0 },
         warpTextureAmount: { value: 0 },
@@ -1388,6 +1777,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         currentTex: { value: this.displayTarget.texture },
         savedTex: { value: null },
         transitionAlpha: { value: 0 },
+        patternAspect: { value: 16 / 9 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -1400,15 +1790,67 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform sampler2D currentTex;
         uniform sampler2D savedTex;
         uniform float transitionAlpha;
+        uniform float patternAspect;
         varying vec2 vUv;
+
+        // MilkDrop-style dissolve: a static noise pattern sets when each pixel
+        // flips from the saved frame to the live preset, so the transition
+        // sweeps through the image in organic patches instead of one flat
+        // full-screen fade. Knobs live in MILKDROP_BLEND_DISSOLVE
+        // (feedback-composite-profile.ts), shared with the WebGPU TSL node.
+        // Sin-free hash (Dave Hoskins): fract(sin(x) * 43758.5453) breaks
+        // down on mediump mobile GPUs (Mali/Adreno) and costs more there.
+        float hash21(vec2 p) {
+          vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+          p3 += dot(p3, p3.yzx + 33.33);
+          return fract((p3.x + p3.y) * p3.z);
+        }
+        float valueNoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          float a = hash21(i);
+          float b = hash21(i + vec2(1.0, 0.0));
+          float c = hash21(i + vec2(0.0, 1.0));
+          float d = hash21(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+        }
         void main() {
           vec4 current = texture2D(currentTex, vUv);
           if (transitionAlpha < 0.001) {
             gl_FragColor = current;
             return;
           }
-          vec4 saved = texture2D(savedTex, vUv);
-          gl_FragColor = mix(current, saved, transitionAlpha);
+          float a = clamp(transitionAlpha, 0.0, 1.0);
+          // Ease the global progression so the wipe starts and ends gently
+          // instead of snapping into motion off the linear alpha ramp.
+          a = a * a * (3.0 - 2.0 * a);
+          // The saved frame is a static snapshot; zoom it slowly as it
+          // dissolves out (alpha runs 1 -> 0) so the outgoing image keeps
+          // moving instead of freezing for the whole blend.
+          float drift = 1.0 +
+            ${MILKDROP_BLEND_DISSOLVE.savedZoomDrift.toFixed(4)} * (1.0 - a);
+          vec2 savedUv = (vUv - 0.5) / drift + 0.5;
+          vec4 saved = texture2D(savedTex, savedUv);
+          // Aspect-corrected sample point keeps dissolve patches round on
+          // any viewport instead of stretched across the wide axis.
+          vec2 p = vec2(vUv.x * patternAspect, vUv.y);
+          float pattern =
+            ${MILKDROP_BLEND_DISSOLVE.coarseWeight.toFixed(4)} *
+              valueNoise(p * ${MILKDROP_BLEND_DISSOLVE.coarseScale.toFixed(4)}) +
+            ${(1 - MILKDROP_BLEND_DISSOLVE.coarseWeight).toFixed(4)} *
+              valueNoise(p * ${MILKDROP_BLEND_DISSOLVE.fineScale.toFixed(4)} +
+                ${MILKDROP_BLEND_DISSOLVE.fineOffset.toFixed(4)});
+          const float band = ${MILKDROP_BLEND_DISSOLVE.band.toFixed(4)};
+          // Remap so a=1 keeps every pixel on the saved frame and a=0 releases
+          // every pixel, regardless of where its pattern threshold landed.
+          float aa = a * (1.0 + 2.0 * band) - band;
+          float local = smoothstep(pattern - band, pattern + band, aa);
+          vec3 currentSq = current.rgb * current.rgb;
+          vec3 savedSq = saved.rgb * saved.rgb;
+          vec3 blendedRgb = sqrt(mix(currentSq, savedSq, local));
+          float blendedAlpha = mix(current.a, saved.a, local);
+          gl_FragColor = vec4(blendedRgb, blendedAlpha);
         }
       `,
     });
@@ -1419,6 +1861,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     this.compositeScene.add(quad);
     this.presentScene.add(presentQuad);
+
+    this.camera.matrixAutoUpdate = false;
+    this.camera.updateMatrixWorld(true);
+    this.warpScene.matrixAutoUpdate = false;
+    this.feedbackBlendScene.matrixAutoUpdate = false;
+    this.compositeScene.matrixAutoUpdate = false;
+    this.presentScene.matrixAutoUpdate = false;
+    this.blurScene.matrixAutoUpdate = false;
   }
 
   setAudioTexture(texture: Texture | null): void {
@@ -1450,12 +1900,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
-        scale1: { value: 1 },
-        bias1: { value: 0 },
-        scale2: { value: 1 },
-        bias2: { value: 0 },
-        scale3: { value: 1 },
-        bias3: { value: 0 },
+        ...BLUR_RANGE_UNIFORM_DEFAULTS,
         videoEchoAlpha: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
@@ -1496,18 +1941,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureScale: { value: new Vector2(1, 1) },
         warpTextureOffset: { value: new Vector2(0, 0) },
         warpTextureVolumeSliceZ: { value: 0 },
-        signalBass: { value: 0 },
-        signalMid: { value: 0 },
-        signalTreb: { value: 0 },
-        signalBassAtt: { value: 0 },
-        signalMidAtt: { value: 0 },
-        signalTrebAtt: { value: 0 },
-        signalBeat: { value: 0 },
-        signalBeatPulse: { value: 0 },
-        signalEnergy: { value: 0 },
-        signalTime: { value: 0 },
-        signalFrame: { value: 0 },
-        signalFps: { value: 60 },
+        ...SIGNAL_UNIFORM_DEFAULTS,
         aspect: { value: new Vector4(1, 1, 1, 1) },
         _qa: { value: new Vector4() },
         _qb: { value: new Vector4() },
@@ -1533,6 +1967,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             1 / Math.max(1, this.sceneTarget.height),
           ),
         },
+        texsize: {
+          value: new Vector4(
+            this.sceneTarget.width,
+            this.sceneTarget.height,
+            1 / Math.max(1, this.sceneTarget.width),
+            1 / Math.max(1, this.sceneTarget.height),
+          ),
+        },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -1553,18 +1995,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     return material;
   }
 
-  get readTarget() {
-    return this.targets[this.index];
-  }
-
-  get writeTarget() {
-    return this.targets[(this.index + 1) % 2];
-  }
-
-  getShapeTexture() {
-    return this.readTarget.texture;
-  }
-
   swap() {
     this.index = (this.index + 1) % 2;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
@@ -1572,6 +2002,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.warpMaterial.uniforms.warpTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.currentTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.texelSize.value.set(
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
+    this.warpMaterial.uniforms.texsize.value.set(
+      this.readTarget.width,
+      this.readTarget.height,
       1 / this.readTarget.width,
       1 / this.readTarget.height,
     );
@@ -1609,10 +2045,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       this.savedFrameTarget.texture;
   }
 
-  setTransitionBlend(alpha: number): void {
-    this.presentMaterial.uniforms.transitionAlpha.value = alpha;
-  }
-
   setDirectShaderPrograms(
     warp: MilkdropShaderProgramPayload | null,
     comp: MilkdropShaderProgramPayload | null,
@@ -1623,13 +2055,16 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const executableComp = isMilkdropShaderProgramBackendExecutable(comp)
       ? comp
       : null;
+    // This runs every frame; without the cache, translated presets (no
+    // rawGlsl) would regenerate multi-KB GLSL strings for both stages each
+    // frame just to hit the "nothing changed" early-out below.
     const warpGlsl = executableWarp
       ? (executableWarp.rawGlsl ??
-        generateGlslFromShaderStatements(executableWarp.statements, 'warp'))
+        getCachedGlslForShaderProgram(executableWarp, 'warp'))
       : null;
     const compGlsl = executableComp
       ? (executableComp.rawGlsl ??
-        generateGlslFromShaderStatements(executableComp.statements, 'comp'))
+        getCachedGlslForShaderProgram(executableComp, 'comp'))
       : null;
 
     // Skip rebuild if nothing changed
@@ -1639,7 +2074,106 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
+    const revision = ++this.directShaderSwapRevision;
+    // A new swap supersedes any pending one; the async path re-arms below.
+    this.directShaderSwapPending = false;
 
+    const renderer = this.lastRenderer as
+      | (NonNullable<SharedMilkdropFeedbackManager['lastRenderer']> & {
+          compileAsync?: (scene: Scene, camera: Camera) => Promise<unknown>;
+        })
+      | null;
+    const hasCustomShaders = warpGlsl !== null || compGlsl !== null;
+    const compileAsync = renderer?.compileAsync?.bind(renderer);
+    // Agent mode captures frames immediately after a preset applies
+    // (preview generation, deterministic parity captures); the async warm-up
+    // window would put pass-through styling in those captures — the 08-18
+    // preview batch recorded 176 near-black/flat thumbnails this way.
+    // Same rule as the WebGPU manager's pipeline swap: sync in agent mode.
+    if (!hasCustomShaders || !compileAsync || isAgentMode()) {
+      this.applyAssembledDirectShaders(warpGlsl, compGlsl);
+      return;
+    }
+
+    // Progressive apply. Assigning the custom fragment shaders directly
+    // would make the next render build their GL programs synchronously —
+    // the single biggest stall of a preset switch (hundreds of ms on weak
+    // GPUs, seconds under software rasterizers). Instead the preset lands
+    // on the pass-through pair now (its program is shared by every preset
+    // and already cached), the custom pair warms through
+    // KHR_parallel_shader_compile on throwaway materials, and the live
+    // materials pick the finished programs out of the renderer's program
+    // cache when the swap completes. Equations, waves, and shapes are
+    // unaffected — they render from frame one; only the warp/comp styling
+    // arrives a beat later.
+    this.applyAssembledDirectShaders(null, null);
+    this.directShaderSwapPending = true;
+
+    const { warp: warmWarpShader, composite: warmCompositeShader } =
+      assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    const warmupMaterials = [
+      new ShaderMaterial({
+        vertexShader: this.warpMaterial.vertexShader,
+        fragmentShader: warmWarpShader,
+      }),
+      new ShaderMaterial({
+        vertexShader: this.compositeMaterial.vertexShader,
+        fragmentShader: warmCompositeShader,
+      }),
+    ];
+    const warmupScene = new Scene();
+    for (const material of warmupMaterials) {
+      warmupScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, material));
+    }
+    const finishSwap = () => {
+      if (revision !== this.directShaderSwapRevision) {
+        for (const material of warmupMaterials) {
+          material.dispose();
+        }
+        return;
+      }
+      this.directShaderSwapPending = false;
+      this.applyAssembledDirectShaders(warpGlsl, compGlsl);
+      // The warm materials must outlive the swap: they hold the program
+      // refcount until the live materials acquire it at their next render.
+      // Disposing them now would drop the count to zero and force the sync
+      // recompile this path exists to avoid. They retire at the next swap
+      // (or manager dispose) instead.
+      this.disposeRetiredWarmupMaterials();
+      this.retiredWarmupMaterials.push(...warmupMaterials);
+    };
+    // The kick is deferred a macrotask: this method runs from
+    // applyCompositeState, i.e. mid-frame between the renderer's internal
+    // passes, and compileAsync's first step is a synchronous
+    // renderer.compile() of the warm scene — running that inside the live
+    // frame corrupts the in-flight render state and blacked out the stage
+    // (verified against the deep-link boot flow). After the current frame
+    // unwinds, compiling the throwaway scene is safe.
+    //
+    // A compile error surfaces identically to today's sync path: finishSwap
+    // assigns the shaders anyway and THREE logs the failure at first use.
+    setTimeout(() => {
+      if (revision !== this.directShaderSwapRevision) {
+        for (const material of warmupMaterials) {
+          material.dispose();
+        }
+        return;
+      }
+      void compileAsync(warmupScene, this.camera).then(finishSwap, finishSwap);
+    }, 0);
+  }
+
+  private disposeRetiredWarmupMaterials() {
+    for (const material of this.retiredWarmupMaterials) {
+      material.dispose();
+    }
+    this.retiredWarmupMaterials.length = 0;
+  }
+
+  private applyAssembledDirectShaders(
+    warpGlsl: string | null,
+    compGlsl: string | null,
+  ) {
     // Every `sampler_*` still referenced after the built-in rewrites is a
     // texture-pack sampler (MilkDrop auto-binds them without declarations);
     // each resolves to a bundled texture or a deterministic fallback so the
@@ -1661,27 +2195,34 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
 
     // Rebuild both shaders with preset GLSL injected (pass-through when null)
-    const { warp: injectedWarp, composite: injectedShader } =
-      assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    const {
+      warp: injectedWarp,
+      composite: injectedShader,
+      perFrameVariables,
+    } = assembleMilkdropDirectFragmentShaders(warpGlsl, compGlsl);
+    this.perFrameShaderVariables = perFrameVariables;
+    for (const name of perFrameVariables) {
+      if (!this.warpMaterial.uniforms[name]) {
+        this.warpMaterial.uniforms[name] = { value: 0 };
+      }
+      if (!this.compositeMaterial.uniforms[name]) {
+        this.compositeMaterial.uniforms[name] = { value: 0 };
+      }
+    }
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
     this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
     this.feedbackBlendMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
-    // Preserve current uniform values before disposing old material
-    const oldUniforms = this.compositeMaterial.uniforms;
-    disposeMaterial(this.compositeMaterial);
-
-    // Find and replace the composite mesh material
-    const oldQuad = this.compositeScene.children[0] as Mesh | undefined;
-    if (oldQuad) {
-      this.compositeScene.remove(oldQuad);
-    }
-
-    const newMaterial = this.createCompositeMaterial(injectedShader);
-    // Restore uniform values from old material
-    Object.assign(newMaterial.uniforms, oldUniforms);
-    newMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
+    // Reuse the composite material across presets: only the injected
+    // fragment shader changes, and its uniform set is fixed. Recreating the
+    // ShaderMaterial per switch (dispose + fresh ~50-uniform object + new
+    // quad + uniform-value copy) rebuilt GPU programs and churned uniforms on
+    // every preset load, stalling the first frame of each switch.
+    const composite = this.compositeMaterial;
+    composite.fragmentShader = injectedShader;
+    composite.needsUpdate = true;
+    composite.uniforms.hasDirectWarp.value = hasDirectWarp;
 
     // New preset shaders → fresh rand_preset draw (MilkDrop rolls these
     // per-preset random constants once per preset load).
@@ -1691,17 +2232,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       Math.random(),
       Math.random(),
     );
-    (newMaterial.uniforms.rand_preset.value as Vector4).copy(
+    (composite.uniforms.rand_preset.value as Vector4).copy(
       this.warpMaterial.uniforms.rand_preset.value as Vector4,
     );
 
-    (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
-      newMaterial;
-    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
-    this.compositeScene.add(quad);
-
     this.blurEnabled =
-      /texture2D\s*\(\s*blur[123]Tex/.test(newMaterial.fragmentShader) ||
+      /texture2D\s*\(\s*blur[123]Tex/.test(composite.fragmentShader) ||
       /texture2D\s*\(\s*blur[123]Tex/.test(this.warpMaterial.fragmentShader);
   }
 
@@ -1716,10 +2252,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const blurShaderRanges = resolveMilkdropBlurShaderRanges(
       state.perPixelVariables,
     );
-    for (const [index, range] of blurShaderRanges.entries()) {
-      uniforms[`scale${index + 1}`].value = range.scale;
-      uniforms[`bias${index + 1}`].value = range.bias;
-    }
+    uniforms.scale1.value = blurShaderRanges[0].scale;
+    uniforms.bias1.value = blurShaderRanges[0].bias;
+    uniforms.scale2.value = blurShaderRanges[1].scale;
+    uniforms.bias2.value = blurShaderRanges[1].bias;
+    uniforms.scale3.value = blurShaderRanges[2].scale;
+    uniforms.bias3.value = blurShaderRanges[2].bias;
     const overlayTextureName = resolveAuxTextureName(
       state.overlayTextureSource,
     );
@@ -1774,88 +2312,31 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.warpTextureVolumeSliceZ;
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
-    uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
-    uniforms.brighten.value = state.brighten;
-    uniforms.darken.value = state.darken;
-    uniforms.darkenCenter.value = state.darkenCenter;
-    uniforms.solarize.value = state.solarize;
-    uniforms.invert.value = state.invert;
-    uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
-    uniforms.gammaAdj.value = state.gammaAdj;
-    uniforms.textureWrap.value = state.textureWrap;
-    uniforms.decay.value = state.decay;
-    uniforms.warpScale.value = state.warpScale;
-    uniforms.offsetX.value = state.offsetX;
-    uniforms.offsetY.value = state.offsetY;
-    uniforms.rotation.value = state.rotation;
-    uniforms.zoomMul.value = state.zoomMul;
-    uniforms.saturation.value = state.saturation;
-    uniforms.contrast.value = state.contrast;
-    uniforms.colorScale.value.setRGB(
-      state.colorScale.r,
-      state.colorScale.g,
-      state.colorScale.b,
+    applyCompositeUniformState(uniforms, state, blurShaderRanges);
+    this.syncMilkdropShaderBuiltinUniforms(
+      uniforms,
+      this.getCompQTargets(uniforms),
+      state,
     );
-    uniforms.hueShift.value = state.hueShift;
-    uniforms.brightenBoost.value = state.brightenBoost;
-    uniforms.invertBoost.value = state.invertBoost;
-    uniforms.solarizeBoost.value = state.solarizeBoost;
-    uniforms.vignette.value = state.vignette ?? 0;
-    uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
-    uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
-    uniforms.overlayTextureSource.value = state.overlayTextureSource;
-    uniforms.overlayTextureMode.value = state.overlayTextureMode;
-    uniforms.overlayTextureSampleDimension.value =
-      state.overlayTextureSampleDimension;
-    uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
-    uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
-    uniforms.overlayTextureScale.value.set(
-      state.overlayTextureScale.x,
-      state.overlayTextureScale.y,
-    );
-    uniforms.overlayTextureOffset.value.set(
-      state.overlayTextureOffset.x,
-      state.overlayTextureOffset.y,
-    );
-    uniforms.overlayTextureVolumeSliceZ.value =
-      state.overlayTextureVolumeSliceZ;
-    uniforms.warpTextureSource.value = state.warpTextureSource;
-    uniforms.warpTextureSampleDimension.value =
-      state.warpTextureSampleDimension;
-    uniforms.warpTextureAmount.value = state.warpTextureAmount;
-    uniforms.warpTextureScale.value.set(
-      state.warpTextureScale.x,
-      state.warpTextureScale.y,
-    );
-    uniforms.warpTextureOffset.value.set(
-      state.warpTextureOffset.x,
-      state.warpTextureOffset.y,
-    );
-    uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
-    uniforms.signalBass.value = state.signalBass;
-    uniforms.signalMid.value = state.signalMid;
-    uniforms.signalTreb.value = state.signalTreb;
-    uniforms.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
-    uniforms.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
-    uniforms.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
-    uniforms.signalBeat.value = state.signalBeat;
-    uniforms.signalBeatPulse.value = state.signalBeatPulse;
-    uniforms.signalEnergy.value = state.signalEnergy;
-    uniforms.signalTime.value = state.signalTime;
-    uniforms.signalFrame.value = state.signalFrame ?? 0;
-    uniforms.signalFps.value = state.signalFps ?? 60;
-    this.syncMilkdropShaderBuiltinUniforms(uniforms, state);
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
-    for (const [index, range] of blurShaderRanges.entries()) {
-      wu[`scale${index + 1}`].value = range.scale;
-      wu[`bias${index + 1}`].value = range.bias;
-    }
+    wu.scale1.value = blurShaderRanges[0].scale;
+    wu.bias1.value = blurShaderRanges[0].bias;
+    wu.scale2.value = blurShaderRanges[1].scale;
+    wu.bias2.value = blurShaderRanges[1].bias;
+    wu.scale3.value = blurShaderRanges[2].scale;
+    wu.bias3.value = blurShaderRanges[2].bias;
     wu.previousTex.value = this.readTarget.texture;
     wu.warpTex.value = this.readTarget.texture;
     wu.currentTex.value = this.readTarget.texture;
     wu.texelSize.value.set(
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
+    wu.texsize.value.set(
+      this.readTarget.width,
+      this.readTarget.height,
       1 / this.readTarget.width,
       1 / this.readTarget.height,
     );
@@ -1890,14 +2371,69 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     wu.signalBassAtt.value = state.signalBassAtt ?? state.signalBass;
     wu.signalMidAtt.value = state.signalMidAtt ?? state.signalMid;
     wu.signalTrebAtt.value = state.signalTrebAtt ?? state.signalTreb;
+    applyHarmonicPercussiveUniforms(wu, state);
     wu.signalBeat.value = state.signalBeat;
     wu.signalBeatPulse.value = state.signalBeatPulse;
     wu.signalEnergy.value = state.signalEnergy;
     wu.signalTime.value = state.signalTime;
     wu.signalFrame.value = state.signalFrame ?? 0;
     wu.signalFps.value = state.signalFps ?? 60;
-    this.syncMilkdropShaderBuiltinUniforms(wu, state);
+    this.syncMilkdropShaderBuiltinUniforms(wu, this.getWarpQTargets(wu), state);
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
+
+    // Per-frame variables referenced by the injected shader bodies are
+    // uniforms driven from the CPU VM's computed frame state.
+    for (const name of this.perFrameShaderVariables) {
+      const value = state.perPixelVariables?.[name] ?? 0;
+      const warpUniform = wu[name];
+      if (warpUniform) {
+        warpUniform.value = value;
+      }
+      const compositeUniform = this.compositeMaterial.uniforms[name];
+      if (compositeUniform) {
+        compositeUniform.value = value;
+      }
+    }
+
+    // Zero for presets that never sample the blur textures: the warp and
+    // feedback-blend softness taps are skipped instead of softened every
+    // frame for no visible result.
+    if (wu.feedbackSoftness) {
+      wu.feedbackSoftness.value = state.feedbackSoftness;
+    }
+    if (this.feedbackBlendMaterial.uniforms.feedbackSoftness) {
+      this.feedbackBlendMaterial.uniforms.feedbackSoftness.value =
+        state.feedbackSoftness;
+    }
+  }
+
+  private compQTargetsCache: (Vector4 | undefined)[] | null = null;
+  private compQTargetsMaterial: ShaderMaterial['uniforms'] | null = null;
+  private warpQTargetsCache: (Vector4 | undefined)[] | null = null;
+  private warpQTargetsMaterial: ShaderMaterial['uniforms'] | null = null;
+
+  private getCompQTargets(
+    uniforms: ShaderMaterial['uniforms'],
+  ): (Vector4 | undefined)[] {
+    if (this.compQTargetsMaterial !== uniforms || !this.compQTargetsCache) {
+      this.compQTargetsMaterial = uniforms;
+      this.compQTargetsCache = Q_UNIFORM_NAMES.map(
+        (name) => uniforms[name]?.value as Vector4 | undefined,
+      );
+    }
+    return this.compQTargetsCache;
+  }
+
+  private getWarpQTargets(
+    uniforms: ShaderMaterial['uniforms'],
+  ): (Vector4 | undefined)[] {
+    if (this.warpQTargetsMaterial !== uniforms || !this.warpQTargetsCache) {
+      this.warpQTargetsMaterial = uniforms;
+      this.warpQTargetsCache = Q_UNIFORM_NAMES.map(
+        (name) => uniforms[name]?.value as Vector4 | undefined,
+      );
+    }
+    return this.warpQTargetsCache;
   }
 
   /**
@@ -1908,6 +2444,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
    */
   private syncMilkdropShaderBuiltinUniforms(
     uniforms: ShaderMaterial['uniforms'],
+    qTargets: (Vector4 | undefined)[],
     state: MilkdropFeedbackCompositeState,
   ) {
     const aspect =
@@ -1921,18 +2458,22 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       1 / aspectY,
     );
     const vars = state.perPixelVariables;
-    for (let group = 0; group < 8; group++) {
-      const target = uniforms[`_q${'abcdefgh'[group]}`]?.value as
-        | Vector4
-        | undefined;
-      if (!target) continue;
-      const base = group * 4;
-      target.set(
-        vars?.[`q${base + 1}`] ?? 0,
-        vars?.[`q${base + 2}`] ?? 0,
-        vars?.[`q${base + 3}`] ?? 0,
-        vars?.[`q${base + 4}`] ?? 0,
-      );
+    if (vars) {
+      for (let group = 0; group < 8; group++) {
+        const target = qTargets[group];
+        if (!target) continue;
+        const keys = Q_VAR_NAMES[group];
+        target.set(
+          vars[keys[0]] ?? 0,
+          vars[keys[1]] ?? 0,
+          vars[keys[2]] ?? 0,
+          vars[keys[3]] ?? 0,
+        );
+      }
+    } else {
+      for (let group = 0; group < 8; group++) {
+        qTargets[group]?.set(0, 0, 0, 0);
+      }
     }
   }
 
@@ -1961,22 +2502,39 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     renderer.setRenderTarget(this.writeTarget);
     renderer.render(this.feedbackBlendScene, this.camera);
 
-    // Display frame: comp shader + post effects over the internal frame.
-    // Never fed back — MilkDrop's comp output is display-only.
     this.compositeMaterial.uniforms.internalTex.value =
       this.writeTarget.texture;
-    renderer.setRenderTarget(this.displayTarget);
-    renderer.render(this.compositeScene, this.camera);
 
-    if (
-      this.blurEnabled &&
-      this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
-    ) {
-      this.renderBlurPasses(renderer);
+    const transitionAlpha =
+      (this.presentMaterial.uniforms.transitionAlpha?.value as
+        | number
+        | undefined) ?? 0;
+
+    if (transitionAlpha > 0.001) {
+      renderer.setRenderTarget(this.displayTarget);
+      renderer.render(this.compositeScene, this.camera);
+
+      if (
+        this.blurEnabled &&
+        this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
+      ) {
+        this.renderBlurPasses(renderer);
+      }
+
+      renderer.setRenderTarget(null);
+      renderer.render(this.presentScene, this.camera);
+    } else {
+      renderer.setRenderTarget(null);
+      renderer.render(this.compositeScene, this.camera);
+
+      if (
+        this.blurEnabled &&
+        this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD
+      ) {
+        this.renderBlurPasses(renderer);
+      }
     }
 
-    renderer.setRenderTarget(null);
-    renderer.render(this.presentScene, this.camera);
     this.swap();
     return true;
   }
@@ -1992,7 +2550,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     for (let i = 0; i < 3; i++) {
       const hTarget = this.blurHTargets[i];
       const vTarget = this.blurTargets[i];
-      const radius = [2, 4, 8][i];
+      const radius = BLUR_PASS_RADII[i];
 
       this.blurHMaterial.uniforms.sourceTex.value = srcTex;
       this.blurHMaterial.uniforms.texelSize.value.set(1 / srcW, 1 / srcH);
@@ -2011,46 +2569,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       renderer.setRenderTarget?.(vTarget);
       renderer.render(this.blurScene, this.camera);
     }
-  }
-
-  setAdaptiveQuality({
-    feedbackResolutionMultiplier,
-  }: Partial<{
-    feedbackResolutionMultiplier: number;
-  }>) {
-    const nextMultiplier = Math.min(
-      1.5,
-      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
-    );
-    if (
-      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
-      0.0001
-    ) {
-      return;
-    }
-    const previousFeedbackResolutionScale = this.currentFeedbackResolutionScale;
-    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
-    this.currentFeedbackResolutionScale =
-      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
-    if (this.currentFeedbackResolutionScale < previousFeedbackResolutionScale) {
-      this.resize(this.viewportWidth, this.viewportHeight);
-      return;
-    }
-    this.scheduleAdaptiveResize();
-  }
-
-  private scheduleAdaptiveResize() {
-    if (this.adaptiveResizeFrameId !== null) {
-      return;
-    }
-    if (typeof requestAnimationFrame !== 'function') {
-      this.resize(this.viewportWidth, this.viewportHeight);
-      return;
-    }
-    this.adaptiveResizeFrameId = requestAnimationFrame(() => {
-      this.adaptiveResizeFrameId = null;
-      this.resize(this.viewportWidth, this.viewportHeight);
-    });
   }
 
   resize(width: number, height: number) {
@@ -2078,28 +2596,28 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       target.setSize(feedbackWidth, feedbackHeight),
     );
     this.displayTarget.setSize(feedbackWidth, feedbackHeight);
-    this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
-    this.blurHTargets[0].setSize(feedbackWidth, feedbackHeight);
     if (this.savedFrameTarget) {
       this.savedFrameTarget.setSize(feedbackWidth, feedbackHeight);
     }
-    this.blurTargets[1].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.5)),
-      Math.max(1, Math.round(feedbackHeight * 0.5)),
-    );
-    this.blurHTargets[1].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.5)),
-      Math.max(1, Math.round(feedbackHeight * 0.5)),
-    );
-    this.blurTargets[2].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.25)),
-      Math.max(1, Math.round(feedbackHeight * 0.25)),
-    );
-    this.blurHTargets[2].setSize(
-      Math.max(1, Math.round(feedbackWidth * 0.25)),
-      Math.max(1, Math.round(feedbackHeight * 0.25)),
-    );
+    for (let level = 0; level < BLUR_LEVEL_SCALES.length; level += 1) {
+      const levelWidth = Math.max(
+        1,
+        Math.round(feedbackWidth * BLUR_LEVEL_SCALES[level]),
+      );
+      const levelHeight = Math.max(
+        1,
+        Math.round(feedbackHeight * BLUR_LEVEL_SCALES[level]),
+      );
+      this.blurTargets[level].setSize(levelWidth, levelHeight);
+      this.blurHTargets[level].setSize(levelWidth, levelHeight);
+    }
     this.compositeMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
+    );
+    this.compositeMaterial.uniforms.texsize.value.set(
+      Math.max(1, feedbackWidth),
+      Math.max(1, feedbackHeight),
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
     );
@@ -2131,6 +2649,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     disposeMaterial(this.blurVMaterial);
     disposeMaterial(this.warpMaterial);
     disposeMaterial(this.feedbackBlendMaterial);
+    // Invalidate any in-flight async shader warm-up and drop its materials.
+    this.directShaderSwapRevision += 1;
+    this.directShaderSwapPending = false;
+    this.disposeRetiredWarmupMaterials();
     this.compositeScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();

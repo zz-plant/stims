@@ -2,31 +2,17 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
-import {
-  buildAudioProfile,
-  searchByAudioProfile,
-} from '../core/services/audio-matcher.ts';
-import { searchByFrame } from '../core/services/visual-embedding.ts';
-import type { PresetCatalogEntry } from './contracts.ts';
-import {
-  getAudioEnergy,
-  subscribeAudioEnergy,
-} from './engine-audio-energy-store.ts';
-import { useEngineSnapshot } from './engine-context.tsx';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
-import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
-import { useWorkspace } from './workspace-context.tsx';
-import { resolveAuthorUrl } from './workspace-helpers.ts';
 
 const isMobileSheet = () =>
   typeof window !== 'undefined' &&
-  window.matchMedia('(max-width: 767px)').matches;
+  (window.matchMedia('(max-width: 767px)').matches ||
+    window.matchMedia('(max-height: 500px) and (pointer: coarse)').matches);
 
 /* Stage-anchored seam: the editor/stage split is user-resizable on desktop.
    The chosen width feeds --stage-tool-width on the shell root, which sizes
@@ -64,6 +50,12 @@ type SidePanelProps = {
   // rendered, so the live stage and its transport dock stay visible and
   // clickable beside the panel. Used by the editor.
   stageAnchored?: boolean;
+  // When true, the body stops being a scroll container and becomes a
+  // fixed-height flex column instead, so the panel's content manages its own
+  // scrolling regions. The editor needs this: as a plain scroll container the
+  // body let CodeMirror render its whole document at full height, pushing
+  // every tool below the code thousands of pixels out of reach.
+  fillBody?: boolean;
 };
 
 export function SidePanel({
@@ -73,15 +65,23 @@ export function SidePanel({
   children,
   onOpen,
   stageAnchored = false,
+  fillBody = false,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
 
   const isActive = open && !exiting;
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useFocusTrap<HTMLDivElement>({
     active: isActive,
     autoFocus: true,
     restoreFocusOnUnmount: true,
+    // Stage-anchored panels are non-modal: the stage and dock stay usable
+    // beside them (for pointer AND keyboard), so focus must not be fenced in.
+    // The seam is first in DOM order but is the wrong first landing — start
+    // on the close button, a control every panel shares.
+    trapFocus: !stageAnchored,
+    initialFocusRef: stageAnchored ? closeBtnRef : undefined,
   });
 
   const startClose = useCallback(() => {
@@ -254,12 +254,22 @@ export function SidePanel({
   const handleSeamKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const current = clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH);
+      // stopPropagation: ArrowLeft/ArrowRight are also the global
+      // previous/shuffle preset shortcuts on document — a resize nudge must
+      // not switch presets underneath the editor.
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        e.stopPropagation();
         commitSeamWidth(clampSeamWidth(current + SEAM_KEY_STEP));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
+        e.stopPropagation();
         commitSeamWidth(clampSeamWidth(current - SEAM_KEY_STEP));
+      } else if (e.key === 'Enter') {
+        // Keyboard path for the double-click reset.
+        e.preventDefault();
+        e.stopPropagation();
+        commitSeamWidth(null);
       }
     },
     [seamWidth, commitSeamWidth],
@@ -302,34 +312,44 @@ export function SidePanel({
         data-exiting={String(exiting)}
         data-stage-anchored={stageAnchored ? 'true' : undefined}
         role="dialog"
-        aria-modal="true"
+        aria-modal={stageAnchored ? undefined : 'true'}
         aria-label={title}
         data-shell-dialog="true"
         tabIndex={-1}
       >
         {stageAnchored ? (
-          // biome-ignore lint/a11y/useSemanticElements: focusable window-splitter (WAI-ARIA APG pattern); <hr> cannot take focus or a value
-          <div
-            className={styles.seam}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize editor panel"
-            aria-valuemin={SEAM_MIN_WIDTH}
-            aria-valuemax={
-              typeof window !== 'undefined'
-                ? seamMaxWidth()
-                : SEAM_DEFAULT_WIDTH
-            }
-            aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
-            tabIndex={0}
-            title="Drag to resize (double-click to reset)"
-            onPointerDown={handleSeamPointerDown}
-            onPointerMove={handleSeamPointerMove}
-            onPointerUp={handleSeamPointerEnd}
-            onPointerCancel={handleSeamPointerEnd}
-            onKeyDown={handleSeamKeyDown}
-            onDoubleClick={() => commitSeamWidth(null)}
-          />
+          <>
+            {/* biome-ignore lint/a11y/useSemanticElements: focusable window-splitter (WAI-ARIA APG pattern); <hr> cannot take focus or a value */}
+            <div
+              className={styles.seam}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize editor panel"
+              aria-keyshortcuts="ArrowLeft ArrowRight Enter"
+              aria-valuemin={SEAM_MIN_WIDTH}
+              aria-valuemax={
+                typeof window !== 'undefined'
+                  ? seamMaxWidth()
+                  : SEAM_DEFAULT_WIDTH
+              }
+              aria-valuenow={clampSeamWidth(seamWidth ?? SEAM_DEFAULT_WIDTH)}
+              tabIndex={0}
+              title="← → to resize · Enter or double-click to reset"
+              onPointerDown={handleSeamPointerDown}
+              onPointerMove={handleSeamPointerMove}
+              onPointerUp={handleSeamPointerEnd}
+              onPointerCancel={handleSeamPointerEnd}
+              onKeyDown={handleSeamKeyDown}
+              onDoubleClick={() => commitSeamWidth(null)}
+            />
+            {/* Silent until the seam itself has focus — a persistent hint on
+                a 12px-wide sliver almost nobody touches would be pure
+                clutter; this only needs to confirm the arrow-key path right
+                when someone's actually found their way to it. */}
+            <span className={styles.seamHint} aria-hidden="true">
+              ← →
+            </span>
+          </>
         ) : null}
         <div
           className={styles.header}
@@ -341,11 +361,15 @@ export function SidePanel({
           <div className={styles.grabber} aria-hidden="true" />
           <h2 className={styles.title}>{title}</h2>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.closeBtn}
             onClick={startClose}
             aria-label="Close"
-            title="Close"
+            // Esc closes every panel and is in the shortcut registry, but the
+            // one control for it advertised nothing.
+            title="Close (Esc)"
+            aria-keyshortcuts="Escape"
           >
             <UiIcon
               name="close"
@@ -353,356 +377,10 @@ export function SidePanel({
             />
           </button>
         </div>
-        <div className={styles.body}>{children}</div>
+        <div className={styles.body} data-fill={fillBody ? 'true' : undefined}>
+          {children}
+        </div>
       </div>
     </>
-  );
-}
-
-export function RefinePanel() {
-  const [instruction, setInstruction] = useState('');
-  const [state, setState] = useState<'idle' | 'refining' | 'explaining'>(
-    'idle',
-  );
-  const [response, setResponse] = useState<string | null>(null);
-  const { engine, ui } = useWorkspace();
-  const { engineSnapshot } = useEngineSnapshot();
-  const currentSource = engineSnapshot?.currentSource ?? '';
-
-  const handleRefine = useCallback(async () => {
-    if (!instruction.trim()) return;
-    setState('refining');
-    ui.setStatusMessage('Refining preset…');
-    try {
-      const res = await fetch('/api/refine-preset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentSource,
-          instruction: instruction.trim(),
-        }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      if (data.milkSource) {
-        await engine.updateEditorSource(data.milkSource);
-        setResponse(`Refined: ${data.title || 'New Preset'}`);
-      } else {
-        throw new Error('No source returned');
-      }
-    } catch (err) {
-      const error = err as Error;
-      setResponse(`Error: ${error.message}`);
-    } finally {
-      setState('idle');
-      ui.setStatusMessage(null);
-    }
-  }, [currentSource, engine, instruction, ui]);
-
-  const handleExplain = useCallback(async () => {
-    if (!instruction.trim()) return;
-    setState('explaining');
-    ui.setStatusMessage('Analyzing preset…');
-    try {
-      const res = await fetch('/api/refine-preset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentSource,
-          instruction: 'explain this preset',
-        }),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      setResponse(
-        data.explanation || data.message || 'No explanation available.',
-      );
-    } catch (err) {
-      const error = err as Error;
-      setResponse(`Error: ${error.message}`);
-    } finally {
-      setState('idle');
-      ui.setStatusMessage(null);
-    }
-  }, [currentSource, instruction, ui]);
-
-  return (
-    <div className="stims-shell__refine-panel">
-      <div className="stims-shell__refine-input">
-        <label htmlFor="refine-instruction" className="stims-shell__sr-only">
-          Describe how to change the preset
-        </label>
-        <textarea
-          id="refine-instruction"
-          className="stims-shell__refine-textarea"
-          placeholder="e.g., make it more blue, add slow rotation, increase bass reactivity"
-          value={instruction}
-          onChange={(e) => setInstruction(e.target.value)}
-          rows={3}
-          disabled={state !== 'idle'}
-        />
-      </div>
-      <div className="stims-shell__refine-actions">
-        <button
-          type="button"
-          className="stims-shell__refine-btn"
-          onClick={handleRefine}
-          disabled={state !== 'idle' || !instruction.trim()}
-        >
-          {state === 'refining' ? 'Refining…' : 'Refine'}
-        </button>
-        <button
-          type="button"
-          className="stims-shell__refine-btn stims-shell__refine-btn--secondary"
-          onClick={handleExplain}
-          disabled={state !== 'idle' || !instruction.trim()}
-        >
-          {state === 'explaining' ? 'Explaining…' : 'Explain'}
-        </button>
-      </div>
-      {response && (
-        <div
-          className="stims-shell__refine-response"
-          role="status"
-          aria-live="polite"
-        >
-          {response}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
-  const [matches, setMatches] = useState<Array<{
-    presetId: string;
-    score: number;
-  }> | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { engine } = useWorkspace();
-  const [audioEnergy, setEnergy] = useState(getAudioEnergy);
-
-  useEffect(() => {
-    return subscribeAudioEnergy(() => setEnergy(getAudioEnergy()));
-  }, []);
-
-  const handleMatch = useCallback(async () => {
-    if (!audioEnergy || loading) return;
-    setLoading(true);
-    setMatches(null);
-    try {
-      const profile = buildAudioProfile({ audioEnergy });
-      const results = await searchByAudioProfile(profile);
-      setMatches(results.slice(0, 5));
-    } catch (error) {
-      console.error('Audio match failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [audioEnergy, loading]);
-
-  const autoMatchTriggeredRef = useRef(false);
-  useEffect(() => {
-    if (autoMatchTriggeredRef.current) return;
-    if (audioEnergy > 0.02) {
-      autoMatchTriggeredRef.current = true;
-      handleMatch();
-    }
-  }, [handleMatch, audioEnergy]);
-
-  return (
-    <div className="stims-shell__audiomatch-panel">
-      <div className="stims-shell__audiomatch-header">
-        <UiIcon
-          name="music"
-          className="stims-shell__audiomatch-icon"
-          aria-hidden="true"
-        />
-        <h3>Match my music</h3>
-        <p className="stims-shell__audiomatch-desc">
-          Finding presets that fit the current audio energy…
-        </p>
-      </div>
-      {loading ? (
-        <div className="stims-shell__audiomatch-loading">Analyzing audio…</div>
-      ) : matches ? (
-        <ul className="stims-shell__audiomatch-results">
-          {matches.length === 0 ? (
-            <li className="stims-shell__audiomatch-empty">No matches found</li>
-          ) : (
-            matches.map((match, i) => (
-              <li key={match.presetId} className="stims-shell__audiomatch-item">
-                <button
-                  type="button"
-                  className="stims-shell__audiomatch-btn"
-                  onClick={() => {
-                    engine.handlePlayPreset(match.presetId);
-                    onClose();
-                  }}
-                >
-                  <span className="stims-shell__audiomatch-rank">{i + 1}</span>
-                  <span className="stims-shell__audiomatch-id">
-                    {match.presetId}
-                  </span>
-                  <span className="stims-shell__audiomatch-score">
-                    {(match.score * 100).toFixed(0)}% match
-                  </span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : (
-        <button
-          type="button"
-          className="stims-shell__audiomatch-refresh"
-          onClick={handleMatch}
-          disabled={loading || audioEnergy < 0.02}
-        >
-          <UiIcon
-            name="refresh"
-            className="stims-icon-slot stims-icon-slot--sm"
-            aria-hidden="true"
-          />
-          Analyze audio
-        </button>
-      )}
-    </div>
-  );
-}
-
-export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
-  const [matches, setMatches] = useState<PresetCatalogEntry[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { engine, ui } = useWorkspace();
-
-  const catalogEntryById = useMemo(() => {
-    const map = new Map<string, PresetCatalogEntry>();
-    for (const entry of engine.catalog) {
-      map.set(entry.id, entry);
-    }
-    return map;
-  }, [engine.catalog]);
-
-  const handleSearch = useCallback(async () => {
-    setLoading(true);
-    setMatches(null);
-    setError(null);
-    try {
-      const canvas = ui.stageRef.current?.querySelector(
-        'canvas',
-      ) as HTMLCanvasElement | null;
-      if (!canvas) throw new Error('No canvas found');
-      const results = await searchByFrame(canvas);
-      if (results.length === 0) {
-        setMatches([]);
-      } else {
-        const fullMatches = results
-          .map((r) => catalogEntryById.get(r.presetId))
-          .filter((e): e is PresetCatalogEntry => e !== undefined);
-        setMatches(fullMatches);
-      }
-    } catch (err) {
-      const error = err as Error;
-      if (error.name !== 'AbortError') {
-        setError(error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [catalogEntryById, ui]);
-
-  useEffect(() => {
-    handleSearch();
-  }, [handleSearch]);
-
-  return (
-    <div className="stims-shell__visualsearch-panel">
-      <div className="stims-shell__visualsearch-header">
-        <UiIcon
-          name="eye"
-          className="stims-shell__visualsearch-icon"
-          aria-hidden="true"
-        />
-        <h3>More like this</h3>
-        <p className="stims-shell__visualsearch-desc">
-          Finding visually similar presets…
-        </p>
-      </div>
-      {loading ? (
-        <div className="stims-shell__visualsearch-loading">
-          Analyzing frame…
-        </div>
-      ) : error ? (
-        <div className="stims-shell__visualsearch-error">{error}</div>
-      ) : matches ? (
-        <ul className="stims-shell__visualsearch-results">
-          {matches.length === 0 ? (
-            <li className="stims-shell__visualsearch-empty">
-              No similar presets found
-            </li>
-          ) : (
-            matches.map((entry) => (
-              <li key={entry.id} className="stims-shell__visualsearch-item">
-                <button
-                  type="button"
-                  className="stims-shell__visualsearch-btn"
-                  onClick={() => {
-                    engine.handlePlayPreset(entry.id);
-                    onClose();
-                  }}
-                >
-                  <PresetArtwork entry={entry} compact />
-                  <div className="stims-shell__visualsearch-info">
-                    <span className="stims-shell__visualsearch-title">
-                      {entry.title}
-                    </span>
-                    <span className="stims-shell__visualsearch-meta">
-                      {entry.author ? (
-                        <>
-                          by{' '}
-                          {resolveAuthorUrl(entry.author, entry.authorUrl) ? (
-                            <a
-                              href={resolveAuthorUrl(
-                                entry.author,
-                                entry.authorUrl,
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ctl-preset__author-link"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {entry.author}
-                            </a>
-                          ) : (
-                            entry.author
-                          )}
-                        </>
-                      ) : (
-                        'Unknown author'
-                      )}
-                    </span>
-                  </div>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : (
-        <button
-          type="button"
-          className="stims-shell__visualsearch-refresh"
-          onClick={handleSearch}
-        >
-          <UiIcon
-            name="refresh"
-            className="stims-icon-slot stims-icon-slot--sm"
-            aria-hidden="true"
-          />
-          Analyze frame
-        </button>
-      )}
-    </div>
   );
 }

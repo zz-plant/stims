@@ -1,31 +1,70 @@
-// Cloudflare Pages Middleware: Intercepts preset routes to dynamically rewrite Open Graph & Twitter meta tags
+// Edge middleware for preset routes.
+//
+// Two jobs:
+//   1. `/preset/<id>` used to 404 with an empty body even though this file
+//      already parsed that shape. It now redirects to the canonical query form.
+//   2. `/?preset=<id>` gets real per-preset <title>, description, canonical,
+//      og:url and OG image. Before, canonical and og:url stayed pinned to the
+//      site root, so every preset told crawlers it was the same page and every
+//      social share collapsed onto `/`.
+
+import { isAllowedDiscoverSlug } from './discover-slugs.ts';
 
 interface EventContext {
   request: Request;
   next: () => Promise<Response>;
+  env?: { ASSETS?: { fetch: (request: Request) => Promise<Response> } };
 }
 
-function humanizePresetId(presetId: string): {
-  title: string;
-  author?: string;
-} {
-  const parts = presetId.split('-');
-  const formatted = parts
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+type PresetMeta = Record<string, [title: string, author: string]>;
 
-  // Common author prefix patterns in MilkDrop presets (e.g. rovastar-parallel-universe -> Rovastar)
-  if (parts.length >= 2) {
-    const potentialAuthor =
-      parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-    const titlePart = parts
-      .slice(1)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-    return { title: titlePart, author: potentialAuthor };
-  }
+// Per-isolate memo. Workers reuse isolates across requests, so the metadata
+// file is fetched once per isolate rather than once per request. A failed
+// fetch is not cached, so a transient error does not poison the isolate.
+let presetMetaPromise: Promise<PresetMeta | null> | null = null;
 
-  return { title: formatted };
+function loadPresetMeta(
+  context: EventContext,
+  origin: string,
+): Promise<PresetMeta | null> {
+  presetMetaPromise ??= (async () => {
+    const assets = context.env?.ASSETS;
+    if (!assets) {
+      return null;
+    }
+    try {
+      const response = await assets.fetch(
+        new Request(new URL('/preset-meta.json', origin).toString()),
+      );
+      if (!response.ok) {
+        return null;
+      }
+      return (await response.json()) as PresetMeta;
+    } catch {
+      return null;
+    }
+  })().then(
+    (value) => {
+      if (value === null) {
+        presetMetaPromise = null;
+      }
+      return value;
+    },
+    () => {
+      presetMetaPromise = null;
+      return null;
+    },
+  );
+
+  return presetMetaPromise;
+}
+
+function escapeAttribute(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export async function onRequest(context: EventContext): Promise<Response> {
@@ -43,11 +82,113 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return next();
   }
 
-  // Extract preset ID from query param ?preset=<id> or path /preset/<id>
-  let presetId = url.searchParams.get('preset');
-  if (!presetId && url.pathname.startsWith('/preset/')) {
-    presetId = url.pathname.replace('/preset/', '').split('/')[0];
+  // `/preset/<id>` is a real inbound shape (it was linked and parsed here) but
+  // the site only serves the app at `/`. Redirect instead of 404ing, and keep
+  // a single canonical URL form for crawlers.
+  if (url.pathname.startsWith('/preset/')) {
+    const pathPresetId = url.pathname.slice('/preset/'.length).split('/')[0];
+    if (pathPresetId) {
+      let decodedPresetId: string;
+      try {
+        decodedPresetId = decodeURIComponent(pathPresetId);
+      } catch {
+        return new Response('Malformed preset id.', { status: 400 });
+      }
+      const target = new URL('/', url.origin);
+      target.searchParams.set('preset', decodedPresetId);
+      return Response.redirect(target.toString(), 301);
+    }
   }
+
+  // `/discover/<slug>` semantic discovery route handler for curated topic
+  // hubs. Slugs outside the allowlist fall through to the app shell with its
+  // default root-canonical metadata — generating unique self-canonical pages
+  // for arbitrary slugs would mint an unbounded crawlable space of thin
+  // near-duplicate pages.
+  if (url.pathname.startsWith('/discover/')) {
+    const slug = url.pathname.slice('/discover/'.length).split('/')[0];
+    if (slug && isAllowedDiscoverSlug(slug)) {
+      const formattedName = slug
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const fullTitle = `${formattedName} Music Visualizers — Stims`;
+      const description = `Explore sound-reactive ${formattedName} MilkDrop music visualizers running live in your browser on Stims — high-performance WebGL & WebGPU visual experience.`;
+      const canonical = new URL(
+        `/discover/${encodeURIComponent(slug)}`,
+        url.origin,
+      ).toString();
+      const oembedUrl = new URL(
+        `/api/oembed?url=${encodeURIComponent(canonical)}`,
+        url.origin,
+      ).toString();
+
+      const response = await next();
+      if (
+        response.status !== 200 ||
+        !response.headers.get('content-type')?.includes('text/html')
+      ) {
+        return response;
+      }
+      if (typeof HTMLRewriter === 'undefined') return response;
+
+      const setContent = (value: string) => ({
+        element(el: { setAttribute: (name: string, value: string) => void }) {
+          el.setAttribute('content', value);
+        },
+      });
+
+      const jsonLd = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: fullTitle,
+        description,
+        url: canonical,
+        isPartOf: {
+          '@type': 'SoftwareApplication',
+          name: 'Stims',
+          url: url.origin,
+        },
+      });
+
+      return new HTMLRewriter()
+        .on('title', {
+          element(el) {
+            el.setInnerContent(fullTitle);
+          },
+        })
+        .on('link[rel="canonical"]', {
+          element(el) {
+            el.setAttribute('href', canonical);
+          },
+        })
+        .on('meta[name="description"]', setContent(description))
+        .on('meta[property="og:title"]', setContent(fullTitle))
+        .on('meta[property="og:description"]', setContent(description))
+        .on('meta[property="og:url"]', setContent(canonical))
+        .on('meta[name="twitter:title"]', setContent(fullTitle))
+        .on('meta[name="twitter:description"]', setContent(description))
+        .on('head', {
+          element(el) {
+            el.append(
+              `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script>`,
+              { html: true },
+            );
+          },
+        })
+        .on('noscript', {
+          element(el) {
+            el.append(
+              `<h1>${escapeAttribute(formattedName)} Music Visualizers</h1><p>${escapeAttribute(description)}</p>`,
+              { html: true },
+            );
+          },
+        })
+        .transform(response);
+    }
+  }
+
+  const presetId = url.searchParams.get('preset');
 
   // Fetch standard static response first
   const response = await next();
@@ -61,10 +202,25 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return response;
   }
 
-  const { title, author } = humanizePresetId(presetId);
-  const authorCredit = author ? `by ${author}` : null;
-  const fullTitle = `${title}${authorCredit ? ` ${authorCredit}` : ''} — Stims Music Visualizer`;
-  const description = `Experience "${title}"${authorCredit ? ` by ${author}` : ''} live on Stims music visualizer. High-fidelity audio-reactive visuals in your browser, WebGPU accelerated.`;
+  if (typeof HTMLRewriter === 'undefined') {
+    return response;
+  }
+
+  const presetMeta = await loadPresetMeta(context, url.origin);
+  const entry = presetMeta?.[presetId];
+
+  // Unknown ids are left with the site's default metadata. Generating a unique
+  // title and canonical for arbitrary `?preset=` values would turn the query
+  // string into unbounded crawlable space full of near-duplicate pages.
+  if (!entry) {
+    return response;
+  }
+
+  const [title, author] = entry;
+  const authorCredit = author ? ` by ${author}` : '';
+  const fullTitle = `▶ Play ${title}${authorCredit} — Stims Visualizer`;
+  const description = `Tap to launch "${title}" live in 60FPS WebGPU. Reacts to your mic or audio in the browser — zero install required.`;
+
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
   // unfurler) and falls back to the static card if rendering fails.
@@ -74,57 +230,129 @@ export async function onRequest(context: EventContext): Promise<Response> {
   ).toString();
   const imageAlt = `Social card for the ${title} preset on Stims`;
 
-  // Use Cloudflare HTMLRewriter to substitute Open Graph / Twitter tags dynamically
-  // HTMLRewriter is provided natively by Cloudflare Workers runtime
-  if (typeof HTMLRewriter !== 'undefined') {
-    return new HTMLRewriter()
+  // The URL this page should be indexed and shared as. Must match the form
+  // emitted into the sitemap, or the two disagree about what the page is.
+  const canonicalUrl = new URL('/', url.origin);
+  canonicalUrl.searchParams.set('preset', presetId);
+  const canonical = canonicalUrl.toString();
+
+  const oembedUrl = new URL(
+    `/api/oembed?url=${encodeURIComponent(canonical)}`,
+    url.origin,
+  ).toString();
+
+  const setContent = (value: string) => ({
+    element(el: { setAttribute: (name: string, value: string) => void }) {
+      el.setAttribute('content', value);
+    },
+  });
+
+  // Inject preset-specific JSON-LD structured data for search engine rich snippets
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'VisualArtwork',
+        name: title,
+        description,
+        ...(author ? { artist: { '@type': 'Person', name: author } } : {}),
+        image: imageUrl,
+        url: canonical,
+        isPartOf: {
+          '@type': 'SoftwareApplication',
+          name: 'Stims',
+          url: url.origin,
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: url.origin,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Presets',
+            item: canonical,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: title,
+            item: canonical,
+          },
+        ],
+      },
+    ],
+  });
+
+  const playerUrl = new URL('/', url.origin);
+  playerUrl.searchParams.set('preset', presetId);
+  playerUrl.searchParams.set('embedded', 'true');
+  const embedPlayerUrl = playerUrl.toString();
+
+  const speculationRulesJson = JSON.stringify({
+    prefetch: [
+      {
+        source: 'list',
+        urls: [
+          '/milkdrop-presets/catalog.json',
+          `/milkdrop-presets/previews/${encodeURIComponent(presetId)}.png`,
+        ],
+      },
+    ],
+  });
+
+  return (
+    new HTMLRewriter()
       .on('title', {
         element(el) {
           el.setInnerContent(fullTitle);
         },
       })
-      .on('meta[property="og:title"]', {
+      .on('link[rel="canonical"]', {
         element(el) {
-          el.setAttribute('content', fullTitle);
+          el.setAttribute('href', canonical);
         },
       })
-      .on('meta[property="og:description"]', {
+      .on('meta[name="description"]', setContent(description))
+      .on('meta[property="og:title"]', setContent(fullTitle))
+      .on('meta[property="og:description"]', setContent(description))
+      .on('meta[property="og:url"]', setContent(canonical))
+      .on('meta[property="og:image"]', setContent(imageUrl))
+      .on('meta[property="og:image:alt"]', setContent(imageAlt))
+      .on('meta[name="twitter:card"]', setContent('player'))
+      .on('meta[name="twitter:title"]', setContent(fullTitle))
+      .on('meta[name="twitter:description"]', setContent(description))
+      .on('meta[name="twitter:image"]', setContent(imageUrl))
+      .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
+      .on('head', {
         element(el) {
-          el.setAttribute('content', description);
+          el.append(
+            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
+            {
+              html: true,
+            },
+          );
         },
       })
-      .on('meta[property="og:image"]', {
+      // A crawler that renders no JavaScript otherwise sees 212 characters of
+      // "JavaScript is required". This gives the preset page a real indexable
+      // sentence naming the preset and its author.
+      .on('noscript', {
         element(el) {
-          el.setAttribute('content', imageUrl);
+          el.append(
+            `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
+              `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
+            )}</p>`,
+            { html: true },
+          );
         },
       })
-      .on('meta[property="og:image:alt"]', {
-        element(el) {
-          el.setAttribute('content', imageAlt);
-        },
-      })
-      .on('meta[name="twitter:image"]', {
-        element(el) {
-          el.setAttribute('content', imageUrl);
-        },
-      })
-      .on('meta[name="twitter:image:alt"]', {
-        element(el) {
-          el.setAttribute('content', imageAlt);
-        },
-      })
-      .on('meta[name="twitter:title"]', {
-        element(el) {
-          el.setAttribute('content', fullTitle);
-        },
-      })
-      .on('meta[name="twitter:description"]', {
-        element(el) {
-          el.setAttribute('content', description);
-        },
-      })
-      .transform(response);
-  }
-
-  return response;
+      .transform(response)
+  );
 }

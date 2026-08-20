@@ -21,8 +21,28 @@ export {
 const MAX_COMPILED_PRESET_CACHE = 50;
 const compiledPresetCache = new Map<string, MilkdropCompiledPreset>();
 
+function insertCompiledPresetCacheEntry(
+  raw: string,
+  compiled: MilkdropCompiledPreset,
+) {
+  compiledPresetCache.delete(raw);
+  compiledPresetCache.set(raw, compiled);
+
+  while (compiledPresetCache.size > MAX_COMPILED_PRESET_CACHE) {
+    const oldestKey = compiledPresetCache.keys().next().value;
+    if (oldestKey === undefined) {
+      break;
+    }
+    compiledPresetCache.delete(oldestKey);
+  }
+}
+
 export function clearCompiledPresetCache() {
   compiledPresetCache.clear();
+}
+
+export function getCompiledPresetCacheSize() {
+  return compiledPresetCache.size;
 }
 
 export function compileMilkdropPresetSource(
@@ -34,12 +54,17 @@ export function compileMilkdropPresetSource(
   const isSimpleCall =
     Object.keys(options).length === 0 &&
     (source.id === undefined || Object.keys(source).length <= 1);
+  // The load path opts into the raw-string cache explicitly so re-loading a
+  // preset skips the parse+IR rebuild. Only honored when no other compile
+  // option could make the cached IR stale.
+  const cacheable =
+    isSimpleCall ||
+    (options.cacheCompile === true && Object.keys(options).length === 1);
 
-  if (isSimpleCall) {
+  if (cacheable) {
     const cached = compiledPresetCache.get(raw);
     if (cached) {
-      compiledPresetCache.delete(raw);
-      compiledPresetCache.set(raw, cached);
+      insertCompiledPresetCacheEntry(raw, cached);
       return cached;
     }
   }
@@ -61,23 +86,17 @@ export function compileMilkdropPresetSource(
 
   compiled.formattedSource = formatMilkdropPreset(compiled);
 
-  if (isSimpleCall) {
-    if (compiledPresetCache.size >= MAX_COMPILED_PRESET_CACHE) {
-      const oldestKey = compiledPresetCache.keys().next().value;
-      if (oldestKey !== undefined) {
-        compiledPresetCache.delete(oldestKey);
-      }
-    }
-    compiledPresetCache.set(raw, compiled);
+  if (cacheable) {
+    insertCompiledPresetCacheEntry(raw, compiled);
   }
 
   return compiled;
 }
 
 export function warmupCompiledPresetCache(presets: MilkdropCompiledPreset[]) {
-  presets.forEach((compiled) => {
+  presets.slice(-MAX_COMPILED_PRESET_CACHE).forEach((compiled) => {
     if (compiled.source?.raw) {
-      compiledPresetCache.set(compiled.source.raw, compiled);
+      insertCompiledPresetCacheEntry(compiled.source.raw, compiled);
     }
   });
 }

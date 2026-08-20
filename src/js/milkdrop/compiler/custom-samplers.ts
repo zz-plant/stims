@@ -1,8 +1,5 @@
-import {
-  CUSTOM_TEXTURE_FILES,
-  MILKDROP_TEXTURE_FILES,
-} from '../feedback-manager-webgpu-composite';
 import { normalizeMilkdropShaderSamplerName } from '../shader-samplers.ts';
+import { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from '../texture-files';
 
 export type MilkdropCustomSamplerFilter = 'linear' | 'nearest';
 export type MilkdropCustomSamplerWrap = 'repeat' | 'clamp';

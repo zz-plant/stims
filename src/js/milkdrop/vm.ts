@@ -1,3 +1,18 @@
+/**
+ * Executes a compiled preset's equations, once per frame and once per vertex.
+ *
+ * This is the CPU tier of the expression runtime: it owns the variable
+ * environment MilkDrop presets mutate (`q1`–`q32`, `t1`–`t8`, the `megabuf`
+ * scratch space), runs the per-frame and per-vertex program blocks through the
+ * JIT in `expression-jit.ts`, and hands the resulting state to the renderer.
+ *
+ * Numbers produced here are a contract, not an implementation detail. The GPU
+ * tier (`vm-gpu.ts`) is expected to reproduce them, and `tests/unit/
+ * vm-golden-traces.test.ts` replays recorded traces against this VM
+ * bit-for-bit. Changing evaluation order or arithmetic here is a
+ * platform-semantics decision that will move those traces — verify with
+ * `bun run lab:replay` before assuming a difference is noise.
+ */
 /* global GPUDevice */
 
 import { DEFAULT_MILKDROP_STATE } from './compiler';
@@ -6,6 +21,7 @@ import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,
 } from './expression-jit.ts';
+import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -25,7 +41,6 @@ import {
   buildMeshField,
   buildMotionVectors,
   getMeshDensity,
-  resetFrameTransformCache,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
 import { buildBorders, buildShapes } from './vm/shape-border-builder';
@@ -78,6 +93,12 @@ function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
 
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
+  /**
+   * Which borders the preset explicitly sized. Borders default to a non-zero
+   * size, so this is what separates "wants a border" from "never mentioned
+   * one" — see buildBorders.
+   */
+  private declaredBorderKeys: ReadonlySet<'outer' | 'inner'> = new Set();
   private state: MutableState = {};
   private registers: MutableState = {};
   private readonly signalEnv: MutableState = createDefaultSignalEnv();
@@ -123,12 +144,10 @@ class MilkdropPresetVM implements MilkdropVM {
       momentumSamples: new Float32Array(0),
     },
     pointLocalsScratch: {},
+    customWaveBaseLocalsPool: [],
   };
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
-    frameTransformCache: new Map<number, { x: number; y: number }>(),
-    transformCachePool: [],
-    transformCachePoolIndex: 0,
     pointScratch: {},
     meshPoints: [],
     motionVectorFrameIndex: 0,
@@ -143,6 +162,19 @@ class MilkdropPresetVM implements MilkdropVM {
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
   private perFrameBaseValues: MutableState = {};
+  /**
+   * `perFrameBaseValues` flattened into parallel arrays, rebuilt once per
+   * preset in setPreset. restorePerFrameBaseValues runs on EVERY frame over
+   * ~100 keys; a `for...in` there re-walks the object's enumerable keys (and
+   * its prototype chain) each time, while an indexed loop over two dense
+   * arrays stays monomorphic. Keys and values are positionally paired.
+   */
+  private perFrameBaseKeys: string[] = [];
+  private perFrameBaseNumbers: number[] = [];
+  /** O(1) lookup for `setField`: which index a field holds in the parallel
+   * per-frame base arrays, so a live value can be nudged in both without a
+   * linear scan per input event. */
+  private perFrameBaseKeyIndex = new Map<string, number>();
 
   /** Resolves `wave${slot}_${key}` / `shape${slot}_${key}` composite keys that
    * exist only in the synthesized snapshot, returning the owning locals object
@@ -189,16 +221,15 @@ class MilkdropPresetVM implements MilkdropVM {
     if (prop in this.frameCommonVars) {
       return this.frameCommonVars[prop];
     }
-    const parsed = this.parseFrameLocalKey(prop);
-    if (parsed) {
-      const { locals, localKey } = parsed;
-      return localKey in locals ? (locals[localKey] ?? 0) : undefined;
-    }
-    // `registers` is `Object.create(state)`, so `in` covers state keys and
-    // reads resolve through the prototype chain exactly like `{...state,
-    // ...registers}`.
     if (prop in this.registers) {
       return this.registers[prop];
+    }
+    if (prop.startsWith('wave') || prop.startsWith('shape')) {
+      const parsed = this.parseFrameLocalKey(prop);
+      if (parsed) {
+        const { locals, localKey } = parsed;
+        return localKey in locals ? (locals[localKey] ?? 0) : undefined;
+      }
     }
     return undefined;
   }
@@ -220,11 +251,16 @@ class MilkdropPresetVM implements MilkdropVM {
       if (prop in this.frameCommonVars) {
         return this.frameCommonVars[prop] !== undefined;
       }
-      const parsed = this.parseFrameLocalKey(prop);
-      if (parsed) {
-        return parsed.localKey in parsed.locals;
+      if (prop in this.registers) {
+        return true;
       }
-      return prop in this.registers;
+      if (prop.startsWith('wave') || prop.startsWith('shape')) {
+        const parsed = this.parseFrameLocalKey(prop);
+        if (parsed) {
+          return parsed.localKey in parsed.locals;
+        }
+      }
+      return false;
     },
     ownKeys: () => {
       if (this.frameVariablesSnapshot === null) {
@@ -273,30 +309,66 @@ class MilkdropPresetVM implements MilkdropVM {
     this.webgpuOptimizationFlags = { ...flags };
   }
 
-  setGpuDevice(device: GPUDevice | null) {
+  /** Returns whether the GPU compute runner is active afterwards — false
+   * when disabled, or when the per-frame program is not GPU-executable
+   * (stepAsync then silently runs the CPU path, which differential
+   * harnesses must be able to detect). */
+  setGpuDevice(device: GPUDevice | null): boolean {
     if (!device || !this.webgpuOptimizationFlags.gpuComputeVM) {
       this.gpuRunner.dispose();
-      return;
+      return false;
     }
-    this.gpuRunner.init(
+    return this.gpuRunner.init(
       device,
       this.preset.ir.programs.perFrame,
       this.state,
       this.randomState,
       this.registers,
+      // Guest memory: the runner mirrors these into storage buffers and
+      // copies GPU writes back after each dispatch, so the CPU tiers keep
+      // seeing one coherent megabuf/gmegabuf.
+      { megabuf: this.megabuf, gmegabuf: this.gmegabuf },
     );
   }
 
+  private cachedEffectivePlan: ReturnType<
+    typeof applyMilkdropWebGpuOptimizationFlags
+  > | null = null;
+  private cachedEffectivePlanSource: unknown = null;
+  private cachedEffectivePlanFlags: MilkdropWebGpuOptimizationFlags | null =
+    null;
+
   private getEffectiveWebGpuDescriptorPlan() {
-    return this.renderBackend === 'webgpu'
-      ? applyMilkdropWebGpuOptimizationFlags(
-          this.preset.ir.compatibility.gpuDescriptorPlans.webgpu,
-          this.webgpuOptimizationFlags,
-        )
-      : null;
+    if (this.renderBackend !== 'webgpu') {
+      return null;
+    }
+    // Called several times per frame (waves, mesh, motion vectors, and once
+    // per custom wave); applyMilkdropWebGpuOptimizationFlags allocates a new
+    // plan each call, so memoize on its two inputs. The flags object is
+    // cloned on every set, so identity is a valid change signal for both.
+    const source = this.preset.ir.compatibility.gpuDescriptorPlans.webgpu;
+    if (
+      this.cachedEffectivePlanSource !== source ||
+      this.cachedEffectivePlanFlags !== this.webgpuOptimizationFlags
+    ) {
+      this.cachedEffectivePlan = applyMilkdropWebGpuOptimizationFlags(
+        source,
+        this.webgpuOptimizationFlags,
+      );
+      this.cachedEffectivePlanSource = source;
+      this.cachedEffectivePlanFlags = this.webgpuOptimizationFlags;
+    }
+    return this.cachedEffectivePlan;
   }
 
   reset() {
+    const declaredBorders = new Set<'outer' | 'inner'>();
+    for (const field of this.preset.ast.fields) {
+      const key = normalizeProgramAssignmentTarget(field.key);
+      if (key === 'ob_size') declaredBorders.add('outer');
+      else if (key === 'ib_size') declaredBorders.add('inner');
+    }
+    this.declaredBorderKeys = declaredBorders;
     this.gmegabuf = resolveGlobalBuffer(this.preset);
     this.megabuf.fill(0);
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
@@ -315,6 +387,9 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.mainWaveFrameIndex = -1;
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
+    );
+    this.waveState.customWaveBaseLocalsPool = this.preset.ir.customWaves.map(
+      (wave) => this.seedCustomWaveState(wave),
     );
     this.waveState.customWaveFrameIndex = 0;
     this.waveState.customWaveVisualFrames[0].length = 0;
@@ -338,7 +413,6 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
-    resetFrameTransformCache(this.geometryState);
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
     this.lastPreparedSignalFrame = Number.NaN;
@@ -355,14 +429,24 @@ class MilkdropPresetVM implements MilkdropVM {
     // User variables (and q/t/reg/megabuf) persist across frames, and
     // `basstime` is conventionally a user accumulator despite having a
     // default, so it persists too.
+    // `basstime` is skipped rather than deleted afterwards: `delete` would move
+    // this object into V8 dictionary mode, and it is enumerated on every frame.
     this.perFrameBaseValues = {};
     for (const key in DEFAULT_MILKDROP_STATE) {
+      if (key === 'basstime') continue;
       this.perFrameBaseValues[key] = this.state[key] ?? 0;
     }
     for (const key in this.preset.ir.numericFields) {
+      if (key === 'basstime') continue;
       this.perFrameBaseValues[key] = this.state[key] ?? 0;
     }
-    delete this.perFrameBaseValues.basstime;
+    this.perFrameBaseKeys = Object.keys(this.perFrameBaseValues);
+    this.perFrameBaseNumbers = this.perFrameBaseKeys.map(
+      (key) => this.perFrameBaseValues[key] ?? 0,
+    );
+    this.perFrameBaseKeyIndex = new Map(
+      this.perFrameBaseKeys.map((key, index) => [key, index]),
+    );
 
     this.waveState.customWaveTAfterInit = [];
     this.preset.ir.customWaves.forEach((wave, index) => {
@@ -401,6 +485,29 @@ class MilkdropPresetVM implements MilkdropVM {
       }
       this.shapeState.customShapeTAfterInit[index] = tSnapshot;
     });
+  }
+
+  /**
+   * Live-apply one numeric field without a recompile.
+   *
+   * The per-frame reload (`restorePerFrameBaseValues`) resets every built-in
+   * to its base before each step, so a bare `state` write would be gone next
+   * frame. Writing the base too makes the value stick until the next commit.
+   * User variables and q/t registers are not in the base set and persist on
+   * their own, so they only need the state/register write.
+   */
+  setField(key: string, value: number): void {
+    const normalized = normalizeProgramAssignmentTarget(key);
+    this.state[normalized] = value;
+    if (objectHasOwn(this.registers, normalized)) {
+      this.registers[normalized] = value;
+    }
+    const baseIndex = this.perFrameBaseKeyIndex.get(normalized);
+    if (baseIndex !== undefined) {
+      this.perFrameBaseValues[normalized] = value;
+      this.perFrameBaseNumbers[baseIndex] = value;
+    }
+    this.frameVariablesSnapshot = null;
   }
 
   getStateSnapshot() {
@@ -446,8 +553,11 @@ class MilkdropPresetVM implements MilkdropVM {
     return this.randomState / 0x100000000;
   };
 
-  private seedCustomWaveState(wave: MilkdropWaveDefinition) {
-    return seedCustomWaveFields(wave, this.state);
+  private seedCustomWaveState(
+    wave: MilkdropWaveDefinition,
+    target?: MutableState,
+  ) {
+    return seedCustomWaveFields(wave, this.state, target);
   }
 
   private seedCustomShapeState(shape: MilkdropShapeDefinition) {
@@ -455,7 +565,12 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private prepareSignalEnv(signals: MilkdropRuntimeSignals) {
+    // Under relationship lock, preset-facing time/frame are pinned, so the
+    // frame/time cache key would otherwise trip and freeze every signal —
+    // including audio. Bypass the cache so the env keeps syncing fresh audio
+    // while the clock stays put.
     if (
+      !signals.relationshipLock &&
       this.lastPreparedSignalSource === signals &&
       this.lastPreparedSignalFrame === signals.frame &&
       this.lastPreparedSignalTime === signals.time
@@ -480,7 +595,14 @@ class MilkdropPresetVM implements MilkdropVM {
   ) {
     this.prepareSignalEnv(signals);
     if (options.reuseExtraAsEnv) {
-      Object.setPrototypeOf(extra, this.signalEnv);
+      // Persistent locals (shape/wave state) pass through here every frame.
+      // Re-setting an unchanged prototype is semantically a no-op, but V8
+      // treats prototype mutation as a deopt trigger for every later
+      // property access on the object (see geometry-builder.ts), so only
+      // write it when the prototype actually changes.
+      if (Object.getPrototypeOf(extra) !== this.signalEnv) {
+        Object.setPrototypeOf(extra, this.signalEnv);
+      }
       return extra as MutableState;
     }
     const env = Object.create(this.signalEnv) as MutableState;
@@ -488,12 +610,25 @@ class MilkdropPresetVM implements MilkdropVM {
     return env;
   }
 
+  /** Reused across frames: the flat env consumer (buildShaderControls) reads
+   * it synchronously and the program fallback spreads it into its own copy,
+   * so nothing retains the object between frames. Rebuilding it fresh was
+   * ~7% of total CPU (2026-08-18 rAF profile) — ~300 properties into a new
+   * dictionary-mode object every frame; overwriting a stable-shape scratch
+   * object costs only the value stores. Keys are only ever added (state and
+   * registers never delete), so stale keys cannot survive. */
+  private flatEnvScratch: MutableState | null = null;
+
   private createFlatEnv(
     signals: MilkdropRuntimeSignals,
     extra: Record<string, number> = {},
   ) {
     this.prepareSignalEnv(signals);
-    const env = Object.create(this.signalEnv) as MutableState;
+    let env = this.flatEnvScratch;
+    if (!env || Object.getPrototypeOf(env) !== this.signalEnv) {
+      env = Object.create(this.signalEnv) as MutableState;
+      this.flatEnvScratch = env;
+    }
     Object.assign(env, this.state, this.registers, this.signalEnv, extra);
     return env;
   }
@@ -568,17 +703,17 @@ class MilkdropPresetVM implements MilkdropVM {
    * a per-frame run (MilkDrop reload semantics). Mutates `this.state` in place
    * so the `registers` prototype chain stays intact. */
   private restorePerFrameBaseValues() {
-    const base = this.perFrameBaseValues;
+    const keys = this.perFrameBaseKeys;
+    const values = this.perFrameBaseNumbers;
     const state = this.state;
-    for (const key in base) {
-      state[key] = base[key];
+    for (let i = 0; i < keys.length; i += 1) {
+      state[keys[i]] = values[i];
     }
   }
 
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
-    resetFrameTransformCache(this.geometryState);
     this.restorePerFrameBaseValues();
 
     if (
@@ -604,7 +739,6 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
-    resetFrameTransformCache(this.geometryState);
     this.restorePerFrameBaseValues();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
@@ -684,7 +818,7 @@ class MilkdropPresetVM implements MilkdropVM {
       createEnv: this.frameCallbacks.createEnv,
       seedCustomShapeState: this.frameCallbacks.seedCustomShapeState,
     });
-    const borders = buildBorders(this.state);
+    const borders = buildBorders(this.state, this.declaredBorderKeys);
     const post = buildPost({
       preset: this.preset,
       state: this.state,
@@ -721,7 +855,6 @@ class MilkdropPresetVM implements MilkdropVM {
       gpuGeometry,
     });
     gpuGeometry.customWaves = customWaves.procedural;
-    resetFrameTransformCache(this.geometryState);
 
     return frameState;
   }

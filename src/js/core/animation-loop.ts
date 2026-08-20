@@ -1,5 +1,38 @@
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import { getAverageFrequency, getFrequencyData } from './audio-handler';
+import { createFrameGate } from './frame-pacing';
+import { getPowerSavingFrameCapHz } from './power-state';
+
+export {
+  createSimulationAccumulator,
+  type SimulationAccumulator,
+  type SimulationAccumulatorOptions,
+} from './simulation-accumulator';
+
+/** Optional virtual time source for deterministic testing/capture.
+ * When set, `performance.now()` is replaced by this function.
+ * Expected to return monotonically increasing milliseconds. */
+export let virtualTimeSource: (() => number) | null = null;
+let virtualTimeAdvanceMs = 0;
+
+export function setVirtualTimeSource(
+  fn: (() => number) | null,
+  advanceMs = 1000 / 60,
+) {
+  virtualTimeSource = fn;
+  virtualTimeAdvanceMs = advanceMs;
+}
+
+export function getVirtualTimeAdvanceMs(): number {
+  return virtualTimeAdvanceMs;
+}
+
+export function now(): number {
+  if (virtualTimeSource) {
+    return virtualTimeSource();
+  }
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
 
 export interface AudioLoopToy {
   rendererReady?: Promise<unknown>;
@@ -7,6 +40,7 @@ export interface AudioLoopToy {
   analyser: FrequencyAnalyser | null;
   renderer: {
     setAnimationLoop: ((callback: (() => void) | null) => void) | null;
+    xr?: { isPresenting?: boolean } | null;
   } | null;
 }
 
@@ -96,11 +130,23 @@ export async function startAudioLoop(
   // single uncaught throw would freeze the visual permanently. Guard each
   // frame and stop only after a sustained failure streak.
   let failureStreak = 0;
+  // Power-saver frame ceiling. Gating here rather than inside each toy keeps the
+  // skip ahead of every simulation and draw call, and covers both renderer
+  // backends — WebGL's native scheduling and the WebGPU recovery-aware loop both
+  // funnel through this callback.
+  const frameGate = createFrameGate(getPowerSavingFrameCapHz);
   toy.renderer.setAnimationLoop(() => {
-    const now =
-      typeof performance !== 'undefined' ? performance.now() : Date.now();
-    ctx.time = now / 1000;
-    ctx.realTimeMs = now;
+    const nowMs = now();
+    // An XR session owns its own presentation cadence; dropping frames there
+    // reads as head-tracking judder, not as a power saving.
+    if (
+      !toy.renderer?.xr?.isPresenting &&
+      !frameGate.shouldRenderFrame(nowMs)
+    ) {
+      return;
+    }
+    ctx.time = nowMs / 1000;
+    ctx.realTimeMs = nowMs;
     try {
       animate(ctx);
       failureStreak = 0;

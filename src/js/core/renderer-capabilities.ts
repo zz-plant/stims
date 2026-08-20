@@ -1,3 +1,21 @@
+/**
+ * Decides what this device can actually render, and at what tier.
+ *
+ * Probes the GPU (adapter, features, limits, worker support, battery and
+ * performance profile) and resolves it into a `RendererCapabilities` verdict:
+ * which backend to use, which WebGPU tier is safe, and which optimizations to
+ * enable. The renderer, quality controller and fallback machinery all read that
+ * verdict rather than probing independently.
+ *
+ * Probing must never be the reason nothing renders. Every path resolves to a
+ * usable answer — WebGL2 is the floor — because a device that reports oddly is
+ * far more common than a device that genuinely cannot draw.
+ *
+ * The contract this participates in, including how `renderScale` propagates and
+ * how backends fall back, is specified in
+ * `docs/architecture/fallback-state-machine.md`. Read it before changing
+ * detection: the state machine has more edges than it looks.
+ */
 /* global GPUAdapter, GPUDevice, GPU */
 
 import {
@@ -5,7 +23,10 @@ import {
   isMobileDevice,
 } from '../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from './device-profile.ts';
-import { isCompatibilityModeEnabled } from './render-preferences.ts';
+import {
+  resolveGpuPowerPreference,
+  whenBatteryStateSettled,
+} from './power-state.ts';
 import {
   getRendererFallbackReasonMessage,
   inferRendererFallbackReasonCode,
@@ -13,9 +34,14 @@ import {
   type RendererFallbackReasonCode,
 } from './renderer-fallback-reasons.ts';
 import {
-  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  getDefaultWebGpuInitTimeoutMs,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
+import {
+  isFirefoxUA,
+  isRecognizedWebGPUBrowser,
+  isWebGPUStableInThisBrowser,
+} from './renderer-query-override.ts';
 import {
   getRendererRetrySnapshot,
   type RendererRetrySnapshot,
@@ -23,6 +49,7 @@ import {
   recordRendererRetrySuccess,
   resetRendererRetryPolicy,
 } from './renderer-retry-policy.ts';
+import { isCompatibilityModeEnabled } from './state/render-preference-store.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
 
@@ -231,12 +258,16 @@ function isGuardedMobileWebGPUEnvironment() {
     Boolean(nav.gpu) && typeof nav.gpu?.requestAdapter === 'function';
   const userAgent = nav.userAgent?.toLowerCase() ?? '';
 
-  // Guard against known unstable WebGPU implementations even when the API is present
-  if (
-    userAgent.includes('samsungbrowser/') ||
-    userAgent.includes('; wv') ||
-    userAgent.includes('miuibrowser/')
-  ) {
+  // Guard embedded WebViews and browsers with known-unstable WebGPU even
+  // when the API is present. Samsung Internet defers to the same
+  // version-aware stability check the desktop path uses — a blanket
+  // `samsungbrowser/` guard here contradicted that whitelist and kept every
+  // Galaxy owner using their default browser on WebGL forever, current
+  // flagship hardware included.
+  if (userAgent.includes('; wv') || userAgent.includes('miuibrowser/')) {
+    return true;
+  }
+  if (userAgent.includes('samsungbrowser/') && !isWebGPUStableInThisBrowser()) {
     return true;
   }
 
@@ -251,7 +282,17 @@ function resetCache() {
 }
 
 function getFallbackBackend(): RendererBackend | null {
-  return getRenderingSupport().hasWebGL ? 'webgl' : null;
+  const hasWebGPU =
+    typeof navigator !== 'undefined' &&
+    Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
+  // When WebGPU is available, skip the expensive WebGL canvas context probe
+  // — the fallback backend is only needed if WebGPU fails, and we can probe
+  // lazily at that point. When WebGPU is absent, probe WebGL immediately
+  // since it's the only viable backend.
+  if (hasWebGPU) {
+    return 'webgl';
+  }
+  return probeCanvasWebGLContext() ? 'webgl' : null;
 }
 
 function probeCanvasWebGLContext() {
@@ -539,7 +580,11 @@ export function getRenderingSupport(): RenderingSupport {
   const hasWebGPU =
     typeof navigator !== 'undefined' &&
     Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
-  const hasWebGL = probeCanvasWebGLContext();
+  // Skip the expensive WebGL canvas context probe when WebGPU is present —
+  // callers that only need to know "can we render at all?" get an immediate
+  // answer. The probe is still available for callers that need the definitive
+  // WebGL check (e.g., the capability probe's final fallback decision).
+  const hasWebGL = hasWebGPU ? true : probeCanvasWebGLContext();
 
   return {
     hasWebGPU,
@@ -667,10 +712,20 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
     return CapabilityProbeState.CheckingGapsGuard;
   },
   [CapabilityProbeState.CheckingGapsGuard]: (ctx) => {
-    if (ctx.preferWebGLForKnownCompatibilityGaps) {
+    // Feature detection (the probe below) is the real availability signal; the
+    // UA stability check is a bias, not a verdict. Recognized-but-unstable
+    // engines (Firefox, old Chrome/Edge/Safari/Opera/Samsung) prefer WebGL
+    // without paying a probe cost, with a hard skip reserved for Firefox —
+    // the one engine whose WebGPU is disabled by default. Unrecognized
+    // browsers that expose a working WebGPU probe it and use it; the runtime
+    // fallback is the safety net for a bad guess.
+    if (
+      ctx.preferWebGLForKnownCompatibilityGaps &&
+      isRecognizedWebGPUBrowser()
+    ) {
       return buildFallback(
         'WebGPU is not enabled automatically for this browser or session. Using WebGL mode.',
-        { forceWebGL: true },
+        { forceWebGL: isFirefoxUA() },
       );
     }
     return CapabilityProbeState.CheckingWebGpuAPI;
@@ -696,7 +751,15 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
       );
     }
     try {
-      const adapter = await gpu.requestAdapter();
+      // This adapter is not a throwaway probe — its device is handed to the
+      // WebGPU renderer, so this call is what picks the GPU for the whole
+      // session. On a dual-GPU laptop that makes it the largest single power
+      // decision the app makes, hence the short wait for the battery state.
+      await whenBatteryStateSettled();
+      const powerPreference = resolveGpuPowerPreference();
+      const adapter =
+        (await gpu.requestAdapter({ powerPreference })) ??
+        (await gpu.requestAdapter());
       if (!adapter) {
         return buildFallback(
           getRendererFallbackReasonMessage(
@@ -801,7 +864,7 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
 
 async function probeRendererCapabilities({
   preferWebGLForKnownCompatibilityGaps = false,
-  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
 }: {
   preferWebGLForKnownCompatibilityGaps?: boolean;
   webgpuInitTimeoutMs?: number;
@@ -902,7 +965,7 @@ export function rememberRendererFallback(
 export async function getRendererCapabilities({
   forceRetry = false,
   preferWebGLForKnownCompatibilityGaps = false,
-  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
 }: RendererCapabilityProbeOptions = {}) {
   const environmentKey = getEnvironmentKey({
     preferWebGLForKnownCompatibilityGaps,

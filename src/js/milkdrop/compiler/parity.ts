@@ -115,7 +115,10 @@ export function buildFeatureAnalysis({
     features.add('shape-texture-controls');
   }
 
-  if ((numericFields.ob_size ?? 0) > 0 || (numericFields.ib_size ?? 0) > 0) {
+  // Gate on alpha, not size: both border sizes default to 0.01 (MilkDrop's
+  // own default), so a size test marks every preset as using borders. A border
+  // is only drawn when its alpha is non-zero, and both alphas default to 0.
+  if ((numericFields.ob_a ?? 0) > 0 || (numericFields.ib_a ?? 0) > 0) {
     features.add('borders');
   }
 
@@ -171,6 +174,7 @@ export function buildBackendSupport({
   softUnknownKeys,
   hardUnsupportedFields,
   unsupportedVolumeSamplerWarnings,
+  missingAliasesOrFunctions = [],
   createBackendEvidence,
   backendPartialFeatureGaps,
   backendShaderTextGaps,
@@ -181,6 +185,7 @@ export function buildBackendSupport({
   softUnknownKeys: string[];
   hardUnsupportedFields: HardUnsupportedFieldSpec[];
   unsupportedVolumeSamplerWarnings: string[];
+  missingAliasesOrFunctions?: string[];
   createBackendEvidence: (args: {
     backend: MilkdropRenderBackend;
     scope: 'shared' | 'backend';
@@ -233,6 +238,20 @@ export function buildBackendSupport({
     );
   });
 
+  // Unknown functions or aliases evaluate to 0 in the expression VM, so the
+  // preset runs but computes distorted values — a real partial-support gap.
+  missingAliasesOrFunctions.forEach((name) => {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'shared',
+        status: 'partial',
+        code: 'unknown-function',
+        message: `Expression references unknown function or variable "${name}", which evaluates to 0 at runtime.`,
+      }),
+    );
+  });
+
   unsupportedVolumeSamplerWarnings.forEach((message) => {
     evidence.push(
       createBackendEvidence({
@@ -262,6 +281,30 @@ export function buildBackendSupport({
       );
     }
     unsupportedFeatures.push('unsupported-shader-text');
+  }
+
+  // When the other backend executes this preset's shader programs directly
+  // but this one falls back to extracted scalar controls (e.g. the packed
+  // sampler_fc_main gap on WebGPU), the translation is a real visual
+  // approximation and must surface as backend evidence instead of silently
+  // reporting full support. Symmetric 'translated' (control-syntax shader
+  // text with no direct programs) is the designed exact path and stays
+  // unflagged.
+  const otherBackend: MilkdropRenderBackend =
+    backend === 'webgl' ? 'webgpu' : 'webgl';
+  if (
+    featureAnalysis.shaderTextExecution[backend] === 'translated' &&
+    featureAnalysis.shaderTextExecution[otherBackend] === 'direct'
+  ) {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'backend',
+        status: 'partial',
+        code: 'shader-text-translated',
+        message: `Shader programs execute directly on ${otherBackend.toUpperCase()} but are approximated through extracted controls on ${backend.toUpperCase()}; visuals may diverge between backends.`,
+      }),
+    );
   }
 
   Object.entries(backendPartialFeatureGaps[backend]).forEach(

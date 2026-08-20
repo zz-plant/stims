@@ -1,11 +1,17 @@
 import type { AnimationContext } from './animation-loop';
-import { getContextFrequencyData } from './animation-loop';
+import { getContextFrequencyData, virtualTimeSource } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
+import { createFrameGate } from './frame-pacing';
 import {
   getActivePerformanceSettings,
   type PerformanceSettings,
   subscribeToPerformanceSettings,
 } from './performance-panel';
+import { getPowerSavingFrameCapHz } from './power-state';
+import {
+  generateStimulusFrame,
+  type StimulusSpec,
+} from './testing/synthetic-stimulus.ts';
 import {
   resolveToyAudioOptions,
   startToyAudio,
@@ -22,6 +28,16 @@ import WebToy, { type WebToyOptions } from './web-toy';
 
 const EMPTY_UINT8 = new Uint8Array(0);
 
+// Touch/mobile detection is static per session; evaluating the UA regex
+// inside the preview tick put it on the pre-audio hot path for no reason.
+// Mobile throttles the synthetic preview data to 30Hz; desktop runs every tick.
+const PREVIEW_DATA_INTERVAL_MS =
+  typeof navigator !== 'undefined' &&
+  ((navigator.maxTouchPoints ?? 0) > 0 ||
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
+    ? 1000 / 30
+    : 0;
+
 export type ToyRuntimeFrame = {
   toy: WebToy;
   time: number;
@@ -32,6 +48,12 @@ export type ToyRuntimeFrame = {
   waveformData: Uint8Array;
   input: UnifiedInputState | null;
   performance: PerformanceSettings;
+  /**
+   * Relationship lock flag for the current frame: pins preset-facing
+   * time/frame signals so the audio->visual mapping stays put while audio
+   * keeps driving output. Set by `renderFrames({ relationshipLock })`.
+   */
+  relationshipLock?: boolean;
 };
 
 export type ToyRuntimePlugin = {
@@ -79,6 +101,61 @@ export type ToyRuntimeInstance = ToyInstance & {
   pausePreview?: () => void;
   /** Resume the idle preview loop. */
   resumePreview?: () => void;
+  /**
+   * Synchronously pump N frames through the plugin pipeline with synthetic
+   * time and audio data, decoupling simulation time from wall-clock time.
+   * Built for headless capture harnesses: presets that need seconds of
+   * feedback accumulation render in however long the GPU takes, and the
+   * synthetic signal is a pure function of frame time so captures are
+   * reproducible. Only valid while audio is inactive (the audio loop would
+   * double-drive the pipeline); returns null in that case.
+   */
+  renderFrames?: (options?: {
+    frames?: number;
+    deltaMs?: number;
+    /**
+     * Overlay a deterministic 2Hz beat envelope on the synthetic signal.
+     * The idle preview signal is smooth sines with no transients, so
+     * beat-gated visuals never fire under it; captures that want them
+     * lit opt into pulsed energy. Ignored when `stimulus` is set.
+     */
+    beatPulse?: boolean;
+    /**
+     * Replace the synthetic signal entirely with a controlled, known
+     * profile (flat/ramp/transient/band) for audio->visual transfer
+     * characterization — see `testing/synthetic-stimulus.ts` and
+     * `scripts/analyze-preset-audio-response.ts`. When set, the decorative
+     * idle-preview wave and `beatPulse` are both bypassed for every frame
+     * of this call, so the driving signal is exactly what the spec
+     * describes and nothing else.
+     */
+    stimulus?: {
+      spec: StimulusSpec;
+      /**
+       * Frame index within the *full* stimulus timeline that this call's
+       * first frame represents. A caller driving the stimulus one frame at
+       * a time (to read pixels back between frames) must pass its own
+       * running counter here — without it, every single-frame call would
+       * see itself as frame 0 of a 1-frame timeline, collapsing a ramp or
+       * transient to a single fixed value. Defaults to 0.
+       */
+      frameOffset?: number;
+      /**
+       * Length of the full stimulus timeline, which may exceed this call's
+       * own `frames` when driving it incrementally. Defaults to this
+       * call's `frames` — correct when one call renders one whole trial.
+       */
+      totalFrames?: number;
+    };
+    /**
+     * Pin the preset-facing `time` and `frame` signals at their first-locked
+     * values while the internal audio-analysis clock keeps running — the
+     * "relationship lock" for docs/SENSORY_ACCESSIBILITY.md. The audio->visual
+     * mapping (time/frame-driven terms) stays put; audio still drives output.
+     * Only meaningful for the deterministic `renderFrames` path.
+     */
+    relationshipLock?: boolean;
+  }) => { rendered: number } | null;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
   getPerformanceSettings: () => PerformanceSettings;
@@ -260,7 +337,6 @@ export function createToyRuntime({
     canvas,
   });
   let analyser: FrequencyAnalyser | null = null;
-  let smoothedBassLevel = 0;
   let lastFrameTime = 0;
   const pluginManager = createPluginManager(plugins);
   let runtime: ToyRuntimeInstance | null = null;
@@ -288,6 +364,7 @@ export function createToyRuntime({
     waveformData: new Uint8Array(0),
     input: null,
     performance: performanceController.getSettings(),
+    relationshipLock: false,
   };
 
   const inputController = createInputController({
@@ -364,29 +441,38 @@ export function createToyRuntime({
       return;
     }
     previewActive = true;
-    const timeSource = globalThis.performance ?? {
-      now: () => Date.now(),
-    };
+    const timeSource = virtualTimeSource
+      ? { now: virtualTimeSource }
+      : (globalThis.performance ?? { now: () => Date.now() });
     previewStart = timeSource.now();
     previewLastFrame = previewStart;
     let failureStreak = 0;
 
+    let smoothedPreviewDeltaMs = 0;
+    // The pre-audio preview runs before the user has done anything, so it is the
+    // loop most likely to be left burning battery on a page nobody is watching.
+    const previewFrameGate = createFrameGate(getPowerSavingFrameCapHz);
     const tick = (now: number) => {
       if (!previewActive) return;
-      const time = (now - previewStart) / 1000;
-      frameState.deltaMs = now - previewLastFrame;
-      previewLastFrame = now;
-      frameState.time = time;
-      frameState.realTimeMs = now;
+      const currentTime = virtualTimeSource ? virtualTimeSource() : now;
+      if (!previewFrameGate.shouldRenderFrame(currentTime)) {
+        previewAnimationId = requestAnimationFrame(tick);
+        return;
+      }
+      const rawDeltaMs = previewLastFrame
+        ? Math.min(100, Math.max(0, currentTime - previewLastFrame))
+        : 1000 / 60;
+      previewLastFrame = currentTime;
+      smoothedPreviewDeltaMs = smoothedPreviewDeltaMs
+        ? smoothedPreviewDeltaMs * 0.85 + rawDeltaMs * 0.15
+        : rawDeltaMs;
+      frameState.deltaMs = smoothedPreviewDeltaMs;
+      frameState.time += smoothedPreviewDeltaMs / 1000;
+      frameState.realTimeMs = currentTime;
       frameState.analyser = null;
-      const previewDataIntervalMs =
-        typeof navigator !== 'undefined' &&
-        ((navigator.maxTouchPoints ?? 0) > 0 ||
-          /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
-          ? 1000 / 30
-          : 0;
+      const previewDataIntervalMs = PREVIEW_DATA_INTERVAL_MS;
       if (now - previewLastDataUpdate >= previewDataIntervalMs) {
-        updatePreviewFrequencyData(time);
+        updatePreviewFrequencyData(frameState.time);
         previewLastDataUpdate = now;
       }
       frameState.frequencyData = previewFrequencyData;
@@ -441,14 +527,21 @@ export function createToyRuntime({
   }
 
   const startAudio = async (request?: ToyAudioRequest) => {
+    let smoothedAudioDeltaMs = 0;
     const context = await startToyAudio(
       toy,
       (ctx) => {
         analyser = ctx.analyser;
         const now = ctx.time;
-        frameState.deltaMs = lastFrameTime ? (now - lastFrameTime) * 1000 : 0;
+        const rawDeltaMs = lastFrameTime
+          ? Math.min(100, Math.max(0, (now - lastFrameTime) * 1000))
+          : 1000 / 60;
         lastFrameTime = now;
-        frameState.time = now;
+        smoothedAudioDeltaMs = smoothedAudioDeltaMs
+          ? smoothedAudioDeltaMs * 0.85 + rawDeltaMs * 0.15
+          : rawDeltaMs;
+        frameState.deltaMs = smoothedAudioDeltaMs;
+        frameState.time += smoothedAudioDeltaMs / 1000;
         frameState.realTimeMs = ctx.realTimeMs;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
@@ -456,11 +549,6 @@ export function createToyRuntime({
         frameState.input = inputController.getState();
         frameState.performance = performanceController.getSettings();
         pluginManager.update(frameState);
-
-        if (typeof window !== 'undefined' && analyser) {
-          const energy = analyser.getMultiBandEnergy(frameState.frequencyData);
-          smoothedBassLevel = smoothedBassLevel * 0.84 + energy.bass * 0.16;
-        }
       },
       resolveToyAudioOptions(request, {
         fftSize: audio?.fftSize,
@@ -484,6 +572,59 @@ export function createToyRuntime({
     },
     pausePreview: stopPreviewLoop,
     resumePreview: startPreviewLoop,
+    renderFrames: (options) => {
+      const frames = Math.max(1, Math.floor(options?.frames ?? 1));
+      const deltaMs = options?.deltaMs ?? 1000 / 60;
+      const beatPulse = options?.beatPulse ?? false;
+      const stimulus = options?.stimulus;
+      const relationshipLock = options?.relationshipLock ?? false;
+      stopPreviewLoop();
+      let rendered = 0;
+      for (let i = 0; i < frames; i += 1) {
+        frameState.time += deltaMs / 1000;
+        frameState.deltaMs = deltaMs;
+        frameState.realTimeMs += deltaMs;
+        frameState.relationshipLock = relationshipLock;
+        frameState.analyser = null;
+        if (stimulus) {
+          // A controlled, known signal replaces the decorative wave
+          // entirely — transfer-characterization needs the driving input
+          // to be exactly what the spec describes, with no unaccounted
+          // component riding along underneath it.
+          previewFrequencyData.set(
+            generateStimulusFrame(
+              stimulus.spec,
+              (stimulus.frameOffset ?? 0) + i,
+              stimulus.totalFrames ?? frames,
+              previewFrequencyData.length,
+            ),
+          );
+        } else {
+          updatePreviewFrequencyData(frameState.time);
+          if (beatPulse) {
+            // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a
+            // kick drum is — enough contrast for onset detectors to fire.
+            const phase = Math.sin(Math.PI * 2 * frameState.time * 2);
+            const spike = Math.max(0, phase) ** 8;
+            for (let bin = 0; bin < previewFrequencyData.length; bin += 1) {
+              const bassWeight = 1 - (bin / previewFrequencyData.length) * 0.6;
+              const gain = 0.35 + 1.4 * spike * bassWeight;
+              previewFrequencyData[bin] = Math.min(
+                255,
+                Math.round(previewFrequencyData[bin] * gain),
+              );
+            }
+          }
+        }
+        frameState.frequencyData = previewFrequencyData;
+        frameState.waveformData = previewWaveformData;
+        frameState.input = inputController.getState();
+        frameState.performance = performanceController.getSettings();
+        pluginManager.update(frameState);
+        rendered += 1;
+      }
+      return { rendered };
+    },
     addPlugin: (plugin) => {
       pluginManager.add(plugin);
       plugin.setup?.(runtime as ToyRuntimeInstance);

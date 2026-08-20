@@ -1,10 +1,12 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
+import { installAgentDriver } from './core/agent-driver.ts';
 import {
   applyDeviceTierToDocument,
   startRefreshRateSampling,
 } from './core/device-profile.ts';
+import { startBatteryMonitoring } from './core/power-state.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
@@ -15,7 +17,24 @@ import { initGamepadNavigation } from './utils/browser/gamepad-navigation.ts';
 type StimsAppGlobals = typeof globalThis & {
   __stimsAppDispose?: () => void;
   __stimsAppReady?: Promise<void>;
+  __stimsStarterCatalogPromise?: Promise<unknown>;
 };
+
+/**
+ * Kick off the starter catalog fetch immediately, before React mounts.
+ * The renderer capability probe and battery/refresh-rate sampling also start
+ * here, so this fetch runs in parallel with all of them instead of waiting
+ * for React hydration + useCatalogLoading to fire.
+ */
+const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
+(globalThis as StimsAppGlobals).__stimsStarterCatalogPromise = fetch(
+  STARTER_CATALOG_URL,
+)
+  .then((r) => {
+    if (!r.ok) throw new Error(`Starter catalog fetch failed (${r.status})`);
+    return r.json();
+  })
+  .catch(() => null);
 
 function ensureRootContainer() {
   const existing = document.getElementById('app');
@@ -34,9 +53,14 @@ const startApp = async () => {
   // Start early: the adaptive quality controller reads the refresh rate when it
   // is constructed, and an unmeasured rate falls back to a conservative 60.
   startRefreshRateSampling();
+  // Also start early: renderer setup waits on this to choose between the
+  // discrete and integrated GPU, and that wait is only cheap if the probe is
+  // already in flight by the time the capability probe runs.
+  void startBatteryMonitoring();
   installCrashTelemetry();
   installRendererTelemetryPersistence();
   initAgentAPI();
+  installAgentDriver();
   initGamepadNavigation();
 
   if (document.body) {
@@ -82,10 +106,8 @@ const appReady = new Promise<void>((resolve) => {
 (globalThis as StimsAppGlobals).__stimsAppReady = appReady;
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then((reg) => {
-      void reg.update();
-    });
+  navigator.serviceWorker.register('/service-worker.js').then((reg) => {
+    void reg.update();
   });
 }
 

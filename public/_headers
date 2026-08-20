@@ -2,11 +2,17 @@
   Cache-Control: public, max-age=0, must-revalidate
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Permissions-Policy: camera=(), geolocation=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
 
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Permissions-Policy: camera=(), geolocation=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -14,15 +20,32 @@
 # Large preset sources, previews, and textures use stable human-readable names.
 # Cache them long enough to avoid repeat transfers during normal use, then
 # revalidate in the background so an in-place asset correction still reaches
-# returning users. Catalog manifests (*.json) intentionally do not match.
+# returning users.
 /milkdrop-presets/*.milk
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Catalog manifests are the largest payloads in the app (catalog.json ~1.7 MB,
+# search-index.json ~1.1 MB) and change only on deploy. A short max-age keeps
+# them fresh within the hour while stale-while-revalidate makes repeat visits
+# serve instantly from HTTP cache instead of re-downloading on every load.
+/milkdrop-presets/*.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
 
 /milkdrop-presets/previews/*.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 /textures/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Icons and the manifest previously shipped with no Cache-Control at all,
+# leaving freshness to browser heuristics (typically 10% of file age — days
+# for these). Explicit rules make revocation predictable: a day of caching,
+# then background revalidation.
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/manifest.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
 /og/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800

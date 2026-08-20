@@ -1,7 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import {
+  clearCompiledPresetCache,
+  compileMilkdropPresetSource,
+  getCompiledPresetCacheSize,
+} from '../../src/js/milkdrop/compiler.ts';
+import {
+  upsertMilkdropField,
+  upsertMilkdropFields,
+} from '../../src/js/milkdrop/formatter.ts';
 import type { MilkdropVideoEchoOrientation } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop compiler', () => {
@@ -341,6 +349,125 @@ bDarkenCenter=1
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'post-effects',
     );
+  });
+
+  test('formatted source keeps warp/comp shader sections and title for shader-bearing presets', () => {
+    const fixturePath = join(
+      process.cwd(),
+      'public',
+      'milkdrop-presets',
+      'butterchurn',
+      '11.milk',
+    );
+    const compiled = compileMilkdropPresetSource(
+      readFileSync(fixturePath, 'utf8'),
+      {
+        id: 'butterchurn-11',
+        title: 'Butterchurn 11',
+        origin: 'bundled',
+        fileName: '11.milk',
+      },
+    );
+
+    expect(compiled.ir.shaderText.warp).toBeTruthy();
+    expect(compiled.ir.shaderText.comp).toBeTruthy();
+    expect(compiled.formattedSource).toContain('[warp_shader]');
+    expect(compiled.formattedSource).toContain('[comp_shader]');
+    expect(compiled.formattedSource).toContain('title="Butterchurn 11"');
+    expect(compiled.formattedSource).not.toContain('MilkDrop Session');
+
+    const recompiled = compileMilkdropPresetSource(compiled.formattedSource, {
+      id: 'butterchurn-11-roundtrip',
+    });
+
+    expect(recompiled.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(recompiled.ir.shaderText.comp).toBe(
+      compiled.ir.shaderText.comp as string,
+    );
+    expect(recompiled.ir.shaderText.warpProgram).not.toBeNull();
+    expect(recompiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(recompiled.ir.shaderText.supported).toBe(
+      compiled.ir.shaderText.supported,
+    );
+    expect(recompiled.ir.title).toBe('Butterchurn 11');
+
+    // A second format→compile generation must be stable.
+    const thirdGeneration = compileMilkdropPresetSource(
+      recompiled.formattedSource,
+      { id: 'butterchurn-11-gen3' },
+    );
+    expect(thirdGeneration.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(thirdGeneration.formattedSource).toBe(recompiled.formattedSource);
+  });
+
+  test('formatted source round-trips legacy backtick warp/comp shader lines', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Shader Lines
+fDecay=0.97
+warp_1=\`shader_body
+warp_2=\`{
+warp_3=\`ret = tex2D(sampler_main, uv).xyz * 0.98;
+warp_4=\`}
+comp_1=\`shader_body
+comp_2=\`{
+comp_3=\`ret = tex2D(sampler_main, uv).xyz + float3(0.01, 0.0, 0.0);
+comp_4=\`}
+      `.trim(),
+      { id: 'legacy-shader-lines' },
+    );
+
+    expect(compiled.ir.shaderText.warp).toBeTruthy();
+    expect(compiled.ir.shaderText.comp).toBeTruthy();
+    expect(compiled.formattedSource).toContain('[warp_shader]');
+    expect(compiled.formattedSource).toContain('[comp_shader]');
+
+    const recompiled = compileMilkdropPresetSource(compiled.formattedSource, {
+      id: 'legacy-shader-lines-roundtrip',
+    });
+
+    expect(recompiled.ir.shaderText.warp).toBe(
+      compiled.ir.shaderText.warp as string,
+    );
+    expect(recompiled.ir.shaderText.comp).toBe(
+      compiled.ir.shaderText.comp as string,
+    );
+    expect(recompiled.ir.title).toBe('Legacy Shader Lines');
+  });
+
+  test('upserted fields land before shader sections instead of inside them', () => {
+    const source = [
+      'title=Upsert Guard',
+      'fDecay=0.97',
+      '',
+      '[warp_shader]',
+      'shader_body { ret = tex2D(sampler_main, uv).xyz; }',
+      '',
+      '[comp_shader]',
+      'shader_body { ret = tex2D(sampler_main, uv).xyz; }',
+      '',
+    ].join('\n');
+
+    const single = upsertMilkdropField(source, 'zoom', 1.02);
+    const singleCompiled = compileMilkdropPresetSource(single, {
+      id: 'upsert-single',
+    });
+    expect(singleCompiled.ir.numericFields.zoom).toBeCloseTo(1.02, 6);
+    expect(singleCompiled.ir.shaderText.warp).toContain('shader_body');
+    expect(singleCompiled.ir.shaderText.warp).not.toContain('zoom=1.02');
+    expect(singleCompiled.ir.shaderText.comp).not.toContain('zoom=1.02');
+
+    const multi = upsertMilkdropFields(source, { rot: 0.1, warp: 0.5 });
+    const multiCompiled = compileMilkdropPresetSource(multi, {
+      id: 'upsert-multi',
+    });
+    expect(multiCompiled.ir.numericFields.rot).toBeCloseTo(0.1, 6);
+    expect(multiCompiled.ir.numericFields.warp).toBeCloseTo(0.5, 6);
+    expect(multiCompiled.ir.shaderText.comp).not.toContain('rot=0.1');
   });
 
   test('accepts motion vector fields as supported preset inputs', () => {
@@ -903,9 +1030,74 @@ warp_shader=uv=(uv-0.5)/1.25+0.5+vec2(0.03,-0.02);
 
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(0.8, 6);
+    // `(uv-0.5)/1.25+0.5` scales the sampling coordinate by 1/1.25 (zoom in),
+    // so the zoom control is 1/(1/1.25) = 1.25 — not the raw divisor.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1.25, 6);
     expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
     expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
+  });
+
+  test('extracts division uv transforms into reciprocal zoom controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Division UV Shader
+warp_shader=uv=uv/2.0;
+      `.trim(),
+      { id: 'division-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    // `uv/2` samples at uv/2 (zoom in), so zoom = 1/(1/2) = 2. Matches the
+    // controls produced for the equivalent `uv*0.5` form.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(2, 6);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(-0.25, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.25, 6);
+  });
+
+  test('extracts centered uv scale transforms into consistent zoom controls', () => {
+    const star = compileMilkdropPresetSource(
+      `
+title=Centered Star UV Shader
+warp_shader=uv=(uv-0.5)*2.0+0.5;
+      `.trim(),
+      { id: 'centered-star-uv-shader' },
+    );
+
+    expect(star.ir.shaderText.supported).toBe(true);
+    // `(uv-0.5)*2+0.5` is a centered zoom-out: zoom = 1/2, offset stays 0.
+    expect(star.ir.post.shaderControls.zoom).toBeCloseTo(0.5, 6);
+    expect(star.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(star.ir.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+
+    const div = compileMilkdropPresetSource(
+      `
+title=Centered Div UV Shader
+warp_shader=uv=(uv-0.5)/2.0+0.5;
+      `.trim(),
+      { id: 'centered-div-uv-shader' },
+    );
+
+    expect(div.ir.shaderText.supported).toBe(true);
+    // `(uv-0.5)/2+0.5` is a centered zoom-in: zoom = 2, offset stays 0.
+    expect(div.ir.post.shaderControls.zoom).toBeCloseTo(2, 6);
+    expect(div.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(div.ir.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+  });
+
+  test('extracts audio-reactive centered uv transforms into live zoom expressions', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Centered Reactive UV Shader
+warp_shader=uv=(uv-0.5)/(1.0+bass*0.1)+0.5;
+      `.trim(),
+      { id: 'centered-reactive-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControlExpressions.zoom).not.toBeNull();
+    // Static analysis runs with bass=0, so the zoom value is 1/1 = 1.
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1, 6);
   });
 
   test('maps direct scalar uv shader transforms into compatible controls', () => {
@@ -1862,6 +2054,60 @@ definitely_not_a_real_field=1
     ).toBe(true);
   });
 
+  test('retains Milkdrop2 sz*/@ metadata fields without degrading fidelity', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+szTitle="My Preset"
+szAuthor="Some Author"
+@Comment="A comment"
+szHint="a hint"
+fRating=4.5
+      `.trim(),
+      { id: 'milkdrop2-metadata', origin: 'user' },
+    );
+
+    expect(
+      compiled.diagnostics.some(
+        (entry) => entry.code === 'preset_unknown_field',
+      ),
+    ).toBe(false);
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.title).toBe('My Preset');
+    expect(compiled.ir.author).toBe('Some Author');
+    expect(compiled.ir.description).toBe('A comment');
+    expect(compiled.ir.stringFields.meta_szhint).toBe('a hint');
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual(
+      [],
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
+  });
+
+  test('keeps unknown fields visible but non-blocking for fidelity', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Parity Soft Field
+custom_modded_field=1
+      `.trim(),
+      { id: 'parity-soft-field', origin: 'user' },
+    );
+
+    // The field is still surfaced honestly...
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
+      'custom_modded_field',
+    ]);
+    expect(
+      compiled.diagnostics.some(
+        (entry) => entry.code === 'preset_unknown_field',
+      ),
+    ).toBe(true);
+    // ...but it no longer blocks fidelity classification.
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+  });
+
   test('ignores video echo orientation when echo is disabled', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -2482,5 +2728,52 @@ comp_shader=uniform sampler2D sampler_water_caustics; ret = texture(sampler_wate
           diagnostic.code === 'preset_missing_custom_sampler_texture',
       ),
     ).toBe(false);
+  });
+
+  test('load-path compiles with metadata opt into the raw-string cache and reuse the compiled IR', () => {
+    clearCompiledPresetCache();
+
+    const raw = `
+title="Cached Preset"
+fDecay=0.5
+    `.trim();
+    const source = { id: 'cached-preset', origin: 'bundled' } as const;
+
+    const first = compileMilkdropPresetSource(raw, source, {
+      cacheCompile: true,
+    });
+    const second = compileMilkdropPresetSource(raw, source, {
+      cacheCompile: true,
+    });
+
+    // A cache hit returns the identical compiled object — the parse+IR
+    // rebuild that normally costs several milliseconds is skipped entirely.
+    expect(first).toBe(second);
+    expect(second.source.id).toBe('cached-preset');
+    expect(second.source.origin).toBe('bundled');
+    expect(second.formattedSource).not.toBe('');
+
+    clearCompiledPresetCache();
+    expect(getCompiledPresetCacheSize()).toBe(0);
+  });
+
+  test('the raw-string cache stays keyed by exact source text', () => {
+    clearCompiledPresetCache();
+
+    const rawA = 'title="A"\nfDecay=0.5';
+    const rawB = 'title="A"\nfDecay=0.6';
+    const source = { id: 'cached-a', origin: 'bundled' } as const;
+
+    const a = compileMilkdropPresetSource(rawA, source, { cacheCompile: true });
+    const b = compileMilkdropPresetSource(rawB, source, { cacheCompile: true });
+    const aAgain = compileMilkdropPresetSource(rawA, source, {
+      cacheCompile: true,
+    });
+
+    expect(a).not.toBe(b);
+    expect(a).toBe(aAgain);
+    expect(b.ir.numericFields.decay).toBeCloseTo(0.6, 4);
+
+    clearCompiledPresetCache();
   });
 });

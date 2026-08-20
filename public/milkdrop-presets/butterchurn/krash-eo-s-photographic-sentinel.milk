@@ -5,7 +5,7 @@ fVideoEchoZoom=1.000000
 bMaximizeWaveColor=0.000000
 bTexWrap=0.000000
 fWaveAlpha=1.000000
-fWaveScale=0.608000
+fWaveScale=0.608039
 fWaveParam=-0.400000
 fWaveR=0.500000
 fWaveG=0.500000
@@ -43,11 +43,11 @@ wavecode_3_g=0.700000
 wavecode_3_b=0.500000
 shapecode_0_enabled=1.000000
 shapecode_0_textured=1.000000
-shapecode_0_rad=0.472210
-shapecode_0_tex_zoom=0.503300
+shapecode_0_rad=0.472208
+shapecode_0_tex_zoom=0.503298
 shapecode_0_g=0.700000
 shapecode_0_r2=1.000000
-shapecode_0_g2=0.700000
+shapecode_0_g2=0.699900
 shapecode_1_enabled=0.000000
 shapecode_2_enabled=0.000000
 shapecode_3_enabled=0.000000
@@ -542,8 +542,34 @@ wave_3_per_point58=y = 1.3 * ys + 0.5;
 wave_3_per_point59=a = 1 - sample;
 shape_0_init1=xpos = 0;
 shape_0_init2=q1 = 0;
-shape_0_init3=ypos = 0;
-shape_0_init4=flash = 0;
+shape_0_init3=xpos = 0;
+shape_0_init4=ypos = 0;
+shape_0_init5=q1 = 0;
+shape_0_init6=ypos = 0;
+shape_0_init7=xpos = 0;
+shape_0_init8=ypos = 0;
+shape_0_init9=flash = 0;
+shape_0_init10=q1 = 0;
+shape_0_init11=flash = 0;
+shape_0_init12=flash = 0;
+shape_0_init13=flash = 0;
+shape_0_init14=flash = 0;
+shape_0_init15=flash = 0;
+shape_0_init16=flash = 0;
+shape_0_init17=flash = 0;
+shape_0_init18=flash = 0;
+shape_0_init19=flash = 0;
+shape_0_init20=flash = 0;
+shape_0_init21=flash = 0;
+shape_0_init22=flash = 0;
+shape_0_init23=flash = 0;
+shape_0_init24=flash = 0;
+shape_0_init25=flash = 0;
+shape_0_init26=flash = 0;
+shape_0_init27=flash = 0;
+shape_0_init28=flash = 0;
+shape_0_init29=flash = 0;
+shape_0_init30=flash = 0;
 shape_0_per_frame1=xpos = if(0.00001 < abs(q1), 0.25 * (randint(4) + 1) - 0.125, xpos);
 shape_0_per_frame2=ypos = if(0.00001 < abs(q1), 0.333 * (randint(3) + 1) - 0.166, ypos);
 shape_0_per_frame3=x = xpos;
@@ -562,27 +588,3 @@ shape_0_per_frame15=b2 = if(0.00001 < abs(above(flash, 0.5)), 0.5 * flash, 0.6 +
 shape_0_per_frame16=border_r = 0.5 * above(flash, 0);
 shape_0_per_frame17=border_g = 0.5 * above(flash, 0);
 shape_0_per_frame18=border_b = 0.5 * above(flash, 0);
-
-[warp_shader]
-uniform sampler2D sampler_cells;
- shader_body { 
-  vec3 ret_1;
-  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_noise_lq, 
-    (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)
-  ).xyz - 0.5) / 256.0));
-  vec4 tmpvar_2;
-  tmpvar_2 = texture (sampler_cells, (uv_orig * aspect.xy));
-  vec2 x_3;
-  x_3 = (uv - uv_orig);
-  ret_1 = (mix (ret_1, tmpvar_2.xyz, vec3((
-    clamp ((1.0 - (abs(
-      (((dot (tmpvar_2.xyz, vec3(0.32, 0.49, 0.29)) * 0.8) + 0.1) - (0.5 + (roam_cos.y * 0.25)))
-    ) * 43.0)), 0.0, 1.0)
-   * 0.07))) * (0.97 + (0.03 * 
-    clamp ((sqrt(dot (x_3, x_3)) * 200.0), 0.0, 1.0)
-  )));
-  vec4 tmpvar_4;
-  tmpvar_4.w = 1.0;
-  tmpvar_4.xyz = ret_1;
-  ret = tmpvar_4.xyz;
- }

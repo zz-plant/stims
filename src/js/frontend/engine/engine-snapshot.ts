@@ -17,6 +17,9 @@ export type EngineSnapshot = {
   audioActive: boolean;
   audioSource: AudioSource | null;
   audioEnergy: number;
+  audioBass: number;
+  audioMid: number;
+  audioTreble: number;
   /**
    * Timestamp (`Date.now()`) of the most recent unexpected audio stream
    * termination (mic revoked, tab/display share or YouTube capture
@@ -25,6 +28,11 @@ export type EngineSnapshot = {
    * (not truthiness) since it never resets back to `null`.
    */
   audioEndedAt: number | null;
+  /** Whole-number tempo of the playing audio, or null when the runtime's
+   * beat clock has no confident read. Null is the honest answer for ambient
+   * material and must render as "no tempo", never as the last number that
+   * worked. */
+  tempoBpm: number | null;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;
@@ -43,7 +51,11 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioActive: false,
     audioSource: null,
     audioEnergy: 0,
+    audioBass: 0,
+    audioMid: 0,
+    audioTreble: 0,
     audioEndedAt: null,
+    tempoBpm: null,
     autoplay: false,
     transitionMode: 'blend',
     blendDuration: 0.3,
@@ -64,7 +76,11 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
     a.audioEnergy === b.audioEnergy &&
+    a.audioBass === b.audioBass &&
+    a.audioMid === b.audioMid &&
+    a.audioTreble === b.audioTreble &&
     a.audioEndedAt === b.audioEndedAt &&
+    a.tempoBpm === b.tempoBpm &&
     a.autoplay === b.autoplay &&
     a.transitionMode === b.transitionMode &&
     a.blendDuration === b.blendDuration
@@ -99,7 +115,11 @@ export function buildEngineSnapshot({
     audioActive,
     audioSource,
     audioEnergy: snapshot?.audioEnergy ?? 0,
+    audioBass: snapshot?.audioBass ?? 0,
+    audioMid: snapshot?.audioMid ?? 0,
+    audioTreble: snapshot?.audioTreble ?? 0,
     audioEndedAt: audioEndedAt ?? null,
+    tempoBpm: snapshot?.tempoBpm ?? null,
     autoplay: snapshot?.autoplay ?? false,
     transitionMode: snapshot?.transitionMode ?? 'blend',
     blendDuration: snapshot?.blendDuration ?? 0.3,

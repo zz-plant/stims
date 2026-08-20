@@ -1,4 +1,8 @@
-import { getDeviceEnvironmentProfile } from '../utils/browser/device-detect';
+import {
+  getDeviceEnvironmentProfile,
+  isInAppBrowser,
+  isSmartTvDevice,
+} from '../utils/browser/device-detect';
 
 export type DevicePerformanceProfile = {
   lowPower: boolean;
@@ -8,22 +12,58 @@ export type DevicePerformanceProfile = {
 
 export type DeviceTier = 'low' | 'mid' | 'high' | 'ultra';
 
-export function getDeviceTier(): DeviceTier {
+/**
+ * Single read-point for the raw hardware facts that every "should this
+ * session start lighter" heuristic in the codebase (first-run quality
+ * preset here, and the adaptive-quality controller's initial step) ends up
+ * asking about. Consumers apply their own thresholds on top of these facts —
+ * centralizing here only removes the duplicated navigator/device-detect
+ * plumbing, not each consumer's judgment call about what counts as "weak".
+ */
+export type HardwareSignals = {
+  hardwareConcurrency: number | null;
+  deviceMemory: number | null;
+  isMobile: boolean;
+  isSmartTv: boolean;
+  isInAppBrowser: boolean;
+};
+
+export function getHardwareSignals(): HardwareSignals {
   const environment = getDeviceEnvironmentProfile();
   const hardwareConcurrency =
     typeof navigator !== 'undefined'
       ? (navigator.hardwareConcurrency ?? null)
       : null;
+  const deviceMemory =
+    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
+      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null)
+      : null;
+
+  return {
+    hardwareConcurrency,
+    deviceMemory,
+    isMobile: environment.isMobile,
+    isSmartTv: isSmartTvDevice(),
+    isInAppBrowser: isInAppBrowser(),
+  };
+}
+
+export function getDeviceTier(): DeviceTier {
+  const signals = getHardwareSignals();
+  if (signals.isSmartTv) {
+    return 'mid';
+  }
 
   // Mobile stays at 12+ cores: 8-core chips like the Snapdragon 8 Gen 1 (S22)
   // look capable by core count but have a fraction of the sustained GPU
   // throughput and thermal-throttle within seconds. Desktop uses 10+ so
   // sustained-clock parts like the 10-core M1 Pro qualify.
   const isUltra =
-    (hardwareConcurrency !== null &&
-      (environment.isMobile
-        ? hardwareConcurrency >= 12
-        : hardwareConcurrency >= 10)) ||
+    (signals.hardwareConcurrency !== null &&
+      (signals.isMobile
+        ? signals.hardwareConcurrency >= 12
+        : signals.hardwareConcurrency >= 10)) ||
     readVerifiedWebGpuTier() === 'high-end';
 
   if (isUltra) return 'ultra';
@@ -31,19 +71,14 @@ export function getDeviceTier(): DeviceTier {
   const profile = getDevicePerformanceProfile();
   if (!profile.lowPower) return 'high';
 
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-
   const veryConstrained =
-    (deviceMemory !== null && deviceMemory <= 2) ||
-    (hardwareConcurrency !== null && hardwareConcurrency <= 2) ||
-    (deviceMemory !== null &&
-      deviceMemory <= 3 &&
-      hardwareConcurrency !== null &&
-      hardwareConcurrency <= 3);
+    (signals.deviceMemory !== null && signals.deviceMemory <= 2) ||
+    (signals.hardwareConcurrency !== null &&
+      signals.hardwareConcurrency <= 2) ||
+    (signals.deviceMemory !== null &&
+      signals.deviceMemory <= 3 &&
+      signals.hardwareConcurrency !== null &&
+      signals.hardwareConcurrency <= 3);
 
   return veryConstrained ? 'low' : 'mid';
 }
@@ -54,35 +89,51 @@ export function applyDeviceTierToDocument() {
   document.documentElement.dataset.deviceTier = tier;
 }
 
+/**
+ * The MediaQueryList is cached, but `.matches` is still read live on every
+ * call, so a user toggling reduced-motion mid-session is still respected.
+ * Only the construction is hoisted: `window.matchMedia(...)` forces a style
+ * resolution, and getDevicePerformanceProfile runs on every animation frame
+ * via buildParticleFieldVisual.
+ */
+let reducedMotionQuery: MediaQueryList | null = null;
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  if (reducedMotionQuery === null) {
+    reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  }
+  return reducedMotionQuery.matches;
+}
+
+/** Test seam: drops the cached MediaQueryList when a spec swaps matchMedia. */
+export function resetDeviceProfileCache(): void {
+  reducedMotionQuery = null;
+}
+
 export function getDevicePerformanceProfile(): DevicePerformanceProfile {
-  const environment = getDeviceEnvironmentProfile();
-  const deviceMemory =
-    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
-      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
-        null)
-      : null;
-  const hardwareConcurrency =
-    typeof navigator !== 'undefined'
-      ? (navigator.hardwareConcurrency ?? null)
-      : null;
-  const reducedMotion =
-    typeof window !== 'undefined' && window.matchMedia
-      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      : false;
+  const signals = getHardwareSignals();
+  const {
+    deviceMemory,
+    hardwareConcurrency,
+    isMobile,
+    isSmartTv: isTv,
+  } = signals;
+  const reducedMotion = prefersReducedMotion();
 
   const reasons: string[] = [];
   const limitedDeviceMemory = deviceMemory !== null && deviceMemory <= 3;
   const limitedCpuCores =
     hardwareConcurrency !== null && hardwareConcurrency <= 3;
   const constrainedHandheld =
-    environment.isMobile &&
+    isMobile &&
     ((deviceMemory !== null && deviceMemory <= 3) ||
       (hardwareConcurrency !== null && hardwareConcurrency <= 3));
 
   // When deviceMemory is unavailable (Safari/Firefox), use core count as proxy
   const inferredLimitedMemory =
     deviceMemory === null &&
-    environment.isMobile &&
+    isMobile &&
     hardwareConcurrency !== null &&
     hardwareConcurrency <= 3;
 
@@ -101,14 +152,19 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   if (inferredLimitedMemory) {
     reasons.push('inferred memory constraint (Safari/Firefox mobile)');
   }
+  if (isTv) {
+    reasons.push('Smart TV limited processing envelope');
+  }
+
+  const isHardwareLowPower =
+    limitedDeviceMemory ||
+    limitedCpuCores ||
+    constrainedHandheld ||
+    inferredLimitedMemory ||
+    isTv;
 
   return {
-    lowPower:
-      reducedMotion ||
-      limitedDeviceMemory ||
-      limitedCpuCores ||
-      constrainedHandheld ||
-      inferredLimitedMemory,
+    lowPower: isHardwareLowPower,
     reason: reasons.length > 0 ? reasons.join(', ') : null,
     reducedMotion,
   };
@@ -278,7 +334,7 @@ export function startRefreshRateSampling() {
     }
     last = now;
 
-    if (deltas.length < 20) {
+    if (deltas.length < 8) {
       window.requestAnimationFrame(sample);
       return;
     }

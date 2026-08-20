@@ -221,4 +221,106 @@ describe('deriveMashupCredit', () => {
     );
     expect(credit.mashupOf).toEqual(['Fractopia', 'Bas Relief']);
   });
+
+  test('a blend inherits both parents component and compatibility credits', () => {
+    const a = parsePresetCredit('Eo.S. - Glowsticks (+Krash′s beat code)');
+    const b = parsePresetCredit('martin - neon space ps2 (ati fix)');
+    const credit = deriveMashupCredit(a, b);
+    expect(credit.componentCredits).toEqual([
+      { author: 'Krash', component: 'beat code' },
+    ]);
+    expect(credit.compatibilityNotes).toEqual(['ati fix']);
+    expect(credit.shaderModel).toBe('ps2');
+  });
+});
+
+describe('inline component credits', () => {
+  test('parenthesized form, including the prime apostrophe the catalog uses', () => {
+    const credit = parsePresetCredit(
+      'Eo.S. - glowsticks v2 05 and proton lights (+Krash′s beat code)',
+    );
+    expect(credit.componentCredits).toEqual([
+      { author: 'Krash', component: 'beat code' },
+    ]);
+    expect(credit.title).toBe('glowsticks v2 05 and proton lights');
+    // The component credit must not be mistaken for a mix name.
+    expect(credit.mixName).toBeNull();
+  });
+
+  test('bare form joined to the title with a plus', () => {
+    const credit = parsePresetCredit(
+      'shifter - spills blender + krash beatdetect',
+    );
+    expect(credit.componentCredits).toEqual([
+      { author: 'krash', component: 'beatdetect' },
+    ]);
+    expect(credit.authors).toEqual(['shifter']);
+  });
+
+  test('a title that merely mentions beat detection is not a component credit', () => {
+    expect(
+      parsePresetCredit('Unchained - Goofy Beat Detection').componentCredits,
+    ).toEqual([]);
+    expect(
+      parsePresetCredit('Flexi + Geiss - antagonizing beat detection codes')
+        .componentCredits,
+    ).toEqual([]);
+    const mix = parsePresetCredit(
+      'flexi - far away distance (custom beat detection + bipolar colour ghost mix)',
+    );
+    expect(mix.componentCredits).toEqual([]);
+    expect(mix.mixName).toBe(
+      'custom beat detection + bipolar colour ghost mix',
+    );
+  });
+});
+
+describe('compatibility markers', () => {
+  test('vendor fixes are lifted out of the title', () => {
+    expect(
+      parsePresetCredit('martin - soma in pink (Ati Fix)').compatibilityNotes,
+    ).toEqual(['Ati Fix']);
+    expect(
+      parsePresetCredit('Eo.S. - chasers 19 Portal (geiss flicker fix)')
+        .compatibilityNotes,
+    ).toEqual(['geiss flicker fix']);
+    expect(
+      parsePresetCredit('Cope - Cartune (extrusion machine) [fixed]')
+        .compatibilityNotes,
+    ).toEqual(['fixed']);
+  });
+
+  test('a vendor fix does not consume the real mix name', () => {
+    const credit = parsePresetCredit(
+      'Cope - Cartune (extrusion machine) [fixed]',
+    );
+    expect(credit.mixName).toBe('extrusion machine');
+    expect(credit.title).toBe('Cartune');
+  });
+});
+
+describe('shader-model variants', () => {
+  test('the two shader builds of one work share a family key', () => {
+    const ps2 = parsePresetCredit('martin - rogue wave -ps2');
+    const ps3 = parsePresetCredit('martin - rogue wave -ps3');
+    expect(ps2.shaderModel).toBe('ps2');
+    expect(ps3.shaderModel).toBe('ps3');
+    expect(ps2.title).toBe('rogue wave');
+    expect(presetFamilyKey(ps2)).toBe(presetFamilyKey(ps3));
+  });
+
+  test('handles the unspaced and dotted spellings', () => {
+    expect(parsePresetCredit('martin - neon space ps2').shaderModel).toBe(
+      'ps2',
+    );
+    expect(
+      parsePresetCredit('hexcollie - 2nd collaboration(ps2.0) - 8').shaderModel,
+    ).toBe('ps2');
+  });
+
+  test('leaves a title with no shader suffix alone', () => {
+    const credit = parsePresetCredit('Geiss - Casino');
+    expect(credit.shaderModel).toBeNull();
+    expect(credit.title).toBe('Casino');
+  });
 });

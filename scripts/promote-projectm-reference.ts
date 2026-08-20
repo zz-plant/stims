@@ -1,3 +1,22 @@
+/**
+ * Promotes a reviewed native projectM capture into the checked-in visual
+ * reference manifest.
+ *
+ * Promote stage of the parity pipeline (capture -> diff -> promote). Takes the
+ * latest `projectm-reference` parity artifact for a preset (or an explicit
+ * image via `--source-image`/`--source-meta`), re-validates its provenance
+ * metadata against the upstream preset fixture, copies the image and sidecar
+ * into the visual reference fixture root, and upserts the preset entry — size,
+ * tolerance, required backend, strata, provenance — so parity:suite starts
+ * diffing against it.
+ *
+ *   bun run parity:promote-reference -- --preset <id> [--strata a,b,c]
+ *
+ * Alternatives and overrides: `--projectm-id` selects an exact artifact,
+ * `--output` points at the parity artifact directory, `--fixture-root` changes
+ * the preset root used for provenance checks, and `--title`/`--label` override
+ * the recorded title and provenance label.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';

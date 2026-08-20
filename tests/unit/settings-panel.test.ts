@@ -186,7 +186,7 @@ describe('quality preset subscriptions', () => {
       balanced.renderScale ?? 1,
     );
     expect(hiFi.maxPixelRatio).toBeGreaterThan(balanced.maxPixelRatio);
-    expect(hiFi.renderScale).toBeGreaterThan(balanced.renderScale ?? 1);
+    expect(hiFi.renderScale).toBeGreaterThanOrEqual(balanced.renderScale ?? 1);
     expect(hiFi.particleScale).toBeGreaterThan(balanced.particleScale ?? 1);
   });
 

@@ -39,11 +39,8 @@ import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2
 import docsMcpServer from '../docs/MCP_SERVER.md';
 import docsReadme from '../docs/README.md';
 import docsStatus202605 from '../docs/STATUS_2026-05.md';
-import docsToyDevelopment from '../docs/TOY_DEVELOPMENT.md';
-import docsToyScriptIndex from '../docs/TOY_SCRIPT_INDEX.md';
-import docsToys from '../docs/toys.md';
 import readme from '../README.md';
-import toyManifest from '../src/js/data/toy-manifest.ts';
+import toyManifest from '../src/data/toys.json';
 
 const defaultInstructions = [
   'Stims is a browser-native MilkDrop visualizer with 43+ bundled presets. The MCP server provides tools organized into these categories:',
@@ -84,9 +81,6 @@ const markdownSources = {
   'docs/README.md': docsReadme,
   'docs/MCP_SERVER.md': docsMcpServer,
   'docs/DEVELOPMENT.md': docsDevelopment,
-  'docs/TOY_DEVELOPMENT.md': docsToyDevelopment,
-  'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
-  'docs/toys.md': docsToys,
   'docs/STATUS_2026-05.md': docsStatus202605,
   'docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md': docsEvidenceLedger202605,
   'docs/evidence/public-claim-audit.md': docsEvidenceClaimAudit,
@@ -1229,6 +1223,25 @@ function asTextResponse(text: string) {
   };
 }
 
+/**
+ * Returns a screenshot as an inline base64 image content block alongside a
+ * text summary, so a client connected over a remote transport (no shared
+ * filesystem with this process) can still see the pixels — a local stdio
+ * client that can Read the file path is unaffected either way.
+ */
+function asImageResponse(pngBuffer: Buffer, summaryText: string) {
+  return {
+    content: [
+      { type: 'text' as const, text: summaryText },
+      {
+        type: 'image' as const,
+        data: pngBuffer.toString('base64'),
+        mimeType: 'image/png',
+      },
+    ],
+  };
+}
+
 function normalizeToys(data: unknown): ToyMetadata[] {
   if (!Array.isArray(data)) return [];
 
@@ -1285,7 +1298,11 @@ function extractMarkdownSection(markdown: string, heading: string) {
 
   const startIndex = match.index + match[0].length;
   const rest = markdown.slice(startIndex);
-  const nextHeading = rest.search(/^#{1,6}\\s+/m);
+  // A section runs until the next heading of the same or higher level —
+  // cutting at ANY heading would return empty content for a section whose
+  // body starts with a subsection.
+  const level = /^#+/.exec(match[1])?.[0].length ?? 6;
+  const nextHeading = rest.search(new RegExp(`^#{1,${level}}\\s+`, 'm'));
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
 
   return {
@@ -1462,6 +1479,7 @@ export type {
   ToyMetadata,
 };
 export {
+  asImageResponse,
   asTextResponse,
   buildDocPointers,
   createMcpServer,

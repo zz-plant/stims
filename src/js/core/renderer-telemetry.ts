@@ -8,9 +8,15 @@ const logger = createLogger('RendererTelemetry');
 
 const STORAGE_KEY = 'stims:renderer-support-stats';
 
-function readTelemetryStats() {
+function readTelemetryStats(): Record<string, unknown> {
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : {};
+  if (!raw) return {};
+  const parsed: unknown = JSON.parse(raw);
+  if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return parsed as Record<string, unknown>;
+  }
+  window.localStorage.removeItem(STORAGE_KEY);
+  return {};
 }
 
 function writeTelemetryStats(nextStats: Record<string, unknown>) {
@@ -79,10 +85,10 @@ function installOptimizationTelemetry() {
         }
 
         const existing = readTelemetryStats();
-        const counters =
+        const counters: Record<string, unknown> =
           existing.optimizationCounters &&
           typeof existing.optimizationCounters === 'object'
-            ? existing.optimizationCounters
+            ? (existing.optimizationCounters as Record<string, unknown>)
             : {};
 
         counters[detail.counter] =
@@ -102,7 +108,80 @@ function installOptimizationTelemetry() {
   );
 }
 
+import { getDeviceTier } from './device-profile.ts';
+import { getActiveAdaptiveQualityController } from './services/adaptive-quality-controller.ts';
+
+export type StimsTelemetryAPI = {
+  getLiveStats: () => {
+    deviceTier: string | null;
+    qualityPreset: string | null;
+    hardwareConcurrency: number | null;
+    deviceMemory: number | null;
+    adaptiveState: ReturnType<
+      import('./services/adaptive-quality-controller.ts').AdaptiveQualityController['getState']
+    > | null;
+    persistedStats: Record<string, unknown>;
+  };
+  setQualityStep: (step: number) => boolean;
+  readTelemetryStats: () => Record<string, unknown>;
+};
+
+function installGlobalTelemetryAPI() {
+  if (typeof window === 'undefined') return;
+
+  const api: StimsTelemetryAPI = {
+    getLiveStats: () => {
+      const controller = getActiveAdaptiveQualityController();
+      const adaptiveState = controller ? controller.getState() : null;
+      const deviceMemory =
+        'deviceMemory' in navigator
+          ? ((navigator as Navigator & { deviceMemory?: number })
+              .deviceMemory ?? null)
+          : null;
+
+      return {
+        deviceTier:
+          document.documentElement.dataset.deviceTier ?? getDeviceTier(),
+        qualityPreset: document.documentElement.dataset.qualityPreset ?? null,
+        hardwareConcurrency: navigator.hardwareConcurrency ?? null,
+        deviceMemory,
+        adaptiveState,
+        persistedStats: readTelemetryStats(),
+      };
+    },
+    setQualityStep: (step: number) => {
+      const controller = getActiveAdaptiveQualityController();
+      if (!controller) return false;
+      controller.setQualityStep(step);
+      return true;
+    },
+    readTelemetryStats: () => readTelemetryStats(),
+  };
+
+  (
+    window as unknown as { __stims_telemetry?: StimsTelemetryAPI }
+  ).__stims_telemetry = api;
+}
+
 export function installRendererTelemetryPersistence() {
   installRendererSupportTelemetry();
   installOptimizationTelemetry();
+  installGlobalTelemetryAPI();
+}
+
+/**
+ * The reason recorded the last time the renderer probe fell back from
+ * WebGPU, or null when the last probe succeeded (or nothing is stored).
+ * Lets the settings UI answer "why am I on WebGL?" without devtools.
+ */
+export function getLastRendererFallbackReason(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const reason = readTelemetryStats().lastFallbackReason;
+    return typeof reason === 'string' && reason.length > 0 ? reason : null;
+  } catch {
+    return null;
+  }
 }

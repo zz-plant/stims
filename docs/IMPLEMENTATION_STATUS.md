@@ -40,9 +40,16 @@ This document is the consolidated source for implementation progress across road
   - [x] Added unit test suite in `tests/unit/butterchurn-eel-transpiler.test.ts` (4/4 tests passing).
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **WebMIDI controller-service foundation** (2026-07-30):
-  - [x] Implemented `MidiControllerManager` in `src/js/core/midi-controller.ts` with WebMIDI access, mapping, and learn-mode logic.
+  - [x] Implemented WebMIDI access, mapping, and learn-mode logic in `src/js/core/services/webmidi-controller.ts`.
   - [x] Connected the shared controller service to live workspace parameters and Settings UI.
-  - [ ] Add persistent mappings, recovery behavior, and device-backed verification.
+  - [x] Add persistent mappings, recovery behavior, and device-backed verification (2026-08-13, below).
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **MIDI/VJ hardware workflow: persistent mappings, device QA, recovery, MCP performance** (2026-08-13):
+  - [x] Rewrote `src/js/core/services/webmidi-controller.ts`: per-device bindings persisted to localStorage, MIDI-learn mode, `onstatechange` hot-plug recovery, per-device enable toggle. Deleted the unused parallel `MidiControllerManager` class it superseded.
+  - [x] Opened `performance-hardware-controls.ts`'s live-target allowlist — any field name is now bindable, matching what the inspector panel already accepts.
+  - [x] Moved the live MIDI→engine binding from `PerformanceHardwareSection` (mounted only while Settings was open) to `App.tsx`, so a controller keeps driving the visuals with Settings closed.
+  - [x] Modeled Claude as a virtual "Claude (MCP)" MIDI device sharing the same binding pipeline as hardware; added `toil:midi_set`/`toil:midi_cc` commands to the agent bridge (`src/js/frontend/agent-bridge.ts`) and `session_midi_set`/`session_midi_cc`/`session_midi_bindings`/`session_midi_devices` MCP tools (`scripts/mcp-server.ts`).
+  - [x] Rebuilt `PerformanceHardwareSection.tsx`: device list with connect state, per-device enable switch, bindings table with remove, MIDI-learn UI.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
   - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)
@@ -58,8 +65,7 @@ This document is the consolidated source for implementation progress across road
 - [ ] Complete the browse → edit → compare → save → share remix workflow.
 - [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
 - [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
-- [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
-- [ ] **WebXR spatial stage experiment** (retired: the unverified session-attachment scaffolding and settings toggle were removed; the concept stays in the roadmap's research bucket only).
+- [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication). Not started: two stub modules were removed unused — neither had a code generator consuming them, and both restated uniform defaults the feedback managers already own.
 
 ## Refactor milestone tracking
 
@@ -71,12 +77,12 @@ This document is the consolidated source for implementation progress across road
 - [x] **Milestone B:** Pilot migration complete and validated.
   - [x] Documented the runtime ownership map and shell contract in `docs/ARCHITECTURE.md`.
   - [x] Migrated the shipped MilkDrop starter/quality helpers from `utils/` into `core/` as the pilot boundary slice.
-  - [x] Validated the pilot with focused tests, `bun run check:toys`, and `bun run check`.
+  - [x] Validated the pilot with focused tests, `bun run check:readme-claims`, and `bun run check`.
 - [x] **Milestone C:** Broad toy migration with hardened drift checks.
   - [x] Added `bun run check:architecture` and wired it into the full `bun run check` quality gate.
   - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
-  - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `src/data/toys.json`.
-  - [x] Wired `bun run check:toys` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
+  - [x] Retired the generated toy-manifest artifacts; `src/data/toys.json` is now read directly by the MCP server.
+  - [x] Wired `bun run check:readme-claims` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
 - [x] **Milestone D:** Performance/reliability pass complete.
   - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.
   - [x] Expanded browser-backed smoke coverage to include homepage-to-launchpad navigation in addition to live-session launch coverage.
@@ -97,7 +103,7 @@ This document is the consolidated source for implementation progress across road
   - [x] MilkDrop pilot slice now uses `core/` starter/quality helpers instead of `utils/` runtime helpers.
 - [x] 4) Data and metadata consistency hardening.
   - [x] Architecture boundary enforcement now runs in CI-local parity through `bun run check:architecture`.
-  - [x] Toy manifest docs are generated from `src/data/toys.json` and validated by `bun run check:toys`.
+  - [x] README public claims are validated against the shipped catalog by `bun run check:readme-claims`.
   - [x] SEO surface validation now runs alongside the main quality gate through `bun run check:seo`.
 - [x] 5) Incremental performance and reliability pass.
   - [x] Catalog refresh scheduling now coalesces to the latest requested overlay state during rapid preset/backend churn.

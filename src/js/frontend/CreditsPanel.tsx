@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { STIMS_REPO_URL } from './workspace-helpers.ts';
 
 function CreditsSection({
   title,
@@ -8,20 +9,9 @@ function CreditsSection({
   children: ReactNode;
 }) {
   return (
-    <section style={{ marginBottom: '2rem' }}>
-      <h3
-        style={{
-          fontSize: '0.95rem',
-          fontWeight: 600,
-          margin: '0 0 0.75rem 0',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          opacity: 0.7,
-        }}
-      >
-        {title}
-      </h3>
-      <div style={{ lineHeight: 1.7, fontSize: '0.9rem' }}>{children}</div>
+    <section className="stims-credits-section">
+      <h3 className="stims-credits-section-title">{title}</h3>
+      <div className="stims-credits-body">{children}</div>
     </section>
   );
 }
@@ -37,18 +27,19 @@ function CreditEntry({
 }) {
   const content = (
     <>
-      <strong>{name}</strong> · {creditRole}
+      <strong className="stims-credits-entry-name">{name}</strong> ·{' '}
+      <span className="stims-credits-entry-role">{creditRole}</span>
     </>
   );
 
   if (url) {
     return (
-      <div style={{ marginBottom: '0.5rem' }}>
+      <div className="stims-credits-entry">
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: 'inherit', textDecoration: 'none' }}
+          className="stims-credits-entry-link"
           title={url}
         >
           {content}
@@ -57,22 +48,13 @@ function CreditEntry({
     );
   }
 
-  return <div style={{ marginBottom: '0.5rem' }}>{content}</div>;
+  return <div className="stims-credits-entry">{content}</div>;
 }
 
 export function CreditsPanel() {
   return (
-    <div
-      style={{
-        padding: '1.5rem',
-        fontSize: '0.9rem',
-        lineHeight: 1.6,
-        maxWidth: '600px',
-      }}
-    >
-      <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.3rem' }}>
-        About Stims
-      </h2>
+    <div className="stims-credits-panel">
+      <h2 className="stims-credits-title">About Stims</h2>
 
       <CreditsSection title="What is Stims?">
         <p>
@@ -81,7 +63,7 @@ export function CreditsPanel() {
           discovery environment for audio-reactive presets—with compatibility
           claims tied to measured evidence.
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           Stims is not affiliated with or endorsed by MilkDrop, Winamp,
           projectM, or Butterchurn. Each project is independent, and this
           lineage is acknowledged with respect.
@@ -98,7 +80,7 @@ export function CreditsPanel() {
           name="Winamp & Nullsoft"
           creditRole="Original public product context"
         />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           MilkDrop defined the preset language, visual vocabulary, and real-time
           visualization paradigm that audio-reactive presets are built on today.
         </p>
@@ -115,7 +97,7 @@ export function CreditsPanel() {
           creditRole="Web-based MilkDrop player"
           url="https://butterchurnviz.com/"
         />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
+        <p className="stims-credits-disclaimer">
           These projects maintain the format, expand the tooling, and preserve
           the preset ecosystem. Stims compatibility testing references projectM
           captures and code.
@@ -124,29 +106,35 @@ export function CreditsPanel() {
 
       <CreditsSection title="Preset Authors & Curators">
         <p>
-          The 1,791 presets in Stims' catalog are created and maintained by
-          hundreds of artists in the demoscene and audio-visual community. Key
-          contributors include:
+          The 1,787 presets in Stims' catalog were made by roughly 140 authors.
+          Counting every appearance in a credit chain rather than only solo
+          bylines, the most-credited are Geiss, Flexi, Martin, Rovastar, Eo.S.,
+          Stahlregen, Unchained, fiShbRaiN, Phat, and Aderrasi.
         </p>
         <CreditEntry
-          name="Eo.S."
-          creditRole="Cream of the Crop curator & artist"
+          name="Rovastar"
+          creditRole="Classic-era author; researched the cross-vendor texel-alignment fix credited in Geiss's MilkDrop changelog"
+        />
+        <CreditEntry
+          name="Krash"
+          creditRole="Classic-era author; his beat-detection routine circulated scene-wide, credited inline in preset titles"
+        />
+        <p>Curation decided which presets most people ever saw:</p>
+        <CreditEntry
+          name="djdafreund"
+          creditRole="Compiler, Better Living Through Chemicals (BLTC) — ships inside projectM as bltc201"
+        />
+        <CreditEntry
+          name="Jason Fletcher / ISOSCELES"
+          creditRole="Compiler, Cream of the Crop — the default projectM preset pack since 2022"
           url="https://github.com/projectM-visualizer/presets-cream-of-the-crop"
         />
-        <CreditEntry
-          name="Rovastar"
-          creditRole="Classic MilkDrop packs & projectM development"
-          url="https://sourceforge.net/projects/milkdrop2/"
-        />
-        <CreditEntry
-          name="projectM Community"
-          creditRole="Distributed preset packs & collections"
-          url="https://github.com/projectM-visualizer/projectm/tree/master/src/libprojectM/presets"
-        />
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
-          Every preset in your library carries the work and creativity of its
-          original author. Stims aims to make that authorship visible and
-          linkable.
+        <p className="stims-credits-disclaimer">
+          MilkDrop credits are accretive: a remixer joins the byline rather than
+          replacing it, so a title like "Stahlregen &amp; Geiss + Rovastar +
+          Illusion + Krash + Rozzor — Cyclopean Shift (Eyeless Mix)" names six
+          hands on one work. Stims preserves those chains in full and never
+          truncates them to "and others."
         </p>
       </CreditsSection>
 
@@ -157,13 +145,25 @@ export function CreditsPanel() {
           innovation, and open-source visualization work—all of which is honored
           through code comments, test fixtures, and this credit page.
         </p>
-        <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.75rem' }}>
-          See{' '}
+        <p className="stims-credits-disclaimer">
+          The full source lives at{' '}
           <a
-            href="https://github.com/zz-plant/stims/blob/main/docs/LINEAGE_AND_CREDITS.md"
+            href={STIMS_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'inherit', textDecoration: 'underline' }}
+            className="stims-credits-link"
+          >
+            github.com/zz-plant/stims
+          </a>
+          .
+        </p>
+        <p className="stims-credits-disclaimer">
+          See{' '}
+          <a
+            href={`${STIMS_REPO_URL}/blob/main/docs/LINEAGE_AND_CREDITS.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="stims-credits-link"
           >
             LINEAGE_AND_CREDITS.md
           </a>{' '}

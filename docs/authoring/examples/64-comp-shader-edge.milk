@@ -1,0 +1,35 @@
+[preset00]
+// Pattern 10 from the coding guide: edge detection via a 4-neighbor
+// gradient, then a high-pass (sharp minus blurred) to pick out detail.
+fRating=5
+fDecay=0.98
+fWaveAlpha=1.2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=1
+bTexWrap=1
+zoom=1.01
+rot=0.01
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.2
+wave_g=0.85
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+[comp_shader]
+float dx = texture2D(sampler_main, uv + vec2(1.0 / texsize.x, 0.0)).x - texture2D(sampler_main, uv + vec2(-1.0 / texsize.x, 0.0)).x;
+float dy = texture2D(sampler_main, uv + vec2(0.0, 1.0 / texsize.y)).x - texture2D(sampler_main, uv + vec2(0.0, -1.0 / texsize.y)).x;
+float edge = length(vec2(dx, dy)) * 6.0;
+vec3 sharpv = texture2D(sampler_main, uv).rgb;
+vec3 blurred = texture2D(sampler_blur1, uv).rgb;
+ret = abs(sharpv - blurred) * edge;

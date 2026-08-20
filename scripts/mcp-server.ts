@@ -1,13 +1,36 @@
+/**
+ * Stdio MCP server exposing this repo's visualizer capabilities to agents.
+ *
+ * Tools cover long-lived headless browser sessions (start_agent_session,
+ * session_capture_frame/switch_preset/watch/describe_frame/compare),
+ * preset editing and inspection (session_get_preset_source, session_apply_source,
+ * session_set_fields, session_tweak, session_vibe, inspect_eel_ast,
+ * inspect_preset_lowerer), MIDI control, toy screenshots and health checks,
+ * preview galleries, quality gates (run_quality_gate), and the live-performance
+ * tools from mcp-performance-tools.ts (session_play_pattern, session_bind,
+ * session_macro, session_scene, session_listen). Launched via `bun run mcp`.
+ */
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { chromium } from 'playwright';
+import sharp from 'sharp';
 import { z } from 'zod';
-import { asTextResponse, createMcpServer } from './mcp-shared.ts';
+import type { MilkdropExpressionNode } from '../src/js/milkdrop/common-types.ts';
+import { resolveAgentChromiumArgs } from './browser-launch.ts';
+import { registerPerformanceTools } from './mcp-performance-tools.ts';
+import {
+  asImageResponse,
+  asTextResponse,
+  createMcpServer,
+} from './mcp-shared.ts';
 import { playToy } from './play-toy.ts';
+import { computeImageMetrics } from './preset-lab-metrics.ts';
 
 const server = createMcpServer();
 const transport = new StdioServerTransport();
@@ -57,7 +80,6 @@ async function closeSession(session: AgentSession) {
 const qualityGateCommands = {
   full: ['bun', ['run', 'check']],
   quick: ['bun', ['run', 'check:quick']],
-  toys: ['bun', ['run', 'check:toys']],
   typecheck: ['bun', ['run', 'typecheck']],
   test: ['bun', ['run', 'test']],
 } as const;
@@ -174,7 +196,7 @@ server.registerTool(
       'Run Bun-based quality gate commands and return structured pass/fail output. Useful for agent workflows that need deterministic repository checks.',
     inputSchema: z.object({
       scope: z
-        .enum(['full', 'quick', 'toys', 'typecheck', 'test'])
+        .enum(['full', 'quick', 'typecheck', 'test'])
         .optional()
         .default('full')
         .describe('Quality gate scope to run. Defaults to full.'),
@@ -241,9 +263,13 @@ server.registerTool(
         );
       }
 
-      return asTextResponse(
-        `Captured screenshot for ${slug} at ${result.screenshot}\nAudio Active: ${result.audioActive}\nConsole Errors: ${result.consoleErrors?.length || 0}`,
-      );
+      const summary = `Captured screenshot for ${slug} at ${result.screenshot}\nAudio Active: ${result.audioActive}\nConsole Errors: ${result.consoleErrors?.length || 0}`;
+      const pngBuffer = result.screenshot
+        ? await readFile(result.screenshot).catch(() => null)
+        : null;
+      return pngBuffer
+        ? asImageResponse(pngBuffer, summary)
+        : asTextResponse(summary);
     } catch (e) {
       return asTextResponse(`Error running automation: ${e}`);
     }
@@ -295,16 +321,20 @@ server.registerTool(
         );
       }
 
-      return asTextResponse(
-        [
-          `Preset: ${preset.title} by ${preset.author}`,
-          `Screenshot: ${result.screenshot}`,
-          `Audio Active: ${result.audioActive}`,
-          result.consoleErrors?.length
-            ? `Console Warnings: ${result.consoleErrors.length}`
-            : 'No console errors',
-        ].join('\n'),
-      );
+      const summary = [
+        `Preset: ${preset.title} by ${preset.author}`,
+        `Screenshot: ${result.screenshot}`,
+        `Audio Active: ${result.audioActive}`,
+        result.consoleErrors?.length
+          ? `Console Warnings: ${result.consoleErrors.length}`
+          : 'No console errors',
+      ].join('\n');
+      const pngBuffer = result.screenshot
+        ? await readFile(result.screenshot).catch(() => null)
+        : null;
+      return pngBuffer
+        ? asImageResponse(pngBuffer, summary)
+        : asTextResponse(summary);
     } catch (e) {
       return asTextResponse(`Error capturing preset: ${e}`);
     }
@@ -473,7 +503,10 @@ server.registerTool(
   async ({ presetId, headless }) => {
     try {
       const id = randomUUID();
-      const browser = await chromium.launch({ headless });
+      const browser = await chromium.launch({
+        headless,
+        args: resolveAgentChromiumArgs(),
+      });
       const page = await browser.newPage({
         viewport: { width: 1280, height: 720 },
       });
@@ -581,7 +614,7 @@ server.registerTool(
   'session_capture_frame',
   {
     description:
-      'Capture a screenshot from an active agent session. Returns the file path to the captured image. Use after start_agent_session.',
+      'Capture a screenshot from an active agent session. Returns both the file path and the image itself (inline base64), so it works whether the client shares a filesystem with this process or not. Use after start_agent_session.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
       waitMs: z
@@ -609,9 +642,10 @@ server.registerTool(
 
       const filename = `frame-${session.presetId}-${Date.now()}.png`;
       const filepath = join(session.screenshotDir, filename);
-      await session.page.screenshot({ path: filepath });
+      const pngBuffer = await session.page.screenshot({ path: filepath });
 
-      return asTextResponse(
+      return asImageResponse(
+        pngBuffer,
         `Frame captured: ${filepath}\nPreset: ${session.presetId}`,
       );
     } catch (e) {
@@ -828,23 +862,83 @@ server.registerTool(
   },
 );
 
+/**
+ * Live code editing goes through the editor session's compile pipeline, which
+ * deliberately keeps rendering the last good compile when new source fails.
+ * That safety net is invisible from outside: the stage keeps moving whether
+ * the edit landed or not. These helpers read the bridge's editor state so a
+ * tool can say which of the two actually happened.
+ */
+type AgentEditorStatePayload = {
+  presetId: string | null;
+  title: string | null;
+  dirty: boolean;
+  errorCount: number;
+  warningCount: number;
+  diagnostics: Array<{
+    severity: string;
+    code: string;
+    message: string;
+    line?: number;
+    field?: string;
+  }>;
+  renderingFallback: boolean;
+  renderedTitle: string | null;
+  sourceLength: number;
+};
+
+const EDITOR_BRIDGE_MISSING =
+  'The page has no editor bridge. Make sure the session was started in agent mode (?agent=true) and the visualizer has finished mounting.';
+
+function formatEditorState(
+  state: AgentEditorStatePayload,
+  heading: string,
+): string {
+  const lines = [heading];
+  lines.push(
+    `preset: ${state.title ?? 'unknown'} (${state.presetId ?? 'no id'})`,
+  );
+  lines.push(
+    `compile: ${state.errorCount} error(s), ${state.warningCount} warning(s)`,
+  );
+  lines.push(`buffer: ${state.sourceLength} chars, dirty=${state.dirty}`);
+
+  if (state.renderingFallback) {
+    lines.push(
+      '',
+      `⚠ NOT RENDERING YOUR SOURCE. The compile failed, so the stage is still showing the last good compile ("${state.renderedTitle ?? 'previous preset'}"). Fix the errors below and re-apply.`,
+    );
+  }
+
+  if (state.diagnostics.length) {
+    lines.push('', 'diagnostics:');
+    for (const diagnostic of state.diagnostics.slice(0, 25)) {
+      const where = diagnostic.line ? `line ${diagnostic.line}` : 'no line';
+      const field = diagnostic.field ? ` [${diagnostic.field}]` : '';
+      lines.push(
+        `  ${diagnostic.severity}: ${where}${field} — ${diagnostic.message} (${diagnostic.code})`,
+      );
+    }
+    if (state.diagnostics.length > 25) {
+      lines.push(`  … ${state.diagnostics.length - 25} more`);
+    }
+  } else {
+    lines.push('', 'diagnostics: none — the source compiled clean.');
+  }
+
+  return lines.join('\n');
+}
+
 server.registerTool(
   'session_apply_source',
   {
     description:
-      'Apply modified preset source code to the running visualizer. The editor panel will update and the preset will recompile and render immediately. Changes are in-memory only — refresh the page to reset.',
+      'Apply modified preset source code to the running visualizer and wait for it to compile. Returns real compile diagnostics with line numbers, and tells you when the source FAILED and the stage is still rendering the previous preset — a failed edit looks identical on screen otherwise. Changes are in-memory only; refresh to reset.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
       source: z
         .string()
         .describe('The full .milk preset source code to apply.'),
-      lineOffset: z
-        .number()
-        .int()
-        .min(0)
-        .optional()
-        .default(0)
-        .describe('Line offset if applying a partial edit.'),
     }),
   },
   async ({ sessionId, source }) => {
@@ -852,16 +946,24 @@ server.registerTool(
     if (!session) return asTextResponse('Session not found or expired.');
 
     try {
-      await session.page.evaluate((src) => {
-        // Dispatch a custom event that the overlay's editor listens for
-        window.dispatchEvent(
-          new CustomEvent('applyPresetSource', { detail: src }),
-        );
-      }, source);
-      await session.page.waitForTimeout(1500);
+      // Awaits the actual compile rather than sleeping a fixed 1500ms and
+      // declaring success, which reported "applied" for source that never
+      // compiled.
+      const state = await session.page.evaluate(
+        async (src) =>
+          (await window.__STIMS_AGENT_BRIDGE__?.applyEditorSource(src)) ?? null,
+        source,
+      );
+
+      if (!state) return asTextResponse(EDITOR_BRIDGE_MISSING);
 
       return asTextResponse(
-        'Source applied. The visualizer should now reflect the changes.',
+        formatEditorState(
+          state as AgentEditorStatePayload,
+          (state as AgentEditorStatePayload).errorCount > 0
+            ? 'Source applied but DID NOT compile.'
+            : 'Source applied and compiled successfully.',
+        ),
       );
     } catch (e) {
       return asTextResponse(`Error applying source: ${e}`);
@@ -870,10 +972,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  'session_get_inspector_values',
+  'session_editor_state',
   {
     description:
-      'Read current MilkDrop field values from the inspector panel. Returns all visible field names and their current numeric values.',
+      'Read the live editor/compile state without changing anything: current preset, error and warning counts, per-line diagnostics, whether the buffer is dirty, and whether the stage is rendering a fallback because the latest source failed to compile. Use after any edit to confirm what actually landed.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session ID from start_agent_session.'),
     }),
@@ -883,40 +985,252 @@ server.registerTool(
     if (!session) return asTextResponse('Session not found or expired.');
 
     try {
-      const fields = await session.page.evaluate(() => {
-        const overlay = document.querySelector('.milkdrop-overlay');
-        if (!overlay) return { error: 'overlay not found' };
+      const state = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getEditorState() ?? null,
+      );
+      if (!state) return asTextResponse(EDITOR_BRIDGE_MISSING);
 
-        // Open inspector tab if needed
-        const inspectBtn = overlay.querySelector<HTMLButtonElement>(
-          '[data-tab="inspector"]',
-        );
-        inspectBtn?.click();
-
-        // Wait a beat for the inspector to render
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            const fieldEls = overlay.querySelectorAll(
-              '.milkdrop-overlay__field',
-            );
-            const result: Record<string, string> = {};
-            fieldEls.forEach((el) => {
-              const labelEl = el.querySelector(
-                '.milkdrop-overlay__field-label',
-              );
-              const label = labelEl?.textContent?.trim() ?? '';
-              const value =
-                el.querySelector('input, select')?.getAttribute('value') ?? '';
-              if (label) result[label] = value;
-            });
-            resolve(result);
-          }, 500);
-        });
-      });
-
-      return asTextResponse(JSON.stringify(fields, null, 2));
+      return asTextResponse(
+        formatEditorState(state as AgentEditorStatePayload, 'Editor state:'),
+      );
     } catch (e) {
-      return asTextResponse(`Error reading inspector: ${e}`);
+      return asTextResponse(`Error reading editor state: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_set_fields',
+  {
+    description:
+      'Set several MilkDrop fields (zoom, warp, decay, wave_r, …) in ONE compile, and wait for the result. Prefer this over repeated session_midi_set calls when changing more than one field: separate calls can interleave inside a single compile window, and it returns compile diagnostics the same way session_apply_source does.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      fields: z
+        .record(z.string(), z.union([z.number(), z.string()]))
+        .describe(
+          'Field name to value, e.g. { "zoom": 1.02, "warp": 0.4, "wave_r": 0.9 }.',
+        ),
+    }),
+  },
+  async ({ sessionId, fields }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    const keys = Object.keys(fields);
+    if (!keys.length) return asTextResponse('No fields given.');
+
+    try {
+      const state = await session.page.evaluate(
+        async (updates) =>
+          (await window.__STIMS_AGENT_BRIDGE__?.applyEditorFields(updates)) ??
+          null,
+        fields as Record<string, number | string>,
+      );
+      if (!state) return asTextResponse(EDITOR_BRIDGE_MISSING);
+
+      return asTextResponse(
+        formatEditorState(
+          state as AgentEditorStatePayload,
+          `Applied ${keys.length} field(s) in one commit: ${keys.join(', ')}.`,
+        ),
+      );
+    } catch (e) {
+      return asTextResponse(`Error setting fields: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_get_inspector_values',
+  {
+    description:
+      "Read the running preset's numeric field values (zoom, warp, decay, wave_r, …) straight from the compiled IR. These are the values actually driving the render, not scraped panel markup, and no panel needs to be open. Pass a filter to narrow a large preset down.",
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      filter: z
+        .string()
+        .optional()
+        .describe(
+          'Case-insensitive substring to match field names, e.g. "wave" or "mv_".',
+        ),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(2000)
+        .optional()
+        .default(200)
+        .describe('Maximum fields to return (default 200).'),
+    }),
+  },
+  async ({ sessionId, filter, limit }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      // Previously this clicked open the inspector tab and read `value`
+      // attributes out of the DOM, which returned the markup's *initial*
+      // attribute rather than the live value and silently produced `{}` when
+      // the overlay was not mounted.
+      const fields = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getEditorFields() ?? null,
+      );
+      if (!fields) return asTextResponse(EDITOR_BRIDGE_MISSING);
+
+      const all = fields as Record<string, number>;
+      const needle = filter?.toLowerCase();
+      const entries = Object.entries(all)
+        .filter(([key]) => !needle || key.toLowerCase().includes(needle))
+        .sort(([a], [b]) => a.localeCompare(b));
+
+      if (!entries.length) {
+        return asTextResponse(
+          `No fields match "${filter}". The preset defines ${Object.keys(all).length} fields.`,
+        );
+      }
+
+      // The IR pre-populates every custom wave/shape slot, so an unfiltered
+      // read is ~1600 mostly-default entries. Cap it and say so rather than
+      // flooding the caller's context.
+      const cap = limit ?? 200;
+      const shown = entries.slice(0, cap);
+      const header = `${shown.length} of ${entries.length} field(s)${
+        filter ? ` matching "${filter}"` : ''
+      } (preset defines ${Object.keys(all).length} total):`;
+      const footer =
+        entries.length > shown.length
+          ? `\n… ${entries.length - shown.length} more omitted — narrow with \`filter\` or raise \`limit\`.`
+          : '';
+
+      return asTextResponse(
+        [
+          header,
+          JSON.stringify(Object.fromEntries(shown), null, 2),
+          footer,
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error reading fields: ${e}`);
+    }
+  },
+);
+
+// ── MIDI performance tools ───────────────────────────────────────────
+// The app models Claude as a virtual MIDI device ("Claude (MCP)") that
+// goes through the exact same per-device binding pipeline a physical
+// controller uses (src/js/core/services/webmidi-controller.ts). These
+// tools post window messages the app already listens for
+// (src/js/frontend/agent-bridge.ts) — same mechanism session_apply_source
+// uses for the editor, just a different event name.
+
+server.registerTool(
+  'session_midi_set',
+  {
+    description:
+      'Set a MilkDrop target (zoom, warp, rot, decay, q1-q4, or any preset variable) to a specific value, as the virtual "Claude (MCP)" MIDI device. Value is in the target\'s own units (e.g. zoom=1.2), not a raw 0-127 MIDI value — use session_midi_cc for that.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      target: z
+        .string()
+        .describe('Field name to set, e.g. "zoom", "warp", "q1".'),
+      value: z.number().describe("Value to apply, in the target's own units."),
+    }),
+  },
+  async ({ sessionId, target, value }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      await session.page.evaluate(
+        ({ target: t, value: v }) => {
+          window.postMessage(
+            { type: 'toil:midi_set', target: t, value: v },
+            '*',
+          );
+        },
+        { target, value },
+      );
+      return asTextResponse(`Set ${target} = ${value}.`);
+    } catch (e) {
+      return asTextResponse(`Error setting ${target}: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_cc',
+  {
+    description:
+      'Send a raw MIDI Control Change value (0-127) as the virtual "Claude (MCP)" device. Resolved through whatever mapping that device currently has for the CC number — use session_midi_bindings to see current mappings, or session_midi_set to target a field by name directly.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      cc: z.number().int().min(0).max(127).describe('MIDI CC number.'),
+      value: z.number().int().min(0).max(127).describe('Raw value, 0-127.'),
+    }),
+  },
+  async ({ sessionId, cc, value }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      await session.page.evaluate(
+        ({ cc: c, value: v }) => {
+          window.postMessage({ type: 'toil:midi_cc', cc: c, value: v }, '*');
+        },
+        { cc, value },
+      );
+      return asTextResponse(`Sent CC${cc} = ${value}.`);
+    } catch (e) {
+      return asTextResponse(`Error sending CC${cc}: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_bindings',
+  {
+    description:
+      'List current MIDI CC bindings for every known device (physical controllers plus the virtual "Claude (MCP)" channel), keyed by device id.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const bindings = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getMidiBindings?.() ?? {},
+      );
+      return asTextResponse(JSON.stringify(bindings, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading MIDI bindings: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_midi_devices',
+  {
+    description:
+      'List known MIDI devices for the session — physical controllers (with connect state) and the virtual "Claude (MCP)" channel.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const devices = await session.page.evaluate(
+        () => window.__STIMS_AGENT_BRIDGE__?.getMidiDevices?.() ?? [],
+      );
+      return asTextResponse(JSON.stringify(devices, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading MIDI devices: ${e}`);
     }
   },
 );
@@ -949,7 +1263,9 @@ server.registerTool(
 
       // Capture a screenshot and analyze it via Playwright's built-in pixel access
       const screenshotPath = `/tmp/stims-analyze-${Date.now()}.png`;
-      await session.page.screenshot({ path: screenshotPath });
+      const screenshotBuffer = await session.page.screenshot({
+        path: screenshotPath,
+      });
 
       // Basic metadata from the page
       const meta = await session.page.evaluate(() => {
@@ -965,12 +1281,28 @@ server.registerTool(
         };
       });
 
-      // For pixel-level analysis, agents should use session_capture_frame
-      // and interpret the image themselves or via a vision model.
+      // Numeric image metrics (brightness, colorfulness, blown highlights,
+      // near-black detection) so an agent without vision can still tell a
+      // rendering apart from a black/frozen canvas. session_capture_frame
+      // remains the path for actually looking at the pixels.
+      const { data, info } = await sharp(screenshotBuffer)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const metrics = computeImageMetrics({
+        data,
+        width: info.width,
+        height: info.height,
+        channels: info.channels,
+      });
+
       const analysis = {
         ...meta,
         screenshotPath,
-        note: 'Pixel data extracted to screenshot. Use a vision model or external tool for detailed analysis.',
+        metrics,
+        note: metrics.nearBlack
+          ? 'Frame reads as near-black — likely a blank/failed render, not just a dark preset. Check session_get_state and console errors.'
+          : 'Use session_capture_frame to inspect pixels directly (e.g. with a vision model) if these metrics are ambiguous.',
       };
 
       return asTextResponse(JSON.stringify(analysis, null, 2));
@@ -1036,7 +1368,10 @@ server.registerTool(
         return asTextResponse('No presets found matching that description.');
 
       // Open a session and try each candidate
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch({
+        headless: true,
+        args: resolveAgentChromiumArgs(),
+      });
       const page = await browser.newPage({
         viewport: { width: 1280, height: 720 },
       });
@@ -1219,75 +1554,120 @@ server.registerTool(
         field: 'decay',
         delta: -0.02,
       },
+      {
+        match: [
+          'more rot',
+          'more rotation',
+          'spin faster',
+          'faster spin',
+          'rotate more',
+        ],
+        field: 'rot',
+        delta: 0.05,
+      },
+      {
+        match: [
+          'less rot',
+          'less rotation',
+          'spin slower',
+          'slower spin',
+          'rotate less',
+        ],
+        field: 'rot',
+        delta: -0.05,
+      },
+      {
+        match: ['more wave', 'bigger wave', 'increase wave', 'wave scale'],
+        field: 'wave_scale',
+        delta: 0.2,
+      },
+      {
+        match: ['less wave', 'smaller wave', 'decrease wave'],
+        field: 'wave_scale',
+        delta: -0.2,
+      },
+      {
+        match: [
+          'more beat',
+          'higher beat sensitivity',
+          'more sensitive',
+          'beat pulse',
+        ],
+        field: 'beat_sensitivity',
+        delta: 0.2,
+      },
+      {
+        match: ['less beat', 'lower beat sensitivity', 'less sensitive'],
+        field: 'beat_sensitivity',
+        delta: -0.2,
+      },
     ];
 
-    let matched = false;
-    const results: string[] = [];
+    const updates: Record<string, number> = {};
+    const changes: string[] = [];
+
+    // Deltas are resolved against the compiled IR's real values and applied in
+    // ONE commit. The previous implementation scraped the inspector panel's
+    // markup, needed that panel open, and pushed "changed" while discarding
+    // the {error} its own page script returned — so a field it never found
+    // still reported success.
+    const current = await session.page.evaluate(
+      () => window.__STIMS_AGENT_BRIDGE__?.getEditorFields() ?? null,
+    );
+    if (!current) return asTextResponse(EDITOR_BRIDGE_MISSING);
+
+    const fields = current as Record<string, number>;
+    const missing: string[] = [];
 
     for (const entry of fieldMap) {
-      if (entry.match.some((m) => t.includes(m))) {
-        matched = true;
-        const fieldKey = entry.field;
-        const delta = entry.delta;
-        try {
-          await session.page.evaluate(
-            ({ key, delta: d }) => {
-              // Find the inspector field by its data-key attribute or label text
-              const fieldEl = Array.from(
-                document.querySelectorAll('.milkdrop-overlay__field'),
-              ).find((el) => {
-                const label = el
-                  .querySelector('span')
-                  ?.textContent?.trim()
-                  .toLowerCase();
-                return label === key || label?.includes(key);
-              });
-
-              if (!fieldEl) return { error: `field ${key} not found` };
-
-              const input = fieldEl.querySelector('input');
-              if (!input) return { error: 'no input found' };
-
-              const currentVal = parseFloat(input.value);
-              if (Number.isNaN(currentVal))
-                return { error: 'non-numeric value' };
-
-              const newVal = Math.max(0, Math.min(2, currentVal + d));
-              input.value = String(newVal);
-
-              // Dispatch input event for range sliders, change for text inputs
-              if (input.type === 'range') {
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-              } else {
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-
-              return { field: key, from: currentVal, to: newVal };
-            },
-            { key: fieldKey, delta },
-          );
-          results.push(`  ${fieldKey}: changed`);
-        } catch (e) {
-          results.push(`  ${fieldKey}: error - ${e}`);
-        }
+      if (!entry.match.some((m) => t.includes(m))) continue;
+      const base = fields[entry.field];
+      if (typeof base !== 'number' || !Number.isFinite(base)) {
+        missing.push(entry.field);
+        continue;
       }
+      const next = Number((base + entry.delta).toFixed(4));
+      updates[entry.field] = next;
+      changes.push(`  ${entry.field}: ${base} → ${next}`);
     }
 
-    if (!matched) {
+    if (!changes.length && !missing.length) {
       return asTextResponse(
         `Could not understand "${tweak}". Try: more/less color (red, blue, green), warp, zoom, motion, brightness, saturation, contrast, decay.`,
       );
     }
 
-    await session.page.waitForTimeout(1500);
+    if (!changes.length) {
+      return asTextResponse(
+        `Tweak "${tweak}" maps to ${missing.join(', ')}, which this preset does not define. Nothing changed.`,
+      );
+    }
 
-    return asTextResponse(
-      [
-        `Applied tweak: "${tweak}"`,
-        ...results,
-        'Use session_capture_frame to see the result.',
-      ].join('\n'),
-    );
+    try {
+      const state = await session.page.evaluate(
+        async (u) =>
+          (await window.__STIMS_AGENT_BRIDGE__?.applyEditorFields(u)) ?? null,
+        updates,
+      );
+      if (!state) return asTextResponse(EDITOR_BRIDGE_MISSING);
+
+      const notes = missing.length
+        ? `\nnot defined by this preset (skipped): ${missing.join(', ')}`
+        : '';
+
+      return asTextResponse(
+        [
+          formatEditorState(
+            state as AgentEditorStatePayload,
+            `Applied tweak "${tweak}" in one commit:\n${changes.join('\n')}${notes}`,
+          ),
+          '',
+          'Use session_capture_frame to see the result.',
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error applying tweak: ${e}`);
+    }
   },
 );
 
@@ -1343,6 +1723,325 @@ server.registerTool(
     }
   },
 );
+
+// ── Compiler inspection ─────────────────────────────────────────────
+// The preset pipeline is source → AST → IR → lowered GPU programs, and a
+// failure at any stage shows up only as "the preset looks wrong". These two
+// tools expose the intermediate stages so an agent can read what the compiler
+// actually produced instead of inferring it from pixels.
+
+function formatExpressionTree(
+  node: MilkdropExpressionNode,
+  indent = 0,
+): string[] {
+  const pad = '  '.repeat(indent);
+  switch (node.type) {
+    case 'literal':
+      return [`${pad}literal ${node.value}`];
+    case 'identifier':
+      return [`${pad}identifier ${node.name}`];
+    case 'unary':
+      return [
+        `${pad}unary ${node.operator}`,
+        ...formatExpressionTree(node.operand, indent + 1),
+      ];
+    case 'binary':
+      return [
+        `${pad}binary ${node.operator}`,
+        ...formatExpressionTree(node.left, indent + 1),
+        ...formatExpressionTree(node.right, indent + 1),
+      ];
+    case 'call':
+      return [
+        `${pad}call ${node.name}`,
+        ...node.args.flatMap((arg: MilkdropExpressionNode) =>
+          formatExpressionTree(arg, indent + 1),
+        ),
+      ];
+    default:
+      return [`${pad}${(node as { type: string }).type}`];
+  }
+}
+
+function formatStatementTree(
+  statement: import('../src/js/milkdrop/types.ts').MilkdropCompiledStatement,
+  indent = 1,
+): string[] {
+  const pad = '  '.repeat(indent);
+  const lines: string[] = [];
+
+  if (statement.control) {
+    const kind = statement.control.kind;
+    lines.push(`${pad}control: ${kind}`);
+    if (statement.control.kind === 'loop') {
+      if (statement.control.count) {
+        lines.push(`${pad}  count:`);
+        lines.push(
+          ...formatExpressionTree(statement.control.count, indent + 2),
+        );
+      }
+    } else if (statement.control.condition) {
+      lines.push(`${pad}  condition:`);
+      lines.push(
+        ...formatExpressionTree(statement.control.condition, indent + 2),
+      );
+    }
+    lines.push(
+      `${pad}  body (${statement.control.body.length} statement${statement.control.body.length === 1 ? '' : 's'}):`,
+    );
+    statement.control.body.forEach((sub, subIdx) => {
+      lines.push(
+        `${pad}    [${subIdx}] line ${sub.line}: ${sub.source.trim()}`,
+      );
+      lines.push(...formatStatementTree(sub, indent + 3));
+    });
+    return lines;
+  }
+
+  if (statement.target === '__control') {
+    lines.push(`${pad}expression statement:`);
+    lines.push(...formatExpressionTree(statement.expression, indent + 1));
+    return lines;
+  }
+
+  lines.push(`${pad}target: ${statement.target}`);
+  lines.push(...formatExpressionTree(statement.expression, indent + 1));
+  return lines;
+}
+
+server.registerTool(
+  'inspect_eel_ast',
+  {
+    description:
+      'Parse MilkDrop EEL source (one or more statements, as found in a per_frame/per_pixel block) and return the parsed AST plus any parser diagnostics. Use this to check how the compiler actually reads an expression before blaming the renderer for a wrong-looking preset.',
+    inputSchema: z.object({
+      source: z
+        .string()
+        .min(1)
+        .describe(
+          'EEL source, e.g. "zoom = 1 + 0.1*sin(time);rot = rot + 0.01".',
+        ),
+      startLine: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .default(1)
+        .describe('Line number reported in diagnostics. Defaults to 1.'),
+    }),
+  },
+  async ({ source, startLine = 1 }) => {
+    const { parseMilkdropStatement, splitMilkdropStatements } = await import(
+      '../src/js/milkdrop/expression.ts'
+    );
+
+    const statements = splitMilkdropStatements(source);
+    if (statements.length === 0) {
+      return asTextResponse('No statements parsed from the supplied source.');
+    }
+
+    const lines: string[] = [`Statements: ${statements.length}`, ''];
+    let diagnosticCount = 0;
+
+    statements.forEach((statementSource, index) => {
+      const line = startLine + index;
+      const parsed = parseMilkdropStatement(statementSource, line);
+      lines.push(`[${index}] line ${line}: ${statementSource.trim()}`);
+
+      if (parsed.value) {
+        lines.push(...formatStatementTree(parsed.value, 1));
+      } else {
+        lines.push('  <unparsed>');
+      }
+
+      for (const diagnostic of parsed.diagnostics) {
+        diagnosticCount += 1;
+        lines.push(
+          `  ${diagnostic.severity}: ${diagnostic.message} (${diagnostic.code})`,
+        );
+      }
+      lines.push('');
+    });
+
+    lines.push(`Diagnostics: ${diagnosticCount}`);
+    return asTextResponse(lines.join('\n'));
+  },
+);
+
+server.registerTool(
+  'inspect_preset_lowerer',
+  {
+    description:
+      'Compile a bundled catalog preset (or a .milk file) and report what each lowering stage produced: warp/comp shader programs and their generated GLSL, WGSL for the per-frame block, whether the per-pixel block lowers to a GPU field program, shader control uniforms, and compile diagnostics. Use this to find where a preset falls off the GPU path.',
+    inputSchema: z.object({
+      presetId: z
+        .string()
+        .optional()
+        .describe('Bundled catalog preset id to inspect.'),
+      filePath: z
+        .string()
+        .optional()
+        .describe('Path to a .milk file, used instead of presetId.'),
+      stage: z
+        .enum(['summary', 'glsl', 'wgsl', 'uniforms'])
+        .optional()
+        .default('summary')
+        .describe(
+          'summary = all stages at a glance; glsl/wgsl = emit generated shader source; uniforms = shader control values and samplers.',
+        ),
+    }),
+  },
+  async ({ presetId, filePath, stage = 'summary' }) => {
+    if (!presetId && !filePath) {
+      return asTextResponse('Provide either presetId or filePath.');
+    }
+
+    try {
+      const [
+        { loadPresetSource },
+        { compileMilkdropPresetSource },
+        { lowerGpuFieldProgram },
+      ] = await Promise.all([
+        import('./preset-lab-reactivity.ts'),
+        import('../src/js/milkdrop/compiler.ts'),
+        import('../src/js/milkdrop/compiler/gpu-field-planner.ts'),
+      ]);
+
+      const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+      const source = loadPresetSource(repoRoot, { presetId, filePath });
+      const compiled = compileMilkdropPresetSource(source.raw, {
+        id: source.id,
+        title: source.title,
+      });
+      const shader = compiled.ir.shaderText;
+
+      if (stage === 'glsl') {
+        const { generateGlslFromShaderStatements } = await import(
+          '../src/js/milkdrop/compiler/shader-analysis-glsl.ts'
+        );
+        const warpGlsl = generateGlslFromShaderStatements(
+          shader.warpAst,
+          'warp',
+        );
+        const compGlsl = generateGlslFromShaderStatements(
+          shader.compAst,
+          'comp',
+        );
+        return asTextResponse(
+          [
+            `Preset: ${source.id}`,
+            '',
+            '── warp GLSL ──',
+            warpGlsl ?? '<not emitted>',
+            '',
+            '── comp GLSL ──',
+            compGlsl ?? '<not emitted>',
+          ].join('\n'),
+        );
+      }
+
+      if (stage === 'wgsl') {
+        const { compileProgramToWgsl } = await import(
+          '../src/js/milkdrop/compiler/wgsl-generator.ts'
+        );
+        const perFrame = compileProgramToWgsl(compiled.ir.programs.perFrame);
+        return asTextResponse(
+          [
+            `Preset: ${source.id}`,
+            `Entry point: ${perFrame.entryPoint}`,
+            `GPU executable: ${perFrame.gpuExecutable ? 'yes' : 'no'}`,
+            perFrame.unsupportedFeatures.length > 0
+              ? `Unsupported: ${perFrame.unsupportedFeatures.join(', ')}`
+              : 'Unsupported: none',
+            '',
+            '── per_frame WGSL ──',
+            perFrame.wgslCode,
+          ].join('\n'),
+        );
+      }
+
+      if (stage === 'uniforms') {
+        return asTextResponse(
+          [
+            `Preset: ${source.id}`,
+            '',
+            '── shader controls ──',
+            JSON.stringify(shader.controls, null, 2),
+            '',
+            '── custom samplers ──',
+            JSON.stringify(shader.customSamplers, null, 2),
+          ].join('\n'),
+        );
+      }
+
+      const gpuPerPixel = lowerGpuFieldProgram(compiled.ir.programs.perPixel);
+      const errors = compiled.diagnostics.filter((d) => d.severity === 'error');
+      const warnings = compiled.diagnostics.filter(
+        (d) => d.severity === 'warning',
+      );
+
+      const lines = [
+        `Preset: ${source.id}`,
+        `Title: ${compiled.title}`,
+        '',
+        '── shader lowering ──',
+        `warp text:      ${shader.warp === null ? 'none authored' : `${shader.warp.split('\n').length} lines`}`,
+        `warp program:   ${
+          shader.warpProgram
+            ? `${shader.warpProgram.execution.kind} → ${shader.warpProgram.execution.entryTarget} [${shader.warpProgram.execution.supportedBackends.join(', ')}]`
+            : 'not lowered'
+        }`,
+        `comp text:      ${shader.comp === null ? 'none authored' : `${shader.comp.split('\n').length} lines`}`,
+        `comp program:   ${
+          shader.compProgram
+            ? `${shader.compProgram.execution.kind} → ${shader.compProgram.execution.entryTarget} [${shader.compProgram.execution.supportedBackends.join(', ')}]`
+            : 'not lowered'
+        }`,
+        `fully supported: ${shader.supported ? 'yes' : 'no'}`,
+        `approximated lines: ${shader.unsupportedLines.length}`,
+        '',
+        '── gpu field lowering (per_pixel) ──',
+        // The WebGPU field path silently falls back to the CPU transform when
+        // this returns null, so "not lowered" here is the single most common
+        // reason a preset costs more per frame than its author intended.
+        `per_pixel statements: ${compiled.ir.programs.perPixel.statements.length}`,
+        `lowered to GPU field: ${gpuPerPixel ? 'yes' : 'no'}`,
+        '',
+        '── diagnostics ──',
+        `errors: ${errors.length}  warnings: ${warnings.length}`,
+      ];
+
+      for (const diagnostic of [...errors, ...warnings].slice(0, 25)) {
+        lines.push(
+          `  ${diagnostic.severity} ${diagnostic.code}${
+            diagnostic.line === undefined ? '' : ` (line ${diagnostic.line})`
+          }: ${diagnostic.message}`,
+        );
+      }
+      if (errors.length + warnings.length > 25) {
+        lines.push(
+          `  … ${errors.length + warnings.length - 25} more not shown`,
+        );
+      }
+
+      if (shader.unsupportedLines.length > 0) {
+        lines.push('', '── approximated shader lines ──');
+        lines.push(
+          ...shader.unsupportedLines.slice(0, 15).map((l) => `  ${l}`),
+        );
+      }
+
+      return asTextResponse(lines.join('\n'));
+    } catch (e) {
+      return asTextResponse(`Error inspecting preset: ${e}`);
+    }
+  },
+);
+
+// ── Live-performance tools ──────────────────────────────────────────
+// Pattern the audio, ramp visuals over time, and measure the result. Kept in
+// their own module; they need the session map, so getSession is passed in.
+registerPerformanceTools(server, getSession);
 
 async function startServer() {
   await server.connect(transport);

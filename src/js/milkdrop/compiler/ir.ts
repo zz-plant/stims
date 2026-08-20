@@ -1,3 +1,21 @@
+/**
+ * Assembles the compiled intermediate representation a preset runs from.
+ *
+ * Everything upstream (parsing, shader analysis, field lowering) produces
+ * fragments; this module is where they become one `MilkdropPresetIR` and where
+ * the preset's *compatibility verdict* is decided — which backends can run it,
+ * which features degrade, and the fidelity class the parity pipeline reports.
+ *
+ * `createMilkdropIr` takes its analysis passes as injected helpers rather than
+ * importing them. That keeps the assembly order readable in one place and lets
+ * the compiler tests drive individual passes without standing up the whole
+ * front end.
+ *
+ * A blocked construct here is not a crash: it is recorded as a degradation
+ * reason and the preset still runs with that feature disabled. Presets in the
+ * wild routinely use constructs no backend supports, and refusing to load them
+ * would be worse than rendering them imperfectly.
+ */
 import type {
   MilkdropDegradationReason,
   MilkdropDiagnostic,
@@ -90,6 +108,51 @@ type ShaderControlAnalysis = {
   nativeBodyUnparsedLines: string[];
 };
 
+/**
+ * Builds the direct-execution shader program payload for one stage (warp or
+ * comp). Both stages go through the same translation/fallback logic, so the
+ * two near-identical call sites share this single builder.
+ */
+function buildShaderProgramForStage(
+  shaderHelpers: Pick<ShaderAssemblyHelpers, 'buildShaderProgramPayload'>,
+  analysis: ShaderControlAnalysis,
+  stage: 'warp' | 'comp',
+  shaderText: string | null,
+  hasTranslatedDirectStatements: boolean,
+) {
+  if (!analysis.directProgramRequired) {
+    return null;
+  }
+  return shaderHelpers.buildShaderProgramPayload({
+    stage,
+    statements: analysis.directProgramStatements,
+    normalizedLines: analysis.directProgramLines,
+    requiresControlFallback:
+      !hasTranslatedDirectStatements ||
+      analysis.directProgramStatements.length !== analysis.statements.length,
+    supportedBackends:
+      hasTranslatedDirectStatements &&
+      (analysis.hasNativeBody
+        ? analysis.nativeBodyUnparsedLines.length === 0
+        : analysis.unsupportedLines.length === 0)
+        ? analysis.hasNativeBody
+          ? (['webgpu'] as const)
+          : (['webgl', 'webgpu'] as const)
+        : [],
+    rawGlsl:
+      analysis.hasNativeBody || !hasTranslatedDirectStatements
+        ? analysis.hasNativeBody
+          ? (extractNativeShaderBody(shaderText ?? '') ??
+            analysis.directProgramLines
+              .map((line) => (line.endsWith(';') ? line : `${line};`))
+              .join('\n'))
+          : analysis.directProgramLines
+              .map((line) => (line.endsWith(';') ? line : `${line};`))
+              .join('\n')
+        : undefined,
+  });
+}
+
 type ProgramAssemblyHelpers = {
   createProgramBlock: () => ProgramBlock;
   compileProgramsFromField: (
@@ -150,6 +213,8 @@ type FieldAssemblyHelpers = {
     field: PendingHardUnsupportedField,
     runtimeGlobals: Record<string, number>,
   ) => boolean;
+  isMilkdropMetadataFieldKey: (field: MilkdropPresetField) => boolean;
+  resolveMilkdropMetadataKey: (field: MilkdropPresetField) => string | null;
 };
 
 type ShaderAssemblyHelpers = {
@@ -337,6 +402,16 @@ export function createMilkdropIr({
       stringFields[normalizedKey] = fieldHelpers.normalizeString(
         field.rawValue,
       );
+      return;
+    }
+
+    if (fieldHelpers.isMilkdropMetadataFieldKey(field)) {
+      const metadataKey = fieldHelpers.resolveMilkdropMetadataKey(field);
+      if (metadataKey) {
+        stringFields[metadataKey] = fieldHelpers.normalizeString(
+          field.rawValue,
+        );
+      }
       return;
     }
 
@@ -574,68 +649,20 @@ export function createMilkdropIr({
     shaderWarpAnalysis.directProgramStatements.length > 0;
   const compHasTranslatedDirectStatements =
     shaderCompAnalysis.directProgramStatements.length > 0;
-  const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
-    ? shaderHelpers.buildShaderProgramPayload({
-        stage: 'warp',
-        statements: shaderWarpAnalysis.directProgramStatements,
-        normalizedLines: shaderWarpAnalysis.directProgramLines,
-        requiresControlFallback:
-          !warpHasTranslatedDirectStatements ||
-          shaderWarpAnalysis.directProgramStatements.length !==
-            shaderWarpAnalysis.statements.length,
-        supportedBackends:
-          warpHasTranslatedDirectStatements &&
-          (shaderWarpAnalysis.hasNativeBody
-            ? shaderWarpAnalysis.nativeBodyUnparsedLines.length === 0
-            : shaderWarpAnalysis.unsupportedLines.length === 0)
-            ? shaderWarpAnalysis.hasNativeBody
-              ? ['webgpu' as const]
-              : ['webgl' as const, 'webgpu' as const]
-            : [],
-        rawGlsl:
-          shaderWarpAnalysis.hasNativeBody || !warpHasTranslatedDirectStatements
-            ? shaderWarpAnalysis.hasNativeBody
-              ? (extractNativeShaderBody(warpShaderText ?? '') ??
-                shaderWarpAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n'))
-              : shaderWarpAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n')
-            : undefined,
-      })
-    : null;
-  const compShaderProgram = shaderCompAnalysis.directProgramRequired
-    ? shaderHelpers.buildShaderProgramPayload({
-        stage: 'comp',
-        statements: shaderCompAnalysis.directProgramStatements,
-        normalizedLines: shaderCompAnalysis.directProgramLines,
-        requiresControlFallback:
-          !compHasTranslatedDirectStatements ||
-          shaderCompAnalysis.directProgramStatements.length !==
-            shaderCompAnalysis.statements.length,
-        supportedBackends:
-          compHasTranslatedDirectStatements &&
-          (shaderCompAnalysis.hasNativeBody
-            ? shaderCompAnalysis.nativeBodyUnparsedLines.length === 0
-            : shaderCompAnalysis.unsupportedLines.length === 0)
-            ? shaderCompAnalysis.hasNativeBody
-              ? ['webgpu' as const]
-              : ['webgl' as const, 'webgpu' as const]
-            : [],
-        rawGlsl:
-          shaderCompAnalysis.hasNativeBody || !compHasTranslatedDirectStatements
-            ? shaderCompAnalysis.hasNativeBody
-              ? (extractNativeShaderBody(compShaderText ?? '') ??
-                shaderCompAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n'))
-              : shaderCompAnalysis.directProgramLines
-                  .map((line) => (line.endsWith(';') ? line : `${line};`))
-                  .join('\n')
-            : undefined,
-      })
-    : null;
+  const warpShaderProgram = buildShaderProgramForStage(
+    shaderHelpers,
+    shaderWarpAnalysis,
+    'warp',
+    warpShaderText,
+    warpHasTranslatedDirectStatements,
+  );
+  const compShaderProgram = buildShaderProgramForStage(
+    shaderHelpers,
+    shaderCompAnalysis,
+    'comp',
+    compShaderText,
+    compHasTranslatedDirectStatements,
+  );
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -650,10 +677,11 @@ export function createMilkdropIr({
       hardUnsupportedFields,
       approximatedShaderLines,
     });
-  compatibilityHelpers.collectExpressionsFromValue(
-    mergedShaderControls.expressions,
-    parsedExpressions,
-  );
+  // Shader-control expressions are intentionally NOT fed into the unknown-
+  // identifier gap check below: they carry HLSL-style temp declarations with
+  // their own resolution environment, so EEL scoping rules would flag false
+  // positives. The check covers the expression-VM programs, where an unknown
+  // identifier really does evaluate to 0.
   for (const block of [
     programs.init,
     programs.perFrame,
@@ -678,6 +706,17 @@ export function createMilkdropIr({
       parsedExpressions,
       assignedTargets,
     );
+  // The expression VM evaluates unrecognized functions and aliases to 0 at
+  // runtime, which silently distorts the preset. Surface each gap as a
+  // diagnostic so the report reflects it instead of claiming exact fidelity.
+  missingAliasesOrFunctions.forEach((name) => {
+    fieldHelpers.addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_expression_unknown_function',
+      `Expression references unknown function or variable "${name}", which evaluates to 0 at runtime.`,
+    );
+  });
   const hasShaderText = Boolean(warpShaderText || compShaderText);
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
@@ -809,6 +848,7 @@ export function createMilkdropIr({
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
+      missingAliasesOrFunctions,
       createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,
@@ -820,6 +860,7 @@ export function createMilkdropIr({
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
+      missingAliasesOrFunctions,
       createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,
@@ -903,13 +944,40 @@ export function createMilkdropIr({
   const author = stringFields.author;
   const description = stringFields.description;
 
+  const brighten = (numericFields.brighten ?? 0) > 0.5;
+  const darken = (numericFields.darken ?? 0) > 0.5;
+  const darkenCenter = (numericFields.darken_center ?? 0) > 0.5;
+  const solarize = (numericFields.solarize ?? 0) > 0.5;
+  const invert = (numericFields.invert ?? 0) > 0.5;
+  const videoEchoEnabled =
+    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
+    (numericFields.video_echo_alpha ?? 0) > 0;
+  const redBlueStereo =
+    (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
+  const gammaAdj = numericFields.gammaadj ?? 1;
+  const shaderEnabled =
+    (numericFields.shader ?? 1) > 0.5 ||
+    videoEchoEnabled ||
+    brighten ||
+    darken ||
+    darkenCenter ||
+    solarize ||
+    invert ||
+    redBlueStereo ||
+    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
+    warpShaderText !== null ||
+    compShaderText !== null ||
+    warpShaderProgram !== null ||
+    compShaderProgram !== null ||
+    hasNonNeutralShaderControls(mergedShaderControls.controls);
+
   const post = {
-    brighten: (numericFields.brighten ?? 0) > 0.5,
-    darken: (numericFields.darken ?? 0) > 0.5,
-    darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
-    solarize: (numericFields.solarize ?? 0) > 0.5,
-    invert: (numericFields.invert ?? 0) > 0.5,
-    shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+    brighten,
+    darken,
+    darkenCenter,
+    solarize,
+    invert,
+    shaderEnabled,
     textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
     feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
     outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
@@ -920,10 +988,8 @@ export function createMilkdropIr({
       warp: warpShaderProgram,
       comp: compShaderProgram,
     },
-    gammaAdj: numericFields.gammaadj ?? 1,
-    videoEchoEnabled:
-      (numericFields.video_echo_enabled ?? 0) > 0.5 ||
-      (numericFields.video_echo_alpha ?? 0) > 0,
+    gammaAdj,
+    videoEchoEnabled,
     videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
     videoEchoZoom: numericFields.video_echo_zoom ?? 1,
     videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
@@ -994,32 +1060,6 @@ export function createMilkdropIr({
   const mainWave = Object.fromEntries(
     Object.entries(numericFields).filter(([key]) => key.startsWith('wave_')),
   );
-  const brighten = (numericFields.brighten ?? 0) > 0.5;
-  const darken = (numericFields.darken ?? 0) > 0.5;
-  const darkenCenter = (numericFields.darken_center ?? 0) > 0.5;
-  const solarize = (numericFields.solarize ?? 0) > 0.5;
-  const invert = (numericFields.invert ?? 0) > 0.5;
-  const videoEchoEnabled =
-    (numericFields.video_echo_enabled ?? 0) > 0.5 ||
-    (numericFields.video_echo_alpha ?? 0) > 0;
-  const redBlueStereo =
-    (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
-  const gammaAdj = numericFields.gammaadj ?? 1;
-  const shaderEnabled =
-    (numericFields.shader ?? 1) > 0.5 ||
-    videoEchoEnabled ||
-    brighten ||
-    darken ||
-    darkenCenter ||
-    solarize ||
-    invert ||
-    redBlueStereo ||
-    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
-    warpShaderText !== null ||
-    compShaderText !== null ||
-    warpShaderProgram !== null ||
-    compShaderProgram !== null ||
-    hasNonNeutralShaderControls(mergedShaderControls.controls);
 
   const perPixelStatements =
     programs.perPixel.statements.length > 0
@@ -1073,31 +1113,7 @@ export function createMilkdropIr({
         a: numericFields.ib_a,
       },
     },
-    post: {
-      brighten,
-      darken,
-      darkenCenter,
-      solarize,
-      invert,
-      shaderEnabled,
-      textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
-      feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
-      outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
-      innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
-      shaderControls: mergedShaderControls.controls,
-      shaderControlExpressions: mergedShaderControls.expressions,
-      shaderPrograms: {
-        warp: warpShaderProgram,
-        comp: compShaderProgram,
-      },
-      gammaAdj,
-      videoEchoEnabled,
-      videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
-      videoEchoZoom: numericFields.video_echo_zoom ?? 1,
-      videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
-        numericFields.video_echo_orientation ?? 0,
-      ),
-    },
+    post,
     compatibility,
   } satisfies MilkdropPresetIR;
 }

@@ -2,7 +2,7 @@
 fRating=5.000000
 fGammaAdj=1.900000
 fVideoEchoZoom=1.169000
-nWaveMode=2.000000
+nWaveMode=1.000000
 bWaveDots=1.000000
 bWaveThick=1.000000
 fWaveAlpha=1.347000
@@ -51,26 +51,12 @@ per_frame_20=wave_y = wave_y - 7 * dy_residual;
 
 [warp_shader]
 shader_body { 
-  vec3 ret_1;
-  vec4 tmpvar_2;
-  tmpvar_2 = ((texture (sampler_noise_lq, (rand_frame.xy + 
-    ((uv * texsize_noise_lq.zw) * texsize.xy)
-  )) * 2.0) - 1.0);
-  ret_1 = (texture (sampler_pw_main, (uv + (
-    (tmpvar_2.zw * texsize.zw)
-   * 0.5))).xyz + ((0.59 - 
-    (0.2 * rad)
-  ) * tmpvar_2.xyz));
-  vec3 tmpvar_3;
-  tmpvar_3 = clamp (((
-    (ret_1 - 0.5)
-   * 3.0) + 0.25), 0.0, 1.0);
-  ret_1.x = tmpvar_3.x;
-  ret_1.yz = tmpvar_3.xx;
-  vec4 tmpvar_4;
-  tmpvar_4.w = 1.0;
-  tmpvar_4.xyz = ret_1;
-  ret = tmpvar_4.xyz;
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, (uv + (
+    (texture (sampler_main, (uv + texsize.zw)).xy - 0.37)
+   * 0.02))).xyz - 0.004);
+  ret = tmpvar_1.xyz;
  }
 
 [comp_shader]

@@ -10,7 +10,7 @@ For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMO
 
 - **Flagship launch and discovery**
   - What to verify: `/` renders the workspace shell, launch controls remain stable, preset browsing works, and canonical route state stays on `/` after boot.
-  - Automation: `tests/unit/app-shell.test.js`, `tests/unit/frontend-url-state.test.ts`, and `tests/e2e/agent-integration.test.ts`.
+  - Automation: `tests/unit/app-shell.test.ts`, `tests/unit/frontend-url-state.test.ts`, and `tests/e2e/agent-integration.test.ts`.
   - Supporting checks: `bun run dev:check` confirms the Vite dev server wiring without opening a browser.
 - **Shared quality preset persistence**
   - What to verify: the reusable settings state remembers the user-selected quality preset across workspace reloads and live-session reuse and notifies subscribers exactly when the user changes presets.
@@ -46,12 +46,12 @@ Use Bun to match the repository tooling:
 
 - Run the happy-dom suites for the app shell, route contract, settings panel, and microphone flows:
   ```bash
-  bun run test tests/unit/app-shell.test.js tests/unit/frontend-url-state.test.ts tests/unit/settings-panel.test.ts
+  bun run test tests/unit/app-shell.test.ts tests/unit/frontend-url-state.test.ts tests/unit/settings-panel.test.ts
   ```
 
 - Run the focused workspace/session regression suites:
   ```bash
-  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/audio-controls.test.ts
+  bun run test tests/unit/frontend-url-state.test.ts tests/e2e/agent-integration.test.ts tests/unit/app-shell-route-sync.test.ts
   ```
 
 - Run the integration harness (real Chromium — also runs in CI on every PR):

@@ -1,13 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import type { MilkdropCatalogCoordinator } from '../../src/js/milkdrop/runtime/catalog-coordinator.ts';
+import { FIRST_RUN_PRESET_ID } from '../../src/js/milkdrop/runtime/first-run-preset.ts';
 import { createMilkdropPresetNavigationController } from '../../src/js/milkdrop/runtime/preset-navigation-controller.ts';
 import type {
-  MilkdropBlendState,
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
   MilkdropEditorSession,
-  MilkdropFrameState,
   MilkdropPresetSource,
   MilkdropRenderBackend,
   MilkdropSupportStatus,
@@ -174,18 +173,16 @@ describe('milkdrop preset navigation controller', () => {
       session: createSession({}),
       getActivePresetId: () => 'unsupported-webgl',
       getActiveBackend: () => 'webgl',
-      getCurrentFrameState: () => null as MilkdropFrameState | null,
-      getBlendDuration: () => 1,
-      getTransitionMode: () => 'blend',
       applyCompiledPreset: () => undefined,
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
       triggerWebglFallback: () => undefined,
       rememberLastPreset: () => undefined,
-      preparePresetTransition: (_blendState: MilkdropBlendState | null) =>
-        undefined,
-      markPresetSwitched: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
     });
 
     expect(controller.isBackendSelectable('unsupported-webgl', 'webgl')).toBe(
@@ -194,6 +191,68 @@ describe('milkdrop preset navigation controller', () => {
     expect(controller.getFirstSelectablePresetId('webgl')).toBe(
       'supported-webgl',
     );
+  });
+
+  test('prefers the first-run preset over sort order, but only when it can run', () => {
+    const build = (entries: ReturnType<typeof createCatalogEntry>[]) =>
+      createMilkdropPresetNavigationController({
+        catalogStore: {} as MilkdropCatalogStore,
+        catalogCoordinator: {
+          async syncCatalog() {},
+          scheduleCatalogSync: async () => undefined,
+          async rememberSelection() {},
+          async consumePreviousSelection() {
+            return null;
+          },
+          getCatalogEntries: () => entries,
+          getActiveCatalogEntry: () => null,
+          dispose() {},
+        } as unknown as MilkdropCatalogCoordinator,
+        session: createSession({}),
+        getActivePresetId: () => 'head-of-sort-order',
+        getActiveBackend: () => 'webgl',
+        applyCompiledPreset: () => undefined,
+        applyPresetPerformanceOverride: () => undefined,
+        setOverlayStatus: () => undefined,
+        shouldFallbackToWebgl: () => false,
+        triggerWebglFallback: () => undefined,
+        rememberLastPreset: () => undefined,
+        beginPresetTransition: () => ({
+          mode: 'blend' as const,
+          durationSeconds: 1,
+        }),
+      });
+
+    const supportedEverywhere = {
+      webgl: 'supported',
+      webgpu: 'supported',
+    } as const;
+
+    // Present and runnable: it wins even though it is not first in the list.
+    expect(
+      build([
+        createCatalogEntry('head-of-sort-order', supportedEverywhere),
+        createCatalogEntry(FIRST_RUN_PRESET_ID, supportedEverywhere),
+      ]).getFirstSelectablePresetId('webgl'),
+    ).toBe(FIRST_RUN_PRESET_ID);
+
+    // Unsupported on this backend: degrade to sort order rather than to nothing.
+    expect(
+      build([
+        createCatalogEntry('head-of-sort-order', supportedEverywhere),
+        createCatalogEntry(FIRST_RUN_PRESET_ID, {
+          webgl: 'unsupported',
+          webgpu: 'supported',
+        }),
+      ]).getFirstSelectablePresetId('webgl'),
+    ).toBe('head-of-sort-order');
+
+    // Absent from the catalog entirely: same degradation, no crash.
+    expect(
+      build([
+        createCatalogEntry('head-of-sort-order', supportedEverywhere),
+      ]).getFirstSelectablePresetId('webgl'),
+    ).toBe('head-of-sort-order');
   });
 
   test('skips unsupported adjacent presets on the active backend', async () => {
@@ -245,9 +304,6 @@ describe('milkdrop preset navigation controller', () => {
       session: createSession(compiledById),
       getActivePresetId: () => activePresetId,
       getActiveBackend: () => 'webgl' as MilkdropRenderBackend,
-      getCurrentFrameState: () => null,
-      getBlendDuration: () => 1,
-      getTransitionMode: () => 'blend',
       applyCompiledPreset: (compiled) => {
         activePresetId = compiled.source.id;
         selected.push(compiled.source.id);
@@ -257,14 +313,107 @@ describe('milkdrop preset navigation controller', () => {
       shouldFallbackToWebgl: () => false,
       triggerWebglFallback: () => undefined,
       rememberLastPreset: () => undefined,
-      preparePresetTransition: () => undefined,
-      markPresetSwitched: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
     });
 
     await controller.selectAdjacentPreset(1);
 
     expect(selected).toEqual(['supported-c']);
     expect(activePresetId).toBe('supported-c');
+  });
+
+  describe('skipIfAlreadyActive', () => {
+    // Startup uses this so the bundled first-run preset, already compiled and
+    // rendering, is not fetched and recompiled the moment catalog selection
+    // resolves to that same id.
+    const buildSkipHarness = (draft: string | null) => {
+      const fetched: string[] = [];
+      const applied: string[] = [];
+      const transitions: number[] = [];
+      const controller = createMilkdropPresetNavigationController({
+        catalogStore: {
+          async getPresetSource(id: string) {
+            fetched.push(id);
+            return { id, title: id, raw: `title=${id}\n`, origin: 'bundled' };
+          },
+          async getDraft() {
+            return draft;
+          },
+          async saveDraft() {},
+        } as unknown as MilkdropCatalogStore,
+        catalogCoordinator: {
+          async syncCatalog() {},
+          async scheduleCatalogSync() {},
+          async rememberSelection() {},
+          async consumePreviousSelection() {
+            return null;
+          },
+          getCatalogEntries: () => [],
+          getActiveCatalogEntry: () => null,
+          dispose() {},
+        } as unknown as MilkdropCatalogCoordinator,
+        session: createSession({
+          'active-preset': createCompiledPreset('active-preset'),
+        }),
+        getActivePresetId: () => 'active-preset',
+        getActiveBackend: () => 'webgl' as MilkdropRenderBackend,
+        applyCompiledPreset: (compiled) => {
+          applied.push(compiled.source.id);
+        },
+        applyPresetPerformanceOverride: () => undefined,
+        setOverlayStatus: () => undefined,
+        shouldFallbackToWebgl: () => false,
+        triggerWebglFallback: () => undefined,
+        rememberLastPreset: () => undefined,
+        beginPresetTransition: () => {
+          transitions.push(1);
+          return { mode: 'blend' as const, durationSeconds: 1 };
+        },
+      });
+
+      return { controller, fetched, applied, transitions };
+    };
+
+    test('does not reload the preset that is already active', async () => {
+      const { controller, fetched, applied, transitions } =
+        buildSkipHarness(null);
+
+      await controller.selectPreset('active-preset', {
+        skipIfAlreadyActive: true,
+      });
+
+      expect(fetched).toEqual([]);
+      expect(applied).toEqual([]);
+      // No transition either: crossfading a preset into itself is the visible
+      // symptom this skip removes.
+      expect(transitions).toEqual([]);
+    });
+
+    test('still loads when an edited draft exists for that preset', async () => {
+      const { controller, fetched, applied } = buildSkipHarness(
+        'title=active-preset\nzoom=2\n',
+      );
+
+      await controller.selectPreset('active-preset', {
+        skipIfAlreadyActive: true,
+      });
+
+      expect(fetched).toEqual(['active-preset']);
+      expect(applied).toEqual(['active-preset']);
+    });
+
+    test('loads normally for a different preset', async () => {
+      const { controller, fetched } = buildSkipHarness(null);
+
+      await controller.selectPreset('other-preset', {
+        skipIfAlreadyActive: true,
+      });
+
+      expect(fetched).toEqual(['other-preset']);
+    });
   });
 
   test('includes detailed descriptor unsupported reasons when triggering WebGL fallback', async () => {
@@ -327,9 +476,6 @@ describe('milkdrop preset navigation controller', () => {
       } as unknown as MilkdropEditorSession,
       getActivePresetId: () => 'fallback-preset',
       getActiveBackend: () => 'webgpu' as MilkdropRenderBackend,
-      getCurrentFrameState: () => null,
-      getBlendDuration: () => 1,
-      getTransitionMode: () => 'cut',
       applyCompiledPreset: () => undefined,
       applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
@@ -338,8 +484,10 @@ describe('milkdrop preset navigation controller', () => {
         fallbackReason = reason;
       },
       rememberLastPreset: () => undefined,
-      preparePresetTransition: () => undefined,
-      markPresetSwitched: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
     });
 
     await controller.selectPreset('fallback-preset');
@@ -347,5 +495,81 @@ describe('milkdrop preset navigation controller', () => {
     expect(fallbackReason).toContain(
       'Procedural custom waves not supported on WebGPU',
     );
+  });
+
+  test('prepareNextRandomPreset plans a pick that the advance then consumes', async () => {
+    const entries = [
+      createCatalogEntry('active-preset', {
+        webgl: 'supported',
+        webgpu: 'supported',
+      }),
+      createCatalogEntry('other-preset', {
+        webgl: 'supported',
+        webgpu: 'supported',
+      }),
+    ];
+    const compiled = createCompiledPreset('other-preset');
+    const sourceFetches: string[] = [];
+    const applied: string[] = [];
+
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          sourceFetches.push(id);
+          return {
+            id,
+            title: id,
+            raw: `title=${id}\n`,
+            origin: 'bundled',
+          } satisfies MilkdropPresetSource;
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        scheduleCatalogSync: async () => undefined,
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => entries,
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: createSession({ 'other-preset': compiled }),
+      getActivePresetId: () => 'active-preset',
+      getActiveBackend: () => 'webgl',
+      applyCompiledPreset: (next) => {
+        applied.push(next.source.id);
+      },
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => false,
+      triggerWebglFallback: () => undefined,
+      rememberLastPreset: () => undefined,
+      beginPresetTransition: () => ({
+        mode: 'blend' as const,
+        durationSeconds: 1,
+      }),
+    });
+
+    // Only one candidate besides the active preset, so the plan is
+    // deterministic: prepare must prefetch it, and the advance must apply
+    // the planned pick without re-rolling.
+    controller.prepareNextRandomPreset();
+    // The prefetch fetch is fire-and-forget; give the microtask queue a turn.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sourceFetches).toContain('other-preset');
+
+    // Planning twice must not re-pick or re-fetch while the plan is valid.
+    const fetchesAfterFirstPlan = sourceFetches.length;
+    controller.prepareNextRandomPreset();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(sourceFetches.length).toBe(fetchesAfterFirstPlan);
+
+    await controller.selectRandomPreset();
+    expect(applied).toEqual(['other-preset']);
   });
 });

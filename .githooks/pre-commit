@@ -1,0 +1,31 @@
+#!/usr/bin/env bun
+
+import { $ } from 'bun';
+
+console.log('🔒 Pre-commit gate (check:quick + format + strict cache bounds)...');
+
+const format = await $`bun run format:changed --staged`.nothrow();
+if (format.exitCode !== 0) {
+  console.error('❌ Commit blocked: Biome formatting failed on changed files.');
+  process.exit(1);
+}
+
+// Staged-only lint scope: this hook gates the commit's contents, not
+// another session's live working-tree churn (see scripts/lint-changed.ts).
+const quick = await $`STIMS_LINT_STAGED=1 bun run check:quick`.nothrow();
+if (quick.exitCode !== 0) {
+  console.error(
+    '❌ Commit blocked: bun run check:quick failed (lint, typecheck, or guard).',
+  );
+  process.exit(1);
+}
+
+const cacheBounds = await $`bun run scripts/check-cache-bounds.ts --strict`.nothrow();
+if (cacheBounds.exitCode !== 0) {
+  console.error(
+    '❌ Commit blocked: unbounded cache/pool added without a bound or allowlist reason.',
+  );
+  process.exit(1);
+}
+
+console.log('✅ Pre-commit gate passed.');

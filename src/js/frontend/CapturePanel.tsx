@@ -16,6 +16,18 @@ const CAPTURE_FORMATS = [
   'youtube-shorts',
 ] as const;
 
+const CAPTURE_FORMAT_STORAGE_KEY = 'stims:capture-format';
+
+function initialCaptureFormat(): (typeof CAPTURE_FORMATS)[number] {
+  try {
+    const stored = localStorage.getItem(CAPTURE_FORMAT_STORAGE_KEY);
+    const match = CAPTURE_FORMATS.find((format) => format === stored);
+    return match ?? 'hd-landscape';
+  } catch {
+    return 'hd-landscape';
+  }
+}
+
 function getFilename(preset: ExportPresetTarget, mimeType: string) {
   const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
   return `stims-${preset}-${new Date().toISOString().slice(0, 10)}.${extension}`;
@@ -25,7 +37,7 @@ export function CapturePanel() {
   const { engine, ui } = useWorkspace();
   const exporterRef = useRef<CanvasVideoExporter | null>(null);
   const [preset, setPreset] =
-    useState<(typeof CAPTURE_FORMATS)[number]>('hd-landscape');
+    useState<(typeof CAPTURE_FORMATS)[number]>(initialCaptureFormat);
   const [support, setSupport] = useState<CanvasVideoExporterSupport | null>(
     null,
   );
@@ -95,6 +107,27 @@ export function CapturePanel() {
     );
   }, [engine.audioActive, preset]);
 
+  // Repeat use is instant: the ☰ "Record video" item sets this flag when a
+  // remembered format exists, so opening the panel starts recording with it
+  // immediately. First-ever use (no stored format, no flag) shows the form.
+  const autoStartConsumedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartConsumedRef.current) return;
+    // Wait for the exporter's support probe: consuming the flag before it
+    // resolves would drop the auto-start on the floor.
+    if (!support?.supported || recording) return;
+    let flagged = false;
+    try {
+      flagged = sessionStorage.getItem('stims:capture-autostart') === '1';
+    } catch {}
+    if (!flagged) return;
+    autoStartConsumedRef.current = true;
+    try {
+      sessionStorage.removeItem('stims:capture-autostart');
+    } catch {}
+    startRecording();
+  }, [support, recording, startRecording]);
+
   const stopRecording = useCallback(async () => {
     const exporter = exporterRef.current;
     if (!exporter) return;
@@ -143,7 +176,12 @@ export function CapturePanel() {
                 name="capture-format"
                 value={format}
                 checked={preset === format}
-                onChange={() => setPreset(format)}
+                onChange={() => {
+                  setPreset(format);
+                  try {
+                    localStorage.setItem(CAPTURE_FORMAT_STORAGE_KEY, format);
+                  } catch {}
+                }}
               />
               <span>
                 <strong>{details.label}</strong>

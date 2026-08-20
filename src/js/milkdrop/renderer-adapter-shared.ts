@@ -8,12 +8,15 @@ import {
   DynamicDrawUsage,
   Float32BufferAttribute,
   type Group,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
   type Line,
   type LineBasicMaterial,
   type LineSegments,
   type Material,
   type Mesh,
   type MeshBasicMaterial,
+  NormalBlending,
   OneFactor,
   PlaneGeometry,
   type Points,
@@ -71,6 +74,11 @@ export type MilkdropRendererAdapterConfig = {
 export type MilkdropRendererBatcher = {
   attach: (root: Group) => void;
   dispose: () => void;
+  /** Hides every batched target belonging to the blend layer. Batched
+   * targets live under the batcher's own root, not the adapter's blend
+   * groups, so blend end must hide them here or their last synced
+   * instances keep rendering as a ghost of the outgoing preset. */
+  hideBlendTargets?: () => void;
   disposeWithCaches?: () => void;
   setShapeTexture?: (texture: Texture | null) => void;
   renderWaveGroup?: (
@@ -356,7 +364,7 @@ export function clearSharedMilkdropGeometries() {
 
 export function closeLinePositions<T extends ArrayLike<number>>(
   positions: T,
-): T | number[] {
+): T | Float32Array {
   if (positions.length < 6) {
     return positions;
   }
@@ -371,7 +379,15 @@ export function closeLinePositions<T extends ArrayLike<number>>(
   ) {
     return positions;
   }
-  return [...Array.from(positions), firstX, firstY, firstZ];
+  // Single typed-array copy; the previous [...Array.from(positions), ...]
+  // materialized the whole wave as boxed JS numbers twice per closed
+  // wave/border per frame.
+  const closed = new Float32Array(positions.length + 3);
+  closed.set(positions);
+  closed[positions.length] = firstX;
+  closed[positions.length + 1] = firstY;
+  closed[positions.length + 2] = firstZ;
+  return closed;
 }
 
 export function getWaveLinePositions(
@@ -447,17 +463,162 @@ export function setMaterialColor(
   material.transparent = opacity < 1 || material.blending === AdditiveBlending;
 }
 
+export type SegmentUploadBufferLike = {
+  count: number;
+  getLineData(): Float32Array;
+  getStyleData(): Float32Array;
+  getControlData(): Float32Array;
+  getJoinData(): Float32Array;
+};
+
+export function createSegmentQuadGeometry() {
+  const geometry = new InstancedBufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new Float32BufferAttribute(
+      [0, -1, 0, 1, -1, 0, 0, 1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0],
+      3,
+    ),
+  );
+  geometry.setAttribute(
+    'segmentCoord',
+    new Float32BufferAttribute([0, -1, 1, -1, 0, 1, 0, 1, 1, -1, 1, 1], 2),
+  );
+  return geometry;
+}
+
+export function ensureInstancedAttribute(
+  geometry: InstancedBufferGeometry,
+  name: string,
+  itemSize: number,
+  count: number,
+) {
+  const existing = geometry.getAttribute(name);
+  const requiredLength = Math.max(1, count * itemSize);
+  // Capacity policy, not exact-fit: instance counts track live audio, so an
+  // exact length check reallocates the CPU array and the GPU buffer (and, on
+  // WebGPU, rebuilds bind groups) nearly every frame. Keep any buffer that
+  // fits and isn't wildly oversized; draw range is governed by
+  // geometry.instanceCount, not the array length.
+  if (
+    existing instanceof InstancedBufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length >= requiredLength &&
+    existing.array.length <= requiredLength * 4 + 64 * itemSize
+  ) {
+    return existing;
+  }
+  // Round capacity up to 64-instance granularity so small count jitter never
+  // crosses an allocation boundary.
+  const capacityLength =
+    Math.ceil(requiredLength / (64 * itemSize)) * 64 * itemSize;
+  const attribute = new InstancedBufferAttribute(
+    new Float32Array(capacityLength),
+    itemSize,
+  );
+  attribute.setUsage(DynamicDrawUsage);
+  geometry.setAttribute(name, attribute);
+  return attribute;
+}
+
+/**
+ * Uploads one CompactSegmentUploadBuffer's per-instance data into a mesh's
+ * instanced geometry. Shared by the WebGL (renderer-segment-batching.ts) and
+ * WebGPU (renderer-adapter-webgpu-batching.ts) segment batches so the four
+ * attribute uploads cannot drift.
+ */
+export function syncSegmentMesh(
+  mesh: Mesh,
+  instances: SegmentUploadBufferLike,
+) {
+  const geometry = mesh.geometry as InstancedBufferGeometry;
+  geometry.instanceCount = instances.count;
+  mesh.visible = instances.count > 0;
+  const line = ensureInstancedAttribute(
+    geometry,
+    'instanceLine',
+    4,
+    instances.count,
+  );
+  const colorAlpha = ensureInstancedAttribute(
+    geometry,
+    'instanceColorAlpha',
+    4,
+    instances.count,
+  );
+  const control = ensureInstancedAttribute(
+    geometry,
+    'instanceControl',
+    3,
+    instances.count,
+  );
+  const join = ensureInstancedAttribute(
+    geometry,
+    'instanceJoin',
+    4,
+    instances.count,
+  );
+  (line.array as Float32Array).set(instances.getLineData());
+  (colorAlpha.array as Float32Array).set(instances.getStyleData());
+  (control.array as Float32Array).set(instances.getControlData());
+  (join.array as Float32Array).set(instances.getJoinData());
+  line.needsUpdate = true;
+  colorAlpha.needsUpdate = true;
+  control.needsUpdate = true;
+  join.needsUpdate = true;
+}
+
+/**
+ * Computes one custom-wave vertex in renderer space. Single source of truth
+ * for the JS fallback path; the native WebGPU path keeps the same formula in
+ * WGSL (buildCustomWaveVertexWgslCode in webgpu-procedural-materials.ts).
+ * Returns x/y zero-centered like the WGSL point.
+ */
+export function buildMilkdropCustomWavePoint(
+  centerX: number,
+  centerY: number,
+  scaling: number,
+  mystery: number,
+  spectrum: number,
+  time: number,
+  sampleT: number,
+  sampleValue: number,
+) {
+  const x = centerX + (-1 + sampleT * 2);
+  const baseY =
+    centerY + (sampleValue - 0.5) * 0.55 * scaling * (1 + mystery * 0.25);
+  const orbitalY =
+    centerY +
+    Math.sin(sampleT * Math.PI * 2 * (1 + mystery) + time) * 0.18 * scaling;
+  return { x, y: spectrum >= 0.5 ? baseY : orbitalY };
+}
+
 export function setMaterialBlendMode(
   material: Material | Material[],
-  blendMode: 'subtractive' | 'multiplicative',
+  blendMode: 'normal' | 'additive' | 'subtractive' | 'multiplicative',
 ) {
   const candidates = Array.isArray(material) ? material : [material];
   for (const mat of candidates) {
-    mat.blending = CustomBlending;
-    mat.blendSrc = blendMode === 'multiplicative' ? DstColorFactor : OneFactor;
-    mat.blendDst = blendMode === 'multiplicative' ? ZeroFactor : OneFactor;
-    mat.blendEquation =
-      blendMode === 'subtractive' ? ReverseSubtractEquation : AddEquation;
+    switch (blendMode) {
+      case 'additive':
+        mat.blending = AdditiveBlending;
+        break;
+      case 'subtractive':
+        mat.blending = CustomBlending;
+        mat.blendSrc = OneFactor;
+        mat.blendDst = OneFactor;
+        mat.blendEquation = ReverseSubtractEquation;
+        break;
+      case 'multiplicative':
+        mat.blending = CustomBlending;
+        mat.blendSrc = DstColorFactor;
+        mat.blendDst = ZeroFactor;
+        mat.blendEquation = AddEquation;
+        break;
+      default:
+        mat.blending = NormalBlending;
+        break;
+    }
   }
 }
 
@@ -482,23 +643,76 @@ export function applyBlendModeToGroup(
   }
 }
 
+/**
+ * Writes `data` into a dynamic float attribute, growing the underlying buffer
+ * but never shrinking it, and returns the vertex count `data` occupies.
+ *
+ * The no-shrink rule is not a micro-optimisation — it is what keeps WebGPU
+ * valid. Replacing the attribute changes `position.count`, which is what
+ * `RenderObject.getDrawParameters()` derives the draw count from, but the
+ * backend's uploaded GPUBuffer for that geometry is only refreshed on its own
+ * schedule. For one frame the draw is issued with the new count against the
+ * old, smaller buffer:
+ *
+ *   Vertex range (first: 0, count: 1555) requires a larger buffer (18660)
+ *   than the bound buffer size (10932) of the vertex buffer at slot 0
+ *
+ * which invalidates the whole command buffer, so the frame is dropped too.
+ * Keeping one monotonically-growing buffer per geometry makes the bound size
+ * an upper bound on every draw range that can follow, so the mismatch cannot
+ * occur regardless of upload timing.
+ *
+ * Preset transitions are where this bit: a blend renders the outgoing and
+ * incoming preset into the same pooled geometries, so a wave whose sample
+ * count differs between the two would reallocate on *every* frame of the
+ * blend, alternating between the two lengths.
+ */
+export function ensureDynamicFloatAttribute(
+  geometry: BufferGeometry,
+  name: string,
+  data: ArrayLike<number>,
+  itemSize: number,
+): number {
+  const existing = geometry.getAttribute(name);
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length >= data.length
+  ) {
+    (existing.array as Float32Array).set(data);
+    existing.needsUpdate = true;
+  } else {
+    // Grow to exactly what is needed rather than doubling: these buffers reach
+    // ~40k floats for a dense mesh, and the callers' lengths come from a small
+    // set of preset-driven sizes, so they settle after the first few frames.
+    const array = new Float32Array(Math.max(itemSize, data.length));
+    array.set(data);
+    const attribute = new Float32BufferAttribute(array, itemSize);
+    attribute.setUsage(DynamicDrawUsage);
+    geometry.setAttribute(name, attribute);
+  }
+  return Math.floor(data.length / itemSize);
+}
+
 export function ensureGeometryPositions(
   geometry: BufferGeometry,
   positions: ArrayLike<number>,
 ) {
-  const existing = geometry.getAttribute('position');
-  if (
-    existing instanceof Float32BufferAttribute &&
-    existing.itemSize === 3 &&
-    existing.array.length === positions.length
-  ) {
-    existing.array.set(positions);
-    existing.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(positions, 3);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('position', attribute);
+  const vertexCount = ensureDynamicFloatAttribute(
+    geometry,
+    'position',
+    positions,
+    3,
+  );
+  // The buffer may now be larger than this frame's data, so the draw range —
+  // not the attribute length — is what bounds the draw. On an indexed geometry
+  // the draw range counts indices rather than vertices, so a vertex count
+  // would be the wrong unit; no current caller indexes, and this keeps a
+  // future one from silently drawing the wrong range.
+  if (geometry.getIndex() === null) {
+    geometry.setDrawRange(0, vertexCount);
   }
+
   if (geometry.userData.skipDynamicBounds === true) {
     setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), Math.SQRT2 * 2.4);
     return;

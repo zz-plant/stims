@@ -24,14 +24,6 @@ function isInteractiveTarget(target: EventTarget | null) {
   );
 }
 
-function _supportsTouchShortcutInput() {
-  return (
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(pointer: coarse)').matches ||
-      navigator.maxTouchPoints > 0)
-  );
-}
-
 export function useStageGesture({
   enabled,
   stageRef,
@@ -53,7 +45,7 @@ export function useStageGesture({
   closePanel?: () => void;
   toggleFavoritePreset?: () => void;
   handleToggleFullscreen?: () => void;
-  setStatusMessage?: (message: string) => void;
+  setStatusMessage?: (message: string | null) => void;
   hapticsEnabled?: boolean;
   longPressMs?: number;
 }) {
@@ -96,9 +88,18 @@ export function useStageGesture({
       }
     };
 
-    document.addEventListener('wheel', handleWheel, { passive: false });
-    return () => document.removeEventListener('wheel', handleWheel);
-  }, [enabled]);
+    // Scope the non-passive listener to the stage when it exists: a
+    // non-passive wheel listener on `document` opts every scrollable surface
+    // (preset lists, editor, panels) out of the compositor's scroll fast
+    // path — the browser must wait for this handler before it can scroll
+    // anything. Wheel-over-panel then never reaches preventDefault anyway.
+    const wheelHost: EventTarget = stageRef?.current ?? document;
+    wheelHost.addEventListener('wheel', handleWheel as EventListener, {
+      passive: false,
+    });
+    return () =>
+      wheelHost.removeEventListener('wheel', handleWheel as EventListener);
+  }, [enabled, stageRef]);
 
   useEffect(() => {
     const stage = stageRef?.current;

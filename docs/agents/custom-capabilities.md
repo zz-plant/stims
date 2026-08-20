@@ -19,6 +19,19 @@ In practice:
 - reach for `.agent/skills/*/SKILL.md` first,
 - open the matching `.agent/workflows/*.md` when the task spans multiple phases or needs a more explicit runbook.
 
+## Before either: check the script index
+
+Skills and workflows are curated, so they name only the commands their author needed. The repo ships **127 scripts**, and the tables on this page are not an inventory of them.
+
+```bash
+bun run help          # every script, grouped by namespace, with a one-line purpose
+bun run help --json   # {name, command, purpose} records
+```
+
+Purpose lines are generated from the docblock atop each script file, so the index tracks the code rather than drifting from it; `bun run check:script-docs` (part of `bun run check`) fails when a script has no summary. If a skill on this page doesn't mention a capability, check the index before concluding the repo lacks it — whole namespaces (`parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`) are absent from the skill tables by omission, not because they don't exist.
+
+For driving a running visualizer, see [`browser-automation.md`](./browser-automation.md) — `__stims_agent`, `bun run ctl`, and `bun run mcp` replace DOM scraping and sleep-poll loops.
+
 ## Delegation guidance
 
 When the work may be split across multiple agents, start with [`agent-handoffs.md`](./agent-handoffs.md) before assigning ownership. Use these boundaries:
@@ -38,6 +51,7 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/modify-preset-workflow/SKILL.md` | Updating bundled presets, catalog/editor flows, import/export, compatibility, or preset fixtures/metadata. | targeted tests, then `bun run test:compat` or `bun run test:integration` as needed, then `bun run check` |
 | `.agent/skills/improve-preset-fidelity/SKILL.md` | Tuning a preset's visual fidelity or audio reactivity with measured baseline→edit→compare loops; works without vision or hearing (numeric reports), with contact-sheet images for vision-capable agents. | `bun run lab:reactivity -- --preset <id> --compare`, `bun run lab:visual -- --preset <id> --compare`, then `bun run check:quick` |
 | `.agent/skills/play-visualizer/SKILL.md` | Launching or visually checking the flagship visualizer in the browser. | `bun run play:toy milkdrop` or local `bun run dev` session |
+| `.agent/skills/perform-livecoding/SKILL.md` | Performing or jamming on the instrument: live-coded Strudel audio driving the visuals, plus timed visual gestures. Not for fidelity tuning or QA. | MCP `session_play_pattern` / `session_ramp` / `session_listen`, or `window.__stims_live` on any `?agent=true` page |
 | `.agent/skills/test-visualizer/SKILL.md` | Running visualizer-focused validation or full repo quality gates. | `bun run test …`, `bun run test:integration`, `bun run test:compat`, `bun run check` |
 | `.agent/skills/verify-visualizer-work/SKILL.md` | Quick validation checks during implementation; iterative testing without full quality gate. | `bun run check:quick`, `bun run test`, `bun run dev` with browser testing |
 | `.agent/skills/ship-visualizer-change/SKILL.md` | End-to-end product-facing implementation + docs + PR-ready validation flow. | targeted checks as needed, then `bun run check` |
@@ -46,8 +60,8 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/review-test-harness/SKILL.md` | Reviewing PRs that add, modify, or remove tests, fixtures, or integration harness code. | `bun run test`, behavior-based assertion review, fixture determinism check |
 | `.agent/skills/review-workspace-ui-state/SKILL.md` | Reviewing PRs that touch React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary. | `bun run test tests/unit/frontend-url-state.test.ts`, adapter boundary inspection |
 | `.agent/skills/review-deploy-tooling/SKILL.md` | Reviewing PRs that touch CI, wrangler config, build scripts, Cloudflare deploy, or package.json tooling. | `bun run build`, `bun run preview`, verify wrangler.site.jsonc and CI workflow integrity |
-| `.agent/skills/review-module-loading/SKILL.md` | Reviewing PRs that touch module loading, bootstrap, toy manifest, library resolution, or gamepad polling. | `bun run check:toys`, validate manifest regeneration, gamepad lifecycle |
-| `.agent/skills/audit-recurring-fixes/SKILL.md` | Auditing commit history to find recurring fix patterns and updating prevention skills. | `git log` analysis, cross-reference with `docs/RECURRING_FIX_PATTERNS_AUDIT_*.md` |
+| `.agent/skills/review-module-loading/SKILL.md` | Reviewing PRs that touch module loading, bootstrap, toy manifest, library resolution, or gamepad polling. | `bun run check:readme-claims`, `bun run check:architecture`, gamepad lifecycle |
+| `.agent/skills/audit-recurring-fixes/SKILL.md` | Auditing commit history to find recurring fix patterns and updating prevention skills. | `git log` analysis, cross-reference with `docs/evidence/RECURRING_FIX_PATTERNS_AUDIT_*.md` |
 | `.agent/skills/iterate-visualizer-ui/SKILL.md` | Iterating on workspace UI, shell chrome, and CSS with fast feedback loops and component isolation. | `bun run dev:ui`, isolated component playground, screenshot diff, responsive grid |
 | `.agent/skills/quick-start/SKILL.md` | First entry into the repo or after a long gap; fastest safe path to productive work. | `bun run agent:status`, `bun run setup:codex` |
 | `.agent/skills/agent-ergonomics/SKILL.md` | Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure. | Read-only, then apply changes |

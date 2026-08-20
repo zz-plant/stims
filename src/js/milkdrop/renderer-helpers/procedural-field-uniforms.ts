@@ -2,8 +2,10 @@ import { Color, type ShaderMaterial } from 'three';
 import type {
   MilkdropGpuFieldSignalInputs,
   MilkdropGpuInteractionTransform,
+  MilkdropPerFrameFieldRegisters,
   MilkdropProceduralFieldTransformVisual,
 } from '../types';
+import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout.ts';
 
 export type ProceduralFieldUniformState = {
   zoom: { value: number };
@@ -39,11 +41,40 @@ export type ProceduralFieldUniformState = {
   signalVol: { value: number };
   signalMusic: { value: number };
   signalWeightedEnergy: { value: number };
-};
+  signalPixelsX: { value: number };
+  signalPixelsY: { value: number };
+  meshSize: { value: number };
+} & ProceduralFieldRegisterUniformState;
+
+/** Packed frame-constant register bank: 32 positional scalar slots
+ * (`registerSlot0`..`registerSlot31`), assigned in the order of the lowered
+ * program's `registerInputs` list. Slot uniforms carry q registers and
+ * per-frame-assigned user variables alike; materials wire ceil(inputs/4)
+ * vec4s from them. */
+export const FIELD_REGISTER_UNIFORM_COUNT = 32;
+
+export type ProceduralFieldRegisterUniformState = Record<
+  `registerSlot${number}`,
+  { value: number }
+>;
+
+function createFieldRegisterUniformState(): ProceduralFieldRegisterUniformState {
+  const state: Record<string, { value: number }> = {};
+  for (let index = 0; index < FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
+    state[`registerSlot${index}`] = { value: 0 };
+  }
+  return state as ProceduralFieldRegisterUniformState;
+}
 
 export type ProceduralFieldVisualWithSignals =
   MilkdropProceduralFieldTransformVisual & {
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
+    /** Warp mesh dimension (meshx/meshy builtin); mesh and motion-vector
+     * visuals carry the density their CPU counterpart ran with. */
+    density?: number;
+    /** Lowered field program; its registerInputs order defines slot layout. */
+    program?: { registerInputs?: readonly string[] } | null;
   };
 
 export type ProceduralInteractionUniformState = {
@@ -89,6 +120,10 @@ export function createProceduralFieldUniformState() {
     signalVol: { value: 0 },
     signalMusic: { value: 0 },
     signalWeightedEnergy: { value: 0 },
+    signalPixelsX: { value: 1280 },
+    signalPixelsY: { value: 1280 },
+    meshSize: { value: 48 },
+    ...createFieldRegisterUniformState(),
   } satisfies ProceduralFieldUniformState;
 }
 
@@ -121,6 +156,9 @@ export function syncProceduralFieldUniforms(
     signals,
     tint,
     alpha,
+    registers,
+    density,
+    program,
   }: ProceduralFieldVisualWithSignals & {
     time: number;
     trebleAtt: number;
@@ -161,6 +199,18 @@ export function syncProceduralFieldUniforms(
   material.uniforms.signalVol.value = signals.vol;
   material.uniforms.signalMusic.value = signals.music;
   material.uniforms.signalWeightedEnergy.value = signals.weightedEnergy;
+  const viewport = deriveMilkdropViewportSignalValues(signals);
+  material.uniforms.signalPixelsX.value = viewport.pixelsx;
+  material.uniforms.signalPixelsY.value = viewport.pixelsy;
+  material.uniforms.meshSize.value = density ?? 48;
+  // Slots are positional in the lowered program's registerInputs order; the
+  // registers payload is a sparse name→value map copied from VM state.
+  const registerInputs = program?.registerInputs;
+  for (let slot = 0; slot < FIELD_REGISTER_UNIFORM_COUNT; slot += 1) {
+    const name = registerInputs?.[slot];
+    material.uniforms[`registerSlot${slot}`].value =
+      name !== undefined ? (registers?.[name] ?? 0) : 0;
+  }
 }
 
 export function syncProceduralInteractionUniforms(
@@ -208,4 +258,8 @@ export function syncPreviousProceduralFieldUniforms(
   material.uniforms.previousSignalMusic.value = field.signals.music;
   material.uniforms.previousSignalWeightedEnergy.value =
     field.signals.weightedEnergy;
+  const previousViewport = deriveMilkdropViewportSignalValues(field.signals);
+  material.uniforms.previousSignalPixelsX.value = previousViewport.pixelsx;
+  material.uniforms.previousSignalPixelsY.value = previousViewport.pixelsy;
+  material.uniforms.previousMeshSize.value = field.density ?? 48;
 }

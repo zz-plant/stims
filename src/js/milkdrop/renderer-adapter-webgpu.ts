@@ -3,7 +3,16 @@ import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
 import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
-import { createWebGPUBatchingLayer } from './renderer-adapter-webgpu-batching.ts';
+import {
+  createNativeWebGPUShapeBatchingLayer,
+  createWebGPUBatchingLayer,
+} from './renderer-adapter-webgpu-batching.ts';
+import { createNativeWebGpuShapeBatchMaterialFactory } from './renderer-backends/webgpu-batching-materials.ts';
+// Side-effect import: registers the shared renderer helpers' WebGPU material
+// toolkit (NodeMaterial/TSL + procedural factories) at module scope, so it is
+// synchronously available before this adapter constructs any helper material.
+// See renderer-helpers/webgpu-materials-loader.ts.
+import './renderer-backends/webgpu-procedural-materials.ts';
 import { resolveMilkdropRendererExecutionPlan } from './renderer-execution-plan.ts';
 import {
   applyNativeWebGpuMaterialCompatibilityFlags,
@@ -20,13 +29,6 @@ export type MilkdropWebGPURendererAdapterConfig = Omit<
   MilkdropRendererAdapterConfig,
   'backend'
 >;
-
-const WEBGPU_BEHAVIOR = {
-  ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-  supportsShapeGradient: true,
-  supportsShapeShaderFill: true,
-  supportsFeedbackPass: true,
-} as const;
 
 function buildSafeWebGpuOptimizationFlags(
   flags: MilkdropWebGpuOptimizationFlags | undefined,
@@ -95,12 +97,19 @@ export function createMilkdropWebGPURendererAdapter(
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
-    behavior: WEBGPU_BEHAVIOR,
+    behavior: WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
     createFeedbackManager:
       executionPlan.feedbackMode === 'webgpu-native'
         ? createMilkdropWebGPUFeedbackManager
         : undefined,
-    batcher: usesNativeWebGpuRenderer ? undefined : createWebGPUBatchingLayer(),
+    // The native WebGPU renderer can't compile the GLSL batching materials,
+    // so it gets a shapes+borders-only batcher built on NodeMaterial/TSL
+    // (waves stay on the native procedural TSL paths).
+    batcher: usesNativeWebGpuRenderer
+      ? createNativeWebGPUShapeBatchingLayer(
+          createNativeWebGpuShapeBatchMaterialFactory(),
+        )
+      : createWebGPUBatchingLayer(),
     webgpuOptimizationFlags,
   });
 }

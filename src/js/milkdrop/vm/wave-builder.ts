@@ -129,7 +129,10 @@ export function buildCustomWaves({
       reuseExtraAsEnv?: boolean;
     },
   ) => MutableState;
-  seedCustomWaveState: (wave: MilkdropWaveDefinition) => MutableState;
+  seedCustomWaveState: (
+    wave: MilkdropWaveDefinition,
+    target?: MutableState,
+  ) => MutableState;
   getProceduralCustomWaveDescriptor: (
     wave: MilkdropWaveDefinition,
     drawMode: 'line' | 'dots',
@@ -151,9 +154,17 @@ export function buildCustomWaves({
       continue;
     }
 
-    // Reload base values from wave definition each frame
-    const baseLocals = seedCustomWaveState(wave);
-    const frameLocals = waveState.customWaveLocals[index] ?? baseLocals;
+    // Reload base values from wave definition each frame, writing into a
+    // pooled object (one per wave slot) instead of allocating a fresh ~21-key
+    // locals per wave per frame. Every key is overwritten in the same order, so
+    // the merge below sees identical contents to a fresh seed.
+    const baseLocals = seedCustomWaveState(
+      wave,
+      waveState.customWaveBaseLocalsPool[index],
+    );
+    // Never let a pooled seed become the persistent locals object (that would
+    // alias two waves' state on the rare path where the slot is unseeded).
+    const frameLocals = waveState.customWaveLocals[index] ?? {};
 
     // Merge base values into frame locals (preserves per-frame user vars)
     for (const key in baseLocals) {
@@ -216,11 +227,15 @@ export function buildCustomWaves({
       drawMode,
     );
     const useProcedural = proceduralDescriptor !== null;
-    const pointLocals = { ...frameLocals };
+    // Non-reuse createEnv builds the copy with Object.create(signalEnv) so
+    // the object is BORN with the right prototype. The previous
+    // `{...frameLocals}` + reuseExtraAsEnv path guaranteed a
+    // Object.setPrototypeOf on a fresh object every wave every frame — the
+    // exact V8 deopt the reuse path's comment warns about — right before a
+    // several-hundred-iteration per-point loop reads from it.
+    const pointEnv = useProcedural ? null : createEnv(signals, frameLocals);
+    const pointLocals = pointEnv ?? { ...frameLocals };
     waveState.pointLocalsScratch = pointLocals;
-    const pointEnv = useProcedural
-      ? null
-      : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
 
     let positions = useProcedural ? null : visualWave.positions;
     const visualWaveWithColorCache = visualWave as MilkdropWaveVisual & {

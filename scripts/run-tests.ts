@@ -1,3 +1,10 @@
+/**
+ * Runs the test suite by profile, mapping each profile to the test categories
+ * it covers and executing slow or serial categories in their own passes.
+ *
+ * `--profile <name>` selects a profile (default `fast`), `--changed` runs only
+ * tests affected by uncommitted changes, and `--watch` re-runs on edit.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -33,7 +40,7 @@ const PROFILES: Record<string, Category[]> = {
   all: ['unit', 'compat', 'corpus', 'e2e'],
   fast: ['unit', 'compat'],
   unit: ['unit'],
-  compat: ['compat', 'corpus'],
+  compat: ['compat'],
   corpus: ['corpus'],
   e2e: ['e2e'],
 };
@@ -143,19 +150,27 @@ function buildBunTestCmd({
   changed,
   parallel,
   maxConcurrency,
+  bail,
 }: {
   files: string[];
   watch: boolean;
   changed?: boolean;
   parallel?: number | true;
   maxConcurrency?: number;
+  bail?: boolean;
 }): string[] {
+  // Dev feedback stops at the first failing test file; CI keeps running so a
+  // single failure cannot mask the rest of a suite. `--bail` is inert under
+  // `--watch`, which must keep running after a failure.
+  const bailEnabled = (bail ?? true) && !watch && !process.env.CI;
+
   return [
     'bun',
     'test',
     '--preload=./tests/setup.ts',
     ...(watch ? ['--watch'] : []),
     ...(changed ? ['--changed'] : []),
+    ...(bailEnabled ? ['--bail'] : []),
     ...(parallel === true
       ? ['--parallel']
       : typeof parallel === 'number'

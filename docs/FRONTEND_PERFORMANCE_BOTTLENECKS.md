@@ -1,109 +1,109 @@
 # Front-end performance bottlenecks
 
-This note captures the highest-impact front-end performance risks found during a static audit of the Stims runtime. It focuses on hot paths that execute every frame, on user input, or on overlay/catalog refreshes.
+> Rewritten 2026-08. The previous version of this note was materially stale:
+> its top findings (full per-frame `variables` snapshot, duplicate drag-magnitude
+> math, imperative overlay browse-list re-rendering, `syncCatalog()` cascades)
+> were fixed as the overlay moved to React (`useDeferredValue`, capped lists)
+> and the VM gained a lazy variables proxy. This version reflects the current
+> code so an audit does not re-file solved issues.
 
-## Highest-priority bottlenecks
+## Fixed since the original audit (do not re-file)
 
-### 1. Per-frame VM and renderer data reconstruction
+- **Autoplay advance stampede** (fixed 2026-08-18) — the frame loop fired
+  `selectRandomPreset` on every frame of the fetch+compile window (6–20
+  superseded fetch+compiles per advance); an in-flight latch in
+  `experience-frame-loop.ts` allows one advance at a time.
+- **Per-frame `variables` snapshot** — `vm.ts` now exposes a lazy proxy and
+  nulls the frame snapshot; the full copy only materializes when a debug
+  consumer asks for it.
+- **Duplicate drag-magnitude computation** — `interaction-response.ts`
+  computes `inputSpeed` once.
+- **Overlay browse-list full DOM re-render** — the browse UI is React with
+  deferred search values and a capped result list.
+- **Renderer-service Proxy churn** — bound renderer methods are now cached
+  per underlying renderer instance (`render-service.ts`), instead of minting
+  a fresh closure on every property access in the frame path.
+- **Meyda / stats-gl in the startup payload** — both are dynamic imports now;
+  Meyda only loads on the AnalyserNode fallback path, stats-gl only when the
+  overlay is enabled.
+- **Per-frame Meyda FFT on the fallback path** — spectral features refresh
+  every fourth frame once a snapshot exists (`audio-handler.ts`).
+- **Repeated `Object.setPrototypeOf` in `createEnv`** — the reuse path only
+  rewrites the prototype when it actually changed, so persistent shape/wave
+  locals no longer trigger V8 deopts every frame.
+- **Live tile pool vs. the stage** — the pool's engine cap now follows the
+  adaptive-quality controller via `engine-quality-store.ts`; when the stage
+  degrades, browse-grid previews shed engines instead of competing.
 
-The MilkDrop runtime rebuilds large visual payloads on every animation tick:
+## Open bottlenecks (verified against current code)
 
-- `MilkdropPresetVM.step()` rebuilds the frame state, including waves, mesh geometry, motion vectors, shapes, borders, shader controls, and a full variable snapshot on each frame.
-- `buildMainWave()` allocates a new `positions` array sized to the current sample count and also copies `smoothedSamples` into `lastWaveSamples` every frame.
-- `buildMesh()` and `buildMotionVectors()` rebuild arrays for line geometry each frame.
+### 1. Low-quality path clones the frame state every frame
 
-Why this matters:
+`runtime/lifecycle.ts` (`buildRenderFrameState`) and
+`runtime/enhanced-effects-policy.ts` early-return the frame state unchanged
+on the fast path, but when `shaderQuality === 'low'`, `low-motion`, or
+mobile-low-power is active they clone the full `MilkdropFrameState` plus
+nested `post` / `postprocessingProfile` / `gpuGeometry` / `particleField`
+objects — 120–180 large objects per second, imposed exactly on the devices
+that can least afford GC.
 
-- These allocations happen in the hottest path of the application.
-- The work scales with quality settings (`mesh_density`, detail scale, motion vector counts, wave sample counts).
-- This raises GC pressure and makes frame pacing more fragile on mobile or integrated GPUs.
+Why it is not a one-line fix: the derived state is consumed by
+`adapter.render()` in the same frame, but the adapters' retention semantics
+are not locally provable, and the tile pool runs up to 10 engines through
+the same code path — a shared scratch object would alias state across
+engines if any consumer holds the reference. The fix needs either a
+per-experience scratch object with an audited no-retention contract on the
+adapter seam, or mutable render flags the adapter reads instead of a derived
+state object.
 
-Recommended follow-up:
+### 2. Full-catalog `JSON.parse` on the main thread
 
-- Reuse typed buffers for wave, mesh, and motion-vector positions instead of allocating fresh arrays each frame.
-- Avoid creating the full `variables` snapshot unless the inspector or debugging tools actively need it.
-- Consider splitting “simulation state” from “render payload” so only changed structures are rebuilt.
+`use-catalog-loading.ts` parses the 1.7 MB catalog and maps every entry on
+the main thread. The work is idle-scheduled, which is right, but
+`JSON.parse` of that payload is a single non-yieldable ~80–150 ms block on
+mobile. Comlink is already a dependency: parse in a worker and transfer, or
+ship the catalog as NDJSON and stream it. (Delivery-side caching is fixed —
+catalog JSON now has stale-while-revalidate headers and the service worker
+serves preset payloads cache-first.)
 
-### 2. Object-spread churn in the per-frame runtime update
+### 3. Continuous dynamic resolution scaling is written but not wired
 
-`createMilkdropExperience().update()` merges runtime signals with:
+`core/services/continuous-drs.ts` implements a PID-style analog render-scale
+controller, unit-tested, referenced only by its test. The shipping path uses
+the discrete `adaptive-quality-controller.ts` steps — exactly the
+step-hunting the DRS controller's header says it exists to eliminate.
+Wiring it in behind the existing controller's sampling seam should produce
+visibly smoother degradation than the current stepped drops.
 
-- a freshly-built input override object,
-- optional signal overrides,
-- blend-state wrapper objects,
-- low-quality post-processing override objects.
+### 4. Stage `--energy` CSS pulse is event-driven, not frame-driven
 
-`buildMilkdropInputSignalOverrides()` also computes the same drag magnitude twice for camelCase and snake_case fields.
+`StageControls.tsx` updates the `--energy` custom property from
+`subscribeAudioEnergy`, which is fed from engine *snapshot* changes — and
+snapshots emit on discrete events (preset change, audio start/stop), not per
+frame. The "energy" visual therefore does not track the music. The fix is a
+dedicated per-frame publisher across the engine seam (a rAF reader of the
+live analyser writing `style.setProperty` directly, no React), which needs a
+small API addition on the engine adapter.
 
-Why this matters:
+### 5. Spectrum processed in multiple passes per frame
 
-- The update path already performs substantial VM and rendering work.
-- Repeated object spreads add avoidable allocations every frame.
-- Duplicate math and object creation add overhead without improving output quality.
+On the AnalyserNode fallback path, each frame runs: `getByteFrequencyData`
+copy, a stylize pass, a `getAverageFrequency` pass used only for a silence
+threshold, and an optional blend pass (`animation-loop.ts`,
+`audio-handler.ts`). Fusing the copy+stylize passes and returning the mean
+from the stylize pass would drop 2 of the 4–5 full-array walks nearly for
+free.
 
-Recommended follow-up:
+### 6. Blend-state cloning during preset transitions
 
-- Reuse a mutable signal object and update fields in place.
-- Compute drag magnitude once and assign it to both aliases.
-- Move low-quality and blend-state toggles toward in-place flag updates or adapter-side branching.
+`cloneBlendState()` deep-copies wave positions, custom waves, shapes,
+borders, and motion vectors when a blend transition begins. Not per-frame,
+but it can spike a frame during preset switches on dense presets.
 
-### 3. Full overlay browse-list re-rendering on every filter/search/catalog update
+## Regression guards
 
-The MilkDrop overlay rebuilds the entire browse DOM tree whenever search text changes, sort/filter selections change, collection filters change, or the preset catalog is refreshed.
-
-Why this matters:
-
-- Search uses the `input` event, so a full re-render runs on every keystroke.
-- `renderBrowseList()` recreates rows, buttons, select controls, and warning blocks instead of diffing or reusing DOM nodes.
-- The cost grows with the preset catalog size and can compete with the active render loop when the overlay is open.
-
-Recommended follow-up:
-
-- Debounce search input.
-- Cache row elements by preset id and patch only changed fields.
-- Keep overlay chrome (for example collection filters) stable when browse options have not changed.
-- Separate sorting/filtering from DOM updates so unchanged rows can be retained.
-- Consider virtualizing long browse lists if the catalog keeps growing.
-
-### 4. Catalog refreshes cascade into expensive UI work
-
-`syncCatalog()` repopulates the overlay catalog and triggers both collection-filter rebuilding and browse-list rendering. It is called after favorite/rating changes, imports, deletions, startup, preset selection, and editor-session updates.
-
-Why this matters:
-
-- The same expensive browse rebuild can happen repeatedly during interactive workflows.
-- `session.subscribe()` calls `syncCatalog()` after editor changes, even though most editor edits do not fundamentally change the catalog contents.
-- This creates avoidable main-thread work while the visualizer is already animating.
-
-Recommended follow-up:
-
-- Distinguish “catalog metadata changed” from “editor source changed”.
-- Only refresh the active row when rating/favorite state changes.
-- Coalesce queued catalog refreshes to the latest requested state before they hit the overlay.
-- Throttle or batch catalog refreshes behind `requestAnimationFrame()` or a microtask queue.
-
-## Secondary bottlenecks
-
-### Blend-state cloning is expensive during preset transitions
-
-`cloneBlendState()` deep-copies wave positions, custom waves, shapes, borders, and motion vectors when blend transitions begin. This is not a per-frame cost, but it can cause visible spikes during preset switches, especially on dense presets.
-
-### Renderer adapter cleanup patterns create avoidable array churn
-
-The adapter frequently uses `group.children.slice(...)` and similar array-copy patterns while reconciling render groups. These are smaller costs than the VM allocations, but they still add pressure in a frame-critical path.
-
-## Recommended order of attack
-
-1. **Reduce per-frame allocations in `vm.ts` and `runtime.ts`.** This should produce the biggest frame-time improvement.
-2. **Stop full overlay re-renders for browse/search/catalog changes.** This should improve responsiveness while the panel is open.
-3. **Trim catalog refresh frequency.** This removes repeated UI work during editing and metadata tweaks.
-4. ~~**Simplify inspector updates.**~~ (Inspector panel removed Jun 2026)
-5. **Optimize transition cloning and adapter reconciliation.** These are worthwhile once the bigger hotspots are addressed.
-
-## Evidence reviewed
-
-- `src/js/milkdrop/runtime.ts`
-- `src/js/milkdrop/vm.ts`
-- `src/js/milkdrop/overlay/`
-- `src/js/milkdrop/renderer-adapter.ts`
-- `src/js/core/web-toy.ts`
+- `bun run check:bundle-size` (scripts/check-bundle-size.ts) asserts bundle
+  budgets against `dist/` after a build — run it whenever imports or vendor
+  chunking change.
+- `tests/unit/app-shell-performance-regression.test.ts` pins the service
+  worker's non-blocking cache-write contract and the lazy runtime imports.

@@ -51,9 +51,15 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   noise_mq: 'noise',
   fw_noisevol: 'simplex',
   fw_noisevol_lq: 'simplex',
+  fw_noisevol_mq: 'simplex',
   fw_noisevol_hq: 'simplex',
+  pw_noisevol: 'simplex',
+  pw_noisevol_lq: 'simplex',
+  pw_noisevol_mq: 'simplex',
+  pw_noisevol_hq: 'simplex',
   noisevol: 'simplex',
   noisevol_lq: 'simplex',
+  noisevol_mq: 'simplex',
   noisevol_hq: 'simplex',
   fc_main: 'fc_main',
   // MilkDrop names the main-texture samplers by filter and address mode:
@@ -145,9 +151,40 @@ export function classifyTex3dSamplerEquivalence(
 ): Tex3dSamplerEquivalence {
   // Bundled volume samplers are backed by native Data3DTexture on WebGPU and
   // an interpolated atlas path on WebGL. They are semantically supported;
-  // only unknown/custom sources should remain a compatibility gap.
-  if (dimension === '3d' && isMilkdropVolumeShaderSamplerName(source)) {
-    return 'semantic-supported';
+  // non-volume 2D textures sampled via tex3D are not equivalent to native volume textures.
+  if (dimension === '3d' && !isMilkdropVolumeShaderSamplerName(source)) {
+    return 'not-equivalent';
   }
   return 'semantic-supported';
+}
+
+/**
+ * Canonical aux-texture source ids shared by the GLSL aux sampling path
+ * (shader-analysis-glsl.ts), the WebGPU direct-sampler binding table
+ * (feedback-manager-webgpu-bindings.ts), and the WebGPU aux sampler node
+ * (feedback-manager-webgpu-composite.ts). Keeping the ids in one place is
+ * what keeps perlin/glyph/organic resolving to their own textures instead
+ * of degrading to noise or the neutral fallback on one backend.
+ */
+export const MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS: Readonly<
+  Record<string, number>
+> = {
+  noise: 1,
+  simplex: 2,
+  voronoi: 3,
+  aura: 4,
+  caustics: 5,
+  pattern: 6,
+  fractal: 7,
+  video: 8,
+  perlin: 9,
+  glyph: 12,
+  organic: 13,
+  blur1: 14,
+  blur2: 15,
+  blur3: 16,
+};
+
+export function getMilkdropShaderAuxTextureSourceId(name: string): number {
+  return MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS[name.toLowerCase()] ?? 0;
 }

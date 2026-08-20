@@ -132,6 +132,28 @@
         "audioMode": "demo",
         "vibeMode": true
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260816000000",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-08-16T00:00:00.248Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1786838400193.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
     }
   ]
 }

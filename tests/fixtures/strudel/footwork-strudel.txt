@@ -1,0 +1,48 @@
+// Footwork / Juke pattern for Strudel × Stims
+// 160 BPM, syncopated kicks, rolling hats, sub bass
+
+stack(
+  // Kicks - classic footwork syncopation
+  s("<bd ~ bd bd ~ ~ bd ~ bd ~ bd bd ~ ~ bd ~ bd>")
+    .gain(1.3)
+    .speed(1),
+  
+  // Rolling hats - 16th note feel with accents
+  s("hh*16")
+    .gain("[0.4 0.8 0.3 0.6]*4")
+    .speed(1),
+  
+  // Snares on 2 and 4 with ghost notes
+  s("[~ sd ~ ~ ~ sd ~ ~] [~ sd ~ ~ ~ sd ~ sd ~]")
+    .gain(1),
+  
+  // Sub bass - follows kick pattern, octave down
+  note("<c1 ~ c1 c1 ~ ~ c1 ~ c1 ~ c1 c1 ~ ~ c1 ~ c1>")
+    .s("sine")
+    .lpf(80)
+    .gain(1.5),
+  
+  // Mid synth - stabs on off-beats
+  note("<~ [eb2 g2] ~ ~ ~ [f2 ab2] ~ ~ ~ [g2 bb2] ~ [c3 eb3] ~ ~>")
+    .s("sawtooth")
+    .lpf(1200)
+    .gain(0.6)
+    .room(0.4),
+  
+  // Vocal chops / samples - sporadic
+  s("vocal*4")
+    .gain("[0 0.3 0 0.4]*2")
+    .speed("[1 1.5 0.5 2]")
+    .bank("github:tidalcycles/dirt-samples")
+)  
+
+// Alternative: More aggressive "juke" variant
+/*
+stack(
+  s("bd*4 bd bd ~ bd ~ bd bd").gain(1.4),
+  s("hh*32").gain("[0.5 0.2 0.6 0.3]*8"),
+  s("[sd ~ sd sd] [sd ~ ~ sd]").gain(1.1),
+  note("c1 c1 ~ c1 ~ c1 c1 ~ c1").s("sine").lpf(60).gain(2),
+  note("<~ [f2 ab2 c3] ~ ~ [g2 bb2 d3] ~ [ab2 c3 eb3] ~>").s("square").lpf(2000).gain(0.5)
+)
+*/

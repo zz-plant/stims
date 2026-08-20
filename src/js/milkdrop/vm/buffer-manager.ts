@@ -1,12 +1,34 @@
+import { EEL_F32_MAX } from '../compiler/eel-function-table.ts';
+
 export type VmBufferLayout = {
   fieldOffsets: Record<string, number>;
   fieldCount: number;
   bufferSize: number;
   buffer: GPUBuffer | null;
+  /** COPY_DST|MAP_READ staging buffer for readState — the storage buffer
+   * itself cannot be mapped (STORAGE+MAP_READ is an invalid usage
+   * combination, and mapping it directly throws on real devices). */
+  readbackBuffer?: GPUBuffer | null;
+  stagingBuffer?: ArrayBuffer;
+  stagingFloatView?: Float32Array;
+  stagingUintView?: Uint32Array;
 };
 
 const FLOAT32_BYTES = 4;
 const UINT32_BYTES = 4;
+
+/**
+ * Mirror of the WGSL `milkdropFinite` clamp — same `EEL_F32_MAX` bound, for values crossing the CPU/GPU
+ * seam. `Number.isFinite` is NOT sufficient here: it accepts f64 values the
+ * CPU tiers legitimately produce (1e300 survives their own finite clamp) that
+ * become +/-Infinity the instant they are stored into a Float32Array. That
+ * Infinity then reaches every WGSL expression reading the field and turns
+ * into NaN on the first `Inf - Inf` / `Inf * 0`, and because VM state
+ * persists across frames the NaN never washes out.
+ */
+function toGpuFinite(value: number): number {
+  return Math.abs(value) < EEL_F32_MAX ? value : 0;
+}
 
 export function createVmBufferManager() {
   let layout: VmBufferLayout | null = null;
@@ -30,11 +52,16 @@ export function createVmBufferManager() {
       offset += UINT32_BYTES;
     }
 
+    const stagingBuffer = new ArrayBuffer(offset);
     return {
       fieldOffsets,
       fieldCount: Object.keys(fieldOffsets).length,
       bufferSize: offset,
       buffer: null as GPUBuffer | null,
+      readbackBuffer: null as GPUBuffer | null,
+      stagingBuffer,
+      stagingFloatView: new Float32Array(stagingBuffer),
+      stagingUintView: new Uint32Array(stagingBuffer),
     } satisfies VmBufferLayout;
   }
 
@@ -47,6 +74,7 @@ export function createVmBufferManager() {
     if (layout?.buffer) {
       layout.buffer.destroy();
     }
+    layout?.readbackBuffer?.destroy();
     const newLayout = computeLayout(fieldKeys, usesRandom);
     const buffer = device.createBuffer({
       label,
@@ -58,6 +86,11 @@ export function createVmBufferManager() {
     });
 
     newLayout.buffer = buffer;
+    newLayout.readbackBuffer = device.createBuffer({
+      label: `${label}-readback`,
+      size: newLayout.bufferSize,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
     layout = newLayout;
     return newLayout;
   }
@@ -71,9 +104,23 @@ export function createVmBufferManager() {
       return;
     }
 
-    const data = new ArrayBuffer(layout.bufferSize);
-    const floatView = new Float32Array(data);
-    const uintView = new Uint32Array(data);
+    let data = layout.stagingBuffer;
+    let floatView = layout.stagingFloatView;
+    let uintView = layout.stagingUintView;
+
+    if (
+      !data ||
+      !floatView ||
+      !uintView ||
+      data.byteLength !== layout.bufferSize
+    ) {
+      data = new ArrayBuffer(layout.bufferSize);
+      floatView = new Float32Array(data);
+      uintView = new Uint32Array(data);
+      layout.stagingBuffer = data;
+      layout.stagingFloatView = floatView;
+      layout.stagingUintView = uintView;
+    }
 
     for (const [key, value] of Object.entries(state)) {
       const offset = layout.fieldOffsets[key];
@@ -84,9 +131,11 @@ export function createVmBufferManager() {
         uintView[offset / UINT32_BYTES] = randomState;
       } else {
         const floatIndex = offset / FLOAT32_BYTES;
-        if (Number.isFinite(value)) {
-          floatView[floatIndex] = value;
-        }
+        // Always write. Skipping the store on a bad value left the previous
+        // frame's number sitting at that offset in the reused staging
+        // buffer, so the GPU silently ran a frame behind on that field
+        // instead of seeing the 0 every other tier clamps to.
+        floatView[floatIndex] = toGpuFinite(value);
       }
     }
 
@@ -98,16 +147,39 @@ export function createVmBufferManager() {
     device.queue.writeBuffer(layout.buffer, 0, data);
   }
 
-  async function readState(): Promise<Record<string, number>> {
+  async function readState(
+    device?: GPUDevice,
+  ): Promise<Record<string, number>> {
     if (!layout?.buffer) {
       return {};
     }
 
     const data = new ArrayBuffer(layout.bufferSize);
-    await layout.buffer.mapAsync(GPUMapMode.READ);
-    const mapped = layout.buffer.getMappedRange();
-    new Uint8Array(data).set(new Uint8Array(mapped));
-    layout.buffer.unmap();
+    // Route through the MAP_READ staging buffer when a device is available;
+    // mapping the storage buffer directly is a validation error on real GPUs
+    // (kept as a fallback for mock devices in unit tests that predate the
+    // readback buffer).
+    const readback = layout.readbackBuffer;
+    if (device && readback) {
+      const encoder = device.createCommandEncoder({
+        label: 'milkdrop-vm-state-readback',
+      });
+      encoder.copyBufferToBuffer(
+        layout.buffer,
+        0,
+        readback,
+        0,
+        layout.bufferSize,
+      );
+      device.queue.submit([encoder.finish()]);
+      await readback.mapAsync(GPUMapMode.READ);
+      new Uint8Array(data).set(new Uint8Array(readback.getMappedRange()));
+      readback.unmap();
+    } else {
+      await layout.buffer.mapAsync(GPUMapMode.READ);
+      new Uint8Array(data).set(new Uint8Array(layout.buffer.getMappedRange()));
+      layout.buffer.unmap();
+    }
 
     const floatView = new Float32Array(data);
     const result: Record<string, number> = {};
@@ -121,8 +193,11 @@ export function createVmBufferManager() {
         continue;
       }
       const floatIndex = offset / FLOAT32_BYTES;
-      result[key] =
-        floatView[floatIndex] !== undefined ? floatView[floatIndex] : 0;
+      // Readback is the GPU -> persistent-CPU-state trust boundary: anything
+      // non-finite that escaped a shader path without a milkdropFinite store
+      // would otherwise be adopted as this preset's state forever.
+      const raw = floatView[floatIndex];
+      result[key] = raw === undefined ? 0 : toGpuFinite(raw);
     }
 
     return result;
@@ -130,6 +205,7 @@ export function createVmBufferManager() {
 
   function dispose() {
     layout?.buffer?.destroy();
+    layout?.readbackBuffer?.destroy();
     layout = null;
   }
 

@@ -105,6 +105,11 @@ export type MilkdropProceduralFieldTransformVisual = {
   translateY: number;
 };
 
+/** Frame-constant `q` register values a lowered per-pixel program reads as
+ * uniforms. Sparse: producers only populate the registers the program's
+ * `registerInputs` actually name (full bank is `q1`..`q32`). */
+export type MilkdropPerFrameFieldRegisters = Partial<Record<string, number>>;
+
 export type MilkdropGpuFieldSignalInputs = {
   time: number;
   frame: number;
@@ -124,6 +129,10 @@ export type MilkdropGpuFieldSignalInputs = {
   vol: number;
   music: number;
   weightedEnergy: number;
+  /** Real viewport pixel size when the runtime knows it; consumers fall back
+   * to deriveMilkdropViewportSignalValues' aspect-based estimate otherwise. */
+  pixelsx?: number;
+  pixelsy?: number;
 };
 
 export type MilkdropProceduralMeshFieldVisual =
@@ -131,6 +140,7 @@ export type MilkdropProceduralMeshFieldVisual =
     density: number;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
   };
 
 export type MilkdropProceduralWaveVisual = {
@@ -179,6 +189,9 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     legacyControls: boolean;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    registers?: MilkdropPerFrameFieldRegisters;
+    /** Warp mesh density, for the meshx/meshy builtins. */
+    density?: number;
     tint?: MilkdropColor;
     alpha?: number;
   };
@@ -381,6 +394,15 @@ export type MilkdropFeedbackCompositeState = {
   signalMidAtt?: number;
   signalTreb: number;
   signalTrebAtt?: number;
+  /** Harmonic/percussive decomposition; see
+   * `harmonic-percussive-shader-signals.ts` for the neutral defaults applied
+   * when the host has not supplied them. */
+  signalPercussive?: number;
+  signalHarmonic?: number;
+  signalPercussiveLow?: number;
+  signalPercussiveMid?: number;
+  signalPercussiveHigh?: number;
+  signalPercussiveRatio?: number;
   signalBeat: number;
   signalBeatPulse: number;
   signalEnergy: number;
@@ -389,6 +411,11 @@ export type MilkdropFeedbackCompositeState = {
   signalFps?: number;
   aspect: number;
   decay: number;
+  /** Effective feedback softening for this preset. Zero when the preset never
+   * samples the blur textures, so the always-on softness taps (and the
+   * backend's blur passes) are skipped instead of rasterizing work nothing
+   * consumes. */
+  feedbackSoftness: number;
 };
 
 export type MilkdropFeedbackSetRenderTarget = {
@@ -409,6 +436,8 @@ export interface MilkdropFeedbackManager {
   ): void;
   saveCurrentFrame?(): void;
   setTransitionBlend?(alpha: number): void;
+  /** True while an async warp/comp shader swap is still warming. */
+  isDirectShaderSwapPending?(): boolean;
   render(
     renderer: {
       render(scene: Scene, camera: Camera): void;
@@ -430,6 +459,12 @@ export interface MilkdropVM {
   setRenderBackend(backend: 'webgl' | 'webgpu'): void;
   setGpuDevice(device: GPUDevice | null): void;
   reset(): void;
+  /**
+   * Apply one numeric field to live per-frame state without recompiling.
+   * Feeds the Tune pane's drag feedback: a fader moves and the next frame
+   * reflects it, while the source/compile path stays on the commit.
+   */
+  setField(key: string, value: number): void;
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState;
   stepAsync?(signals: MilkdropRuntimeSignals): Promise<MilkdropFrameState>;
   getStateSnapshot(): Record<string, number>;

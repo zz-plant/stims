@@ -125,7 +125,8 @@ export type PresetLabScenario =
   | 'bass-pulse'
   | 'mid-pulse'
   | 'treble-pulse'
-  | 'full-mix';
+  | 'full-mix'
+  | 'sweep';
 
 export const PRESET_LAB_SCENARIOS: readonly PresetLabScenario[] = [
   'silence',
@@ -144,6 +145,28 @@ export const AUDIO_DRIVEN_SCENARIOS: readonly PresetLabScenario[] = [
 
 const SCENARIO_BPM = 120;
 const BEAT_INTERVAL_MS = (60 / SCENARIO_BPM) * 1000;
+
+/**
+ * One full low→high traversal of the `sweep` scenario. Chosen as a whole
+ * number of beats so a sweep run can be compared against the pulse scenarios
+ * without the two drifting in and out of phase.
+ */
+export const SCENARIO_SWEEP_PERIOD_MS = BEAT_INTERVAL_MS * 8;
+
+/** Width of the sweep's moving band, as a fraction of the spectrum. */
+const SWEEP_BAND_WIDTH = 0.08;
+
+/**
+ * Position of the sweep's centre in [0, 1) at `timeMs`, low frequency to high,
+ * wrapping at the period boundary. Pure function of time, like every other
+ * generator here — that is what makes a run reproducible.
+ */
+export function scenarioSweepPosition(timeMs: number): number {
+  const phase =
+    ((timeMs % SCENARIO_SWEEP_PERIOD_MS) + SCENARIO_SWEEP_PERIOD_MS) %
+    SCENARIO_SWEEP_PERIOD_MS;
+  return phase / SCENARIO_SWEEP_PERIOD_MS;
+}
 
 /** Sharp attack, fast decay pulse train at 120 BPM. Range [0, 1]. */
 export function scenarioPulseEnvelope(timeMs: number): number {
@@ -183,6 +206,28 @@ export function fillScenarioSpectrum(
   buffer.fill(0);
   if (scenario === 'silence') {
     return 0;
+  }
+
+  if (scenario === 'sweep') {
+    // A single band of energy walking low→high. Unlike the pulse scenarios
+    // this holds a constant total level, so a variable that tracks it is
+    // responding to *which* frequencies are present rather than to loudness.
+    const position = scenarioSweepPosition(timeMs);
+    const halfWidth = Math.max(1, (buffer.length * SWEEP_BAND_WIDTH) / 2);
+    // Inset the travel so the whole band always fits inside the spectrum.
+    // Sweeping centre from bin 0 would clip half the band at each end and
+    // make the scenario quieter there — turning a frequency sweep into an
+    // accidental loudness ramp, which is the one thing it must not be.
+    const centre = halfWidth + position * (buffer.length - 1 - halfWidth * 2);
+    for (let index = 0; index < buffer.length; index += 1) {
+      const distance = Math.abs(index - centre) / halfWidth;
+      if (distance >= 1) continue;
+      // Raised cosine, so the band's edges do not step discontinuously as it
+      // moves and the band levels stay differentiable frame to frame.
+      const level = 0.5 * (1 + Math.cos(distance * Math.PI)) * 235;
+      buffer[index] = Math.min(255, Math.max(0, Math.round(level)));
+    }
+    return position;
   }
 
   const envelope = scenarioPulseEnvelope(timeMs);
@@ -230,6 +275,20 @@ export function fillScenarioWaveform(
     buffer.fill(128);
     return;
   }
+  if (scenario === 'sweep') {
+    // Constant amplitude, rising pitch: the time-domain counterpart of the
+    // moving spectral band above.
+    const position = scenarioSweepPosition(timeMs);
+    const cycles = 2 + position * 22;
+    for (let index = 0; index < buffer.length; index += 1) {
+      const ratio = index / Math.max(1, buffer.length - 1);
+      const sample =
+        128 + Math.sin(ratio * Math.PI * 2 * cycles + timeMs * 0.006) * 90;
+      buffer[index] = Math.min(255, Math.max(0, Math.round(sample)));
+    }
+    return;
+  }
+
   const envelope = scenarioPulseEnvelope(timeMs);
   const amplitude = 24 + envelope * 96;
   const cycles =

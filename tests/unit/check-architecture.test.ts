@@ -19,7 +19,7 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('src/js/frontend/App.tsx')),
     ).toBe('frontend');
     expect(
-      classifyArchitectureLayer(workspacePath('src/js/data/toy-manifest.ts')),
+      classifyArchitectureLayer(workspacePath('src/js/data/bundled-index.ts')),
     ).toBe('data');
     expect(
       classifyArchitectureLayer(workspacePath('src/js/bootstrap/home-page.ts')),
@@ -37,7 +37,7 @@ describe('architecture boundary rules', () => {
     ).toBe('utils');
     expect(
       classifyArchitectureLayer(workspacePath('src/js/toys/milkdrop-toy.ts')),
-    ).toBe('toy');
+    ).toBeNull();
     expect(
       classifyArchitectureLayer(
         workspacePath('src/js/milkdrop/public/launch-intents.ts'),
@@ -75,18 +75,18 @@ describe('architecture boundary rules', () => {
   test('treats data as a leaf layer', () => {
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'toy',
+        sourceLayer: 'milkdrop',
         targetLayer: 'data',
-        sourcePath: workspacePath('src/js/toys/milkdrop-toy.ts'),
-        targetPath: workspacePath('src/js/data/toy-manifest.ts'),
+        sourcePath: workspacePath('src/js/milkdrop/catalog-store.ts'),
+        targetPath: workspacePath('src/js/data/bundled-index.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'data',
         targetLayer: 'core',
-        sourcePath: workspacePath('src/js/data/toy-manifest.ts'),
-        targetPath: workspacePath('src/js/core/render-preferences.ts'),
+        sourcePath: workspacePath('src/js/data/bundled-index.ts'),
+        targetPath: workspacePath('src/js/core/renderer-capabilities.ts'),
       }),
     ).toBe(false);
   });
@@ -166,21 +166,21 @@ describe('architecture boundary rules', () => {
     ).toBe(false);
   });
 
-  test('rejects utils depending on core or toy runtime code', () => {
+  test('rejects utils depending on core or engine runtime code', () => {
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'core',
         sourcePath: workspacePath('src/js/utils/browser/device-detect.ts'),
-        targetPath: workspacePath('src/js/core/render-preferences.ts'),
+        targetPath: workspacePath('src/js/core/renderer-capabilities.ts'),
       }),
     ).toBe(false);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
-        targetLayer: 'toy',
+        targetLayer: 'milkdrop',
         sourcePath: workspacePath('src/js/utils/browser/device-detect.ts'),
-        targetPath: workspacePath('src/js/toys/milkdrop-toy.ts'),
+        targetPath: workspacePath('src/js/milkdrop/runtime.ts'),
       }),
     ).toBe(false);
   });
@@ -192,7 +192,7 @@ describe('architecture boundary rules', () => {
 
     await fs.writeFile(
       fixturePath,
-      "import '../core/render-preferences.ts';\nexport function TmpArchitectureViolationFixture() { return null; }\n",
+      "import '../core/renderer-capabilities.ts';\nexport function TmpArchitectureViolationFixture() { return null; }\n",
       'utf8',
     );
 
@@ -204,7 +204,7 @@ describe('architecture boundary rules', () => {
           expect.objectContaining({
             sourceLayer: 'utils',
             targetLayer: 'core',
-            specifier: expect.stringContaining('render-preferences'),
+            specifier: expect.stringContaining('renderer-capabilities'),
           }),
         ]),
       );

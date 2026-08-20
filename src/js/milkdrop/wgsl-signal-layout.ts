@@ -33,6 +33,12 @@ export const MILKDROP_WGSL_SIGNAL_FIELDS = [
   'vol',
   'music',
   'weighted_energy',
+  'percussive',
+  'harmonic',
+  'percussive_low',
+  'percussive_mid',
+  'percussive_high',
+  'percussive_ratio',
   'progress',
   'aspectx',
   'aspecty',
@@ -105,6 +111,18 @@ export const MILKDROP_WGSL_SIGNAL_ALIAS_MAP = new Map<
     (field) => [field.toLowerCase(), field] as const,
   ),
   ['weightedenergy', 'weighted_energy'],
+  ['percussivelow', 'percussive_low'],
+  ['percussivemid', 'percussive_mid'],
+  ['percussivehigh', 'percussive_high'],
+  ['percussiveratio', 'percussive_ratio'],
+  // Legacy MilkDrop shorthand aliases (vm/shared.ts syncSignalEnvironment is
+  // the CPU-side source of truth: med->mid, att->treb, med_att->mid_att).
+  // Missing here silently resolved to an uninitialized state field on GPU
+  // instead of the signal — found via the GPU-tier replay harness on
+  // martin-the-bridge-of-khazad-dum's `vol = (bass + med + treb) / 1.5`.
+  ['med', 'mid'],
+  ['att', 'treb'],
+  ['med_att', 'mid_att'],
 ]);
 
 export type MilkdropGpuVmSignals = Pick<

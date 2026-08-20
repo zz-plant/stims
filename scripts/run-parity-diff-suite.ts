@@ -1,3 +1,21 @@
+/**
+ * Diffs every certified projectM reference against its latest Stims capture
+ * and writes a suite summary.
+ *
+ * Batch diff stage of the parity pipeline (capture -> diff -> promote). Walks
+ * the visual reference manifest, pairs each entry with the newest matching
+ * Stims artifact, enforces the required render backend, applies the per-preset
+ * tolerance, and writes <output>/suite/<preset>.json per preset plus a
+ * summary.json counting passes, failures, backend mismatches, missing captures
+ * and measured-result provenance issues. Those per-preset reports are exactly
+ * what promote-parity-suite-result.ts consumes.
+ *
+ *   bun run parity:suite -- [--preset <id>] [--strict] [--write-diff-images]
+ *
+ * `--strict` exits non-zero on any failure, missing capture or provenance
+ * issue; `--output` and `--repo-root` relocate the artifact directory and the
+ * checked-in manifests.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import {

@@ -1,3 +1,9 @@
+import {
+  allowedModelOrNull,
+  enforceAiRateLimit,
+  type RateLimiter,
+} from './_ai-guard.ts';
+
 interface Env {
   AI: {
     run: (
@@ -5,6 +11,7 @@ interface Env {
       opts: { messages: Array<{ role: string; content: string }> },
     ) => Promise<{ response: string }>;
   };
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 const DEFAULT_REFINE_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
@@ -26,6 +33,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
+
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
 
   try {
     const { currentSource, instruction, history, model } =
@@ -67,7 +77,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     }
 
-    const selectedModel = model || DEFAULT_REFINE_MODEL;
+    const selectedModel = allowedModelOrNull(model) || DEFAULT_REFINE_MODEL;
 
     const systemPrompt = `You are a MilkDrop preset editor. Given an existing preset and a refinement instruction, modify ONLY the requested aspects while keeping everything else unchanged.
 
@@ -124,16 +134,13 @@ Return the complete modified preset. Keep all unchanged fields identical.`;
 }
 
 function extractMilkSection(response: string): string {
-  const cleaned = response.replace(/```[\w]*\n?/g, '').trim();
+  const cleaned = response
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/```[\w]*\n?/g, '')
+    .trim();
 
   const start = cleaned.indexOf('[preset00]');
   if (start < 0) return cleaned;
 
-  const after = cleaned.slice(start);
-  const nextSection = after.slice('[preset00]'.length).match(/\n\[(\w+)\]/);
-  const end = nextSection
-    ? after.indexOf(`\n[${nextSection[1]}]`, '[preset00]'.length)
-    : after.length;
-
-  return after.slice(0, end).trim();
+  return cleaned.slice(start).trim();
 }

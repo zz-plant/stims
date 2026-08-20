@@ -56,13 +56,6 @@ Generate a MilkDrop preset from an uploaded image.
 
 Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. When the description's embedding closely matches a stored preset embedding (cosine > 0.88) and that preset's source is resolvable from the gallery, returns the cached preset's real source with its id; otherwise generates fresh source.
 
-## POST /api/store-embedding
-
-Store a preset embedding for visual search.
-
-**Body:** `{ presetId: string, embedding: number[], description: string }`
-**Response:** `{ ok: true }`
-
 ## GET /api/presets
 
 List community presets with optional search, tag filtering, and sorting.

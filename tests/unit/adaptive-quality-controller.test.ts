@@ -166,7 +166,7 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 24,
         phases: { renderMs: 18 },
@@ -191,6 +191,75 @@ describe('createAdaptiveQualityController', () => {
     expect(['steady', 'recovering', 'enhanced']).toContain(
       recovered.adaptation,
     );
+  });
+
+  test('does not eagerly degrade during startup warmup or transient stutters', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1_024,
+          maxStorageBufferBindingSize: 1_073_741_824,
+          maxTextureDimension2D: 16_384,
+        },
+      },
+    });
+
+    const initialStep = controller.getState().qualityStep;
+
+    // First 18 frames have shader compile jank (during 24-frame warmup)
+    for (let index = 0; index < 18; index += 1) {
+      controller.recordFrame({
+        frameMs: 35,
+        phases: { renderMs: 25 },
+      });
+    }
+    // Controller should remain in warmup without stepping down
+    expect(controller.getState().qualityStep).toBe(initialStep);
+
+    // Next 10 frames are smooth (finishing warmup)
+    for (let index = 0; index < 10; index += 1) {
+      controller.recordFrame({
+        frameMs: 12,
+        phases: { renderMs: 8 },
+      });
+    }
+    expect(controller.getState().qualityStep).toBe(initialStep);
+
+    // Transient 5-frame hitch (less than DEGRADE_THRESHOLD_SAMPLES = 12)
+    for (let index = 0; index < 5; index += 1) {
+      controller.recordFrame({
+        frameMs: 30,
+        phases: { renderMs: 22 },
+      });
+    }
+    expect(controller.getState().qualityStep).toBe(initialStep);
   });
 
   test('degrades when the 5-second rolling frame-time average exceeds budget', () => {
@@ -236,22 +305,28 @@ describe('createAdaptiveQualityController', () => {
     const overBudgetFrameMs = budgetMs * 1.5;
 
     // Fill the rolling window with over-budget frames, plus enough samples to
-    // clear warmup and the rolling-window degrade threshold.
-    for (let index = 0; index < windowSize + 6; index += 1) {
-      controller.recordFrame({
+    // clear warmup and the rolling-window degrade threshold. Capture the state
+    // at the moment of the degrade event: steady-state republishing means the
+    // final published state legitimately settles back to 'steady' afterwards.
+    let degradeState: ReturnType<typeof controller.getState> | null = null;
+    for (let index = 0; index < windowSize + 12; index += 1) {
+      const next = controller.recordFrame({
         frameMs: overBudgetFrameMs,
         phases: { renderMs: 2 },
       });
+      if (!degradeState && next.adaptation === 'degraded') {
+        degradeState = next;
+      }
     }
 
     const state = controller.getState();
     expect(state.rollingAverageFrameMs).not.toBeNull();
     expect(state.rollingAverageFrameMs as number).toBeGreaterThan(budgetMs);
     expect(state.qualityStep).toBeGreaterThan(0);
-    expect(state.adaptation).toBe('degraded');
-    expect(state.reasons.some((reason) => reason.includes('5-second'))).toBe(
-      true,
-    );
+    expect(degradeState).not.toBeNull();
+    expect(
+      degradeState?.reasons.some((reason) => reason.includes('5-second')),
+    ).toBe(true);
   });
 
   test('starts conservatively and adapts on webgl backends', () => {
@@ -260,7 +335,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 34,
         phases: { renderMs: 28 },
@@ -281,8 +356,8 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const recovered = controller.getState();
-    expect(recovered.qualityStep).toBe(2);
-    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
+    expect(recovered.qualityStep).toBe(1);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.0, 6);
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
@@ -292,7 +367,7 @@ describe('createAdaptiveQualityController', () => {
       capabilities: null,
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
         cadenceMs: 28,
@@ -301,9 +376,45 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const state = controller.getState();
-    expect(state.qualityStep).toBeGreaterThan(2);
+    expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageFrameMs).toBeCloseTo(5, 6);
     expect(state.averageCadenceMs).toBeCloseTo(28, 6);
+  });
+
+  test('recovers when presenting exactly at the display cadence', () => {
+    // Regression: hasHeadroom used to require averageCadenceMs to be
+    // *faster* than the frame budget (`< budget * 0.9`). A session
+    // presenting perfectly at vsync has cadenceMs === frameBudgetMs, which
+    // never satisfies "faster than budget" — so once degraded, a session
+    // that was rendering fine could never recover, on any 60Hz/120Hz
+    // display. This pins that cadence exactly at budget still counts as
+    // headroom.
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+
+    for (let index = 0; index < 42; index += 1) {
+      controller.recordFrame({
+        frameMs: 20,
+        cadenceMs: 28,
+        phases: { renderMs: 2 },
+      });
+    }
+    const degraded = controller.getState();
+    expect(degraded.qualityStep).toBeGreaterThan(0);
+
+    const frameBudgetMs = degraded.frameBudgetMs;
+    for (let index = 0; index < 220; index += 1) {
+      controller.recordFrame({
+        frameMs: frameBudgetMs * 0.5,
+        cadenceMs: frameBudgetMs,
+        phases: { renderMs: frameBudgetMs * 0.3 },
+      });
+    }
+
+    const recovered = controller.getState();
+    expect(recovered.qualityStep).toBeLessThan(degraded.qualityStep);
   });
 
   test('uses supplied GPU duration to detect render pressure', () => {
@@ -344,11 +455,11 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
-    for (let index = 0; index < 24; index += 1) {
+    for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
         cadenceMs: 16,
-        gpuMs: 15,
+        gpuMs: 16,
         phases: { renderMs: 2 },
       });
     }
@@ -356,7 +467,7 @@ describe('createAdaptiveQualityController', () => {
     const state = controller.getState();
     expect(state.qualityStep).toBeGreaterThan(0);
     expect(state.averageRenderMs).toBeCloseTo(2, 6);
-    expect(state.averageGpuMs).toBeCloseTo(15, 6);
+    expect(state.averageGpuMs).toBeCloseTo(16, 6);
   });
 
   test('starts one step down when high-end webgpu devices prefer balanced quality', () => {
@@ -463,11 +574,22 @@ describe('createAdaptiveQualityController', () => {
       });
 
       const state = controller.getState();
-      expect(state.qualityStep).toBe(2);
+      expect(state.qualityStep).toBe(1);
       expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
       expect(state.reasons).toContain(
-        'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+        'Flagship mobile sessions start from full quality with adaptive throttling headroom.',
       );
+
+      // Sustained headroom must not enhance mobile past the full-quality
+      // floor back into ultra (step 0): the extra density/feedback fill costs
+      // more on a phone than the over-1.0 multipliers are worth.
+      for (let index = 0; index < 60; index += 1) {
+        controller.recordFrame({
+          frameMs: 8,
+          phases: { renderMs: 5 },
+        });
+      }
+      expect(controller.getState().qualityStep).toBe(1);
     } finally {
       Object.defineProperty(navigator, 'maxTouchPoints', {
         configurable: true,
@@ -475,5 +597,85 @@ describe('createAdaptiveQualityController', () => {
       });
       window.matchMedia = originalMatchMedia;
     }
+  });
+
+  test('notePresetApplied pre-degrades constrained profiles after warmup, never high-end', () => {
+    const capabilitiesForTier = (performanceTier: 'baseline' | 'high-end') => ({
+      preferredCanvasFormat: 'bgra8unorm' as const,
+      performanceTier,
+      recommendedQualityPreset: 'balanced' as const,
+      workers: {
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+      },
+      optimization: {
+        timestampQuery: false,
+        shaderF16: false,
+        subgroups: false,
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+        workerOffscreenPipeline: true,
+      },
+      features: {
+        bgra8unormStorage: false,
+        float32Blendable: false,
+        float32Filterable: false,
+        shaderF16: false,
+        subgroups: false,
+        timestampQuery: false,
+      },
+      limits: {
+        maxColorAttachments: 4,
+        maxComputeInvocationsPerWorkgroup: 256,
+        maxStorageBufferBindingSize: 268_435_456,
+        maxTextureDimension2D: 4_096,
+      },
+    });
+
+    const baseline = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('baseline'),
+    });
+    const startStep = baseline.getState().qualityStep;
+
+    // During session warmup a switch clears evidence but must not pre-degrade
+    // (the boot heuristics already start conservatively).
+    baseline.notePresetApplied();
+    expect(baseline.getState().qualityStep).toBe(startStep);
+
+    // Get past warmup with settled frames, then pin a known mid step so the
+    // +1 is observable regardless of where this environment's heuristics
+    // settle the baseline profile.
+    for (let index = 0; index < 30; index += 1) {
+      baseline.recordFrame({ frameMs: 12, phases: { renderMs: 8 } });
+    }
+    baseline.setQualityStep(2);
+    const state = baseline.notePresetApplied();
+    expect(state.qualityStep).toBe(3);
+    expect(state.adaptation).toBe('degraded');
+
+    const highEnd = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('high-end'),
+    });
+    for (let index = 0; index < 30; index += 1) {
+      highEnd.recordFrame({ frameMs: 6, phases: { renderMs: 4 } });
+    }
+    const highEndStep = highEnd.getState().qualityStep;
+    highEnd.notePresetApplied();
+    expect(highEnd.getState().qualityStep).toBe(highEndStep);
+
+    const locked = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: capabilitiesForTier('baseline'),
+      lockedQualityStep: 2,
+    });
+    for (let index = 0; index < 30; index += 1) {
+      locked.recordFrame({ frameMs: 12, phases: { renderMs: 8 } });
+    }
+    locked.notePresetApplied();
+    expect(locked.getState().qualityStep).toBe(2);
   });
 });

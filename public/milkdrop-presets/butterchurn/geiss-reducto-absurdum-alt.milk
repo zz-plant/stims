@@ -1,0 +1,62 @@
+[preset00]
+fRating=5.000000
+nWaveMode=2.000000
+fWaveAlpha=0.399000
+fWaveScale=1.605000
+fWaveSmoothing=0.100000
+fWarpScale=2.853000
+fZoom=1.042000
+fWarp=0.000000
+fWaveR=0.600000
+fWaveG=0.600000
+fWaveB=0.600000
+fMotionVectorsA=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.4 * (0.6 * sin(0.933 * time) + 0.4 * sin(1.045 * time));
+per_frame_2=wave_g = wave_g + 0.4 * (0.6 * sin(0.9 * time) + 0.4 * sin(0.956 * time));
+per_frame_3=wave_b = wave_b + 0.4 * (0.6 * sin(0.91 * time) + 0.4 * sin(0.92 * time));
+per_frame_4=zoom = zoom + 0.213 * (0.6 * sin(0.339 * time) + 0.4 * sin(0.276 * time));
+per_frame_5=rot = rot + 0.05 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_6=cx = cx + 7 * (zoom - 1);
+per_frame_7=cy = cy + 2 * rot;
+per_frame_8=sx = sx - max(0, bass_att - 1.2);
+per_frame_9=sy = sy - max(0, treb_att - 1.2);
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec2 tmpvar_2;
+  tmpvar_2 = (uv - 0.5);
+  ret_1.x = texture (sampler_main, (tmpvar_2 + 0.5)).x;
+  ret_1.y = texture (sampler_main, ((tmpvar_2 * 0.98) + 0.5)).y;
+  ret_1.z = texture (sampler_main, ((tmpvar_2 * 0.95) + 0.5)).z;
+  vec3 tmpvar_3;
+  tmpvar_3.z = 0.0;
+  tmpvar_3.x = -(ret_1.x);
+  tmpvar_3.y = ret_1.x;
+  ret_1 = (ret_1 + (0.12 * tmpvar_3));
+  vec3 tmpvar_4;
+  tmpvar_4.x = 0.0;
+  tmpvar_4.y = -(ret_1.y);
+  tmpvar_4.z = ret_1.y;
+  ret_1 = (ret_1 + (0.1 * tmpvar_4));
+  vec3 tmpvar_5;
+  tmpvar_5.xy = vec2(0.0, 0.0);
+  tmpvar_5.z = -(ret_1.z);
+  ret_1 = (ret_1 + (0.08 * tmpvar_5));
+  ret_1 = (ret_1 + ((
+    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)
+   / 256.0) * vec3(3.0, 5.0, 8.0)));
+  ret_1 = (ret_1 - 0.0005);
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_1;
+  ret = tmpvar_6.xyz;
+ }

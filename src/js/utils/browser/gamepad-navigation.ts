@@ -435,7 +435,7 @@ export const initGamepadNavigation = (
   const body = doc.body;
   if (!body) return () => {};
 
-  let lastButtons: boolean[] = [];
+  let lastButtonMask = 0;
   let lastDirection: FocusDirection | null = null;
   let nextMoveTime = 0;
   let rafId: number | null = null;
@@ -515,13 +515,16 @@ export const initGamepadNavigation = (
   };
 
   const handleButtons = (pad: Gamepad) => {
-    const pressed = pad.buttons.map((button) => button.pressed);
-    const wasPressed = (index: number) => lastButtons[index] ?? false;
+    const buttons = pad.buttons;
+    const b0 = Boolean(buttons[0]?.pressed);
+    const b1 = Boolean(buttons[1]?.pressed);
+    const b4 = Boolean(buttons[4]?.pressed);
+    const b5 = Boolean(buttons[5]?.pressed);
 
-    const aPressed = pressed[0] && !wasPressed(0);
-    const bPressed = pressed[1] && !wasPressed(1);
-    const leftBumper = pressed[4] && !wasPressed(4);
-    const rightBumper = pressed[5] && !wasPressed(5);
+    const aPressed = b0 && !(lastButtonMask & (1 << 0));
+    const bPressed = b1 && !(lastButtonMask & (1 << 1));
+    const leftBumper = b4 && !(lastButtonMask & (1 << 4));
+    const rightBumper = b5 && !(lastButtonMask & (1 << 5));
 
     if (aPressed) {
       setActive();
@@ -546,7 +549,11 @@ export const initGamepadNavigation = (
       moveFocus('next', resolved.focusableSelector, doc);
     }
 
-    lastButtons = pressed;
+    lastButtonMask =
+      (b0 ? 1 << 0 : 0) |
+      (b1 ? 1 << 1 : 0) |
+      (b4 ? 1 << 4 : 0) |
+      (b5 ? 1 << 5 : 0);
   };
 
   const tick = (now: number) => {

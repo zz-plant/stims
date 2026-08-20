@@ -1,31 +1,39 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { parseURLParams } from '../core/url-params.ts';
 import { WorkspaceProvider } from './workspace-context.tsx';
 import { WorkspaceStagePanel, WorkspaceToast } from './workspace-ui.tsx';
 
 function getQueryParams() {
-  const url = new URL(window.location.href);
-  const component = url.searchParams.get('component') ?? 'WorkspaceStagePanel';
-  const propsParam = url.searchParams.get('props');
-  const props = propsParam
-    ? (JSON.parse(decodeURIComponent(propsParam)) as Record<string, unknown>)
-    : {};
-  const mockBackend = url.searchParams.get('mockBackend') ?? 'webgl';
-  const mockPresetId = url.searchParams.get('mockPresetId') ?? null;
-  const mockAudioActive = url.searchParams.get('mockAudioActive') === 'true';
-  const gridParam = url.searchParams.get('grid');
-  const gridWidths = gridParam
-    ? gridParam
+  const {
+    component,
+    props: propsParam,
+    grid,
+  } = parseURLParams(window.location.href).harness;
+  let props: Record<string, unknown> = {};
+  if (propsParam) {
+    try {
+      const parsed: unknown = JSON.parse(propsParam);
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed)
+      ) {
+        props = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // The harness should still mount when a hand-authored query is invalid.
+    }
+  }
+  const gridWidths = grid
+    ? grid
         .split(',')
         .map((s) => Number.parseInt(s.trim(), 10))
         .filter(Boolean)
     : null;
   return {
-    component,
+    component: component ?? 'WorkspaceStagePanel',
     props,
-    mockBackend,
-    mockPresetId,
-    mockAudioActive,
     gridWidths,
   };
 }
@@ -132,7 +140,7 @@ function HarnessDashboard() {
       >
         <h1
           style={{
-            fontFamily: 'Cormorant Garamond, serif',
+            fontFamily: 'var(--font-family-base)',
             fontSize: '1.5rem',
             margin: 0,
           }}

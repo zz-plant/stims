@@ -24,6 +24,15 @@ import type {
 const log = createLogger('CatalogStore');
 const HISTORY_RECORD_ID = '__history__';
 
+// The full-catalog load maps ~1800 bundled entries on the main thread right
+// after the shell paints. A single synchronous pass blocks rendering for
+// hundreds of milliseconds on mid-range hardware; yielding a macrotask every
+// time a batch exceeds this budget keeps each contiguous chunk short.
+const CATALOG_BATCH_TIME_BUDGET_MS = 24;
+
+const yieldToMainThread = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 function slugify(value: string) {
   return (
     value
@@ -72,79 +81,80 @@ export function createMilkdropCatalogStore({
         ]);
       const metaById = new Map(storedMeta.map((record) => [record.id, record]));
       const history = historyRecord.stack ?? [];
+      const historyIndexMap = new Map<string, number>();
+      for (let i = 0; i < history.length; i += 1) {
+        historyIndexMap.set(history[i], i);
+      }
 
-      const bundledEntries = (
-        await Promise.all(
-          bundled.map(async (entry) => {
-            try {
-              const meta = metaById.get(entry.id) ?? null;
-              const historyIndex = history.indexOf(entry.id);
-              const cachedCompiled = analysis.getCachedCompiled(entry.id);
+      const bundledEntries: MilkdropCatalogEntry[] = [];
+      let batchStart = performance.now();
+      for (let i = 0; i < bundled.length; i += 1) {
+        const entry = bundled[i];
+        try {
+          const meta = metaById.get(entry.id) ?? null;
+          const historyIndex = historyIndexMap.get(entry.id) ?? -1;
+          const cachedCompiled = analysis.getCachedCompiled(entry.id);
 
-              if (cachedCompiled) {
-                const validatedOverrides = getValidatedCatalogOverrides(
-                  entry,
-                  cachedCompiled,
-                );
-                return toCatalogEntry(
-                  cachedCompiled.source,
-                  cachedCompiled,
-                  meta,
-                  {
-                    tags: entry.tags ?? [],
-                    curatedRank: entry.curatedRank,
-                    bundledFile: entry.file,
-                    historyIndex,
-                    certification: entry.certification ?? 'bundled',
-                    corpusTier: entry.corpusTier ?? 'bundled',
-                    preview: entry.preview,
-                    ...validatedOverrides,
-                  },
-                );
-              }
-
-              return toBundledCatalogEntryFromManifest(
-                entry,
-                meta,
-                historyIndex,
-              );
-            } catch (error) {
-              log.warn(
-                `Skipping bundled preset "${entry.id}" (${entry.title}): failed to analyze`,
-                error,
-              );
-              return null;
-            }
-          }),
-        )
-      ).filter((entry): entry is MilkdropCatalogEntry => entry !== null);
-
-      const customEntries = storedPresets
-        .map((entry) => {
-          try {
-            const compiled = analysis.getCompiled(entry);
-            return toCatalogEntry(
+          if (cachedCompiled) {
+            const validatedOverrides = getValidatedCatalogOverrides(
               entry,
-              compiled,
-              metaById.get(entry.id) ?? null,
-              {
-                tags: ['custom'],
-                historyIndex: history.indexOf(entry.id),
-                certification:
-                  entry.origin === 'bundled' ? 'bundled' : 'exploratory',
-                corpusTier:
-                  entry.origin === 'bundled' ? 'bundled' : 'exploratory',
-              },
+              cachedCompiled,
             );
-          } catch (error) {
-            log.warn(
-              `Skipping stored preset "${entry.id}" (${entry.title}): failed to compile`,
-              error,
+            bundledEntries.push(
+              toCatalogEntry(cachedCompiled.source, cachedCompiled, meta, {
+                tags: entry.tags ?? [],
+                curatedRank: entry.curatedRank,
+                // Lab measurements live only on the manifest entry; the
+                // compiled projection has no way to derive them.
+                quality: entry.quality,
+                sensoryProfile: entry.sensoryProfile,
+                bundledFile: entry.file,
+                historyIndex,
+                certification: entry.certification ?? 'bundled',
+                corpusTier: entry.corpusTier ?? 'bundled',
+                preview: entry.preview,
+                ...validatedOverrides,
+              }),
             );
-            return null;
+          } else {
+            bundledEntries.push(
+              toBundledCatalogEntryFromManifest(entry, meta, historyIndex),
+            );
           }
-        })
-        .filter((entry): entry is MilkdropCatalogEntry => entry !== null);
+        } catch (error) {
+          log.warn(
+            `Skipping bundled preset "${entry.id}" (${entry.title}): failed to analyze`,
+            error,
+          );
+        }
+        if (performance.now() - batchStart >= CATALOG_BATCH_TIME_BUDGET_MS) {
+          batchStart = performance.now();
+          await yieldToMainThread();
+        }
+      }
+
+      const customEntries: MilkdropCatalogEntry[] = [];
+      for (let i = 0; i < storedPresets.length; i += 1) {
+        const entry = storedPresets[i];
+        try {
+          const compiled = analysis.getCompiled(entry);
+          customEntries.push(
+            toCatalogEntry(entry, compiled, metaById.get(entry.id) ?? null, {
+              tags: ['custom'],
+              historyIndex: historyIndexMap.get(entry.id) ?? -1,
+              certification:
+                entry.origin === 'bundled' ? 'bundled' : 'exploratory',
+              corpusTier:
+                entry.origin === 'bundled' ? 'bundled' : 'exploratory',
+            }),
+          );
+        } catch (error) {
+          log.warn(
+            `Skipping stored preset "${entry.id}" (${entry.title}): failed to compile`,
+            error,
+          );
+        }
+      }
 
       return sortMilkdropCatalogEntries([...bundledEntries, ...customEntries]);
     },
@@ -200,16 +210,15 @@ export function createMilkdropCatalogStore({
       return source;
     },
 
-    async prefetchCompiledPresets() {
+    async prefetchCompiledPresets(limit = 20) {
       if (prefetched) return;
       prefetched = true;
 
       // Each compile runs synchronously on this thread and can take tens of
       // milliseconds, so pacing matters: yielding only a macrotask between
       // ~1800 compiles kept the main thread saturated for minutes and froze
-      // rendering and automation after catalog load. Compile only inside
-      // idle budget, falling back to a coarse delay where
-      // requestIdleCallback is unavailable.
+      // rendering and automation after catalog load. Limit prefetching to
+      // the top curated presets and compile only inside idle budget.
       type IdleBudget = { timeRemaining(): number };
       const waitForIdle = (): Promise<IdleBudget | null> =>
         new Promise((resolve) => {
@@ -224,14 +233,22 @@ export function createMilkdropCatalogStore({
           if (typeof ric === 'function') {
             ric((deadline) => resolve(deadline), { timeout: 1000 });
           } else {
+            // requestIdleCallback fallback only (Safari) — approximates "one
+            // frame has passed" at 30fps. Deliberately unrelated to
+            // CATALOG_BATCH_TIME_BUDGET_MS above: that constant bounds a
+            // synchronous mapping batch's length; this one paces a
+            // completely different prefetch/compile loop when the real idle
+            // API isn't available. Same file, different jobs — not a
+            // mismatch to reconcile.
             setTimeout(() => resolve(null), 32);
           }
         });
 
       try {
         const bundled = await bundledCatalog.getBundledCatalog();
+        const targetEntries = limit > 0 ? bundled.slice(0, limit) : bundled;
         let budget = await waitForIdle();
-        for (const entry of bundled) {
+        for (const entry of targetEntries) {
           if (analysis.getCachedCompiled(entry.id)) continue;
           if (budget && budget.timeRemaining() < 10) {
             budget = await waitForIdle();

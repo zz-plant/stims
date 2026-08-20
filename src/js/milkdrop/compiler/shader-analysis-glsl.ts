@@ -1,10 +1,18 @@
-import { isMilkdropVolumeShaderSamplerName } from '../shader-samplers';
+import {
+  getMilkdropShaderAuxTextureSourceId,
+  isMilkdropVolumeShaderSamplerName,
+} from '../shader-samplers';
 import type {
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
 } from '../types';
 import {
   isAuxShaderSamplerName,
+  MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_SIGNAL_NAME_ALIASES,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
   normalizeShaderSamplerName,
 } from './shader-analysis-helpers';
 
@@ -87,39 +95,24 @@ export function createCompositeGlslEmitter(): GlslEmitter {
   return {
     emitIdentifier(name: string): string {
       const lower = name.toLowerCase();
-      // Map common MilkDrop shader variables to composite shader uniforms
+      // Signal aliases come from the shared table; only the non-signal
+      // composite uniforms and literal constants live in this map.
       const uniformMap: Record<string, string> = {
-        time: 'signalTime',
-        bass: 'signalBass',
-        bass_att: 'signalBassAtt',
-        mid: 'signalMid',
-        mids: 'signalMid',
-        mid_att: 'signalMidAtt',
-        mids_att: 'signalMidAtt',
-        treb: 'signalTreb',
-        treb_att: 'signalTrebAtt',
-        treble: 'signalTreb',
-        // MilkDrop shader snippets commonly use camelCase attenuated bands;
-        // identifiers are lower-cased before lookup, so keep normalized entries here.
+        ...MILKDROP_SIGNAL_NAME_ALIASES,
+        rand_frame: MILKDROP_RAND_FRAME_GLSL,
+        // Emitter-only signal aliases: camelCase attenuated bands and energy
+        // synonyms the raw-text normalizer leaves untouched.
         bassatt: 'signalBassAtt',
         midatt: 'signalMidAtt',
         midsatt: 'signalMidAtt',
-        trebatt: 'signalTrebAtt',
-        trebleatt: 'signalTrebAtt',
-        beat: 'signalBeat',
-        beat_pulse: 'signalBeatPulse',
-        rand_frame:
-          'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-        // progress is frame count in ProjectM; signalFrame provides the actual value.
-        progress: 'signalFrame',
-        frame: 'signalFrame',
-        fps: 'signalFps',
-        aspect: 'aspect',
-        vol: 'signalEnergy',
-        vol_att: 'signalEnergy',
-        rms: 'signalEnergy',
+        percussiveratio: 'signalPercussiveRatio',
+        percussivelow: 'signalPercussiveLow',
+        percussivemid: 'signalPercussiveMid',
+        percussivehigh: 'signalPercussiveHigh',
         music: 'signalEnergy',
         weighted_energy: 'signalEnergy',
+        // aspect is an actual composite shader uniform, not a signal alias.
+        aspect: 'aspect',
         pi: '3.14159265359',
         e: '2.71828182846',
         warp: 'warpScale',
@@ -159,7 +152,27 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         tint_b: 'tint.b',
         uv: 'vUv',
       };
-      return uniformMap[lower] ?? name;
+      const mapped = uniformMap[lower];
+      if (mapped !== undefined) return mapped;
+      // texsize* are vec4s (xy = size, zw = 1/size). The raw-GLSL path
+      // rewrites them in shader-analysis.ts, but statement-emitted programs
+      // never went through that chain, so they reached the shader as bare
+      // identifiers — which the undeclared-identifier pass then declared as
+      // `uniform float`, turning every `texsize.xy` into a scalar swizzle and
+      // failing the whole program to compile. Values mirror that chain.
+      if (lower === 'texsize') return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (
+        /^texsize_(?:fw_|pw_)?(?:noise|noisevol)(?:_lq|_mq|_hq)?$/.test(lower)
+      )
+        return MILKDROP_TEXSIZE_NOISE_GLSL;
+      if (
+        /^texsize_(?:main|fw_main|pw_main|pc_main|fc_main|blur[123])$/.test(
+          lower,
+        )
+      )
+        return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (lower.startsWith('texsize_')) return MILKDROP_TEXSIZE_SUBSTITUTE_GLSL;
+      return name;
     },
 
     emitLiteral(value: number): string {
@@ -210,6 +223,39 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'tex3d' || lower === 'texture3d') {
         return emitTextureSample(args, '3d');
       }
+      if (
+        lower === 'tex2dlod' ||
+        lower === 'tex2dbias' ||
+        lower === 'tex2dgrad'
+      ) {
+        return emitLodTextureSample(lower, args);
+      }
+      // MilkDrop 2's shader preamble ships these as helper functions, so
+      // preset bodies call them without ever defining them. They were missing
+      // here, which meant every preset using one failed to compile and
+      // rendered black — 511 presets, the entire projectm-cream-of-the-crop
+      // library (the main butterchurn catalog happens to use none of them,
+      // which is why the gap stayed invisible).
+      //
+      //   GetPixel(uv) = tex2D(sampler_main, uv).xyz
+      //   GetBlurN(uv) = tex2D(sampler_blurN, uv).xyz * scaleN + biasN
+      //
+      // GetBlur0 is MilkDrop's alias for the unblurred main sample.
+      if (lower === 'getpixel' || lower === 'getblur0') {
+        const coord = args[0];
+        return coord
+          ? `texture2D(currentTex, sampleUv(${coord}, textureWrap)).xyz`
+          : null;
+      }
+      const blurMatch = /^getblur([123])$/.exec(lower);
+      if (blurMatch) {
+        const level = blurMatch[1];
+        const coord = args[0];
+        return coord
+          ? `(texture2D(blur${level}Tex, sampleUv(${coord}, textureWrap)).xyz * scale${level} + bias${level})`
+          : null;
+      }
+
       if (lower === 'videotex2d') {
         // video texture sampling - maps to videoTex
         const coord = args[1] ?? args[0];
@@ -231,14 +277,20 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'frac') {
         return `fract(${args[0] ?? '0.0'})`;
       }
-      if (lower === 'ddx') {
+      if (lower === 'ddx' || lower === 'dfdx') {
         return `dFdx(${args[0] ?? '0.0'})`;
       }
-      if (lower === 'ddy') {
+      if (lower === 'ddy' || lower === 'dfdy') {
         return `dFdy(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'fwidth') {
+        return `fwidth(${args[0] ?? '0.0'})`;
       }
       if (lower === 'mul') {
         return `(${args[0] ?? '0.0'} * ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'transpose') {
+        return `transpose(${args[0] ?? '0.0'})`;
       }
       if (lower === 'if') {
         const cond = args[0] ?? '0.0';
@@ -250,10 +302,13 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `abs(${args[0] ?? '0.0'})`;
       }
       if (lower === 'pow') {
-        return `pow(${args[0] ?? '0.0'}, ${args[1] ?? '2.0'})`;
+        return `pow(max(0.0, ${args[0] ?? '0.0'}), ${args[1] ?? '2.0'})`;
       }
       if (lower === 'sqrt') {
-        return `sqrt(${args[0] ?? '0.0'})`;
+        return `sqrt(max(0.0, ${args[0] ?? '0.0'}))`;
+      }
+      if (lower === 'rsqrt') {
+        return `inversesqrt(max(${args[0] ?? '1.0'}, 0.000001))`;
       }
       if (lower === 'sin') {
         return `sin(${args[0] ?? '0.0'})`;
@@ -272,6 +327,12 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       }
       if (lower === 'ceil') {
         return `ceil(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'trunc') {
+        return `trunc(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'round') {
+        return `round(${args[0] ?? '0.0'})`;
       }
       if (lower === 'min') {
         return `min(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
@@ -300,6 +361,12 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'normalize') {
         return `normalize(${args[0] ?? '0.0'})`;
       }
+      if (lower === 'reflect') {
+        return `reflect(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'})`;
+      }
+      if (lower === 'refract') {
+        return `refract(${args[0] ?? '0.0'}, ${args[1] ?? '0.0'}, ${args[2] ?? '1.0'})`;
+      }
       if (lower === 'mod' || lower === 'fmod') {
         return `mod(${args[0] ?? '0.0'}, ${args[1] ?? '1.0'})`;
       }
@@ -318,11 +385,17 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (lower === 'log') {
         return `log(max(${args[0] ?? '1.0'}, 0.000001))`;
       }
+      if (lower === 'log2') {
+        return `log2(max(${args[0] ?? '1.0'}, 0.000001))`;
+      }
       if (lower === 'log10') {
         return `(log(max(${args[0] ?? '1.0'}, 0.000001)) * 0.4342944819)`;
       }
       if (lower === 'exp') {
         return `exp(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'exp2') {
+        return `exp2(${args[0] ?? '0.0'})`;
       }
       if (lower === 'atan') {
         const y = args[0] ?? '0.0';
@@ -358,13 +431,23 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `sampleAuxTexture(1.0, 0.0, sampleUv(${coord}, textureWrap), 0.0).r`;
       }
 
-      // vec2/vec3 constructors
-      if (lower === 'vec2') {
+      // vec2/vec3/vec4 constructors (half* aliases lower to the same forms)
+      const constructorName =
+        lower === 'half'
+          ? 'float'
+          : lower === 'half2'
+            ? 'vec2'
+            : lower === 'half3'
+              ? 'vec3'
+              : lower === 'half4'
+                ? 'vec4'
+                : lower;
+      if (constructorName === 'vec2') {
         const x = args[0] ?? '0.0';
         const y = args[1] ?? x;
         return `vec2(${x}, ${y})`;
       }
-      if (lower === 'vec3') {
+      if (constructorName === 'vec3') {
         const x = args[0] ?? '0.0';
         if (args.length === 2) {
           const y = args[1] ?? x;
@@ -383,15 +466,21 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const z = args[2] ?? x;
         return `vec3(${x}, ${y}, ${z})`;
       }
-      if (lower === 'vec4' || lower === 'float4') {
+      if (constructorName === 'vec4' || constructorName === 'float4') {
         const x = args[0] ?? '0.0';
         const y = args[1] ?? x;
         const z = args[2] ?? x;
         const w = args[3] ?? x;
         return `vec4(${x}, ${y}, ${z}, ${w})`;
       }
-      if (lower === 'float') {
+      if (constructorName === 'float') {
         return `float(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'int') {
+        return `int(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'bool') {
+        return `bool(${args[0] ?? '0.0'})`;
       }
 
       // tint constructor
@@ -445,7 +534,7 @@ function emitTextureSample(
   let zSlice = args[2] ?? '0.0';
 
   if (dimension === '3d') {
-    const vec3Args = splitGlslConstructorArgs(coordArg, 'vec3');
+    const vec3Args = splitGlslConstructorArgs(coordArg);
     if (vec3Args) {
       if (vec3Args.length >= 3) {
         coordArg = `vec2(${vec3Args[0]}, ${vec3Args[1]})`;
@@ -466,14 +555,22 @@ function emitTextureSample(
   const rawSamplerName = samplerName.startsWith('sampler_')
     ? samplerName.slice('sampler_'.length)
     : samplerName;
-  if (rawSamplerName === 'fw_noise_lq') {
+  if (rawSamplerName === 'fw_noise_lq' || rawSamplerName === 'fw_noise') {
     return `vec3(noise((${coordArg}) * 8.0 + vec2(signalTime * 0.8, signalTime * 0.6)))`;
+  }
+  if (rawSamplerName === 'fw_noise_mq') {
+    return `vec3(noise((${coordArg}) * 12.0 + vec2(signalTime * 1.0, signalTime * 0.75)))`;
   }
   if (rawSamplerName === 'fw_noise_hq') {
     return `vec3(noise((${coordArg}) * 16.0 + vec2(signalTime * 1.2, signalTime * 0.9)))`;
   }
-  if (rawSamplerName === 'pw_noise_lq') {
-    return `texture2D(noiseTex, sampleUv(${coordArg}, textureWrap)).rgba`;
+  if (
+    rawSamplerName === 'pw_noise_lq' ||
+    rawSamplerName === 'pw_noise_mq' ||
+    rawSamplerName === 'pw_noise_hq' ||
+    rawSamplerName === 'pw_noise'
+  ) {
+    return `texture2D(noiseTex, sampleUv(${coordArg}, 1.0)).rgba`;
   }
 
   // Unknown samplers have no texture wired at runtime — emitting a
@@ -513,16 +610,13 @@ function emitTextureSample(
   return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
 }
 
-function splitGlslConstructorArgs(
-  expression: string,
-  constructorName: 'vec3',
-): string[] | null {
+function splitGlslConstructorArgs(expression: string): string[] | null {
   const trimmed = expression.trim();
-  const prefix = `${constructorName}(`;
-  if (!trimmed.startsWith(prefix) || !trimmed.endsWith(')')) {
+  const match = trimmed.match(/^(?:vec[234]|float[234])\((.*)\)$/s);
+  if (!match) {
     return null;
   }
-  const body = trimmed.slice(prefix.length, -1);
+  const body = match[1];
   const args: string[] = [];
   let depth = 0;
   let start = 0;
@@ -540,20 +634,93 @@ function splitGlslConstructorArgs(
 }
 
 /**
+ * Resolves a sampler argument to the GLSL texture uniform it samples on the
+ * direct path. Texture uniforms with a real mip chain (framebuffer, blur,
+ * bundled aux textures) support textureLod/textureGrad; the atlas/aux helper
+ * path and procedural feed-forward noise do not, so they fall back to the
+ * base-mip sample.
+ */
+function resolveLodTextureName(samplerArg: string): string | null {
+  const lower = samplerArg.toLowerCase();
+  const raw = lower.startsWith('sampler_')
+    ? lower.slice('sampler_'.length)
+    : lower;
+  const map: Record<string, string> = {
+    main: 'currentTex',
+    fw_main: 'currentTex',
+    pw_main: 'previousTex',
+    pc_main: 'previousTex',
+    fc_main: 'warpTex',
+    blur1: 'blur1Tex',
+    blur2: 'blur2Tex',
+    blur3: 'blur3Tex',
+    noise: 'noiseTex',
+    noise_lq: 'noiseTex',
+    noise_mq: 'noiseTex',
+    noise_hq: 'noiseTex',
+    pw_noise_lq: 'noiseTex',
+    perlin: 'perlinTex',
+    simplex: 'simplexTex',
+    voronoi: 'voronoiTex',
+    aura: 'auraTex',
+    caustics: 'causticsTex',
+    pattern: 'patternTex',
+    fractal: 'fractalTex',
+    video: 'videoTex',
+  };
+  return map[raw] ?? null;
+}
+
+/**
+ * Emits HLSL tex2Dlod/tex2Dbias/tex2Dgrad as GLSL ES 3.00
+ * textureLod/texture(bias)/textureGrad. HLSL's tex2Dlod/tex2Dbias take a
+ * float4 coordinate (xy = uv, w = lod/bias); tex2Dgrad takes a uv plus
+ * explicit gradient vectors. The composite/warp fragment templates stay in
+ * GLSL ES 1.00 style, but three's WebGLRenderer (0.185, WebGL2-only) shims
+ * ShaderMaterial sources to `#version 300 es` and maps texture2D→texture,
+ * so the native ES 3.00 functions resolve. Samplers without a native mip
+ * chain fall back to the base-mip sample so the call never emits invalid
+ * GLSL.
+ */
+function emitLodTextureSample(
+  name: 'tex2dlod' | 'tex2dbias' | 'tex2dgrad',
+  args: string[],
+): string | null {
+  const samplerArg = args[0];
+  const texName = samplerArg ? resolveLodTextureName(samplerArg) : null;
+  if (!texName) {
+    return samplerArg && args[1] ? emitTextureSample(args, '2d') : null;
+  }
+  const coordRaw = args[1] ?? args[0] ?? 'vUv';
+  const vectorArgs = splitGlslConstructorArgs(coordRaw);
+
+  if (name === 'tex2dgrad') {
+    const uv =
+      vectorArgs && vectorArgs.length >= 2
+        ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+        : coordRaw;
+    const dx = args[2] ?? 'dFdx(vUv)';
+    const dy = args[3] ?? 'dFdy(vUv)';
+    return `textureGrad(${texName}, sampleUv(${uv}, textureWrap), ${dx}, ${dy}).rgb`;
+  }
+
+  const uv =
+    vectorArgs && vectorArgs.length >= 2
+      ? `vec2(${vectorArgs[0]}, ${vectorArgs[1]})`
+      : coordRaw;
+  const amount =
+    (vectorArgs && vectorArgs.length >= 4 ? vectorArgs[3] : args[2]) ?? '0.0';
+  if (name === 'tex2dlod') {
+    return `textureLod(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+  }
+  return `texture(${texName}, sampleUv(${uv}, textureWrap), ${amount}).rgb`;
+}
+
+/**
  * Returns the numeric source ID for an aux texture name.
  */
 function getAuxTextureSourceId(name: string): string {
-  const map: Record<string, string> = {
-    noise: '1.0',
-    simplex: '2.0',
-    voronoi: '3.0',
-    aura: '4.0',
-    caustics: '5.0',
-    pattern: '6.0',
-    fractal: '7.0',
-    video: '8.0',
-  };
-  return map[name] ?? '0.0';
+  return `${getMilkdropShaderAuxTextureSourceId(name)}.0`;
 }
 
 /**
@@ -580,7 +747,20 @@ export function generateGlslFromShaderStatements(
     const operator = statement.operator;
 
     if (operator === '=') {
-      lines.push(`  ${target} = ${expressionGlsl};`);
+      // HLSL promotes a scalar to every component on assignment, so
+      // `ret = GetPixel(uv).x * k;` is legal there and means grey. GLSL has no
+      // such promotion and rejects the assignment outright, taking the whole
+      // program down with it. `ret` is declared vec3 in both stage templates,
+      // and vec3(...) is a valid copy constructor for a vec3 RHS as well as a
+      // broadcast for a scalar one, so wrapping restores HLSL's meaning for
+      // both. Compound operators need no help: GLSL already defines
+      // vector-op-scalar component-wise.
+      const needsBroadcast = target === 'ret';
+      lines.push(
+        needsBroadcast
+          ? `  ${target} = vec3(${expressionGlsl});`
+          : `  ${target} = ${expressionGlsl};`,
+      );
     } else if (operator === '+=') {
       lines.push(`  ${target} += ${expressionGlsl};`);
     } else if (operator === '-=') {

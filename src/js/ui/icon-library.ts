@@ -24,6 +24,11 @@ const ICON_NODES = {
       },
     },
   ],
+  upload: [
+    { tag: 'path', attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } },
+    { tag: 'path', attrs: { d: 'm17 8-5-5-5 5' } },
+    { tag: 'path', attrs: { d: 'M12 3v12' } },
+  ],
   error: [
     { tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } },
     { tag: 'path', attrs: { d: 'm15 9-6 6' } },
@@ -272,7 +277,7 @@ export function renderIconSvg(
     ? `<title>${escapeAttribute(options.title)}</title>`
     : '';
 
-  return `<svg${className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true" data-icon="${escapeAttribute(name)}">${title}${body}</svg>`;
+  return `<svg${className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter" focusable="false" aria-hidden="true" data-icon="${escapeAttribute(name)}">${title}${body}</svg>`;
 }
 
 export function replaceIconContents(

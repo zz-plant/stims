@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { FrequencyAnalyser } from '../../src/js/core/audio-handler.ts';
+import type { HarmonicPercussiveLevels } from '../../src/js/utils/audio/harmonic-percussive.ts';
 
 type ProcessorConstructor = new (
   options?: AudioWorkletNodeOptions,
@@ -95,6 +96,51 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
       vocalMidEnv: expect.any(Number),
       snareSnap: expect.any(Number),
     });
+    expect(payload.harmonicPercussive).toEqual({
+      percussive: expect.any(Number),
+      harmonic: expect.any(Number),
+      percussiveLow: expect.any(Number),
+      percussiveMid: expect.any(Number),
+      percussiveHigh: expect.any(Number),
+      percussiveRatio: expect.any(Number),
+    });
+  });
+
+  test('worklet HPSS reports a sustained tone as harmonic', () => {
+    const ProcessorClass = registeredProcessors.get('frequency-analyser');
+    expect(ProcessorClass).toBeDefined();
+    if (!ProcessorClass) return;
+
+    const fftSize = 512;
+    const sampleRate = 44100;
+    const processor = new ProcessorClass({
+      processorOptions: { fftSize, sampleRate, messageEvery: 1 },
+    });
+
+    const amplitude = 0.2;
+    const binIndex = 8;
+    const frequency = (binIndex * sampleRate) / fftSize;
+    const samples = new Float32Array(fftSize);
+    for (let i = 0; i < fftSize; i += 1) {
+      samples[i] =
+        amplitude * Math.sin((2 * Math.PI * frequency * i) / sampleRate);
+    }
+    // Feed several FFT buffers so the time-median has sustained history.
+    for (let frame = 0; frame < 8; frame += 1) {
+      for (let offset = 0; offset < fftSize; offset += 128) {
+        processor.process(
+          [[samples.subarray(offset, offset + 128)]],
+          [[new Float32Array(128)]],
+        );
+      }
+    }
+
+    const calls = processor.port.postMessage.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const payload = calls[calls.length - 1][0];
+    const hp = payload.harmonicPercussive as HarmonicPercussiveLevels;
+    expect(hp.harmonic).toBeGreaterThan(hp.percussive * 5);
+    expect(hp.percussiveRatio).toBeLessThan(0.2);
   });
 
   test('FrequencyAnalyser seamlessly consumes worklet energy and transient metrics', async () => {
@@ -159,6 +205,14 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
             vocalMidEnv: 0.45,
             snareSnap: 0.3,
           },
+          harmonicPercussive: {
+            percussive: 0.6,
+            harmonic: 0.2,
+            percussiveLow: 0.5,
+            percussiveMid: 0.7,
+            percussiveHigh: 0.4,
+            percussiveRatio: 0.75,
+          },
         },
       } as MessageEvent);
 
@@ -179,6 +233,15 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
         kickTransient: 0.65,
         vocalMidEnv: 0.45,
         snareSnap: 0.3,
+      });
+
+      expect(analyser.getHarmonicPercussiveLevels()).toEqual({
+        percussive: 0.6,
+        harmonic: 0.2,
+        percussiveLow: 0.5,
+        percussiveMid: 0.7,
+        percussiveHigh: 0.4,
+        percussiveRatio: 0.75,
       });
     } finally {
       globalThis.AudioWorkletNode = origWorkletNode;
@@ -231,6 +294,10 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
     const transients = analyser.getTransientMetrics();
     expect(transients.subBassEnv).toBeGreaterThanOrEqual(0);
     expect(transients.kickTransient).toBeGreaterThanOrEqual(0);
+
+    // No worklet -> no worklet HPSS levels; the analyser-node path must not
+    // fabricate them (the signal processor falls back to its own analysis).
+    expect(analyser.getHarmonicPercussiveLevels()).toBeNull();
   });
 
   test('frequency bytes use the AnalyserNode decibel scale, not linear magnitude', () => {

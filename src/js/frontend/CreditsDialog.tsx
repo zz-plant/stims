@@ -37,17 +37,18 @@ export function CreditsDialog({
         className="stims-shell__credits-card"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
-          e.stopPropagation();
+          // Let Escape bubble to the backdrop's close handler above — focus
+          // is trapped inside this card for the entire time it's open, so
+          // an unconditional stopPropagation here would make Escape a dead
+          // key while the dialog is up.
+          if (e.key !== 'Escape') {
+            e.stopPropagation();
+          }
         }}
         role="presentation"
       >
         <CreditsPanel />
-        <button
-          type="button"
-          className="cta-button ghost"
-          onClick={onClose}
-          style={{ marginTop: '1.5rem' }}
-        >
+        <button type="button" className="cta-button ghost" onClick={onClose}>
           Close
         </button>
       </div>

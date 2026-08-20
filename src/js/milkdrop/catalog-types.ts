@@ -1,3 +1,4 @@
+import type { PresetSensoryProfile } from '../core/sensory-profile.ts';
 import type { VisualFidelityTier } from './catalog-store-analysis.ts';
 import type {
   MilkdropBackendSupport,
@@ -13,14 +14,40 @@ import type {
   MilkdropVisualEvidenceTier,
 } from './common-types.ts';
 
-export type MilkdropBundledCatalogEntry = {
+/**
+ * Offline measurements the catalog ships per preset: the quality scorer's
+ * component breakdown (scripts/score-catalog) and the photosensitivity audit
+ * (scripts/analyze-preset-flash + merge-flash-audit). Both are produced by
+ * lab runs, not at runtime, so they ride the manifest and must be carried
+ * across the catalog projections rather than recomputed.
+ */
+export type MilkdropPresetMeasurements = {
+  quality?: {
+    score?: number;
+    components?: {
+      fidelity?: number | null;
+      evidence?: number | null;
+      staticAudio?: number | null;
+      measuredReactivity?: number | null;
+      motion?: number | null;
+      flashPenalty?: number | null;
+      duplicatePenalty?: number | null;
+    };
+  };
+  sensoryProfile?: PresetSensoryProfile;
+};
+
+export type MilkdropBundledCatalogEntry = MilkdropPresetMeasurements & {
   id: string;
   title: string;
   author?: string;
   authorUrl?: string;
   file: string;
   tags?: string[];
+  searchTerms?: string[];
   curatedRank?: number;
+  /** Near-duplicate cluster annotation from scripts/dedup-catalog.ts. */
+  similarity?: { clusterId: string; duplicateOf?: string };
   corpusTier?: 'bundled' | 'certified' | 'exploratory';
   certification?: 'bundled' | 'certified' | 'exploratory';
   expectedFidelityClass?: MilkdropFidelityClass;
@@ -34,7 +61,7 @@ export type MilkdropBundledCatalogEntry = {
   preview?: boolean;
 };
 
-export type MilkdropCatalogEntry = {
+export type MilkdropCatalogEntry = MilkdropPresetMeasurements & {
   id: string;
   title: string;
   author?: string;
@@ -43,6 +70,7 @@ export type MilkdropCatalogEntry = {
   origin: MilkdropPresetOrigin;
   tags: string[];
   curatedRank?: number;
+  similarity?: { clusterId: string; duplicateOf?: string };
   isFavorite: boolean;
   rating: number;
   lastOpenedAt?: number;
@@ -70,7 +98,7 @@ export type MilkdropCatalogEntry = {
 export interface MilkdropCatalogStore {
   listPresets(): Promise<MilkdropCatalogEntry[]>;
   getPresetSource(id: string): Promise<MilkdropPresetSource | null>;
-  prefetchCompiledPresets(): Promise<void>;
+  prefetchCompiledPresets(limit?: number): Promise<void>;
   savePreset(source: MilkdropPresetSource): Promise<MilkdropPresetSource>;
   deletePreset(id: string): Promise<void>;
   saveDraft(id: string, raw: string): Promise<void>;

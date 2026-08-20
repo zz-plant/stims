@@ -27,9 +27,11 @@ When restructuring docs, keep these entry points in sync:
 | Change type | Required docs updates |
 | --- | --- |
 | New script or renamed script | `docs/DEVELOPMENT.md` plus `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `docs/agents/README.md`, `docs/agents/tooling-and-quality.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they reference the changed script. |
-| New toy / renamed toy slug | Update `src/data/toys.json`, then run `bun run generate:toys` so `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` stay aligned; update `docs/TOY_DEVELOPMENT.md` only if the workflow itself changed. |
+| Product metadata changes (title, description, controls, starter preset) | Update `src/data/toys.json`; it is read directly by the MCP server, so there is nothing to regenerate. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
 | Repo-local agent skill/workflow changes | `AGENTS.md`, `docs/agents/README.md`, `docs/agents/custom-capabilities.md`, `docs/agents/visual-testing.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` when they mention the changed route, command, or capability. |
+| New or changed guard script | Update the guard's docblock — it is the source of truth. Regenerate with `bun run generate:guardrails`; `check:guardrails-doc` fails if `docs/GUARDRAILS.md` is stale. |
+| New `src/` module over 400 lines | Add a file-level docblock saying what it owns and what it leaves to others (`bun run check:module-docs`). |
 | Docs restructuring | Update links and references across all entry points listed above. |
 
 ## PR metadata expectations

@@ -21,12 +21,29 @@
  *     literal directory prefix is verified
  *   - documented placeholders (`tests/path/to/spec.test.ts`) and proposal docs
  *     that name files a plan would create (marked `(NEW)` or "New follow-up")
+ *   - generated docs (`docs/GUARDRAILS.md`), whose prose is copied verbatim
+ *     from guard docblocks. Those docblocks cite illustrative non-existent
+ *     paths on purpose — `check-doc-references.ts` itself names
+ *     `tests/foo.test.ts` to explain what it catches. The references are
+ *     already verified where they are authored, in `scripts/`, so checking the
+ *     copy would force the explanations to be written worse.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOTS = ['docs', '.agent'];
-const EXTRA_FILES = ['AGENTS.md', 'README.md', '.github/AGENTS.md'];
+const EXTRA_FILES = [
+  'AGENTS.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  '.github/AGENTS.md',
+];
+/**
+ * Docs generated from source that is itself checked. See the docblock above for
+ * why the copy is exempt while the original is not.
+ */
+const GENERATED_DOCS = new Set(['docs/GUARDRAILS.md']);
+
 const SKIP_DIRS = new Set([
   'archive',
   'evidence',
@@ -42,6 +59,15 @@ const HISTORICAL_RECORD =
 
 /** Placeholders that stand in for "whatever file you are working on". */
 const PLACEHOLDER = /path\/to|your-file|YYYY-MM|<[a-z-]+>/;
+
+/**
+ * A path named at a historical commit — `git show <sha>:src/js/…` — is
+ * deliberately about a file that no longer exists. Recovering deleted code is
+ * the whole point of writing one down, so requiring it to resolve against the
+ * working tree would force docs to drop exactly the pointer that makes a
+ * removal recoverable.
+ */
+const HISTORICAL_PATH = /\b[0-9a-f]{7,40}:$/;
 
 const PATH_PREFIX =
   '(?:src|tests|scripts|docs|\\.agent|\\.github|functions|public)';
@@ -100,6 +126,7 @@ const offenders: Array<{ file: string; line: number; problem: string }> = [];
 for (const file of [...ROOTS.flatMap((root) => walk(root)), ...EXTRA_FILES]) {
   const name = file.split('/').pop() ?? '';
   if (HISTORICAL_RECORD.test(name)) continue;
+  if (GENERATED_DOCS.has(file.replaceAll('\\', '/'))) continue;
 
   let text: string;
   try {
@@ -115,6 +142,10 @@ for (const file of [...ROOTS.flatMap((root) => walk(root)), ...EXTRA_FILES]) {
     for (const match of line.matchAll(PATH_RE)) {
       const ref = match[1];
       if (PLACEHOLDER.test(ref) || referenceResolves(ref)) continue;
+      // What precedes the path decides whether it is a live reference.
+      const before =
+        line.slice(0, match.index ?? 0) + match[0].slice(0, -ref.length);
+      if (HISTORICAL_PATH.test(before)) continue;
       offenders.push({ file, line: index + 1, problem: `missing path ${ref}` });
     }
     for (const match of line.matchAll(COMMAND_RE)) {

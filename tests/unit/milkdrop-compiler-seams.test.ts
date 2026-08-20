@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { buildWebGpuDescriptorPlan } from '../../src/js/milkdrop/compiler/gpu-descriptor-plan.ts';
-import { lowerGpuFieldProgram } from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
+import {
+  lowerGpuFieldProgram,
+  PER_FRAME_FIELD_REGISTER_INPUTS,
+} from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
 import {
   buildBackendSupport,
   buildFeatureAnalysis,
@@ -133,6 +136,48 @@ describe('milkdrop compiler seams', () => {
       'Video echo needs the legacy feedback path.',
     );
     expect(support.evidence).toHaveLength(2);
+  });
+
+  test('flags asymmetric shader translation as partial backend evidence', () => {
+    const featureAnalysis = buildFeatureAnalysis({
+      programs: {
+        init: { statements: [], sourceLines: [] },
+        perFrame: { statements: [], sourceLines: [] },
+        perPixel: { statements: [], sourceLines: [] },
+      },
+      customWaves: [],
+      customShapes: [],
+      numericFields: {},
+      unsupportedShaderText: false,
+      supportedShaderText: true,
+      shaderTextExecution: { webgl: 'direct', webgpu: 'translated' },
+      featureOrder: ['base-globals', 'unsupported-shader-text'],
+      analyzeProgramRegisters: () => {},
+      hasProgramStatements: (block) => block.statements.length > 0,
+      hasLegacyMotionVectorControls: () => false,
+    });
+
+    const buildSupport = (backend: 'webgl' | 'webgpu') =>
+      buildBackendSupport({
+        backend,
+        featureAnalysis,
+        sharedWarnings: [],
+        softUnknownKeys: [],
+        hardUnsupportedFields: [],
+        unsupportedVolumeSamplerWarnings: [],
+        createBackendEvidence: (args) => args as MilkdropBackendSupportEvidence,
+        backendPartialFeatureGaps: { webgl: {}, webgpu: {} },
+        backendShaderTextGaps: { webgl: {}, webgpu: {} },
+      });
+
+    const webgl = buildSupport('webgl');
+    const webgpu = buildSupport('webgpu');
+
+    expect(webgl.status).toBe('supported');
+    expect(webgpu.status).toBe('partial');
+    expect(
+      webgpu.evidence.some((entry) => entry.code === 'shader-text-translated'),
+    ).toBe(true);
   });
 
   test('routes WebGPU descriptor planning to fallback when unsupported features remain', () => {
@@ -394,6 +439,170 @@ describe('milkdrop compiler seams', () => {
     expect(aspectProgram?.statements[0]?.expression).toEqual({
       type: 'identifier',
       name: 'aspect',
+    });
+  });
+
+  describe('lowerGpuFieldProgram temporaries', () => {
+    const statement = (target: string, source: string, expression: unknown) =>
+      ({
+        target,
+        expression,
+        line: 1,
+        source,
+      }) as never;
+
+    test('lowers scratch locals with arbitrary names, not just q/t-numbered ones', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('thresh', 'thresh = 0.5', {
+            type: 'literal',
+            value: 0.5,
+          }),
+          statement('zoom', 'zoom = thresh', {
+            type: 'identifier',
+            name: 'thresh',
+          }),
+        ],
+        sourceLines: ['thresh = 0.5', 'zoom = thresh'],
+      });
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual(['thresh']);
+      expect(lowered?.statements[1]?.expression).toEqual({
+        type: 'identifier',
+        name: 'thresh',
+      });
+    });
+
+    test('allows a local to be read before its first assignment (MilkDrop zero-init)', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = thresh', {
+            type: 'identifier',
+            name: 'thresh',
+          }),
+          statement('thresh', 'thresh = 1', { type: 'literal', value: 1 }),
+        ],
+        sourceLines: ['zoom = thresh', 'thresh = 1'],
+      });
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual(['thresh']);
+    });
+
+    test('still bails on an identifier that is never assigned anywhere', () => {
+      expect(
+        lowerGpuFieldProgram({
+          statements: [
+            statement('zoom', 'zoom = nosuchthing', {
+              type: 'identifier',
+              name: 'nosuchthing',
+            }),
+          ],
+          sourceLines: ['zoom = nosuchthing'],
+        }),
+      ).toBeNull();
+    });
+
+    test('refuses to turn a signal into a local', () => {
+      expect(
+        lowerGpuFieldProgram({
+          statements: [
+            statement('bass', 'bass = 1', { type: 'literal', value: 1 }),
+          ],
+          sourceLines: ['bass = 1'],
+        }),
+      ).toBeNull();
+    });
+
+    test('writes caller-injected state in place instead of shadowing it', () => {
+      // The custom-wave path passes sample/value1 as state: they must be
+      // assigned directly, never redeclared as a zero-initialised local.
+      const lowered = lowerGpuFieldProgram(
+        {
+          statements: [
+            statement('value1', 'value1 = sample', {
+              type: 'identifier',
+              name: 'sample',
+            }),
+          ],
+          sourceLines: ['value1 = sample'],
+        },
+        { additionalStateIdentifiers: ['sample', 'value1'] },
+      );
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual([]);
+      expect(lowered?.statements[0]?.target).toBe('value1');
+    });
+
+    test('lowers reads of the full q1..q32 register bank as frame-constant inputs', () => {
+      const lowered = lowerGpuFieldProgram(
+        {
+          statements: [
+            statement('zoom', 'zoom = q20 + q32', {
+              type: 'binary',
+              operator: '+',
+              left: { type: 'identifier', name: 'q20' },
+              right: { type: 'identifier', name: 'q32' },
+            }),
+          ],
+          sourceLines: ['zoom = q20 + q32'],
+        },
+        { registerInputs: PER_FRAME_FIELD_REGISTER_INPUTS },
+      );
+      expect(lowered?.registerInputs).toEqual(['q20', 'q32']);
+    });
+
+    test('lowers aspectx/aspecty reads to the derived aspect signal aliases', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = aspectx * aspecty', {
+            type: 'binary',
+            operator: '*',
+            left: { type: 'identifier', name: 'aspectx' },
+            right: { type: 'identifier', name: 'aspecty' },
+          }),
+        ],
+        sourceLines: ['zoom = aspectx * aspecty'],
+      });
+      expect(lowered?.statements[0]?.expression).toEqual({
+        type: 'binary',
+        operator: '*',
+        left: { type: 'identifier', name: 'aspectX' },
+        right: { type: 'identifier', name: 'aspectY' },
+      });
+    });
+
+    test('lowers log10 calls', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = log10(rad)', {
+            type: 'call',
+            name: 'log10',
+            args: [{ type: 'identifier', name: 'rad' }],
+          }),
+        ],
+        sourceLines: ['zoom = log10(rad)'],
+      });
+      expect(lowered).not.toBeNull();
+    });
+
+    test('does not reclassify a caller-injected read-only binding as a local', () => {
+      expect(
+        lowerGpuFieldProgram(
+          {
+            statements: [
+              statement('mystery', 'mystery = 1', {
+                type: 'literal',
+                value: 1,
+              }),
+            ],
+            sourceLines: ['mystery = 1'],
+          },
+          { additionalAllowedIdentifiers: ['mystery'] },
+        ),
+      ).toBeNull();
     });
   });
 });

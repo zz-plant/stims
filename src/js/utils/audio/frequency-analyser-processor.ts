@@ -1,5 +1,10 @@
 /* global AudioWorkletProcessor, registerProcessor, currentTime */
 
+import {
+  createHarmonicPercussiveAnalyser,
+  type HarmonicPercussiveLevels,
+} from './harmonic-percussive.ts';
+
 const TWO_PI = Math.PI * 2;
 
 // Match AnalyserNode.getByteFrequencyData's decibel window (minDecibels /
@@ -171,6 +176,10 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly prevMagnitudes: Float32Array;
   private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
   private readonly messageEvery: number;
+  private readonly hpAnalyser: ReturnType<
+    typeof createHarmonicPercussiveAnalyser
+  >;
+  private hpLevels: HarmonicPercussiveLevels | null = null;
   private analyseCount = 0;
   private hasStereoInput = false;
 
@@ -230,6 +239,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       1,
       resolvedOptions.processorOptions?.messageEvery ?? 1,
     );
+    this.hpAnalyser = createHarmonicPercussiveAnalyser();
   }
 
   private analyse() {
@@ -258,6 +268,30 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     }
 
     this.analyseCount += 1;
+
+    // Byte-map every analyse — not just on message ticks — so the HPSS
+    // time-median history advances at full analyse cadence. The byte domain
+    // matches what the main-thread fallback consumed, keeping the two paths
+    // bit-compatible (the relative normalization washes out any scale drift).
+    for (let i = 0; i < this.frequencyBinCount; i += 1) {
+      const magnitude =
+        Math.sqrt(
+          this.outputReal[i] * this.outputReal[i] +
+            this.outputImag[i] * this.outputImag[i],
+        ) / this.frequencyBinCount;
+      this.freqBuf[i] = byteFromMagnitude(magnitude);
+      if (this.hasStereoInput) {
+        const magnitudeR =
+          Math.sqrt(
+            this.outputRealR[i] * this.outputRealR[i] +
+              this.outputImagR[i] * this.outputImagR[i],
+          ) / this.frequencyBinCount;
+        this.freqBufR[i] = byteFromMagnitude(magnitudeR);
+      }
+    }
+
+    this.hpLevels = this.hpAnalyser.analyse(this.freqBuf, this.sampleRate);
+
     if (this.analyseCount % this.messageEvery === 0) {
       let maxMag = 0;
       let sumMag = 0;
@@ -278,16 +312,6 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
         if (magnitude > maxMag) maxMag = magnitude;
         sumMag += magnitude;
-
-        this.freqBuf[i] = byteFromMagnitude(magnitude);
-        if (this.hasStereoInput) {
-          const magnitudeR =
-            Math.sqrt(
-              this.outputRealR[i] * this.outputRealR[i] +
-                this.outputImagR[i] * this.outputImagR[i],
-            ) / this.frequencyBinCount;
-          this.freqBufR[i] = byteFromMagnitude(magnitudeR);
-        }
       }
 
       const meanMag = sumMag / Math.max(1, this.frequencyBinCount);
@@ -495,6 +519,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
           vocalMidEnv,
           snareSnap,
         },
+        harmonicPercussive: this.hpLevels ? { ...this.hpLevels } : null,
       };
       const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];
       if (this.hasStereoInput) {
@@ -555,5 +580,3 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('frequency-analyser', FrequencyAnalyserProcessor);
-
-export {};

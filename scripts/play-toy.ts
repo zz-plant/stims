@@ -1,3 +1,13 @@
+/**
+ * Drives a toy in headless Chromium and captures a screenshot plus frame-timing
+ * metrics, the shared engine behind the browser QA and parity tooling.
+ *
+ * Boots (or reuses) the dev server, loads the toy in agent mode with demo
+ * audio, and records FPS/frame-cost samples, the actual backend, and any
+ * WebGPU-to-WebGL fallback. Flags include `--preset`, `--port`, `--duration`,
+ * `--width`/`--height`, `--audio`, `--renderer-profile`, `--catalog-mode`,
+ * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, and `--output`.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -1417,7 +1427,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           return rect.width > 0 && rect.height > 0;
         })() ||
         document.querySelector('#use-demo-audio') ||
-        document.querySelector('#start-audio-btn'),
+        // data-attribute, not #start-audio-btn: AudioSourcePanel mounts
+        // twice (home + Settings) so its ids are useId-scoped now, and the
+        // attribute is the stable automation hook.
+        document.querySelector('[data-mic-audio-btn]'),
       undefined,
       { timeout: TOY_LOAD_TIMEOUT_MS },
     );

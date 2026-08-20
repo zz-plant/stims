@@ -245,8 +245,10 @@ export type MilkdropVisualCertification = {
 
 export type MilkdropBackendSupportEvidenceCode =
   | 'unknown-field'
+  | 'unknown-function'
   | 'unsupported-hard-feature'
   | 'unsupported-shader-text-gap'
+  | 'shader-text-translated'
   | 'volume-sampler-gap'
   | 'shape-texture-gap'
   | 'video-echo-gap'
@@ -279,6 +281,13 @@ export type MilkdropParityReport = {
 
 export type MilkdropCompileOptions = {
   aspect?: number;
+  /**
+   * Force the raw-string compile cache even when the caller passes source
+   * metadata (id, origin, …). Used by the preset load path so re-loading a
+   * preset skips the full parse+IR rebuild. Safe only when no other options
+   * vary between calls for the same raw text.
+   */
+  cacheCompile?: boolean;
 };
 
 export type MilkdropBackendSupport = {

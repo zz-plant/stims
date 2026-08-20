@@ -40,7 +40,7 @@ Bundled shipped preset lane:
   - run `bun run parity:suite`,
   - promote the suite result into `src/data/milkdrop-parity/measured-results.json`,
   - sync `public/milkdrop-presets/catalog.json`.
-  - The current report intentionally classifies one as WebGL-only and three as uncertified because the latest captures do not pass the required native WebGPU lane. They must not be described as WebGPU-certified.
+  - The current report certifies `eos-glowsticks-v2-03-music` on both backends and classifies the other three as uncertified because their latest captures fail visual tolerance (`rovastar-parallel-universe` at ~98% pixel mismatch on both backends). They must not be described as WebGPU-certified.
 
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
@@ -52,7 +52,7 @@ Primary remaining roadmap:
 2. Close the remaining texture and sampler behavior gaps, especially overlay, warp, and shape texture semantics that still differ from `projectM`.
 3. Match wave, shape, border, and mesh rasterization more closely in draw ordering, thickness, smoothing, and blend semantics.
 4. Re-certify WebGPU against both checked-in `projectM` references and the Stims compatibility WebGL path before allowing stronger fidelity claims.
-5. Deepen the measured certification corpus for shader-heavy, sampler-heavy, and rasterization-heavy presets.
+5. Cover any remaining divergence strata with one representative each. The corpus is a bounded proof-of-method sample (see the certification-scope rule in the parity plan), not a path to full-catalog certification.
 
 ## Milestone 0: tooling baseline
 
@@ -307,7 +307,7 @@ Status:
 
 Current evidence:
 - The comparator requires native WebGPU captures and records backend mismatches instead of accepting fallback WebGL captures.
-- Current report: 2 presets certified on both backends, 1 WebGL-only, 6 uncertified, 14 unmeasured, and 0 missing native WebGPU captures. The volume fixtures are now captured natively but fail visual tolerance.
+- Current report (`src/data/milkdrop-parity/webgpu-certification-report.json`, 2026-07-29): 3 presets certified on both backends, 0 WebGL-only, 6 uncertified, and 62 unmeasured out of a 71-preset corpus. The volume fixtures are captured natively but fail visual tolerance.
 - Native WebGPU direct feedback remains disabled for live sessions and is enabled only in the explicit `renderer=webgpu&corpus=certification` lane, pending measured ShaderMaterial/TSL composite equivalence for broader use.
 - Built-in `noise_lq` and `noisevol_lq` now use deterministic RGBA noise sources for browser parity; strict pixel comparison remains intentionally non-certifying because native projectM seeds these textures independently per process.
 
@@ -325,6 +325,12 @@ Implementation tasks:
    - projectM reference output
    - Stims compatibility WebGL output
 2. Disable exactness claims for WebGPU where descriptor-plan output diverges.
+   (2026-08-18: the semantic layer of this divergence is now converged and
+   fuzz-guarded — `tests/unit/gpu-field-tier-differential.test.ts` holds the
+   lowered-descriptor semantics equal to the CPU JIT after fixing six
+   divergence classes that covered 32% of lowered programs. Remaining
+   divergence sources are f32 precision and non-lowered constructs, not
+   operator/function semantics.)
 3. Keep fallback routing conservative until equivalence is proven.
 
 Current remaining focus:

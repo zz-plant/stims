@@ -1,7 +1,7 @@
 /* global GPUAdapter, GPUDevice */
 import {
   ACESFilmicToneMapping,
-  SRGBColorSpace,
+  type SRGBColorSpace,
   type WebGLRenderer,
 } from 'three';
 import {
@@ -9,11 +9,7 @@ import {
   isMobileDevice,
 } from '../utils/browser/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
-import {
-  FallbackEvent,
-  FallbackState,
-  FallbackStateMachine,
-} from './fallback-state.ts';
+import { resolveGpuPowerPreference } from './power-state.ts';
 import {
   getRendererCapabilities,
   type RendererBackend,
@@ -24,7 +20,7 @@ import {
   RENDERER_FALLBACK_REASON_CODES,
 } from './renderer-fallback-reasons.ts';
 import {
-  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  getDefaultWebGpuInitTimeoutMs,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
@@ -35,6 +31,7 @@ import { isAgentMode } from './url-params.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
+import { resolveOutputColorSpace } from './wide-gamut.ts';
 
 export type RendererInitResult = {
   renderer: WebGLRenderer | WebGPURenderer;
@@ -71,6 +68,24 @@ async function loadWebGPURenderer() {
 const isMobileUserAgent = isMobileDevice();
 const deviceEnvironment = getDeviceEnvironmentProfile();
 
+// Canvases that have ever had a WebGPURenderer constructed on them. A canvas
+// permanently binds its first context type, so this must outlive a single
+// initRenderer call: device-loss recovery re-invokes initRenderer with the
+// same element, and a WebGL fallback there needs to know the canvas is
+// already WebGPU-bound.
+const webgpuBoundCanvases = new WeakSet<HTMLCanvasElement>();
+
+// Original canvas → the replacement element currently occupying its spot in
+// the DOM. A device-loss recovery can run several init attempts against the
+// same (original, now detached) canvas; each WebGL fallback must clone from
+// the element that is actually in the document, or `replaceChild` silently
+// no-ops on the parentless original and the renderer paints a canvas nobody
+// can see.
+const liveReplacementCanvases = new WeakMap<
+  HTMLCanvasElement,
+  HTMLCanvasElement
+>();
+
 function shouldPreserveDrawingBufferForValidation() {
   if (typeof window === 'undefined') {
     return false;
@@ -101,14 +116,9 @@ export async function initRenderer(
     renderScale: createRenderScale(1),
   },
 ): Promise<RendererInitResult | null> {
-  const stateMachine = new FallbackStateMachine(FallbackState.Initial);
-
   if (!ensureWebGL()) {
-    stateMachine.transition(FallbackEvent.FAIL_BACKEND);
     return null;
   }
-
-  stateMachine.transition(FallbackEvent.CHECK_WEBGL);
 
   const {
     antialias = !isMobileUserAgent,
@@ -119,7 +129,7 @@ export async function initRenderer(
     adaptiveMaxPixelRatioMultiplier = 1,
     adaptiveRenderScaleMultiplier = 1,
     adaptiveDensityMultiplier = 1,
-    webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+    webgpuInitTimeoutMs = getDefaultWebGpuInitTimeoutMs(),
     forceRetryCapabilities = false,
     preserveDrawingBuffer = false,
   } = config;
@@ -149,7 +159,10 @@ export async function initRenderer(
     );
     renderer.setPixelRatio(effectivePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = SRGBColorSpace;
+    // sRGB unless the user opted into wide gamut AND the display can show it
+    // (see core/wide-gamut.ts — default off, and it changes every colour).
+    renderer.outputColorSpace =
+      resolveOutputColorSpace() as typeof SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = exposure;
     return {
@@ -174,13 +187,25 @@ export async function initRenderer(
   let webgpuBoundToCanvas = false;
 
   const resolveFallbackCanvas = (): HTMLCanvasElement => {
-    if (!webgpuBoundToCanvas || typeof canvas.cloneNode !== 'function') {
+    if (
+      (!webgpuBoundToCanvas && !webgpuBoundCanvases.has(canvas)) ||
+      typeof canvas.cloneNode !== 'function'
+    ) {
       return canvas;
     }
-    const replacement = canvas.cloneNode(false) as HTMLCanvasElement;
-    if (canvas.parentNode) {
-      canvas.parentNode.replaceChild(replacement, canvas);
+    // Swap out whichever element currently holds the stage slot: the canvas
+    // itself, or — when an earlier fallback attempt already swapped it — the
+    // replacement that took its place.
+    const priorReplacement = liveReplacementCanvases.get(canvas);
+    const target =
+      canvas.parentNode || !priorReplacement?.parentNode
+        ? canvas
+        : priorReplacement;
+    const replacement = target.cloneNode(false) as HTMLCanvasElement;
+    if (target.parentNode) {
+      target.parentNode.replaceChild(replacement, target);
     }
+    liveReplacementCanvases.set(canvas, replacement);
     console.info(
       'Replaced WebGPU-bound canvas with a fresh element for the WebGL fallback.',
     );
@@ -205,7 +230,7 @@ export async function initRenderer(
       canvas: resolveFallbackCanvas(),
       antialias,
       alpha,
-      powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
+      powerPreference: resolveGpuPowerPreference(),
       failIfMajorPerformanceCaveat: false,
       stencil: true,
       preserveDrawingBuffer:
@@ -224,8 +249,6 @@ export async function initRenderer(
     capabilities,
     hasWebGL: true,
   });
-
-  stateMachine.transition(FallbackEvent.START_PROBE_WEBGPU);
 
   if (plan.backend === 'webgpu' && capabilities?.adapter) {
     const adapter = capabilities.adapter;
@@ -248,7 +271,6 @@ export async function initRenderer(
         );
       } catch (error) {
         teardownAbort();
-        stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
         return fallbackToWebGL(
           getRendererFallbackReasonMessage(
             RENDERER_FALLBACK_REASON_CODES.noDevice,
@@ -260,7 +282,6 @@ export async function initRenderer(
 
     if (!device) {
       teardownAbort();
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL('WebGPU device request returned no device.');
     }
 
@@ -268,8 +289,14 @@ export async function initRenderer(
       const WebGPURendererConstructor = await loadWebGPURenderer();
       // From this point the canvas may carry a `webgpu` context — even a
       // timed-out init keeps running in the background and can bind it later,
-      // so any fallback below must treat the canvas as WebGPU-bound.
+      // so any fallback below must treat the canvas as WebGPU-bound. The
+      // module-level set makes this survive into *future* initRenderer calls:
+      // device-loss recovery re-runs init with the same canvas, and a WebGL
+      // fallback in that later run would otherwise reuse the WebGPU-bound
+      // element, fail context creation ("existing context of a different
+      // type"), and leave the stage permanently black.
       webgpuBoundToCanvas = true;
+      webgpuBoundCanvases.add(canvas);
       const renderer = new WebGPURendererConstructor({
         canvas,
         antialias,
@@ -296,7 +323,6 @@ export async function initRenderer(
           );
         } catch (error) {
           disposeTimedOutRenderer();
-          stateMachine.transition(FallbackEvent.TIMEOUT_WEBGPU);
           teardownAbort();
           void initPromise
             .then(() => {
@@ -311,7 +337,6 @@ export async function initRenderer(
             .catch((error: unknown) => {
               console.warn('WebGPU renderer init timed out.', error);
             });
-          stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
           return fallbackToWebGL(
             getRendererFallbackReasonMessage(
               RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
@@ -320,12 +345,10 @@ export async function initRenderer(
           );
         }
       }
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       teardownAbort();
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       teardownAbort();
-      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuRendererCreationFailed,
@@ -335,7 +358,6 @@ export async function initRenderer(
     }
   }
 
-  stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
   return fallbackToWebGL(
     plan.reasonMessage ??
       getRendererFallbackReasonMessage(

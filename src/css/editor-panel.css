@@ -1,0 +1,1471 @@
+/* Preset code editor — "Signal Panel" instrument console.
+ *
+ * Layout contract: the panel is a fixed-height flex column that never grows
+ * past its dock. Only three regions scroll, each on its own: the CodeMirror
+ * viewport, the problems list, and the dock body. Before this, the whole
+ * panel was one unbounded document — a 400-line preset made the host 14000px
+ * tall, which pushed every tool below the code out of reach.
+ */
+
+/* Panel-local aliases derived from tokens that both themes define.
+ * tokens.css leaves --stims-ink-muted, --stims-ink-dim and the --stims-white-*
+ * tints at their dark-theme values under html.light, so using them directly
+ * here would paint near-white text on the light theme's near-white panel. */
+.stims-editor {
+  --ed-muted: var(--stims-muted);
+  --ed-dim: color-mix(in srgb, var(--stims-muted) 82%, transparent);
+  --ed-tint-2: color-mix(in srgb, var(--stims-ink) 3%, transparent);
+  --ed-tint-3: color-mix(in srgb, var(--stims-ink) 4%, transparent);
+  --ed-tint-4: color-mix(in srgb, var(--stims-ink) 6%, transparent);
+  --ed-tint-5: color-mix(in srgb, var(--stims-ink) 8%, transparent);
+  --ed-tint-6: color-mix(in srgb, var(--stims-ink) 10%, transparent);
+  --ed-focus: var(--stims-accent);
+  --ed-on-accent: var(--stims-on-accent);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  color: var(--stims-ink);
+  font-size: 0.82rem;
+}
+
+/* The light theme's accent is a dark rust, so accent-filled controls need
+   light ink rather than the dark-theme's near-black. */
+html.light .stims-editor {
+  --ed-on-accent: #fffaf0;
+}
+
+/* Shared micro-label: uppercase, tracked, dim. The console's only
+   label voice, so sections read as instrument legends rather than headings. */
+.stims-editor__legend {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ed-dim);
+}
+
+/* ── Status line ──────────────────────────────────────────────────── */
+
+.stims-editor__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ed-muted);
+}
+
+.stims-editor__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background: var(--ed-dim);
+}
+
+.stims-editor__state[data-state="dirty"] .stims-editor__dot,
+.stims-editor__state[data-state="queued"] .stims-editor__dot {
+  background: var(--stims-accent);
+}
+
+.stims-editor__state[data-state="queued"] .stims-editor__dot {
+  animation: stims-editor-pulse 1.1s ease-in-out infinite;
+}
+
+.stims-editor__state[data-state="error"] .stims-editor__dot {
+  background: var(--stims-bad);
+}
+
+.stims-editor__state[data-state="synced"] .stims-editor__dot {
+  background: var(--stims-good);
+}
+
+@keyframes stims-editor-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-editor__state[data-state="queued"] .stims-editor__dot {
+    animation: none;
+  }
+}
+
+.stims-editor__flags {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.stims-editor__flag {
+  padding: 2px 7px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.stims-editor__flag[data-tone="danger"] {
+  border-color: color-mix(in srgb, var(--stims-bad) 55%, transparent);
+  color: var(--stims-bad);
+}
+
+.stims-editor__flag[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--stims-warn) 50%, transparent);
+  color: var(--stims-warn);
+}
+
+.stims-editor__shortcut {
+  font-family: var(--font-family-mono);
+  font-size: 0.65rem;
+  color: var(--ed-dim);
+  white-space: nowrap;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────── */
+
+.stims-editor__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--stims-control-fill);
+  color: var(--ed-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.stims-editor__btn:hover:not(:disabled) {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+  color: var(--stims-ink);
+}
+
+.stims-editor__btn:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The single primary action. Warm accent is reserved for it and for
+   focus/active states, so nothing else in the panel competes with it. */
+.stims-editor__btn--primary {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--ed-on-accent);
+}
+
+.stims-editor__btn--primary:hover:not(:disabled) {
+  border-color: var(--stims-accent);
+  background: color-mix(in srgb, var(--stims-accent) 86%, #fff);
+  color: var(--ed-on-accent);
+}
+
+.stims-editor__btn--danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--stims-bad) 60%, transparent);
+  color: var(--stims-bad);
+}
+
+.stims-editor__btn--icon {
+  min-width: 30px;
+  padding: 0 7px;
+  font-size: 0.85rem;
+}
+
+/* Undo/redo read as one control, not two unrelated buttons. */
+.stims-editor__pair {
+  display: inline-flex;
+}
+
+.stims-editor__pair .stims-editor__btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.stims-editor__pair .stims-editor__btn:last-child {
+  margin-left: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.stims-editor__spacer {
+  flex: 1;
+}
+
+/* ── Overflow menu ────────────────────────────────────────────────── */
+
+.stims-editor__menu-wrap {
+  position: relative;
+}
+
+.stims-editor__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  padding: 4px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-panel);
+  background: var(--panel-solid);
+  box-shadow: var(--stims-shadow-soft);
+}
+
+.stims-editor__menu[hidden] {
+  display: none;
+}
+
+.stims-editor__menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--stims-radius);
+  background: transparent;
+  color: var(--ed-muted);
+  font: inherit;
+  font-size: 0.76rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__menu-item:hover {
+  background: var(--ed-tint-6);
+  color: var(--stims-ink);
+}
+
+.stims-editor__menu-item:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+}
+
+.stims-editor__menu-item[data-tone="danger"]:hover {
+  color: var(--stims-bad);
+}
+
+.stims-editor__menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--stims-line-soft);
+}
+
+/* ── Stage: the code, and anything layered over it ────────────────── */
+
+.stims-editor__stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The one-line state message. It sits directly above the code because it
+   describes the buffer, not the app. */
+.stims-editor__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--stims-line-soft);
+  background: var(--ed-tint-3);
+  color: var(--ed-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.stims-editor__note[hidden] {
+  display: none;
+}
+
+.stims-editor__note--error {
+  background: color-mix(in srgb, var(--stims-bad) 12%, transparent);
+  color: var(--stims-bad);
+}
+
+.stims-editor__note-icon {
+  flex: none;
+  width: 0.95em;
+  height: 0.95em;
+  margin-top: 0.15em;
+}
+
+.stims-editor__code {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stims-editor__code .cm-editor {
+  height: 100%;
+}
+
+.stims-editor__code .cm-scroller {
+  overflow: auto;
+}
+
+/* ── AI proposal sheet ────────────────────────────────────────────── */
+
+/* A proposed diff covers the code it would replace instead of pushing it
+   off screen, so the review happens where the change lands. */
+.stims-editor__proposal {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--stims-cool);
+  background: var(--panel-solid);
+}
+
+.stims-editor__proposal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--stims-line-soft);
+  color: var(--stims-cool);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stims-editor__proposal-lines {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  font-family: var(--font-family-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.stims-editor__proposal-line {
+  display: block;
+  color: var(--ed-dim);
+}
+
+.stims-editor__proposal-line--add {
+  background: color-mix(in srgb, var(--stims-good) 14%, transparent);
+  color: var(--stims-good);
+}
+
+.stims-editor__proposal-line--del {
+  background: color-mix(in srgb, var(--stims-bad) 14%, transparent);
+  color: var(--stims-bad);
+}
+
+.stims-editor__proposal-line--gap {
+  color: var(--ed-dim);
+  opacity: 0.6;
+}
+
+.stims-editor__proposal-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--stims-line-soft);
+}
+
+/* ── Problems strip ───────────────────────────────────────────────── */
+
+.stims-editor__problems {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  border-top: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__problems-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.stims-editor__problems-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stims-editor__problems-toggle:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+}
+
+.stims-editor__fix {
+  flex: none;
+}
+
+.stims-editor__count {
+  margin-left: auto;
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ed-dim);
+}
+
+.stims-editor__count[data-tone="danger"] {
+  color: var(--stims-bad);
+}
+
+.stims-editor__count[data-tone="warning"] {
+  color: var(--stims-warn);
+}
+
+.stims-editor__caret {
+  width: 0.7em;
+  color: var(--ed-dim);
+  font-size: 0.7rem;
+  transition: transform 0.12s ease;
+}
+
+[data-open="false"] .stims-editor__caret {
+  transform: rotate(-90deg);
+}
+
+.stims-editor__problems-body {
+  max-height: 132px;
+  padding-bottom: 8px;
+  overflow-y: auto;
+}
+
+.stims-editor__problems[data-open="false"] .stims-editor__problems-body {
+  display: none;
+}
+
+.stims-editor__problem {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 4px 2px;
+  border-radius: var(--radius-sm);
+  font-size: 0.73rem;
+  line-height: 1.45;
+  color: var(--ed-muted);
+}
+
+.stims-editor__problem--jump {
+  cursor: pointer;
+}
+
+.stims-editor__problem--jump:hover {
+  background: var(--ed-tint-4);
+  color: var(--stims-ink);
+}
+
+/* The row is keyboard-operable (role=button); ring matches the panel's
+   other inset focus styles. */
+.stims-editor__problem--jump:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+  background: var(--ed-tint-4);
+  color: var(--stims-ink);
+}
+
+.stims-editor__problem-tag {
+  flex: none;
+  width: 3.4em;
+  font-family: var(--font-family-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stims-editor__problem--error .stims-editor__problem-tag {
+  color: var(--stims-bad);
+}
+
+.stims-editor__problem--warning .stims-editor__problem-tag {
+  color: var(--stims-warn);
+}
+
+.stims-editor__problem--info .stims-editor__problem-tag {
+  color: var(--stims-cool);
+}
+
+.stims-editor__problem-line {
+  flex: none;
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ed-dim);
+}
+
+.stims-editor__problems-empty {
+  padding: 4px 2px;
+  color: var(--ed-dim);
+  font-size: 0.73rem;
+}
+
+/* ── Bottom dock ──────────────────────────────────────────────────── */
+
+.stims-editor__dock {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  height: 236px;
+  border-top: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__dock[data-open="false"] {
+  height: auto;
+}
+
+/* Holds the tablist and the collapse toggle side by side. The toggle used to
+   live inside .stims-editor__tabs, but a role="tablist" may only contain
+   tabs; it moved out and this row took over the flex layout so the toggle's
+   `margin-left: auto` still pushes it to the right edge. */
+.stims-editor__tabrow {
+  display: flex;
+  align-items: stretch;
+}
+
+.stims-editor__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: none;
+}
+
+.stims-editor__tab {
+  padding: 8px 9px 7px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ed-dim);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.stims-editor__tab:hover {
+  color: var(--ed-muted);
+}
+
+.stims-editor__tab:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+}
+
+.stims-editor__tab[aria-selected="true"] {
+  border-bottom-color: var(--stims-accent);
+  color: var(--stims-ink);
+}
+
+.stims-editor__dock-toggle {
+  margin-left: auto;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--ed-dim);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.stims-editor__dock-toggle:hover {
+  color: var(--stims-ink);
+}
+
+.stims-editor__dock-toggle:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -2px;
+}
+
+.stims-editor__dock-body {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 2px 4px;
+  overflow-y: auto;
+}
+
+.stims-editor__dock[data-open="false"] .stims-editor__dock-body {
+  display: none;
+}
+
+.stims-editor__pane[hidden] {
+  display: none;
+}
+
+.stims-editor__hint {
+  margin: 0 0 8px;
+  color: var(--ed-dim);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+/* ── Tune pane ────────────────────────────────────────────────────── */
+
+/* Two columns at panel width. The old single 140px column beside the code
+   left no room for a label and a value on the same line. */
+.stims-editor__sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 16px;
+}
+
+.stims-editor__slider {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+/* Label, state chip, value — the chip sits between the name and the number
+   because it qualifies the number: "1.02, but the preset rewrites it". */
+.stims-editor__control-head {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.stims-editor__control-head .stims-editor__slider-value,
+.stims-editor__control-head .stims-editor__color-hex {
+  justify-self: end;
+}
+
+.stims-editor__slider-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ed-muted);
+  cursor: pointer;
+}
+
+.stims-editor__slider-value {
+  font-family: var(--font-family-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--stims-ink);
+}
+
+.stims-editor__slider-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Thin track, square thumb — a console fader, not a media scrubber. */
+.stims-editor__slider-input {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.stims-editor__slider-input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--stims-line-strong);
+}
+
+.stims-editor__slider-input::-moz-range-track {
+  height: 2px;
+  background: var(--stims-line-strong);
+}
+
+.stims-editor__slider-input::-webkit-slider-thumb {
+  width: 4px;
+  height: 12px;
+  margin-top: -5px;
+  appearance: none;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+}
+
+.stims-editor__slider-input::-moz-range-thumb {
+  width: 4px;
+  height: 12px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+}
+
+.stims-editor__slider-input:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
+}
+
+.stims-editor__slider-btn {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-dim);
+  font-size: 0.65rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stims-editor__slider-btn:hover {
+  border-color: var(--stims-line);
+  color: var(--stims-ink);
+}
+
+.stims-editor__slider-btn:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__slider-btn[data-armed="true"] {
+  border-color: var(--stims-accent);
+  color: var(--stims-accent);
+  animation: stims-editor-pulse 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-editor__slider-btn[data-armed="true"] {
+    animation: none;
+  }
+}
+
+/* ── Value-source chip ────────────────────────────────────────────────
+   Four states, and only two of them are clickable. "set" is the quiet
+   default and must not compete with the value beside it; "eq" and "eq ⚠"
+   are the ones worth interrupting for, because the control is not in
+   charge of that field. */
+.stims-editor__state-chip {
+  flex: none;
+  padding: 0 4px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-dim);
+  font-family: var(--font-family-mono);
+  font-size: 0.6rem;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  cursor: default;
+}
+
+.stims-editor__state-chip:not(:disabled) {
+  cursor: pointer;
+}
+
+.stims-editor__state-chip:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__state-chip[data-state="static"] {
+  border-color: transparent;
+  opacity: 0.55;
+}
+
+/* Cool accent = "a device is driving this"; warm would read as an alert. */
+.stims-editor__state-chip[data-state="bound"] {
+  border-color: var(--stims-cool);
+  color: var(--stims-cool);
+}
+
+.stims-editor__state-chip[data-state="driven"],
+.stims-editor__state-chip[data-state="shadowed"] {
+  border-color: var(--stims-warn);
+  color: var(--stims-warn);
+}
+
+.stims-editor__state-chip[data-state="driven"]:hover,
+.stims-editor__state-chip[data-state="shadowed"]:hover {
+  background: color-mix(in srgb, var(--stims-warn) 14%, transparent);
+}
+
+/* Transient overwrite hint: shown only while a control on an equation-driven
+   field is being dragged. The readout moves and the stage may not, so the row
+   says which — the permanent chip is too easy to miss mid-drag. */
+.stims-editor__live-hint:not([hidden]) {
+  grid-column: 1 / -1;
+  padding: 1px 2px 0;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  color: var(--stims-warn);
+}
+
+/* ── Subject sections ─────────────────────────────────────────────────
+   Warp / Wave / Post / Frame. Each holds whatever control forms its subject
+   needs, so a section is a mixed stack of swatches, faders, ranges and
+   switches rather than a run of one widget type. The rule below is the only
+   thing separating them, because the heading already does the work. */
+
+.stims-editor__section {
+  display: grid;
+  gap: 4px;
+}
+
+.stims-editor__section + .stims-editor__section {
+  margin-top: 10px;
+}
+
+/* The first heading in the pane has the hint paragraph above it already. */
+.stims-editor__section:first-of-type .stims-editor__subhead {
+  margin-top: 4px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* ── Switches ─────────────────────────────────────────────────────────
+   Boolean fields, which the format stores as floats and this pane used to
+   render as faders you dragged to 1.000. The post-chain bank is in frame
+   processing order, so it reads as a pipeline. */
+
+.stims-editor__toggle-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.stims-editor__toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* In a dense bank of switches, a chip on every one saying "the buffer owns
+   this" is the expected case and reads as noise. Only the exception — a
+   switch the preset overwrites every frame — earns a marker here. Faders
+   keep theirs, where it sits in a label row and qualifies a number. */
+.stims-editor__toggle-wrap .stims-editor__state-chip[data-state="static"] {
+  display: none;
+}
+
+.stims-editor__toggle {
+  padding: 2px 8px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.68rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.stims-editor__toggle:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink);
+}
+
+.stims-editor__toggle:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+/* On reads as filled, not merely tinted: at 0.68rem a border-colour change
+   alone is not a reliable on/off signal. */
+.stims-editor__toggle[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--ed-on-accent);
+  font-weight: 600;
+}
+
+/* ── Segmented mode pickers ───────────────────────────────────────── */
+
+.stims-editor__enum {
+  display: grid;
+  gap: 3px;
+  padding: 3px 0;
+}
+
+.stims-editor__segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.stims-editor__segment {
+  flex: 1 1 auto;
+  min-width: 4.5rem;
+  padding: 2px 6px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.66rem;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.stims-editor__segment:hover {
+  border-color: var(--stims-line-strong);
+  color: var(--stims-ink);
+}
+
+.stims-editor__segment:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__segment[data-on="true"] {
+  border-color: var(--stims-accent);
+  background: var(--stims-accent);
+  color: var(--ed-on-accent);
+  font-weight: 600;
+}
+
+/* ── Dual-handle ranges ───────────────────────────────────────────────
+   Two range inputs stacked on one track. Overlaying real inputs keeps
+   keyboard, focus and screen-reader behaviour that a custom-drawn track
+   would have to reimplement; only the tracks are hidden, not the thumbs. */
+
+.stims-editor__range {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.stims-editor__range-track {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  min-width: 0;
+}
+
+.stims-editor__range-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--stims-line-strong);
+  transform: translateY(-50%);
+}
+
+.stims-editor__range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  /* The bodies overlap, so only the thumbs may take the pointer — otherwise
+     the input on top swallows every click meant for the other handle. */
+  pointer-events: none;
+}
+
+.stims-editor__range-input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: transparent;
+}
+
+.stims-editor__range-input::-moz-range-track {
+  height: 2px;
+  background: transparent;
+}
+
+.stims-editor__range-input::-webkit-slider-thumb {
+  width: 4px;
+  height: 12px;
+  appearance: none;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stims-editor__range-input::-moz-range-thumb {
+  width: 4px;
+  height: 12px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--stims-ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stims-editor__range-input[data-handle="max"]::-webkit-slider-thumb {
+  background: var(--stims-cool);
+}
+
+.stims-editor__range-input[data-handle="max"]::-moz-range-thumb {
+  background: var(--stims-cool);
+}
+
+.stims-editor__range-input:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
+}
+
+/* ── Modulation row ───────────────────────────────────────────────────
+   Folded under each fader. Muted until a source is picked, because on most
+   presets most of these stay off and a bank of loud rows would bury the
+   faders they belong to. */
+
+.stims-editor__mod {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--stims-line);
+}
+
+.stims-editor__mod[data-state="none"] {
+  opacity: 0.5;
+}
+
+.stims-editor__mod[data-state="none"]:hover,
+.stims-editor__mod[data-state="none"]:focus-within {
+  opacity: 1;
+}
+
+.stims-editor__mod[data-state="on"] {
+  border-left-color: var(--stims-cool);
+}
+
+/* A hand-written equation is not something to edit through three widgets,
+   so the row disables itself rather than pretending. */
+.stims-editor__mod[data-state="custom"] {
+  border-left-color: var(--stims-warn);
+  opacity: 0.75;
+}
+
+.stims-editor__mod-select {
+  max-width: 8rem;
+  padding: 1px 2px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ed-muted);
+  font-size: 0.62rem;
+}
+
+.stims-editor__mod-select:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__mod-mode {
+  width: 18px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--stims-ink);
+  font-family: var(--font-family-mono);
+  font-size: 0.68rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stims-editor__mod-mode:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stims-editor__mod-mode:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__mod-readout {
+  min-width: 2.6rem;
+  color: var(--stims-cool);
+  font-family: var(--font-family-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stims-editor__mod[data-state="custom"] .stims-editor__mod-readout {
+  min-width: 0;
+  color: var(--stims-warn);
+}
+
+/* ── Colour groups ────────────────────────────────────────────────── */
+
+.stims-editor__subhead {
+  margin: 14px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--stims-line);
+  color: var(--ed-muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stims-editor__colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 4px 16px;
+}
+
+.stims-editor__color {
+  display: grid;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.stims-editor__color-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stims-editor__color-hex {
+  font-family: var(--font-family-mono);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--stims-ink);
+}
+
+/* Square chip, not the browser's default pill: it reads as a paint sample
+   sitting in the same grid as the faders. */
+.stims-editor__color-swatch {
+  flex: none;
+  width: 26px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--stims-line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.stims-editor__color-swatch::-webkit-color-swatch-wrapper {
+  padding: 1px;
+}
+
+.stims-editor__color-swatch::-webkit-color-swatch {
+  border: 0;
+  border-radius: 1px;
+}
+
+.stims-editor__color-swatch::-moz-color-swatch {
+  border: 0;
+  border-radius: 1px;
+}
+
+.stims-editor__color-swatch:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
+}
+
+/* ── Insert pane ──────────────────────────────────────────────────── */
+
+.stims-editor__inserts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.stims-editor__insert {
+  display: grid;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius);
+  background: var(--ed-tint-2);
+  color: var(--ed-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.stims-editor__insert:hover {
+  border-color: var(--stims-cool);
+  background: var(--ed-tint-5);
+}
+
+.stims-editor__insert:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 1px;
+}
+
+.stims-editor__insert strong {
+  font-family: var(--font-family-mono);
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+}
+
+.stims-editor__insert span {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--ed-dim);
+}
+
+/* ── Assist pane ──────────────────────────────────────────────────── */
+
+.stims-editor__assist-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.stims-editor__assist-input,
+.stims-editor__assist-textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-control);
+  background: var(--ed-tint-3);
+  color: var(--stims-ink);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.stims-editor__assist-input::placeholder,
+.stims-editor__assist-textarea::placeholder {
+  color: var(--ed-dim);
+}
+
+.stims-editor__assist-input:focus-visible,
+.stims-editor__assist-textarea:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: -1px;
+}
+
+.stims-editor__assist-textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-family-mono);
+}
+
+.stims-editor__assist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stims-editor__btn--error {
+  border-color: var(--stims-bad);
+  color: var(--stims-bad);
+}
+
+.stims-editor__blend[hidden] {
+  display: none;
+}
+
+.stims-editor__blend {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__explanation {
+  position: relative;
+  margin-top: 8px;
+  padding: 8px 26px 8px 9px;
+  border-left: 2px solid var(--stims-cool);
+  background: var(--ed-tint-3);
+  color: var(--ed-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.stims-editor__explanation-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ed-dim);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.stims-editor__explanation-close:hover {
+  color: var(--stims-ink);
+}
+
+/* ── History pane ─────────────────────────────────────────────────── */
+
+.stims-editor__history {
+  display: grid;
+  gap: 2px;
+}
+
+.stims-editor__history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 2px;
+  border-bottom: 1px solid var(--stims-line-soft);
+}
+
+.stims-editor__history-row:last-child {
+  border-bottom: 0;
+}
+
+.stims-editor__history-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.73rem;
+  color: var(--ed-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stims-editor__history-empty {
+  color: var(--ed-dim);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+/* ── Narrow panel / mobile sheet ──────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .stims-editor__dock {
+    height: 200px;
+  }
+
+  .stims-editor__toolbar {
+    flex-wrap: wrap;
+  }
+
+  .stims-editor__spacer {
+    display: none;
+  }
+}
+
+/* ── Jump to variable (Cmd/Ctrl+J) ───────────────────────────── */
+.stims-editor__jump {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(320px, calc(100% - 24px));
+  background: var(--ed-panel, #131a22);
+  border: 1px solid var(--ed-line, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.stims-editor__jump-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid var(--ed-line-soft, rgba(255, 255, 255, 0.08));
+  background: transparent;
+  color: var(--ed-ink, #e8ecf4);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.stims-editor__jump-input:focus-visible {
+  outline: 2px solid var(--ed-focus, #f47a54);
+  outline-offset: -2px;
+}
+
+.stims-editor__jump-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.stims-editor__jump-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--ed-ink, #e8ecf4);
+  cursor: pointer;
+}
+
+.stims-editor__jump-item[data-active="true"] {
+  background: var(--ed-active-soft, rgba(244, 122, 84, 0.18));
+  box-shadow: inset 2px 0 0 var(--ed-focus, #f47a54);
+}
+
+.stims-editor__jump-count {
+  color: var(--ed-muted, rgba(232, 236, 244, 0.55));
+  font-size: 0.72rem;
+}
+
+.stims-editor__jump-empty {
+  padding: 8px;
+  color: var(--ed-muted, rgba(232, 236, 244, 0.55));
+  font-size: 0.78rem;
+}

@@ -5,7 +5,7 @@ import {
   UnsignedByteType,
 } from 'three';
 
-export const MILKDROP_NOISE_2D_SIZE = 256;
+export const MILKDROP_NOISE_2D_SIZE = 512;
 export const MILKDROP_NOISE_VOLUME_ATLAS_GRID_SIZE = 8;
 export const MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE = 64;
 export const MILKDROP_NOISE_VOLUME_ATLAS_SIZE =
@@ -23,17 +23,29 @@ function toNoiseByte(value: number) {
   return Math.round((milkdropNoiseHash(value) / 2147483648) * 255);
 }
 
+let cachedNoise2dData: Uint8Array | null = null;
+let cachedNoiseVolumeAtlasData: Uint8Array | null = null;
+
 export function buildMilkdropNoise2dData(size = MILKDROP_NOISE_2D_SIZE) {
+  if (size === MILKDROP_NOISE_2D_SIZE && cachedNoise2dData) {
+    return cachedNoise2dData;
+  }
   const data = new Uint8Array(size * size * 4);
   let offset = 0;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const value = toNoiseByte(y + x * 57);
-      data[offset++] = value;
-      data[offset++] = value;
-      data[offset++] = value;
-      data[offset++] = 255;
+      const valR = toNoiseByte(y + x * 57);
+      const valG = toNoiseByte(y * 131 + x * 59 + 17);
+      const valB = toNoiseByte(y * 97 + x * 173 + 31);
+      const valA = toNoiseByte(y * 233 + x * 109 + 47);
+      data[offset++] = valR;
+      data[offset++] = valG;
+      data[offset++] = valB;
+      data[offset++] = valA;
     }
+  }
+  if (size === MILKDROP_NOISE_2D_SIZE) {
+    cachedNoise2dData = data;
   }
   return data;
 }
@@ -41,6 +53,12 @@ export function buildMilkdropNoise2dData(size = MILKDROP_NOISE_2D_SIZE) {
 export function buildMilkdropNoiseVolumeAtlasData(
   sliceSize = MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 ) {
+  if (
+    sliceSize === MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE &&
+    cachedNoiseVolumeAtlasData
+  ) {
+    return cachedNoiseVolumeAtlasData;
+  }
   const gridSize = MILKDROP_NOISE_VOLUME_ATLAS_GRID_SIZE;
   const size = gridSize * sliceSize;
   const data = new Uint8Array(size * size * 4);
@@ -60,6 +78,9 @@ export function buildMilkdropNoiseVolumeAtlasData(
         data[offset + 3] = 255;
       }
     }
+  }
+  if (sliceSize === MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE) {
+    cachedNoiseVolumeAtlasData = data;
   }
   return data;
 }

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>RT shape probe</title></head>
+<body>
+<canvas id="c0" width="625" height="360" style="width:200px;height:115px"></canvas>
+<pre id="out"></pre>
+<script type="module">
+import * as THREE from 'three';
+import { WebGPURenderer } from 'three/webgpu';
+
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += m + '\n'; };
+
+const r = new WebGPURenderer({ canvas: document.getElementById('c0'), antialias: false });
+await r.init();
+r.setSize(625, 360, false);
+
+const scene = new THREE.Scene();
+// square ShapeGeometry (like the app's shapes)
+const shape = new THREE.Shape();
+shape.moveTo(1, 0); shape.lineTo(0, 1); shape.lineTo(-1, 0); shape.lineTo(0, -1); shape.lineTo(1, 0);
+const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+mesh.position.set(0.4, 0, 0);
+mesh.scale.set(0.9, 0.9, 1);
+scene.add(mesh);
+const cam = new THREE.OrthographicCamera(-1.736, 1.736, 1, -1, -100, 100);
+cam.position.z = 1; cam.lookAt(0, 0, 0); cam.updateMatrixWorld(true); cam.updateProjectionMatrix();
+
+const rt = new THREE.RenderTarget(625, 360, { type: THREE.HalfFloatType });
+r.setRenderTarget(rt);
+r.render(scene, cam);
+r.setRenderTarget(null);
+
+const mat = new THREE.MeshBasicMaterial({ map: rt.texture });
+const quadScene = new THREE.Scene();
+const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
+quadCam.position.z = 1;
+quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+r.render(quadScene, quadCam);
+setTimeout(() => log('done'), 300);
+</script>
+</body>
+</html>

@@ -48,6 +48,9 @@ function loadServiceWorker(options: {
       skipWaiting: () => {
         skipWaitingCalls += 1;
       },
+      location: {
+        origin: 'https://toil.fyi',
+      },
     },
   });
   return {
@@ -320,7 +323,10 @@ describe('Workspace performance regressions', () => {
       ),
       'utf8',
     );
-    const sidePanelSource = readFileSync(
+    // The catalog-lookup memo moved out of SidePanel when "Match my music"
+    // and "More like this" were merged into one finder panel; the guard
+    // follows the code rather than the filename it used to live in.
+    const finderPanelSource = readFileSync(
       join(
         import.meta.dir,
         '..',
@@ -328,16 +334,15 @@ describe('Workspace performance regressions', () => {
         'src',
         'js',
         'frontend',
-        'SidePanel.tsx',
+        'PresetFinderPanel.tsx',
       ),
       'utf8',
     );
 
-    expect(sidePanelSource).toContain('const catalogEntryById = useMemo');
-    expect(sidePanelSource).toContain('catalogEntryById.get(r.presetId)');
-    expect(sidePanelSource).not.toContain(
-      'engine.catalog.find((e) => e.id === r.presetId)',
-    );
+    expect(finderPanelSource).toContain('const catalogEntryById = useMemo');
+    expect(finderPanelSource).toContain('catalogEntryById.get(match.presetId)');
+    // The regression this guards: an O(catalog) scan per result row.
+    expect(finderPanelSource).not.toContain('engine.catalog.find(');
     expect(browsePanelSource).toContain('const sorted = useMemo');
     expect(browsePanelSource).toContain('sortBrowseEntries(');
   });
@@ -356,8 +361,13 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(helperSource).toContain('presetSearchIndexCache');
-    expect(helperSource).toContain('getPresetSearchIndex(entry)');
+    // Renamed from presetSearchIndexCache/getPresetSearchIndex when the
+    // browse matcher and the palette scorer were unified onto one weighted
+    // field model. The guard is the per-entry WeakMap cache, not the names:
+    // what must never come back is rebuilding the haystack per match.
+    expect(helperSource).toContain('presetMatchFieldsCache');
+    expect(helperSource).toContain('new WeakMap<PresetCatalogEntry');
+    expect(helperSource).toContain('getPresetMatchFields(entry)');
     expect(helperSource).not.toContain(
       'const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]',
     );
@@ -405,18 +415,6 @@ describe('Workspace performance regressions', () => {
   });
 
   test('updates audio-reactive decoration without rerendering static React shells', () => {
-    const hudSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'AudioSpectrumHud.tsx',
-      ),
-      'utf8',
-    );
     const stageControlsSource = readFileSync(
       join(
         import.meta.dir,
@@ -434,10 +432,8 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(hudSource).not.toContain('useAudioEnergy');
     expect(stageControlsSource).not.toContain('useAudioEnergy');
     expect(appSource).not.toContain('useAudioEnergy');
-    expect(hudSource).toContain('subscribeAudioEnergy');
     expect(stageControlsSource).toContain('subscribeAudioEnergy');
     expect(appSource).toContain('subscribeAudioEnergy');
   });
@@ -501,7 +497,11 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(feedbackSource).toContain('buildCompositeStateKey(state)');
+    // 13779ef0 replaced the multi-KB string state key with a field-compare
+    // change signal; the guard follows the replacement.
+    expect(feedbackSource).toContain(
+      'compositeStateIdentityChanged(this.compositeIdentity, state)',
+    );
     expect(feedbackSource).not.toContain('JSON.stringify({');
     expect(feedbackSource).toContain('currentOverlayTextureName');
     expect(feedbackSource).toContain('currentWarpTextureName');
@@ -555,7 +555,7 @@ describe('Service worker caching behavior', () => {
     expect(worker.skipWaitingCalls).toBe(1);
   });
 
-  test('finishes runtime cache writes before resolving a network response', async () => {
+  test('resolves the network response without blocking on the cache write, holding the write on waitUntil', async () => {
     let finishPut: (() => void) | undefined;
     const putWork = new Promise<void>((resolve) => {
       finishPut = resolve;
@@ -576,6 +576,7 @@ describe('Service worker caching behavior', () => {
       throw new Error('Expected a fetch handler.');
     }
     let responseWork: Promise<Response> | undefined;
+    const extensions: Promise<unknown>[] = [];
     fetchHandler({
       request: {
         method: 'GET',
@@ -585,17 +586,19 @@ describe('Service worker caching behavior', () => {
       respondWith(response) {
         responseWork = response;
       },
+      waitUntil(work) {
+        extensions.push(work);
+      },
     });
 
-    let resolved = false;
-    void responseWork?.then(() => {
-      resolved = true;
-    });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(resolved).toBe(false);
+    // The response must not wait for the (still pending) cache write — the
+    // write is handed to event.waitUntil, which keeps the worker alive
+    // until it finishes without adding storage latency to the response.
+    await expect(responseWork).resolves.toBeInstanceOf(Response);
+    expect(extensions.length).toBeGreaterThan(0);
 
     finishPut?.();
-    await expect(responseWork).resolves.toBeInstanceOf(Response);
+    await Promise.all(extensions);
   });
 
   test('returns a successful network response when an optional runtime write fails', async () => {

@@ -27,18 +27,24 @@
       .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
       .stims-loading__dots span:first-child{animation-delay:-.32s}
       .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
+      .stims-loading__exit{position:absolute;top:12px;right:12px;width:24px;height:24px;background:rgba(0,0,0,.3);border-radius:50%;color:#e9fbff;font-size:1.2rem;line-height:24px;text-align:center;transition:background .2s;cursor:pointer;}
+      .stims-loading__exit:hover{background:rgba(0,0,0,.5)}
       .stims-crawl-links{position:absolute;top:0;left:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
       @keyframes stims-spin{to{transform:rotate(360deg)}}
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
       @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
       @media(prefers-reduced-motion:reduce){.stims-loading,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
-      .stims-loading__fallback{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.35);backdrop-filter:blur(16px);margin:20px}
+      .stims-loading__fallback{background:#0d121c;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.5);margin:20px}
       .stims-loading__fallback p{margin:0 0 24px;font-size:1rem;line-height:1.6;opacity:0.85}
       .stims-loading__retry{display:inline-block;background:#5fc0b5;color:#0a0f19;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;font-size:0.9rem;letter-spacing:0.02em;transition:transform 150ms ease,opacity 150ms ease}
       .stims-loading__retry:hover{transform:scale(1.03);opacity:0.95}
       .stims-loading__retry:active{transform:scale(0.98)}
     </style>
+    <!-- The entry module loads via the module script tag at the end of body.
+         A modulepreload for /src/js/app.ts is redundant there, and Rolldown
+         emits it as a data:video/mp2t link that fails every page load. -->
+    <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="manifest" href="/manifest.json" />
@@ -48,7 +54,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>Stims — MilkDrop-Inspired Browser Visualizer</title>
+    <title>Stims — MilkDrop-Inspired Audio Visualizer</title>
     <meta property="og:title" content="Stims — MilkDrop-Inspired Audio Visualizer" />
     <meta
       property="og:description"
@@ -71,14 +77,8 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
-    <!-- Local CSS loads render-blocking: tokens/base/index are the design system
-         and above-the-fold layout, so deferring them only buys a flash of
-         unstyled content. The normalize reset is @imported by tokens.css so it
-         bundles instead of costing its own round trip. Web fonts stay deferred
-         (with display=swap) because text should paint immediately in a fallback
-         face, not block on the network. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
@@ -86,7 +86,7 @@
     <noscript>
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
       />
     </noscript>
     <link rel="stylesheet" href="src/css/tokens.css" />
@@ -143,17 +143,34 @@
       >
         <div>
           <div class="stims-loading__spinner" aria-hidden="true"></div>
-          <div class="stims-loading__text">
-            Loading MilkDrop visualizer<span class="stims-loading__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <div class="stims-loading__text" id="stims-loading-text">
+            Loading MilkDrop visualizer
           </div>
+          <button
+            class="stims-loading__exit"
+            type="button"
+            aria-label="Dismiss loading screen"
+            onclick="document.getElementById('stims-loading').hidden=true"
+          >
+            ✕
+          </button>
         </div>
       </div>
     </div>
 
 
-    <nav class="stims-crawl-links" aria-label="Crawlable site links">
+    <!-- inert: these exist for crawlers reading the HTML source; without it
+         they are 8 invisible tab stops in front of the app, and Enter on one
+         navigates the page away. -->
+    <nav class="stims-crawl-links" aria-label="Crawlable site links" inert>
       <a href="/">Visualizer</a>
       <a href="/performance/">Compatibility and performance</a>
+      <a href="/discover/audio-reactive">Audio-reactive visualizers</a>
+      <a href="/discover/hall-of-fame">Hall of fame presets</a>
+      <a href="/discover/fractal">Fractal visualizers</a>
+      <a href="/discover/tunnel">Tunnel visualizers</a>
+      <a href="/discover/psychedelic">Psychedelic visualizers</a>
+      <a href="/discover/ambient">Ambient visualizers</a>
     </nav>
     <noscript>
       <div class="stims-loading" role="alert">
@@ -165,7 +182,7 @@
     </noscript>
     <script>
       (() => {
-        const TIMEOUT_MS = 10000;
+        const TIMEOUT_MS = 15000;
         const phaseLabels = {
           'app-module': 'Starting app shell',
           'shell-rendered': 'Showing controls',

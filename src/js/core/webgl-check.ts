@@ -114,6 +114,24 @@ function buildOverlay(content: OverlayContent) {
 
   const actions = document.createElement('div');
   actions.className = 'rendering-overlay__actions';
+  // Forces the WebGL compatibility path and retries — the same recovery the
+  // error boundary offers. If the device truly has no GPU support the
+  // overlay reappears after reload, which is an honest retry loop rather
+  // than a dead end.
+  const compatButton = document.createElement('button');
+  compatButton.type = 'button';
+  compatButton.className = 'rendering-overlay__button';
+  compatButton.textContent = 'Try compatibility mode';
+  compatButton.addEventListener('click', () => {
+    try {
+      window.sessionStorage.removeItem('stims:webgpu-compat-override');
+    } catch {}
+    try {
+      window.localStorage.setItem('stims:compatibility-mode', 'true');
+    } catch {}
+    window.location.reload();
+  });
+  actions.appendChild(compatButton);
   const backLink = document.createElement('a');
   backLink.className = 'rendering-overlay__button';
   backLink.href = '/';
@@ -138,6 +156,7 @@ function buildOverlay(content: OverlayContent) {
     anchor.target = '_blank';
     anchor.rel = 'noreferrer noopener';
     anchor.textContent = label;
+    anchor.setAttribute('aria-label', `${label} (opens in a new tab)`);
     links.appendChild(anchor);
   });
   panel.appendChild(links);
@@ -208,7 +227,7 @@ export function ensureWebGL(options: EnsureOptions = {}) {
   const defaultContent: OverlayContent = {
     title: 'WebGL or WebGPU is required',
     description:
-      'This visual needs GPU acceleration to draw its 3D graphics. Update your browser, enable hardware acceleration, or return to the library to switch to compatibility mode.',
+      'This visual needs GPU acceleration to draw its 3D graphics. Update your browser, enable hardware acceleration, or try compatibility mode below.',
     steps: [
       'Use a modern browser like Chrome, Edge, or Firefox.',
       'Check that hardware acceleration is turned on in browser settings.',

@@ -24,7 +24,7 @@ The site deploys as the `stims` Worker with static assets, configured in [`wrang
 2. Confirm manifest and generated artifacts remain aligned:
 
    ```bash
-   bun run check:toys
+   bun run check:readme-claims
    ```
 
 3. Push the branch and open a pull request. Workers Builds publishes a preview URL for the branch (`wrangler versions upload`); CI runs the test gates in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) but does not deploy.
@@ -108,7 +108,7 @@ Both commands expect a fresh `bun run build` and read from `dist/`.
 Track A quick path above is the default release preflight. Use this section as the same checklist reference before production deploys:
 
 1. `bun run check`
-2. `bun run check:toys`
+2. `bun run check:readme-claims`
 3. `bun run build`
 4. `bun run preview`
 
@@ -124,6 +124,16 @@ Any static host should point its document root to the `dist/` directory and pres
 
 If your platform supports immutable caching, enable it for `dist/assets/**`; keep HTML un-cached or lightly cached so updates propagate.
 Cloudflare Workers static assets read caching rules from `public/_headers`, which Vite copies into `dist/_headers` at build time. The repo ships defaults that set long-term caching for `assets/*` and force revalidation for HTML and `.vite` metadata; adjust those if your host requires a different policy.
+
+### Preset previews live in R2, not the bundle
+
+`/milkdrop-presets/previews/*` is served by the site Worker from the `stims-static` R2 bucket (`functions/milkdrop-presets/previews/[[path]].ts`). The PNG files are generated artifacts: they are gitignored, excluded from the deploy bundle via `.assetsignore`, and published with:
+
+```bash
+BACKFILL_TOKEN=<token> bun run previews:sync
+```
+
+Run that after `scripts/generate-thumbnails.ts` regenerates previews; pass specific filenames to sync only what changed. The token is the `stims-embed-backfill` Worker secret. A non-Cloudflare static host would need the previews directory copied into its document root instead.
 
 ## Legacy Cloudflare Pages path (removed)
 

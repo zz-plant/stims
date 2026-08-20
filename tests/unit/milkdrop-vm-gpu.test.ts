@@ -60,6 +60,7 @@ describe('GPU VM Runner', () => {
               end() {},
             };
           },
+          copyBufferToBuffer() {},
           finish() {
             return {};
           },
@@ -127,15 +128,78 @@ describe('GPU VM Runner', () => {
     expect(destroyedBuffers).toBeGreaterThan(0);
   });
 
-  test('leaves megabuf programs on the CPU path', () => {
-    let shaderModuleCreations = 0;
+  test('megabuf programs run on the GPU with a bound guest-memory buffer', () => {
+    const bufferLabels: string[] = [];
+    let layoutEntries: Array<{ binding: number; buffer?: { type?: string } }> =
+      [];
+    let bindGroupBindings: number[] = [];
+    const writtenBuffers = new Set<string>();
+
     const mockDevice = {
+      createBuffer(desc: { label?: string; size: number }) {
+        bufferLabels.push(desc.label ?? '');
+        const bufSize = desc.size || 256;
+        return {
+          label: desc.label,
+          destroy() {},
+          async mapAsync() {},
+          getMappedRange() {
+            return new ArrayBuffer(bufSize);
+          },
+          unmap() {},
+        };
+      },
       createShaderModule() {
-        shaderModuleCreations += 1;
         return {};
       },
+      createBindGroupLayout(desc: {
+        entries: Array<{ binding: number; buffer?: { type?: string } }>;
+      }) {
+        layoutEntries = desc.entries;
+        return {};
+      },
+      createPipelineLayout() {
+        return {};
+      },
+      createComputePipeline() {
+        return {
+          getBindGroupLayout() {
+            return {};
+          },
+        };
+      },
+      createBindGroup(desc: { entries: Array<{ binding: number }> }) {
+        bindGroupBindings = desc.entries.map((entry) => entry.binding);
+        return {};
+      },
+      createCommandEncoder() {
+        return {
+          beginComputePass() {
+            return {
+              setPipeline() {},
+              setBindGroup() {},
+              dispatchWorkgroups() {},
+              end() {},
+            };
+          },
+          copyBufferToBuffer() {},
+          finish() {
+            return {};
+          },
+        };
+      },
+      queue: {
+        writeBuffer(buffer: { label?: string }) {
+          writtenBuffers.add(buffer.label ?? '');
+        },
+        submit() {},
+        async onSubmittedWorkDone() {},
+      },
     };
+
     const runner = createGpuVmRunner();
+    const megabuf = new Float32Array(8);
+    megabuf[4] = 2.5;
     const initialized = runner.init(
       mockDevice as unknown as GPUDevice,
       {
@@ -155,10 +219,107 @@ describe('GPU VM Runner', () => {
       },
       { q1: 0 },
       1,
+      {},
+      { megabuf },
     );
 
-    expect(initialized).toBe(false);
-    expect(runner.isInitialized()).toBe(false);
-    expect(shaderModuleCreations).toBe(0);
+    expect(initialized).toBe(true);
+    expect(runner.isInitialized()).toBe(true);
+    // binding 2 = megabuf storage; no binding 3 (program never touches
+    // gmegabuf) and no megabuf readback allocation (read-only program).
+    expect(
+      layoutEntries.find((entry) => entry.binding === 2)?.buffer?.type,
+    ).toBe('storage');
+    expect(layoutEntries.some((entry) => entry.binding === 3)).toBe(false);
+    expect(bindGroupBindings).toContain(2);
+    expect(bufferLabels).toContain('milkdrop-vm-megabuf');
+    expect(bufferLabels).not.toContain('milkdrop-vm-megabuf-readback');
+    // The CPU mirror was uploaded at init.
+    expect(writtenBuffers.has('milkdrop-vm-megabuf')).toBe(true);
+    runner.dispose();
+  });
+
+  test('gmegabuf writer programs allocate the readback staging buffer', () => {
+    const bufferLabels: string[] = [];
+    const mockDevice = {
+      createBuffer(desc: { label?: string; size: number }) {
+        bufferLabels.push(desc.label ?? '');
+        return {
+          label: desc.label,
+          destroy() {},
+          async mapAsync() {},
+          getMappedRange() {
+            return new ArrayBuffer(desc.size || 256);
+          },
+          unmap() {},
+        };
+      },
+      createShaderModule() {
+        return {};
+      },
+      createBindGroupLayout() {
+        return {};
+      },
+      createPipelineLayout() {
+        return {};
+      },
+      createComputePipeline() {
+        return {
+          getBindGroupLayout() {
+            return {};
+          },
+        };
+      },
+      createBindGroup() {
+        return {};
+      },
+      createCommandEncoder() {
+        return {
+          beginComputePass() {
+            return {
+              setPipeline() {},
+              setBindGroup() {},
+              dispatchWorkgroups() {},
+              end() {},
+            };
+          },
+          copyBufferToBuffer() {},
+          finish() {
+            return {};
+          },
+        };
+      },
+      queue: {
+        writeBuffer() {},
+        submit() {},
+        async onSubmittedWorkDone() {},
+      },
+    };
+
+    const runner = createGpuVmRunner();
+    const initialized = runner.init(
+      mockDevice as unknown as GPUDevice,
+      {
+        statements: [
+          {
+            target: 'gmegabuf',
+            targetExpression: { type: 'literal', value: 7 },
+            expression: { type: 'identifier', name: 'bass' },
+            source: 'gmegabuf(7)=bass;',
+            line: 1,
+          },
+        ],
+        sourceLines: ['gmegabuf(7)=bass;'],
+      },
+      {},
+      1,
+      {},
+      { gmegabuf: new Float32Array(16) },
+    );
+
+    expect(initialized).toBe(true);
+    expect(bufferLabels).toContain('milkdrop-vm-gmegabuf');
+    expect(bufferLabels).toContain('milkdrop-vm-gmegabuf-readback');
+    runner.dispose();
   });
 });

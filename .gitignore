@@ -45,6 +45,8 @@ thumbnails/
 # --output outside the repo instead.
 /screenshots/loop-preset-sweep*/
 /screenshots/certification-perf/
+/screenshots/ui-diff/
+/screenshots/ui-diff-baseline/
 
 # Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
 # Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
@@ -92,3 +94,8 @@ thumbnails/
 !/screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784479069093.debug.json
 !/screenshots/parity/debug-canvas-*.png
 !/screenshots/parity/debug-page-*.png
+# Generated preset previews are published to R2 (scripts/sync-previews-r2.ts)
+/public/milkdrop-presets/previews/
+
+# e2e failure diagnostics (tests/e2e/agent-api.ts writeAgentFailureArtifact)
+/test-results/

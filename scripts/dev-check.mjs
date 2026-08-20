@@ -1,5 +1,10 @@
-/* eslint-env node */
-/* global fetch, console, process */
+/**
+ * Smoke-tests the Vite dev server by booting it and fetching the app once.
+ *
+ * Starts Vite on 127.0.0.1:5173 with HMR and dep pre-bundling off, requests the
+ * resolved URL, then always shuts the server down; a non-OK response exits
+ * non-zero so a broken dev boot fails the quality gate.
+ */
 import { createServer } from 'vite';
 
 async function main() {
@@ -31,7 +36,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console
   console.error(error);
   process.exitCode = 1;
 });

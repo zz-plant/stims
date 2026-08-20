@@ -6,53 +6,31 @@ import {
   Line,
   NormalBlending,
   type ShaderMaterial,
-  Sphere,
   Vector3,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial } from 'three/webgpu';
 import {
   disposeGeometry,
   disposeMaterial,
 } from '../../utils/three/three-dispose';
 import {
-  createProceduralCustomWaveMaterial,
-  createProceduralWaveMaterial,
-} from '../renderer-backends/webgpu-procedural-materials';
+  isSharedGeometry,
+  markSharedGeometry,
+  setGeometryBoundingSphere,
+} from '../renderer-adapter-shared';
 import type {
   MilkdropGpuInteractionTransform,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
 } from '../types';
 import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
-const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const PROCEDURAL_WAVE_BOUNDS_RADIUS = Math.SQRT2 * 2.2;
 const PROJECTM_STEREO_OFFSET = 32 / 512;
 const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
-
-function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
-  geometry.userData[SHARED_GEOMETRY_FLAG] = true;
-  return geometry;
-}
-
-function isSharedGeometry(geometry: BufferGeometry) {
-  return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
-}
-
-function setGeometryBoundingSphere(
-  geometry: BufferGeometry,
-  center: Vector3,
-  radius: number,
-) {
-  if (!geometry.boundingSphere) {
-    geometry.boundingSphere = new Sphere(center.clone(), radius);
-    return geometry.boundingSphere;
-  }
-  geometry.boundingSphere.center.copy(center);
-  geometry.boundingSphere.radius = radius;
-  return geometry.boundingSphere;
-}
 
 function getProceduralWaveGeometry(sampleCount: number) {
   const safeCount = Math.max(2, Math.round(sampleCount));
@@ -187,23 +165,35 @@ function setOrUpdateVectorAttribute(
 ) {
   const itemSize = columns.length;
   const length = columns[0]?.length ?? 0;
-  const interleaved = new Float32Array(length * itemSize);
-  for (let i = 0; i < length; i += 1) {
-    for (let c = 0; c < itemSize; c += 1) {
-      interleaved[i * itemSize + c] = columns[c]?.[i] ?? 0;
-    }
-  }
+  const requiredLength = length * itemSize;
   const existing = geometry.getAttribute(name);
+
+  let targetArray: Float32Array;
   if (
     existing instanceof Float32BufferAttribute &&
     existing.itemSize === itemSize &&
-    existing.array.length === interleaved.length
+    existing.array.length === requiredLength
   ) {
-    existing.array.set(interleaved);
+    targetArray = existing.array as Float32Array;
+  } else {
+    targetArray = new Float32Array(requiredLength);
+  }
+
+  for (let i = 0; i < length; i += 1) {
+    for (let c = 0; c < itemSize; c += 1) {
+      targetArray[i * itemSize + c] = columns[c]?.[i] ?? 0;
+    }
+  }
+
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === itemSize &&
+    existing.array.length === requiredLength
+  ) {
     existing.needsUpdate = true;
     return;
   }
-  const attribute = new Float32BufferAttribute(interleaved, itemSize);
+  const attribute = new Float32BufferAttribute(targetArray, itemSize);
   attribute.setUsage(DynamicDrawUsage);
   geometry.setAttribute(name, attribute);
 }
@@ -241,18 +231,23 @@ function resampleScalarValues(values: ArrayLike<number>, targetLength: number) {
   return resampled;
 }
 
-export function syncProceduralWaveObject(
+/**
+ * Ensures a Line object with the correct geometry/material for a procedural
+ * wave exists, creating or replacing either as needed. Does not touch
+ * per-frame attribute data — call fillProceduralWaveAttributes for that.
+ */
+function ensureProceduralWaveObject(
   object: Line | undefined,
   wave: MilkdropProceduralWaveVisual,
-  interaction?: MilkdropGpuInteractionTransform | null,
 ) {
+  const { createProceduralWaveMaterial } = getWebGpuHelperMaterialsSync();
   const next =
     object ??
     new Line(
       createProceduralWaveObjectGeometry(getProceduralWaveRenderCount(wave)),
       createProceduralWaveMaterial(),
     );
-  if (!(next.material instanceof NodeMaterial)) {
+  if (!isWebGpuNodeMaterial(next.material)) {
     disposeMaterial(next.material);
     next.material = createProceduralWaveMaterial();
   }
@@ -270,13 +265,26 @@ export function syncProceduralWaveObject(
     }
     next.geometry = createProceduralWaveObjectGeometry(renderCount);
   }
+  return next;
+}
 
+/**
+ * Computes and uploads the per-frame sampleT/sampleData/sampleMisc
+ * attributes for a procedural wave's current-frame data. Returns the
+ * computed sampleData channels so callers that also need a
+ * previous-frame snapshot (e.g. syncInterpolatedProceduralWaveObject)
+ * can reuse them instead of recomputing identical values.
+ */
+function fillProceduralWaveAttributes(
+  next: Line,
+  wave: MilkdropProceduralWaveVisual,
+) {
   setOrUpdateScalarAttribute(
     next.geometry,
     'sampleT',
     buildProceduralWaveSampleT(wave.samples.length, wave.closed),
   );
-  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
+  const sampleDataChannels = [
     buildProceduralWaveAttributeValues(wave.samples, wave.closed),
     buildProceduralWaveAttributeValues(
       wave.samples,
@@ -293,34 +301,37 @@ export function syncProceduralWaveObject(
       wave.closed,
       PROJECTM_STEREO_OFFSET * 3,
     ),
+  ];
+  setOrUpdateVectorAttribute(next.geometry, 'sampleData', sampleDataChannels);
+  const velocityChannel = buildProceduralWaveAttributeValues(
+    wave.velocities,
+    wave.closed,
+  );
+  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
+    buildProceduralWaveParity(wave.samples.length, wave.closed),
+    velocityChannel,
+    velocityChannel,
   ]);
+  return { sampleDataChannels, velocityChannel };
+}
+
+export function syncProceduralWaveObject(
+  object: Line | undefined,
+  wave: MilkdropProceduralWaveVisual,
+  interaction?: MilkdropGpuInteractionTransform | null,
+) {
+  const next = ensureProceduralWaveObject(object, wave);
+  const { sampleDataChannels } = fillProceduralWaveAttributes(next, wave);
   // "previous" is the same snapshot as "current" here — this sync path
   // always drives blendMix to 1 below, so mix(previous, current, 1) reduces
   // to current regardless. syncInterpolatedProceduralWaveObject overwrites
   // this with a genuine previous-frame snapshot and a real blendMix.
-  setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
-    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET,
-    ),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 2,
-    ),
-    buildProceduralWaveAttributeValues(
-      wave.samples,
-      wave.closed,
-      PROJECTM_STEREO_OFFSET * 3,
-    ),
-  ]);
-  setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
-    buildProceduralWaveParity(wave.samples.length, wave.closed),
-    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
-  ]);
+  // Reuse the arrays computed above instead of recomputing identical values.
+  setOrUpdateVectorAttribute(
+    next.geometry,
+    'previousSampleData',
+    sampleDataChannels,
+  );
 
   const material = next.material as ShaderMaterial;
   material.uniforms.mode.value = wave.mode;
@@ -351,6 +362,7 @@ export function syncProceduralCustomWaveObject(
   wave: MilkdropProceduralCustomWaveVisual,
   interaction?: MilkdropGpuInteractionTransform | null,
 ) {
+  const { createProceduralCustomWaveMaterial } = getWebGpuHelperMaterialsSync();
   const next =
     object ??
     new Line(
@@ -359,7 +371,7 @@ export function syncProceduralCustomWaveObject(
     );
   const fieldProgramSignature = wave.fieldProgram?.signature ?? 'default';
   if (
-    !(next.material instanceof NodeMaterial) ||
+    !isWebGpuNodeMaterial(next.material) ||
     next.material.userData.fieldProgramSignature !== fieldProgramSignature
   ) {
     disposeMaterial(next.material);
@@ -466,7 +478,11 @@ export function syncInterpolatedProceduralWaveObject(
   alphaMultiplier: number,
   interaction: MilkdropGpuInteractionTransform | null | undefined,
 ) {
-  const next = syncProceduralWaveObject(object, currentWave, interaction);
+  const next = ensureProceduralWaveObject(object, currentWave);
+  const { sampleDataChannels, velocityChannel } = fillProceduralWaveAttributes(
+    next,
+    currentWave,
+  );
   const previousSamples = resampleScalarValues(
     previousWave.samples,
     currentWave.samples.length,
@@ -475,24 +491,10 @@ export function syncInterpolatedProceduralWaveObject(
     previousWave.velocities,
     currentWave.velocities.length,
   );
-  setOrUpdateVectorAttribute(next.geometry, 'sampleData', [
-    buildProceduralWaveAttributeValues(currentWave.samples, currentWave.closed),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET,
-    ),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET * 2,
-    ),
-    buildProceduralWaveAttributeValues(
-      currentWave.samples,
-      currentWave.closed,
-      PROJECTM_STEREO_OFFSET * 3,
-    ),
-  ]);
+  // sampleData/sampleMisc's "current" channels were already computed and
+  // uploaded by fillProceduralWaveAttributes above; only previousSampleData
+  // and the previous-velocity slot of sampleMisc are genuinely new here.
+  void sampleDataChannels;
   setOrUpdateVectorAttribute(next.geometry, 'previousSampleData', [
     buildProceduralWaveAttributeValues(previousSamples, currentWave.closed),
     buildProceduralWaveAttributeValues(
@@ -513,13 +515,18 @@ export function syncInterpolatedProceduralWaveObject(
   ]);
   setOrUpdateVectorAttribute(next.geometry, 'sampleMisc', [
     buildProceduralWaveParity(currentWave.samples.length, currentWave.closed),
-    buildProceduralWaveAttributeValues(
-      currentWave.velocities,
-      currentWave.closed,
-    ),
+    velocityChannel,
     buildProceduralWaveAttributeValues(previousVelocities, currentWave.closed),
   ]);
   const material = next.material as ShaderMaterial;
+  material.uniforms.mode.value = currentWave.mode;
+  material.uniforms.centerX.value = currentWave.centerX;
+  material.uniforms.centerY.value = currentWave.centerY;
+  material.uniforms.scale.value = currentWave.scale;
+  material.uniforms.mystery.value = currentWave.mystery;
+  material.uniforms.signalTime.value = currentWave.time;
+  material.uniforms.beatPulse.value = currentWave.beatPulse;
+  material.uniforms.trebleAtt.value = currentWave.trebleAtt;
   material.uniforms.previousCenterX.value = previousWave.centerX;
   material.uniforms.previousCenterY.value = previousWave.centerY;
   material.uniforms.previousScale.value = previousWave.scale;

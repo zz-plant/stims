@@ -13,12 +13,43 @@ You're about to code on Stims. Before you dive into docs, grab these five things
 
 3. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
 
-4. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
+4. **Test visually in the browser** — For a live edit loop, run `bun run dev:agent` (one warm loop: dev server + typecheck watch + fast tests watch). For visual QA only, run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
 
 5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type/guard check (~5-10s with fail-fast feedback)
    - `bun run test tests/path/to/file.test.ts` — Targeted test for a specific file (~1-3s)
    - `bun run check` — Full quality gate before committing (guards + fast sharded test suite)
+
+   For anything else, `bun run scripts:list` (alias `bun run help`) prints every script grouped by namespace with a one-line purpose.
+
+## Verify by change type
+
+Run exactly what your change can break instead of the whole gate:
+
+| Change touches | Verify with |
+| --- | --- |
+| `README.md`, `docs/`, AGENTS files only | `bun run check:doc-references` + `bun run check:readme-claims` |
+| `src/`, `scripts/` code | `bun run check:quick` |
+| tests | `bun run test <file>` then `bun run check:quick` |
+| `expression.ts` / `builtin-docs.ts` | `bun run docs:authoring-reference` then `bun run check:authoring-docs` |
+| `public/milkdrop-presets/catalog.json` | `bun run check:catalog-integrity` + `bun run check:catalog-fidelity` |
+| anything | `bun run verify --changed` (smart gate: detects applicable guards/tests/regens; `agent:verify` is the same script) |
+
+## Boundaries and don't-touch areas
+
+- **`src/data/milkdrop-parity/`** — measured results, certification corpus, and
+  reference manifests are promotion outputs. Change them only through the
+  capture → import → promote workflow (`parity:capture:projectm-native`,
+  `parity:promote-reference`, `parity:promote-result`); direct edits break the
+  provenance chain.
+- **`tests/fixtures/milkdrop/projectm-reference/`** and `projectm-upstream/` —
+  provenance-bound fixtures; regenerated, not hand-edited.
+- **`scratch/`, `screenshots/`, `output/`** — gitignored measurement output, not
+  source. Never commit them.
+- **`docs/authoring/reference.md`** — generated from `expression.ts` /
+  `builtin-docs.ts`. Edit the source, then `bun run docs:authoring-reference`.
+- **Stale `docs/archive/` and dated `STATUS_*` docs** — historical records.
+  `check:doc-references` intentionally skips them; don't rewrite the past.
 
 ## Task routing
 
@@ -26,7 +57,7 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 
 | If the task is mainly about... | Start here |
 | --- | --- |
-| shared runtime, renderer, shell, controls, audio, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| shared runtime, renderer, shell, controls, audio, MIDI/hardware controllers, or URL state | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
 | bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](./.agent/skills/modify-preset-workflow/SKILL.md) |
 | browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](./.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) |
 | quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
@@ -43,9 +74,19 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 - **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and husky `commit-msg` hook.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
+## Dev modes
+
+| Command | What it runs | When to use |
+| --- | --- | --- |
+| `bun run dev:agent` | Vite (`?agent=true` route) + typecheck watch + fast tests watch | Canonical warm loop for humans and agents |
+| `bun run dev` | Vite only | Visual QA at `http://localhost:5173/?agent=true` |
+| `bun run dev:host` | Vite on LAN | Testing from another device |
+| `bun run dev:webgpu` | WebGPU-focused dev harness | WebGPU backend work |
+| `bun run dev:ui` | Vite with `vite.config.ui.js` | Standalone UI-harness work |
+
 ## Regression guards
 
-The quality gate (`bun run check`) runs these guards automatically. New code must pass them:
+The quality gate (`bun run check`) runs these guards automatically. New code must pass them. All `check:*` scripts are read-only — when a check reports stale output, regenerate via the corresponding `generate:*` script or `--write` flag rather than editing the artifact.
 
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
@@ -53,9 +94,11 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 - `check:architecture` — the `frontend/*` → engine boundary; only the engine adapter may cross it.
 - `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
 - `check:css-tokens` — CSS custom properties resolve to a defined token.
+- `check:cache-bounds` — new `Map`/`Set`/`WeakMap` growth containers added in the diff must share their file with an explicit bound (a `MAX_*`/`*_LIMIT`/`capacity`/`maxSize` constant or an eviction path), or be allowlisted with a reason. Strict mode runs at commit; advisory in `bun run check`.
 - `catalog-compiler-smoke` (unit) — every bundled preset compiles; samplers normalize; wave per-point programs work. Catches shader/sampler regressions pre-merge.
 - `mobile-viewport-matrix` (unit) — mobile layout invariants (viewport-safe stage, control dock visibility, sidecar wrap, safe-area insets).
 - `audio-lifecycle` (unit) — audio ordering contract (no leaked contexts, permission-before-mount, generation race detection).
+- `check:readme-claims` — keeps the public README honest. Any `N-preset catalog` or `**N presets**` figure must equal `public/milkdrop-presets/catalog.json`, and these phrases are rejected as claims for unshipped features: `Stem-Aware Audio Engine`, `WebMIDI & VJ Controls`, `WebXR 6DoF Spatial VR Stage`, `4K / 60FPS Video Export`, `AI Generation & Blending`. README edits must not introduce them.
 
 ## Recommended execution order
 

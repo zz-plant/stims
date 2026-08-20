@@ -16,10 +16,6 @@ describe('launch shell skip-to-visualizer flow', () => {
     const appSource = frontendSource('App.tsx');
     const uiSource = frontendSource('workspace-ui.tsx');
     const stageSource = frontendSource('StimsStageFrame.tsx');
-    const accessibilityTestSource = readFileSync(
-      join(import.meta.dir, 'accessibility-regression.test.ts'),
-      'utf8',
-    );
 
     expect(appSource).toContain(
       '<a href="#stims-visualizer" className="skip-link">',
@@ -28,7 +24,6 @@ describe('launch shell skip-to-visualizer flow', () => {
     expect(uiSource).toContain('#preset-search, .milkdrop-overlay__search');
     expect(stageSource).toContain('id="stims-visualizer"');
     expect(stageSource).toContain('tabIndex={-1}');
-    expect(accessibilityTestSource).toContain('href="#stims-visualizer"');
   });
 
   test('keeps launch hero dismissal tied to live data-mode transitions', () => {

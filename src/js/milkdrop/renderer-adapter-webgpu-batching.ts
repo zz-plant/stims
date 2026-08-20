@@ -1,28 +1,39 @@
-import type { Texture } from 'three';
+/**
+ * Batches WebGPU draw work so per-frame CPU cost stays flat.
+ *
+ * A preset can declare hundreds of custom waves and shapes, each nominally its
+ * own draw. Issuing them individually spends more time in command encoding than
+ * in rendering, so this module groups compatible segments into shared buffers
+ * and pipelines and emits far fewer, larger draws.
+ *
+ * Batching is a performance optimisation with correctness stakes: grouping
+ * changes draw order, and draw order is visible wherever blending is. Output
+ * must stay identical to the unbatched WebGL path — verify with
+ * `bun run lab:gpu-differential`, and measure the gain with
+ * `bun run perf:certification-corpus` rather than assuming it.
+ */
+import type { Material, Texture } from 'three';
 import {
-  AddEquation,
-  AdditiveBlending,
   BufferGeometry,
-  CustomBlending,
   DoubleSide,
-  DstColorFactor,
-  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
-  InstancedBufferAttribute,
   InstancedBufferGeometry,
   Mesh,
   NormalBlending,
-  OneFactor,
-  ReverseSubtractEquation,
   ShaderMaterial,
-  ZeroFactor,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
 import {
+  buildMilkdropCustomWavePoint,
+  createSegmentQuadGeometry,
+  ensureInstancedAttribute,
+  getMilkdropLayerRenderOrder,
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
+  setMaterialBlendMode,
+  syncSegmentMesh,
 } from './renderer-adapter-shared';
 import {
   getMilkdropSegmentWidth,
@@ -39,7 +50,11 @@ import type {
   MilkdropWaveVisual,
 } from './types';
 
-type BlendModeKey = 'normal' | 'additive' | 'subtractive' | 'multiplicative';
+export type BlendModeKey =
+  | 'normal'
+  | 'additive'
+  | 'subtractive'
+  | 'multiplicative';
 
 const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
   'normal',
@@ -48,27 +63,33 @@ const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
   'multiplicative',
 ];
 
-function applyBlendMode(material: ShaderMaterial, mode: BlendModeKey): void {
-  switch (mode) {
-    case 'additive':
-      material.blending = AdditiveBlending;
-      break;
-    case 'subtractive':
-      material.blending = CustomBlending;
-      material.blendSrc = OneFactor;
-      material.blendDst = OneFactor;
-      material.blendEquation = ReverseSubtractEquation;
-      break;
-    case 'multiplicative':
-      material.blending = CustomBlending;
-      material.blendSrc = DstColorFactor;
-      material.blendDst = ZeroFactor;
-      material.blendEquation = AddEquation;
-      break;
-    default:
-      material.blending = NormalBlending;
-      break;
-  }
+/**
+ * Uniform handles the fill batch pokes every sync. Both the GLSL
+ * ShaderMaterial and the native-WebGPU NodeMaterial implementations expose
+ * plain `{ value }` slots so the batch classes stay shader-dialect agnostic.
+ */
+export type ShapeFillBatchMaterial = Material & {
+  batchUniforms: {
+    shapeTexture: { value: Texture | null };
+    textureAspectY: { value: number };
+  };
+};
+
+/**
+ * Creates the shape/border materials for the batching layer. The default
+ * implementation below emits GLSL ShaderMaterials (WebGL backend and the
+ * WebGPU compatibility path); renderer-backends/webgpu-batching-materials.ts
+ * provides the NodeMaterial/TSL equivalent for the native WebGPU renderer,
+ * which cannot compile GLSL.
+ */
+export type ShapeBatchMaterialFactory = {
+  createShapeFillMaterial(): ShapeFillBatchMaterial;
+  createShapeRingMaterial(layerZ: number): Material;
+  createBorderMaterial(): Material;
+};
+
+function applyBlendMode(material: Material, mode: BlendModeKey): void {
+  setMaterialBlendMode(material, mode);
 }
 
 function getVisualBlendMode(visual: {
@@ -303,32 +324,12 @@ export function resetWebGPUBatchingMemoryStats(): void {
   };
 }
 
-function createSegmentQuadGeometry() {
-  const geometry = new InstancedBufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute(
-      [0, -1, 0, 1, -1, 0, 0, 1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0],
-      3,
-    ),
-  );
-  geometry.setAttribute(
-    'segmentCoord',
-    new Float32BufferAttribute([0, -1, 1, -1, 0, 1, 0, 1, 1, -1, 1, 1], 2),
-  );
-  return geometry;
-}
-
-function createBorderRingGeometry() {
+function buildRingGeometryLayout(
+  corners: Array<[number, number]>,
+): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
   const unitCorner: number[] = [];
   const innerWeight: number[] = [];
-  const corners: Array<[number, number]> = [
-    [-1, 1],
-    [1, 1],
-    [1, -1],
-    [-1, -1],
-  ];
   for (let index = 0; index < corners.length; index += 1) {
     const current = corners[index] as [number, number];
     const next = corners[(index + 1) % corners.length] as [number, number];
@@ -364,6 +365,16 @@ function createBorderRingGeometry() {
     new Float32BufferAttribute(innerWeight, 1),
   );
   return geometry;
+}
+
+function createBorderRingGeometry() {
+  const corners: Array<[number, number]> = [
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+  ];
+  return buildRingGeometryLayout(corners);
 }
 
 function toRadiusNormalizedScale(radius: number, offset: number) {
@@ -420,48 +431,9 @@ function getUnitPolygonRingGeometry(sides: number) {
     return cached;
   }
   memoryStats.geometryCacheMisses++;
-  const geometry = new InstancedBufferGeometry();
-  const unitCorner: number[] = [];
-  const innerWeight: number[] = [];
   const vertices = getUnitPolygonVertices(safeSides);
-  for (let index = 0; index < vertices.length; index += 1) {
-    const currentVertex = vertices[index];
-    const nextVertex = vertices[(index + 1) % vertices.length];
-    if (!currentVertex || !nextVertex) {
-      continue;
-    }
-    const current: [number, number] = [currentVertex.x, currentVertex.y];
-    const next: [number, number] = [nextVertex.x, nextVertex.y];
-    unitCorner.push(
-      current[0],
-      current[1],
-      next[0],
-      next[1],
-      current[0],
-      current[1],
-      current[0],
-      current[1],
-      next[0],
-      next[1],
-      next[0],
-      next[1],
-    );
-    innerWeight.push(0, 0, 1, 1, 0, 1);
-  }
-  geometry.setAttribute(
-    'position',
-    new Float32BufferAttribute(
-      new Array((unitCorner.length / 2) * 3).fill(0),
-      3,
-    ),
-  );
-  geometry.setAttribute(
-    'unitCorner',
-    new Float32BufferAttribute(unitCorner, 2),
-  );
-  geometry.setAttribute(
-    'innerWeight',
-    new Float32BufferAttribute(innerWeight, 1),
+  const geometry = buildRingGeometryLayout(
+    vertices.map((vertex) => [vertex.x, vertex.y]),
   );
   polygonRingGeometryCache.set(safeSides, geometry);
   return geometry;
@@ -471,30 +443,6 @@ function cloneAsInstancedGeometry(geometry: BufferGeometry) {
   return new InstancedBufferGeometry().copy(
     geometry as unknown as InstancedBufferGeometry,
   ) as InstancedBufferGeometry;
-}
-
-function ensureInstancedAttribute(
-  geometry: InstancedBufferGeometry,
-  name: string,
-  itemSize: number,
-  count: number,
-) {
-  const existing = geometry.getAttribute(name);
-  const requiredLength = Math.max(1, count * itemSize);
-  if (
-    existing instanceof InstancedBufferAttribute &&
-    existing.itemSize === itemSize &&
-    existing.array.length === requiredLength
-  ) {
-    return existing;
-  }
-  const attribute = new InstancedBufferAttribute(
-    new Float32Array(requiredLength),
-    itemSize,
-  );
-  attribute.setUsage(DynamicDrawUsage);
-  geometry.setAttribute(name, attribute);
-  return attribute;
 }
 
 function getTextureAspectY(texture: Texture | null) {
@@ -513,29 +461,35 @@ function getBatchedTargetRenderOrder(key: string) {
   switch (key) {
     case 'wave:main-wave':
     case 'procedural-wave:main-wave':
-      return 20;
+      return getMilkdropLayerRenderOrder('main-wave');
     case 'wave:custom-wave':
     case 'procedural-custom-wave':
-      return 30;
+      return getMilkdropLayerRenderOrder('custom-wave');
     case 'line:trails':
     case 'procedural-wave:trail-waves':
-      return 40;
+      return getMilkdropLayerRenderOrder('trails');
+    case 'particle-field':
+    case 'wave:particle-field':
+      return getMilkdropLayerRenderOrder('particle-field');
+    case 'blend-particle-field':
+    case 'wave:blend-particle-field':
+      return getMilkdropLayerRenderOrder('blend-particle-field');
     case 'shapes':
-      return 50;
+      return getMilkdropLayerRenderOrder('shapes');
     case 'borders':
-      return 60;
+      return getMilkdropLayerRenderOrder('borders');
     case 'line:motion-vectors':
-      return 70;
+      return getMilkdropLayerRenderOrder('motion-vectors');
     case 'wave:blend-main-wave':
-      return 80;
+      return getMilkdropLayerRenderOrder('blend-main-wave');
     case 'wave:blend-custom-wave':
-      return 90;
+      return getMilkdropLayerRenderOrder('blend-custom-wave');
     case 'blend-shapes':
-      return 100;
+      return getMilkdropLayerRenderOrder('blend-shapes');
     case 'blend-borders':
-      return 110;
+      return getMilkdropLayerRenderOrder('blend-borders');
     case 'line:blend-motion-vectors':
-      return 120;
+      return getMilkdropLayerRenderOrder('blend-motion-vectors');
     default:
       return 0;
   }
@@ -728,18 +682,17 @@ class CompactSegmentUploadBuffer {
     const width = getMilkdropSegmentWidth(wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
-      const sampleValue = wave.samples[index] ?? 0;
-      const x = wave.centerX + (-1 + sampleT * 2) * 0.85;
-      const baseY =
-        wave.centerY +
-        (sampleValue - 0.5) * 0.55 * wave.scaling * (1 + wave.mystery * 0.25);
-      const orbitalY =
-        wave.centerY +
-        Math.sin(sampleT * Math.PI * 2 * (1 + wave.mystery) + wave.time) *
-          0.18 *
-          wave.scaling;
-      const pointY = wave.spectrum ? baseY : orbitalY;
-      positions.push(x, pointY, MILKDROP_CUSTOM_WAVE_Z);
+      const point = buildMilkdropCustomWavePoint(
+        wave.centerX,
+        wave.centerY,
+        wave.scaling,
+        wave.mystery,
+        wave.spectrum ? 1 : 0,
+        wave.time,
+        sampleT,
+        wave.samples[index] ?? 0,
+      );
+      positions.push(point.x, point.y, MILKDROP_CUSTOM_WAVE_Z);
     }
     this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
@@ -984,6 +937,10 @@ class InstancedSegmentBatch {
       depthWrite: false,
       depthTest: true,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       blending: NormalBlending,
       vertexShader: `
           attribute vec2 segmentCoord;
@@ -1074,41 +1031,7 @@ class InstancedSegmentBatch {
   }
 
   private syncMesh(mesh: Mesh, instances: CompactSegmentUploadBuffer) {
-    const geometry = mesh.geometry as InstancedBufferGeometry;
-    geometry.instanceCount = instances.count;
-    mesh.visible = instances.count > 0;
-    const line = ensureInstancedAttribute(
-      geometry,
-      'instanceLine',
-      4,
-      instances.count,
-    );
-    const colorAlpha = ensureInstancedAttribute(
-      geometry,
-      'instanceColorAlpha',
-      4,
-      instances.count,
-    );
-    const control = ensureInstancedAttribute(
-      geometry,
-      'instanceControl',
-      3,
-      instances.count,
-    );
-    const join = ensureInstancedAttribute(
-      geometry,
-      'instanceJoin',
-      4,
-      instances.count,
-    );
-    (line.array as Float32Array).set(instances.getLineData());
-    (colorAlpha.array as Float32Array).set(instances.getStyleData());
-    (control.array as Float32Array).set(instances.getControlData());
-    (join.array as Float32Array).set(instances.getJoinData());
-    line.needsUpdate = true;
-    colorAlpha.needsUpdate = true;
-    control.needsUpdate = true;
-    join.needsUpdate = true;
+    syncSegmentMesh(mesh, instances);
   }
 
   dispose() {
@@ -1122,27 +1045,17 @@ class InstancedSegmentBatch {
   }
 }
 
-class InstancedBorderBatch {
-  readonly group = new Group();
-  private readonly fillMesh: Mesh;
-  private readonly outlineMesh: Mesh;
-
-  constructor(renderOrder: number) {
-    this.group.renderOrder = renderOrder;
-    this.fillMesh = this.createMesh(0.285, renderOrder);
-    this.outlineMesh = this.createMesh(0.3, renderOrder);
-    this.group.add(this.fillMesh, this.outlineMesh);
-  }
-
-  private createMesh(_defaultZ: number, renderOrder: number) {
-    const mesh = new Mesh(
-      BORDER_RING_GEOMETRY.clone(),
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        side: DoubleSide,
-        toneMapped: false,
-        vertexShader: `
+function createGlslBorderMaterial(): Material {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    toneMapped: false,
+    vertexShader: `
           attribute vec2 unitCorner;
           attribute float innerWeight;
           attribute vec4 instanceInsets;
@@ -1150,21 +1063,42 @@ class InstancedBorderBatch {
           varying vec4 vColor;
 
           void main() {
-            float outerScale = 1.0 - 2.0 * instanceInsets.y;
-            float innerScale = 1.0 - 2.0 * instanceInsets.z;
+            float outerScale = 1.0 - instanceInsets.y;
+            float innerScale = 1.0 - instanceInsets.z;
             float scale = mix(outerScale, innerScale, innerWeight) * instanceInsets.w;
             vec2 point = unitCorner * scale;
             vColor = instanceColorAlpha;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, instanceInsets.x, 1.0);
           }
         `,
-        fragmentShader: `
+    fragmentShader: `
           varying vec4 vColor;
           void main() {
             gl_FragColor = vColor;
           }
         `,
-      }),
+  });
+}
+
+class InstancedBorderBatch {
+  readonly group = new Group();
+  private readonly fillMesh: Mesh;
+  private readonly outlineMesh: Mesh;
+
+  constructor(renderOrder: number, materials: ShapeBatchMaterialFactory) {
+    this.group.renderOrder = renderOrder;
+    this.fillMesh = this.createMesh(renderOrder, materials);
+    this.outlineMesh = this.createMesh(renderOrder, materials);
+    this.group.add(this.fillMesh, this.outlineMesh);
+  }
+
+  private createMesh(
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    const mesh = new Mesh(
+      BORDER_RING_GEOMETRY.clone(),
+      materials.createBorderMaterial(),
     );
     mesh.renderOrder = renderOrder;
     return mesh;
@@ -1188,17 +1122,19 @@ class InstancedBorderBatch {
         scale: 1,
         z: 0.285,
         color: border.color,
-        alpha: border.alpha * 0.45 * alphaMultiplier,
-      });
-      outlines.push({
-        inset: innerInset,
-        outerInset: Math.max(0, innerInset - 0.0035),
-        innerInset: Math.min(0.98, innerInset + 0.0035),
-        scale: 1,
-        z: 0.3,
-        color: border.color,
         alpha: border.alpha * alphaMultiplier,
       });
+      if (border.styled) {
+        outlines.push({
+          inset: innerInset,
+          outerInset: Math.max(0, innerInset - 0.0035),
+          innerInset: Math.min(0.98, innerInset + 0.0035),
+          scale: 1,
+          z: 0.3,
+          color: border.color,
+          alpha: border.alpha * alphaMultiplier,
+        });
+      }
     }
     this.syncMesh(this.fillMesh, fills);
     this.syncMesh(this.outlineMesh, outlines);
@@ -1249,31 +1185,25 @@ class InstancedBorderBatch {
   }
 }
 
-class InstancedShapeFillBatch {
-  readonly mesh: Mesh;
-  private readonly getShapeTexture: () => Texture | null;
-
-  constructor(
-    sides: number,
-    mode: BlendModeKey,
-    getShapeTexture: () => Texture | null,
-    renderOrder: number,
-  ) {
-    this.getShapeTexture = getShapeTexture;
-    const material = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: DoubleSide,
-      blending: NormalBlending,
-      uniforms: {
-        shapeTexture: {
-          value: null,
-        },
-        textureAspectY: {
-          value: 1,
-        },
+function createGlslShapeFillMaterial(): ShapeFillBatchMaterial {
+  const material = new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    blending: NormalBlending,
+    uniforms: {
+      shapeTexture: {
+        value: null,
       },
-      vertexShader: `
+      textureAspectY: {
+        value: 1,
+      },
+    },
+    vertexShader: `
           attribute vec4 instanceTransform;
           attribute vec4 instancePrimaryColorAlpha;
           attribute vec4 instanceSecondaryColorAlpha;
@@ -1310,7 +1240,7 @@ class InstancedShapeFillBatch {
             );
           }
         `,
-      fragmentShader: `
+    fragmentShader: `
           uniform sampler2D shapeTexture;
           uniform float textureAspectY;
           varying vec4 vPrimaryColor;
@@ -1346,11 +1276,35 @@ class InstancedShapeFillBatch {
             gl_FragColor = color;
           }
         `,
-    });
-    applyBlendMode(material, mode);
+  });
+  return Object.assign(material, {
+    batchUniforms: {
+      shapeTexture: material.uniforms.shapeTexture as {
+        value: Texture | null;
+      },
+      textureAspectY: material.uniforms.textureAspectY as { value: number },
+    },
+  });
+}
+
+class InstancedShapeFillBatch {
+  readonly mesh: Mesh;
+  private readonly material: ShapeFillBatchMaterial;
+  private readonly getShapeTexture: () => Texture | null;
+
+  constructor(
+    sides: number,
+    mode: BlendModeKey,
+    getShapeTexture: () => Texture | null,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    this.getShapeTexture = getShapeTexture;
+    this.material = materials.createShapeFillMaterial();
+    applyBlendMode(this.material, mode);
     this.mesh = new Mesh(
       cloneAsInstancedGeometry(getUnitPolygonFillGeometry(sides)),
-      material,
+      this.material,
     );
     this.mesh.renderOrder = renderOrder;
   }
@@ -1359,10 +1313,10 @@ class InstancedShapeFillBatch {
     const geometry = this.mesh.geometry as InstancedBufferGeometry;
     geometry.instanceCount = instances.length;
     this.mesh.visible = instances.length > 0;
-    const material = this.mesh.material as ShaderMaterial;
     const shapeTexture = this.getShapeTexture();
-    material.uniforms.shapeTexture.value = shapeTexture;
-    material.uniforms.textureAspectY.value = getTextureAspectY(shapeTexture);
+    this.material.batchUniforms.shapeTexture.value = shapeTexture;
+    this.material.batchUniforms.textureAspectY.value =
+      getTextureAspectY(shapeTexture);
     const transform = ensureInstancedAttribute(
       geometry,
       'instanceTransform',
@@ -1430,24 +1384,20 @@ class InstancedShapeFillBatch {
   }
 }
 
-class InstancedShapeRingBatch {
-  readonly mesh: Mesh;
-
-  constructor(
-    sides: number,
-    mode: BlendModeKey,
-    layerZ: number,
-    renderOrder: number,
-  ) {
-    const material = new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      side: DoubleSide,
-      blending: NormalBlending,
-      uniforms: {
-        layerZ: { value: layerZ },
-      },
-      vertexShader: `
+function createGlslShapeRingMaterial(layerZ: number): Material {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
+    blending: NormalBlending,
+    uniforms: {
+      layerZ: { value: layerZ },
+    },
+    vertexShader: `
           uniform float layerZ;
           attribute vec2 unitCorner;
           attribute float innerWeight;
@@ -1473,13 +1423,32 @@ class InstancedShapeRingBatch {
             );
           }
         `,
-      fragmentShader: `
+    fragmentShader: `
           varying vec4 vColor;
           void main() {
             gl_FragColor = vColor;
           }
         `,
-    });
+  });
+}
+
+export const GLSL_SHAPE_BATCH_MATERIAL_FACTORY: ShapeBatchMaterialFactory = {
+  createShapeFillMaterial: createGlslShapeFillMaterial,
+  createShapeRingMaterial: createGlslShapeRingMaterial,
+  createBorderMaterial: createGlslBorderMaterial,
+};
+
+class InstancedShapeRingBatch {
+  readonly mesh: Mesh;
+
+  constructor(
+    sides: number,
+    mode: BlendModeKey,
+    layerZ: number,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
+    const material = materials.createShapeRingMaterial(layerZ);
     applyBlendMode(material, mode);
     this.mesh = new Mesh(getUnitPolygonRingGeometry(sides).clone(), material);
     this.mesh.renderOrder = renderOrder;
@@ -1547,6 +1516,7 @@ class ShapeBatchBucket {
     mode: BlendModeKey,
     getShapeTexture: () => Texture | null,
     renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
   ) {
     const bucketRenderOrder = renderOrder + BLEND_MODE_KEYS.indexOf(mode);
     this.getShapeTexture = getShapeTexture;
@@ -1556,12 +1526,14 @@ class ShapeBatchBucket {
       mode,
       getShapeTexture,
       bucketRenderOrder,
+      materials,
     );
     this.outline = new InstancedShapeRingBatch(
       sides,
       mode,
       0.16,
       bucketRenderOrder,
+      materials,
     );
     this.group.add(this.fill.mesh, this.outline.mesh);
   }
@@ -1612,34 +1584,58 @@ class ShapeBatchBucket {
 
 class ShapeBatchTarget {
   readonly group = new Group();
-  private readonly buckets = new Map<string, ShapeBatchBucket>();
+  private readonly buckets = new Map<number, ShapeBatchBucket>();
+  // Persistent grouping scratch: numeric keys (sides × blend mode) and
+  // reused per-bucket arrays, so the per-frame regroup allocates nothing.
+  // The old version built a fresh Map, a template-literal key per shape,
+  // and fresh bucket arrays every frame.
+  private readonly groupScratch = new Map<number, MilkdropShapeVisual[]>();
   private readonly getShapeTexture: () => Texture | null;
   private readonly renderOrder: number;
+  private readonly materials: ShapeBatchMaterialFactory;
 
-  constructor(getShapeTexture: () => Texture | null, renderOrder: number) {
+  constructor(
+    getShapeTexture: () => Texture | null,
+    renderOrder: number,
+    materials: ShapeBatchMaterialFactory,
+  ) {
     this.getShapeTexture = getShapeTexture;
     this.renderOrder = renderOrder;
+    this.materials = materials;
     this.group.renderOrder = renderOrder;
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
-    const grouped = new Map<string, MilkdropShapeVisual[]>();
+    const grouped = this.groupScratch;
+    for (const bucketShapes of grouped.values()) {
+      bucketShapes.length = 0;
+    }
     for (const shape of shapes) {
-      const key = `${shape.sides}:${getVisualBlendMode(shape)}`;
-      const bucket = grouped.get(key) ?? [];
-      bucket.push(shape);
-      grouped.set(key, bucket);
+      const key =
+        shape.sides * BLEND_MODE_KEYS.length +
+        BLEND_MODE_KEYS.indexOf(getVisualBlendMode(shape));
+      let bucketShapes = grouped.get(key);
+      if (!bucketShapes) {
+        bucketShapes = [];
+        grouped.set(key, bucketShapes);
+      }
+      bucketShapes.push(shape);
     }
 
     for (const [key, bucketShapes] of grouped) {
+      if (bucketShapes.length === 0) {
+        continue;
+      }
       let bucket = this.buckets.get(key);
       if (!bucket) {
-        const [sidesStr, mode] = key.split(':') as [string, BlendModeKey];
+        const sides = Math.floor(key / BLEND_MODE_KEYS.length);
+        const mode = BLEND_MODE_KEYS[key % BLEND_MODE_KEYS.length] ?? 'normal';
         bucket = new ShapeBatchBucket(
-          Number(sidesStr),
+          sides,
           mode,
           this.getShapeTexture,
           this.renderOrder,
+          this.materials,
         );
         this.buckets.set(key, bucket);
         this.group.add(bucket.group);
@@ -1647,8 +1643,10 @@ class ShapeBatchTarget {
       bucket.sync(bucketShapes, alphaMultiplier);
     }
 
-    for (const [key, bucket] of [...this.buckets.entries()]) {
-      if (grouped.has(key)) {
+    // Deleting during Map iteration is well-defined, so no entries() copy.
+    for (const [key, bucket] of this.buckets) {
+      const live = grouped.get(key);
+      if (live && live.length > 0) {
         continue;
       }
       bucket.dispose();
@@ -1680,6 +1678,13 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     multiplicative: new CompactSegmentUploadBuffer(),
   };
   private shapeTexture: Texture | null = null;
+  private readonly materials: ShapeBatchMaterialFactory;
+
+  constructor(
+    materials: ShapeBatchMaterialFactory = GLSL_SHAPE_BATCH_MATERIAL_FACTORY,
+  ) {
+    this.materials = materials;
+  }
 
   setShapeTexture(texture: Texture | null) {
     this.shapeTexture = texture;
@@ -1702,6 +1707,8 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       this.waveTargets.set(key, target);
       this.root.add(target.group);
     }
+    // A sync re-shows a target hidden by hideBlendTargets.
+    target.group.visible = true;
     return target;
   }
 
@@ -1721,20 +1728,26 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       target = new ShapeBatchTarget(
         () => this.shapeTexture,
         getBatchedTargetRenderOrder(key),
+        this.materials,
       );
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
     }
+    target.group.visible = true;
     return target;
   }
 
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
-      target = new InstancedBorderBatch(getBatchedTargetRenderOrder(key));
+      target = new InstancedBorderBatch(
+        getBatchedTargetRenderOrder(key),
+        this.materials,
+      );
       this.borderTargets.set(key, target);
       this.root.add(target.group);
     }
+    target.group.visible = true;
     return target;
   }
 
@@ -1849,6 +1862,24 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     return true;
   }
 
+  hideBlendTargets() {
+    for (const [key, target] of this.waveTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+    for (const [key, target] of this.shapeTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+    for (const [key, target] of this.borderTargets) {
+      if (key.includes('blend-')) {
+        target.group.visible = false;
+      }
+    }
+  }
+
   dispose() {
     for (const target of this.waveTargets.values()) {
       target.dispose();
@@ -1878,4 +1909,40 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
 
 export function createWebGPUBatchingLayer(): MilkdropRendererBatcher {
   return new WebGPUBatchingLayer();
+}
+
+/**
+ * Shapes+borders-only batcher for the native WebGPU renderer. Waves, lines,
+ * and motion vectors intentionally stay on the existing native TSL paths
+ * (procedural materials with cross-preset blending), so only the shape and
+ * border hooks are exposed; the adapter core falls back to per-object
+ * rendering for everything else.
+ */
+export function createNativeWebGPUShapeBatchingLayer(
+  materials: ShapeBatchMaterialFactory,
+): MilkdropRendererBatcher {
+  const layer = new WebGPUBatchingLayer(materials);
+  return {
+    attach: (root) => layer.attach(root),
+    setShapeTexture: (texture) => layer.setShapeTexture(texture),
+    renderShapeGroup: (target, group, shapes, alphaMultiplier) =>
+      layer.renderShapeGroup(target, group, shapes, alphaMultiplier),
+    renderBorderGroup: (
+      target,
+      group,
+      borders,
+      alphaMultiplier,
+      screenAspect,
+    ) =>
+      layer.renderBorderGroup(
+        target,
+        group,
+        borders,
+        alphaMultiplier,
+        screenAspect,
+      ),
+    hideBlendTargets: () => layer.hideBlendTargets(),
+    dispose: () => layer.dispose(),
+    disposeWithCaches: () => layer.disposeWithCaches(),
+  };
 }

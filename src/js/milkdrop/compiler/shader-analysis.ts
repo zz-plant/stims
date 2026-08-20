@@ -1,3 +1,27 @@
+/**
+ * Recognises what a preset's shader source is trying to do, so it can be re-expressed.
+ *
+ * Preset shaders cannot be handed to the GPU as written: they are
+ * HLSL-flavored, target a fixed-function pipeline that no longer exists, and
+ * must run on two backends whose shading languages differ. This module reads
+ * the parsed shader AST and extracts a structured description — samplers, UV
+ * transforms, tint and blend modes, the scalar controls a preset animates —
+ * that `shader-analysis-glsl.ts` and the WebGPU TSL path can each realise in
+ * their own language.
+ *
+ * That is why so much of this file is pattern recognition with names like
+ * `isShaderSolarizeSampleExpression`. Each predicate exists because real
+ * presets write that exact shape and the original renderer produced a
+ * particular result. There is no specification to consult; the corpus is the
+ * specification.
+ *
+ * Consequences worth knowing before editing:
+ * - Unrecognised constructs degrade, they do not throw. A preset that renders
+ *   imperfectly beats one that refuses to load.
+ * - A "simplification" that collapses two predicates usually breaks a preset
+ *   nobody in the review has heard of. Run `bun run lab:glsl-corpus-scan` and
+ *   `bun run parity:suite`; the corpus is the only witness that matters.
+ */
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
@@ -23,6 +47,7 @@ import {
   applyShaderControlValue,
   applyShaderExpressionOperator,
   applyTextureLayerSample,
+  buildMilkdropSignalNameReplacements,
   buildTintBlendExpression,
   createDefaultShaderControlExpressions,
   createDefaultShaderControls,
@@ -41,6 +66,10 @@ import {
   isShaderScalarValue,
   isShaderSolarizeSampleExpression,
   isShaderUvIdentifier,
+  MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
   normalizeShaderSamplerName,
   normalizeShaderSyntax,
   normalizeShaderTextureBlendMode,
@@ -69,81 +98,95 @@ export {
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
 export function normalizeHlslToGlsl(shaderText: string): string {
-  return (
-    shaderText
-      // Volume-noise samples take a vec3 coordinate; route them to the
-      // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
-      // texture2D, which has no vec3 overload. Must run before the generic
-      // texture( → texture2D( rewrite below.
-      .replace(
-        /\b(?:texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
-        'sampleNoiseVolume(',
-      )
-      .replace(/\btexture\s*\(/giu, 'texture2D(')
-      .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
-      .replace(/\b(\d+)u\b/giu, '$1')
-      .replace(/\bfloat2\b/giu, 'vec2')
-      .replace(/\bfloat3\b/giu, 'vec3')
-      .replace(/\bfloat4\b/giu, 'vec4')
-      .replace(/\bsampler_main\b/giu, 'currentTex')
-      .replace(/\bsampler_fw_main\b/giu, 'currentTex')
-      .replace(/\bsampler_pc_main\b/giu, 'previousTex')
-      .replace(/\bsampler_pw_main\b/giu, 'previousTex')
-      .replace(/\bsampler_fc_main\b/giu, 'warpTex')
-      .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
-      .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
-      .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
-      .replace(
-        /\bsampler_noise\b|\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_fw_noise_lq\b|\bsampler_fw_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
-        'noiseTex',
-      )
-      .replace(
-        /\bsampler_noisevol\b|\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b|\bsampler_fw_noisevol\b|\bsampler_fw_noisevol_hq\b|\bsampler_fw_noisevol_lq\b/giu,
-        'simplexTex',
-      )
-      .replace(
-        /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
-        'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
-      )
-      .replace(
-        /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
-        'vec4(1.0 / texelSize, texelSize)',
-      )
-      // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
-      // uniform behind them — MilkDrop injects them at runtime, this pipeline
-      // does not — so any identifier left after the specific rewrites above
-      // would reach the GLSL undeclared and fail to compile. Every bundled
-      // substitute texture is 640x640 (xy = size, zw = 1/size).
-      .replace(
-        /\btexsize_[A-Za-z0-9_]+\b/giu,
-        'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
-      )
-      .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
-      .replace(/\buv_orig\b/giu, 'vUv')
-      .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
-      .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
-      .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
-      .replace(/\btime\b/giu, 'signalTime')
-      .replace(/\bbass_att\b/giu, 'signalBassAtt')
-      .replace(/\bbass\b/giu, 'signalBass')
-      .replace(/\bmid_att\b/giu, 'signalMidAtt')
-      .replace(/\bmids_att\b/giu, 'signalMidAtt')
-      .replace(/\bmid\b/giu, 'signalMid')
-      .replace(/\bmids\b/giu, 'signalMid')
-      .replace(/\btreb_att\b/giu, 'signalTrebAtt')
-      .replace(/\btreb\b/giu, 'signalTreb')
-      .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
-      .replace(/\brms\b/giu, 'signalEnergy')
-      .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
-      .replace(/\bbeat\b/giu, 'signalBeat')
-      .replace(/\bprogress\b/giu, 'signalFrame')
-      .replace(/\bframe\b/giu, 'signalFrame')
-      .replace(/\bfps\b/giu, 'signalFps')
-      .replace(
-        /\brand_frame\b/giu,
-        'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
-      )
-  );
+  const result = shaderText
+    // Volume-noise samples take a vec3 coordinate; route them to the
+    // sampleNoiseVolume helper (atlas-sliced 3D emulation) instead of
+    // texture2D, which has no vec3 overload. Must run before the generic
+    // texture( → texture2D( rewrite below.
+    .replace(
+      /\b(?:texture3D|texture|tex3D)\s*\(\s*sampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\s*,/giu,
+      'sampleNoiseVolume(',
+    )
+    .replace(/\btexture\s*\(/giu, 'texture2D(')
+    .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
+    .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bfloat2\b/giu, 'vec2')
+    .replace(/\bfloat3\b/giu, 'vec3')
+    .replace(/\bfloat4\b/giu, 'vec4')
+    .replace(/\bsampler_main\b/giu, 'currentTex')
+    .replace(/\bsampler_fw_main\b/giu, 'currentTex')
+    .replace(/\bsampler_pc_main\b/giu, 'previousTex')
+    .replace(/\bsampler_pw_main\b/giu, 'previousTex')
+    .replace(/\bsampler_fc_main\b/giu, 'warpTex')
+    .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
+    .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
+    .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
+    .replace(/\bsampler_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b/giu, 'noiseTex')
+    .replace(
+      /\bsampler_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
+      'simplexTex',
+    )
+    .replace(
+      /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
+      MILKDROP_TEXSIZE_NOISE_GLSL,
+    )
+    .replace(
+      /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
+      MILKDROP_TEXSIZE_MAIN_GLSL,
+    )
+    // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
+    // uniform behind them — MilkDrop injects them at runtime, this pipeline
+    // does not — so any identifier left after the specific rewrites above
+    // would reach the GLSL undeclared and fail to compile. Every bundled
+    // substitute texture is 640x640 (xy = size, zw = 1/size).
+    .replace(/\btexsize_[A-Za-z0-9_]+\b/giu, MILKDROP_TEXSIZE_SUBSTITUTE_GLSL)
+    .replace(/\btexsize\b/giu, MILKDROP_TEXSIZE_MAIN_GLSL)
+    .replace(/\buv_orig\b/giu, 'vUv')
+    .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
+    .replace(/\bhue_secondary\b/giu, 'vec3(tint)')
+    .replace(/\bhue_tertiary\b/giu, 'vec3(colorScale)')
+    .replace(/\brand_frame\b/giu, MILKDROP_RAND_FRAME_GLSL);
+  // Signal aliases are rewritten through the shared table
+  // (MILKDROP_SIGNAL_NAME_ALIASES) so this chain and the composite emitter
+  // cannot drift. `\b` word boundaries keep `bass` from matching inside
+  // `bass_att`; longest-first ordering keeps the more specific alias winning.
+  return buildMilkdropSignalNameReplacements(result);
+}
+
+// Slices the body of a `shader_body { … }` block by scanning to the closing
+// brace that matches the block's opening brace, counting nested braces so
+// if/for blocks stay intact. Content after the closing brace (trailing
+// statements, comments, a second shader_body block) belongs to the preset
+// text outside the body and must never be folded into the executable GLSL.
+function extractShaderBodyBlock(
+  shaderText: string,
+  openBrace: number,
+): string | null {
+  let depth = 1;
+  let inLineComment = false;
+  for (let index = openBrace + 1; index < shaderText.length; index += 1) {
+    const char = shaderText[index];
+    if (inLineComment) {
+      if (char === '\n' || char === '\r') {
+        inLineComment = false;
+      }
+      continue;
+    }
+    if (char === '/' && shaderText[index + 1] === '/') {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return shaderText.slice(openBrace + 1, index);
+      }
+    }
+  }
+  return null;
 }
 
 export function extractNativeShaderBody(shaderText: string) {
@@ -164,10 +207,9 @@ export function extractNativeShaderBody(shaderText: string) {
       ),
     )
     .map((line) => `  ${line};`);
-  const rawBody = shaderText
-    .slice(openBrace + 1)
-    .replace(/;\s*}\s*;?\s*$/, '')
-    .replace(/}\s*;?\s*$/, '');
+  const rawBody =
+    extractShaderBodyBlock(shaderText, openBrace) ??
+    shaderText.slice(openBrace + 1);
   const body = normalizeHlslToGlsl(rawBody);
 
   // Collapse whitespace/empty statements introduced when multiple raw
@@ -190,21 +232,55 @@ export function splitShaderGlobalsAndBody(glsl: string): {
   globals: string;
   body: string;
 } {
-  const funcRegex =
-    /\b(?:float|vec[234]|mat[234]|void|int|bool)\s+\w+\s*\([^)]*\)\s*\{/gu;
+  // Matches function declarations by their header: an optional `const`, a
+  // scalar/vector/matrix return type, the function name, and the opening
+  // paren of the argument list. The argument list is scanned separately (it
+  // can contain nested parens, e.g. `vec2 foo(vec2(0.0))`), and a following
+  // `{` confirms it is a declaration rather than a stray typed expression.
+  const funcHeaderRegex =
+    /\b(?:const\s+)?(?:float[234]|vec[234]|mat[234]|double|float|int|uint|bool|void)\s+[a-zA-Z_]\w*\s*\(/gu;
   const ranges: Array<[number, number]> = [];
-  let match: RegExpExecArray | null = funcRegex.exec(glsl);
+  let match: RegExpExecArray | null = funcHeaderRegex.exec(glsl);
   while (match !== null) {
     const start = match.index;
+    // Walk to the paren that closes this candidate's argument list, counting
+    // nested parens so `foo(vec2(a, b))` is consumed as one argument list.
+    let parenDepth = 0;
+    let parenClose = match.index + match[0].length;
+    let closed = false;
+    for (; parenClose < glsl.length; parenClose += 1) {
+      const char = glsl[parenClose];
+      if (char === '(') {
+        parenDepth += 1;
+      } else if (char === ')') {
+        if (parenDepth === 0) {
+          closed = true;
+          break;
+        }
+        parenDepth -= 1;
+      }
+    }
+    if (!closed) {
+      match = funcHeaderRegex.exec(glsl);
+      continue;
+    }
+    let brace = parenClose + 1;
+    while (brace < glsl.length && /\s/u.test(glsl[brace] ?? '')) {
+      brace += 1;
+    }
+    if (glsl[brace] !== '{') {
+      match = funcHeaderRegex.exec(glsl);
+      continue;
+    }
     let depth = 1;
-    let end = start + match[0].length;
+    let end = brace + 1;
     while (depth > 0 && end < glsl.length) {
       if (glsl[end] === '{') depth++;
       else if (glsl[end] === '}') depth--;
       end++;
     }
     ranges.push([start, end]);
-    match = funcRegex.exec(glsl);
+    match = funcHeaderRegex.exec(glsl);
   }
   if (ranges.length === 0) {
     return { globals: '', body: glsl };
@@ -1220,8 +1296,11 @@ function applyShaderProgramHeuristicLine({
       return false;
     }
     const offsetSign = uvAffineMatch[3] === '-' ? -1 : 1;
+    // `(uv-0.5)*z+0.5` scales the sampling coordinate by z (zoom control 1/z,
+    // zoom out for z>1); `(uv-0.5)/z+0.5` scales by 1/z (zoom control z, zoom
+    // in for z>1). Mirrors applyMainUvTransformControls' 1/scale convention.
     const zoomValue =
-      uvAffineMatch[1] === '/' && zoomScalar.value !== 0
+      uvAffineMatch[1] === '*' && zoomScalar.value !== 0
         ? 1 / zoomScalar.value
         : zoomScalar.value;
     const nextZoom = applyShaderControlValue(
@@ -1708,18 +1787,27 @@ export function extractShaderControls(
       ) {
         return;
       }
-      // Skip control-flow and structural lines that don't translate to TSL:
-      //   `}` `} else { ... }`  — closing braces / else clauses from if-blocks
-      //   `if (...) { ...`       — if-block openings (branching unsupported)
-      //   bare `tmpvar_N`         — declaration without type (e.g. `vec2 tmpvar_2;`
-      //                            split such that the type was consumed by a
-      //                            prior statement)
+      // Bare declaration tails (e.g. `vec2 tmpvar_2;` split such that the type
+      // was consumed by a prior statement) carry no executable logic.
+      if (/^[a-z_]\w*\s*$/u.test(line)) {
+        return;
+      }
+      // Control-flow lines (if/else/braces) don't translate to the TSL
+      // statement model — branching is unsupported, and the parser splits the
+      // body on `;` so an `if (...) { stmt` segment swallows the branch body
+      // into the structural line. Record them so native bodies are classified
+      // as not WebGPU-direct-executable and fall back to WebGL's raw GLSL
+      // instead of silently dropping the branch statements.
       if (
         /^\}\s*(?:else\s*\{.*)?$/u.test(line) ||
         /^if\s*\(.*\)\s*\{.*$/u.test(line) ||
-        /^else\s*\{.*$/u.test(line) ||
-        /^[a-z_]\w*\s*$/u.test(line)
+        /^else\s*\{.*$/u.test(line)
       ) {
+        if (nativeShaderBody) {
+          nativeBodyUnparsedLines.push(line);
+        } else {
+          trackUnsupported(line);
+        }
         return;
       }
       // For native shader bodies, parse failures don't invalidate the raw

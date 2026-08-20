@@ -106,7 +106,11 @@ Recognized texture sources: `noise`, `perlin`, `simplex`, `voronoi`, `aura`, `ca
 
 All listed in `shader-analysis-glsl.ts:149-315` and `wgsl-generator.ts:97-181`.
 
-Supported: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `abs`, `sqrt`, `pow`, `mod`, `fmod`, `min`, `max`, `mix`, `lerp`, `floor`, `ceil`, `fract`/`frac`, `clamp`, `step`, `smoothstep`, `length`, `dot`, `cross`, `normalize`, `sign`, `log`, `exp`, `sigmoid`, `if`, `above`, `below`, `equal`, `rand`, `sqr`, `int`.
+Supported: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `abs`, `sqrt`, `rsqrt`, `pow`, `exp`, `exp2`, `log`, `log2`, `log10`, `mod`, `fmod`, `min`, `max`, `mix`, `lerp`, `saturate`, `floor`, `ceil`, `trunc`, `round`, `fract`/`frac`, `clamp`, `step`, `smoothstep`, `length`, `dot`, `cross`, `normalize`, `reflect`, `refract`, `sign`, `fwidth`, `ddx`/`dFdx`, `ddy`/`dFdy`, `transpose`, `mul`, `sigmoid`, `if`, `above`, `below`, `equal`, `rand`, `sqr`, `int`, `bool`, `float`, `half`/`half2`/`half3`/`half4`.
+
+### LOD / Derivative Sampling
+
+`tex2Dlod`, `tex2Dbias`, and `tex2Dgrad` are emitted as GLSL ES 3.00 `textureLod`, `texture(…, bias)`, and `textureGrad` (the HLSL `float4(uv, 0, lod)` coordinate is unwrapped automatically) and as three.js TSL `.lod()/.bias()/.grad()` nodes on WebGPU. The composite/warp fragment templates stay in GLSL ES 1.00 style; three's WebGLRenderer (0.185, WebGL2-only) shims ShaderMaterial sources to `#version 300 es` and maps `texture2D→texture`, so native ES 3.00 functions resolve. Samplers without a native mip chain (procedural feed-forward noise, atlas-helper paths) fall back to the base-mip sample so emission never produces invalid GLSL.
 
 ### Audio Signal Identifiers
 
@@ -190,6 +194,9 @@ Below are constructs that parse successfully (produce a `MilkdropShaderStatement
 ### 2.7 Volume texture classification and browser approximation
 
 Bundled aux samplers are recognized as volume sources and routed to native WebGPU 3D textures or the WebGL atlas fallback. The atlas preserves bounded sampling semantics but is not a native projectM volume texture. The certification and catalog layers therefore keep this path measurable but do not promote it to exact without visual evidence.
+
+**Graduated**: `sampler_noisevol_*` (all of `_lq`/`_mq`/`_hq`, `fw_`/`pw_` prefixed) and the `sampleNoiseVolume` helper are fully supported across backends — they are `semantic-supported` volume sampling, produce no `volume-sampler-gap` evidence, and the WebGPU TSL path builds them natively. Non-volume samplers sampled via `tex3D` (e.g. `sampler_main`, blur, glyph/organic) remain genuinely non-equivalent and keep degrading honestly.
+
 **Status**: Semantic support is fixed; pixel equivalence remains an evidence gap by design.
 
 ### 2.8 `uv = uv * vec2(sx, sy)` — non-uniform scale not extracted as control
@@ -268,11 +275,17 @@ Ranked by impact: how many certification-corpus and real-world presets would mov
 
 | Category | Count |
 |---|---|
-| Fully supported patterns | ~50 (covering all control keys, all math functions, all sampler call variants, AST and heuristic paths) |
-| Unsupported/partial patterns | 3 |
+| Fully supported patterns | ~60 (all control keys, all math/vector intrinsics, LOD sampling, all sampler call variants, AST and heuristic paths) |
+| Unsupported/partial patterns | 2 |
 | Silent fallback locations | 5 |
 
 **Top 3 by impact**:
 1. Native WebGPU feedback and capture certification
 2. Feedback/rasterization visual drift
 3. Volume-texture equivalence and measured sampler coverage
+
+---
+
+## 6. Non-Standard / Metadata Preset Fields
+
+Milkdrop2 `sz*` string metadata (`szTitle`, `szAuthor`, `szComment`, …) and `@key=value` credit lines (`@Author`, `@Title`, …) are recognized by the preset parser and retained in the AST metadata (`title`/`author`/`description`/`meta_*`) instead of being flagged as unknown fields. Genuinely unknown fields remain visible (`preset_unknown_field` diagnostic, `ignoredFields`, backend `partial` evidence) but are **non-blocking**: they no longer push fidelity classification to `fallback` — an unknown-field-only preset classifies as `near-exact`.

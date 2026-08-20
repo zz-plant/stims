@@ -17,7 +17,6 @@ export function useWorkspaceToast({
     tone: 'info' | 'warn' | 'error';
   } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
-  const webglWarningShownRef = useRef(false);
   const shownToastKeysRef = useRef(new Set<string>());
 
   const clearToastTimer = () => {
@@ -37,25 +36,12 @@ export function useWorkspaceToast({
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      !engineSnapshot?.runtimeReady ||
-      engineSnapshot.backend !== 'webgl' ||
-      webglWarningShownRef.current
-    ) {
-      return;
-    }
-
-    webglWarningShownRef.current = true;
-    setToast({ message: 'Using lighter visual mode.', tone: 'warn' });
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 4200);
-  }, [engineSnapshot?.backend, engineSnapshot?.runtimeReady]);
+  // No boot-time backend toast. WebGL is the designed default on most
+  // devices, and announcing it as a warning made an apology the first thing
+  // every mobile visitor read — over a stage that hadn't painted yet. The
+  // curious can see the backend and the WebGPU fallback reason in
+  // Settings → Graphics; mid-session renderer trouble still surfaces through
+  // the context-loss toasts below.
 
   const showToast = useEffectEvent(
     (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {

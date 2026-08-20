@@ -1,17 +1,19 @@
+import { getSessionRandom } from '../../core/deterministic-random.ts';
+import { notePresetShown } from '../../core/services/preset-telemetry';
+import { compileMilkdropPresetSource } from '../compiler';
+import { prewarmMilkdropPrograms } from '../expression-jit.ts';
 import type {
-  MilkdropBlendState,
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
   MilkdropEditorSession,
-  MilkdropFrameState,
   MilkdropPresetSource,
   MilkdropRenderBackend,
 } from '../types';
+import { describeWebglFallback } from './backend-fallback';
 import type { MilkdropCatalogCoordinator } from './catalog-coordinator';
+import { FIRST_RUN_PRESET_ID } from './first-run-preset';
 import { createPresetLoadTrace } from './preset-load-trace';
-import { cloneBlendState, estimateFrameBlendWorkload } from './session';
-
-const MAX_BLEND_WORKLOAD = 900;
+import type { MilkdropPresetSelectionReason } from './startup.ts';
 
 export function createMilkdropPresetNavigationController({
   catalogStore,
@@ -19,34 +21,39 @@ export function createMilkdropPresetNavigationController({
   session,
   getActivePresetId,
   getActiveBackend,
-  getCurrentFrameState,
-  getBlendDuration,
-  getTransitionMode,
   applyCompiledPreset,
   applyPresetPerformanceOverride,
+  beginPresetTransition,
   setOverlayStatus,
   shouldFallbackToWebgl,
   triggerWebglFallback,
   rememberLastPreset,
-  preparePresetTransition,
-  markPresetSwitched,
+  noteSelectionReason,
 }: {
   catalogStore: MilkdropCatalogStore;
   catalogCoordinator: MilkdropCatalogCoordinator;
   session: MilkdropEditorSession;
   getActivePresetId: () => string;
   getActiveBackend: () => MilkdropRenderBackend;
-  getCurrentFrameState: () => MilkdropFrameState | null;
-  getBlendDuration: () => number;
-  getTransitionMode: () => 'blend' | 'cut';
   applyCompiledPreset: (compiled: MilkdropCompiledPreset) => void;
   applyPresetPerformanceOverride: (presetId: string) => void;
+  /**
+   * Starts the crossfade into the preset about to be applied and reports what
+   * it decided. The blend-vs-cut policy lives with the frame state it reads,
+   * so this controller does not re-derive it.
+   */
+  beginPresetTransition: () => {
+    mode: 'blend' | 'cut';
+    durationSeconds: number;
+  };
   setOverlayStatus: (message: string) => void;
   shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
   triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
   rememberLastPreset: (id: string) => void;
-  preparePresetTransition: (blendState: MilkdropBlendState | null) => void;
-  markPresetSwitched: () => void;
+  /** Records why the current preset was chosen, for runtime state/debugging.
+   * Purely observational — optional so callers that do not surface it (tests,
+   * preview runtimes) need not supply a stub. */
+  noteSelectionReason?: (reason: MilkdropPresetSelectionReason) => void;
 }) {
   const syncCatalog = () =>
     catalogCoordinator.scheduleCatalogSync({
@@ -64,20 +71,100 @@ export function createMilkdropPresetNavigationController({
     return entry.supports[backend].status !== 'unsupported';
   };
 
-  const getFirstSelectablePresetId = (backend = getActiveBackend()) =>
-    catalogCoordinator.getCatalogEntries().find((entry) => {
-      return entry.supports[backend].status !== 'unsupported';
-    })?.id ?? null;
+  // Prefers the deliberate first-run pick over the head of the sort order. See
+  // first-run-preset.ts for the measurements behind it. Falls back to sort
+  // order when that preset is missing from the catalog or unsupported here, so
+  // a bad id degrades to the previous behaviour rather than to no preset.
+  const getFirstSelectablePresetId = (backend = getActiveBackend()) => {
+    const entries = catalogCoordinator.getCatalogEntries();
+    const selectable = (entry: (typeof entries)[number]) =>
+      entry.supports[backend].status !== 'unsupported';
+
+    const firstRunEntry = entries.find(
+      (entry) => entry.id === FIRST_RUN_PRESET_ID && selectable(entry),
+    );
+
+    return (firstRunEntry ?? entries.find(selectable))?.id ?? null;
+  };
 
   let currentLoadRequestRevision = 0;
 
+  // Best-effort warm-up for the next likely switch. Resolves the adjacent
+  // selectable preset's source and pre-compiles it into the shared raw-string
+  // cache in idle, so a next/prev or autoplay advance applies in ~0ms instead
+  // of blocking the main thread for a full parse+IR rebuild right before the
+  // blend begins.
+  let adjacentPrefetchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const prefetchPresetById = async (id: string) => {
+    try {
+      const source = await catalogStore.getPresetSource(id);
+      if (!source) {
+        return;
+      }
+      compileMilkdropPresetSource(source.raw, source, {
+        cacheCompile: true,
+      });
+    } catch {
+      // Prefetch is invisible to the user; a failure just costs a cold
+      // compile later.
+    }
+  };
+
+  const prefetchAdjacentPreset = async (presetId: string) => {
+    const entries = catalogCoordinator.getCatalogEntries();
+    const backend = getActiveBackend();
+    const pool = entries.filter(
+      (entry) => entry.supports[backend].status !== 'unsupported',
+    );
+    const currentIndex = pool.findIndex((entry) => entry.id === presetId);
+    const next = pool[(currentIndex + 1) % pool.length];
+    if (!next || next.id === getActivePresetId()) {
+      return;
+    }
+    await prefetchPresetById(next.id);
+  };
+
+  const scheduleAdjacentPresetPrefetch = (presetId: string) => {
+    if (adjacentPrefetchTimer !== null) {
+      clearTimeout(adjacentPrefetchTimer);
+    }
+    adjacentPrefetchTimer = setTimeout(() => {
+      adjacentPrefetchTimer = null;
+      void prefetchAdjacentPreset(presetId);
+    }, 250);
+  };
+
   const selectPreset = async (
     id: string,
-    options: { recordHistory?: boolean } = {},
+    options: {
+      recordHistory?: boolean;
+      skipIfAlreadyActive?: boolean;
+      /** Why this preset is being selected; surfaced on the runtime state so
+       * an unexpected preset can be traced to its cause. Defaults to
+       * 'requested' (a UI/route/agent selection). */
+      reason?: MilkdropPresetSelectionReason;
+    } = {},
   ) => {
     const requestRevision = ++currentLoadRequestRevision;
+    noteSelectionReason?.(options.reason ?? 'requested');
     const trace = createPresetLoadTrace(id);
     try {
+      // Startup sets this. The first-run preset is compiled into the bundle and
+      // is already mounted and rendering by the time catalog selection resolves
+      // to that same id, so the fetch + recompile + re-apply below would just
+      // rebuild what is on screen. A stored draft still has to win, so only
+      // skip when there is nothing edited to apply.
+      if (options.skipIfAlreadyActive && id === getActivePresetId()) {
+        trace.step('reuseActive');
+        if (!(await catalogStore.getDraft(id))) {
+          applyPresetPerformanceOverride(id);
+          rememberLastPreset(id);
+          trace.done('already active');
+          return;
+        }
+      }
+
       trace.step('getPresetSource');
 
       const source = await catalogStore.getPresetSource(id);
@@ -141,22 +228,9 @@ export function createMilkdropPresetNavigationController({
       }
 
       if (shouldFallbackToWebgl(nextCompiled)) {
-        const unsupportedItems =
-          nextCompiled.ir?.compatibility?.gpuDescriptorPlans?.webgpu
-            ?.unsupported ?? [];
-        const unsupportedDetail =
-          unsupportedItems.length > 0
-            ? `: ${unsupportedItems.map((u) => u.reason).join('; ')}`
-            : '';
-
-        trace.adapter(
-          'WebGL fallback',
-          `${nextCompiled.title} uses features unsupported on WebGPU${unsupportedDetail}`,
-        );
-        triggerWebglFallback({
-          presetId: id,
-          reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet${unsupportedDetail}, so Stims switched to WebGL compatibility mode.`,
-        });
+        const reason = describeWebglFallback(nextCompiled);
+        trace.adapter('WebGL fallback', reason);
+        triggerWebglFallback({ presetId: id, reason });
         trace.done('fallback to WebGL');
         return;
       }
@@ -165,19 +239,13 @@ export function createMilkdropPresetNavigationController({
       applyPresetPerformanceOverride(nextCompiled.source.id);
 
       trace.step('blendTransition');
-      const currentFrameState = getCurrentFrameState();
-      const canBlend =
-        getTransitionMode() === 'blend' &&
-        getBlendDuration() > 0 &&
-        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+      const transition = beginPresetTransition();
       trace.adapter(
         'transition',
-        canBlend ? `blend (${getBlendDuration().toFixed(2)}s)` : 'cut',
+        transition.mode === 'blend'
+          ? `blend (${transition.durationSeconds.toFixed(2)}s)`
+          : 'cut',
       );
-      preparePresetTransition(
-        canBlend ? cloneBlendState(currentFrameState) : null,
-      );
-      markPresetSwitched();
 
       if (options.recordHistory !== false) {
         await catalogCoordinator.rememberSelection(id);
@@ -189,9 +257,24 @@ export function createMilkdropPresetNavigationController({
 
       rememberLastPreset(id);
 
+      // Pre-warm the equation JIT before the swap: otherwise every
+      // `new Function` parse lands in the first rendered frame of the new
+      // preset — one long task that visibly hitches playback mid-blend.
+      trace.step('jitPrewarm');
+      await prewarmMilkdropPrograms(
+        nextCompiled.ir,
+        () => requestRevision !== currentLoadRequestRevision,
+      );
+      if (requestRevision !== currentLoadRequestRevision) {
+        trace.done('superseded');
+        return;
+      }
+
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);
+      notePresetShown(nextCompiled.source.id);
       setOverlayStatus(`Loaded ${nextCompiled.title}.`);
+      scheduleAdjacentPresetPrefetch(id);
 
       trace.step('catalogSync');
       await syncCatalog();
@@ -238,10 +321,10 @@ export function createMilkdropPresetNavigationController({
     }
   };
 
-  const selectRandomPreset = async () => {
+  const pickRandomPresetId = (): string | null => {
     const catalogEntries = catalogCoordinator.getCatalogEntries();
     if (!catalogEntries.length) {
-      return;
+      return null;
     }
     const activePresetId = getActivePresetId();
     const activeBackend = getActiveBackend();
@@ -255,7 +338,7 @@ export function createMilkdropPresetNavigationController({
       ? pool
       : catalogEntries.filter((entry) => entry.id !== activePresetId);
     if (!candidates.length) {
-      return;
+      return null;
     }
 
     const scatterWeight = (entry: (typeof candidates)[number]) => {
@@ -270,6 +353,12 @@ export function createMilkdropPresetNavigationController({
       const favoriteWeight = entry.isFavorite ? 6 : 0;
       const historyBonus =
         entry.historyIndex !== undefined && entry.historyIndex >= 0 ? 3 : 0;
+      // 5 minutes: long enough that a preset shown near the start of a
+      // shuffle session has fully rotated out of "recent" by the time a
+      // typical autoplay interval (well under 5 minutes) would risk
+      // resurfacing it, short enough that it doesn't bias variety across an
+      // entire long session — only against picking the same handful of
+      // presets back-to-back.
       const recentPenalty =
         entry.lastOpenedAt && entry.lastOpenedAt > Date.now() - 300_000
           ? -4
@@ -285,15 +374,48 @@ export function createMilkdropPresetNavigationController({
       weight: scatterWeight(entry),
     }));
     const totalWeight = scoredPool.reduce((sum, s) => sum + s.weight, 0);
-    let roll = Math.random() * totalWeight;
+    let roll = getSessionRandom()() * totalWeight;
     const picked = scoredPool.find((s) => {
       roll -= s.weight;
       return roll <= 0;
     });
 
-    const selectionId = picked?.entry.id ?? candidates[0]?.id;
+    return picked?.entry.id ?? candidates[0]?.id ?? null;
+  };
+
+  // Autoplay's next pick used to be rolled at switch time, so its fetch +
+  // parse + IR rebuild always landed on the exact frame the blend began.
+  // Planning the pick ahead (the frame loop calls this a few seconds before
+  // the advance) lets the source fetch and compile happen in the quiet window
+  // instead, and the switch itself becomes a warm-cache apply.
+  let plannedRandomPresetId: string | null = null;
+
+  const isPlannedPickStillValid = (id: string) =>
+    id !== getActivePresetId() && isBackendSelectable(id);
+
+  const prepareNextRandomPreset = () => {
+    if (
+      plannedRandomPresetId !== null &&
+      isPlannedPickStillValid(plannedRandomPresetId)
+    ) {
+      return;
+    }
+    plannedRandomPresetId = pickRandomPresetId();
+    if (plannedRandomPresetId) {
+      void prefetchPresetById(plannedRandomPresetId);
+    }
+  };
+
+  const selectRandomPreset = async () => {
+    const planned =
+      plannedRandomPresetId !== null &&
+      isPlannedPickStillValid(plannedRandomPresetId)
+        ? plannedRandomPresetId
+        : null;
+    plannedRandomPresetId = null;
+    const selectionId = planned ?? pickRandomPresetId();
     if (selectionId) {
-      await selectPreset(selectionId);
+      await selectPreset(selectionId, { reason: 'autoplay' });
     }
   };
 
@@ -312,6 +434,7 @@ export function createMilkdropPresetNavigationController({
     selectPreset,
     selectAdjacentPreset,
     selectRandomPreset,
+    prepareNextRandomPreset,
     goBackPreset,
   };
 }

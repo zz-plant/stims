@@ -21,101 +21,232 @@ export type OgPresetOptions = {
   author?: string;
   tags?: string[];
   fidelity?: string;
+  tweak?: string;
+  previewImageUri?: string;
 };
 
 // A row of VU-meter bars, echoing the app's own level meter — a real
 // instrument reading, not a decorative logo mark. Heights are fixed (not
 // randomized) so output is reproducible.
-const VU_BAR_HEIGHTS = [26, 46, 78, 54, 88, 38, 64, 44];
-function buildVuMeter(x: number, y: number): string {
-  const barWidth = 11;
-  const gap = 7;
-  const peakIndex = VU_BAR_HEIGHTS.indexOf(Math.max(...VU_BAR_HEIGHTS));
-  const bars = VU_BAR_HEIGHTS.map((h, i) => {
+type OgPalette = {
+  primary: string;
+  secondary: string;
+  glow: string;
+  badgeBg: string;
+};
+
+function getPresetPalette(id: string): OgPalette {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % 5;
+  const palettes: OgPalette[] = [
+    {
+      primary: '#77c9ff',
+      secondary: '#f47a54',
+      glow: 'rgba(119, 201, 255, 0.28)',
+      badgeBg: 'rgba(119, 201, 255, 0.12)',
+    },
+    {
+      primary: '#c084fc',
+      secondary: '#f472b6',
+      glow: 'rgba(192, 132, 252, 0.28)',
+      badgeBg: 'rgba(192, 132, 252, 0.12)',
+    },
+    {
+      primary: '#34d399',
+      secondary: '#38bdf8',
+      glow: 'rgba(52, 211, 153, 0.28)',
+      badgeBg: 'rgba(52, 211, 153, 0.12)',
+    },
+    {
+      primary: '#fbbf24',
+      secondary: '#fb7185',
+      glow: 'rgba(251, 191, 36, 0.28)',
+      badgeBg: 'rgba(251, 191, 36, 0.12)',
+    },
+    {
+      primary: '#60a5fa',
+      secondary: '#e879f9',
+      glow: 'rgba(96, 165, 250, 0.28)',
+      badgeBg: 'rgba(96, 165, 250, 0.12)',
+    },
+  ];
+  return palettes[index];
+}
+
+const SPECTRUM_HEIGHTS = [24, 48, 82, 56, 92, 70, 44, 88, 36, 64, 84, 50, 96, 54, 32];
+function buildSpectrumAnalyzer(
+  x: number,
+  y: number,
+  primaryColor: string,
+  secondaryColor: string,
+): string {
+  const barWidth = 8;
+  const gap = 5;
+  const bars = SPECTRUM_HEIGHTS.map((h, i) => {
     const bx = i * (barWidth + gap);
-    const fill = i === peakIndex ? '#f47a54' : 'rgba(119,201,255,0.55)';
-    return `<rect x="${bx}" y="${-h}" width="${barWidth}" height="${h}" fill="${fill}"/>`;
+    const color = i % 3 === 0 ? secondaryColor : primaryColor;
+    return `<rect x="${bx}" y="${-h}" width="${barWidth}" height="${h}" rx="2" fill="${color}" opacity="${
+      0.55 + (i % 4) * 0.12
+    }" /><rect x="${bx}" y="${-h - 5}" width="${barWidth}" height="2" rx="1" fill="${secondaryColor}" opacity="0.95" />`;
   }).join('');
   return `<g transform="translate(${x},${y})">${bars}</g>`;
 }
 
-// A scope trace spanning the full canvas width, kept within a fixed vertical
-// band so it never runs into the footer or corner meter.
-const SCOPE_TRACE_PATH =
-  'M0,500 Q60,438 120,500 T240,502 T360,462 T480,522 T600,480 T720,538 T840,470 T960,512 T1080,458 T1200,500';
+const WAVEFORM_TRACE_PATH =
+  'M0,320 Q50,260 100,320 T200,322 T300,282 T400,342 T500,300 T600,358 T700,290 T800,332 T900,278 T1000,320 T1100,285 T1200,320';
 
-// Font weights are limited to the static TTFs vendored in /og/fonts
-// (Grotesk 400/500/700, Mono 400/700) so the rasterizer never substitutes.
 export function buildPresetOgSvg({
+  id = DEFAULT_PRESET_ID,
   title,
   author,
   tags = [],
+  tweak,
+  previewImageUri,
 }: OgPresetOptions): string {
-  const truncatedTitle = title.length > 60 ? `${title.slice(0, 57)}...` : title;
+  const palette = getPresetPalette(id);
+  const truncatedTitle = title.length > 55 ? `${title.slice(0, 52)}...` : title;
   const safeTitle = escapeXml(truncatedTitle);
-  // Fixed 54px comfortably fits titles up to ~34 chars at canvas width 1200;
-  // scale down for longer titles instead of letting them run off the edge.
   const titleFontSize =
-    truncatedTitle.length > 34
-      ? Math.max(32, Math.round(54 * (34 / truncatedTitle.length)))
-      : 54;
+    truncatedTitle.length > 28
+      ? Math.max(34, Math.round(52 * (28 / truncatedTitle.length)))
+      : 52;
   const safeAuthor = author ? escapeXml(author.trim()) : null;
+  const safeTweak = tweak ? escapeXml(tweak.slice(0, 30)) : null;
 
   const collectionTag = tags
     .find((t) => t.startsWith('collection:'))
     ?.replace('collection:', '')
     .replace(/-/g, ' ');
-  const badgeLabel = collectionTag
-    ? collectionTag.toUpperCase()
-    : 'BEAT REACTIVE';
+  const badgeLabel = safeTweak
+    ? `TWEAK: ${safeTweak.toUpperCase()}`
+    : collectionTag
+      ? collectionTag.toUpperCase()
+      : 'BEAT REACTIVE';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${safeTitle}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#12191f"/>
-      <stop offset="100%" stop-color="#0b1014"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c1118"/>
+      <stop offset="50%" stop-color="#111823"/>
+      <stop offset="100%" stop-color="#070a0e"/>
     </linearGradient>
-    <radialGradient id="glow" cx="82%" cy="16%" r="55%">
-      <stop offset="0%" stop-color="rgba(119, 201, 255, 0.22)"/>
-      <stop offset="100%" stop-color="rgba(119, 201, 255, 0)"/>
+    <radialGradient id="glow-left" cx="20%" cy="25%" r="60%">
+      <stop offset="0%" stop-color="${palette.glow}"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
     </radialGradient>
+    <radialGradient id="glow-right" cx="80%" cy="70%" r="55%">
+      <stop offset="0%" stop-color="${safeTweak ? 'rgba(244, 122, 84, 0.35)' : 'rgba(244, 122, 84, 0.2)'}"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <linearGradient id="card-border" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${palette.primary}" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="${palette.secondary}" stop-opacity="0.1"/>
+    </linearGradient>
+    <clipPath id="preview-clip">
+      <rect x="0" y="0" width="506" height="430" rx="16"/>
+    </clipPath>
+    <style>
+      @keyframes pulseDot {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      .live-pulse-dot {
+        animation: pulseDot 1.4s ease-in-out infinite;
+      }
+      @keyframes waveFlow {
+        0% { stroke-dashoffset: 0; }
+        100% { stroke-dashoffset: -120; }
+      }
+      .wave-trace {
+        stroke-dasharray: 10, 5;
+        animation: waveFlow 4s linear infinite;
+      }
+    </style>
   </defs>
 
-  <!-- Background -->
+  <!-- Background Layer -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#glow-left)"/>
+  <rect width="1200" height="630" fill="url(#glow-right)"/>
 
-  <!-- Scope graticule + trace, full-bleed — reads as a live signal, not decoration -->
-  <g stroke="rgba(119,201,255,0.14)" stroke-width="1">
-    ${Array.from({ length: 11 }, (_, i) => `<line x1="${i * 120}" y1="560" x2="${i * 120}" y2="570"/>`).join('')}
+  <!-- Subtle Audio Waveform Layer -->
+  <path d="${WAVEFORM_TRACE_PATH}" fill="none" stroke="${palette.secondary}" stroke-opacity="0.18" stroke-width="2" transform="translate(0, -20)"/>
+  <path d="${WAVEFORM_TRACE_PATH}" fill="none" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="3"/>
+
+  <!-- Left Content Panel -->
+  <g transform="translate(64, 60)">
+    <!-- Header Badge -->
+    <circle cx="10" cy="14" r="5" fill="${palette.secondary}"/>
+    <text x="24" y="19" font-size="14" font-weight="700" fill="${palette.primary}" font-family="Space Mono, monospace" letter-spacing="2.5">STIMS • SOUND REACTIVE VISUALIZER</text>
+
+    <!-- Title -->
+    <text x="0" y="${safeAuthor ? '145' : '165'}" font-size="${titleFontSize}" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
+
+    <!-- Author Byline -->
+    ${safeAuthor ? `<text x="0" y="195" font-size="24" font-weight="500" fill="rgba(247,244,235,0.72)" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#f7f4eb" font-weight="700">${safeAuthor}</tspan></text>` : ''}
+
+    <!-- Badges Row -->
+    <g transform="translate(0, ${safeAuthor ? 235 : 215})">
+      <rect x="0" y="0" width="${safeTweak ? 240 : 170}" height="36" rx="6" fill="${palette.badgeBg}" stroke="${palette.primary}" stroke-opacity="0.4"/>
+      <text x="14" y="23" font-size="13" font-weight="700" fill="${palette.primary}" font-family="Space Mono, monospace">${escapeXml(badgeLabel)}</text>
+
+      <rect x="${safeTweak ? 252 : 182}" y="0" width="150" height="36" rx="6" fill="rgba(244, 122, 84, 0.14)" stroke="rgba(244, 122, 84, 0.4)"/>
+      <text x="${safeTweak ? 266 : 196}" y="23" font-size="13" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">WEBGPU • 60 FPS</text>
+    </g>
   </g>
-  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(244,122,84,0.16)" stroke-width="2" transform="translate(0,12)"/>
-  <path d="${SCOPE_TRACE_PATH}" fill="none" stroke="rgba(119,201,255,0.4)" stroke-width="3"/>
 
-  <!-- Header label -->
-  <circle cx="92" cy="91" r="4" fill="#f47a54"/>
-  <text x="108" y="96" font-size="15" font-weight="700" fill="#77c9ff" font-family="Space Mono, monospace" letter-spacing="2">STIMS • AUDIO VISUALIZER</text>
+  <!-- Right Visualizer Preview HUD Canvas Card -->
+  <g transform="translate(630, 65)">
+    ${
+      previewImageUri
+        ? `<!-- Real Preset Preview Image Snapshot -->
+    <image href="${previewImageUri}" x="0" y="0" width="506" height="430" preserveAspectRatio="xMidYMid slice" clip-path="url(#preview-clip)" opacity="0.92"/>
+    <rect width="506" height="430" rx="16" fill="none" stroke="url(#card-border)" stroke-width="1.5"/>`
+        : `<!-- Fallback HUD Frame -->
+    <rect width="506" height="430" rx="16" fill="#0f1722" stroke="url(#card-border)" stroke-width="1.5"/>
+    <circle cx="253" cy="215" r="130" fill="none" stroke="${palette.primary}" stroke-opacity="0.15" stroke-width="1" stroke-dasharray="6,6"/>
+    <circle cx="253" cy="215" r="95" fill="none" stroke="${palette.secondary}" stroke-opacity="0.25" stroke-width="1.5"/>
+    <circle cx="253" cy="215" r="60" fill="none" stroke="${palette.primary}" stroke-opacity="0.4" stroke-width="2"/>
+    <circle cx="253" cy="215" r="25" fill="${palette.secondary}" fill-opacity="0.6"/>
+    <line x1="123" y1="85" x2="228" y2="190" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
+    <line x1="383" y1="85" x2="278" y2="190" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
+    <line x1="123" y1="345" x2="228" y2="240" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>
+    <line x1="383" y1="345" x2="278" y2="240" stroke="${palette.primary}" stroke-opacity="0.3" stroke-width="1.5"/>`
+    }
 
-  <!-- Preset Title -->
-  <text x="88" y="${safeAuthor ? '230' : '250'}" font-size="${titleFontSize}" font-weight="700" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="-0.5">${safeTitle}</text>
+    <!-- HUD Grid Ticks -->
+    <line x1="20" y1="20" x2="40" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="20" y1="20" x2="20" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="486" y1="20" x2="466" y2="20" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
+    <line x1="486" y1="20" x2="486" y2="40" stroke="${palette.primary}" stroke-opacity="0.6" stroke-width="2"/>
 
-  <!-- Author Byline -->
-  ${safeAuthor ? `<text x="88" y="286" font-size="26" font-weight="500" fill="rgba(247,244,235,0.76)" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#f7f4eb" font-weight="700">${safeAuthor}</tspan></text>` : ''}
+    <!-- High-CTR Play CTA Overlay -->
+    <g transform="translate(253, 200)">
+      <circle r="42" fill="#0c1118" stroke="${palette.primary}" stroke-width="2.5"/>
+      <polygon points="-11,-18 18,0 -11,18" fill="${palette.secondary}"/>
+    </g>
+    <g transform="translate(253, 275)">
+      <rect x="-100" y="-16" width="200" height="32" rx="16" fill="${palette.secondary}"/>
+      <text x="0" y="5" font-size="12" font-weight="700" fill="#0c1118" font-family="Space Mono, monospace" text-anchor="middle">LAUNCH VISUALIZER ▶</text>
+    </g>
 
-  <!-- Badges -->
-  <g transform="translate(88, ${safeAuthor ? 336 : 306})">
-    <rect x="0" y="0" width="180" height="36" rx="4" fill="rgba(119, 201, 255, 0.12)" stroke="rgba(119, 201, 255, 0.35)"/>
-    <text x="16" y="24" font-size="14" font-weight="500" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">${escapeXml(badgeLabel)}</text>
-
-    <rect x="196" y="0" width="176" height="36" rx="4" fill="rgba(244, 122, 84, 0.16)" stroke="rgba(244, 122, 84, 0.4)"/>
-    <text x="212" y="24" font-size="14" font-weight="500" fill="#f7f4eb" font-family="Space Grotesk, system-ui, sans-serif">WebGPU • 60 FPS</text>
+    <!-- Live Status Pill -->
+    <rect x="366" y="24" width="116" height="28" rx="14" fill="rgba(16, 185, 129, 0.2)" stroke="rgba(16, 185, 129, 0.5)"/>
+    <circle cx="382" cy="38" r="4" fill="#10b981" class="live-pulse-dot"/>
+    <text x="394" y="43" font-size="12" font-weight="700" fill="#10b981" font-family="Space Mono, monospace">LIVE 60FPS</text>
   </g>
 
-  ${buildVuMeter(996, 560)}
+  <!-- Bottom Spectrum Analyzer & Branding Bar -->
+  ${buildSpectrumAnalyzer(650, 565, palette.primary, palette.secondary)}
 
-  <!-- Footer Branding -->
-  <text x="88" y="602" font-size="20" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
-  <text x="215" y="602" font-size="18" font-weight="400" fill="rgba(247,244,235,0.55)" font-family="Space Grotesk, system-ui, sans-serif">Instant sound-reactive visuals in the browser</text>
+  <g transform="translate(64, 560)">
+    <text x="0" y="20" font-size="22" font-weight="700" fill="#f47a54" font-family="Space Mono, monospace">toil.fyi</text>
+    <text x="110" y="20" font-size="16" font-weight="500" fill="rgba(247,244,235,0.7)" font-family="Space Grotesk, system-ui, sans-serif">• Instant audio-reactive visualizer in your browser</text>
+  </g>
 </svg>`;
 }
 
@@ -289,15 +420,57 @@ async function fallbackPngResponse(
   return Response.redirect(new URL('/og/milkdrop.png', origin), 302);
 }
 
+async function loadPresetPreviewDataUri(
+  assetsBinding: StaticAssetFetcher | undefined,
+  origin: string,
+  presetId: string,
+): Promise<string | undefined> {
+  if (!assetsBinding) return undefined;
+  try {
+    const previewUrl = new URL(
+      `/milkdrop-presets/previews/${encodeURIComponent(presetId)}.png`,
+      origin,
+    );
+    const response = await assetsBinding.fetch(previewUrl);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      let b64: string;
+      if (typeof Buffer !== 'undefined') {
+        b64 = Buffer.from(buffer).toString('base64');
+      } else {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        b64 = btoa(binary);
+      }
+      return `data:image/png;base64,${b64}`;
+    }
+  } catch {
+    // preview unavailable
+  }
+  return undefined;
+}
+
 export async function onRequest(context: OgPresetContext): Promise<Response> {
   const url = new URL(context.request.url);
   const presetId = normalizePresetId(
-    url.searchParams.get('id') || url.searchParams.get('preset'),
+    url.searchParams.get('id') ||
+      url.searchParams.get('preset') ||
+      url.searchParams.get('name'),
   );
+  const tweak = url.searchParams.get('tweak') || undefined;
   const format = url.searchParams.get('format') === 'svg' ? 'svg' : 'png';
 
   const { title, author } = humanizePresetId(presetId);
-  const svg = buildPresetOgSvg({ id: presetId, title, author });
+  const previewImageUri = await loadPresetPreviewDataUri(
+    context.env?.ASSETS,
+    url.origin,
+    presetId,
+  );
+  const svg = buildPresetOgSvg({ id: presetId, title, author, tweak, previewImageUri });
 
   if (format === 'svg') {
     return new Response(svg, {

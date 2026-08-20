@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type { MilkdropFidelityClass } from '../../src/js/milkdrop/types.ts';
@@ -185,6 +185,10 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgpu: 'supported',
   },
   'geiss-happy-drops.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'illusion-unchained-new-strategy.milk': {
     webgl: 'supported',
     webgpu: 'supported',
   },
@@ -384,8 +388,58 @@ function loadPresetCorpus(dir: string, origin: 'bundled' | 'user' = 'bundled') {
     });
 }
 
+/**
+ * The curated set this suite pins per-preset backend expectations for — the
+ * files named in BUNDLED_PRESET_EXPECTATIONS, wherever they live.
+ *
+ * It used to be "every .milk under the bundled preset directories", which
+ * silently meant something very different once the cream-of-the-crop library
+ * grew from 40 files to 895: the corpus became 899 presets, 855 of which had
+ * no expectation, and the count assertion below still said 44. That failure
+ * was invisible because compiling 899 presets overran bun's 5s default
+ * timeout, so the suite reported "timed out" instead of the real mismatch.
+ *
+ * Deriving the corpus from the expectation table keeps the two in lockstep —
+ * adding an expectation adds the preset, and the count can no longer drift.
+ * The full library is not lost coverage: every manifest entry is compiled and
+ * asserted supported/supported/exact by
+ * tests/unit/milkdrop-projectm-cream-library.test.ts.
+ */
+const BUNDLED_PRESET_DIRS = [
+  join(process.cwd(), 'public', 'milkdrop-presets'),
+  join(
+    process.cwd(),
+    'public',
+    'milkdrop-presets',
+    'libraries',
+    'projectm-cream-of-the-crop',
+  ),
+];
+
 function loadBundledPresetCorpus() {
-  return loadPresetCorpus(join(process.cwd(), 'public', 'milkdrop-presets'));
+  return Object.keys(BUNDLED_PRESET_EXPECTATIONS)
+    .sort()
+    .map((file) => {
+      const dir = BUNDLED_PRESET_DIRS.find((candidate) =>
+        existsSync(join(candidate, file)),
+      );
+      if (!dir) {
+        throw new Error(
+          `BUNDLED_PRESET_EXPECTATIONS names ${file}, which exists in none of ` +
+            `the bundled preset directories. Remove the expectation or restore ` +
+            `the preset.`,
+        );
+      }
+      const raw = readFileSync(join(dir, file), 'utf8');
+      return {
+        file,
+        compiled: compileMilkdropPresetSource(raw, {
+          id: basename(file, '.milk'),
+          title: file,
+          origin: 'bundled' as const,
+        }),
+      };
+    });
 }
 
 function loadLegacyFixtureCorpus() {
@@ -416,54 +470,68 @@ function loadProjectmUpstreamCorpus() {
   );
 }
 
+// loadBundledPresetCorpus() compiles all 44 bundled presets through the full
+// pipeline before a single assertion runs, which takes ~7.7s on an idle Linux
+// container against bun's inherited 5s default — a deterministic failure on
+// slower hardware, not a flake. 60s is headroom for a loaded CI runner.
+const CORPUS_COMPILE_TIMEOUT_MS = 60_000;
+
 describe('milkdrop bundled preset corpus', () => {
-  test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
-    const corpus = loadBundledPresetCorpus();
+  test(
+    'keeps the bundled preset corpus fully supported on both backends in compat mode',
+    () => {
+      const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(43);
-
-    const unexpected = corpus.filter(({ file, compiled }) => {
-      const expectation =
-        BUNDLED_PRESET_EXPECTATIONS[
-          file as keyof typeof BUNDLED_PRESET_EXPECTATIONS
-        ];
-
-      return (
-        !expectation ||
-        compiled.ir.compatibility.backends.webgl.status !== expectation.webgl ||
-        compiled.ir.compatibility.backends.webgpu.status !== expectation.webgpu
+      expect(corpus.length).toBe(
+        Object.keys(BUNDLED_PRESET_EXPECTATIONS).length,
       );
-    });
 
-    expect(unexpected).toEqual([]);
+      const unexpected = corpus.filter(({ file, compiled }) => {
+        const expectation =
+          BUNDLED_PRESET_EXPECTATIONS[
+            file as keyof typeof BUNDLED_PRESET_EXPECTATIONS
+          ];
 
-    Object.entries(BUNDLED_PRESET_EXPECTATIONS).forEach(
-      ([file, expectation]) => {
-        const entry = corpus.find((preset) => preset.file === file);
+        return (
+          !expectation ||
+          compiled.ir.compatibility.backends.webgl.status !==
+            expectation.webgl ||
+          compiled.ir.compatibility.backends.webgpu.status !==
+            expectation.webgpu
+        );
+      });
 
-        expect(entry).toBeDefined();
-        expect(entry?.compiled.ir.compatibility.backends.webgl.status).toBe(
-          expectation.webgl,
-        );
-        expect(entry?.compiled.ir.compatibility.backends.webgpu.status).toBe(
-          expectation.webgpu,
-        );
-        expect(
-          entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
-        ).toBe(
-          entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-            ?.fallbackToLegacyFeedback
-            ? 'fallback-webgl'
-            : 'descriptor-plan',
-        );
-        expectation.forbiddenUnsupportedKeys?.forEach((key) => {
+      expect(unexpected).toEqual([]);
+
+      Object.entries(BUNDLED_PRESET_EXPECTATIONS).forEach(
+        ([file, expectation]) => {
+          const entry = corpus.find((preset) => preset.file === file);
+
+          expect(entry).toBeDefined();
+          expect(entry?.compiled.ir.compatibility.backends.webgl.status).toBe(
+            expectation.webgl,
+          );
+          expect(entry?.compiled.ir.compatibility.backends.webgpu.status).toBe(
+            expectation.webgpu,
+          );
           expect(
-            entry?.compiled.ir.compatibility.unsupportedKeys,
-          ).not.toContain(key);
-        });
-      },
-    );
-  });
+            entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
+          ).toBe(
+            entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+              ?.fallbackToLegacyFeedback
+              ? 'fallback-webgl'
+              : 'descriptor-plan',
+          );
+          expectation.forbiddenUnsupportedKeys?.forEach((key) => {
+            expect(
+              entry?.compiled.ir.compatibility.unsupportedKeys,
+            ).not.toContain(key);
+          });
+        },
+      );
+    },
+    CORPUS_COMPILE_TIMEOUT_MS,
+  );
 });
 
 describe('milkdrop legacy fixture corpus', () => {

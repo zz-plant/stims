@@ -1,31 +1,10 @@
-interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-interface D1PreparedStatement {
-  bind(...params: unknown[]): D1PreparedStatement;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-}
-
-interface VectorizeIndex {
-  query(
-    vector: number[],
-    options?: {
-      topK?: number;
-      returnVectors?: boolean;
-      returnMetadata?: boolean;
-    },
-  ): Promise<{ matches: Array<{ id: string; score: number }> }>;
-}
+import { enforceAiRateLimit } from './_ai-guard.ts';
 
 interface Env {
-  AI: {
-    run: (
-      model: string,
-      opts: { text: string[] },
-    ) => Promise<{ data: number[][] }>;
-  };
+  AI?: WorkersAI;
   DB: D1Database;
   VECTOR_INDEX?: VectorizeIndex;
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 type CachedEmbedding = {
@@ -95,6 +74,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
+
   try {
     const body = (await request.json()) as {
       description: string;
@@ -108,10 +90,10 @@ export async function onRequest(context: { request: Request; env: Env }) {
     let queryEmbedding: number[] = [];
 
     if (env.AI) {
-      const result = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
+      const result = (await env.AI.run('@cf/baai/bge-base-en-v1.5', {
         text: [body.description],
-      });
-      queryEmbedding = result.data[0];
+      })) as { data?: number[][] };
+      queryEmbedding = result.data?.[0] ?? [];
     }
 
     if (body.embedOnly) {
@@ -136,9 +118,15 @@ export async function onRequest(context: { request: Request; env: Env }) {
       try {
         const vResult = await env.VECTOR_INDEX.query(queryEmbedding, {
           topK: 5,
+          // Long preset slugs are stored under hashed vector ids; the real
+          // preset id lives in metadata (see src/js/milkdrop/vectorize-id.ts).
+          returnMetadata: 'all',
         });
         const matches = vResult.matches.map((m) => ({
-          presetId: m.id,
+          presetId:
+            typeof m.metadata?.presetId === 'string'
+              ? m.metadata.presetId
+              : m.id,
           score: m.score,
         }));
         return new Response(

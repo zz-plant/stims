@@ -7,7 +7,6 @@ import {
   DataTexture,
   HalfFloatType,
   LinearFilter,
-  NearestFilter,
   RedFormat,
   RepeatWrapping,
   RGBAFormat,
@@ -61,90 +60,35 @@ export type FeedbackRendererLike = {
   setRenderTarget: (target: RenderTarget | null) => void;
 };
 
-export const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  perlin: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
+export { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
 
-// Canonical sampler names that exist only for custom-sampler aliasing (no
-// real MilkDrop built-in warp/overlay texture slot, unlike the names in
-// MILKDROP_TEXTURE_FILES above). Kept separate so they don't force the
-// legacy warp/overlay texture-selector plumbing (AUX_TEXTURE_SPECS et al.,
-// exhaustively keyed off MILKDROP_TEXTURE_FILES) to grow a slot it has no
-// real numeric ID for.
-export const CUSTOM_TEXTURE_FILES = {
-  glyph: 'glyph_matrix_tile.png',
-  organic: 'organic_mottle.png',
-} as const;
+import {
+  AUX_TEXTURE_SPECS,
+  type AuxTextureName,
+  configureMilkdropTexture,
+  DEFAULT_TEXTURE_SAMPLE_MODE,
+  getSharedMilkdropTexture,
+  type MilkdropTextureSampleMode,
+  resolveTextureUrl,
+} from './feedback-texture-utils.ts';
+import { CUSTOM_TEXTURE_FILES, MILKDROP_TEXTURE_FILES } from './texture-files';
 
-const AUX_TEXTURE_SPECS = {
-  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
-  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
-  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
-  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
-  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
-  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
-  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
-  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
-} as const satisfies Record<
-  keyof typeof MILKDROP_TEXTURE_FILES,
-  { fileName: string; colorTexture: boolean }
->;
+export {
+  configureMilkdropTexture,
+  DEFAULT_TEXTURE_SAMPLE_MODE,
+  getSharedMilkdropTexture,
+  loadMilkdropTexture,
+  type MilkdropTextureSampleMode,
+  resolveAuxTextureName,
+  resolveTextureUrl,
+} from './feedback-texture-utils.ts';
 
-type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
-type SharedAuxTextureName = AuxTextureName | 'video';
 export type MilkdropCustomSamplerTextureBinding = {
   name: string;
   textureFile: string;
   texture: Texture;
 };
 
-export function resolveTextureUrl(fileName: string) {
-  const baseUrl =
-    typeof import.meta.env.BASE_URL === 'string'
-      ? import.meta.env.BASE_URL
-      : '/';
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBaseUrl}textures/${fileName}`;
-}
-
-export type MilkdropTextureSampleMode = {
-  filter: 'linear' | 'nearest';
-  wrap: 'repeat' | 'clamp';
-};
-
-const DEFAULT_TEXTURE_SAMPLE_MODE: MilkdropTextureSampleMode = {
-  filter: 'linear',
-  wrap: 'repeat',
-};
-
-export function configureMilkdropTexture(
-  textureValue: Texture,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const wrapMode =
-    sampleMode.wrap === 'clamp' ? ClampToEdgeWrapping : RepeatWrapping;
-  textureValue.wrapS = wrapMode;
-  textureValue.wrapT = wrapMode;
-  if (sampleMode.filter === 'nearest') {
-    textureValue.minFilter = NearestFilter;
-    textureValue.magFilter = NearestFilter;
-  }
-  if (colorTexture) {
-    textureValue.colorSpace = SRGBColorSpace;
-  }
-  return textureValue;
-}
-
-const sharedMilkdropTextureCache = new Map<string, Texture>();
-const milkdropTextureLoader = new TextureLoader();
 const sharedMilkdropNativeNoiseTexture = configureMilkdropTexture(
   createMilkdropNoiseTexture(),
 );
@@ -152,29 +96,6 @@ const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
   createMilkdropNoiseVolumeAtlasTexture(),
 );
 const sharedMilkdropTexturePlaceholder = sharedMilkdropNativeNoiseTexture;
-
-export function loadMilkdropTexture(
-  fileName: string,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const loaded = milkdropTextureLoader.load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(loaded, colorTexture, sampleMode);
-}
-
-export function getSharedMilkdropTexture(
-  fileName: string,
-  colorTexture = false,
-  sampleMode: MilkdropTextureSampleMode = DEFAULT_TEXTURE_SAMPLE_MODE,
-) {
-  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}:${sampleMode.filter}:${sampleMode.wrap}`;
-  let textureValue = sharedMilkdropTextureCache.get(cacheKey);
-  if (!textureValue) {
-    textureValue = loadMilkdropTexture(fileName, colorTexture, sampleMode);
-    sharedMilkdropTextureCache.set(cacheKey, textureValue);
-  }
-  return textureValue;
-}
 
 export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
@@ -406,41 +327,7 @@ export function getSharedMilkdropAuxTextures() {
     pattern: getSharedMilkdropTexturePlaceholder(),
     fractal: getSharedMilkdropTexturePlaceholder(),
     video: getSharedMilkdropCapturedVideoTexture(),
-  } satisfies Record<SharedAuxTextureName, Texture>;
-}
-
-export function resolveAuxTextureName(source: number) {
-  if (source < 0.5) {
-    return null;
-  }
-  if (source < 1.5) {
-    return 'noise';
-  }
-  if (source < 2.5) {
-    return 'simplex';
-  }
-  if (source < 3.5) {
-    return 'voronoi';
-  }
-  if (source < 4.5) {
-    return 'aura';
-  }
-  if (source < 5.5) {
-    return 'caustics';
-  }
-  if (source < 6.5) {
-    return 'pattern';
-  }
-  if (source < 7.5) {
-    return 'fractal';
-  }
-  if (source < 8.5) {
-    return null;
-  }
-  if (source < 9.5) {
-    return 'perlin';
-  }
-  return null;
+  } satisfies Record<AuxTextureName | 'video', Texture>;
 }
 
 export function createFeedbackRenderTarget(
@@ -497,6 +384,10 @@ export function createCompositeUniforms(
     // This frame's internal image written by the feedback-blend pass; the
     // display-only composite pass reads it (rebound per frame by the manager).
     internalTex: texture(previousTexture),
+    // MilkDrop's sampler_fc_main reads the warp output. The WebGPU pipeline
+    // produces that image inside the feedback-blend pass, so warpTex aliases
+    // the internal/warped frame (rebound per frame in render()).
+    warpTex: texture(shared2DPlaceholderRGBA),
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
@@ -508,6 +399,14 @@ export function createCompositeUniforms(
     videoTex: texture(auxTextures.video),
     glyphTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.glyph)),
     organicTex: texture(getSharedMilkdropTexture(CUSTOM_TEXTURE_FILES.organic)),
+    // The WebGPU feedback pipeline runs a single gaussian blur pass; the
+    // three blur samplers all read its output (rebound by the manager).
+    // MilkDrop's progressive blur1→blur2→blur3 chain is not reproduced on
+    // this backend, but the samplers resolve to a real texture instead of
+    // the neutral fallback.
+    blur1Tex: texture(shared2DPlaceholderRGBA),
+    blur2Tex: texture(shared2DPlaceholderRGBA),
+    blur3Tex: texture(shared2DPlaceholderRGBA),
     audioTex: texture(shared2DPlaceholderRGBA),
     noiseTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex3D: texture3D(shared3DPlaceholderRGBA),
@@ -573,15 +472,29 @@ export function createCompositeUniforms(
     signalMidAtt: uniform(0),
     signalTreb: uniform(0),
     signalTrebAtt: uniform(0),
+    // Neutral defaults mirror the CPU VM (vm/shared.ts).
+    signalPercussive: uniform(1),
+    signalHarmonic: uniform(1),
+    signalPercussiveLow: uniform(1),
+    signalPercussiveMid: uniform(1),
+    signalPercussiveHigh: uniform(1),
+    signalPercussiveRatio: uniform(0.5),
     signalBeat: uniform(0),
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
     signalFrame: uniform(0),
     signalFps: uniform(60),
-    perPixelQ: Array.from({ length: 32 }, () => uniform(0)),
-    perPixelT: Array.from({ length: 32 }, () => uniform(0)),
-    aspect: uniform(1),
+    // q/t register banks packed four-per-vec4 (q1..q4 in [0], q5..q8 in [1],
+    // …), matching the WebGL path's _qa.._qh packing: 16 uniform nodes and 16
+    // per-frame writes instead of 64 scalars.
+    perPixelQ: Array.from({ length: 8 }, () =>
+      uniform(new Vector4(0, 0, 0, 0)),
+    ),
+    perPixelT: Array.from({ length: 8 }, () =>
+      uniform(new Vector4(0, 0, 0, 0)),
+    ),
+    aspect: uniform(new Vector4(1, 1, 1, 1)),
     decay: uniform(0.98),
     postBloomStrength: uniform(0),
     postBloomThreshold: uniform(0.85),
@@ -589,8 +502,26 @@ export function createCompositeUniforms(
     postFilmGrainAmount: uniform(0),
     postChromaticAberration: uniform(0),
     postAfterimageDamp: uniform(0),
+    // Last frame's COMPOSITED display frame (afterimage included) — the
+    // manager rebinds this to the retired half of the display ping-pong every
+    // frame. Never a feedback/internal texture: sampling those here is what
+    // caused the noisevol green-screen corruption.
+    displayHistoryTex: texture(shared2DPlaceholderRGBA),
     texelSize: uniform(new Vector2(1, 1)),
     texsize: uniform(new Vector4(1, 1, 1, 1)),
+    // Butterchurn bodies reference per-preset random constants as
+    // rand_preset; the WebGL path rolls fresh values once per preset load.
+    rand_preset: uniform(new Vector4(0, 0, 0, 0)),
+    // Butterchurn shader bodies multiply blur samplers by scaleN/biasN
+    // (derived from the preset's blur1_min/blur1_max … ranges). The WebGL
+    // templates expose them as uniforms; mirror that so warp/comp statements
+    // that reference them don't drop.
+    scale1: uniform(1),
+    bias1: uniform(0),
+    scale2: uniform(1),
+    bias2: uniform(0),
+    scale3: uniform(1),
+    bias3: uniform(0),
     texsizeNoiseLq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoiseHq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
     texsizeNoisevolHq: uniform(
@@ -644,6 +575,9 @@ export function createSampleAuxTextureNode(
   videoTexNode: ReturnType<typeof texture>,
   glyphTexNode: ReturnType<typeof texture>,
   organicTexNode: ReturnType<typeof texture>,
+  blur1TexNode: ReturnType<typeof texture>,
+  blur2TexNode: ReturnType<typeof texture>,
+  blur3TexNode: ReturnType<typeof texture>,
   tex3DNodes: {
     noise: ReturnType<typeof texture3D>;
     simplex: ReturnType<typeof texture3D>;
@@ -693,7 +627,19 @@ export function createSampleAuxTextureNode(
                           select(
                             source.lessThan(13.5),
                             organicTexNode.sample(sampleUv),
-                            flat,
+                            select(
+                              source.lessThan(14.5),
+                              blur1TexNode.sample(sampleUv),
+                              select(
+                                source.lessThan(15.5),
+                                blur2TexNode.sample(sampleUv),
+                                select(
+                                  source.lessThan(16.5),
+                                  blur3TexNode.sample(sampleUv),
+                                  flat,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -738,7 +684,17 @@ export function createSampleAuxTextureNode(
         source,
         atlasSliceUvNode(sampleUv, upperSlice),
       );
-      return mix(lowerSample, upperSample, blend);
+      // Match the WebGL atlas path: snap to the pure slice inside the blend
+      // margins so cross-slice color never bleeds near atlas seams.
+      const edgeMargin = 0.02;
+      const blended = mix(lowerSample, upperSample, blend);
+      const snapLow = select(step(edgeMargin, blend), blended, lowerSample);
+      const snapHigh = select(
+        step(float(1).sub(edgeMargin), blend),
+        upperSample,
+        snapLow,
+      );
+      return snapHigh;
     },
   );
 
@@ -772,9 +728,13 @@ export function createSampleAuxTextureNode(
                       source.lessThan(7.5),
                       tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
                       select(
-                        source.lessThan(9.5),
-                        tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                        source.lessThan(8.5),
                         flat,
+                        select(
+                          source.lessThan(9.5),
+                          tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                          flat,
+                        ),
                       ),
                     ),
                   ),
@@ -784,13 +744,19 @@ export function createSampleAuxTextureNode(
           ),
         ),
       );
+      // `video` has no real 3D texture (a video frame isn't a volume) so it
+      // always needs the 2D-atlas emulation. `simplex` used to be force-
+      // routed here too with no comment explaining why; its native
+      // Data3DTexture is wired up the same way as every other volume type
+      // (see the constructor's getShared3dAuxTexture(name).then(...) loop)
+      // and there is no evidence the swap doesn't take effect, so it now
+      // takes the native-3D path like noise/voronoi/aura/etc.
       const isVideo = source.greaterThanEqual(7.5).and(source.lessThan(8.5));
-      const isSimplex = source.greaterThanEqual(1.5).and(source.lessThan(2.5));
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
         select(
-          isVideo.or(isSimplex),
+          isVideo,
           atlasTrilinearSample(source, wrappedUv, sliceZ),
           native3dSample,
         ),

@@ -1,6 +1,12 @@
 #!/usr/bin/env node
-/* eslint-env node */
-/* global process, console */
+/**
+ * Runs post-install setup: the resvg WASM sync, Husky hooks, and the
+ * Cloudflare Pages build of dist/.
+ *
+ * Each step is skipped where it does not apply — STIMS_SKIP_POSTINSTALL_BUILD=1
+ * disables the WASM sync and the Pages build, and hooks are skipped in CI or
+ * when Bun is not the installer.
+ */
 
 import { execSync } from 'node:child_process';
 
@@ -27,11 +33,16 @@ const hasBun = (() => {
   }
 })();
 
-run(
-  hasBun
-    ? 'bun scripts/sync-resvg-wasm.mjs'
-    : 'node scripts/sync-resvg-wasm.mjs',
-);
+// Skip WASM sync in CI when node_modules haven't changed (the lockfile key
+// means the binary is already cached). Also skip when STIMS_SKIP_POSTINSTALL_BUILD
+// is set, which is used by the build script's own install step.
+if (!skipCloudflareBuild && !process.env.STIMS_SKIP_POSTINSTALL_BUILD) {
+  run(
+    hasBun
+      ? 'bun scripts/sync-resvg-wasm.mjs'
+      : 'node scripts/sync-resvg-wasm.mjs',
+  );
+}
 
 if (isCloudflarePages) {
   if (skipCloudflareBuild) {

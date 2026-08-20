@@ -862,7 +862,9 @@ per_pixel_1=zoom=1.1; rot=0.08; warp=0.2;
 
     expect(frameState.variables.motion_vectors_x).toBeCloseTo(64, 6);
     expect(frameState.variables.motion_vectors_y).toBeCloseTo(48, 6);
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    // This preset parks mv_a=0, so the fully transparent 64x48 grid must be
+    // skipped instead of paying a per-pixel program run per cell.
+    expect(frameState.motionVectors).toHaveLength(0);
   });
 
   test('preserves prior frame wave samples for velocity-driven main wave animation', () => {
@@ -1320,6 +1322,24 @@ warp_shader=dx=0.06; dy=-0.03; rot=0.22; zoom=1.1
     expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.1, 6);
   });
 
+  test('evaluates centered uv transform zoom against live signals', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Centered UV Zoom VM
+warp_shader=uv=(uv-0.5)/(1.0+bass*0.1)+0.5
+      `.trim(),
+      { id: 'centered-uv-zoom-vm' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 7 }));
+
+    // `(uv-0.5)/(1+bass*0.1)+0.5` zooms in by 1+bass*0.1; with bass=0.7 that
+    // is 1.07. The centered transform keeps the offset at 0.
+    expect(frameState.post.shaderControls.zoom).toBeCloseTo(1.07, 6);
+    expect(frameState.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(frameState.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+  });
+
   test('carries shader color controls into post visuals', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -1692,5 +1712,43 @@ wave_mystery=0.55
     expect(buffers.liveSamples).not.toBe(firstLive);
     expect(buffers.smoothedSamples).toBe(resized.nextSamples);
     expect(buffers.momentumSamples).toBe(resized.nextMomentum);
+  });
+});
+
+describe('milkdrop vm live field updates', () => {
+  test('setField applies a built-in immediately and it survives per-frame reload', () => {
+    const preset = compileMilkdropPresetSource('title=Live Builtin', {
+      id: 'live-builtin',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('zoom', 1.5);
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(1.5, 6);
+
+    // Per-frame reload resets built-ins to their base; the live value was
+    // written into the base too, so it must survive a step.
+    vm.step(makeSignals({ frame: 1 }));
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(1.5, 6);
+  });
+
+  test('setField writes aliased spellings to the canonical field', () => {
+    const preset = compileMilkdropPresetSource('title=Live Alias', {
+      id: 'live-alias',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('fZoom', 2.0);
+    expect(vm.getStateSnapshot().zoom).toBeCloseTo(2.0, 6);
+  });
+
+  test('setField persists a user variable across frames without a recompile', () => {
+    const preset = compileMilkdropPresetSource('title=Live User Var', {
+      id: 'live-user-var',
+    });
+    const vm = createMilkdropVM(preset);
+
+    vm.setField('q1', 0.42);
+    vm.step(makeSignals({ frame: 1 }));
+    expect(vm.getStateSnapshot().q1).toBeCloseTo(0.42, 6);
   });
 });

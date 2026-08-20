@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isDocumentAudioActive } from '../workspace-helpers.ts';
 
 export function useDocumentDatasetSync({
   audioActive,
@@ -8,8 +9,7 @@ export function useDocumentDatasetSync({
   agentMode: boolean | undefined;
 }) {
   useEffect(() => {
-    const liveSession =
-      audioActive || document.body.dataset.audioActive === 'true';
+    const liveSession = audioActive || isDocumentAudioActive();
     document.documentElement.dataset.focusedSession = liveSession
       ? 'live'
       : 'launch';

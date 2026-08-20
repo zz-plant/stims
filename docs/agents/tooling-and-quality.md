@@ -106,7 +106,7 @@ The quality gate now also runs architecture dependency checks via `dependency-cr
 - Toy registration, generated-doc, and public README claim consistency:
 
   ```bash
-  bun run check:toys
+  bun run check:readme-claims
   ```
 
 - Architecture dependency boundaries:
@@ -151,22 +151,42 @@ For Markdown-only edits, you can skip typecheck/tests unless the change modifies
 
 ## Quick CLI reference for agents
 
+This section lists the commands used most often — it is a shortlist, not the full set. The repo has 127 scripts; start here when you don't already know the name:
+
+```bash
+# Every script, grouped by namespace, each with a one-line purpose
+bun run help
+
+# Same index as {name, command, purpose} records, for tooling
+bun run help --json
+```
+
+Purpose lines come from the docblock atop each script file, so the index cannot drift from the code (`bun run check:script-docs` enforces that every script has one). Namespaces that this page does not otherwise cover: `parity:`, `sweep:`, `perf:`, `bench:`, `profile:`, `catalog:`, `previews:`.
+
+To drive a running visualizer, use the agent API rather than DOM scraping — see [`browser-automation.md`](./browser-automation.md), plus `bun run ctl` (one-shot CLI) and `bun run mcp` (MCP server).
+
 Common commands to keep nearby while implementing:
 
 ### Development
 
 ```bash
+# One warm feedback loop: dev server + typecheck watch + fast tests watch
+bun run dev:agent
+
 # Warm long-lived agent session
 bun run session:codex -- --profile review
 
 # Route a task to the local LM Studio helper stack
 bun run model:codex -- --mode auto --task "review a loader bug" --no-exec
 
-# Start the dev server
+# Start the dev server only (visual testing: http://localhost:5173/?agent=true)
 bun run dev
 
 # Specifically test the MilkDrop visualizer
 bun run play:toy milkdrop
+
+# Diagnose a machine that can't build/test/deploy
+bun run doctor
 ```
 
 ### During implementation (iterate-test-verify loop)
@@ -174,6 +194,9 @@ bun run play:toy milkdrop
 ```bash
 # Fast syntax/type/lint check (use frequently)
 bun run check:quick
+
+# Scoped verification: run exactly the guards/tests/regens a change can break
+bun run verify --changed
 
 # Run a specific test file while developing
 bun run test tests/path/to/spec.test.ts
@@ -202,7 +225,7 @@ bun run check
 bun run check:architecture
 
 # Toy manifest, generated docs, and public README claim drift
-bun run check:toys
+bun run check:readme-claims
 
 # SEO surface issues
 bun run check:seo

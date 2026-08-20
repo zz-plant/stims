@@ -1,3 +1,18 @@
+/**
+ * Backend-independent drawing logic shared by the WebGL and WebGPU adapters.
+ *
+ * Holds the parts of a frame that do not depend on which graphics API is
+ * active: building geometry for warp mesh, waves, shapes and borders from VM
+ * state, managing the Three.js object graph, and disposing GPU resources on
+ * teardown. `renderer-adapter-webgl.ts` and `renderer-adapter-webgpu.ts` supply
+ * the API-specific pieces around it.
+ *
+ * Anything added here runs on both backends, which is the reason to prefer it
+ * over a per-backend file — the two paths are required to agree pixel-for-pixel
+ * and every duplicated implementation is a chance for them to drift. Verify
+ * changes with `bun run lab:gpu-differential` rather than by eye; divergence is
+ * usually subtle enough to survive a visual check.
+ */
 import type { Camera, Scene, ShaderMaterial, Texture } from 'three';
 import {
   BufferGeometry,
@@ -21,7 +36,6 @@ import {
   applyBlendModeToGroup,
   BACKGROUND_GEOMETRY,
   clearGroup,
-  clearSharedMilkdropGeometries,
   disposeObject,
   ensureGeometryPositions,
   getBorderLinePositions,
@@ -57,17 +71,10 @@ import {
   updateBorderLine as updateBorderLineHelper,
 } from './renderer-helpers/border-renderer';
 import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
-import {
-  clearProceduralMeshGeometryCache,
-  renderMesh as renderMeshHelper,
-} from './renderer-helpers/mesh-renderer';
-import {
-  clearProceduralMotionVectorGeometryCache,
-  renderMotionVectors as renderMotionVectorsHelper,
-} from './renderer-helpers/motion-vector-renderer';
+import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
+import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
 import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
 import {
-  clearProceduralWaveGeometryCache,
   syncInterpolatedProceduralCustomWaveObject,
   syncInterpolatedProceduralWaveObject,
   syncProceduralCustomWaveObject,
@@ -295,6 +302,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     ),
     getMilkdropLayerRenderOrder('motion-vectors'),
   );
+  /** True while the blend-layer groups are visible with the outgoing
+   * preset's geometry, so blend end hides them exactly once. */
+  private blendVisualsVisible = false;
   private readonly blendWaveGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('blend-main-wave'),
@@ -388,26 +398,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
     // When WebGPU render bundles are enabled, group static objects into a
     // BundleGroup so the renderer records their draw calls once per bundle
-    // lifetime instead of every frame.
+    // lifetime instead of every frame. Only the background quad has truly
+    // static geometry; border/motion-vector groups update every frame and
+    // must not be bundled.
     const useBundles =
       backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles;
     const staticBundle = createMilkdropStaticBundleGroup({
       enabled: useBundles,
-      objects: [
-        this.background,
-        this.meshLines,
-        this.borderGroup,
-        this.motionVectorCpuGroup,
-        this.blendBorderGroup,
-        this.blendMotionVectorCpuGroup,
-      ],
+      objects: [this.background],
     });
     if (staticBundle) {
       this.root.add(staticBundle);
     } else {
       this.root.add(this.background);
-      this.root.add(this.meshLines);
     }
+    this.root.add(this.meshLines);
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);
@@ -479,6 +484,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.feedback?.saveCurrentFrame?.();
   }
 
+  /**
+   * False while the incoming preset's warp/comp shaders are still warming
+   * asynchronously (rendering on the pass-through pair). The transition
+   * controller keeps the reveal covered until this flips true.
+   */
+  isPresetPresentable(): boolean {
+    return !(this.feedback?.isDirectShaderSwapPending?.() ?? false);
+  }
+
   setTransitionBlend(alpha: number): void {
     this.feedback?.setTransitionBlend?.(alpha);
   }
@@ -544,6 +558,32 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  // A preset switch can flip whether a wave target uses the GPU-procedural
+  // path (a bare Line) or the CPU path (a Group wrapping 1-4 Line/Points
+  // layers) between one frame and the next, while the same `group.children`
+  // slot is reused across the switch for performance. Blindly casting that
+  // slot to `Line` and reusing it crashes on `.geometry.getAttribute(...)`
+  // once it turns out to be a CPU-path Group, which has no `.geometry`.
+  // Treat a shape mismatch as "nothing there yet" so it gets disposed and
+  // rebuilt instead of reused.
+  private readExistingProceduralLine(
+    group: Group,
+    index: number,
+  ): Line | undefined {
+    const existing = group.children[index];
+    if (!existing) {
+      return undefined;
+    }
+    if (
+      !((existing as { geometry?: unknown }).geometry instanceof BufferGeometry)
+    ) {
+      disposeObject(existing as { children?: unknown[] });
+      group.remove(existing);
+      return undefined;
+    }
+    return existing as Line;
+  }
+
   private renderProceduralWaveGroup(
     target: 'main-wave' | 'trail-waves',
     group: Group,
@@ -556,7 +596,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncProceduralWaveObject(existing, wave, interaction);
       synced.renderOrder = getMilkdropPassRenderOrder(
         target === 'trail-waves' ? 'trails' : 'main-wave',
@@ -583,7 +623,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralCustomWaveVisual;
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncProceduralCustomWaveObject(
         existing,
         wave,
@@ -618,7 +658,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         previous: MilkdropProceduralWaveVisual;
         current: MilkdropProceduralWaveVisual;
       };
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncInterpolatedProceduralWaveObject(
         existing,
         wave.previous,
@@ -656,7 +696,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         previous: MilkdropProceduralCustomWaveVisual;
         current: MilkdropProceduralCustomWaveVisual;
       };
-      const existing = group.children[index] as Line | undefined;
+      const existing = this.readExistingProceduralLine(group, index);
       const synced = syncInterpolatedProceduralCustomWaveObject(
         existing,
         wave.previous,
@@ -1263,6 +1303,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
+  private setBlendVisualsVisible(visible: boolean) {
+    this.blendWaveGroup.visible = visible;
+    this.blendCustomWaveGroup.visible = visible;
+    this.blendParticleFieldGroup.visible = visible;
+    this.blendShapeGroup.visible = visible;
+    this.blendBorderGroup.visible = visible;
+    this.blendMotionVectorGroup.visible = visible;
+    if (!visible) {
+      // Batched blend targets render under the batcher's root, not these
+      // groups; hide them too or they keep the ghost alive on their own.
+      this.batcher?.hideBlendTargets?.();
+    }
+    this.blendVisualsVisible = visible;
+  }
+
   render(payload: MilkdropRenderPayload) {
     try {
       this.audioTexture.update(
@@ -1292,7 +1347,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
       const blend = payload.blendState;
       if (blend) {
+        if (!this.blendVisualsVisible) {
+          this.setBlendVisualsVisible(true);
+        }
         this.renderBlendVisuals(payload, blend);
+      } else if (this.blendVisualsVisible) {
+        // No blend this frame (settled, cut/cancelled, or gate-suspended):
+        // the blend groups still hold the outgoing preset's last geometry
+        // and would keep rendering it as a ghost — hide them. Contents are
+        // kept (not disposed) so the next blend reuses the pooled objects
+        // instead of recompiling their materials.
+        this.setBlendVisualsVisible(false);
       }
 
       if (
@@ -1306,9 +1371,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState,
       );
       this.feedback.applyCompositeState(compositeState);
-      this.feedback.applyPostprocessingProfile?.(
-        payload.frameState.post.postprocessingProfile,
-      );
+      // Shader presets get NO heuristic postprocessing profile on any
+      // backend. On WebGL the app-level composer is disposed for shader
+      // presets and the WebGL feedback manager never implemented
+      // applyPostprocessingProfile, so the profile suite (bloom, afterimage,
+      // film grain, chroma offset) silently never applied there — WebGL's
+      // clean output is the visual reference. Feeding the profile to the
+      // WebGPU manager made bright comp presets measurably brighter than
+      // WebGL (bloom + grain + afterimage stack). MilkDrop-native post
+      // effects (echo, vignette, gamma, …) still flow through
+      // applyCompositeState above. The WebGPU manager keeps a working
+      // display-frame afterimage/bloom/grain implementation behind
+      // applyPostprocessingProfile for when profiles are deliberately
+      // (re)enabled on both backends.
+      this.feedback.applyPostprocessingProfile?.(null);
       const audioTex = this.audioTexture.getTexture();
       if (this.feedback.setAudioTexture) {
         this.feedback.setAudioTexture(audioTex);
@@ -1360,13 +1436,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       disposeGeometry(this.meshLines.geometry);
     }
     disposeMaterial(this.meshLines.material);
-    this.batcher?.disposeWithCaches
-      ? this.batcher.disposeWithCaches()
-      : this.batcher?.dispose();
-    clearSharedMilkdropGeometries();
-    clearProceduralMeshGeometryCache();
-    clearProceduralWaveGeometryCache();
-    clearProceduralMotionVectorGeometryCache();
+    // Deliberately NOT this.batcher?.disposeWithCaches() and NOT
+    // clear*GeometryCache()/clearSharedMilkdropGeometries() here: those
+    // caches (proceduralMeshGeometryCache, proceduralWaveGeometryCache,
+    // proceduralMotionVectorGeometryCache, BACKGROUND_GEOMETRY, the polygon
+    // caches, the batching layer's static geometry/buffer pool) are
+    // module-level singletons shared by every ThreeMilkdropAdapter instance
+    // on the page — including pooled live browse-tile renderers and preview
+    // renderers that come and go independently of the main stage. Wiping
+    // them here disposes GPU buffers a still-alive sibling instance is
+    // actively drawing from (e.g. a browse tile scrolling out of view was
+    // observed nuking the main stage's shared background/mesh geometry mid
+    // render), producing "buffer too small" WebGPU validation errors and,
+    // in the worst case, a stuck-black canvas. Only release what this
+    // instance exclusively owns.
+    this.batcher?.dispose();
     this.feedback?.dispose();
     this.audioTexture.dispose();
     this.scene.remove(this.root);
@@ -1404,8 +1488,6 @@ export function createMilkdropRendererAdapterCore({
   }
   return adapter;
 }
-
-export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;
 
 export const __milkdropRendererAdapterTestUtils = {
   syncInterpolatedProceduralWaveObject,

@@ -89,9 +89,17 @@ describe('minimal workspace surfaces', () => {
     expect(artwork).not.toContain('stims-shell__preset-art-grid');
     expect(artwork).not.toContain('stims-shell__preset-art-orbit');
     expect(artwork).not.toContain('stims-shell__preset-art-core');
-    expect(css).toMatch(
-      /\.stims-shell__starter-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
-    );
+    // Scoped to the card's own declaration block. The previous pattern let
+    // `[\s\S]*?` run past the end of the rule, so it was satisfied by a
+    // `box-shadow: none` belonging to an unrelated rule ~1500 lines later —
+    // it asserted nothing about the starter card and broke when that other
+    // rule was removed.
+    const starterCard = css.match(
+      /\n {2}\.stims-shell__starter-card \{([\s\S]*?)\n {2}\}/u,
+    )?.[1];
+    expect(starterCard).toBeDefined();
+    expect(starterCard).toMatch(/padding:\s*11px 12px;/u);
+    expect(starterCard).not.toMatch(/backdrop-filter/u);
     expect(cssSource('chrome.css')).toMatch(
       /\.ctl-preset \{[\s\S]*?border-radius: var\(--ctl-radius\);/u,
     );

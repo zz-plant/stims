@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
+import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import {
   formatPresetShareCopy,
   shareOrCopyLink,
 } from '../utils/media/share-link.ts';
 import type {
+  AudioSource,
   PanelState,
   PresetCatalogEntry,
   SessionRouteState,
@@ -16,12 +18,48 @@ import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
   getCollectionTags,
+  isDocumentAudioActive,
   mapRuntimeCatalogEntry,
   matchesPreset,
   mergeCatalogActivity,
   pickFavoritePresets,
   pickRecentPresets,
 } from './workspace-helpers.ts';
+
+const IN_APP_BROWSER_LIMITED_MIC_MESSAGE =
+  "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.";
+
+/**
+ * When the requested preset is missing (e.g. a dead link), fall back to the
+ * featured preset and surface the heal in a status message. Shared by the
+ * file-audio and microphone/demo start paths.
+ */
+function buildHealedPresetRoute(
+  routeState: SessionRouteState,
+  missingRequestedPreset: boolean,
+  featuredPreset: PresetCatalogEntry | null | undefined,
+  audioSource: AudioSource,
+): {
+  nextRouteState: SessionRouteState;
+  healMessage: string | null;
+} {
+  const healedPresetId = missingRequestedPreset
+    ? (featuredPreset?.id ?? null)
+    : routeState.presetId;
+  const healMessage =
+    missingRequestedPreset && featuredPreset
+      ? `Requested preset unavailable. Starting with ${featuredPreset.title}.`
+      : null;
+  return {
+    nextRouteState: {
+      ...routeState,
+      audioSource,
+      panel: null,
+      presetId: healedPresetId,
+    },
+    healMessage,
+  };
+}
 
 type WorkspaceShellOrchestrationArgs = {
   commitRoute: (nextState: SessionRouteState) => void;
@@ -33,8 +71,7 @@ type WorkspaceShellOrchestrationArgs = {
   fullCatalogReady?: boolean;
   activityCatalog: PresetCatalogEntry[];
   goBackPreset: () => Promise<void>;
-  importPresetFiles: (files: FileList | null) => Promise<void>;
-  pendingPresetIdRef: { current: string | null };
+  importPresetFiles: (files: FileList | File[] | null) => Promise<void>;
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
   startAudioSource: (request: {
@@ -59,7 +96,6 @@ export function useWorkspaceShellOrchestration({
   activityCatalog,
   goBackPreset,
   importPresetFiles,
-  pendingPresetIdRef,
   routeState,
   setStatusMessage,
   startAudioSource,
@@ -70,21 +106,34 @@ export function useWorkspaceShellOrchestration({
   const audioStartInProgressRef = useRef(false);
   const fileAudioContextRef = useRef<AudioContext | null>(null);
 
+  // Dep on the narrow snapshot fields, never the snapshot object: while audio
+  // plays the snapshot is rebuilt every frame (audioEnergy changes), and a
+  // whole-object dep made this remap+merge the full catalog per frame — and
+  // hand a fresh catalog identity to every consumer, re-filtering the browse
+  // panel at frame rate. catalogEntries/runtimeReady keep stable identities
+  // across those rebuilds (see engine-snapshot.ts equality).
+  const snapshotCatalogEntries = engineSnapshot?.catalogEntries;
+  const snapshotRuntimeReady = engineSnapshot?.runtimeReady ?? false;
   const enrichedCatalog = useMemo(() => {
-    const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
+    const runtimeCatalog = (snapshotCatalogEntries ?? []).map(
       mapRuntimeCatalogEntry,
     );
     const runtimeCatalogReady =
-      (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
+      snapshotRuntimeReady || runtimeCatalog.length > 0;
     const rawCatalog = runtimeCatalogReady ? runtimeCatalog : fallbackCatalog;
     return mergeCatalogActivity(rawCatalog, activityCatalog);
-  }, [engineSnapshot, fallbackCatalog, activityCatalog]);
+  }, [
+    snapshotCatalogEntries,
+    snapshotRuntimeReady,
+    fallbackCatalog,
+    activityCatalog,
+  ]);
 
   const catalogReady = useMemo(
     () =>
-      ((engineSnapshot?.runtimeReady ?? false) || fallbackCatalogReady) &&
+      (snapshotRuntimeReady || fallbackCatalogReady) &&
       enrichedCatalog.length > 0,
-    [engineSnapshot, fallbackCatalogReady, enrichedCatalog],
+    [snapshotRuntimeReady, fallbackCatalogReady, enrichedCatalog],
   );
 
   // Only report a catalog error when there is nothing to show — a fallback
@@ -125,8 +174,17 @@ export function useWorkspaceShellOrchestration({
     [enrichedCatalog],
   );
 
+  // The deliberate first-run pick wins: it is measured for audio reactivity
+  // and brightness (see milkdrop/runtime/first-run-preset.ts). Falling
+  // through to catalog order resurfaces eos-glowsticks — the near-black
+  // preset that pick exists to replace — exactly on the healed-deep-link and
+  // featured surfaces where a first impression is being made.
   const featuredPreset = useMemo(
-    () => starterPresets[0]?.preset ?? enrichedCatalog[0] ?? null,
+    () =>
+      enrichedCatalog.find((entry) => entry.id === FIRST_RUN_PRESET_ID) ??
+      starterPresets[0]?.preset ??
+      enrichedCatalog[0] ??
+      null,
     [starterPresets, enrichedCatalog],
   );
 
@@ -144,9 +202,7 @@ export function useWorkspaceShellOrchestration({
   );
 
   const audioActive = useMemo(
-    () =>
-      engineSnapshot?.audioActive ||
-      document.body.dataset.audioActive === 'true',
+    () => engineSnapshot?.audioActive || isDocumentAudioActive(),
     [engineSnapshot?.audioActive],
   );
 
@@ -157,12 +213,18 @@ export function useWorkspaceShellOrchestration({
 
   const engineReady = useMemo(() => catalogError === null, [catalogError]);
 
+  // No pendingPresetIdRef shield here: the ref is seeded with the arrival's
+  // route preset id (workspace-hooks.ts) so the engine→route sync cannot
+  // clobber a deep link while its launch-intent load is in flight. But once
+  // the FULL catalog has settled and still cannot resolve the id, that load
+  // can never succeed (loadPreset draws from the same store+bundle), so the
+  // seed would otherwise suppress "missing" forever — stranding a dead share
+  // link on the launch form with the heal path never firing.
   const missingRequestedPreset = Boolean(
     routeState.presetId &&
       catalogReady &&
       (fullCatalogReady ?? true) &&
-      !resolvedRequestedPreset &&
-      pendingPresetIdRef.current !== routeState.presetId,
+      !resolvedRequestedPreset,
   );
 
   const loadingRequestedPreset = Boolean(
@@ -211,13 +273,14 @@ export function useWorkspaceShellOrchestration({
 
   const updatePanel = useCallback(
     (panel: PanelState) => {
+      if (panel === routeState.panel) return;
       commitRoute({ ...routeState, panel });
     },
     [commitRoute, routeState],
   );
 
   const handleVisualSearch = useCallback(async () => {
-    updatePanel(routeState.panel === 'visualsearch' ? null : 'visualsearch');
+    updatePanel(routeState.panel === 'finder' ? null : 'finder');
   }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {
@@ -323,20 +386,15 @@ export function useWorkspaceShellOrchestration({
       source.connect(audioContext.destination);
       source.start(0);
 
-      const healedPresetId = shellState.missingRequestedPreset
-        ? (shellState.featuredPreset?.id ?? null)
-        : routeState.presetId;
-      const nextRouteState = {
-        ...routeState,
-        audioSource: 'file' as const,
-        panel: null,
-        presetId: healedPresetId,
-      };
+      const { nextRouteState, healMessage } = buildHealedPresetRoute(
+        routeState,
+        shellState.missingRequestedPreset,
+        shellState.featuredPreset,
+        'file',
+      );
 
-      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
-        setStatusMessage(
-          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
-        );
+      if (healMessage) {
+        setStatusMessage(healMessage);
       }
 
       commitRoute(nextRouteState);
@@ -387,20 +445,15 @@ export function useWorkspaceShellOrchestration({
 
     try {
       setStatusMessage(null);
-      const healedPresetId = shellState.missingRequestedPreset
-        ? (shellState.featuredPreset?.id ?? null)
-        : routeState.presetId;
-      const nextRouteState = {
-        ...routeState,
-        audioSource: source,
-        panel: null,
-        presetId: healedPresetId,
-      };
+      const { nextRouteState, healMessage } = buildHealedPresetRoute(
+        routeState,
+        shellState.missingRequestedPreset,
+        shellState.featuredPreset,
+        source,
+      );
 
-      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
-        setStatusMessage(
-          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
-        );
+      if (healMessage) {
+        setStatusMessage(healMessage);
       }
 
       if (source === 'microphone') {
@@ -425,9 +478,7 @@ export function useWorkspaceShellOrchestration({
               source: 'demo',
               launchState: demoRouteState,
             });
-            setStatusMessage(
-              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
-            );
+            setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
             return;
           }
 
@@ -462,9 +513,7 @@ export function useWorkspaceShellOrchestration({
               source: 'demo',
               launchState: demoRouteState,
             });
-            setStatusMessage(
-              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
-            );
+            setStatusMessage(IN_APP_BROWSER_LIMITED_MIC_MESSAGE);
             return;
           }
 
@@ -515,8 +564,16 @@ export function useWorkspaceShellOrchestration({
           'Tab and YouTube capture need a desktop browser. Use the microphone instead.',
         missingAudioMessage:
           source === 'youtube'
-            ? 'No YouTube audio track was captured. Re-share and enable Share audio.'
-            : 'No tab audio track was captured. Re-share and enable Share audio.',
+            ? 'No YouTube audio track was captured. Re-share and enable Share tab audio.'
+            : 'No tab audio track was captured. Re-share and enable Share tab audio.',
+        // For YouTube the player lives in this tab, so pre-select it. For a
+        // plain tab capture the user is reaching for a different tab.
+        preferCurrentTab: source === 'youtube',
+        onEnded: () => {
+          setStatusMessage(
+            'Screen sharing stopped, so the audio feed ended. Start capture again to keep going.',
+          );
+        },
       });
       commitRoute(nextRouteState);
       await startAudioSource({
@@ -539,7 +596,7 @@ export function useWorkspaceShellOrchestration({
     setStatusMessage('Audio stopped.');
   };
 
-  const handleImport = async (files: FileList | null) => {
+  const handleImport = async (files: FileList | File[] | null) => {
     try {
       await importPresetFiles(files);
       updatePanel('editor');

@@ -23,6 +23,7 @@ import {
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial } from 'three/webgpu';
+import { getFeedbackBackendProfile } from '../../src/js/milkdrop/backend-behavior';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   __milkdropRendererAdapterTestUtils,
@@ -103,12 +104,28 @@ function getFloat32AttributeArray(
   const attribute = node?.geometry?.getAttribute?.(name) as
     | {
         array?: ArrayLike<number>;
+        itemSize?: number;
       }
     | undefined;
   if (!attribute?.array) {
     return null;
   }
-  return Float32Array.from(attribute.array);
+  const full = Float32Array.from(attribute.array);
+  // Instanced attribute buffers are capacity-allocated (rounded up past the
+  // live instance count), so only the slots covered by instanceCount hold
+  // meaningful data.
+  const instanceCount = (
+    node?.geometry as { instanceCount?: number } | undefined
+  )?.instanceCount;
+  const itemSize = attribute.itemSize;
+  if (
+    typeof instanceCount === 'number' &&
+    typeof itemSize === 'number' &&
+    instanceCount * itemSize <= full.length
+  ) {
+    return full.slice(0, instanceCount * itemSize);
+  }
+  return full;
 }
 
 function getRootChildByRenderOrder(
@@ -407,8 +424,89 @@ shapecode_0_thickoutline=1
     });
     expect(fillMesh).toBeDefined();
     expect(fillControl?.array[0]).toBe(1);
-    expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
-    expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
+    // Instanced attribute buffers are capacity-allocated (rounded up to
+    // 64-instance granularity), so only the written prefix is meaningful.
+    expect(fillPrimary?.array.slice(0, 4)).toEqual(
+      new Float32Array([1, 0.2, 0.1, 0.7]),
+    );
+    expect(fillSecondary?.array.slice(0, 4)).toEqual(
+      new Float32Array([0.1, 0.2, 1, 0.3]),
+    );
+  });
+
+  test('hides blend-layer visuals once the blend ends instead of ghosting', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Blend Ghosting
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_a=0.7
+shapecode_0_border_a=0.9
+      `.trim(),
+      { id: 'blend-ghosting' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const previousFrame = vm.step(makeSignals());
+    const frameState = vm.step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+    adapter.attach();
+
+    // Blend layers render at order >= 80 (getMilkdropLayerRenderOrder). A
+    // node ghosts when it still draws content while every ancestor up to the
+    // scene is visible.
+    const effectivelyVisibleBlendNodes = () => {
+      const walk = (
+        node: RenderTreeNode,
+        out: RenderTreeNode[],
+      ): RenderTreeNode[] => {
+        if (node.visible === false) {
+          return out;
+        }
+        if (
+          (node.renderOrder ?? -1) >= 80 &&
+          ((getGeometryInstanceCount(node) ?? 0) > 0 ||
+            node.geometry?.getAttribute?.('position') !== undefined)
+        ) {
+          out.push(node);
+        }
+        for (const child of node.children ?? []) {
+          walk(child, out);
+        }
+        return out;
+      };
+      return walk(scene as RenderTreeNode, []);
+    };
+
+    adapter.render({
+      frameState,
+      blendState: { mode: 'gpu', previousFrame, alpha: 0.6 },
+    });
+    expect(effectivelyVisibleBlendNodes().length).toBeGreaterThan(0);
+
+    // Blend settled (or was cut/cancelled): nothing from the blend layer may
+    // stay effectively visible — this is the preset-ghosting regression.
+    adapter.render({
+      frameState: vm.step(makeSignals()),
+      blendState: null,
+    });
+    expect(effectivelyVisibleBlendNodes()).toHaveLength(0);
+
+    // A following switch re-shows the blend layer.
+    adapter.render({
+      frameState: vm.step(makeSignals()),
+      blendState: { mode: 'gpu', previousFrame, alpha: 0.6 },
+    });
+    expect(effectivelyVisibleBlendNodes().length).toBeGreaterThan(0);
+    adapter.dispose();
   });
 
   test('uses non-shader render materials for query-forced webgpu sessions', async () => {
@@ -1731,6 +1829,90 @@ per_pixel_3=sx=2;
     );
   });
 
+  test('binds high q registers and aspect builtins in generated transform WGSL', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=High Register Field
+per_frame_1=q20=bass;
+per_frame_2=q32=treb;
+per_pixel_1=zoom=zoom+q20*0.01+q32*0.001+aspectx*0-aspecty*0+log10(rad+1);
+      `.trim(),
+      { id: 'high-register-field' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.registerInputs).toEqual(['q20', 'q32']);
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    // Slots are positional in the sorted registerInputs list: q20 first,
+    // q32 second, both in the first packed vector.
+    expect(transformWgsl).toContain('let fieldRegisterIn_q20 = registersA.x;');
+    expect(transformWgsl).toContain('let fieldRegisterIn_q32 = registersA.y;');
+    // Only ceil(2/4) = 1 register vector is declared as a parameter.
+    expect(transformWgsl).toContain('registersA: vec4<f32>');
+    expect(transformWgsl).not.toContain('registersB: vec4<f32>');
+    expect(transformWgsl).toContain('signalAspectXValue');
+    expect(transformWgsl).toContain('signalAspectYValue');
+    // log10 lowers through the domain-guarded helper (tier-differential
+    // convergence), not a raw WGSL log().
+    expect(transformWgsl).toContain('milkdropLog10(');
+  });
+
+  test('lowers per-frame user variables as frame-constant register inputs', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Per Frame Var Bus
+per_frame_1=mx=0.3+0.2*sin(time);
+per_frame_2=wavescale=1.5+bass*0.1;
+per_pixel_1=dx=(x-mx)*0.01*wavescale;
+      `.trim(),
+      { id: 'per-frame-var-bus' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.registerInputs).toEqual(['mx', 'wavescale']);
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    expect(transformWgsl).toContain('let fieldRegisterIn_mx = registersA.x;');
+    expect(transformWgsl).toContain(
+      'let fieldRegisterIn_wavescale = registersA.y;',
+    );
+    expect(transformWgsl).toContain('fieldRegisterIn_mx');
+  });
+
+  test('binds viewport/mesh builtins and overwritten pi in transform WGSL', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Viewport Builtin Field
+per_pixel_1=pi=3.14159;
+per_pixel_2=dx=cos(x*pixelsx*0.001+pi)*0.01+sin(y*meshx)*0.001;
+per_pixel_3=dy=sin(y*pixelsy*0.001)*0.01;
+      `.trim(),
+      { id: 'viewport-builtin-field' },
+    );
+    const program =
+      preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+        ?.fieldProgram;
+    expect(program).not.toBeNull();
+    expect(program?.temporaries).toContain('pi');
+
+    const transformWgsl = buildMilkdropTransformWgslCode(program);
+    expect(transformWgsl).toContain('signalPixelsXValue');
+    expect(transformWgsl).toContain('signalPixelsYValue');
+    expect(transformWgsl).toContain('fieldMeshSizeValue');
+    // Overwritable pi: declared as a var initialised to the constant, and
+    // reads reference the var, not an inlined literal.
+    expect(transformWgsl).toContain('var field_pi: f32 = 3.141592653589793;');
+    // Stores wrap in milkdropFinite — the per-statement clamp matching the
+    // CPU JIT's `_v` clamp (tier-differential convergence).
+    expect(transformWgsl).toContain('field_pi = milkdropFinite(3.14159);');
+    expect(transformWgsl).toContain('+ field_pi)');
+  });
+
   test('renders motion vectors directly on webgpu when per-pixel VM work is absent', async () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -1961,6 +2143,69 @@ video_echo_orientation=3
         videoEchoOrientation: 3,
         zoom: frameState.post.videoEchoZoom,
         warpScale: frameState.post.shaderControls.warpScale,
+      });
+    },
+  );
+
+  test.each(['webgl', 'webgpu'] as const)(
+    'drops the echo orientation flip for presets with a warp shader on %s',
+    (backend) => {
+      // A preset whose feedback is driven by a warp shader must not get the
+      // legacy echo orientation flip: the direct warp path never applies it,
+      // so applying it in the legacy fallback would rotate the whole previous
+      // frame 180° and render the theme upside down.
+      const preset = compileMilkdropPresetSource(
+        `
+title=Feedback Orientation Gating
+video_echo=1
+video_echo_alpha=0.42
+video_echo_orientation=3
+[warp_shader]
+shader_body {
+  ret = uv.xxx;
+}
+        `.trim(),
+        { id: `feedback-orientation-gating-${backend}` },
+      );
+      expect(preset.ir.post.shaderPrograms.warp).not.toBeNull();
+
+      const frameState = createMilkdropVM(preset).step(makeSignals());
+      const compositeStates: MilkdropFeedbackCompositeState[] = [];
+      const feedback = {
+        applyCompositeState(state: MilkdropFeedbackCompositeState) {
+          compositeStates.push(state);
+        },
+        render() {
+          return true;
+        },
+        swap() {},
+        resize() {},
+        dispose() {},
+      } as MilkdropFeedbackManager;
+
+      const adapter = createMilkdropRendererAdapterCore({
+        scene: new Scene(),
+        camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+        renderer: {
+          getSize: (target: Vector2) => target.set(320, 180),
+          render() {},
+          setRenderTarget() {},
+        },
+        backend,
+        createFeedbackManager: () => feedback,
+      });
+
+      adapter.attach();
+      expect(
+        adapter.render({
+          frameState,
+          blendState: null,
+        }),
+      ).toBe(true);
+
+      expect(compositeStates[0]).toMatchObject({
+        videoEchoAlpha: 0.42,
+        videoEchoOrientation: 0,
       });
     },
   );
@@ -2705,6 +2950,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
             { target: 'x', expression: { type: 'literal', value: 0 } },
           ],
           temporaries: [],
+          registerInputs: [],
           signature: 'field-program',
         },
         color: { r: 1, g: 1, b: 1, a: 1 },
@@ -3914,8 +4160,8 @@ video_echo=1
     expect(feedback).not.toBeNull();
     expect(feedback?.sceneTarget.width).toBe(640);
     expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.targets[0]?.width).toBe(320);
-    expect(feedback?.targets[0]?.height).toBe(180);
+    expect(feedback?.targets[0]?.width).toBe(400);
+    expect(feedback?.targets[0]?.height).toBe(225);
   });
 
   test('forwards shader transform controls into composite uniforms', async () => {
@@ -4004,6 +4250,46 @@ warp_shader=dx=0.05; dy=-0.02; rot=0.18; zoom=1.12
     });
     expect(state.perPixelVariables?.q6).toBeCloseTo(0.5, 6);
     expect(state.signalBassAtt).toBeCloseTo(0.6, 6);
+  });
+
+  test('gates feedback softness on preset blur-texture usage', () => {
+    const nonBlurPreset = compileMilkdropPresetSource(
+      `
+title=No Blur
+comp_shader=saturation=1.4; contrast=1.2
+      `.trim(),
+      { id: 'no-blur-feedback' },
+    );
+    const nonBlurState = buildFeedbackCompositeState({
+      frameState: createMilkdropVM(nonBlurPreset).step(makeSignals()),
+      backend: 'webgpu',
+      directFeedbackShaders: true,
+      webgpuFeedbackPlanShaderExecution: 'controls',
+      getShaderTextureSourceId: () => 0,
+      getShaderTextureBlendModeId: () => 0,
+      getShaderSampleDimensionId: () => 0,
+    });
+    expect(nonBlurState.feedbackSoftness).toBe(0);
+
+    const blurPreset = compileMilkdropPresetSource(
+      `
+title=Samples Blur
+comp_shader=ret=texture2D(blur1Tex, uv)
+      `.trim(),
+      { id: 'blur-feedback' },
+    );
+    const blurState = buildFeedbackCompositeState({
+      frameState: createMilkdropVM(blurPreset).step(makeSignals()),
+      backend: 'webgpu',
+      directFeedbackShaders: true,
+      webgpuFeedbackPlanShaderExecution: 'controls',
+      getShaderTextureSourceId: () => 0,
+      getShaderTextureBlendModeId: () => 0,
+      getShaderSampleDimensionId: () => 0,
+    });
+    expect(blurState.feedbackSoftness).toBe(
+      getFeedbackBackendProfile('webgpu').feedbackSoftness,
+    );
   });
 
   test('forwards shader color controls into composite uniforms', async () => {
@@ -4441,5 +4727,54 @@ ob_a=0.8
     };
     expect(borderMesh).toBeDefined();
     expect(borderMesh?.position?.z).toBe(0.285);
+  });
+});
+
+describe('ensureGeometryPositions buffer stability', () => {
+  test('never shrinks the position buffer, and bounds the draw with drawRange', async () => {
+    const { BufferGeometry } = await import('three');
+    const { ensureGeometryPositions } = await import(
+      '../../src/js/milkdrop/renderer-adapter-shared.ts'
+    );
+
+    const geometry = new BufferGeometry();
+
+    // A blend renders the outgoing and incoming preset into the same pooled
+    // geometry, so a wave whose sample count differs between the two used to
+    // reallocate on every frame, alternating between the two lengths. The
+    // draw count follows `position.count` immediately while the backend's
+    // uploaded GPUBuffer does not, so the shrink frame issued a draw wider
+    // than the buffer bound for it and invalidated the command buffer.
+    ensureGeometryPositions(geometry, new Float32Array(2913));
+    const afterSmall = geometry.getAttribute('position');
+    expect(afterSmall.array.length).toBe(2913);
+    expect(geometry.drawRange.count).toBe(971);
+
+    ensureGeometryPositions(geometry, new Float32Array(5019));
+    expect(geometry.getAttribute('position').array.length).toBe(5019);
+    expect(geometry.drawRange.count).toBe(1673);
+
+    // Shrinking back must keep the larger buffer and narrow the draw instead.
+    ensureGeometryPositions(geometry, new Float32Array(2913));
+    const attribute = geometry.getAttribute('position');
+    expect(attribute.array.length).toBe(5019);
+    expect(geometry.drawRange.count).toBe(971);
+    expect(geometry.drawRange.count).toBeLessThanOrEqual(attribute.count);
+  });
+
+  test('writes the supplied data at the start of an oversized buffer', async () => {
+    const { BufferGeometry } = await import('three');
+    const { ensureGeometryPositions } = await import(
+      '../../src/js/milkdrop/renderer-adapter-shared.ts'
+    );
+
+    const geometry = new BufferGeometry();
+    ensureGeometryPositions(geometry, new Float32Array([1, 2, 3, 4, 5, 6]));
+    ensureGeometryPositions(geometry, new Float32Array([7, 8, 9]));
+
+    const array = geometry.getAttribute('position').array as Float32Array;
+    expect(array.length).toBe(6);
+    expect(Array.from(array.slice(0, 3))).toEqual([7, 8, 9]);
+    expect(geometry.drawRange.count).toBe(1);
   });
 });

@@ -1,4 +1,5 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
+import { enforceAiRateLimit, type RateLimiter } from './_ai-guard.ts';
 
 interface D1Database {
   prepare(sql: string): D1PreparedStatement;
@@ -25,6 +26,7 @@ interface Env {
   };
   DB: D1Database;
   GALLERY_R2?: R2Bucket;
+  AI_RATE_LIMITER?: RateLimiter;
 }
 
 const VISION_MODEL = '@cf/google/gemma-4-26b-a4b-it';
@@ -44,6 +46,19 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(buffer).toString('base64');
+  }
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
@@ -61,6 +76,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  const limited = await enforceAiRateLimit(request, env.AI_RATE_LIMITER);
+  if (limited) return limited;
+
   try {
     let imageBase64: string | undefined;
     let guidance = '';
@@ -72,7 +90,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       const file = formData.get('image');
       if (file instanceof File) {
         const buffer = await file.arrayBuffer();
-        imageBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        imageBase64 = arrayBufferToBase64(buffer);
       }
       const guidanceField = formData.get('guidance');
       if (typeof guidanceField === 'string') {

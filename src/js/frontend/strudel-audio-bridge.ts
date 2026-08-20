@@ -62,13 +62,15 @@ export function peekStrudelBridge(): StrudelBridge | null {
 }
 
 /**
- * Loads Strudel on first call (heavy: pulls the pattern engine plus the
- * dirt-samples drum kit index from the network) and returns a singleton
- * bridge. Failed loads clear the cache so a retry is possible.
+ * Loads Strudel on first call and returns a singleton bridge.
+ * Set prebake=false to skip downloading dirt-samples (synth-only mode).
+ * Failed loads clear the cache so a retry is possible.
  */
-export function loadStrudelBridge(): Promise<StrudelBridge> {
+export function loadStrudelBridge(options?: {
+  prebake?: boolean;
+}): Promise<StrudelBridge> {
   if (!bridgePromise) {
-    bridgePromise = createBridge().catch((error) => {
+    bridgePromise = createBridge(options).catch((error) => {
       bridgePromise = null;
       throw error;
     });
@@ -76,7 +78,9 @@ export function loadStrudelBridge(): Promise<StrudelBridge> {
   return bridgePromise;
 }
 
-async function createBridge(): Promise<StrudelBridge> {
+async function createBridge(options?: {
+  prebake?: boolean;
+}): Promise<StrudelBridge> {
   ensureConnectTee();
 
   const strudel = await import('@strudel/web');
@@ -90,8 +94,12 @@ async function createBridge(): Promise<StrudelBridge> {
     taps.set(context, tap);
   }
 
+  const prebake = options?.prebake ?? true;
+
   await strudel.initStrudel({
-    prebake: () => strudel.samples('github:tidalcycles/dirt-samples'),
+    prebake: prebake
+      ? () => strudel.samples('github:tidalcycles/dirt-samples')
+      : undefined,
   });
 
   resolvedBridge = {

@@ -43,7 +43,7 @@ type LabStatus = 'idle' | 'loading' | 'playing' | 'stopped' | 'error';
 
 const STATUS_TEXT: Record<LabStatus, string> = {
   idle: 'Write a pattern, then Play. Audio is teed into the analyser, so bass/mid/treble drive the preset.',
-  loading: 'Loading the Strudel engine and drum samples…',
+  loading: 'Loading the Strudel engine…',
   playing: 'Playing — the visualizer is being driven by this pattern.',
   stopped: 'Stopped. Edit the pattern and Play again.',
   error: 'Pattern failed to evaluate.',
@@ -56,6 +56,7 @@ export function StrudelLabPanel() {
   const [status, setStatus] = useState<LabStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scopeStream, setScopeStream] = useState<MediaStream | null>(null);
+  const [synthOnly, setSynthOnly] = useState(false);
   const bridgeRef = useRef<StrudelBridge | null>(null);
   const visualizerStartedRef = useRef(false);
 
@@ -98,7 +99,7 @@ export function StrudelLabPanel() {
     try {
       if (!bridgeRef.current) {
         setStatus('loading');
-        bridgeRef.current = await loadStrudelBridge();
+        bridgeRef.current = await loadStrudelBridge({ prebake: !synthOnly });
         setScopeStream(bridgeRef.current.stream);
       }
       const bridge = bridgeRef.current;
@@ -169,6 +170,18 @@ export function StrudelLabPanel() {
         <header className={styles.header} {...panelDock.surfaceProps}>
           <h2 className={styles.title}>Strudel × Stims</h2>
           <div className={styles.headerActions}>
+            <label
+              className={styles.synthOnlyLabel}
+              title="Skip drum sample download (synth-only patterns work immediately)"
+            >
+              <input
+                type="checkbox"
+                checked={synthOnly}
+                onChange={(e) => setSynthOnly(e.target.checked)}
+                disabled={status === 'loading' || status === 'playing'}
+              />
+              <span>Synth only</span>
+            </label>
             <button
               type="button"
               className={styles.moveButton}
@@ -178,7 +191,7 @@ export function StrudelLabPanel() {
                 )
               }
               aria-label={`Move lab to ${panelDock.anchor === 'right' ? 'left' : 'right'} edge`}
-              title="Move to the other edge (or drag the header)"
+              title="Move to the other edge"
             >
               ⇄
             </button>
@@ -210,6 +223,12 @@ export function StrudelLabPanel() {
           className={styles.editor}
           value={code}
           onChange={(event) => setCode(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+              event.preventDefault();
+              void handlePlay();
+            }
+          }}
           rows={9}
           spellCheck={false}
           aria-label="Strudel pattern code"

@@ -14,13 +14,15 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
-import { setAudioEnergy } from './engine-audio-energy-store.ts';
+import type { EngineSnapshot } from './engine/engine-snapshot.ts';
+import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
   EngineCtx,
   EngineProvider,
   type EngineSnapshotValue,
 } from './engine-context.tsx';
+import { setEngineQualityState } from './engine-quality-store.ts';
 import { usePersistentPresetQueue } from './preset-queue.ts';
 import {
   useWorkspaceRouteState,
@@ -55,8 +57,24 @@ export interface WorkspaceContextValue {
   youtubeLoading: boolean;
   youtubePreviewRef: React.RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
+  youtubeTransport: {
+    currentSeconds: number;
+    durationSeconds: number;
+    paused: boolean;
+  } | null;
+  youtubeTransportControls: {
+    play: () => void;
+    pause: () => void;
+    seekTo: (seconds: number) => void;
+    nudge: (deltaSeconds: number) => void;
+  };
   youtubeUrl: string;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
+  recentYouTubeVideos: Array<{
+    id: string;
+    title: string;
+    thumbnail?: string;
+    author?: string;
+  }>;
   renderPreferences: RenderPreferences;
   fallbackCatalog: PresetCatalogEntry[];
   fallbackCatalogError: string | null;
@@ -74,7 +92,7 @@ export interface WorkspaceContextValue {
 
   handleBrowseRecovery: () => void;
   handleFeaturedPresetSelection: () => void;
-  handleImport: (files: FileList | null) => Promise<void>;
+  handleImport: (files: FileList | File[] | null) => Promise<void>;
   handleShowCurrentLink: () => Promise<void>;
   updatePanel: (panel: PanelState) => void;
 }
@@ -129,6 +147,44 @@ export function WorkspaceValueProvider({
   );
 }
 
+/**
+ * Coarse-field equality for the engine snapshot context value. The snapshot
+ * rebuilds per frame while audio plays (audioEnergy/bass/mid/treble churn), so
+ * the context deliberately skips those four fields — they flow through the
+ * dedicated audio-energy store instead. Every other snapshot field MUST be
+ * compared here: any field left out silently stops propagating to
+ * useEngineSnapshot consumers until an included field happens to change
+ * (this is how setBlendDuration appeared to "not take effect" until a page
+ * reload — the setter and the runtime were correct, the context memo swallowed
+ * the update).
+ *
+ * `currentSource` derives from `sessionState.source`, so the `sessionState`
+ * identity check covers it.
+ *
+ * Exported for unit tests.
+ */
+export function coarseEngineSnapshotEqual(
+  prev: EngineSnapshot,
+  snap: EngineSnapshot,
+): boolean {
+  return (
+    prev.activePresetId === snap.activePresetId &&
+    prev.backend === snap.backend &&
+    prev.status === snap.status &&
+    prev.runtimeReady === snap.runtimeReady &&
+    prev.audioActive === snap.audioActive &&
+    prev.audioSource === snap.audioSource &&
+    prev.audioEndedAt === snap.audioEndedAt &&
+    prev.adaptiveQuality === snap.adaptiveQuality &&
+    prev.catalogEntries === snap.catalogEntries &&
+    prev.sessionState === snap.sessionState &&
+    prev.tempoBpm === snap.tempoBpm &&
+    prev.autoplay === snap.autoplay &&
+    prev.transitionMode === snap.transitionMode &&
+    prev.blendDuration === snap.blendDuration
+  );
+}
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
 
@@ -145,7 +201,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     activityCatalog: sessionState.activityCatalog,
     goBackPreset: sessionState.goBackPreset,
     importPresetFiles: sessionState.importPresetFiles,
-    pendingPresetIdRef: sessionState.pendingPresetIdRef,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
     startAudioSource: sessionState.startAudioSource,
@@ -155,12 +210,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
 
   const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
+  // The context VALUE wrapper must also keep its identity when the coarse
+  // fields are unchanged — returning a fresh `{ engineSnapshot: prev }` per
+  // snapshot tick re-rendered every useEngineSnapshot consumer at frame rate
+  // while audio played (the snapshot itself rebuilds per frame on
+  // audioEnergy), which showed up as continuous 60-80ms long tasks whenever
+  // a panel with catalog rows was open.
+  const coarseValueRef = useRef<EngineSnapshotValue | null>(null);
   const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
 
   useEffect(() => {
     const snap = sessionState.engineSnapshot;
     if (snap) {
       setAudioEnergy(snap.audioEnergy);
+      setAudioBands({
+        bass: snap.audioBass,
+        mid: snap.audioMid,
+        treble: snap.audioTreble,
+      });
+      setEngineQualityState(
+        snap.adaptiveQuality
+          ? {
+              step: snap.adaptiveQuality.qualityStep,
+              stepCount: snap.adaptiveQuality.qualityStepCount,
+            }
+          : null,
+      );
     }
   }, [sessionState.engineSnapshot]);
 
@@ -170,20 +245,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (
       prev &&
       snap &&
-      prev.activePresetId === snap.activePresetId &&
-      prev.backend === snap.backend &&
-      prev.status === snap.status &&
-      prev.runtimeReady === snap.runtimeReady &&
-      prev.audioActive === snap.audioActive &&
-      prev.audioSource === snap.audioSource &&
-      prev.adaptiveQuality === snap.adaptiveQuality &&
-      prev.catalogEntries === snap.catalogEntries &&
-      prev.sessionState === snap.sessionState
+      coarseValueRef.current &&
+      coarseEngineSnapshotEqual(prev, snap)
     ) {
-      return { engineSnapshot: prev };
+      return coarseValueRef.current;
     }
     coarseRef.current = snap;
-    return { engineSnapshot: snap };
+    coarseValueRef.current = { engineSnapshot: snap };
+    return coarseValueRef.current;
   }, [sessionState.engineSnapshot]);
 
   const engineDataValue: EngineContextValue = useMemo(
@@ -228,9 +297,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setQualityPreset: sessionState.setQualityPreset,
       setAutoplay: sessionState.setAutoplay,
       setTransitionMode: sessionState.setTransitionMode,
+      startManualCrossfade: sessionState.startManualCrossfade,
+      setCrossfade: sessionState.setCrossfade,
+      getCrossfade: sessionState.getCrossfade,
       setBlendDuration: sessionState.setBlendDuration,
       updateEditorSource: sessionState.updateEditorSource,
+      updateFieldLive: sessionState.updateFieldLive,
+      applyEditorSourceAwaited: sessionState.applyEditorSourceAwaited,
+      applyEditorFieldsAwaited: sessionState.applyEditorFieldsAwaited,
+      getEditorSessionState: sessionState.getEditorSessionState,
       updateInspectorField: sessionState.updateInspectorField,
+      getActiveCompiledPreset: sessionState.getActiveCompiledPreset,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -274,9 +351,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setQualityPreset,
       sessionState.setAutoplay,
       sessionState.setTransitionMode,
+      sessionState.startManualCrossfade,
+      sessionState.setCrossfade,
+      sessionState.getCrossfade,
       sessionState.setBlendDuration,
       sessionState.updateEditorSource,
+      sessionState.updateFieldLive,
+      sessionState.applyEditorSourceAwaited,
+      sessionState.applyEditorFieldsAwaited,
+      sessionState.getEditorSessionState,
       sessionState.updateInspectorField,
+      sessionState.getActiveCompiledPreset,
       shellOrchestration.handleVisualSearch,
     ],
   );
@@ -305,6 +390,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       youtubeLoading: sessionState.youtubeLoading,
       youtubePreviewRef: sessionState.youtubePreviewRef,
       youtubeReady: sessionState.youtubeReady,
+      youtubeTransport: sessionState.youtubeTransport,
+      youtubeTransportControls: sessionState.youtubeTransportControls,
       youtubeUrl: sessionState.youtubeUrl,
       recentYouTubeVideos: sessionState.recentYouTubeVideos,
       renderPreferences: sessionState.renderPreferences,
@@ -343,6 +430,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.youtubeLoading,
       sessionState.youtubePreviewRef,
       sessionState.youtubeReady,
+      sessionState.youtubeTransport,
+      sessionState.youtubeTransportControls,
       sessionState.youtubeUrl,
       sessionState.recentYouTubeVideos,
       sessionState.renderPreferences,
@@ -360,10 +449,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <WorkspaceContext.Provider value={uiValue}>
+    <WorkspaceContext value={uiValue}>
       <EngineProvider snapshot={engineSnapshotValue} data={engineDataValue}>
         {children}
       </EngineProvider>
-    </WorkspaceContext.Provider>
+    </WorkspaceContext>
   );
 }

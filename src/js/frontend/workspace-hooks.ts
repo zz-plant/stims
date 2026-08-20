@@ -1,19 +1,25 @@
 import {
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useDeferredValue,
   useEffect,
   useEffectEvent,
   useRef,
   useState,
 } from 'react';
+import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { createLogger } from '../core/logger.ts';
+import { noteSubstitution } from '../core/services/preset-telemetry.ts';
 import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
+import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
+import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
+import { recordStatusMessage } from './agent-state.ts';
 import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
@@ -27,6 +33,7 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { decidePresetRoutePush } from './preset-route-push.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -34,6 +41,7 @@ import {
   stringifyPlainSearch,
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
+import { runViewTransition } from './view-transition.ts';
 import { buildLaunchIntent } from './workspace-helpers.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -44,8 +52,12 @@ export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
   );
+  const previousPanelRef = useRef<SessionRouteState['panel']>(routeState.panel);
 
   useEffect(() => {
+    const previousPanel = previousPanelRef.current;
+    previousPanelRef.current = routeState.panel;
+
     const currentSearch = parsePlainSearch(window.location.search);
     const nextSearch = buildSessionRouteSearch(routeState, currentSearch);
     const serialized = stringifyPlainSearch(nextSearch);
@@ -56,7 +68,16 @@ export function useWorkspaceRouteState() {
 
     const hash = window.location.hash;
     const newUrl = hash ? `${serialized}${hash}` : serialized;
-    window.history.replaceState(null, '', newUrl);
+    // Opening a panel pushes a history entry so the browser Back button (and
+    // the Android back gesture) closes the sheet instead of leaving the
+    // site. Every other route change — preset switches, audio source,
+    // filters, panel-to-panel moves — stays a replace so history isn't
+    // flooded with entries.
+    if (routeState.panel !== null && previousPanel === null) {
+      window.history.pushState(null, '', newUrl);
+    } else {
+      window.history.replaceState(null, '', newUrl);
+    }
   }, [routeState]);
 
   useEffect(() => {
@@ -93,10 +114,18 @@ export function useWorkspaceSessionState({
   const { motionPreference, qualityPreset, renderPreferences } =
     useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessageState] = useState<string | null>(null);
+  // Status toasts are the app's confirmation channel but they evaporate;
+  // mirror every message into the agent-state ring buffer so automation can
+  // verify effects after the fact.
+  const setStatusMessage = useCallback((message: string | null) => {
+    recordStatusMessage(message);
+    setStatusMessageState(message);
+  }, []);
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const engineSnapshotRef = useRef<EngineSnapshot | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
     null,
@@ -105,7 +134,39 @@ export function useWorkspaceSessionState({
   const ensureEngineMountPromiseRef =
     useRef<Promise<MilkdropEngineAdapter> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(routeState.presetId);
+  // Preset ids that already timed out or failed. Loading the fallback changes
+  // `activePresetId`, which re-runs the load effect; without this the effect
+  // would keep re-requesting the preset that just failed, forever.
+  const failedPresetIdsRef = useRef<Set<string>>(new Set());
+  // The resolved route preset id the route -> engine effect last acted on.
+  // Distinguishes "the route changed, push it to the engine" from "the engine
+  // moved on its own and this effect is only re-running because of it" — see
+  // the guard in that effect.
+  const handledRouteRequestRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
+
+  // The landing page is the pitch for a visuals product and contained no
+  // visuals: a full-viewport canvas sat behind the launch form with nothing
+  // drawn on it, because the engine only mounted once a preset or an audio
+  // source was in the route. Mount it for the bare landing view too, so an
+  // arrival sees the thing they came for while reading the form.
+  //
+  // Audio is silent until they choose a source, so this leans on the first-run
+  // preset's autonomous motion (see runtime/first-run-preset.ts) rather than on
+  // audio reactivity.
+  //
+  // Gated on the device profile: `lowPower` covers limited memory or cores,
+  // handhelds and smart TVs, and `reducedMotion` honors the OS-level
+  // prefers-reduced-motion request — anyone who asked for less motion, or
+  // whose device should not spend a GPU context on decoration, still gets the
+  // static form.
+  const [attractModeEnabled] = useState(() => {
+    if (routeState.previewMode) {
+      return false;
+    }
+    const profile = getDevicePerformanceProfile();
+    return !profile.lowPower && !profile.reducedMotion;
+  });
 
   const {
     activityCatalog,
@@ -142,10 +203,28 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     setYoutubeUrl,
   } = useWorkspaceYouTubePreview({
     setStatusMessage,
+    initialVideoId: routeState.youtubeVideoId ?? null,
+    initialStartSeconds: routeState.youtubeStartSeconds ?? null,
+    onVideoLoaded: ({ id, startSeconds }) => {
+      // Keep the address bar shareable: whatever is playing is what a copied
+      // link will reopen.
+      setRouteState((previous) =>
+        previous.youtubeVideoId === id &&
+        (previous.youtubeStartSeconds ?? 0) === startSeconds
+          ? previous
+          : {
+              ...previous,
+              youtubeVideoId: id,
+              youtubeStartSeconds: startSeconds > 0 ? startSeconds : null,
+            },
+      );
+    },
   });
   const { toast, dismissToast } = useWorkspaceToast({
     engineSnapshot,
@@ -165,7 +244,20 @@ export function useWorkspaceSessionState({
       // after createLazyFactory has confirmed this call still owns the slot.
       install: (adapter) => {
         engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-          setEngineSnapshot(snapshot);
+          const audioFlipped =
+            Boolean(engineSnapshotRef.current?.audioActive) !==
+            Boolean(snapshot.audioActive);
+          engineSnapshotRef.current = snapshot;
+          if (audioFlipped) {
+            // The home<->live swap (launch form <-> live stage) is the one
+            // transition worth the view-transition snapshot freeze: the
+            // engine is crossfading presets at the same moment, which masks
+            // the brief static canvas frame. In-live interactions are left
+            // out so the canvas never freezes while music plays.
+            runViewTransition(() => setEngineSnapshot(snapshot));
+          } else {
+            setEngineSnapshot(snapshot);
+          }
         });
       },
       getRef: () => engineRef.current,
@@ -218,10 +310,33 @@ export function useWorkspaceSessionState({
   useStageCanvasSync(stageRef);
 
   useEffect(() => {
-    if (routeState.panel === 'browse' || routeState.presetId) {
+    if (routeState.panel === 'browse') {
       void hydrateFullCatalogNow();
+      return;
     }
-  }, [routeState.panel, routeState.presetId, hydrateFullCatalogNow]);
+
+    if (routeState.presetId) {
+      if (fallbackCatalogReady) {
+        const isPresetInFallback = fallbackCatalog.some(
+          (entry) => entry.id === routeState.presetId,
+        );
+        if (
+          !isPresetInFallback &&
+          routeState.presetId !== FIRST_RUN_PRESET_ID
+        ) {
+          void hydrateFullCatalogNow();
+        }
+      } else {
+        void hydrateFullCatalogNow();
+      }
+    }
+  }, [
+    routeState.panel,
+    routeState.presetId,
+    fallbackCatalogReady,
+    fallbackCatalog,
+    hydrateFullCatalogNow,
+  ]);
 
   useEffect(() => {
     sessionDisposedRef.current = false;
@@ -266,21 +381,45 @@ export function useWorkspaceSessionState({
     if (engineSnapshot?.runtimeReady) {
       return;
     }
-    if (!routeState.presetId && !routeState.audioSource) {
+    if (
+      !routeState.presetId &&
+      !routeState.audioSource &&
+      !attractModeEnabled
+    ) {
       return;
     }
 
-    void ensureEngineMounted().catch((error) => {
-      setStatusMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to start the visualizer runtime.',
-      );
-    });
+    const mountEngine = () => {
+      void ensureEngineMounted().catch((error) => {
+        setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to start the visualizer runtime.',
+        );
+      });
+    };
+
+    // Attract-mode boots are decorative: nothing the visitor asked for depends
+    // on them. Paying for the renderer boot up front (WebGPU probe + device
+    // request, shader compile, first-run preset compile, first frames) used to
+    // sit on the initial-load critical path as a ~2.5s main-thread block on
+    // mid-range hardware. Let the shell paint and the page settle first, then
+    // boot during idle budget. A deep-linked preset or audio source is a real
+    // intent and still mounts immediately.
+    if (!routeState.presetId && !routeState.audioSource) {
+      return scheduleIdleTask(mountEngine, {
+        idleTimeout: 2500,
+        fallbackDelay: 800,
+      });
+    }
+
+    mountEngine();
   }, [
     engineSnapshot?.runtimeReady,
     routeState.presetId,
     routeState.audioSource,
+    attractModeEnabled,
+    setStatusMessage,
   ]);
 
   usePresetRouteSync({
@@ -320,52 +459,118 @@ export function useWorkspaceSessionState({
         routePresetId)
       : null;
 
-    if (!engineRef.current?.isMounted()) {
-      if (requestedPresetId) {
-        log.log(`engine not mounted, deferring preset ${requestedPresetId}`);
+    // Every branch below is decided by `decidePresetRoutePush` so the rules
+    // (especially the engine-moved guard that stops the route and the engine
+    // fighting over the address bar) are unit-testable in isolation.
+    const decision = decidePresetRoutePush({
+      engineMounted: Boolean(engineRef.current?.isMounted()),
+      requestedPresetId,
+      activePresetId: engineSnapshot?.activePresetId,
+      handledRouteRequestId: handledRouteRequestRef.current,
+      pendingPresetId: pendingPresetIdRef.current,
+      hasFailed: requestedPresetId
+        ? failedPresetIdsRef.current.has(requestedPresetId)
+        : false,
+    });
+
+    if (decision !== 'load') {
+      if (decision === 'engine-not-mounted') {
+        if (requestedPresetId) {
+          log.log(`engine not mounted, deferring preset ${requestedPresetId}`);
+        }
+        // Nothing was handled while unmounted; let the request through again
+        // once the engine mounts.
+        handledRouteRequestRef.current = null;
+      } else if (decision === 'no-request') {
+        handledRouteRequestRef.current = null;
+      } else if (decision === 'already-active') {
+        pendingPresetIdRef.current = null;
+        handledRouteRequestRef.current = requestedPresetId;
+      } else if (decision === 'engine-moved') {
+        // Deliberately NOT clearing pendingPresetIdRef: it is already null on
+        // an engine-initiated move, and usePresetRouteSync needs it null to
+        // publish the engine's new id to the URL.
+        log.log(
+          `engine moved to ${engineSnapshot?.activePresetId ?? 'none'} on its own; not re-pushing route preset ${requestedPresetId}`,
+        );
       }
       return;
     }
-
-    if (!requestedPresetId) {
-      return;
-    }
-
-    if (requestedPresetId === engineSnapshot?.activePresetId) {
-      pendingPresetIdRef.current = null;
-      return;
-    }
-
-    // This effect re-runs whenever the engine snapshot changes — notably when
-    // `catalogEntries` lands, which on slower devices happens well before
-    // `activePresetId` catches up. Without an in-flight check the same preset
-    // gets requested again while the first request is still compiling, and the
-    // navigation controller discards the earlier one as `superseded` after it
-    // has already paid for the fetch and compile. The ref is always cleared on
-    // success, failure, or the 10s timeout below, so this cannot wedge.
-    if (pendingPresetIdRef.current === requestedPresetId) {
+    // `decision === 'load'` already implies this, but the compiler cannot see
+    // through the helper; this keeps the rest of the effect non-null.
+    if (!requestedPresetId || !engineRef.current) {
       return;
     }
 
     pendingPresetIdRef.current = requestedPresetId;
+    handledRouteRequestRef.current = requestedPresetId;
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
+    // A slow or unavailable preset used to leave a black canvas and a "Try
+    // again" toast with nothing to try again with. Fall back to the known-good
+    // first-run preset so the visitor still ends up watching something.
+    const fallBackToFirstRunPreset = (message: string) => {
+      failedPresetIdsRef.current.add(requestedPresetId);
+      pendingPresetIdRef.current = null;
+
+      const engine = engineRef.current;
+      if (!engine || requestedPresetId === FIRST_RUN_PRESET_ID) {
+        noteSubstitution(
+          'preset-load-failed',
+          `${requestedPresetId}: ${message}`,
+        );
+        setStatusMessage(message);
+        return;
+      }
+
+      noteSubstitution('fallback-preset', `${requestedPresetId}: ${message}`);
+      setStatusMessage(`${message} Showing another preset instead.`);
+      void engine.loadPreset(FIRST_RUN_PRESET_ID).catch(() => {
+        log.log(`fallback preset ${FIRST_RUN_PRESET_ID} also failed`);
+      });
+    };
+
     let timedOut = false;
+    let fellBack = false;
     const timeoutId = setTimeout(() => {
       timedOut = true;
       if (pendingPresetIdRef.current === requestedPresetId) {
-        pendingPresetIdRef.current = null;
-        setStatusMessage(
-          `Preset "${requestedPresetId}" took too long to load. Try again.`,
-        );
+        fellBack = true;
+        fallBackToFirstRunPreset(`Preset "${requestedPresetId}" timed out.`);
       }
     }, 10_000);
 
     void engineRef.current.loadPreset(requestedPresetId).then(
       () => {
         clearTimeout(timeoutId);
-        if (timedOut) return;
+        if (timedOut) {
+          // The fallback fired while this load was still finishing — a race
+          // the wall-clock timer cannot avoid. The visitor asked for this
+          // preset and it did load (the compile is cached now), so reclaim
+          // the stage from the substitute instead of stranding them on it.
+          //
+          // Unless the visitor has since navigated: the fallback cleared
+          // pendingPresetIdRef, so a non-null value here means a NEWER
+          // request is in flight — reclaiming now would hijack it with a
+          // later engine revision. Their pick wins; only the failed-preset
+          // mark is lifted so the original id stays retryable.
+          if (fellBack) {
+            failedPresetIdsRef.current.delete(requestedPresetId);
+            if (pendingPresetIdRef.current !== null) {
+              log.log(
+                `skipping reclaim of ${requestedPresetId}: ${pendingPresetIdRef.current} was requested meanwhile`,
+              );
+              return;
+            }
+            setStatusMessage(null);
+            log.log(`reclaiming ${requestedPresetId} after timeout fallback`);
+            void engineRef.current?.loadPreset(requestedPresetId).catch(() => {
+              failedPresetIdsRef.current.add(requestedPresetId);
+            });
+          }
+          return;
+        }
         log.log(`loaded ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
@@ -375,9 +580,8 @@ export function useWorkspaceSessionState({
         clearTimeout(timeoutId);
         if (timedOut) return;
         if (pendingPresetIdRef.current === requestedPresetId) {
-          pendingPresetIdRef.current = null;
-          setStatusMessage(
-            `Failed to load preset. "${requestedPresetId}" may be unavailable.`,
+          fallBackToFirstRunPreset(
+            `"${requestedPresetId}" could not be loaded.`,
           );
         }
       },
@@ -388,6 +592,7 @@ export function useWorkspaceSessionState({
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,
     routeState.presetId,
+    setStatusMessage,
   ]);
 
   useAudioSourceSync({
@@ -430,7 +635,7 @@ export function useWorkspaceSessionState({
     fullCatalogReady,
     handleYoutubeUrlKeyDown,
     activityCatalog,
-    importPresetFiles: async (files: FileList | null) => {
+    importPresetFiles: async (files: FileList | File[] | null) => {
       if (!files?.length) {
         return;
       }
@@ -463,15 +668,34 @@ export function useWorkspaceSessionState({
     setTransitionMode: (mode: 'blend' | 'cut') => {
       engineRef.current?.setTransitionMode(mode);
     },
+    startManualCrossfade: () => {
+      engineRef.current?.startManualCrossfade();
+    },
+    setCrossfade: (position: number) => {
+      engineRef.current?.setCrossfade(position);
+    },
+    getCrossfade: () => engineRef.current?.getCrossfade() ?? null,
     setBlendDuration: (value: number) => {
       engineRef.current?.setBlendDuration(value);
     },
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
+    updateFieldLive: (key: string, value: number) => {
+      engineRef.current?.updateFieldLive(key, value);
+    },
+    applyEditorSourceAwaited: async (source: string) =>
+      (await engineRef.current?.applyEditorSourceAwaited(source)) ?? null,
+    applyEditorFieldsAwaited: async (
+      updates: Record<string, string | number>,
+    ) => (await engineRef.current?.applyEditorFieldsAwaited(updates)) ?? null,
+    getEditorSessionState: () =>
+      engineRef.current?.getEditorSessionState() ?? null,
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
     },
+    getActiveCompiledPreset: () =>
+      engineRef.current?.getActiveCompiledPreset() ?? null,
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,
@@ -522,6 +746,8 @@ export function useWorkspaceSessionState({
     youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
+    youtubeTransport,
+    youtubeTransportControls,
     youtubeUrl,
     clearRecentYouTubeVideos,
     pausePreview: () => {

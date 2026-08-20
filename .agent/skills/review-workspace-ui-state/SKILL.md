@@ -22,7 +22,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 - [ ] Legacy query params are read on boot and rewritten to canonical form, not carried forward as aliases.
 - [ ] New params use the canonical namespace (`tool`, `collection`, `preset`, `audio`).
-- [ ] URL changes are coalesced (one `replaceState` per logical update, not per keystroke).
+- [ ] URL changes are coalesced (one history update per logical update, not per keystroke). Almost every update should be `replaceState`; the one deliberate exception is `useWorkspaceRouteState` calling `pushState` when a panel transitions from closed to open, so Back/the Android back gesture closes the sheet instead of leaving the site — a new `pushState` call needs the same "closes something the user just opened" justification, not a blanket rejection.
 
 ### 3. Toast/panel state is isolated from engine state
 
@@ -43,13 +43,13 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
   ```bash
   bun run test tests/unit/frontend-url-state.test.ts
-  bun run test tests/unit/app-shell.test.js
+  bun run test tests/unit/app-shell.test.ts
   ```
 
 ## What to reject in review
 
 - Direct imports from `src/js/milkdrop/runtime.ts` or `src/js/milkdrop/vm.ts` into frontend components
-- URL state updates that append rather than replace query params
+- URL state updates that append rather than replace query params, or that push a new history entry without the "closes something the user just opened" justification `useWorkspaceRouteState`'s panel-open case has
 - Toast or panel logic that reads `window.milkdropRuntime` or similar global
 - Missing cleanup for `useEffect` subscriptions that touch engine lifecycle
 

@@ -1,3 +1,11 @@
+/**
+ * Precompiles per-preset browse search terms from the catalog into
+ * public/milkdrop-presets/search-index.json.
+ *
+ * Terms come from title, author, tags, and collection labels, plus synthetic
+ * aliases for Rovastar and classic-MilkDrop lineage. Skips work when the
+ * existing index is newer than catalog.json.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -22,6 +30,7 @@ type CatalogPresetEntry = {
   title: string;
   author?: string;
   tags: string[];
+  searchTerms?: string[];
 };
 
 type CatalogDocument = {
@@ -63,6 +72,7 @@ function getBrowseSearchTerms(preset: CatalogPresetEntry) {
     preset.title,
     preset.author ?? '',
     ...preset.tags,
+    ...(preset.searchTerms ?? []),
     ...preset.tags
       .filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX))
       .map((tag) => collectionLabel(tag)),
@@ -86,7 +96,7 @@ function getBrowseSearchTerms(preset: CatalogPresetEntry) {
     .filter(Boolean);
 }
 
-export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
+export async function generateCatalogSearchIndex(repoRoot = process.cwd()) {
   const catalogPath = path.join(
     repoRoot,
     'public/milkdrop-presets/catalog.json',
@@ -101,8 +111,26 @@ export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
     return;
   }
 
-  const raw = fs.readFileSync(catalogPath, 'utf8');
-  const doc = JSON.parse(raw) as CatalogDocument;
+  // Skip regeneration if the search index is already up to date.
+  if (fs.existsSync(outputPath)) {
+    const catalogMtime = fs.statSync(catalogPath).mtimeMs;
+    const indexMtime = fs.statSync(outputPath).mtimeMs;
+    if (indexMtime >= catalogMtime) {
+      console.log(
+        `[INFO] Search index is up to date (catalog mtime ${new Date(catalogMtime).toISOString()}, index mtime ${new Date(indexMtime).toISOString()}). Skipping.`,
+      );
+      return;
+    }
+  }
+
+  let doc: CatalogDocument;
+  if (typeof Bun !== 'undefined') {
+    doc = (await Bun.file(catalogPath).json()) as CatalogDocument;
+  } else {
+    const raw = fs.readFileSync(catalogPath, 'utf8');
+    doc = JSON.parse(raw) as CatalogDocument;
+  }
+
   const presets = doc.presets ?? [];
 
   const searchIndex: Record<
@@ -118,7 +146,13 @@ export function generateCatalogSearchIndex(repoRoot = process.cwd()) {
     };
   }
 
-  fs.writeFileSync(outputPath, JSON.stringify(searchIndex, null, 2), 'utf8');
+  const outputContent = JSON.stringify(searchIndex, null, 2);
+  if (typeof Bun !== 'undefined') {
+    await Bun.write(outputPath, outputContent);
+  } else {
+    fs.writeFileSync(outputPath, outputContent, 'utf8');
+  }
+
   console.log(
     `[INFO] Precompiled search index for ${Object.keys(searchIndex).length} presets -> ${outputPath}`,
   );

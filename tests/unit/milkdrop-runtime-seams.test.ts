@@ -7,26 +7,18 @@ import {
 import { applyMilkdropCapturedVideoFrameState } from '../../src/js/milkdrop/runtime/captured-video-frame.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 import {
-  buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
+  shouldPrepareNextPreset,
 } from '../../src/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from '../../src/js/milkdrop/runtime/lifetime.ts';
 import {
+  resolveStartupPresetChoice,
   resolveStartupPresetId,
   shouldDeferStartupPresetFallback,
 } from '../../src/js/milkdrop/runtime/startup.ts';
-import type {
-  MilkdropBlendState,
-  MilkdropFrameState,
-} from '../../src/js/milkdrop/types.ts';
+import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
-
-const gpuBlendState: MilkdropBlendState = {
-  mode: 'gpu',
-  previousFrame: { presetId: 'prev' } as MilkdropFrameState,
-  alpha: 1,
-};
 
 function resolveCapturedVideoReactivity({
   weightedEnergy,
@@ -84,7 +76,11 @@ describe('milkdrop runtime startup seams', () => {
     ).toBe(false);
   });
 
-  test('does not auto-select a preset when nothing was explicitly requested', () => {
+  test('falls back to the first selectable preset when nothing was explicitly requested', () => {
+    // This used to return null, which is why a first-time visitor with no
+    // deep link, history or collection got a mounted engine drawing nothing.
+    // "Nothing was requested" is the most common arrival, not an edge case, so
+    // it resolves to the deliberate first-run pick.
     const startupId = resolveStartupPresetId({
       requestedPresetId: null,
       preferredStartupPresetId: null,
@@ -94,7 +90,7 @@ describe('milkdrop runtime startup seams', () => {
       activeBackend: 'webgpu',
     });
 
-    expect(startupId).toBeNull();
+    expect(startupId).toBe('fallback');
   });
 
   test('prefers an explicitly requested preset when the backend can run it', () => {
@@ -121,6 +117,62 @@ describe('milkdrop runtime startup seams', () => {
     });
 
     expect(startupId).toBe('fallback');
+  });
+
+  // Provenance: the id alone cannot tell you why a preset is on screen, which
+  // is what made "why is it showing this preset?" a code-reading exercise.
+  test('reports which branch chose the startup preset', () => {
+    const choose = (
+      over: Partial<Parameters<typeof resolveStartupPresetChoice>[0]>,
+    ) =>
+      resolveStartupPresetChoice({
+        requestedPresetId: null,
+        preferredStartupPresetId: null,
+        collectionEntryId: null,
+        isBackendSelectable: () => true,
+        getFirstSelectablePresetId: () => 'fallback',
+        activeBackend: 'webgpu',
+        ...over,
+      });
+
+    expect(choose({ requestedPresetId: 'deep' })).toEqual({
+      presetId: 'deep',
+      reason: 'deep-link',
+    });
+    expect(choose({ preferredStartupPresetId: 'stored' })).toEqual({
+      presetId: 'stored',
+      reason: 'remembered',
+    });
+    expect(choose({ collectionEntryId: 'coll' })).toEqual({
+      presetId: 'coll',
+      reason: 'collection',
+    });
+    expect(choose({})).toEqual({
+      presetId: 'fallback',
+      reason: 'first-selectable',
+    });
+    // An unsupported preferred pick falls through to the fallback, and the
+    // reason must fall through with it rather than still claiming 'remembered'.
+    expect(
+      choose({
+        preferredStartupPresetId: 'blocked',
+        isBackendSelectable: (id) => id !== 'blocked',
+      }),
+    ).toEqual({ presetId: 'fallback', reason: 'first-selectable' });
+  });
+
+  test('resolveStartupPresetId stays in agreement with the reported choice', () => {
+    const args = {
+      requestedPresetId: null,
+      preferredStartupPresetId: 'stored',
+      collectionEntryId: 'coll',
+      isBackendSelectable: () => true,
+      getFirstSelectablePresetId: () => 'fallback',
+      activeBackend: 'webgpu' as const,
+    };
+    expect(resolveStartupPresetId(args)).toBe(
+      resolveStartupPresetChoice(args).presetId,
+    );
   });
 });
 
@@ -176,32 +228,24 @@ describe('milkdrop runtime lifecycle seams', () => {
     ).toBe(false);
   });
 
-  test('builds blend payloads only while an active blend is still valid', () => {
-    const blend = buildBlendStateForRender({
-      transitionMode: 'blend',
-      shaderQuality: 'balanced',
-      canBlendCurrentFrame: true,
-      blendState: gpuBlendState,
-      now: 3_000,
-      blendEndAtMs: 4_000,
+  test('asks to prepare the next pick a lead window before the advance', () => {
+    const base = {
+      autoplay: true,
+      catalogSize: 3,
+      lastPresetSwitchAt: 1_000,
       blendDuration: 2,
-    });
-
-    expect(blend?.mode).toBe('gpu');
-    expect(blend?.alpha).toBeCloseTo(0.5, 6);
-
+    };
+    // Advance fires at 31s; preparation must lead it, not trail it.
+    expect(shouldPrepareNextPreset({ ...base, now: 24_000 })).toBe(true);
+    expect(shouldPrepareNextPreset({ ...base, now: 20_000 })).toBe(false);
+    // Same gates as the advance itself: no autoplay → no preparation.
     expect(
-      buildBlendStateForRender({
-        transitionMode: 'cut',
-        shaderQuality: 'balanced',
-        canBlendCurrentFrame: true,
-        blendState: gpuBlendState,
-        now: 3_000,
-        blendEndAtMs: 4_000,
-        blendDuration: 2,
-      }),
-    ).toBeNull();
+      shouldPrepareNextPreset({ ...base, autoplay: false, now: 24_000 }),
+    ).toBe(false);
   });
+
+  // Blend-alpha behavior moved to runtime/transition-controller.ts; see
+  // tests/unit/milkdrop-transition-controller.test.ts.
 
   test('disables heavy post effects for low shader quality frames', () => {
     const frameState = {
@@ -231,6 +275,41 @@ describe('milkdrop runtime lifecycle seams', () => {
 
     expect(downgraded).not.toBe(frameState);
     expect(downgraded.post.shaderEnabled).toBe(false);
+    expect(downgraded.post.videoEchoEnabled).toBe(false);
+    expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
+    expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
+  });
+
+  test('keeps the shader stage at low quality when it is the preset painter', () => {
+    // Direct warp/comp programs paint the frame; stripping them at the low
+    // step turned those presets into a black screen with a bare wave line.
+    const frameState = {
+      post: {
+        shaderEnabled: true,
+        videoEchoEnabled: true,
+        shaderPrograms: { warp: null, comp: { rawGlsl: 'ret = float3(1);' } },
+        postprocessingProfile: {
+          enabled: true,
+        },
+      },
+      gpuGeometry: {
+        particleField: {
+          enabled: true,
+          instanceCount: 96,
+        },
+      },
+    } as unknown as MilkdropFrameState;
+
+    const downgraded = buildRenderFrameState({
+      frameState,
+      shaderQuality: 'low',
+      lowQualityPostOverride: {
+        shaderEnabled: false,
+        videoEchoEnabled: false,
+      },
+    });
+
+    expect(downgraded.post.shaderEnabled).toBe(true);
     expect(downgraded.post.videoEchoEnabled).toBe(false);
     expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
     expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);

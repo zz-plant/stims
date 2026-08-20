@@ -1,4 +1,5 @@
 export {
+  compileShaderExpressionNode,
   createMilkdropWebGPUFeedbackManager,
   resolveDirectShaderConstructorPattern,
   resolveDirectShaderSamplerBinding,

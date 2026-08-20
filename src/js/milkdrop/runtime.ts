@@ -1,3 +1,22 @@
+/**
+ * Owns a running visualizer session: the frame loop, preset lifecycle, and failover.
+ *
+ * `createMilkdropExperience` is the engine's entry point. Everything with a
+ * lifetime longer than one frame is coordinated from here or from `runtime/*`:
+ * loading and swapping presets, driving the renderer adapter each frame,
+ * reacting to quality changes, and falling back to another backend when the
+ * active one fails.
+ *
+ * Read this as an orchestrator, not an implementation — the individual concerns
+ * live in `runtime/` (`lifecycle`, `experience-frame-loop`, `transition-
+ * controller`, `backend-fallback`) and this module wires them together and owns
+ * the shared state between them.
+ *
+ * The invariant worth protecting: a preset that fails to compile, a backend
+ * that drops its context, or a device that loses WebGPU must all degrade to
+ * something still on screen. Failing loudly here means a black canvas, which
+ * users read as the app being broken.
+ */
 import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import { createLogger } from '../core/logger.ts';
@@ -6,11 +25,12 @@ import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
 } from '../core/services/adaptive-quality-controller.ts';
+import { noteSubstitution } from '../core/services/preset-telemetry.ts';
+import { subscribeToRendererLifecycle } from '../core/services/render-service.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
-import { createStatsOverlay } from '../core/stats-overlay.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -19,8 +39,13 @@ import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
+import { encodePresetPreviewImage } from './preset-preview.ts';
 import type { MilkdropRendererAdapter } from './renderer-types';
-import { createMilkdropBackendFailover } from './runtime/backend-fallback';
+import {
+  createMilkdropBackendFailover,
+  describeWebglFallback,
+} from './runtime/backend-fallback';
+import { createMilkdropBeatClock } from './runtime/beat-clock.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
@@ -29,12 +54,19 @@ import { DEFAULT_MILKDROP_PRESET_SOURCE } from './runtime/default-preset';
 import { createMilkdropEditorActions } from './runtime/editor-actions';
 import { createMilkdropExperienceAttachmentController } from './runtime/experience-attachment.ts';
 import { createMilkdropExperienceFrameLoop } from './runtime/experience-frame-loop.ts';
+import {
+  DEFAULT_BLEND_DURATION_SECONDS,
+  FIRST_RUN_PRESET_AUTHOR,
+  FIRST_RUN_PRESET_ID,
+  FIRST_RUN_PRESET_TITLE,
+} from './runtime/first-run-preset';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
 import {
   applyMilkdropInteractionResponse as applyMilkdropInteractionResponseImpl,
   buildMilkdropInputSignalOverrides as buildMilkdropInputSignalOverridesImpl,
   getMilkdropDetailScale as getMilkdropDetailScaleImpl,
 } from './runtime/interaction-response';
+import { AUTO_ADVANCE_TEMPO_CONFIDENCE } from './runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
@@ -45,8 +77,11 @@ import { createMilkdropPresetPreviewService } from './runtime/preset-preview-ser
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
+import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
+import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
+import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
@@ -89,19 +124,49 @@ export function createMilkdropExperience({
     catalogEntries: ReturnType<typeof catalogCoordinator.getCatalogEntries>;
     sessionState: ReturnType<typeof session.getState>;
     audioEnergy: number;
+    audioBass: number;
+    audioMid: number;
+    audioTreble: number;
+    /**
+     * Estimated tempo, already adjudicated: a whole number of BPM when the
+     * beat clock is confident, null otherwise. One field rather than a
+     * value plus a confidence, so the "is this trustworthy" rule lives here
+     * instead of being re-decided by every consumer — and rounded, because
+     * the raw median jitters by fractions of a BPM and every change of this
+     * field republishes the engine snapshot to the UI.
+     */
+    tempoBpm: number | null;
     autoplay: boolean;
     transitionMode: 'blend' | 'cut';
     blendDuration: number;
   };
 
   const catalogStore = createMilkdropCatalogStore();
+  // Deep-link boots used to fetch the requested preset's source only after
+  // engine mount + catalog projection + the route effect round-tripped.
+  // Kicking the fetch here overlaps it (and the parse+IR compile, via the
+  // shared raw-string cache) with renderer boot and GPU init; the later real
+  // load then hits warm caches. Fire-and-forget: a bad id resolves to null
+  // and the normal load path still owns every user-visible outcome.
+  if (initialPresetId && initialPresetId !== FIRST_RUN_PRESET_ID) {
+    void catalogStore
+      .getPresetSource(initialPresetId)
+      .then((source) => {
+        if (source) {
+          compileMilkdropPresetSource(source.raw, source, {
+            cacheCompile: true,
+          });
+        }
+      })
+      .catch(() => {});
+  }
   const defaultPreset = compileMilkdropPresetSource(
     DEFAULT_MILKDROP_PRESET_SOURCE,
     {
-      id: 'signal-bloom',
-      title: 'Signal Bloom',
+      id: FIRST_RUN_PRESET_ID,
+      title: FIRST_RUN_PRESET_TITLE,
       origin: 'bundled',
-      author: 'Stims',
+      author: FIRST_RUN_PRESET_AUTHOR,
     },
   );
   const preferences = createMilkdropRuntimePreferences();
@@ -111,7 +176,6 @@ export function createMilkdropExperience({
   const signalTracker = createMilkdropSignalTracker();
   const capturedVideoReactivityTracker =
     createMilkdropCapturedVideoReactivityTracker();
-  const statsOverlay = createStatsOverlay();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
     initialCompiled: defaultPreset,
@@ -124,20 +188,31 @@ export function createMilkdropExperience({
   let pendingStartupPresetId = initialPresetId ?? null;
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let currentFrameState: MilkdropFrameState | null = null;
-  let blendState = cloneBlendState(currentFrameState);
-  let blendEndAtMs = 0;
+  const transitionController = createMilkdropTransitionController();
   let autoplay = preferences.getAutoplay();
   let lockedPreset = false;
-  const presetBlend = activeCompiled.ir.numericFields.blend_duration;
   let blendDuration = preferences.getBlendDuration(
-    presetBlend && presetBlend > 0 ? presetBlend : 0.3,
+    DEFAULT_BLEND_DURATION_SECONDS,
   );
   let preferredTransitionMode = preferences.getTransitionMode();
   let transitionMode = preferredTransitionMode;
   let preferredQualityPresetId = quality.activeQuality.id;
   const agentModeEnabled = isAgentMode();
+  // Live trace capture is an agent-mode diagnostic; keep the per-frame hook
+  // out of normal sessions entirely.
+  const traceRecorder = agentModeEnabled
+    ? createMilkdropTraceRecorder({
+        vm,
+        getBackend: () => activeBackend,
+        getWebGpuFlags: () => ({ ...webgpuOptimizationFlags }),
+      })
+    : null;
   let lastPresetSwitchAt = performance.now();
   let lastStatusMessage: string | null = null;
+  // Seeded as the bundled boot preset: that is genuinely what is on screen
+  // until startup selection resolves, and labelling it makes the "why is this
+  // preset showing?" question answerable from runtime state alone.
+  let presetSelectionReason: MilkdropPresetSelectionReason = 'boot-bundle';
   let disposeKeyboardShortcuts: (() => void) | null = null;
   let disposeRequestedPresetListener: (() => void) | null = null;
   let adaptiveQualityController: AdaptiveQualityController | null = null;
@@ -151,6 +226,16 @@ export function createMilkdropExperience({
     videoEchoEnabled: false,
   };
   const lifetime = createMilkdropRuntimeLifetime();
+  // Resolves once the async startup preset selection below (catalog sync +
+  // selectMilkdropStartupPreset) has run to completion. Startup selection
+  // races any preset an agent selects immediately after mount — without a
+  // signal for "startup is done," an early stims.agent.selectPreset() call
+  // could apply successfully and then get silently overwritten a moment
+  // later, or vice versa. Exposed to agent callers via the debug handle.
+  let resolveStartupSettled: () => void = () => {};
+  const startupSettled = new Promise<void>((resolve) => {
+    resolveStartupSettled = resolve;
+  });
   const capturedVideoOverlay = createMilkdropCapturedVideoOverlay();
   const getQualityPresetById = (presetId: string) =>
     qualityControl.presets.find((preset) => preset.id === presetId) ?? null;
@@ -242,9 +327,38 @@ export function createMilkdropExperience({
       activePresetId,
       backend: activeBackend,
       status: lastStatusMessage,
+      presetSelectionReason,
     }),
     getAdaptiveQuality: () => adaptiveQualityState,
     getPerformance: () => performanceTracker.getSnapshot(),
+    // Closures over bindings assigned later in this function (`navigation`,
+    // `setAutoplayEnabled`) — safe because agent callers can only invoke
+    // these after createMilkdropExperience has finished running.
+    selectPreset: (presetId) => navigation.selectPreset(presetId),
+    setAutoplay: (enabled) => setAutoplayEnabled(enabled),
+    startupSettled: () => startupSettled,
+    getTransition: () => ({
+      phase: transitionController.getPhase(),
+      crossfade:
+        transitionController.getPhase() === 'manual'
+          ? transitionController.getManualPosition()
+          : null,
+      events: transitionController.getEvents(),
+    }),
+    startTraceCapture: (options) => {
+      if (!traceRecorder) {
+        throw new Error('Trace capture requires agent mode (?agent=true).');
+      }
+      return traceRecorder.start(options);
+    },
+    stopTraceCapture: () => traceRecorder?.stop() ?? null,
+    getTraceCaptureState: () =>
+      traceRecorder?.getState() ?? {
+        recording: false,
+        presetId: null,
+        frameCount: 0,
+        autoStopped: false,
+      },
   });
 
   const backendFailover = createMilkdropBackendFailover({
@@ -282,18 +396,37 @@ export function createMilkdropExperience({
   const updateAgentDebugSnapshot = (force = false) =>
     presentationController.updateAgentDebugSnapshot(force);
 
-  const buildSnapshot = (): MilkdropExperienceSnapshot => ({
-    activePresetId,
-    backend: activeBackend,
-    status: lastStatusMessage,
-    adaptiveQuality: adaptiveQualityState,
-    catalogEntries: catalogCoordinator.getCatalogEntries(),
-    sessionState: session.getState(),
-    audioEnergy: signalTracker.getLatestAudioEnergy(),
-    autoplay,
-    transitionMode,
-    blendDuration,
-  });
+  // Tempo/bar tracking lives at runtime scope, not inside the frame loop:
+  // the snapshot below is built before the frame loop exists, and tempo is
+  // read by the UI as well as by the quantized advance.
+  const beatClock = createMilkdropBeatClock();
+
+  const buildSnapshot = (): MilkdropExperienceSnapshot => {
+    // One read per snapshot: `snapshot()` allocates, and buildSnapshot runs
+    // every frame while audio plays.
+    const beat = beatClock.snapshot(performance.now());
+    return {
+      activePresetId,
+      backend: activeBackend,
+      status: lastStatusMessage,
+      adaptiveQuality: adaptiveQualityState,
+      catalogEntries: catalogCoordinator.getCatalogEntries(),
+      sessionState: session.getState(),
+      audioEnergy: signalTracker.getLatestAudioEnergy(),
+      // Three primitives rather than an object: the snapshot equality check is
+      // per-field ===, and a fresh object every frame would defeat it.
+      audioBass: signalTracker.getLatestAudioBands().bass,
+      audioMid: signalTracker.getLatestAudioBands().mid,
+      audioTreble: signalTracker.getLatestAudioBands().treble,
+      tempoBpm:
+        beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
+          ? Math.round(beat.bpm)
+          : null,
+      autoplay,
+      transitionMode,
+      blendDuration,
+    };
+  };
 
   const runtimeSignalHub = createMilkdropRuntimeSignalHub({
     getSnapshot: buildSnapshot,
@@ -365,6 +498,7 @@ export function createMilkdropExperience({
      * and would make the failover guard silently drop the request. */
     backend?: 'webgl' | 'webgpu';
   }) => {
+    noteSubstitution('backend-fallback', `${presetId}: ${reason}`);
     backendFailover.trigger({
       presetId,
       reason,
@@ -485,7 +619,7 @@ export function createMilkdropExperience({
       }
 
       return {
-        imageUrl: canvas.toDataURL('image/webp', 0.82),
+        imageUrl: encodePresetPreviewImage(canvas),
         actualBackend: backend,
         updatedAt: Date.now(),
         error: null,
@@ -496,17 +630,69 @@ export function createMilkdropExperience({
     }
   };
 
+  /** Set by `startManualCrossfade()` and consumed by the next switch. */
+  let pendingManualCrossfade = false;
+
+  /**
+   * Starts the crossfade into a preset that is about to be applied.
+   *
+   * Preset switches arrive on two paths — the navigation controller and the
+   * editor-session subscriber below — and both need the same blend-vs-cut
+   * decision over the same frame state. Each used to derive it separately,
+   * down to a second copy of `MAX_BLEND_WORKLOAD` in the controller.
+   */
+  const beginPresetTransition = () => {
+    // A hand-driven crossfade is a gesture, not a persisted mode: it applies
+    // to the one switch that armed it and then clears. Making it a third
+    // `transitionMode` would let it be saved to preferences, and a user who
+    // ended a session mid-fader would come back to a visualizer that never
+    // completes a preset change on its own.
+    const manual = pendingManualCrossfade;
+    pendingManualCrossfade = false;
+
+    const canBlend =
+      (manual || transitionMode === 'blend') &&
+      (manual || blendDuration > 0) &&
+      estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+    const nextBlendState = canBlend ? cloneBlendState(currentFrameState) : null;
+    if (manual && nextBlendState) {
+      transitionController.beginManual(nextBlendState);
+    } else {
+      if (manual) {
+        // The workload gate refused: drawing two layers over a frame this
+        // heavy is what it exists to prevent. The switch still happens, but
+        // a requested fade that silently became a cut leaves the performer
+        // holding a fader that never appeared.
+        setOverlayStatus(
+          'Too much on screen to crossfade — switched instantly.',
+        );
+      }
+      transitionController.begin(nextBlendState, blendDuration);
+    }
+    if (nextBlendState) {
+      adapter?.saveFeedbackFrame?.();
+    }
+    lastPresetSwitchAt = performance.now();
+    // Warm-up hint: the incoming preset's first frames carry compile and
+    // feedback warm-up cost that resolves on its own. The controller clears
+    // stale pressure evidence and, on constrained devices, pre-pays the
+    // warm-up with one quality step instead of dropped frames.
+    adaptiveQualityController?.notePresetApplied();
+    return {
+      mode: canBlend ? ('blend' as const) : ('cut' as const),
+      durationSeconds: blendDuration,
+    };
+  };
+
   const navigation = createMilkdropPresetNavigationController({
     catalogStore,
     catalogCoordinator,
     session,
     getActivePresetId: () => activePresetId,
     getActiveBackend: () => activeBackend,
-    getCurrentFrameState: () => currentFrameState,
-    getBlendDuration: () => blendDuration,
-    getTransitionMode: () => transitionMode,
     applyCompiledPreset,
     applyPresetPerformanceOverride,
+    beginPresetTransition,
     setOverlayStatus,
     shouldFallbackToWebgl,
     triggerWebglFallback,
@@ -515,18 +701,8 @@ export function createMilkdropExperience({
         preferences.rememberLastPreset(id);
       }
     },
-    preparePresetTransition(nextBlendState) {
-      blendState = nextBlendState;
-      blendEndAtMs =
-        nextBlendState && blendDuration > 0
-          ? performance.now() + blendDuration * 1000
-          : 0;
-      if (nextBlendState) {
-        adapter?.saveFeedbackFrame?.();
-      }
-    },
-    markPresetSwitched() {
-      lastPresetSwitchAt = performance.now();
+    noteSelectionReason: (reason) => {
+      presetSelectionReason = reason;
     },
   });
 
@@ -580,6 +756,7 @@ export function createMilkdropExperience({
     previewService = createMilkdropPresetPreviewService({
       capturePreview: capturePresetPreview,
       onPreviewChanged: () => {},
+      onPreviewEvicted: () => {},
     });
   }
 
@@ -648,14 +825,14 @@ export function createMilkdropExperience({
     },
   });
   const frameLoop = createMilkdropExperienceFrameLoop({
+    beatClock,
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getActiveBackend: () => activeBackend,
     setCurrentFrameState: (frameState) => {
       currentFrameState = frameState;
     },
-    getBlendState: () => blendState,
-    getBlendEndAtMs: () => blendEndAtMs,
+    transitionController,
     getBlendDuration: () => blendDuration,
     getTransitionMode: () => transitionMode,
     getAutoplay: () => autoplay && !lockedPreset,
@@ -678,6 +855,7 @@ export function createMilkdropExperience({
     },
     capturedVideoOverlay,
     getFreezeFrame: () => isFreezeFrameActive(),
+    traceRecorder,
   });
 
   _disposeSessionSubscription = session.subscribe((state) => {
@@ -694,7 +872,7 @@ export function createMilkdropExperience({
       );
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
-        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+        reason: describeWebglFallback(nextCompiled),
       });
       return;
     }
@@ -707,19 +885,7 @@ export function createMilkdropExperience({
         `${nextCompiled.source.id}: subscriber: preset ID change, applying`,
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
-      const canBlend =
-        transitionMode === 'blend' &&
-        blendDuration > 0 &&
-        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
-      blendState = canBlend ? cloneBlendState(currentFrameState) : null;
-      blendEndAtMs =
-        blendState && blendDuration > 0
-          ? performance.now() + blendDuration * 1000
-          : 0;
-      if (blendState) {
-        adapter?.saveFeedbackFrame?.();
-      }
-      lastPresetSwitchAt = performance.now();
+      beginPresetTransition();
       if (!previewMode) {
         void catalogCoordinator.rememberSelection(nextCompiled.source.id);
         preferences.rememberLastPreset(nextCompiled.source.id);
@@ -749,37 +915,44 @@ export function createMilkdropExperience({
     );
   }
   void (async () => {
-    await catalogCoordinator.scheduleCatalogSync({
-      activePresetId,
-      activeBackend,
-    });
-    if (!lifetime.isActive()) {
-      return;
-    }
-    const { startupPresetId } = await selectMilkdropStartupPreset({
-      catalogCoordinator,
-      navigation,
-      preferences,
-      initialPresetId,
-      activeBackend,
-    });
-    pendingStartupPresetId = startupPresetId;
-    if (!lifetime.isActive()) {
-      return;
-    }
-    if (startupPresetId) {
-      await navigation.selectPreset(startupPresetId, {
-        recordHistory: false,
+    try {
+      await catalogCoordinator.scheduleCatalogSync({
+        activePresetId,
+        activeBackend,
       });
-      pendingStartupPresetId = null;
       if (!lifetime.isActive()) {
         return;
       }
-      if (activePresetId === startupPresetId) {
+      const { startupPresetId, startupPresetReason } =
+        await selectMilkdropStartupPreset({
+          catalogCoordinator,
+          navigation,
+          preferences,
+          initialPresetId,
+          activeBackend,
+        });
+      pendingStartupPresetId = startupPresetId;
+      if (!lifetime.isActive()) {
         return;
       }
+      if (startupPresetId) {
+        await navigation.selectPreset(startupPresetId, {
+          recordHistory: false,
+          skipIfAlreadyActive: true,
+          reason: startupPresetReason,
+        });
+        pendingStartupPresetId = null;
+        if (!lifetime.isActive()) {
+          return;
+        }
+        if (activePresetId === startupPresetId) {
+          return;
+        }
+      }
+      pendingStartupPresetId = null;
+    } finally {
+      resolveStartupSettled();
     }
-    pendingStartupPresetId = null;
   })();
 
   return buildExperienceController({
@@ -798,6 +971,15 @@ export function createMilkdropExperience({
     setAutoplay: setAutoplayEnabled,
     getTransitionMode: () => transitionMode,
     setTransitionMode,
+    startManualCrossfade: () => {
+      pendingManualCrossfade = true;
+    },
+    setCrossfade: (position: number) =>
+      transitionController.setManualPosition(position),
+    getCrossfade: () =>
+      transitionController.getPhase() === 'manual'
+        ? transitionController.getManualPosition()
+        : null,
     getBlendDuration: () => blendDuration,
     setBlendDuration: setBlendDurationValue,
     attachmentController,
@@ -820,13 +1002,16 @@ export function createMilkdropExperience({
     emitChange,
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
-    statsOverlay,
+    // setLiveField/applyFields drive the running VM directly (Tune drags,
+    // MIDI, the agent API); omitting vm here made them throw.
+    vm,
     // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
   } as any);
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
 function buildExperienceController(deps: Record<string, any>) {
+  let rendererLifecycleUnsubscribe: (() => void) | null = null;
   return {
     subscribe(listener: unknown) {
       return deps.subscribe(listener);
@@ -852,14 +1037,7 @@ function buildExperienceController(deps: Record<string, any>) {
     },
 
     openTab(
-      _tab:
-        | 'browse'
-        | 'editor'
-        | 'inspector'
-        | 'refine'
-        | 'audiomatch'
-        | 'visualsearch'
-        | 'blend',
+      _tab: 'browse' | 'editor' | 'inspector' | 'refine' | 'finder' | 'blend',
     ) {
       deps.emitChange();
     },
@@ -880,6 +1058,29 @@ function buildExperienceController(deps: Record<string, any>) {
     setTransitionMode(mode: 'blend' | 'cut') {
       deps.setTransitionMode(mode);
     },
+
+    /**
+     * Arms the next preset switch to be crossfaded by hand rather than on a
+     * timer. Call immediately before selecting the preset; it applies to that
+     * one switch only.
+     *
+     * Known limit, worth stating plainly: the outgoing side of the fade is a
+     * saved frame, not a second live pipeline (see `cloneBlendState`). Riding
+     * a fade of a second or two looks right; parking the fader at halfway for
+     * eight bars shows a still image of where the outgoing preset stopped.
+     */
+    startManualCrossfade() {
+      deps.startManualCrossfade();
+    },
+    /** Moves a hand-driven crossfade. 0 holds the outgoing preset, 1 completes
+     * the switch. Out-of-range values clamp. */
+    setCrossfade(position: number) {
+      deps.setCrossfade(position);
+    },
+    /** Current fader position, or null when no hand-driven fade is running. */
+    getCrossfade(): number | null {
+      return deps.getCrossfade();
+    },
     getBlendDuration() {
       return deps.getBlendDuration();
     },
@@ -887,7 +1088,7 @@ function buildExperienceController(deps: Record<string, any>) {
       deps.setBlendDuration(value);
     },
 
-    async importPresetFiles(files: FileList) {
+    async importPresetFiles(files: FileList | File[]) {
       await deps.presetFileActions.importFiles(files);
       deps.emitChange();
     },
@@ -907,17 +1108,64 @@ function buildExperienceController(deps: Record<string, any>) {
       await deps.presetFileActions.deleteActivePreset();
       deps.emitChange();
     },
+    /**
+     * Awaitable counterpart to `updateEditorSource`, for callers that need to
+     * know whether the source actually compiled — an agent editing preset
+     * code cannot tell "applied" from "failed and the stage kept rendering
+     * the last good compile" without the resulting diagnostics.
+     */
+    async applyEditorSourceAwaited(source: string) {
+      const next = await deps.session.applySource(source);
+      deps.emitChange();
+      return next;
+    },
+
+    /** Atomic multi-field edit; see `MilkdropEditorSession.updateFields`. */
+    async applyEditorFieldsAwaited(updates: Record<string, string | number>) {
+      const next = await deps.session.updateFields(updates);
+      deps.emitChange();
+      return next;
+    },
+
+    getEditorSessionState() {
+      return deps.session.getState();
+    },
+
+    // These are fire-and-forget by design — the editor renders from the
+    // session's subscription, not from the returned state. They are still
+    // guarded so a compile that fails in an unforeseen way surfaces as a log
+    // line rather than an unhandled rejection that takes the page down.
     updateEditorSource(source: string) {
-      deps.session.applySource(source);
+      void deps.session.applySource(source).catch((error: unknown) => {
+        log.warn('Editor source could not be applied', error);
+      });
       deps.emitChange();
     },
     revertEditorSource() {
-      deps.session.resetToActive();
+      void deps.session.resetToActive().catch((error: unknown) => {
+        log.warn('Editor revert failed', error);
+      });
       deps.emitChange();
     },
     updateInspectorField(key: string, value: string | number) {
-      deps.session.updateField(key, value);
+      // Live-first: MIDI faders and the inspector feed continuous values and
+      // used to only become visible once a recompile landed. Write the running
+      // VM immediately for instant feedback; the session commit below still
+      // persists the value into the source.
+      const numeric = typeof value === 'number' ? value : Number(value);
+      if (Number.isFinite(numeric)) {
+        deps.vm.setField(key, numeric);
+      }
+      void deps.session.updateField(key, value).catch((error: unknown) => {
+        log.warn(`Inspector field "${key}" could not be applied`, error);
+      });
       deps.emitChange();
+    },
+    /** Live-apply a numeric field to the running VM without recompiling. The
+     * Tune pane uses this on `input` (during a drag); the value is committed
+     * to the source separately on release. */
+    setLiveField(key: string, value: number) {
+      deps.vm.setField(key, value);
     },
 
     setQualityPreset(presetId: string) {
@@ -942,18 +1190,36 @@ function buildExperienceController(deps: Record<string, any>) {
         // renderer finishes booting (e.g. a superseded mount).
         const renderer = (handle as { renderer?: unknown } | null)?.renderer;
         if (!renderer || !deps.lifetime.isActive()) return;
-        void deps.statsOverlay.init(renderer);
+        // The pooled renderer handle keeps its identity across a device-loss
+        // recovery, but the underlying renderer (and possibly the backend —
+        // WebGPU can come back as WebGL) does not. The adapter and material
+        // graph are compiled per-renderer, so a recreation must re-run the
+        // attachment or every subsequent frame renders against disposed GPU
+        // state (a permanently black stage with per-frame adapter errors).
+        rendererLifecycleUnsubscribe?.();
+        rendererLifecycleUnsubscribe = subscribeToRendererLifecycle((event) => {
+          if (event.type !== 'recreated' || event.handle !== handle) {
+            return;
+          }
+          if (!deps.lifetime.isActive()) {
+            return;
+          }
+          log.log(
+            `Renderer recreated (backend: ${event.handle.backend}); rebuilding the milkdrop attachment.`,
+          );
+          deps.attachmentController.attachRuntime(nextRuntime);
+        });
       });
       return result;
     },
     update(frame: unknown, options?: unknown) {
       const result = deps.frameLoop.update(frame, options);
-      deps.statsOverlay.update();
       return result;
     },
 
     dispose() {
-      deps.statsOverlay.dispose();
+      rendererLifecycleUnsubscribe?.();
+      rendererLifecycleUnsubscribe = null;
       deps.lifetime.dispose();
       deps.clearDebugSnapshot?.('milkdrop');
       deps.disposeSessionSubscription?.();

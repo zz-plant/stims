@@ -55,7 +55,23 @@ bun run test:unit
 
 ### 3. Visual verification (< 1 minute)
 
-Launch the visualizer locally to see your changes live:
+**Pick your tier by what you can sense and what environment you're in** —
+this list assumes a GUI browser; if you don't have one, or don't have a
+confirmed GPU (common in cloud/sandboxed agent sessions), skip straight to
+the alternatives below instead of skipping verification entirely:
+
+| Environment | Use | What you get |
+| --- | --- | --- |
+| GUI browser, human or vision-capable agent | `bun run dev` + manual checklist below | Full visual/UX confirmation |
+| No browser at all | `bun run lab:reactivity -- --preset <id>` | Numeric audio-reactivity verdicts, no browser, ~15s |
+| Headless browser, no confirmed GPU | `bun run ctl -- --screenshot out.png` or `bun run mcp` (`session_describe_frame`) | Screenshot + numeric brightness/color metrics; both default to software rendering so they don't silently return a black canvas |
+| Headless browser + vision | `bun run lab:visual -- --preset <id>` | Pixel-level metrics + contact-sheet PNGs |
+| UI/shell/chrome changes, any environment | `bun run ui:diff` | Captures + pixel-diffs component screenshots against a local baseline — no GPU/WebGL involved, works headless everywhere. First run creates the baseline; `-- --update-baseline` accepts an intentional change. |
+
+See [`../../docs/agents/visual-testing.md`](../../docs/agents/visual-testing.md#cloud-sandboxed-agents-without-a-gpu)
+for the full breakdown of which tools need a GPU vs. software-render fine.
+
+**Manual path** (GUI browser available):
 
 ```bash
 bun run dev
@@ -71,7 +87,7 @@ Then visit:
 - [ ] Audio visualization is responsive
 - [ ] UI controls work as expected
 - [ ] Presets load and play correctly (if preset-related changes)
-- [ ] Mobile/responsive layout is intact (resize browser)
+- [ ] Mobile/responsive layout is intact (resize browser, or `bun run ui:diff` if headless)
 
 ### 4. Full quality gate (2-5 minutes)
 
@@ -113,7 +129,7 @@ This runs the production-ready validation:
 
 ### UI/styling changes
 1. `bun run check:quick` — syntax only
-2. `bun run dev` — launch browser at `?agent=true` URL
+2. `bun run dev` — launch browser at `?agent=true` URL (or `bun run ui:diff` if headless/no GPU — see the tier table above)
 3. Test across:
    - [ ] Desktop (1920px+)
    - [ ] Tablet (768px-1024px)
@@ -155,7 +171,7 @@ bun run check:architecture
 bun run check:seo
 
 # Check toy manifest alignment
-bun run check:toys
+bun run check:readme-claims
 ```
 
 ## Common issues and quick fixes

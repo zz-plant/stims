@@ -70,6 +70,12 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(literal(-3))).toBe('-3');
     expect(buildWgslExpressionString(literal(Infinity))).toBe('0.0');
     expect(buildWgslExpressionString(literal(NaN))).toBe('0.0');
+    // f64-finite but f32-unrepresentable: emitting the literal verbatim is a
+    // WGSL shader-creation error, which loses the whole program rather than
+    // one value. 0.0 is also what milkdropFinite gives that magnitude.
+    expect(buildWgslExpressionString(literal(1e39))).toBe('0.0');
+    expect(buildWgslExpressionString(literal(-1e300))).toBe('0.0');
+    expect(buildWgslExpressionString(literal(3e38))).toBe('3e+38');
   });
 
   test('identifier resolution', () => {
@@ -90,7 +96,7 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(unary('+', literal(5)))).toBe('5');
     expect(buildWgslExpressionString(unary('-', literal(5)))).toBe('(-5)');
     expect(buildWgslExpressionString(unary('!', ident('enabled')))).toBe(
-      'select(1.0f, 0.0f, abs(state.enabled) > 0.000001f)',
+      'select(1.0f, 0.0f, abs(state.enabled) > 0.00001f)',
     );
   });
 
@@ -106,9 +112,9 @@ describe('wgsl expression generation', () => {
     ).toBe('(signals.bass * 2)');
     expect(
       buildWgslExpressionString(binary('/', ident('vol'), literal(0))),
-    ).toBe('select(0.0f, (signals.vol) / (0), abs(0) > 0.000001f)');
+    ).toBe('milkdropDiv(signals.vol, 0)');
     expect(buildWgslExpressionString(binary('^', literal(2), literal(3)))).toBe(
-      'pow(2, 3)',
+      'milkdropPow(2, 3)',
     );
     // `%` is integer modulo in EEL: both operands truncate before dividing.
     expect(buildWgslExpressionString(binary('%', literal(7), literal(3)))).toBe(
@@ -144,12 +150,12 @@ describe('wgsl expression generation', () => {
     expect(
       buildWgslExpressionString(binary('&&', ident('beat'), ident('enabled'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(signals.beat) > 0.000001f && abs(state.enabled) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.beat) > 0.00001f && abs(state.enabled) > 0.00001f)',
     );
     expect(
       buildWgslExpressionString(binary('||', ident('bass'), ident('treb'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(signals.bass) > 0.000001f || abs(signals.treb) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.bass) > 0.00001f || abs(signals.treb) > 0.00001f)',
     );
   });
 
@@ -175,15 +181,15 @@ describe('wgsl expression generation', () => {
       'abs(-3)',
     );
     expect(buildWgslExpressionString(call('sqrt', [literal(4)]))).toBe(
-      'sqrt(max(0.0f, 4))',
+      'milkdropSqrt(4)',
     );
     expect(
       buildWgslExpressionString(call('pow', [literal(2), literal(3)])),
-    ).toBe('pow(2, 3)');
+    ).toBe('milkdropPow(2, 3)');
     // mod()/fmod() are float remainders, unlike the `%` operator above.
     expect(
       buildWgslExpressionString(call('mod', [literal(7), literal(3)])),
-    ).toBe('milkdropFmod(7, 3)');
+    ).toBe('milkdropMod(7, 3)');
     expect(buildWgslExpressionString(call('floor', [literal(3.7)]))).toBe(
       'floor(3.7)',
     );
@@ -196,8 +202,9 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(call('sign', [literal(-5)]))).toBe(
       'sign(-5)',
     );
+    // log(0) is 0 (max(0)+finite clamp), matching the CPU tiers.
     expect(buildWgslExpressionString(call('log', [literal(10)]))).toBe(
-      'log(max(0.000001f, 10))',
+      'milkdropLog(10)',
     );
     expect(buildWgslExpressionString(call('exp', [literal(1)]))).toBe('exp(1)');
   });
@@ -277,7 +284,7 @@ describe('wgsl expression generation', () => {
       buildWgslExpressionString(
         call('if', [literal(1), literal(10), literal(20)]),
       ),
-    ).toBe('select(f32(20), f32(10), abs(1) > 0.000001f)');
+    ).toBe('select(f32(20), f32(10), abs(1) > 0.00001f)');
     expect(
       buildWgslExpressionString(call('above', [literal(5), literal(3)])),
     ).toBe('select(0.0f, 1.0f, (5) > (3))');
@@ -286,7 +293,9 @@ describe('wgsl expression generation', () => {
     ).toBe('select(0.0f, 1.0f, (5) < (3))');
     expect(
       buildWgslExpressionString(call('equal', [literal(5), literal(5)])),
-    ).toBe('select(0.0f, 1.0f, (5) == (5))');
+      // equal() is close-factor equality, like the interpreter; only the ==
+      // operator compares exactly.
+    ).toBe('milkdropEqual(5, 5)');
     expect(buildWgslExpressionString(call('rand', []))).toBe('rand()');
     expect(buildWgslExpressionString(call('nonexistent', [literal(1)]))).toBe(
       '0.0f',
@@ -304,7 +313,7 @@ describe('wgsl expression generation', () => {
     ]);
 
     expect(buildWgslExpressionString(expression)).toBe(
-      'select(f32(0), f32(1), abs(select(0.0f, 1.0f, ((signals.treb + signals.treb_att)) > (2.8))) > 0.000001f)',
+      'select(f32(0), f32(1), abs(select(0.0f, 1.0f, ((signals.treb + signals.treb_att)) > (2.8))) > 0.00001f)',
     );
   });
 
@@ -337,7 +346,9 @@ describe('wgsl program compilation', () => {
     expect(result.usesRandom).toBe(false);
     expect(result.fieldKeys).toContain('bass');
     expect(result.fieldKeys).toContain('myvar');
-    expect(result.wgslCode).toContain('state.myvar = (signals.bass + 1)');
+    expect(result.wgslCode).toContain(
+      'state.myvar = milkdropFinite((signals.bass + 1))',
+    );
     expect(result.wgslCode).toContain('struct VmState');
     expect(result.wgslCode).toContain('struct VmSignals');
     expect(result.wgslCode).toContain('fn main()');
@@ -383,29 +394,83 @@ describe('wgsl program compilation', () => {
     expect(result.registerKeys).toContain('t5');
     expect(result.fieldKeys).toContain('q1');
     expect(result.fieldKeys).toContain('t5');
-    expect(result.wgslCode).toContain('state.q1 = (signals.bass + 1)');
-    expect(result.wgslCode).toContain('state.t5 = (signals.mid * 2)');
-    expect(result.wgslCode).toContain('state.result = state.q1');
+    expect(result.wgslCode).toContain(
+      'state.q1 = milkdropFinite((signals.bass + 1))',
+    );
+    expect(result.wgslCode).toContain(
+      'state.t5 = milkdropFinite((signals.mid * 2))',
+    );
+    expect(result.wgslCode).toContain(
+      'state.result = milkdropFinite(state.q1)',
+    );
     expect(result.wgslCode).not.toContain('var reg_q1');
     expect(result.wgslCode).not.toContain('var reg_t5');
   });
 
-  test('megabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+  test('megabuf reads bind a storage array and stay gpu-executable', () => {
     const result = compileProgramToWgsl(
       block([statement('q1', call('megabuf', [literal(4)]))]),
     );
-    expect(result.gpuExecutable).toBe(false);
-    expect(result.unsupportedFeatures).toContain('megabuf');
-    expect(result.wgslCode).not.toContain('megabuf[');
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.usesMegabuf).toBe(true);
+    expect(result.writesMegabuf).toBe(false);
+    expect(result.unsupportedFeatures).toEqual([]);
+    expect(result.wgslCode).toContain(
+      '@group(0) @binding(2) var<storage, read_write> megabuf: array<f32, 1048576>;',
+    );
+    expect(result.wgslCode).toContain(
+      'state.q1 = milkdropFinite(milkdropMegabufRead(4));',
+    );
+    // The read helper must reject a NaN index like the CPU (Math.trunc(NaN)
+    // misses the bounds check) instead of collapsing it onto slot 0.
+    expect(result.wgslCode).toContain('index == index');
   });
 
-  test('gmegabuf programs are classified for CPU fallback instead of invalid WGSL', () => {
+  test('gmegabuf programs bind their own storage array at binding 3', () => {
     const result = compileProgramToWgsl(
       block([statement('q1', call('gmegabuf', [literal(4)]))]),
     );
-    expect(result.gpuExecutable).toBe(false);
-    expect(result.unsupportedFeatures).toContain('gmegabuf');
-    expect(result.wgslCode).not.toContain('gmegabuf[');
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.usesGmegabuf).toBe(true);
+    expect(result.usesMegabuf).toBe(false);
+    expect(result.wgslCode).toContain(
+      '@group(0) @binding(3) var<storage, read_write> gmegabuf: array<f32, 1048576>;',
+    );
+    expect(result.wgslCode).not.toContain('@binding(2)');
+    expect(result.wgslCode).toContain('milkdropGmegabufRead(4)');
+  });
+
+  test('megabuf stores compile to the bounds-checked write helper', () => {
+    const result = compileProgramToWgsl(
+      block([
+        {
+          target: 'megabuf',
+          targetExpression: {
+            type: 'identifier' as const,
+            name: 'q2',
+          },
+          expression: { type: 'identifier' as const, name: 'bass' },
+          source: 'megabuf(q2)=bass;',
+          line: 1,
+        },
+      ]),
+    );
+    expect(result.gpuExecutable).toBe(true);
+    expect(result.writesMegabuf).toBe(true);
+    expect(result.wgslCode).toContain(
+      'milkdropMegabufWrite(state.q2, signals.bass);',
+    );
+    // The index expression's identifiers must reach the state struct.
+    expect(result.fieldKeys).toContain('q2');
+  });
+
+  test('a variable merely prefixed with megabuf stays an ordinary state field', () => {
+    const result = compileProgramToWgsl(
+      block([statement('megabufx', literal(1))]),
+    );
+    expect(result.usesMegabuf).toBe(false);
+    expect(result.wgslCode).toContain('state.megabufx = milkdropFinite(1);');
+    expect(result.wgslCode).not.toContain('@binding(2)');
   });
 
   test('default state fields always included', () => {
@@ -499,9 +564,47 @@ describe('wgsl program compilation', () => {
       block([statement('bg_r', binary('+', ident('bass'), literal(0.02)))]),
     );
     expect(result.usesRandom).toBe(false);
-    expect(result.wgslCode).toContain('state.bg_r = (signals.bass + 0.02)');
+    expect(result.wgslCode).toContain(
+      'state.bg_r = milkdropFinite((signals.bass + 0.02))',
+    );
     expect(result.wgslCode).not.toContain('fn rand()');
     expect(result.wgslCode).not.toContain('rand_state');
+  });
+
+  test('a program that reassigns a signal name reads its own value afterward', () => {
+    // Stock MilkDrop idiom (martin-the-bridge-of-khazad-dum): `vol = ...;
+    // vol_ = vol_ * k + (1-k) * vol;`. The CPU tiers' env mirrors an
+    // assignment (`e[target] = _v`) so every later read of `vol` in the
+    // same frame sees the computed value, not the raw audio signal — found
+    // via bun run lab:replay --tier gpu diverging on this exact preset.
+    const result = compileProgramToWgsl(
+      block([
+        statement('vol', binary('/', ident('bass'), literal(1.5))),
+        statement('vol_', ident('vol')),
+      ]),
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol = milkdropFinite(milkdropDiv(signals.bass, 1.5));',
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol_ = milkdropFinite(state.vol);',
+    );
+    expect(result.wgslCode).not.toContain('milkdropFinite(signals.vol)');
+  });
+
+  test('a read of a signal name BEFORE its assignment still sees the raw signal', () => {
+    const result = compileProgramToWgsl(
+      block([
+        statement('mirror', ident('vol')),
+        statement('vol', binary('/', ident('bass'), literal(1.5))),
+      ]),
+    );
+    expect(result.wgslCode).toContain(
+      'state.mirror = milkdropFinite(signals.vol);',
+    );
+    expect(result.wgslCode).toContain(
+      'state.vol = milkdropFinite(milkdropDiv(signals.bass, 1.5));',
+    );
   });
 });
 
@@ -524,12 +627,14 @@ describe('wgsl edge cases', () => {
     expect(result.registerKeys).toEqual([]);
   });
 
-  test('division by near-zero guarded', () => {
+  test('division routes through milkdropDiv (exact-zero guard)', () => {
+    // The guard is exact zero, not a tolerance: dividing by a tiny nonzero
+    // value must produce the same large finite result the CPU tiers compute
+    // (the old abs(right) > 1e-6 guard silently zeroed it).
     const result = buildWgslExpressionString(
       binary('/', ident('vol'), literal(0.0000001)),
     );
-    expect(result).toContain('select');
-    expect(result).toContain('abs');
+    expect(result).toBe('milkdropDiv(signals.vol, 1e-7)');
   });
 
   test('integer helpers use a representable f32 finite-value threshold', () => {
@@ -538,7 +643,7 @@ describe('wgsl edge cases', () => {
     );
 
     expect(result.wgslCode).not.toContain('3.4028235e38');
-    expect(result.wgslCode).toContain('abs(value) < 3.402823e38f');
+    expect(result.wgslCode).toContain('abs(value) < 3.402823e38');
   });
 
   test('nested rand()', () => {
@@ -558,5 +663,97 @@ describe('wgsl edge cases', () => {
     );
     expect(result.usesRandom).toBe(true);
     expect(result.wgslCode).toContain('rand_state: u32');
+  });
+});
+
+// ─── WGSL Reserved Word Escaping ───────────────────────────────────
+// `mod` is a legal MilkDrop variable and appears in stock presets, but it is a
+// reserved word in WGSL. Emitting it raw made the whole module fail to parse,
+// which invalidated the compute pipeline and killed the WebGPU path entirely.
+describe('WGSL reserved word escaping', () => {
+  test('escapes `mod` in both the struct and its accesses', () => {
+    const result = compileProgramToWgsl(
+      block([
+        statement('mod', binary('*', ident('bass'), literal(2))),
+        statement('zoom', binary('+', literal(1), ident('mod'))),
+      ]),
+    );
+
+    // Nothing may declare or reference a bare `mod`.
+    expect(result.wgslCode).not.toMatch(/^\s*mod\s*:/mu);
+    expect(result.wgslCode).not.toMatch(/\bstate\.mod\b/u);
+
+    // It is present, under the escaped name, on both sides.
+    expect(result.wgslCode).toContain('mv_mod: f32,');
+    expect(result.wgslCode).toContain('state.mv_mod =');
+    expect(result.wgslCode).toContain('state.mv_mod)');
+  });
+
+  test('escaping does not change the buffer layout keys', () => {
+    const result = compileProgramToWgsl(block([statement('mod', literal(1))]));
+    // fieldKeys drive the GPU buffer offsets and the host-side writes, which
+    // are keyed by the preset's own variable names — they must stay unescaped.
+    expect(result.fieldKeys).toContain('mod');
+    expect(result.fieldKeys).not.toContain('mv_mod');
+  });
+
+  test('leaves non-reserved names untouched', () => {
+    const result = compileProgramToWgsl(
+      block([statement('myvar', ident('zoom'))]),
+    );
+    expect(result.wgslCode).toContain('state.myvar =');
+    expect(result.wgslCode).toContain('state.zoom');
+    expect(result.wgslCode).not.toContain('mv_myvar');
+    expect(result.wgslCode).not.toContain('mv_zoom');
+  });
+
+  test('escaping stays injective for names shaped like the escape', () => {
+    // A preset variable literally named `mv_mod` must not collide with the
+    // escaped form of `mod`.
+    const result = compileProgramToWgsl(
+      block([statement('mod', literal(1)), statement('mv_mod', literal(2))]),
+    );
+    expect(result.wgslCode).toContain('mv_mod: f32,');
+    expect(result.wgslCode).toContain('mv_mv_mod: f32,');
+    const declarations = result.wgslCode.match(/^\s*mv_\w+: f32,$/gmu) ?? [];
+    expect(new Set(declarations).size).toBe(declarations.length);
+  });
+
+  test('no emitted struct field is a bare WGSL reserved word', () => {
+    // Guards the default state fields plus anything a preset can introduce.
+    const reserved = new Set([
+      'mod',
+      'const',
+      'var',
+      'let',
+      'fn',
+      'loop',
+      'if',
+      'else',
+      'return',
+      'struct',
+      'switch',
+      'case',
+      'default',
+      'break',
+      'continue',
+      'discard',
+      'true',
+      'false',
+      'while',
+      'for',
+      'type',
+      'filter',
+      'sizeof',
+      'do',
+    ]);
+    const result = compileProgramToWgsl(block([statement('mod', literal(1))]));
+    const fields = [
+      ...result.wgslCode.matchAll(/^\s*(\w+):\s*(?:f32|u32),$/gmu),
+    ].map((m) => m[1]);
+    expect(fields.length).toBeGreaterThan(0);
+    for (const field of fields) {
+      expect(reserved.has(field)).toBe(false);
+    }
   });
 });

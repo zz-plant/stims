@@ -7,7 +7,6 @@ export type {
 
 export {
   __milkdropRendererAdapterTestUtils,
-  createMilkdropRendererAdapter,
   createMilkdropRendererAdapterCore,
   getFeedbackBackendProfile,
   WEBGL_MILKDROP_BACKEND_BEHAVIOR,

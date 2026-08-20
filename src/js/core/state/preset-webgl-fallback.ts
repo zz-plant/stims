@@ -39,29 +39,45 @@ function readSet(): Set<string> {
   }
 }
 
-function writeSet(presetIds: Set<string>) {
+/** @returns whether the set actually reached storage. */
+function writeSet(presetIds: Set<string>): boolean {
   const storage = getBrowserSessionStorage();
   if (!storage) {
-    return;
+    return false;
   }
 
   try {
     storage.setItem(PRESET_WEBGL_FALLBACK_KEY, JSON.stringify([...presetIds]));
+    return true;
   } catch (_error) {
-    // Storage full or blocked: the fallback simply will not survive the reload.
+    // Storage full or blocked (Safari private mode quota).
+    return false;
   }
 }
 
-export function markPresetNeedsWebgl(presetId: string) {
+/**
+ * Record that `presetId` must render on WebGL.
+ *
+ * The return value is load-bearing, not informational: the caller reloads the
+ * page so the fresh renderer selection can read this back. If the write did
+ * not land, that read returns false, the reload re-mounts WebGPU, hits the
+ * same unsupported descriptor, and reloads again — forever. Both failure modes
+ * are reachable in exactly the environments this fallback exists for
+ * (cross-origin embeds where touching sessionStorage throws, Safari private
+ * mode where setItem does), so the caller must not reload on `false`.
+ *
+ * @returns whether the fallback was persisted and will survive a reload.
+ */
+export function markPresetNeedsWebgl(presetId: string): boolean {
   if (!presetId) {
-    return;
+    return false;
   }
   const presetIds = readSet();
   if (presetIds.has(presetId)) {
-    return;
+    return true;
   }
   presetIds.add(presetId);
-  writeSet(presetIds);
+  return writeSet(presetIds);
 }
 
 export function presetNeedsWebgl(presetId: string | null | undefined) {

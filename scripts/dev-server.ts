@@ -30,7 +30,13 @@ export async function ensureDevServer(
   console.log(`Starting Vite dev server on port ${port}...`);
   const child = spawn(
     process.execPath,
-    ['run', 'vite', '--host', '127.0.0.1', '--port', String(port)],
+    [
+      './node_modules/vite/bin/vite.js',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      String(port),
+    ],
     {
       cwd: repoRoot,
       detached: true,

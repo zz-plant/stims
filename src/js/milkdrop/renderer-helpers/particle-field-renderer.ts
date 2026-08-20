@@ -10,8 +10,6 @@ import {
   ShaderMaterial,
   Mesh as ThreeMesh,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   disposeObject,
   getMilkdropPassRenderOrder,
@@ -24,6 +22,10 @@ import type {
   MilkdropRenderPayload,
   MilkdropRuntimeSignals,
 } from '../types';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 type ParticleFieldObject = Mesh<InstancedBufferGeometry, ShaderMaterial>;
 
@@ -100,26 +102,29 @@ function makeParticleFieldUniforms(
 // not recognize plain ShaderMaterial and silently swaps in a blank default
 // material), while the WebGL path keeps the original GLSL ShaderMaterial —
 // this helper runs on both backends, unlike the procedural descriptor
-// materials in webgpu-procedural-materials.ts.
-const {
-  attribute,
-  cameraProjectionMatrix,
-  modelViewMatrix,
-  positionGeometry,
-  smoothstep,
-  uniform,
-  uv,
-  varying,
-  vec3,
-  vec4,
-} = TSL;
-
+// materials in webgpu-procedural-materials.ts. NodeMaterial/TSL come from
+// the lazy toolkit (webgpu-materials-loader.ts) so 'three/webgpu' stays out
+// of the shared boot-path chunk; the WebGPU adapter registers it before
+// this runs.
 function createParticleFieldNodeMaterial(
   particleField: MilkdropParticleFieldVisual,
   mesh: MilkdropRenderPayload['frameState']['mesh'],
   signals: MilkdropRenderPayload['frameState']['signals'] | null,
   alphaMultiplier: number,
 ) {
+  const { NodeMaterial, TSL } = getWebGpuHelperMaterialsSync();
+  const {
+    attribute,
+    cameraProjectionMatrix,
+    modelViewMatrix,
+    positionGeometry,
+    smoothstep,
+    uniform,
+    uv,
+    varying,
+    vec3,
+    vec4,
+  } = TSL;
   const state = makeParticleFieldUniforms(
     particleField,
     mesh,
@@ -212,6 +217,10 @@ function createParticleFieldShaderMaterial(
     depthTest: false,
     depthWrite: false,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     blending: AdditiveBlending,
     uniforms: makeParticleFieldUniforms(
       particleField,
@@ -317,7 +326,7 @@ function isParticleFieldMaterialForBackend(
   backend: 'webgl' | 'webgpu',
 ) {
   return backend === 'webgpu'
-    ? material instanceof NodeMaterial
+    ? isWebGpuNodeMaterial(material)
     : material instanceof ShaderMaterial;
 }
 
@@ -345,9 +354,7 @@ function getParticleFieldInstanceAnchors(
     const x = meshPositions[baseIndex] ?? 0;
     const y = meshPositions[baseIndex + 1] ?? 0;
     const z = meshPositions[baseIndex + 2] ?? 0;
-    const seed = fract(
-      hashNumber(`${particleField.seed}:${index}:${x}:${y}:${z}`),
-    );
+    const seed = fract(hashNumericValues(particleField.seed, index, x, y, z));
     const jitterX = (fract(seed * 13.371) - 0.5) * 0.03;
     const jitterY = (fract(seed * 91.731) - 0.5) * 0.03;
     const jitterZ = (fract(seed * 47.519) - 0.5) * 0.02;
@@ -366,12 +373,28 @@ function getParticleFieldInstanceAnchors(
   };
 }
 
-function hashNumber(value: string) {
+function hashNumericValues(
+  seed: number,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+) {
   let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
+  const s = (seed * 1000) | 0;
+  hash = Math.imul(hash ^ (s & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((s >> 8) & 0xff), 16777619);
+  hash = Math.imul(hash ^ (index & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((index >> 8) & 0xff), 16777619);
+  const xi = (x * 1000) | 0;
+  hash = Math.imul(hash ^ (xi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((xi >> 8) & 0xff), 16777619);
+  const yi = (y * 1000) | 0;
+  hash = Math.imul(hash ^ (yi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((yi >> 8) & 0xff), 16777619);
+  const zi = (z * 1000) | 0;
+  hash = Math.imul(hash ^ (zi & 0xff), 16777619);
+  hash = Math.imul(hash ^ ((zi >> 8) & 0xff), 16777619);
   return (hash >>> 0) / 0x100000000;
 }
 
@@ -481,10 +504,14 @@ export function syncParticleFieldObject(
     return null;
   }
 
+  // Instance count is deliberately NOT part of the match: it folds in the
+  // adaptive-quality detail scale, so a count change happens exactly when
+  // the device is under load — rebuilding here would dispose the material
+  // and force a pipeline recompile at the worst moment. The attribute
+  // updater below resizes buffers and instanceCount in place.
   const matches =
     !!existing &&
     existing.geometry instanceof InstancedBufferGeometry &&
-    existing.geometry.instanceCount === particleField.instanceCount &&
     isParticleFieldMaterialForBackend(existing.material, backend) &&
     existing.userData.particleFieldSeed === particleField.seed;
 
@@ -533,16 +560,13 @@ export function syncParticleFieldObject(
   uniforms.size.value = particleField.size;
   uniforms.opacity.value = particleField.alpha * alphaMultiplier;
   uniforms.seed.value = particleField.seed;
-  material.transparent = true;
-  material.depthTest = false;
-  material.depthWrite = false;
-  material.blending = AdditiveBlending;
-  material.side = DoubleSide;
-  if (backend === 'webgl') {
-    // Bumping material.version on a NodeMaterial forces a full pipeline
-    // rebuild every frame on WebGPU; only the WebGL ShaderMaterial needs it.
-    material.needsUpdate = true;
-  }
+  // transparent / depthTest / depthWrite / blending / side are set once at
+  // material construction and never vary, so they are not re-assigned here —
+  // and `needsUpdate` is deliberately NOT set. This function only writes
+  // uniform VALUES, which three.js uploads every render on its own; marking
+  // the material dirty instead bumped material.version each frame, forcing
+  // WebGLRenderer to re-run getParameters() and the program-cache lookup for
+  // a program that never changed (~2% of frame time).
   existing.renderOrder = getMilkdropPassRenderOrder('particle-field');
   existing.position.z = 0.18;
   return existing;

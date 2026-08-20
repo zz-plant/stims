@@ -1,4 +1,21 @@
+/**
+ * Adapts raw analyser output into the named signals presets actually read.
+ *
+ * Sits between `core/audio-handler.ts` and the VM, deriving the bass/mid/treb
+ * levels, their attenuated variants, and the harmonic/percussive split that
+ * MilkDrop equations reference by name. Also provides synthetic beat data so
+ * demo mode and headless tests can run a preset with no real audio present.
+ *
+ * These signals are the entire vocabulary a preset has for "what is the music
+ * doing", so smoothing choices here are visible in every preset at once — a
+ * change that makes one preset feel snappier can make another strobe. Measure
+ * with `bun run lab:reactivity` across several presets, never one.
+ */
 import type { FrequencyAnalyser } from '../core/audio-handler';
+import {
+  createHarmonicPercussiveAnalyser,
+  type HarmonicPercussiveLevels,
+} from '../utils/audio/harmonic-percussive';
 import {
   type BandLevels,
   getBandLevels,
@@ -26,6 +43,14 @@ type MilkdropAudioSignalUpdate = {
   relativeAttenuatedBands: BandLevels;
   rawWeightedEnergy: number;
   weightedEnergy: number;
+  /**
+   * Harmonic/percussive decomposition of the spectrum (see
+   * `utils/audio/harmonic-percussive`). Energies are on the same
+   * MilkDrop-relative scale as `relativeBands` — 1.0 means "as much
+   * percussive/harmonic energy as this track usually carries" — except
+   * `percussiveRatio`, which stays an absolute 0..1 fraction.
+   */
+  harmonicPercussive: HarmonicPercussiveLevels;
 };
 
 const BAND_KEYS: readonly BandKey[] = ['bass', 'mid', 'treble'];
@@ -84,6 +109,21 @@ const RELATIVE_SILENCE_EPSILON = 0.001;
 
 const INV_LOG1P_6_2 = 1 / Math.log1p(6.2);
 const FALLBACK_SYNTHETIC_BUFFER = new Uint8Array(128);
+
+const RAW_ENERGY_OPTIONS = {
+  weights: { bass: 0.58, mid: 0.27, treble: 0.15 },
+  boost: 1.08,
+};
+
+const ATTENUATED_ENERGY_OPTIONS = {
+  weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
+  boost: 1,
+};
+
+const ENERGY_PEAK_OPTIONS = {
+  decay: 0.96,
+  floor: 0.12,
+};
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -147,6 +187,28 @@ function spectralCompensationForRatio(ratio: number) {
   return 1.02 + bassBody + trebleAir;
 }
 
+/** Keys of the HPSS output that get relative normalization; the ratio is left
+ * on its own absolute 0..1 scale. */
+const HP_ENERGY_KEYS = [
+  'percussive',
+  'harmonic',
+  'percussiveLow',
+  'percussiveMid',
+  'percussiveHigh',
+] as const;
+
+type HpEnergyKey = (typeof HP_ENERGY_KEYS)[number];
+
+function createHpState(): Record<HpEnergyKey, number> {
+  return {
+    percussive: 0,
+    harmonic: 0,
+    percussiveLow: 0,
+    percussiveMid: 0,
+    percussiveHigh: 0,
+  };
+}
+
 export function createMilkdropAudioSignalProcessor() {
   let bandBaseline = createBandState();
   let bandPeak = createBandState();
@@ -155,6 +217,17 @@ export function createMilkdropAudioSignalProcessor() {
   let relativeAveragesSeeded = false;
   const relativeBands = createBandState();
   const relativeAttenuatedBands = createBandState();
+  const harmonicPercussiveAnalyser = createHarmonicPercussiveAnalyser();
+  let hpLongAverage = createHpState();
+  let hpAveragesSeeded = false;
+  const relativeHarmonicPercussive: HarmonicPercussiveLevels = {
+    percussive: 1,
+    harmonic: 1,
+    percussiveLow: 1,
+    percussiveMid: 1,
+    percussiveHigh: 1,
+    percussiveRatio: 0.5,
+  };
   let energyPeak = 0.12;
   let smoothedSpectrum = new Float32Array(0);
   let spectrumNoiseFloor = new Float32Array(0);
@@ -168,6 +241,7 @@ export function createMilkdropAudioSignalProcessor() {
     relativeAttenuatedBands,
     rawWeightedEnergy: 0,
     weightedEnergy: 0,
+    harmonicPercussive: relativeHarmonicPercussive,
   };
 
   const ensureSpectrumBuffers = (length: number) => {
@@ -181,46 +255,43 @@ export function createMilkdropAudioSignalProcessor() {
   };
 
   const buildSpectrumFrame = (source: Uint8Array, deltaMs: number) => {
-    ensureSpectrumBuffers(source.length);
+    const len = source.length;
+    ensureSpectrumBuffers(len);
 
-    for (let index = 0; index < source.length; index += 1) {
-      const previous = (source[index - 1] ?? source[index] ?? 0) / 255;
-      const current = (source[index] ?? 0) / 255;
-      const next = (source[index + 1] ?? source[index] ?? 0) / 255;
-      const ratio =
-        source.length > 1 ? index / Math.max(1, source.length - 1) : 0;
+    const safeDelta = Math.max(0, deltaMs);
+    const coeffFloorAttack = Math.exp(-safeDelta / 220);
+    const coeffFloorRelease = Math.exp(-safeDelta / 900);
+    const coeffSmoothAttack = Math.exp(-safeDelta / 26);
+    const coeffSmoothRelease = Math.exp(-safeDelta / 170);
+
+    let previous = len > 0 ? source[0] / 255 : 0;
+    for (let index = 0; index < len; index += 1) {
+      const current = source[index] / 255;
+      const next = index + 1 < len ? source[index + 1] / 255 : current;
+      const ratio = len > 1 ? index / (len - 1) : 0;
       const spatial = previous * 0.18 + current * 0.64 + next * 0.18;
+      previous = current;
 
-      spectrumNoiseFloor[index] = smoothLevel(
-        spectrumNoiseFloor[index] ?? 0,
-        spatial,
-        deltaMs,
-        220,
-        900,
-      );
+      const prevFloor = spectrumNoiseFloor[index];
+      const coeffFloor =
+        spatial > prevFloor ? coeffFloorAttack : coeffFloorRelease;
+      const floorVal = prevFloor * coeffFloor + spatial * (1 - coeffFloor);
+      spectrumNoiseFloor[index] = floorVal;
 
-      const denoised = Math.max(
-        0,
-        spatial - Math.min(0.085, (spectrumNoiseFloor[index] ?? 0) * 0.72),
-      );
+      const denoised = Math.max(0, spatial - Math.min(0.085, floorVal * 0.72));
       const compensated =
         denoised * spectralCompensationForRatio(ratio) +
-        Math.max(0, current - (previousSpectrum[index] ?? 0)) *
-          (0.42 + ratio * 0.08);
+        Math.max(0, current - previousSpectrum[index]) * (0.42 + ratio * 0.08);
       const compressed =
         Math.log1p(clamp(compensated, 0, 1.6) * 6.2) * INV_LOG1P_6_2;
       const target = clamp(compressed, 0, 1);
 
-      smoothedSpectrum[index] = smoothLevel(
-        smoothedSpectrum[index] ?? 0,
-        target,
-        deltaMs,
-        26,
-        170,
-      );
-      shapedSpectrum[index] = Math.round(
-        clamp(smoothedSpectrum[index] ?? 0, 0, 1) * 255,
-      );
+      const prevSmooth = smoothedSpectrum[index];
+      const coeffSmooth =
+        target > prevSmooth ? coeffSmoothAttack : coeffSmoothRelease;
+      const smoothed = prevSmooth * coeffSmooth + target * (1 - coeffSmooth);
+      smoothedSpectrum[index] = smoothed;
+      shapedSpectrum[index] = (clamp(smoothed, 0, 1) * 255) | 0;
       previousSpectrum[index] = current;
     }
 
@@ -318,6 +389,44 @@ export function createMilkdropAudioSignalProcessor() {
     }
   };
 
+  const updateHarmonicPercussive = (
+    raw: HarmonicPercussiveLevels,
+    deltaMs: number,
+  ) => {
+    if (!hpAveragesSeeded) {
+      // Same seeding rule as the bands: start the long average at the first
+      // frame so the opening second doesn't read as one huge transient.
+      for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+        const key = HP_ENERGY_KEYS[i];
+        hpLongAverage[key] = raw[key];
+      }
+      hpAveragesSeeded = true;
+    }
+
+    for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+      const key = HP_ENERGY_KEYS[i];
+      const current = raw[key];
+      hpLongAverage[key] = smoothLevel(
+        hpLongAverage[key],
+        current,
+        deltaMs,
+        RELATIVE_LONG_AVG_MS,
+        RELATIVE_LONG_AVG_MS,
+      );
+      const longAverage = hpLongAverage[key];
+      relativeHarmonicPercussive[key] =
+        longAverage < RELATIVE_SILENCE_EPSILON
+          ? 1
+          : clamp(current / longAverage, 0, RELATIVE_MAX);
+    }
+    relativeHarmonicPercussive.percussiveRatio = clamp(
+      raw.percussiveRatio,
+      0,
+      1,
+    );
+    return relativeHarmonicPercussive;
+  };
+
   return {
     reset() {
       bandBaseline = createBandState();
@@ -329,6 +438,13 @@ export function createMilkdropAudioSignalProcessor() {
         relativeBands[BAND_KEYS[i]] = 1;
         relativeAttenuatedBands[BAND_KEYS[i]] = 1;
       }
+      harmonicPercussiveAnalyser.reset();
+      hpLongAverage = createHpState();
+      hpAveragesSeeded = false;
+      for (let i = 0; i < HP_ENERGY_KEYS.length; i += 1) {
+        relativeHarmonicPercussive[HP_ENERGY_KEYS[i]] = 1;
+      }
+      relativeHarmonicPercussive.percussiveRatio = 0.5;
       energyPeak = 0.12;
       smoothedSpectrum = new Float32Array(0);
       spectrumNoiseFloor = new Float32Array(0);
@@ -354,21 +470,16 @@ export function createMilkdropAudioSignalProcessor() {
       });
       const attenuatedBands = updateBandAttenuation(bands, deltaMs);
       updateRelativeBands(bands, deltaMs);
-      const rawWeightedEnergy = getWeightedEnergy(bands, {
-        weights: { bass: 0.58, mid: 0.27, treble: 0.15 },
-        boost: 1.08,
-      });
-      const attenuatedWeightedEnergy = getWeightedEnergy(attenuatedBands, {
-        weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
-        boost: 1,
-      });
+      const rawWeightedEnergy = getWeightedEnergy(bands, RAW_ENERGY_OPTIONS);
+      const attenuatedWeightedEnergy = getWeightedEnergy(
+        attenuatedBands,
+        ATTENUATED_ENERGY_OPTIONS,
+      );
+      ENERGY_PEAK_OPTIONS.decay = Math.exp(-Math.max(0, deltaMs) / 860);
       energyPeak = updateEnergyPeak(
         energyPeak,
         Math.max(rawWeightedEnergy, attenuatedWeightedEnergy * 0.94),
-        {
-          decay: Math.exp(-Math.max(0, deltaMs) / 860),
-          floor: 0.12,
-        },
+        ENERGY_PEAK_OPTIONS,
       );
       const normalizedRawEnergy = clamp(
         rawWeightedEnergy / Math.max(energyPeak, 0.12),
@@ -394,6 +505,19 @@ export function createMilkdropAudioSignalProcessor() {
       updateResult.attenuatedBands = attenuatedBands;
       updateResult.relativeBands = relativeBands;
       updateResult.relativeAttenuatedBands = relativeAttenuatedBands;
+      // Prefer the worklet's off-thread HPSS levels when they are available
+      // (they advance at analyse cadence on the audio thread). Fall back to
+      // the main-thread analyser on the byte spectrum otherwise — the
+      // analyser-node path, the window before the first worklet message, or
+      // an older worklet without HPSS.
+      const workletLevels = analyser?.getHarmonicPercussiveLevels?.() ?? null;
+      const rawLevels =
+        workletLevels ??
+        harmonicPercussiveAnalyser.analyse(rawSpectrum, sampleRate);
+      updateResult.harmonicPercussive = updateHarmonicPercussive(
+        rawLevels,
+        deltaMs,
+      );
       updateResult.rawWeightedEnergy = rawWeightedEnergy;
       updateResult.weightedEnergy = weightedEnergy;
       return updateResult;

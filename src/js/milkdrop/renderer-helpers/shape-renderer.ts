@@ -14,14 +14,16 @@ import {
   LineLoop as ThreeLineLoop,
   Mesh as ThreeMesh,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
-import { NodeMaterial, TSL } from 'three/webgpu';
 import type {
   MilkdropBackendBehavior,
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropShapeVisual } from '../types';
 import { MILKDROP_THICK_SHAPE_PASS_OFFSET } from './primitive-rasterization-metrics';
+import {
+  getWebGpuHelperMaterialsSync,
+  isWebGpuNodeMaterial,
+} from './webgpu-materials-loader';
 
 type MilkdropRenderBackend = 'webgl' | 'webgpu';
 
@@ -102,15 +104,23 @@ function syncShapeShaderUniforms(
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
+  // Both WebGL ShaderMaterials and WebGPU NodeMaterials need sRGB→linear
+  // conversion here because the renderer's outputColorSpace = SRGBColorSpace
+  // re-encodes colors during output. Without this, the encoder treats sRGB
+  // input as linear and applies a second gamma curve, producing darker fills.
+  const primaryColor = toLinearColor(shape.color);
+  const secondaryColor = toLinearColor(
+    shape.secondaryColor ?? { r: 0, g: 0, b: 0 },
+  );
   material.uniforms.primaryColor.value.setRGB(
-    shape.color.r,
-    shape.color.g,
-    shape.color.b,
+    primaryColor.r,
+    primaryColor.g,
+    primaryColor.b,
   );
   material.uniforms.secondaryColor.value.setRGB(
-    shape.secondaryColor?.r ?? 0,
-    shape.secondaryColor?.g ?? 0,
-    shape.secondaryColor?.b ?? 0,
+    secondaryColor.r,
+    secondaryColor.g,
+    secondaryColor.b,
   );
   material.uniforms.primaryAlpha.value =
     (shape.color.a ?? 0.4) * alphaMultiplier;
@@ -127,39 +137,41 @@ function syncShapeShaderUniforms(
   material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
 }
 
+function toLinearColor(color: { r: number; g: number; b: number }) {
+  return new Color(color.r, color.g, color.b).convertSRGBToLinear();
+}
+
 // The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder throws
 // on plain ShaderMaterial), while the WebGL path keeps the original GLSL
 // ShaderMaterial — this helper runs on both backends, mirroring the pattern
-// in particle-field-renderer.ts.
-const {
-  cameraProjectionMatrix,
-  clamp: tslClamp,
-  float,
-  fract,
-  mix,
-  modelViewMatrix,
-  positionGeometry,
-  texture: tslTexture,
-  uniform,
-  vec2,
-  vec4,
-} = TSL;
-
+// in particle-field-renderer.ts. NodeMaterial/TSL come from the lazy toolkit
+// (webgpu-materials-loader.ts) so 'three/webgpu' stays out of the shared
+// boot-path chunk; the WebGPU adapter registers it before this runs.
 function createShapeFillNodeMaterial(
   shape: MilkdropShapeVisual,
   texture: Texture | null,
   alphaMultiplier: number,
 ) {
+  const { NodeMaterial, TSL } = getWebGpuHelperMaterialsSync();
+  const {
+    cameraProjectionMatrix,
+    clamp: tslClamp,
+    float,
+    fract,
+    mix,
+    modelViewMatrix,
+    positionGeometry,
+    texture: tslTexture,
+    uniform,
+    vec2,
+    vec4,
+  } = TSL;
   const uniforms = {
-    primaryColor: uniform(
-      new Color(shape.color.r, shape.color.g, shape.color.b),
-    ),
+    primaryColor: uniform(toLinearColor(shape.color)),
     secondaryColor: uniform(
-      new Color(
-        shape.secondaryColor?.r ?? 0,
-        shape.secondaryColor?.g ?? 0,
-        shape.secondaryColor?.b ?? 0,
-      ),
+      shape.secondaryColor
+        ? toLinearColor(shape.secondaryColor)
+        : new Color(0, 0, 0),
     ),
     primaryAlpha: uniform((shape.color.a ?? 0.4) * alphaMultiplier),
     secondaryAlpha: uniform((shape.secondaryColor?.a ?? 0) * alphaMultiplier),
@@ -210,7 +222,7 @@ function isShapeFillShaderMaterialForBackend(
   backend: MilkdropRenderBackend,
 ) {
   return backend === 'webgpu'
-    ? material instanceof NodeMaterial
+    ? isWebGpuNodeMaterial(material)
     : material instanceof ShaderMaterial;
 }
 
@@ -256,6 +268,10 @@ function createShapeFillShaderMaterial(
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     ...(shape.additive ? { blending: AdditiveBlending } : {}),
     vertexShader: `
       varying vec2 vLocal;
@@ -332,6 +348,10 @@ function createShapeFillMaterial(
     opacity: (fillColor.a ?? 0.4) * alphaMultiplier,
     transparent: true,
     side: DoubleSide,
+    // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+    // two-pass render (it bumps material.needsUpdate twice per object per
+    // frame, forcing getParameters/getProgram churn on every material).
+    forceSinglePass: true,
     ...(shape.additive ? { blending: AdditiveBlending } : {}),
   });
 }
@@ -586,6 +606,10 @@ export function syncShapeFillMaterial(
       opacity: (fillColor.a ?? 0.4) * alphaMultiplier,
       transparent: true,
       side: DoubleSide,
+      // Flat z-layered 2D geometry: skip three.js's transparent+DoubleSide
+      // two-pass render (it bumps material.needsUpdate twice per object per
+      // frame, forcing getParameters/getProgram churn on every material).
+      forceSinglePass: true,
       ...(shape.additive ? { blending: AdditiveBlending } : {}),
     });
   }

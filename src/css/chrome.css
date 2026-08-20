@@ -69,6 +69,45 @@ html.light .stims-shell {
     gap: 18px;
   }
 
+  .ctl-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ctl-tab {
+    flex: 1;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ctl-ink-2);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .ctl-tab:hover {
+    color: var(--ctl-ink);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .ctl-tab--active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
   /* ── Section: a flat group, separated by a rule rather than nested
         inside yet another card. ─────────────────────────────────── */
   .ctl-section {
@@ -205,6 +244,88 @@ html.light .stims-shell {
 
   .ctl-row:has(.ctl-switch) {
     cursor: pointer;
+  }
+
+  /* ── MIDI devices & bindings ──────────────────────────────────── */
+  .ctl-midi-devices {
+    display: grid;
+    gap: 10px;
+  }
+
+  .ctl-midi-device {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill-sunk);
+  }
+
+  .ctl-midi-bindings {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ctl-midi-binding-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ctl-midi-binding-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ctl-ink-3);
+  }
+
+  .ctl-midi-binding-dot--live {
+    background: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  }
+
+  .ctl-midi-binding-badge {
+    flex-shrink: 0;
+    font-family: var(--font-family-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--ctl-ink-3);
+    background: var(--ctl-fill-sunk);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .ctl-midi-binding-row .ctl-row__hint {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ctl-midi-learn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ctl-midi-learn-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill);
+    color: var(--ctl-ink);
+    font: inherit;
+    font-size: 0.8125rem;
+  }
+
+  .ctl-midi-learn-input:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 2px;
   }
 
   /* ── Option list: radio rows carrying the lit edge ─────────────── */
@@ -427,6 +548,9 @@ html.light .stims-shell {
     scrollbar-width: none;
     scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
+    /* Fallback for before useScrollerOverflow has measured (and if it never
+       runs): the old symmetric fade. The data-overflow rules below replace
+       it with a fade on only the side that has something hidden. */
     -webkit-mask-image: linear-gradient(
       90deg,
       transparent 0,
@@ -445,6 +569,51 @@ html.light .stims-shell {
 
   .ctl-scroller::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Fade only where content actually continues. A constant both-edge fade
+     says nothing — it looks identical whether one chip is hidden or nine.
+     `data-overflow` comes from useScrollerOverflow. The gradient is wider
+     than the old 16px so it reads as "more this way" rather than as a
+     rounded edge. */
+  .ctl-scroller[data-overflow="none"] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .ctl-scroller[data-overflow="end"] {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+  }
+
+  .ctl-scroller[data-overflow="start"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+    mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+  }
+
+  .ctl-scroller[data-overflow="both"] {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
   }
 
   .ctl-chip {
@@ -491,17 +660,57 @@ html.light .stims-shell {
     outline-offset: 2px;
   }
 
-  /* ── Preset rows ───────────────────────────────────────────────── */
+  /* ── Preset rows and tiles ─────────────────────────────────────────
+     BOTH browse views are virtualized (BrowseSheetPanel.tsx for the
+     list, PresetGrid.tsx for the grid, both via @tanstack/react-virtual):
+     only the rows within the scroll viewport plus a small overscan exist
+     as real DOM nodes, so browsing stays cheap regardless of catalog
+     size. .ctl-presets-scroll / .stims-preset-grid-scroll are the
+     dedicated scroll regions — each needs an explicit bounded height,
+     which it gets from the [data-fill="true"] flex-column chain set up
+     in App.tsx (Browse opts into fillBody the same way the editor
+     already does) down through .ctl-browse-results. The chain is not
+     scoped to one view: the grid needs the same bounded region, and
+     scoping it to [data-view="list"] left the grid scrolling the whole
+     sheet body with an unbounded container the virtualizer can't
+     measure. .ctl-presets / .stims-preset-grid are sized to their
+     virtualizer's reported total content height (inline style) and each
+     row is absolutely positioned at its reported offset (also inline) —
+     position/gap here are just the positioning context and
+     containing-block, not real layout participants. ─────────────────── */
+  [data-fill="true"] > .stims-shell__sheet-panel--browse {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  [data-fill="true"] .stims-shell__sheet-panel--browse .ctl-browse-results {
+    /* Containing block for the focus-revealed keyboard hint, which overlays
+       this region's bottom edge rather than taking a row in flow. */
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .ctl-presets-scroll {
+    flex: 1;
+    min-height: 120px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .ctl-presets {
-    display: grid;
-    gap: 2px;
+    position: relative;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .ctl-preset {
-    position: relative;
+    position: absolute;
     display: grid;
     grid-template-columns: 56px minmax(0, 1fr) auto;
     align-items: center;
@@ -527,6 +736,14 @@ html.light .stims-shell {
     font: inherit;
     text-align: left;
     cursor: pointer;
+    transition:
+      opacity 0.1s ease,
+      transform 0.1s ease;
+  }
+
+  .ctl-preset__open:active {
+    opacity: 0.85;
+    transform: scale(0.995);
   }
 
   .ctl-preset__open:focus-visible {
@@ -561,7 +778,6 @@ html.light .stims-shell {
     object-fit: cover;
   }
 
-  .ctl-preset__art .preset-artwork-ghost__meta,
   .ctl-preset__art .stims-shell__preset-art-fallback {
     display: none;
   }
@@ -601,6 +817,24 @@ html.light .stims-shell {
     color: var(--ctl-accent);
   }
 
+  /* The size of a collection, inline on its chip. A rail where four of the
+     entries each hold ~80% of the catalog looks like four equal choices
+     until the numbers are visible. */
+  .ctl-chip__count {
+    margin-left: 6px;
+    padding-left: 6px;
+    border-left: 1px solid var(--ctl-line);
+    color: var(--ctl-ink-3);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92em;
+  }
+
+  .ctl-chip[data-active="true"] .ctl-chip__count {
+    color: inherit;
+    border-left-color: currentColor;
+    opacity: 0.7;
+  }
+
   .ctl-preset__fav {
     display: inline-flex;
     align-items: center;
@@ -626,6 +860,10 @@ html.light .stims-shell {
     color: var(--ctl-saved);
   }
 
+  .ctl-preset__fav:active {
+    transform: scale(0.9);
+  }
+
   .ctl-preset__fav[data-saved="true"] {
     color: var(--ctl-saved);
   }
@@ -648,6 +886,27 @@ html.light .stims-shell {
     -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
   }
 
+  /* The grid's star reuses the list's icon span, so it needs the same ink
+     and filled-state mask. Its box/placement lives in app-shell.css with
+     the rest of the tile, since it overlays the artwork there rather than
+     sitting in a row's trailing slot. */
+  .stims-preset-grid__fav {
+    color: var(--ctl-ink-2);
+  }
+
+  .stims-preset-grid__fav:hover {
+    color: var(--ctl-saved);
+  }
+
+  .stims-preset-grid__fav[data-saved="true"] {
+    color: var(--ctl-saved);
+  }
+
+  .stims-preset-grid__fav[data-saved="true"] .ctl-preset__fav-icon {
+    mask: var(--ctl-heart-filled) center / contain no-repeat;
+    -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
+  }
+
   @media (pointer: coarse) {
     .ctl-preset__fav {
       width: 44px;
@@ -656,6 +915,187 @@ html.light .stims-shell {
       min-height: 44px;
       margin-right: 0;
     }
+  }
+
+  /* ── Recent rail: this-session history, not persisted lastOpenedAt ─ */
+  /* Compact on purpose. This rail is a convenience — the same presets are
+     also the top of the "Recently opened" sort — so it should not cost a
+     sixth of the panel's height before a single result is visible. */
+  .ctl-recent-rail {
+    padding: 10px 16px 4px;
+    border-bottom: 1px solid var(--ctl-line);
+  }
+
+  .ctl-recent-rail__label {
+    margin: 0 0 5px;
+    color: var(--ctl-ink-3);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .ctl-recent-rail__list {
+    /* Scroll/fade mechanics come from .ctl-scroller; this only resets the
+       list semantics it's combined with. */
+    list-style: none;
+  }
+
+  .ctl-recent-rail__list > li {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  .ctl-recent-rail__item {
+    display: grid;
+    gap: 4px;
+    width: 76px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ctl-recent-rail__item:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 2px;
+    border-radius: var(--ctl-radius);
+  }
+
+  .ctl-recent-rail__item .stims-shell__preset-art {
+    width: 76px;
+    height: 50px;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    border-radius: 8px;
+    aspect-ratio: auto;
+    transition: transform var(--ctl-ease);
+  }
+
+  .ctl-recent-rail__item:hover .stims-shell__preset-art,
+  .ctl-recent-rail__item:active .stims-shell__preset-art {
+    transform: scale(1.03);
+  }
+
+  .ctl-recent-rail__title {
+    overflow: hidden;
+    color: var(--ctl-ink-2);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Remix lineage ─────────────────────────────────────────────────
+     The family of the preset that's playing. Held apart from the result
+     list with the same dashed frame the empty states use, so it reads as
+     context about the current pick rather than more results to scroll. */
+  .ctl-lineage {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    border: 1px dashed var(--ctl-line);
+    border-radius: var(--ctl-radius-lg);
+  }
+
+  .ctl-lineage__title {
+    margin: 0;
+    color: var(--ctl-ink);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .ctl-lineage__list {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ctl-lineage__btn {
+    display: grid;
+    gap: 1px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: var(--ctl-radius);
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--ctl-ease);
+  }
+
+  .ctl-lineage__btn:hover:not(:disabled) {
+    background: var(--ctl-fill-sunk);
+  }
+
+  .ctl-lineage__btn:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: -2px;
+  }
+
+  /* The member you're already hearing: marked, not hidden — it's the anchor
+     that makes the rest of the list legible as relatives. */
+  .ctl-lineage__btn:disabled {
+    background: var(--ctl-accent-dim);
+    box-shadow: inset 2px 0 0 var(--ctl-accent);
+    cursor: default;
+  }
+
+  .ctl-lineage__btn:disabled .ctl-lineage__label {
+    color: var(--ctl-accent);
+  }
+
+  .ctl-lineage__label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    overflow: hidden;
+    color: var(--ctl-ink);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ctl-lineage__root-tag,
+  .ctl-lineage__shader {
+    flex: none;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--ctl-fill-sunk);
+    color: var(--ctl-ink-3);
+    font-size: 0.625rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .ctl-lineage__byline {
+    overflow: hidden;
+    color: var(--ctl-ink-3);
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* The hands this version added on top of the base credit — the whole point
+     of an accretive byline, so it gets the accent rather than the muted ink. */
+  .ctl-lineage__added {
+    color: var(--ctl-accent);
+  }
+
+  .ctl-lineage__note {
+    margin: 0;
+    color: var(--ctl-ink-3);
+    font-size: 0.6875rem;
+    line-height: 1.5;
   }
 
   /* ── Empty / status states ─────────────────────────────────────── */
@@ -682,12 +1122,125 @@ html.light .stims-shell {
   }
 
   /* ── Result bar ────────────────────────────────────────────────── */
-  .ctl-resultbar {
+  /* Author + sort + count on one line. These are one job — narrow the
+     result set and say how big it is — and they used to be split across a
+     full-width select in the filter block and a separate bar below the
+     recently-played rail. */
+  .ctl-browse-refine {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 2px 0 6px;
+    gap: 8px;
+  }
+
+  /* Selects share the row evenly; the count takes only what it needs. */
+  .ctl-browse-refine .ctl-select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ctl-browse-count {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Narrow panels: the row is exactly full at ~348px, so the unit word goes
+     and the selects get the width back. */
+  @media (max-width: 480px) {
+    .ctl-browse-count__unit {
+      display: none;
+    }
+
+    .ctl-browse-refine {
+      gap: 6px;
+    }
+  }
+
+  /* Segmented view switch. Sits in the search row rather than owning a row
+     of its own, and shows both options so the current one is legible
+     without having to reason about what the label means. */
+  .ctl-viewtoggle {
+    display: flex;
+    flex: 0 0 auto;
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-fill-sunk);
+  }
+
+  .ctl-viewtoggle__btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    padding: 0;
+    border: none;
+    border-radius: calc(var(--ctl-radius) - 3px);
+    background: transparent;
+    color: var(--ctl-ink-3);
+    cursor: pointer;
+    transition:
+      background var(--ctl-ease),
+      color var(--ctl-ease);
+  }
+
+  .ctl-viewtoggle__btn:hover {
+    color: var(--ctl-ink);
+  }
+
+  .ctl-viewtoggle__btn[data-active="true"] {
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-ink);
+  }
+
+  .ctl-viewtoggle__btn:focus-visible {
+    outline: 2px solid var(--ctl-accent);
+    outline-offset: 1px;
+  }
+
+  /* Shown when focus is actually in the results, not permanently.
+     Advertising arrow keys costs a full row of panel height to teach a
+     one-time lesson to the one visitor in ten who reaches for the keyboard.
+     Overlaid on the bottom edge of the results rather than stacked above
+     them, because appearing in flow would shove the list downward at the
+     exact moment someone starts arrowing through it. */
+  .ctl-keyboard-hint {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    margin: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    color: var(--ctl-ink-2);
+    font-size: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--ctl-ease);
+  }
+
+  .ctl-browse-results:focus-within .ctl-keyboard-hint {
+    opacity: 1;
+  }
+
+  .ctl-keyboard-hint kbd {
+    display: inline-block;
+    margin-right: 1px;
+    padding: 1px 5px;
+    border: 1px solid var(--ctl-line-strong);
+    border-radius: 4px;
+    background: var(--ctl-fill);
+    color: var(--ctl-ink-2);
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.7rem;
+  }
+
+  @media (any-hover: none) and (any-pointer: coarse) {
+    /* Touch-primary devices have no arrow keys to hint at. */
+    .ctl-keyboard-hint {
+      display: none;
+    }
   }
 
   /* ── Browse panel layout ───────────────────────────────────────── */
@@ -703,9 +1256,26 @@ html.light .stims-shell {
     border-bottom: 1px solid var(--ctl-line);
   }
 
+  /* Wraps rather than crushing the field. The view toggle earns its place
+     here by saving a whole row, but on a phone it plus the two icon buttons
+     left the input at ~130px with a truncated placeholder. flex-wrap costs a
+     second line only at the widths where everything genuinely cannot fit —
+     no breakpoint to keep in sync with the control count. */
   .ctl-browse-searchrow {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .ctl-browse-searchrow .ctl-field {
+    flex: 1 1 170px;
+    min-width: 0;
+  }
+
+  /* Pushed to the row's end so that when the buttons do wrap they sit under
+     the field's right edge instead of drifting to the left margin. */
+  .ctl-browse-searchrow .ctl-viewtoggle {
+    margin-left: auto;
   }
 
   .ctl-browse-applied {
@@ -728,13 +1298,6 @@ html.light .stims-shell {
     display: grid;
     gap: 4px;
     align-content: start;
-  }
-
-  .ctl-browse-more {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-top: 10px;
   }
 
   /* ── Audio source panel ────────────────────────────────────────────

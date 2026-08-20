@@ -3,15 +3,20 @@ export type MilkdropShaderValueKind = 'scalar' | 'vec2' | 'vec3' | 'vec4';
 export type MilkdropShaderConstructorPattern =
   | 'vec2-pair'
   | 'vec2-splat'
+  | 'vec2-copy'
   | 'vec3-triple'
   | 'vec3-splat'
   | 'vec3-vec2-scalar'
   | 'vec3-scalar-vec2'
+  | 'vec3-copy'
   | 'vec4-quad'
   | 'vec4-splat'
   | 'vec4-vec3-scalar'
   | 'vec4-scalar-vec3'
-  | 'vec4-vec2-vec2';
+  | 'vec4-vec2-vec2'
+  | 'vec4-copy'
+  | 'mat2-quad'
+  | 'mat2-pair';
 
 /**
  * Fast case-insensitive check that avoids creating a new string when the
@@ -79,6 +84,9 @@ export function resolveMilkdropShaderConstructorPattern(
     if (argKinds[0] === 'scalar') {
       return 'vec2-splat';
     }
+    if (argKinds[0] === 'vec2') {
+      return 'vec2-copy';
+    }
     return null;
   }
 
@@ -98,6 +106,9 @@ export function resolveMilkdropShaderConstructorPattern(
     }
     if (argKinds[0] === 'scalar') {
       return 'vec3-splat';
+    }
+    if (argKinds[0] === 'vec3') {
+      return 'vec3-copy';
     }
   }
 
@@ -121,6 +132,23 @@ export function resolveMilkdropShaderConstructorPattern(
     }
     if (argKinds[0] === 'scalar') {
       return 'vec4-splat';
+    }
+    if (argKinds[0] === 'vec4') {
+      return 'vec4-copy';
+    }
+  }
+
+  if (isLowerAlphaEquals(normalizedName, 'mat2')) {
+    if (
+      argKinds[0] === 'scalar' &&
+      argKinds[1] === 'scalar' &&
+      argKinds[2] === 'scalar' &&
+      argKinds[3] === 'scalar'
+    ) {
+      return 'mat2-quad';
+    }
+    if (argKinds[0] === 'vec2' && argKinds[1] === 'vec2') {
+      return 'mat2-pair';
     }
   }
 

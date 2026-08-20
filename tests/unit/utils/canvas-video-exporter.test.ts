@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { openRecordPanel } from '../../../src/js/frontend/workspace-actions.ts';
 import {
   CanvasVideoExporter,
   type CanvasVideoExporterEnvironment,
@@ -343,8 +344,57 @@ describe('Canvas Video Exporter Utility', () => {
     expect(panelSource).toContain('aria-live="polite"');
     expect(panelSource).toContain('Stop and save video');
     expect(stageControlsSource).toContain('Record video');
-    expect(stageControlsSource).toContain(
-      "ui.updatePanel(panel === 'capture' ? null : 'capture')",
-    );
+    // The dock delegates to the shared action rather than re-implementing the
+    // toggle, so this only checks the wiring; the behaviour itself is asserted
+    // against openRecordPanel below.
+    expect(stageControlsSource).toContain('openRecordPanel(menuSurface)');
+  });
+
+  /**
+   * These replace two assertions that grepped StageControls.tsx for the
+   * literal toggle body. That body moved into workspace-actions.ts when the
+   * dock and the command palette were unified onto one implementation, and
+   * the greps silently went stale — they kept passing only because the file
+   * they scanned had fallen out of the changed-file test scope. Testing the
+   * exported function directly cannot rot the same way.
+   */
+  describe('openRecordPanel', () => {
+    function surfaceOn(panel: string | null) {
+      const calls: Array<string | null> = [];
+      return {
+        surface: {
+          updatePanel: (next: string | null) => calls.push(next),
+          routePanel: () => panel,
+        } as unknown as Parameters<typeof openRecordPanel>[0],
+        calls,
+      };
+    }
+
+    beforeEach(() => {
+      localStorage.removeItem('stims:capture-format');
+      sessionStorage.removeItem('stims:capture-autostart');
+    });
+
+    test('closes the panel when it is already open', () => {
+      const { surface, calls } = surfaceOn('capture');
+      openRecordPanel(surface);
+      expect(calls).toEqual([null]);
+      expect(sessionStorage.getItem('stims:capture-autostart')).toBeNull();
+    });
+
+    test('first-ever use opens the form without autostarting', () => {
+      const { surface, calls } = surfaceOn(null);
+      openRecordPanel(surface);
+      expect(calls).toEqual(['capture']);
+      expect(sessionStorage.getItem('stims:capture-autostart')).toBeNull();
+    });
+
+    test('repeat use arms autostart from the remembered format', () => {
+      localStorage.setItem('stims:capture-format', 'hd-landscape');
+      const { surface, calls } = surfaceOn(null);
+      openRecordPanel(surface);
+      expect(calls).toEqual(['capture']);
+      expect(sessionStorage.getItem('stims:capture-autostart')).toBe('1');
+    });
   });
 });
