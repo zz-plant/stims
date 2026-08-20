@@ -13,6 +13,51 @@ import {
 import type { MilkdropVideoEchoOrientation } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop compiler', () => {
+  test('joins a loop body split across numbered program lines', () => {
+    // MilkDrop concatenates the numbered lines of a block into one source
+    // blob before parsing, so a `loop(` head legitimately spans many of them.
+    // Two rules broke that: a pending line was flushed as soon as the next
+    // one contained an `=` (every loop body is full of them), and a pending
+    // line was only ever started if it contained an `=` itself — which a bare
+    // `loop (10000,` head does not. Either one dropped the head, which then
+    // failed to find its closing paren and vanished silently, leaving the
+    // `);` behind as an orphan. Whole iterative loops disappeared from
+    // shipped presets that way.
+    const compiled = compileMilkdropPresetSource(
+      `
+title="Continued Loop"
+per_frame_init_1=index = 0;
+per_frame_init_2=loop (4,
+per_frame_init_3=  megabuf(index) = .1;
+per_frame_init_4=  index = index + 1;
+per_frame_init_5=);
+per_frame_1=x = 0;
+per_frame_2=loop(3,  sample = 1;
+per_frame_3=
+per_frame_4=x = x + sample;
+per_frame_5=);
+`,
+      { id: 'continued-loop' },
+    );
+
+    expect(
+      compiled.diagnostics.filter((entry) => entry.severity === 'error'),
+    ).toEqual([]);
+
+    const init = compiled.ir.programs.init.statements.filter(
+      (entry) => entry?.control,
+    );
+    expect(init).toHaveLength(1);
+    expect(init[0]?.control?.kind).toBe('loop');
+    expect(init[0]?.control?.body).toHaveLength(2);
+
+    const perFrame = compiled.ir.programs.perFrame.statements.filter(
+      (entry) => entry?.control,
+    );
+    expect(perFrame).toHaveLength(1);
+    expect(perFrame[0]?.control?.body).toHaveLength(2);
+  });
+
   test('compiles preset metadata, scalars, and program statements', () => {
     const compiled = compileMilkdropPresetSource(
       `
