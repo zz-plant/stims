@@ -35,6 +35,9 @@ const GRID_GAP_PX = 8;
  * and the thumb jumped as rows measured in. */
 const GRID_ROW_SEED_PX = 212;
 const GRID_ROW_OVERSCAN = 3;
+/** Assumed viewport height for the first render, before the scroll element
+ * has been measured. See `initialRect` below. */
+const GRID_INITIAL_VIEWPORT_PX = 600;
 /** A screenful is ~12 tiles; anything beyond that came from a scroll jump. */
 const PREVIEW_REQUEST_BATCH = 12;
 const PREVIEW_REQUEST_DEBOUNCE_MS = 300;
@@ -58,6 +61,7 @@ const GridTile = memo(function GridTile({
   onAuditionEnd,
   onOpen,
   onFocusIndex,
+  onToggleFavorite,
 }: {
   entry: PresetCatalogEntry;
   preview: MilkdropPresetRenderPreview | null;
@@ -71,49 +75,76 @@ const GridTile = memo(function GridTile({
   onAuditionEnd: (id: string) => void;
   onOpen: (id: string) => void;
   onFocusIndex: (index: number) => void;
+  onToggleFavorite: (entry: PresetCatalogEntry) => void;
 }) {
   return (
-    <button
-      type="button"
-      className="stims-preset-grid__item"
-      data-preset-id={entry.id}
-      data-preset-index={index}
-      data-active={active ? 'true' : 'false'}
-      // Listbox semantics rather than a plain button: the grid is a
-      // single-select set with roving-tabindex arrow navigation, and only
-      // `option` accepts the set-size/position pair a virtualized view needs
-      // (without it a screen reader reports only the handful of mounted
-      // tiles as the whole result set). `aria-selected` is the option-role
-      // equivalent of the list row's `aria-current`.
-      role="option"
-      aria-selected={active}
+    // List semantics, matching the list view, rather than listbox/option.
+    // A tile carries two controls — open and save — and a listbox may only
+    // contain options, so the star could never have lived inside one. The
+    // listitem wrapper is also where the set-size/position pair belongs:
+    // without it a screen reader reports only the handful of mounted tiles
+    // as the entire result set.
+    // biome-ignore lint/a11y/useSemanticElements: <li> would have to sit inside a <ul>, but virtualization puts an absolutely-positioned row wrapper between the list and its items — nesting a <div> row inside a <ul> is invalid HTML, so the roles carry the semantics instead
+    <div
+      className="stims-preset-grid__cell"
+      role="listitem"
       aria-setsize={setSize}
       aria-posinset={index + 1}
-      tabIndex={tabbable ? 0 : -1}
-      aria-label={
-        variants > 0
-          ? `${entry.title || entry.id} (+${variants} near-identical variant${variants === 1 ? '' : 's'})`
-          : entry.title || entry.id
-      }
-      onPointerEnter={() => onAudition(entry.id)}
-      onPointerLeave={() => onAuditionEnd(entry.id)}
-      onFocus={() => {
-        onFocusIndex(index);
-        onAudition(entry.id);
-      }}
-      onBlur={() => onAuditionEnd(entry.id)}
-      onClick={() => onOpen(entry.id)}
     >
-      <PresetIdentity entry={entry} preview={preview} audition={audition} />
-      {variants > 0 ? (
-        <span
-          className="stims-preset-grid__variants"
-          title={`${variants} near-identical variant${variants === 1 ? '' : 's'} (see list view)`}
-        >
-          +{variants}
-        </span>
-      ) : null}
-    </button>
+      <button
+        type="button"
+        className="stims-preset-grid__item"
+        data-preset-id={entry.id}
+        data-preset-index={index}
+        data-active={active ? 'true' : 'false'}
+        aria-current={active ? 'true' : undefined}
+        tabIndex={tabbable ? 0 : -1}
+        aria-label={
+          variants > 0
+            ? `${entry.title || entry.id} (+${variants} near-identical variant${variants === 1 ? '' : 's'})`
+            : entry.title || entry.id
+        }
+        onPointerEnter={() => onAudition(entry.id)}
+        onPointerLeave={() => onAuditionEnd(entry.id)}
+        onFocus={() => {
+          onFocusIndex(index);
+          onAudition(entry.id);
+        }}
+        onBlur={() => onAuditionEnd(entry.id)}
+        onClick={() => onOpen(entry.id)}
+      >
+        <PresetIdentity entry={entry} preview={preview} audition={audition} />
+        {variants > 0 ? (
+          <span
+            className="stims-preset-grid__variants"
+            title={`${variants} near-identical variant${variants === 1 ? '' : 's'} (see list view)`}
+          >
+            +{variants}
+          </span>
+        ) : null}
+      </button>
+      {/* A sibling of the tile, never a child: nesting an interactive
+          control inside the tile button is invalid, and every save would
+          also select the preset. Follows the roving index rather than being
+          statically tabbable — otherwise each mounted tile adds a tab stop
+          and Tab walks a wall of stars instead of leaving the grid. */}
+      <button
+        type="button"
+        className="stims-preset-grid__fav"
+        data-saved={String(Boolean(entry.isFavorite))}
+        aria-label={
+          entry.isFavorite
+            ? `Remove ${entry.title} from saved`
+            : `Save ${entry.title}`
+        }
+        title={entry.isFavorite ? 'Remove from saved' : 'Save preset'}
+        aria-pressed={Boolean(entry.isFavorite)}
+        tabIndex={tabbable ? 0 : -1}
+        onClick={() => onToggleFavorite(entry)}
+      >
+        <span className="ctl-preset__fav-icon" aria-hidden="true" />
+      </button>
+    </div>
   );
 });
 
@@ -141,6 +172,10 @@ export function PresetGrid({
   routeState,
   setRouteState,
   currentPresetId = null,
+  onToggleFavorite,
+  initialScrollTop = 0,
+  onScrollTopChange,
+  filterEpoch = 0,
 }: {
   catalogEntries: PresetCatalogEntry[];
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
@@ -151,6 +186,14 @@ export function PresetGrid({
     audioSource: AudioSource | null;
   }) => void;
   currentPresetId?: string | null;
+  onToggleFavorite: (entry: PresetCatalogEntry) => void;
+  /** Offset this view was left at, restored on mount. */
+  initialScrollTop?: number;
+  onScrollTopChange?: (top: number) => void;
+  /** Bumped by the panel when filters change, so the grid returns to the
+   * top in step with the list instead of holding an offset into a result
+   * set that no longer exists. */
+  filterEpoch?: number;
 }) {
   // The context request function changes identity on every session render;
   // keep the latest behind a ref so observers never re-subscribe over it.
@@ -220,9 +263,45 @@ export function PresetGrid({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => measuredRowHeight,
     overscan: GRID_ROW_OVERSCAN,
+    // Without a starting rect the virtualizer has nothing to measure until
+    // the scroll element exists, so the very first render emits zero tiles —
+    // an empty grid on first paint, and nothing at all under a non-DOM
+    // renderer (which is what silently emptied preset-grid.test.tsx when
+    // this view was virtualized). A nominal viewport lets it produce a
+    // plausible first window that real measurement then corrects.
+    initialRect: { width: 0, height: GRID_INITIAL_VIEWPORT_PX },
   });
 
   const virtualRows = rowVirtualizer.getVirtualItems();
+
+  // Restore where this view was left. Deferred past the commit for the same
+  // reason the keyboard jumps are: a scroll event landing mid-render
+  // collides with the virtualizer's flushSync and wedges it.
+  // Mount only: later `initialScrollTop` values are this component
+  // reporting its own scrolling back up, and re-applying them would fight
+  // the user mid-scroll.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only restore
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element || initialScrollTop <= 0) return;
+    const timer = window.setTimeout(() => {
+      element.scrollTop = initialScrollTop;
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  // Filters changed under us: the old offset points into a result set that
+  // no longer exists. Skips mount so it cannot stomp the restore above.
+  const filterEpochSettledRef = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filterEpoch is a change signal, not a value read in the body
+  useEffect(() => {
+    if (!filterEpochSettledRef.current) {
+      filterEpochSettledRef.current = true;
+      return;
+    }
+    const element = scrollRef.current;
+    if (element) element.scrollTop = 0;
+  }, [filterEpoch]);
 
   // Deliberately a passive effect keyed on columnCount, with the actual
   // read deferred to a frame — NOT a layout effect running every render.
@@ -252,6 +331,15 @@ export function PresetGrid({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [columnCount]);
+
+  // A new estimateSize does NOT retroactively resize rows the virtualizer
+  // has already measured — it caches them — so without this the layout
+  // keeps spacing rows at the seed height while they render at their real
+  // one, leaving a visible gap under every row (54px per row at 2 columns).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the estimate changes, not when the virtualizer instance churns
+  useEffect(() => {
+    rowVirtualizer.measure();
+  }, [measuredRowHeight]);
 
   // Previews for the tiles actually on screen. This replaces a per-tile
   // IntersectionObserver that re-observed every tile in the grid on each
@@ -438,11 +526,19 @@ export function PresetGrid({
   }, []);
 
   return (
-    <div ref={scrollRef} className="stims-preset-grid-scroll">
+    <div
+      ref={scrollRef}
+      className="stims-preset-grid-scroll"
+      // Straight to the caller's module-scope memory, never to state: this
+      // fires every scroll frame and a re-render per frame would undo the
+      // virtualization it is riding on.
+      onScroll={(event) => onScrollTopChange?.(event.currentTarget.scrollTop)}
+    >
+      {/* biome-ignore lint/a11y/useSemanticElements: see the cell below — a <ul> may only contain <li>, and the virtualized row wrappers in between are <div>s, so this carries role="list" rather than emitting invalid markup */}
       <div
         ref={gridRef}
         className="stims-preset-grid"
-        role="listbox"
+        role="list"
         aria-label="Preset grid"
         onKeyDown={handleKeyDown}
         style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
@@ -487,6 +583,7 @@ export function PresetGrid({
                     onAuditionEnd={handleAuditionEnd}
                     onOpen={handleOpen}
                     onFocusIndex={handleFocusIndex}
+                    onToggleFavorite={onToggleFavorite}
                   />
                 );
               })}

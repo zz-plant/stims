@@ -16,6 +16,7 @@ import {
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { AudioSource, PresetCatalogEntry } from './contracts.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
+import { useScrollerOverflow } from './hooks/use-scroller-overflow.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetGrid } from './PresetGrid.tsx';
 import { PresetLineageSection } from './PresetLineageSection.tsx';
@@ -53,6 +54,18 @@ type SortMode = BrowseSortMode;
 const PRESET_ROW_HEIGHT = 54;
 const PRESET_ROW_GAP = 2;
 const PRESET_ROW_OVERSCAN = 8;
+
+/**
+ * Where each view was left, so toggling grid/list or reopening the panel
+ * does not dump you back at the top of ~2,700 results.
+ *
+ * Module scope rather than a ref: BrowseSheetPanel unmounts when the panel
+ * closes, so anything held in component state dies with it. Per view because
+ * the two have completely different offsets for the same position in the
+ * result set. Deliberately NOT persisted across reloads — a remembered
+ * offset into a catalog that may have changed is worse than starting fresh.
+ */
+const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
 function readSortMode(): SortMode {
   try {
@@ -332,6 +345,11 @@ export function BrowseSheetPanel({
     orientation: 'horizontal',
     deps: [featuredTags.length],
   });
+  // Both rails hide their scrollbars, so the edge fade is the only signal
+  // that they scroll at all — the chips hide roughly three screens of
+  // filters at phone widths.
+  useScrollerOverflow(collectionChipsRef, [featuredTags.length, offline]);
+  useScrollerOverflow(recentRailRef, [sessionHistory.length]);
 
   // This-session rail: distinct from the "Recently opened" sort mode, which
   // reads persisted lastOpenedAt across sessions. sessionHistory is in-memory
@@ -360,12 +378,43 @@ export function BrowseSheetPanel({
   // Jump the virtualized list back to the top when filters change — mirrors
   // the old pagination reset (a fresh filter previously meant "start from
   // batch one again"); scrollToIndex needs a guard for an empty result set.
+  //
+  // The mount run is skipped so it cannot stomp the remembered offset being
+  // restored below: this effect's deps are all filter values, which "change"
+  // once on mount by definition. `filterEpoch` lets the grid — which owns
+  // its own scroll element — reset in step without having to work out for
+  // itself whether a new entry list came from a filter or a re-sort.
+  const filterSettledRef = useRef(false);
+  const [filterEpoch, setFilterEpoch] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll-to-top on filter changes specifically, not sorted identity
   useEffect(() => {
+    if (!filterSettledRef.current) {
+      filterSettledRef.current = true;
+      return;
+    }
+    // A remembered offset into the previous result set means nothing once
+    // the set changes.
+    browseScrollMemory.list = 0;
+    browseScrollMemory.grid = 0;
+    setFilterEpoch((epoch) => epoch + 1);
     if (sorted.length > 0) {
       rowVirtualizer.scrollToIndex(0, { align: 'start' });
     }
   }, [searchQuery, routeState.collectionTag, authorFilter]);
+
+  // Restore the list's remembered offset on mount (panel reopen, or a
+  // toggle back from grid). Deferred past the commit for the same reason
+  // the grid defers its jumps: a scroll event landing while React renders
+  // collides with the virtualizer's flushSync and leaves it wedged.
+  useEffect(() => {
+    const element = presetScrollRef.current;
+    const saved = browseScrollMemory.list;
+    if (!element || saved <= 0) return;
+    const timer = window.setTimeout(() => {
+      element.scrollTop = saved;
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <div
@@ -619,10 +668,21 @@ export function BrowseSheetPanel({
             <option value="random">Random</option>
           </select>
 
+          {/* The unit is a separate span so it can drop on narrow panels:
+              this row is exactly full at ~348px and the word "presets" was
+              taking 44px the two selects needed, leaving them to render as
+              "All autho" / "Recomm". The number is the information. */}
           <p className="ctl-readout ctl-browse-count" aria-live="polite">
-            {catalogReady
-              ? `${sorted.length.toLocaleString()} preset${sorted.length === 1 ? '' : 's'}`
-              : 'loading…'}
+            {catalogReady ? (
+              <>
+                {sorted.length.toLocaleString()}
+                <span className="ctl-browse-count__unit">
+                  {` preset${sorted.length === 1 ? '' : 's'}`}
+                </span>
+              </>
+            ) : (
+              'loading…'
+            )}
           </p>
         </div>
 
@@ -768,6 +828,14 @@ export function BrowseSheetPanel({
             routeState={ui.routeState}
             setRouteState={setPresetRouteState}
             currentPresetId={currentPresetId}
+            onToggleFavorite={(entry) => {
+              void engine.toggleFavoritePreset(entry.id, !entry.isFavorite);
+            }}
+            initialScrollTop={browseScrollMemory.grid}
+            onScrollTopChange={(top) => {
+              browseScrollMemory.grid = top;
+            }}
+            filterEpoch={filterEpoch}
           />
         ) : null}
 
@@ -777,7 +845,16 @@ export function BrowseSheetPanel({
           // regardless of how many presets match the current filter — see
           // handlePresetListKeyDown above for how arrow/Home/End nav still
           // reaches rows that aren't currently rendered.
-          <div ref={presetScrollRef} className="ctl-presets-scroll">
+          <div
+            ref={presetScrollRef}
+            className="ctl-presets-scroll"
+            // Written straight to module scope, never to state: this fires
+            // on every scroll frame and a re-render per frame would undo the
+            // virtualization it is riding on.
+            onScroll={(event) => {
+              browseScrollMemory.list = event.currentTarget.scrollTop;
+            }}
+          >
             {/* The lineage section scrolls WITH the list (matching its old
                 position in normal document flow before virtualization)
                 rather than sitting fixed above it. Its height varies with

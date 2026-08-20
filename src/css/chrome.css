@@ -548,6 +548,9 @@ html.light .stims-shell {
     scrollbar-width: none;
     scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
+    /* Fallback for before useScrollerOverflow has measured (and if it never
+       runs): the old symmetric fade. The data-overflow rules below replace
+       it with a fade on only the side that has something hidden. */
     -webkit-mask-image: linear-gradient(
       90deg,
       transparent 0,
@@ -566,6 +569,51 @@ html.light .stims-shell {
 
   .ctl-scroller::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Fade only where content actually continues. A constant both-edge fade
+     says nothing — it looks identical whether one chip is hidden or nine.
+     `data-overflow` comes from useScrollerOverflow. The gradient is wider
+     than the old 16px so it reads as "more this way" rather than as a
+     rounded edge. */
+  .ctl-scroller[data-overflow="none"] {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .ctl-scroller[data-overflow="end"] {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+  }
+
+  .ctl-scroller[data-overflow="start"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+    mask-image: linear-gradient(90deg, transparent 0, #000 28px);
+  }
+
+  .ctl-scroller[data-overflow="both"] {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 28px,
+      #000 calc(100% - 28px),
+      transparent 100%
+    );
   }
 
   .ctl-chip {
@@ -638,6 +686,9 @@ html.light .stims-shell {
   }
 
   [data-fill="true"] .stims-shell__sheet-panel--browse .ctl-browse-results {
+    /* Containing block for the focus-revealed keyboard hint, which overlays
+       this region's bottom edge rather than taking a row in flow. */
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -813,6 +864,27 @@ html.light .stims-shell {
   }
 
   .ctl-preset__fav[data-saved="true"] .ctl-preset__fav-icon {
+    mask: var(--ctl-heart-filled) center / contain no-repeat;
+    -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
+  }
+
+  /* The grid's star reuses the list's icon span, so it needs the same ink
+     and filled-state mask. Its box/placement lives in app-shell.css with
+     the rest of the tile, since it overlays the artwork there rather than
+     sitting in a row's trailing slot. */
+  .stims-preset-grid__fav {
+    color: var(--ctl-ink-2);
+  }
+
+  .stims-preset-grid__fav:hover {
+    color: var(--ctl-saved);
+  }
+
+  .stims-preset-grid__fav[data-saved="true"] {
+    color: var(--ctl-saved);
+  }
+
+  .stims-preset-grid__fav[data-saved="true"] .ctl-preset__fav-icon {
     mask: var(--ctl-heart-filled) center / contain no-repeat;
     -webkit-mask: var(--ctl-heart-filled) center / contain no-repeat;
   }
@@ -1053,6 +1125,18 @@ html.light .stims-shell {
     white-space: nowrap;
   }
 
+  /* Narrow panels: the row is exactly full at ~348px, so the unit word goes
+     and the selects get the width back. */
+  @media (max-width: 480px) {
+    .ctl-browse-count__unit {
+      display: none;
+    }
+
+    .ctl-browse-refine {
+      gap: 6px;
+    }
+  }
+
   /* Segmented view switch. Sits in the search row rather than owning a row
      of its own, and shows both options so the current one is legible
      without having to reason about what the label means. */
@@ -1095,20 +1179,31 @@ html.light .stims-shell {
     outline-offset: 1px;
   }
 
-  /* A hint only the keyboard user who already found the feature would ever
-     see isn't a discovery mechanism, so this stays visible by default —
-     same treatment as the "Long-press to queue" hint on shelf cards. It
-     just brightens slightly once the list actually has focus, closing the
-     loop for whoever's using it right now. */
+  /* Shown when focus is actually in the results, not permanently.
+     Advertising arrow keys costs a full row of panel height to teach a
+     one-time lesson to the one visitor in ten who reaches for the keyboard.
+     Overlaid on the bottom edge of the results rather than stacked above
+     them, because appearing in flow would shove the list downward at the
+     exact moment someone starts arrowing through it. */
   .ctl-keyboard-hint {
-    margin: 0 0 6px;
-    color: var(--ctl-ink-3);
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    margin: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--ctl-line);
+    border-radius: var(--ctl-radius);
+    background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+    color: var(--ctl-ink-2);
     font-size: 0.75rem;
-    transition: color var(--ctl-ease);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--ctl-ease);
   }
 
-  .ctl-browse-results:has(.ctl-presets:focus-within) .ctl-keyboard-hint {
-    color: var(--ctl-ink-2);
+  .ctl-browse-results:focus-within .ctl-keyboard-hint {
+    opacity: 1;
   }
 
   .ctl-keyboard-hint kbd {
@@ -1143,9 +1238,26 @@ html.light .stims-shell {
     border-bottom: 1px solid var(--ctl-line);
   }
 
+  /* Wraps rather than crushing the field. The view toggle earns its place
+     here by saving a whole row, but on a phone it plus the two icon buttons
+     left the input at ~130px with a truncated placeholder. flex-wrap costs a
+     second line only at the widths where everything genuinely cannot fit —
+     no breakpoint to keep in sync with the control count. */
   .ctl-browse-searchrow {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .ctl-browse-searchrow .ctl-field {
+    flex: 1 1 170px;
+    min-width: 0;
+  }
+
+  /* Pushed to the row's end so that when the buttons do wrap they sit under
+     the field's right edge instead of drifting to the left margin. */
+  .ctl-browse-searchrow .ctl-viewtoggle {
+    margin-left: auto;
   }
 
   .ctl-browse-applied {

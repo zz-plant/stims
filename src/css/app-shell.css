@@ -3802,6 +3802,63 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   width: 100%;
 }
 
+/* Positioning context for the star, which overlays the tile rather than
+   taking caption space. The tile fills the cell. */
+.stims-preset-grid__cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.stims-preset-grid__cell > .stims-preset-grid__item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stims-preset-grid__fav {
+  position: absolute;
+  top: var(--space-xs, 4px);
+  left: var(--space-xs, 4px);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--stims-line);
+  border-radius: 999px;
+  /* Opaque-ish disc: the art underneath is arbitrary and often bright, so a
+     transparent star disappears against roughly half the catalog. */
+  background: color-mix(in srgb, var(--stims-panel-strong) 78%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* Revealed on hover/focus of the tile, but a saved preset always shows its
+   star — otherwise there is no way to see what you have saved while
+   scanning, which is most of the point of saving. */
+.stims-preset-grid__cell:hover .stims-preset-grid__fav,
+.stims-preset-grid__cell:focus-within .stims-preset-grid__fav,
+.stims-preset-grid__fav[data-saved="true"],
+.stims-preset-grid__fav:focus-visible {
+  opacity: 1;
+}
+
+.stims-preset-grid__fav:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+@media (any-hover: none) and (any-pointer: coarse) {
+  /* No hover to reveal it on touch. */
+  .stims-preset-grid__fav {
+    opacity: 1;
+  }
+}
+
 .stims-preset-grid__item {
   position: relative;
   display: flex;
@@ -3859,15 +3916,27 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   padding: var(--space-xs, 4px) var(--space-sm, 8px);
 }
 
-/* Both shrink and both ellipsize, so a long title cannot push the credit out
-   of the tile entirely and vice versa. */
 .stims-preset-grid__item .stims-preset-identity__title,
 .stims-preset-grid__item .stims-preset-identity__subtitle {
-  flex: 0 1 auto;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The title absorbs the truncation and the credit keeps its width. Letting
+   both shrink proportionally reduced a long-titled tile to
+   "And - Idiot24 - ... · R…", where neither half identified anything. A
+   title's opening words are what distinguishes it, so it is the half that
+   can afford to lose its tail; the credit is short and either fits or does
+   not, capped here so a long chain of authors cannot take the whole line. */
+.stims-preset-grid__item .stims-preset-identity__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stims-preset-grid__item .stims-preset-identity__subtitle {
+  flex: 0 0 auto;
+  max-width: 45%;
 }
 
 .stims-preset-grid__item .stims-preset-identity__title {
@@ -3927,7 +3996,10 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   padding: 1px 7px 2px;
   border-radius: var(--radius-pill, 999px);
   border: 1px solid var(--stims-line);
-  color: var(--stims-ink-2);
+  /* --stims-ink-2 is a chrome.css token (--ctl-ink-2) and undefined in this
+     sheet, so this declaration was being dropped entirely and the chip
+     inherited its colour. --stims-muted is what secondary text uses here. */
+  color: var(--stims-muted);
   white-space: nowrap;
 }
 
