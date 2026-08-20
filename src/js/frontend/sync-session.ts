@@ -228,21 +228,42 @@ export function setSyncUrlParam(room: string | null): void {
  * can lose transient user activation in stricter browsers, so a copy failure
  * still reports a live session — the ?sync link sits in the address bar.
  */
+/**
+ * The room this tab hosts, creating one if it does not have it yet. Shared by
+ * the watch-party action and the external-display path, which both need "a
+ * URL another browser can follow this one from" and must not each invent
+ * their own room.
+ *
+ * `alreadyHosting` lets callers word their own message differently for a
+ * fresh session versus a reused one.
+ */
+export async function ensureHostRoom(): Promise<{
+  room: string;
+  url: string;
+  alreadyHosting: boolean;
+} | null> {
+  const current = state.role === 'host' ? state.room : null;
+  if (current) {
+    return { room: current, url: syncShareUrl(current), alreadyHosting: true };
+  }
+  try {
+    const room = await startHostSession();
+    setSyncUrlParam(room);
+    return { room, url: syncShareUrl(room), alreadyHosting: false };
+  } catch {
+    return null;
+  }
+}
+
 export async function startOrCopyWatchParty(
   announce: (message: string) => void,
 ): Promise<void> {
-  const current = state.role === 'host' ? state.room : null;
-  const wasHosting = current !== null;
-  let room = current;
-  if (!room) {
-    try {
-      room = await startHostSession();
-      setSyncUrlParam(room);
-    } catch {
-      announce('Could not start a watch party.');
-      return;
-    }
+  const hosted = await ensureHostRoom();
+  if (!hosted) {
+    announce('Could not start a watch party.');
+    return;
   }
+  const { room, alreadyHosting: wasHosting } = hosted;
   try {
     await navigator.clipboard.writeText(syncShareUrl(room));
     announce(

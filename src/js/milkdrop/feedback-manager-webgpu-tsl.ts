@@ -1,7 +1,6 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {
-  LinearSRGBColorSpace,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -12,6 +11,7 @@ import {
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
+import { resolveLinearOutputColorSpace } from '../core/wide-gamut.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -1318,6 +1318,32 @@ export function compileShaderExpressionNode(
         return shaderMat2(
           coerceShaderValue(args[0], 'vec2'),
           coerceShaderValue(args[1], 'vec2'),
+        );
+      }
+      // MilkDrop 2 preamble helpers — see the matching GLSL emitter case in
+      // compiler/shader-analysis-glsl.ts. Bodies call these without defining
+      // them, so both backends have to supply them or the preset renders
+      // black.
+      if ((name === 'getpixel' || name === 'getblur0') && args.length >= 1) {
+        const sampleUv = coerceShaderValue(args[0], 'vec2').node;
+        const mainSample = env.sampleMainNode
+          ? env.sampleMainNode(sampleUv)
+          : env.uniforms.currentTex.sample(
+              env.sampleUvNode(sampleUv, env.uniforms.textureWrap),
+            ).rgb;
+        return makeShaderValue('vec3', mainSample);
+      }
+      const blurHelperMatch = /^getblur([123])$/.exec(name);
+      if (blurHelperMatch && args.length >= 1) {
+        const level = blurHelperMatch[1] as '1' | '2' | '3';
+        const sampleUv = coerceShaderValue(args[0], 'vec2').node;
+        const blurTexture = env.uniforms[`blur${level}Tex`];
+        return makeShaderValue(
+          'vec3',
+          blurTexture
+            .sample(env.sampleUvNode(sampleUv, env.uniforms.textureWrap))
+            .rgb.mul(env.uniforms[`scale${level}`])
+            .add(env.uniforms[`bias${level}`]),
         );
       }
       if (
@@ -3165,12 +3191,16 @@ class WebGPUMilkdropFeedbackManager
     if (savedToneMapping !== 0) {
       toneMappedRenderer.toneMapping = 0;
     }
+    // The linear counterpart of whatever gamut is configured: pinning this to
+    // linear-sRGB unconditionally would quietly undo wide-gamut output, since
+    // this suspension is exactly where the present pass's encode is chosen.
+    const linearOutputColorSpace = resolveLinearOutputColorSpace();
     const savedOutputColorSpace = toneMappedRenderer.outputColorSpace;
     if (
       savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== LinearSRGBColorSpace
+      savedOutputColorSpace !== linearOutputColorSpace
     ) {
-      toneMappedRenderer.outputColorSpace = LinearSRGBColorSpace;
+      toneMappedRenderer.outputColorSpace = linearOutputColorSpace;
     }
     renderer.setRenderTarget(null);
     renderer.render(this.presentScene, this.camera);
@@ -3179,7 +3209,7 @@ class WebGPUMilkdropFeedbackManager
     }
     if (
       savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== LinearSRGBColorSpace
+      savedOutputColorSpace !== linearOutputColorSpace
     ) {
       toneMappedRenderer.outputColorSpace = savedOutputColorSpace;
     }

@@ -43,6 +43,9 @@ import {
   isShaderSolarizeSampleExpression,
   isShaderUvIdentifier,
   MILKDROP_RAND_FRAME_GLSL,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
   normalizeShaderSamplerName,
   normalizeShaderSyntax,
   normalizeShaderTextureBlendMode,
@@ -101,22 +104,19 @@ export function normalizeHlslToGlsl(shaderText: string): string {
     )
     .replace(
       /\btexsize_(?:fw_|pw_)?noise(?:_lq|_mq|_hq)?\b|\btexsize_(?:fw_|pw_)?noisevol(?:_lq|_mq|_hq)?\b/giu,
-      'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
+      MILKDROP_TEXSIZE_NOISE_GLSL,
     )
     .replace(
       /\btexsize_main\b|\btexsize_fw_main\b|\btexsize_pw_main\b|\btexsize_pc_main\b|\btexsize_fc_main\b|\btexsize_blur1\b|\btexsize_blur2\b|\btexsize_blur3\b/giu,
-      'vec4(1.0 / texelSize, texelSize)',
+      MILKDROP_TEXSIZE_MAIN_GLSL,
     )
     // Custom-texture sizes (texsize_mcode1, texsize_cells, …) have no
     // uniform behind them — MilkDrop injects them at runtime, this pipeline
     // does not — so any identifier left after the specific rewrites above
     // would reach the GLSL undeclared and fail to compile. Every bundled
     // substitute texture is 640x640 (xy = size, zw = 1/size).
-    .replace(
-      /\btexsize_[A-Za-z0-9_]+\b/giu,
-      'vec4(640.0, 640.0, 0.0015625, 0.0015625)',
-    )
-    .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+    .replace(/\btexsize_[A-Za-z0-9_]+\b/giu, MILKDROP_TEXSIZE_SUBSTITUTE_GLSL)
+    .replace(/\btexsize\b/giu, MILKDROP_TEXSIZE_MAIN_GLSL)
     .replace(/\buv_orig\b/giu, 'vUv')
     .replace(/\bhue_shader\b/giu, 'vec3(colorScale * tint)')
     .replace(/\bhue_secondary\b/giu, 'vec3(tint)')

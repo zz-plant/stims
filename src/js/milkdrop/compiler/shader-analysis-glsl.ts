@@ -10,6 +10,9 @@ import {
   isAuxShaderSamplerName,
   MILKDROP_RAND_FRAME_GLSL,
   MILKDROP_SIGNAL_NAME_ALIASES,
+  MILKDROP_TEXSIZE_MAIN_GLSL,
+  MILKDROP_TEXSIZE_NOISE_GLSL,
+  MILKDROP_TEXSIZE_SUBSTITUTE_GLSL,
   normalizeShaderSamplerName,
 } from './shader-analysis-helpers';
 
@@ -149,7 +152,27 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         tint_b: 'tint.b',
         uv: 'vUv',
       };
-      return uniformMap[lower] ?? name;
+      const mapped = uniformMap[lower];
+      if (mapped !== undefined) return mapped;
+      // texsize* are vec4s (xy = size, zw = 1/size). The raw-GLSL path
+      // rewrites them in shader-analysis.ts, but statement-emitted programs
+      // never went through that chain, so they reached the shader as bare
+      // identifiers — which the undeclared-identifier pass then declared as
+      // `uniform float`, turning every `texsize.xy` into a scalar swizzle and
+      // failing the whole program to compile. Values mirror that chain.
+      if (lower === 'texsize') return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (
+        /^texsize_(?:fw_|pw_)?(?:noise|noisevol)(?:_lq|_mq|_hq)?$/.test(lower)
+      )
+        return MILKDROP_TEXSIZE_NOISE_GLSL;
+      if (
+        /^texsize_(?:main|fw_main|pw_main|pc_main|fc_main|blur[123])$/.test(
+          lower,
+        )
+      )
+        return MILKDROP_TEXSIZE_MAIN_GLSL;
+      if (lower.startsWith('texsize_')) return MILKDROP_TEXSIZE_SUBSTITUTE_GLSL;
+      return name;
     },
 
     emitLiteral(value: number): string {
@@ -207,6 +230,32 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       ) {
         return emitLodTextureSample(lower, args);
       }
+      // MilkDrop 2's shader preamble ships these as helper functions, so
+      // preset bodies call them without ever defining them. They were missing
+      // here, which meant every preset using one failed to compile and
+      // rendered black — 511 presets, the entire projectm-cream-of-the-crop
+      // library (the main butterchurn catalog happens to use none of them,
+      // which is why the gap stayed invisible).
+      //
+      //   GetPixel(uv) = tex2D(sampler_main, uv).xyz
+      //   GetBlurN(uv) = tex2D(sampler_blurN, uv).xyz * scaleN + biasN
+      //
+      // GetBlur0 is MilkDrop's alias for the unblurred main sample.
+      if (lower === 'getpixel' || lower === 'getblur0') {
+        const coord = args[0];
+        return coord
+          ? `texture2D(currentTex, sampleUv(${coord}, textureWrap)).xyz`
+          : null;
+      }
+      const blurMatch = /^getblur([123])$/.exec(lower);
+      if (blurMatch) {
+        const level = blurMatch[1];
+        const coord = args[0];
+        return coord
+          ? `(texture2D(blur${level}Tex, sampleUv(${coord}, textureWrap)).xyz * scale${level} + bias${level})`
+          : null;
+      }
+
       if (lower === 'videotex2d') {
         // video texture sampling - maps to videoTex
         const coord = args[1] ?? args[0];
@@ -698,7 +747,20 @@ export function generateGlslFromShaderStatements(
     const operator = statement.operator;
 
     if (operator === '=') {
-      lines.push(`  ${target} = ${expressionGlsl};`);
+      // HLSL promotes a scalar to every component on assignment, so
+      // `ret = GetPixel(uv).x * k;` is legal there and means grey. GLSL has no
+      // such promotion and rejects the assignment outright, taking the whole
+      // program down with it. `ret` is declared vec3 in both stage templates,
+      // and vec3(...) is a valid copy constructor for a vec3 RHS as well as a
+      // broadcast for a scalar one, so wrapping restores HLSL's meaning for
+      // both. Compound operators need no help: GLSL already defines
+      // vector-op-scalar component-wise.
+      const needsBroadcast = target === 'ret';
+      lines.push(
+        needsBroadcast
+          ? `  ${target} = vec3(${expressionGlsl});`
+          : `  ${target} = ${expressionGlsl};`,
+      );
     } else if (operator === '+=') {
       lines.push(`  ${target} += ${expressionGlsl};`);
     } else if (operator === '-=') {
