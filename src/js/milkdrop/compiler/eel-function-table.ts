@@ -303,6 +303,21 @@ export const EEL_FUNCTIONS: Record<string, EelFunctionSpec> = {
     wgslVm: (a) => `milkdropSqrt(${a[0]})`,
     wgslField: (a) => `milkdropSqrt(${a[0]})`,
   },
+  // ns-eel's reciprocal square root. MilkDrop's implementation is the
+  // Quake-style fast approximation; we use the exact reciprocal, which is
+  // strictly closer to the ideal and keeps every tier bit-comparable. A
+  // non-positive input gives 1/0 = Infinity, which the usual finite clamp
+  // turns into 0.
+  invsqrt: {
+    defaults: [0],
+    interp: (a) => finiteOrZero(1 / Math.sqrt(Math.max(0, a[0]))),
+    jit: (a, ctx) => {
+      const vTemp = ctx.temp();
+      return `(${vTemp} = 1 / Math.sqrt(Math.max(0, ${a[0]})), Number.isFinite(${vTemp}) ? ${vTemp} : 0)`;
+    },
+    wgslVm: (a) => `milkdropInvSqrt(${a[0]})`,
+    wgslField: (a) => `milkdropInvSqrt(${a[0]})`,
+  },
   pow: {
     defaults: [0, 0],
     interp: (a) => finiteOrZero(a[0] ** a[1]),

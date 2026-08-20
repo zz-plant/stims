@@ -118,6 +118,39 @@ describe('EEL CSP interpreter-only fallback', () => {
     expect(fallback.env.x).toBe(jit.env.x);
   });
 
+  test('runs unknown-function arguments for their side effects', () => {
+    // Regression: the JIT's unknown-name fallback emitted a bare `(0)` and
+    // threw the compiled argument expressions away, so an assignment nested
+    // in an argument never ran. The interpreter evaluates every argument
+    // before dispatch, so the two tiers disagreed on which variables even
+    // existed.
+    const program = ['a = nosuchfn((rot = (q1 = 1e38)))'];
+    const jit = runTier(program, true);
+    const fallback = runTier(program, false);
+
+    expect(jit.registers.q1).toBe(1e38);
+    expect(jit.state.rot).toBe(1e38);
+    expect(jit.env.a).toBe(0);
+    expect(jit.registers.q1).toBe(fallback.registers.q1 as number);
+    expect(jit.state.rot).toBe(fallback.state.rot as number);
+    expect(jit.env.a).toBe(fallback.env.a as number);
+  });
+
+  test('implements invsqrt identically on both tiers', () => {
+    // invsqrt is a real ns-eel builtin; it was missing from the function
+    // table entirely, so it took the unknown-name path on every tier.
+    const program = ['a = invsqrt(16)', 'b = invsqrt(0)', 'c = invsqrt(-4)'];
+    const jit = runTier(program, true);
+    const fallback = runTier(program, false);
+
+    expect(jit.env.a).toBeCloseTo(0.25, 12);
+    expect(jit.env.b).toBe(0); // 1/0 -> Infinity -> finite clamp
+    expect(jit.env.c).toBe(0);
+    expect(fallback.env.a).toBe(jit.env.a as number);
+    expect(fallback.env.b).toBe(jit.env.b as number);
+    expect(fallback.env.c).toBe(jit.env.c as number);
+  });
+
   test('agrees with the JIT on 300 seeded random programs', () => {
     const VARS = ['a', 'b', 'c', 'd', 'x', 'y', 'zoom', 'rot'];
     const failures: string[] = [];

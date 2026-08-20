@@ -170,10 +170,18 @@ function compileNode(
         return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
       }
       const args = node.args.map((arg) => compileNode(arg, context));
-      return (
-        emitEelCallJs(name, args, { temp: () => nextTemporary(context) }) ??
-        '(0)'
-      );
+      const emitted = emitEelCallJs(name, args, {
+        temp: () => nextTemporary(context),
+      });
+      if (emitted !== null) {
+        return emitted;
+      }
+      // Unknown function: the value is 0, but the arguments still run. The
+      // interpreter evaluates every argument before dispatch, so an
+      // assignment nested in one (`a = nosuchfn(q1 = 1)`) writes q1 there;
+      // dropping the compiled args here made the tiers disagree on which
+      // variables exist. Keep them in a comma expression.
+      return args.length > 0 ? `(${args.join(', ')}, 0)` : '(0)';
     }
   }
 }
