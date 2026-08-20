@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
+import {
+  NO_RESERVED_KEYS,
+  setReservedShellKeys,
+} from '../../core/unified-input.ts';
 import type { PanelState, PresetCatalogEntry } from '../contracts';
 import {
   eventMatchesShortcut,
+  getShortcutKeys,
+  parseShortcut,
   readShortcutOverrides,
   SHORTCUT_REGISTRY,
 } from '../shortcut-registry.ts';
@@ -62,6 +68,27 @@ export function useKeyboardShortcuts({
   setStatusMessageRef.current = setStatusMessage;
   const runPaletteActionRef = useRef(runPaletteAction);
   runPaletteActionRef.current = runPaletteAction;
+
+  // Tell the focused-canvas input surface which keys belong to the shell, so
+  // it stops swallowing them. Resolved on each lookup rather than captured, so
+  // a rebind in the shortcuts dialog takes effect without a reload.
+  useEffect(() => {
+    setReservedShellKeys(() => {
+      const overrides = readShortcutOverrides();
+      const reserved = new Set<string>();
+      for (const entry of SHORTCUT_REGISTRY) {
+        for (const spec of getShortcutKeys(entry.id, overrides)) {
+          const parsed = parseShortcut(spec);
+          // Chords carrying Cmd/Ctrl/Alt never collide with the canvas's bare
+          // keys, so leave those with the canvas.
+          if (parsed.mod || parsed.alt || !parsed.key) continue;
+          reserved.add(parsed.key === 'space' ? ' ' : parsed.key);
+        }
+      }
+      return reserved;
+    });
+    return () => setReservedShellKeys(() => NO_RESERVED_KEYS);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

@@ -8,9 +8,14 @@
  * declares a modifier — impossible to ever trigger.
  */
 
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { isCanvasConsumedKey } from '../../src/js/core/unified-input.ts';
+import {
+  isCanvasConsumedKey,
+  isReservedByShell,
+  NO_RESERVED_KEYS,
+  setReservedShellKeys,
+} from '../../src/js/core/unified-input.ts';
 import {
   ariaKeyShortcutsFor,
   eventMatchesShortcut,
@@ -256,5 +261,58 @@ describe('bindings land on keys that actually reach the shell', () => {
     expect(overlapping.sort()).toEqual(
       ['audio', 'editor', 'favorite', 'previous', 'settings', 'shuffle'].sort(),
     );
+  });
+});
+
+describe('the shell reserves its keys from the focused canvas', () => {
+  // The canvas consumes its pointer/gesture/performance keys with
+  // stopPropagation(), and focuses itself on pointerdown — so before this,
+  // one click on the stage killed every shell binding that shared a letter.
+  const reservedFromRegistry = () => {
+    const reserved = new Set<string>();
+    for (const entry of SHORTCUT_REGISTRY) {
+      for (const spec of entry.defaultKeys) {
+        if (spec === '1–9') continue;
+        const parsed = parseShortcut(spec);
+        if (parsed.mod || parsed.alt || !parsed.key) continue;
+        reserved.add(parsed.key === 'space' ? ' ' : parsed.key);
+      }
+    }
+    return reserved;
+  };
+
+  afterEach(() => setReservedShellKeys(() => NO_RESERVED_KEYS));
+
+  test('every key the canvas used to swallow is now reserved', () => {
+    setReservedShellKeys(reservedFromRegistry);
+    // The six that were silently dead after a click on the stage.
+    for (const key of ['s', 'e', 'a', ' ', 'arrowleft', 'arrowright']) {
+      expect(isReservedByShell(key)).toBe(true);
+    }
+  });
+
+  test('canvas-only performance keys stay with the canvas', () => {
+    setReservedShellKeys(reservedFromRegistry);
+    // No shell binding, so the canvas keeps feeding these to presets as
+    // action_mode_next / action_remix / preset stepping.
+    for (const key of ['x', 'z', ']', '[', 'r']) {
+      expect(isReservedByShell(key)).toBe(false);
+    }
+  });
+
+  test('Space is reserved under either spelling', () => {
+    setReservedShellKeys(reservedFromRegistry);
+    expect(isReservedByShell('Space')).toBe(true);
+    expect(isReservedByShell(' ')).toBe(true);
+  });
+
+  test('a modifier chord is left alone — it cannot collide', () => {
+    setReservedShellKeys(reservedFromRegistry);
+    expect(isReservedByShell('k')).toBe(false);
+  });
+
+  test('nothing is reserved until the shell declares it', () => {
+    setReservedShellKeys(() => NO_RESERVED_KEYS);
+    expect(isReservedByShell('s')).toBe(false);
   });
 });
