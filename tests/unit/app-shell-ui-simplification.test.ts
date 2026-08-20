@@ -105,7 +105,10 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__stage-frame"');
     expect(stageControlsSource).toContain('className={styles.pill}');
-    expect(stageControlsSource).toContain('title="Surprise me"');
+    // The copy is unchanged; the tooltip now appends the current keyboard
+    // shortcut through withHint(), so the literal is no longer adjacent to
+    // the title= attribute.
+    expect(stageControlsSource).toContain("withHint('Surprise me'");
     expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
     expect(homeSource).toContain('Browse presets');
     expect(audioSourcePanelSource).toContain('YouTube playback');

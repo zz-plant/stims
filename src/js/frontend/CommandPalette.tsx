@@ -6,9 +6,8 @@
 //
 //   const [paletteOpen, setPaletteOpen] = useState(false);
 //   useCommandPaletteHotkey(() => setPaletteOpen(true));   // binds Cmd/Ctrl+K
-//   // ...or instead register 'k' in shortcut-registry.ts and open it from
-//   // useKeyboardShortcuts like the other panels, if a rebindable shortcut
-//   // is wanted — the hook is just the zero-config path.
+//   // The chord itself lives in shortcut-registry.ts under 'palette', so it
+//   // is listed in the shortcuts dialog and can be rebound there.
 //
 //   const paletteActions: CommandAction[] = useMemo(() => [
 //     { id: 'open-browse', label: 'Browse presets', shortcutHint: 'B',
@@ -39,6 +38,12 @@ import {
   type PaletteResult,
 } from './command-palette-registry.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
+import {
+  eventMatchesShortcut,
+  readShortcutOverrides,
+  type ShortcutOverrides,
+  shortcutHintFor,
+} from './shortcut-registry.ts';
 
 export type CommandPaletteProps = {
   open: boolean;
@@ -104,6 +109,13 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  // Re-read on each open so a rebind made in the shortcuts dialog shows up
+  // the next time the palette is used, without this component subscribing to
+  // storage.
+  const [overrides, setOverrides] = useState<ShortcutOverrides>({});
+  useEffect(() => {
+    if (open) setOverrides(readShortcutOverrides());
+  }, [open]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -306,11 +318,19 @@ export function CommandPalette({
                         <span className={styles.optionLabel}>
                           {result.action.label}
                         </span>
-                        {result.action.shortcutHint ? (
-                          <kbd className={styles.optionHint}>
-                            {result.action.shortcutHint}
-                          </kbd>
-                        ) : null}
+                        {(() => {
+                          // Derived, not read off the action: an explicit
+                          // shortcutHint stays authoritative for actions with
+                          // no registry binding, but anything bound resolves
+                          // through the registry so a rebind is reflected here
+                          // instead of advertising the old key.
+                          const hint =
+                            shortcutHintFor(result.action.id, overrides) ??
+                            result.action.shortcutHint;
+                          return hint ? (
+                            <kbd className={styles.optionHint}>{hint}</kbd>
+                          ) : null;
+                        })()}
                       </>
                     ) : (
                       <>
@@ -336,9 +356,9 @@ export function CommandPalette({
 }
 
 /**
- * Optional zero-config opener: binds Cmd+K (macOS) / Ctrl+K to `onOpen` on
- * document. App can use this, or skip it and register the key through
- * shortcut-registry.ts if it should be user-rebindable.
+ * Opens the palette on the chord registered as 'palette' in
+ * shortcut-registry.ts — Cmd+K (macOS) / Ctrl+K by default, and rebindable
+ * from the shortcuts dialog like any other binding.
  */
 export function useCommandPaletteHotkey(onOpen: () => void) {
   const onOpenRef = useRef(onOpen);
@@ -346,12 +366,9 @@ export function useCommandPaletteHotkey(onOpen: () => void) {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        !event.altKey &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === 'k'
-      ) {
+      // Matched through the registry so the chord has one definition, and so
+      // the help dialog lists it rather than it being folded into this file.
+      if (eventMatchesShortcut(event, 'palette', readShortcutOverrides())) {
         event.preventDefault();
         onOpenRef.current();
       }

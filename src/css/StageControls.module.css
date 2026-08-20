@@ -331,6 +331,24 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.menuHint {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 1px 5px;
+  border: 1px solid var(--ctl-line);
+  border-radius: var(--radius-sm, 0.125rem);
+  color: var(--ctl-ink-3);
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.4;
+}
+
+/* The open-panel check also claims margin-left:auto; without this the two
+   fight over the same slack and the hint lands hard against the glyph. */
+.menuItem[data-active="true"] .menuHint {
+  margin-right: 6px;
+}
+
 .menuItem:hover {
   background: var(--ctl-fill-hover);
   color: var(--ctl-ink);
