@@ -3982,11 +3982,15 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
    signal here that can matter to someone's safety, so it must not compete
    with the neutral reactivity chip for attention. */
 .stims-preset-signals {
-  display: flex;
+  /* inline-flex, not flex: these sit alongside the credit on the row's
+     single metadata line. The browse list is virtualized at a fixed row
+     height, so anything that adds a line breaks row alignment. */
+  display: inline-flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  margin-top: 2px;
+  margin-left: 8px;
+  vertical-align: baseline;
 }
 
 .stims-preset-signals__chip {

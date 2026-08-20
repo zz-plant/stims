@@ -951,8 +951,12 @@ export function BrowseSheetPanel({
                             where it stands in for a missing thumbnail. */}
                         <span className="ctl-preset__meta">
                           {display.byline ?? describePresetMood(entry)}
+                          {/* Inline with the credit, not on its own line:
+                              the virtualizer measures rows at a fixed
+                              PRESET_ROW_HEIGHT, so a third line overflows
+                              and each chip crowds the next row's title. */}
+                          <PresetSignals entry={entry} />
                         </span>
-                        <PresetSignals entry={entry} />
                       </span>
                     </button>
                     <button

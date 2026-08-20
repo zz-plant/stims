@@ -1,3 +1,4 @@
+import type { PresetSensoryProfile } from '../core/sensory-profile.ts';
 import type { VisualFidelityTier } from './catalog-store-analysis.ts';
 import type {
   MilkdropBackendSupport,
@@ -13,7 +14,30 @@ import type {
   MilkdropVisualEvidenceTier,
 } from './common-types.ts';
 
-export type MilkdropBundledCatalogEntry = {
+/**
+ * Offline measurements the catalog ships per preset: the quality scorer's
+ * component breakdown (scripts/score-catalog) and the photosensitivity audit
+ * (scripts/analyze-preset-flash + merge-flash-audit). Both are produced by
+ * lab runs, not at runtime, so they ride the manifest and must be carried
+ * across the catalog projections rather than recomputed.
+ */
+export type MilkdropPresetMeasurements = {
+  quality?: {
+    score?: number;
+    components?: {
+      fidelity?: number | null;
+      evidence?: number | null;
+      staticAudio?: number | null;
+      measuredReactivity?: number | null;
+      motion?: number | null;
+      flashPenalty?: number | null;
+      duplicatePenalty?: number | null;
+    };
+  };
+  sensoryProfile?: PresetSensoryProfile;
+};
+
+export type MilkdropBundledCatalogEntry = MilkdropPresetMeasurements & {
   id: string;
   title: string;
   author?: string;
@@ -37,7 +61,7 @@ export type MilkdropBundledCatalogEntry = {
   preview?: boolean;
 };
 
-export type MilkdropCatalogEntry = {
+export type MilkdropCatalogEntry = MilkdropPresetMeasurements & {
   id: string;
   title: string;
   author?: string;

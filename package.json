@@ -73,6 +73,7 @@
     "catalog:ingest-corpus": "bun run scripts/ingest-corpus.ts",
     "catalog:generate": "bun run scripts/generate-presets-milkdroplm.ts",
     "catalog:merge-flash": "bun run scripts/merge-flash-audit.ts",
+    "generate:starter-catalog": "bun run scripts/generate-starter-catalog.ts",
     "check:guard-registry": "bun run scripts/check-guard-registry.ts",
     "check:quick": "bun run scripts/run-quality-gate.ts --quick",
     "check:architecture": "bun --bun ./node_modules/dependency-cruiser/bin/dependency-cruise.mjs --config .dependency-cruiser.mjs --cache node_modules/.cache/dependency-cruiser src/js scripts tests",

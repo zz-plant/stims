@@ -701,6 +701,13 @@ export function mapRuntimeCatalogEntry(
     similarity: entry.similarity,
     fidelityTier: entry.fidelityTier,
     visualCertification: entry.visualCertification,
+    // The last of four hand-listed projections between catalog.json and a
+    // rendered row. Each builds a fresh object rather than spreading, so a
+    // field missing from any one of them disappears with no type error —
+    // which is exactly how the reactivity band shipped reading a field that
+    // never survived the trip.
+    quality: entry.quality,
+    sensoryProfile: entry.sensoryProfile,
     supports: {
       webgl: entry.supports.webgl.status === 'supported',
       webgpu: entry.supports.webgpu.status === 'supported',

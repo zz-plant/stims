@@ -103,6 +103,12 @@ function toBundledCatalogEntries(document: BundledCatalogDocument) {
         visualCertification: entry.visualCertification,
         supports: entry.supports ?? entry.compatibility,
         preview: entry.preview,
+        // Lab measurements. This is the earliest of three hand-listed
+        // projections between catalog.json and a rendered row — a field
+        // missing from any one of them vanishes silently, with no type error,
+        // because each layer builds a fresh object instead of spreading.
+        quality: entry.quality,
+        sensoryProfile: entry.sensoryProfile,
       }));
 }
 
