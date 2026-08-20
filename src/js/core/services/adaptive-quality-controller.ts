@@ -420,6 +420,12 @@ export function createAdaptiveQualityController({
   let sampleCount = 0;
   let consecutiveOverBudget = 0;
   let consecutiveUnderBudget = 0;
+  /**
+   * Whether a preset switch has already pre-paid a quality step that has not
+   * been earned back yet. The pre-degrade covers the warm-up cost of ONE
+   * switch; without this it compounded across a burst of them.
+   */
+  let switchPreDegradeOutstanding = false;
   let consecutiveRollingOverBudget = 0;
   let adaptation: AdaptiveQualityState['adaptation'] = 'steady';
   const rollingWindowSize = Math.max(
@@ -756,6 +762,7 @@ export function createAdaptiveQualityController({
         qualityStep > heuristic.initialStep
       ) {
         qualityStep -= 1;
+        switchPreDegradeOutstanding = false;
         adaptation = 'recovering';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
@@ -822,13 +829,25 @@ export function createAdaptiveQualityController({
         heuristic.profile !== 'high-end' && heuristic.profile !== 'enhanced';
       // The session-start warmup path (MIN_WARMUP_SAMPLES) already seeds the
       // boot conservatively; the pre-degrade is for switches after that.
+      // One outstanding pre-degrade at a time. This is charged per switch,
+      // but earning a step back costs RECOVER_THRESHOLD_SAMPLES *consecutive*
+      // under-budget frames — and the reset above clears that counter on
+      // every switch. Stacking therefore made the two directions wildly
+      // asymmetric: swiping through presets faster than the recovery window
+      // walked quality from `full` to `minimal` in four switches on frames
+      // that were never once over budget, coarsening the mesh and halving
+      // feedback resolution for no measured reason. The warm-up this exists
+      // to absorb belongs to a single switch, so charge it once and let it be
+      // earned back before charging it again.
       if (
         stepLock === null &&
         constrainedProfile &&
+        !switchPreDegradeOutstanding &&
         sampleCount >= MIN_WARMUP_SAMPLES &&
         qualityStep < QUALITY_STEPS.length - 1
       ) {
         qualityStep += 1;
+        switchPreDegradeOutstanding = true;
         adaptation = 'degraded';
         state = {
           ...state,
