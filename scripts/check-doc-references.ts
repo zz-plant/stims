@@ -21,6 +21,12 @@
  *     literal directory prefix is verified
  *   - documented placeholders (`tests/path/to/spec.test.ts`) and proposal docs
  *     that name files a plan would create (marked `(NEW)` or "New follow-up")
+ *   - generated docs (`docs/GUARDRAILS.md`), whose prose is copied verbatim
+ *     from guard docblocks. Those docblocks cite illustrative non-existent
+ *     paths on purpose — `check-doc-references.ts` itself names
+ *     `tests/foo.test.ts` to explain what it catches. The references are
+ *     already verified where they are authored, in `scripts/`, so checking the
+ *     copy would force the explanations to be written worse.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,6 +38,12 @@ const EXTRA_FILES = [
   'CONTRIBUTING.md',
   '.github/AGENTS.md',
 ];
+/**
+ * Docs generated from source that is itself checked. See the docblock above for
+ * why the copy is exempt while the original is not.
+ */
+const GENERATED_DOCS = new Set(['docs/GUARDRAILS.md']);
+
 const SKIP_DIRS = new Set([
   'archive',
   'evidence',
@@ -114,6 +126,7 @@ const offenders: Array<{ file: string; line: number; problem: string }> = [];
 for (const file of [...ROOTS.flatMap((root) => walk(root)), ...EXTRA_FILES]) {
   const name = file.split('/').pop() ?? '';
   if (HISTORICAL_RECORD.test(name)) continue;
+  if (GENERATED_DOCS.has(file.replaceAll('\\', '/'))) continue;
 
   let text: string;
   try {

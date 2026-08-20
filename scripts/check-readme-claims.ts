@@ -1,3 +1,17 @@
+#!/usr/bin/env bun
+/**
+ * Keeps the README's public claims aligned with what the repo actually ships.
+ *
+ * Docs that oversell are a support cost and an onboarding trap: a contributor
+ * who reads that a foundation is shipped, then finds it experimental, has to
+ * re-derive the real state from the code. This guard checks the README's preset
+ * count against the bundled catalog and rejects wording that promotes known
+ * experimental work as finished.
+ *
+ * It is the same principle as `check-doc-references.ts` applied to claims
+ * rather than paths: documentation that lies is worse than documentation that
+ * is missing, because it is trusted.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

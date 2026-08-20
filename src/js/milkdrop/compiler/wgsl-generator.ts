@@ -1,3 +1,17 @@
+/**
+ * Lowers compiled EEL2 program blocks to WGSL compute shaders.
+ *
+ * The counterpart to `expression-jit.ts`: where the JIT emits JavaScript for
+ * the CPU tier, this emits WGSL for the GPU tier that `vm-gpu.ts` dispatches,
+ * including the `megabuf`/`gmegabuf` scratch bindings presets expect.
+ *
+ * The hard part is not translation but agreement. WGSL is stricter than
+ * JavaScript about types, and its floating-point behavior differs in exactly
+ * the places EEL2 is loosest — integer coercion, division by zero, and
+ * evaluation order. Every construct emitted here must reproduce what the
+ * interpreter in `expression.ts` produces, or the two tiers silently disagree.
+ * `bun run lab:replay --tier gpu` is how that gets checked.
+ */
 import {
   MILKDROP_GMEGABUF_SIZE,
   MILKDROP_MEGABUF_SIZE,

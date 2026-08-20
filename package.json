@@ -84,6 +84,8 @@
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
     "check:script-docs": "bun run scripts/scripts-list.ts --check",
+    "check:module-docs": "bun run scripts/check-module-docs.ts",
+    "check:guardrails-doc": "bun run scripts/generate-guardrails-doc.ts --check",
     "check:authoring-examples": "bun run scripts/check-authoring-examples.ts",
     "check:authoring-docs": "bun run scripts/check-authoring-examples.ts && bun run scripts/generate-authoring-reference.ts --check",
     "docs:authoring-reference": "bun run scripts/generate-authoring-reference.ts",
@@ -155,7 +157,8 @@
     "check:bundle-size": "bun run scripts/check-bundle-size.ts",
     "assets:generate": "bun run scripts/generate-scenes.ts",
     "perf:low-resource": "bun run scripts/run-certification-corpus-perf-suite.ts --cpu-throttle 4 --renderer compatibility --viewport-width 1280 --viewport-height 720 --output ./screenshots/low-resource-perf",
-    "test:audio-rig": "bun run scripts/test-audio-rig.ts"
+    "test:audio-rig": "bun run scripts/test-audio-rig.ts",
+    "generate:guardrails": "bun run scripts/generate-guardrails-doc.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -164,7 +167,7 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "@playwright/test": "1.62.1",
     "@types/bun": "^1.3.14",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.2.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@types/three": "^0.185.4",
@@ -180,7 +183,7 @@
     "pixelmatch": "^7.2.0",
     "playwright": "1.62.1",
     "sharp": "^0.35.2",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "8.0.16",
     "wrangler": "^4.123.0",
     "zod": "4.4.3"

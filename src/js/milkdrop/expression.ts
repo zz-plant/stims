@@ -1,3 +1,19 @@
+/**
+ * Parses and interprets EEL2, the expression language MilkDrop presets are
+ * written in.
+ *
+ * Owns the whole front end for preset equations: statement splitting, the
+ * expression parser, and a tree-walking evaluator. `expression-jit.ts` compiles
+ * the same AST to JavaScript for speed, but this interpreter remains the
+ * reference — it is what the JIT is checked against, and what runs when
+ * `new Function` is unavailable under a strict Content-Security-Policy.
+ *
+ * EEL2 has no specification. Its semantics are whatever Winamp's implementation
+ * did, including the parts that look like bugs: integer coercion rules,
+ * division by zero yielding zero rather than infinity, and the `close`
+ * comparison tolerance in `eel-function-table.ts`. Match observed behavior over
+ * intuition, and add a case to the compiler tests when you discover a new one.
+ */
 import {
   MILKDROP_INTRINSIC_FUNCTION_NAMES,
   MILKDROP_INTRINSIC_IDENTIFIER_NAMES,

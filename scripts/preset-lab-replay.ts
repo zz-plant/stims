@@ -155,6 +155,10 @@ function diffFields(
   right: FrameCapture,
   equals: (a: number | undefined, b: number | undefined) => boolean,
   labels: [string, string],
+  geometryEquals: (
+    a: number | undefined,
+    b: number | undefined,
+  ) => boolean = equals,
 ): string[] {
   const [leftLabel, rightLabel] = labels;
   const details: string[] = [];
@@ -172,7 +176,7 @@ function diffFields(
   for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
     const a = left.geometry?.[field];
     const b = right.geometry?.[field];
-    if (!equals(a, b)) {
+    if (!geometryEquals(a, b)) {
       details.push(`  geometry.${field}: ${leftLabel}=${a} ${rightLabel}=${b}`);
     }
   }
@@ -181,6 +185,11 @@ function diffFields(
 
 type DivergenceOptions = {
   equals: (a: number | undefined, b: number | undefined) => boolean;
+  /** Comparator for the geometry triple, when it needs to differ from
+   * `equals` — geometry is pre-rounded to 1e-6, so it wants an absolute
+   * floor that would be far too loose for raw variables. Defaults to
+   * `equals`. */
+  geometryEquals?: (a: number | undefined, b: number | undefined) => boolean;
   labels: [string, string];
   /** Fast pre-check per frame (e.g. digest equality) that skips the
    * detailed field diff entirely when true. Omit for tolerance-based
@@ -202,8 +211,14 @@ function findFirstDivergence(
   rightFrames: Array<FrameCapture | undefined>,
   options: DivergenceOptions,
 ): { frame: number; details: string[] } | null {
-  const { equals, labels, sameFrame, noSnapshotNotice, missingFrameNotice } =
-    options;
+  const {
+    equals,
+    geometryEquals,
+    labels,
+    sameFrame,
+    noSnapshotNotice,
+    missingFrameNotice,
+  } = options;
   for (let index = 0; index < leftFrames.length; index += 1) {
     const left = leftFrames[index] as FrameCapture;
     const right = rightFrames[index];
@@ -213,15 +228,16 @@ function findFirstDivergence(
     if (sameFrame?.(left, right)) {
       continue;
     }
-    if (
-      !left.variables ||
-      !left.geometry ||
-      !right.variables ||
-      !right.geometry
-    ) {
+    // Compare whatever this frame actually carries. Compact golden traces
+    // keep variables only on checkpoint frames but geometry on every frame,
+    // so requiring both would have thrown away the per-frame geometry signal
+    // and reported "cannot tell you what moved" instead of using it.
+    const comparableVariables = Boolean(left.variables && right.variables);
+    const comparableGeometry = Boolean(left.geometry && right.geometry);
+    if (!comparableVariables && !comparableGeometry) {
       return { frame: index, details: [noSnapshotNotice] };
     }
-    const details = diffFields(left, right, equals, labels);
+    const details = diffFields(left, right, equals, labels, geometryEquals);
     if (details.length > 0) {
       return { frame: index, details };
     }
@@ -229,20 +245,76 @@ function findFirstDivergence(
   return null;
 }
 
-/** Compares a replay against a trace; returns null when every frame's digest
- * matches, else the first divergence. Shared by the CLI and the golden-trace
- * unit gate. */
+/**
+ * Largest relative difference treated as floating-point noise rather than a
+ * semantics change, for raw (unrounded) variables.
+ *
+ * A double carries ~16 significant digits, so 1e-9 discards roughly the last
+ * seven of them while still failing on anything a person would call a
+ * behavior change. The gap is deliberate and large: measured cross-machine
+ * noise on these traces is ~8e-16 relative (a couple of ulps on `shape4_x`),
+ * and the divergences this gate exists to catch — a wrong guard, a wrong
+ * operator, an off-by-one in a loop — move values by whole percentages or
+ * flip their sign. Nothing real lives in the six orders of magnitude
+ * between.
+ */
+const GOLDEN_VARIABLE_TOLERANCE = 1e-9;
+
+/**
+ * Absolute floor for the geometry triple.
+ *
+ * `positionsChecksum` rounds to 1e-6 before storing, so two runs that differ
+ * only in the last bits can still land on opposite sides of that rounding
+ * boundary and print a difference of exactly 1e-6. The floor absorbs that
+ * quantisation step; the relative term above still governs anything larger.
+ */
+const GOLDEN_GEOMETRY_FLOOR = 2e-6;
+
+function nearlyEqual(tolerance: number, floor: number) {
+  return (a: number | undefined, b: number | undefined): boolean => {
+    const left = a ?? 0;
+    const right = b ?? 0;
+    if (left === right) return true;
+    // NaN/Infinity are semantics, never noise: an unguarded divide is exactly
+    // the sort of regression this gate is here to catch, so any non-finite
+    // value must match its counterpart exactly.
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+    const magnitude = Math.max(Math.abs(left), Math.abs(right));
+    return Math.abs(left - right) <= Math.max(floor, tolerance * magnitude);
+  };
+}
+
+/**
+ * Compares a replay against a trace; returns null when every frame agrees,
+ * else the first divergence. Shared by the CLI and the golden-trace unit gate.
+ *
+ * Identical digests are the fast path — same machine, same code, nothing to
+ * do. A digest mismatch is NOT by itself a failure, because the digest is
+ * FNV-1a over full-precision doubles and therefore changes completely when a
+ * single variable moves by one ulp. Two CPUs legitimately disagree in the
+ * last bits of `pow`/`sin`, so treating the digest as the verdict made these
+ * traces pass only on the machine that recorded them: they were red on CI and
+ * in a Linux container while presumably green for their author, and red even
+ * when replayed against the exact commit that recorded them.
+ *
+ * So a digest mismatch escalates to a field comparison under the tolerances
+ * above, which is what actually decides the result.
+ */
 export function compareReplay(
   trace: TraceFile,
   replayed: FrameCapture[],
 ): { frame: number; details: string[] } | null {
   return findFirstDivergence(trace.frames, replayed, {
-    equals: (a, b) => a === b,
+    equals: nearlyEqual(GOLDEN_VARIABLE_TOLERANCE, 0),
+    geometryEquals: nearlyEqual(
+      GOLDEN_VARIABLE_TOLERANCE,
+      GOLDEN_GEOMETRY_FLOOR,
+    ),
     labels: ['recorded', 'replayed'],
     sameFrame: (left, right) => left.digest === right.digest,
     missingFrameNotice: '  (missing frame)',
     noSnapshotNotice:
-      '  (compact trace: no variable checkpoint at this frame — re-record without --compact to name variables)',
+      '  (compact trace: this frame carries neither a variable checkpoint nor geometry — re-record without --compact)',
   });
 }
 
@@ -410,9 +482,24 @@ async function runGpuTrace(
 
 const GOLDEN_CHECKPOINT_EVERY = 30;
 
+/**
+ * Strips the full variable snapshot from non-checkpoint frames but KEEPS the
+ * geometry triple on every frame.
+ *
+ * Geometry is three numbers, already rounded to 1e-6 by `positionsChecksum`,
+ * so retaining it costs almost nothing and buys the golden gate a per-frame
+ * signal that survives a change of machine. The digest cannot do that job
+ * alone: it is FNV-1a over full-precision doubles, so a last-bit difference
+ * in any one variable — the kind two CPUs disagree on for `pow`/`sin` —
+ * changes it completely. Without geometry here, a digest mismatch on a
+ * non-checkpoint frame left nothing to compare and the gate could only say
+ * "something moved, and I cannot tell you what".
+ */
 function compactFrames(frames: FrameCapture[]): FrameCapture[] {
   return frames.map((frame, index) =>
-    index % GOLDEN_CHECKPOINT_EVERY === 0 ? frame : { digest: frame.digest },
+    index % GOLDEN_CHECKPOINT_EVERY === 0
+      ? frame
+      : { digest: frame.digest, geometry: frame.geometry },
   );
 }
 

@@ -1,3 +1,18 @@
+/**
+ * Executes a compiled preset's equations, once per frame and once per vertex.
+ *
+ * This is the CPU tier of the expression runtime: it owns the variable
+ * environment MilkDrop presets mutate (`q1`–`q32`, `t1`–`t8`, the `megabuf`
+ * scratch space), runs the per-frame and per-vertex program blocks through the
+ * JIT in `expression-jit.ts`, and hands the resulting state to the renderer.
+ *
+ * Numbers produced here are a contract, not an implementation detail. The GPU
+ * tier (`vm-gpu.ts`) is expected to reproduce them, and `tests/unit/
+ * vm-golden-traces.test.ts` replays recorded traces against this VM
+ * bit-for-bit. Changing evaluation order or arithmetic here is a
+ * platform-semantics decision that will move those traces — verify with
+ * `bun run lab:replay` before assuming a difference is noise.
+ */
 /* global GPUDevice */
 
 import { DEFAULT_MILKDROP_STATE } from './compiler';
