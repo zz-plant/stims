@@ -34,12 +34,10 @@ function describeReactivity(score: number): string | null {
 }
 
 function readReactivity(entry: PresetCatalogEntry): number | null {
-  const quality = (
-    entry as unknown as {
-      quality?: { components?: { measuredReactivity?: number | null } };
-    }
-  ).quality;
-  const measured = quality?.components?.measuredReactivity;
+  // Typed, not cast. This was an `as unknown as` read of a field the catalog
+  // projection did not actually carry, so it compiled, passed a test fed raw
+  // catalog.json, and returned null for every real entry in the app.
+  const measured = entry.quality?.components?.measuredReactivity;
   return typeof measured === 'number' ? measured : null;
 }
 

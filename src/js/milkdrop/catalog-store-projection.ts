@@ -110,6 +110,8 @@ export function toCatalogEntry(
     visualCertification?: MilkdropCatalogEntry['visualCertification'];
     evidence?: MilkdropCatalogEntry['evidence'];
     preview?: boolean;
+    quality?: MilkdropCatalogEntry['quality'];
+    sensoryProfile?: MilkdropCatalogEntry['sensoryProfile'];
   } = {},
 ): MilkdropCatalogEntry {
   const semanticSupport =
@@ -128,6 +130,11 @@ export function toCatalogEntry(
     title: compiled.title,
     author: compiled.author ?? source.author,
     authorUrl: source.authorUrl,
+    // Manifest-only measurements. Without these the browse row's reactivity
+    // band and flash warning would vanish the moment a preset compiled and
+    // this projection replaced the manifest one.
+    quality: options.quality,
+    sensoryProfile: options.sensoryProfile,
     derivedFrom: source.derivedFrom,
     origin: source.origin,
     tags: Array.from(
@@ -185,6 +192,14 @@ export function toUnavailableBundledCatalogEntry(
     tags: entry.tags ?? [],
     curatedRank: entry.curatedRank,
     similarity: entry.similarity,
+    // Carried through because the browse row reads them. This projection
+    // builds an explicit entry rather than spreading the manifest, so any
+    // field not named here is silently dropped at this boundary — which is
+    // how the reactivity band and the photosensitivity warning came to read
+    // fields that were present in catalog.json and absent by the time the UI
+    // saw an entry.
+    quality: entry.quality,
+    sensoryProfile: entry.sensoryProfile,
     isFavorite: Boolean(meta?.favorite),
     rating: meta?.rating ?? 0,
     lastOpenedAt: meta?.lastOpenedAt,
@@ -349,6 +364,8 @@ export function toBundledCatalogEntryFromManifest(
     tags: entry.tags ?? [],
     curatedRank: entry.curatedRank,
     similarity: entry.similarity,
+    quality: entry.quality,
+    sensoryProfile: entry.sensoryProfile,
     isFavorite: Boolean(meta?.favorite),
     rating: meta?.rating ?? 0,
     lastOpenedAt: meta?.lastOpenedAt,

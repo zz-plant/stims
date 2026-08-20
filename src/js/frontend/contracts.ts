@@ -91,6 +91,11 @@ export type PresetCatalogEntry = {
   fidelityTier?: VisualFidelityTier;
   visualCertification?: MilkdropVisualCertification;
   sensoryProfile?: PresetSensoryProfile;
+  /** Offline quality scoring; the browse row reads measuredReactivity. */
+  quality?: {
+    score?: number;
+    components?: { measuredReactivity?: number | null };
+  };
   supports?: {
     webgl?: boolean;
     webgpu?: boolean;
