@@ -1,3 +1,19 @@
+/**
+ * The predicate and extraction vocabulary `shader-analysis.ts` is written in.
+ *
+ * Split out so the analysis pass reads as a sequence of decisions rather than a
+ * wall of AST matching. Everything here is small, pure and individually
+ * testable: does this expression sample the main texture, is this identifier a
+ * UV, what blend mode does this text name, what scalar does this control
+ * resolve to.
+ *
+ * Each helper encodes an observed MilkDrop behavior, so they are more specific
+ * than they look — `isIdentityTextureSampleExpression` matches the shapes real
+ * presets write, not every expression that is mathematically an identity.
+ * Widening one to be "more correct" is how presets that used to render start
+ * rendering differently. Add a case beside the existing ones instead, and cover
+ * it in `tests/unit/milkdrop-compiler.test.ts`.
+ */
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,

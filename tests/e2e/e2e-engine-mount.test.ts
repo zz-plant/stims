@@ -6,7 +6,11 @@ import { afterAll, beforeAll, expect, test } from 'bun:test';
 import fs from 'node:fs';
 import { chromium, devices } from 'playwright';
 import { writeAgentFailureArtifact } from './agent-api.ts';
-import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import {
+  type DevServerHandle,
+  isResponsive,
+  startDevServer,
+} from './dev-server.ts';
 import {
   HEADLESS,
   WEBGL_RENDERER_ARGS as RENDERER_ARGS,
@@ -18,7 +22,7 @@ import {
  * product regression. Skip instead, matching agent-integration.
  */
 const hasChromium = fs.existsSync(chromium.executablePath());
-const browserTest = hasChromium ? test : test.skip;
+const baseBrowserTest = hasChromium ? test : test.skip;
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -142,6 +146,44 @@ async function stopServer() {
   const server = devServer;
   devServer = null;
   await server?.stop();
+}
+
+/**
+ * Re-checks the shared dev server before each test, restarting it when it has
+ * stopped answering.
+ *
+ * This suite used to start vite once in `beforeAll` and assume it survived the
+ * whole file. It does not always: the run launches a fresh Chromium per test
+ * against a dev server that stays up for minutes, and when vite dies partway
+ * the remaining tests fail with a bare `ERR_CONNECTION_REFUSED` naming only
+ * the URL — a message that describes the symptom and hides the cause. The
+ * probe is bounded (see isResponsive) so a wedged server is treated the same
+ * as a dead one instead of hanging the test that found it.
+ */
+async function ensureDevServer() {
+  if (!devServer) {
+    await startServer();
+    return;
+  }
+  if (await isResponsive(SERVER_URL)) return;
+  await stopServer();
+  await startServer();
+}
+
+/** Wraps every browser test so the server guard above cannot be forgotten. */
+function browserTest(
+  name: string,
+  body: () => Promise<void>,
+  options?: Parameters<typeof test>[2],
+) {
+  return baseBrowserTest(
+    name,
+    async () => {
+      await ensureDevServer();
+      await body();
+    },
+    options,
+  );
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });

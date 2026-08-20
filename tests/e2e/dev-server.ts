@@ -24,8 +24,31 @@ export type DevServerHandle = {
 
 /** Any HTTP response proves the server is listening; a 404 counts. */
 async function isListening(url: string): Promise<boolean> {
+  return isResponsive(url, 2000);
+}
+
+/**
+ * Bounded health probe: does the server answer within `timeoutMs`?
+ *
+ * The timeout is the entire point. A suite that re-checks its dev server with
+ * a bare `fetch` has no defence against vite being alive-but-wedged — the
+ * socket is accepted, no response ever comes, and the probe hangs forever.
+ * That is not hypothetical: it is how a 180s e2e budget got consumed with no
+ * output at all, because the hang happened in the health check before the
+ * test had logged anything or navigated anywhere. An unresponsive server must
+ * look like a dead one so the caller can restart it.
+ */
+export async function isResponsive(
+  url: string,
+  timeoutMs = 5000,
+): Promise<boolean> {
   try {
-    await fetch(url, { signal: AbortSignal.timeout(2000) });
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    // Any status proves it is serving; only a transport failure or a timeout
+    // means it is gone.
+    void response.status;
     return true;
   } catch {
     return false;

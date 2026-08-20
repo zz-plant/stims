@@ -1,3 +1,27 @@
+/**
+ * Recognises what a preset's shader source is trying to do, so it can be re-expressed.
+ *
+ * Preset shaders cannot be handed to the GPU as written: they are
+ * HLSL-flavored, target a fixed-function pipeline that no longer exists, and
+ * must run on two backends whose shading languages differ. This module reads
+ * the parsed shader AST and extracts a structured description — samplers, UV
+ * transforms, tint and blend modes, the scalar controls a preset animates —
+ * that `shader-analysis-glsl.ts` and the WebGPU TSL path can each realise in
+ * their own language.
+ *
+ * That is why so much of this file is pattern recognition with names like
+ * `isShaderSolarizeSampleExpression`. Each predicate exists because real
+ * presets write that exact shape and the original renderer produced a
+ * particular result. There is no specification to consult; the corpus is the
+ * specification.
+ *
+ * Consequences worth knowing before editing:
+ * - Unrecognised constructs degrade, they do not throw. A preset that renders
+ *   imperfectly beats one that refuses to load.
+ * - A "simplification" that collapses two predicates usually breaks a preset
+ *   nobody in the review has heard of. Run `bun run lab:glsl-corpus-scan` and
+ *   `bun run parity:suite`; the corpus is the only witness that matters.
+ */
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,

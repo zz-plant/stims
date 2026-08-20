@@ -1,3 +1,15 @@
+/**
+ * WebGPU materials for the procedurally generated visuals.
+ *
+ * Builds the node-based materials the WebGPU backend uses for procedural waves,
+ * particle fields and motion vectors — the visuals whose geometry is generated
+ * per frame from VM state rather than authored.
+ *
+ * Each material here has a WebGL counterpart under `renderer-helpers/`, and the
+ * pair is expected to produce the same image. When adding a visual, add both
+ * sides together; a backend-only visual becomes a silent difference on hardware
+ * the author does not have.
+ */
 import { Color } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';

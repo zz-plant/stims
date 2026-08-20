@@ -1,3 +1,17 @@
+/**
+ * Batches WebGPU draw work so per-frame CPU cost stays flat.
+ *
+ * A preset can declare hundreds of custom waves and shapes, each nominally its
+ * own draw. Issuing them individually spends more time in command encoding than
+ * in rendering, so this module groups compatible segments into shared buffers
+ * and pipelines and emits far fewer, larger draws.
+ *
+ * Batching is a performance optimisation with correctness stakes: grouping
+ * changes draw order, and draw order is visible wherever blending is. Output
+ * must stay identical to the unbatched WebGL path — verify with
+ * `bun run lab:gpu-differential`, and measure the gain with
+ * `bun run perf:certification-corpus` rather than assuming it.
+ */
 import type { Material, Texture } from 'three';
 import {
   BufferGeometry,

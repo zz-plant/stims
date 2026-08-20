@@ -16,7 +16,11 @@ This repo has **127 scripts**. The tables below are a shortlist, not an inventor
 ```bash
 bun run help                 # every script, grouped by namespace, with a one-line purpose
 bun run help --json          # same index as {name, command, purpose} records
+bun run help --for "<symptom>"   # symptom → instrument ("my preset looks wrong" → parity:capture)
 ```
+
+`--for` exists because knowing a script exists is not the same as knowing it is
+the right one. Reach for it before hand-rolling a measurement.
 
 Each purpose line is generated from the docblock atop the script's file, so the index cannot drift from the code. `bun run check` fails if a script has no docblock summary (`bun run check:script-docs`).
 
@@ -126,6 +130,7 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 
 ## Quality gate reminder
 
+- Every enforced rule, with its rationale, is listed in [`docs/GUARDRAILS.md`](../docs/GUARDRAILS.md) (generated from the guard scripts by `bun run generate:guardrails`)
 - `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + toy manifest + SEO + architecture + typecheck, no tests
 - `bun run check` = everything above, preceded by `assets:check`, plus the fast test suite (`unit` + `compat`; skips the slow corpus/e2e tests)
 - `bun run check:all` = the same gate with the full test suite, including corpus and e2e

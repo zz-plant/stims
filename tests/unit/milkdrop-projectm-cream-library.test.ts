@@ -60,27 +60,41 @@ test('projectM Cream of the Crop library manifest stays aligned with the shipped
   });
 });
 
-test('projectM Cream of the Crop picks stay fully supported on both backends', () => {
-  const manifest = JSON.parse(
-    readFileSync(MANIFEST_PATH, 'utf8'),
-  ) as LibraryManifest;
+// Compiles every manifest entry end-to-end (parse -> IR -> both backend
+// compatibility verdicts), so its cost scales with the library and lands well
+// past bun's 5s default: ~6.5s on a idle Linux container, more under the
+// parallel shards CI runs. The budget was never chosen for this test, it was
+// simply inherited, and the test failed deterministically on slower hardware
+// rather than flaking. 60s is headroom for a loaded runner, not a target.
+const CORPUS_COMPILE_TIMEOUT_MS = 60_000;
 
-  manifest.presets.forEach((entry) => {
-    const raw = readFileSync(
-      join(process.cwd(), 'public', entry.file.replace(/^\/+/, '')),
-      'utf8',
-    );
-    const compiled = compileMilkdropPresetSource(raw, {
-      id: entry.id,
-      title: entry.title,
-      fileName: basename(entry.file),
-      origin: 'bundled',
+test(
+  'projectM Cream of the Crop picks stay fully supported on both backends',
+  () => {
+    const manifest = JSON.parse(
+      readFileSync(MANIFEST_PATH, 'utf8'),
+    ) as LibraryManifest;
+
+    manifest.presets.forEach((entry) => {
+      const raw = readFileSync(
+        join(process.cwd(), 'public', entry.file.replace(/^\/+/, '')),
+        'utf8',
+      );
+      const compiled = compileMilkdropPresetSource(raw, {
+        id: entry.id,
+        title: entry.title,
+        fileName: basename(entry.file),
+        origin: 'bundled',
+      });
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
+      expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
-  });
-});
+  },
+  CORPUS_COMPILE_TIMEOUT_MS,
+);
 
 test('recent projectM cream expansion picks compile without parser errors', () => {
   const manifest = JSON.parse(

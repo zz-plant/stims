@@ -1,3 +1,18 @@
+/**
+ * Backend-independent drawing logic shared by the WebGL and WebGPU adapters.
+ *
+ * Holds the parts of a frame that do not depend on which graphics API is
+ * active: building geometry for warp mesh, waves, shapes and borders from VM
+ * state, managing the Three.js object graph, and disposing GPU resources on
+ * teardown. `renderer-adapter-webgl.ts` and `renderer-adapter-webgpu.ts` supply
+ * the API-specific pieces around it.
+ *
+ * Anything added here runs on both backends, which is the reason to prefer it
+ * over a per-backend file — the two paths are required to agree pixel-for-pixel
+ * and every duplicated implementation is a chance for them to drift. Verify
+ * changes with `bun run lab:gpu-differential` rather than by eye; divergence is
+ * usually subtle enough to survive a visual check.
+ */
 import type { Camera, Scene, ShaderMaterial, Texture } from 'three';
 import {
   BufferGeometry,

@@ -1,3 +1,21 @@
+/**
+ * Builds the WebGPU feedback pipeline as Three.js TSL node graphs.
+ *
+ * The WebGPU backend does not consume the GLSL strings the WebGL path uses. It
+ * builds equivalent shaders as TSL node graphs instead, which means every
+ * preset shader construct needs a second lowering — from the parsed shader AST
+ * to nodes — implemented here alongside the blur, warp and composite passes.
+ *
+ * That duplication is the file's size and its main hazard: this is the second
+ * of two implementations that must agree pixel-for-pixel with the first, on
+ * hardware many contributors do not have. Nothing fails loudly when they
+ * diverge — the preset just looks slightly wrong somewhere else. Treat
+ * `bun run lab:gpu-differential` as part of editing this file, not as an
+ * optional follow-up.
+ *
+ * The file-level `noExplicitAny` suppression is deliberate: TSL's node graphs
+ * are not fully typed under the repo's current module resolution.
+ */
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {

@@ -1,3 +1,17 @@
+/**
+ * Tokenizer, parser and evaluator for the shader source embedded in presets.
+ *
+ * MilkDrop presets carry HLSL-flavored warp and composite shaders as plain
+ * text. This module turns that text into a typed AST that `compiler/
+ * shader-analysis*.ts` can inspect, and can evaluate constant subtrees so
+ * static expressions collapse before code generation.
+ *
+ * It is deliberately tolerant. Preset shaders in the wild are frequently
+ * malformed by any strict reading, and the original renderer accepted them, so
+ * a parse error here should degrade the affected statement rather than reject
+ * the preset. This is a parser for a dialect defined by what shipped, not by a
+ * grammar.
+ */
 import { evaluateMilkdropExpression } from './expression';
 import { normalizeMilkdropShaderSamplerName } from './shader-samplers';
 import type {

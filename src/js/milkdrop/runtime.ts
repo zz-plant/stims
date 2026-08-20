@@ -1,3 +1,22 @@
+/**
+ * Owns a running visualizer session: the frame loop, preset lifecycle, and failover.
+ *
+ * `createMilkdropExperience` is the engine's entry point. Everything with a
+ * lifetime longer than one frame is coordinated from here or from `runtime/*`:
+ * loading and swapping presets, driving the renderer adapter each frame,
+ * reacting to quality changes, and falling back to another backend when the
+ * active one fails.
+ *
+ * Read this as an orchestrator, not an implementation — the individual concerns
+ * live in `runtime/` (`lifecycle`, `experience-frame-loop`, `transition-
+ * controller`, `backend-fallback`) and this module wires them together and owns
+ * the shared state between them.
+ *
+ * The invariant worth protecting: a preset that fails to compile, a backend
+ * that drops its context, or a device that loses WebGPU must all degrade to
+ * something still on screen. Failing loudly here means a black canvas, which
+ * users read as the app being broken.
+ */
 import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import { createLogger } from '../core/logger.ts';

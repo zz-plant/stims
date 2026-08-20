@@ -1,3 +1,18 @@
+/**
+ * Compiles parsed EEL2 program blocks into JavaScript functions.
+ *
+ * The per-frame and per-vertex blocks run for every frame — and per-vertex runs
+ * once per mesh point — so tree-walking them is too slow at mesh resolutions
+ * real presets use. This module lowers a block to a single `new Function` and
+ * memoises it per block object.
+ *
+ * Two constraints shape the code. First, output must match the interpreter in
+ * `expression.ts` exactly, including MilkDrop's non-obvious arithmetic edge
+ * cases; the JIT is an optimisation, never a second dialect. Second, a strict
+ * Content-Security-Policy can forbid `new Function`, so the module probes for
+ * it once and degrades to an interpreter-backed path rather than failing to
+ * load — deliberately slower, and covered by tests/unit/eel-csp-fallback.test.ts.
+ */
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,

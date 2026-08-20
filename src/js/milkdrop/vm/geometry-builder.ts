@@ -1,3 +1,19 @@
+/**
+ * Turns per-frame VM state into the vertex data a frame actually draws.
+ *
+ * Builds the warp mesh, motion vectors and particle fields: choosing mesh
+ * density for the device, evaluating the per-vertex program across mesh points,
+ * and packing the results into typed arrays for the renderer adapter.
+ *
+ * This is the hottest CPU work in a frame — the per-vertex program runs once
+ * per mesh point, so mesh density is the single biggest lever on frame cost and
+ * is deliberately device-dependent (`getMeshDensity`). Allocation discipline
+ * matters here more than elsewhere; buffers are reused across frames because
+ * per-frame allocation at this size shows up directly as GC pauses.
+ *
+ * Profile changes with `bun run profile:frame` rather than reasoning about
+ * them; intuition about which loop dominates is usually wrong.
+ */
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
 import { normalizeProgramAssignmentTarget } from '../field-normalization.ts';
