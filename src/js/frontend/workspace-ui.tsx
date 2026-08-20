@@ -42,6 +42,7 @@ export function WorkspaceStagePanel({
   const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
   const invalidPanel = ui.routeState.invalidPanel;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
+  const panelOpen = ui.routeState.panel !== null;
   const _audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
   return (
@@ -72,8 +73,17 @@ export function WorkspaceStagePanel({
         {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
         {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its
-            buttons stay in the tab order and accessibility tree without it */}
-        <div className="stims-shell__stage-hero" inert={liveMode}>
+            buttons stay in the tab order and accessibility tree without it.
+            Also inert whenever a panel is open — on the home screen the hero
+            stayed fully live and full-contrast behind an open sheet, so
+            "Welcome back / Continue with <preset>" sat at display size
+            competing with the list the user was actually reading, and Tab
+            still walked into it from behind the panel. */}
+        <div
+          className="stims-shell__stage-hero"
+          data-behind-panel={panelOpen ? 'true' : undefined}
+          inert={liveMode || panelOpen}
+        >
           {launchPanel}
         </div>
         {/* An unrecognized ?tool= used to be dropped silently, landing you on

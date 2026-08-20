@@ -19,17 +19,26 @@ import type { PresetCatalogEntry } from './contracts.ts';
  */
 
 /**
- * Reactivity bands. The underlying score is a continuous 0..1, but a number
- * on a browse row invites comparisons it cannot support — it is a measured
- * estimate under a synthetic stimulus, not a rating. Three bands say the
- * thing a user actually decides on: will this move with my music.
+ * Reactivity, shown only when it is the exception.
+ *
+ * The first version banded all three levels and printed one on every row.
+ * Measured in the live list that came out as ten "Strongly beat-reactive" and
+ * one "Moderately reactive" out of eleven — a badge on every row, saying the
+ * same thing, which is chrome rather than signal. Most presets react well;
+ * that is the baseline and the baseline needs no label.
+ *
+ * What earns a row is the case that surprises someone: a preset that largely
+ * ignores audio. That is a legitimate aesthetic — ambient drift — and it is
+ * also the single most common reason a user concludes the visualizer is
+ * broken, which is exactly when a word of explanation is worth its space.
+ *
+ * The threshold is the old low band's upper edge, unchanged; only the
+ * decision to render the other two was removed.
  */
+const AMBIENT_REACTIVITY_MAX = 0.45;
+
 function describeReactivity(score: number): string | null {
-  if (score >= 0.8) return 'Strongly beat-reactive';
-  if (score >= 0.45) return 'Moderately reactive';
-  // Below this the preset largely ignores audio. That is a legitimate
-  // aesthetic — ambient drift — but it is the single most common reason
-  // someone thinks the visualizer is broken, so it is worth saying.
+  if (score >= AMBIENT_REACTIVITY_MAX) return null;
   return 'Ambient · low reactivity';
 }
 
