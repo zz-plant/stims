@@ -84,10 +84,12 @@ import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
   openRecordPanel,
+  presentToExternalDisplayAction,
   setTransition,
   startAudioSource,
   startOrCopyWatchPartyAction,
   toggleAutoplay,
+  toggleCameraAction,
   togglePanel,
 } from './workspace-actions.ts';
 import {
@@ -345,6 +347,11 @@ function StimsWorkspaceAppShell() {
     );
   };
 
+  // Declared ahead of useKeyboardShortcuts so keyboard bindings can dispatch
+  // palette actions by id; the list itself is built further down and assigned
+  // into this ref there.
+  const paletteActionsRef = useRef<CommandAction[]>([]);
+
   useKeyboardShortcuts({
     liveMode,
     engineReady: engine.engineReady,
@@ -360,6 +367,9 @@ function StimsWorkspaceAppShell() {
     toggleFavoritePreset: toggleFavoriteCurrentPreset,
     setStatusMessage: ui.setStatusMessage,
     setShowShortcuts,
+    runPaletteAction: (actionId) => {
+      paletteActionsRef.current.find((a) => a.id === actionId)?.run();
+    },
   });
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -393,14 +403,12 @@ function StimsWorkspaceAppShell() {
         id: 'open-browse',
         group: 'Presets',
         label: 'Browse presets',
-        shortcutHint: 'B',
         run: () => togglePanel(paletteSurface, 'browse'),
       },
       {
         id: 'next-preset',
         group: 'Presets',
         label: 'Next preset (random)',
-        shortcutHint: 'N',
         keywords: ['shuffle', 'surprise'],
         run: () => void engine.handleShufflePreset(),
       },
@@ -408,7 +416,6 @@ function StimsWorkspaceAppShell() {
         id: 'previous-preset',
         group: 'Presets',
         label: 'Previous preset',
-        shortcutHint: 'P',
         keywords: ['back'],
         run: () => void engine.handlePreviousPreset(),
       },
@@ -416,7 +423,6 @@ function StimsWorkspaceAppShell() {
         id: 'save-preset',
         group: 'Presets',
         label: 'Save preset',
-        shortcutHint: 'A',
         keywords: ['favorite', 'star'],
         run: toggleFavoriteCurrentPreset,
       },
@@ -424,7 +430,6 @@ function StimsWorkspaceAppShell() {
         id: 'find-similar',
         group: 'Presets',
         label: 'Find similar presets',
-        shortcutHint: 'M',
         keywords: ['match', 'sound', 'look'],
         run: () => void engine.handleVisualSearch(),
       },
@@ -432,14 +437,12 @@ function StimsWorkspaceAppShell() {
         id: 'open-editor',
         group: 'Create',
         label: 'Edit preset code',
-        shortcutHint: 'E',
         run: () => togglePanel(paletteSurface, 'editor'),
       },
       {
         id: 'open-refine',
         group: 'Create',
         label: 'Refine with AI',
-        shortcutHint: 'G',
         run: () => togglePanel(paletteSurface, 'refine'),
       },
       {
@@ -460,14 +463,12 @@ function StimsWorkspaceAppShell() {
         id: 'open-settings',
         group: 'View',
         label: 'Settings',
-        shortcutHint: 'S',
         run: () => togglePanel(paletteSurface, 'settings'),
       },
       {
         id: 'open-shortcuts',
         group: 'View',
         label: 'Keyboard shortcuts',
-        shortcutHint: '?',
         keywords: ['help', 'keys', 'bindings'],
         run: () => setShowShortcuts(true),
       },
@@ -505,8 +506,21 @@ function StimsWorkspaceAppShell() {
         id: 'toggle-fullscreen',
         group: 'View',
         label: isFullscreen ? 'Exit full screen' : 'Full screen',
-        shortcutHint: 'F',
         run: handleToggleFullscreen,
+      },
+      {
+        id: 'toggle-camera',
+        group: 'View',
+        label: 'Camera as video input',
+        keywords: ['webcam', 'video', 'input', 'source'],
+        run: () => toggleCameraAction(ui.setStatusMessage),
+      },
+      {
+        id: 'external-display',
+        group: 'Share',
+        label: 'Show on second screen or cast',
+        keywords: ['projector', 'monitor', 'chromecast', 'present', 'tv'],
+        run: () => presentToExternalDisplayAction(ui.setStatusMessage),
       },
       {
         id: 'share-link',
@@ -679,7 +693,6 @@ function StimsWorkspaceAppShell() {
               id: 'stop-audio',
               group: 'Audio',
               label: 'Stop audio',
-              shortcutHint: 'Space',
               run: () => engine.handleAudioStop(),
             } satisfies CommandAction,
           ]
@@ -692,7 +705,6 @@ function StimsWorkspaceAppShell() {
   // status log, run-palette-action-by-id) plus a selector-waitable
   // data-engine-state attribute on <body>. Providers read refs, so this
   // installs exactly once.
-  const paletteActionsRef = useRef(paletteActions);
   paletteActionsRef.current = paletteActions;
   const liveModeRef = useRef(liveMode);
   liveModeRef.current = liveMode;
@@ -946,9 +958,21 @@ function StimsWorkspaceAppShell() {
         },
       );
 
+      // A gamepad drives parameters through the same binding/learn machinery
+      // as a MIDI controller — it arrives as the `virtual:gamepad` device, so
+      // the line above already handles it once it starts injecting.
+      let stopGamepad: (() => void) | null = null;
+      void import('../core/services/gamepad-performance-source.ts').then(
+        (mod) => {
+          if (!mod.isGamepadPerformanceSupported()) return;
+          stopGamepad = mod.startGamepadPerformanceSource(webMidiService);
+        },
+      );
+
       return () => {
         uninstallLive();
         unbindMidi();
+        stopGamepad?.();
       };
     });
   }, [engine]);

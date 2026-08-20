@@ -123,6 +123,28 @@ const KEYBOARD_GESTURE_SCALE_RATE = 0.9; // log-scale units per second
 const KEYBOARD_GESTURE_ROTATION_RATE = 1.2; // radians per second
 const KEYBOARD_GESTURE_RELEASE_MS = 400;
 
+/**
+ * True when a focused canvas swallows `key` before the document-level
+ * shortcuts can see it.
+ *
+ * handleKeyDown() below stopPropagation()s every pointer, gesture and
+ * performance key, deliberately, so one keystroke cannot fire both a canvas
+ * behavior and a shell shortcut. The cost is that any shell shortcut sharing
+ * one of these letters silently does nothing while the canvas holds focus —
+ * which is invisible when reading shortcut-registry.ts alone. Exported so
+ * that registry can be tested against it.
+ */
+export function isCanvasConsumedKey(key: string): boolean {
+  // Accept both spellings of the space bar: KeyboardEvent.key reports ' ',
+  // while shortcut specs write it as 'Space'.
+  const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
+  return (
+    KEYBOARD_POINTER_KEYS.has(lower) ||
+    KEYBOARD_GESTURE_KEYS.has(lower) ||
+    Object.values(PERFORMANCE_ACTION_KEYS).some((keys) => keys.includes(lower))
+  );
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
@@ -376,13 +398,7 @@ export function createUnifiedInput({
     // movement arrows all collide with document-level shell shortcuts
     // (stop audio, open editor, quick-select, previous/next preset) — without
     // this, one keystroke on a focused canvas fires both behaviors.
-    if (
-      KEYBOARD_POINTER_KEYS.has(lowerKey) ||
-      KEYBOARD_GESTURE_KEYS.has(lowerKey) ||
-      Object.values(PERFORMANCE_ACTION_KEYS).some((keys) =>
-        keys.includes(lowerKey),
-      )
-    ) {
+    if (isCanvasConsumedKey(lowerKey)) {
       event.preventDefault();
       event.stopPropagation();
     }

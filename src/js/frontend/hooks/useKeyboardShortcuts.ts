@@ -3,6 +3,7 @@ import type { PanelState, PresetCatalogEntry } from '../contracts';
 import {
   eventMatchesShortcut,
   readShortcutOverrides,
+  SHORTCUT_REGISTRY,
 } from '../shortcut-registry.ts';
 
 export function useKeyboardShortcuts({
@@ -20,6 +21,7 @@ export function useKeyboardShortcuts({
   toggleFavoritePreset,
   setStatusMessage,
   setShowShortcuts,
+  runPaletteAction,
 }: {
   liveMode: boolean;
   engineReady: boolean;
@@ -35,6 +37,8 @@ export function useKeyboardShortcuts({
   toggleFavoritePreset?: () => void;
   setStatusMessage?: (message: string | null) => void;
   setShowShortcuts: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Runs a command-palette action by id — see ShortcutDefinition.paletteActionId. */
+  runPaletteAction?: (actionId: string) => void;
 }) {
   const filteredCatalogRef = useRef(filteredCatalog);
   filteredCatalogRef.current = filteredCatalog;
@@ -56,6 +60,8 @@ export function useKeyboardShortcuts({
   toggleFavoritePresetRef.current = toggleFavoritePreset;
   const setStatusMessageRef = useRef(setStatusMessage);
   setStatusMessageRef.current = setStatusMessage;
+  const runPaletteActionRef = useRef(runPaletteAction);
+  runPaletteActionRef.current = runPaletteAction;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -130,7 +136,17 @@ export function useKeyboardShortcuts({
       } else if (eventMatchesShortcut(event, 'favorite', shortcutOverrides)) {
         event.preventDefault();
         toggleFavoritePresetRef.current?.();
-      } else if (/^[1-9]$/.test(key) && liveMode) {
+      } else if (
+        /^[1-9]$/.test(key) &&
+        liveMode &&
+        // Quick-select is matched as a raw digit rather than through the
+        // registry, so it needs its own modifier guard: without this, Cmd+1
+        // jumps to a preset *and* preventDefault()s the browser's own
+        // switch-to-tab-1.
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
         event.preventDefault();
         const index = Number.parseInt(key, 10) - 1;
         const preset = filteredCatalogRef.current[index];
@@ -148,6 +164,18 @@ export function useKeyboardShortcuts({
       } else if (eventMatchesShortcut(event, 'help', shortcutOverrides)) {
         event.preventDefault();
         setShowShortcuts((s) => !s);
+      } else {
+        // Bindings that just run an existing palette action carry no bespoke
+        // handler — see ShortcutDefinition.paletteActionId.
+        for (const entry of SHORTCUT_REGISTRY) {
+          if (!entry.dispatchViaPalette || !entry.paletteActionId) continue;
+          if (!eventMatchesShortcut(event, entry.id, shortcutOverrides)) {
+            continue;
+          }
+          event.preventDefault();
+          runPaletteActionRef.current?.(entry.paletteActionId);
+          break;
+        }
       }
     };
 
