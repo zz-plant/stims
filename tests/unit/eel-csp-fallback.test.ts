@@ -118,6 +118,20 @@ describe('EEL CSP interpreter-only fallback', () => {
     expect(fallback.env.x).toBe(jit.env.x);
   });
 
+  test('clamps non-finite nested assignments like the JIT', () => {
+    // Regression: the fallback's statement-level clamp only covered the
+    // outermost value, so an assignment nested inside an expression stored a
+    // raw Infinity into the register/state mirrors, where it persisted
+    // across frames and NaN-poisoned everything reading it.
+    const program = ['zoom = (q1 = 1e300 * 1e300) * 0 + 1'];
+    const jit = runTier(program, true);
+    const fallback = runTier(program, false);
+
+    expect(fallback.registers.q1).toBe(0);
+    expect(fallback.registers.q1).toBe(jit.registers.q1 as number);
+    expect(fallback.state.zoom).toBe(jit.state.zoom as number);
+  });
+
   test('runs unknown-function arguments for their side effects', () => {
     // Regression: the JIT's unknown-name fallback emitted a bare `(0)` and
     // threw the compiled argument expressions away, so an assignment nested
@@ -152,16 +166,26 @@ describe('EEL CSP interpreter-only fallback', () => {
   });
 
   test('agrees with the JIT on 300 seeded random programs', () => {
-    const VARS = ['a', 'b', 'c', 'd', 'x', 'y', 'zoom', 'rot'];
+    const VARS = ['a', 'b', 'c', 'd', 'x', 'y', 'zoom', 'rot', 'q1', 't2'];
+    const OVERFLOW_LITERALS = ['1e300', '-1e300', '1e-320', '1e38'];
     const failures: string[] = [];
     for (let seed = 1; seed <= 300; seed++) {
       const rnd = mulberry32(seed);
       const genExpr = (depth: number): string => {
         const roll = rnd();
         if (depth <= 0 || roll < 0.3) {
-          return rnd() < 0.5
-            ? (rnd() * 20 - 10).toFixed(4)
-            : (VARS[Math.floor(rnd() * VARS.length)] as string);
+          if (rnd() < 0.5) {
+            // A tenth of the literals overflow f64 when multiplied, which is
+            // what makes the never-let-NaN-escape clamp observable. A pool of
+            // only +/-10 values kept the fuzz permanently inside the finite
+            // range and hid an unclamped nested-assignment store.
+            return rnd() < 0.2
+              ? (OVERFLOW_LITERALS[
+                  Math.floor(rnd() * OVERFLOW_LITERALS.length)
+                ] as string)
+              : (rnd() * 20 - 10).toFixed(4);
+          }
+          return VARS[Math.floor(rnd() * VARS.length)] as string;
         }
         if (roll < 0.5) {
           const fns = ['sin', 'sqrt', 'log', 'int', 'frac', 'abs', 'sqr'];
@@ -190,16 +214,33 @@ describe('EEL CSP interpreter-only fallback', () => {
         failures.push(`seed ${seed} threw: ${(error as Error).message}`);
         continue;
       }
-      for (const key of new Set([
-        ...Object.keys(jit.env),
-        ...Object.keys(fallback.env),
-      ])) {
-        if (!closeEnough(jit.env[key] ?? 0, fallback.env[key] ?? 0)) {
-          failures.push(
-            `seed ${seed}: ${key} jit=${jit.env[key]} fallback=${fallback.env[key]}\n  ${lines.join('\n  ')}`,
-          );
-          break;
+      // Every store, not just env: q registers and the state mirror are what
+      // persist across frames, so a value that only goes bad there is exactly
+      // the one that poisons a preset for its whole lifetime.
+      let mismatched = false;
+      for (const store of ['env', 'state', 'registers'] as const) {
+        for (const key of new Set([
+          ...Object.keys(jit[store]),
+          ...Object.keys(fallback[store]),
+        ])) {
+          const jitValue = jit[store][key] ?? 0;
+          const fallbackValue = fallback[store][key] ?? 0;
+          if (!Number.isFinite(jitValue) || !Number.isFinite(fallbackValue)) {
+            failures.push(
+              `seed ${seed}: ${store}.${key} escaped non-finite jit=${jitValue} fallback=${fallbackValue}\n  ${lines.join('\n  ')}`,
+            );
+            mismatched = true;
+            break;
+          }
+          if (!closeEnough(jitValue, fallbackValue)) {
+            failures.push(
+              `seed ${seed}: ${store}.${key} jit=${jitValue} fallback=${fallbackValue}\n  ${lines.join('\n  ')}`,
+            );
+            mismatched = true;
+            break;
+          }
         }
+        if (mismatched) break;
       }
     }
     expect(failures).toEqual([]);
