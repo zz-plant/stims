@@ -158,6 +158,7 @@
     "test:audio-rig": "bun run scripts/test-audio-rig.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.5.8",
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/sdk": "1.30.0",
@@ -169,12 +170,14 @@
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "6.0.5",
     "@webgpu/types": "^0.1.72",
+    "axe-core": "^4.13.0",
     "butterchurn": "^2.6.7",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^17.3.9",
     "esbuild": "^0.28.1",
     "happy-dom": "20.11.1",
     "husky": "^9.1.7",
+    "pixelmatch": "^7.2.0",
     "playwright": "1.62.1",
     "sharp": "^0.35.2",
     "typescript": "^6.0.3",
