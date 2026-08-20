@@ -11330,7 +11330,7 @@
       "author": "Eo.S.",
       "order": 237,
       "file": "/milkdrop-presets/butterchurn/eo-s-repeater-08-rave-on-a-lot-of-acid-and-some-k.milk",
-      "preview": true,
+      "preview": false,
       "tags": [
         "collection:webgpu-showcase",
         "collection:hall-of-fame",
@@ -70764,7 +70764,7 @@
       "author": "goody + martin",
       "order": 1485,
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations.milk",
-      "preview": true,
+      "preview": false,
       "tags": [
         "collection:webgpu-showcase",
         "collection:hall-of-fame",
@@ -72580,7 +72580,7 @@
       "author": "martin",
       "order": 1523,
       "file": "/milkdrop-presets/butterchurn/martin-axon3.milk",
-      "preview": true,
+      "preview": false,
       "tags": [
         "collection:webgpu-showcase",
         "collection:hall-of-fame",
@@ -81057,7 +81057,7 @@
       "author": "shifter",
       "order": 1700,
       "file": "/milkdrop-presets/butterchurn/shifter-digi.milk",
-      "preview": true,
+      "preview": false,
       "tags": [
         "collection:butterchurn",
         "preset",

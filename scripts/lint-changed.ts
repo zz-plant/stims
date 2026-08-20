@@ -3,8 +3,9 @@
  * and mid-edit check instead of a whole-repo pass.
  *
  * Scans modified plus untracked JS/TS/JSON/CSS/HTML files (skipping dist/ and
- * node_modules/, and paths deleted on disk). `--staged` narrows the scan to
- * the git index so the pre-commit hook gates only what is being committed.
+ * node_modules/, paths deleted on disk, and files past Biome's
+ * `files.maxSize`). `--staged` narrows the scan to the git index so the
+ * pre-commit hook gates only what is being committed.
  */
 import { $ } from 'bun';
 
@@ -14,6 +15,8 @@ import { $ } from 'bun';
 // the machine). Default (no flag) keeps the wider working-tree scope for
 // interactive `bun run lint:changed` runs.
 const stagedOnly = process.argv.includes('--staged');
+const { files: biomeFiles } = await Bun.file('biome.json').json();
+const maxSize: number = biomeFiles?.maxSize ?? 1024 * 1024;
 const rawDiff = stagedOnly
   ? await $`git diff --name-only --cached`.text()
   : await $`git diff --name-only HEAD`.text();
@@ -32,7 +35,12 @@ const files = [...rawDiff.split('\n'), ...rawUntracked.split('\n')]
   )
   // A deletion also shows up in the diff; Biome errors on paths that no
   // longer exist on disk.
-  .filter((f) => Bun.file(f).size > 0);
+  .filter((f) => Bun.file(f).size > 0)
+  // Biome skips anything over files.maxSize and then exits non-zero with "No
+  // files were processed" if that was the whole list — which turned a
+  // catalog.json-only change into a failing gate. Read the limit from the
+  // config so the two cannot drift apart.
+  .filter((f) => Bun.file(f).size <= maxSize);
 
 if (files.length === 0) {
   console.log('No modified or untracked files to lint.');
