@@ -22,6 +22,8 @@
  * (lab:gpu-differential) showed naive WGSL pow() diverging constantly on
  * boolean-fed pow idioms, so this is NOT an acceptable divergence.
  */
+import { EEL_F32_MAX_WGSL } from './eel-function-table.ts';
+
 export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   fn milkdropBool(value: f32) -> f32 {
     return select(0.0, 1.0, abs(value) > 0.00001);
@@ -32,7 +34,7 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   }
 
   fn milkdropFinite(value: f32) -> f32 {
-    return select(0.0, value, abs(value) < 3.402823e38);
+    return select(0.0, value, abs(value) < ${EEL_F32_MAX_WGSL});
   }
 
   fn milkdropSqrt(value: f32) -> f32 {
@@ -43,7 +45,7 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
     // 1/sqrt(x) with the CPU's clamps: x <= 0 gives Infinity, which the
     // per-op finite clamp zeroes.
     let v = 1.0 / sqrt(max(value, 0.0));
-    return select(0.0, v, abs(v) < 3.402823e38);
+    return select(0.0, v, abs(v) < ${EEL_F32_MAX_WGSL});
   }
 
   fn milkdropAsin(value: f32) -> f32 {
@@ -78,12 +80,12 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
     } else {
       v = pow(base, exponent);
     }
-    return select(0.0, v, abs(v) < 3.402823e38);
+    return select(0.0, v, abs(v) < ${EEL_F32_MAX_WGSL});
   }
 
   fn milkdropLog(value: f32) -> f32 {
     let v = log(max(value, 0.0));
-    return select(0.0, v, abs(v) < 3.402823e38);
+    return select(0.0, v, abs(v) < ${EEL_F32_MAX_WGSL});
   }
 
   fn milkdropLog10(value: f32) -> f32 {
@@ -129,7 +131,7 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
   fn milkdropTruncInt(value: f32) -> i32 {
     // Non-finite collapses to 0, matching toMilkdropInt. Clamp before the
     // i32 cast: out-of-range float-to-int conversion is undefined in WGSL.
-    let finite = value == value && abs(value) < 3.402823e38;
+    let finite = value == value && abs(value) < ${EEL_F32_MAX_WGSL};
     let truncated = trunc(select(0.0, value, finite));
     return i32(clamp(truncated, -2147483520.0, 2147483520.0));
   }

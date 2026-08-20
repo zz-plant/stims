@@ -1,3 +1,5 @@
+import { EEL_F32_MAX } from '../compiler/eel-function-table.ts';
+
 export type VmBufferLayout = {
   fieldOffsets: Record<string, number>;
   fieldCount: number;
@@ -14,6 +16,19 @@ export type VmBufferLayout = {
 
 const FLOAT32_BYTES = 4;
 const UINT32_BYTES = 4;
+
+/**
+ * Mirror of the WGSL `milkdropFinite` clamp — same `EEL_F32_MAX` bound, for values crossing the CPU/GPU
+ * seam. `Number.isFinite` is NOT sufficient here: it accepts f64 values the
+ * CPU tiers legitimately produce (1e300 survives their own finite clamp) that
+ * become +/-Infinity the instant they are stored into a Float32Array. That
+ * Infinity then reaches every WGSL expression reading the field and turns
+ * into NaN on the first `Inf - Inf` / `Inf * 0`, and because VM state
+ * persists across frames the NaN never washes out.
+ */
+function toGpuFinite(value: number): number {
+  return Math.abs(value) < EEL_F32_MAX ? value : 0;
+}
 
 export function createVmBufferManager() {
   let layout: VmBufferLayout | null = null;
@@ -116,9 +131,11 @@ export function createVmBufferManager() {
         uintView[offset / UINT32_BYTES] = randomState;
       } else {
         const floatIndex = offset / FLOAT32_BYTES;
-        if (Number.isFinite(value)) {
-          floatView[floatIndex] = value;
-        }
+        // Always write. Skipping the store on a bad value left the previous
+        // frame's number sitting at that offset in the reused staging
+        // buffer, so the GPU silently ran a frame behind on that field
+        // instead of seeing the 0 every other tier clamps to.
+        floatView[floatIndex] = toGpuFinite(value);
       }
     }
 
@@ -176,8 +193,11 @@ export function createVmBufferManager() {
         continue;
       }
       const floatIndex = offset / FLOAT32_BYTES;
-      result[key] =
-        floatView[floatIndex] !== undefined ? floatView[floatIndex] : 0;
+      // Readback is the GPU -> persistent-CPU-state trust boundary: anything
+      // non-finite that escaped a shader path without a milkdropFinite store
+      // would otherwise be adopted as this preset's state forever.
+      const raw = floatView[floatIndex];
+      result[key] = raw === undefined ? 0 : toGpuFinite(raw);
     }
 
     return result;

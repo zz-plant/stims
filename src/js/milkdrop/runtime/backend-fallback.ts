@@ -55,12 +55,22 @@ export function describeWebglFallback(compiled: MilkdropCompiledPreset) {
 export function createMilkdropBackendFailover({
   preferences,
   reload,
+  persistFallback = markPresetNeedsWebgl,
 }: {
   preferences: {
     recordFallback(args: { presetId: string; reason: string }): void;
   };
   reload: (presetId: string) => void;
+  /**
+   * Test seam. Injected rather than module-mocked: `mock.module` here leaks
+   * across the whole Bun run and perturbs unrelated compiler suites.
+   */
+  persistFallback?: (presetId: string) => boolean;
 }) {
+  // Guards against re-entry within one runtime. It deliberately does NOT guard
+  // the reload loop: the reload tears this closure down and the next page load
+  // builds a fresh one with the latch clear. Only `markPresetNeedsWebgl`
+  // succeeding breaks that cycle.
   let fallbackTriggered = false;
 
   return {
@@ -82,12 +92,20 @@ export function createMilkdropBackendFailover({
       // Scope the fallback to this preset for this session. Flipping the global
       // compatibility-mode preference here would persist a device-wide WebGL
       // downgrade for every future preset and session.
-      markPresetNeedsWebgl(presetId);
+      if (!persistFallback(presetId)) {
+        // The reload's whole purpose is to re-enter with this preset pinned to
+        // WebGL. Unpersisted, it re-enters pinned to nothing and lands right
+        // back here, so reloading is not a degraded outcome — it is an
+        // unbounded reload loop with no user escape. Stay on the WebGPU path
+        // instead: this preset renders wrong, every other one still works, and
+        // the tab remains usable.
+        console.warn(
+          `Could not persist the WebGL fallback for ${presetId} (session storage unavailable); staying on WebGPU rather than reloading indefinitely.`,
+        );
+        return true;
+      }
       reload(presetId);
       return true;
-    },
-    hasTriggered() {
-      return fallbackTriggered;
     },
   };
 }

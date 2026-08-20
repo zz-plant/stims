@@ -36,7 +36,7 @@ and the runner derives profiles from those folders (`fast` = unit + compat;
 `milkdrop-webgpu-feature-routing.test.ts` · `webgpu-timestamp-profiler.test.ts` ·
 `shader-dependent-presets.test.ts` · `renderer-capabilities.test.ts` ·
 `renderer-query-override.test.ts` · `renderer-retry-policy.test.ts` ·
-`renderer-settings.test.ts` · `renderer-setup.test.ts` · `renderer-fallback-state.test.ts` (`fallback-state.test.ts`)
+`renderer-settings.test.ts` · `renderer-setup.test.ts`
 
 ## Audio
 

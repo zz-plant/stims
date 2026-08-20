@@ -70,6 +70,12 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(literal(-3))).toBe('-3');
     expect(buildWgslExpressionString(literal(Infinity))).toBe('0.0');
     expect(buildWgslExpressionString(literal(NaN))).toBe('0.0');
+    // f64-finite but f32-unrepresentable: emitting the literal verbatim is a
+    // WGSL shader-creation error, which loses the whole program rather than
+    // one value. 0.0 is also what milkdropFinite gives that magnitude.
+    expect(buildWgslExpressionString(literal(1e39))).toBe('0.0');
+    expect(buildWgslExpressionString(literal(-1e300))).toBe('0.0');
+    expect(buildWgslExpressionString(literal(3e38))).toBe('3e+38');
   });
 
   test('identifier resolution', () => {

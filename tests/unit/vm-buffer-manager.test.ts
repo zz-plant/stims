@@ -60,4 +60,34 @@ describe('createVmBufferManager', () => {
 
     manager.dispose();
   });
+
+  test('writeState zeroes values f32 cannot hold instead of leaking Infinity', () => {
+    const manager = createVmBufferManager();
+    const mockDevice = {
+      createBuffer: () => ({ destroy: () => {} }),
+      queue: { writeBuffer: () => {} },
+    } as unknown as GPUDevice;
+
+    const layout = manager.allocateBuffer(
+      mockDevice,
+      ['zoom', 'rot'],
+      false,
+      'test-buffer',
+    );
+    const floats = layout.stagingFloatView as Float32Array;
+    const zoomIndex = (layout.fieldOffsets.zoom as number) / 4;
+    const rotIndex = (layout.fieldOffsets.rot as number) / 4;
+
+    manager.writeState(mockDevice, { zoom: 1.05, rot: 0.02 }, 0);
+    expect(floats[zoomIndex]).toBeCloseTo(1.05, 5);
+
+    // 1e300 passes Number.isFinite but is +Infinity once stored as f32, and
+    // the shader turns that into NaN on the first Inf-Inf. Every other tier
+    // clamps this magnitude to 0, so the upload must too.
+    manager.writeState(mockDevice, { zoom: 1e300, rot: Number.NaN }, 0);
+    expect(floats[zoomIndex]).toBe(0);
+    expect(floats[rotIndex]).toBe(0);
+
+    manager.dispose();
+  });
 });

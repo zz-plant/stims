@@ -32,9 +32,9 @@ export function deriveRendererPlan({
   if (!capabilities) {
     return {
       backend: hasWebGL ? 'webgl' : null,
-      reasonCode: hasWebGL
-        ? RENDERER_FALLBACK_REASON_CODES.rendererUnavailable
-        : RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
+      // The reason is the same either way — capabilities are unavailable.
+      // Only whether WebGL can still carry the stage differs.
+      reasonCode: RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
       reasonMessage: getRendererFallbackReasonMessage(
         RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
       ),

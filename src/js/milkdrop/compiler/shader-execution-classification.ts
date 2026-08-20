@@ -40,7 +40,13 @@ export function classifyMilkdropShaderProgramExecution(
 
   if (preservesRawGlsl) {
     return {
-      kind: 'backend-executable',
+      // Same rule as the branch above: raw GLSL makes the program executable,
+      // but it does not remove a control-fallback requirement. Hardcoding the
+      // plain kind here made the returned object contradict its own
+      // `requiresControlFallback` field.
+      kind: requiresControlFallback
+        ? 'backend-executable-with-control-fallback'
+        : 'backend-executable',
       backends: ['webgl' as MilkdropRenderBackend],
       preservesRawGlsl,
       requiresControlFallback,
