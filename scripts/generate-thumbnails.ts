@@ -413,16 +413,22 @@ class RenderSession {
 
           // A good preview frame has visible structure and isn't blown out.
           // Feedback presets go black → structured → saturated white as sim
-          // time accumulates, so capture the first good checkpoint and keep
-          // the best-scoring frame as a fallback. Thresholds mirror the
-          // authoritative badFrameReason() checks on the Node side.
-          const isGood = (s: { mean: number; max: number; std: number }) =>
+          // time accumulates, so keep sampling and hold the BEST frame.
+          //
+          // This used to stop at the first frame clearing `isGood`, whose bar
+          // was mean >= 0.4 out of 255 — a nearly-black frame with a handful
+          // of lit pixels ended the search on the spot, long before a feedback
+          // preset had drawn anything. Measured over the shipped set that left
+          // a median luminance of 17/255 with 27% of thumbnails effectively
+          // black. Structure (std) is what actually makes a thumbnail
+          // readable, so it drives the score, scaled down for frames that are
+          // technically lit but almost empty, and zeroed at both failure ends.
+          const acceptable = (s: { mean: number; max: number; std: number }) =>
             s.max >= 32 && s.mean >= 0.4 && s.mean <= 240 && s.std >= 2.5;
-          const score = (s: { mean: number; max: number; std: number }) =>
-            (s.max >= 32 && s.mean >= 0.4 ? 2 : 0) +
-            (s.mean <= 240 ? 1 : 0) +
-            (s.std >= 2.5 ? 2 : 0) +
-            Math.min(s.std, 50) / 100;
+          const score = (s: { mean: number; max: number; std: number }) => {
+            if (s.max < 32 || s.mean > 240) return 0;
+            return s.std * Math.min(1, s.mean / 8);
+          };
 
           let rendered = 0;
           const pump = (n: number) => {
@@ -439,6 +445,12 @@ class RenderSession {
             dataUrl: string;
             framesUsed: number;
           } | null = null;
+          // Stop once the image has stopped getting better rather than at the
+          // first passable frame — but only after one acceptable frame exists,
+          // so a slow-blooming preset is never abandoned while still black.
+          // Running the full budget for every preset would be correct and far
+          // too slow across ~2,700 of them; a plateau is the cheap equivalent.
+          let sinceImprovement = 0;
           for (;;) {
             const s = snapshot();
             const sc = score(s);
@@ -448,14 +460,22 @@ class RenderSession {
                 dataUrl: full.toDataURL('image/png'),
                 framesUsed: rendered,
               };
+              sinceImprovement = 0;
+            } else {
+              sinceImprovement += 1;
             }
-            if (isGood(s) || rendered >= maxFrames) break;
+            const settled =
+              sinceImprovement >= plateauCheckpoints && best.score > 0;
+            if (settled || rendered >= maxFrames) break;
             // Sample finely while saturation risk is highest, then coarsen.
             const stride = rendered < 60 ? 15 : rendered < 120 ? 30 : 60;
             if (!pump(stride)) {
               return { error: 'render hook returned null (audio active?)' };
             }
           }
+          // `acceptable` stays the shared definition of a usable frame; the
+          // Node side re-checks it authoritatively before writing.
+          void acceptable;
           return {
             dataUrl: best.dataUrl,
             rendered,
