@@ -183,7 +183,7 @@
     "pixelmatch": "^7.2.0",
     "playwright": "1.62.1",
     "sharp": "^0.35.2",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "8.0.16",
     "wrangler": "^4.123.0",
     "zod": "4.4.3"
