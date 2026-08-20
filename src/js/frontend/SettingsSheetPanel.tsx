@@ -575,7 +575,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
-          Playback &amp; Audio
+          Playback
         </button>
         <button
           id="tab-hardware"
@@ -587,7 +587,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
-          MIDI &amp; Stage
+          MIDI
         </button>
         <button
           id="tab-graphics"
@@ -599,7 +599,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
-          Graphics &amp; Performance
+          Graphics
         </button>
         <button
           id="tab-accessibility"
@@ -611,7 +611,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
-          Accessibility &amp; Device
+          Accessibility
         </button>
       </div>
       {activeTab === 'playback' ? (

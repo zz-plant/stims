@@ -817,6 +817,24 @@ html.light .stims-shell {
     color: var(--ctl-accent);
   }
 
+  /* The size of a collection, inline on its chip. A rail where four of the
+     entries each hold ~80% of the catalog looks like four equal choices
+     until the numbers are visible. */
+  .ctl-chip__count {
+    margin-left: 6px;
+    padding-left: 6px;
+    border-left: 1px solid var(--ctl-line);
+    color: var(--ctl-ink-3);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92em;
+  }
+
+  .ctl-chip[data-active="true"] .ctl-chip__count {
+    color: inherit;
+    border-left-color: currentColor;
+    opacity: 0.7;
+  }
+
   .ctl-preset__fav {
     display: inline-flex;
     align-items: center;

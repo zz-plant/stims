@@ -31,12 +31,14 @@ import {
   buildAppliedFilterSummary,
   describePresetMood,
   getAuthorOptions,
+  getCollectionCounts,
   getFeaturedCollectionTags,
   matchesAuthor,
   matchesPreset,
   passesFlashPreference,
   prettifyCollectionTag,
   sortBrowseEntries,
+  sortCollectionsBySelectivity,
 } from './workspace-helpers.ts';
 
 export {
@@ -171,7 +173,18 @@ export function BrowseSheetPanel({
     return () => clearTimeout(timer);
   }, [localSearch, searchQuery, ui]);
 
-  const featuredTags = getFeaturedCollectionTags(collectionTags);
+  const collectionCounts = useMemo(
+    () => getCollectionCounts(catalog),
+    [catalog],
+  );
+  const featuredTags = useMemo(
+    () =>
+      sortCollectionsBySelectivity(
+        getFeaturedCollectionTags(collectionTags),
+        collectionCounts,
+      ),
+    [collectionTags, collectionCounts],
+  );
   const hasFilter =
     localSearch.trim().length > 0 ||
     routeState.collectionTag !== null ||
@@ -603,6 +616,11 @@ export function BrowseSheetPanel({
               }
             >
               {prettifyCollectionTag(tag)}
+              {collectionCounts.get(tag) ? (
+                <span className="ctl-chip__count">
+                  {collectionCounts.get(tag)?.toLocaleString()}
+                </span>
+              ) : null}
             </button>
           ))}
           <button

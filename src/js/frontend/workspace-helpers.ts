@@ -325,6 +325,46 @@ export function passesFlashPreference(
   return !hiddenByFlashPreference(entry.sensoryProfile);
 }
 
+/** How many catalog entries each collection tag actually contains. */
+export function getCollectionCounts(
+  entries: PresetCatalogEntry[],
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    for (const tag of entry.tags ?? []) {
+      if (!tag.startsWith('collection:')) continue;
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Order the collection rail by how much each collection narrows the list.
+ *
+ * The curated order put the broadest collections first, and they are very
+ * broad: hall-of-fame, webgpu-showcase, audio-reactive and butterchurn each
+ * hold 77-98% of the 1787 entries, so picking one removes almost nothing.
+ * The genuinely selective collections — cream-of-the-crop (42),
+ * classic-milkdrop (12), rovastar-and-collaborators (6) — sat past the right
+ * edge of a rail that already overflowed by more than 2x, which meant the
+ * only chips a user could see without scrolling were the ones that barely
+ * filter.
+ *
+ * Nothing is removed; a collection someone curated stays reachable. This
+ * only decides which end of the rail earns the visible seats.
+ */
+export function sortCollectionsBySelectivity(
+  tags: string[],
+  counts: Map<string, number>,
+): string[] {
+  return [...tags].sort((a, b) => {
+    const byCount = (counts.get(a) ?? 0) - (counts.get(b) ?? 0);
+    // Stable within a tie so the curated order still shows through.
+    return byCount !== 0 ? byCount : tags.indexOf(a) - tags.indexOf(b);
+  });
+}
+
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
   const collectionTags = new Set<string>();
   entries.forEach((entry) => {

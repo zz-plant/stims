@@ -73,11 +73,23 @@ describe('photosensitivity warning', () => {
   });
 });
 
-describe('reactivity band', () => {
-  test('bands split high / medium / low', () => {
-    expect(render(withReactivity(0.95))).toContain('Strongly beat-reactive');
-    expect(render(withReactivity(0.6))).toContain('Moderately reactive');
+describe('reactivity is shown only when it is the exception', () => {
+  test('a low-reactivity preset says so', () => {
+    // The case worth a row: someone whose visuals barely move needs to know
+    // that is the preset, not a broken visualizer.
     expect(render(withReactivity(0.1))).toContain('Ambient');
+  });
+
+  test('ordinary and strong reactivity render nothing', () => {
+    // The first version printed a band on every row; measured live that was
+    // ten identical chips out of eleven. The baseline needs no label.
+    expect(render(withReactivity(0.95))).toBe('');
+    expect(render(withReactivity(0.6))).toBe('');
+    expect(render(withReactivity(0.45))).toBe('');
+  });
+
+  test('the threshold is exclusive at the boundary', () => {
+    expect(render(withReactivity(0.449))).toContain('Ambient');
   });
 
   test('an unmeasured preset shows no reactivity claim', () => {
@@ -85,7 +97,7 @@ describe('reactivity band', () => {
   });
 
   test('suppressed where space is tightest', () => {
-    expect(render(withReactivity(0.95), false)).toBe('');
+    expect(render(withReactivity(0.1), false)).toBe('');
   });
 });
 
@@ -116,7 +128,11 @@ describe('against the shipped catalog', () => {
     });
     expect(withMeasured.length).toBeGreaterThan(0);
 
-    const rendered = render(withMeasured[0] as unknown as PresetCatalogEntry);
-    expect(rendered).not.toBe('');
+    // Deliberately not asserting a rendered chip: the measured presets are
+    // the curated starter set and nearly all score above the ambient
+    // threshold, so the correct output for most of them is nothing. This
+    // guards the field's presence, which is what silently broke before.
+    const sample = withMeasured[0] as unknown as PresetCatalogEntry;
+    expect(sample.quality?.components?.measuredReactivity).toBeTypeOf('number');
   });
 });

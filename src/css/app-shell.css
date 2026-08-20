@@ -4012,3 +4012,18 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   color: var(--stims-accent);
   font-weight: 600;
 }
+
+/* The hero recedes while a panel is open. It is still the page's backdrop —
+   not hidden — but it stops competing for attention with the sheet in front
+   of it. Paired with `inert`, which takes it out of the tab order at the
+   same moment. */
+.stims-shell__stage-hero[data-behind-panel] {
+  opacity: 0.32;
+  transition: opacity 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-shell__stage-hero[data-behind-panel] {
+    transition-duration: 0.01ms;
+  }
+}
