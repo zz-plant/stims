@@ -383,6 +383,8 @@ export class FrequencyAnalyser {
     stream: MediaStream,
     fftSize?: number,
     smoothingTimeConstant?: number,
+    /** Which two input channels feed the visuals on a multichannel device. */
+    channelPair?: [number, number],
   ): Promise<FrequencyAnalyser> {
     const sourceNode = context.createMediaStreamSource(stream);
     const silentGain = context.createGain();
@@ -423,11 +425,27 @@ export class FrequencyAnalyser {
       }
     }
 
-    const hasStereoTrack =
-      typeof stream.getAudioTracks === 'function' &&
-      stream
-        .getAudioTracks()
-        .some((track) => (track.getSettings().channelCount ?? 1) >= 2);
+    const trackChannelCount = Math.max(
+      1,
+      ...(typeof stream.getAudioTracks === 'function'
+        ? stream
+            .getAudioTracks()
+            .map((track) => track.getSettings().channelCount ?? 1)
+        : [1]),
+    );
+    const hasStereoTrack = trackChannelCount >= 2;
+    // Clamp the requested pair to what actually arrived, so asking for the
+    // cue bus on a device that only has two channels degrades to the main
+    // pair instead of connecting to a channel index that does not exist.
+    const [requestedLeft, requestedRight] = channelPair ?? [0, 1];
+    const leftChannel = Math.min(
+      Math.max(0, requestedLeft),
+      trackChannelCount - 1,
+    );
+    const rightChannel = Math.min(
+      Math.max(0, requestedRight),
+      trackChannelCount - 1,
+    );
     let analyserNodeL: AnalyserNode | undefined;
     let analyserNodeR: AnalyserNode | undefined;
     const analyserNode = workletNode
@@ -441,7 +459,7 @@ export class FrequencyAnalyser {
           sourceNode.connect(node);
 
           if (hasStereoTrack) {
-            const splitter = context.createChannelSplitter(2);
+            const splitter = context.createChannelSplitter(trackChannelCount);
             analyserNodeL = context.createAnalyser();
             analyserNodeR = context.createAnalyser();
             analyserNodeL.fftSize = effectiveFftSize;
@@ -451,8 +469,8 @@ export class FrequencyAnalyser {
               analyserNodeR.smoothingTimeConstant = smoothingTimeConstant;
             }
             sourceNode.connect(splitter);
-            splitter.connect(analyserNodeL, 0);
-            splitter.connect(analyserNodeR, 1);
+            splitter.connect(analyserNodeL, leftChannel);
+            splitter.connect(analyserNodeR, rightChannel);
           }
 
           return node;
@@ -988,6 +1006,13 @@ export function classifyAudioAccessError(error: unknown): AudioAccessError {
 export type AudioInitOptions = {
   fftSize?: number;
   deviceId?: string;
+  /**
+   * Which two input channels drive the visuals, on an interface that carries
+   * more than two. Defaults to the first pair. A DJ mixer's cue bus is
+   * commonly channels 3/4, and previously there was no way to reach it —
+   * everything past the first pair was inaccessible.
+   */
+  channelPair?: [number, number];
   smoothingTimeConstant?: number;
   camera?: Camera;
   positional?: boolean;
@@ -1015,11 +1040,18 @@ export type AudioInitOptions = {
   monitorInput?: boolean;
 };
 
+/** Ask for more than stereo so an audio interface's extra channels survive.
+ * `ideal` (never `exact`) — the browser clamps to whatever the device
+ * actually offers, and a hard constraint would fail outright on a laptop
+ * mic. */
+const MAX_REQUESTED_INPUT_CHANNELS = 8;
+
 export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
     echoCancellation: { ideal: false },
     noiseSuppression: { ideal: false },
     autoGainControl: { ideal: false },
+    channelCount: { ideal: MAX_REQUESTED_INPUT_CHANNELS },
   },
 };
 
@@ -1578,6 +1610,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       streamSource,
       fftSize,
       smoothingTimeConstant,
+      options.channelPair,
     );
 
     const cleanup = async () => {

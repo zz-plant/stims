@@ -32,6 +32,7 @@ import { createHash } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   renameSync,
   writeFileSync,
@@ -42,6 +43,7 @@ import sharp from 'sharp';
 import { ensureDevServer } from './dev-server.ts';
 
 const OUTPUT_DIR = 'public/milkdrop-presets/previews';
+const LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
 const PREVIEW_W = 480;
 const PREVIEW_H = 270;
 const DEFAULT_LIMIT = 50;
@@ -118,20 +120,59 @@ function parseArgs() {
   return args;
 }
 
+/**
+ * Every preset the app can browse, main catalog plus the bundled libraries.
+ *
+ * The libraries (projectm-cream-of-the-crop, projectm-upstream) carry their
+ * own catalog.json and are ~a third of the browsable catalog, but this script
+ * only ever read the root catalog — so those presets could never get a
+ * preview, and browse rendered them as empty tiles. PresetArtwork resolves
+ * preview art by convention (`previews/{id}.png`), so a generated file is all
+ * they need; no catalog entry has to change.
+ */
+async function loadAllCatalogEntries(): Promise<PresetEntry[]> {
+  // Libraries are discovered by directory, matching loadCatalogEntries in
+  // preset-lab-reactivity.ts, so a newly vendored library needs no edit here.
+  const librariesRoot = new URL(`../${LIBRARIES_DIR}/`, import.meta.url);
+  const libraryCatalogs = existsSync(librariesRoot)
+    ? readdirSync(librariesRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => new URL(`${entry.name}/catalog.json`, librariesRoot))
+    : [];
+  const catalogUrls = [
+    new URL('../public/milkdrop-presets/catalog.json', import.meta.url),
+    ...libraryCatalogs,
+  ];
+  const entries: PresetEntry[] = [];
+  const seen = new Set<string>();
+  for (const url of catalogUrls) {
+    if (!existsSync(url)) continue;
+    const data = await Bun.file(url).json();
+    if (!Array.isArray(data.presets)) continue;
+    for (const preset of data.presets as PresetEntry[]) {
+      if (seen.has(preset.id)) continue;
+      seen.add(preset.id);
+      entries.push(preset);
+    }
+  }
+  return entries;
+}
+
+/**
+ * `preview` is an opt-OUT flag: it is `true` on all but one root-catalog entry
+ * and absent entirely on library entries, so only an explicit `false` skips.
+ */
+function wantsPreview(preset: PresetEntry): boolean {
+  return preset.preview !== false;
+}
+
 async function getPresets(filter: {
   count?: number;
   ids?: string[];
   all?: boolean;
   force?: boolean;
 }): Promise<PresetEntry[]> {
-  const catalogPath = new URL(
-    '../public/milkdrop-presets/catalog.json',
-    import.meta.url,
-  );
-  const data = await Bun.file(catalogPath).json();
-  const all = Array.isArray(data.presets)
-    ? (data.presets as PresetEntry[])
-    : [];
+  const all = await loadAllCatalogEntries();
 
   if (filter.ids) {
     const idSet = new Set(filter.ids);
@@ -146,11 +187,13 @@ async function getPresets(filter: {
 
   const limit = filter.count ?? DEFAULT_LIMIT;
   if (filter.force) {
-    return all.filter((p) => p.preview).slice(0, limit);
+    return all.filter(wantsPreview).slice(0, limit);
   }
 
   return all
-    .filter((p) => p.preview && !existsSync(join(OUTPUT_DIR, `${p.id}.png`)))
+    .filter(
+      (p) => wantsPreview(p) && !existsSync(join(OUTPUT_DIR, `${p.id}.png`)),
+    )
     .slice(0, limit);
 }
 
@@ -601,12 +644,7 @@ async function main() {
   const queue = [...presets];
   // Full catalog, not just the queue: the sacrificial boot preset must
   // differ from the target even when rendering a single id.
-  const catalogData = await Bun.file(
-    new URL('../public/milkdrop-presets/catalog.json', import.meta.url),
-  ).json();
-  const catalogIds = (
-    Array.isArray(catalogData.presets) ? catalogData.presets : []
-  ).map((p: PresetEntry) => p.id);
+  const catalogIds = (await loadAllCatalogEntries()).map((p) => p.id);
   const workers = Array.from({ length: concurrency }, (_, i) =>
     worker(
       browser,

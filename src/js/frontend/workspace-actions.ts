@@ -44,7 +44,10 @@ export function openRecordPanel(surface: PanelSurface): void {
     if (localStorage.getItem('stims:capture-format')) {
       sessionStorage.setItem('stims:capture-autostart', '1');
     }
-  } catch {}
+  } catch {
+    // Storage is unavailable (private mode, quota): the capture panel still
+    // opens, it just will not auto-start with the remembered format.
+  }
   surface.updatePanel('capture');
 }
 
@@ -104,4 +107,78 @@ export function endWatchParty(announce: (message: string) => void): void {
   leaveSyncSession();
   setSyncUrlParam(null);
   announce('Watch party ended — viewers keep local control.');
+}
+
+/** Point a camera at the preset's video sampler, or turn it back off. */
+export function toggleCameraAction(announce: (message: string) => void): void {
+  void (async () => {
+    const {
+      toggleCameraVideoSource,
+      isCameraVideoSupported,
+      CameraVideoError,
+    } = await import('../core/services/camera-video-source.ts');
+    if (!isCameraVideoSupported()) {
+      announce('This browser cannot open a camera.');
+      return;
+    }
+    try {
+      const on = await toggleCameraVideoSource();
+      announce(
+        on
+          ? 'Camera on — presets that sample video now see it.'
+          : 'Camera off.',
+      );
+    } catch (error) {
+      announce(
+        error instanceof CameraVideoError
+          ? error.message
+          : 'Could not start the camera.',
+      );
+    }
+  })();
+}
+
+/**
+ * Put the show on a projector, second monitor, or Chromecast. The external
+ * display loads this tab's watch-party link, so it renders the show itself
+ * and follows every preset change — no video is streamed to it.
+ */
+export function presentToExternalDisplayAction(
+  announce: (message: string) => void,
+): void {
+  void (async () => {
+    const [display, { ensureHostRoom }] = await Promise.all([
+      import('../core/services/external-display-service.ts'),
+      import('./sync-session.ts'),
+    ]);
+    if (display.getExternalDisplayState().mode !== null) {
+      display.stopExternalDisplay();
+      announce('External display disconnected.');
+      return;
+    }
+    if (!display.isCastSupported() && !display.isSecondScreenSupported()) {
+      announce('This browser cannot drive a second screen or cast.');
+      return;
+    }
+    const hosted = await ensureHostRoom();
+    if (!hosted) {
+      announce('Could not prepare the link for the external display.');
+      return;
+    }
+    try {
+      await display.presentToExternalDisplay(hosted.url);
+      const state = display.getExternalDisplayState();
+      if (state.mode === null) return; // Picker dismissed.
+      announce(
+        state.mode === 'window'
+          ? `Showing on ${state.target ?? 'the second screen'}.`
+          : 'Casting — the receiver follows every preset you play.',
+      );
+    } catch {
+      announce(
+        display.getExternalDisplayState().error ??
+          'Could not reach an external display.',
+      );
+    }
+  })();
 }

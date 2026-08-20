@@ -127,6 +127,18 @@ beforeAll(async () => {
   } = await import('../../src/js/core/audio-handler.ts'));
 });
 
+describe('multichannel input', () => {
+  test('asks for more than stereo without hard-constraining it', () => {
+    const audio = DEFAULT_MICROPHONE_CONSTRAINTS.audio as MediaTrackConstraints;
+    // `ideal`, never `exact`: the browser clamps to the device's real channel
+    // count, and a hard constraint would fail outright on a laptop mic.
+    expect(audio.channelCount).toEqual({ ideal: 8 });
+    // The DSP that would wreck music analysis stays off.
+    expect(audio.echoCancellation).toEqual({ ideal: false });
+    expect(audio.autoGainControl).toEqual({ ideal: false });
+  });
+});
+
 describe('audio-handler utilities', () => {
   beforeEach(() => {
     FakeAudioWorkletNode.instances.length = 0;
