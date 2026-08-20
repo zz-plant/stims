@@ -57,6 +57,8 @@ const DEFAULT_PORT = 5173;
 // so checkpoints start at 15 frames and sample finely early on.
 const MIN_FRAMES = 15;
 const MAX_FRAMES = 600;
+/** Checkpoints without a better frame before the search is considered done. */
+const PLATEAU_CHECKPOINTS = 3;
 const MAX_RETRIES = 1;
 // Generous under load: 8 workers can stampede compiles + Vite transforms,
 // especially while every page boots at once.
@@ -342,7 +344,7 @@ class RenderSession {
     let failure = 'unknown';
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       const capture = await page.evaluate(
-        ({ minFrames, maxFrames, beatPulse }) => {
+        ({ minFrames, maxFrames, beatPulse, plateauCheckpoints }) => {
           const step = window.__STIMS_AGENT_RENDER_FRAMES__;
           if (typeof step !== 'function') {
             return { error: 'render hook missing' };
@@ -486,6 +488,7 @@ class RenderSession {
           minFrames: MIN_FRAMES,
           maxFrames: MAX_FRAMES,
           beatPulse: this.beatPulse,
+          plateauCheckpoints: PLATEAU_CHECKPOINTS,
         },
       );
 
