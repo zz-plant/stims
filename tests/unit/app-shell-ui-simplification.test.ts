@@ -111,10 +111,15 @@ describe('Workspace shell UI simplification regression', () => {
     expect(audioSourcePanelSource).toContain('YouTube playback');
     expect(audioSourcePanelSource).toContain('Live mic input');
     expect(audioSourcePanelSource).toContain('Audio from this browser tab');
-    expect(browseSource).toContain('const BATCH_SIZE = 30;');
-    expect(browseSource).toContain('visible.map');
-    // Paging tells you how many more you get, rather than a bare "Show more".
-    expect(browseSource).toContain('Show {Math.min(BATCH_SIZE, hiddenCount)}');
+    // Browse used to paginate in batches of 30 behind a "Show N more"
+    // button; both views are virtualized now, so the batch constant, the
+    // `visible` slice and that button are all gone. The contract that
+    // replaced them is that the result set is windowed rather than paged —
+    // asserted properly against rendered output in preset-grid.test.tsx,
+    // and guarded here only against the paging UI creeping back.
+    expect(browseSource).not.toContain('BATCH_SIZE');
+    expect(browseSource).not.toContain('hiddenCount');
+    expect(browseSource).toContain('useVirtualizer');
     expect(browseSource).toContain("import { UiIcon } from './UiIcon.tsx';");
     expect(browseSource).toContain('aria-label="Shuffle presets"');
   });
