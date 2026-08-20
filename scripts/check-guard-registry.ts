@@ -114,8 +114,9 @@ export function checkGuardRegistry(): boolean {
     // Comments collapse to a placeholder rather than vanishing, so that a
     // catch whose body is a written justification still reads as non-empty —
     // deleting them outright would newly condemn `catch { /* why */ }`, which
-    // this guard has always accepted. The suppression-directive rule below
-    // keeps using the raw source, because that directive *is* a comment.
+    // this guard has always accepted. Rule 1 below keeps using the raw source,
+    // because a @ts-nocheck directive *is* a comment — stripping comments
+    // first would blind it entirely.
     const codeOnly = content
       .replace(/\/\*[\s\S]*?\*\//g, '0')
       .replace(/(^|[^:])\/\/.*$/gm, '$10');

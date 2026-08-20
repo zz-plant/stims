@@ -235,6 +235,16 @@ describe('bindings land on keys that actually reach the shell', () => {
     },
   );
 
+  // Verified in the browser, not inferred: once the engine is live the canvas
+  // carries tabindex="0" and unified-input focuses it on pointerdown, so a
+  // single click on the stage — the most natural thing to do — silently kills
+  // these six. S stops opening Settings and ArrowRight stops changing preset,
+  // while a non-consumed binding like T keeps working.
+  //
+  // Not fixed here because the collision is between two real features:
+  // interaction-response.ts feeds these same keys to presets as
+  // action_mode_next / action_remix / accent pulses. Deciding which side wins
+  // is a product call, so this pins the blast radius instead of hiding it.
   test('the known pre-existing canvas overlaps have not grown', () => {
     const overlapping = SHORTCUT_REGISTRY.filter((entry) =>
       entry.defaultKeys.some((spec) => {
