@@ -10,8 +10,9 @@ import { toMeasurement } from '../../scripts/merge-flash-audit.ts';
  * red-flash figure must not merge as though the red channel had been checked
  * and come back clean.
  *
- * scratch/flash-audit-sample50.json is a real report from before that channel
- * existed, so it doubles as the fixture for exactly that case.
+ * tests/fixtures/flash-audit/pre-red-channel-sample.json is an excerpt of a real
+ * report from before that channel existed, so it doubles as the fixture for
+ * exactly that case.
  */
 
 describe('toMeasurement', () => {
@@ -52,9 +53,9 @@ describe('the pre-red-channel report is refused wholesale', () => {
     const path = join(
       import.meta.dir,
       '..',
-      '..',
-      'scratch',
-      'flash-audit-sample50.json',
+      'fixtures',
+      'flash-audit',
+      'pre-red-channel-sample.json',
     );
     const reports = (
       JSON.parse(readFileSync(path, 'utf8')) as {

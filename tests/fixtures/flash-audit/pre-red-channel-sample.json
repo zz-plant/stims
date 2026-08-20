@@ -1,0 +1,92 @@
+{
+  "note": "Verbatim excerpt of scratch/flash-audit-sample50.json, a real lab:flash-audit report captured before the red-flash channel existed. Kept as a fixture so the merge refusal is exercised against genuine pre-red-channel rows.",
+  "summary": {
+    "generatedFrom": "34 analysed / 50 attempted",
+    "beatPulse": true,
+    "framesPerPreset": 300,
+    "overThresholdCount": 0,
+    "overThresholdShare": 0,
+    "peakFlashesPerSecond": {
+      "median": 0,
+      "p90": 0,
+      "p99": 0,
+      "max": 0
+    }
+  },
+  "reports": [
+    {
+      "presetId": "geiss-rose-5-crossfire-beats",
+      "title": "Geiss - Rose 5 Crossfire Beats",
+      "author": "Geiss",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0.00010736472855287383,
+      "luminanceVolatility": 0.0002761085406959277,
+      "meanLuminance": 0.9979658354562626,
+      "frameCount": 300
+    },
+    {
+      "presetId": "phat-eo-s-data-swimmer",
+      "title": "Phat + Eo.S. - Data_swimmer",
+      "author": "Phat + Eo.S.",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0.001179362975707038,
+      "luminanceVolatility": 0.0006947041828343506,
+      "meanLuminance": 0.9944507521526064,
+      "frameCount": 300
+    },
+    {
+      "presetId": "rovastar-geiss-hyperspace-kaleidoscope",
+      "title": "Rovastar + Geiss - Hyperspace - kaleidoscope",
+      "author": "Rovastar + Geiss",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0.004497526728311549,
+      "luminanceVolatility": 0.001962194658104394,
+      "meanLuminance": 0.830777797412201,
+      "frameCount": 300
+    },
+    {
+      "presetId": "geiss-3-layers-planar-mix",
+      "title": "Geiss - 3 layers (Planar Mix)",
+      "author": "Geiss",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0.00003686071341791872,
+      "luminanceVolatility": 0.00011430208337746138,
+      "meanLuminance": 0.729309215098768,
+      "frameCount": 300
+    },
+    {
+      "presetId": "flexi-bdrv-what-to-do-phat-edit",
+      "title": "Flexi + bdrv - what to do [Phat edit]",
+      "author": "Flexi + bdrv",
+      "error": "evaluate: Execution context was destroyed, most likely because of a navigation",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0,
+      "luminanceVolatility": 0,
+      "meanLuminance": 0,
+      "frameCount": 0
+    },
+    {
+      "presetId": "geiss-motion-blur-2-stahl-s-neon-jelly-2-rmx",
+      "title": "Geiss - Motion Blur 2 (Stahl′s Neon Jelly 2 RMX)",
+      "author": "Geiss",
+      "error": "evaluate: Execution context was destroyed, most likely because of a navigation",
+      "peakFlashesPerSecond": 0,
+      "totalFlashes": 0,
+      "exceedsThreshold": false,
+      "motionEnergy": 0,
+      "luminanceVolatility": 0,
+      "meanLuminance": 0,
+      "frameCount": 0
+    }
+  ]
+}
