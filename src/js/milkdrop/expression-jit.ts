@@ -540,6 +540,14 @@ export async function prewarmMilkdropPrograms(
   if (!ir?.programs) {
     return;
   }
+  // Nothing to pre-warm without the JIT: buildInterpretedProgram just closes
+  // over the block, so the cost this function exists to move off the first
+  // frame does not exist on the CSP tier. Running anyway spent a setTimeout
+  // round-trip per block — pure added startup latency for the users already
+  // on the slower tier.
+  if (!isJitAvailable()) {
+    return;
+  }
   const blocks: MilkdropProgramBlock[] = [
     ir.programs.init,
     ir.programs.perFrame,

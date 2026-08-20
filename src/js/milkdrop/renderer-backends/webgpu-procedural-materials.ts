@@ -15,6 +15,7 @@ import { Color } from 'three';
 import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   EEL_BINARY_OPERATORS,
+  EEL_F32_MAX,
   EEL_UNARY_OPERATORS,
   emitEelCallWgslField,
 } from '../compiler/eel-function-table.ts';
@@ -308,7 +309,12 @@ function buildGpuFieldRegisterCallArgs(
 }
 
 function formatWgslFloat(value: number) {
-  if (!Number.isFinite(value)) {
+  // The f32 bound, not just f64 finiteness: WGSL rejects an abstract-float
+  // literal it cannot represent as f32, so emitting a preset's `1e39` aborts
+  // the whole shader (black frame) instead of producing one bad pixel. Zero
+  // is also what `milkdropFinite` yields for that magnitude, so this keeps
+  // the GPU tier on the CPU tiers' semantics rather than inventing a third.
+  if (!Number.isFinite(value) || Math.abs(value) >= EEL_F32_MAX) {
     return '0.0';
   }
   const text = value.toString();
