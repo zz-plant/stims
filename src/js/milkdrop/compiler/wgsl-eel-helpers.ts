@@ -39,6 +39,13 @@ export const MILKDROP_EEL_WGSL_SCALAR_HELPERS_SOURCE = `
     return sqrt(max(value, 0.0));
   }
 
+  fn milkdropInvSqrt(value: f32) -> f32 {
+    // 1/sqrt(x) with the CPU's clamps: x <= 0 gives Infinity, which the
+    // per-op finite clamp zeroes.
+    let v = 1.0 / sqrt(max(value, 0.0));
+    return select(0.0, v, abs(v) < 3.402823e38);
+  }
+
   fn milkdropAsin(value: f32) -> f32 {
     return asin(clamp(value, -1.0, 1.0));
   }
