@@ -14,14 +14,13 @@
  *   - The collection chips overflowed their row and clipped at both edges.
  *   - The side panel was hard-coded dark, so light mode failed WCAG AA.
  */
-import { afterAll, beforeAll, expect, test } from 'bun:test';
-import fs from 'node:fs';
+import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
+import { hasChromium, requiredBrowserTest } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 
 const TEST_PORT = 5183;
-const hasChromium = fs.existsSync(chromium.executablePath());
-const chromeTest = hasChromium ? test : test.skip;
+const chromeTest = requiredBrowserTest;
 
 let server: DevServerHandle | null = null;
 let browser: Browser | null = null;
