@@ -19,6 +19,7 @@ flowchart LR
   Start --> Strat["📊 Strategy & QA"]
   Start --> Access["♿ Accessibility & Sensory Research"]
 
+  GS --> GS0["ONBOARDING.md<br/>learning curve map"]
   GS --> GS1["DEVELOPMENT.md · TESTING.md"]
   GS --> GS2["DEPLOYMENT.md · COMMIT_CONVENTIONS.md"]
 
@@ -49,6 +50,7 @@ Everything you need to set up your environment, run the local dev server, run qu
 
 | Document | Description |
 | --- | --- |
+| 🧭 [**Onboarding Map**](./ONBOARDING.md) | Which parts of the codebase are hard, why, and what order to learn them in — read first |
 | 🛠️ [**Development Setup**](./DEVELOPMENT.md) | Local environment setup (Bun 1.3+), scripts, dev server, and troubleshooting |
 | 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Pages deployment pipeline, environment variables, and wrangler configuration |
 | 🧪 [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
