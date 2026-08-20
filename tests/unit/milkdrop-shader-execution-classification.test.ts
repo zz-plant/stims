@@ -54,7 +54,11 @@ describe('milkdrop shader execution classification', () => {
     });
   });
 
-  test('identifies raw-preserved programs as backend-executable on webgl', () => {
+  test('keeps the control-fallback flag on raw-preserved programs', () => {
+    // Raw GLSL makes the program executable on WebGL; it does not remove a
+    // control-fallback requirement. This previously returned the plain
+    // `backend-executable` kind alongside `requiresControlFallback: true`,
+    // so the object contradicted itself.
     expect(
       classifyMilkdropShaderProgramExecution(
         createProgram({
@@ -70,10 +74,33 @@ describe('milkdrop shader execution classification', () => {
         }),
       ),
     ).toEqual({
-      kind: 'backend-executable',
+      kind: 'backend-executable-with-control-fallback',
       backends: ['webgl'],
       preservesRawGlsl: true,
       requiresControlFallback: true,
+    });
+  });
+
+  test('identifies raw-preserved programs as backend-executable on webgl', () => {
+    expect(
+      classifyMilkdropShaderProgramExecution(
+        createProgram({
+          rawGlsl: 'ret = custom_glsl_only_value',
+          execution: {
+            kind: 'direct-feedback-program',
+            stage: 'comp',
+            entryTarget: 'ret',
+            supportedBackends: [],
+            requiresControlFallback: false,
+            statementTargets: ['ret'],
+          },
+        }),
+      ),
+    ).toEqual({
+      kind: 'backend-executable',
+      backends: ['webgl'],
+      preservesRawGlsl: true,
+      requiresControlFallback: false,
     });
   });
 });
