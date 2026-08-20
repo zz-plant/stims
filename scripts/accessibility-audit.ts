@@ -330,9 +330,19 @@ function runDomChecks(stateName: string) {
     }
   });
 
-  // Check 12: Dialogs missing aria-modal
+  // Check 12: Modal dialogs missing aria-modal.
+  //
+  // Only *modal* ones. aria-modal defaults to false and a non-modal dialog is
+  // valid ARIA — the stage-anchored editor is deliberately one, because it
+  // sits beside the visualizer and leaves it interactive. Declaring
+  // aria-modal="true" there would tell a screen reader the rest of the page
+  // is inert when it is not, which is worse than the omission this check was
+  // flagging. SidePanel encodes the distinction itself
+  // (`aria-modal={stageAnchored ? undefined : 'true'}`), so trust the same
+  // signal rather than assuming every dialog traps the user.
   document.querySelectorAll('[role="dialog"]').forEach((dialog) => {
     if (isHidden(dialog)) return;
+    if (dialog.getAttribute('data-stage-anchored') === 'true') return;
     if (dialog.getAttribute('aria-modal') !== 'true') {
       issues.push({
         type: 'dialog-aria-modal',

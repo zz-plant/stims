@@ -1427,7 +1427,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           return rect.width > 0 && rect.height > 0;
         })() ||
         document.querySelector('#use-demo-audio') ||
-        document.querySelector('#start-audio-btn'),
+        // data-attribute, not #start-audio-btn: AudioSourcePanel mounts
+        // twice (home + Settings) so its ids are useId-scoped now, and the
+        // attribute is the stable automation hook.
+        document.querySelector('[data-mic-audio-btn]'),
       undefined,
       { timeout: TOY_LOAD_TIMEOUT_MS },
     );

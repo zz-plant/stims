@@ -271,7 +271,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             onPaste={handleYoutubeUrlPaste}
           />
           <button
-            id="load-youtube"
+            id={`${sourcePanelId}-load-youtube`}
+            data-youtube-load-btn="true"
             className="cta-button primary"
             type="button"
             disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
@@ -404,7 +405,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
       </div>
       <div className="stims-shell__source-grid">
         <button
-          id="use-demo-audio-card"
+          id={`${sourcePanelId}-use-demo-audio-card`}
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__source-card"
@@ -424,7 +425,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <span>Start with demo audio — no permission needed</span>
         </button>
         <button
-          id="start-audio-btn"
+          id={`${sourcePanelId}-start-audio-btn`}
+          data-mic-audio-btn="true"
           type="button"
           className="stims-shell__source-card"
           disabled={!engineReady}
@@ -526,7 +528,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         {canCaptureDisplayAudio ? (
           <button
             type="button"
-            id="use-tab-audio"
+            id={`${sourcePanelId}-use-tab-audio`}
+            data-tab-audio-btn="true"
             className="stims-shell__source-card"
             disabled={!engineReady}
             aria-describedby={!engineReady ? disabledDescription : undefined}

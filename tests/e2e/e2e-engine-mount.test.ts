@@ -416,12 +416,12 @@ async function verifySmartphoneMicrophoneAccess({
     // the card into view and wait for its rect to hold still across two
     // polls before tapping.
     await openAudioSourceDisclosure(page);
-    const micButton = page.locator('#start-audio-btn');
+    const micButton = page.locator('[data-mic-audio-btn]');
     await micButton.scrollIntoViewIfNeeded();
     await page.waitForFunction(
       () => {
         const btn = document.querySelector(
-          '#start-audio-btn',
+          '[data-mic-audio-btn]',
         ) as HTMLButtonElement | null;
         if (!btn || btn.disabled) return false;
         const r = btn.getBoundingClientRect();
@@ -560,7 +560,9 @@ browserTest(
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
       await openAudioSourceDisclosure(page);
-      await page.locator('#use-demo-audio-card').click();
+      await page
+        .locator('.stims-shell__source-card[data-demo-audio-btn]')
+        .click();
 
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
@@ -645,7 +647,9 @@ browserTest(
       });
       await page.waitForSelector('#stims-main', { timeout: 30000 });
       await openAudioSourceDisclosure(page);
-      await page.locator('#use-demo-audio-card').click();
+      await page
+        .locator('.stims-shell__source-card[data-demo-audio-btn]')
+        .click();
 
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
