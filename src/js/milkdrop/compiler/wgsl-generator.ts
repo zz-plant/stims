@@ -13,6 +13,8 @@ import {
 } from '../wgsl-signal-layout.ts';
 import {
   EEL_BINARY_OPERATORS,
+  EEL_F32_MAX,
+  EEL_F32_MAX_WGSL,
   EEL_UNARY_OPERATORS,
   emitEelCallWgslVm,
 } from './eel-function-table.ts';
@@ -245,7 +247,12 @@ function buildWgslExpression(
 ): string {
   switch (expression.type) {
     case 'literal':
-      return Number.isFinite(expression.value)
+      // f32 range, not f64 finiteness — see formatWgslFloat in
+      // renderer-backends/webgpu-procedural-materials.ts: an f32-unrepresentable
+      // literal is a WGSL shader-creation error, and 0.0 is what
+      // milkdropFinite gives that magnitude on every other path.
+      return Number.isFinite(expression.value) &&
+        Math.abs(expression.value) < EEL_F32_MAX
         ? expression.value.toString()
         : '0.0';
 
@@ -474,7 +481,7 @@ function buildGuestBufferWgsl(
 ): string {
   return /* wgsl */ `
 fn milkdrop${fnSuffix}Read(index: f32) -> f32 {
-  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let finiteIndex = index == index && abs(index) < ${EEL_F32_MAX_WGSL};
   let i = milkdropTruncInt(index);
   if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
     return ${varName}[u32(i)];
@@ -482,7 +489,7 @@ fn milkdrop${fnSuffix}Read(index: f32) -> f32 {
   return 0.0f;
 }
 fn milkdrop${fnSuffix}Write(index: f32, value: f32) {
-  let finiteIndex = index == index && abs(index) < 3.402823e38;
+  let finiteIndex = index == index && abs(index) < ${EEL_F32_MAX_WGSL};
   let i = milkdropTruncInt(index);
   if (finiteIndex && i >= 0 && i < ${sizeFloats}) {
     ${varName}[u32(i)] = milkdropFinite(value);
