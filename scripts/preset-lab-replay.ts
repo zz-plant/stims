@@ -162,15 +162,29 @@ function diffFields(
 ): string[] {
   const [leftLabel, rightLabel] = labels;
   const details: string[] = [];
-  const keys = new Set([
-    ...Object.keys(left.variables ?? {}),
-    ...Object.keys(right.variables ?? {}),
-  ]);
-  for (const key of [...keys].sort()) {
-    const a = left.variables?.[key];
-    const b = right.variables?.[key];
-    if (!equals(a, b)) {
-      details.push(`  variables.${key}: ${leftLabel}=${a} ${rightLabel}=${b}`);
+  // Only diff variables when BOTH sides carry them. A compact trace stores
+  // variables on checkpoint frames only, so on every other frame the union of
+  // keys pitted the replay's real values against `undefined` — which the
+  // tolerance comparators read as 0 — and reported every variable in the
+  // preset as moved. That made the digest-mismatch escalation below unusable
+  // on exactly the frames it exists for: a machine whose libm differs from
+  // the recorder's fails the digest, escalates, and is told that all ~2000
+  // variables changed. The gate could therefore only ever pass on the machine
+  // that recorded the traces, which is the very thing the tolerances were
+  // added to fix.
+  if (left.variables && right.variables) {
+    const keys = new Set([
+      ...Object.keys(left.variables),
+      ...Object.keys(right.variables),
+    ]);
+    for (const key of [...keys].sort()) {
+      const a = left.variables[key];
+      const b = right.variables[key];
+      if (!equals(a, b)) {
+        details.push(
+          `  variables.${key}: ${leftLabel}=${a} ${rightLabel}=${b}`,
+        );
+      }
     }
   }
   for (const field of ['mainWave', 'customWaves', 'shapes'] as const) {
