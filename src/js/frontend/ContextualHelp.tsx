@@ -29,6 +29,18 @@ const HINTS: HelpHintDef[] = [
     autoHideMs: 5000,
   },
   {
+    // Interaction-reactive presets were completely silent about being
+    // interactive: the keys and gestures that drive them are documented in
+    // the shortcuts dialog now, but nothing told you *this* visual is one of
+    // the few that listens. Fires once, the first time you land on one.
+    id: 'interactive-preset',
+    message: () =>
+      isMobileDevice()
+        ? 'This visual reacts to you — drag, pinch and twist it'
+        : 'This visual reacts to you — click it and drag, or press Q, R, [ and ]',
+    autoHideMs: 7000,
+  },
+  {
     id: 'editor-open',
     message:
       'This is the preset’s source code. Edits show up in the visuals live.',

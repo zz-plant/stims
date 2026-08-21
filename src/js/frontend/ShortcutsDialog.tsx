@@ -1,5 +1,11 @@
 import type { RefObject } from 'react';
 import { Fragment, useEffect, useState } from 'react';
+import {
+  availableStageKeyDocs,
+  availableStageSignalKeys,
+  formatStageKey,
+} from '../core/unified-input.ts';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { STAGE_GESTURES } from './hooks/useStageGesture.ts';
 import {
@@ -36,6 +42,13 @@ export function ShortcutsDialog({
   }, [open]);
 
   if (!open) return null;
+
+  // On touch there is no keyboard to shortcut with, and the gestures are the
+  // only way to drive the stage — so they lead. Deciding by device rather
+  // than by input event keeps the order stable while the dialog is open.
+  const touchFirst = isMobileDevice();
+  const stageKeys = availableStageKeyDocs();
+  const signalKeys = availableStageSignalKeys();
 
   const saveOverride = (actionId: ShortcutActionId, rawValue: string) => {
     const def = SHORTCUT_REGISTRY.find((entry) => entry.id === actionId);
@@ -75,7 +88,7 @@ export function ShortcutsDialog({
       className="stims-shell__shortcut-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Keyboard shortcuts and stage gestures"
+      aria-label="Shortcuts and gestures"
       onClick={onClose}
       onKeyDown={(e) => {
         if (e.key === 'Escape') onClose();
@@ -99,61 +112,121 @@ export function ShortcutsDialog({
         }}
         role="presentation"
       >
-        <h2>Keyboard shortcuts</h2>
+        <h2>Shortcuts &amp; gestures</h2>
         {warning ? (
           <p className="stims-shell__meta-copy" role="alert">
             {warning}
           </p>
         ) : null}
-        <div className="stims-shell__shortcut-grid stims-shell__shortcut-grid--editable">
-          {SHORTCUT_REGISTRY.map((shortcut) => (
-            <div className="stims-shell__shortcut-row" key={shortcut.id}>
-              <kbd>{getShortcutKeys(shortcut.id, overrides).join(' / ')}</kbd>
-              <span>{shortcut.label}</span>
-              {shortcut.configurable === false ? null : editing ===
-                shortcut.id ? (
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const form = event.currentTarget;
-                    const data = new FormData(form);
-                    saveOverride(shortcut.id, String(data.get('keys') ?? ''));
-                  }}
-                >
-                  <input
-                    className="stims-shell__input"
-                    name="keys"
-                    defaultValue={getShortcutKeys(shortcut.id, overrides).join(
-                      ', ',
-                    )}
-                    aria-label={`Shortcut keys for ${shortcut.label}`}
-                  />
-                  <button type="submit" className="stims-shell__text-button">
-                    Save
-                  </button>
-                </form>
-              ) : (
-                <button
-                  type="button"
-                  className="stims-shell__text-button"
-                  aria-label={`Edit shortcut for ${shortcut.label}`}
-                  onClick={() => setEditing(shortcut.id)}
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        <h3>Stage gestures</h3>
-        <div className="stims-shell__shortcut-grid">
-          {STAGE_GESTURES.map((entry) => (
-            <Fragment key={entry.gesture}>
-              <kbd>{entry.gesture}</kbd>
-              <span>{entry.label}</span>
-            </Fragment>
-          ))}
-        </div>
+        {(touchFirst
+          ? (['gestures', 'stage', 'keyboard'] as const)
+          : (['keyboard', 'stage', 'gestures'] as const)
+        ).map((section) => {
+          if (section === 'keyboard') {
+            return (
+              <section key={section}>
+                <h3>Keyboard</h3>
+                <div className="stims-shell__shortcut-grid stims-shell__shortcut-grid--editable">
+                  {SHORTCUT_REGISTRY.map((shortcut) => (
+                    <div
+                      className="stims-shell__shortcut-row"
+                      key={shortcut.id}
+                    >
+                      <kbd>
+                        {getShortcutKeys(shortcut.id, overrides).join(' / ')}
+                      </kbd>
+                      <span>{shortcut.label}</span>
+                      {shortcut.configurable === false ? null : editing ===
+                        shortcut.id ? (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            const form = event.currentTarget;
+                            const data = new FormData(form);
+                            saveOverride(
+                              shortcut.id,
+                              String(data.get('keys') ?? ''),
+                            );
+                          }}
+                        >
+                          <input
+                            className="stims-shell__input"
+                            name="keys"
+                            defaultValue={getShortcutKeys(
+                              shortcut.id,
+                              overrides,
+                            ).join(', ')}
+                            aria-label={`Shortcut keys for ${shortcut.label}`}
+                          />
+                          <button
+                            type="submit"
+                            className="stims-shell__text-button"
+                          >
+                            Save
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          className="stims-shell__text-button"
+                          aria-label={`Edit shortcut for ${shortcut.label}`}
+                          onClick={() => setEditing(shortcut.id)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          }
+          if (section === 'gestures') {
+            return (
+              <section key={section}>
+                <h3>Stage gestures</h3>
+                <div className="stims-shell__shortcut-grid">
+                  {STAGE_GESTURES.map((entry) => (
+                    <Fragment key={entry.gesture}>
+                      <kbd>{entry.gesture}</kbd>
+                      <span>{entry.label}</span>
+                    </Fragment>
+                  ))}
+                </div>
+              </section>
+            );
+          }
+          if (stageKeys.length === 0) return null;
+          return (
+            <section key={section}>
+              <h3>On the stage</h3>
+              <p className="stims-shell__meta-copy">
+                Click the visuals first, then drag them around — these keys
+                belong to the stage, not the app.
+              </p>
+              <div className="stims-shell__shortcut-grid">
+                {stageKeys.map((entry) => (
+                  <Fragment key={entry.label}>
+                    <span className="stims-shell__shortcut-keys">
+                      {entry.keys.map((key) => (
+                        <kbd key={key}>{formatStageKey(key)}</kbd>
+                      ))}
+                    </span>
+                    <span>{entry.label}</span>
+                  </Fragment>
+                ))}
+              </div>
+              {signalKeys.length > 0 ? (
+                <p className="stims-shell__meta-copy">
+                  The stage also passes{' '}
+                  {signalKeys.map(formatStageKey).join(' ')} straight to the
+                  playing preset. No bundled preset reads them yet — one you
+                  write or generate can.
+                </p>
+              ) : null}
+            </section>
+          );
+        })}
         <button type="button" className="cta-button ghost" onClick={onClose}>
           Close
         </button>
