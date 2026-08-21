@@ -21,6 +21,7 @@ import {
   localOnlyBrowserTest,
   requiredBrowserTest,
 } from './browser-availability.ts';
+import { closeQuietly } from './browser-teardown.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import {
   HEADLESS,
@@ -67,16 +68,6 @@ type AgentWindow = typeof window & {
     } | null;
   };
 };
-
-async function closeQuietly(
-  ...closeables: Array<{ close: () => Promise<unknown> }>
-) {
-  for (const c of closeables) {
-    try {
-      await c.close();
-    } catch {}
-  }
-}
 
 beforeAll(
   async () => {
