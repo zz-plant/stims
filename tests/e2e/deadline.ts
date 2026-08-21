@@ -72,7 +72,16 @@ export async function closeQuietly(
         'closing a browser or context during teardown',
       );
     } catch {
-      // Deliberately swallowed: teardown must not replace the real failure.
+      // The failure is swallowed — teardown must not replace the real one —
+      // but not silently. Giving up here leaks a browser that is very likely
+      // still burning CPU in a WebGL rAF loop, which starves whatever runs
+      // next; a test that then fails for "no reason" deserves this line in
+      // its log. Silence here would be the same antipattern this module
+      // exists to remove.
+      console.error(
+        '[e2e] a close() exceeded its deadline and was abandoned — a browser ' +
+          'is still running and may starve later tests in this file.',
+      );
     }
   }
 }
