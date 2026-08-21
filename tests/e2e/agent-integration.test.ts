@@ -10,6 +10,7 @@ import {
   localOnlyBrowserTest,
   requiredBrowserTest,
 } from './browser-availability.ts';
+import { closeQuietly, withDeadline } from './deadline.ts';
 import {
   type DevServerHandle,
   isResponsive,
@@ -79,9 +80,14 @@ async function createMobilePage() {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
+  // .catch() handles a close() that throws; it does nothing about one that
+  // hangs, and closing a wedged browser does exactly that. This runs in every
+  // test's finally, so a hang here is charged to a test that was already
+  // failing: the process is left for the runner to reap ("killed 1 dangling
+  // process") and the real error is buried under a bare budget timeout.
+  // closeQuietly bounds each close and gives up rather than blocking.
   const closeBrowser = async () => {
-    await context.close().catch(() => {});
-    await browser.close().catch(() => {});
+    await closeQuietly(context, browser);
   };
 
   return {
@@ -109,15 +115,23 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`);
-      await mobile.page.waitForSelector('[data-audio-controls]');
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`, {
+        timeout: 30000,
+      });
+      await mobile.page.waitForSelector('[data-audio-controls]', {
+        timeout: 30000,
+      });
 
-      const launchpadState = await mobile.page.evaluate(() => ({
-        pathname: window.location.pathname,
-        hasAudioControls: Boolean(
-          document.querySelector('[data-audio-controls]'),
-        ),
-      }));
+      const launchpadState = await withDeadline(
+        mobile.page.evaluate(() => ({
+          pathname: window.location.pathname,
+          hasAudioControls: Boolean(
+            document.querySelector('[data-audio-controls]'),
+          ),
+        })),
+        15000,
+        'reading the launchpad route and audio-control presence',
+      );
 
       expect(launchpadState.pathname).toBe('/');
       expect(launchpadState.hasAudioControls).toBe(true);
@@ -170,8 +184,10 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
-      await mobile.page.waitForSelector('#use-demo-audio');
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`, {
+        timeout: 30000,
+      });
+      await mobile.page.waitForSelector('#use-demo-audio', { timeout: 30000 });
       // waitForSelector resolves on *attached*, but this CTA renders
       // `disabled={!isEngineReady || isStarting}` and engineReady is just
       // `catalogError === null` (workspace-shell-hooks.ts). click() then
@@ -197,8 +213,10 @@ integrationTest(
         { timeout: 45000 },
       );
 
-      const state = await mobile.page.evaluate(() =>
-        window.stimState?.getState(),
+      const state = await withDeadline(
+        mobile.page.evaluate(() => window.stimState?.getState()),
+        15000,
+        'reading window.stimState.getState() back out of the page',
       );
       expect(state?.audioActive).toBe(true);
       expect(state?.audioSource).toBe('demo');
@@ -216,26 +234,34 @@ gestureGatedTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
-      await mobile.page.waitForSelector('#use-demo-audio');
-
-      const result = await mobile.page.evaluate(async () => {
-        try {
-          await window.stimState?.enableDemoAudio();
-          return { ok: true, error: null };
-        } catch (error) {
-          return {
-            ok: false,
-            error: error instanceof Error ? error.message : String(error),
-          };
-        }
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`, {
+        timeout: 30000,
       });
+      await mobile.page.waitForSelector('#use-demo-audio', { timeout: 30000 });
+
+      const result = await withDeadline(
+        mobile.page.evaluate(async () => {
+          try {
+            await window.stimState?.enableDemoAudio();
+            return { ok: true, error: null };
+          } catch (error) {
+            return {
+              ok: false,
+              error: error instanceof Error ? error.message : String(error),
+            };
+          }
+        }),
+        30000,
+        'calling window.stimState.enableDemoAudio() in the page',
+      );
 
       expect(result.error).toBeNull();
       expect(result.ok).toBe(true);
 
-      const state = await mobile.page.evaluate(() =>
-        window.stimState?.getState(),
+      const state = await withDeadline(
+        mobile.page.evaluate(() => window.stimState?.getState()),
+        15000,
+        'reading window.stimState.getState() back out of the page',
       );
       expect(state?.audioActive).toBe(true);
       expect(state?.audioSource).toBe('demo');
@@ -279,15 +305,24 @@ integrationTest(
         .catch(async (error) => {
           // Name what the page actually showed instead. Without this the
           // only artifact of a failure here is the selector string.
-          const shellState = await mobile.page.evaluate(() => ({
-            url: window.location.href,
-            readyState: document.readyState,
-            hasShell: Boolean(document.getElementById('stims-main')),
-            statusText:
-              document
-                .querySelector('.active-toy-status')
-                ?.textContent?.trim() ?? null,
-          }));
+          // Bounded: this runs *because* the wait above already failed, so
+          // the page it interrogates is exactly the kind that may not
+          // answer. evaluate() has no timeout of its own, and an unbounded
+          // one here would eat the test budget and destroy the very error
+          // it exists to enrich. Fall back to a null probe instead.
+          const shellState = await withDeadline(
+            mobile.page.evaluate(() => ({
+              url: window.location.href,
+              readyState: document.readyState,
+              hasShell: Boolean(document.getElementById('stims-main')),
+              statusText:
+                document
+                  .querySelector('.active-toy-status')
+                  ?.textContent?.trim() ?? null,
+            })),
+            10000,
+            'probing the shell after the error status never rendered',
+          ).catch(() => null);
           throw new Error(
             `Error status never rendered: ${JSON.stringify(shellState)} (${
               (error as Error).message
