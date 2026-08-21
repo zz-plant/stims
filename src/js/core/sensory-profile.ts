@@ -27,8 +27,16 @@ export type PresetSensoryProfile = {
   measuredAt: string;
 };
 
-/** The WCAG general/red flash threshold, in flashes per second. */
-export const WCAG_FLASHES_PER_SECOND_LIMIT = 3;
+/**
+ * The WCAG general/red flash threshold, in flashes per second.
+ *
+ * Re-exported from `flash-thresholds.ts` rather than redeclared: the offline
+ * audit, this classifier, and the runtime governor must agree on the limit,
+ * and a second literal `3` in the tree is how they stop agreeing.
+ */
+export { FLASHES_PER_SECOND_LIMIT as WCAG_FLASHES_PER_SECOND_LIMIT } from './flash-thresholds.ts';
+
+import { FLASHES_PER_SECOND_LIMIT as WCAG_FLASHES_PER_SECOND_LIMIT } from './flash-thresholds.ts';
 
 /**
  * The measurement this classifier consumes. Structurally a subset of the
