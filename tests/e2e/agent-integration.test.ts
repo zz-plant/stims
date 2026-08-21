@@ -284,9 +284,13 @@ integrationTest(
       // load before the shell even starts booting — on CI's 2-core
       // SwiftShader runner that hop was pure overhead against this test's
       // budget, and the alias has its own coverage in the SEO guard.
+      // 60s, not 30s: this is the first navigation to this route, so vite
+      // transforms the chunks cold, and on CI's 2-core SwiftShader runner
+      // that ran past 30s — the observed failure on 1ae6066 was this goto
+      // timing out, not the app failing to render the error state.
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
-        { waitUntil: 'domcontentloaded', timeout: 30000 },
+        { waitUntil: 'domcontentloaded', timeout: 60000 },
       );
 
       // Two waits, not one, because they fail for different reasons and the
@@ -334,5 +338,12 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 90000 },
+  // Budget covers the sum of the deadlines inside plus teardown, or the
+  // outer timeout wins and buries the named error — the same defect the
+  // smartphone tests in e2e-engine-mount.test.ts had. Worst case here:
+  // goto 60 + shell 30 + error status 20 + failure probe 10 + teardown 30
+  // = 150s. It surfaced its error on 1ae6066 only by luck: the goto failed
+  // at 30s and teardown took 30s, landing at 60s inside the old 90s budget.
+  // Had a later wait been the one to fail, the sum would have exceeded it.
+  { timeout: 210000 },
 );
