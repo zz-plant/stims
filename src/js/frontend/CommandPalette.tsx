@@ -149,7 +149,15 @@ export function CommandPalette({
         actions,
         presets,
         searchPresets,
-        limit: maxResults,
+        // The empty-query list is the palette's whole discovery story: it is
+        // grouped and scrollable precisely so it can be read top to bottom.
+        // Capping it at the search limit hid two thirds of the actions behind
+        // knowing their name already, which is the opposite of discovery.
+        // Typed queries stay capped — there, relevance is the point.
+        limit:
+          query.trim() === ''
+            ? Math.max(maxResults, actions.length)
+            : maxResults,
         useCounts,
       }),
     [query, actions, presets, searchPresets, maxResults, useCounts],

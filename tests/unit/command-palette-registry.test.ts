@@ -81,3 +81,34 @@ describe('buildPaletteResults frecency', () => {
     expect(withCounts.map((r) => r.id)).toEqual(withoutCounts.map((r) => r.id));
   });
 });
+
+/**
+ * The empty-query list is the palette's only discovery surface, and it was
+ * being sliced to the search limit — with 34 actions registered, two thirds
+ * of them were reachable only by typing a name you had no way to learn.
+ */
+describe('the unfiltered list is not truncated to the search limit', () => {
+  const many = Array.from({ length: 30 }, (_, index) => ({
+    id: `action-${index}`,
+    label: `Action ${index}`,
+    run: () => {},
+  }));
+
+  test('an empty query can list every action when asked to', () => {
+    const results = buildPaletteResults({
+      query: '',
+      actions: many,
+      limit: many.length,
+    });
+    expect(results).toHaveLength(many.length);
+  });
+
+  test('a typed query still honours the limit it is given', () => {
+    const results = buildPaletteResults({
+      query: 'action',
+      actions: many,
+      limit: 12,
+    });
+    expect(results).toHaveLength(12);
+  });
+});

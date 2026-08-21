@@ -11,9 +11,14 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import {
+  availableStageKeyDocs,
+  availableStageSignalKeys,
+  formatStageKey,
   isCanvasConsumedKey,
   isReservedByShell,
   NO_RESERVED_KEYS,
+  STAGE_KEY_DOCS,
+  STAGE_SIGNAL_KEYS,
   setReservedShellKeys,
 } from '../../src/js/core/unified-input.ts';
 import {
@@ -314,5 +319,81 @@ describe('the shell reserves its keys from the focused canvas', () => {
   test('nothing is reserved until the shell declares it', () => {
     setReservedShellKeys(() => NO_RESERVED_KEYS);
     expect(isReservedByShell('s')).toBe(false);
+  });
+});
+
+/**
+ * The stage's key layer went undocumented for its whole life, and the reason
+ * it was risky to document is that the shell can claim any of its keys at
+ * runtime: a static list would advertise behavior that never fires.
+ */
+describe('stage keys are documented from the maps that implement them', () => {
+  const reservedFromRegistry = () => {
+    const reserved = new Set<string>();
+    for (const entry of SHORTCUT_REGISTRY) {
+      for (const spec of entry.defaultKeys) {
+        const parsed = parseShortcut(spec);
+        if (parsed.mod || parsed.alt || !parsed.key) continue;
+        reserved.add(parsed.key === 'space' ? ' ' : parsed.key);
+      }
+    }
+    return reserved;
+  };
+
+  afterEach(() => setReservedShellKeys(() => NO_RESERVED_KEYS));
+
+  test('every documented key is one the canvas actually consumes', () => {
+    setReservedShellKeys(() => NO_RESERVED_KEYS);
+    for (const key of [
+      ...STAGE_KEY_DOCS.flatMap((row) => row.keys),
+      ...STAGE_SIGNAL_KEYS,
+    ]) {
+      expect(isCanvasConsumedKey(key)).toBe(true);
+    }
+  });
+
+  // The two lists are documented differently because they behave
+  // differently: one changes the picture on any preset, the other only sets
+  // variables a preset may or may not read — and no bundled preset does.
+  // Mixing them promises behavior the shipped catalog cannot deliver.
+  test('keys that only set preset variables stay out of the key list', () => {
+    setReservedShellKeys(() => NO_RESERVED_KEYS);
+    const documented = STAGE_KEY_DOCS.flatMap((row) => row.keys);
+    for (const key of STAGE_SIGNAL_KEYS) {
+      expect(documented).not.toContain(key);
+    }
+  });
+
+  test('keys the shell has claimed are advertised by neither list', () => {
+    setReservedShellKeys(reservedFromRegistry);
+    const advertised = [
+      ...availableStageKeyDocs().flatMap((row) => row.keys),
+      ...availableStageSignalKeys(),
+    ];
+    expect(advertised.length).toBeGreaterThan(0);
+    for (const key of advertised) {
+      expect(isReservedByShell(key)).toBe(false);
+    }
+    // Space (stop audio) and E (editor) are shell bindings: the stage never
+    // sees them, so nothing may tell the user they do something there.
+    expect(advertised).not.toContain(' ');
+    expect(advertised).not.toContain('e');
+    expect(advertised).toContain('r');
+  });
+
+  test('a row whose every key is claimed disappears entirely', () => {
+    setReservedShellKeys(() => new Set([',', '.']));
+    const labels = availableStageKeyDocs().map((row) => row.label);
+    const rotateRow = STAGE_KEY_DOCS.find((row) =>
+      row.keys.includes(','),
+    )?.label;
+    expect(rotateRow).toBeDefined();
+    expect(labels).not.toContain(rotateRow);
+  });
+
+  test('keys are prettified for display, not shown raw', () => {
+    expect(formatStageKey(' ')).toBe('Space');
+    expect(formatStageKey('arrowup')).toBe('\u2191');
+    expect(formatStageKey('w')).toBe('W');
   });
 });

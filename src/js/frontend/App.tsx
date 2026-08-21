@@ -47,6 +47,7 @@ import {
   type ThemeChoice,
 } from '../core/theme-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
+import { presetReadsInteractionSignals } from '../milkdrop/runtime/interaction-response.ts';
 import { scheduleIdleTask } from '../utils/browser/idle-task.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import {
@@ -487,8 +488,8 @@ function StimsWorkspaceAppShell() {
       {
         id: 'open-shortcuts',
         group: 'View',
-        label: 'Keyboard shortcuts',
-        keywords: ['help', 'keys', 'bindings'],
+        label: 'Shortcuts & gestures',
+        keywords: ['help', 'keys', 'bindings', 'gestures', 'swipe', 'touch'],
         run: () => setShowShortcuts(true),
       },
       {
@@ -570,12 +571,14 @@ function StimsWorkspaceAppShell() {
         : []),
       {
         id: 'perform-pin',
+        group: 'Perform',
         label: 'Pin a parameter to the stage',
         keywords: ['perform', 'fader', 'control', 'surface'],
         run: () => openPerformPicker(),
       },
       {
         id: 'queue-add',
+        group: 'Queue',
         label: 'Add this preset to the queue',
         keywords: ['cue', 'crate', 'next', 'setlist'],
         run: () => {
@@ -592,6 +595,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'queue-take',
+        group: 'Queue',
         label: 'Take the cued preset',
         keywords: ['cue', 'next', 'play'],
         run: () => {
@@ -605,6 +609,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'queue-skip',
+        group: 'Queue',
         label: 'Skip the cued preset',
         keywords: ['cue', 'drop', 'pass'],
         run: () => {
@@ -618,6 +623,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'queue-fade',
+        group: 'Queue',
         label: 'Crossfade to the cued preset by hand',
         keywords: ['cue', 'fader', 'blend', 'mix'],
         run: () => {
@@ -642,6 +648,7 @@ function StimsWorkspaceAppShell() {
       },
       {
         id: 'queue-clear',
+        group: 'Queue',
         label: 'Clear the queue',
         keywords: ['cue', 'crate', 'empty'],
         run: () => {
@@ -1224,6 +1231,19 @@ function StimsWorkspaceAppShell() {
       showHint('editor-open');
     }
   }, [ui.routeState.panel, showHint]);
+
+  // Presets that read the interaction signals are the minority, and nothing
+  // marked them: the stage keys and drag gestures did nothing on most of the
+  // catalog, which reads as broken rather than as "this one doesn't listen".
+  // So the layer is taught once, on the first preset that actually rewards
+  // it — and never on top of another hint, since showing one marks it seen.
+  useEffect(() => {
+    if (!liveMode || visibleHint) return;
+    if (!presetReadsInteractionSignals(engineSnapshot?.currentSource ?? '')) {
+      return;
+    }
+    showHint('interactive-preset');
+  }, [liveMode, visibleHint, engineSnapshot?.currentSource, showHint]);
 
   // NOTE: temporal-memory frame recording was removed here deliberately.
   // It sampled the live stage canvas (2D drawImage + getImageData) on every

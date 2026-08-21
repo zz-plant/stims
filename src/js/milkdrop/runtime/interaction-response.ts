@@ -9,6 +9,58 @@ import type {
   MilkdropRuntimeSignals,
 } from '../types.ts';
 
+/**
+ * Namespaces this module publishes to preset code. Every signal written below
+ * is spelled `<prefix>_snake` or `<prefix>Camel`, and nothing else in the
+ * MilkDrop variable vocabulary uses these prefixes, so matching on them
+ * cannot go stale when a new interaction signal is added.
+ */
+const INTERACTION_SIGNAL_PREFIXES = [
+  'input',
+  'gesture',
+  'hover',
+  'wheel',
+  'drag',
+  'accent',
+  'action',
+];
+
+/**
+ * Two patterns, deliberately: EEL is case-insensitive, so `ACTION_REMIX` has
+ * to match — but a case-insensitive `[A-Z]` matches lowercase too, which
+ * turns the camelCase half into "prefix followed by any letter" and flags
+ * `accentuate` (a real word in the catalog), `dragon` and `inputs`. The
+ * snake half carries the case-insensitivity; the camel half must not.
+ */
+const INTERACTION_SNAKE_PATTERN = new RegExp(
+  `\\b(${INTERACTION_SIGNAL_PREFIXES.join('|')})_[a-z]`,
+  'i',
+);
+const INTERACTION_CAMEL_PATTERN = new RegExp(
+  `\\b(${INTERACTION_SIGNAL_PREFIXES.join('|')})[A-Z]`,
+);
+
+/**
+ * True when a preset's source reads any of the interaction signals this
+ * module writes — i.e. when moving the mouse, dragging, or pressing the
+ * stage keys will actually change what is on screen.
+ *
+ * A handful of presets in the catalog respond to input and the rest do not,
+ * and nothing distinguished them: the whole input layer was invisible unless
+ * you already knew it existed and happened to be on a preset that used it.
+ * Read by the shell to teach the layer once, on the first preset that
+ * rewards it.
+ *
+ * Text matching, not compilation: the shell has the source string on hand
+ * and this runs on every preset change.
+ */
+export function presetReadsInteractionSignals(source: string): boolean {
+  return (
+    INTERACTION_SNAKE_PATTERN.test(source) ||
+    INTERACTION_CAMEL_PATTERN.test(source)
+  );
+}
+
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
