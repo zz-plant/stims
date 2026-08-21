@@ -41,8 +41,10 @@ function CueScreen({ entry }: { entry: PresetCatalogEntry }) {
  * has been persisted since it was written while being rendered nowhere.
  *
  * So this is a cue channel, not a queue manager: the next preset *running*,
- * with one control to take it and one to pass. Reordering and clearing belong
- * in the browse panel, where there is room for them.
+ * with one control to take it and one to pass. Reordering belongs in the
+ * browse panel, where there is room for it; clearing sits on the "n more
+ * queued" line here, because the browse panel has no queue view yet and the
+ * palette was otherwise the only route to it.
  *
  * Renders nothing when the queue is empty, so it stays invisible to everyone
  * who never builds one.
@@ -210,7 +212,22 @@ export function CueMonitor() {
         </button>
       ) : null}
       {remaining > 0 ? (
-        <p className={styles.remaining}>{remaining} more queued</p>
+        <p className={styles.remaining}>
+          {remaining} more queued
+          {/* Clearing was a palette-only action with no button anywhere,
+              because the docblock above defers it to a browse-panel queue
+              view that was never built. Until that exists, the count is the
+              only place the rest of the queue is even mentioned, so the
+              control belongs beside it. */}
+          <button
+            type="button"
+            className={styles.clear}
+            onClick={queue.clear}
+            data-action="queue-clear"
+          >
+            Clear
+          </button>
+        </p>
       ) : null}
     </aside>
   );

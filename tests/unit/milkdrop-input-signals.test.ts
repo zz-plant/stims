@@ -3,6 +3,7 @@ import type { UnifiedInputState } from '../../src/js/core/unified-input.ts';
 import {
   applyMilkdropInteractionResponse,
   buildMilkdropInputSignalOverrides,
+  presetReadsInteractionSignals,
 } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 
@@ -332,5 +333,43 @@ describe('milkdrop input signal overrides', () => {
     expect(adjusted.mainWave.positions[0]).not.toBe(0);
     expect(adjusted.shapes[0]?.rotation).toBeGreaterThan(0);
     expect(adjusted.gpuGeometry.meshField?.rotation).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The shell teaches the input layer once, on the first preset that actually
+ * responds to it — so a false positive spends the one hint on a preset that
+ * ignores every key, and a false negative means the layer is never mentioned.
+ */
+describe('detecting presets that read the interaction signals', () => {
+  test('finds both spellings the runtime publishes', () => {
+    expect(presetReadsInteractionSignals('zoom = 1 + input_x*0.2')).toBe(true);
+    expect(presetReadsInteractionSignals('q1 = actionRemix;')).toBe(true);
+    expect(presetReadsInteractionSignals('rot = gesture_rotation')).toBe(true);
+  });
+
+  test('EEL is case-insensitive, so this is too', () => {
+    expect(presetReadsInteractionSignals('x = ACTION_REMIX')).toBe(true);
+  });
+
+  test('an ordinary preset does not look interactive', () => {
+    expect(
+      presetReadsInteractionSignals(
+        'per_frame_1=wave_x = 0.5 + 0.1*sin(time);\nper_frame_2=decay = 0.98;',
+      ),
+    ).toBe(false);
+  });
+
+  test('a preset variable that merely ends in one is not a match', () => {
+    expect(presetReadsInteractionSignals('my_input_x = 3')).toBe(false);
+  });
+
+  // A case-insensitive [A-Z] also matches lowercase, which degrades the
+  // camelCase half into "prefix + any letter". `accentuate` appears in the
+  // shipped cream-of-the-crop library, so this is a live catalog case.
+  test('an English word that starts with a prefix is not a match', () => {
+    for (const word of ['accentuate', 'dragon', 'inputs = 3', 'hovering']) {
+      expect(presetReadsInteractionSignals(word)).toBe(false);
+    }
   });
 });

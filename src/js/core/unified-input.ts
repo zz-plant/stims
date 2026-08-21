@@ -119,6 +119,90 @@ const KEYBOARD_POINTER_KEYS = new Set([
     warp/zoom/video-echo) are unreachable without a touchscreen. */
 const KEYBOARD_GESTURE_KEYS = new Set(['=', '+', '-', '_', ',', '.']);
 
+/**
+ * The stage's key layer, in the shape the shortcuts dialog renders.
+ *
+ * This layer existed for a long time with no user-facing description
+ * anywhere, so every key below was reachable only by accident. It is
+ * authored here, next to the maps it describes, so the keys and their
+ * documentation cannot drift apart.
+ *
+ * Only keys that change what is on screen for *any* preset belong in this
+ * list. The rest of the layer (see {@link STAGE_SIGNAL_KEYS}) is published to
+ * preset code as variables, and documenting those the same way would promise
+ * a behavior the bundled catalog never delivers — the exact failure this
+ * documentation exists to end.
+ *
+ * Keys are stored the way `isReservedByShell` wants them (lowercase, ' ' for
+ * the space bar) and prettified for display by `formatStageKey`.
+ */
+export type StageKeyDoc = { keys: string[]; label: string };
+
+export const STAGE_KEY_DOCS: readonly StageKeyDoc[] = [
+  { keys: ['=', '-'], label: 'Zoom and warp (the pinch gesture, by keyboard)' },
+  { keys: [',', '.'], label: 'Rotate (the twist gesture, by keyboard)' },
+];
+
+/**
+ * Keys the canvas forwards to preset code as `action_*` signals, and nothing
+ * else: no runtime behavior reads them.
+ *
+ * Zero of the 2,686 bundled presets reference these variables, so on the
+ * shipped catalog every key here is inert — which is why they are named in
+ * one sentence aimed at people writing presets, rather than listed beside
+ * keys that do something.
+ */
+export const STAGE_SIGNAL_KEYS: readonly string[] = [
+  ' ',
+  'enter',
+  'e',
+  'x',
+  'q',
+  'z',
+  '[',
+  ']',
+  '1',
+  '2',
+  '3',
+  'r',
+];
+
+const STAGE_KEY_LABELS: Record<string, string> = {
+  ' ': 'Space',
+  enter: 'Enter',
+  arrowup: '\u2191',
+  arrowdown: '\u2193',
+  arrowleft: '\u2190',
+  arrowright: '\u2192',
+};
+
+/** Display spelling for one stage key: 'w' -> 'W', 'arrowup' -> up arrow. */
+export function formatStageKey(key: string): string {
+  return STAGE_KEY_LABELS[key] ?? key.toUpperCase();
+}
+
+/**
+ * {@link STAGE_KEY_DOCS} with every key the shell has claimed removed, and
+ * rows left with nothing dropped.
+ *
+ * The shell wins those keys (see {@link setReservedShellKeys}), so listing
+ * them here would advertise a stage behavior that never fires. Resolved per
+ * call, because shortcuts are rebindable at runtime.
+ */
+export function availableStageKeyDocs(): StageKeyDoc[] {
+  const rows: StageKeyDoc[] = [];
+  for (const row of STAGE_KEY_DOCS) {
+    const keys = row.keys.filter((key) => !isReservedByShell(key));
+    if (keys.length > 0) rows.push({ keys, label: row.label });
+  }
+  return rows;
+}
+
+/** {@link STAGE_SIGNAL_KEYS}, minus the ones the shell has claimed. */
+export function availableStageSignalKeys(): string[] {
+  return STAGE_SIGNAL_KEYS.filter((key) => !isReservedByShell(key));
+}
+
 const KEYBOARD_GESTURE_SCALE_RATE = 0.9; // log-scale units per second
 const KEYBOARD_GESTURE_ROTATION_RATE = 1.2; // radians per second
 const KEYBOARD_GESTURE_RELEASE_MS = 400;

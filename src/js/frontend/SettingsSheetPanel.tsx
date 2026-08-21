@@ -191,8 +191,11 @@ function AccessibilitySection({
           setAccessibilityPreference({ reduceFlashing });
         }}
       />
+      {/* Named for both halves of what it opens: on a touch device the
+          gestures are the only useful half, and "Keyboard shortcuts" is
+          exactly the label a phone user skips. */}
       <button type="button" className="ctl-btn" onClick={onOpenShortcuts}>
-        Keyboard shortcuts
+        Shortcuts &amp; gestures
       </button>
       <button type="button" className="ctl-btn" onClick={onOpenCredits}>
         About &amp; credits

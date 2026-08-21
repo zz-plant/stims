@@ -2983,6 +2983,15 @@ body[data-page="workspace"][data-live="true"] {
   line-height: 1.2;
 }
 
+/* Stage-key rows list several keys for one behavior (W/A/S/D, the arrows),
+   so the key column is a wrapping row of <kbd> rather than a single one. */
+.stims-shell__shortcut-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .stims-shell__shortcut-grid span,
 .stims-shell__shortcut-row span {
   font-family: var(--font-family-base);
