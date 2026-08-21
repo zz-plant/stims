@@ -238,6 +238,15 @@ export function createMilkdropPresetNavigationController({
       trace.step('performanceOverride');
       applyPresetPerformanceOverride(nextCompiled.source.id);
 
+      trace.step('blendTransition');
+      const transition = beginPresetTransition();
+      trace.adapter(
+        'transition',
+        transition.mode === 'blend'
+          ? `blend (${transition.durationSeconds.toFixed(2)}s)`
+          : 'cut',
+      );
+
       if (options.recordHistory !== false) {
         await catalogCoordinator.rememberSelection(id);
         if (requestRevision !== currentLoadRequestRevision) {
@@ -260,28 +269,6 @@ export function createMilkdropPresetNavigationController({
         trace.done('superseded');
         return;
       }
-
-      // Only now, with every abort point behind us, is the switch certain to
-      // happen — so this is where the crossfade may start. It used to begin
-      // before `rememberSelection` and the JIT pre-warm, both of which can
-      // still bail out as superseded, and neither unwinds it. A fast swipe
-      // therefore left a cover fading over a preset that never changed, and
-      // charged the switch's costs anyway: `saveFeedbackFrame` plus
-      // `notePresetApplied`, which pre-degrades a quality step on constrained
-      // devices. Swiping quickly walked the renderer down toward its minimum
-      // quality for presets that were never applied.
-      //
-      // Starting here also means the cover captures the outgoing frame at the
-      // moment of the swap rather than one pre-warm earlier, so it is a
-      // fresher image of what is actually on screen.
-      trace.step('blendTransition');
-      const transition = beginPresetTransition();
-      trace.adapter(
-        'transition',
-        transition.mode === 'blend'
-          ? `blend (${transition.durationSeconds.toFixed(2)}s)`
-          : 'cut',
-      );
 
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);
