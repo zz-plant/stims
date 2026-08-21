@@ -299,5 +299,11 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 90000 },
+  // The waits inside sum to 80s (30 + 30 + 20) before the browser launch and
+  // the dev-server check are counted, so 90s could expire *during* the last
+  // wait — killing the test before the wait it was stuck in could name itself,
+  // which is the bare "timed out after 90000ms" CI kept reporting and the
+  // whole reason these waits are split. Every other test in this file already
+  // budgets INTEGRATION_TIMEOUT_MS; this one was left behind.
+  { timeout: INTEGRATION_TIMEOUT_MS },
 );
