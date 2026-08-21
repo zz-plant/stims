@@ -283,7 +283,15 @@ integrationTest(
       // budget, and the alias has its own coverage in the SEO guard.
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
-        { waitUntil: 'domcontentloaded', timeout: 30000 },
+        // 60s, not the 30s default. This is the fifth browser this file
+        // launches in a run, and CI reported `goto: Timeout 30000ms exceeded`
+        // here while the identical navigation in the tests above — on the
+        // slower `load` wait, no less — finished in single-digit seconds. The
+        // page is not stuck, the 2-core SwiftShader runner is just saturated
+        // by that point, so the first navigation needs room rather than a
+        // tighter bound. Still well inside the test budget: 60 + 30 + 20 plus
+        // setup stays under INTEGRATION_TIMEOUT_MS.
+        { waitUntil: 'domcontentloaded', timeout: 60000 },
       );
 
       // Two waits, not one, because they fail for different reasons and the
