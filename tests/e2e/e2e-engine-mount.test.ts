@@ -10,6 +10,7 @@ import {
   localOnlyBrowserTest,
   requiredBrowserTest,
 } from './browser-availability.ts';
+import { closeQuietly } from './browser-teardown.ts';
 import {
   type DevServerHandle,
   isResponsive,
@@ -48,15 +49,6 @@ let devServer: DevServerHandle | null = null;
 const GPU_PROBE_TIMEOUT_MS = 120000;
 
 /** Never let teardown mask the assertion failure that got us here. */
-async function closeQuietly(
-  ...closeables: Array<{ close: () => Promise<unknown> }>
-) {
-  for (const c of closeables) {
-    try {
-      await c.close();
-    } catch {}
-  }
-}
 
 /**
  * Waits for the GPU to produce non-zero output anywhere on the stage canvas.
@@ -609,9 +601,49 @@ browserTest(
         { timeout: 30000 },
       );
       step('await stage-hero');
-      await page.waitForSelector('.stims-shell__stage-hero', {
-        timeout: 30000,
-      });
+      try {
+        await page.waitForSelector('.stims-shell__stage-hero', {
+          timeout: 30000,
+        });
+      } catch (heroError) {
+        // This is the step that stalls on CI. waitForSelector defaults to
+        // state:'visible', so "not found" and "in the DOM but zero-sized or
+        // hidden" are the same failure here and need very different fixes:
+        // the first points at the lazy home chunk never resolving, the second
+        // at a CSS rule (this viewport is exactly 1280x720, which sits on the
+        // boundary of both a max-width:1280px and a max-height:720px query).
+        const probe = await page
+          .evaluate(() => {
+            const el = document.querySelector('.stims-shell__stage-hero');
+            const frame = document.querySelector('.stims-shell__stage-frame');
+            if (!el) {
+              return {
+                attached: false,
+                frameMode: frame?.getAttribute('data-mode') ?? null,
+                frameChildCount: frame?.childElementCount ?? 0,
+                bodyHtmlLength: document.body.innerHTML.length,
+              };
+            }
+            const rect = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            return {
+              attached: true,
+              width: rect.width,
+              height: rect.height,
+              display: style.display,
+              visibility: style.visibility,
+              opacity: style.opacity,
+              childCount: el.childElementCount,
+              frameMode: frame?.getAttribute('data-mode') ?? null,
+              viewport: `${window.innerWidth}x${window.innerHeight}`,
+            };
+          })
+          .catch((probeError: unknown) => ({
+            probeFailed: String(probeError),
+          }));
+        console.log(`[VT SWAP HERO PROBE] ${JSON.stringify(probe)}`);
+        throw heroError;
+      }
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
       step('open audio disclosure');
