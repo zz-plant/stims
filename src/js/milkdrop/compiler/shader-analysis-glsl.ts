@@ -727,6 +727,41 @@ function getAuxTextureSourceId(name: string): string {
  * Generates a GLSL function body from a list of shader statements.
  * Returns GLSL code that can be embedded in a fragment shader.
  */
+// Targets the stage templates declare and read back themselves. `ret` is the
+// shader's output and `uv` its coordinate: re-declaring either inside main()
+// would shadow the template's copy, so the value the template reads after the
+// body would never be written — a black frame rather than a compile error.
+const TEMPLATE_OWNED_TARGETS = new Set(['ret', 'uv']);
+
+/**
+ * Carries a preset's own `float2 uv_y = …` through as `vec2 uv_y = …`.
+ *
+ * The declared type was parsed into the statement and then dropped here, which
+ * left the assembled shader to infer it from the assignment text downstream —
+ * and that inference only recognises a bare `vecN(` constructor, so
+ * `float2 uv_y = uv - 0.25 * float2(a, b);` was declared `float uv_y;` and
+ * every later use failed to compile. Vector and matrix declarations are the
+ * only ones emitted: `float` already matches what the fallback infers, so
+ * restating it would add shadowing risk for no gain.
+ */
+function localDeclarationType(
+  statement: MilkdropShaderStatement,
+  target: string,
+  declaredLocals: Set<string>,
+): string | null {
+  const declaration = statement.declaration;
+  if (
+    !declaration ||
+    !/^(?:vec[234]|mat[234])$/u.test(declaration) ||
+    TEMPLATE_OWNED_TARGETS.has(target) ||
+    declaredLocals.has(target)
+  ) {
+    return null;
+  }
+  declaredLocals.add(target);
+  return declaration;
+}
+
 export function generateGlslFromShaderStatements(
   statements: MilkdropShaderStatement[],
   _stage: 'warp' | 'comp',
@@ -735,6 +770,7 @@ export function generateGlslFromShaderStatements(
 
   const emitter = createCompositeGlslEmitter();
   const lines: string[] = [];
+  const declaredLocals = new Set<string>();
 
   for (const statement of statements) {
     const expressionGlsl = emitExpression(statement.expression, emitter);
@@ -755,12 +791,26 @@ export function generateGlslFromShaderStatements(
       // broadcast for a scalar one, so wrapping restores HLSL's meaning for
       // both. Compound operators need no help: GLSL already defines
       // vector-op-scalar component-wise.
-      const needsBroadcast = target === 'ret';
-      lines.push(
-        needsBroadcast
-          ? `  ${target} = vec3(${expressionGlsl});`
-          : `  ${target} = ${expressionGlsl};`,
+      const declaration = localDeclarationType(
+        statement,
+        target,
+        declaredLocals,
       );
+      if (target === 'ret') {
+        lines.push(`  ${target} = vec3(${expressionGlsl});`);
+      } else if (declaration) {
+        // Same HLSL promotion `ret` needs, at the declaration: `float3 dots =
+        // <scalar>;` splats there, and vecN(...) is both a broadcast for a
+        // scalar RHS and a copy constructor for a matching one. Matrices are
+        // left alone — matN(scalar) is a diagonal in GLSL but a full splat in
+        // HLSL, so wrapping would quietly change the value.
+        const wrapped = declaration.startsWith('vec')
+          ? `${declaration}(${expressionGlsl})`
+          : expressionGlsl;
+        lines.push(`  ${declaration} ${target} = ${wrapped};`);
+      } else {
+        lines.push(`  ${target} = ${expressionGlsl};`);
+      }
     } else if (operator === '+=') {
       lines.push(`  ${target} += ${expressionGlsl};`);
     } else if (operator === '-=') {
