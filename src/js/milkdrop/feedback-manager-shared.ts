@@ -439,6 +439,18 @@ const MILKDROP_NOISE_VOLUME_HELPERS = `
 // the composite pass (overlay/comp-body sampling), so they live in one
 // shared chunk instead of drifting apart as duplicates.
 const MILKDROP_AUX_SAMPLING_HELPERS = `
+        // MilkDrop 2's shader preamble ships lum(), so preset bodies call it
+        // without ever declaring it — the same gap that made GetPixel/GetBlur
+        // blank the cream-of-the-crop library. Its weights are MilkDrop's own,
+        // confirmed against the vendored butterchurn corpus, where the same
+        // expression appears inlined as dot(rgb, vec3(0.32, 0.49, 0.29)).
+        //
+        // The scalar overload matches HLSL, not intuition: there a float
+        // argument promotes to float3 before the dot, so lum(x) is x * 1.10.
+        float lum(vec3 v) { return dot(v, vec3(0.32, 0.49, 0.29)); }
+        float lum(vec4 v) { return lum(v.xyz); }
+        float lum(float v) { return v * 1.10; }
+
         vec2 sampleUv(vec2 uv, float wrapMode) {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
