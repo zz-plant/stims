@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { type Browser, chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
 import {
   hasChromium,
@@ -30,6 +30,13 @@ const TEST_PORT = 5180;
 // this test past a 90s budget in CI even though it completes in ~10s
 // locally with real GPU (2026-08-06 CI investigation).
 const INTEGRATION_TIMEOUT_MS = 180000;
+// Launching Chromium and bringing the dev server back are the two setup steps
+// that can wait on something wedged, and neither carries a timeout of its own.
+const LAUNCH_TIMEOUT_MS = 60_000;
+const DEV_SERVER_TIMEOUT_MS = 90_000;
+// evaluate() takes no timeout at all, and the one here runs *inside* a failure
+// path — exactly when the page has stopped answering.
+const EVALUATE_TIMEOUT_MS = 15_000;
 let devServer: DevServerHandle | null = null;
 
 async function startDevServerInstance() {
@@ -55,32 +62,69 @@ async function stopDevServerInstance() {
  * which is what made it look like flakiness rather than a fixed bug.
  */
 async function ensureDevServer() {
-  if (!devServer) {
-    await startDevServerInstance();
-    return;
-  }
-  if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
-    return;
-  }
-  await stopDevServerInstance();
-  await startDevServerInstance();
+  await withDeadline(
+    (async () => {
+      if (!devServer) {
+        await startDevServerInstance();
+        return;
+      }
+      if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
+        return;
+      }
+      await stopDevServerInstance();
+      await startDevServerInstance();
+    })(),
+    DEV_SERVER_TIMEOUT_MS,
+    'restarting the shared dev server',
+  );
+}
+
+/**
+ * One Chromium for the whole file, a fresh context per test.
+ *
+ * Each test used to launch its own browser. CI failed on the fifth with
+ * `Timed out after 60000ms while launching Chromium` — not a slow page, a
+ * browser process that could not start, because by then the 2-core runner was
+ * carrying the remains of four others. The symptom kept moving earlier as the
+ * machine degraded (first a stuck wait, then a 30s navigation, then the launch
+ * itself), which is the signature of resource exhaustion rather than of any
+ * one call being wrong.
+ *
+ * A context is the isolation boundary these tests actually need — separate
+ * storage, cookies and pages — so sharing the process costs nothing and
+ * removes four launches from the run.
+ */
+let sharedBrowser: Browser | null = null;
+
+async function launchSharedBrowser(): Promise<Browser> {
+  if (sharedBrowser?.isConnected()) return sharedBrowser;
+  sharedBrowser = await withDeadline(
+    chromium.launch({ args: WEBGL_RENDERER_ARGS }),
+    LAUNCH_TIMEOUT_MS,
+    'launching the shared Chromium',
+  );
+  return sharedBrowser;
 }
 
 async function createMobilePage() {
-  const browser = await chromium.launch({
-    args: WEBGL_RENDERER_ARGS,
-  });
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
+  const browser = await launchSharedBrowser();
+  const context = await withDeadline(
+    browser.newContext({
+      viewport: { width: 430, height: 932 },
+      isMobile: true,
+      hasTouch: true,
+    }),
+    LAUNCH_TIMEOUT_MS,
+    'opening a browser context',
+  );
+  const page = await withDeadline(
+    context.newPage(),
+    LAUNCH_TIMEOUT_MS,
+    'opening a page',
+  );
   // A crashed renderer does not make Playwright throw — the next wait just
   // never resolves and reports a timeout on the selector, which reads as
-  // "the app never rendered" when the truth is "the tab died". These suites
-  // run several SwiftShader browsers on a small runner, which is exactly
-  // where the renderer gets killed, so say so when it happens.
+  // "the app never rendered" when the truth is "the tab died".
   page.on('crash', () => {
     console.error(
       `[e2e] RENDERER CRASHED on ${page.url()} — any timeout after this ` +
@@ -91,21 +135,14 @@ async function createMobilePage() {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
-  // .catch() handles a close() that throws; it does nothing about one that
-  // hangs, and closing a wedged browser does exactly that. This runs in every
-  // test's finally, so a hang here is charged to a test that was already
-  // failing: the process is left for the runner to reap ("killed 1 dangling
-  // process") and the real error is buried under a bare budget timeout.
-  // closeQuietly bounds each close and gives up rather than blocking.
-  const closeBrowser = async () => {
-    await closeQuietly(context, browser);
-  };
-
   return {
     browser,
     context,
     page,
-    close: closeBrowser,
+    // Only the context: the browser outlives the test.
+    close: async () => {
+      await closeQuietly(context);
+    },
   };
 }
 
@@ -116,6 +153,10 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  if (sharedBrowser) {
+    await closeQuietly(sharedBrowser);
+    sharedBrowser = null;
+  }
   await stopDevServerInstance();
 }, 30000);
 
@@ -316,6 +357,14 @@ integrationTest(
       // leak, not the load, is what starves it).
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
+        // 60s, not the 30s default. This is the fifth browser this file
+        // launches in a run, and CI reported `goto: Timeout 30000ms exceeded`
+        // here while the identical navigation in the tests above — on the
+        // slower `load` wait, no less — finished in single-digit seconds. The
+        // page is not stuck, the 2-core SwiftShader runner is just saturated
+        // by that point, so the first navigation needs room rather than a
+        // tighter bound. Still well inside the test budget: 60 + 30 + 20 plus
+        // setup stays under INTEGRATION_TIMEOUT_MS.
         { waitUntil: 'domcontentloaded', timeout: 60000 },
       );
 
@@ -327,10 +376,14 @@ integrationTest(
       // a single 60s wait, both looked identical — and when the boot ran
       // long, the wait outlived the test's own budget, so the suite reported
       // a bare "timed out" naming neither.
-      // Same starvation budget as the goto above, and note this waits for
-      // *visible*, not attached. Under `taskset -c 0,1` this is where the
-      // run fails when it fails -- the shell mounts, just not within 30s.
-      await mobile.page.waitForSelector('#stims-main', { timeout: 60000 });
+      // Note this waits for *visible*, not attached. 30s, matching the
+      // budget arithmetic in the comment on this test's timeout below
+      // (60 + 30 + 20 plus setup, inside INTEGRATION_TIMEOUT_MS). An
+      // earlier revision of this branch raised it to 60s to survive a
+      // browser leak; #1136 removed the leak by sharing one Chromium, and
+      // main is green on 30s, so the larger value would only have broken
+      // that sum for no benefit.
+      await mobile.page.waitForSelector('#stims-main', { timeout: 30000 });
       const message = await mobile.page
         .waitForSelector('.active-toy-status.is-error p', { timeout: 20000 })
         .then((handle) => handle.textContent())
@@ -353,8 +406,8 @@ integrationTest(
                   .querySelector('.active-toy-status')
                   ?.textContent?.trim() ?? null,
             })),
-            10000,
-            'probing the shell after the error status never rendered',
+            EVALUATE_TIMEOUT_MS,
+            'reading the shell state after the error status never rendered',
           ).catch(() => null);
           throw new Error(
             `Error status never rendered: ${JSON.stringify(shellState)} (${
@@ -367,12 +420,11 @@ integrationTest(
       await mobile.close();
     }
   },
-  // Budget covers the sum of the deadlines inside plus teardown, or the
-  // outer timeout wins and buries the named error — the same defect the
-  // smartphone tests in e2e-engine-mount.test.ts had. Worst case here:
-  // goto 60 + shell 30 + error status 20 + failure probe 10 + teardown 30
-  // = 150s. It surfaced its error on 1ae6066 only by luck: the goto failed
-  // at 30s and teardown took 30s, landing at 60s inside the old 90s budget.
-  // Had a later wait been the one to fail, the sum would have exceeded it.
-  { timeout: 210000 },
+  // The waits inside sum to 80s (30 + 30 + 20) before the browser launch and
+  // the dev-server check are counted, so 90s could expire *during* the last
+  // wait — killing the test before the wait it was stuck in could name itself,
+  // which is the bare "timed out after 90000ms" CI kept reporting and the
+  // whole reason these waits are split. Every other test in this file already
+  // budgets INTEGRATION_TIMEOUT_MS; this one was left behind.
+  { timeout: INTEGRATION_TIMEOUT_MS },
 );

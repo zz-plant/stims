@@ -1,0 +1,119 @@
+{
+  "$schema": "../schema.json",
+  "section": "operators-arithmetic",
+  "description": "Arithmetic operators, their zero-guards, and precedence.",
+  "cases": [
+    {
+      "id": "div-by-zero",
+      "name": "division by zero yields 0",
+      "program": ["x = 1 / 0"],
+      "expected": { "x": 0 },
+      "note": "MilkDrop never propagates Infinity out of a division."
+    },
+    {
+      "id": "div-tiny-divisor",
+      "name": "division by a tiny nonzero divisor divides normally",
+      "program": ["x = 1 / 0.0000001"],
+      "expected": { "x": 10000000 },
+      "note": "The guard is exact-zero, NOT the close factor. A tolerance guard here zeroes large finite results real presets depend on."
+    },
+    {
+      "id": "mod-op-truncates-operands",
+      "name": "the % operator truncates both operands to integers first",
+      "program": ["x = 7.5 % 0.7"],
+      "expected": { "x": 0 },
+      "note": "trunc(7.5) % trunc(0.7) = 7 % 0 = 0. Float remainder is mod()/fmod(), not %."
+    },
+    {
+      "id": "mod-op-by-zero",
+      "name": "the % operator by zero yields 0",
+      "program": ["x = 5 % 0"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "mod-op-sign",
+      "name": "the % operator is trunc-mod, so the sign follows the dividend",
+      "program": ["x = (-7) % 3", "y = 7 % (-3)"],
+      "expected": { "x": -1, "y": 1 }
+    },
+    {
+      "id": "mod-fn-is-float",
+      "name": "mod()/fmod() is a float remainder, unlike the % operator",
+      "program": ["x = mod(-7.5, 3)", "y = mod(7.5, 2)", "z = fmod(7.5, 2)"],
+      "expected": { "x": -1.5, "y": 1.5, "z": 1.5 },
+      "note": "Same trunc-toward-zero sign rule as %, but without truncating the operands."
+    },
+    {
+      "id": "mod-fn-by-zero",
+      "name": "mod() by zero yields 0",
+      "program": ["x = mod(5, 0)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "pow-real",
+      "name": "^ computes real powers",
+      "program": ["x = 2 ^ 10"],
+      "expected": { "x": 1024 }
+    },
+    {
+      "id": "pow-overflow-clamps",
+      "name": "^ overflow clamps to 0, not Infinity",
+      "program": ["x = 10 ^ 5000"],
+      "expected": { "x": 0 },
+      "note": "The finite clamp applies to the operator result, not only at the store."
+    },
+    {
+      "id": "pow-negative-base-integral",
+      "name": "a negative base with an integral exponent is real",
+      "program": ["x = (-2) ^ 2"],
+      "expected": { "x": 4 },
+      "note": "milkdropPow is sign-decomposed on the GPU tiers to match this."
+    },
+    {
+      "id": "pow-negative-base-fractional",
+      "name": "a negative base with a fractional exponent is 0 via the NaN clamp",
+      "program": ["x = (-2) ^ 0.5"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "pow-zero-zero",
+      "name": "0 ^ 0 is 1",
+      "program": ["x = 0 ^ 0"],
+      "expected": { "x": 1 }
+    },
+    {
+      "id": "pow-negative-exponent",
+      "name": "a negative exponent is a reciprocal",
+      "program": ["x = 2 ^ (-1)"],
+      "expected": { "x": 0.5 }
+    },
+    {
+      "id": "precedence-mul-over-add",
+      "name": "multiplication binds tighter than addition",
+      "program": ["x = 2 + 3 * 4"],
+      "expected": { "x": 14 }
+    },
+    {
+      "id": "precedence-pow-over-mul",
+      "name": "^ binds tighter than multiplication",
+      "program": ["x = 2 * 3 ^ 2"],
+      "expected": { "x": 18 }
+    },
+    {
+      "id": "precedence-unary-minus-over-pow",
+      "name": "unary minus binds TIGHTER than ^",
+      "program": ["x = -2 ^ 2"],
+      "expected": { "x": 4 },
+      "status": "provisional",
+      "note": "PROVISIONAL. Reads as (-2)^2 = 4, not -(2^2) = -4. Most languages that spell pow as an operator bind unary minus looser. Confirm against ns-eel before relying on this; corpus impact appears to be nil (no bundled preset writes -a^b)."
+    },
+    {
+      "id": "pow-left-associative",
+      "name": "^ is LEFT-associative",
+      "program": ["x = 2 ^ 3 ^ 2"],
+      "expected": { "x": 64 },
+      "status": "provisional",
+      "note": "PROVISIONAL. Reads as (2^3)^2 = 64, not 2^(3^2) = 512. Exponentiation is right-associative in most languages. Confirm against ns-eel."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 Status: compute-VM increment landing 2026-08-18/19; field-path increment designed, not yet implemented.
 Part of the EEL consolidation program (presets = ROM corpus, EEL = guest ISA); sibling of the
-platform-profile spec (`tests/unit/eel-conformance-spec.test.ts`) and the declarative op table
+platform-profile spec (`spec/eel-conformance/`) and the declarative op table
 (`src/js/milkdrop/compiler/eel-function-table.ts`).
 
 ## The model
@@ -120,8 +120,10 @@ Planned shape:
 
 ## Invariants (enforced by tests)
 
-- `tests/unit/eel-conformance-spec.test.ts` — scalar platform profile (buffer semantics to be
-  added there as the interpreter helpers stop being stubs).
+- `spec/eel-conformance/` — the portable platform profile, covering scalar semantics AND
+  buffer semantics (indexing, truncation, bounds, megabuf/gmegabuf separation) in
+  `cases/07-buffers.json`. Run with `bun run spec:eel`; enforced by
+  `tests/unit/eel-conformance-spec.test.ts` across all three tiers.
 - `tests/unit/eel-csp-fallback.test.ts` — JIT vs interpreter buffer parity.
 - `tests/unit/wgsl-generator.test.ts` — buffer programs emit bindings/helpers and are
   `gpuExecutable`.

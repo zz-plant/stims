@@ -45,6 +45,10 @@ const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
  * breakpoint these tests assert against.
  */
 const CHEAP_RENDER_PARAMS = 'lockQualityStep=6';
+
+// Launching a browser carries no timeout of its own, and it is the call that
+// fails first when the runner is out of headroom.
+const LAUNCH_TIMEOUT_MS = 60_000;
 let devServer: DevServerHandle | null = null;
 
 // A single preset navigation used to fan out into several redundant compile
@@ -181,6 +185,41 @@ async function ensureDevServer() {
 }
 
 /** Wraps every browser test so the server guard above cannot be forgotten. */
+/**
+ * One Chromium for the tests that launch it identically, a fresh context each.
+ *
+ * This file launched a browser per test — five on a 2-core SwiftShader runner,
+ * and `home-to-live flip` is the fourth. That is why its stall kept moving
+ * (`await stage-hero` at 30s one run, `open audio disclosure` at 90s the next)
+ * without any of its own waits being wrong: by the time it ran, the machine
+ * was carrying the remains of three other browsers. The sibling suite showed
+ * the end state of the same pattern, failing outright with
+ * `Timed out after 60000ms while launching Chromium`.
+ *
+ * A context already gives these tests the isolation they use — viewport,
+ * reduced-motion, init scripts, storage — so the process is shared and only
+ * the context is per-test. The microphone test keeps its own browser: its
+ * fake-media-stream flags are process-level, not context-level.
+ */
+let sharedBrowser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+
+async function releaseSharedBrowser() {
+  if (!sharedBrowser) return;
+  const browser = sharedBrowser;
+  sharedBrowser = null;
+  await closeQuietly(browser);
+}
+
+async function sharedRendererBrowser() {
+  if (sharedBrowser?.isConnected()) return sharedBrowser;
+  sharedBrowser = await withDeadline(
+    chromium.launch({ headless: HEADLESS, args: RENDERER_ARGS }),
+    LAUNCH_TIMEOUT_MS,
+    'launching the shared Chromium',
+  );
+  return sharedBrowser;
+}
+
 function browserTest(
   name: string,
   body: () => Promise<void>,
@@ -197,15 +236,15 @@ function browserTest(
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });
-afterAll(() => stopServer());
+afterAll(async () => {
+  await releaseSharedBrowser();
+  stopServer();
+});
 
 browserTest(
   'mounts engine, loads preset, and renders a silent preview frame',
   async () => {
-    const browser = await chromium.launch({
-      headless: HEADLESS,
-      args: RENDERER_ARGS,
-    });
+    const browser = await sharedRendererBrowser();
     // DPR 1 keeps the SwiftShader backing store at 1280×720. CI's 2-core
     // runner software-rasterizes every frame, so the 4× pixel work of DPR 2
     // is pure timeout risk with no assertion value here (non-zero pixel and
@@ -275,7 +314,7 @@ browserTest(
       );
       throw error;
     } finally {
-      await closeQuietly(ctx, browser);
+      await closeQuietly(ctx);
     }
   },
   { timeout: 240000 },
@@ -284,10 +323,7 @@ browserTest(
 browserTest(
   'switches preset and canvas content changes',
   async () => {
-    const browser = await chromium.launch({
-      headless: HEADLESS,
-      args: RENDERER_ARGS,
-    });
+    const browser = await sharedRendererBrowser();
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 1,
@@ -358,7 +394,7 @@ browserTest(
       );
       throw error;
     } finally {
-      await closeQuietly(ctx, browser);
+      await closeQuietly(ctx);
     }
   },
   { timeout: 240000 },
@@ -448,14 +484,24 @@ async function verifySmartphoneMicrophoneAccess({
 }: {
   returningUser: boolean;
 }) {
-  const browser = await chromium.launch({
-    headless: HEADLESS,
-    args: [
-      ...RENDERER_ARGS,
-      '--use-fake-device-for-media-stream',
-      '--use-fake-ui-for-media-stream',
-    ],
-  });
+  // This one cannot share: fake-media-stream is a process-level flag. Drop the
+  // shared browser first so only one is ever alive — leaving both up put two
+  // SwiftShader processes on the runner at once, which is the contention this
+  // whole change exists to remove. `sharedRendererBrowser()` re-launches on
+  // demand if a later test needs it.
+  await releaseSharedBrowser();
+  const browser = await withDeadline(
+    chromium.launch({
+      headless: HEADLESS,
+      args: [
+        ...RENDERER_ARGS,
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+      ],
+    }),
+    LAUNCH_TIMEOUT_MS,
+    'launching Chromium with a fake media stream',
+  );
   const ctx = await browser.newContext({
     ...devices['iPhone 13'],
     ...(returningUser ? { permissions: ['microphone'] } : {}),
@@ -667,10 +713,7 @@ async function readVtCount(page: import('playwright').Page): Promise<number> {
 browserTest(
   'home-to-live flip runs a view transition and mounts the live canvas',
   async () => {
-    const browser = await chromium.launch({
-      headless: HEADLESS,
-      args: RENDERER_ARGS,
-    });
+    const browser = await sharedRendererBrowser();
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 1,
@@ -791,7 +834,7 @@ browserTest(
       );
       throw error;
     } finally {
-      await closeQuietly(ctx, browser);
+      await closeQuietly(ctx);
     }
   },
   { timeout: 240000 },
@@ -800,10 +843,7 @@ browserTest(
 browserTest(
   'skips the view transition when the OS prefers reduced motion',
   async () => {
-    const browser = await chromium.launch({
-      headless: HEADLESS,
-      args: RENDERER_ARGS,
-    });
+    const browser = await sharedRendererBrowser();
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 1,
@@ -851,7 +891,7 @@ browserTest(
       );
       throw error;
     } finally {
-      await closeQuietly(ctx, browser);
+      await closeQuietly(ctx);
     }
   },
   { timeout: 180000 },
