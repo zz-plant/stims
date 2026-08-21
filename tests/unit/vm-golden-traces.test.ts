@@ -140,25 +140,33 @@ describe('VM golden traces', () => {
       }
     };
 
-    test('replays clean under a foreign libm (1-ULP transcendentals)', () => {
-      expect(
-        divergedUnder((original) => {
-          Math.sin = (x) => nextUp(original.sin(x));
-          Math.cos = (x) => nextUp(original.cos(x));
-          Math.exp = (x) => nextUp(original.exp(x));
-          Math.log = (x) => nextUp(original.log(x));
-          Math.tan = (x) => nextUp(original.tan(x));
-          Math.pow = (a, b) => nextUp(original.pow(a, b));
-          Math.atan2 = (a, b) => nextUp(original.atan2(a, b));
-        }),
-      ).toEqual([]);
-    }, SLOW_REPLAY_TIMEOUT_MS);
+    test(
+      'replays clean under a foreign libm (1-ULP transcendentals)',
+      () => {
+        expect(
+          divergedUnder((original) => {
+            Math.sin = (x) => nextUp(original.sin(x));
+            Math.cos = (x) => nextUp(original.cos(x));
+            Math.exp = (x) => nextUp(original.exp(x));
+            Math.log = (x) => nextUp(original.log(x));
+            Math.tan = (x) => nextUp(original.tan(x));
+            Math.pow = (a, b) => nextUp(original.pow(a, b));
+            Math.atan2 = (a, b) => nextUp(original.atan2(a, b));
+          }),
+        ).toEqual([]);
+      },
+      SLOW_REPLAY_TIMEOUT_MS,
+    );
 
-    test('still catches a 0.1% semantics change in every witness', () => {
-      const diverged = divergedUnder((original) => {
-        Math.sin = (x) => original.sin(x) * 1.001;
-      });
-      expect(diverged.sort()).toEqual([...traceFiles].sort());
-    }, SLOW_REPLAY_TIMEOUT_MS);
+    test(
+      'still catches a 0.1% semantics change in every witness',
+      () => {
+        const diverged = divergedUnder((original) => {
+          Math.sin = (x) => original.sin(x) * 1.001;
+        });
+        expect(diverged.sort()).toEqual([...traceFiles].sort());
+      },
+      SLOW_REPLAY_TIMEOUT_MS,
+    );
   });
 });
