@@ -588,13 +588,21 @@ const smartphoneMicrophoneTest = localOnlyBrowserTest;
 smartphoneMicrophoneTest(
   'requests default microphone access for a first-time smartphone user',
   () => verifySmartphoneMicrophoneAccess({ returningUser: false }),
-  { timeout: 120000 },
+  // A test budget has to cover the work *plus* what runs when the work
+  // fails, or the outer timeout fires first and buries the named error —
+  // the exact opaque failure the deadlines in this file exist to remove.
+  // Worst case here: 90s waiting for the disclosure, then up to 30s of
+  // bounded failure-dump probes, then up to 30s of bounded teardown = 150s.
+  // Caught in review of #1138, which raised the disclosure wait to 90s
+  // without re-checking these two budgets against it.
+  { timeout: 180000 },
 );
 
 smartphoneMicrophoneTest(
   'reuses granted microphone access for a returning smartphone user',
   () => verifySmartphoneMicrophoneAccess({ returningUser: true }),
-  { timeout: 120000 },
+  // Same reserve as its sibling above: 90s + 30s dump + 30s teardown.
+  { timeout: 180000 },
 );
 
 const VT_COUNT_INIT_SCRIPT = `
