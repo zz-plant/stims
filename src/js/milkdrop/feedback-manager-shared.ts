@@ -1656,6 +1656,17 @@ class SharedMilkdropFeedbackManager
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
         texelSize: { value: new Vector2(1, 1) },
+        // MilkDrop's texsize builtin, declared for every custom shader body by
+        // MILKDROP_SHADER_BUILTIN_DECLARATIONS — so the warp shader can read
+        // it, and two paths here write it every frame (swap() and
+        // applyCompositeState). It was never actually created on this
+        // material, so the first of those writes threw
+        // "Cannot read properties of undefined (reading 'value')" inside the
+        // adapter's try/catch: every frame logged "render failed (potentially
+        // during fallback/transition)" and returned false, so nothing drew at
+        // all. Placeholder dimensions; both writers overwrite it with the
+        // feedback target's real size before it is sampled.
+        texsize: { value: new Vector4(1, 1, 1, 1) },
         noiseTex: { value: this.auxTextures.noise },
         simplexTex: { value: this.auxTextures.simplex },
         voronoiTex: { value: this.auxTextures.voronoi },

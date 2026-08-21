@@ -237,3 +237,46 @@ test('applies comp-stage color controls and overlay work before legacy post effe
     manager.dispose();
   }
 });
+
+test('every material written each frame declares the texsize builtin', () => {
+  // Regression: MILKDROP_SHADER_BUILTIN_DECLARATIONS declares `uniform vec4
+  // texsize` for every custom shader body, and two paths write it every frame
+  // (swap() and applyCompositeState). The warp material never actually created
+  // the uniform, so the first write threw "Cannot read properties of undefined
+  // (reading 'value')" inside the adapter's try/catch — every frame logged
+  // "render failed (potentially during fallback/transition)" and returned
+  // false, so nothing drew at all. The catch turned a crash into a silent
+  // stall, and the e2e waiting for canvas content timed out instead.
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    warpMaterial: { uniforms: Record<string, { value: unknown } | undefined> };
+    compositeMaterial: {
+      uniforms: Record<string, { value: unknown } | undefined>;
+    };
+    feedbackBlendMaterial: {
+      uniforms: Record<string, { value: unknown } | undefined>;
+    };
+    dispose: () => void;
+  };
+
+  try {
+    for (const [label, material] of [
+      ['warp', manager.warpMaterial],
+      ['composite', manager.compositeMaterial],
+      ['feedbackBlend', manager.feedbackBlendMaterial],
+    ] as const) {
+      const texsize = material.uniforms.texsize;
+      expect(`${label}: ${texsize ? 'declared' : 'MISSING'}`).toBe(
+        `${label}: declared`,
+      );
+      // vec4 (width, height, 1/width, 1/height) — a Vector2 here would compile
+      // but silently truncate the .zw one-texel offset neighbour taps read.
+      expect(texsize?.value).toHaveProperty('w');
+    }
+  } finally {
+    manager.dispose();
+  }
+});
