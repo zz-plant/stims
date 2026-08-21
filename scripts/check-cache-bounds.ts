@@ -39,6 +39,8 @@ const ALLOWED: Record<string, string> = {
     'PINNABLE_BY_TARGET is a lookup index over the fixed PINNABLE_FIELDS literal, built once at module load — it is a table, not a cache.',
   'src/js/frontend/PerformSurface.tsx':
     'The only container is a Set derived inside a render/poll callback to de-duplicate the current modulator targets; it is rebuilt from scratch each time and never accumulates.',
+  'src/js/milkdrop/compiler/shader-analysis-glsl.ts':
+    'TEMPLATE_OWNED_TARGETS is a two-element literal fixed at module load, and declaredLocals is a per-call Set scoped to one shader program — both are bounded by the source they read, not by runtime accumulation.',
 };
 
 type DiffLine = { kind: 'file' | 'hunk' | 'added' | 'other'; text: string };
