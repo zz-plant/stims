@@ -1,0 +1,25 @@
+{
+  "$schema": "../schema.json",
+  "section": "random",
+  "description": "rand() and randint() under the fixed conformance RNG, which returns exactly 0.5 for every call (see README, Runner contract).",
+  "cases": [
+    {
+      "id": "rand-scales-the-draw",
+      "name": "rand(n) scales the RNG draw by n",
+      "program": ["x = rand(10)"],
+      "expected": { "x": 5 }
+    },
+    {
+      "id": "rand-defaults-to-one",
+      "name": "rand() with no argument draws over [0, 1)",
+      "program": ["x = rand()"],
+      "expected": { "x": 0.5 }
+    },
+    {
+      "id": "randint-floors-the-draw",
+      "name": "randint(n) floors the scaled draw",
+      "program": ["x = randint(3)", "y = randint(10)"],
+      "expected": { "x": 1, "y": 5 }
+    }
+  ]
+}

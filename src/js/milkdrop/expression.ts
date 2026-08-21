@@ -937,9 +937,17 @@ export function parseMilkdropStatement(
 
   return {
     value: {
+      // Lowercased because ns-eel is case-insensitive: `contVol = 1` and
+      // `contvol` are one variable. Identifier READS already normalise
+      // (parseMilkdropExpression lowercases every name), so leaving the
+      // target raw made the store and the load disagree — a preset writing
+      // `contVol` then reading `contvol` read 0 forever on the program
+      // tiers, and `Zoom = 1.02` never reached the `zoom` state field.
+      // Consumers downstream already compare against lowercase literals
+      // (`megabuf`, `motion_vectors_x`), so this is also what they expect.
       target: megabufTarget
         ? (megabufTarget[1] as string).toLowerCase()
-        : target,
+        : target.toLowerCase(),
       ...(targetExpression?.value
         ? { targetExpression: targetExpression.value }
         : {}),

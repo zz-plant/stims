@@ -17,6 +17,10 @@ and the runner derives profiles from those folders (`fast` = unit + compat;
 `custom-shader-import.test.ts` ·
 `butterchurn-eel-transpiler.test.ts` (scripts/)
 
+`eel-conformance-spec.test.ts` runs the portable conformance corpus in `spec/eel-conformance/`
+against all three execution tiers. The cases are JSON, not TypeScript — edit them there, not in
+the test. `bun run spec:eel` runs the same corpus with a per-section report.
+
 ## VM / runtime
 
 `milkdrop-vm.test.ts` (1698 lines) · `milkdrop-vm-frame-generation.test.ts` ·

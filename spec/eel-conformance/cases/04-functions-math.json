@@ -1,0 +1,84 @@
+{
+  "$schema": "../schema.json",
+  "section": "functions-math",
+  "description": "Transcendental and root functions, and the domain guards that keep them finite.",
+  "cases": [
+    {
+      "id": "sqrt-negative-is-zero",
+      "name": "sqrt() of a negative is 0",
+      "program": ["x = sqrt(-4)"],
+      "expected": { "x": 0 },
+      "note": "The argument is clamped to >= 0 rather than returning NaN."
+    },
+    {
+      "id": "invsqrt",
+      "name": "invsqrt() is the exact reciprocal square root",
+      "program": ["x = invsqrt(4)"],
+      "expected": { "x": 0.5 },
+      "note": "MilkDrop ships the Quake fast-approximation here. This platform uses the exact reciprocal: strictly closer to the ideal, and identical across tiers."
+    },
+    {
+      "id": "invsqrt-nonpositive",
+      "name": "invsqrt() of zero or a negative is 0",
+      "program": ["x = invsqrt(0)", "y = invsqrt(-1)"],
+      "expected": { "x": 0, "y": 0 },
+      "note": "1/sqrt(0) is Infinity, which the finite clamp zeroes."
+    },
+    {
+      "id": "asin-acos-clamp-domain",
+      "name": "asin() and acos() clamp their argument to [-1, 1]",
+      "program": ["x = asin(2)", "y = acos(-3)"],
+      "expected": { "x": 1.5707963267948966, "y": 3.141592653589793 }
+    },
+    {
+      "id": "atan-quarter-turn",
+      "name": "atan() of 1 is a quarter of pi",
+      "program": ["x = atan(1)"],
+      "expected": { "x": 0.7853981633974483 }
+    },
+    {
+      "id": "atan2-argument-order",
+      "name": "atan2() takes (y, x) in that order",
+      "program": ["x = atan2(1, 0)"],
+      "expected": { "x": 1.5707963267948966 },
+      "note": "atan2(1, 0) is +pi/2. Swapped arguments would give 0."
+    },
+    {
+      "id": "log-zero-is-zero",
+      "name": "log(0) is 0, not -Infinity",
+      "program": ["x = log(0)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "log-negative-is-zero",
+      "name": "log() of a negative is 0",
+      "program": ["x = log(-5)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "log10",
+      "name": "log10() of a power of ten is its exponent",
+      "program": ["x = log10(1000)"],
+      "expected": { "x": 3 }
+    },
+    {
+      "id": "exp-basic",
+      "name": "exp(0) is 1",
+      "program": ["x = exp(0)"],
+      "expected": { "x": 1 }
+    },
+    {
+      "id": "exp-overflow-clamps-at-store",
+      "name": "exp() overflow reaches the store as Infinity and is clamped to 0 there",
+      "program": ["x = exp(1000)"],
+      "expected": { "x": 0 },
+      "note": "exp() itself is NOT finite-clamped; the statement-boundary clamp catches it. The observable result is the same, but an implementation clamping inside exp() would differ for `exp(1000) - exp(1000)` (0 here, NaN-then-0 if clamped late)."
+    },
+    {
+      "id": "sigmoid-midpoint",
+      "name": "sigmoid() at zero is one half",
+      "program": ["x = sigmoid(0, 1)"],
+      "expected": { "x": 0.5 }
+    }
+  ]
+}
