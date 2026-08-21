@@ -102,17 +102,27 @@ const PERFORMANCE_ACTION_KEYS = {
   remix: ['r'],
 } satisfies Record<keyof UnifiedPerformanceActions, string[]>;
 
-/** Keys the canvas consumes for the virtual pointer while focused. */
+/**
+ * Keys that steer the virtual pointer, and only while Shift is held.
+ *
+ * This was WASD plus the bare arrows, which could not work: the shell binds
+ * A (save), S (settings) and both arrows (preset navigation), and the
+ * reservation that keeps those shortcuts alive on a focused canvas took them
+ * away from here — leaving a steering cluster that could go up, down and
+ * right but never left. Shifted arrows collide with nothing: the shell's
+ * bindings are bare, and the MilkDrop overlay's are letters.
+ */
 const KEYBOARD_POINTER_KEYS = new Set([
   'arrowleft',
   'arrowright',
   'arrowup',
   'arrowdown',
-  'a',
-  'd',
-  'w',
-  's',
 ]);
+
+/** True when this keydown is a steering chord rather than a shell shortcut. */
+function isSteeringChord(key: string, shiftKey: boolean): boolean {
+  return shiftKey && KEYBOARD_POINTER_KEYS.has(key);
+}
 
 /** Keyboard stand-in for the two-finger pinch/rotate gesture: = / - scale,
     , / . rotate. Without this, gesture-driven preset signals (pinchDelta →
@@ -136,9 +146,19 @@ const KEYBOARD_GESTURE_KEYS = new Set(['=', '+', '-', '_', ',', '.']);
  * Keys are stored the way `isReservedByShell` wants them (lowercase, ' ' for
  * the space bar) and prettified for display by `formatStageKey`.
  */
-export type StageKeyDoc = { keys: string[]; label: string };
+export type StageKeyDoc = {
+  keys: string[];
+  label: string;
+  /** Rendered as a Shift chord, and exempt from the bare-key reservation. */
+  shift?: boolean;
+};
 
 export const STAGE_KEY_DOCS: readonly StageKeyDoc[] = [
+  {
+    keys: ['arrowleft', 'arrowright', 'arrowup', 'arrowdown'],
+    label: 'Push the visuals around (drag, by keyboard)',
+    shift: true,
+  },
   { keys: ['=', '-'], label: 'Zoom and warp (the pinch gesture, by keyboard)' },
   { keys: [',', '.'], label: 'Rotate (the twist gesture, by keyboard)' },
 ];
@@ -176,9 +196,10 @@ const STAGE_KEY_LABELS: Record<string, string> = {
   arrowright: '\u2192',
 };
 
-/** Display spelling for one stage key: 'w' -> 'W', 'arrowup' -> up arrow. */
-export function formatStageKey(key: string): string {
-  return STAGE_KEY_LABELS[key] ?? key.toUpperCase();
+/** Display spelling for one stage key: 'r' -> 'R', 'arrowup' -> up arrow. */
+export function formatStageKey(key: string, shift = false): string {
+  const base = STAGE_KEY_LABELS[key] ?? key.toUpperCase();
+  return shift ? `\u21e7${base}` : base;
 }
 
 /**
@@ -192,8 +213,12 @@ export function formatStageKey(key: string): string {
 export function availableStageKeyDocs(): StageKeyDoc[] {
   const rows: StageKeyDoc[] = [];
   for (const row of STAGE_KEY_DOCS) {
-    const keys = row.keys.filter((key) => !isReservedByShell(key));
-    if (keys.length > 0) rows.push({ keys, label: row.label });
+    // A Shift row is exempt: the shell reserves bare keys, so Shift+Arrow
+    // stays with the stage even though ArrowLeft is a shell binding.
+    const keys = row.shift
+      ? row.keys
+      : row.keys.filter((key) => !isReservedByShell(key));
+    if (keys.length > 0) rows.push({ ...row, keys });
   }
   return rows;
 }
@@ -254,12 +279,12 @@ export function isReservedByShell(key: string): boolean {
   return resolveReservedShellKeys().has(lower);
 }
 
-export function isCanvasConsumedKey(key: string): boolean {
+export function isCanvasConsumedKey(key: string, shiftKey = false): boolean {
   // Accept both spellings of the space bar: KeyboardEvent.key reports ' ',
   // while shortcut specs write it as 'Space'.
   const lower = key.toLowerCase() === 'space' ? ' ' : key.toLowerCase();
   return (
-    KEYBOARD_POINTER_KEYS.has(lower) ||
+    isSteeringChord(lower, shiftKey) ||
     KEYBOARD_GESTURE_KEYS.has(lower) ||
     Object.values(PERFORMANCE_ACTION_KEYS).some((keys) => keys.includes(lower))
   );
@@ -340,6 +365,15 @@ export function createUnifiedInput({
   const pendingPointerEvents: PointerEvent[] = [];
   const pendingPointerMoveIndexes = new Map<number, number>();
   const keyState = new Set<string>();
+  /**
+   * Arrows currently held *as steering chords*.
+   *
+   * Tracked separately from `keyState` rather than re-deriving from it: the
+   * modifier is only known at keydown, and an embedding with no shell
+   * reservation installed would otherwise let a bare arrow steer — the same
+   * double-duty this chord exists to avoid.
+   */
+  const steerKeys = new Set<string>();
   let keyboardPointer = { normalizedX: 0, normalizedY: 0 };
   let gamepadPointer = { normalizedX: 0, normalizedY: 0 };
   let lastFrameTime =
@@ -517,15 +551,24 @@ export function createUnifiedInput({
     if (!keyboardEnabled) return;
     if (isTextInput(document.activeElement)) return;
     const lowerKey = event.key.toLowerCase();
+    // The shell reserves bare keys, so a steering chord is never one of its
+    // shortcuts even when the unshifted key is: Shift+ArrowLeft steers,
+    // ArrowLeft still changes preset.
+    const steering = isSteeringChord(lowerKey, event.shiftKey);
     // The shell owns this chord; leave the event completely untouched so its
     // shortcut runs and nothing here double-acts on the same press.
-    if (isReservedByShell(lowerKey)) return;
+    if (!steering && isReservedByShell(lowerKey)) return;
     keyState.add(lowerKey);
+    if (steering) {
+      steerKeys.add(lowerKey);
+    } else {
+      steerKeys.delete(lowerKey);
+    }
     // Consume keys this surface handles. Space/e/x/q/z/r/1-3 and the
     // movement arrows all collide with document-level shell shortcuts
     // (stop audio, open editor, quick-select, previous/next preset) — without
     // this, one keystroke on a focused canvas fires both behaviors.
-    if (isCanvasConsumedKey(lowerKey)) {
+    if (isCanvasConsumedKey(lowerKey, event.shiftKey)) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -548,7 +591,15 @@ export function createUnifiedInput({
     if (!keyboardEnabled) return;
     // Deleting unconditionally (rather than mirroring the keydown guard) so a
     // key reserved mid-press cannot stay stuck in the held set.
-    keyState.delete(event.key.toLowerCase());
+    const released = event.key.toLowerCase();
+    keyState.delete(released);
+    // Letting go of Shift ends the chord, so the scene stops moving where the
+    // user stopped asking it to.
+    if (released === 'shift') {
+      steerKeys.clear();
+    } else {
+      steerKeys.delete(released);
+    }
     scheduleFrame();
   };
 
@@ -562,6 +613,7 @@ export function createUnifiedInput({
   const releaseHeldKeys = () => {
     if (keyState.size === 0 && !keyboardGestureActive) return;
     keyState.clear();
+    steerKeys.clear();
     // Losing focus is not the same as letting go: there is no ramp to run,
     // and the release timer only advances on frames the loop is still
     // scheduling. Drop the synthetic pinch here so the visuals cannot stay
@@ -587,14 +639,16 @@ export function createUnifiedInput({
     if (!keyboardEnabled || keyState.size === 0) return null;
     let dx = 0;
     let dy = 0;
-    if (keyState.has('arrowleft') || keyState.has('a')) dx -= 1;
-    if (keyState.has('arrowright') || keyState.has('d')) dx += 1;
-    if (keyState.has('arrowup') || keyState.has('w')) dy += 1;
-    if (keyState.has('arrowdown') || keyState.has('s')) dy -= 1;
+    if (steerKeys.has('arrowleft')) dx -= 1;
+    if (steerKeys.has('arrowright')) dx += 1;
+    if (steerKeys.has('arrowup')) dy += 1;
+    if (steerKeys.has('arrowdown')) dy -= 1;
 
     const magnitude = Math.hypot(dx, dy) || 1;
-    const boost = keyState.has('shift') ? keyboardBoost : 1;
-    const step = (keyboardSpeed * boost * deltaMs) / 1000;
+    // No Shift boost here: Shift is what makes an arrow a steering chord in
+    // the first place, so boosting on it would mean the only speed there is
+    // — a pointer crossing the stage in two thirds of a second.
+    const step = (keyboardSpeed * deltaMs) / 1000;
     keyboardPointer = {
       normalizedX: clamp(
         keyboardPointer.normalizedX + (dx / magnitude) * step,
@@ -721,7 +775,16 @@ export function createUnifiedInput({
     );
   };
 
-  const getKeyboardPressed = () => keyState.has(' ') || keyState.has('enter');
+  /**
+   * Steering counts as pressed, so pushing the visuals takes one chord.
+   *
+   * The scene only moves while `isPressed` (dragDelta is gated on it), and
+   * the hold key for that was Space or Enter — with Space bound to the
+   * shell's stop-audio, this asked for Shift, an arrow and Enter at once to
+   * do what a mouse does by dragging.
+   */
+  const getKeyboardPressed = () =>
+    keyState.has(' ') || keyState.has('enter') || steerKeys.size > 0;
 
   const getGamepadPressed = () => {
     if (!gamepadEnabled) return false;
@@ -1138,6 +1201,7 @@ export function createUnifiedInput({
     pendingPointerEvents.length = 0;
     pendingPointerMoveIndexes.clear();
     keyState.clear();
+    steerKeys.clear();
     wheelDelta = 0;
     wheelAccum = 0;
     hoverPointer = null;

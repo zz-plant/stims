@@ -17,6 +17,7 @@ import {
   KEYWORD_WORDS,
 } from '../../src/js/milkdrop/overlay/editor-language.ts';
 import { MILKDROP_BUILTIN_OPTIONS } from '../../src/js/milkdrop/overlay/editor-panel.ts';
+import { buildMilkdropInputSignalOverrides } from '../../src/js/milkdrop/runtime/interaction-response.ts';
 
 describe('milkdrop builtin table integrity', () => {
   test('has no duplicate names', () => {
@@ -165,6 +166,37 @@ describe('q/t register range matches the VM', () => {
     }
     for (const rejected of ['q0', 'q33', 'q01', 't0', 't33', 'q', 't', 'r1']) {
       expect(MILKDROP_REGISTER_WORD_PATTERN.test(rejected)).toBe(false);
+    }
+  });
+});
+
+/**
+ * The interaction vocabulary was published to preset code for its whole life
+ * without appearing here — so the editor never completed it, hover said
+ * nothing, and the generated reference had no entry. A preset author had no
+ * way to learn the names existed.
+ *
+ * Derived from the runtime's own output rather than a second hand-written
+ * list: a signal added there and not documented here would be invisible in
+ * exactly the same way.
+ */
+describe('the interaction signals the runtime publishes are documented', () => {
+  const published = Object.keys(buildMilkdropInputSignalOverrides(null)).filter(
+    (name) => name.includes('_'),
+  );
+  const documented = new Set(MILKDROP_BUILTIN_DOCS.map((entry) => entry.name));
+
+  test('the runtime publishes an interaction vocabulary at all', () => {
+    expect(published.length).toBeGreaterThan(20);
+  });
+
+  test.each(published)('%s is in the builtin table', (name) => {
+    expect(documented.has(name)).toBe(true);
+  });
+
+  test('none of them is claimed as a compiler intrinsic', () => {
+    for (const name of published) {
+      expect(MILKDROP_INTRINSIC_IDENTIFIERS.has(name)).toBe(false);
     }
   });
 });

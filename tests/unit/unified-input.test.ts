@@ -334,3 +334,71 @@ describe('unified input multi-touch gestures', () => {
     restoreNow();
   });
 });
+
+/**
+ * Steering used to be WASD plus the bare arrows, of which the shell had
+ * claimed A, S and both arrows — so the cluster could go up, down and right
+ * and never left — and it only moved the scene while Space or Enter was also
+ * held, with Space bound to stop-audio.
+ */
+describe('steering the stage by keyboard', () => {
+  const steer = (target: HTMLElement, key: string, shiftKey = true) => {
+    const keydown = new window.Event('keydown', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperties(keydown, {
+      key: { value: key },
+      shiftKey: { value: shiftKey },
+      repeat: { value: false },
+    });
+    target.dispatchEvent(keydown);
+    return keydown;
+  };
+
+  test('a shifted arrow drags the scene with no second key held', async () => {
+    const target = createTarget();
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      gamepadEnabled: false,
+    });
+
+    steer(target, 'ArrowLeft');
+    await flushInput();
+    await flushInput();
+
+    const state = latest as UnifiedInputState | null;
+    expect(state?.isPressed).toBe(true);
+    // Left is the direction the old cluster could never go.
+    expect(state?.dragDelta.x ?? 0).toBeLessThan(0);
+
+    input.dispose();
+    target.remove();
+  });
+
+  test('an unshifted arrow is left to the shell entirely', async () => {
+    const target = createTarget();
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      gamepadEnabled: false,
+    });
+
+    const event = steer(target, 'ArrowLeft', false);
+    await flushInput();
+    await flushInput();
+
+    expect(event.defaultPrevented).toBe(false);
+    const state = latest as UnifiedInputState | null;
+    expect(state?.isPressed ?? false).toBe(false);
+    expect(state?.dragDelta.x ?? 0).toBe(0);
+
+    input.dispose();
+    target.remove();
+  });
+});

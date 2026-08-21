@@ -312,6 +312,238 @@ const SIGNAL_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
   },
 ];
 
+/**
+ * What the person watching is doing, published every frame by
+ * `runtime/interaction-response.ts`.
+ *
+ * Absent from this table until now, which made the whole layer invisible to
+ * the person best placed to use it: the editor completes and hover-documents
+ * from here, and docs/authoring/reference.md is generated from it, so a
+ * preset author had no way to learn these names existed. Nothing in the
+ * bundled catalog reads them.
+ *
+ * Documented in snake_case, the spelling MilkDrop presets are written in;
+ * the runtime publishes a camelCase alias for each as well.
+ */
+const INTERACTION_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
+  {
+    name: 'input_x',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'pointer x while pressed, -1..1 (0 when nothing is touching the stage)',
+  },
+  {
+    name: 'input_y',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'pointer y while pressed, -1..1',
+  },
+  {
+    name: 'input_dx',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'pointer movement along x since the last frame',
+  },
+  {
+    name: 'input_dy',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'pointer movement along y since the last frame',
+  },
+  {
+    name: 'input_speed',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'magnitude of the per-frame pointer movement',
+  },
+  {
+    name: 'input_pressed',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 while a pointer, Enter, or a steering chord is held',
+  },
+  {
+    name: 'input_just_pressed',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 on the frame the press began',
+  },
+  {
+    name: 'input_just_released',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 on the frame the press ended',
+  },
+  {
+    name: 'input_count',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'number of pointers currently down',
+  },
+  {
+    name: 'hover_active',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 while a mouse hovers the stage without pressing',
+  },
+  {
+    name: 'hover_x',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'hover x, -1..1',
+  },
+  {
+    name: 'hover_y',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'hover y, -1..1',
+  },
+  {
+    name: 'wheel_delta',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'scroll amount this frame, -2..2',
+  },
+  {
+    name: 'wheel_accum',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'decaying sum of recent scrolling, -3..3',
+  },
+  {
+    name: 'drag_intensity',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'how hard the pointer is being dragged, 0..1',
+  },
+  {
+    name: 'drag_angle',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'direction of the drag in radians',
+  },
+  {
+    name: 'gesture_scale',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'pinch scale, 1 at rest (= and - on the keyboard)',
+  },
+  {
+    name: 'gesture_rotation',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'twist angle in radians (, and . on the keyboard)',
+  },
+  {
+    name: 'gesture_translate_x',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'two-finger pan along x',
+  },
+  {
+    name: 'gesture_translate_y',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'two-finger pan along y',
+  },
+  {
+    name: 'accent_pulse',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'decaying pulse from the accent key or tap, 0..1',
+  },
+  {
+    name: 'action_accent',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'accent pressed: 1, decaying to 0 over ~220ms',
+  },
+  {
+    name: 'action_mode_next',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'X pressed (decaying pulse) — your preset decides what a mode is',
+  },
+  {
+    name: 'action_mode_previous',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'Q or Z pressed (decaying pulse)',
+  },
+  {
+    name: 'action_preset_next',
+    kind: 'variable',
+    group: 'signal',
+    doc: '] pressed (decaying pulse)',
+  },
+  {
+    name: 'action_preset_previous',
+    kind: 'variable',
+    group: 'signal',
+    doc: '[ pressed (decaying pulse)',
+  },
+  {
+    name: 'action_quick_look_1',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 pressed (decaying pulse)',
+  },
+  {
+    name: 'action_quick_look_2',
+    kind: 'variable',
+    group: 'signal',
+    doc: '2 pressed (decaying pulse)',
+  },
+  {
+    name: 'action_quick_look_3',
+    kind: 'variable',
+    group: 'signal',
+    doc: '3 pressed (decaying pulse)',
+  },
+  {
+    name: 'action_remix',
+    kind: 'variable',
+    group: 'signal',
+    doc: 'R pressed (decaying pulse)',
+  },
+  {
+    name: 'input_source_pointer',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when the last input came from a mouse, pen or finger',
+  },
+  {
+    name: 'input_source_keyboard',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when the last input came from the keyboard',
+  },
+  {
+    name: 'input_source_gamepad',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when the last input came from a gamepad',
+  },
+  {
+    name: 'input_source_mouse',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when a mouse specifically is driving',
+  },
+  {
+    name: 'input_source_touch',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when a finger specifically is driving',
+  },
+  {
+    name: 'input_source_pen',
+    kind: 'variable',
+    group: 'signal',
+    doc: '1 when a pen specifically is driving',
+  },
+];
+
 const STATE_VARIABLE_DOCS: readonly MilkdropBuiltinDoc[] = [
   {
     name: 'zoom',
@@ -362,6 +594,7 @@ const CONSTANT_DOCS: readonly MilkdropBuiltinDoc[] = [
 export const MILKDROP_BUILTIN_DOCS: readonly MilkdropBuiltinDoc[] = [
   ...FUNCTION_DOCS,
   ...SIGNAL_VARIABLE_DOCS,
+  ...INTERACTION_VARIABLE_DOCS,
   ...STATE_VARIABLE_DOCS,
   ...REGISTER_DOCS,
   ...CONSTANT_DOCS,

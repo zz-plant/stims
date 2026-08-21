@@ -1,0 +1,48 @@
+[preset00]
+// Stims-only: the picture answers the person watching it.
+// Drag the stage (or hold Shift and an arrow key) to push the drift around,
+// twist two fingers — or press , and . — to spin it, and press R to snap
+// the colour. With no hands on it, every one of these reads 0 and the preset
+// behaves like an ordinary slow drift, which is the point: interaction is a
+// layer on top of a preset that already works.
+fRating=5
+fDecay=0.98
+fWaveAlpha=2
+fWaveScale=1
+nWaveMode=0
+bWaveThick=1
+bMaximizeWaveColor=0
+bTexWrap=1
+zoom=1
+rot=0
+cx=0.5
+cy=0.5
+dx=0
+dy=0
+sx=1
+sy=1
+warp=0
+wave_r=0.55
+wave_g=0.75
+wave_b=1
+wave_x=0.5
+wave_y=0.5
+ob_a=0
+ib_a=0
+mv_a=0
+per_frame_1=vol = (bass+mid+treb)*0.333;
+per_frame_2=zoom = 1.012 + 0.02*vol*vol;
+// Drag pushes the field: input_dx/input_dy are per-frame pointer movement,
+// so this is a shove rather than a position.
+per_frame_3=dx = dx*0.9 + input_dx*0.35;
+per_frame_4=dy = dy*0.9 - input_dy*0.35;
+// Where the hand is decides where the zoom pulls from. input_x/input_y are
+// -1..1 across the stage, and cx/cy want 0..1.
+per_frame_5=cx = 0.5 + input_x*0.25*input_pressed;
+per_frame_6=cy = 0.5 - input_y*0.25*input_pressed;
+// Pinch and twist ride on top of whatever the audio is already doing.
+per_frame_7=rot = 0.02 + gesture_rotation*0.25 + bass*0.01;
+per_frame_8=warp = 0.2 + drag_intensity*1.5;
+// R is a pulse that decays over ~220ms, so this reads as a snap, not a hold.
+per_frame_9=wave_r = 0.55 + action_remix*0.45;
+per_frame_10=wave_g = 0.75 - action_remix*0.5;

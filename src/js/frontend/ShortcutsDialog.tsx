@@ -209,7 +209,7 @@ export function ShortcutsDialog({
                   <Fragment key={entry.label}>
                     <span className="stims-shell__shortcut-keys">
                       {entry.keys.map((key) => (
-                        <kbd key={key}>{formatStageKey(key)}</kbd>
+                        <kbd key={key}>{formatStageKey(key, entry.shift)}</kbd>
                       ))}
                     </span>
                     <span>{entry.label}</span>
@@ -219,9 +219,9 @@ export function ShortcutsDialog({
               {signalKeys.length > 0 ? (
                 <p className="stims-shell__meta-copy">
                   The stage also passes{' '}
-                  {signalKeys.map(formatStageKey).join(' ')} straight to the
-                  playing preset. No bundled preset reads them yet — one you
-                  write or generate can.
+                  {signalKeys.map((key) => formatStageKey(key)).join(' ')}{' '}
+                  straight to the playing preset. No bundled preset reads them
+                  yet — one you write or generate can.
                 </p>
               ) : null}
             </section>
