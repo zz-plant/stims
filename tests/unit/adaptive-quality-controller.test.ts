@@ -740,4 +740,46 @@ describe('createAdaptiveQualityController', () => {
     }
     expect(controller.getState().qualityStep).toBeGreaterThan(settled + 1);
   });
+
+  test('pressure-induced recovery does not re-arm the switch pre-pay early', () => {
+    // The pre-pay tracks the step it degraded FROM, not a bare flag. With a
+    // flag, pressure could degrade further steps and the first recovery — which
+    // only claws back a pressure step — would re-arm the pre-pay while quality
+    // was still below where the switch found it. Alternating pressure,
+    // one-step recovery and switching then walks downward again.
+    const healthy = { frameMs: 8, cadenceMs: 16.7, gpuMs: 4 };
+    const slow = { frameMs: 45, cadenceMs: 45, gpuMs: 40 };
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+    for (let index = 0; index < 40; index += 1) {
+      controller.recordFrame(healthy);
+    }
+    const settled = controller.getState().qualityStep;
+
+    controller.notePresetApplied();
+    expect(controller.getState().qualityStep).toBe(settled + 1);
+
+    // Real pressure takes it further down.
+    for (let frame = 0; frame < 120; frame += 1) {
+      controller.recordFrame(slow);
+    }
+    const underPressure = controller.getState().qualityStep;
+    expect(underPressure).toBeGreaterThan(settled + 1);
+
+    // Enough headroom to claw back one step, but not back to `settled`.
+    let step = underPressure;
+    let guard = 0;
+    while (step >= underPressure && guard < 200) {
+      controller.recordFrame(healthy);
+      step = controller.getState().qualityStep;
+      guard += 1;
+    }
+    expect(step).toBeGreaterThan(settled);
+
+    // A switch here must NOT pre-pay again — the first one is still unearned.
+    controller.notePresetApplied();
+    expect(controller.getState().qualityStep).toBe(step);
+  });
 });

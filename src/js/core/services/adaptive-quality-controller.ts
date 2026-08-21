@@ -421,11 +421,17 @@ export function createAdaptiveQualityController({
   let consecutiveOverBudget = 0;
   let consecutiveUnderBudget = 0;
   /**
-   * Whether a preset switch has already pre-paid a quality step that has not
-   * been earned back yet. The pre-degrade covers the warm-up cost of ONE
-   * switch; without this it compounded across a burst of them.
+   * The quality step a preset switch pre-degraded *from*, while that step has
+   * not been earned back yet — or null when nothing is outstanding.
+   *
+   * The pre-degrade covers the warm-up cost of ONE switch; without this it
+   * compounded across a burst of them. It stores the level rather than a bare
+   * flag because pressure can degrade further steps in between: clearing on
+   * the first recovery would re-arm the pre-pay while quality was still below
+   * where the switch found it, so alternating pressure, one-step recovery and
+   * switching would walk downward again — the same ratchet by a slower route.
    */
-  let switchPreDegradeOutstanding = false;
+  let switchPreDegradeFromStep: number | null = null;
   let consecutiveRollingOverBudget = 0;
   let adaptation: AdaptiveQualityState['adaptation'] = 'steady';
   const rollingWindowSize = Math.max(
@@ -590,6 +596,9 @@ export function createAdaptiveQualityController({
         QUALITY_STEPS.length - 1,
       );
       qualityStep = targetStep;
+      // An explicit set overrides whatever the switch pre-payment was tracking;
+      // holding a stale level would suppress the next switch's pre-pay.
+      switchPreDegradeFromStep = null;
       adaptation = 'steady';
       consecutiveOverBudget = 0;
       consecutiveUnderBudget = 0;
@@ -762,7 +771,14 @@ export function createAdaptiveQualityController({
         qualityStep > heuristic.initialStep
       ) {
         qualityStep -= 1;
-        switchPreDegradeOutstanding = false;
+        if (
+          switchPreDegradeFromStep !== null &&
+          qualityStep <= switchPreDegradeFromStep
+        ) {
+          // Back to (or above) where the switch found us: the pre-payment has
+          // genuinely been earned back, so a later switch may pre-pay again.
+          switchPreDegradeFromStep = null;
+        }
         adaptation = 'recovering';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
@@ -842,12 +858,12 @@ export function createAdaptiveQualityController({
       if (
         stepLock === null &&
         constrainedProfile &&
-        !switchPreDegradeOutstanding &&
+        switchPreDegradeFromStep === null &&
         sampleCount >= MIN_WARMUP_SAMPLES &&
         qualityStep < QUALITY_STEPS.length - 1
       ) {
+        switchPreDegradeFromStep = qualityStep;
         qualityStep += 1;
-        switchPreDegradeOutstanding = true;
         adaptation = 'degraded';
         state = {
           ...state,
