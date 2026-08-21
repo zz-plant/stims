@@ -247,14 +247,15 @@ describe('bindings land on keys that actually reach the shell', () => {
 
   // Verified in the browser, not inferred: once the engine is live the canvas
   // carries tabindex="0" and unified-input focuses it on pointerdown, so a
-  // single click on the stage — the most natural thing to do — silently kills
-  // these six. S stops opening Settings and ArrowRight stops changing preset,
-  // while a non-consumed binding like T keeps working.
+  // single click on the stage — the most natural thing to do — makes every
+  // overlapping binding depend on the shell reservation to survive.
   //
-  // Not fixed here because the collision is between two real features:
-  // interaction-response.ts feeds these same keys to presets as
-  // action_mode_next / action_remix / accent pulses. Deciding which side wins
-  // is a product call, so this pins the blast radius instead of hiding it.
+  // Four of the original six overlaps are gone: the virtual pointer moved
+  // from WASD and the bare arrows to Shift+Arrow chords, which the shell's
+  // bare bindings cannot collide with. The two that remain are genuine
+  // two-feature collisions — interaction-response.ts feeds Space and E to
+  // presets as accent and action_mode_next — so this pins the blast radius
+  // rather than hiding it.
   test('the known pre-existing canvas overlaps have not grown', () => {
     const overlapping = SHORTCUT_REGISTRY.filter((entry) =>
       entry.defaultKeys.some((spec) => {
@@ -263,9 +264,13 @@ describe('bindings land on keys that actually reach the shell', () => {
       }),
     ).map((entry) => String(entry.id));
 
-    expect(overlapping.sort()).toEqual(
-      ['audio', 'editor', 'favorite', 'previous', 'settings', 'shuffle'].sort(),
-    );
+    expect(overlapping.sort()).toEqual(['audio', 'editor'].sort());
+  });
+
+  test('a shifted arrow steers the stage without costing preset navigation', () => {
+    // The bare key stays the shell's; only the chord reaches the canvas.
+    expect(isCanvasConsumedKey('arrowleft')).toBe(false);
+    expect(isCanvasConsumedKey('arrowleft', true)).toBe(true);
   });
 });
 
@@ -344,10 +349,12 @@ describe('stage keys are documented from the maps that implement them', () => {
 
   test('every documented key is one the canvas actually consumes', () => {
     setReservedShellKeys(() => NO_RESERVED_KEYS);
-    for (const key of [
-      ...STAGE_KEY_DOCS.flatMap((row) => row.keys),
-      ...STAGE_SIGNAL_KEYS,
-    ]) {
+    for (const row of STAGE_KEY_DOCS) {
+      for (const key of row.keys) {
+        expect(isCanvasConsumedKey(key, row.shift ?? false)).toBe(true);
+      }
+    }
+    for (const key of STAGE_SIGNAL_KEYS) {
       expect(isCanvasConsumedKey(key)).toBe(true);
     }
   });
@@ -366,8 +373,12 @@ describe('stage keys are documented from the maps that implement them', () => {
 
   test('keys the shell has claimed are advertised by neither list', () => {
     setReservedShellKeys(reservedFromRegistry);
+    // Shift rows excluded: the reservation is on bare keys, so ArrowLeft
+    // being the shell's is exactly why Shift+ArrowLeft can be the stage's.
     const advertised = [
-      ...availableStageKeyDocs().flatMap((row) => row.keys),
+      ...availableStageKeyDocs()
+        .filter((row) => !row.shift)
+        .flatMap((row) => row.keys),
       ...availableStageSignalKeys(),
     ];
     expect(advertised.length).toBeGreaterThan(0);

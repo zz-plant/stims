@@ -107,6 +107,42 @@ see Track 3 of the curriculum for how to use them well.
 | `frame` | frame count |
 | `fps` | frames per second |
 | `progress` | frame count (ProjectM-compatible alias) |
+| `input_x` | pointer x while pressed, -1..1 (0 when nothing is touching the stage) |
+| `input_y` | pointer y while pressed, -1..1 |
+| `input_dx` | pointer movement along x since the last frame |
+| `input_dy` | pointer movement along y since the last frame |
+| `input_speed` | magnitude of the per-frame pointer movement |
+| `input_pressed` | 1 while a pointer, Enter, or a steering chord is held |
+| `input_just_pressed` | 1 on the frame the press began |
+| `input_just_released` | 1 on the frame the press ended |
+| `input_count` | number of pointers currently down |
+| `hover_active` | 1 while a mouse hovers the stage without pressing |
+| `hover_x` | hover x, -1..1 |
+| `hover_y` | hover y, -1..1 |
+| `wheel_delta` | scroll amount this frame, -2..2 |
+| `wheel_accum` | decaying sum of recent scrolling, -3..3 |
+| `drag_intensity` | how hard the pointer is being dragged, 0..1 |
+| `drag_angle` | direction of the drag in radians |
+| `gesture_scale` | pinch scale, 1 at rest (= and - on the keyboard) |
+| `gesture_rotation` | twist angle in radians (, and . on the keyboard) |
+| `gesture_translate_x` | two-finger pan along x |
+| `gesture_translate_y` | two-finger pan along y |
+| `accent_pulse` | decaying pulse from the accent key or tap, 0..1 |
+| `action_accent` | accent pressed: 1, decaying to 0 over ~220ms |
+| `action_mode_next` | X pressed (decaying pulse) — your preset decides what a mode is |
+| `action_mode_previous` | Q or Z pressed (decaying pulse) |
+| `action_preset_next` | ] pressed (decaying pulse) |
+| `action_preset_previous` | [ pressed (decaying pulse) |
+| `action_quick_look_1` | 1 pressed (decaying pulse) |
+| `action_quick_look_2` | 2 pressed (decaying pulse) |
+| `action_quick_look_3` | 3 pressed (decaying pulse) |
+| `action_remix` | R pressed (decaying pulse) |
+| `input_source_pointer` | 1 when the last input came from a mouse, pen or finger |
+| `input_source_keyboard` | 1 when the last input came from the keyboard |
+| `input_source_gamepad` | 1 when the last input came from a gamepad |
+| `input_source_mouse` | 1 when a mouse specifically is driving |
+| `input_source_touch` | 1 when a finger specifically is driving |
+| `input_source_pen` | 1 when a pen specifically is driving |
 
 Stims also exposes interaction and device-motion signals (`inputX`,
 `gestureScale`, `motionX`, …) that are **not standard MilkDrop** — see the
