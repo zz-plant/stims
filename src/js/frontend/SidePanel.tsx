@@ -1,3 +1,12 @@
+/**
+ * The one panel shell every side surface renders into: browse, the editor,
+ * settings, refine. It owns the chrome around the content — focus trap, close
+ * affordances, the desktop editor/stage seam, and the mobile bottom sheet's
+ * drag-to-dismiss — and nothing about what any particular panel shows.
+ *
+ * Panel content lives in its own component and is handed in as children; the
+ * route state that decides which one is open lives in the workspace context.
+ */
 import {
   type ReactNode,
   useCallback,
@@ -169,6 +178,23 @@ export function SidePanel({
       }
     },
     [panelRef, onClose],
+  );
+
+  // pointercancel is the system taking the gesture away — a call arriving, an
+  // edge swipe winning — not a decision to dismiss. Routing it through
+  // handleDragEnd meant a cancel that happened to land 96px down closed the
+  // sheet on the user's behalf. Put the sheet back instead.
+  const handleDragCancel = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      const panel = panelRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      dragRef.current = null;
+      if (!panel) return;
+      panel.style.transition = 'transform 0.2s ease';
+      panel.style.transform = '';
+    },
+    [panelRef],
   );
 
   useEffect(
@@ -356,7 +382,7 @@ export function SidePanel({
           onPointerDown={handleDragStart}
           onPointerMove={handleDragMove}
           onPointerUp={handleDragEnd}
-          onPointerCancel={handleDragEnd}
+          onPointerCancel={handleDragCancel}
         >
           <div className={styles.grabber} aria-hidden="true" />
           <h2 className={styles.title}>{title}</h2>

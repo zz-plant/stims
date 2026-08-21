@@ -281,10 +281,14 @@ export function createUnifiedInput({
       remix: -Infinity,
     };
   let gestureAnchor: {
-    centroid: { x: number; y: number };
+    /** The two pointers this gesture is pinned to for its whole lifetime. */
+    ids: [number, number];
     normalizedCentroid: { x: number; y: number };
     distance: number;
-    angle: number;
+    /** Last frame's raw angle, for unwrapping the next delta. */
+    lastAngle: number;
+    /** Rotation accumulated across frames, free to pass ±π. */
+    rotation: number;
   } | null = null;
 
   const boundsSource = boundsElement ?? target;
@@ -464,8 +468,31 @@ export function createUnifiedInput({
     scheduleFrame();
   };
 
+  // keydown/keyup are bound to the target, so a key released after focus has
+  // moved on — clicking a panel button mid-press, cmd-tabbing away — delivers
+  // its keyup somewhere else and leaves that key held forever: the synthetic
+  // pinch ramps to its clamp and never lifts, the virtual pointer keeps
+  // drifting, and `keyState.size > 0` re-arms the rAF loop every frame for the
+  // rest of the session. Dropping the held set when the surface stops
+  // receiving keys is the release those keys will never get.
+  const releaseHeldKeys = () => {
+    if (keyState.size === 0) return;
+    keyState.clear();
+    scheduleFrame();
+  };
+  const handleTargetBlur = () => releaseHeldKeys();
+  const handleWindowBlur = () => releaseHeldKeys();
+  const handleKeyVisibilityChange = () => {
+    if (typeof document !== 'undefined' && document.hidden) releaseHeldKeys();
+  };
+
   target.addEventListener('keydown', handleKeyDown);
   target.addEventListener('keyup', handleKeyUp);
+  target.addEventListener('blur', handleTargetBlur);
+  window.addEventListener('blur', handleWindowBlur);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleKeyVisibilityChange);
+  }
 
   const updateKeyboardPointer = (deltaMs: number) => {
     if (!keyboardEnabled || keyState.size === 0) return null;
@@ -662,38 +689,71 @@ export function createUnifiedInput({
     };
   };
 
-  const getGesture = (
-    pointers: UnifiedPointer[],
-    summary: ReturnType<typeof getPointerSummary>,
-  ): UnifiedGesture | null => {
+  const getGesture = (pointers: UnifiedPointer[]): UnifiedGesture | null => {
     if (pointers.length < 2) {
       gestureAnchor = null;
       return null;
     }
 
-    const [p1, p2] = pointers;
+    // Pin the gesture to two specific pointer ids for its lifetime. Reading
+    // "the first two active pointers" every frame meant a third finger
+    // landing, or the first of three lifting, silently swapped which hand
+    // positions the anchor was measured against: a motionless three-finger
+    // rest reported scale 5 and rotation π the instant one finger came off.
+    let p1 = pointers[0];
+    let p2 = pointers[1];
+    if (gestureAnchor) {
+      const anchored1 = pointers.find((p) => p.id === gestureAnchor?.ids[0]);
+      const anchored2 = pointers.find((p) => p.id === gestureAnchor?.ids[1]);
+      if (anchored1 && anchored2) {
+        p1 = anchored1;
+        p2 = anchored2;
+      } else {
+        // One of the anchored fingers left. Re-anchor on whatever is still
+        // down rather than carrying a scale measured against a finger that
+        // is no longer part of the gesture.
+        gestureAnchor = null;
+      }
+    }
+
     const dx = p2.clientX - p1.clientX;
     const dy = p2.clientY - p1.clientY;
     const distance = Math.hypot(dx, dy) || 1;
     const angle = Math.atan2(dy, dx);
+    // The anchored pair's own centroid, not every active pointer's: a finger
+    // joining or leaving would otherwise shift the translation on its own.
+    const normalizedCentroid = {
+      x: (p1.normalizedX + p2.normalizedX) / 2,
+      y: (p1.normalizedY + p2.normalizedY) / 2,
+    };
 
     if (!gestureAnchor) {
       gestureAnchor = {
-        centroid: summary.centroid,
-        normalizedCentroid: summary.normalizedCentroid,
+        ids: [p1.id, p2.id],
+        normalizedCentroid,
         distance,
-        angle,
+        lastAngle: angle,
+        rotation: 0,
       };
       return null;
     }
 
+    // Unwrap: atan2 folds at ±π, so diffing raw angles turned a 1° turn
+    // across that seam into a reported 359° one and spun the whole scene.
+    const rawDelta = angle - gestureAnchor.lastAngle;
+    gestureAnchor.rotation += Math.atan2(
+      Math.sin(rawDelta),
+      Math.cos(rawDelta),
+    );
+    gestureAnchor.lastAngle = angle;
+
     return {
       pointerCount: pointers.length,
       scale: distance / gestureAnchor.distance,
-      rotation: angle - gestureAnchor.angle,
+      rotation: gestureAnchor.rotation,
       translation: {
-        x: summary.normalizedCentroid.x - gestureAnchor.normalizedCentroid.x,
-        y: summary.normalizedCentroid.y - gestureAnchor.normalizedCentroid.y,
+        x: normalizedCentroid.x - gestureAnchor.normalizedCentroid.x,
+        y: normalizedCentroid.y - gestureAnchor.normalizedCentroid.y,
       },
     };
   };
@@ -733,18 +793,21 @@ export function createUnifiedInput({
     }
 
     const summary = getPointerSummary(pointers);
-    const activeSummary = getPointerSummary(activePointerList);
     // Run the keyboard gesture every frame so its release timer decays even
     // while real pointers take precedence.
     const keyboardGesture = updateKeyboardGesture(deltaMs);
-    const gesture =
-      getGesture(activePointerList, activeSummary) ?? keyboardGesture;
+    const gesture = getGesture(activePointerList) ?? keyboardGesture;
     const primary = pointers[0] ?? null;
     const pressed =
       activePointerList.length > 0 || keyboardPressed || gamepadPressed;
 
+    // Same-pointer check: when the finger the primary slot points at changes
+    // (one of a multi-touch lifts, or a hover pointer takes over), the two
+    // positions belong to different hands and their difference is not a drag
+    // — it used to land as one huge dragIntensity spike on the frame of the
+    // swap.
     const dragDelta =
-      primary && lastPrimary && pressed
+      primary && lastPrimary && primary.id === lastPrimary.id && pressed
         ? {
             x: primary.normalizedX - lastPrimary.normalizedX,
             y: primary.normalizedY - lastPrimary.normalizedY,
@@ -940,6 +1003,14 @@ export function createUnifiedInput({
     target.removeEventListener('wheel', handleWheel);
     target.removeEventListener('keydown', handleKeyDown);
     target.removeEventListener('keyup', handleKeyUp);
+    target.removeEventListener('blur', handleTargetBlur);
+    window.removeEventListener('blur', handleWindowBlur);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener(
+        'visibilitychange',
+        handleKeyVisibilityChange,
+      );
+    }
     if (gamepadEnabled) {
       window.removeEventListener(
         'gamepadconnected',

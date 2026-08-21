@@ -2936,6 +2936,15 @@ body[data-page="workspace"][data-live="true"] {
   -webkit-text-fill-color: transparent;
 }
 
+.stims-shell__shortcut-card h3 {
+  margin: 0 0 14px;
+  font-family: var(--font-family-base);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--stims-ink);
+}
+
 .stims-shell__shortcut-grid {
   display: grid;
   grid-template-columns: auto 1fr;
