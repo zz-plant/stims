@@ -10,6 +10,7 @@ import {
   localOnlyBrowserTest,
   requiredBrowserTest,
 } from './browser-availability.ts';
+import { closeQuietly, withDeadline } from './deadline.ts';
 import {
   type DevServerHandle,
   isResponsive,
@@ -29,6 +30,13 @@ const TEST_PORT = 5180;
 // this test past a 90s budget in CI even though it completes in ~10s
 // locally with real GPU (2026-08-06 CI investigation).
 const INTEGRATION_TIMEOUT_MS = 180000;
+// Launching Chromium and bringing the dev server back are the two setup steps
+// that can wait on something wedged, and neither carries a timeout of its own.
+const LAUNCH_TIMEOUT_MS = 60_000;
+const DEV_SERVER_TIMEOUT_MS = 90_000;
+// evaluate() takes no timeout at all, and the one here runs *inside* a failure
+// path — exactly when the page has stopped answering.
+const EVALUATE_TIMEOUT_MS = 15_000;
 let devServer: DevServerHandle | null = null;
 
 async function startDevServerInstance() {
@@ -54,34 +62,49 @@ async function stopDevServerInstance() {
  * which is what made it look like flakiness rather than a fixed bug.
  */
 async function ensureDevServer() {
-  if (!devServer) {
-    await startDevServerInstance();
-    return;
-  }
-  if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
-    return;
-  }
-  await stopDevServerInstance();
-  await startDevServerInstance();
+  await withDeadline(
+    (async () => {
+      if (!devServer) {
+        await startDevServerInstance();
+        return;
+      }
+      if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
+        return;
+      }
+      await stopDevServerInstance();
+      await startDevServerInstance();
+    })(),
+    DEV_SERVER_TIMEOUT_MS,
+    'restarting the shared dev server',
+  );
 }
 
 async function createMobilePage() {
-  const browser = await chromium.launch({
-    args: WEBGL_RENDERER_ARGS,
-  });
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
+  const browser = await withDeadline(
+    chromium.launch({ args: WEBGL_RENDERER_ARGS }),
+    LAUNCH_TIMEOUT_MS,
+    'launching Chromium',
+  );
+  const context = await withDeadline(
+    browser.newContext({
+      viewport: { width: 430, height: 932 },
+      isMobile: true,
+      hasTouch: true,
+    }),
+    LAUNCH_TIMEOUT_MS,
+    'opening a browser context',
+  );
+  const page = await withDeadline(
+    context.newPage(),
+    LAUNCH_TIMEOUT_MS,
+    'opening a page',
+  );
   await page.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
   const closeBrowser = async () => {
-    await context.close().catch(() => {});
-    await browser.close().catch(() => {});
+    await closeQuietly(context, browser);
   };
 
   return {
@@ -279,15 +302,19 @@ integrationTest(
         .catch(async (error) => {
           // Name what the page actually showed instead. Without this the
           // only artifact of a failure here is the selector string.
-          const shellState = await mobile.page.evaluate(() => ({
-            url: window.location.href,
-            readyState: document.readyState,
-            hasShell: Boolean(document.getElementById('stims-main')),
-            statusText:
-              document
-                .querySelector('.active-toy-status')
-                ?.textContent?.trim() ?? null,
-          }));
+          const shellState = await withDeadline(
+            mobile.page.evaluate(() => ({
+              url: window.location.href,
+              readyState: document.readyState,
+              hasShell: Boolean(document.getElementById('stims-main')),
+              statusText:
+                document
+                  .querySelector('.active-toy-status')
+                  ?.textContent?.trim() ?? null,
+            })),
+            EVALUATE_TIMEOUT_MS,
+            'reading the shell state after the error status never rendered',
+          ).catch(() => null);
           throw new Error(
             `Error status never rendered: ${JSON.stringify(shellState)} (${
               (error as Error).message
