@@ -1,0 +1,50 @@
+{
+  "$schema": "../schema.json",
+  "section": "truthiness",
+  "description": "The close-factor truthiness threshold: a value is true when its magnitude EXCEEDS 1e-5.",
+  "cases": [
+    {
+      "id": "close-factor-falsy",
+      "name": "values at or below the close factor are falsy",
+      "program": ["x = !0.000001", "y = !0.0001", "z = bnot(0.000001)"],
+      "expected": { "x": 1, "y": 0, "z": 1 }
+    },
+    {
+      "id": "if-uses-threshold",
+      "name": "if() applies the truthiness threshold to its condition",
+      "program": ["x = if(0.000001, 10, 20)", "y = if(0.0001, 10, 20)"],
+      "expected": { "x": 20, "y": 10 }
+    },
+    {
+      "id": "and-uses-threshold",
+      "name": "&& applies the truthiness threshold to both sides",
+      "program": ["x = 1 && 2", "y = 0.000001 && 1"],
+      "expected": { "x": 1, "y": 0 }
+    },
+    {
+      "id": "if-evaluates-only-taken-branch",
+      "name": "if() evaluates only the taken branch, so side effects in the other must not run",
+      "program": ["a = 0", "b = 0", "x = if(1, a = 5, b = 7)"],
+      "expected": { "a": 5, "b": 0, "x": 5 },
+      "note": "Presets put assignments in branch position. An eager if() silently corrupts state."
+    },
+    {
+      "id": "and-short-circuits",
+      "name": "&& short-circuits its right side",
+      "program": ["a = 0", "x = 0 && (a = 5)"],
+      "expected": { "a": 0, "x": 0 }
+    },
+    {
+      "id": "or-short-circuits",
+      "name": "|| short-circuits its right side",
+      "program": ["a = 0", "x = 1 || (a = 5)"],
+      "expected": { "a": 0, "x": 1 }
+    },
+    {
+      "id": "exec2-evaluates-all-returns-last",
+      "name": "exec2()/exec3() evaluate every argument and return the last",
+      "program": ["a = 0", "b = 0", "x = exec2(a = 1, b = 2)"],
+      "expected": { "a": 1, "b": 2, "x": 2 }
+    }
+  ]
+}

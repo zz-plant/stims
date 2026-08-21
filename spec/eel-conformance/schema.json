@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://toil.fyi/spec/eel-conformance/schema.json",
+  "title": "EEL conformance case group",
+  "description": "A group of executable conformance cases pinning MilkDrop EEL platform semantics. Any implementation can run these; see README.md for the runner contract.",
+  "type": "object",
+  "required": ["section", "description", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "section": {
+      "type": "string",
+      "description": "Stable kebab-case section id."
+    },
+    "description": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/case" }
+    }
+  },
+  "definitions": {
+    "slotMap": {
+      "type": "object",
+      "description": "Buffer slots as index -> value. Indices are decimal integer strings.",
+      "patternProperties": { "^-?[0-9]+$": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "varMap": {
+      "type": "object",
+      "patternProperties": { "^[a-z_][a-z0-9_]*$": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": ["id", "name", "program", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Stable identifier, unique within the group. Never reuse an id for different semantics."
+        },
+        "name": {
+          "type": "string",
+          "description": "One sentence stating the rule the case pins."
+        },
+        "program": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "EEL statements, executed in order as one block."
+        },
+        "env": {
+          "$ref": "#/definitions/varMap",
+          "description": "Initial variable values. Absent variables start at 0."
+        },
+        "megabuf": { "$ref": "#/definitions/slotMap" },
+        "gmegabuf": { "$ref": "#/definitions/slotMap" },
+        "expected": {
+          "$ref": "#/definitions/varMap",
+          "description": "Required variable values after the block runs."
+        },
+        "expectedMegabuf": { "$ref": "#/definitions/slotMap" },
+        "expectedGmegabuf": { "$ref": "#/definitions/slotMap" },
+        "note": {
+          "type": "string",
+          "description": "Why the value is what it is, and what depends on it."
+        },
+        "status": {
+          "enum": ["pinned", "provisional"],
+          "default": "pinned",
+          "description": "pinned: derived from documented MilkDrop 2.x / ns-eel behavior. provisional: this implementation's observed behavior, NOT yet confirmed against the reference. A provisional case is a question, not a requirement."
+        }
+      }
+    }
+  }
+}

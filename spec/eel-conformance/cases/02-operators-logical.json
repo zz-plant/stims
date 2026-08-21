@@ -1,0 +1,51 @@
+{
+  "$schema": "../schema.json",
+  "section": "operators-logical",
+  "description": "Bitwise operators, comparisons, and the logical operators that are NOT bitwise despite their names.",
+  "cases": [
+    {
+      "id": "bit-ops-truncate",
+      "name": "the bitwise | and & operators truncate their operands toward zero",
+      "program": ["x = 6.9 | 3.2", "y = (-6.9) | 0", "z = 6.9 & 3.2"],
+      "expected": { "x": 7, "y": -6, "z": 2 }
+    },
+    {
+      "id": "bor-is-logical",
+      "name": "bor() is LOGICAL or, not bitwise",
+      "program": ["x = bor(2, 4)"],
+      "expected": { "x": 1 },
+      "note": "Reads as a bitwise name but returns 1, not 6. The bitwise operator is |."
+    },
+    {
+      "id": "band-is-logical",
+      "name": "band() is LOGICAL and, not bitwise",
+      "program": ["x = band(2, 4)", "y = band(2, 0)"],
+      "expected": { "x": 1, "y": 0 },
+      "note": "band(2,4) is 1, not the bitwise 0."
+    },
+    {
+      "id": "comparison-yields-one-or-zero",
+      "name": "comparison operators yield exactly 1 or 0",
+      "program": ["x = 3 > 2", "y = 1 != 2", "z = 2 <= 2"],
+      "expected": { "x": 1, "y": 1, "z": 1 }
+    },
+    {
+      "id": "equality-operator-is-exact",
+      "name": "the == operator is exact float equality",
+      "program": ["x = (0.1 + 0.2) == 0.3"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "equal-fn-uses-close-factor",
+      "name": "equal() uses the close factor (1e-5), unlike ==",
+      "program": ["x = equal(0.1 + 0.2, 0.3)", "y = equal(1, 1.1)"],
+      "expected": { "x": 1, "y": 0 }
+    },
+    {
+      "id": "above-below-strict",
+      "name": "above() and below() are strict comparisons",
+      "program": ["x = above(2, 1)", "y = above(1, 1)", "z = below(1, 2)"],
+      "expected": { "x": 1, "y": 0, "z": 1 }
+    }
+  ]
+}

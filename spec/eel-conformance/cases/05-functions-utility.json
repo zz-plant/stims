@@ -1,0 +1,100 @@
+{
+  "$schema": "../schema.json",
+  "section": "functions-utility",
+  "description": "Rounding, clamping, interpolation, and the default arguments that fill omitted parameters.",
+  "cases": [
+    {
+      "id": "int-truncates-toward-zero",
+      "name": "int() truncates toward zero, which is not floor for negatives",
+      "program": ["x = int(-3.7)", "y = int(3.7)"],
+      "expected": { "x": -3, "y": 3 }
+    },
+    {
+      "id": "floor-int-ceil-differ",
+      "name": "floor(), int(), and ceil() all differ on a negative",
+      "program": ["x = floor(-3.2)", "y = int(-3.2)", "z = ceil(-3.2)"],
+      "expected": { "x": -4, "y": -3, "z": -3 }
+    },
+    {
+      "id": "sign",
+      "name": "sign() returns -1, 0, or 1, and sign(0) is 0",
+      "program": ["x = sign(-3)", "y = sign(0)", "z = sign(2.5)"],
+      "expected": { "x": -1, "y": 0, "z": 1 }
+    },
+    {
+      "id": "frac-is-floor-based",
+      "name": "frac() subtracts the FLOOR, so a negative input yields a positive fraction",
+      "program": ["x = frac(2.75)", "y = frac(-0.25)"],
+      "expected": { "x": 0.75, "y": 0.75 },
+      "note": "frac(-0.25) is 0.75, not -0.25. An implementation using trunc() instead of floor() diverges on every negative."
+    },
+    {
+      "id": "sqr",
+      "name": "sqr() squares its argument",
+      "program": ["x = sqr(-3)"],
+      "expected": { "x": 9 }
+    },
+    {
+      "id": "abs",
+      "name": "abs() is the magnitude",
+      "program": ["x = abs(-3.5)"],
+      "expected": { "x": 3.5 }
+    },
+    {
+      "id": "clamp",
+      "name": "clamp() bounds a value to [lo, hi]",
+      "program": [
+        "x = clamp(5, 0, 1)",
+        "y = clamp(-5, 0, 1)",
+        "z = clamp(0.5, 0, 1)"
+      ],
+      "expected": { "x": 1, "y": 0, "z": 0.5 }
+    },
+    {
+      "id": "clamp-default-bounds",
+      "name": "clamp() defaults its bounds to 0 and 1 when omitted",
+      "program": ["x = clamp(2)"],
+      "expected": { "x": 1 },
+      "note": "Omitted arguments take the entry's declared defaults; they are not an error."
+    },
+    {
+      "id": "clamp-inverted-bounds",
+      "name": "clamp() with lo above hi returns hi",
+      "program": ["x = clamp(5, 10, 1)"],
+      "expected": { "x": 1 },
+      "note": "Evaluated as min(max(v, lo), hi); the outer min wins. Not a documented MilkDrop case, but tiers must agree."
+    },
+    {
+      "id": "min-max-variadic",
+      "name": "min() and max() accept more than two arguments",
+      "program": ["x = min(3, 1, 2)", "y = max(3, 1, 2)"],
+      "expected": { "x": 1, "y": 3 }
+    },
+    {
+      "id": "mix-and-lerp",
+      "name": "mix() interpolates from the first toward the second, and lerp() is an alias",
+      "program": ["x = mix(0, 10, 0.25)", "y = lerp(0, 10, 0.25)"],
+      "expected": { "x": 2.5, "y": 2.5 }
+    },
+    {
+      "id": "step-edge-first",
+      "name": "step() takes the edge FIRST and is 1 when the value reaches it",
+      "program": ["x = step(1, 0.5)", "y = step(1, 1)"],
+      "expected": { "x": 0, "y": 1 },
+      "note": "step(edge, v) is v >= edge. Swapped arguments invert the result everywhere it is used."
+    },
+    {
+      "id": "smoothstep-midpoint",
+      "name": "smoothstep() at the midpoint is one half",
+      "program": ["x = smoothstep(0, 1, 0.5)"],
+      "expected": { "x": 0.5 }
+    },
+    {
+      "id": "smoothstep-degenerate-edges",
+      "name": "smoothstep() with equal edges degrades to a hard step",
+      "program": ["x = smoothstep(2, 2, 1)", "y = smoothstep(2, 2, 3)"],
+      "expected": { "x": 0, "y": 1 },
+      "note": "Equal edges divide by zero. This platform defines the result as v < edge ? 0 : 1. WGSL and GLSL leave it undefined, so a GPU tier MUST special-case it rather than call the builtin."
+    }
+  ]
+}

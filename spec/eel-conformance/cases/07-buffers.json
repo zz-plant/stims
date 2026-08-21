@@ -1,0 +1,83 @@
+{
+  "$schema": "../schema.json",
+  "section": "buffers",
+  "description": "megabuf and gmegabuf guest memory: indexing, truncation, bounds, and separation. Both buffers hold 1048576 f32 slots and start zero-filled.",
+  "cases": [
+    {
+      "id": "store-and-load",
+      "name": "a value stored in megabuf reads back at the same index",
+      "program": ["megabuf(3) = 7", "x = megabuf(3)"],
+      "expected": { "x": 7 },
+      "expectedMegabuf": { "3": 7 }
+    },
+    {
+      "id": "index-truncates",
+      "name": "a buffer index truncates toward zero",
+      "program": ["megabuf(2.9) = 4", "x = megabuf(2)"],
+      "expected": { "x": 4 },
+      "expectedMegabuf": { "2": 4 }
+    },
+    {
+      "id": "unwritten-slot-is-zero",
+      "name": "an unwritten slot reads as 0",
+      "program": ["x = megabuf(5)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "negative-index-reads-zero",
+      "name": "a negative index reads as 0",
+      "program": ["x = megabuf(-1)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "negative-index-write-dropped",
+      "name": "a write to a negative index is dropped, not an error",
+      "program": ["megabuf(-1) = 9", "x = megabuf(-1)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "out-of-range-write-dropped",
+      "name": "a write past the end of the buffer is dropped",
+      "program": ["megabuf(99999999) = 9", "x = megabuf(99999999)"],
+      "expected": { "x": 0 },
+      "note": "Out-of-range access is silently ignored at both ends. Presets index buffers with computed values that routinely leave the range."
+    },
+    {
+      "id": "index-expression-uses-div-guard",
+      "name": "a buffer index is an ordinary expression, so the division guard applies to it",
+      "program": ["megabuf(1 / 0) = 9", "x = megabuf(0)"],
+      "expected": { "x": 9 },
+      "note": "1/0 is 0, so this writes slot 0. A tier that let the index become Infinity would drop the write instead."
+    },
+    {
+      "id": "read-modify-write",
+      "name": "a buffer slot can be read and written in one statement",
+      "program": [
+        "megabuf(1) = 2.5",
+        "megabuf(1) = megabuf(1) * 2",
+        "x = megabuf(1)"
+      ],
+      "expected": { "x": 5 }
+    },
+    {
+      "id": "megabuf-and-gmegabuf-are-separate",
+      "name": "megabuf and gmegabuf are separate address spaces",
+      "program": [
+        "megabuf(0) = 1",
+        "gmegabuf(0) = 2",
+        "x = megabuf(0)",
+        "y = gmegabuf(0)"
+      ],
+      "expected": { "x": 1, "y": 2 },
+      "note": "megabuf is per-preset scratch; gmegabuf is shared across presets and survives a preset switch."
+    },
+    {
+      "id": "preloaded-slots-are-readable",
+      "name": "buffer state supplied before the block runs is visible to it",
+      "program": ["x = megabuf(10) + gmegabuf(20)"],
+      "megabuf": { "10": 3 },
+      "gmegabuf": { "20": 4 },
+      "expected": { "x": 7 }
+    }
+  ]
+}

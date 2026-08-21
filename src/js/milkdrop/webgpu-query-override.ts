@@ -21,6 +21,7 @@ const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
 const RENDER_BUNDLES_STORAGE_KEY =
   'stims:experiments:milkdrop-webgpu-render-bundles';
+const COMPUTE_VM_STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-compute-vm';
 
 const ENABLED_FLAG_VALUES = new Set(['1', 'true', 'on', 'yes', 'enabled']);
 const DISABLED_FLAG_VALUES = new Set(['0', 'false', 'off', 'no', 'disabled']);
@@ -201,6 +202,17 @@ export function resolveMilkdropWebGpuFeatureRouting(
   );
   const renderBundlesRollout =
     webgpuFlagParams.renderBundles ?? storageRenderBundles ?? false;
+  const storageComputeVM = parseOptionalBooleanFlag(
+    getBrowserStorage()?.getItem(COMPUTE_VM_STORAGE_KEY) ?? null,
+  );
+  // Opt-in, not on-by-default: measured at 1.1-6.8ms per frame against
+  // ~0.05us for the CPU JIT on the same per_frame blocks
+  // (`bun run lab:vm-tier-bench`, and the table in
+  // webgpu-optimization-flags.ts). Left reachable because the compute VM is
+  // still the right vehicle for per-vertex work and the differential
+  // harnesses drive it directly.
+  const computeVmRollout =
+    webgpuFlagParams.gpuComputeVM ?? storageComputeVM ?? false;
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
@@ -217,7 +229,14 @@ export function resolveMilkdropWebGpuFeatureRouting(
       enabled: nativeFeedbackEnabled,
       reason: safeReason,
     },
-    gpuComputeVM: { enabled: !safeMode, reason: safeReason },
+    gpuComputeVM: {
+      enabled: !safeMode && computeVmRollout,
+      reason:
+        safeReason ??
+        (!computeVmRollout
+          ? 'compute VM is opt-in: measured slower than the CPU JIT for per_frame programs'
+          : null),
+    },
     renderBundles: {
       enabled: !safeMode && renderBundlesRollout,
       reason:

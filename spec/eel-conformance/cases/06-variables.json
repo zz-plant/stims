@@ -1,0 +1,64 @@
+{
+  "$schema": "../schema.json",
+  "section": "variables",
+  "description": "Variable initialisation, assignment as an expression, overwritable constants, and the finite clamp at the statement boundary.",
+  "cases": [
+    {
+      "id": "uninitialized-reads-zero",
+      "name": "an uninitialized variable reads as 0",
+      "program": ["x = never_written * 3 + 1"],
+      "expected": {
+        "x": 1
+      },
+      "note": "Reading an unknown name is legal and yields 0. It is never an error, which is why a misspelled builtin fails silently."
+    },
+    {
+      "id": "assignment-is-an-expression",
+      "name": "assignment is an expression returning the assigned value",
+      "program": ["y = (x = 3) + 1"],
+      "expected": {
+        "x": 3,
+        "y": 4
+      }
+    },
+    {
+      "id": "pi-and-e-default",
+      "name": "pi and e read as the mathematical constants by default",
+      "program": ["x = pi", "y = e"],
+      "expected": {
+        "x": 3.141592653589793,
+        "y": 2.718281828459045
+      }
+    },
+    {
+      "id": "pi-and-e-overwritable",
+      "name": "pi and e are ORDINARY variables, so assignments to them stick",
+      "program": ["pi = 4", "x = pi * 2", "e = 10", "y = e + 1"],
+      "expected": {
+        "x": 8,
+        "y": 11
+      },
+      "note": "ns-eel registers pi/e as plain prepopulated variables. Around 74 presets in the bundled corpus overwrite one of them, so treating them as read-only constants breaks real content."
+    },
+    {
+      "id": "nonfinite-clamped-at-store",
+      "name": "a non-finite value is clamped to 0 when stored",
+      "program": ["x = 1 / 0 + 5", "y = sqrt(4)"],
+      "expected": {
+        "x": 5,
+        "y": 2
+      },
+      "note": "Here 1/0 is already 0 by the division guard, so x is 5. The clamp exists because expression state persists across frames: one unclamped Infinity poisons a variable for the preset's lifetime."
+    },
+    {
+      "id": "case-insensitive-names",
+      "name": "variable names are case-insensitive",
+      "program": ["Foo = 3", "x = fOO + 1", "Zoom = 2", "y = zoom"],
+      "expected": {
+        "x": 4,
+        "y": 2
+      },
+      "note": "ns-eel is case-insensitive: `contVol` and `contvol` are one variable, and `Zoom = 1.02` sets the `zoom` state field. Identifier reads normalise to lowercase, so a store that keeps the writer's casing silently disagrees with every read. Eight presets in the bundled corpus depend on this (six spell `contVol`/`contvol` inconsistently, two do the same with X1/Y1)."
+    }
+  ]
+}

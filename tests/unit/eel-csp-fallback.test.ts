@@ -3,7 +3,7 @@
  * use the `new Function` JIT, so compileMilkdropProgram falls back to an
  * interpreter-backed executor. This suite makes that a TESTED configuration
  * rather than a dead codepath: the fallback must satisfy the full platform
- * profile (eel-conformance-spec) and match the JIT's store contract
+ * profile (spec/eel-conformance/) and match the JIT's store contract
  * (env + state/register/local mirrors, megabuf writes, control flow) on
  * seeded random programs.
  */
@@ -17,7 +17,6 @@ import {
   __setJitAvailableForTests,
   compileMilkdropProgram,
 } from '../../src/js/milkdrop/expression-jit.ts';
-import { SPEC } from './eel-conformance-spec.test.ts';
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -87,18 +86,12 @@ afterAll(() => {
 });
 
 describe('EEL CSP interpreter-only fallback', () => {
-  test('satisfies every platform-profile conformance case', () => {
-    for (const specCase of SPEC) {
-      const { env } = runTier(specCase.program, false);
-      for (const [key, expected] of Object.entries(specCase.expected)) {
-        const actual = env[key] ?? 0;
-        expect(
-          Math.abs(actual - expected),
-          `${specCase.name}: ${key} expected ${expected}, got ${actual}`,
-        ).toBeLessThanOrEqual(1e-12 + Math.abs(expected) * 1e-9);
-      }
-    }
-  });
+  // The platform profile itself is no longer re-run here. The conformance
+  // corpus (spec/eel-conformance/) exercises this exact executor as its
+  // `interpreter` tier, with the buffer and environment seeding the corpus
+  // needs, so a copy of the loop in this file could only drift from it.
+  // What stays below is what the corpus does NOT cover: the store contract
+  // (env/state/register/local mirrors) and seeded-random tier agreement.
 
   test('mirrors q/t registers and state like the JIT store contract', () => {
     const program = [

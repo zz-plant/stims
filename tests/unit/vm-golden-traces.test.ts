@@ -9,7 +9,7 @@
  * classic (geiss-game-of-life), and megabuf-using (alien-fish-pond).
  *
  * An INTENDED semantics change (a platform-profile decision — see
- * tests/unit/eel-conformance-spec.test.ts) is re-baselined by re-recording:
+ * spec/eel-conformance/) is re-baselined by re-recording:
  *
  *   bun run lab:replay -- --preset <id> --record performance/traces/<id>.json --frames 120 --compact
  */

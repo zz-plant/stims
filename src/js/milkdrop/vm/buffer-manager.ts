@@ -12,6 +12,11 @@ export type VmBufferLayout = {
   stagingBuffer?: ArrayBuffer;
   stagingFloatView?: Float32Array;
   stagingUintView?: Uint32Array;
+  /** Reused destination for readState, so the GPU tier does not allocate a
+   * fresh state-sized ArrayBuffer every frame. Separate from `stagingBuffer`,
+   * which is the WRITE staging path — sharing one would let a readback
+   * clobber a pending write. */
+  readStagingBuffer?: ArrayBuffer;
 };
 
 const FLOAT32_BYTES = 4;
@@ -147,14 +152,27 @@ export function createVmBufferManager() {
     device.queue.writeBuffer(layout.buffer, 0, data);
   }
 
-  async function readState(
-    device?: GPUDevice,
-  ): Promise<Record<string, number>> {
+  /**
+   * Reads the whole state buffer back in ONE mapping, including `rand_state`.
+   *
+   * The random state lives inside this same buffer, so returning it here
+   * costs nothing: the copy already carries those four bytes. vm-gpu used to
+   * follow this call with its own encoder + submit + mapAsync just for
+   * `rand_state`, which is a second full CPU/GPU sync point per frame for
+   * data that was already in hand.
+   */
+  async function readState(device?: GPUDevice): Promise<{
+    fields: Record<string, number>;
+    randomState: number | null;
+  }> {
     if (!layout?.buffer) {
-      return {};
+      return { fields: {}, randomState: null };
     }
 
-    const data = new ArrayBuffer(layout.bufferSize);
+    // Reused across frames: readState runs once per frame on the GPU tier, and
+    // a fresh ArrayBuffer per call is per-frame garbage for no benefit.
+    layout.readStagingBuffer ??= new ArrayBuffer(layout.bufferSize);
+    const data = layout.readStagingBuffer;
     // Route through the MAP_READ staging buffer when a device is available;
     // mapping the storage buffer directly is a validation error on real GPUs
     // (kept as a fallback for mock devices in unit tests that predate the
@@ -183,6 +201,7 @@ export function createVmBufferManager() {
 
     const floatView = new Float32Array(data);
     const result: Record<string, number> = {};
+    let randomState: number | null = null;
 
     for (const key of Object.keys(layout.fieldOffsets)) {
       const offset = layout.fieldOffsets[key];
@@ -190,6 +209,8 @@ export function createVmBufferManager() {
         continue;
       }
       if (key === 'rand_state') {
+        // A u32, not a float — read through a Uint32 view of the same bytes.
+        randomState = new Uint32Array(data, offset, 1)[0] ?? null;
         continue;
       }
       const floatIndex = offset / FLOAT32_BYTES;
@@ -200,7 +221,7 @@ export function createVmBufferManager() {
       result[key] = raw === undefined ? 0 : toGpuFinite(raw);
     }
 
-    return result;
+    return { fields: result, randomState };
   }
 
   function dispose() {

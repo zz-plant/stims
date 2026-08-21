@@ -12,7 +12,7 @@
  *
  * The reference semantics are the CPU interpreter's
  * (expression.ts evaluateMilkdropExpression) as pinned by
- * tests/unit/eel-conformance-spec.test.ts and kept in GPU lockstep by the JS
+ * spec/eel-conformance/ and kept in GPU lockstep by the JS
  * mirror in tests/unit/gpu-field-tier-differential.test.ts. The truthiness
  * threshold is MILKDROP_EEL_CLOSE_FACTOR (0.00001) everywhere — a
  * tenfold-tighter constant here has already caused visible cross-tier flips.

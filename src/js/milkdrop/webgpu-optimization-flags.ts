@@ -71,7 +71,27 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   proceduralMotionVectors: true,
   directFeedbackShaders: true,
   descriptorFallbackToWebgl: false,
-  gpuComputeVM: true,
+  // Measured OFF (2026-08-21, `bun run lab:vm-tier-bench`). The compute VM
+  // runs a preset's per_frame block as a single-workgroup dispatch, but
+  // vm.ts stepAsync needs the resulting state back on the CPU to build
+  // geometry, so every frame pays upload + dispatch + readback. Against the
+  // CPU JIT on the same blocks:
+  //
+  //     statements        CPU JIT     compute VM
+  //         15             0.05us       1.1ms
+  //         49            <0.05us       1.2ms
+  //        111            <0.05us       1.4ms
+  //         21 (megabuf)   0.05us       6.8ms   <- 8 MiB round trip
+  //
+  // That is 7-8% of a 16.7ms frame budget for a median 21-statement program,
+  // and 41% for the 2.3% of presets that touch guest memory. The cost is
+  // CPU/GPU sync latency, not compute, so no amount of readback tuning
+  // closes the gap -- one workgroup of scalar math cannot use the GPU at
+  // all. The flag and its code stay: this is still the right vehicle for
+  // PER-VERTEX work (thousands of invocations, via the separate gpu-field
+  // path) and the differential harnesses drive it directly. Opt in with
+  // ?milkdrop-webgpu-compute-vm=1.
+  gpuComputeVM: false,
   renderBundles: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
 

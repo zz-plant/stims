@@ -28,6 +28,7 @@ import type {
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
+import { useFlashSafety } from './hooks/use-flash-safety.ts';
 import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
@@ -308,6 +309,7 @@ export function useWorkspaceSessionState({
   );
 
   useStageCanvasSync(stageRef);
+  useFlashSafety(stageRef);
 
   useEffect(() => {
     if (routeState.panel === 'browse') {
