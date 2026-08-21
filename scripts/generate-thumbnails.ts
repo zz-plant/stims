@@ -20,6 +20,8 @@
  *   bun run scripts/generate-thumbnails.ts --ids-file=path/to/ids.txt
  *   bun run scripts/generate-thumbnails.ts --all         # all presets
  *   bun run scripts/generate-thumbnails.ts --force       # overwrite existing
+ *   bun run scripts/generate-thumbnails.ts --force --keep-best  # re-sweep, keep the better frame
+ *   bun run scripts/generate-thumbnails.ts --beat-pulse  # 2Hz beats in the synthetic signal
  *   bun run scripts/generate-thumbnails.ts --workers=8   # concurrency
  *   bun run scripts/generate-thumbnails.ts --port=5178   # dedicated dev server
  *   bun run scripts/generate-thumbnails.ts --no-headless # visible windows (debugging)
@@ -94,6 +96,7 @@ function parseArgs() {
     workers?: number;
     port?: number;
     beatPulse?: boolean;
+    keepBest?: boolean;
     // Headless by default: launched via the 'chromium' channel
     // (--headless=new), captures still render on the real GPU, and the
     // whole window-occlusion problem class disappears. --no-headless
@@ -118,6 +121,9 @@ function parseArgs() {
     // Overlay deterministic 2Hz beats on the synthetic audio — lights up
     // beat-gated presets that stay dark under the smooth idle signal.
     if (arg === '--beat-pulse') args.beatPulse = true;
+    // Only replace an existing preview when the fresh capture scores better.
+    // Makes a corpus-wide --force re-sweep monotonic (see the write site).
+    if (arg === '--keep-best') args.keepBest = true;
   }
   return args;
 }
@@ -205,6 +211,8 @@ type FrameStats = {
   meanLuma: number;
   maxLuma: number;
   stdLuma: number;
+  /** Fraction of pixels clipped to white — high std is worthless if clipped. */
+  blownFraction: number;
 };
 
 async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
@@ -215,6 +223,7 @@ async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
   let sum = 0;
   let sumSq = 0;
   let max = 0;
+  let blown = 0;
   const pixels = info.width * info.height;
   for (let i = 0; i < data.length; i += info.channels) {
     const luma =
@@ -222,10 +231,18 @@ async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
     sum += luma;
     sumSq += luma * luma;
     if (luma > max) max = luma;
+    if (
+      data[i] >= 250 &&
+      (data[i + 1] ?? 0) >= 250 &&
+      (data[i + 2] ?? 0) >= 250
+    ) {
+      blown += 1;
+    }
   }
   const mean = sum / pixels;
   return {
     hash: createHash('sha256').update(data).digest('hex'),
+    blownFraction: blown / pixels,
     meanLuma: mean,
     maxLuma: max,
     stdLuma: Math.sqrt(Math.max(0, sumSq / pixels - mean * mean)),
@@ -238,6 +255,19 @@ async function analyzeFrame(buffer: Buffer): Promise<FrameStats> {
  * presets (a few glowing shapes on black) are legitimate, so a low mean is
  * only fatal when nothing bright exists either.
  */
+// The same score the in-page checkpoint search maximizes. Structure (std) is
+// what makes a thumbnail readable, scaled down for frames that are technically
+// lit but almost empty, penalized for clipping (a white blob on black scores
+// enormous std while showing nothing), and zeroed at both failure ends.
+function frameScore(stats: FrameStats): number {
+  if (stats.maxLuma < 32 || stats.meanLuma > 240) return 0;
+  return (
+    stats.stdLuma *
+    Math.min(1, stats.meanLuma / 8) *
+    (1 - Math.min(1, stats.blownFraction)) ** 2
+  );
+}
+
 function badFrameReason(stats: FrameStats): string | null {
   if (stats.maxLuma < 32 || stats.meanLuma < 0.4) {
     return `black frame (mean=${stats.meanLuma.toFixed(1)}, max=${stats.maxLuma.toFixed(0)})`;
@@ -278,6 +308,8 @@ class RenderSession {
     /** All catalog ids, used to pick a sacrificial boot preset. */
     private catalogIds: string[],
     private beatPulse: boolean,
+    private keepBest: boolean,
+    private tally: { kept: number; improved: number },
   ) {}
 
   private async boot(firstTargetId: string) {
@@ -402,15 +434,17 @@ class RenderSession {
             let sum = 0;
             let sumSq = 0;
             let max = 0;
+            let blown = 0;
             for (let i = 0; i < d.length; i += 4) {
               const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
               sum += l;
               sumSq += l * l;
               if (l > max) max = l;
+              if (d[i] >= 250 && d[i + 1] >= 250 && d[i + 2] >= 250) blown += 1;
             }
             const mean = sum / (96 * 54);
             const std = Math.sqrt(Math.max(0, sumSq / (96 * 54) - mean * mean));
-            return { mean, max, std };
+            return { mean, max, std, blown: blown / (96 * 54) };
           };
 
           // A good preview frame has visible structure and isn't blown out.
@@ -427,9 +461,21 @@ class RenderSession {
           // technically lit but almost empty, and zeroed at both failure ends.
           const acceptable = (s: { mean: number; max: number; std: number }) =>
             s.max >= 32 && s.mean >= 0.4 && s.mean <= 240 && s.std >= 2.5;
-          const score = (s: { mean: number; max: number; std: number }) => {
+          // A clipped white region has enormous std, so an unpenalized score
+          // ranks "black rectangle with a white blob burned into it" above the
+          // structured frame a second earlier. Squaring the unclipped fraction
+          // makes a frame that is half blown out worth a quarter of the same
+          // structure drawn in tones the viewer can actually see.
+          const score = (s: {
+            mean: number;
+            max: number;
+            std: number;
+            blown: number;
+          }) => {
             if (s.max < 32 || s.mean > 240) return 0;
-            return s.std * Math.min(1, s.mean / 8);
+            return (
+              s.std * Math.min(1, s.mean / 8) * (1 - Math.min(1, s.blown)) ** 2
+            );
           };
 
           let rendered = 0;
@@ -518,8 +564,25 @@ class RenderSession {
           // not actually advance to this preset.
           failure = `duplicate of ${collidesWith}`;
         } else {
+          const outPath = join(OUTPUT_DIR, `${preset.id}.png`);
+          // A re-sweep is not uniformly an upgrade: the capture search is a
+          // plateau search over a moving image, so a preset that happened to
+          // land on a good frame last time can land on a worse one now.
+          // Under --keep-best a fresh capture has to beat what is already on
+          // disk before it replaces it, which makes a corpus-wide re-run
+          // monotonic instead of a coin flip per preset.
+          if (this.keepBest && existsSync(outPath)) {
+            const previous = await analyzeFrame(readFileSync(outPath));
+            if (frameScore(stats) <= frameScore(previous)) {
+              this.seenHashes.set(previous.hash, preset.id);
+              this.tally.kept++;
+              this.rendered++;
+              return;
+            }
+          }
           this.seenHashes.set(stats.hash, preset.id);
-          await writePreview(buffer, join(OUTPUT_DIR, `${preset.id}.png`));
+          await writePreview(buffer, outPath);
+          this.tally.improved++;
           this.rendered++;
           return;
         }
@@ -535,13 +598,20 @@ async function worker(
   browser: Awaited<ReturnType<typeof chromium.launch>>,
   id: number,
   queue: PresetEntry[],
-  counters: { success: number; fail: number; done: number },
+  counters: {
+    success: number;
+    fail: number;
+    done: number;
+    kept: number;
+    improved: number;
+  },
   failures: CaptureFailure[],
   total: number,
   devServer: string,
   seenHashes: Map<string, string>,
   catalogIds: string[],
   beatPulse: boolean,
+  keepBest: boolean,
 ) {
   let ctx: BrowserContext | null = null;
   let session: RenderSession | null = null;
@@ -579,6 +649,8 @@ async function worker(
           seenHashes,
           catalogIds,
           beatPulse,
+          keepBest,
+          counters,
         );
 
       await Promise.race([
@@ -660,7 +732,7 @@ async function main() {
     ],
   });
   const startTime = Date.now();
-  const counters = { success: 0, fail: 0, done: 0 };
+  const counters = { success: 0, fail: 0, done: 0, kept: 0, improved: 0 };
   const failures: CaptureFailure[] = [];
   const seenHashes = new Map<string, string>();
 
@@ -680,6 +752,7 @@ async function main() {
       seenHashes,
       catalogIds,
       args.beatPulse ?? false,
+      args.keepBest ?? false,
     ),
   );
   await Promise.all(workers);
@@ -689,11 +762,17 @@ async function main() {
   console.log('=== Done ===');
   console.log(`Total: ${(totalTime / 60).toFixed(1)}m`);
   console.log(`Success: ${counters.success}  Failed: ${counters.fail}`);
+  if (args.keepBest)
+    console.log(
+      `Replaced: ${counters.improved}  Kept existing (not an improvement): ${counters.kept}`,
+    );
   if (counters.success > 0)
     console.log(`Avg: ${(totalTime / counters.success).toFixed(1)}s/preset`);
   if (failures.length > 0) {
     const reportPath = join(OUTPUT_DIR, '..', 'preview-failures.json');
-    writeFileSync(reportPath, JSON.stringify(failures, null, 2));
+    // Trailing newline: this file is committed, and the repo's own formatter
+    // check fails on it otherwise.
+    writeFileSync(reportPath, `${JSON.stringify(failures, null, 2)}\n`);
     console.log(
       `${failures.length} presets failed — no file written; details in ${reportPath}`,
     );
