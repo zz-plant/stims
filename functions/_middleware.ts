@@ -9,6 +9,7 @@
 //      social share collapsed onto `/`.
 
 import { isAllowedDiscoverSlug } from './discover-slugs.ts';
+import { presentTitle } from './shared/preset-title.ts';
 
 interface EventContext {
   request: Request;
@@ -216,10 +217,13 @@ export async function onRequest(context: EventContext): Promise<Response> {
     return response;
   }
 
-  const [title, author] = entry;
+  const [rawTitle, author] = entry;
+  // preset-meta titles carry the author as a prefix ("Rovastar - Parallel
+  // Universe"), so using them raw next to a byline printed the name twice.
+  const title = presentTitle(rawTitle, author);
   const authorCredit = author ? ` by ${author}` : '';
-  const fullTitle = `▶ Play ${title}${authorCredit} — Stims Visualizer`;
-  const description = `Tap to launch "${title}" live in 60FPS WebGPU. Reacts to your mic or audio in the browser — zero install required.`;
+  const fullTitle = `${title}${authorCredit} — MilkDrop preset on Stims`;
+  const description = `${title}${authorCredit} is a MilkDrop preset running live in your browser on Stims. It reacts to the demo track, your microphone, or audio from another tab.`;
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
