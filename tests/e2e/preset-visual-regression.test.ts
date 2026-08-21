@@ -30,13 +30,15 @@ import {
   minPairwiseHammingDistance,
   VISUAL_REGRESSION_PRESET_IDS,
 } from '../../scripts/preset-visual-regression-capture.ts';
+import { hasChromium as sharedHasChromium } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 // SOFTWARE_RENDERER_ARGS, not WEBGL_RENDERER_ARGS: the dhash baselines were
 // captured under SwiftShader, so the runner must render with the same
 // software pipeline or the comparison drifts with the local GPU.
 import { HEADLESS, SOFTWARE_RENDERER_ARGS } from './webgl-launch.ts';
 
-const hasChromium = fs.existsSync(chromium.executablePath());
+// Local-only by design (needs a real GPU), so a missing browser is not a fault.
+const hasChromium = sharedHasChromium;
 // CI runs the eight-preset burst under SwiftShader on a 2-core runner; the
 // sequential WebGL captures are too heavy for that and flake by hanging
 // mid-capture (the failing preset shifts every run). Run this suite locally
