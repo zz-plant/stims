@@ -1,18 +1,954 @@
 [
   {
-    "presetId": "eo-s-repeater-08-rave-on-a-lot-of-acid-and-some-k",
-    "reason": "black frame (mean=0.4, max=145)"
+    "presetId": "250-wavecode",
+    "reason": "black frame (mean=0.4, max=21)"
   },
   {
-    "presetId": "martin-axon3",
+    "presetId": "252-wavecode-spectrum2",
+    "reason": "black frame (mean=1.4, max=25)"
+  },
+  {
+    "presetId": "300-beatdetect-bassmidtreb",
+    "reason": "black frame (mean=0.3, max=19)"
+  },
+  {
+    "presetId": "cotc-174",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-22",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-228",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-288",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-34",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-367",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-414",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-423",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-429",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-455",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-amandio-c-ifs-01",
     "reason": "black frame (mean=0.4, max=5)"
   },
   {
-    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations",
+    "presetId": "cotc-amandio-c-iterative-squares-1",
+    "reason": "black frame (mean=2.2, max=17)"
+  },
+  {
+    "presetId": "cotc-amandio-c-iterative-squares-4",
+    "reason": "black frame (mean=2.4, max=20)"
+  },
+  {
+    "presetId": "cotc-amandio-c-moving-ripple-intraphereonts-pad-urn",
+    "reason": "black frame (mean=0.1, max=1)"
+  },
+  {
+    "presetId": "cotc-amandio-c-moving-ripple-reproducing-the-end-feeling-of-doing-anything-in-the-mind",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-amandio-c-orbitin-around-3",
+    "reason": "black frame (mean=0.0, max=3)"
+  },
+  {
+    "presetId": "cotc-amandio-c-water-ripples-2d",
+    "reason": "black frame (mean=0.1, max=2)"
+  },
+  {
+    "presetId": "cotc-bdrv-etal-nighthawk-dark-crystal",
+    "reason": "black frame (mean=0.1, max=3)"
+  },
+  {
+    "presetId": "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-aderassi-phat-zylot4-isosceles-e",
+    "reason": "black frame (mean=2.4, max=16)"
+  },
+  {
+    "presetId": "cotc-bleeding-like-a-horsey-roams-i-just-got-through-watching-planet-bboy-and-boy-do-i-feel-emba",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spec",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-camel-llama",
+    "reason": "black frame (mean=0.6, max=6)"
+  },
+  {
+    "presetId": "cotc-cantstop-adamfx-2-flexi-geiss-fishbrain-swelling-spiral-work-with-lines-deamon-lord-eos-hex",
+    "reason": "black frame (mean=2.6, max=19)"
+  },
+  {
+    "presetId": "cotc-dbleja-horizontology-blue-mix",
+    "reason": "flat frame (mean=255.0, std=0.1)"
+  },
+  {
+    "presetId": "cotc-dbleja-horizontology-red-mix",
+    "reason": "flat frame (mean=255.0, std=0.1)"
+  },
+  {
+    "presetId": "cotc-dbleja-horizontology-white-mix",
+    "reason": "flat frame (mean=255.0, std=0.1)"
+  },
+  {
+    "presetId": "cotc-drugsincombat-reactive-molecule-v-05a",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-flexi-s-reflections-phat-s-r",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2-border-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eos-magnetosphere-04",
+    "reason": "black frame (mean=1.4, max=31)"
+  },
+  {
+    "presetId": "cotc-eos-phat-i-v2-gradients",
+    "reason": "black frame (mean=3.0, max=25)"
+  },
+  {
+    "presetId": "cotc-eos-phat-i-v2-gradients-rot",
+    "reason": "black frame (mean=1.5, max=30)"
+  },
+  {
+    "presetId": "cotc-eos-phat-linear-clouds-solarized-points-of-light-v2",
+    "reason": "flat frame (mean=254.6, std=0.9)"
+  },
+  {
+    "presetId": "cotc-eos-phat-technicolor-f-breather-c",
+    "reason": "black frame (mean=0.3, max=12)"
+  },
+  {
+    "presetId": "cotc-eos-phat-technicolor-f-breather-d",
+    "reason": "black frame (mean=0.4, max=9)"
+  },
+  {
+    "presetId": "cotc-eos-phat-technicolor-f-breather-e",
+    "reason": "black frame (mean=0.2, max=16)"
+  },
+  {
+    "presetId": "cotc-eos-phat-the-lights-at-night",
     "reason": "black frame (mean=0.5, max=5)"
   },
   {
-    "presetId": "shifter-digi",
-    "reason": "black frame (mean=0.2, max=13)"
+    "presetId": "cotc-eos-phat-the-lights-at-night-spikes",
+    "reason": "black frame (mean=0.2, max=2)"
+  },
+  {
+    "presetId": "cotc-eos-rename-2b",
+    "reason": "black frame (mean=1.2, max=16)"
+  },
+  {
+    "presetId": "cotc-eos-subtraction-fade",
+    "reason": "flat frame (mean=254.4, std=0.8)"
+  },
+  {
+    "presetId": "cotc-evet-ball-lightning-1",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-evet-ball-lightning-1-isosceles-edit1",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-evet-ball-lightning-1-isosceles-edit2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-evet-waterrgate",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-eviljim-11-ice-drops",
+    "reason": "black frame (mean=1.1, max=8)"
+  },
+  {
+    "presetId": "cotc-eviljim-ice-drops",
+    "reason": "black frame (mean=0.8, max=7)"
+  },
+  {
+    "presetId": "cotc-fishbrain-flexi-stitchcraft-n",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-fishbrain-flexi-witchcraft-unleashed-00-the-template",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-fishbrain-flexi-witchcraft-unleashed-01-stepping-into-it",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-fishbrain-geiss-witchcraft-glow-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-fishbrain-swarming-glory-spiral-remix",
+    "reason": "black frame (mean=2.8, max=32)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft",
+    "reason": "flat frame (mean=0.6, std=1.7)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-alcoholic-remix",
+    "reason": "flat frame (mean=0.5, std=2.3)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-metropolish-remix",
+    "reason": "flat frame (mean=0.7, std=2.3)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-metropolish-remix-motor-up-pre-air-filter-cyclone-argon-tweecer",
+    "reason": "black frame (mean=0.2, max=21)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-metropolish-remix-test",
+    "reason": "black frame (mean=0.3, max=12)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-necromancer-remix",
+    "reason": "black frame (mean=0.2, max=46)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-necromancer-remix-busy",
+    "reason": "black frame (mean=0.3, max=43)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit",
+    "reason": "black frame (mean=0.2, max=1)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit-v2",
+    "reason": "black frame (mean=0.1, max=30)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit-v3",
+    "reason": "black frame (mean=0.3, max=18)"
+  },
+  {
+    "presetId": "cotc-fishbrain-witchcraft-sorcery-remix",
+    "reason": "black frame (mean=0.1, max=21)"
+  },
+  {
+    "presetId": "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-110-satanic-teleprompter-05",
+    "reason": "black frame (mean=0.4, max=11)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-110-so-call-the-police",
+    "reason": "black frame (mean=0.2, max=7)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90",
+    "reason": "black frame (mean=0.2, max=6)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter",
+    "reason": "black frame (mean=0.4, max=10)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-01",
+    "reason": "black frame (mean=0.2, max=6)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-02",
+    "reason": "black frame (mean=0.2, max=5)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-03",
+    "reason": "black frame (mean=0.3, max=7)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-04",
+    "reason": "black frame (mean=0.2, max=6)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-05",
+    "reason": "black frame (mean=0.2, max=7)"
+  },
+  {
+    "presetId": "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-on",
+    "reason": "black frame (mean=0.2, max=6)"
+  },
+  {
+    "presetId": "cotc-flexi-geiss-bipolar-vs-reaction-diffusion-mirror-scoped-phat-s-reflecto",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-heartbleeding-emocore-will-get-the-rest-of-you",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-identity-killing-petting-colon-gonad-type8",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-identity-killing-petting-colon-gonad-type9",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-stahlregen-jewelry-tiles",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-flexi-wolfram-s-rule-110-rise-of-the-log-attack",
+    "reason": "black frame (mean=0.3, max=9)"
+  },
+  {
+    "presetId": "cotc-flexi-wolfram-s-rule-90-rise-of-the-log-attack",
+    "reason": "black frame (mean=0.2, max=5)"
+  },
+  {
+    "presetId": "cotc-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-cepia-dither",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup-yay3",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-3-janky-diffusion-effect-warp",
+    "reason": "black frame (mean=0.3, max=4)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-3-janky-ripple-effect-again",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-3-janky-ripples",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-3-janky-ripples-warp",
+    "reason": "black frame (mean=0.3, max=3)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-3-rippling-leopard-skin",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-reaction-diffusion-simple-squamous-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-10",
+    "reason": "black frame (mean=0.1, max=2)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-10b",
+    "reason": "black frame (mean=0.2, max=3)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-10c",
+    "reason": "black frame (mean=0.5, max=13)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-11-crossfire-composite",
+    "reason": "black frame (mean=0.8, max=4)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-11b",
+    "reason": "black frame (mean=0.3, max=7)"
+  },
+  {
+    "presetId": "cotc-geiss-skin-dots-multi-layer-3-pig-jembe-acid-wretch",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-goody-s-fatal-color-attraction-ps2-0",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-goody-s-portfolio-acid-angel",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-goody-woven-beads",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-goody-woven-beads-ps2-0",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-halfbreak-caramelize-serpentine",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-halfbreak-tonymilkdrop-beautiful-sepia-mashmash",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-hexcollie-demonic-afterimages",
+    "reason": "black frame (mean=0.1, max=4)"
+  },
+  {
+    "presetId": "cotc-hexcollie-flexi-n-geiss-caught-in-the-vortex-of-the-mystery-pill",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-hexcollie-julian-shader-wars3",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-hexcollie-julian-shader-wars4",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-hexcollie-melodic-pulsing-leds-mash0000-vegas-doesn-t-make-life-less-pointless",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-hexcollie-zylot-n-phat-it-has-to-be-wrong-to-have-this-much-fun-without-any-talent",
+    "reason": "black frame (mean=0.2, max=4)"
+  },
+  {
+    "presetId": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-isosceles-mashup23",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-isosceles-mashup25",
+    "reason": "black frame (mean=1.3, max=9)"
+  },
+  {
+    "presetId": "cotc-luxxx-fuck-ur-fractal-muscles-i",
+    "reason": "black frame (mean=0.1, max=2)"
+  },
+  {
+    "presetId": "cotc-luxxx-my-soul-i",
+    "reason": "black frame (mean=3.3, max=25)"
+  },
+  {
+    "presetId": "cotc-luxxx-wip",
+    "reason": "flat frame (mean=255.0, std=1.6)"
+  },
+  {
+    "presetId": "cotc-luxxx-wip-isosceles-edit",
+    "reason": "flat frame (mean=255.0, std=0.2)"
+  },
+  {
+    "presetId": "cotc-martin-another-kind-of-groove",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-martin-diabolo",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-martin-diabolo-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-martin-soma-in-pink",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-martin-sphery-tales-slow-version",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-midgitstraights-of-majillaen-gunthree-spher",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-3",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34",
+    "reason": "flat frame (mean=254.3, std=0.6)"
+  },
+  {
+    "presetId": "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral",
+    "reason": "flat frame (mean=254.8, std=0.4)"
+  },
+  {
+    "presetId": "cotc-new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-orb-blade",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-orb-lazer-ride",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-phat-zylot-eos-trippy-rotation-v2-alt-colours",
+    "reason": "black frame (mean=0.4, max=8)"
+  },
+  {
+    "presetId": "cotc-pieturp-hsltorgb-swirl",
+    "reason": "black frame (mean=0.0, max=1)"
+  },
+  {
+    "presetId": "cotc-pieturp-stripes-goingfastmix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-pieturp-stripes-goingslowmix",
+    "reason": "flat frame (mean=255.0, std=0.0)"
+  },
+  {
+    "presetId": "cotc-pieturp-stripes-hippiestyle",
+    "reason": "black frame (mean=0.2, max=12)"
+  },
+  {
+    "presetId": "cotc-pieturp-stripes-tvstyle",
+    "reason": "black frame (mean=0.3, max=18)"
+  },
+  {
+    "presetId": "cotc-pieturp-sunflare2",
+    "reason": "flat frame (mean=227.6, std=1.5)"
+  },
+  {
+    "presetId": "cotc-rovastar-stahlregen-touchdown-on-jelly-planet-bccn-v4",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-115",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-157",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-160",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-183",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-189",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-190",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-192",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-21",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-270",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-29",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-395",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-444",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-royal-mashup-524",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-serge-158-002",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-serge-adam-eatit-mashup-fx-2-martin001",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-serge-martin-crystal-palace000",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-serge-martin-crystal-palace001",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-serge-martin-crystal-palace001b",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-shifter-dark-tides-eos-phat-whisps-of-doom-mix-mash0000-salt-dunes-time-lapse",
+    "reason": "flat frame (mean=0.6, std=1.3)"
+  },
+  {
+    "presetId": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-shifter-geiss-neon-pulse-glow-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-shifter-glassworms-flare-jelly-5-5",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-shifter-neon-pulse-reactive",
+    "reason": "black frame (mean=8.4, max=29)"
+  },
+  {
+    "presetId": "cotc-shifter-yak-yetanotherkaleidoscope-01",
+    "reason": "flat frame (mean=253.1, std=0.4)"
+  },
+  {
+    "presetId": "cotc-stahlregen-boz-eos-phat-rovastar-zylot-machine-code-01010010-01000001-01010111-2",
+    "reason": "black frame (mean=1.7, max=17)"
+  },
+  {
+    "presetId": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killgaia-mix2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-downpour-x-spectre-ps2b",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-fishbrain-flexi-geiss-martin-shifter-stonecraft-martin-s-metallics",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-glowing",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-adam-martin-geiss-come-into-my-closet-of-rot",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-bmelgren-hungry-orbits-mash0000-sir-i-can-t-help-you-over-here-isosceles-edit",
+    "reason": "flat frame (mean=1.4, std=2.4)"
+  },
+  {
+    "presetId": "cotc-suksma-circle-of-the-taeyrunts-phairess-imbularse-deign-offal",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-cuneinformal-basilihistrionix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-j4-flacc-bryan-fnord-kool-aid",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-offx-flacc",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-one-too-many-days-under-the-iron-flacc",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-pacific-heights-flacc-roams-higher-self-lower-self-battles",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-fishbrain-hexcollie-martin-bioluminescent-aerodynamic-poltergeist",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-fishbrain-witchcraft-phugly-megalopolish-remix",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-flaming-bag-of-wisconsin-i-being-the-last-thing-you-remember-is-the-last-thing-i-rem",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-flaring-squamoid-mode-placement",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-flukerication-machinist",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-foldrinymicull",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-g-thea-ceo-m-zylo-v-w-27su-om-wp-xxx-c-stah-j5-heiyin-taiyang",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-her-sideways-crawl-through-your-bank-accounts",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-hypnocinagenic-drift",
+    "reason": "black frame (mean=0.3, max=10)"
+  },
+  {
+    "presetId": "cotc-suksma-indecision-about-how-to-die-decision-made",
+    "reason": "black frame (mean=0.3, max=67)"
+  },
+  {
+    "presetId": "cotc-suksma-moistened-gills-in-latent-galaxy-raggy",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-mtn-flx-flacc",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-mtn-flx-flacc-choilan-collapsar",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-mtn-flx-flacc-choilan-duncan-dodo-boid-dna-kodak-whore",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-mtn-flx-flacc-roam3",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-no-grip-chute-reinvents-terror",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-rechivalrizing-tents",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-trapstract",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-suksma-truth-rarity-isosceles-edit09",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-telek-goodoldcollingwoodforever",
+    "reason": "black frame (mean=6.2, max=16)"
+  },
+  {
+    "presetId": "cotc-telek-goodoldcollingwoodforever-isosceles-edit",
+    "reason": "black frame (mean=13.0, max=13)"
+  },
+  {
+    "presetId": "cotc-the-ng-stahlregen-boz-eos-geiss-phat-rovastar-zylot-flexi-martin-fishbrain-machine-code-in-",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-have-you-listened-anyway-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-priming-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-the-psyched-out-about-loop-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tonymilkdrop-tricolors-flexi-true-meaning-alien-complex-isosceles-edit",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-acid-astralmatics",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-astral-calculations-5",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-astralacid",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-circular-unlogic",
+    "reason": "black frame (mean=0.2, max=14)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-diffused-mana-pattern-2",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-tripgnosis-neon-algebra",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-undermines-him-in-the-subtlest-ways-mega-schoob-1d-serial-flashline-projection-creator",
+    "reason": "black frame (mean=0.0, max=0)"
+  },
+  {
+    "presetId": "cotc-va-ultramix2-156-1",
+    "reason": "black frame (mean=0.1, max=2)"
+  },
+  {
+    "presetId": "cotc-zylot-and-fishbrain-i-am-the-witch",
+    "reason": "black frame (mean=0.0, max=0)"
   }
 ]

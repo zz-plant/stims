@@ -33,6 +33,7 @@ export const PRESET_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
 // parsing the full catalog on every cold isolate.
 export const GENERATED_PRESET_META_PATH = 'public/preset-meta.json';
 export const PRESET_PREVIEW_DIR = 'public/milkdrop-presets/previews';
+export const PRESET_LIBRARIES_DIR = 'public/milkdrop-presets/libraries';
 // Presets start at chunk 2; chunk 1 stays reserved for the hand-written app
 // routes so their priorities and lastmods are not buried under 1,791 entries.
 export const PRESET_SITEMAP_FIRST_CHUNK = 2;
@@ -590,18 +591,38 @@ export async function buildPresetSitemapEntries(
 }
 
 export async function buildPresetMetaMap(rootDir = repoRoot) {
-  const catalogRaw = await readFile(
-    path.join(rootDir, PRESET_CATALOG_PATH),
-    'utf8',
-  );
-  const catalog = JSON.parse(catalogRaw) as { presets?: PresetCatalogEntry[] };
+  // Root catalog plus the bundled libraries, discovered by directory the same
+  // way generate-thumbnails does. The libraries are ~a third of the browsable
+  // catalog, and reading only the root left 932 presets — the whole
+  // cream-of-the-crop set among them — with no title or author here. Sharing
+  // one of those produced a card that guessed both from the slug, crediting
+  // "ORB - Fire and Fumes 2" to an author named "Cotc".
+  const libraryDir = path.join(rootDir, PRESET_LIBRARIES_DIR);
+  const libraryCatalogs = (
+    await readdir(libraryDir, { withFileTypes: true }).catch(() => [])
+  )
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(libraryDir, entry.name, 'catalog.json'));
 
-  return Object.fromEntries(
-    (catalog.presets ?? []).map((preset) => [
-      preset.id,
-      [preset.title, isNamedAuthor(preset.author) ? preset.author : ''],
-    ]),
-  );
+  const meta: Record<string, [string, string]> = {};
+  for (const catalogPath of [
+    path.join(rootDir, PRESET_CATALOG_PATH),
+    ...libraryCatalogs,
+  ]) {
+    const raw = await readFile(catalogPath, 'utf8').catch(() => null);
+    if (!raw) continue;
+    const catalog = JSON.parse(raw) as { presets?: PresetCatalogEntry[] };
+    for (const preset of catalog.presets ?? []) {
+      // First catalog wins, matching the runtime's own precedence.
+      if (meta[preset.id]) continue;
+      const author = preset.author;
+      meta[preset.id] = [
+        preset.title,
+        author && isNamedAuthor(author) ? author : '',
+      ];
+    }
+  }
+  return meta;
 }
 
 export const chunkSitemapEntries = (

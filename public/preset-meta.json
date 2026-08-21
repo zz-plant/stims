@@ -4923,5 +4923,2598 @@
   "yin-385-magic-ride-distance-based-hue": [
     "yin - 385 - Magic ride (distance based hue)",
     "yin"
+  ],
+  "000-empty": ["000 Empty", ""],
+  "001-line": ["001 Line", ""],
+  "100-square": ["100 Square", ""],
+  "101-per_frame": ["101 Per Frame", ""],
+  "102-per_frame3": ["102 Per Frame3", ""],
+  "103-multiple-eqn": ["103 Multiple Eqn", ""],
+  "104-continued-eqn": ["104 Continued Eqn", ""],
+  "105-per_frame_init": ["105 Per Frame Init", ""],
+  "110-per_pixel": ["110 Per Pixel", ""],
+  "200-wave": ["200 Wave", ""],
+  "201-wave": ["201 Wave", ""],
+  "202-wave": ["202 Wave", ""],
+  "203-wave": ["203 Wave", ""],
+  "204-wave": ["204 Wave", ""],
+  "205-wave": ["205 Wave", ""],
+  "206-wave": ["206 Wave", ""],
+  "207-wave": ["207 Wave", ""],
+  "208-wave": ["208 Wave", ""],
+  "209-wave": ["209 Wave", ""],
+  "210-wave": ["210 Wave", ""],
+  "211-wave": ["211 Wave", ""],
+  "212-wave": ["212 Wave", ""],
+  "213-wave": ["213 Wave", ""],
+  "214-wave": ["214 Wave", ""],
+  "215-wave": ["215 Wave", ""],
+  "240-wave-smooth-00": ["240 Wave Smooth 00", ""],
+  "241-wave-smooth-01": ["241 Wave Smooth 01", ""],
+  "242-wave-smooth-80": ["242 Wave Smooth 80", ""],
+  "243-wave-smooth-90": ["243 Wave Smooth 90", ""],
+  "244-wave-smooth-99": ["244 Wave Smooth 99", ""],
+  "245-wave-smooth-100": ["245 Wave Smooth 100", ""],
+  "250-wavecode": ["250 Wavecode", ""],
+  "251-wavecode-spectrum": ["251 Wavecode Spectrum", ""],
+  "252-wavecode-spectrum2": ["252 Wavecode Spectrum2", ""],
+  "260-compshader-noise_lq": ["260 Compshader Noise Lq", ""],
+  "261-compshader-noisevol_lq": ["261 Compshader Noisevol Lq", ""],
+  "300-beatdetect-bassmidtreb": ["300 Beatdetect Bassmidtreb", ""],
+  "cotc-suksma-passive-probabilistic-roaming-coin-gods": [
+    "suksma - passive probabilistic roaming coin gods",
+    "suksma"
+  ],
+  "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-phat-zyl": [
+    "BEST OF ADAMFX 2 Flexi + Geiss - Bipolar vs reaction diffusion + Another Flexi + Fishbrain  + Phat Zylot 8",
+    "BEST OF ADAMFX 2 Flexi + Geiss"
+  ],
+  "cotc-royal-mashup-291": ["$$$ Royal - Mashup (291)", "$$$ Royal"],
+  "cotc-geiss-skin-dots-10b": ["Geiss - Skin Dots 10b", "Geiss"],
+  "cotc-beta106i-brilliance-space-time-breaking-mash0000-it-s-2009-and-you-haven-t-replaced-your-an": [
+    "beta106i - Brilliance (Space-Time Breaking) - mash0000 - it's 2009 and you haven't replaced your analog tv with digital",
+    "beta106i"
+  ],
+  "cotc-royal-mashup-131": ["$$$ Royal - Mashup (131)", "$$$ Royal"],
+  "cotc-stahlregen-geiss-martin-tiger-no5-random-color-metal": [
+    "Stahlregen & Geiss + martin - Tiger No5 (random color metal)",
+    "Stahlregen & Geiss + martin"
+  ],
+  "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-eos-angels-of-decay-19-hexocollie-6": [
+    "Including Adam FX 2 flexi + fishbrain - operation fatcap + Eos Angels of Decay 19 + Hexocollie 6",
+    "Including Adam FX 2 flexi + fishbrain"
+  ],
+  "cotc-isosceles-mashup25": ["Isosceles mashup25", ""],
+  "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-hexocollie-flexi-adamfx-": [
+    "A Feature Preset Master Exclusive ORB - Planetary Alignment Acidburn - Hexocollie, Flexi AdamFX,Martin  b",
+    "A Feature Preset Master Exclusive ORB"
+  ],
+  "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-5-5": [
+    "Stahlregen & Geiss + Rovastar - Fields of Flowers (Jelly 5-5)",
+    "Stahlregen & Geiss + Rovastar"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-geiss-and-zylot-aurora-industrialis": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Geiss and Zylot + Aurora Industrialis + ORb acid cycle  + triptrap",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2": [
+    "NeW Adam Master Mashup FX 2 Geiss and Zylot - Reaction Diffusion 3 (Overload Mix 2)",
+    "NeW Adam Master Mashup FX 2 Geiss and Zylot"
+  ],
+  "cotc-suksma-daryl-feels-my-hellish-lonliness": [
+    "suksma - daryl feels my hellish lonliness",
+    "suksma"
+  ],
+  "cotc-mashup-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-flexi-and": [
+    "Mashup ADAMFX 2 Flexi + Geiss - Bipolar vs reaction diffusion + Another Flexi + Fishbrain  + Flexi And ADAMFX 10",
+    "Mashup ADAMFX 2 Flexi + Geiss"
+  ],
+  "cotc-zylot-visionarie-geiss-aspect-ratio-fix-mash0000-infinitely-dense-massless-particle": [
+    "Zylot - Visionarie (geiss aspect ratio fix) - mash0000 - infinitely dense massless particle",
+    "Zylot"
+  ],
+  "cotc-suksma-adam-martin-geiss-come-into-my-closet-of-rot": [
+    "suksma - adam martin geiss - come into my closet of rot",
+    "suksma"
+  ],
+  "cotc-isosceles-mashup24": ["Isosceles mashup24", ""],
+  "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2-amazing-mas": [
+    "NeW Adam Master Mashup FX 2 Geiss and Zylot - Reaction Diffusion 3 (Overload Mix 2) AMAZING MASUP Various Workwithlines 8",
+    "NeW Adam Master Mashup FX 2 Geiss and Zylot"
+  ],
+  "cotc-jim-geiss-bass-zoom-symmetry-mash0000-the-god-damn-pen-is-rrrroyal-blue": [
+    "Jim & Geiss - Bass Zoom Symmetry - mash0000 - the god damn pen is rrrroyal blue",
+    "Jim & Geiss"
+  ],
+  "cotc-geiss-three-kinds-of-amphetamines-mash0000-jester-od-s-on-back-alley-clown-juice": [
+    "Geiss - Three Kinds Of Amphetamines - mash0000 - jester OD's on back alley clown juice",
+    "Geiss"
+  ],
+  "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-aderassi-phat-zylot6": [
+    "BEST OF ADAMFX 2 Flexi + Geiss - Bipolar vs reaction diffusion + Aderassi Phat Zylot6",
+    "BEST OF ADAMFX 2 Flexi + Geiss"
+  ],
+  "cotc-suksma-jim-geiss-inverse-bass-zoom-mash0000-aim-your-scream-toward-the-avalanche": [
+    "suksma - Jim & Geiss - Inverse Bass Zoom - mash0000 - aim your scream toward the avalanche",
+    "suksma"
+  ],
+  "cotc-geiss-reaction-diffusion-3-janky-diffusion-effect-warp": [
+    "Geiss - Reaction Diffusion 3 (janky diffusion effect warp)",
+    "Geiss"
+  ],
+  "cotc-geiss-tadpole-hunter-mash0000-humiliate-the-god-with-spencer": [
+    "Geiss - Tadpole Hunter - mash0000 - humiliate the god with spencer",
+    "Geiss"
+  ],
+  "cotc-geiss-skin-dots-10c": ["Geiss - Skin Dots 10c", "Geiss"],
+  "cotc-halfbreak-caramelize-serpentine": [
+    "Halfbreak - Caramelize Serpentine",
+    "Halfbreak"
+  ],
+  "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx": [
+    "Stahlregen & Geiss - Tiger No5 (MashUp 16 - Seizure-Inducing Confetti Kaleidoscope RMX)",
+    "Stahlregen & Geiss"
+  ],
+  "cotc-halfbreak-flexi-and-goody-geiss-benski-sparkly-lsb-feedback": [
+    "Halfbreak + Flexi and goody + geiss + benski - Sparkly LSB Feedback'",
+    "Halfbreak + Flexi and goody + geiss + benski"
+  ],
+  "cotc-suksma-bmelgren-hungry-orbits-mash0000-sir-i-can-t-help-you-over-here-isosceles-edit": [
+    "suksma - Bmelgren - Hungry Orbits - mash0000 - sir, i can't help you over here",
+    "suksma"
+  ],
+  "cotc-geiss-skin-dots-11b": ["Geiss - Skin Dots 11b", "Geiss"],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Swelling Spiral",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-luxxx-geiss-game-of-life-4": [
+    "LuxXx - Geiss - Game of Life 4",
+    "LuxXx"
+  ],
+  "cotc-royal-mashup-130": ["$$$ Royal - Mashup (130)", "$$$ Royal"],
+  "cotc-geiss-reaction-diffusion-3-janky-ripples-warp": [
+    "Geiss - Reaction Diffusion 3 (janky ripples warp)",
+    "Geiss"
+  ],
+  "cotc-stahlregen-geiss-eos-martin-rovastar-halcyon-jelly-skin": [
+    "Stahlregen & Geiss + EoS + Martin + Rovastar - Halcyon Jelly Skin",
+    "Stahlregen & Geiss + EoS + Martin + Rovastar"
+  ],
+  "cotc-hexcollie-flexi-n-geiss-caught-in-the-vortex-of-the-mystery-pill": [
+    "Hexcollie, Flexi n Geiss - Caught in the vortex of the mystery pill",
+    "Hexcollie, Flexi n Geiss"
+  ],
+  "cotc-halfbreak-last-in-nebula": ["Halfbreak - Last in Nebula", "Halfbreak"],
+  "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx": [
+    "A HD ADAMFX Creation !!FT  Martin + flexi +  Rovastar MDropFX Collaboration E Adam HD INFECTIONFX",
+    ""
+  ],
+  "cotc-isosceles-mashup02": ["Isosceles mashup02", ""],
+  "cotc-rovastar-unchained-life-after-pie-remix-girl-powa": [
+    "Rovastar + Unchained - Life After Pie (Remix) girl powa",
+    "Rovastar + Unchained"
+  ],
+  "cotc-geiss-reaction-diffusion-2": ["Geiss - Reaction Diffusion 2", "Geiss"],
+  "cotc-hexcollie-melodic-pulsing-leds-mash0000-vegas-doesn-t-make-life-less-pointless": [
+    "Hexcollie - Melodic pulsing leds - mash0000 - vegas doesn't make life less pointless",
+    "Hexcollie"
+  ],
+  "cotc-a-bit-storm-effected-by-adamfx-2-shadowharlequin-bit-storm-ft-dancing-petals": [
+    "A Bit Storm Effected by AdamFX 2 shadowharlequin - bit storm Ft dancing petals",
+    "A Bit Storm Effected by AdamFX 2 shadowharlequin"
+  ],
+  "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs": [
+    "shifter - crosshatch colony beta6 - loved to death by nymphs",
+    "shifter"
+  ],
+  "cotc-royal-mashup-155": ["$$$ Royal - Mashup (155)", "$$$ Royal"],
+  "cotc-royal-mashup-157": ["$$$ Royal - Mashup (157)", "$$$ Royal"],
+  "cotc-tripgnosis-acid-astralmatics": [
+    "Tripgnosis - Acid Astralmatics",
+    "Tripgnosis"
+  ],
+  "cotc-stahlregen-fishbrain-geiss-witchcraft-dense-2": [
+    "Stahlregen & fishbrain + Geiss - Witchcraft (Dense)2",
+    "Stahlregen & fishbrain + Geiss"
+  ],
+  "cotc-suksma-hypnocinagenic-drift": [
+    "suksma - hypnocinagenic drift",
+    "suksma"
+  ],
+  "cotc-stahlregen-fishbrain-geiss-witchcraft-dense": [
+    "Stahlregen & fishbrain + Geiss - Witchcraft (Dense)",
+    "Stahlregen & fishbrain + Geiss"
+  ],
+  "cotc-stahlregen-fishbrain-geiss-witchcraft-cents": [
+    "Stahlregen & fishbrain + Geiss - Witchcraft (cents)",
+    "Stahlregen & fishbrain + Geiss"
+  ],
+  "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame": [
+    "suksma - my malice tears space time fabric putting black holes to shame",
+    "suksma"
+  ],
+  "cotc-fishbrain-geiss-witchcraft-glow-mix": [
+    "fiShbRaiN + geiss - witchcraft (Glow Mix)",
+    "fiShbRaiN + geiss"
+  ],
+  "cotc-234": ["234", ""],
+  "cotc-suksma-fig-leaves-can-t-cover-that-much": [
+    "suksma - fig leaves can't cover that much",
+    "suksma"
+  ],
+  "cotc-fishbrain-quark-matrix": ["fiShbRaiN - quark matrix", "fiShbRaiN"],
+  "cotc-tripgnosis-diffused-mana-pattern-2": [
+    "Tripgnosis - Diffused Mana pattern 2",
+    "Tripgnosis"
+  ],
+  "cotc-suksma-cuneinformal-basilihistrionix": [
+    "suksma - cuneinformal basilihistrionix",
+    "suksma"
+  ],
+  "cotc-zylot-and-fishbrain-i-am-the-witch": [
+    "Zylot and FishBrain - I am the witch",
+    "Zylot and FishBrain"
+  ],
+  "cotc-tripgnosis-astral-calculations-5": [
+    "Tripgnosis - Astral Calculations 5",
+    "Tripgnosis"
+  ],
+  "cotc-the-ng-martin-flexi-witchcraft-when-lines-get-desperate-isosceles-edit": [
+    "The NG + martin + Flexi - witchcraft (When Lines Get Desperate)",
+    "The NG + martin + Flexi"
+  ],
+  "cotc-suksma-my-malice-tears-space-time-fabric-putting-black-holes-to-shame-roam2": [
+    "suksma - my malice tears space time fabric putting black holes to shame roam2",
+    "suksma"
+  ],
+  "cotc-suksma-descentive-maxhorroral-fences": [
+    "suksma - descentive maxhorroral fences",
+    "suksma"
+  ],
+  "cotc-suksma-indecision-about-how-to-die-decision-made": [
+    "suksma - indecision about how to die - decision made",
+    "suksma"
+  ],
+  "cotc-fishbrain-witchcraft-dmt-remix": [
+    "fiShbRaiN - witchcraft (DMT remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft": [
+    "Including Adam FX 2 flexi + fishbrain - operation fatcap + Fishbrain and WitchCraft",
+    "Including Adam FX 2 flexi + fishbrain"
+  ],
+  "cotc-fishbrain-flexi-martin-grafitti-tagging-witchcraft-must-be-overrated-demonlord-shaders-lamp": [
+    "fiShbRaiN, flexi + martin - grafitti tagging witchcraft must be overrated - demonlord shaders - lampshade hubrys",
+    "fiShbRaiN, flexi + martin"
+  ],
+  "cotc-repressed-americans-certain-of-spectral-diffucktion": [
+    "repressed americans - certain of spectral diffucktion",
+    "repressed americans"
+  ],
+  "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit": [
+    "fiShbRaiN - witchcraft (necromancer remix)_phat_edit",
+    "fiShbRaiN"
+  ],
+  "cotc-tripgnosis-neon-algebra": ["Tripgnosis - Neon Algebra", "Tripgnosis"],
+  "cotc-hexcollie-aderassi-bdrv-adamfx-n-flexi-it-s-a-start": [
+    "Hexcollie, Aderassi, BDRV, AdamFX n Flexi - It's a start",
+    "Hexcollie, Aderassi, BDRV, AdamFX n Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-01": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter 01]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-03": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter 03]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-05": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter 05]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-02": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter 02]",
+    "Flexi"
+  ],
+  "cotc-amandio-c-ifs-01": ["amandio c - IFS 01", "amandio c"],
+  "cotc-flexi-disruptor-wolfram-s-rule-90": [
+    "Flexi - disruptor [wolfram's rule 90]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-04": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter 04]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter-on": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter ON]",
+    "Flexi"
+  ],
+  "cotc-amandio-c-sierpinsky-s-triangle": [
+    "amandio c - Sierpinsky's triangle",
+    "amandio c"
+  ],
+  "cotc-flexi-wolfram-s-rule-110-rise-of-the-log-attack": [
+    "Flexi - wolfram's rule 110 [rise of the log attack]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-110-so-call-the-police": [
+    "Flexi - disruptor [wolfram's rule 110 so call the police;]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-90-satanic-teleprompter": [
+    "Flexi - disruptor [wolfram's rule 90 satanic teleprompter]",
+    "Flexi"
+  ],
+  "cotc-flexi-wolfram-s-rule-90-rise-of-the-log-attack": [
+    "Flexi - wolfram's rule 90 [rise of the log attack]",
+    "Flexi"
+  ],
+  "cotc-flexi-disruptor-wolfram-s-rule-110-satanic-teleprompter-05": [
+    "Flexi - disruptor [wolfram's rule 110 satanic teleprompter 05]",
+    "Flexi"
+  ],
+  "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors2": [
+    "suksma - now for only $19-95, you can pray to a whole array of saviors2",
+    "suksma"
+  ],
+  "cotc-suksma-enough-strange-candles-to-lay": [
+    "suksma - enough strange candles to lay",
+    "suksma"
+  ],
+  "cotc-suksma-now-for-only-19-95-you-can-pray-to-a-whole-array-of-saviors": [
+    "suksma - now for only $19-95, you can pray to a whole array of saviors",
+    "suksma"
+  ],
+  "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy2": [
+    "suksma - aaron funcking god and his mod file savvy2",
+    "suksma"
+  ],
+  "cotc-shadowharlequin-crystal-liquid-eos-phat-the-lights-at-night-spikes": [
+    "ShadowHarlequin - Crystal Liquid - [EoS + Phat - the lights at night_spikes]",
+    "ShadowHarlequin"
+  ],
+  "cotc-suksma-squasm-minor-plot-frugal-koonut-kalifee": [
+    "suksma - squasm minor plot frugal koonut kalifee",
+    "suksma"
+  ],
+  "cotc-suksma-camden-defib-lancaster-tucker-s-neck": [
+    "suksma - camden defib lancaster tucker's neck",
+    "suksma"
+  ],
+  "cotc-shifter-bronchiole-eos-phat-edit-tethered": [
+    "shifter - bronchiole (EoS+Phat edit) tethered",
+    "shifter"
+  ],
+  "cotc-eos-phat-fractical-dancer-light-in-the-distance": [
+    "EoS+Phat Fractical_dancer - light in the distance",
+    "EoS+Phat Fractical_dancer"
+  ],
+  "cotc-suksma-frustratingly-incomplete-wasteland": [
+    "suksma - frustratingly incomplete wasteland",
+    "suksma"
+  ],
+  "cotc-suksma-aaron-funcking-god-and-his-mod-file-savvy": [
+    "suksma - aaron funcking god and his mod file savvy",
+    "suksma"
+  ],
+  "cotc-suksma-no-i-don-t-know-what-the-hell-it-is-but-i-m-eating-it-for-mind-lunch-demonlard-axed-": [
+    "suksma - no, i don't know what the hell it is, but i'm eating it for mind lunch - + demonlard - axed me to say some mc rhymes",
+    "suksma"
+  ],
+  "cotc-salvia-with-chip-harris-culminatorics": [
+    "salvia with chip harris - culminatorics",
+    "salvia with chip harris"
+  ],
+  "cotc-suksma-estrangedaholic-grandfather-cloques": [
+    "suksma - estrangedaholic grandfather cloques",
+    "suksma"
+  ],
+  "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit": [
+    "suksma - nothing to remember you by - logsmeltitdealtit",
+    "suksma"
+  ],
+  "cotc-bdrv-al-eos-pulsecubebdrv-etal-rmxmix-25-qabalistic-space-invading-homo-nutrient-mouth-swis": [
+    "bdrv + al EoS - Pulsecubebdrv etAL  Rmxmix 25 - qabalistic space invading homo-nutrient mouth swish transmuting 9d symbiosis - fed",
+    "bdrv + al EoS"
+  ],
+  "cotc-suksma-gapes-to-spelunkcide-dada-hate-art-isn-t-art": [
+    "suksma - gapes to spelunkcide - dada hate art isn't art",
+    "suksma"
+  ],
+  "cotc-fishbrain-submarine": ["fiShbRaiN - submarine", "fiShbRaiN"],
+  "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos-isosceles-edit": [
+    "suksma - this pain was saved for you - roams stephen hill hos",
+    "suksma"
+  ],
+  "cotc-rovastar-loadus-geiss-tone-mapped-fractaldrop-4-jelly-v5": [
+    "rovastar + loadus + geiss - tone-mapped fractaldrop 4 (jelly v5)",
+    "rovastar + loadus + geiss"
+  ],
+  "cotc-fishbrain-submarine-exp-ame-med": [
+    "fiShbRaiN - submarine - exp ame med",
+    "fiShbRaiN"
+  ],
+  "cotc-beta106i-airhandler-last-breath-crab-hand": [
+    "beta106i - Airhandler (Last Breath - Crab Hand)",
+    "beta106i"
+  ],
+  "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-j": [
+    "Starz in MilkHDFX - Stahlregen & Aderrasi + EoS + Geiss + Unchained + Zylot + Flexi + Martin + AdamFX J",
+    "Starz in MilkHDFX"
+  ],
+  "cotc-suksma-movement-within-the-trout-i-love-you-i-thank-you-it-meant-everything-don-t-forget": [
+    "suksma - movement within the trout - i love you, i thank you, it meant everything, don't forget",
+    "suksma"
+  ],
+  "cotc-new-creation-sensation-adamfx-flexi-amandio-c-n-martin-star-to-another-world-ft-hexocollie-": [
+    "New Creation Sensation - AdamFx,Flexi,Amandio c n Martin - Star to Another World ft Hexocollie,ShadowH,Geiss n Fishbrain K",
+    "New Creation Sensation"
+  ],
+  "cotc-evet-esotic-krash-rolly-poly": [
+    "EVET + Esotic & Krash - Rolly Poly",
+    "EVET + Esotic & Krash"
+  ],
+  "cotc-nicklepenultim-roam": ["nicklepenultim roam", ""],
+  "cotc-nicklepenultim": ["nicklepenultim", ""],
+  "cotc-nicklepenultim-the-skuzzmuppet": [
+    "nicklepenultim - the skuzzmuppet",
+    "nicklepenultim"
+  ],
+  "cotc-camel-llama": ["camel llama", ""],
+  "cotc-suksma-at-the-root-of-open-the-graves": [
+    "suksma - at the root of - open the graves",
+    "suksma"
+  ],
+  "cotc-goody-on-mushrooms-hexcollie-n-fyornulis-cellsmosis-acid-angelated": [
+    "Goody on mushrooms + Hexcollie n Fyornulis - Cellsmosis (acid angelated)",
+    "Goody on mushrooms + Hexcollie n Fyornulis"
+  ],
+  "cotc-eos-angels-of-decay-01-soul": ["EoS - angels of decay 01 soul", "EoS"],
+  "cotc-amandio-c-iterative-squares-2": [
+    "amandio c - iterative - squares 2",
+    "amandio c"
+  ],
+  "cotc-suksma-truth-rarity-isosceles-edit08": [
+    "suksma - truth, rarity",
+    "suksma"
+  ],
+  "cotc-phat-eos-blah-smooth-colors-shadow-dancer": [
+    "Phat + EoS - blah_Smooth_Colors_Shadow_Dancer",
+    "Phat + EoS"
+  ],
+  "cotc-suksma-truth-rarity-isosceles-edit09": [
+    "suksma - truth, rarity",
+    "suksma"
+  ],
+  "cotc-amandio-c-iterative-squares-3": [
+    "amandio c - iterative - squares 3",
+    "amandio c"
+  ],
+  "cotc-eos-rename-2b": ["EoS - rename 2b", "EoS"],
+  "cotc-suksma-truth-rarity-isosceles-edit05": [
+    "suksma - truth, rarity",
+    "suksma"
+  ],
+  "cotc-rarian-rakista-cheap-angels-23": [
+    "rarian rakista - Cheap Angels 23",
+    "rarian rakista"
+  ],
+  "cotc-eos-multisphere-01-b-phat-ra-mix-nexus-roams-falling-through-9-time": [
+    "EoS - multisphere 01 B_Phat_Ra_mix nexus roams falling through 9 time",
+    "EoS"
+  ],
+  "cotc-amandio-c-iterative-squares-4": [
+    "amandio c - iterative - squares 4",
+    "amandio c"
+  ],
+  "cotc-suksma-foldrinymicull": ["suksma - foldrinymicull", "suksma"],
+  "cotc-eos-angels-of-decay": ["EoS - angels of decay", "EoS"],
+  "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher": [
+    "cope + flexi - strange attractor (jewellery tile mix) spher",
+    "cope + flexi"
+  ],
+  "cotc-suksma-truth-rarity-isosceles-edit02": [
+    "suksma - truth, rarity",
+    "suksma"
+  ],
+  "cotc-amandio-c-secret-garden-6": [
+    "amandio c - secret garden 6",
+    "amandio c"
+  ],
+  "cotc-amandio-c-orbitin-around-3": [
+    "amandio c - Orbitin' around 3",
+    "amandio c"
+  ],
+  "cotc-hexcollie-zylot-n-phat-it-has-to-be-wrong-to-have-this-much-fun-without-any-talent": [
+    "Hexcollie, Zylot n Phat - It has to be wrong to have this much fun without any talent",
+    "Hexcollie, Zylot n Phat"
+  ],
+  "cotc-shifter-lazerspecs-phat-edit": [
+    "shifter - lazerspecs_phat_edit",
+    "shifter"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-ghosts-gaseous": [
+    "EoS - glowsticks v2 04 music minimal - ghosts gaseous",
+    "EoS"
+  ],
+  "cotc-inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rova": [
+    "Inside A Black Whole AdamFX 2 martin - another kind of groove (Ati Fix)Ft Raron Flexi and Rovastar (AdamFX Remix)3",
+    "Inside A Black Whole AdamFX 2 martin"
+  ],
+  "cotc-suksma-truth-rarity-isosceles-edit03": [
+    "suksma - truth, rarity",
+    "suksma"
+  ],
+  "cotc-amandio-c-secret-garden-7": [
+    "amandio c - secret garden 7",
+    "amandio c"
+  ],
+  "cotc-phat-eos-blah-smooth-colors-shadow-dancer-v2": [
+    "Phat + EoS - blah_Smooth_Colors_Shadow_Dancer_V2",
+    "Phat + EoS"
+  ],
+  "cotc-shifter-lazerspecs": ["shifter - lazerspecs", "shifter"],
+  "cotc-fishbrain-evolution-3d-phat-edit-v2": [
+    "fiShbRaiN - evolution (3d)_phat_edit_v2",
+    "fiShbRaiN"
+  ],
+  "cotc-orb-mega-spectrum-1-04": ["ORB - Mega Spectrum 1-04", "ORB"],
+  "cotc-orb-mega-spectrum": ["ORB - Mega Spectrum", "ORB"],
+  "cotc-orb-solar-sail": ["ORB - Solar Sail", "ORB"],
+  "cotc-amandio-c-secret-garden-4": [
+    "amandio c - secret garden 4",
+    "amandio c"
+  ],
+  "cotc-eos-more-waveforms": ["EoS - more waveforms", "EoS"],
+  "cotc-stuttler-kaleidoscope-from-hell": [
+    "Stuttler - Kaleidoscope From Hell",
+    "Stuttler"
+  ],
+  "cotc-amandio-c-secret-garden-5": [
+    "amandio c - secret garden 5",
+    "amandio c"
+  ],
+  "cotc-pinbi7-stuttler-trackdown": ["Pinbi7&stuttler-trackdown", ""],
+  "cotc-amandio-c-goldline-fireworks": [
+    "Amandio C - Goldline (fireworks)",
+    "Amandio C"
+  ],
+  "cotc-orb-space-time": ["ORB - Space Time", "ORB"],
+  "cotc-royal-mashup-162": ["$$$ Royal - Mashup (162)", "$$$ Royal"],
+  "cotc-eos-phat-crazy": ["EoS_Phat craZy", ""],
+  "cotc-fishbrain-blueprint": ["fiShbRaiN - blueprint", "fiShbRaiN"],
+  "cotc-suksma-truth-raritys-isosceles-edit-11": [
+    "suksma - truth, raritys",
+    "suksma"
+  ],
+  "cotc-phat-eos-blah": ["Phat + EoS - blah", "Phat + EoS"],
+  "cotc-eos-multisphere-01-b-phat-ra-mix-nexus": [
+    "EoS - multisphere 01 B_Phat_Ra_mix nexus",
+    "EoS"
+  ],
+  "cotc-orb-space-time2": ["ORB - Space Time2", "ORB"],
+  "cotc-rarian-rakista-cheap-angels": [
+    "rarian rakista - Cheap Angels",
+    "rarian rakista"
+  ],
+  "cotc-orb-saturns-rings": ["ORB - Saturns Rings", "ORB"],
+  "cotc-evet-dreamy-days": ["EVET - Dreamy Days", "EVET"],
+  "cotc-amandio-c-iterative-squares-1": [
+    "amandio c - iterative - squares 1",
+    "amandio c"
+  ],
+  "cotc-eos-angels-of-decay-02-phat-soulmate": [
+    "EoS - angels of decay 02 + Phat - soulmate",
+    "EoS"
+  ],
+  "cotc-yin-253-artificial-poles-of-the-continuum-remix-3": [
+    "yin - 253 - Artificial poles of the continuum (remix #3)",
+    "yin"
+  ],
+  "cotc-syst3mfailur-satanic-ring-v2": [
+    "Syst3mFailur - satanic ring V2",
+    "Syst3mFailur"
+  ],
+  "cotc-yin-250-artificial-poles-of-the-continuum-3": [
+    "Yin - 250 - Artificial Poles Of The Continuum 3",
+    "Yin"
+  ],
+  "cotc-yin-252-artificial-poles-of-the-continuum-remix-2": [
+    "yin - 252 - Artificial poles of the continuum (remix #2)",
+    "yin"
+  ],
+  "cotc-eos-apocalypse-g": ["EoS - Apocalypse G", "EoS"],
+  "cotc-yin-250-artificial-poles-of-the-continuum-phat-s-star-mix": [
+    "yin - 250 - Artificial poles of the continuum_Phat's_star_mix",
+    "yin"
+  ],
+  "cotc-yin-253-artificial-poles-of-the-continuum-remix-3-1": [
+    "yin - 253 - Artificial poles of the continuum (remix #3)_1",
+    "yin"
+  ],
+  "cotc-syst3mfailur-satanic-ring-phat-eos-diety-freequency-remix": [
+    "Syst3mFailur - satanic ring_Phat+EoS_DIEty_FREEquency_Remix",
+    "Syst3mFailur"
+  ],
+  "cotc-yin-251-artificial-poles-of-the-continuum-remix-1": [
+    "yin - 251 - Artificial poles of the continuum (remix #1)",
+    "yin"
+  ],
+  "cotc-syst3mfailur-satanic-ring": [
+    "Syst3mFailur - satanic ring",
+    "Syst3mFailur"
+  ],
+  "cotc-yin-253-artificial-poles-of-the-continuum-remix-3-2": [
+    "yin - 253 - Artificial poles of the continuum (remix #3) (2)",
+    "yin"
+  ],
+  "cotc-eos-apocalypse-c": ["EoS - Apocalypse C", "EoS"],
+  "cotc-evet-desmond-axis-2": ["EVET - Desmond Axis 2", "EVET"],
+  "cotc-eos-apocalypse-b": ["EoS - Apocalypse B", "EoS"],
+  "cotc-stahlregen-do-the-wave-v2-celestial-butterfly": [
+    "Stahlregen - Do the Wave (V2 - celestial butterfly)",
+    "Stahlregen"
+  ],
+  "cotc-adamfx-2-aderrasi-airhandler-last-breath-calm-ilusional-discontent2": [
+    "AdamFx 2 Aderrasi - Airhandler (Last Breath - Calm)Ilusional Discontent2",
+    "AdamFx 2 Aderrasi"
+  ],
+  "cotc-bmelgren-unchained-a-spinningrainmix": [
+    "Bmelgren&unchained-a(spinningrainmix)",
+    ""
+  ],
+  "cotc-pithlit-nova-rainbow-mix": ["Pithlit - Nova(Rainbow mix)", "Pithlit"],
+  "cotc-royal-mashup-168": ["$$$ Royal - Mashup (168)", "$$$ Royal"],
+  "cotc-evet-waterrgate": ["EVET - Waterrgate", "EVET"],
+  "cotc-pithlit-nova": ["Pithlit - Nova", "Pithlit"],
+  "cotc-tripgnosis-hypesurrealism": [
+    "Tripgnosis - Hypesurrealism",
+    "Tripgnosis"
+  ],
+  "cotc-phat-eos-blah-smooth-colors-morph-blah": [
+    "Phat + EoS - blah_Smooth_Colors_morph blah",
+    "Phat + EoS"
+  ],
+  "cotc-royal-mashup-28": ["$$$ Royal - Mashup (28)", "$$$ Royal"],
+  "cotc-bmelgren-unchained-amb-mythicrainmix": [
+    "Bmelgren&unchained-amb(mythicrainmix)",
+    ""
+  ],
+  "cotc-royal-mashup-29": ["$$$ Royal - Mashup (29)", "$$$ Royal"],
+  "cotc-geiss-plasma": ["Geiss - Plasma", "Geiss"],
+  "cotc-rocke-personal-comet": ["Rocke - Personal Comet", "Rocke"],
+  "cotc-tripgnosis-flameorb": ["Tripgnosis - FlameOrb", "Tripgnosis"],
+  "cotc-royal-mashup-380": ["$$$ Royal - Mashup (380)", "$$$ Royal"],
+  "cotc-pieturp-hsl-tunnelvisions-morphing3": [
+    "PieturP - HSL-tunnelvisions_morphing3",
+    "PieturP"
+  ],
+  "cotc-pieturp-hsl-tunnelvisions-morphing2": [
+    "PieturP - HSL-tunnelvisions_morphing2",
+    "PieturP"
+  ],
+  "cotc-145": ["145", ""],
+  "cotc-305": ["305", ""],
+  "cotc-138": ["138", ""],
+  "cotc-fishbrain-betelguese3": ["fiShbRaiN - betelguese3", "fiShbRaiN"],
+  "cotc-suksma-foolish-mash": ["suksma - foolish mash", "suksma"],
+  "cotc-pieturp-sunflare2": ["PieturP - sunflare2", "PieturP"],
+  "cotc-royal-mashup-395": ["$$$ Royal - Mashup (395)", "$$$ Royal"],
+  "cotc-hexcollie-first": ["Hexcollie - First", "Hexcollie"],
+  "cotc-royal-mashup-377": ["$$$ Royal - Mashup (377)", "$$$ Royal"],
+  "cotc-eos-phat-the-lights-at-night": [
+    "EoS+Phat - the lights at night",
+    "EoS+Phat"
+  ],
+  "cotc-suksma-dark-one-clouds-das-yi-hyper-phosphene-ejaculate": [
+    "suksma - Dark One - Clouds - das yi hyper phosphene ejaculate",
+    "suksma"
+  ],
+  "cotc-yin-314-ocean-of-light-ascending-nadi-mix": [
+    "yin - 314 - Ocean of Light (ascending nadi mix)",
+    "yin"
+  ],
+  "cotc-yin-315-ocean-of-light-moreacidplz-eos-phat": [
+    "yin - 315 - Ocean of Light (moreacidplz EoS-Phat)",
+    "yin"
+  ],
+  "cotc-yin-313-ocean-of-light-esp": [
+    "yin - 313 - Ocean of Light (ESP)",
+    "yin"
+  ],
+  "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher": [
+    "yin - 314 - Ocean of Light (ascending nadi mix) spher",
+    "yin"
+  ],
+  "cotc-goody-lights-in-the-sky": ["Goody - Lights in the Sky", "Goody"],
+  "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy": [
+    "skipper skipper kiss me hard - thank god for martin nitorami - maps of hell roams saucy",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher": [
+    "skipper skipper kiss me hard - slut warm spher",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell": [
+    "skipper skipper kiss me hard - thank god for martin nitorami - maps of hell",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-suksma-farming-equipment-ice-shower": [
+    "suksma - farming equipment - ice shower",
+    "suksma"
+  ],
+  "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami": [
+    "skipper skipper kiss me hard - thank god for martin nitorami",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear": [
+    "skipper skipper kiss me hard - thank god for martin nitorami - a rip in mommy's underwear",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-suksma-phairess-weale-mrt-flx": [
+    "suksma - phairess weale + mrt,flx",
+    "suksma"
+  ],
+  "cotc-suksma-penattrition-geiss-crossfire-shaders": [
+    "suksma - penattrition - geiss crossfire shaders",
+    "suksma"
+  ],
+  "cotc-royal-mashup-40": ["$$$ Royal - Mashup (40)", "$$$ Royal"],
+  "cotc-bdrv-al-eos-more-waveforms-5-mx": [
+    "bdrv + al EoS - more waveforms 5 mx",
+    "bdrv + al EoS"
+  ],
+  "cotc-undulate-harque-auto-thef": [
+    "undulate harque - auto thef",
+    "undulate harque"
+  ],
+  "cotc-undulate-harque-zing": ["undulate harque - zing", "undulate harque"],
+  "cotc-suksma-circle-of-the-taeyrunts-phairess-imbularse-deign-offal": [
+    "suksma - circle of the taeyrunts, phairess imbularse deign offal",
+    "suksma"
+  ],
+  "cotc-amandio-c-pulse": ["amandio c - pulse", "amandio c"],
+  "cotc-geite-spooksville-roams": ["geite' - spooksville roams", "geite'"],
+  "cotc-undulate-harque-pain-tthe": [
+    "undulate harque - pain tthe",
+    "undulate harque"
+  ],
+  "cotc-hypra-a-astral-hypra-a-plane-fairlly-amazing-bullshit": [
+    "hypra-a-astral hypra-a-plane fairlly amazing bullshit",
+    ""
+  ],
+  "cotc-fvese-lips-isosceles-edit": ["Fvese-lips", ""],
+  "cotc-gentlekid-cosmic-dust-2-digital-data-loss": [
+    "Gentlekid - Cosmic Dust 2 - Digital Data loss",
+    "Gentlekid"
+  ],
+  "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0-isosceles-edit": [
+    "Goody's Fatal Color Attraction (pliant reality remix) PS2-0",
+    ""
+  ],
+  "cotc-geiss-vapor-echo": ["Geiss - Vapor Echo", "Geiss"],
+  "cotc-stahlregen-do-the-wave-v2-minimal-ps2-blur": [
+    "Stahlregen - Do the Wave (V2 minimal - PS2 blur)",
+    "Stahlregen"
+  ],
+  "cotc-suksma-accredited-omniversidioty": [
+    "suksma - accredited omniversidioty",
+    "suksma"
+  ],
+  "cotc-rovastar-geiss-dynamic-swirls-3-broken-destiny-mix": [
+    "Rovastar & Geiss - Dynamic Swirls 3 (Broken Destiny Mix)",
+    "Rovastar & Geiss"
+  ],
+  "cotc-lux-geiss-spacefurnace": ["LuX_-_Geiss - spacefurnace", "LuX_-_Geiss"],
+  "cotc-stahlregen-bass-spectre-ps2": [
+    "Stahlregen - Bass Spectre (PS2)",
+    "Stahlregen"
+  ],
+  "cotc-stahlregen-downpour-x-spectre-ps2b": [
+    "Stahlregen - Downpour x Spectre PS2b",
+    "Stahlregen"
+  ],
+  "cotc-rovastar-idiot24-7-juanita": [
+    "Rovastar & Idiot24-7 - Juanita",
+    "Rovastar & Idiot24-7"
+  ],
+  "cotc-fishbrain-geiss-witchcraft-grow-mix-2-a-a": [
+    "fiShbRaiN + geiss - witchcraft (Grow Mix)2 a a",
+    "fiShbRaiN + geiss"
+  ],
+  "cotc-geiss-electric-storm-half-digital-2-fiesta-mix": [
+    "Geiss - Electric Storm Half-Digital 2 (Fiesta Mix)",
+    "Geiss"
+  ],
+  "cotc-tonymilkdrop-this-is-a-painting-flexi-let-s-trade-techstyle-isosceles-edit": [
+    "TonyMilkdrop - This Is A Painting [Flexi - let's trade + techstyle]",
+    "TonyMilkdrop"
+  ],
+  "cotc-bmelgren-rovastar-jester-sawakening-r": [
+    "Bmelgren&Rovastar-Jester'sAwakening(R",
+    ""
+  ],
+  "cotc-beta106i-jupiter-divine-lances": [
+    "beta106i - Jupiter (Divine Lances)",
+    "beta106i"
+  ],
+  "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0": [
+    "Goody's Fatal Color Attraction (pliant reality remix) PS2-0",
+    ""
+  ],
+  "cotc-suksma-awareness-implodes-disappears": [
+    "suksma - awareness implodes disappears",
+    "suksma"
+  ],
+  "cotc-geiss-cosmic-dust-2-tiny-reaction-diffusion-mix": [
+    "Geiss - Cosmic Dust 2 - Tiny Reaction Diffusion Mix",
+    "Geiss"
+  ],
+  "cotc-suksma-race-for-hot-dog-log-smell-2": [
+    "suksma - race for hot dog - log smell 2",
+    "suksma"
+  ],
+  "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20": [
+    "Stahlregen & Geiss + ORB - Etheral Waves (MashUp 20)",
+    "Stahlregen & Geiss + ORB"
+  ],
+  "cotc-mig-091b": ["Mig_091b", ""],
+  "cotc-geiss-motion-blur-2": ["Geiss - Motion Blur 2", "Geiss"],
+  "cotc-goody-vertigo-revisited": ["Goody - Vertigo - revisited", "Goody"],
+  "cotc-mig-oscilloscope021": ["Mig_Oscilloscope021", ""],
+  "cotc-geiss-tokamak-plus-painterly": [
+    "Geiss - Tokamak Plus Painterly",
+    "Geiss"
+  ],
+  "cotc-geiss-cepia-dither": ["Geiss - Cepia Dither", "Geiss"],
+  "cotc-stahlregen-do-the-wave-v2": [
+    "Stahlregen - Do the Wave (V2)",
+    "Stahlregen"
+  ],
+  "cotc-stahlregen-downpour-x-spectre-ps2-contact-mix": [
+    "Stahlregen - Downpour x Spectre PS2 (Contact Mix)",
+    "Stahlregen"
+  ],
+  "cotc-goody-s-fatal-color-attraction-ps2-0": [
+    "Goody's Fatal Color Attraction PS2-0",
+    ""
+  ],
+  "cotc-eos-waveform-01": ["EoS - waveform 01", "EoS"],
+  "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix": [
+    "Geiss - Cosmic Dust 2 - Laplacian Mix maalol mix",
+    "Geiss"
+  ],
+  "cotc-stahlregen-do-the-wave-v2-minimal-w": [
+    "Stahlregen - Do the Wave (V2 minimal - W)",
+    "Stahlregen"
+  ],
+  "cotc-evet-lovegates": ["EVET - Lovegates", "EVET"],
+  "cotc-fishbrain-white-scream-firefly": [
+    "fiShbRaiN - white scream firefly",
+    "fiShbRaiN"
+  ],
+  "cotc-stahlregen-do-the-wave": ["Stahlregen - Do the Wave", "Stahlregen"],
+  "cotc-luxxx-broken-beat-machina-i": [
+    "LuxXx - Broken Beat Machina i",
+    "LuxXx"
+  ],
+  "cotc-geiss-cosmic-dust-2-laplacian-mix": [
+    "Geiss - Cosmic Dust 2 - Laplacian Mix",
+    "Geiss"
+  ],
+  "cotc-stahlregen-downpour-x-spectre-ps2": [
+    "Stahlregen - Downpour x Spectre PS2",
+    "Stahlregen"
+  ],
+  "cotc-14": ["14", ""],
+  "cotc-evet-jewelsmoke": ["EVET - Jewelsmoke", "EVET"],
+  "cotc-mig-036version3": ["Mig_036version3", ""],
+  "cotc-suksma-deconstrue-orbaet": ["suksma - deconstrue orbaet", "suksma"],
+  "cotc-martin-another-kind-of-groove": [
+    "martin - another kind of groove",
+    "martin"
+  ],
+  "cotc-suksma-g-martin-m-m-w-mu-wp-m-c-m-getting-beat-isn-t-embarrassing-it-s-no-one-cares": [
+    "suksma - g-martin m-m w-!mu$ wp-m c-m - getting beat isn't embarrassing, it's no one cares",
+    "suksma"
+  ],
+  "cotc-xtramartin-3": ["xtramartin (3)", ""],
+  "cotc-orb-radiation2": ["ORB - Radiation2", "ORB"],
+  "cotc-suksma-trapstract": ["suksma - trapstract", "suksma"],
+  "cotc-shifter-flashburn-roams-use-fishing-line-to-keep-the-spiral-plates-from-touching": [
+    "shifter - flashburn roams use fishing line to keep the spiral plates from touching",
+    "shifter"
+  ],
+  "cotc-flexi-suksma-goody-fed-other-artists-blarfff-throwing-up-cubes": [
+    "flexi +  suksma + goody + fed + other artists - blarfff (throwing up cubes)",
+    "flexi +  suksma + goody + fed + other artists"
+  ],
+  "cotc-suksma-never-churchmouth": ["suksma - never churchmouth", "suksma"],
+  "cotc-luxxx-water-your-pet-goldfish-i": [
+    "LuxXx - Water Your Pet Goldfish i",
+    "LuxXx"
+  ],
+  "cotc-suksma-flaring-squamoid-mode-placement": [
+    "suksma - flaring squamoid mode placement",
+    "suksma"
+  ],
+  "cotc-luxxx-absinthe-with-mc-escher": [
+    "LuxXx - Absinthe with MC Escher",
+    "LuxXx"
+  ],
+  "cotc-luxxx-badballz": ["LuxXx - BadBallz", "LuxXx"],
+  "cotc-suksma-never-throck": ["suksma - never throck", "suksma"],
+  "cotc-luxxx-when-the-first-aliens-came-b": [
+    "LuxXx - When the First Aliens Came b",
+    "LuxXx"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Swelling Spiral  + Liquid Fire",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-geiss-flexi-orb-others-i-ve-had-it-with-this-g-tree": [
+    "geiss + flexi + orb + others - i've had it with this g tree",
+    "geiss + flexi + orb + others"
+  ],
+  "cotc-orb-fire-poi": ["ORB - Fire Poi", "ORB"],
+  "cotc-serge-circles007b": ["Serge circles007b", ""],
+  "cotc-serge-martin-crystal-palace000": [
+    "Serge + martin - crystal palace000",
+    "Serge + martin"
+  ],
+  "cotc-serge-martin-crystal-palace001": [
+    "Serge + martin - crystal palace001",
+    "Serge + martin"
+  ],
+  "cotc-serge-158-002": ["Serge + 158 002", ""],
+  "cotc-martin-pendulum-in-brass-ps2": [
+    "martin - pendulum in brass ps2",
+    "martin"
+  ],
+  "cotc-martin-pendulum-in-brass-ps3": [
+    "martin - pendulum in brass ps3",
+    "martin"
+  ],
+  "cotc-serge-martin-crystal-palace001b": [
+    "Serge + martin - crystal palace001b",
+    "Serge + martin"
+  ],
+  "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-e": [
+    "Starz in MilkHDFX - Stahlregen & Aderrasi + EoS + Geiss + Unchained + Zylot + Flexi + Martin + AdamFX E",
+    "Starz in MilkHDFX"
+  ],
+  "cotc-serge-martin-crystal-palace001c": [
+    "Serge + martin - crystal palace001c",
+    "Serge + martin"
+  ],
+  "cotc-suksma-uhnfareknesce-roosta-conflarian": [
+    "suksma - uhnfareknesce roosta conflarian",
+    "suksma"
+  ],
+  "cotc-jc-lovely-bones": ["Jc - Lovely Bones", "Jc"],
+  "cotc-288": ["288", ""],
+  "cotc-beta106i-songflower-ice-flower": [
+    "beta106i - Songflower (Ice Flower)",
+    "beta106i"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-ghosts-gaseous-2": [
+    "EoS - glowsticks v2 04 music minimal - ghosts gaseous 2",
+    "EoS"
+  ],
+  "cotc-eos-planetfunk-10-tracers-e-phat-edit": [
+    "EoS planetfunk-10 - tracers E_phat_edit",
+    "EoS planetfunk-10"
+  ],
+  "cotc-amandio-c-secret-garden-3": [
+    "amandio c - secret garden 3",
+    "amandio c"
+  ],
+  "cotc-fishbrain-betelguese": ["fiShbRaiN - betelguese", "fiShbRaiN"],
+  "cotc-hexcollie-curly-que-1": ["Hexcollie - Curly Que (1)", "Hexcollie"],
+  "cotc-hexcollie-x-warp-harsh-klive": [
+    "Hexcollie - X warp harsh - klive",
+    "Hexcollie"
+  ],
+  "cotc-flexi-heartbleeding-emocore-will-get-the-rest-of-you": [
+    "Flexi - heartbleeding emocore will get the rest of you",
+    "Flexi"
+  ],
+  "cotc-suksma-as-for-me-i-take-medicines2": [
+    "suksma - as for me, i take medicines2",
+    "suksma"
+  ],
+  "cotc-goody-need-desire-remix": ["Goody - Need - Desire remix", "Goody"],
+  "cotc-goody-aurora-totalis": ["Goody - Aurora Totalis", "Goody"],
+  "cotc-fed-dsc-011-lsd-edit-4": ["fed - DSC-011 LSD Edit 4", "fed"],
+  "cotc-101": ["101", ""],
+  "cotc-316": ["316", ""],
+  "cotc-royal-mashup-215": ["$$$ Royal - Mashup (215)", "$$$ Royal"],
+  "cotc-orb-blade": ["ORB - Blade", "ORB"],
+  "cotc-hexcollie-shifter-martin-anime-vs-the-stalion-mang": [
+    "Hexcollie, shifter, martin - Anime vs The stalion Mang",
+    "Hexcollie, shifter, martin"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-swelling-spiral-liquid-fire-geiss-a": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Swelling Spiral  + Liquid Fire  + Geiss an65",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-geiss-reaction-diffusion-3-janky-ripple-effect-again": [
+    "Geiss - Reaction Diffusion 3 (Janky Ripple Effect again)",
+    "Geiss"
+  ],
+  "cotc-cantstop-adamfx-2-flexi-geiss-fishbrain-swelling-spiral-work-with-lines-deamon-lord-eos-hex": [
+    "CantStop ADAMFX 2 Flexi + Geiss + Fishbrain  + Swelling Spiral + Work With Lines + Deamon Lord + EOS + HEX 2",
+    ""
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-3": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 3",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx": [
+    "Stahlregen & AdamFX + flexi + Geiss - Dragonfly Wings (MashUp 26 - Jack's Playful Thumbdrum Planet RMX) - mash0000 - closer",
+    "Stahlregen & AdamFX + flexi + Geiss"
+  ],
+  "cotc-geiss-reaction-diffusion-3-rippling-leopard-skin": [
+    "geiss - reaction diffusion 3 (rippling leopard skin)",
+    "geiss"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-shifter-etw": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Aurora Industrialis +  Shifter ETW",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-hexcollie-julian-shader-wars4": [
+    "Hexcollie - Julian Shader Wars4",
+    "Hexcollie"
+  ],
+  "cotc-mig-colorful9": ["Mig_COLORFUL9", ""],
+  "cotc-geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup-yay3": [
+    "Geiss, Flexi + Stahlregen - Thumbdrum Tokamak [crossfiring aftermath jelly mashup] yay3",
+    "Geiss, Flexi + Stahlregen"
+  ],
+  "cotc-isosceles-mashup01": ["Isosceles mashup01", ""],
+  "cotc-stahlregen-bdrv-flexi-geiss-shifter-hypno-swirl-mashup-38-coral-trance-rmx": [
+    "Stahlregen & bdrv + flexi + Geiss + shifter - Hypno Swirl (MashUp 38 - Coral Trance RMX)",
+    "Stahlregen & bdrv + flexi + Geiss + shifter"
+  ],
+  "cotc-luxxx-inhale-this-golden-rate-tax-stamp-for-025-credits-off": [
+    "LuxXx - Inhale this Golden Rate Tax Stamp for 025 Credits Off!",
+    "LuxXx"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-shifter-dark-tides-eos-phat-whisps-of-doom-mix-mash0000-salt-dunes-time-lapse": [
+    "shifter - dark tides (EoS+phat_whisps of doom mix) - mash0000 - salt dunes time lapse",
+    "shifter"
+  ],
+  "cotc-aderrasi-airhandler-last-breath-angel-evolution-mash0000-your-mints-have-arrived-sir": [
+    "Aderrasi - Airhandler (Last Breath - Angel Evolution) - mash0000 - your mints have arrived, sir",
+    "Aderrasi"
+  ],
+  "cotc-geiss-reaction-diffusion-3-janky-ripples": [
+    "Geiss - Reaction Diffusion 3 (janky ripples)",
+    "Geiss"
+  ],
+  "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada": [
+    "A Feature Preset Master Exclusive ORB - Planetary Alignment Acidburn - BitStorm Intune With AdamFX,Shado",
+    "A Feature Preset Master Exclusive ORB"
+  ],
+  "cotc-geiss-skin-dots-10": ["Geiss - Skin Dots 10", "Geiss"],
+  "cotc-royal-mashup-127": ["$$$ Royal - Mashup (127)", "$$$ Royal"],
+  "cotc-geiss-reaction-diffusion-simple-squamous-mix": [
+    "Geiss - Reaction Diffusion - Simple Squamous Mix",
+    "Geiss"
+  ],
+  "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-aderassi-phat-zylot4-isosceles-e": [
+    "BEST OF ADAMFX 2 Flexi + Geiss - Bipolar vs reaction diffusion + Aderassi Phat Zylot4",
+    "BEST OF ADAMFX 2 Flexi + Geiss"
+  ],
+  "cotc-geiss-skin-dots-9": ["Geiss - Skin Dots 9", "Geiss"],
+  "cotc-suksma-lackstastique-j4": ["suksma - lackstastique - j4+", "suksma"],
+  "cotc-shifter-crosshatch-colony-beta6-gaseous-lives": [
+    "shifter - crosshatch colony beta6 - gaseous lives",
+    "shifter"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-molten-glass": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Aurora Industrialis +  Molten Glass",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-geiss-skin-dots-11-crossfire-composite": [
+    "Geiss - Skin Dots 11 Crossfire Composite",
+    "Geiss"
+  ],
+  "cotc-eos-particle-daemon-forge-mash0000-the-itchy-and-scratchy-show-meets-the-adam-s-family": [
+    "EoS - particle daemon (forge) - mash0000 - the itchy and scratchy show meets the adam's family",
+    "EoS"
+  ],
+  "cotc-suksma-bmelgren-unchained-ambrosia-myth-spinning-rain-mix-mash0000-fucked-up-dreams-about-a": [
+    "suksma - Bmelgren & Unchained - Ambrosia Myth (Spinning Rain Mix) - mash0000 - fucked up dreams about a six dimensional",
+    "suksma"
+  ],
+  "cotc-hexcollie-julian-shader-wars3": [
+    "Hexcollie - Julian Shader Wars3",
+    "Hexcollie"
+  ],
+  "cotc-new-adam-master-mashup-fx-2-geiss-reaction-diffusion-34-aurora-industrialis-orb-acid-cycle": [
+    "NeW Adam Master Mashup FX 2 Geiss - Reaction Diffusion 34 + Aurora Industrialis + ORb acid cycle",
+    "NeW Adam Master Mashup FX 2 Geiss"
+  ],
+  "cotc-geiss-skin-dots-multi-layer-1": [
+    "Geiss - Skin Dots Multi-layer 1",
+    "Geiss"
+  ],
+  "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs-and-hentai-succubi": [
+    "shifter - crosshatch colony beta6 - loved to death by nymphs and hentai succubi",
+    "shifter"
+  ],
+  "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-eso-demon-released-by-ad": [
+    "A Feature Preset Master Exclusive ORB - Planetary Alignment Acidburn - Eso - Demon Released by AdamFXIntrusionnn B",
+    "A Feature Preset Master Exclusive ORB"
+  ],
+  "cotc-geiss-and-zylot-reaction-diffusion-3-overload-mix-2": [
+    "Geiss and Zylot - Reaction Diffusion 3 (Overload Mix 2)",
+    "Geiss and Zylot"
+  ],
+  "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx-a": [
+    "A HD ADAMFX Creation  !!FT  Martin + flexi +  Rovastar MDropFX Collaboration E Adam HD INFECTIONFX A",
+    ""
+  ],
+  "cotc-suksma-g-thea-ceo-m-zylo-v-w-27su-om-wp-xxx-c-stah-j5-heiyin-taiyang": [
+    "suksma - g-thea ceo m-zylo v w-27su om wp-xxx c-stah j5+ - heiyin taiyang",
+    "suksma"
+  ],
+  "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-zen-gardens": [
+    "Stahlregen & Geiss + Rovastar - Fields of Flowers (Jelly Zen Gardens)",
+    "Stahlregen & Geiss + Rovastar"
+  ],
+  "cotc-geiss-skin-dots-multi-layer-3-pig-jembe-acid-wretch": [
+    "Geiss - Skin Dots Multi-layer 3 - pig - jembe acid wretch",
+    "Geiss"
+  ],
+  "cotc-va-ultramix-05-2": ["va ultramix - 05_2", "va ultramix"],
+  "cotc-luxxx-my-soul-i": ["LuxXx - My Soul i", "LuxXx"],
+  "cotc-phat-zylot-eos-trippy-rotation-v2-alt-colours": [
+    "Phat_Zylot_EoS Trippy_rotation_v2_alt_colours",
+    ""
+  ],
+  "cotc-va-ultramix2-296-1": ["va ultramix2 - 296_1", "va ultramix2"],
+  "cotc-bdrv-monster-wave-flexis-color-bleeding-ivories": [
+    "bdrv - monster wave [flexis color bleeding ivories]",
+    "bdrv"
+  ],
+  "cotc-beta106i-antidote-crying-pan": [
+    "beta106i - Antidote (Crying Pan)",
+    "beta106i"
+  ],
+  "cotc-rce-ordinary-want-nevermore-mix": [
+    "rce-ordinary - want (nevermore mix)",
+    "rce-ordinary"
+  ],
+  "cotc-beta106i-potion-of-smoke": ["beta106i - Potion of Smoke", "beta106i"],
+  "cotc-bdrv-al-rovastar-explosive-minds-bug-mix-wait-a-moment-rmx": [
+    "bdrv + al Rovastar - Explosive Minds Bug Mix wait a moment  rmx",
+    "bdrv + al Rovastar"
+  ],
+  "cotc-phat-zylot-eos-trippy-rotation-v2-sector-mix": [
+    "Phat_Zylot_EoS Trippy_rotation_v2_sector_mix",
+    ""
+  ],
+  "cotc-flexi-leaving-colors-crazy-cogitations-centrifuge-collapsing-cosmos-creation-oh-thats-still": [
+    "Flexi - leaving colors - crazy cogitations centrifuge [collapsing cosmos creation] oh thats still harmless",
+    "Flexi"
+  ],
+  "cotc-va-ultramix2-253": ["va ultramix2 - 253", "va ultramix2"],
+  "cotc-beta106i-airhandler-radial-dreamers": [
+    "beta106i - Airhandler (Radial Dreamers)",
+    "beta106i"
+  ],
+  "cotc-phat-zylot-eos-trippy-rotation-v2-sector-mix-alt-colours": [
+    "Phat_Zylot_EoS Trippy_rotation_v2_sector_mix_alt_colours",
+    ""
+  ],
+  "cotc-hexcollie-alex2": ["hexcollie - Alex2", "hexcollie"],
+  "cotc-stahlregen-flexi-geiss-shifter-swirlz-hue-mix": [
+    "Stahlregen & flexi + Geiss + shifter - Swirlz (Hue Mix)",
+    "Stahlregen & flexi + Geiss + shifter"
+  ],
+  "cotc-phat-zylot-eos-spiral-movements": [
+    "Phat_Zylot_EoS spiral_Movements",
+    ""
+  ],
+  "cotc-rovastar-destiny-star-starbrust-mix": [
+    "Rovastar - Destiny Star (Starbrust Mix)",
+    "Rovastar"
+  ],
+  "cotc-va-ultramix2-208-1": ["va ultramix2 - 208_1", "va ultramix2"],
+  "cotc-va-ultramix-430": ["va ultramix - 430", "va ultramix"],
+  "cotc-aderrasi-graft-first-rate-heart": [
+    "Aderrasi - Graft (First Rate Heart)",
+    "Aderrasi"
+  ],
+  "cotc-beta106i-airhandler-radial-dreamers-nightmare": [
+    "beta106i - Airhandler (Radial Dreamers - Nightmare)",
+    "beta106i"
+  ],
+  "cotc-suksma-youtube-pqswlhvukk8-something-else-dumb": [
+    "suksma - youtube PQsWLhvuKk8 - something else dumb",
+    "suksma"
+  ],
+  "cotc-suksma-no-grip-chute-reinvents-terror": [
+    "suksma - no grip chute reinvents terror",
+    "suksma"
+  ],
+  "cotc-loading-doctor": ["loading doctor", ""],
+  "cotc-suksma-moistened-gills-in-latent-galaxy-raggy": [
+    "suksma - moistened gills in latent galaxy raggy",
+    "suksma"
+  ],
+  "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul": [
+    "suksma - daryl feels my hellish lonliness - creamy layers of junk mail drips with soul",
+    "suksma"
+  ],
+  "cotc-men-in-reverse-in-reverse-time-born-to-breath-not-much-else": [
+    "men in reverse in reverse time born to breath, not much else",
+    ""
+  ],
+  "cotc-suksma-feeling-ignore": ["suksma - feeling ignore", "suksma"],
+  "cotc-suksma-everyone-knows-your-alleged-secret-none-care-but-to-whisper-and-laugh-and-quickly-mo": [
+    "suksma - everyone knows your alleged secret, none care but to whisper and laugh and quickly move on2",
+    "suksma"
+  ],
+  "cotc-fishbrain-witchcraft-metropolis-remix": [
+    "fiShbRaiN - witchcraft (metropolis remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-stahlregen-eos-fishbrain-flexi-fvese-geiss-rovastar-shifter-stonecraft-mashup-19-paranormal": [
+    "Stahlregen & EoS + fiShbRaiN + flexi + fvese + Geiss + Rovastar + shifter - Stonecraft (MashUp 19 - Paranormal Reflecto Static Blur RMX)",
+    "Stahlregen & EoS + fiShbRaiN + flexi + fvese + Geiss + Rovastar + shifter"
+  ],
+  "cotc-414": ["414", ""],
+  "cotc-fishbrain-witchcraft-necromancer-remix-busy": [
+    "fiShbRaiN - witchcraft (necromancer remix) - busy",
+    "fiShbRaiN"
+  ],
+  "cotc-flexi-fishbrain-geiss-unchained-others-plaidcraft": [
+    "flexi + fishbrain + geiss + unchained + others - Plaidcraft",
+    "flexi + fishbrain + geiss + unchained + others"
+  ],
+  "cotc-fishbrain-witchcraft-sorcery-remix": [
+    "fiShbRaiN - witchcraft (sorcery remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-suksma-feeling-retry": ["suksma - feeling retry", "suksma"],
+  "cotc-fishbrain-witchcraft-ritual-dance-remix": [
+    "fiShbRaiN - witchcraft (ritual dance remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-fishbrain-when-coathangers-dream-phat-edit": [
+    "fiShbRaiN - when coathangers dream_phat_edit",
+    "fiShbRaiN"
+  ],
+  "cotc-fishbrain-flexi-witchcraft-unleashed-01-stepping-into-it": [
+    "fiShbRaiN + Flexi - witchcraft unleashed [01 stepping into it]",
+    "fiShbRaiN + Flexi"
+  ],
+  "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo": [
+    "414 bowel rebranding pr skinned to the teeth loadus morons like me who indulge in crying wolf chicken little paradigms",
+    ""
+  ],
+  "cotc-423": ["423", ""],
+  "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku": [
+    "Stahlregen & fishbrain + geiss + martin - Flowercraft (reflecto upfcku)",
+    "Stahlregen & fishbrain + geiss + martin"
+  ],
+  "cotc-fishbrain-witchcraft-alcoholic-remix": [
+    "fiShbRaiN - witchcraft (alcoholic remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth": [
+    "414 bowel rebranding pr skinned to the teeth",
+    ""
+  ],
+  "cotc-flexi-identity-killing-petting-colon-gonad-type8": [
+    "flexi - identity-killing petting - colon gonad type8",
+    "flexi"
+  ],
+  "cotc-shifter-fishbrain-witchcraft-i-m-melting": [
+    "shifter & fiShbRaiN - witchcraft (i'm melting)",
+    "shifter & fiShbRaiN"
+  ],
+  "cotc-stahlregen-fishbrain-flexi-geiss-martin-shifter-stonecraft-martin-s-metallics": [
+    "Stahlregen & fiSHbRaiN + flexi + Geiss + martin + shifter - Stonecraft (martin's metallics)",
+    "Stahlregen & fiSHbRaiN + flexi + Geiss + martin + shifter"
+  ],
+  "cotc-suksma-rechivalrizing-tents": [
+    "suksma - rechivalrizing tents",
+    "suksma"
+  ],
+  "cotc-fishbrain-witchcraft": ["fiShbRaiN - witchcraft", "fiShbRaiN"],
+  "cotc-suksma-purple-9-d-rubber-coins-embossed-with-cataverses": [
+    "suksma - purple 9-d rubber coins embossed with cataverses",
+    "suksma"
+  ],
+  "cotc-fishbrain-flexi-witchcraft-unleashed-00-the-template": [
+    "fiShbRaiN + Flexi - witchcraft unleashed [00 the template]",
+    "fiShbRaiN + Flexi"
+  ],
+  "cotc-fishbrain-witchcraft-metropolish-remix": [
+    "fiShbRaiN - witchcraft (metropolish remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-fishbrain-flexi-stitchcraft-n": [
+    "fiShbRaiN + Flexi - stitchcraft n",
+    "fiShbRaiN + Flexi"
+  ],
+  "cotc-fishbrain-witchcraft-metropolish-remix-test": [
+    "fiShbRaiN - witchcraft (metropolish remix) - test",
+    "fiShbRaiN"
+  ],
+  "cotc-tripgnosis-circular-unlogic": [
+    "Tripgnosis - Circular Unlogic",
+    "Tripgnosis"
+  ],
+  "cotc-429": ["429", ""],
+  "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going": [
+    "414 bowel rebranding pr skinned to the teeth loadus morons who don't think things are going to collapse",
+    ""
+  ],
+  "cotc-suksma-g-martin-m-m-w-fishbrain-wp-m-c-m-tanked-on-pure-neoepinephrine": [
+    "suksma - g-martin m-m w-fishbrain wp-m c-m - tanked on pure neoepinephrine",
+    "suksma"
+  ],
+  "cotc-flexi-identity-killing-petting-colon-gonad-type9": [
+    "flexi - identity-killing petting - colon gonad type9",
+    "flexi"
+  ],
+  "cotc-suksma-feeling-abort": ["suksma - feeling abort", "suksma"],
+  "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus": [
+    "414 bowel rebranding pr skinned to the teeth loadus",
+    ""
+  ],
+  "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz": [
+    "414 bowel rebranding pr skinned to the teeth loadus veracruz",
+    ""
+  ],
+  "cotc-tripgnosis-astralacid": ["Tripgnosis - Astralacid", "Tripgnosis"],
+  "cotc-fishbrain-witchcraft-necromancer-remix": [
+    "fiShbRaiN - witchcraft (necromancer remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-dense": [
+    "Stahlregen & fiSHbRaiN + flexi + Geiss + shifter - Stonecraft (Dense)",
+    "Stahlregen & fiSHbRaiN + flexi + Geiss + shifter"
+  ],
+  "cotc-serge-adam-eatit-mashup-fx-2-martin001": [
+    "Serge + Adam Eatit Mashup FX 2 martin001",
+    ""
+  ],
+  "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit-v2": [
+    "fiShbRaiN - witchcraft (necromancer remix)_phat_edit_v2",
+    "fiShbRaiN"
+  ],
+  "cotc-fishbrain-witchcraft-necromancer-remix-phat-edit-v3": [
+    "fiShbRaiN - witchcraft (necromancer remix)_phat_edit_v3",
+    "fiShbRaiN"
+  ],
+  "cotc-fishbrain-witchcraft-metropolish-remix-motor-up-pre-air-filter-cyclone-argon-tweecer": [
+    "fiShbRaiN - witchcraft (metropolish remix) - motor up, pre air filter cyclone, argon, tweecer",
+    "fiShbRaiN"
+  ],
+  "cotc-halfbreak-tonymilkdrop-beautiful-sepia-mashmash": [
+    "Halfbreak + TonyMilkdrop - Beautiful Sepia - mashmash",
+    "Halfbreak + TonyMilkdrop"
+  ],
+  "cotc-fishbrain-witchcraft-neuromancer-remix": [
+    "fiShbRaiN - witchcraft (neuromancer remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-suksma-her-sideways-crawl-through-your-bank-accounts": [
+    "suksma - her sideways crawl through your bank accounts",
+    "suksma"
+  ],
+  "cotc-midgitstraights-of-majillaen-gunthree-spher": [
+    "midgitstraights of majillaen - gunthree spher",
+    "midgitstraights of majillaen"
+  ],
+  "cotc-best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-swellin1": [
+    "BEST OF ADAMFX 2 Flexi + Geiss - Bipolar vs reaction diffusion + Another Flexi + Fishbrain  + Swellin12",
+    "BEST OF ADAMFX 2 Flexi + Geiss"
+  ],
+  "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-glowing": [
+    "stahlregen & fishbrain + flexi + geiss + shifter - stonecraft (glowing)",
+    "stahlregen & fishbrain + flexi + geiss + shifter"
+  ],
+  "cotc-tripgnosis-triadular": ["Tripgnosis - Triadular", "Tripgnosis"],
+  "cotc-suksma-twist-fiber-wrap-cut-circulation": [
+    "suksma - twist fiber wrap cut circulation",
+    "suksma"
+  ],
+  "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku-yaqui-graph": [
+    "Stahlregen & fishbrain + geiss + martin - Flowercraft (reflecto upfcku) - yaqui graph",
+    "Stahlregen & fishbrain + geiss + martin"
+  ],
+  "cotc-suksma-fishbrain-witchcraft-phugly-megalopolish-remix": [
+    "suksma - fiShbRaiN - witchcraft (phugly megalopolish remix)",
+    "suksma"
+  ],
+  "cotc-goody-s-portfolio-acid-angel": [
+    "Goody's Portfolio - Acid Angel",
+    "Goody's Portfolio"
+  ],
+  "cotc-waltra-monodream": ["Waltra - Monodream", "Waltra"],
+  "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse-isosceles-edit": [
+    "TonyMilkdrop - Rhythm Of My Life [Flexi - multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-true-meaning-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - true meaning + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-the-touch-and-the-tough-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - the touch and the tough + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex": [
+    "TonyMilkdrop - Rhythm Of My Life [Flexi - alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-the-psyched-out-about-loop-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - the psyched out about loop + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-gettogether-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - gettogether + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit": [
+    "TonyMilkdrop - Angels Of Glory [Flexi - don't play with those kids + multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-angels-of-glory-flexi-an-excuse-taken-back-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Angels Of Glory [Flexi - an excuse taken back + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2": [
+    "TonyMilkdrop - Nuclear [Flexi - why even bother + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all": [
+    "flexi + bdrv - ultramix#05 [alien complex mix] [not roaring at all]",
+    "flexi + bdrv"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-have-you-listened-anyway-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - have you listened anyway + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - pump up the jam + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1": [
+    "TonyMilkdrop - Nuclear [Flexi - why even bother + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-priming-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - priming + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Rhythm Of My Life [Flexi - alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse": [
+    "TonyMilkdrop - Rhythm Of My Life [Flexi - multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground": [
+    "The NG + flexi + bdrv - ultramix#05 [alien complex mix] [underground]",
+    "The NG + flexi + bdrv"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-pump-up-the-jam-multiverse-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - pump up the jam + multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-tricolors-flexi-gettogether-multiverse-isosceles-edit": [
+    "TonyMilkdrop - Tricolors [Flexi - gettogether + multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-evet-flexi-geiss-tokamak-fractal-2": [
+    "EVET - flexi + geiss - tokamak fractal 2",
+    "EVET"
+  ],
+  "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit": [
+    "TonyMilkdrop - Angels Of Glory [Flexi - safer sex + multiverse]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex": [
+    "TonyMilkdrop - Nuclear [Flexi - why even bother + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit": [
+    "TonyMilkdrop - Angels Of Glory [Flexi - safer sex + alien complex]",
+    "TonyMilkdrop"
+  ],
+  "cotc-suksma-salutatorian-s-teat": ["suksma - salutatorian's teat", "suksma"],
+  "cotc-beta106i-airhandler-last-breath-clam": [
+    "beta106i - Airhandler (Last Breath - Clam)",
+    "beta106i"
+  ],
+  "cotc-zylot-crystal-ball-magical-reaction-mix": [
+    "Zylot - Crystal Ball (Magical Reaction Mix)",
+    "Zylot"
+  ],
+  "cotc-zylot-crystal-ball": ["Zylot - Crystal Ball", "Zylot"],
+  "cotc-beta106i-airhandler-last-breath-clam-handler": [
+    "beta106i - Airhandler (Last Breath - Clam Handler)",
+    "beta106i"
+  ],
+  "cotc-luxxx-fuck-ur-fractal-muscles-i": [
+    "LuxXx - Fuck ur Fractal Muscles I",
+    "LuxXx"
+  ],
+  "cotc-suksma-fickle-will-dive-fed-shd": [
+    "suksma - fickle will - dive - fed shd",
+    "suksma"
+  ],
+  "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit2": [
+    "suksma - nothing to remember you by - logsmeltitdealtit2",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-fed-shd": [
+    "suksma - dotes hostile undertake - fed shd",
+    "suksma"
+  ],
+  "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit": [
+    "suksma - this pain was saved for you - maggot filigree",
+    "suksma"
+  ],
+  "cotc-suksma-distort-crops-of-horror-torture-blackode": [
+    "suksma - distort crops of horror torture - blackode",
+    "suksma"
+  ],
+  "cotc-suksma-flaming-bag-of-wisconsin-i-being-the-last-thing-you-remember-is-the-last-thing-i-rem": [
+    "suksma - flaming bag of wisconsin - i being the last thing you remember is the last thing i remember roams satanick ckristianity",
+    "suksma"
+  ],
+  "cotc-pieturp-hsltorgb-swirl": ["PieturP - HSLtoRGB-swirl", "PieturP"],
+  "cotc-shifter-interference-field-v3-phat-darken-pop-edit-v4-eos-edit-b-dickless": [
+    "shifter - interference field v3_Phat_Darken_Pop_Edit_v4 EoS edit B dickless",
+    "shifter"
+  ],
+  "cotc-zylot-crystalball-aren-tfractals": [
+    "Zylot-CrystalBall(Aren'tFractals",
+    ""
+  ],
+  "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos": [
+    "suksma - this pain was saved for you - roams stephen hill hos",
+    "suksma"
+  ],
+  "cotc-suksma-distort-crops-of-horror-torture": [
+    "suksma - distort crops of horror torture",
+    "suksma"
+  ],
+  "cotc-zylot-shifter-tartan-silent-heaven-mix": [
+    "Zylot & Shifter - Tartan (Silent Heaven Mix)",
+    "Zylot & Shifter"
+  ],
+  "cotc-stahlregen-boz-eos-phat-rovastar-zylot-machine-code-01010010-01000001-01010111-2": [
+    "Stahlregen & Boz + EoS + Phat + Rovastar + Zylot - Machine Code (01010010 01000001 01010111)_2",
+    "Stahlregen & Boz + EoS + Phat + Rovastar + Zylot"
+  ],
+  "cotc-stahlregen-downpour": ["Stahlregen - Downpour", "Stahlregen"],
+  "cotc-tonymilkdrop-go-to-heaven-isosceles-edit": [
+    "TonyMilkdrop - Go To Heaven",
+    "TonyMilkdrop"
+  ],
+  "cotc-eviljim-11-ice-drops": ["EvilJim - #11 Ice Drops", "EvilJim"],
+  "cotc-the-ng-stahlregen-boz-eos-geiss-phat-rovastar-zylot-flexi-martin-fishbrain-machine-code-in-": [
+    "The NG + Stahlregen & Boz + EoS + Geiss + Phat + Rovastar + Zylot + Flexi + martin + Fishbrain - Machine Code (In The Wind Tunnel)",
+    "The NG + Stahlregen & Boz + EoS + Geiss + Phat + Rovastar + Zylot + Flexi + martin + Fishbrain"
+  ],
+  "cotc-eviljim-ice-drops": ["EvilJim - Ice Drops", "EvilJim"],
+  "cotc-pieturp-stripes-hippiestyle": [
+    "PieturP - stripes-hippiestyle",
+    "PieturP"
+  ],
+  "cotc-shifter-ice-ripples": ["shifter - ice ripples", "shifter"],
+  "cotc-pieturp-stripes-tvstyle": ["PieturP - stripes-tvstyle", "PieturP"],
+  "cotc-stahlregen-crossroads-rainbow-falls": [
+    "Stahlregen - Crossroads (Rainbow Falls)",
+    "Stahlregen"
+  ],
+  "cotc-96": ["96", ""],
+  "cotc-eos-phat-i-v2-gradients": ["EoS+Phat - I_v2 gradients", "EoS+Phat"],
+  "cotc-eos-phat-i-v2-gradients-rot": [
+    "EoS+Phat - I_v2 gradients rot",
+    "EoS+Phat"
+  ],
+  "cotc-shifter-geiss-neon-pulse-glow-mix": [
+    "shifter + geiss - neon pulse (glow mix)",
+    "shifter + geiss"
+  ],
+  "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress": [
+    "By Adam FX 2 shifter + geiss - neon pulse (glow mix) + Rovastar + Orb  + Mstress",
+    "By Adam FX 2 shifter + geiss"
+  ],
+  "cotc-flexi-stahlregen-jewelry-tiles": [
+    "flexi + stahlregen - jewelry tiles",
+    "flexi + stahlregen"
+  ],
+  "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar-orb-mstress-mash0000-prismatic-spec": [
+    "By Adam FX 2 shifter + geiss - neon pulse (glow mix) + Rovastar + Orb  + Mstress - mash0000 - prismatic spectral haze filter",
+    "By Adam FX 2 shifter + geiss"
+  ],
+  "cotc-shifter-neon-pulse": ["shifter - neon pulse", "shifter"],
+  "cotc-98": ["98", ""],
+  "cotc-flexi-geiss-bipolar-vs-reaction-diffusion-mirror-scoped-phat-s-reflecto": [
+    "flexi + geiss - bipolar vs reaction diffusion [mirror scoped] (+phat's reflecto)",
+    "flexi + geiss"
+  ],
+  "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar": [
+    "By Adam FX 2 shifter + geiss - neon pulse (glow mix) + Rovastar",
+    "By Adam FX 2 shifter + geiss"
+  ],
+  "cotc-shifter-neon-pulse-reactive": [
+    "shifter - neon pulse (reactive)",
+    "shifter"
+  ],
+  "cotc-shifter-yak-yetanotherkaleidoscope-02": [
+    "Shifter-yak(yetanotherkaleidoscope)02",
+    ""
+  ],
+  "cotc-eos-phat-linear-clouds-solarized-points-of-light-v2": [
+    "EoS+Phat - linear clouds_solarized_points_of_light_v2",
+    "EoS+Phat"
+  ],
+  "cotc-eos-phat-linear-clouds-solarized-points-of-light": [
+    "EoS+Phat - linear clouds_solarized_points_of_light",
+    "EoS+Phat"
+  ],
+  "cotc-shifter-yak-yetanotherkaleidoscope-01": [
+    "Shifter-yak(yetanotherkaleidoscope)01",
+    ""
+  ],
+  "cotc-shifter-yak-yetanotherkaleidoscope-00": [
+    "Shifter-yak(yetanotherkaleidoscope)00",
+    ""
+  ],
+  "cotc-orb-cosmic-dream": ["ORB - Cosmic Dream", "ORB"],
+  "cotc-bdrv-aderrasi-inhuman-emotion-bw5": [
+    "Bdrv Aderrasi - Inhuman Emotion bw5",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-bdrv-aderrasi-true-subject-star-pure-medium-bdrv-etal": [
+    "Bdrv Aderrasi - True Subject Star (Pure Medium) bdrv etAL",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-bdrv-aderrasi-divine-finery-vishnu-s-tophat-bdrv-etal3": [
+    "Bdrv Aderrasi - Divine Finery (Vishnu's Tophat) bdrv etAL3",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-bdrv-aderrasi-armada-battleship-bdrv-etal": [
+    "Bdrv Aderrasi - Armada (Battleship) bdrv etAL",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-va-ultramix2-156-1": ["va ultramix2 - 156_1", "va ultramix2"],
+  "cotc-va-ultramix-381": ["va ultramix - 381", "va ultramix"],
+  "cotc-bdrv-aderrasi-accelerator-orbital-migraine-bdrv-et-al-rmx8-sorry-to-hear-you-re-not-liking-": [
+    "Bdrv Aderrasi - Accelerator (Orbital Migraine) BDRV et  AL  rmx8 - sorry to hear you're not liking the f",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-bdrv-etal-aderrasi-accelerator-contractor-core-rmx": [
+    "bdrv etAL Aderrasi - Accelerator (contractor Core) rmx",
+    "bdrv etAL Aderrasi"
+  ],
+  "cotc-northern-lights-throbbing-bud": ["Northern Lights Throbbing Bud", ""],
+  "cotc-cope-flexi-julia-set-strange-days-bdrv2": [
+    "Cope + flexi - julia set (strange days)bdrv2",
+    "Cope + flexi"
+  ],
+  "cotc-rovastar-voov-s-light-pattern": [
+    "Rovastar - VooV's Light Pattern",
+    "Rovastar"
+  ],
+  "cotc-rovastar-studiomusic-spider-in-the-mind": [
+    "Rovastar & StudioMusic - Spider In the Mind",
+    "Rovastar & StudioMusic"
+  ],
+  "cotc-bdrv-aderrasi-negative-sun-haze-star-bdrv-et-al-rmxmix4": [
+    "Bdrv Aderrasi - Negative Sun (Haze Star)BDRV et  AL  rmxmix4",
+    "Bdrv Aderrasi"
+  ],
+  "cotc-bdrv-etal-nighthawk-dark-crystal": [
+    "bdrv etAL Nighthawk - dark Crystal",
+    "bdrv etAL Nighthawk"
+  ],
+  "cotc-evet-superstrings-2": ["EVET - Superstrings 2", "EVET"],
+  "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself": [
+    "Martin n AdamFX - Hardcore Mix Collision in Myself",
+    "Martin n AdamFX"
+  ],
+  "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain": [
+    "Martin n AdamFX - Hardcore Mix Collision in Myself Ft - Flexi Shifter n Fishbrain",
+    "Martin n AdamFX"
+  ],
+  "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac": [
+    "Martin n AdamFX - Hardcore Mix Collision in Myself Ft - AC",
+    "Martin n AdamFX"
+  ],
+  "cotc-martin-tunnel-race-meta-mash-for-rats": [
+    "martin - tunnel race [meta mash] - for rats",
+    "martin"
+  ],
+  "cotc-xtramartin-459": ["xtramartin (459)", ""],
+  "cotc-martin-hardcore-mix-2-2": ["martin - hardcore mix 2 (2)", "martin"],
+  "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen-aderrasi-geiss-unchained-zyl": [
+    "Martin n AdamFX - Hardcore Mix Collision in Myself ft Stahlregen - Aderrasi - Geiss - Unchained - Zylot",
+    "Martin n AdamFX"
+  ],
+  "cotc-martin-tunnel-race-meta-mash-disciple": [
+    "martin - tunnel race [meta mash] - disciple'",
+    "martin"
+  ],
+  "cotc-martin-hardcore-mix-2": ["martin - hardcore mix 2", "martin"],
+  "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen": [
+    "Martin n AdamFX - Hardcore Mix Collision in Myself ft Stahlregen",
+    "Martin n AdamFX"
+  ],
+  "cotc-sewn-to-slavish-memes": ["sewn to slavish memes", ""],
+  "cotc-suksma-mundane-side-of-eden": [
+    "suksma - mundane side of eden",
+    "suksma"
+  ],
+  "cotc-orb-waaa-lamersass-remix-4": ["ORB - Waaa (LamersAss Remix 4)", "ORB"],
+  "cotc-orb-waaa-lamersass-remix-2": ["ORB - Waaa (LamersAss Remix 2)", "ORB"],
+  "cotc-suksma-never-poo": ["suksma - never poo", "suksma"],
+  "cotc-orb-waaa-lamersass-remix-3": ["ORB - Waaa (LamersAss Remix 3)", "ORB"],
+  "cotc-amandio-c-salty-bits-5": ["amandio c - salty bits - 5", "amandio c"],
+  "cotc-krash-yin-phat-electric-universe-uncertainty-principle-unknown-mix": [
+    "Krash & yin + Phat - Electric universe (uncertainty principle)_unknown_mix",
+    "Krash & yin + Phat"
+  ],
+  "cotc-krash-yin-electric-universe-variable-spin-004": [
+    "Krash & yin - Electric universe (variable spin - 004)",
+    "Krash & yin"
+  ],
+  "cotc-krash-yin-electric-universe-nuclear-secrets-phat-nuleus-mix": [
+    "Krash & yin - Electric universe (nuclear secrets) (Phat_nuleus_mix)",
+    "Krash & yin"
+  ],
+  "cotc-krash-yin-electric-universe-variable-spin": [
+    "Krash & yin - Electric universe (variable spin)",
+    "Krash & yin"
+  ],
+  "cotc-krash-yin-phat-electric-universe-uncertainty-principle-remix-v2": [
+    "Krash & yin + Phat - Electric universe (uncertainty principle)_remix_v2",
+    "Krash & yin + Phat"
+  ],
+  "cotc-krash-yin-electric-universe-nuclear-secrets-phat-carbon-mix": [
+    "Krash & yin - Electric universe (nuclear secrets) (Phat_Carbon_mix)",
+    "Krash & yin"
+  ],
+  "cotc-krash-yin-electric-universe-uncertainty-principle": [
+    "Krash & yin - Electric universe (uncertainty principle)",
+    "Krash & yin"
+  ],
+  "cotc-krash-yin-phat-electric-universe-uncertainty-principle-remix": [
+    "Krash & yin + Phat - Electric universe (uncertainty principle)_remix",
+    "Krash & yin + Phat"
+  ],
+  "cotc-goody-ego-decontructor": ["Goody - Ego Decontructor", "Goody"],
+  "cotc-goody-woven-beads-ps2-0": ["goody - woven beads (ps2-0)", "goody"],
+  "cotc-goody-woven-beads": ["goody - woven beads", "goody"],
+  "cotc-amandio-c-typhoon-season-inside": [
+    "amandio c - typhoon season (inside)",
+    "amandio c"
+  ],
+  "cotc-amandio-c-moving-ripple-intraphereonts-pad-urn": [
+    "amandio c - moving ripple - intraphereonts pad urn",
+    "amandio c"
+  ],
+  "cotc-amandio-c-moving-ripple-reproducing-the-end-feeling-of-doing-anything-in-the-mind": [
+    "amandio c - moving ripple - reproducing the end feeling of doing anything in the mind",
+    "amandio c"
+  ],
+  "cotc-amandio-c-typhoon-season-inside-eid-sdi": [
+    "amandio c - typhoon season (inside) - eid (-sdi)",
+    "amandio c"
+  ],
+  "cotc-amandio-c-water-ripples-2d": [
+    "amandio c - water ripples - 2D",
+    "amandio c"
+  ],
+  "cotc-dbleja-horizontology-red-mix": [
+    "Dbleja - Horizontology (Red Mix)",
+    "Dbleja"
+  ],
+  "cotc-telek-goodoldcollingwoodforever": [
+    "Telek-goodoldcollingwoodforever",
+    ""
+  ],
+  "cotc-royal-mashup-524": ["$$$ Royal - Mashup (524)", "$$$ Royal"],
+  "cotc-orb-waaa-lamersass-remix-5": ["ORB - Waaa (LamersAss Remix 5)", "ORB"],
+  "cotc-royal-mashup-505": ["$$$ Royal - Mashup (505)", "$$$ Royal"],
+  "cotc-orb-waaa-lamersass-remix-1": ["ORB - Waaa (LamersAss Remix 1)", "ORB"],
+  "cotc-pieturp-stripes-goingslowmix": [
+    "PieturP - stripes-goingSlowMix",
+    "PieturP"
+  ],
+  "cotc-pieturp-stripes-goingfastmix": [
+    "PieturP - stripes-goingFastMix",
+    "PieturP"
+  ],
+  "cotc-dbleja-horizontology-white-mix": [
+    "Dbleja - Horizontology (White Mix)",
+    "Dbleja"
+  ],
+  "cotc-royal-mashup-509": ["$$$ Royal - Mashup (509)", "$$$ Royal"],
+  "cotc-dbleja-horizontology-blue-mix": [
+    "Dbleja - Horizontology (Blue Mix)",
+    "Dbleja"
+  ],
+  "cotc-telek-goodoldcollingwoodforever-isosceles-edit": [
+    "Telek-goodoldcollingwoodforever",
+    ""
+  ],
+  "cotc-eos-3d": ["EoS 3d", ""],
+  "cotc-eos-planetfunk-07-tracers-b-syst3mfailur-bluespin-remix": [
+    "EoS planetfunk-07 - tracers B(Syst3mFailur - bluespin remix)",
+    "EoS planetfunk-07"
+  ],
+  "cotc-eos-magnetosphere-06-birthegg": [
+    "EoS - magnetosphere 06 - birthegg",
+    "EoS"
+  ],
+  "cotc-eos-magnetosphere-05": ["EoS - magnetosphere 05", "EoS"],
+  "cotc-eos-magnetosphere-11-polarsphere-warp": [
+    "EoS - magnetosphere 11 - polarsphere-warp",
+    "EoS"
+  ],
+  "cotc-eos-magnetosphere-04": ["EoS - magnetosphere 04", "EoS"],
+  "cotc-eos-magnetosphere-08-quantum": [
+    "EoS - magnetosphere 08 - quantum",
+    "EoS"
+  ],
+  "cotc-eos-magnetosphere-03": ["EoS - magnetosphere 03", "EoS"],
+  "cotc-evet-mindmelt-responsive-mix": [
+    "EVET - Mindmelt Responsive mix",
+    "EVET"
+  ],
+  "cotc-incubus-our-destiny": ["InCUbuS - Our Destiny", "InCUbuS"],
+  "cotc-royal-mashup-276": ["$$$ Royal - Mashup (276)", "$$$ Royal"],
+  "cotc-royal-mashup-385-isosceles-edit": [
+    "$$$ Royal - Mashup (385)",
+    "$$$ Royal"
+  ],
+  "cotc-orb-cloud-burst": ["ORB - Cloud Burst", "ORB"],
+  "cotc-suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall": [
+    "suksma + rovaster eos phat gastly geiss stahlgren - copper mine shaft fall",
+    "suksma + rovaster eos phat gastly geiss stahlgren"
+  ],
+  "cotc-goody-amandio-c-final-hour-eclipse-shader-rmx-isosceles-edit": [
+    "goody + amandio c - final hour - eclipse shader rmx",
+    "goody + amandio c"
+  ],
+  "cotc-dark-one-happy-sad-daisy": ["Dark One - Happy Sad Daisy", "Dark One"],
+  "cotc-dark-one-clouds": ["Dark One - Clouds", "Dark One"],
+  "cotc-royal-mashup-444": ["$$$ Royal - Mashup (444)", "$$$ Royal"],
+  "cotc-fishbrain-swarming-glory-geomancy-remix": [
+    "fiShbRaiN - swarming glory (geomancy remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-suksma-type-o-negative-world-coming-down": [
+    "suksma - type o negative - world coming down",
+    "suksma"
+  ],
+  "cotc-evet-fishbrain-betelguese-hyperdrive-remix": [
+    "EVET - fiShbRaiN - betelguese (hyperdrive remix)",
+    "EVET"
+  ],
+  "cotc-fishbrain-swarming-glory-angry-remix": [
+    "fiShbRaiN - swarming glory (angry remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-royal-mashup-376": ["$$$ Royal - Mashup (376)", "$$$ Royal"],
+  "cotc-suksma-time-is-a-prison": ["suksma - time is a prison", "suksma"],
+  "cotc-royal-mashup-69": ["$$$ Royal - Mashup (69)", "$$$ Royal"],
+  "cotc-tag-cradle-of-life-remix-of-yin-315": [
+    "Tag - Cradle of Life(remix of yin 315)",
+    "Tag"
+  ],
+  "cotc-eos-phat-the-lights-at-night-spikes": [
+    "EoS+Phat - the lights at night_spikes",
+    "EoS+Phat"
+  ],
+  "cotc-suksma-apparitions-tear-at-your-b": [
+    "suksma - apparitions tear at your b",
+    "suksma"
+  ],
+  "cotc-suksma-var-eos-geiss-goody-god-parasite-dissonance-palms-your-soul": [
+    "suksma + var eos geiss goody - god parasite dissonance palms your soul",
+    "suksma + var eos geiss goody"
+  ],
+  "cotc-custom1": ["custom1", ""],
+  "cotc-royal-mashup-276-isosceles-edit": [
+    "$$$ Royal - Mashup (276)",
+    "$$$ Royal"
+  ],
+  "cotc-royal-mashup-381": ["$$$ Royal - Mashup (381)", "$$$ Royal"],
+  "cotc-fishbrain-betelguese-hyperdrive-remix": [
+    "fiShbRaiN - betelguese (hyperdrive remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-tripgnosis-firestar": ["Tripgnosis - Firestar", "Tripgnosis"],
+  "cotc-suksma-dark-one-clouds-i-forcibly-shoved-the-crowbar-down-my-skeletal-remain": [
+    "suksma - Dark One - Clouds - i forcibly shoved the crowbar down my skeletal remain",
+    "suksma"
+  ],
+  "cotc-fishbrain-betelguese3-aa": ["fiShbRaiN - betelguese3 aa", "fiShbRaiN"],
+  "cotc-royal-mashup-382": ["$$$ Royal - Mashup (382)", "$$$ Royal"],
+  "cotc-suksma-fishbrain-hexcollie-martin-bioluminescent-aerodynamic-poltergeist": [
+    "suksma + fishbrain hexcollie martin - bioluminescent aerodynamic poltergeist",
+    "suksma + fishbrain hexcollie martin"
+  ],
+  "cotc-rovastar-rocke-answer42-trippy-sperm-mix": [
+    "Rovastar & Rocke - Answer42 (Trippy Sperm Mix)",
+    "Rovastar & Rocke"
+  ],
+  "cotc-hexcollie-abyssal-dreamscape": [
+    "Hexcollie - Abyssal Dreamscape",
+    "Hexcollie"
+  ],
+  "cotc-fishbrain-david-bowie-cpe": [
+    "fiShbRaiN - david bowie cpe",
+    "fiShbRaiN"
+  ],
+  "cotc-eos-phat-recursion-frustum-02-ananda-flash-remix-zion-6-orange-hold": [
+    "EoS + Phat - recursion frustum 02_Ananda_Flash_Remix zion 6 orange hold",
+    "EoS + Phat"
+  ],
+  "cotc-orb-waaa-jelly-5-55": ["ORB - Waaa (Jelly 5-55)", "ORB"],
+  "cotc-orb-wheel-of-fire": ["ORB - Wheel of Fire", "ORB"],
+  "cotc-royal-mashup-59": ["$$$ Royal - Mashup (59)", "$$$ Royal"],
+  "cotc-royal-mashup-85": ["$$$ Royal - Mashup (85)", "$$$ Royal"],
+  "cotc-royal-mashup-290": ["$$$ Royal - Mashup (290)", "$$$ Royal"],
+  "cotc-royal-mashup-405": ["$$$ Royal - Mashup (405)", "$$$ Royal"],
+  "cotc-royal-mashup-83": ["$$$ Royal - Mashup (83)", "$$$ Royal"],
+  "cotc-royal-mashup-58": ["$$$ Royal - Mashup (58)", "$$$ Royal"],
+  "cotc-royal-mashup-96": ["$$$ Royal - Mashup (96)", "$$$ Royal"],
+  "cotc-orb-fire-and-fumes-2": ["ORB - Fire and Fumes 2", "ORB"],
+  "cotc-orb-waaa": ["ORB - Waaa", "ORB"],
+  "cotc-bmelgren-liqurido2": ["bmelgren - Liqurido2", "bmelgren"],
+  "cotc-hexcollie-surge": ["Hexcollie - Surge", "Hexcollie"],
+  "cotc-northern-lights-ii": ["Northern Lights II", ""],
+  "cotc-waltra-furry-synthesis-isosceles-edit2": [
+    "Waltra - Furry Synthesis",
+    "Waltra"
+  ],
+  "cotc-eos-phat-trinary-02-afterlife": [
+    "EoS + phat - trinary 02 - afterlife",
+    "EoS + phat"
+  ],
+  "cotc-syst3mfailur-phat-eos-planetfunk-tracers-devilglobe-4": [
+    "Syst3mFailur - phat - EoS planetfunk-tracers(devilglobe-4)",
+    "Syst3mFailur"
+  ],
+  "cotc-suksma-last-thing-i-remember-was-reading-tombstones": [
+    "suksma - last thing i remember was reading tombstones",
+    "suksma"
+  ],
+  "cotc-rovastar-geiss-hyperkaleidoscope-glow-2-multitonal": [
+    "Rovastar + Geiss - Hyperkaleidoscope Glow 2 Multitonal",
+    "Rovastar + Geiss"
+  ],
+  "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams": [
+    "skipper skipper kiss me hard - thank god for martin nitorami - a rip in mommy's underwear roams",
+    "skipper skipper kiss me hard"
+  ],
+  "cotc-suksma-as-for-me-i-take-medicines": [
+    "suksma - as for me, i take medicines",
+    "suksma"
+  ],
+  "cotc-undulate-harque-amaz-inge": [
+    "undulate harque - amaz inge",
+    "undulate harque"
+  ],
+  "cotc-suksma-circle-of-the-taeyrunts": [
+    "suksma - circle of the taeyrunts",
+    "suksma"
+  ],
+  "cotc-undulate-harque-brit-tlee": [
+    "undulate harque - brit tlee",
+    "undulate harque"
+  ],
+  "cotc-shifter-plasmic": ["shifter - plasmic", "shifter"],
+  "cotc-extreme-paranoia-and-fear-unleash-in-spontaneous-suicide-flails-slapping-the-elite-roam3": [
+    "extreme paranoia and fear unleash in spontaneous suicide flails - slapping the elite roam3",
+    "extreme paranoia and fear unleash in spontaneous suicide flails"
+  ],
+  "cotc-extreme-paranoia-and-fear-unleash-in-spontaneous-suicide-flails-slapping-the-elite": [
+    "extreme paranoia and fear unleash in spontaneous suicide flails - slapping the elite",
+    "extreme paranoia and fear unleash in spontaneous suicide flails"
+  ],
+  "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies": [
+    "suksma - log smell via gandalf pipeweed taint - flashies",
+    "suksma"
+  ],
+  "cotc-suksma-hordes-and-legions-of-unborn": [
+    "suksma - hordes and legions of unborn",
+    "suksma"
+  ],
+  "cotc-suksma-confetti-manslut": ["suksma - confetti manslut", "suksma"],
+  "cotc-goody-in-the-passenger-seat-with-a-head-full-of-acid-ps2-0": [
+    "Goody - In the Passenger Seat with a Head Full of Acid (PS2-0)",
+    "Goody"
+  ],
+  "cotc-stahlregen-hyperspace-rainbow": [
+    "Stahlregen - Hyperspace Rainbow",
+    "Stahlregen"
+  ],
+  "cotc-suksma-flukerication-machinist": [
+    "suksma - flukerication machinist",
+    "suksma"
+  ],
+  "cotc-suksma-actually-i-didn-t-eat-last-night": [
+    "suksma - actually i didn't eat last night",
+    "suksma"
+  ],
+  "cotc-suksma-and-i-will-have-salmon-for-dinner": [
+    "suksma - and i will have salmon for dinner",
+    "suksma"
+  ],
+  "cotc-suksma-log-smell-via-gandalf-pipeweed-taint": [
+    "suksma - log smell via gandalf pipeweed taint",
+    "suksma"
+  ],
+  "cotc-rovastar-kronos-twisted-spawn": [
+    "Rovastar - Kronos' Twisted Spawn",
+    "Rovastar"
+  ],
+  "cotc-suksma-barnacle-coated-hemoclubbin": [
+    "suksma - barnacle coated hemoclubbin'",
+    "suksma"
+  ],
+  "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies2": [
+    "suksma - log smell via gandalf pipeweed taint - flashies2",
+    "suksma"
+  ],
+  "cotc-suksma-cad-bury-chalk-let-egz-demonlord-i-am-aware-of-the-fools-i-follow-there-s-nothing-be": [
+    "suksma - cad bury chalk let egz + demonlord - i am aware of the fools i follow, there's nothing better to do",
+    "suksma"
+  ],
+  "cotc-eos-pointfield-07-insek-mash0000-shiny-bladed-homicide-machine-at-dusk": [
+    "EoS - pointfield 07 insek - mash0000 - shiny-bladed homicide machine at dusk",
+    "EoS"
+  ],
+  "cotc-border-magic": ["Border-magic", ""],
+  "cotc-waltra-galactic-super-perspective": [
+    "Waltra - Galactic Super Perspective",
+    "Waltra"
+  ],
+  "cotc-eos-and-pieturp-starfield-with-huge-stars": [
+    "EoS and PieturP - Starfield-with-huge-stars",
+    "EoS and PieturP"
+  ],
+  "cotc-fishbrain-swarming-glory": ["fiShbRaiN - swarming glory", "fiShbRaiN"],
+  "cotc-fishbrain-swarming-glory-spiral-remix": [
+    "fiShbRaiN - swarming glory (spiral remix)",
+    "fiShbRaiN"
+  ],
+  "cotc-53": ["53", ""],
+  "cotc-martin-soma-in-pink": ["martin - soma in pink", "martin"],
+  "cotc-suksma-passive-probabilistic-roaming": [
+    "suksma - passive probabilistic roaming",
+    "suksma"
+  ],
+  "cotc-fishbrain-swarming-glory-suksma-shapes": [
+    "fiShbRaiN - swarming glory suksma shapes",
+    "fiShbRaiN"
+  ],
+  "cotc-eos-pointfield-08-insek-nebula": [
+    "EoS - pointfield 08 insek nebula",
+    "EoS"
+  ],
+  "cotc-eos-pointfield-09-the-gases-beyond-85b-3d": [
+    "EoS - pointfield 09 the gases beyond 85b 3d",
+    "EoS"
+  ],
+  "cotc-220": ["220", ""],
+  "cotc-beta106i-burning-form-seething-mass-mash0000-fire-paint-easter-egg-internals-isosceles-edit": [
+    "beta106i - Burning Form (Seething Mass) - mash0000 - fire paint easter egg internals",
+    "beta106i"
+  ],
+  "cotc-fishbrain-gandalf-does-it-best-pipeweed-remix-v2-phat-rose-mix": [
+    "fiShbRaiN - gandalf does it best (pipeweed remix v2)_phat_rose_mix",
+    "fiShbRaiN"
+  ],
+  "cotc-royal-mashup-103": ["$$$ Royal - Mashup (103)", "$$$ Royal"],
+  "cotc-eos-pointfield-09-the-gases-beyond-85b-3d-v2": [
+    "EoS - pointfield 09 the gases beyond 85b 3d_v2",
+    "EoS"
+  ],
+  "cotc-174": ["174", ""],
+  "cotc-royal-mashup-104": ["$$$ Royal - Mashup (104)", "$$$ Royal"],
+  "cotc-suksma-ritually-invoking-the-irrational-slaves": [
+    "suksma - ritually invoking the irrational slaves",
+    "suksma"
+  ],
+  "cotc-shifter-rapid-birth": ["shifter - rapid birth", "shifter"],
+  "cotc-royal-mashup-102": ["$$$ Royal - Mashup (102)", "$$$ Royal"],
+  "cotc-shifter-fuzzball-implosion": [
+    "shifter - fuzzball (implosion)",
+    "shifter"
+  ],
+  "cotc-shifter-rapid-birth-bright": [
+    "shifter - rapid birth bright",
+    "shifter"
+  ],
+  "cotc-royal-mashup-62": ["$$$ Royal - Mashup (62)", "$$$ Royal"],
+  "cotc-flexi-space-voyage-organic-aftermath-1": [
+    "Flexi - space voyage [organic aftermath 1]",
+    "Flexi"
+  ],
+  "cotc-eos-particle-storm-c": ["EoS - particle storm C", "EoS"],
+  "cotc-eos-pointfield-02-complex": ["EoS - pointfield 02 complex", "EoS"],
+  "cotc-eos-particle-storm-b": ["EoS - particle storm B", "EoS"],
+  "cotc-waltra-time-travel": ["Waltra - Time Travel", "Waltra"],
+  "cotc-eos-linefield-more-demon": ["EoS - linefield more demon", "EoS"],
+  "cotc-stahlregen-eos-geiss-krash-pieturp-zylot-dandelion-2": [
+    "Stahlregen & EoS + Geiss + Krash + PieturP + Zylot - Dandelion_2",
+    "Stahlregen & EoS + Geiss + Krash + PieturP + Zylot"
+  ],
+  "cotc-isosceles-mashup23": ["Isosceles mashup23", ""],
+  "cotc-eos-cubetrace-particlefly-phat-solarized-mix": [
+    "EoS - cubetrace particlefly_Phat_Solarized_Mix",
+    "EoS"
+  ],
+  "cotc-eos-pointfield-09-the-gases-beyond-85b": [
+    "EoS - pointfield 09 the gases beyond 85b",
+    "EoS"
+  ],
+  "cotc-317": ["317", ""],
+  "cotc-goody-need-transcendance-remix": [
+    "Goody - Need - Transcendance remix",
+    "Goody"
+  ],
+  "cotc-141": ["141", ""],
+  "cotc-19": ["19", ""],
+  "cotc-146": ["146", ""],
+  "cotc-beta106i-arise-padded": ["beta106i - Arise! (Padded)", "beta106i"],
+  "cotc-310": ["310", ""],
+  "cotc-367": ["367", ""],
+  "cotc-170": ["170", ""],
+  "cotc-370": ["370", ""],
+  "cotc-13": ["13", ""],
+  "cotc-307": ["307", ""],
+  "cotc-312": ["312", ""],
+  "cotc-345": ["345", ""],
+  "cotc-308": ["308", ""],
+  "cotc-372": ["372", ""],
+  "cotc-368": ["368", ""],
+  "cotc-313": ["313", ""],
+  "cotc-318": ["318", ""],
+  "cotc-fed-s-spectro-2": ["fed's spectro 2", ""],
+  "cotc-16": ["16", ""],
+  "cotc-goody-need": ["Goody - Need", "Goody"],
+  "cotc-314": ["314", ""],
+  "cotc-338": ["338", ""],
+  "cotc-103": ["103", ""],
+  "cotc-102": ["102", ""],
+  "cotc-99": ["99", ""],
+  "cotc-315": ["315", ""],
+  "cotc-rovastar-stahlregen-touchdown-on-jelly-planet-bccn-v4": [
+    "Rovastar + Stahlregen - Touchdown on Jelly Planet (bccn V4)",
+    "Rovastar + Stahlregen"
+  ],
+  "cotc-bmelgren-shimmer-n-shine": ["Bmelgren - Shimmer N Shine", "Bmelgren"],
+  "cotc-zylot-rays-burst": ["Zylot - Rays (Burst)", "Zylot"],
+  "cotc-zylot-the-collective-unconcious-jelly-5-5": [
+    "Zylot - The Collective Unconcious (Jelly 5-5)",
+    "Zylot"
+  ],
+  "cotc-stahlregen-bass-pulsing-ps2": [
+    "Stahlregen - Bass Pulsing (PS2)",
+    "Stahlregen"
+  ],
+  "cotc-stahlregen-sparkling": ["Stahlregen - sparkling", "Stahlregen"],
+  "cotc-geiss-flower": ["Geiss - Flower", "Geiss"],
+  "cotc-stahlregen-eckshack-s-eyeball-floater-mix-plastic": [
+    "Stahlregen - Eckshack's Eyeball (floater mix) (Plastic)",
+    "Stahlregen"
+  ],
+  "cotc-geiss-drift-1-02-version": ["Geiss - Drift (1-02 Version)", "Geiss"],
+  "cotc-geiss-drift": ["Geiss - Drift", "Geiss"],
+  "cotc-bmelgren-tonic": ["Bmelgren - Tonic", "Bmelgren"],
+  "cotc-stahlregen-pulse-dark": ["Stahlregen - Pulse (Dark)", "Stahlregen"],
+  "cotc-beta106i-old-myths-and-fairytales": [
+    "beta106i - Old Myths and Fairytales",
+    "beta106i"
+  ],
+  "cotc-rovastar-unchained-life-after-pie-remix": [
+    "Rovastar + Unchained - Life After Pie (Remix)",
+    "Rovastar + Unchained"
+  ],
+  "cotc-bmelgren-krash-rainbo-unknowablemix1": [
+    "Bmelgren&krash-rainbo(unknowablemix1)",
+    ""
+  ],
+  "cotc-brownian-bass": ["Brownian Bass", ""],
+  "cotc-suksma-rovastar-goody-geiss-rism-1982-gremlin-pinto-hybrid-440-block-2000-watts-obscura-bla": [
+    "suksma + rovastar goody geiss rism - 1982 gremlin pinto hybrid 440 block 2000 watts obscura blaster dasd",
+    "suksma + rovastar goody geiss rism"
+  ],
+  "cotc-stahlregen-esotic-idiot24-7-rozzer-zylot-digital-heartbeat-3": [
+    "Stahlregen & Esotic + Idiot24-7 + Rozzer + Zylot - Digital Heartbeat_3",
+    "Stahlregen & Esotic + Idiot24-7 + Rozzer + Zylot"
+  ],
+  "cotc-cellular-growth": ["cellular growth", ""],
+  "cotc-bmelgren-morpherous3": ["Bmelgren-morpherous3", ""],
+  "cotc-fvese-mvfun4": ["Fvese-mvfun4", ""],
+  "cotc-rovastar-explosive-minds-kay": [
+    "Rovastar - Explosive Minds kay",
+    "Rovastar"
+  ],
+  "cotc-stahlregen-hypnotron-v-0-5": [
+    "stahlregen - hypnotron v 0-5",
+    "stahlregen"
+  ],
+  "cotc-stahlregen-eckshack-s-eyeball-popped-eyeball-mix": [
+    "Stahlregen - Eckshack's Eyeball (popped eyeball mix)",
+    "Stahlregen"
+  ],
+  "cotc-goody-s-unstable-sonic-reactor-inside-of-it-all-remix-aspect-fix": [
+    "Goody's Unstable Sonic Reactor (Inside of it all remix - aspect fix)",
+    "Goody's Unstable Sonic Reactor (Inside of it all remix"
+  ],
+  "cotc-ed-nameless": ["Ed - Nameless", "Ed"],
+  "cotc-royal-mashup-484": ["$$$ Royal - Mashup (484)", "$$$ Royal"],
+  "cotc-royal-mashup-270": ["$$$ Royal - Mashup (270)", "$$$ Royal"],
+  "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with": [
+    "shifter + flexi - american pie artifactory - never contribute - given 7 inches to bath with",
+    "shifter + flexi"
+  ],
+  "cotc-orb-lazer-ride": ["ORB - Lazer Ride", "ORB"],
+  "cotc-royal-mashup-160": ["$$$ Royal - Mashup (160)", "$$$ Royal"],
+  "cotc-royal-mashup-183": ["$$$ Royal - Mashup (183)", "$$$ Royal"],
+  "cotc-orb-fire-poi-2": ["ORB - Fire Poi 2", "ORB"],
+  "cotc-martin-sphery-tales-slow-version": [
+    "martin - sphery tales slow version",
+    "martin"
+  ],
+  "cotc-martin-sphery-tales": ["martin - sphery tales", "martin"],
+  "cotc-martin-lock-and-release": ["martin - lock and release", "martin"],
+  "cotc-shifter-glassworms-flare-jelly-5-5": [
+    "shifter - glassworms flare (Jelly 5-5)",
+    "shifter"
+  ],
+  "cotc-shifter-glassworms-original": [
+    "shifter - glassworms original",
+    "shifter"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-ghosts": [
+    "EoS - glowsticks v2 04 music minimal - ghosts",
+    "EoS"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-swim-color": [
+    "EoS - glowsticks v2 04 music minimal - swim color",
+    "EoS"
+  ],
+  "cotc-shifter-glassworms-flare-xbmc-speed-tweak": [
+    "shifter - glassworms flare (xbmc speed tweak)",
+    "shifter"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-swim": [
+    "EoS - glowsticks v2 04 music minimal - swim",
+    "EoS"
+  ],
+  "cotc-shifter-glassworms-flare-1": [
+    "shifter - glassworms flare_1",
+    "shifter"
+  ],
+  "cotc-shifter-glassworms-flip": ["shifter - glassworms flip", "shifter"],
+  "cotc-eos-more-waveforms-7": ["EoS - more waveforms 7", "EoS"],
+  "cotc-eos-phat-technicolor-e-breather-b": [
+    "EoS_Phat technicolor E breather B",
+    ""
+  ],
+  "cotc-eos-more-waveforms-7-phat-edit": [
+    "EoS - more waveforms 7_phat_edit",
+    "EoS"
+  ],
+  "cotc-hexcollie-eos-n-phat-just-an-object": [
+    "Hexcollie, EoS n Phat - Just an object",
+    "Hexcollie, EoS n Phat"
+  ],
+  "cotc-eos-phat-technicolor-f-breather-c": [
+    "EoS_Phat technicolor F breather C",
+    ""
+  ],
+  "cotc-eos-phat-3d-tracers": ["EoS_Phat_3d tracers", ""],
+  "cotc-eos-phat-technicolor-f-breather-d": [
+    "EoS_Phat technicolor F breather D",
+    ""
+  ],
+  "cotc-eos-phat-technicolor-f-breather-e": [
+    "EoS_Phat technicolor F breather E",
+    ""
+  ],
+  "cotc-eos-more-waveforms-8": ["EoS - more waveforms 8", "EoS"],
+  "cotc-evet-ball-lightning-1": ["EVET - Ball Lightning 1", "EVET"],
+  "cotc-evet-ball-lightning-1-isosceles-edit1": [
+    "EVET - Ball Lightning 1",
+    "EVET"
+  ],
+  "cotc-martin-diabolo-isosceles-edit": ["Martin - Diabolo", "Martin"],
+  "cotc-martin-diabolo": ["Martin - Diabolo", "Martin"],
+  "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk": [
+    "mrt ei cynical engineers working for a backward system unite in circle jerk",
+    ""
+  ],
+  "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink": [
+    "mrt ei cynical engineers working for a backward system unite in circle jerk oink",
+    ""
+  ],
+  "cotc-evet-ball-lightning-1-isosceles-edit2": [
+    "EVET - Ball Lightning 1",
+    "EVET"
+  ],
+  "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2e-feat-martin-flexi-phat": [
+    "EoS - glowsticks v2 03 music shifter edit b (Stahl's Reactive RMX V2e - feat martin, flexi + phat)",
+    "EoS"
+  ],
+  "cotc-royal-mashup-115": ["$$$ Royal - Mashup (115)", "$$$ Royal"],
+  "cotc-eos-glowsticks-02-phat-edit": ["EoS - glowsticks 02_Phat_edit", "EoS"],
+  "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-v2-border-mix": [
+    "EoS - glowsticks v2 03 music shifter edit b (Stahl's Reactive RMX V2) (border mix)",
+    "EoS"
+  ],
+  "cotc-royal-mashup-190": ["$$$ Royal - Mashup (190)", "$$$ Royal"],
+  "cotc-79": ["79", ""],
+  "cotc-hexcollie-this-is-where-we-begin-stripped": [
+    "Hexcollie - This is where we begin stripped",
+    "Hexcollie"
+  ],
+  "cotc-eos-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix099": [
+    "EoS - glowsticks v2 05 and proton lights (+Krash's beat code) _Phat_remix099",
+    "EoS"
+  ],
+  "cotc-eos-angleform-2-phat-decay-edit-v2throw-water-v2": [
+    "EoS - angleform 2_Phat_Decay_Edit_v2Throw_water_v2",
+    "EoS"
+  ],
+  "cotc-eos-glowsticks-v2-04-music-minimal-oscilloscope-vomit-mix-keylontic": [
+    "EoS - glowsticks v2 04 music minimal oscilloscope vomit mix keylontic",
+    "EoS"
+  ],
+  "cotc-royal-mashup-189": ["$$$ Royal - Mashup (189)", "$$$ Royal"],
+  "cotc-tripgnosis-firesticks-isosceles-edit04": [
+    "Tripgnosis - Firesticks",
+    "Tripgnosis"
+  ],
+  "cotc-455": ["455", ""],
+  "cotc-228": ["228", ""],
+  "cotc-eos-subtraction-fade": ["EoS - subtraction fade", "EoS"],
+  "cotc-luxxx-flowwerpowwer": ["LuxXx - Flowwerpowwer", "LuxXx"],
+  "cotc-royal-mashup-192": ["$$$ Royal - Mashup (192)", "$$$ Royal"],
+  "cotc-22": ["22", ""],
+  "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-flexi-s-reflections-phat-s-r": [
+    "EoS - glowsticks v2 03 music shifter edit b (Stahl's Reactive RMX + flexi's reflections + phat's reflecto)",
+    "EoS"
+  ],
+  "cotc-hexcollie-demonic-afterimages": [
+    "Hexcollie - Demonic Afterimages",
+    "Hexcollie"
+  ],
+  "cotc-34": ["34", ""],
+  "cotc-royal-mashup-21": ["$$$ Royal - Mashup (21)", "$$$ Royal"],
+  "cotc-eos-angleform-4mirror": ["EoS - angleform 4mirror", "EoS"],
+  "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff-isosceles-edit": [
+    "Hexcollie, TI@N, Suksma n Zylot - BLARFFFF",
+    "Hexcollie, TI@N, Suksma n Zylot"
+  ],
+  "cotc-suksma-water-cooled-red-uranium-vs-dotes-here-have-a-hoho-flacc-grey-budget-never-ending-ba": [
+    "suksma - water cooled red uranium vs dotes - here, have a hoho - flacc+ - grey budget (never ending babes)",
+    "suksma"
+  ],
+  "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killphreqs-mix4-flacc": [
+    "stahlregen - dots (layered) - suksma world humanvirus replication killphreqs mix4 - flacc",
+    "stahlregen"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-you-can-buy-hate-flacc": [
+    "suksma - dotes hostile undertake - you can buy hate - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-ed-geining-hateops-flx-if-it-is-selfish-to-have-your-focus-then-i-am-an-ever-unsatis": [
+    "suksma - ed geining hateops - flx if it is selfish to have your focus, then i am an ever unsatisfied hedonist - 1000 zeroes",
+    "suksma"
+  ],
+  "cotc-bleeding-like-a-horsey": ["bleeding like a horsey", ""],
+  "cotc-compelling-vision": ["Compelling Vision", ""],
+  "cotc-suksma-geiss-dotes-roams-proph": [
+    "suksma - geiss + dotes roams proph",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc": [
+    "suksma - dotes hostile undertake - finished breathing sir - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-geiss-dotes-roams": ["suksma - geiss + dotes roams", "suksma"],
+  "cotc-suksma-dotes-hostile-undertake-offx-flacc": [
+    "suksma - dotes hostile undertake - offx - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-mtn-flx-flacc-roam3": [
+    "suksma - mtn,flx - flacc roam3",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc": [
+    "suksma - dotes hostile undertake + demonlord - blood in your eyes again - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills": [
+    "suksma - dotes hostile undertake - dying visions2 - flacc roams thee 'big rip' of wills",
+    "suksma"
+  ],
+  "cotc-suksma-gss-sth-hogwoman-style-starin-at-sports-carscryin-schnig-flacc": [
+    "suksma - gss,sth - hogwoman style - starin' at sports carscryin' - schnig - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-j4-flacc": [
+    "suksma - dotes hostile undertake - j4+ - flacc",
+    "suksma"
+  ],
+  "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-thinkin-bout-u": [
+    "hexcollie, ti@n, suksma, zylot, orb, martin n flexi - blarffff [thinkin bout u]",
+    "hexcollie, ti@n, suksma, zylot, orb, martin n flexi"
+  ],
+  "cotc-hexcollie-ti-n-suksma-n-zylot-blarffff": [
+    "Hexcollie, TI@N, Suksma n Zylot - BLARFFFF",
+    "Hexcollie, TI@N, Suksma n Zylot"
+  ],
+  "cotc-suksma-geiss-dotes-orb": ["suksma - geiss + dotes orb", "suksma"],
+  "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi": [
+    "suksma - dotes hostile undertake - autoclayve - flacc das yi",
+    "suksma"
+  ],
+  "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc-signal-propagation-rhythm": [
+    "suksma - gss,sth - hogwoman style - deaf delphying - flacc signal propagation rhythm",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills-rce-beats": [
+    "suksma - dotes hostile undertake - dying visions2 - flacc roams thee 'big rip' of wills rce beats",
+    "suksma"
+  ],
+  "cotc-suksma-geiss-dotes-orb-extreme-elegance": [
+    "suksma - geiss + dotes orb extreme elegance",
+    "suksma"
+  ],
+  "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire": [
+    "hexcollie, ti@n, suksma, zylot n orb - blarffff fire",
+    "hexcollie, ti@n, suksma, zylot n orb"
+  ],
+  "cotc-suksma-mtn-flx-flacc-choilan-stenter-phi": [
+    "suksma - mtn,flx - flacc - choilan - stenter phi",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-j4-2": [
+    "suksma - dotes hostile undertake - j4+2",
+    "suksma"
+  ],
+  "cotc-luxxx-wip": ["LuxXx - WIP", "LuxXx"],
+  "cotc-hexcollie-ti-n-suksma-zylot-n-orb-blarffff-fire-isosceles-edit": [
+    "hexcollie, ti@n, suksma, zylot n orb - blarffff fire",
+    "hexcollie, ti@n, suksma, zylot n orb"
+  ],
+  "cotc-bleeding-like-a-horsey-roams-i-just-got-through-watching-planet-bboy-and-boy-do-i-feel-emba": [
+    "bleeding like a horsey roams i just got through watching planet bboy and boy do i feel embarrassed for myself and all the world",
+    ""
+  ],
+  "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi-roam": [
+    "suksma - dotes hostile undertake - autoclayve - flacc das yi roam",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-yada-yaka-yada-flacc-spher": [
+    "suksma - dotes hostile undertake - yada yaka yada - flacc spher",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam": [
+    "suksma - dotes hostile undertake - finished breathing sir flacc roam",
+    "suksma"
+  ],
+  "cotc-suksma-mtn-flx-flacc-choilan-collapsar": [
+    "suksma - mtn,flx - flacc - choilan - collapsar",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted": [
+    "suksma - dotes var - eyes built to fuck - flacc - when we touch, i get disgusted",
+    "suksma"
+  ],
+  "cotc-drugsincombat-reactive-molecule-v-05a": [
+    "drugsincombat - reactive molecule v-05a",
+    "drugsincombat"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-pacific-heights-flacc-roams-higher-self-lower-self-battles": [
+    "suksma - dotes hostile undertake - pacific heights - flacc roams higher self lower self battles",
+    "suksma"
+  ],
+  "cotc-suksma-mtn-flx-flacc-choilan-duncan-dodo-boid-dna-kodak-whore": [
+    "suksma - mtn,flx - flacc - choilan - duncan dodo boid dna kodak whore",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-j4-flacc-bryan-fnord-kool-aid": [
+    "suksma - dotes hostile undertake - j4+ - flacc - bryan fnord kool aid",
+    "suksma"
+  ],
+  "cotc-luxxx-wip-isosceles-edit": ["LuxXx - WIP", "LuxXx"],
+  "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss": [
+    "fleekus flokus - violent and insane homicidal air molecules - beat code experiment2 gss",
+    "fleekus flokus"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-painterly-oil-reflection-flacc-spher": [
+    "suksma - dotes hostile undertake - painterly oil reflection - flacc spher",
+    "suksma"
+  ],
+  "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killgaia-mix2": [
+    "stahlregen - dots (layered) - suksma world humanvirus replication killgaia mix2",
+    "stahlregen"
+  ],
+  "cotc-suksma-geiss-dotes-holiday-hidden-in-plain-sight-clown": [
+    "suksma - geiss + dotes - holiday hidden in plain sight clown",
+    "suksma"
+  ],
+  "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist": [
+    "suksma - question authority, take what you want, be a nihilist",
+    "suksma"
+  ],
+  "cotc-suksma-mtn-flx-flacc": ["suksma - mtn,flx - flacc", "suksma"],
+  "cotc-krash-rovastar-rainbow-orb-2-peacock-bmelgren-s-compelling-vision": [
+    "Krash + Rovastar - Rainbow Orb 2 Peacock (Bmelgren's Compelling Vision)",
+    "Krash + Rovastar"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-one-too-many-days-under-the-iron-flacc": [
+    "suksma - dotes hostile undertake - one too many days under the iron - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc": [
+    "suksma - ed geining hateops - flx maggotillion flacc",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam2": [
+    "suksma - dotes var - eyes built to fuck - flacc - when we touch, i get disgusted roam2",
+    "suksma"
+  ],
+  "cotc-stahlregen-flexi-geiss-liquidity-dynamic-swirls-mess-flout-tessed": [
+    "Stahlregen & Flexi + Geiss - Liquidity (Dynamic Swirls) - mess flout tessed",
+    "Stahlregen & Flexi + Geiss"
+  ],
+  "cotc-undermines-him-in-the-subtlest-ways-mega-schoob-1d-serial-flashline-projection-creator": [
+    "undermines him in the subtlest ways mega schoob 1d serial flashline projection creator",
+    ""
+  ],
+  "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam3": [
+    "suksma - dotes var - eyes built to fuck - flacc - when we touch, i get disgusted roam3",
+    "suksma"
+  ],
+  "cotc-suksma-gss-sth-hogwoman-style-incantation-onward-to-golgotha-christening-the-afterbirth-fla": [
+    "suksma - gss,sth - hogwoman style - incantation - onward to golgotha - christening the afterbirth - flacc",
+    "suksma"
+  ],
+  "cotc-orb-inferno-burnt-to-a-crisp-ngdbthzs-avoid-homozoidne": [
+    "orb - inferno - burnt to a crisp - ngdbthzs avoid homozoidne",
+    "orb"
+  ],
+  "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-roams-drugs-stretch-time-wave-packe": [
+    "hexcollie, ti@n, suksma, zylot, orb, martin n flexi - blarffff roams drugs = stretch time wave packet",
+    "hexcollie, ti@n, suksma, zylot, orb, martin n flexi"
+  ],
+  "cotc-suksma-gss-sth-hogwoman-style-deaf-delphying-flacc": [
+    "suksma - gss,sth - hogwoman style - deaf delphying - flacc",
+    "suksma"
+  ],
+  "cotc-suksma-dotes-hostile-undertake-demonlord-blood-in-your-eyes-again-flacc-roam3": [
+    "suksma - dotes hostile undertake + demonlord - blood in your eyes again - flacc roam3",
+    "suksma"
   ]
 }
