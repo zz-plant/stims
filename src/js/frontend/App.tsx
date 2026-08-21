@@ -347,10 +347,17 @@ function StimsWorkspaceAppShell() {
       ui.setStatusMessage('Load a preset before saving it.');
       return;
     }
+    // Autoplay moves the stage on without moving `selectedPreset`, so the two
+    // ids drift apart routinely. Falling back to null there made every press
+    // in that state read "not a favorite": the gesture could only ever add,
+    // and un-saving whatever was playing was impossible until you re-selected
+    // it. The catalog knows the real state — ask it before assuming.
     const activePreset =
       engine.selectedPreset?.id === activePresetId
         ? engine.selectedPreset
-        : null;
+        : (engine.catalog.find((entry) => entry.id === activePresetId) ??
+          engine.favoritePresets.find((entry) => entry.id === activePresetId) ??
+          null);
     void engine.toggleFavoritePreset(activePresetId, !activePreset?.isFavorite);
     ui.setStatusMessage(
       activePreset?.isFavorite

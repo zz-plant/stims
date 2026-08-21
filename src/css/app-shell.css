@@ -2896,6 +2896,12 @@ body[data-page="workspace"][data-live="true"] {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85);
   animation: stims-modal-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
   -webkit-font-smoothing: antialiased;
+  /* Centered fixed cards clip at both ends once their content outgrows the
+     viewport, taking the Close button with them. dvh so a mobile URL bar
+     collapsing does not change the answer. */
+  max-height: 86dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .stims-shell__credits-card {
@@ -2934,6 +2940,15 @@ body[data-page="workspace"][data-live="true"] {
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.stims-shell__shortcut-card h3 {
+  margin: 0 0 14px;
+  font-family: var(--font-family-base);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--stims-ink);
 }
 
 .stims-shell__shortcut-grid {
@@ -3288,8 +3303,10 @@ body[data-page="workspace"][data-live="true"] {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: min(58vh, 560px);
-  overflow-y: auto;
+  /* The card is the scroll region now (see .stims-shell__shortcut-card): with
+     a gesture section below this list, a nested scroller left the Close button
+     and the last gestures below the fold on laptop and phone heights, and two
+     scrollbars on one card is its own kind of lost. */
   padding-right: 4px;
 }
 
