@@ -839,3 +839,66 @@ describe('milkdrop compiler shader GLSL emitter — texsize', () => {
     );
   });
 });
+
+// ─── Preset-declared locals ─────────────────────────────────────────
+
+describe('preset-declared locals', () => {
+  function emitProgram(sources: string[]): string {
+    const glsl = generateGlslFromShaderStatements(
+      sources.map(glslStatement),
+      'comp',
+    );
+    if (glsl === null) throw new Error('Failed to emit GLSL');
+    return glsl;
+  }
+
+  test("carries a preset's declared vector type into the emitted GLSL", () => {
+    const glsl = emitProgram(['float2 uv_y = uv - 0.25']);
+
+    // Without the declaration the assembled shader infers the type from the
+    // assignment text, which only recognises a bare vecN( constructor — so a
+    // parenthesised or arithmetic RHS became `float uv_y;` and every later use
+    // failed to compile.
+    expect(glsl).toContain('vec2 uv_y =');
+  });
+
+  test('broadcasts a scalar into a declared vector, as HLSL does', () => {
+    const glsl = emitProgram(['float3 dots = 0.5']);
+
+    expect(glsl).toContain('vec3 dots = vec3(');
+  });
+
+  test('declares a name once, however many times it is assigned', () => {
+    const glsl = emitProgram(['float3 acc = 0.5', 'acc = 0.25']);
+
+    expect(glsl.match(/vec3 acc =/g)).toHaveLength(1);
+    expect(glsl).toContain('acc = 0.25');
+  });
+
+  // `ret` and `uv` are declared by the stage templates and read back after the
+  // body. Shadowing either with a local means the template reads a value the
+  // body never wrote — a black frame rather than a compile error.
+  test('never re-declares a target the stage template owns', () => {
+    const glsl = emitProgram(['float3 ret = 0.5', 'float2 uv = 0.25']);
+
+    expect(glsl).not.toContain('vec3 ret =');
+    expect(glsl).not.toContain('vec2 uv =');
+  });
+
+  // A preset may name a local after a shader control (`b`, `mix`, `sat`, …).
+  // Rewriting reads of it to the uniform is not a compile error, it is a
+  // silently wrong picture, so the declaration has to win.
+  test('a declared local wins over the uniform alias of the same name', () => {
+    const glsl = emitProgram(['float3 b = 0.5', 'ret = b']);
+
+    expect(glsl).toContain('vec3 b = vec3(');
+    expect(glsl).toContain('ret = vec3(b)');
+    expect(glsl).not.toContain('colorScale.b');
+  });
+
+  test('still aliases a control the preset did not declare', () => {
+    const glsl = emitProgram(['ret = b']);
+
+    expect(glsl).toContain('colorScale.b');
+  });
+});
