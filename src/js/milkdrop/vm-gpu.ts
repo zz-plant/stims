@@ -171,7 +171,6 @@ export function createGpuVmRunner() {
   let activeCompilation: WgslProgramCompilation | null = null;
 
   let currentSignalBuffer: GPUBuffer | null = null;
-  let randReadbackBuffer: GPUBuffer | null = null;
   const signalData = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
 
   // Guest-memory mirrors. The CPU Float32Arrays passed to init() stay the
@@ -286,18 +285,6 @@ export function createGpuVmRunner() {
       size: SIGNAL_BUFFER_SIZE_BYTES,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-
-    if (randReadbackBuffer) {
-      randReadbackBuffer.destroy();
-      randReadbackBuffer = null;
-    }
-    if (compilation.usesRandom) {
-      randReadbackBuffer = gpuDevice.createBuffer({
-        label: 'milkdrop-vm-rand-readback',
-        size: 4,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-      });
-    }
 
     destroyGuestMemoryBuffers();
     if (compilation.usesMegabuf) {
@@ -464,42 +451,24 @@ export function createGpuVmRunner() {
       gmegabufReadback.unmap();
     }
 
-    const storedValues = await bufferManager.readState(device);
+    // One readback for the whole state buffer, rand_state included. This used
+    // to be followed by a second encoder + submit + mapAsync just for those
+    // four bytes — an entire extra CPU/GPU sync point per frame for data the
+    // copy above already carried.
+    const { fields: storedValues, randomState: readRandomState } =
+      await bufferManager.readState(device);
     const registers: Record<string, number> = {};
     for (const key of activeCompilation.registerKeys) {
       registers[key] = storedValues[key] ?? 0;
       delete storedValues[key];
     }
-    const randOffset = bufferManager.getLayout()?.fieldOffsets?.rand_state;
-
-    let randomState = 1;
-    if (
-      randOffset !== undefined &&
-      activeCompilation.usesRandom &&
-      randReadbackBuffer
-    ) {
-      const copyEncoder = device.createCommandEncoder({
-        label: 'milkdrop-vm-copy-rand',
-      });
-      copyEncoder.copyBufferToBuffer(
-        stateBuffer,
-        randOffset,
-        randReadbackBuffer,
-        0,
-        4,
-      );
-      device.queue.submit([copyEncoder.finish()]);
-
-      await randReadbackBuffer.mapAsync(GPUMapMode.READ);
-      const mapped = new Uint32Array(randReadbackBuffer.getMappedRange());
-      randomState = mapped[0] ?? 2531011;
-      randReadbackBuffer.unmap();
-    }
 
     return {
       state: storedValues,
       registers,
-      randomState,
+      randomState: activeCompilation.usesRandom
+        ? (readRandomState ?? 2531011)
+        : 1,
     };
   }
 
@@ -525,10 +494,6 @@ export function createGpuVmRunner() {
     if (currentSignalBuffer) {
       currentSignalBuffer.destroy();
       currentSignalBuffer = null;
-    }
-    if (randReadbackBuffer) {
-      randReadbackBuffer.destroy();
-      randReadbackBuffer = null;
     }
     destroyGuestMemoryBuffers();
     pipeline = null;

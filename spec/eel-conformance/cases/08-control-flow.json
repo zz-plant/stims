@@ -1,0 +1,45 @@
+{
+  "$schema": "../schema.json",
+  "section": "control-flow",
+  "description": "loop() and while() statements, their iteration cap, and the condition rule that differs from every other boolean context.",
+  "cases": [
+    {
+      "id": "loop-runs-count-times",
+      "name": "loop(n, body) runs the body n times",
+      "program": ["loop(3, x = x + 1)"],
+      "expected": { "x": 3 }
+    },
+    {
+      "id": "loop-count-truncates",
+      "name": "a loop count truncates toward zero",
+      "program": ["loop(2.9, x = x + 1)"],
+      "expected": { "x": 2 }
+    },
+    {
+      "id": "loop-negative-count-runs-zero-times",
+      "name": "a negative loop count runs the body zero times",
+      "program": ["loop(-5, x = 1)"],
+      "expected": { "x": 0 }
+    },
+    {
+      "id": "loop-multi-statement-body",
+      "name": "a loop body may hold several statements separated by semicolons",
+      "program": ["loop(2, x = x + 1; y = y + 2)"],
+      "expected": { "x": 2, "y": 4 }
+    },
+    {
+      "id": "while-runs-until-condition-is-zero",
+      "name": "while(cond, body) repeats until the condition is zero",
+      "program": ["n = 3", "while(n, n = n - 1; x = x + 1)"],
+      "expected": { "n": 0, "x": 3 }
+    },
+    {
+      "id": "while-condition-is-exact-zero",
+      "name": "a while() condition tests EXACT zero, not the close-factor threshold",
+      "program": ["n = 0.000001", "while(n, n = 0; x = 1)"],
+      "expected": { "n": 0, "x": 1 },
+      "status": "provisional",
+      "note": "PROVISIONAL, and the sharpest open question in this spec. Every other boolean context in EEL (if, &&, ||, !, bnot) treats |v| <= 1e-5 as false; while() does not, so a condition decaying to 1e-6 keeps looping here but would exit under the close-factor rule. Both CPU tiers agree, so the tier-differential fuzzers cannot see it. Confirm against ns-eel. If the close-factor rule is correct, x would be 0 and a class of presets currently spins to the iteration cap every frame."
+    }
+  ]
+}
