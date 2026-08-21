@@ -3,13 +3,14 @@ import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { type Browser, chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
 import {
   hasChromium,
   localOnlyBrowserTest,
   requiredBrowserTest,
 } from './browser-availability.ts';
+import { closeQuietly, withDeadline } from './deadline.ts';
 import {
   type DevServerHandle,
   isResponsive,
@@ -29,6 +30,13 @@ const TEST_PORT = 5180;
 // this test past a 90s budget in CI even though it completes in ~10s
 // locally with real GPU (2026-08-06 CI investigation).
 const INTEGRATION_TIMEOUT_MS = 180000;
+// Launching Chromium and bringing the dev server back are the two setup steps
+// that can wait on something wedged, and neither carries a timeout of its own.
+const LAUNCH_TIMEOUT_MS = 60_000;
+const DEV_SERVER_TIMEOUT_MS = 90_000;
+// evaluate() takes no timeout at all, and the one here runs *inside* a failure
+// path — exactly when the page has stopped answering.
+const EVALUATE_TIMEOUT_MS = 15_000;
 let devServer: DevServerHandle | null = null;
 
 async function startDevServerInstance() {
@@ -54,41 +62,78 @@ async function stopDevServerInstance() {
  * which is what made it look like flakiness rather than a fixed bug.
  */
 async function ensureDevServer() {
-  if (!devServer) {
-    await startDevServerInstance();
-    return;
-  }
-  if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
-    return;
-  }
-  await stopDevServerInstance();
-  await startDevServerInstance();
+  await withDeadline(
+    (async () => {
+      if (!devServer) {
+        await startDevServerInstance();
+        return;
+      }
+      if (await isResponsive(`http://127.0.0.1:${TEST_PORT}/`)) {
+        return;
+      }
+      await stopDevServerInstance();
+      await startDevServerInstance();
+    })(),
+    DEV_SERVER_TIMEOUT_MS,
+    'restarting the shared dev server',
+  );
+}
+
+/**
+ * One Chromium for the whole file, a fresh context per test.
+ *
+ * Each test used to launch its own browser. CI failed on the fifth with
+ * `Timed out after 60000ms while launching Chromium` — not a slow page, a
+ * browser process that could not start, because by then the 2-core runner was
+ * carrying the remains of four others. The symptom kept moving earlier as the
+ * machine degraded (first a stuck wait, then a 30s navigation, then the launch
+ * itself), which is the signature of resource exhaustion rather than of any
+ * one call being wrong.
+ *
+ * A context is the isolation boundary these tests actually need — separate
+ * storage, cookies and pages — so sharing the process costs nothing and
+ * removes four launches from the run.
+ */
+let sharedBrowser: Browser | null = null;
+
+async function launchSharedBrowser(): Promise<Browser> {
+  if (sharedBrowser?.isConnected()) return sharedBrowser;
+  sharedBrowser = await withDeadline(
+    chromium.launch({ args: WEBGL_RENDERER_ARGS }),
+    LAUNCH_TIMEOUT_MS,
+    'launching the shared Chromium',
+  );
+  return sharedBrowser;
 }
 
 async function createMobilePage() {
-  const browser = await chromium.launch({
-    args: WEBGL_RENDERER_ARGS,
-  });
-  const context = await browser.newContext({
-    viewport: { width: 430, height: 932 },
-    isMobile: true,
-    hasTouch: true,
-  });
-  const page = await context.newPage();
+  const browser = await launchSharedBrowser();
+  const context = await withDeadline(
+    browser.newContext({
+      viewport: { width: 430, height: 932 },
+      isMobile: true,
+      hasTouch: true,
+    }),
+    LAUNCH_TIMEOUT_MS,
+    'opening a browser context',
+  );
+  const page = await withDeadline(
+    context.newPage(),
+    LAUNCH_TIMEOUT_MS,
+    'opening a page',
+  );
   await page.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
-
-  const closeBrowser = async () => {
-    await context.close().catch(() => {});
-    await browser.close().catch(() => {});
-  };
 
   return {
     browser,
     context,
     page,
-    close: closeBrowser,
+    // Only the context: the browser outlives the test.
+    close: async () => {
+      await closeQuietly(context);
+    },
   };
 }
 
@@ -99,6 +144,10 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  if (sharedBrowser) {
+    await closeQuietly(sharedBrowser);
+    sharedBrowser = null;
+  }
   await stopDevServerInstance();
 }, 30000);
 
@@ -260,7 +309,15 @@ integrationTest(
       // budget, and the alias has its own coverage in the SEO guard.
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
-        { waitUntil: 'domcontentloaded', timeout: 30000 },
+        // 60s, not the 30s default. This is the fifth browser this file
+        // launches in a run, and CI reported `goto: Timeout 30000ms exceeded`
+        // here while the identical navigation in the tests above — on the
+        // slower `load` wait, no less — finished in single-digit seconds. The
+        // page is not stuck, the 2-core SwiftShader runner is just saturated
+        // by that point, so the first navigation needs room rather than a
+        // tighter bound. Still well inside the test budget: 60 + 30 + 20 plus
+        // setup stays under INTEGRATION_TIMEOUT_MS.
+        { waitUntil: 'domcontentloaded', timeout: 60000 },
       );
 
       // Two waits, not one, because they fail for different reasons and the
@@ -279,15 +336,19 @@ integrationTest(
         .catch(async (error) => {
           // Name what the page actually showed instead. Without this the
           // only artifact of a failure here is the selector string.
-          const shellState = await mobile.page.evaluate(() => ({
-            url: window.location.href,
-            readyState: document.readyState,
-            hasShell: Boolean(document.getElementById('stims-main')),
-            statusText:
-              document
-                .querySelector('.active-toy-status')
-                ?.textContent?.trim() ?? null,
-          }));
+          const shellState = await withDeadline(
+            mobile.page.evaluate(() => ({
+              url: window.location.href,
+              readyState: document.readyState,
+              hasShell: Boolean(document.getElementById('stims-main')),
+              statusText:
+                document
+                  .querySelector('.active-toy-status')
+                  ?.textContent?.trim() ?? null,
+            })),
+            EVALUATE_TIMEOUT_MS,
+            'reading the shell state after the error status never rendered',
+          ).catch(() => null);
           throw new Error(
             `Error status never rendered: ${JSON.stringify(shellState)} (${
               (error as Error).message
@@ -299,5 +360,11 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 90000 },
+  // The waits inside sum to 80s (30 + 30 + 20) before the browser launch and
+  // the dev-server check are counted, so 90s could expire *during* the last
+  // wait — killing the test before the wait it was stuck in could name itself,
+  // which is the bare "timed out after 90000ms" CI kept reporting and the
+  // whole reason these waits are split. Every other test in this file already
+  // budgets INTEGRATION_TIMEOUT_MS; this one was left behind.
+  { timeout: INTEGRATION_TIMEOUT_MS },
 );
