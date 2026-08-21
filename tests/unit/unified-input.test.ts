@@ -7,6 +7,7 @@ import {
   flushAnimationFrame,
   installAnimationFrameController,
 } from '../environment/animation-frame.ts';
+import { replaceProperty } from '../test-helpers.ts';
 
 const flushInput = async () => {
   // Fire the pending requestAnimationFrame synchronously instead of waiting
@@ -164,5 +165,172 @@ describe('unified input desktop performance state', () => {
       configurable: true,
       value: originalGetGamepads,
     });
+  });
+});
+
+describe('unified input multi-touch gestures', () => {
+  const pinch = (
+    target: HTMLElement,
+    type: string,
+    id: number,
+    x: number,
+    y: number,
+  ) =>
+    dispatchPointer(target, type, {
+      clientX: x,
+      clientY: y,
+      pointerId: id,
+      pointerType: 'touch',
+    });
+
+  test('rotation is unwrapped across the +/-pi seam', async () => {
+    const target = createTarget();
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      keyboardEnabled: false,
+      gamepadEnabled: false,
+    });
+
+    // The second finger sits left of the first, so the pair's angle starts
+    // just under +pi — the seam atan2 folds at.
+    pinch(target, 'pointerdown', 1, 100, 50);
+    pinch(target, 'pointerdown', 2, 20, 51);
+    await flushInput();
+    pinch(target, 'pointermove', 2, 20, 49);
+    await flushInput();
+
+    const state = latest as UnifiedInputState | null;
+    // A ~1.5 degree turn is a ~1.5 degree turn, not a reported full circle.
+    expect(Math.abs(state?.gesture?.rotation ?? 0)).toBeLessThan(0.2);
+
+    input.dispose();
+    target.remove();
+  });
+
+  test('lifting one of three fingers does not jump scale or rotation', async () => {
+    const target = createTarget();
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      keyboardEnabled: false,
+      gamepadEnabled: false,
+    });
+
+    pinch(target, 'pointerdown', 1, 100, 50);
+    pinch(target, 'pointerdown', 2, 120, 50);
+    pinch(target, 'pointerdown', 3, 20, 50);
+    await flushInput();
+    await flushInput();
+    // Nothing moves — only the first finger comes off.
+    pinch(target, 'pointerup', 1, 100, 50);
+    await flushInput();
+
+    const state = latest as UnifiedInputState | null;
+    expect(state?.gesture?.scale ?? 1).toBeCloseTo(1, 1);
+    expect(Math.abs(state?.gesture?.rotation ?? 0)).toBeLessThan(0.1);
+    // The swap used to hand the primary slot to a different finger and
+    // report the gap between two hands as one frame of drag.
+    expect(state?.performance.dragIntensity ?? 0).toBeLessThan(0.1);
+
+    input.dispose();
+    target.remove();
+  });
+
+  test('a key held while focus moves away does not stay held', async () => {
+    const target = createTarget();
+    // The synthetic pinch integrates against deltaMs, and the release timer
+    // counts real milliseconds, so this one needs a clock it can move.
+    let fakeNow = 10_000;
+    const restoreNow = replaceProperty(performance, 'now', () => fakeNow);
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      gamepadEnabled: false,
+    });
+
+    const keydown = new window.Event('keydown', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperties(keydown, {
+      key: { value: '=' },
+      repeat: { value: false },
+    });
+    target.dispatchEvent(keydown);
+    fakeNow += 16;
+    await flushInput();
+    fakeNow += 16;
+    await flushInput();
+    expect(
+      (latest as UnifiedInputState | null)?.gesture?.scale ?? 1,
+    ).toBeGreaterThan(1);
+
+    // Focus moves on mid-press, so the keyup lands somewhere else and this
+    // surface never hears it.
+    target.dispatchEvent(new window.Event('blur'));
+    // One frame, one frame's worth of time: the release ramp only advances on
+    // frames the loop schedules, and with the held set empty there is nothing
+    // left to keep scheduling them. Jumping the clock past the ramp before
+    // flushing would hide exactly that.
+    fakeNow += 16;
+    await flushInput();
+    expect((latest as UnifiedInputState | null)?.gesture).toBeNull();
+
+    input.dispose();
+    target.remove();
+    restoreNow();
+  });
+
+  test('an ordinary key release runs the gesture ramp to completion', async () => {
+    const target = createTarget();
+    let fakeNow = 20_000;
+    const restoreNow = replaceProperty(performance, 'now', () => fakeNow);
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      gamepadEnabled: false,
+    });
+
+    const keydown = new window.Event('keydown', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperties(keydown, {
+      key: { value: '=' },
+      repeat: { value: false },
+    });
+    target.dispatchEvent(keydown);
+    fakeNow += 16;
+    await flushInput();
+    fakeNow += 16;
+    await flushInput();
+    expect(
+      (latest as UnifiedInputState | null)?.gesture?.scale ?? 1,
+    ).toBeGreaterThan(1);
+
+    const keyup = new window.Event('keyup', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperty(keyup, 'key', { value: '=' });
+    target.dispatchEvent(keyup);
+    // The held set is empty from here on, so the ramp only finishes if the
+    // loop keeps scheduling itself while the synthetic gesture is live.
+    for (let frame = 0; frame < 40; frame += 1) {
+      fakeNow += 16;
+      await flushInput();
+    }
+    expect((latest as UnifiedInputState | null)?.gesture).toBeNull();
+
+    input.dispose();
+    target.remove();
+    restoreNow();
   });
 });

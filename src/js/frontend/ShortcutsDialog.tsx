@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
+import { STAGE_GESTURES } from './hooks/useStageGesture.ts';
 import {
   getShortcutKeys,
   readShortcutOverrides,
@@ -74,7 +75,7 @@ export function ShortcutsDialog({
       className="stims-shell__shortcut-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Keyboard shortcuts"
+      aria-label="Keyboard shortcuts and stage gestures"
       onClick={onClose}
       onKeyDown={(e) => {
         if (e.key === 'Escape') onClose();
@@ -142,6 +143,15 @@ export function ShortcutsDialog({
                 </button>
               )}
             </div>
+          ))}
+        </div>
+        <h3>Stage gestures</h3>
+        <div className="stims-shell__shortcut-grid">
+          {STAGE_GESTURES.map((entry) => (
+            <Fragment key={entry.gesture}>
+              <kbd>{entry.gesture}</kbd>
+              <span>{entry.label}</span>
+            </Fragment>
           ))}
         </div>
         <button type="button" className="cta-button ghost" onClick={onClose}>
