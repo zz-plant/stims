@@ -16,7 +16,19 @@ let mode: StorageMode = 'working';
 let backing = new Map<string, string>();
 
 mock.module('../../src/js/core/state/browser-storage.ts', () => ({
-  getBrowserStorage: () => null,
+  // Only the *session* seam is under test here, but `mock.module` is
+  // process-global and permanent in Bun: whatever this returns is what every
+  // test file loaded afterwards sees. Stubbing this to `null` silently
+  // disabled localStorage for the rest of the run, so
+  // milkdrop-webgpu-feature-routing's setWebGpuForceMode() wrote nowhere and
+  // the suite failed while the file passed alone. Keep the real behaviour.
+  getBrowserStorage: () => {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage : null;
+    } catch {
+      return null;
+    }
+  },
   getBrowserSessionStorage: () => {
     // Mirrors the real helper: a global that throws on access (cross-origin
     // embed with third-party storage blocked) is swallowed into null.
