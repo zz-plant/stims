@@ -122,6 +122,15 @@ async function createMobilePage() {
     LAUNCH_TIMEOUT_MS,
     'opening a page',
   );
+  // A crashed renderer does not make Playwright throw — the next wait just
+  // never resolves and reports a timeout on the selector, which reads as
+  // "the app never rendered" when the truth is "the tab died".
+  page.on('crash', () => {
+    console.error(
+      `[e2e] RENDERER CRASHED on ${page.url()} — any timeout after this ` +
+        'line is a consequence, not the cause.',
+    );
+  });
   await page.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
@@ -158,15 +167,23 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`);
-      await mobile.page.waitForSelector('[data-audio-controls]');
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`, {
+        timeout: 30000,
+      });
+      await mobile.page.waitForSelector('[data-audio-controls]', {
+        timeout: 30000,
+      });
 
-      const launchpadState = await mobile.page.evaluate(() => ({
-        pathname: window.location.pathname,
-        hasAudioControls: Boolean(
-          document.querySelector('[data-audio-controls]'),
-        ),
-      }));
+      const launchpadState = await withDeadline(
+        mobile.page.evaluate(() => ({
+          pathname: window.location.pathname,
+          hasAudioControls: Boolean(
+            document.querySelector('[data-audio-controls]'),
+          ),
+        })),
+        15000,
+        'reading the launchpad route and audio-control presence',
+      );
 
       expect(launchpadState.pathname).toBe('/');
       expect(launchpadState.hasAudioControls).toBe(true);
@@ -219,8 +236,10 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
-      await mobile.page.waitForSelector('#use-demo-audio');
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`, {
+        timeout: 30000,
+      });
+      await mobile.page.waitForSelector('#use-demo-audio', { timeout: 30000 });
       // waitForSelector resolves on *attached*, but this CTA renders
       // `disabled={!isEngineReady || isStarting}` and engineReady is just
       // `catalogError === null` (workspace-shell-hooks.ts). click() then
@@ -246,8 +265,10 @@ integrationTest(
         { timeout: 45000 },
       );
 
-      const state = await mobile.page.evaluate(() =>
-        window.stimState?.getState(),
+      const state = await withDeadline(
+        mobile.page.evaluate(() => window.stimState?.getState()),
+        15000,
+        'reading window.stimState.getState() back out of the page',
       );
       expect(state?.audioActive).toBe(true);
       expect(state?.audioSource).toBe('demo');
@@ -265,26 +286,34 @@ gestureGatedTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
-      await mobile.page.waitForSelector('#use-demo-audio');
-
-      const result = await mobile.page.evaluate(async () => {
-        try {
-          await window.stimState?.enableDemoAudio();
-          return { ok: true, error: null };
-        } catch (error) {
-          return {
-            ok: false,
-            error: error instanceof Error ? error.message : String(error),
-          };
-        }
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`, {
+        timeout: 30000,
       });
+      await mobile.page.waitForSelector('#use-demo-audio', { timeout: 30000 });
+
+      const result = await withDeadline(
+        mobile.page.evaluate(async () => {
+          try {
+            await window.stimState?.enableDemoAudio();
+            return { ok: true, error: null };
+          } catch (error) {
+            return {
+              ok: false,
+              error: error instanceof Error ? error.message : String(error),
+            };
+          }
+        }),
+        30000,
+        'calling window.stimState.enableDemoAudio() in the page',
+      );
 
       expect(result.error).toBeNull();
       expect(result.ok).toBe(true);
 
-      const state = await mobile.page.evaluate(() =>
-        window.stimState?.getState(),
+      const state = await withDeadline(
+        mobile.page.evaluate(() => window.stimState?.getState()),
+        15000,
+        'reading window.stimState.getState() back out of the page',
       );
       expect(state?.audioActive).toBe(true);
       expect(state?.audioSource).toBe('demo');
@@ -307,6 +336,25 @@ integrationTest(
       // load before the shell even starts booting — on CI's 2-core
       // SwiftShader runner that hop was pure overhead against this test's
       // budget, and the alias has its own coverage in the SEO guard.
+      // 60s because this navigation is being starved, not because it is
+      // slow. Reproduced locally with `taskset -c 0,1`, which fails this
+      // deterministically where a 4-core run does not, and the measured
+      // chain is:
+      //
+      //   an earlier test's page wedges -> its close() hangs (its siblings
+      //   close in 19ms-2.6s; that one never returned even given 10
+      //   minutes) -> closeQuietly abandons it at 15s and leaks a live
+      //   browser -> the leaked browser keeps burning CPU in its rAF loop
+      //   -> on two cores this goto never gets scheduled.
+      //
+      // So the bound is a backstop, not a cure: see #1123. The route is
+      // fine -- navigated in isolation it reaches domcontentloaded in 2.5s
+      // and renders the error text within 2s.
+      //
+      // Two earlier explanations in this spot were wrong and are recorded
+      // so they are not retried: cold vite transforms (ruled out -- raising
+      // 30s -> 60s did not help), and plain CPU slowness (ruled out -- the
+      // leak, not the load, is what starves it).
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
         // 60s, not the 30s default. This is the fifth browser this file
@@ -328,6 +376,13 @@ integrationTest(
       // a single 60s wait, both looked identical — and when the boot ran
       // long, the wait outlived the test's own budget, so the suite reported
       // a bare "timed out" naming neither.
+      // Note this waits for *visible*, not attached. 30s, matching the
+      // budget arithmetic in the comment on this test's timeout below
+      // (60 + 30 + 20 plus setup, inside INTEGRATION_TIMEOUT_MS). An
+      // earlier revision of this branch raised it to 60s to survive a
+      // browser leak; #1136 removed the leak by sharing one Chromium, and
+      // main is green on 30s, so the larger value would only have broken
+      // that sum for no benefit.
       await mobile.page.waitForSelector('#stims-main', { timeout: 30000 });
       const message = await mobile.page
         .waitForSelector('.active-toy-status.is-error p', { timeout: 20000 })
@@ -336,6 +391,11 @@ integrationTest(
         .catch(async (error) => {
           // Name what the page actually showed instead. Without this the
           // only artifact of a failure here is the selector string.
+          // Bounded: this runs *because* the wait above already failed, so
+          // the page it interrogates is exactly the kind that may not
+          // answer. evaluate() has no timeout of its own, and an unbounded
+          // one here would eat the test budget and destroy the very error
+          // it exists to enrich. Fall back to a null probe instead.
           const shellState = await withDeadline(
             mobile.page.evaluate(() => ({
               url: window.location.href,
