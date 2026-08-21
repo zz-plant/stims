@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { chromium } from 'playwright';
+import { type Browser, chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
 import {
   hasChromium,
@@ -79,12 +79,35 @@ async function ensureDevServer() {
   );
 }
 
-async function createMobilePage() {
-  const browser = await withDeadline(
+/**
+ * One Chromium for the whole file, a fresh context per test.
+ *
+ * Each test used to launch its own browser. CI failed on the fifth with
+ * `Timed out after 60000ms while launching Chromium` — not a slow page, a
+ * browser process that could not start, because by then the 2-core runner was
+ * carrying the remains of four others. The symptom kept moving earlier as the
+ * machine degraded (first a stuck wait, then a 30s navigation, then the launch
+ * itself), which is the signature of resource exhaustion rather than of any
+ * one call being wrong.
+ *
+ * A context is the isolation boundary these tests actually need — separate
+ * storage, cookies and pages — so sharing the process costs nothing and
+ * removes four launches from the run.
+ */
+let sharedBrowser: Browser | null = null;
+
+async function launchSharedBrowser(): Promise<Browser> {
+  if (sharedBrowser?.isConnected()) return sharedBrowser;
+  sharedBrowser = await withDeadline(
     chromium.launch({ args: WEBGL_RENDERER_ARGS }),
     LAUNCH_TIMEOUT_MS,
-    'launching Chromium',
+    'launching the shared Chromium',
   );
+  return sharedBrowser;
+}
+
+async function createMobilePage() {
+  const browser = await launchSharedBrowser();
   const context = await withDeadline(
     browser.newContext({
       viewport: { width: 430, height: 932 },
@@ -103,15 +126,14 @@ async function createMobilePage() {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
-  const closeBrowser = async () => {
-    await closeQuietly(context, browser);
-  };
-
   return {
     browser,
     context,
     page,
-    close: closeBrowser,
+    // Only the context: the browser outlives the test.
+    close: async () => {
+      await closeQuietly(context);
+    },
   };
 }
 
@@ -122,6 +144,10 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  if (sharedBrowser) {
+    await closeQuietly(sharedBrowser);
+    sharedBrowser = null;
+  }
   await stopDevServerInstance();
 }, 30000);
 
