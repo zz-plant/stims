@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
 import {
   buildPresetOgSvg,
+  fitByline,
   fitTitle,
   normalizePresetId,
   onRequest as ogPresetRequest,
@@ -100,6 +101,48 @@ describe('preset social sharing', () => {
       expect(long.lines.join(' ')).toBe(
         'crystal palace schizotoxin the wild iris bloom 16 iterations',
       );
+    });
+
+    // Corpus names carry underscore- and paren-delimited runs with no spaces,
+    // which word wrapping alone cannot fit.
+    test('hard-breaks a single word too long for one line', () => {
+      const { size, lines } = fitTitle(
+        'triptrap_(getting_concrete_visions_through_a_diafragma_version)',
+      );
+      const maxChars = Math.floor(1072 / (size * 0.55));
+
+      expect(lines.length).toBeGreaterThan(1);
+      for (const line of lines) {
+        expect(line.length).toBeLessThanOrEqual(maxChars);
+      }
+      expect(lines.join('')).toContain('triptrap_(getting');
+    });
+
+    test('ellipsizes a title that cannot fit in two lines', () => {
+      const { lines } = fitTitle('x'.repeat(400));
+
+      expect(lines).toHaveLength(2);
+      expect(lines[1].endsWith('…')).toBe(true);
+    });
+
+    // 60 corpus authors run past 40 characters; the longest is 94, and the
+    // brand lockup sits on the byline's own baseline.
+    test('truncates a byline before it reaches the brand lockup', () => {
+      const long =
+        'The NG + Stahlregen & Boz + EoS + Geiss + Phat + Rovastar + Zylot + Flexi + martin + Fishbrain';
+      const fitted = fitByline(long);
+
+      expect(fitted.length).toBeLessThan(long.length);
+      expect(fitted.endsWith('…')).toBe(true);
+      // "by " + the byline must clear the right-aligned "STIMS · toil.fyi".
+      const bylineWidth = `by ${fitted}`.length * 25 * 0.52;
+      expect(bylineWidth).toBeLessThanOrEqual(
+        1200 - 64 * 2 - 16 * 19 * 0.6 - 40,
+      );
+    });
+
+    test('leaves a byline that already fits untouched', () => {
+      expect(fitByline('Rovastar')).toBe('Rovastar');
     });
 
     test('renders the preset frame full-bleed when a preview exists', () => {

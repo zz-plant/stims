@@ -47,19 +47,58 @@ const GROUND = '#070a0e';
 const TITLE_CHAR_RATIO = 0.55;
 const TITLE_MAX_WIDTH = CARD_W - MARGIN * 2;
 
+// The brand lockup is right-aligned on the byline's own baseline, so the
+// byline has to stop before it. Space Mono is monospaced at 0.6em, which makes
+// the lockup's width exact rather than estimated. Collaboration credits in the
+// corpus run to 94 characters ("The NG + Stahlregen & Boz + EoS + Geiss + ..."),
+// and 60 of them exceed 40, so an unconstrained byline runs straight through
+// the branding and off the card.
+const BRAND_TEXT = 'STIMS · toil.fyi';
+const BRAND_FONT_SIZE = 19;
+const BRAND_WIDTH = BRAND_TEXT.length * BRAND_FONT_SIZE * 0.6;
+const BYLINE_GAP = 40;
+const BYLINE_FONT_SIZE = 25;
+const BYLINE_CHAR_RATIO = 0.52;
+const BYLINE_PREFIX = 'by ';
+
+export function fitByline(author: string): string {
+  const available = CARD_W - MARGIN * 2 - BRAND_WIDTH - BYLINE_GAP;
+  const maxChars =
+    Math.floor(available / (BYLINE_FONT_SIZE * BYLINE_CHAR_RATIO)) -
+    BYLINE_PREFIX.length;
+  if (author.length <= maxChars) return author;
+  return `${author.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+}
+
 function wrapWords(text: string, maxChars: number): string[] {
   const lines: string[] = [];
   let line = '';
+  const flush = () => {
+    if (line) {
+      lines.push(line);
+      line = '';
+    }
+  };
   for (const word of text.split(/\s+/).filter(Boolean)) {
-    const candidate = line ? `${line} ${word}` : word;
+    // Preset names are full of underscore- and paren-delimited runs carrying
+    // no spaces at all ("triptrap_(getting_concrete_visions_through_a_..."),
+    // which no amount of word wrapping can fit. Break them at the measured
+    // limit rather than letting one word run off the right edge.
+    let rest = word;
+    while (rest.length > maxChars) {
+      flush();
+      lines.push(rest.slice(0, maxChars));
+      rest = rest.slice(maxChars);
+    }
+    const candidate = line ? `${line} ${rest}` : rest;
     if (candidate.length <= maxChars || !line) {
       line = candidate;
     } else {
-      lines.push(line);
-      line = word;
+      flush();
+      line = rest;
     }
   }
-  if (line) lines.push(line);
+  flush();
   return lines;
 }
 
@@ -75,9 +114,12 @@ export function fitTitle(title: string): { size: number; lines: string[] } {
   }
   const size = 40;
   const maxChars = Math.floor(TITLE_MAX_WIDTH / (size * TITLE_CHAR_RATIO));
-  const lines = wrapWords(title, maxChars).slice(0, 2);
-  if (lines.length === 2 && lines[1].length > maxChars - 1) {
-    lines[1] = `${lines[1].slice(0, maxChars - 1)}…`;
+  const wrapped = wrapWords(title, maxChars);
+  const lines = wrapped.slice(0, 2);
+  // Something was dropped, so the last visible line has to say so.
+  if (wrapped.length > lines.length && lines.length > 0) {
+    const last = lines[lines.length - 1];
+    lines[lines.length - 1] = `${last.slice(0, maxChars - 1).trimEnd()}…`;
   }
   return { size, lines };
 }
@@ -103,7 +145,7 @@ export function buildPresetOgSvg({
   const display = presentTitle(title, author);
   const { size: titleSize, lines } = fitTitle(display);
   const safeLines = lines.map(escapeXml);
-  const safeAuthor = author ? escapeXml(author.trim()) : null;
+  const safeAuthor = author ? escapeXml(fitByline(author.trim())) : null;
   const label = escapeXml(eyebrowLabel(tags, tweak).toUpperCase());
 
   // The caption block is bottom-anchored so a two-line title grows upward and
@@ -152,9 +194,9 @@ export function buildPresetOgSvg({
     )
     .join('\n  ')}
 
-  ${safeAuthor ? `<text x="${MARGIN}" y="${authorBaseline}" font-size="25" font-weight="500" fill="rgba(247,244,235,0.74)" font-family="Space Grotesk, system-ui, sans-serif">by ${safeAuthor}</text>` : ''}
+  ${safeAuthor ? `<text x="${MARGIN}" y="${authorBaseline}" font-size="${BYLINE_FONT_SIZE}" font-weight="500" fill="rgba(247,244,235,0.74)" font-family="Space Grotesk, system-ui, sans-serif">by ${safeAuthor}</text>` : ''}
 
-  <text x="${CARD_W - MARGIN}" y="${authorBaseline}" text-anchor="end" font-size="19" font-weight="700" font-family="Space Mono, monospace"><tspan fill="${CORAL}" letter-spacing="2">STIMS</tspan><tspan fill="rgba(247,244,235,0.45)"> · toil.fyi</tspan></text>
+  <text x="${CARD_W - MARGIN}" y="${authorBaseline}" text-anchor="end" font-size="${BRAND_FONT_SIZE}" font-weight="700" font-family="Space Mono, monospace"><tspan fill="${CORAL}" letter-spacing="2">STIMS</tspan><tspan fill="rgba(247,244,235,0.45)"> · toil.fyi</tspan></text>
 </svg>`;
 }
 
