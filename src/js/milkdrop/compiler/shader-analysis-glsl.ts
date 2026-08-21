@@ -90,10 +90,25 @@ function emitExpression(
 /**
  * Creates a GLSL emitter that maps MilkDrop sampler/texture names to GLSL
  * functions in the composite shader.
+ *
+ * `shadowedIdentifiers` are names the preset declares for itself. The alias
+ * table below would otherwise rewrite every read of such a name to a shader
+ * uniform: a preset writing `float3 b = …; ret = b;` would assign its own
+ * local and then read `colorScale.b`, which is not a compile error — it is a
+ * silently wrong picture. A declaration in the preset wins over the alias, the
+ * same way it would in HLSL.
+ *
+ * No bundled preset currently reaches this (measured: zero declare a local
+ * whose name collides with an alias), so it guards authored presets and the
+ * editor rather than fixing a corpus failure. It is here because the
+ * alternative failure mode is invisible.
  */
-export function createCompositeGlslEmitter(): GlslEmitter {
+export function createCompositeGlslEmitter(
+  shadowedIdentifiers: ReadonlySet<string> = new Set(),
+): GlslEmitter {
   return {
     emitIdentifier(name: string): string {
+      if (shadowedIdentifiers.has(name)) return name;
       const lower = name.toLowerCase();
       // Signal aliases come from the shared table; only the non-signal
       // composite uniforms and literal constants live in this map.
@@ -768,7 +783,17 @@ export function generateGlslFromShaderStatements(
 ): string | null {
   if (statements.length === 0) return null;
 
-  const emitter = createCompositeGlslEmitter();
+  // Collected before emission, not during: a preset may read one of its own
+  // locals on a line the emitter has not walked yet, and the declaration has
+  // to beat the alias on every line rather than only later ones. Every
+  // declared name counts, not just the vector ones emitted below — `float b`
+  // collides with the alias table exactly as `float3 b` does.
+  const presetDeclaredNames = new Set(
+    statements
+      .filter((statement) => statement.declaration !== null)
+      .map((statement) => statement.target),
+  );
+  const emitter = createCompositeGlslEmitter(presetDeclaredNames);
   const lines: string[] = [];
   const declaredLocals = new Set<string>();
 
