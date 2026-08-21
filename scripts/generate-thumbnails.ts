@@ -770,11 +770,22 @@ async function main() {
     console.log(`Avg: ${(totalTime / counters.success).toFixed(1)}s/preset`);
   if (failures.length > 0) {
     const reportPath = join(OUTPUT_DIR, '..', 'preview-failures.json');
+    // check-catalog-integrity reads this file as "these presets have no usable
+    // preview" and forbids `preview: true` for anything on it. On a --force
+    // re-sweep that is not the same set as "this capture attempt failed": a
+    // preset whose recapture came back black keeps the good preview it already
+    // had, and listing it here would strip the preview flag off an image that
+    // renders fine. Only presets actually left without a file belong on the
+    // list.
+    const unusable = failures.filter(
+      (failure) => !existsSync(join(OUTPUT_DIR, `${failure.presetId}.png`)),
+    );
+    const keptPrevious = failures.length - unusable.length;
     // Trailing newline: this file is committed, and the repo's own formatter
     // check fails on it otherwise.
-    writeFileSync(reportPath, `${JSON.stringify(failures, null, 2)}\n`);
+    writeFileSync(reportPath, `${JSON.stringify(unusable, null, 2)}\n`);
     console.log(
-      `${failures.length} presets failed — no file written; details in ${reportPath}`,
+      `${failures.length} presets failed to capture (${keptPrevious} kept the preview they already had); ${unusable.length} left with no preview — details in ${reportPath}`,
     );
   }
 

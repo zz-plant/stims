@@ -8,195 +8,15 @@
     "reason": "black frame (mean=1.4, max=25)"
   },
   {
-    "presetId": "27-super-goats-orbus-maximus",
-    "reason": "flat frame (mean=253.5, std=2.1)"
-  },
-  {
     "presetId": "300-beatdetect-bassmidtreb",
     "reason": "black frame (mean=0.3, max=19)"
-  },
-  {
-    "presetId": "a-milk-art-detail-2-flexi-moebius-transformation-ft-martin-with-adamfx-b-sentensual",
-    "reason": "black frame (mean=0.1, max=50)"
-  },
-  {
-    "presetId": "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye7",
-    "reason": "flat frame (mean=149.7, std=0.0)"
-  },
-  {
-    "presetId": "aderrasi-causeway-of-dreams-point-mix",
-    "reason": "black frame (mean=1.9, max=27)"
-  },
-  {
-    "presetId": "aderrasi-chromatic-abyss-refined-abyss-mix",
-    "reason": "black frame (mean=1.8, max=29)"
-  },
-  {
-    "presetId": "aderrasi-ghast-entity",
-    "reason": "flat frame (mean=0.9, std=2.0)"
-  },
-  {
-    "presetId": "aderrasi-horvath-s-holistic-abyss",
-    "reason": "black frame (mean=1.6, max=23)"
-  },
-  {
-    "presetId": "aderrasi-madness-teaches-us-to-fly",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "aderrasi-roaming-star-himalaya-brach-office-mash0000-creaming-the-summit",
-    "reason": "black frame (mean=3.2, max=23)"
-  },
-  {
-    "presetId": "aderrasi-songflower-moss-posy",
-    "reason": "black frame (mean=0.5, max=1)"
-  },
-  {
-    "presetId": "aderrasi-variants-of-eternity",
-    "reason": "black frame (mean=1.0, max=20)"
-  },
-  {
-    "presetId": "amandio-c-flashy-thing",
-    "reason": "black frame (mean=0.1, max=5)"
-  },
-  {
-    "presetId": "amandio-c-fume",
-    "reason": "black frame (mean=0.1, max=3)"
-  },
-  {
-    "presetId": "amandio-c-odd-star",
-    "reason": "black frame (mean=0.3, max=4)"
-  },
-  {
-    "presetId": "amandio-c-salty-beats-spiral",
-    "reason": "black frame (mean=2.2, max=16)"
-  },
-  {
-    "presetId": "bdrv-al-aderrasi-oracle-bdrv-et-al-rmx-a",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "bdrv-al-eo-s-phat-intergalactic-conquest-flag2b",
-    "reason": "black frame (mean=0.4, max=16)"
-  },
-  {
-    "presetId": "bdrv-al-eo-s-phat-intergalactic-fuzzball",
-    "reason": "black frame (mean=0.3, max=22)"
-  },
-  {
-    "presetId": "bdrv-al-phat-and-eo-s-shapes-are-cool-slow-colour-melting-edit-bdrv-et-al-rmxmix32",
-    "reason": "flat frame (mean=254.9, std=0.3)"
-  },
-  {
-    "presetId": "bdrv-al-telek-spirality",
-    "reason": "flat frame (mean=253.8, std=2.1)"
-  },
-  {
-    "presetId": "bdrv-al-zylot-pinwheelw",
-    "reason": "black frame (mean=0.5, max=14)"
-  },
-  {
-    "presetId": "best-of-adamfx-2-flexi-geiss-bipolar-vs-reaction-diffusion-another-flexi-fishbrain-swelling-spiral-work-with-lines-deamon-lord-eos-23",
-    "reason": "flat frame (mean=255.0, std=0.2)"
-  },
-  {
-    "presetId": "beta106i-songflower-orchid-field-mash0000-too-drunk-and-high-at-club",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "bmelgren-krash-rainbow-orb-peacock-lonely-signal-gone-mad-mix",
-    "reason": "black frame (mean=2.7, max=19)"
-  },
-  {
-    "presetId": "brainstain-blackwidow",
-    "reason": "black frame (mean=0.4, max=12)"
-  },
-  {
-    "presetId": "brainstain-boiling-mix2-redi-jedi-full-carb-mix",
-    "reason": "flat frame (mean=220.0, std=0.0)"
-  },
-  {
-    "presetId": "brainstain-re-entry",
-    "reason": "black frame (mean=0.4, max=28)"
-  },
-  {
-    "presetId": "che-terracarbon-stream",
-    "reason": "black frame (mean=2.5, max=32)"
-  },
-  {
-    "presetId": "cope-27-super-goats-orbus-maximus-breach-the-egg-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cope-ferrofluid",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "cope-flexi-mother-of-whirl-composition-from-fractopia-roam3-nz",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "cope-flexi-mother-of-whirl-no-fnords-were-hurt",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cope-martin-mother-of-pearl",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "cope-the-drain-to-heaven",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "cotc-101",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-102",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-103",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-13",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-14",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-141",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-146",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-16",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-170",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-174",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-19",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-22",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-220",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -208,71 +28,11 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-307",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-308",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-310",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-312",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-313",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-314",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-315",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-316",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-317",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-318",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-338",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-34",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-345",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-367",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-368",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-370",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-372",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -284,19 +44,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-like-me-who-indulge-in-crying-wo",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-morons-who-don-t-think-things-are-going",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-414-bowel-rebranding-pr-skinned-to-the-teeth-loadus-veracruz",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -309,34 +57,6 @@
   },
   {
     "presetId": "cotc-455",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-99",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-bit-storm-effected-by-adamfx-2-shadowharlequin-bit-storm-ft-dancing-petals",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-bitstorm-intune-with-ada",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-eso-demon-released-by-ad",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-feature-preset-master-exclusive-orb-planetary-alignment-acidburn-hexocollie-flexi-adamfx-",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-a-hd-adamfx-creation-ft-martin-flexi-rovastar-mdropfx-collaboration-e-adam-hd-infectionfx-a",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -364,28 +84,8 @@
     "reason": "black frame (mean=0.0, max=3)"
   },
   {
-    "presetId": "cotc-amandio-c-sierpinsky-s-triangle",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-amandio-c-typhoon-season-inside-eid-sdi",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-amandio-c-water-ripples-2d",
     "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "cotc-bdrv-aderrasi-accelerator-orbital-migraine-bdrv-et-al-rmx8-sorry-to-hear-you-re-not-liking-",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-bdrv-aderrasi-true-subject-star-pure-medium-bdrv-etal",
-    "reason": "flat frame (mean=1.0, std=2.2)"
-  },
-  {
-    "presetId": "cotc-bdrv-al-eos-pulsecubebdrv-etal-rmxmix-25-qabalistic-space-invading-homo-nutrient-mouth-swis",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-bdrv-etal-nighthawk-dark-crystal",
@@ -396,23 +96,7 @@
     "reason": "black frame (mean=2.4, max=16)"
   },
   {
-    "presetId": "cotc-beta106i-old-myths-and-fairytales",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-beta106i-songflower-ice-flower",
-    "reason": "black frame (mean=1.0, max=1)"
-  },
-  {
-    "presetId": "cotc-bleeding-like-a-horsey",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-bleeding-like-a-horsey-roams-i-just-got-through-watching-planet-bboy-and-boy-do-i-feel-emba",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-by-adam-fx-2-shifter-geiss-neon-pulse-glow-mix-rovastar",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -432,14 +116,6 @@
     "reason": "black frame (mean=2.6, max=19)"
   },
   {
-    "presetId": "cotc-cope-flexi-julia-set-strange-days-bdrv2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-cope-flexi-strange-attractor-jewellery-tile-mix-spher",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-dbleja-horizontology-blue-mix",
     "reason": "flat frame (mean=255.0, std=0.1)"
   },
@@ -454,14 +130,6 @@
   {
     "presetId": "cotc-drugsincombat-reactive-molecule-v-05a",
     "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-eos-3d",
-    "reason": "black frame (mean=0.6, max=17)"
-  },
-  {
-    "presetId": "cotc-eos-apocalypse-b",
-    "reason": "black frame (mean=2.2, max=30)"
   },
   {
     "presetId": "cotc-eos-glowsticks-v2-03-music-shifter-edit-b-stahl-s-reactive-rmx-flexi-s-reflections-phat-s-r",
@@ -484,24 +152,12 @@
     "reason": "black frame (mean=1.4, max=31)"
   },
   {
-    "presetId": "cotc-eos-magnetosphere-06-birthegg",
-    "reason": "black frame (mean=1.1, max=25)"
-  },
-  {
-    "presetId": "cotc-eos-multisphere-01-b-phat-ra-mix-nexus-roams-falling-through-9-time",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-eos-phat-i-v2-gradients",
     "reason": "black frame (mean=3.0, max=25)"
   },
   {
     "presetId": "cotc-eos-phat-i-v2-gradients-rot",
     "reason": "black frame (mean=1.5, max=30)"
-  },
-  {
-    "presetId": "cotc-eos-phat-linear-clouds-solarized-points-of-light",
-    "reason": "flat frame (mean=255.0, std=0.0)"
   },
   {
     "presetId": "cotc-eos-phat-linear-clouds-solarized-points-of-light-v2",
@@ -548,14 +204,6 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-evet-flexi-geiss-tokamak-fractal-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-evet-jewelsmoke",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-evet-waterrgate",
     "reason": "black frame (mean=0.0, max=0)"
   },
@@ -566,22 +214,6 @@
   {
     "presetId": "cotc-eviljim-ice-drops",
     "reason": "black frame (mean=0.8, max=7)"
-  },
-  {
-    "presetId": "cotc-fishbrain-betelguese3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-fishbrain-betelguese3-aa",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-fishbrain-david-bowie-cpe",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-fishbrain-evolution-3d-phat-edit-v2",
-    "reason": "flat frame (mean=0.5, std=1.7)"
   },
   {
     "presetId": "cotc-fishbrain-flexi-stitchcraft-n",
@@ -597,10 +229,6 @@
   },
   {
     "presetId": "cotc-fishbrain-geiss-witchcraft-glow-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-fishbrain-submarine-exp-ame-med",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -648,19 +276,11 @@
     "reason": "black frame (mean=0.3, max=18)"
   },
   {
-    "presetId": "cotc-fishbrain-witchcraft-neuromancer-remix",
-    "reason": "flat frame (mean=0.5, std=1.1)"
-  },
-  {
     "presetId": "cotc-fishbrain-witchcraft-sorcery-remix",
     "reason": "black frame (mean=0.1, max=21)"
   },
   {
     "presetId": "cotc-fleekus-flokus-violent-and-insane-homicidal-air-molecules-beat-code-experiment2-gss",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-flexi-bdrv-ultramix-05-alien-complex-mix-not-roaring-at-all",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -704,10 +324,6 @@
     "reason": "black frame (mean=0.2, max=6)"
   },
   {
-    "presetId": "cotc-flexi-fishbrain-geiss-unchained-others-plaidcraft",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-flexi-geiss-bipolar-vs-reaction-diffusion-mirror-scoped-phat-s-reflecto",
     "reason": "black frame (mean=0.0, max=0)"
   },
@@ -721,10 +337,6 @@
   },
   {
     "presetId": "cotc-flexi-identity-killing-petting-colon-gonad-type9",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-flexi-leaving-colors-crazy-cogitations-centrifuge-collapsing-cosmos-creation-oh-thats-still",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -748,31 +360,11 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-geiss-cosmic-dust-2-laplacian-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-geiss-cosmic-dust-2-laplacian-mix-maalol-mix",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-geiss-cosmic-dust-2-tiny-reaction-diffusion-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-geiss-electric-storm-half-digital-2-fiesta-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-geiss-flexi-orb-others-i-ve-had-it-with-this-g-tree",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-geiss-flexi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-jelly-mashup-yay3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-geiss-plasma",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -824,55 +416,7 @@
     "reason": "black frame (mean=0.3, max=7)"
   },
   {
-    "presetId": "cotc-geiss-skin-dots-9",
-    "reason": "black frame (mean=0.4, max=7)"
-  },
-  {
     "presetId": "cotc-geiss-skin-dots-multi-layer-3-pig-jembe-acid-wretch",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-geiss-tadpole-hunter-mash0000-humiliate-the-god-with-spencer",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-geite-spooksville-roams",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-gentlekid-cosmic-dust-2-digital-data-loss",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-amandio-c-final-hour-eclipse-shader-rmx-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-aurora-totalis",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-ego-decontructor",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-lights-in-the-sky",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-need",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-need-desire-remix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-need-transcendance-remix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-goody-s-fatal-color-attraction-pliant-reality-remix-ps2-0-isosceles-edit",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -896,23 +440,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-halfbreak-flexi-and-goody-geiss-benski-sparkly-lsb-feedback",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-halfbreak-last-in-nebula",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-halfbreak-tonymilkdrop-beautiful-sepia-mashmash",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-abyssal-dreamscape",
-    "reason": "flat frame (mean=220.0, std=0.0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-aderassi-bdrv-adamfx-n-flexi-it-s-a-start",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -936,43 +464,11 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-hexcollie-shifter-martin-anime-vs-the-stalion-mang",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-surge",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-roams-drugs-stretch-time-wave-packe",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-ti-n-suksma-zylot-orb-martin-n-flexi-blarffff-thinkin-bout-u",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-hexcollie-x-warp-harsh-klive",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-hexcollie-zylot-n-phat-it-has-to-be-wrong-to-have-this-much-fun-without-any-talent",
     "reason": "black frame (mean=0.2, max=4)"
   },
   {
-    "presetId": "cotc-hypra-a-astral-hypra-a-plane-fairlly-amazing-bullshit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-eos-angels-of-decay-19-hexocollie-6",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-including-adam-fx-2-flexi-fishbrain-operation-fatcap-fishbrain-and-witchcraft",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rova",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -984,36 +480,12 @@
     "reason": "black frame (mean=1.3, max=9)"
   },
   {
-    "presetId": "cotc-loading-doctor",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-luxxx-absinthe-with-mc-escher",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-luxxx-broken-beat-machina-i",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-luxxx-fuck-ur-fractal-muscles-i",
     "reason": "black frame (mean=0.1, max=2)"
   },
   {
-    "presetId": "cotc-luxxx-inhale-this-golden-rate-tax-stamp-for-025-credits-off",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-luxxx-my-soul-i",
     "reason": "black frame (mean=3.3, max=25)"
-  },
-  {
-    "presetId": "cotc-luxxx-water-your-pet-goldfish-i",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-luxxx-when-the-first-aliens-came-b",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-luxxx-wip",
@@ -1036,51 +508,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-martin-hardcore-mix-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-hardcore-mix-2-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-lock-and-release",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-ac",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-flexi-shifter-n-fishbrain",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-n-adamfx-hardcore-mix-collision-in-myself-ft-stahlregen-aderrasi-geiss-unchained-zyl",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-pendulum-in-brass-ps2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-pendulum-in-brass-ps3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-martin-soma-in-pink",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-sphery-tales",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1088,31 +516,11 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-martin-tunnel-race-meta-mash-disciple",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-martin-tunnel-race-meta-mash-for-rats",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-men-in-reverse-in-reverse-time-born-to-breath-not-much-else",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-midgitstraights-of-majillaen-gunthree-spher",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-mrt-ei-cynical-engineers-working-for-a-backward-system-unite-in-circle-jerk-oink",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-new-adam-master-mashup-fx-2-geiss-and-zylot-reaction-diffusion-3-overload-mix-2",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1132,23 +540,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-nicklepenultim",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-nicklepenultim-roam",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-nicklepenultim-the-skuzzmuppet",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-orb-blade",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-orb-cloud-burst",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1156,24 +548,8 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-orb-waaa-jelly-5-55",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-phat-zylot-eos-trippy-rotation-v2-alt-colours",
     "reason": "black frame (mean=0.4, max=8)"
-  },
-  {
-    "presetId": "cotc-phat-zylot-eos-trippy-rotation-v2-sector-mix",
-    "reason": "black frame (mean=0.8, max=26)"
-  },
-  {
-    "presetId": "cotc-phat-zylot-eos-trippy-rotation-v2-sector-mix-alt-colours",
-    "reason": "black frame (mean=0.8, max=21)"
-  },
-  {
-    "presetId": "cotc-pieturp-hsl-tunnelvisions-morphing3",
-    "reason": "black frame (mean=3.8, max=22)"
   },
   {
     "presetId": "cotc-pieturp-hsltorgb-swirl",
@@ -1200,47 +576,11 @@
     "reason": "flat frame (mean=227.6, std=1.5)"
   },
   {
-    "presetId": "cotc-rarian-rakista-cheap-angels-23",
-    "reason": "black frame (mean=0.5, max=18)"
-  },
-  {
-    "presetId": "cotc-rce-ordinary-want-nevermore-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-rovastar-geiss-hyperkaleidoscope-glow-2-multitonal",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-rovastar-loadus-geiss-tone-mapped-fractaldrop-4-jelly-v5",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-rovastar-stahlregen-touchdown-on-jelly-planet-bccn-v4",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-royal-mashup-102",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-103",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-104",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-royal-mashup-115",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-130",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-131",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1249,10 +589,6 @@
   },
   {
     "presetId": "cotc-royal-mashup-160",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-162",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1276,10 +612,6 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-royal-mashup-215",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-royal-mashup-270",
     "reason": "black frame (mean=0.0, max=0)"
   },
@@ -1288,27 +620,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-royal-mashup-376",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-377",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-380",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-381",
-    "reason": "flat frame (mean=255.0, std=0.2)"
-  },
-  {
     "presetId": "cotc-royal-mashup-395",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-405",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1316,39 +628,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-royal-mashup-484",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-505",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-509",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-royal-mashup-524",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-58",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-59",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-62",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-83",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-royal-mashup-96",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1357,10 +637,6 @@
   },
   {
     "presetId": "cotc-serge-adam-eatit-mashup-fx-2-martin001",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-serge-circles007b",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1376,36 +652,8 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-serge-martin-crystal-palace001c",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-sewn-to-slavish-memes",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-shifter-crosshatch-colony-beta6-gaseous-lives",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-shifter-crosshatch-colony-beta6-loved-to-death-by-nymphs-and-hentai-succubi",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-shifter-dark-tides-eos-phat-whisps-of-doom-mix-mash0000-salt-dunes-time-lapse",
     "reason": "flat frame (mean=0.6, std=1.3)"
-  },
-  {
-    "presetId": "cotc-shifter-fishbrain-witchcraft-i-m-melting",
-    "reason": "flat frame (mean=253.3, std=1.9)"
-  },
-  {
-    "presetId": "cotc-shifter-flashburn-roams-use-fishing-line-to-keep-the-spiral-plates-from-touching",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-shifter-flexi-american-pie-artifactory-never-contribute-given-7-inches-to-bath-with",
@@ -1428,42 +676,6 @@
     "reason": "flat frame (mean=253.1, std=0.4)"
   },
   {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-slut-warm-spher",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-a-rip-in-mommy-s-underwear-roams",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-maps-of-hell-roams-saucy",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-adamfx-flexi-geiss-dragonfly-wings-mashup-26-jack-s-playful-thumbdrum-planet-rmx",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-bass-spectre-ps2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-bdrv-flexi-geiss-shifter-hypno-swirl-mashup-38-coral-trance-rmx",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-stahlregen-boz-eos-phat-rovastar-zylot-machine-code-01010010-01000001-01010111-2",
     "reason": "black frame (mean=1.7, max=17)"
   },
@@ -1472,35 +684,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-stahlregen-dots-layered-suksma-world-humanvirus-replication-killphreqs-mix4-flacc",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-downpour",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-downpour-x-spectre-ps2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-downpour-x-spectre-ps2-contact-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-stahlregen-downpour-x-spectre-ps2b",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-eckshack-s-eyeball-floater-mix-plastic",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-eckshack-s-eyeball-popped-eyeball-mix",
-    "reason": "flat frame (mean=0.5, std=2.3)"
-  },
-  {
-    "presetId": "cotc-stahlregen-eos-geiss-krash-pieturp-zylot-dandelion-2",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1508,19 +692,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-dense",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-stahlregen-fishbrain-flexi-geiss-shifter-stonecraft-glowing",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-fishbrain-geiss-martin-flowercraft-reflecto-upfcku-yaqui-graph",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1532,47 +704,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-stahlregen-geiss-eos-martin-rovastar-halcyon-jelly-skin",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-geiss-martin-tiger-no5-random-color-metal",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-stahlregen-geiss-orb-etheral-waves-mashup-20",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-5-5",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-geiss-rovastar-fields-of-flowers-jelly-zen-gardens",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-geiss-tiger-no5-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-hypnotron-v-0-5",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-stahlregen-sparkling",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-e",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-starz-in-milkhdfx-stahlregen-aderrasi-eos-geiss-unchained-zylot-flexi-martin-adamfx-j",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-actually-i-didn-t-eat-last-night",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1580,75 +712,15 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-and-i-will-have-salmon-for-dinner",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-as-for-me-i-take-medicines",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-as-for-me-i-take-medicines2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-at-the-root-of-open-the-graves",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-barnacle-coated-hemoclubbin",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-bmelgren-hungry-orbits-mash0000-sir-i-can-t-help-you-over-here-isosceles-edit",
     "reason": "flat frame (mean=1.4, std=2.4)"
-  },
-  {
-    "presetId": "cotc-suksma-circle-of-the-taeyrunts",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-suksma-circle-of-the-taeyrunts-phairess-imbularse-deign-offal",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-confetti-manslut",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-cuneinformal-basilihistrionix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dark-one-clouds-das-yi-hyper-phosphene-ejaculate",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dark-one-clouds-i-forcibly-shoved-the-crowbar-down-my-skeletal-remain",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-daryl-feels-my-hellish-lonliness",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-daryl-feels-my-hellish-lonliness-creamy-layers-of-junk-mail-drips-with-soul",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-deconstrue-orbaet",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-distort-crops-of-horror-torture",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-distort-crops-of-horror-torture-blackode",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-autoclayve-flacc-das-yi",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1660,27 +732,11 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-dying-visions2-flacc-roams-thee-big-rip-of-wills-rce-beats",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-fed-shd",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-suksma-dotes-hostile-undertake-finished-breathing-sir-flacc-roam",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-j4-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-j4-flacc",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1708,10 +764,6 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-dotes-hostile-undertake-you-can-buy-hate-flacc",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted",
     "reason": "black frame (mean=0.0, max=0)"
   },
@@ -1720,43 +772,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-dotes-var-eyes-built-to-fuck-flacc-when-we-touch-i-get-disgusted-roam3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-ed-geining-hateops-flx-if-it-is-selfish-to-have-your-focus-then-i-am-an-ever-unsatis",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-ed-geining-hateops-flx-maggotillion-flacc",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-estrangedaholic-grandfather-cloques",
-    "reason": "black frame (mean=0.0, max=48)"
-  },
-  {
-    "presetId": "cotc-suksma-farming-equipment-ice-shower",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-feeling-abort",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-feeling-ignore",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-feeling-retry",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-fickle-will-dive-fed-shd",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-fig-leaves-can-t-cover-that-much",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1784,43 +800,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-foolish-mash",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-frustratingly-incomplete-wasteland",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-g-martin-m-m-w-fishbrain-wp-m-c-m-tanked-on-pure-neoepinephrine",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-g-martin-m-m-w-mu-wp-m-c-m-getting-beat-isn-t-embarrassing-it-s-no-one-cares",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-g-thea-ceo-m-zylo-v-w-27su-om-wp-xxx-c-stah-j5-heiyin-taiyang",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-gapes-to-spelunkcide-dada-hate-art-isn-t-art",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-geiss-dotes-orb",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-geiss-dotes-orb-extreme-elegance",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-gss-sth-hogwoman-style-incantation-onward-to-golgotha-christening-the-afterbirth-fla",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-gss-sth-hogwoman-style-starin-at-sports-carscryin-schnig-flacc",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1834,26 +814,6 @@
   {
     "presetId": "cotc-suksma-indecision-about-how-to-die-decision-made",
     "reason": "black frame (mean=0.3, max=67)"
-  },
-  {
-    "presetId": "cotc-suksma-lackstastique-j4",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-last-thing-i-remember-was-reading-tombstones",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-log-smell-via-gandalf-pipeweed-taint-flashies2",
-    "reason": "black frame (mean=0.0, max=0)"
   },
   {
     "presetId": "cotc-suksma-moistened-gills-in-latent-galaxy-raggy",
@@ -1872,23 +832,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-mtn-flx-flacc-choilan-stenter-phi",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-mtn-flx-flacc-roam3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-mundane-side-of-eden",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-never-churchmouth",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-never-throck",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1896,23 +840,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-nothing-to-remember-you-by-logsmeltitdealtit2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-passive-probabilistic-roaming-coin-gods",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-question-authority-take-what-you-want-be-a-nihilist",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-race-for-hot-dog-log-smell-2",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1920,23 +848,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-this-pain-was-saved-for-you-maggot-filigree-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-this-pain-was-saved-for-you-roams-stephen-hill-hos-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-time-is-a-prison",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1944,31 +856,7 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-suksma-truth-rarity-isosceles-edit08",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-suksma-truth-rarity-isosceles-edit09",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-truth-raritys-isosceles-edit-11",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-twist-fiber-wrap-cut-circulation",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-uhnfareknesce-roosta-conflarian",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-suksma-var-eos-geiss-goody-god-parasite-dissonance-palms-your-soul",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-syst3mfailur-satanic-ring-phat-eos-diety-freequency-remix",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -1980,55 +868,11 @@
     "reason": "black frame (mean=13.0, max=13)"
   },
   {
-    "presetId": "cotc-the-ng-flexi-bdrv-ultramix-05-alien-complex-mix-underground",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-the-ng-stahlregen-boz-eos-geiss-phat-rovastar-zylot-flexi-martin-fishbrain-machine-code-in-",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-tonymilkdrop-angels-of-glory-flexi-an-excuse-taken-back-alien-complex-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-tonymilkdrop-angels-of-glory-flexi-don-t-play-with-those-kids-multiverse-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-alien-complex-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-angels-of-glory-flexi-safer-sex-multiverse-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit1",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-nuclear-flexi-why-even-bother-alien-complex-isosceles-edit2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-alien-complex-isosceles-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tonymilkdrop-rhythm-of-my-life-flexi-multiverse-isosceles-edit",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
@@ -2092,863 +936,19 @@
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-tripgnosis-firestar",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tripgnosis-flameorb",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-tripgnosis-neon-algebra",
     "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-tripgnosis-triadular",
-    "reason": "black frame (mean=7.3, max=28)"
   },
   {
     "presetId": "cotc-undermines-him-in-the-subtlest-ways-mega-schoob-1d-serial-flashline-projection-creator",
     "reason": "black frame (mean=0.0, max=0)"
   },
   {
-    "presetId": "cotc-undulate-harque-amaz-inge",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-undulate-harque-brit-tlee",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-undulate-harque-pain-tthe",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-undulate-harque-zing",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-va-ultramix-381",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-va-ultramix-430",
-    "reason": "flat frame (mean=254.6, std=1.1)"
-  },
-  {
     "presetId": "cotc-va-ultramix2-156-1",
     "reason": "black frame (mean=0.1, max=2)"
   },
   {
-    "presetId": "cotc-va-ultramix2-296-1",
-    "reason": "black frame (mean=0.5, max=8)"
-  },
-  {
-    "presetId": "cotc-waltra-furry-synthesis-isosceles-edit2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-waltra-galactic-super-perspective",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-waltra-monodream",
-    "reason": "black frame (mean=0.4, max=255)"
-  },
-  {
-    "presetId": "cotc-waltra-time-travel",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-xtramartin-3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-xtramartin-459",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-yin-314-ocean-of-light-ascending-nadi-mix-spher",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
     "presetId": "cotc-zylot-and-fishbrain-i-am-the-witch",
     "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-zylot-crystal-ball",
-    "reason": "black frame (mean=0.2, max=26)"
-  },
-  {
-    "presetId": "cotc-zylot-crystalball-aren-tfractals",
-    "reason": "black frame (mean=0.4, max=19)"
-  },
-  {
-    "presetId": "cotc-zylot-shifter-tartan-silent-heaven-mix",
-    "reason": "black frame (mean=2.4, max=30)"
-  },
-  {
-    "presetId": "cotc-zylot-the-collective-unconcious-jelly-5-5",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "cotc-zylot-visionarie-geiss-aspect-ratio-fix-mash0000-infinitely-dense-massless-particle",
-    "reason": "black frame (mean=0.1, max=16)"
-  },
-  {
-    "presetId": "dbleja-hovering-over-mars",
-    "reason": "flat frame (mean=255.0, std=0.1)"
-  },
-  {
-    "presetId": "dbleja-hovering-over-pluto",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "dbleja-inside-the-tree-blue-mix",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "eo-s-multisphere-01-b-phat-ra-mix",
-    "reason": "black frame (mean=0.1, max=74)"
-  },
-  {
-    "presetId": "eo-s-phat-cool-bug",
-    "reason": "black frame (mean=2.0, max=31)"
-  },
-  {
-    "presetId": "eo-s-phat-cool-bug-v2-krash-s-beat-detection",
-    "reason": "black frame (mean=1.7, max=30)"
-  },
-  {
-    "presetId": "eo-s-phat-shipwreaked-v3",
-    "reason": "black frame (mean=0.2, max=11)"
-  },
-  {
-    "presetId": "eo-s-phat-spectrum-bubble-new-colors-v2",
-    "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "eo-s-phat-the-lights-at-night-spikes",
-    "reason": "black frame (mean=0.0, max=1)"
-  },
-  {
-    "presetId": "eo-s-repeater-08-rave-on-a-lot-of-acid-and-some-k",
-    "reason": "black frame (mean=0.5, max=19)"
-  },
-  {
-    "presetId": "eo-s-repeater-13-definitive",
-    "reason": "black frame (mean=0.7, max=23)"
-  },
-  {
-    "presetId": "eos-heater-core-c",
-    "reason": "black frame (mean=1.2, max=13)"
-  },
-  {
-    "presetId": "eos-matrix-cube-c",
-    "reason": "black frame (mean=6.6, max=26)"
-  },
-  {
-    "presetId": "eos-phat-linear-clouds-v2",
-    "reason": "black frame (mean=0.2, max=12)"
-  },
-  {
-    "presetId": "eosphat-shipwreakedv5b",
-    "reason": "black frame (mean=3.2, max=23)"
-  },
-  {
-    "presetId": "evet-responsive-acid-iris",
-    "reason": "flat frame (mean=0.5, std=1.2)"
-  },
-  {
-    "presetId": "fishbrain-geiss-witchcraft-glow-mix",
-    "reason": "black frame (mean=0.2, max=19)"
-  },
-  {
-    "presetId": "fishbrain-geiss-witchcraft-grow-mix-3c-finally-mirrored-mash0000-rituals-on-water-skin",
-    "reason": "flat frame (mean=149.7, std=1.0)"
-  },
-  {
-    "presetId": "fishbrain-when-robots-take-over-the-world",
-    "reason": "black frame (mean=2.3, max=25)"
-  },
-  {
-    "presetId": "fishbrain-witchcraft",
-    "reason": "black frame (mean=0.2, max=33)"
-  },
-  {
-    "presetId": "fishbrain-witchcraft-necromancer-remix-phat-edit-v3",
-    "reason": "black frame (mean=0.0, max=19)"
-  },
-  {
-    "presetId": "flexi-100-shader-fractal-origami-edit",
-    "reason": "flat frame (mean=149.7, std=0.0)"
-  },
-  {
-    "presetId": "flexi-3d-mosaic-glass-test-mash0000-9d-tuscan-slop-ram",
-    "reason": "black frame (mean=0.2, max=6)"
-  },
-  {
-    "presetId": "flexi-adamfx-hexcollie-moebius-morbid-vision-crack",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-black-holes-sucking-fractals-for-breakfast",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-bouncing-balls-grafitti-mix",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-braggadocio",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-can-t-think-of-mosaic-cages",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-geiss-infused-with-the-spiral-heavy-oil-mix-nz-rapery",
-    "reason": "flat frame (mean=254.9, std=0.2)"
-  },
-  {
-    "presetId": "flexi-geiss-pogo-cubes-on-tokamak-matter-bccn-jelly-v4",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-geiss-pogo-cubes-on-tokamak-matter-jelly-5-55",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-geiss-tokamak-fallout-repellor",
-    "reason": "flat frame (mean=59.6, std=1.4)"
-  },
-  {
-    "presetId": "flexi-gravitational-chaos",
-    "reason": "flat frame (mean=178.6, std=0.3)"
-  },
-  {
-    "presetId": "flexi-infused-with-the-spiral-bc-cn-jelly-v4",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-intensive-shader-fractal",
-    "reason": "black frame (mean=29.1, max=29)"
-  },
-  {
-    "presetId": "flexi-intensive-shader-fractal-suksma-comp-shader-mix",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-invisible-chains-securing-you-don-t-move-cn-bc-jelly-4",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-lorenz-chaser-stahl-s-rainbow-multiply-mix-2-jelly-v2",
-    "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "flexi-martin-geiss-dedicated-to-the-sherwin-maxawow",
-    "reason": "flat frame (mean=105.3, std=0.0)"
-  },
-  {
-    "presetId": "flexi-martin-phat-zylot-eo-s-one-way-trip-trap-proof-of-concept-epileptic-zoom-tunnel-edit",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-martin-tunnel-of-supraschismatika",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-meta4free-3-my-time-is-not-your-time",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-mindblob-2-0-bc-cn-jelly-4",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-mom-why-the-sky-looks-different-today",
-    "reason": "black frame (mean=29.1, max=29)"
-  },
-  {
-    "presetId": "flexi-nitorami-beat-explorer-cn-bc-jelly-4",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-oldschool-tree",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-phat-fractal-star-child-restless",
-    "reason": "black frame (mean=0.4, max=30)"
-  },
-  {
-    "presetId": "flexi-stahlregen-a-car-crash-you-can-t-defocus-2",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-stahlregen-jelly-strike",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "flexi-stahlregen-julian-tiles-3-mirror-mode-eo-s-spiral-chaos",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "flexi-the-bouncer-and-the-crasher-random-mashup",
-    "reason": "flat frame (mean=254.8, std=1.8)"
-  },
-  {
-    "presetId": "flexi-trickster-zenarchy",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "fumbling-foo-flexi-martin-orb-star-forge-v16",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "fvese-the-tunnel-final-stage-mix",
-    "reason": "black frame (mean=1.4, max=28)"
-  },
-  {
-    "presetId": "fvese-zoom-effects-remix-3",
-    "reason": "black frame (mean=0.7, max=32)"
-  },
-  {
-    "presetId": "geiss-experimental-spiral-artifact-filament-mix-scallop-mix",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "geiss-flotsam-mash0000-unfathomably-advanced-yet-psychotic-aliens-churn-my-mental-insides",
-    "reason": "black frame (mean=0.1, max=70)"
-  },
-  {
-    "presetId": "geiss-flotsam-mash0000-unfathomably-advanced-yet-psychotic-aliens-churn-my-mental-insides-2",
-    "reason": "black frame (mean=0.1, max=106)"
-  },
-  {
-    "presetId": "geiss-liquid-beats-janky-ripple-warp-reflecto",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "geiss-mega-swirl-2",
-    "reason": "black frame (mean=0.8, max=25)"
-  },
-  {
-    "presetId": "geiss-mega-swirl-3",
-    "reason": "black frame (mean=0.8, max=30)"
-  },
-  {
-    "presetId": "geiss-microcheckers-2",
-    "reason": "flat frame (mean=254.3, std=2.5)"
-  },
-  {
-    "presetId": "geiss-octopus",
-    "reason": "black frame (mean=2.6, max=28)"
-  },
-  {
-    "presetId": "geiss-reducto-ad-nauseum",
-    "reason": "duplicate of geiss-reaction-diffusion-3"
-  },
-  {
-    "presetId": "geiss-rose-3",
-    "reason": "flat frame (mean=254.9, std=1.4)"
-  },
-  {
-    "presetId": "geiss-rose-4-shifted-tiles",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "geiss-skin-dots-multi-layer-3-pig-fuck-jembe-acid-wretch-dildonic",
-    "reason": "black frame (mean=0.7, max=26)"
-  },
-  {
-    "presetId": "geiss-spiral-artifact",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "geiss-spiral-artifact-filament-mix-beat-dots-mix",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "goody-aurora-totalis",
-    "reason": "flat frame (mean=249.9, std=0.5)"
-  },
-  {
-    "presetId": "goody-clouded-reason-revisited",
-    "reason": "flat frame (mean=237.0, std=0.2)"
-  },
-  {
-    "presetId": "goody-lsd-zoomtunnel",
-    "reason": "black frame (mean=3.3, max=17)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-aqua-lumens",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-ocular-anima",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-need-desire-remix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "goody-vertigo-revisited",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "idiot-9-7-02-remix-2",
-    "reason": "black frame (mean=1.8, max=14)"
-  },
-  {
-    "presetId": "idiot-tentacle-dreams",
-    "reason": "flat frame (mean=1.2, std=2.0)"
-  },
-  {
-    "presetId": "idiot-what-is",
-    "reason": "black frame (mean=1.1, max=12)"
-  },
-  {
-    "presetId": "krash-digital-flame",
-    "reason": "black frame (mean=0.9, max=25)"
-  },
-  {
-    "presetId": "krash-techno-rhythmic-mantas-painterly",
-    "reason": "flat frame (mean=159.9, std=1.2)"
-  },
-  {
-    "presetId": "krash-vinyl-disk",
-    "reason": "black frame (mean=1.0, max=15)"
-  },
-  {
-    "presetId": "krash-war-machine-shifting-complexity-mix",
-    "reason": "black frame (mean=1.1, max=15)"
-  },
-  {
-    "presetId": "lit-claw-explorers-grid-i-don-t-have-either-a-belfry-or-bats-bitch",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "luxxx-melt-ur-face-i",
-    "reason": "flat frame (mean=105.3, std=0.0)"
-  },
-  {
-    "presetId": "martin-adrift-on-a-dead-planet-lard-mix",
-    "reason": "black frame (mean=0.8, max=10)"
-  },
-  {
-    "presetId": "martin-adrift-on-a-dead-planet-lite",
-    "reason": "black frame (mean=1.5, max=14)"
-  },
-  {
-    "presetId": "martin-axon3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-basal-ganglion",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-cherry-brain-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-cope-laser-dome",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-crystal-palace",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-crystal-palace-nz",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-deep-blue",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-elusive-impressions-mix1",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-extreme-heat",
-    "reason": "black frame (mean=1.3, max=23)"
-  },
-  {
-    "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-flexi-laser-dome-bipolar-focus-intent",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-gate-to-moria",
-    "reason": "black frame (mean=0.3, max=9)"
-  },
-  {
-    "presetId": "martin-golden-mirror",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-liquid-gold",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-mandelbox-explorer-high-speed-demo-version",
-    "reason": "flat frame (mean=210.1, std=1.6)"
-  },
-  {
-    "presetId": "martin-pendulum-in-brass-ps3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-purple-pulsator",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-rogue-wave-ps2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-rogue-wave-ps3",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "martin-stahlregen-martin-in-da-mash-12",
-    "reason": "flat frame (mean=149.7, std=0.0)"
-  },
-  {
-    "presetId": "martin-unholy-amulet",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "menstruating-in-reverse-in-reverse-time-max-out-crap-roam3-nz",
-    "reason": "black frame (mean=0.0, max=41)"
-  },
-  {
-    "presetId": "mig-008",
-    "reason": "black frame (mean=0.0, max=17)"
-  },
-  {
-    "presetId": "mig-colorful9",
-    "reason": "flat frame (mean=253.9, std=2.3)"
-  },
-  {
-    "presetId": "mstress-acoustic-nerve-impulses-primary-colors-of-sound-mix",
-    "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "mstress-scattered-gravity-smoked-mix",
-    "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "new-milktrend-trend-setters-amandio-c-flexi-ft-adamfx-n-stahlregen-martin-ufoz-identified",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "orb-acid-cycle-gas-giant",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "orb-acid-in-my-eyes",
-    "reason": "flat frame (mean=254.3, std=1.6)"
-  },
-  {
-    "presetId": "orb-solar-radiation",
-    "reason": "black frame (mean=4.1, max=24)"
-  },
-  {
-    "presetId": "orb-solar-sail",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "phat-eo-s-data-swimmer",
-    "reason": "flat frame (mean=254.0, std=2.0)"
-  },
-  {
-    "presetId": "phat-eo-s-eyes-spiral-mix",
-    "reason": "black frame (mean=0.3, max=44)"
-  },
-  {
-    "presetId": "phat-eo-s-our-own-personal-demon",
-    "reason": "black frame (mean=0.6, max=15)"
-  },
-  {
-    "presetId": "phat-eo-s-rainbow-bubble-mid3-fuck-me-dood",
-    "reason": "preset did not apply (active: phat-eo-s-rainbow-bubble-mid3-f-me-dood) for phat-eo-s-rainbow-bubble-mid3-fuck-me-dood."
-  },
-  {
-    "presetId": "phat-eo-s-single-cel-angel-birth",
-    "reason": "black frame (mean=0.4, max=14)"
-  },
-  {
-    "presetId": "phat-it-sjustnumbers",
-    "reason": "flat frame (mean=254.8, std=1.0)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-krash-i-hope-someone-will-see-this-triping-v2b",
-    "reason": "black frame (mean=0.8, max=27)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-square-faces-v2-alt-colours",
-    "reason": "black frame (mean=1.0, max=24)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-strate-lines",
-    "reason": "black frame (mean=0.8, max=25)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-trippy-rotation-weird-boxs-mix",
-    "reason": "black frame (mean=1.4, max=22)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-work-with-lines",
-    "reason": "black frame (mean=0.6, max=17)"
-  },
-  {
-    "presetId": "phat-zylot-eo-s-work-with-lines-alt",
-    "reason": "black frame (mean=0.7, max=26)"
-  },
-  {
-    "presetId": "phat-zylot-eos-trippy-rotation",
-    "reason": "black frame (mean=0.6, max=16)"
-  },
-  {
-    "presetId": "pieturp-sunflare",
-    "reason": "black frame (mean=22.4, max=22)"
-  },
-  {
-    "presetId": "redi-jedi-off-the-fadar",
-    "reason": "black frame (mean=1.6, max=21)"
-  },
-  {
-    "presetId": "redi-jedi-off-the-fadar-no-sweeps-or-bleeps-but-alotta-creeps",
-    "reason": "black frame (mean=2.3, max=15)"
-  },
-  {
-    "presetId": "reenen-geiss-soft-triple-feedback",
-    "reason": "black frame (mean=0.7, max=10)"
-  },
-  {
-    "presetId": "reenen-geiss-triple-feedback-phat-edit",
-    "reason": "flat frame (mean=254.7, std=0.8)"
-  },
-  {
-    "presetId": "rovastar-geiss-hurricane-nightmare-gold-chrome-mix",
-    "reason": "black frame (mean=0.2, max=18)"
-  },
-  {
-    "presetId": "rovastar-halcyon-dreams-3",
-    "reason": "flat frame (mean=1.5, std=2.4)"
-  },
-  {
-    "presetId": "rovastar-harlequin-s-fractal-encounter",
-    "reason": "black frame (mean=1.0, max=1)"
-  },
-  {
-    "presetId": "rovastar-jester-s-calling-2",
-    "reason": "black frame (mean=1.4, max=30)"
-  },
-  {
-    "presetId": "rovastar-oozing-resistance",
-    "reason": "black frame (mean=0.9, max=28)"
-  },
-  {
-    "presetId": "rovastar-solarized-space",
-    "reason": "black frame (mean=1.4, max=11)"
-  },
-  {
-    "presetId": "rovastar-sunflower-passion",
-    "reason": "black frame (mean=0.9, max=25)"
-  },
-  {
-    "presetId": "rovastar-sunflower-passion-simple-mix",
-    "reason": "flat frame (mean=1.1, std=1.7)"
-  },
-  {
-    "presetId": "rovastar-sunflower-passion-simple-mix-phat-eo-s-werid-angle-mix",
-    "reason": "flat frame (mean=1.2, std=1.9)"
-  },
-  {
-    "presetId": "rovastar-tripmaker-space-trip-mix",
-    "reason": "black frame (mean=9.3, max=27)"
-  },
-  {
-    "presetId": "rovastar-trippy-sperm-jelly",
-    "reason": "black frame (mean=2.2, max=19)"
-  },
-  {
-    "presetId": "rovastar-voov-s-movement-after-dark-mix-painterly",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "rovastar-zylot-crystal-ball-many-visions-mix",
-    "reason": "black frame (mean=4.4, max=18)"
-  },
-  {
-    "presetId": "royal-mashup-177",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "royal-mashup-197",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "schglasmia-danqueer",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "shifter-dark-tides-eo-s-phat-whisps-of-doom-mix",
-    "reason": "flat frame (mean=0.6, std=1.3)"
-  },
-  {
-    "presetId": "shifter-digi",
-    "reason": "black frame (mean=0.1, max=2)"
-  },
-  {
-    "presetId": "shifter-eo-s-phat-fractical-dancer-inside-the-neural-net",
-    "reason": "black frame (mean=0.6, max=20)"
-  },
-  {
-    "presetId": "shifter-geiss-neon-pulse-glow-mix",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "shifter-mandala",
-    "reason": "black frame (mean=1.5, max=12)"
-  },
-  {
-    "presetId": "shifter-robotopia",
-    "reason": "black frame (mean=0.3, max=4)"
-  },
-  {
-    "presetId": "shifter-snakeskin",
-    "reason": "black frame (mean=2.0, max=13)"
-  },
-  {
-    "presetId": "shifter-spectro",
-    "reason": "black frame (mean=14.6, max=31)"
-  },
-  {
-    "presetId": "shifter-spills-blender-krash-beatdetect-mash0000-here-comb-your-hair-with-this-planet",
-    "reason": "black frame (mean=0.0, max=1)"
-  },
-  {
-    "presetId": "shifter-spincycle-remix-love-at-home-electroplasmic-pissbowel-roam3",
-    "reason": "flat frame (mean=208.6, std=1.4)"
-  },
-  {
-    "presetId": "stahlregen-dots-pixels-blocky-jelly-v2",
-    "reason": "flat frame (mean=254.9, std=0.4)"
-  },
-  {
-    "presetId": "stahlregen-dots-pixels-blocky-reverse-jelly-v3",
-    "reason": "flat frame (mean=254.0, std=0.5)"
-  },
-  {
-    "presetId": "stahlregen-eo-s-flexi-phat-rovastar-zylot-screenspace-fractopia-rmx",
-    "reason": "flat frame (mean=105.3, std=0.0)"
-  },
-  {
-    "presetId": "stahlregen-old-school-baby-spiral-ornament-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "stahlregen-spiral-beats-fluctuating-flowers",
-    "reason": "black frame (mean=3.6, max=21)"
-  },
-  {
-    "presetId": "stahlregen-spiral-hundertwasser-2-painterly",
-    "reason": "flat frame (mean=255.0, std=0.0)"
-  },
-  {
-    "presetId": "stahlregen-unchained-psychedelic-flower-kung-fu-corrupt",
-    "reason": "flat frame (mean=193.4, std=0.0)"
-  },
-  {
-    "presetId": "studio-music-and-unchained-rapid-alteration",
-    "reason": "black frame (mean=2.9, max=28)"
-  },
-  {
-    "presetId": "suksma-aderrasi-martin-raron-geiss-are-you-mad-at-me",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "suksma-feign-shoulder-concern-when-i-should-be-executed-everything-is-eternally-shrinking",
-    "reason": "black frame (mean=0.1, max=95)"
-  },
-  {
-    "presetId": "suksma-gaeomaentaec-log-smell-2-steaming-wienies2",
-    "reason": "black frame (mean=0.0, max=1)"
-  },
-  {
-    "presetId": "suksma-rovaster-eos-phat-gastly-geiss-stahlgren-copper-mine-shaft-fall",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "telek-slow-thing-spiderman-mix",
-    "reason": "black frame (mean=7.2, max=18)"
-  },
-  {
-    "presetId": "unchained-cartoon-factory",
-    "reason": "flat frame (mean=77.9, std=0.4)"
-  },
-  {
-    "presetId": "unchained-in-memory-of-peg",
-    "reason": "flat frame (mean=233.5, std=0.5)"
-  },
-  {
-    "presetId": "unchained-making-a-science-of-it-2",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "various-artists-1200774354134-mash0000-what-the-writer-s-guild-is-doing-with-the-extra-money",
-    "reason": "black frame (mean=0.0, max=0)"
-  },
-  {
-    "presetId": "wulfson-crumple-nth-power-mix",
-    "reason": "black frame (mean=14.3, max=21)"
-  },
-  {
-    "presetId": "yin-293-sonic-brainstorm-inner-state-group-experience-mix",
-    "reason": "flat frame (mean=249.8, std=2.4)"
-  },
-  {
-    "presetId": "zylot-building-block-of-color-bitcore-tweak",
-    "reason": "black frame (mean=0.9, max=5)"
   }
 ]
