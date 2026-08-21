@@ -255,13 +255,46 @@ export interface FailureArtifactResult {
  * when nothing could be captured (e.g. the page never got far enough to
  * install `window.__stims_agent` — that case is expected pre-boot and is
  * not itself an error, so this silently no-ops rather than throwing).
+ *
+ * "Wrapped" has to mean time-bounded, not just `.catch()`. Both page probes
+ * below are `page.evaluate` calls, and a `catch` does nothing for an evaluate
+ * that never settles — which is exactly the state a page is in when a test
+ * failed because the page wedged. The dump then hangs in the `catch` block,
+ * the original (informative) error never propagates, and the suite dies on its
+ * outer test timeout with no message at all. That is the worst possible
+ * outcome for a diagnostic: it destroys the diagnosis it exists to provide.
  */
+/** Upper bound for any single page probe inside the dump. */
+const FAILURE_ARTIFACT_PROBE_TIMEOUT_MS = 10_000;
+
+/**
+ * Resolves to `fallback` if `work` has not settled in time. The dump is
+ * diagnostics, never a gate, so a wedged page costs a fallback value rather
+ * than the whole test's error message.
+ */
+async function withProbeTimeout<T>(work: Promise<T>, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work.catch(() => fallback),
+      new Promise<T>((resolve) => {
+        timer = setTimeout(
+          () => resolve(fallback),
+          FAILURE_ARTIFACT_PROBE_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function writeAgentFailureArtifact(
   page: Page,
   testName: string,
 ): Promise<FailureArtifactResult | null> {
   try {
-    const installed = await hasAgentGlobal(page).catch(() => false);
+    const installed = await withProbeTimeout(hasAgentGlobal(page), false);
     if (!installed) {
       // Pre-boot failure (e.g. the page never reached App mount) — nothing
       // agent-shaped to dump. Skip silently rather than writing an
@@ -275,16 +308,14 @@ export async function writeAgentFailureArtifact(
     );
     fs.mkdirSync(dir, { recursive: true });
 
-    const diagnostics: AgentDiagnostics = await dumpAgentDiagnostics(
-      page,
-    ).catch(
-      () =>
-        ({
-          state: null,
-          events: [],
-          stats: null,
-          installed: true,
-        }) satisfies AgentDiagnostics,
+    const diagnostics: AgentDiagnostics = await withProbeTimeout(
+      dumpAgentDiagnostics(page),
+      {
+        state: null,
+        events: [],
+        stats: null,
+        installed: true,
+      } satisfies AgentDiagnostics,
     );
 
     const diagnosticsPath = path.join(dir, 'diagnostics.json');

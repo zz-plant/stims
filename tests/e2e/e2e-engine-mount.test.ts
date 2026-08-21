@@ -598,34 +598,51 @@ browserTest(
       console.log(`[VT SWAP TEST CONSOLE] ${msg.type()}: ${msg.text()}`);
     });
 
+    // This test only reproduces on CI, where the page produces no console
+    // output beyond React's mount message — so the log cannot show which wait
+    // is the one that stalls. Name each step as it starts; the last line
+    // printed is the step that did not finish.
+    const step = (name: string) => {
+      console.log(`[VT SWAP STEP] ${name}`);
+    };
+
     try {
+      step('goto');
       await page.goto(`${SERVER_URL}/?agent=true&renderer=webgl`, {
         waitUntil: 'domcontentloaded',
       });
+      step('await #stims-main');
       await page.waitForSelector('#stims-main', { timeout: 30000 });
+      step('await stage-frame[data-mode=home]');
       await page.waitForSelector(
         '.stims-shell__stage-frame[data-mode="home"]',
         { timeout: 30000 },
       );
+      step('await stage-hero');
       await page.waitForSelector('.stims-shell__stage-hero', {
         timeout: 30000,
       });
 
       // Demo audio needs no mic permission. Click() auto-waits for engineReady.
+      step('open audio disclosure');
       await openAudioSourceDisclosure(page);
+      step('click demo-audio');
       await page
         .locator('.stims-shell__source-card[data-demo-audio-btn]')
         .click();
 
+      step('await audioActive=true');
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
         undefined,
         { timeout: 60000 },
       );
+      step('await stage-frame[data-mode=live]');
       await page.waitForSelector(
         '.stims-shell__stage-frame[data-mode="live"]',
         { timeout: 30000 },
       );
+      step('await live canvas');
       await page.waitForSelector('.stims-shell__stage-frame canvas', {
         timeout: 30000,
       });
@@ -638,6 +655,11 @@ browserTest(
       // transition is active runViewTransition skips the next one (correct
       // reentrancy behavior), which would make the home-side flip below
       // update directly instead of running its own transition.
+      // Named so a stall here is distinguishable from one in a timed wait.
+      // The wait itself is bounded inside the page (see VT_COUNT_INIT_SCRIPT):
+      // it awaits the browser's own transition.finished, which a stalled
+      // compositor never settles, and page.evaluate has no timeout of its own.
+      step('await __stimsVTDone()');
       const transitionsSettled = await page.evaluate(() =>
         (
           window as typeof window & {
@@ -656,11 +678,13 @@ browserTest(
         window.history.pushState(null, '', nextUrl);
         window.dispatchEvent(new PopStateEvent('popstate'));
       });
+      step('await audioActive!=true');
       await page.waitForFunction(
         () => document.body.dataset.audioActive !== 'true',
         undefined,
         { timeout: 60000 },
       );
+      step('await stage-frame[data-mode=home] (return)');
       await page.waitForSelector(
         '.stims-shell__stage-frame[data-mode="home"]',
         { timeout: 30000 },
