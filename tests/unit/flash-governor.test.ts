@@ -120,6 +120,43 @@ describe('flash governor', () => {
     expect(analysis.exceedsThreshold).toBe(false);
   });
 
+  test('the luminance-scale mitigation also brings the strobe under threshold', () => {
+    // The scrim path: instead of blending against the previous frame, scale
+    // the whole frame by luminanceScale. Different picture, same arithmetic
+    // — and this is the form that works on both renderer backends.
+    const raw = strobeTimeline(180, 3);
+    const governor = createFlashGovernor();
+    const scaled: number[][] = [];
+    let last: number[] | null = null;
+    for (const [index, frame] of raw.entries()) {
+      const observed = last ?? frame;
+      const { luminanceScale } = governor.sample(
+        index * FRAME_MS,
+        observed,
+        COLS,
+        ROWS,
+      );
+      const presented = frame.map((v) => v * luminanceScale);
+      scaled.push(presented);
+      last = presented;
+    }
+    const analysis = analyzeFlashTimeline({
+      frames: scaled,
+      deltaMs: FRAME_MS,
+      cols: COLS,
+      rows: ROWS,
+    });
+    expect(analysis.exceedsThreshold).toBe(false);
+  });
+
+  test('luminanceScale is the complement of hold', () => {
+    const governor = createFlashGovernor();
+    for (const [index, frame] of strobeTimeline(120, 3).entries()) {
+      const decision = governor.sample(index * FRAME_MS, frame, COLS, ROWS);
+      expect(decision.luminanceScale).toBeCloseTo(1 - decision.hold, 10);
+    }
+  });
+
   test('a monotonic fade is never held back', () => {
     const governor = createFlashGovernor();
     let maxHold = 0;
@@ -210,12 +247,56 @@ describe('flash governor', () => {
     }
     expect(governor.getState().hold).toBeGreaterThan(0);
 
-    // Calm content, well past the 1s window.
-    for (let i = 0; i < 200; i += 1) {
+    // Release is deliberately measured in seconds, not frames: a fast
+    // release lets the strobe restart and re-trigger, which is a limit cycle
+    // the governor itself drives. Give it long enough to actually finish.
+    for (let i = 0; i < 700; i += 1) {
       governor.sample((120 + i) * FRAME_MS, uniformFrame(0.4), COLS, ROWS);
     }
     expect(governor.getState().hold).toBe(0);
     expect(governor.getState().flashesInWindow).toBe(0);
+  });
+
+  test('release does not begin during the hold-off', () => {
+    // The window empties as soon as the clamp works, so releasing on an
+    // empty window alone would immediately undo the clamp.
+    const governor = createFlashGovernor();
+    for (const [index, frame] of strobeTimeline(120, 3).entries()) {
+      governor.sample(index * FRAME_MS, frame, COLS, ROWS);
+    }
+    const engaged = governor.getState().hold;
+    expect(engaged).toBeGreaterThan(0);
+
+    // Half a second of calm — inside the hold-off.
+    for (let i = 0; i < 30; i += 1) {
+      governor.sample((120 + i) * FRAME_MS, uniformFrame(0.4), COLS, ROWS);
+    }
+    expect(governor.getState().hold).toBe(engaged);
+  });
+
+  test('the response is proportional to how severe the flashing is', () => {
+    // A blind ramp punished a mild flicker as hard as a full-range strobe.
+    // The solved step should leave gentle content much less clamped.
+    const settle = (low: number, high: number) => {
+      const governor = createFlashGovernor();
+      let scale = 1;
+      for (let i = 0; i < 600; i += 1) {
+        const raw = Math.floor(i / 3) % 2 === 1 ? high : low;
+        const observed = uniformFrame(raw * scale);
+        scale = governor.sample(
+          i * FRAME_MS,
+          observed,
+          COLS,
+          ROWS,
+        ).luminanceScale;
+      }
+      return scale;
+    };
+    const mild = settle(0.3, 0.45);
+    const extreme = settle(0.0, 1.0);
+    expect(mild).toBeGreaterThan(extreme);
+    expect(mild).toBeGreaterThan(0.4);
+    expect(extreme).toBeLessThan(0.2);
   });
 
   test('reset clears the window and the hold', () => {
