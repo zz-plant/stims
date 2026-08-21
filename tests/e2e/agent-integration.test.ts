@@ -172,7 +172,24 @@ integrationTest(
     try {
       await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
       await mobile.page.waitForSelector('#use-demo-audio');
-      await mobile.page.click('#use-demo-audio');
+      // waitForSelector resolves on *attached*, but this CTA renders
+      // `disabled={!isEngineReady || isStarting}` and engineReady is just
+      // `catalogError === null` (workspace-shell-hooks.ts). click() then
+      // auto-waits for enabled with no deadline of its own, so a failed
+      // catalog fetch turned this into a silent hang that ate the whole test
+      // budget and reported a timeout naming no cause. Wait for enabled
+      // explicitly, and bound the click, so each failure says which it was.
+      await mobile.page.waitForFunction(
+        () => {
+          const btn = document.querySelector(
+            '#use-demo-audio',
+          ) as HTMLButtonElement | null;
+          return Boolean(btn) && !btn?.disabled;
+        },
+        undefined,
+        { timeout: 60000 },
+      );
+      await mobile.page.click('#use-demo-audio', { timeout: 30000 });
 
       await mobile.page.waitForFunction(
         () => window.stimState?.getState().audioActive === true,
