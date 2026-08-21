@@ -373,7 +373,10 @@ browserTest(
  * descendant does nothing. No-op when already open, or where the controls
  * render without the disclosure (the Settings panel).
  */
-async function openAudioSourceDisclosure(page: import('playwright').Page) {
+async function openAudioSourceDisclosure(
+  page: import('playwright').Page,
+  { attachTimeoutMs = 90000 }: { attachTimeoutMs?: number } = {},
+) {
   const details = page.locator('details.stims-shell__launch-source-minimal');
   // Wait for it rather than probing once: callers navigate with
   // `domcontentloaded`, and the home page is a lazy chunk, so an immediate
@@ -392,7 +395,9 @@ async function openAudioSourceDisclosure(page: import('playwright').Page) {
   // says nothing about that chunk having arrived, and a cold vite dev server
   // on a 2-vCPU runner can take a while to transform it.
   try {
-    await details.first().waitFor({ state: 'attached', timeout: 90000 });
+    await details
+      .first()
+      .waitFor({ state: 'attached', timeout: attachTimeoutMs });
   } catch {
     throw new Error(
       'The audio-source disclosure never appeared. It lives inside the lazy ' +
@@ -511,9 +516,13 @@ async function verifySmartphoneMicrophoneAccess({
     // audio (observed deterministically on the iPhone 13 emulation). Scroll
     // the card into view and wait for its rect to hold still across two
     // polls before tapping.
-    await openAudioSourceDisclosure(page);
+    // 90s of attach wait exists for a cold vite dev server on CI. These two
+    // tests are localOnlyBrowserTest, so they never run there; on a dev box
+    // the chunk is ready in well under 20s, and the shorter wait keeps the
+    // worst-case sum below this test's budget.
+    await openAudioSourceDisclosure(page, { attachTimeoutMs: 20000 });
     const micButton = page.locator('[data-mic-audio-btn]');
-    await micButton.scrollIntoViewIfNeeded();
+    await micButton.scrollIntoViewIfNeeded({ timeout: 15000 });
     await page.waitForFunction(
       () => {
         const btn = document.querySelector(
@@ -530,7 +539,7 @@ async function verifySmartphoneMicrophoneAccess({
       undefined,
       { timeout: 30000, polling: 250 },
     );
-    await micButton.click();
+    await micButton.click({ timeout: 30000 });
     await page.waitForFunction(
       () => document.body.dataset.audioActive === 'true',
       undefined,
@@ -542,17 +551,21 @@ async function verifySmartphoneMicrophoneAccess({
       { timeout: 30000 },
     );
 
-    const info = await page.evaluate(() => {
-      const state = window as typeof window & {
-        __stimsMicCalls?: number;
-        __stimsMicConstraints?: MediaStreamConstraints;
-      };
-      return {
-        calls: state.__stimsMicCalls ?? 0,
-        constraints: state.__stimsMicConstraints,
-        route: window.location.search,
-      };
-    });
+    const info = await withDeadline(
+      page.evaluate(() => {
+        const state = window as typeof window & {
+          __stimsMicCalls?: number;
+          __stimsMicConstraints?: MediaStreamConstraints;
+        };
+        return {
+          calls: state.__stimsMicCalls ?? 0,
+          constraints: state.__stimsMicConstraints,
+          route: window.location.search,
+        };
+      }),
+      15000,
+      'reading the recorded getUserMedia calls back out of the page',
+    );
 
     expect(info.calls).toBe(1);
 
@@ -588,21 +601,32 @@ const smartphoneMicrophoneTest = localOnlyBrowserTest;
 smartphoneMicrophoneTest(
   'requests default microphone access for a first-time smartphone user',
   () => verifySmartphoneMicrophoneAccess({ returningUser: false }),
-  // A test budget has to cover the work *plus* what runs when the work
-  // fails, or the outer timeout fires first and buries the named error —
-  // the exact opaque failure the deadlines in this file exist to remove.
-  // Worst case here: 90s waiting for the disclosure, then up to 30s of
-  // bounded failure-dump probes, then up to 30s of bounded teardown = 150s.
-  // Caught in review of #1138, which raised the disclosure wait to 90s
-  // without re-checking these two budgets against it.
-  { timeout: 180000 },
+  // The budget has to exceed the sum of every deadline inside, or the outer
+  // timeout wins the race and buries the named error — the exact opaque
+  // failure the deadlines in this file exist to remove. Sequential worst
+  // case, once every call in this path is bounded:
+  //
+  //   disclosure attach 20 + read .open 15 + scrollIntoView 15
+  //   + stabilise 30 + click 30 + audioActive 30 + route 30 + read back 15
+  //   + failure dump 30 + teardown 30                        = 245s
+  //
+  // 300s leaves margin. That is not a licence to hang: every step above
+  // fails at its own deadline with a message naming it, so this backstop
+  // should never actually be reached. It exists so the first real error
+  // wins, which is the whole point.
+  //
+  // Two review passes were needed to get this right — #1138 raised the
+  // disclosure wait without re-checking the budget, and the first fix
+  // counted only the disclosure, dump and teardown while three calls in
+  // here were still unbounded. Recompute the sum when changing any of them.
+  { timeout: 300000 },
 );
 
 smartphoneMicrophoneTest(
   'reuses granted microphone access for a returning smartphone user',
   () => verifySmartphoneMicrophoneAccess({ returningUser: true }),
-  // Same reserve as its sibling above: 90s + 30s dump + 30s teardown.
-  { timeout: 180000 },
+  // Same 245s worst-case sum as its sibling above.
+  { timeout: 300000 },
 );
 
 const VT_COUNT_INIT_SCRIPT = `
