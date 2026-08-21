@@ -321,15 +321,28 @@ export async function writeAgentFailureArtifact(
     const diagnosticsPath = path.join(dir, 'diagnostics.json');
     fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
 
+    // Bounded like the probes above, and for the same reason: this dump runs
+    // *because* something already went wrong, so the page it is pointed at is
+    // exactly the kind that does not answer. An unbounded screenshot() here
+    // silently ate the rest of the test budget — a click that had already
+    // failed fast at 30s still reported as a 240s timeout naming no cause,
+    // because the dump, not the test, was hanging. The try/catch below never
+    // saw it: a hang is not a throw.
     let screenshotPath: string | null = null;
-    try {
-      const candidate = path.join(dir, 'screenshot.png');
-      await page.screenshot({ path: candidate });
-      screenshotPath = candidate;
-    } catch {
-      // Page may already be mid-teardown or the backend (WebGPU) canvas may
-      // not be screenshot-able in this state — diagnostics.json still lands.
-    }
+    const candidate = path.join(dir, 'screenshot.png');
+    const captured = await withProbeTimeout(
+      page
+        .screenshot({
+          path: candidate,
+          timeout: FAILURE_ARTIFACT_PROBE_TIMEOUT_MS,
+        })
+        .then(() => true)
+        // Page may already be mid-teardown or the backend (WebGPU) canvas may
+        // not be screenshot-able in this state — diagnostics.json still lands.
+        .catch(() => false),
+      false,
+    );
+    if (captured) screenshotPath = candidate;
 
     return { dir, diagnosticsPath, screenshotPath };
   } catch {
