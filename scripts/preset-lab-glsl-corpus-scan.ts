@@ -175,11 +175,18 @@ function main() {
 
   const args = process.argv.slice(2);
   const updateBaseline = args.includes('--update-baseline');
+  // `--only <id> [...]` takes every id up to the next flag, as the usage above
+  // advertises. Reading just the one argument after the flag silently scanned
+  // a single preset when handed a list, and reported success for the rest.
   const only: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === '--only' && args[index + 1]) {
-      only.push(args[index + 1] as string);
+    if (args[index] !== '--only') continue;
+    let cursor = index + 1;
+    while (cursor < args.length && !args[cursor]?.startsWith('--')) {
+      only.push(args[cursor] as string);
+      cursor += 1;
     }
+    index = cursor - 1;
   }
 
   const entries = [...loadCatalogEntries(repoRoot).values()].filter(
@@ -191,7 +198,7 @@ function main() {
   }
 
   const failures: PresetFinding[] = [];
-  let shaderPresetCount = 0;
+  let failedPresetCount = 0;
   const startedAt = Date.now();
 
   for (const [index, entry] of entries.entries()) {
@@ -213,7 +220,7 @@ function main() {
     }
     const findings = scanPreset(raw, entry.id);
     if (findings.length > 0) {
-      shaderPresetCount += 1;
+      failedPresetCount += 1;
       failures.push(...findings);
     }
     if ((index + 1) % 200 === 0) {
@@ -228,7 +235,7 @@ function main() {
   console.log(
     `\nScanned ${entries.length} presets in ${elapsedSeconds}s ` +
       `(glslangValidator ${validatorVersion}): ` +
-      `${failures.length} shader compile error(s) across ${shaderPresetCount} preset(s).`,
+      `${failures.length} shader compile error(s) across ${failedPresetCount} preset(s).`,
   );
   for (const failure of failures) {
     console.log(`  ✗ ${failure.id} [${failure.stage}] ${failure.detail}`);
