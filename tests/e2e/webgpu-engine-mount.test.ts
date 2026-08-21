@@ -17,16 +17,17 @@
  * being produced" signal that needs no access to the canvas at all.
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import fs from 'node:fs';
 import { chromium } from 'playwright';
 import { captureAgentStats, writeAgentFailureArtifact } from './agent-api.ts';
+import { hasChromium as sharedHasChromium } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
 import {
   HEADLESS,
   WEBGL_RENDERER_ARGS as RENDERER_ARGS,
 } from './webgl-launch.ts';
 
-const hasChromium = fs.existsSync(chromium.executablePath());
+// Local-only by design (needs a real GPU), so a missing browser is not a fault.
+const hasChromium = sharedHasChromium;
 
 /** Skip without Playwright browsers (matches the other e2e suites) or on CI. */
 const localWebGpuTest = hasChromium ? test.skipIf(!!process.env.CI) : test.skip;
