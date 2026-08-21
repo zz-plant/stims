@@ -2,10 +2,14 @@
  * E2E: Verify the engine mounts, loads a preset, and renders canvas content.
  * Uses headed Chromium for real GPU rendering on macOS.
  */
-import { afterAll, beforeAll, expect, test } from 'bun:test';
-import fs from 'node:fs';
+import { afterAll, beforeAll, expect, type test } from 'bun:test';
 import { chromium, devices } from 'playwright';
 import { writeAgentFailureArtifact } from './agent-api.ts';
+import {
+  hasChromium,
+  localOnlyBrowserTest,
+  requiredBrowserTest,
+} from './browser-availability.ts';
 import {
   type DevServerHandle,
   isResponsive,
@@ -21,8 +25,7 @@ import {
  * without them makes chromium.launch() fail in milliseconds and read as a
  * product regression. Skip instead, matching agent-integration.
  */
-const hasChromium = fs.existsSync(chromium.executablePath());
-const baseBrowserTest = hasChromium ? test : test.skip;
+const baseBrowserTest = requiredBrowserTest;
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -529,9 +532,7 @@ async function verifySmartphoneMicrophoneAccess({
   }
 }
 
-const smartphoneMicrophoneTest = hasChromium
-  ? test.skipIf(!!process.env.CI)
-  : test.skip;
+const smartphoneMicrophoneTest = localOnlyBrowserTest;
 
 smartphoneMicrophoneTest(
   'requests default microphone access for a first-time smartphone user',

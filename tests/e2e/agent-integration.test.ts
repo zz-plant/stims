@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test';
+import { afterAll, beforeAll, expect } from 'bun:test';
 import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -6,20 +6,23 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
 import {
+  hasChromium,
+  localOnlyBrowserTest,
+  requiredBrowserTest,
+} from './browser-availability.ts';
+import {
   type DevServerHandle,
   isResponsive,
   startDevServer,
 } from './dev-server.ts';
 import { WEBGL_RENDERER_ARGS } from './webgl-launch.ts';
 
-const chromiumPath = chromium.executablePath();
-const hasChromium = fs.existsSync(chromiumPath);
-const integrationTest = hasChromium ? test : test.skip;
+const integrationTest = requiredBrowserTest;
 // Headless Chromium on Linux CI blocks AudioContext resume without a trusted
 // user gesture; enableDemoAudio's programmatic click() is untrusted and hangs
 // for the full budget. The agent API works on a real (or macOS headless)
 // browser, so run this case locally and skip it on CI.
-const gestureGatedTest = hasChromium && !process.env.CI ? test : test.skip;
+const gestureGatedTest = localOnlyBrowserTest;
 const TEST_PORT = 5180;
 // 180s, not 90s: this job runs after several other SwiftShader-rendered e2e
 // suites in the same CI job, and accumulated GPU/CPU pressure has pushed
