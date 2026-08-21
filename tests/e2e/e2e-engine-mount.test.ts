@@ -550,8 +550,18 @@ const VT_COUNT_INIT_SCRIPT = `
   const win = window;
   win.__stimsVTCount = 0;
   win.__stimsVTs = [];
-  win.__stimsVTDone = () =>
-    Promise.all(win.__stimsVTs.map((p) => p.catch(() => {}))).then(() => true);
+  // Bounded on the page side: page.evaluate has no timeout of its own, so a
+  // view transition whose finished promise never settles - which is what a
+  // stalled compositor under software rendering looks like - hangs the
+  // evaluate until the whole test's budget runs out, reporting a bare
+  // "timed out" against a test that never named the step it stopped on.
+  win.__stimsVTDone = (timeoutMs = 15000) =>
+    Promise.race([
+      Promise.all(win.__stimsVTs.map((p) => p.catch(() => {}))).then(
+        () => true,
+      ),
+      new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs)),
+    ]);
   const original = document.startViewTransition?.bind(document);
   if (original) {
     document.startViewTransition = (callback) => {
@@ -645,16 +655,19 @@ browserTest(
       // transition is active runViewTransition skips the next one (correct
       // reentrancy behavior), which would make the home-side flip below
       // update directly instead of running its own transition.
-      // Unbounded by nature: it awaits the browser's own transition.finished.
       // Named so a stall here is distinguishable from one in a timed wait.
+      // The wait itself is bounded inside the page (see VT_COUNT_INIT_SCRIPT):
+      // it awaits the browser's own transition.finished, which a stalled
+      // compositor never settles, and page.evaluate has no timeout of its own.
       step('await __stimsVTDone()');
-      await page.evaluate(() =>
+      const transitionsSettled = await page.evaluate(() =>
         (
           window as typeof window & {
-            __stimsVTDone: () => Promise<boolean>;
+            __stimsVTDone: (timeoutMs?: number) => Promise<boolean>;
           }
         ).__stimsVTDone(),
       );
+      expect(transitionsSettled).toBe(true);
 
       // Flip back to home through the app's own route plumbing: dropping the
       // audio param stops audio, which re-crosses the audioActive edge and

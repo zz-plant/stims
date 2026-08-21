@@ -236,26 +236,47 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
+      // The canonical route, not the /milkdrop/ alias. The alias is a
+      // client-side redirect, so going through it costs a second document
+      // load before the shell even starts booting — on CI's 2-core
+      // SwiftShader runner that hop was pure overhead against this test's
+      // budget, and the alias has its own coverage in the SEO guard.
       await mobile.page.goto(
-        `http://127.0.0.1:${TEST_PORT}/milkdrop/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
-        { waitUntil: 'domcontentloaded' },
+        `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
+        { waitUntil: 'domcontentloaded', timeout: 30000 },
       );
-      // The agent-facing failure signal is the error status the shell
-      // renders for a slug no toy exists under. This used to go through
-      // playToy, whose preflight probes (each `page.evaluate` defaulting to
-      // a 30s Playwright timeout) piled up against the full app boot on
-      // CI's 2-core SwiftShader runner and blew the 180s budget without
-      // ever asserting. Navigate straight to the route and assert the error
-      // DOM instead: same contract, a fraction of the work.
-      await mobile.page.waitForSelector('.active-toy-status.is-error', {
-        timeout: 60000,
-      });
-      const message = await mobile.page.evaluate(
-        () =>
-          document
-            .querySelector('.active-toy-status.is-error p')
-            ?.textContent?.trim() ?? '',
-      );
+
+      // Two waits, not one, because they fail for different reasons and the
+      // difference is the whole diagnosis. The error status is plain
+      // URL-derived React state with no engine involvement, so if the shell
+      // has mounted and the status is still missing, routing is broken; if
+      // the shell itself never mounts, the app did not boot. Collapsed into
+      // a single 60s wait, both looked identical — and when the boot ran
+      // long, the wait outlived the test's own budget, so the suite reported
+      // a bare "timed out" naming neither.
+      await mobile.page.waitForSelector('#stims-main', { timeout: 30000 });
+      const message = await mobile.page
+        .waitForSelector('.active-toy-status.is-error p', { timeout: 20000 })
+        .then((handle) => handle.textContent())
+        .then((text) => text?.trim() ?? '')
+        .catch(async (error) => {
+          // Name what the page actually showed instead. Without this the
+          // only artifact of a failure here is the selector string.
+          const shellState = await mobile.page.evaluate(() => ({
+            url: window.location.href,
+            readyState: document.readyState,
+            hasShell: Boolean(document.getElementById('stims-main')),
+            statusText:
+              document
+                .querySelector('.active-toy-status')
+                ?.textContent?.trim() ?? null,
+          }));
+          throw new Error(
+            `Error status never rendered: ${JSON.stringify(shellState)} (${
+              (error as Error).message
+            })`,
+          );
+        });
       expect(message).toContain('non-existent-toy-slug');
     } finally {
       await mobile.close();
