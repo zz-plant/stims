@@ -476,8 +476,13 @@ export function createUnifiedInput({
   // rest of the session. Dropping the held set when the surface stops
   // receiving keys is the release those keys will never get.
   const releaseHeldKeys = () => {
-    if (keyState.size === 0) return;
+    if (keyState.size === 0 && !keyboardGestureActive) return;
     keyState.clear();
+    // Losing focus is not the same as letting go: there is no ramp to run,
+    // and the release timer only advances on frames the loop is still
+    // scheduling. Drop the synthetic pinch here so the visuals cannot stay
+    // warped waiting for a countdown nothing is driving.
+    resetKeyboardGesture();
     scheduleFrame();
   };
   const handleTargetBlur = () => releaseHeldKeys();
@@ -532,6 +537,14 @@ export function createUnifiedInput({
   let keyboardGestureRotation = 0;
   let keyboardGestureActive = false;
   let keyboardGestureIdleMs = 0;
+
+  /** Drop the synthetic pinch outright, with no release ramp. */
+  const resetKeyboardGesture = () => {
+    keyboardGestureActive = false;
+    keyboardGestureScale = 1;
+    keyboardGestureRotation = 0;
+    keyboardGestureIdleMs = 0;
+  };
 
   // Two-finger gesture stand-in: while = / - / , / . are held the synthetic
   // gesture accumulates like a pinch in progress; releasing the keys for
@@ -925,6 +938,11 @@ export function createUnifiedInput({
     }
     if (
       keyState.size > 0 ||
+      // The synthetic pinch releases over KEYBOARD_GESTURE_RELEASE_MS of idle
+      // time, which only elapses on frames this loop schedules. Without it the
+      // loop stopped on the keyup frame and the last warped gesture stood as
+      // the runtime's current input until unrelated activity woke it.
+      keyboardGestureActive ||
       activePointers.size > 0 ||
       canPollGamepad() ||
       Math.abs(wheelDelta) > PERFORMANCE_WHEEL_MIN ||

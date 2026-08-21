@@ -276,10 +276,57 @@ describe('unified input multi-touch gestures', () => {
     // Focus moves on mid-press, so the keyup lands somewhere else and this
     // surface never hears it.
     target.dispatchEvent(new window.Event('blur'));
-    fakeNow += 600;
+    // One frame, one frame's worth of time: the release ramp only advances on
+    // frames the loop schedules, and with the held set empty there is nothing
+    // left to keep scheduling them. Jumping the clock past the ramp before
+    // flushing would hide exactly that.
+    fakeNow += 16;
+    await flushInput();
+    expect((latest as UnifiedInputState | null)?.gesture).toBeNull();
+
+    input.dispose();
+    target.remove();
+    restoreNow();
+  });
+
+  test('an ordinary key release runs the gesture ramp to completion', async () => {
+    const target = createTarget();
+    let fakeNow = 20_000;
+    const restoreNow = replaceProperty(performance, 'now', () => fakeNow);
+    let latest: UnifiedInputState | null = null;
+    const input = createUnifiedInput({
+      target,
+      onInput: (state) => {
+        latest = state;
+      },
+      gamepadEnabled: false,
+    });
+
+    const keydown = new window.Event('keydown', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperties(keydown, {
+      key: { value: '=' },
+      repeat: { value: false },
+    });
+    target.dispatchEvent(keydown);
+    fakeNow += 16;
     await flushInput();
     fakeNow += 16;
     await flushInput();
+    expect(
+      (latest as UnifiedInputState | null)?.gesture?.scale ?? 1,
+    ).toBeGreaterThan(1);
+
+    const keyup = new window.Event('keyup', { bubbles: true }) as Event &
+      KeyboardEvent;
+    Object.defineProperty(keyup, 'key', { value: '=' });
+    target.dispatchEvent(keyup);
+    // The held set is empty from here on, so the ramp only finishes if the
+    // loop keeps scheduling itself while the synthetic gesture is live.
+    for (let frame = 0; frame < 40; frame += 1) {
+      fakeNow += 16;
+      await flushInput();
+    }
     expect((latest as UnifiedInputState | null)?.gesture).toBeNull();
 
     input.dispose();
