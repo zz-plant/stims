@@ -76,6 +76,17 @@ async function createMobilePage() {
     hasTouch: true,
   });
   const page = await context.newPage();
+  // A crashed renderer does not make Playwright throw — the next wait just
+  // never resolves and reports a timeout on the selector, which reads as
+  // "the app never rendered" when the truth is "the tab died". These suites
+  // run several SwiftShader browsers on a small runner, which is exactly
+  // where the renderer gets killed, so say so when it happens.
+  page.on('crash', () => {
+    console.error(
+      `[e2e] RENDERER CRASHED on ${page.url()} — any timeout after this ` +
+        'line is a consequence, not the cause.',
+    );
+  });
   await page.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
@@ -284,10 +295,25 @@ integrationTest(
       // load before the shell even starts booting — on CI's 2-core
       // SwiftShader runner that hop was pure overhead against this test's
       // budget, and the alias has its own coverage in the SEO guard.
-      // 60s, not 30s: this is the first navigation to this route, so vite
-      // transforms the chunks cold, and on CI's 2-core SwiftShader runner
-      // that ran past 30s — the observed failure on 1ae6066 was this goto
-      // timing out, not the app failing to render the error state.
+      // 60s because this navigation is being starved, not because it is
+      // slow. Reproduced locally with `taskset -c 0,1`, which fails this
+      // deterministically where a 4-core run does not, and the measured
+      // chain is:
+      //
+      //   an earlier test's page wedges -> its close() hangs (its siblings
+      //   close in 19ms-2.6s; that one never returned even given 10
+      //   minutes) -> closeQuietly abandons it at 15s and leaks a live
+      //   browser -> the leaked browser keeps burning CPU in its rAF loop
+      //   -> on two cores this goto never gets scheduled.
+      //
+      // So the bound is a backstop, not a cure: see #1123. The route is
+      // fine -- navigated in isolation it reaches domcontentloaded in 2.5s
+      // and renders the error text within 2s.
+      //
+      // Two earlier explanations in this spot were wrong and are recorded
+      // so they are not retried: cold vite transforms (ruled out -- raising
+      // 30s -> 60s did not help), and plain CPU slowness (ruled out -- the
+      // leak, not the load, is what starves it).
       await mobile.page.goto(
         `http://127.0.0.1:${TEST_PORT}/?agent=true&experience=non-existent-toy-slug&renderer=webgl`,
         { waitUntil: 'domcontentloaded', timeout: 60000 },
@@ -301,7 +327,10 @@ integrationTest(
       // a single 60s wait, both looked identical — and when the boot ran
       // long, the wait outlived the test's own budget, so the suite reported
       // a bare "timed out" naming neither.
-      await mobile.page.waitForSelector('#stims-main', { timeout: 30000 });
+      // Same starvation budget as the goto above, and note this waits for
+      // *visible*, not attached. Under `taskset -c 0,1` this is where the
+      // run fails when it fails -- the shell mounts, just not within 30s.
+      await mobile.page.waitForSelector('#stims-main', { timeout: 60000 });
       const message = await mobile.page
         .waitForSelector('.active-toy-status.is-error p', { timeout: 20000 })
         .then((handle) => handle.textContent())
