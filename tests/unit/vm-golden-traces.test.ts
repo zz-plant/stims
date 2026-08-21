@@ -112,6 +112,17 @@ describe('VM golden traces', () => {
       };
     });
 
+    /**
+     * Both cases below replay every witness (4 presets x 120 frames) with each
+     * transcendental wrapped in a JS shim, which is far slower than the plain
+     * replay above. That took ~6s on CI runners and tripped Bun's 5s default,
+     * failing as a timeout rather than on anything it measured. The work is
+     * inherent to what these tests check, so they get room instead of being
+     * thinned out — a portability guard that only runs on fast hardware is the
+     * failure mode this whole describe block exists to prevent.
+     */
+    const SLOW_REPLAY_TIMEOUT_MS = 30_000;
+
     const divergedUnder = (patch: (original: typeof originalMath) => void) => {
       try {
         patch({ ...originalMath });
@@ -141,13 +152,13 @@ describe('VM golden traces', () => {
           Math.atan2 = (a, b) => nextUp(original.atan2(a, b));
         }),
       ).toEqual([]);
-    });
+    }, SLOW_REPLAY_TIMEOUT_MS);
 
     test('still catches a 0.1% semantics change in every witness', () => {
       const diverged = divergedUnder((original) => {
         Math.sin = (x) => original.sin(x) * 1.001;
       });
       expect(diverged.sort()).toEqual([...traceFiles].sort());
-    });
+    }, SLOW_REPLAY_TIMEOUT_MS);
   });
 });
