@@ -34,6 +34,8 @@ function buildShaderEnv() {
     uniforms.videoTex,
     uniforms.glyphTex,
     uniforms.organicTex,
+    uniforms.noiseLqTex,
+    uniforms.noisevolTex,
     uniforms.blur1Tex,
     uniforms.blur2Tex,
     uniforms.blur3Tex,
@@ -46,6 +48,7 @@ function buildShaderEnv() {
       pattern: uniforms.patternTex3D,
       fractal: uniforms.fractalTex3D,
       perlin: uniforms.perlinTex3D,
+      noisevol: uniforms.noisevolTex3D,
     },
   );
   return {

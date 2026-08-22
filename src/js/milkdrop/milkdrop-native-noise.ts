@@ -3,6 +3,7 @@ import {
   LinearFilter,
   RepeatWrapping,
   RGBAFormat,
+  SRGBColorSpace,
   UnsignedByteType,
 } from 'three';
 
@@ -114,6 +115,13 @@ export function createMilkdropNoiseTexture() {
   // every other aux texture — measured on the 260 reference: 81% mismatch
   // without, 0.0% with.
   texture.flipY = true;
+  // The bytes are the values projectM stores, not a colour photograph, but
+  // they travel the same path as every sRGB aux PNG and the renderer encodes
+  // its output back to sRGB. Left as linear data, a mid-grey 127 comes out at
+  // ~187 — measured on 260-compshader-noise_lq: mean 176.6 against a
+  // reference mean of 127.7, with the contrast flattened (stdev 33.3 vs
+  // 49.4). Tagging the texture sRGB makes the round trip an identity.
+  texture.colorSpace = SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
 }
@@ -131,6 +139,7 @@ export function createMilkdropNoiseVolumeAtlasTexture() {
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
   texture.generateMipmaps = false;
+  texture.colorSpace = SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
 }
