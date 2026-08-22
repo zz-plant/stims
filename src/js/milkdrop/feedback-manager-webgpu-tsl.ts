@@ -19,6 +19,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {
+  Color,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -183,6 +184,9 @@ const TEXTURE_IDENTIFIER_TO_SAMPLER: Record<string, string> = {
  * sampleFeedbackTarget, so they select their coordinate space by hand.
  */
 const screenSampleUvNode = /* @__PURE__ */ createScreenSampleUvNode();
+
+/** Reused so clearing the feedback chain allocates nothing. */
+const CLEAR_HISTORY_COLOR_SCRATCH = /* @__PURE__ */ new Color();
 
 /** Shader sampler sources backed by one of the feedback manager's own targets. */
 const RENDER_TARGET_SHADER_SOURCES = new Set([
@@ -2855,6 +2859,56 @@ class WebGPUMilkdropFeedbackManager
   setAudioTexture(audioTexture: Texture | null): void {
     if (this.compositeMaterial?.uniforms?.audioTex) {
       this.compositeMaterial.uniforms.audioTex.value = audioTexture;
+    }
+  }
+
+  /**
+   * Empties the feedback chain so the next frame starts from nothing.
+   *
+   * Only the WebGL manager implemented this, so a `resetHistory` frame — what
+   * the deterministic frame pump uses to make a capture reproducible — left
+   * native WebGPU rendering on top of whatever the previous warmup had
+   * accumulated. Measured with `lab:backend-diff`, that put the same-backend
+   * run-to-run mismatch at a 48.9% median on WebGPU against 6.0% on WebGL,
+   * which buries any real disagreement between the two.
+   */
+  clearHistory(): void {
+    const renderer = this.lastRenderer as
+      | (FeedbackRendererLike & {
+          clear?: () => void;
+          getClearAlpha?: () => number;
+          setClearAlpha?: (alpha: number) => void;
+          getClearColor?: (target: Color) => Color;
+          setClearColor?: (color: Color | number, alpha?: number) => void;
+        })
+      | null;
+    if (!renderer?.setRenderTarget) {
+      return;
+    }
+    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+    const previousClearColor = renderer.getClearColor?.(
+      CLEAR_HISTORY_COLOR_SCRATCH,
+    );
+    renderer.setClearColor?.(0x000000, 0);
+    for (const target of [
+      this.targets[0],
+      this.targets[1],
+      this.displayTargets[0],
+      this.displayTargets[1],
+      this.blurTarget,
+      this.sceneTarget,
+      this.savedFrameTargets[0],
+      this.savedFrameTargets[1],
+    ]) {
+      if (!target) continue;
+      renderer.setRenderTarget(target);
+      renderer.clear?.();
+    }
+    renderer.setRenderTarget(null);
+    if (previousClearColor) {
+      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+    } else {
+      renderer.setClearAlpha?.(previousClearAlpha);
     }
   }
 
