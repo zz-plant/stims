@@ -148,11 +148,21 @@ function tokenize(source: string) {
       while (end < source.length && /[0-9._]/u.test(source[end] ?? '')) {
         end += 1;
       }
+      // Scientific notation: GLSL emitted by shader compilers is full of
+      // literals like `1e-08`, and stopping the scan at the `e` left a bare
+      // exponent identifier behind, which failed the whole line. The `e` only
+      // starts an exponent when digits (optionally signed) follow it.
+      const exponent = /^[eE][+-]?\d+/u.exec(source.slice(end));
+      if (exponent) {
+        end += exponent[0].length;
+      }
       const digitsOnly = source.slice(index, end).replace(/_/gu, '');
       // Number.parseFloat only parses a leading numeric prefix, so without
       // this check a typo like "1.2.3" would silently become 1.2 with the
       // invalid ".3" tail dropped instead of failing to parse.
-      if (!/^\d+(\.\d*)?$|^\.\d+$/u.test(digitsOnly)) {
+      if (
+        !/^\d+(\.\d*)?([eE][+-]?\d+)?$|^\.\d+([eE][+-]?\d+)?$/u.test(digitsOnly)
+      ) {
         return null;
       }
       tokens.push({
