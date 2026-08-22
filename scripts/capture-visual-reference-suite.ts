@@ -8,9 +8,12 @@
  * backend, writing canvas PNGs plus debug snapshots into the parity artifact
  * directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts consume.
  *
- * The browser is opened once, not once per preset: measured over the nine
- * certified presets, that is 35s against a process-per-preset run that had not
- * finished in 9 minutes. `--isolate-captures` restores the old behaviour.
+ * The browser is reopened only when the next preset needs a different renderer
+ * profile, not once per preset: measured over the nine WebGPU-certified
+ * presets, 32.8s against 111.5s process-per-preset (3.4x). The win is smaller
+ * on the 39 WebGL presets, whose ~90s software-rendered pump dwarfs the ~8s of
+ * process and browser start being saved. `--isolate-captures` restores the old
+ * behaviour.
  *
  *   bun run parity:capture -- [--preset <id>]... [--output <dir>] [--port <n>]
  *
@@ -164,9 +167,11 @@ export function parsePlayToyStdout(stdout: string): PlayToyResult {
  *
  * The suite used to spawn `bun scripts/play-toy.ts` per preset, which pays for
  * a Bun start, a Chromium launch and a cold dev-server transform on every
- * preset. Measured on the nine certified presets, that overhead is ~98% of the
- * run: the part that actually matters — pumping 900 deterministic frames — is
- * about 1.5s on hardware WebGPU against 60-90s of wall clock per preset.
+ * preset. On hardware WebGPU that overhead is most of the run: 12.4s per
+ * preset process-per-preset against 3.6s reusing the browser, where the part
+ * that actually matters — pumping 900 deterministic frames — is about 1.5s.
+ * On WebGL the same 900 frames take ~90s of software rasterisation, so the
+ * saving is real but proportionally small.
  *
  * Reusing the browser is only sound because captures are already deterministic
  * by construction: `deterministicFrames` pumps a fixed frame count through
@@ -426,6 +431,13 @@ export async function captureVisualReferenceSuite(
     // One browser per worker, opened on the first request and reused for the
     // rest. Held here rather than hoisted to the suite so a pool of workers
     // still gets one browser each instead of sharing one.
+    //
+    // Reopened whenever the next preset needs a different renderer profile or
+    // headless mode: those are Chromium launch flags, so playToy rejects a
+    // session that does not match rather than silently capturing on the wrong
+    // backend. This manifest is mixed — 9 certified presets require WebGPU and
+    // 39 require WebGL — so a worker that opened one browser and kept it for
+    // the whole run failed every preset after the first profile change.
     let browserSession: PlayToyBrowserSession | null = null;
     const releaseSession = async () => {
       const session = browserSession;
@@ -433,6 +445,22 @@ export async function captureVisualReferenceSuite(
       if (session) {
         await closePlayToyBrowserSession(session).catch(() => {});
       }
+    };
+    const sessionFor = async (request: VisualReferenceCaptureRequest) => {
+      if (
+        browserSession &&
+        (browserSession.rendererProfile !== request.rendererProfile ||
+          browserSession.headless !== request.headless)
+      ) {
+        await releaseSession();
+      }
+      if (!browserSession) {
+        browserSession = await createPlayToyBrowserSession({
+          headless: request.headless,
+          rendererProfile: request.rendererProfile,
+        });
+      }
+      return browserSession;
     };
 
     try {
@@ -447,14 +475,9 @@ export async function captureVisualReferenceSuite(
               `${request.presetId} (${index + 1}/${requests.length})`,
             );
           } else {
-            if (!browserSession) {
-              browserSession = await createPlayToyBrowserSession({
-                headless: request.headless,
-                rendererProfile: request.rendererProfile,
-              });
-            }
+            const session = await sessionFor(request);
             try {
-              result = await runPlayToyInProcess(request, browserSession);
+              result = await runPlayToyInProcess(request, session);
             } catch (error) {
               // A lost GPU device kills the browser, not just this capture.
               // Drop it so the next preset opens a fresh one rather than
