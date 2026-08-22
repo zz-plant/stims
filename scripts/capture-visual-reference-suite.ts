@@ -3,11 +3,14 @@
  * manifest.
  *
  * Capture stage of the parity pipeline (capture -> diff -> promote). Ensures
- * the dev server is up, then fans play-toy child processes across the manifest
- * presets using each preset's warmup/capture-offset timing, viewport and
- * required backend, writing canvas PNGs plus debug snapshots into the parity
- * artifact directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts
- * consume.
+ * the dev server is up, then walks the manifest presets on one reused browser,
+ * using each preset's warmup/capture-offset timing, viewport and required
+ * backend, writing canvas PNGs plus debug snapshots into the parity artifact
+ * directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts consume.
+ *
+ * The browser is opened once, not once per preset: measured over the nine
+ * certified presets, that is 35s against a process-per-preset run that had not
+ * finished in 9 minutes. `--isolate-captures` restores the old behaviour.
  *
  *   bun run parity:capture -- [--preset <id>]... [--output <dir>] [--port <n>]
  *
@@ -21,7 +24,14 @@
 import { spawn } from 'node:child_process';
 import { ensureDevServer } from './dev-server.ts';
 import { loadParityArtifactManifest } from './parity-artifacts.ts';
-import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
+import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
+  type PlayToyBrowserSession,
+  type PlayToyOptions,
+  type PlayToyResult,
+  playToy,
+} from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 /**
@@ -50,6 +60,12 @@ export type CaptureVisualReferenceSuiteOptions = {
   concurrency?: number;
   /** Permit `--force-webgl`/`--force-webgpu` to contradict a certified backend. */
   allowBackendOverride?: boolean;
+  /**
+   * Spawn a fresh `bun scripts/play-toy.ts` per preset instead of reusing one
+   * browser. Costs ~60s per preset; buys total isolation. Worth it only when
+   * a capture is suspected of contaminating the next one.
+   */
+  isolateCaptures?: boolean;
 };
 
 type VisualReferenceCaptureRequest = Required<
@@ -141,6 +157,51 @@ export function parsePlayToyStdout(stdout: string): PlayToyResult {
   throw lastError instanceof Error
     ? lastError
     : new Error('No JSON output found');
+}
+
+/**
+ * Run one capture on an already-open browser.
+ *
+ * The suite used to spawn `bun scripts/play-toy.ts` per preset, which pays for
+ * a Bun start, a Chromium launch and a cold dev-server transform on every
+ * preset. Measured on the nine certified presets, that overhead is ~98% of the
+ * run: the part that actually matters — pumping 900 deterministic frames — is
+ * about 1.5s on hardware WebGPU against 60-90s of wall clock per preset.
+ *
+ * Reusing the browser is only sound because captures are already deterministic
+ * by construction: `deterministicFrames` pumps a fixed frame count through
+ * `renderFrames({ startTime: 0 })`, which resets the simulation clock and
+ * clears feedback history, so preset N+1 cannot inherit preset N's warp
+ * buffer. Without that reset this would be a correctness bug, not a speedup.
+ */
+function runPlayToyInProcess(
+  request: VisualReferenceCaptureRequest,
+  browserSession: PlayToyBrowserSession,
+): Promise<PlayToyResult> {
+  return playToy({
+    slug: request.slug,
+    presetId: request.presetId,
+    audioMode: request.audioMode,
+    port: request.port,
+    duration: request.duration,
+    deterministicFrames: request.deterministicFrames,
+    // Pin the quality ladder, exactly as the child-process argv did. Adaptive
+    // quality reacts to frame time, so a capture taken while the machine is
+    // busy renders at a different scale than one taken idle.
+    lockedQualityStep: 0,
+    viewportWidth: request.viewportWidth,
+    viewportHeight: request.viewportHeight,
+    outputDir: request.outputDir,
+    rendererProfile: request.rendererProfile,
+    catalogMode: request.catalogMode,
+    screenshotSurface: request.screenshotSurface,
+    headless: request.headless,
+    vibeMode: request.vibeMode,
+    debugSnapshot: request.debugSnapshot,
+    screenshot: true,
+    video: false,
+    browserSession,
+  });
 }
 
 function runPlayToyInChildProcess(
@@ -362,34 +423,71 @@ export async function captureVisualReferenceSuite(
 
   let nextIndex = 0;
   async function worker() {
-    while (nextIndex < requests.length) {
-      const index = nextIndex++;
-      const request = requests[index];
-      try {
-        const result = await runPlayToyInChildProcess(
-          request,
-          `${request.presetId} (${index + 1}/${requests.length})`,
-        );
-        results[index] = assertVisualReferenceCaptureSucceeded(result);
-        if (!options.allowBackendOverride) {
-          assertCaptureBackendMatches({
-            presetId: request.presetId,
-            requiredBackend:
-              request.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl',
-            actualBackend: latestCaptureBackend(
-              request.outputDir,
-              request.presetId,
-            ),
-          });
-        }
-      } catch (error) {
-        results[index] = {
-          slug: request.slug,
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-        errors.push(error instanceof Error ? error : new Error(String(error)));
+    // One browser per worker, opened on the first request and reused for the
+    // rest. Held here rather than hoisted to the suite so a pool of workers
+    // still gets one browser each instead of sharing one.
+    let browserSession: PlayToyBrowserSession | null = null;
+    const releaseSession = async () => {
+      const session = browserSession;
+      browserSession = null;
+      if (session) {
+        await closePlayToyBrowserSession(session).catch(() => {});
       }
+    };
+
+    try {
+      while (nextIndex < requests.length) {
+        const index = nextIndex++;
+        const request = requests[index];
+        try {
+          let result: PlayToyResult;
+          if (options.isolateCaptures) {
+            result = await runPlayToyInChildProcess(
+              request,
+              `${request.presetId} (${index + 1}/${requests.length})`,
+            );
+          } else {
+            if (!browserSession) {
+              browserSession = await createPlayToyBrowserSession({
+                headless: request.headless,
+                rendererProfile: request.rendererProfile,
+              });
+            }
+            try {
+              result = await runPlayToyInProcess(request, browserSession);
+            } catch (error) {
+              // A lost GPU device kills the browser, not just this capture.
+              // Drop it so the next preset opens a fresh one rather than
+              // failing the whole remaining manifest against a dead handle.
+              await releaseSession();
+              throw error;
+            }
+          }
+          results[index] = assertVisualReferenceCaptureSucceeded(result);
+          if (!options.allowBackendOverride) {
+            assertCaptureBackendMatches({
+              presetId: request.presetId,
+              requiredBackend:
+                request.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl',
+              actualBackend: latestCaptureBackend(
+                request.outputDir,
+                request.presetId,
+              ),
+            });
+          }
+        } catch (error) {
+          results[index] = {
+            slug: request.slug,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+          errors.push(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        }
+      }
+    } finally {
+      await releaseSession();
     }
   }
 
@@ -449,6 +547,7 @@ export function parseVisualReferenceCaptureArgs(
         ? 'webgpu'
         : undefined,
     allowBackendOverride: argv.includes('--allow-backend-override'),
+    isolateCaptures: argv.includes('--isolate-captures'),
     // Left undefined when the flag is absent so the serial default applies.
     // This used to fill in a pool size unconditionally, which defeated the
     // suite's own "WebGPU captures run one at a time" default: it was
