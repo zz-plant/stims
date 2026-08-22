@@ -151,16 +151,27 @@ const COMPATIBILITY_RENDERER_ARGS = [
   '--disable-renderer-backgrounding',
   '--disable-backgrounding-occluded-windows',
 ];
+/**
+ * Deliberately the same three flags `lab:visual` uses (see
+ * run-milkdrop-loop-visual-sweep.ts). The Dawn `allow_unsafe_apis` /
+ * `disallow_unsafe_apis` pair that used to be here rode along with the
+ * bundled headless shell, and the combination lost the GPU device mid-run —
+ * "A valid external Instance reference no longer exists" — so the preset
+ * never finished loading and a black frame was recorded as parity evidence.
+ */
 const WEBGPU_RENDERER_ARGS = [
   '--enable-unsafe-webgpu',
   '--ignore-gpu-blocklist',
   '--enable-features=WebGPU,SharedArrayBuffer',
-  '--enable-dawn-features=allow_unsafe_apis',
-  '--disable-dawn-features=disallow_unsafe_apis',
-  '--disable-background-timer-throttling',
-  '--disable-renderer-backgrounding',
-  '--disable-backgrounding-occluded-windows',
 ];
+
+/**
+ * WebGPU needs the full Chromium build, not Playwright's bundled headless
+ * shell: on macOS the shell's Dawn/Metal device is the one that goes away.
+ * `lab:visual` has always launched this channel, which is why it kept seeing
+ * real frames on WebGPU while this path went blank.
+ */
+const WEBGPU_CHROMIUM_CHANNEL = 'chromium' as const;
 const VULKAN_WEBGPU_RENDERER_ARGS = [
   '--enable-features=Vulkan',
   '--use-angle=vulkan',
@@ -477,6 +488,9 @@ export async function createPlayToyBrowserSession({
   return {
     browser: await chromium.launch({
       headless,
+      ...(rendererProfile === 'webgpu'
+        ? { channel: WEBGPU_CHROMIUM_CHANNEL }
+        : {}),
       args: resolveChromiumRendererArgs(rendererProfile),
     }),
     headless,
@@ -1119,21 +1133,50 @@ export function shouldUseCanvasBitmapCapture({
   );
 }
 
+/** Where the visualizer canvas lives, in the order worth trying. */
+const ACTIVE_CANVAS_SELECTORS = [
+  '#active-toy-container canvas',
+  'canvas',
+] as const;
+
+/** Marks the canvas so the isolation CSS and the element screenshot agree. */
+const CAPTURE_TARGET_ATTRIBUTE = 'data-stims-capture-target';
+
+/**
+ * True when an image carries no picture at all — a single flat colour across
+ * every channel, which is what an empty canvas readback looks like.
+ *
+ * Worth the extra decode on every capture: WebGPU captures silently went
+ * blank in early August and kept being written as parity references, so the
+ * suite reported five failures that were empty PNGs rather than rendering
+ * regressions. A capture that sees nothing must fail loudly.
+ */
+async function isBlankCapture(screenshotPath: string): Promise<boolean> {
+  try {
+    const stats = await sharp(screenshotPath).stats();
+    // Alpha counts: a fully transparent capture is blank even if its RGB
+    // channels carry the clear colour.
+    return stats.channels.every((channel) => channel.stdev < 0.5);
+  } catch {
+    return false;
+  }
+}
+
 export async function captureActiveToyCanvas(
   page: Page,
   screenshotPath: string,
 ): Promise<boolean> {
   const canvasInfo = await page
-    .evaluate(() => {
-      const canvas =
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container .active-toy-stage[data-stage-state="incoming"] canvas',
-        ) ??
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container .active-toy-stage:not([data-stage-state="outgoing"]) canvas',
-        ) ??
-        document.querySelector<HTMLCanvasElement>('canvas');
-      if (!(canvas instanceof HTMLCanvasElement)) {
+    .evaluate((selectors) => {
+      let canvas: HTMLCanvasElement | null = null;
+      for (const selector of selectors) {
+        const found = document.querySelector<HTMLCanvasElement>(selector);
+        if (found instanceof HTMLCanvasElement) {
+          canvas = found;
+          break;
+        }
+      }
+      if (!canvas) {
         return null;
       }
 
@@ -1142,6 +1185,7 @@ export async function captureActiveToyCanvas(
         return null;
       }
 
+      canvas.setAttribute('data-stims-capture-target', 'true');
       return {
         bitmapWidth: canvas.width,
         bitmapHeight: canvas.height,
@@ -1156,7 +1200,7 @@ export async function captureActiveToyCanvas(
             ? ('webgpu' as const)
             : ('webgl' as const),
       };
-    })
+    }, ACTIVE_CANVAS_SELECTORS)
     .catch(() => null);
 
   if (!canvasInfo) {
@@ -1166,83 +1210,106 @@ export async function captureActiveToyCanvas(
   const captureWidth = viewport?.width ?? canvasInfo.viewportWidth;
   const captureHeight = viewport?.height ?? canvasInfo.viewportHeight;
 
-  if (canvasInfo.backend === 'webgpu') {
-    await page.evaluate(() => {
-      const canvas =
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container .active-toy-stage[data-stage-state="incoming"] canvas',
-        ) ??
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container .active-toy-stage:not([data-stage-state="outgoing"]) canvas',
-        ) ??
-        document.querySelector<HTMLCanvasElement>('canvas');
-      canvas?.setAttribute('data-stims-capture-target', 'true');
-      const style = document.createElement('style');
-      style.id = 'stims-canvas-capture-isolation';
-      style.textContent =
-        'body *:not(:has(canvas[data-stims-capture-target="true"])):not(canvas[data-stims-capture-target="true"]) { opacity: 0 !important; } body *:has(canvas[data-stims-capture-target="true"]) { background: transparent !important; border-color: transparent !important; box-shadow: none !important; } canvas[data-stims-capture-target="true"] { opacity: 1 !important; }';
-      document.head.append(style);
-    });
-    try {
-      // Capture the compositor region occupied by the canvas. An element
-      // screenshot can transiently hide or resize a WebGPU canvas; transparent
-      // sibling overlays preserve layout while keeping shell UI out of frame.
-      const buffer = await page.screenshot({
-        animations: 'disabled',
-        clip: {
-          x: canvasInfo.rectX,
-          y: canvasInfo.rectY,
-          width: canvasInfo.rectWidth,
-          height: canvasInfo.rectHeight,
-        },
-      });
-      await sharp(buffer)
-        .resize(captureWidth, captureHeight, { fit: 'fill' })
-        .png()
-        .toFile(screenshotPath);
+  const writeResized = async (buffer: Buffer) => {
+    await sharp(buffer)
+      .resize(captureWidth, captureHeight, { fit: 'fill' })
+      .png()
+      .toFile(screenshotPath);
+  };
+
+  /**
+   * Hide everything that is neither the canvas nor one of its ancestors.
+   *
+   * `visibility` rather than `opacity`, and applied per element rather than
+   * through a `:has()` stylesheet: the old CSS keyed on a selector for stage
+   * wrappers (`.active-toy-stage[data-stage-state]`) that no longer exist in
+   * the app at all, so it matched nothing it meant to and the compositor
+   * capture came back empty on the WebGPU path.
+   */
+  const isolate = () =>
+    page.evaluate((attribute) => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        `canvas[${attribute}]`,
+      );
+      if (!canvas) return;
+      for (const element of document.body.querySelectorAll<HTMLElement>('*')) {
+        if (element === canvas || element.contains(canvas)) continue;
+        element.dataset.stimsCaptureHidden = JSON.stringify({
+          value: element.style.getPropertyValue('visibility'),
+          priority: element.style.getPropertyPriority('visibility'),
+        });
+        element.style.setProperty('visibility', 'hidden', 'important');
+      }
+    }, CAPTURE_TARGET_ATTRIBUTE);
+
+  const restore = () =>
+    page
+      .evaluate((attribute) => {
+        for (const element of document.querySelectorAll<HTMLElement>(
+          '[data-stims-capture-hidden]',
+        )) {
+          const saved = element.dataset.stimsCaptureHidden;
+          delete element.dataset.stimsCaptureHidden;
+          const previous = saved
+            ? (JSON.parse(saved) as { value: string; priority: string })
+            : { value: '', priority: '' };
+          if (previous.value) {
+            element.style.setProperty(
+              'visibility',
+              previous.value,
+              previous.priority,
+            );
+          } else {
+            element.style.removeProperty('visibility');
+          }
+        }
+        document
+          .querySelector(`canvas[${attribute}]`)
+          ?.removeAttribute(attribute);
+      }, CAPTURE_TARGET_ATTRIBUTE)
+      .catch(() => undefined);
+
+  try {
+    await isolate();
+    // Element screenshot, the same call `lab:visual` has been making on both
+    // backends all along. The comment this replaced warned that an element
+    // screenshot can resize a WebGPU canvas; the clip-rect alternative it
+    // chose instead is the one that came back blank, and the isolation above
+    // keeps the layout intact either way.
+    const buffer = await page
+      .locator(`canvas[${CAPTURE_TARGET_ATTRIBUTE}]`)
+      .first()
+      .screenshot({ type: 'png', animations: 'disabled' });
+    await writeResized(buffer);
+
+    if (!(await isBlankCapture(screenshotPath))) {
       return true;
-    } catch (_error) {
-      return false;
-    } finally {
-      await page
-        .evaluate(() => {
-          document.querySelector('#stims-canvas-capture-isolation')?.remove();
-          document
-            .querySelector('[data-stims-capture-target="true"]')
-            ?.removeAttribute('data-stims-capture-target');
-        })
-        .catch(() => undefined);
     }
-  }
 
-  const canvasDataUrl = await page
-    .evaluate(() => {
-      const canvas =
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container canvas',
-        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
-      if (!(canvas instanceof HTMLCanvasElement)) {
-        return null;
-      }
-
-      try {
-        return canvas.toDataURL('image/png');
-      } catch (_error) {
-        return null;
-      }
-    })
-    .catch(() => null);
-
-  const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
-  if (!base64Data) {
+    // Second chance on the compositor path before calling it blank: an
+    // element screenshot can race a canvas that is mid-resize.
+    const clipped = await page.screenshot({
+      animations: 'disabled',
+      clip: {
+        x: canvasInfo.rectX,
+        y: canvasInfo.rectY,
+        width: canvasInfo.rectWidth,
+        height: canvasInfo.rectHeight,
+      },
+    });
+    await writeResized(clipped);
+    if (await isBlankCapture(screenshotPath)) {
+      console.error(
+        `Capture is blank (${canvasInfo.backend}); refusing to record it as evidence.`,
+      );
+      return false;
+    }
+    return true;
+  } catch (_error) {
     return false;
+  } finally {
+    await restore();
   }
-
-  await sharp(Buffer.from(base64Data, 'base64'))
-    .resize(captureWidth, captureHeight, { fit: 'fill' })
-    .png()
-    .toFile(screenshotPath);
-  return true;
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
