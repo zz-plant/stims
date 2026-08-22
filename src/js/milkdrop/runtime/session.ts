@@ -134,8 +134,16 @@ export const MAX_BLEND_WORKLOAD = 6000;
  * geometry submission for its duration, so the headroom check is the honest
  * gate: a machine hitting budget can afford it, one already dropping frames
  * cannot.
+ *
+ * 2x, not something tighter. Against a 60Hz budget this refuses below about
+ * 30fps and allows everything above it. An earlier 1.25x looked defensible
+ * on paper and refused a machine running a perfectly serviceable 45fps —
+ * which is most laptops driving a projector, i.e. exactly the case the
+ * blend exists for. A gate this one has to earn its refusals: a crossfade
+ * that silently does not happen is the failure mode this whole path is
+ * being repaired for.
  */
-const BLEND_FRAME_BUDGET_TOLERANCE = 1.25;
+const BLEND_FRAME_BUDGET_TOLERANCE = 2;
 
 export type BlendPressureSnapshot = {
   rollingAverageFrameMs: number | null;
