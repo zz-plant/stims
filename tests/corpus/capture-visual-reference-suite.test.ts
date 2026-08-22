@@ -27,6 +27,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       height: 720,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -50,6 +51,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           height: 1794,
           warmupMs: 5000,
           captureOffsetMs: 250,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -74,6 +76,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           height: 360,
           warmupMs: 2000,
           captureOffsetMs: 1000,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -98,6 +101,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       presetId: 'alpha',
       port: 4173,
       duration: 5250,
+      deterministicFrames: 900,
       viewportWidth: 2550,
       viewportHeight: 1794,
       screenshot: true,
@@ -115,6 +119,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       presetId: 'beta',
       port: 4173,
       duration: 3000,
+      deterministicFrames: 900,
       viewportWidth: 640,
       viewportHeight: 360,
       screenshot: true,
@@ -147,6 +152,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
       height: 720,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -170,6 +176,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           height: 720,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -194,6 +201,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           height: 720,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',

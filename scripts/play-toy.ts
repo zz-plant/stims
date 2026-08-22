@@ -86,6 +86,21 @@ export type PlayToyOptions = {
   presetId?: string;
   port?: number;
   duration?: number;
+  /**
+   * Pump this many simulation frames through the pipeline before capturing,
+   * instead of watching the wall clock.
+   *
+   * A parity reference is one specific frame of a preset's evolution, but the
+   * capture that gets compared to it was whatever happened to be on screen
+   * after `duration` milliseconds — which is a different frame on every
+   * machine and every backend. Measured on one preset: 631 frames on
+   * hardware WebGPU against 47 on SwiftShader WebGL, for presets whose whole
+   * look is accumulated feedback. Frames make the two comparable.
+   *
+   * Ignored while audio is active: `renderFrames` refuses to run then,
+   * because the audio loop is already driving the pipeline.
+   */
+  deterministicFrames?: number;
   viewportWidth?: number;
   viewportHeight?: number;
   screenshot?: boolean;
@@ -113,6 +128,8 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   audioMode: 'demo' | 'none';
   port: number;
   duration: number;
+  /** 0 when the run should watch the clock instead. */
+  deterministicFrames: number;
   viewportWidth: number;
   viewportHeight: number;
   outputDir: string;
@@ -318,6 +335,7 @@ export function normalizePlayToyOptions(
     audioMode: options.audioMode ?? 'demo',
     port: options.port ?? DEFAULT_OPTIONS.port,
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
+    deterministicFrames: options.deterministicFrames ?? 0,
     viewportWidth: options.viewportWidth ?? DEFAULT_OPTIONS.viewportWidth,
     viewportHeight: options.viewportHeight ?? DEFAULT_OPTIONS.viewportHeight,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
@@ -1162,6 +1180,87 @@ async function isBlankCapture(screenshotPath: string): Promise<boolean> {
   }
 }
 
+/** One chunk of frames per evaluate call, so no single call blocks for long. */
+const DETERMINISTIC_FRAME_CHUNK = 60;
+
+/** Extra frames a capture may spend waiting for a crossfade to land. */
+const TRANSITION_SETTLE_FRAME_BUDGET = 900;
+
+/** Consecutive idle observations required before warmup starts counting. */
+const TRANSITION_IDLE_CONFIRMATIONS = 4;
+const TRANSITION_IDLE_CHECK_INTERVAL_MS = 250;
+
+/**
+ * True while a preset transition is still on screen.
+ *
+ * Captures are evidence about one preset, and a blend puts two on screen at
+ * once: measured on 100-square, capturing mid-blend put the boot preset's
+ * magenta over the reference's red frame and scored 92% mismatch, against
+ * 1.75% once it had settled. Blends only started actually running recently
+ * (they were being gated into hard cuts), so this never used to bite.
+ */
+async function transitionIsActive(page: Page): Promise<boolean> {
+  return (
+    (await page
+      .evaluate(() => {
+        const debug = (
+          window as unknown as {
+            __milkdropRuntimeDebug?: {
+              getTransition?: () => { phase?: string } | null;
+            };
+          }
+        ).__milkdropRuntimeDebug;
+        const phase = debug?.getTransition?.()?.phase;
+        return typeof phase === 'string' && phase !== 'idle';
+      })
+      .catch(() => false)) === true
+  );
+}
+
+/**
+ * Drive `frames` simulation frames through the runtime and report how many
+ * ran, or null when the deterministic path is unavailable (audio active, or
+ * an older shell without the hook) and the caller should fall back to
+ * watching the clock.
+ */
+async function pumpDeterministicFrames(
+  page: Page,
+  frames: number,
+): Promise<number | null> {
+  let rendered = 0;
+  for (let remaining = frames; remaining > 0; ) {
+    const chunk = Math.min(DETERMINISTIC_FRAME_CHUNK, remaining);
+    const result = await page
+      .evaluate((count) => {
+        const hook = (
+          window as unknown as {
+            __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
+              frames?: number;
+              deltaMs?: number;
+            }) => { rendered: number } | null;
+          }
+        ).__STIMS_AGENT_RENDER_FRAMES__;
+        if (typeof hook !== 'function') return null;
+        // 60fps of simulation time per frame, matching the cadence the
+        // projectM references were captured at.
+        return hook({ frames: count, deltaMs: 1000 / 60 });
+      }, chunk)
+      .catch(() => null);
+    if (!result) {
+      if (rendered === 0) {
+        console.log(
+          'Deterministic frame pump unavailable (audio active?); watching the clock instead.',
+        );
+        return null;
+      }
+      break;
+    }
+    rendered += result.rendered;
+    remaining -= chunk;
+  }
+  return rendered;
+}
+
 export async function captureActiveToyCanvas(
   page: Page,
   screenshotPath: string,
@@ -1702,8 +1801,87 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     // Wait for visualization to run
-    console.log(`Watching for ${normalizedOptions.duration}ms...`);
-    await page.waitForTimeout(normalizedOptions.duration);
+    let pumpedFrames: number | null = null;
+    if (normalizedOptions.deterministicFrames > 0) {
+      // Autoplay is the other thing that changes what is on screen without
+      // being asked. A capture is evidence about one named preset, and a
+      // slow enough session — several captures sharing a machine — sits on
+      // screen long enough for autoplay to move on to a different one.
+      //
+      // `startupSettled` is the load-bearing wait: `activePresetId` reports
+      // the requested preset as soon as the switch is *accepted*, while the
+      // boot preset is still the thing on screen. On a busy machine the gap
+      // is long enough that captures came back showing the boot preset —
+      // the same magenta frame for every preset in a batch — which is how
+      // 250-wavecode scored 0.5% run alone and 99% run three at a time.
+      await page
+        .evaluate(async () => {
+          const debug = (
+            window as unknown as {
+              __milkdropRuntimeDebug?: {
+                setAutoplay?: (enabled: boolean) => void;
+                startupSettled?: () => Promise<void>;
+              };
+            }
+          ).__milkdropRuntimeDebug;
+          debug?.setAutoplay?.(false);
+          const settled = debug?.startupSettled?.();
+          if (!settled) return;
+          // Bounded: a shell that never resolves it must not hang the run.
+          await Promise.race([
+            settled,
+            new Promise((resolve) => setTimeout(resolve, 10_000)),
+          ]);
+        })
+        .catch(() => undefined);
+      // Settle *first*, then count. The preset arrives by a route change, so
+      // the blend into it can still be running when the pump starts — and
+      // now that blends actually run (they used to be gated into hard cuts),
+      // a capture that starts mid-blend counts its warmup from a picture
+      // that is still two presets deep. Measured on 250-wavecode: 47%
+      // mismatch when the blend overlapped the pump, 0.5% from a settled
+      // start.
+      let settleFrames = 0;
+      // Idle once is not settled: the switch into the requested preset is
+      // driven by a route change, so a blend can still be a few hundred
+      // milliseconds away when the first check runs. Require the phase to
+      // stay idle across consecutive spaced checks before counting warmup.
+      let consecutiveIdle = 0;
+      while (
+        settleFrames < TRANSITION_SETTLE_FRAME_BUDGET &&
+        consecutiveIdle < TRANSITION_IDLE_CONFIRMATIONS
+      ) {
+        if (await transitionIsActive(page)) {
+          consecutiveIdle = 0;
+          const extra = await pumpDeterministicFrames(
+            page,
+            DETERMINISTIC_FRAME_CHUNK,
+          );
+          if (extra === null) break;
+          settleFrames += extra;
+          continue;
+        }
+        consecutiveIdle += 1;
+        await page.waitForTimeout(TRANSITION_IDLE_CHECK_INTERVAL_MS);
+      }
+      pumpedFrames = await pumpDeterministicFrames(
+        page,
+        normalizedOptions.deterministicFrames,
+      );
+      if (pumpedFrames !== null) {
+        console.log(
+          `Pumped ${pumpedFrames} deterministic frames${
+            settleFrames > 0
+              ? ` (after ${settleFrames} settling a transition)`
+              : ''
+          }.`,
+        );
+      }
+    }
+    if (pumpedFrames === null) {
+      console.log(`Watching for ${normalizedOptions.duration}ms...`);
+      await page.waitForTimeout(normalizedOptions.duration);
+    }
 
     const runtimeDebugSnapshot = normalizedOptions.perfCapture
       ? await getMilkdropDebugSnapshot(page)
@@ -1896,6 +2074,12 @@ if (import.meta.main) {
     console.error('  --port <number>     Dev server port (default: 5173)');
     console.error('  --duration <ms>     Duration to run (default: 5000)');
     console.error(
+      '  --deterministic-frames <n>  Pump n simulation frames instead of watching the clock',
+    );
+    console.error(
+      '  --lock-quality-step <n>     Pin adaptive quality so captures do not vary with load',
+    );
+    console.error(
       '  --width <px>        Capture viewport width (default: 1280)',
     );
     console.error(
@@ -1931,6 +2115,7 @@ if (import.meta.main) {
 
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
+  const deterministicFrames = getArg('--deterministic-frames', 0) as number;
   const viewportWidth = getArg('--width', 1280) as number;
   const viewportHeight = getArg('--height', 720) as number;
   const presetId = getArg('--preset', '') as string;
@@ -1944,6 +2129,7 @@ if (import.meta.main) {
     'compatibility',
   ) as PlayToyRendererProfile;
   const catalogMode = getArg('--catalog-mode', 'bundled') as PlayToyCatalogMode;
+  const lockQualityStep = getArg('--lock-quality-step', -1) as number;
   const screenshotSurface = getArg(
     '--screenshot-surface',
     'canvas',
@@ -1963,6 +2149,9 @@ if (import.meta.main) {
       debugSnapshot,
       video: false,
       duration,
+      deterministicFrames:
+        deterministicFrames > 0 ? deterministicFrames : undefined,
+      lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
       viewportWidth,
       viewportHeight,
       outputDir,

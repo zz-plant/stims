@@ -55,6 +55,7 @@ type VisualReferenceCaptureRequest = Required<
     | 'rendererProfile'
     | 'catalogMode'
     | 'screenshotSurface'
+    | 'deterministicFrames'
   >
 >;
 
@@ -78,6 +79,7 @@ export function buildVisualReferenceCaptureRequests({
       presetId: preset.id,
       port,
       duration: preset.capture.warmupMs + preset.capture.captureOffsetMs,
+      deterministicFrames: preset.capture.warmupFrames,
       viewportWidth: preset.capture.width,
       viewportHeight: preset.capture.height,
       screenshot: true,
@@ -143,6 +145,19 @@ function runPlayToyInChildProcess(
       String(request.port),
       '--duration',
       String(request.duration),
+      // Frames, not milliseconds: the reference is one frame of the preset's
+      // evolution, and a wall-clock wait lands on a different frame on every
+      // backend — 631 frames on hardware WebGPU against 47 on software WebGL,
+      // measured on the same preset.
+      '--deterministic-frames',
+      String(request.deterministicFrames),
+      // Pin the quality ladder. Adaptive quality reacts to frame time, so a
+      // capture taken while the machine is busy — several presets captured
+      // at once, say — renders at a different scale than one taken idle, and
+      // the same preset scored 0.48% and 96.75% against its reference in the
+      // two cases.
+      '--lock-quality-step',
+      '0',
       '--width',
       String(request.viewportWidth),
       '--height',
@@ -226,7 +241,18 @@ export async function captureVisualReferenceSuite(
 ) {
   const server = await ensureDevServer(options.port, options.repoRoot);
   const requests = buildVisualReferenceCaptureRequests(options);
-  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  // WebGPU captures run one at a time unless told otherwise. Parallel
+  // Chromium instances contend for the GPU and lose their device mid-run
+  // ("A valid external Instance reference no longer exists"); the page then
+  // keeps compositing its last frame, which is the boot preset — so every
+  // preset in a batch was captured as the same magenta frame and scored
+  // ~96% against its own reference. Measured on the same three presets:
+  // 96/93/97% at concurrency 4, and 0.50/0.17/16% at 1.
+  const wantsWebGpu = requests.some(
+    (request) => request.rendererProfile === 'webgpu',
+  );
+  const concurrency =
+    options.concurrency ?? (wantsWebGpu ? 1 : DEFAULT_CONCURRENCY);
   const results: PlayToyResult[] = new Array(requests.length);
   const errors: Error[] = [];
 

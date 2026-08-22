@@ -13,7 +13,8 @@
     "captureOffsetMs": 0,
     "toleranceProfile": "default",
     "threshold": 16,
-    "failThreshold": 0.02
+    "failThreshold": 0.02,
+    "warmupFrames": 900
   },
   "presets": [
     {

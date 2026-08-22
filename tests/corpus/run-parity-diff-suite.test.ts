@@ -117,6 +117,7 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -140,6 +141,7 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -164,6 +166,7 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -268,6 +271,7 @@ test('runParityDiffSuite reports missing stims captures', async () => {
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -291,6 +295,7 @@ test('runParityDiffSuite reports missing stims captures', async () => {
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -332,6 +337,7 @@ test('runParityDiffSuite excludes Stims self-references from projectM certificat
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -355,6 +361,7 @@ test('runParityDiffSuite excludes Stims self-references from projectM certificat
           height: 1,
           warmupMs: 3000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'Stims self-reference',
@@ -424,6 +431,7 @@ test('runParityDiffSuite reports certified backend mismatches before diffing', a
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -447,6 +455,7 @@ test('runParityDiffSuite reports certified backend mismatches before diffing', a
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',
@@ -527,6 +536,7 @@ test('runParityDiffSuite surfaces measured source report provenance drift', asyn
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -550,6 +560,7 @@ test('runParityDiffSuite surfaces measured source report provenance drift', asyn
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'fixture',

@@ -79,6 +79,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
       height: 1,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: 900,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -103,6 +104,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
           height: 1,
           warmupMs: 5000,
           captureOffsetMs: 0,
+          warmupFrames: 900,
         },
         provenance: {
           label: 'projectM fixture',

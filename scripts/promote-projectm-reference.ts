@@ -361,6 +361,8 @@ export async function promoteProjectMReference(
       captureOffsetMs:
         existingEntry?.capture.captureOffsetMs ??
         manifest.defaults.captureOffsetMs,
+      warmupFrames:
+        existingEntry?.capture.warmupFrames ?? manifest.defaults.warmupFrames,
     },
     provenance: {
       label:
