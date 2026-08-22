@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
+import {
+  acquireMicrophoneStream,
+  describeInputProcessingWarning,
+} from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
@@ -492,16 +495,7 @@ export function useWorkspaceShellOrchestration({
 
         let permissionStream: MediaStream;
         try {
-          const micConstraints: MediaStreamConstraints = deviceId
-            ? {
-                audio: {
-                  ...(DEFAULT_MICROPHONE_CONSTRAINTS.audio as object),
-                  deviceId: { exact: deviceId },
-                },
-              }
-            : DEFAULT_MICROPHONE_CONSTRAINTS;
-          permissionStream =
-            await navigator.mediaDevices.getUserMedia(micConstraints);
+          permissionStream = await acquireMicrophoneStream({ deviceId });
         } catch (error) {
           if (inApp) {
             const demoRouteState = {
@@ -547,6 +541,15 @@ export function useWorkspaceShellOrchestration({
           throw error;
         }
         commitRoute(nextRouteState);
+        // Read back what the browser actually granted. Asking for the
+        // processing flags off is not the same as getting them off, and a
+        // gain-controlled feed looks fine while quietly flattening every
+        // beat the presets are supposed to move to.
+        const processingWarning =
+          describeInputProcessingWarning(permissionStream);
+        if (processingWarning) {
+          setStatusMessage(processingWarning);
+        }
         return;
       }
 
