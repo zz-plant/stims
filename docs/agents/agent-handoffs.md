@@ -81,6 +81,31 @@ Keep ownership crisp:
 - Treat `/milkdrop/` as a compatibility alias; canonical product behavior lives on `/`.
 - Avoid opportunistic refactors when the handoff is about a bounded fix.
 
+## Working in a tree with other writers
+
+Several agents and sessions routinely share this checkout, and the tooling
+assumes a single writer: one dev server on `:5173`, fixed lab ports, artifacts
+in shared `screenshots/` paths. That assumption has produced measurably wrong
+results — a screenshot taken while another session's edit hot-reloaded, a
+capture of a preset another session had edited in place. Treat the shared tree
+as read-mostly:
+
+- **Verify in your own worktree, on your own port.** `git worktree add --detach
+  <tmpdir> HEAD`, symlink the repo's `node_modules` into it, copy in only the
+  files you changed, and run `bunx vite --port <yours> --strictPort` there.
+  Anything you intend to trust — screenshots, parity captures, frame diffs —
+  comes from that server, not from `:5173`. Remove the worktree when done.
+- **Never `git stash` and never `git checkout` a file you did not write.** A
+  `stash pop` in a shared tree can pop someone else's entry and conflict in a
+  file you have never opened. Stage and commit by explicit path, never `-A`.
+- **Capture serially.** Parallel GPU captures contend and silently produce black
+  or over-bright frames, which read as parity failures.
+- **A red gate is not always yours.** When `check:quick` fails on a file you did
+  not touch, do not bypass the hook: commit through a clean worktree instead —
+  apply your staged diff there, run the gate against an otherwise-clean tree,
+  commit, then fast-forward the branch to that commit. The gate still ran on
+  your change; it just ran without someone else's half-finished work in frame.
+
 ## Fast routing
 
 [`custom-capabilities.md`](./custom-capabilities.md#skills) is the canonical skill/workflow routing table — use it to pick the right playbook before splitting or starting work.
