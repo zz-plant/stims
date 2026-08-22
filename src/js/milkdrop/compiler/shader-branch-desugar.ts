@@ -36,7 +36,57 @@
  * count depends on runtime state, or an unroll that would exceed the statement
  * budget — returns null, and the caller keeps the existing behaviour: the body
  * stays unparsed, and the preset falls back to raw GLSL on WebGL.
+ *
+ * OFF BY DEFAULT, behind the `shaderBranchDesugar` flag
+ * (`?milkdrop-webgpu-branch-desugar=1`, or the matching
+ * `stims:experiments:` localStorage key). Disabled, this returns null for
+ * every body and both classification and rendering are exactly what they were
+ * before the rewrite existed.
+ *
+ * WHY IT IS GATED, and what is left to do before it can be turned on. The
+ * rewrite is not the problem — a control run with the single `if` deleted from
+ * martin-purple-pulsator's body, so this module never ran, still rendered pure
+ * white, and no masked value anywhere in the corpus can produce a NaN. What
+ * the rewrite does is hand ~150 bodies to the WebGPU node executor for the
+ * first time, and the executor's own gaps then show up as wrong pixels. Two
+ * were found and fixed (a sign- and NaN-destroying division guard, and matrix
+ * element writes claiming to be WebGPU-executable). These remain:
+ *
+ *   - flexi-lorenz-chaser-...-discombobule-lose kills the GPU process,
+ *     reproducibly, with no WebGPU validation error emitted. Its desugared
+ *     body is small (28 warp / 18 comp statements), so it is not the uniform
+ *     explosion that matrix writes caused. Undiagnosed, and the reason this
+ *     flag exists rather than an allowlist.
+ *   - flexi-psychenapping, flexi-geiss-infused-with-the-spiral-...-rapery and
+ *     rediculator-qrem-glob render near-uniform white (~255 mean).
+ *   - flexi-area-51, benjam-...-understarted and
+ *     eo-s-phat-technicolor-...-gaia-pussy render black where WebGL has a
+ *     picture.
+ *
+ * A trap for whoever picks this up: WebGL is NOT a usable oracle for several
+ * of these under silent audio. Captured with `audioMode: 'none'` (what
+ * `lab:backend-diff` uses for determinism), flexi-area-51 reads 0.0 on both
+ * backends and no-good-rnz and flexi-alien-fader read ~255 on WebGL itself.
+ * Compare against WebGL with audio, or against a certified projectM capture,
+ * before concluding a preset diverges.
  */
+
+/**
+ * Gate state for the whole module. A plain module-level boolean rather than a
+ * parameter because the decision is per session, not per body, and every
+ * caller between the runtime and here would otherwise have to thread it
+ * through. Compilation that never sets it — worker entry points, catalog
+ * tooling, tests — gets the safe answer.
+ */
+let branchDesugarEnabled = false;
+
+export function setShaderBranchDesugarEnabled(enabled: boolean): void {
+  branchDesugarEnabled = enabled;
+}
+
+export function isShaderBranchDesugarEnabled(): boolean {
+  return branchDesugarEnabled;
+}
 
 const REJECTED_KEYWORDS =
   /\b(?:while|do|switch|case|return|discard|break|continue)\b/u;
@@ -706,6 +756,9 @@ function parseStatements(
  * the supported grammar.
  */
 export function desugarShaderBranches(body: string): string | null {
+  if (!branchDesugarEnabled) {
+    return null;
+  }
   if (!/\b(?:if|for)\s*\(/u.test(body)) {
     return null;
   }
