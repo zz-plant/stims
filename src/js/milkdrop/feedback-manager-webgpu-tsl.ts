@@ -34,6 +34,8 @@ import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
   applyCompositeUniformState,
+  type FeedbackSceneRenderer,
+  renderSceneIntoFeedbackTarget,
   resolveMilkdropBlurShaderRanges,
 } from './feedback-manager-shared.ts';
 import {
@@ -2316,14 +2318,19 @@ function createFeedbackBlendOutputNode(
     );
     const previousColor = previous.rgb.mul(uniforms.decay);
 
-    // Internal frame: warped decayed feedback under this frame's geometry —
-    // additive when the preset warps via its own shader, legacy echo blend
-    // otherwise.
-    const color = mix(
-      current.rgb,
-      previousColor,
-      clamp(uniforms.videoEchoAlpha, 0, 1),
-    );
+    // Internal frame: the warped, decayed previous frame with this frame's
+    // geometry drawn over it. Control-driven presets used to blend the two by
+    // videoEchoAlpha instead, so a preset without video echo (alpha 0)
+    // discarded its history outright: fDecay did nothing and no warp variable
+    // could accumulate, because there was never anything left to move. Video
+    // echo is a display-stage effect in MilkDrop, not the mechanism that
+    // carries feedback. Mirrors the WebGL blend in feedback-manager-shared.ts.
+    //
+    // The scene colour arrives premultiplied — three.js blends src.rgb times
+    // src.a into a target that starts at zero — so this is a straight over,
+    // not a mix (a mix darkens covered pixels twice).
+    const coverage = clamp(current.a, 0, 1);
+    const color = previousColor.mul(float(1).sub(coverage)).add(current.rgb);
 
     return vec4(color, 1);
   })();
@@ -3126,8 +3133,12 @@ class WebGPUMilkdropFeedbackManager
       this.compositeMaterial.uniforms.feedbackSoftness.value ?? 0;
     const shouldBlur = softness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD;
 
-    renderer.setRenderTarget(this.sceneTarget);
-    renderer.render(scene, camera);
+    renderSceneIntoFeedbackTarget(
+      renderer as FeedbackSceneRenderer,
+      scene,
+      camera,
+      this.sceneTarget,
+    );
 
     if (shouldBlur) {
       const blurTexelSize = this.blurMaterial.uniforms.texelSize.value;
