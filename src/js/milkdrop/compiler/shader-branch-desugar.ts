@@ -13,8 +13,15 @@
  *
  * Each branch statement becomes `target = if(mask, value, target)`, where the
  * mask is the branch condition normalized to 0/1 and multiplied through nested
- * branches. `if(...)` is a value select on both backends, so a NaN produced on
- * the untaken side is discarded rather than mixed in.
+ * branches. Masks are exactly 0 or 1 (`step` of a comparison, products and
+ * `1 - m` of those), and the then/else masks of one branch are exact
+ * complements, so the sequential rewrite reproduces the branch's semantics.
+ *
+ * `if(...)` compiles to a `mix`, NOT a select, so the untaken side is
+ * evaluated and blended: a NaN or infinity produced there poisons the result
+ * even under a zero mask. Nothing in the bundled corpus puts a NaN source
+ * inside a branch arm, but a body that did would render wrong rather than be
+ * refused, and this rewrite would be the reason.
  *
  * `for` loops whose trip count is known at compile time are unrolled first:
  * the body is emitted once per iteration with the induction variable replaced

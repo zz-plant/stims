@@ -556,13 +556,19 @@ describe('branch flattening for direct shader execution', () => {
     expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
   });
 
-  test('passes a statement it cannot rewrite through untouched', () => {
+  test('keeps a matrix element write, and off the WebGPU direct path', () => {
     // The desugar's assignment pattern is narrower than the statement parser's
     // — it does not match an indexed target — and dropping what it cannot
     // match corrupted the preset silently: the body still looked fully parsed,
     // so it was classified as directly executable while a matrix was declared
     // and never assigned. A corpus sweep found 49 presets losing 469 such
-    // statements, several rendering black.
+    // statements, several rendering black. So the write is passed through.
+    //
+    // Passing it through is not the same as being able to run it. The WebGPU
+    // node executor cannot write one matrix element, and what it built for a
+    // body full of them was a 44641-member WGSL uniform struct that crashed
+    // the GPU process, so the line is recorded as unparsed: WebGL keeps
+    // running the raw GLSL and WebGPU falls back to scalar controls.
     const analysis = extractShaderControls(
       nativeBody(`
           mat2 basis_1;
@@ -578,11 +584,13 @@ describe('branch flattening for direct shader execution', () => {
 
     // The HLSL-to-GLSL normalizer rewrites `uint(0)` to `int(0)` on the way
     // through; what matters is that the matrix write survives at all.
+    const matrixWrite = /^basis_1\[[^\]]+\] = vec2\(1\.0, 0\.0\)$/u;
     expect(
-      analysis.directProgramLines.some((line) =>
-        /^basis_1\[[^\]]+\] = vec2\(1\.0, 0\.0\)$/u.test(line),
-      ),
+      analysis.nativeBodyUnparsedLines.some((line) => matrixWrite.test(line)),
     ).toBe(true);
+    expect(
+      analysis.directProgramLines.some((line) => matrixWrite.test(line)),
+    ).toBe(false);
   });
 
   test('refuses a body whose branch holds a statement it cannot rewrite', () => {

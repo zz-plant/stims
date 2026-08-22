@@ -1641,6 +1641,37 @@ export function clearShaderAnalysisCaches() {
   shaderStatementCache.clear();
 }
 
+const MATRIX_DECLARATION_PATTERN =
+  /^(?:const\s+)?mat[234]\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)/u;
+
+/** Names declared `mat2`/`mat3`/`mat4` anywhere in this body. */
+function collectMatrixLocals(lines: string[]): Set<string> {
+  const names = new Set<string>();
+  for (const line of lines) {
+    const match = line.match(MATRIX_DECLARATION_PATTERN);
+    if (!match) {
+      continue;
+    }
+    for (const name of (match[1] ?? '').split(',')) {
+      names.add(name.trim());
+    }
+  }
+  return names;
+}
+
+/**
+ * True for an assignment that writes one element of a matrix local —
+ * `tmpvar_1[int(0)].x = q20`. The statement grammar parses these, but only the
+ * raw-GLSL backends can execute them.
+ */
+function isMatrixElementAssignment(
+  target: string,
+  matrixLocals: Set<string>,
+): boolean {
+  const bracket = target.indexOf('[');
+  return bracket > 0 && matrixLocals.has(target.slice(0, bracket).trim());
+}
+
 export function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -1697,10 +1728,27 @@ export function extractShaderControls(
     }
   };
 
+  const matrixLocals = collectMatrixLocals(normalized);
+
   let supportedLineCount = 0;
   normalized.forEach((line) => {
     const parsedStatement = parseShaderStatementCached(line);
     if (parsedStatement) {
+      if (isMatrixElementAssignment(parsedStatement.target, matrixLocals)) {
+        // The statement parser accepts `tmpvar_1[int(0)].x = q20`, but the
+        // WebGPU node executor has no way to write one matrix element, and
+        // what it builds instead is unbounded: martin-city-of-shadows, whose
+        // warp body opens with nine of these, compiled to a WGSL
+        // `objectStruct` of 44641 mat3x3 members behind a 2.1 MB uniform
+        // binding — past both the 16383-member and 65536-byte limits — and
+        // took the GPU process down with it.
+        //
+        // Recording it as unparsed is what keeps the preset honest: WebGL
+        // still runs the raw GLSL, which handles the write fine, and WebGPU
+        // drops back to the uniform-only approximation instead of crashing.
+        trackUnsupported(line);
+        return;
+      }
       statements.push(parsedStatement);
       const requiresDirectProgram = shouldEmitDirectProgramStatement(
         parsedStatement.target,

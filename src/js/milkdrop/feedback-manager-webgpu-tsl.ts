@@ -855,8 +855,41 @@ function toShaderBool(value: ShaderNodeValue) {
   return step(0.0001, abs(scalarValue.node));
 }
 
+/**
+ * Smallest divisor magnitude the executor will divide by, so `x / 0` produces
+ * a large number rather than an infinity that poisons the frame.
+ */
+const DIVIDE_EPSILON = 0.000001;
+
+/**
+ * Division that neither flips the sign of its result nor manufactures one out
+ * of a NaN.
+ *
+ * The guard this replaces was `left / max(abs(right), eps)`, which got both
+ * wrong. Taking `abs` of the divisor made `x / -2.0` evaluate as `x / 2.0`, so
+ * every quotient with a negative denominator came out mirrored — which is most
+ * of the screen for the `x / y` in the inlined `atan2` that MilkDrop's shader
+ * transpiler emits. And `max(NaN, eps)` returns `eps` under WGSL's select-based
+ * max, so a NaN divisor became a divide by one millionth: `0.1 / sqrt(negative)`
+ * turned into 1e5 and saturated the whole frame white instead of producing the
+ * NaN that WebGL's raw GLSL produces and renders as black.
+ *
+ * Only a divisor whose magnitude is genuinely near zero is lifted, and it is
+ * lifted to `±eps` keeping its sign. `abs(NaN) < eps` is false, so a NaN
+ * divisor stays NaN and the NaN propagates, matching the other backend.
+ */
+function createSafeDivisorNode(right: any) {
+  const magnitude = max(abs(right), DIVIDE_EPSILON);
+  const signedFloor = select(right.lessThan(0), magnitude.mul(-1), magnitude);
+  return select(abs(right).lessThan(DIVIDE_EPSILON), signedFloor, right);
+}
+
+function createDivideNode(left: any, right: any) {
+  return left.div(createSafeDivisorNode(right));
+}
+
 function createModNode(left: any, right: any) {
-  return left.sub(floor(left.div(max(abs(right), 0.000001))).mul(right));
+  return left.sub(floor(createDivideNode(left, right)).mul(right));
 }
 
 function createComparisonNode(operator: string, left: any, right: any) {
@@ -944,7 +977,7 @@ function applyShaderBinaryNode(
     case '*':
       return shaderValueFromNode(lhs.mul(rhs), kind);
     case '/':
-      return shaderValueFromNode(lhs.div(max(abs(rhs), 0.000001)), kind);
+      return shaderValueFromNode(createDivideNode(lhs, rhs), kind);
     case '%':
       return shaderValueFromNode(createModNode(lhs, rhs), kind);
     case '^':
