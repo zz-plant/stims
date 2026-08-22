@@ -46,6 +46,7 @@ import {
   createSampleAuxTextureNode,
   createSampleUvNode,
   type FeedbackRendererLike,
+  flipFeedbackSampleUv,
   getShared3dAuxTexture,
   getSharedMilkdropAuxTextures,
   getSharedMilkdropTexture,
@@ -172,6 +173,17 @@ const TEXTURE_IDENTIFIER_TO_SAMPLER: Record<string, string> = {
   blur3tex: 'blur3',
 };
 
+/** Shader sampler sources backed by one of the feedback manager's own targets. */
+const RENDER_TARGET_SHADER_SOURCES = new Set([
+  'main',
+  'pw_main',
+  'pc_main',
+  'fc_main',
+  'blur1',
+  'blur2',
+  'blur3',
+]);
+
 function resolveDirectShaderTextureNode(
   env: ShaderNodeEnv,
   canonicalSource: string,
@@ -252,7 +264,7 @@ function createGaussianBlurOutputNode(
   blurUniforms: ReturnType<typeof createGaussianBlurUniforms>,
 ) {
   return Fn(() => {
-    const centerUv = uv();
+    const centerUv = flipFeedbackSampleUv(uv());
     const offset = blurUniforms.blurDirection.mul(
       blurUniforms.texelSize.mul(blurUniforms.blurPixelStep),
     );
@@ -332,8 +344,10 @@ function createPresentOutputNode(
     savedZoomDrift,
   } = MILKDROP_BLEND_DISSOLVE;
   return Fn(() => {
+    // Screen space for the effect math below, render-target space for the
+    // reads themselves.
     const presentUv = uv();
-    const current = uniforms.currentTex.sample(presentUv);
+    const current = uniforms.currentTex.sample(flipFeedbackSampleUv(presentUv));
     const base = current.rgb.toVar();
 
     // Chromatic aberration over the composited frame (profile-driven).
@@ -343,10 +357,10 @@ function createPresentOutputNode(
         .mul(uniforms.postChromaticAberration)
         .mul(uniforms.postTexelSize);
       const red = uniforms.currentTex.sample(
-        clamp(presentUv.add(offset), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(clamp(presentUv.add(offset), vec2(0), vec2(1))),
       ).r;
       const blue = uniforms.currentTex.sample(
-        clamp(presentUv.sub(offset), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(clamp(presentUv.sub(offset), vec2(0), vec2(1))),
       ).b;
       base.assign(vec3(red, base.g, blue));
     });
@@ -357,16 +371,24 @@ function createPresentOutputNode(
         max(uniforms.postBloomRadius, 0.0001),
       );
       const top = uniforms.currentTex.sample(
-        clamp(presentUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(
+          clamp(presentUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+        ),
       ).rgb;
       const bottom = uniforms.currentTex.sample(
-        clamp(presentUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(
+          clamp(presentUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+        ),
       ).rgb;
       const left = uniforms.currentTex.sample(
-        clamp(presentUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(
+          clamp(presentUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+        ),
       ).rgb;
       const right = uniforms.currentTex.sample(
-        clamp(presentUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+        flipFeedbackSampleUv(
+          clamp(presentUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+        ),
       ).rgb;
       const blurred = top.add(bottom).add(left).add(right).div(4);
       const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
@@ -397,7 +419,7 @@ function createPresentOutputNode(
       // moving instead of freezing for the whole blend.
       const drift = a.oneMinus().mul(savedZoomDrift).add(1.0);
       const savedUv = uv().sub(0.5).div(drift).add(0.5);
-      const saved = uniforms.savedTex.sample(savedUv);
+      const saved = uniforms.savedTex.sample(flipFeedbackSampleUv(savedUv));
       // Aspect-corrected sample point keeps dissolve patches round on any
       // viewport instead of stretched across the wide axis.
       const p = vec2(uv().x.mul(uniforms.patternAspect), uv().y);
@@ -1490,7 +1512,16 @@ export function compileShaderExpressionNode(
           coordinate.kind === 'vec4'
             ? vec2(coordinate.node.x, coordinate.node.y)
             : coerceShaderValue(coordinate, 'vec2').node;
-        const sampleUv = env.sampleUvNode(coordUv, env.uniforms.textureWrap);
+        // sampleUvNode lands in render-target space, which is right for the
+        // feedback textures and wrong for uploaded ones; the flip is its own
+        // inverse, so applying it again puts an aux sampler back in screen
+        // space.
+        const wrappedUv = env.sampleUvNode(coordUv, env.uniforms.textureWrap);
+        const sampleUv = RENDER_TARGET_SHADER_SOURCES.has(
+          resolvedBinding.canonicalSource,
+        )
+          ? wrappedUv
+          : flipFeedbackSampleUv(wrappedUv);
         if (name === 'tex2dgrad') {
           const dx =
             args.length >= 2
@@ -2514,8 +2545,12 @@ function createCompositeOutputNode(
     const chromaDir = baseUv
       .sub(0.5)
       .mul(uniforms.chromaticAberration.mul(0.02));
-    const chromaR = uniforms.internalTex.sample(baseUv.add(chromaDir)).r;
-    const chromaB = uniforms.internalTex.sample(baseUv.sub(chromaDir)).b;
+    const chromaR = uniforms.internalTex.sample(
+      flipFeedbackSampleUv(baseUv.add(chromaDir)),
+    ).r;
+    const chromaB = uniforms.internalTex.sample(
+      flipFeedbackSampleUv(baseUv.sub(chromaDir)),
+    ).b;
     color.assign(mix(color, vec3(chromaR, color.g, chromaB), chromaEnabled));
 
     // Red-blue stereo
@@ -2556,7 +2591,9 @@ function createCompositeOutputNode(
     // chroma (WebGL orders bloom before afterimage; the trails there don't
     // re-bloom either, so the visible difference is negligible).
     If(step(0.0001, uniforms.postAfterimageDamp), () => {
-      const history = uniforms.displayHistoryTex.sample(baseUv).rgb;
+      const history = uniforms.displayHistoryTex.sample(
+        flipFeedbackSampleUv(baseUv),
+      ).rgb;
       const damped = history
         .mul(uniforms.postAfterimageDamp)
         .mul(step(vec3(0.1), history));
