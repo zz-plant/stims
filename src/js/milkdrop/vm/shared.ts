@@ -134,6 +134,8 @@ export type GeometryBuilderState = {
 export type ShapeBuilderState = {
   customShapeLocals: MutableState[];
   customShapeTAfterInit: MutableState[];
+  /** Authored shapecode values, reloaded before each frame's shape code. */
+  customShapeBaseFields: MutableState[];
 };
 
 export function clamp(value: number, min: number, max: number) {
@@ -557,6 +559,37 @@ export function seedCustomWaveFields(
   }
   return locals;
 }
+
+/**
+ * The shape variables a frame's per-frame code starts from. Everything the
+ * shapecode can author, minus the instance counters the builder sets itself
+ * and the t/v registers, which genuinely persist across frames.
+ */
+export const CUSTOM_SHAPE_BASE_FIELD_KEYS = [
+  'enabled',
+  'sides',
+  'x',
+  'y',
+  'rad',
+  'ang',
+  'textured',
+  'tex_zoom',
+  'tex_ang',
+  'r',
+  'g',
+  'b',
+  'a',
+  'r2',
+  'g2',
+  'b2',
+  'a2',
+  'border_r',
+  'border_g',
+  'border_b',
+  'border_a',
+  'additive',
+  'thickoutline',
+] as const;
 
 export function seedCustomShapeFields(
   shape: MilkdropShapeDefinition,
