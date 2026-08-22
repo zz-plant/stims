@@ -85,6 +85,7 @@ import {
   type ShaderExpressionEnv,
   type ShaderRuntimeEnv,
 } from './shader-analysis-helpers';
+import { desugarShaderBranches } from './shader-branch-desugar';
 import {
   applyShaderHeuristicControlStatement,
   applyShaderScalarAliasControl,
@@ -1594,10 +1595,18 @@ function prepareShaderSource(shaderText: string): ShaderSourcePrep {
     return cached;
   }
   const nativeShaderBody = extractNativeShaderBody(shaderText);
+  // Branches have no place in the statement model, so a body that branches
+  // used to be unparseable — WebGPU fell back to uniform-only controls while
+  // WebGL ran the raw GLSL. Flattening `if`/`else` into masked assignments
+  // first keeps those presets on the direct path; the raw GLSL WebGL executes
+  // is extracted from the original text and is untouched by this.
+  const statementBody = nativeShaderBody
+    ? (desugarShaderBranches(nativeShaderBody) ?? nativeShaderBody)
+    : null;
   const prep: ShaderSourcePrep = {
     nativeShaderBody,
-    normalized: nativeShaderBody
-      ? nativeShaderBody
+    normalized: statementBody
+      ? statementBody
           .split(/;\n?/u)
           .map((line) =>
             line

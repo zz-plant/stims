@@ -388,3 +388,83 @@ test('keeps native shader-body aspect as a runtime uniform', () => {
     compiled.ir.shaderText.warpProgram?.normalizedLines.join(' '),
   ).toContain('float x = aspect');
 });
+
+describe('branch flattening for direct shader execution', () => {
+  beforeEach(() => {
+    clearShaderAnalysisCaches();
+  });
+
+  const nativeBody = (body: string) => `shader_body {\n${body}\n}`;
+
+  test('turns an if/else into masked assignments the statement model can run', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        vec3 ret_2;
+        ret_2 = texture(sampler_pw_main, uv).xyz;
+        if ((uv.x < 0.5)) {
+          ret_2 = vec3(1.0, 0.0, 0.0);
+        } else {
+          ret_2 = vec3(0.0, 1.0, 0.0);
+        };
+        ret = ret_2;
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    const targets = analysis.directProgramStatements.map(
+      (statement) => statement.target,
+    );
+    // Both branches survive as assignments to the same variable...
+    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(3);
+    // ...and the else arm is the complement of the then arm, not a second
+    // unconditional write.
+    const lines = analysis.directProgramLines.join('\n');
+    expect(lines).toContain('1.0 - (step(0.0001, abs((uv.x < 0.5))))');
+  });
+
+  test('initializes a variable a branch writes before anything else does', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        vec3 ret_2;
+        bool hit_1;
+        ret_2 = texture(sampler_pw_main, uv).xyz;
+        if ((uv.y < 0.5)) {
+          hit_1 = (uv.x < 0.5);
+        } else {
+          hit_1 = bool(0);
+        };
+        ret = ret_2;
+      `),
+    );
+
+    // Without the seed the masked assignment would read an undeclared value
+    // and the whole statement would be dropped.
+    expect(analysis.directProgramLines[1]).toBe('hit_1 = 0.0');
+  });
+
+  test('leaves a body with loops for the raw-GLSL fallback', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 < 4; i_1++) {
+          acc_1 = (acc_1 + 1.0);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+});
+
+describe('shader expression numbers', () => {
+  test('parses scientific notation', () => {
+    // Compiler-emitted GLSL is full of `1e-08`; stopping the scan at the `e`
+    // left a bare identifier behind and failed the whole line.
+    expect(parseMilkdropShaderStatement('x = (1e-08 * abs(y))')).not.toBeNull();
+    expect(parseMilkdropShaderStatement('x = 2.5E+3')).not.toBeNull();
+    expect(parseMilkdropShaderStatement('x = 5e')).toBeNull();
+    expect(parseMilkdropShaderStatement('x = 1.2.3')).toBeNull();
+  });
+});
