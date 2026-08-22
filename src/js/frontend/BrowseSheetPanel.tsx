@@ -11,6 +11,7 @@ import {
 } from 'react';
 import {
   getActiveAccessibilityPreference,
+  setAccessibilityPreference,
   subscribeToAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
@@ -227,6 +228,21 @@ export function BrowseSheetPanel({
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),
     [browseEntries, sortMode, randomSeed],
   );
+
+  /**
+   * How many presets "Reduce flashing" is holding back.
+   *
+   * This preference defaults to ON whenever the OS reports reduced-motion,
+   * so it is routinely on without ever having been chosen — and unlike the
+   * search and author filters it is invisible here, has no chip, and is not
+   * touched by "Clear filters". The result was a library quietly missing
+   * presets with nothing on screen accounting for them.
+   */
+  const flashHiddenCount = useMemo(() => {
+    if (!reduceFlashing) return 0;
+    return catalog.filter((entry) => !passesFlashPreference(entry, true))
+      .length;
+  }, [catalog, reduceFlashing]);
 
   // The list is virtualized (see rowVirtualizer below), so only a small
   // window of rows exists as real DOM nodes at any time — the roving
@@ -703,6 +719,25 @@ export function BrowseSheetPanel({
             )}
           </p>
         </div>
+
+        {flashHiddenCount > 0 ? (
+          <p className="ctl-browse-applied" aria-live="polite">
+            <span>
+              {`Reduce flashing is hiding ${flashHiddenCount.toLocaleString()} preset${
+                flashHiddenCount === 1 ? '' : 's'
+              }.`}
+            </span>
+            <button
+              type="button"
+              className="ctl-btn ctl-btn--quiet"
+              onClick={() =>
+                setAccessibilityPreference({ reduceFlashing: false })
+              }
+            >
+              Show them
+            </button>
+          </p>
+        ) : null}
 
         {hasFilter ? (
           <p

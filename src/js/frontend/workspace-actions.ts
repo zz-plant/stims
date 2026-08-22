@@ -169,10 +169,16 @@ export function presentToExternalDisplayAction(
       await display.presentToExternalDisplay(hosted.url);
       const state = display.getExternalDisplayState();
       if (state.mode === null) return; // Picker dismissed.
+      // Not a mirror, and saying "showing on X" invited people to expect
+      // one: the receiver loads the sync link and renders its OWN copy, so
+      // it follows preset changes but reacts to whatever audio IT can hear.
+      // On this machine that is the same input; on a cast device there is
+      // no input at all, and the visuals will not be beat-matched to the
+      // room. Better to know that before the set than during it.
       announce(
         state.mode === 'window'
-          ? `Showing on ${state.target ?? 'the second screen'}.`
-          : 'Casting — the receiver follows every preset you play.',
+          ? `Showing on ${state.target ?? 'the second screen'} — it renders its own copy and uses its own audio input.`
+          : 'Casting — the receiver follows every preset you play, but reacts to its own audio, not this machine’s input.',
       );
     } catch {
       announce(
