@@ -205,8 +205,8 @@ export function resolveMilkdropWebGpuFeatureRouting(
   const storageComputeVM = parseOptionalBooleanFlag(
     getBrowserStorage()?.getItem(COMPUTE_VM_STORAGE_KEY) ?? null,
   );
-  // Opt-in, not on-by-default: measured at 1.1-6.8ms per frame against
-  // ~0.05us for the CPU JIT on the same per_frame blocks
+  // Opt-in, not on-by-default: measured at 0.8-8.0ms per frame against
+  // 0.05-0.75us for the CPU JIT on the same per_frame blocks
   // (`bun run lab:vm-tier-bench`, and the table in
   // webgpu-optimization-flags.ts). Left reachable because the compute VM is
   // still the right vehicle for per-vertex work and the differential

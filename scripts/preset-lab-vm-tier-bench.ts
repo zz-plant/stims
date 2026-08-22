@@ -11,6 +11,13 @@
  * reimplemented here) over real preset per_frame blocks:
  *   - `gpu`: syncState + dispatch + readback, exactly what stepAsync does
  *   - `cpu`: the compiled JIT program, same block, same state
+ *   - `per-vertex`: the SAME preset's per_pixel block run once per mesh
+ *     point, which is the workload the GPU tier was actually built for
+ *
+ * The third column exists because the second one alone was used to justify
+ * keeping the compute VM ("still the right vehicle for per-vertex work") and
+ * that claim was asserted, not measured. Per-vertex is where thousands of
+ * invocations should finally beat the round-trip latency — or not.
  *
  * Reports per-iteration median/p95 microseconds for each tier and the ratio,
  * so "is the GPU tier worth it" is a measurement rather than an argument.
@@ -34,11 +41,31 @@ function flag(name: string, fallback: number) {
 }
 const ITERATIONS = flag('iterations', 200);
 
+/** MilkDrop's default mesh; the per-vertex program runs once per point. */
+const MESH_POINTS = 48 * 36;
+
+type TierStats = { median: number; p95: number };
+
+type BenchRow = {
+  id: string;
+  statements: number;
+  compiledFrameStatements: number;
+  pixelStatements: number;
+  compiledPixelStatements: number;
+  usesGuestMemory?: boolean;
+  gpuExecutable?: boolean;
+  cpu: TierStats;
+  gpu: TierStats | null;
+  perVertex: TierStats | null;
+  error?: string;
+};
+
 type Sample = {
   id: string;
   statements: number;
   usesGuestMemory: boolean;
   lines: string[];
+  pixelLines: string[];
 };
 
 function collectPresets(): Sample[] {
@@ -59,8 +86,14 @@ function collectPresets(): Sample[] {
         .filter((line) => /^per_frame_[0-9]+=/i.test(line))
         .map((line) => line.replace(/^[^=]*=/, '').trim())
         .filter(Boolean);
+      const pixelLines = readFileSync(file, 'utf8')
+        .split(/\r?\n/)
+        .filter((line) => /^per_pixel_[0-9]+=/i.test(line))
+        .map((line) => line.replace(/^[^=]*=/, '').trim())
+        .filter(Boolean);
       const source = lines.join('\n');
       return {
+        pixelLines,
         id:
           file
             .split('/')
@@ -82,9 +115,25 @@ function collectPresets(): Sample[] {
 
   // Median / p90 / p99 by program size, plus one guest-memory user (2.3% of
   // the corpus, but the only case that moves 8 MiB per frame).
-  const picks = [at(0.5), at(0.9), at(0.99), ...(guest ? [guest] : [])];
+  // Presets whose per_pixel block is substantial: the per-frame percentiles
+  // above are mostly shader-era presets with no per_pixel equations at all,
+  // which cannot exercise the per-vertex column.
+  const byPixel = [...parsed].sort(
+    (a, b) => b.pixelLines.length - a.pixelLines.length,
+  );
+  const picks = [
+    at(0.5),
+    at(0.9),
+    at(0.99),
+    ...(guest ? [guest] : []),
+    ...byPixel.slice(0, 3),
+  ];
   const seen = new Set<string>();
-  return picks.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+  return picks.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
 }
 
 const samples = collectPresets();
@@ -117,14 +166,16 @@ try {
   }
 
   const results = await page.evaluate(
-    async ({ pageSamples, iterations }) => {
+    async ({ pageSamples, iterations, meshPoints }) => {
       // Vite serves these from the dev server; the specifiers are URLs, not
       // paths tsc can resolve, so they go through a variable to keep the
       // module graph out of the typecheck.
       const load = (specifier: string) =>
-        import(/* @vite-ignore */ specifier) as Promise<any>;
+        import(/* @vite-ignore */ specifier) as Promise<
+          Record<string, CallableFunction>
+        >;
       const [
-        { parseMilkdropStatement },
+        { parseMilkdropStatement, splitMilkdropStatements },
         { compileMilkdropProgram },
         { createGpuVmRunner },
       ] = await Promise.all([
@@ -144,17 +195,25 @@ try {
         return { median: pick(0.5), p95: pick(0.95) };
       };
 
+      // Split each source line the way the compiler does before parsing it.
+      // Feeding whole lines straight to parseMilkdropStatement dropped EVERY
+      // real preset statement -- a trailing ';' is a parse error for an
+      // assignment -- so an earlier run of this harness timed an empty
+      // program and reported CPU cost as 0.000us. The src/compiled counts in
+      // the output exist so that can never pass unnoticed again.
       const parseBlock = (lines: string[]) => {
         const statements: any[] = [];
         for (const [index, line] of lines.entries()) {
-          const parsed = parseMilkdropStatement(line, index + 1);
-          if (
-            parsed.value &&
-            !parsed.diagnostics.some(
-              (d: { severity: string }) => d.severity === 'error',
-            )
-          ) {
-            statements.push(parsed.value);
+          for (const piece of splitMilkdropStatements(line)) {
+            const parsed = parseMilkdropStatement(piece, index + 1);
+            if (
+              parsed.value &&
+              !parsed.diagnostics.some(
+                (d: { severity: string }) => d.severity === 'error',
+              )
+            ) {
+              statements.push(parsed.value);
+            }
           }
         }
         return { statements, sourceLines: lines };
@@ -182,6 +241,7 @@ try {
 
         // ── CPU tier ────────────────────────────────────────────────────
         const cpuBlock = parseBlock(sample.lines);
+        const compiledFrameStatements = cpuBlock.statements.length;
         const cpuFn = compileMilkdropProgram(cpuBlock);
         const megabuf = new Float32Array(1048576);
         const gmegabuf = new Float32Array(1048576);
@@ -201,6 +261,46 @@ try {
             cpuFn(cpuEnv, cpuState, {}, null, megabuf, gmegabuf, rnd);
           }
           cpuTimes.push(((performance.now() - t0) * 1000) / BATCH);
+        }
+
+        // ── Per-vertex CPU tier ─────────────────────────────────────────
+        // One evaluation per mesh point, which is what the renderer actually
+        // does for a per_pixel block.
+        let perVertex: { median: number; p95: number } | null = null;
+        let compiledPixelStatements = 0;
+        if (sample.pixelLines.length > 0) {
+          const pixelBlock = parseBlock(sample.pixelLines);
+          compiledPixelStatements = pixelBlock.statements.length;
+          const pixelFn = compileMilkdropProgram(pixelBlock);
+          const pixelEnv: Record<string, number> = {
+            ...state,
+            x: 0.5,
+            y: 0.5,
+            rad: 0.5,
+            ang: 0,
+          };
+          const pixelState = { ...state };
+          for (let i = 0; i < 5; i += 1) {
+            for (let p = 0; p < meshPoints; p += 1) {
+              pixelFn(pixelEnv, pixelState, {}, null, megabuf, gmegabuf, rnd);
+            }
+          }
+          // Ten frames per timing window: a single mesh pass on a short
+          // program lands under the ~100us performance.now() clamp.
+          const FRAMES_PER_BATCH = 10;
+          const frameTimes: number[] = [];
+          for (let f = 0; f < 20; f += 1) {
+            const t0 = performance.now();
+            for (let r = 0; r < FRAMES_PER_BATCH; r += 1) {
+              for (let p = 0; p < meshPoints; p += 1) {
+                pixelFn(pixelEnv, pixelState, {}, null, megabuf, gmegabuf, rnd);
+              }
+            }
+            frameTimes.push(
+              ((performance.now() - t0) * 1000) / FRAMES_PER_BATCH,
+            );
+          }
+          perVertex = stats(frameTimes);
         }
 
         // ── GPU tier ────────────────────────────────────────────────────
@@ -240,11 +340,15 @@ try {
           gpuExecutable: initialized,
           cpu: stats(cpuTimes),
           gpu: initialized ? stats(gpuTimes) : null,
+          perVertex,
+          compiledFrameStatements,
+          pixelStatements: sample.pixelLines.length,
+          compiledPixelStatements,
         });
       }
       return { results: out };
     },
-    { pageSamples: samples, iterations: ITERATIONS },
+    { pageSamples: samples, iterations: ITERATIONS, meshPoints: MESH_POINTS },
   );
 
   if ('error' in results && results.error) {
@@ -255,7 +359,7 @@ try {
     '\n  program                                     stmts   CPU µs   GPU µs    ratio',
   );
   console.log('  ' + '-'.repeat(78));
-  for (const row of (results as { results: any[] }).results) {
+  for (const row of (results as { results: BenchRow[] }).results) {
     const name = String(row.id).slice(0, 40).padEnd(42);
     if (row.error) {
       console.log(
@@ -263,15 +367,18 @@ try {
       );
       continue;
     }
-    if (!row.gpuExecutable) {
+    if (!row.gpuExecutable || !row.gpu) {
       console.log(
         `  ${name}${String(row.statements).padStart(5)}   ${row.cpu.median.toFixed(2).padStart(7)}   (not GPU-executable)`,
       );
       continue;
     }
     const ratio = row.gpu.median / Math.max(row.cpu.median, 1e-6);
+    const pv = row.perVertex
+      ? `${row.perVertex.median.toFixed(0).padStart(9)}`
+      : '        -';
     console.log(
-      `  ${name}${String(row.statements).padStart(5)}   ${row.cpu.median.toFixed(3).padStart(7)}   ${row.gpu.median.toFixed(1).padStart(7)}   ${ratio.toFixed(0).padStart(6)}x`,
+      `  ${name}${`${row.statements}/${row.compiledFrameStatements}`.padStart(9)}   ${row.cpu.median.toFixed(3).padStart(7)}   ${row.gpu.median.toFixed(1).padStart(7)}   ${ratio.toFixed(0).padStart(6)}x   ${`${row.pixelStatements}/${row.compiledPixelStatements}`.padStart(8)}  ${pv}`,
     );
   }
   console.log(
