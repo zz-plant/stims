@@ -24,6 +24,7 @@ import {
   extractFrameStats,
   type FrameStats,
 } from '../core/services/visual-embedding.ts';
+import type { MilkdropShaderExecutionMode } from '../milkdrop/shader-execution-mode.ts';
 import type { AgentTelemetry } from './agent-bridge.ts';
 import type { CommandAction } from './command-palette-registry.ts';
 
@@ -58,7 +59,8 @@ export type AgentEventType =
   | 'audio-source'
   | 'transition'
   | 'autoplay'
-  | 'backend';
+  | 'backend'
+  | 'shader-execution';
 
 export interface AgentEvent {
   seq: number;
@@ -79,6 +81,21 @@ export interface AgentCoreSnapshot {
   audioEnergy: number | null;
   autoplay: boolean | null;
   transition: { mode: string | null; blendDuration: number | null };
+  /**
+   * Whether the live preset's shader text is executing as authored on the
+   * active backend, or being approximated:
+   *   'direct'      — running as authored.
+   *   'none'        — the preset has no shader text; nothing to approximate.
+   *   'translated'  — the shader text does not run on this backend; the
+   *                   renderer is substituting its uniform-only controls
+   *                   approximation. The picture is plausible but wrong.
+   *   'unsupported' — the shader text is outside the supported subset; also
+   *                   approximated.
+   *   null          — no preset compiled yet. Never read null as "fine".
+   * Assert `shaderExecution === 'direct'` (or `'none'`) to require that what
+   * is on screen is what the preset author wrote.
+   */
+  shaderExecution: MilkdropShaderExecutionMode | null;
 }
 
 export interface AgentStateSnapshot extends AgentCoreSnapshot {
@@ -167,6 +184,27 @@ export const CORE_SNAPSHOT_DIFF_DESCRIPTORS: readonly CoreDiffDescriptor[] = [
     event: (p, n) => ({
       type: 'backend',
       data: { from: p.backend, to: n.backend },
+    }),
+  },
+  {
+    // Its own event rather than a field on the 'preset' one: this changes on
+    // two independent axes. Loading a preset changes it, but so does a
+    // backend fallback with the preset held still — and that second case is
+    // precisely the silent degradation this field exists to expose, so it
+    // must not be reachable only via a preset event that never fires.
+    fields: ['shaderExecution'],
+    changed: (p, n) => p.shaderExecution !== n.shaderExecution,
+    event: (p, n) => ({
+      type: 'shader-execution',
+      data: {
+        from: p.shaderExecution,
+        to: n.shaderExecution,
+        backend: n.backend,
+        presetId: n.presetId,
+        approximated:
+          n.shaderExecution === 'translated' ||
+          n.shaderExecution === 'unsupported',
+      },
     }),
   },
 ];

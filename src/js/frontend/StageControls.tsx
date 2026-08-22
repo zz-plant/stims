@@ -7,6 +7,7 @@ import {
 } from 'react';
 import styles from '../../css/StageControls.module.css';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
+import { describeShaderApproximation } from '../milkdrop/shader-execution-mode.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
 import {
   getAudioEnergy,
@@ -122,6 +123,18 @@ export function StageControls({
   );
   const currentPresetId =
     engine.selectedPreset?.id ?? engine.featuredPreset?.id ?? null;
+
+  // When the active backend cannot run a preset's shader text, the renderer
+  // substitutes a uniform-only approximation — a plausible frame that is not
+  // the preset. That used to be invisible: 19 of the 1201 bundled presets
+  // carrying shader text are approximated on WebGPU and nothing said so. This
+  // marker is deliberately small and sits with the title rather than shouting
+  // from a banner: it should be findable by someone wondering why a preset
+  // looks wrong, not a warning aimed at everyone watching.
+  const shaderApproximation = describeShaderApproximation(
+    engineSnapshot?.shaderExecution,
+    engineSnapshot?.backend,
+  );
 
   // Shared by the dock item and the palette's `queue-add`: the verb must not
   // mean different things depending on which surface invoked it.
@@ -611,8 +624,16 @@ export function StageControls({
             className={styles.titleBtn}
             data-action="open-browse"
             data-active={String(panel === 'browse')}
-            aria-label="Browse presets"
-            title={withHint('Browse presets', 'open-browse')}
+            aria-label={
+              shaderApproximation
+                ? `Browse presets. ${shaderApproximation.detail}`
+                : 'Browse presets'
+            }
+            title={
+              shaderApproximation
+                ? `${withHint('Browse presets', 'open-browse')}\n\n${shaderApproximation.detail}`
+                : withHint('Browse presets', 'open-browse')
+            }
             aria-keyshortcuts={ariaKeyShortcutsFor('open-browse')}
             onClick={handleBrowse}
           >
@@ -623,6 +644,17 @@ export function StageControls({
               <span className={styles.statusText}>Blending…</span>
             ) : presetAuthor ? (
               <span className={styles.authorText}>{presetAuthor}</span>
+            ) : null}
+            {/* Last in the pill, after the byline: this annotates the whole
+                title, and wedging it between the name and its author reads as
+                part of the credit. */}
+            {shaderApproximation ? (
+              <span
+                className={styles.fidelityMark}
+                data-shader-execution={engineSnapshot?.shaderExecution ?? ''}
+              >
+                {shaderApproximation.label}
+              </span>
             ) : null}
           </button>
 

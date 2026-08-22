@@ -38,6 +38,7 @@ __stims_agent.getState().statusLog.at(-1);              // {at, message}
 | `presetId`, `presetTitle` | active preset |
 | `audioSource`, `audioEnergy` | current source and live RMS energy |
 | `autoplay`, `transition` | playback settings (`transition.mode`, `transition.blendDuration`) |
+| `shaderExecution` | is the preset rendering as authored on the active backend? `'direct'` yes; `'none'` the preset has no shader text; `'translated'` / `'unsupported'` the backend cannot run the shader text and the renderer is substituting a **uniform-only approximation** — a plausible frame that is not the preset; `null` nothing compiled yet (never read null as "fine") |
 | `fps`, `quality` | measured frame rate and adaptive-quality diagnostics (from the agent telemetry feed) |
 | `lastError` | most recent window error / unhandled rejection message, or null |
 | `statusLog` | last 20 status toasts, `{at, message}` — toasts are transient in the UI but durable here |
@@ -64,11 +65,32 @@ read-immediately-after-write.
 
 `getEvents(sinceSeq = 0)` → `[{seq, at, type, data}]`, last 100 retained.
 Types: `status`, `error`, `engine-state`, `preset`, `panel`,
-`audio-source`, `transition`, `autoplay`, `backend`. Poll with the last
+`audio-source`, `transition`, `autoplay`, `backend`, `shader-execution`.
+Poll with the last
 seen `seq` to drain incrementally; use it to assert causality ("my action
 produced exactly these events") instead of diffing snapshots by hand.
 `error` events capture window errors and unhandled rejections — check them
-before diagnosing a black canvas.
+before diagnosing a black canvas. `shader-execution` events carry
+`{from, to, backend, presetId, approximated}` and fire on both axes that can
+change the answer — a preset switch *and* a backend fallback with the preset
+held still.
+
+**Asserting fidelity.** To require that what is on screen is what the preset
+author wrote, rather than an approximation of it:
+
+```js
+const s = __stims_agent.getState();
+if (s.shaderExecution !== 'direct' && s.shaderExecution !== 'none') {
+  throw new Error(`approximated on ${s.backend}: ${s.shaderExecution}`);
+}
+```
+
+A screenshot cannot tell you this — the approximation renders a plausible
+frame, which is exactly why it went unnoticed for months. The same fact
+appears in the UI as an "Approximated" marker beside the preset title in the
+dock, in the `?debug=hud` overlay's "Shader lowering" section (the "On
+&lt;backend&gt;" row), and in production aggregates via
+`bun run telemetry:report`.
 
 ## Pixels
 
