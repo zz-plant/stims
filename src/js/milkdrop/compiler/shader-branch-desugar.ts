@@ -218,10 +218,27 @@ function emitStatement(
       out.push(trimmed);
       return true;
     }
-    // Outside a loop, an unrecognized statement is dropped as before. Inside
-    // one it is a refusal: silently dropping one copy of an unrolled body
-    // would delete the effect rather than approximate it.
-    return mask === null && scope.loopDepth === 0;
+    // A statement this module cannot rewrite is still a statement. Passing it
+    // through unchanged is the only honest option at the top level: the
+    // downstream parser is wider than ASSIGNMENT_PATTERN — it accepts indexed
+    // targets like `tmpvar_1[uint(0)].x = q20`, which this one does not — so
+    // it can either execute the line or record it as unparsed and send the
+    // preset to the raw-GLSL fallback.
+    //
+    // Dropping it instead was a silent corruption: a body that lost its matrix
+    // writes still looked fully parsed, so the preset was classified as
+    // directly executable while a mat3 was declared and never assigned. A
+    // corpus sweep found 49 presets losing 469 statements this way, every one
+    // of them a matrix element write, several rendering black.
+    //
+    // Under a mask there is no honest pass-through — the statement would run
+    // unconditionally — so a branch or loop body refuses instead, and the
+    // whole shader falls back.
+    if (mask === null && scope.loopDepth === 0) {
+      out.push(trimmed);
+      return true;
+    }
+    return false;
   }
   const [, declaration, target, operator, value] = match;
   if (!target || !operator || !value) {
