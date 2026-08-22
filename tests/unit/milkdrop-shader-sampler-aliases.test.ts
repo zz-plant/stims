@@ -18,8 +18,11 @@ import {
 
 const SAMPLER_ALIAS_CASES = [
   {
+    // noise_lq and the noisevol family have their own slots: projectM
+    // generates both as white noise (PerlinNoise.cpp), where `noise` and
+    // `simplex` load smooth PNG assets.
     alias: 'sampler_fw_noise_lq',
-    canonical: 'noise',
+    canonical: 'noise_lq',
   },
   {
     alias: 'fw_noise_hq',
@@ -27,23 +30,23 @@ const SAMPLER_ALIAS_CASES = [
   },
   {
     alias: 'sampler_noisevol',
-    canonical: 'simplex',
+    canonical: 'noisevol',
   },
   {
     alias: 'sampler_fw_noisevol_lq',
-    canonical: 'simplex',
+    canonical: 'noisevol',
   },
   {
     alias: 'sampler_fw_noisevol_mq',
-    canonical: 'simplex',
+    canonical: 'noisevol',
   },
   {
     alias: 'sampler_noisevol_mq',
-    canonical: 'simplex',
+    canonical: 'noisevol',
   },
   {
     alias: 'sampler_pw_noisevol_hq',
-    canonical: 'simplex',
+    canonical: 'noisevol',
   },
 ] as const;
 
@@ -126,7 +129,7 @@ describe('milkdrop shader sampler aliases', () => {
     );
     expect(callValue).toMatchObject({
       kind: 'sample',
-      source: 'simplex',
+      source: 'noisevol',
       dimension: '3d',
       z: {
         kind: 'scalar',
@@ -180,7 +183,7 @@ describe('milkdrop shader sampler aliases', () => {
     ).toBe('noise');
     expect(normalizeMilkdropShaderSamplerName('SAMPLER_FW_MAIN')).toBe('main');
     expect(normalizeMilkdropShaderSamplerName('Sampler_Noise_LQ')).toBe(
-      'noise',
+      'noise_lq',
     );
   });
 
@@ -326,7 +329,7 @@ comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2
       expect(compiled.ir.shaderText.supported).toBe(true);
       expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
       expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
-        'simplex',
+        'noisevol',
       );
       expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
       expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
@@ -384,7 +387,9 @@ comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
     );
 
     expect(compiled.ir.shaderText.supported).toBe(true);
-    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+      'noisevol',
+    );
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );

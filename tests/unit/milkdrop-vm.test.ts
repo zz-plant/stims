@@ -1475,7 +1475,9 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
         }),
       }),
     );
-    expect(frameState.post.shaderControls.textureLayer.source).toBe('simplex');
+    // noisevol* is projectM's generated 32^3 white-noise volume
+    // (PerlinNoise.cpp), not the simplex marble PNG it used to alias onto.
+    expect(frameState.post.shaderControls.textureLayer.source).toBe('noisevol');
     expect(frameState.post.shaderControls.textureLayer.mode).toBe('mix');
     expect(frameState.post.shaderControls.textureLayer.inverted).toBe(true);
     expect(frameState.post.shaderControls.textureLayer.amount).toBeCloseTo(

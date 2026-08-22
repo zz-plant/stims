@@ -54,6 +54,12 @@ export type ToyRuntimeFrame = {
    * keeps driving output. Set by `renderFrames({ relationshipLock })`.
    */
   relationshipLock?: boolean;
+  /**
+   * One-shot: this frame starts a deterministic capture, so anything holding
+   * history from before it (feedback buffers) must be dropped. Harness-only —
+   * `renderFrames({ startTime })` sets it; a live session never does.
+   */
+  resetHistory?: boolean;
 };
 
 export type ToyRuntimePlugin = {
@@ -113,6 +119,13 @@ export type ToyRuntimeInstance = ToyInstance & {
   renderFrames?: (options?: {
     frames?: number;
     deltaMs?: number;
+    /**
+     * Start the simulation clock here before pumping, in seconds. Only for
+     * harnesses that need byte-comparable frames; a live session must not use
+     * it, since jumping `time` backwards is visible in any preset that reads
+     * it.
+     */
+    startTime?: number;
     /**
      * Overlay a deterministic 2Hz beat envelope on the synthetic signal.
      * The idle preview signal is smooth sines with no transients, so
@@ -578,9 +591,23 @@ export function createToyRuntime({
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
       const relationshipLock = options?.relationshipLock ?? false;
+      let resetHistoryOnNextFrame = false;
       stopPreviewLoop();
+      if (options?.startTime !== undefined) {
+        // Pumped frames are only reproducible if the clock they integrate is
+        // too. The idle signal is a pure function of frameState.time, and
+        // presets read `time` directly, so starting from however many seconds
+        // of wall clock happened to elapse before the pump made every capture
+        // different: two consecutive captures of the same preset, same code,
+        // differed on 4.2% of pixels — as large as the gap being measured.
+        frameState.time = options.startTime;
+        frameState.realTimeMs = options.startTime * 1000;
+        resetHistoryOnNextFrame = true;
+      }
       let rendered = 0;
       for (let i = 0; i < frames; i += 1) {
+        frameState.resetHistory = resetHistoryOnNextFrame;
+        resetHistoryOnNextFrame = false;
         frameState.time += deltaMs / 1000;
         frameState.deltaMs = deltaMs;
         frameState.realTimeMs += deltaMs;

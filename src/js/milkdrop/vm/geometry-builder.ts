@@ -575,6 +575,14 @@ function transformMeshPoint(
     }
   }
 
+  // NOTE: dx/dy are MilkDrop tu/tv deltas — [0,1] across the buffer, tv
+  // measured downward — while this runs in clip space, [-1,1] and y-up, so in
+  // principle they want doubling and a y flip. Measured, that helps one preset
+  // and badly hurts another (rovastar-parallel-universe 85.3% -> 81.3%,
+  // krash-rovastar-cerebral-demons-stars 14.8% -> 44.2%), which means the mesh
+  // mapping has a deeper error than the sign — most likely the operation order
+  // versus MilkDrop's uv map. Left alone until that is settled; do not "fix"
+  // the sign in isolation.
   const tx = wx + translateX;
   const ty = wy + translateY;
 
