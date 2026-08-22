@@ -147,6 +147,7 @@
     "lab:replay": "bun run scripts/preset-lab-replay.ts",
     "lab:gpu-differential": "bun run scripts/preset-lab-gpu-differential.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
+    "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
     "sweep:milkdrop-loops": "bun run scripts/run-milkdrop-loop-visual-sweep.ts",
     "sweep:butterchurn": "bun run scripts/sweep-butterchurn-support.ts",

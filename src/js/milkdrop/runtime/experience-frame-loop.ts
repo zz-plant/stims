@@ -35,7 +35,7 @@ import {
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
-import { estimateFrameBlendWorkload } from './session.ts';
+import { estimateFrameBlendWorkload, MAX_BLEND_WORKLOAD } from './session.ts';
 import type { MilkdropTraceRecorder } from './trace-recorder.ts';
 import type { MilkdropTransitionController } from './transition-controller.ts';
 
@@ -337,7 +337,7 @@ export function createMilkdropExperienceFrameLoop({
           (getTransitionMode() === 'blend' ||
             transitionController.getPhase() === 'manual') &&
           frame.performance.shaderQuality !== 'low' &&
-          getCurrentFrameWorkload() < 900;
+          getCurrentFrameWorkload() < MAX_BLEND_WORKLOAD;
         const activeBlendState = transitionController.tick({
           now: frameStartAt,
           canBlendThisFrame,

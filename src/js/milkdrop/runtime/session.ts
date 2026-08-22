@@ -75,6 +75,15 @@ export function cloneBlendState(
   };
 }
 
+/**
+ * Rough per-frame geometry cost, used to decide whether a crossfade can
+ * afford to draw two presets at once.
+ *
+ * The units are arbitrary — "segments, weighted by how expensive each kind
+ * is to submit" — so the only meaningful way to set a threshold against it
+ * is to measure the corpus. `scratch`-free reproduction:
+ * `bun run lab:blend-gate`.
+ */
 export function estimateFrameBlendWorkload(
   frameState: MilkdropFrameState | null,
 ) {
@@ -97,6 +106,76 @@ export function estimateFrameBlendWorkload(
     frameState.borders.length * 12 +
     frameState.trails.length * 8
   );
+}
+
+/**
+ * Geometry ceiling above which a crossfade is refused outright.
+ *
+ * Calibrated against a 250-preset corpus sweep (`bun run lab:blend-gate`):
+ * the floor is 1323 and the median 1651, because the warp mesh alone
+ * contributes ~992 to every preset that has one. An earlier value of 900
+ * therefore sat BELOW the corpus minimum and silently turned every single
+ * crossfade into a cut — the blend path was unreachable in production for
+ * as long as it existed. `blend-gate.test.ts` pins the floor so the
+ * threshold can never drop under a realistic frame again.
+ *
+ * The value here sits above the corpus p90 (3401) and below the max
+ * (10523), so it now catches only genuinely pathological frames — which is
+ * what a static geometry gate can honestly do. Device pressure is handled
+ * by the timing gate below instead, because it is the thing that actually
+ * varies between a laptop in a booth and the machine the preset was
+ * authored on.
+ */
+export const MAX_BLEND_WORKLOAD = 6000;
+
+/**
+ * How far over its frame budget the renderer may already be running and
+ * still be asked to draw a second preset layer. Blending roughly doubles
+ * geometry submission for its duration, so the headroom check is the honest
+ * gate: a machine hitting budget can afford it, one already dropping frames
+ * cannot.
+ */
+const BLEND_FRAME_BUDGET_TOLERANCE = 1.25;
+
+export type BlendPressureSnapshot = {
+  rollingAverageFrameMs: number | null;
+  frameBudgetMs: number;
+  thermalState: 'nominal' | 'elevated' | 'throttling';
+} | null;
+
+export type BlendGateDecision = {
+  canBlend: boolean;
+  /** Why not, for the status line. Null when the blend is allowed. */
+  refusal: 'workload' | 'frame-pressure' | 'thermal' | null;
+};
+
+/**
+ * Decides whether the frame currently on screen can be crossfaded out of.
+ *
+ * Split out of `runtime.ts` so it is testable without a renderer: the bug
+ * this replaces survived precisely because the decision only existed inside
+ * a call path that needed a GPU to reach.
+ */
+export function evaluateBlendGate(
+  frameState: MilkdropFrameState | null,
+  pressure: BlendPressureSnapshot = null,
+): BlendGateDecision {
+  if (estimateFrameBlendWorkload(frameState) >= MAX_BLEND_WORKLOAD) {
+    return { canBlend: false, refusal: 'workload' };
+  }
+  if (pressure?.thermalState === 'throttling') {
+    return { canBlend: false, refusal: 'thermal' };
+  }
+  const rolling = pressure?.rollingAverageFrameMs ?? null;
+  if (
+    rolling !== null &&
+    pressure !== null &&
+    pressure.frameBudgetMs > 0 &&
+    rolling > pressure.frameBudgetMs * BLEND_FRAME_BUDGET_TOLERANCE
+  ) {
+    return { canBlend: false, refusal: 'frame-pressure' };
+  }
+  return { canBlend: true, refusal: null };
 }
 
 export function isEditablePreset(
