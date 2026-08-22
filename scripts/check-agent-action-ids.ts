@@ -64,6 +64,10 @@ const PALETTE_ONLY_EXEMPT = new Set([
   'queue-fade',
   'queue-clear',
   'toggle-autoplay',
+  // Set once before a set, from the settings sheet or the palette. A dock
+  // button would sit one mis-click away from silently changing how the
+  // renderer behaves mid-show.
+  'toggle-live-performance',
   'open-shortcuts',
   'cycle-theme',
   'use-webgl',

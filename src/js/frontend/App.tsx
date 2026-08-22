@@ -28,6 +28,10 @@ import {
   applyAccessibility,
   getActiveAccessibilityPreference,
 } from '../core/accessibility-preferences.ts';
+import {
+  describeHiddenTabFreezeRisk,
+  toggleLivePerformanceMode,
+} from '../core/live-performance-mode.ts';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,
@@ -657,6 +661,20 @@ function StimsWorkspaceAppShell() {
         },
       },
       {
+        id: 'toggle-live-performance',
+        group: 'Playback',
+        label: 'Toggle live performance mode',
+        keywords: ['vj', 'show', 'projector', 'gig', 'stage', 'perform'],
+        run: () => {
+          const live = toggleLivePerformanceMode();
+          ui.setStatusMessage(
+            live
+              ? 'Live performance mode on — quality held steady, no battery frame cap, keeps drawing in an unfocused window.'
+              : 'Live performance mode off — quality adapts again and background tabs pause.',
+          );
+        },
+      },
+      {
         id: 'toggle-autoplay',
         group: 'Playback',
         label: 'Toggle autoplay',
@@ -783,6 +801,23 @@ function StimsWorkspaceAppShell() {
         ? 'ready'
         : 'booting';
   }, [liveMode, engine.engineReady]);
+
+  // A hidden tab gets zero requestAnimationFrame callbacks — the browser
+  // stops scheduling them, so nothing in the render path can report the
+  // freeze from inside it. Catch the visibility edge here instead and leave
+  // the explanation where the performer will read it the moment they switch
+  // back to a stage that went black.
+  useEffect(() => {
+    const handleVisibility = () => {
+      const risk = describeHiddenTabFreezeRisk();
+      if (risk) {
+        uiRef.current.setStatusMessage(risk);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 
   // Post-commit notification for run()/waitFor(): fires after React commits
   // any snapshot-relevant change, so a resolved waiter observes real state.

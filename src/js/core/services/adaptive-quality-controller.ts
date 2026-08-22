@@ -55,6 +55,13 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
 
 export type AdaptiveQualityController = {
   getState: () => AdaptiveQualityState;
+  /**
+   * Freezes (or releases) the quality step at whatever it is right now.
+   * Unlike `lockedQualityStep`, which pins a configured step from
+   * construction, this holds the level the controller has already settled
+   * on — see live-performance-mode.ts.
+   */
+  setStepLocked: (locked: boolean) => AdaptiveQualityState;
   recordFrame: (sample: AdaptiveQualitySample) => AdaptiveQualityState;
   setQualityStep: (step: number) => AdaptiveQualityState;
   /**
@@ -404,7 +411,16 @@ export function createAdaptiveQualityController({
     : 'coarse-frame';
   const heuristic = buildHeuristicProfile(backend, capabilities);
 
-  const stepLock =
+  /**
+   * When set, the heuristic may keep measuring but never moves the step.
+   *
+   * Seeded from `lockedQualityStep` for performance runs, and settable at
+   * runtime by `setStepLocked` so live performance mode can freeze the
+   * picture where it currently is: on a projection, a steady image at a
+   * lower quality step beats one that visibly softens and re-sharpens as
+   * the controller hunts.
+   */
+  let stepLock =
     typeof lockedQualityStep === 'number' && Number.isFinite(lockedQualityStep)
       ? Math.min(
           Math.max(Math.round(lockedQualityStep), 0),
@@ -590,6 +606,22 @@ export function createAdaptiveQualityController({
 
   const controller: AdaptiveQualityController = {
     getState: () => state,
+    setStepLocked: (locked: boolean) => {
+      // Freezes at the CURRENT step rather than a configured one: by the
+      // time a performer asks for this, the controller has already found a
+      // step the machine sustains, and that is the one to hold.
+      stepLock = locked ? qualityStep : null;
+      state = {
+        ...state,
+        reasons: [
+          ...heuristic.reasons,
+          locked
+            ? `Quality held at ${QUALITY_STEPS[qualityStep].id} for live performance.`
+            : 'Quality adaptation resumed.',
+        ],
+      };
+      return publish();
+    },
     setQualityStep: (step: number) => {
       const targetStep = Math.min(
         Math.max(Math.round(step), 0),

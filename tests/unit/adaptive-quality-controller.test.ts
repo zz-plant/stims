@@ -193,6 +193,69 @@ describe('createAdaptiveQualityController', () => {
     );
   });
 
+  test('a held step survives pressure that would otherwise degrade it', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1_024,
+          maxStorageBufferBindingSize: 1_073_741_824,
+          maxTextureDimension2D: 16_384,
+        },
+      },
+    });
+
+    controller.setStepLocked(true);
+    const held = controller.getState().qualityStep;
+
+    // The same sustained overrun that degrades an unlocked controller.
+    for (let index = 0; index < 42; index += 1) {
+      controller.recordFrame({ frameMs: 24, phases: { renderMs: 18 } });
+    }
+    // On a projection, an image that visibly softens and re-sharpens is
+    // worse than a steady one a step lower — the performer chose which.
+    expect(controller.getState().qualityStep).toBe(held);
+
+    // And headroom must not push it up either: enhancing is just as visible.
+    for (let index = 0; index < 160; index += 1) {
+      controller.recordFrame({ frameMs: 8, phases: { renderMs: 5 } });
+    }
+    expect(controller.getState().qualityStep).toBe(held);
+
+    // Releasing hands control back to the heuristic.
+    controller.setStepLocked(false);
+    for (let index = 0; index < 42; index += 1) {
+      controller.recordFrame({ frameMs: 24, phases: { renderMs: 18 } });
+    }
+    expect(controller.getState().qualityStep).toBeGreaterThan(held);
+  });
+
   test('does not eagerly degrade during startup warmup or transient stutters', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',
