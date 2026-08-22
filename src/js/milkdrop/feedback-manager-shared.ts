@@ -527,6 +527,9 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
 // with identical math. The warp pass must not define its own variant here —
 // divergent formulas made the feedback chain and the fresh-scene sample
 // disagree and drove WebGL away from WebGPU.
+/** Reused so reading the clear colour each frame allocates nothing. */
+const SCENE_CLEAR_COLOR_SCRATCH = /* @__PURE__ */ new Color();
+
 const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           // Zero warp + zero rotation is an identity polar round-trip; skip
@@ -638,16 +641,21 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           }
           // Apply decay to the previous frame color so history dissipates over time.
           previousColor *= decay;
-          // With a direct warp shader, feedback is the warped previous frame
-          // under this frame's geometry (MilkDrop clears to the warp output);
-          // the legacy echo blend stays for control-driven presets.
+          // The internal frame is the warped, decayed previous frame with this
+          // frame's geometry drawn over it. Control-driven presets used to
+          // blend the two by videoEchoAlpha instead, so a preset without video
+          // echo (alpha 0) discarded its history outright: fDecay did nothing
+          // and no warp variable could accumulate, because there was never
+          // anything left to move. Video echo is a display-stage effect in
+          // MilkDrop, not the mechanism that carries feedback.
+          //
+          // The scene colour arrives premultiplied — three.js blends src.rgb
+          // times src.a into a target that starts at zero — so this is a
+          // straight over, not a mix (a mix darkens covered pixels twice).
+          float coverage = clamp(current.a, 0.0, 1.0);
           vec3 color = hasDirectWarp > 0.5
             ? previousColor + current.rgb
-            : mix(
-                current.rgb,
-                previousColor,
-                clamp(videoEchoAlpha, 0.0, 1.0)
-              );
+            : previousColor * (1.0 - coverage) + current.rgb;
           gl_FragColor = vec4(color, 1.0);
         }
       `;
@@ -2504,6 +2512,11 @@ class SharedMilkdropFeedbackManager
     renderer: {
       render(scene: Scene, camera: Camera): void;
       setRenderTarget?: (target: RenderTarget | null) => void;
+      /** Present on WebGLRenderer; optional so test doubles stay simple. */
+      getClearAlpha?: () => number;
+      setClearAlpha?: (alpha: number) => void;
+      getClearColor?: (target: Color) => Color;
+      setClearColor?: (color: Color | number, alpha?: number) => void;
     },
     sourceScene: Scene,
     sourceCamera: Camera,
@@ -2515,8 +2528,36 @@ class SharedMilkdropFeedbackManager
     this.lastRenderer =
       renderer as SharedMilkdropFeedbackManager['lastRenderer'];
 
+    // Clear the scene target transparent so its alpha means "geometry drew
+    // here". The app builds its WebGLRenderer with `alpha: false`, which sets
+    // three.js's clearAlpha to 1 — every render target then came back fully
+    // opaque, and the blend below could not tell covered pixels from empty
+    // ones, so the feedback history was replaced wholesale every frame.
+    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+    const previousClearColor = renderer.getClearColor?.(
+      SCENE_CLEAR_COLOR_SCRATCH,
+    );
+    // The scene's own `background` colour is painted opaquely across the
+    // target before anything else draws (three.js does this for
+    // Scene.background), and the renderer is built with `alpha: false`, which
+    // makes three.js clear to alpha 1. Between them the scene pass came back
+    // fully opaque, so the blend below could not tell a covered pixel from an
+    // empty one and replaced the whole feedback history every frame. The
+    // background belongs to the display, not to the feedback loop.
+    const previousBackground = sourceScene.background;
+    sourceScene.background = null;
+    // Black, not just transparent: the blend below adds `current.rgb`
+    // straight, and the app's clear colour is a themed tint, so a
+    // transparent-but-tinted clear painted that tint into the feedback loop.
+    renderer.setClearColor?.(0x000000, 0);
     renderer.setRenderTarget(this.sceneTarget);
     renderer.render(sourceScene, sourceCamera);
+    if (previousClearColor) {
+      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+    } else {
+      renderer.setClearAlpha?.(previousClearAlpha);
+    }
+    sourceScene.background = previousBackground;
 
     renderer.setRenderTarget(this.warpTarget);
     renderer.render(this.warpScene, this.camera);

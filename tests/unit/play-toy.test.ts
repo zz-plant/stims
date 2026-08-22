@@ -1,4 +1,5 @@
 import { expect, mock, test } from 'bun:test';
+import sharp from 'sharp';
 import {
   buildPlayToyArtifactStem,
   buildPlayToyPerformanceMetrics,
@@ -222,41 +223,100 @@ test('shouldUseCanvasBitmapCapture only keeps bitmap capture when the live canva
   ).toBe(false);
 });
 
-test('captureActiveToyCanvas isolates undersized backing buffers from shell overlays', async () => {
-  const outputPath = '/tmp/stims-canvas-capture-regression.png';
-  const screenshot = mock(async ({ path }: { path: string }) => {
-    expect(path).toBe(outputPath);
-  });
-  let evaluateCall = 0;
-  const evaluate = mock(async () => {
-    evaluateCall += 1;
-    if (evaluateCall === 1) {
-      return {
-        bitmapWidth: 910,
-        bitmapHeight: 518,
-        rectWidth: 1215,
-        rectHeight: 690,
-        viewportWidth: 1280,
-        viewportHeight: 720,
-      };
-    }
-    if (evaluateCall === 2) {
-      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==';
-    }
-    return null;
-  });
-  const locator = {
-    screenshot,
-  };
+/**
+ * The capture path changed shape: it screenshots the canvas *element* with
+ * siblings hidden by visibility (what lab:visual has always done and what
+ * survives on WebGPU), and refuses a frame with no picture in it rather than
+ * writing it as evidence. The compositor clip is the second chance, not the
+ * first.
+ */
+test('captureActiveToyCanvas screenshots the canvas element', async () => {
+  const outputPath = '/tmp/stims-canvas-capture-element.png';
+  // Two different pixels, so the blank-frame guard keeps it.
+  const png = await sharp({
+    create: {
+      width: 2,
+      height: 1,
+      channels: 3,
+      background: { r: 0, g: 0, b: 0 },
+    },
+  })
+    .composite([
+      {
+        input: {
+          create: {
+            width: 1,
+            height: 1,
+            channels: 3,
+            background: { r: 255, g: 255, b: 255 },
+          },
+        },
+        left: 0,
+        top: 0,
+      },
+    ])
+    .png()
+    .toBuffer();
+  const elementScreenshot = mock(async () => png);
+  const pageScreenshot = mock(async () => png);
   const page = {
-    evaluate,
-    viewportSize: () => ({ width: 1280, height: 720 }),
-    locator: () => locator,
+    evaluate: mock(async () => ({
+      bitmapWidth: 910,
+      bitmapHeight: 518,
+      rectX: 0,
+      rectY: 0,
+      rectWidth: 1215,
+      rectHeight: 690,
+      viewportWidth: 1280,
+      viewportHeight: 720,
+      backend: 'webgl',
+    })),
+    viewportSize: () => ({ width: 4, height: 2 }),
+    locator: () => ({ first: () => ({ screenshot: elementScreenshot }) }),
+    screenshot: pageScreenshot,
   } as never;
 
   expect(await captureActiveToyCanvas(page, outputPath)).toBe(true);
+  expect(elementScreenshot).toHaveBeenCalledTimes(1);
+  // The compositor path is only the fallback for a blank element capture.
+  expect(pageScreenshot).toHaveBeenCalledTimes(0);
+});
 
-  expect(screenshot).toHaveBeenCalledTimes(0);
+test('captureActiveToyCanvas refuses a frame with no picture in it', async () => {
+  const outputPath = '/tmp/stims-canvas-capture-blank.png';
+  const blank = await sharp({
+    create: {
+      width: 2,
+      height: 2,
+      channels: 3,
+      background: { r: 0, g: 0, b: 0 },
+    },
+  })
+    .png()
+    .toBuffer();
+  const elementScreenshot = mock(async () => blank);
+  const pageScreenshot = mock(async () => blank);
+  const page = {
+    evaluate: mock(async () => ({
+      bitmapWidth: 1142,
+      bitmapHeight: 648,
+      rectX: 15,
+      rectY: 10,
+      rectWidth: 1265,
+      rectHeight: 720,
+      viewportWidth: 1280,
+      viewportHeight: 720,
+      backend: 'webgpu',
+    })),
+    viewportSize: () => ({ width: 4, height: 4 }),
+    locator: () => ({ first: () => ({ screenshot: elementScreenshot }) }),
+    screenshot: pageScreenshot,
+  } as never;
+
+  expect(await captureActiveToyCanvas(page, outputPath)).toBe(false);
+  // Both paths tried before giving up, and neither result was kept.
+  expect(elementScreenshot).toHaveBeenCalledTimes(1);
+  expect(pageScreenshot).toHaveBeenCalledTimes(1);
 });
 
 test('captureActiveToyCanvas fails closed when WebGL pixel reads are unavailable', async () => {
@@ -284,49 +344,6 @@ test('captureActiveToyCanvas fails closed when WebGL pixel reads are unavailable
     false,
   );
   expect(screenshot).toHaveBeenCalledTimes(0);
-});
-
-test('captureActiveToyCanvas uses compositor pixels for native WebGPU canvases', async () => {
-  const png = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==',
-    'base64',
-  );
-  const screenshot = mock(async () => png);
-  let evaluateCall = 0;
-  const page = {
-    evaluate: mock(async (callback: unknown) => {
-      evaluateCall += 1;
-      if (evaluateCall === 1) {
-        return {
-          bitmapWidth: 1142,
-          bitmapHeight: 648,
-          rectX: 15,
-          rectY: 10,
-          rectWidth: 1265,
-          rectHeight: 720,
-          viewportWidth: 1280,
-          viewportHeight: 720,
-          backend: 'webgpu',
-        };
-      }
-      if (evaluateCall === 2) {
-        expect(String(callback)).not.toContain('body * { visibility: hidden');
-        expect(String(callback)).toContain(':has(canvas[');
-      }
-      return undefined;
-    }),
-    viewportSize: () => ({ width: 1280, height: 720 }),
-    screenshot,
-  } as never;
-  const outputPath = '/tmp/stims-webgpu-compositor-capture.png';
-
-  expect(await captureActiveToyCanvas(page, outputPath)).toBe(true);
-  expect(screenshot).toHaveBeenCalledTimes(1);
-  expect(screenshot).toHaveBeenCalledWith({
-    animations: 'disabled',
-    clip: { x: 15, y: 10, width: 1265, height: 720 },
-  });
-  expect(evaluateCall).toBe(3);
 });
 
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {
