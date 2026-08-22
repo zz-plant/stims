@@ -36,6 +36,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
 | [`check:unused-exports`](#checkunused-exports) | on demand | Detect exported symbols with zero importers — the "remove dead code" pattern that recurred 12+ times in the last 400 commits. Codex PRs introduced exports that nothing imported; they survived merge and were purged weeks later in bulk. |
+| [`check:webgpu-target-sampling`](#checkwebgpu-target-sampling) | `check:quick` | Blocks a bare `.sample()` against one of the WebGPU feedback manager's own render targets. |
 
 ---
 
@@ -464,6 +465,30 @@ Advisory by default; pass `--strict` to fail the gate. Run via
 `bun run check:unused-exports`.
 
 Run it directly: `bun run check:unused-exports`
+
+## check:webgpu-target-sampling
+
+Blocks a bare `.sample()` against one of the WebGPU feedback manager's own render targets.
+
+Rendering into a render target lands the image with its rows in the opposite
+order from the uv a later pass samples it with, so every read of one of those
+targets has to flip back into screen space. That convention shipped broken:
+every pass wrote with the inversion and read without it, which mirrored the
+whole frame against WebGL and — because the feedback loop is a cycle through
+one target — made history come back flipped every frame, so motion piled up
+in both directions instead of streaming. It survived for months because a
+missing flip produces a plausible frame, not an error.
+
+The fix is only as durable as the discipline enforcing it: one new call site
+that samples a target directly silently reintroduces the bug, and no test
+catches it. So the convention is a build gate instead. Read a target through
+`sampleFeedbackTarget(node, screenUv)`, or through a coordinate that has been
+put in target space by `sampleUvNode` (which flips), and this guard is happy.
+
+Uploaded textures — noise, aura, video, the glyph atlas — are NOT flipped and
+are none of this guard's business.
+
+Run it directly: `bun run check:webgpu-target-sampling`
 
 ---
 

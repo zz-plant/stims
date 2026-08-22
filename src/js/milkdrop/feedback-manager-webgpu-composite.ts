@@ -551,17 +551,36 @@ export function createCompositeUniforms(
  * Textures that were uploaded rather than rendered — noise, aura, video —
  * are not affected and must not be flipped.
  */
-export function flipFeedbackSampleUv(coord: any) {
+function flipFeedbackSampleUv(coord: any) {
   return vec2(coord.x, float(1).sub(coord.y));
+}
+
+/**
+ * Reads one of the feedback manager's own render targets at a screen-space
+ * coordinate. This is the only sanctioned way to sample them:
+ * `check:webgpu-target-sampling` fails the build on a bare `.sample()` against
+ * a target-backed uniform, because a site that forgets the row-order flip
+ * produces a plausible-looking frame rather than an error.
+ */
+export function sampleFeedbackTarget(textureNode: any, screenUv: any) {
+  return textureNode.sample(flipFeedbackSampleUv(screenUv));
+}
+
+/** Wrap/clamp a coordinate in screen space, for an uploaded texture. */
+export function createScreenSampleUvNode() {
+  return Fn(([rawUv, wrapMode]: [any, any]) => {
+    const clampedUv = clamp(rawUv, vec2(0), vec2(1));
+    const wrappedUv = fract(rawUv);
+    return mix(clampedUv, wrappedUv, step(0.5, wrapMode));
+  });
 }
 
 /** Wrap/clamp in screen space, then flip into render-target space. */
 export function createSampleUvNode() {
-  return Fn(([rawUv, wrapMode]: [any, any]) => {
-    const clampedUv = clamp(rawUv, vec2(0), vec2(1));
-    const wrappedUv = fract(rawUv);
-    return flipFeedbackSampleUv(mix(clampedUv, wrappedUv, step(0.5, wrapMode)));
-  });
+  const screenUv = createScreenSampleUvNode();
+  return Fn(([rawUv, wrapMode]: [any, any]) =>
+    flipFeedbackSampleUv(screenUv(rawUv, wrapMode)),
+  );
 }
 
 export function createApplyFeedbackWarpNode() {
@@ -650,19 +669,13 @@ export function createSampleAuxTextureNode(
                             organicTexNode.sample(sampleUv),
                             select(
                               source.lessThan(14.5),
-                              blur1TexNode.sample(
-                                flipFeedbackSampleUv(sampleUv),
-                              ),
+                              sampleFeedbackTarget(blur1TexNode, sampleUv),
                               select(
                                 source.lessThan(15.5),
-                                blur2TexNode.sample(
-                                  flipFeedbackSampleUv(sampleUv),
-                                ),
+                                sampleFeedbackTarget(blur2TexNode, sampleUv),
                                 select(
                                   source.lessThan(16.5),
-                                  blur3TexNode.sample(
-                                    flipFeedbackSampleUv(sampleUv),
-                                  ),
+                                  sampleFeedbackTarget(blur3TexNode, sampleUv),
                                   flat,
                                 ),
                               ),
