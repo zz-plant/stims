@@ -5,6 +5,11 @@ import {
   setAccessibilityPreference,
   type TextScale,
 } from '../core/accessibility-preferences.ts';
+import {
+  getLivePerformanceMode,
+  setLivePerformanceMode,
+  subscribeLivePerformanceMode,
+} from '../core/live-performance-mode.ts';
 import type { PowerSavingLevel } from '../core/power-state.ts';
 import {
   hasWebGPUCompatibilityGapOverride,
@@ -220,6 +225,26 @@ function describeAdaptiveQualityStatus(
     default:
       return 'Running at your selected detail level — frame rate has been steady.';
   }
+}
+
+/**
+ * The three defaults that quietly change the picture during a set, behind
+ * one switch. See core/live-performance-mode.ts for why each one is a
+ * sensible browser default and a bad stage default.
+ */
+function LivePerformanceRow() {
+  const [live, setLive] = useState(() => getLivePerformanceMode());
+  useEffect(() => subscribeLivePerformanceMode(setLive), []);
+  return (
+    <SwitchRow
+      label="Live performance mode"
+      hint="For driving a projector or a second screen: holds detail steady instead of re-scaling it mid-show, ignores the battery frame cap, and keeps drawing in an unfocused window. A fully hidden tab is still paused by the browser — keep the show window visible."
+      checked={live}
+      onChange={(next) => {
+        setLivePerformanceMode(next);
+      }}
+    />
+  );
 }
 
 const POWER_SAVER_OPTIONS: { value: PowerSaverMode; label: string }[] = [
@@ -461,6 +486,8 @@ function PerformanceSection() {
       </div>
 
       <PowerSaverRow />
+
+      <LivePerformanceRow />
 
       <div className="ctl-row">
         <span className="ctl-row__text">

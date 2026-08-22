@@ -1,3 +1,4 @@
+import { isLivePerformanceModeActive } from './live-performance-mode.ts';
 import {
   getPowerSaverMode,
   subscribeToPowerSaverMode,
@@ -207,9 +208,14 @@ function isAgentModeDocument(): boolean {
  * Agent mode is never capped: headless capture, the preset labs, and browser
  * QA all measure per-frame behaviour, and a gate that silently drops half the
  * frames would corrupt every reactivity number they produce.
+ *
+ * Neither is live performance mode. Halving the frame rate because a laptop
+ * is unplugged is right for a tab left open on a café table and wrong for
+ * the machine currently driving a room — and the performer has explicitly
+ * said which one this is.
  */
 export function getPowerSavingFrameCapHz(): number | null {
-  if (isAgentModeDocument()) {
+  if (isAgentModeDocument() || isLivePerformanceModeActive()) {
     return null;
   }
   switch (getPowerSavingLevel()) {

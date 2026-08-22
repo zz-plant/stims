@@ -1,3 +1,4 @@
+import { isLivePerformanceModeActive } from '../../core/live-performance-mode.ts';
 import {
   createMilkdropPostprocessingComposer,
   type PostprocessingPipeline,
@@ -192,18 +193,22 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      // Hidden tabs skip frames to spare the GPU — with two exceptions:
+      // Hidden tabs skip frames to spare the GPU — with three exceptions:
       // agent mode, where automation (headless capture, browser-pane QA)
       // drives frames deliberately and a silent skip reads as a frozen/black
       // canvas; and an open picture-in-picture window, which is a LIVE
       // `canvas.captureStream()` of the stage (picture-in-picture-service.ts).
       // Switching tabs is precisely when PiP earns its keep, and that is also
       // exactly when `document.hidden` flips — so pausing here froze the one
-      // surface the user had deliberately popped out to keep watching.
+      // surface the user had deliberately popped out to keep watching. And
+      // live performance mode, where this tab is driving a projector: the
+      // operator flipping to another tab to line up the next preset must
+      // not black out the room.
       if (
         typeof document !== 'undefined' &&
         document.hidden &&
         document.documentElement.dataset.agentMode !== 'true' &&
+        !isLivePerformanceModeActive() &&
         document.pictureInPictureElement === null
       ) {
         setCurrentFrameState(null);

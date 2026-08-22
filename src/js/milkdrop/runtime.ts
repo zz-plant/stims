@@ -19,6 +19,10 @@
  */
 import { isFreezeFrameActive } from '../core/accessibility-preferences.ts';
 import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
+import {
+  isLivePerformanceModeActive,
+  subscribeLivePerformanceMode,
+} from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import type {
@@ -222,6 +226,11 @@ export function createMilkdropExperience({
   let disposeKeyboardShortcuts: (() => void) | null = null;
   let disposeRequestedPresetListener: (() => void) | null = null;
   let adaptiveQualityController: AdaptiveQualityController | null = null;
+  // Toggling the mode mid-set has to bite immediately — the performer is
+  // reacting to something they can already see on the projection.
+  const unsubscribeLivePerformance = subscribeLivePerformanceMode((live) => {
+    adaptiveQualityController?.setStepLocked(live);
+  });
   let adaptiveQualityState: AdaptiveQualityState | null = null;
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
   let _disposeSessionSubscription: (() => void) | null = null;
@@ -809,6 +818,9 @@ export function createMilkdropExperience({
     capturedVideoOverlay,
     setAdaptiveQualityController: (controller) => {
       adaptiveQualityController = controller;
+      // A controller can be replaced on a backend switch, so re-apply the
+      // performer's hold rather than assuming the fresh one inherits it.
+      controller?.setStepLocked(isLivePerformanceModeActive());
     },
     setAdaptiveQualityUnsubscribe: (unsubscribe) => {
       adaptiveQualityUnsubscribe?.();
@@ -1003,6 +1015,7 @@ export function createMilkdropExperience({
     adapter,
     performanceTracker,
     getAdaptiveQualityUnsubscribe: () => adaptiveQualityUnsubscribe,
+    unsubscribeLivePerformance,
     adaptiveQualityController,
     runtime,
     getDisposeKeyboardShortcuts: () => disposeKeyboardShortcuts,
@@ -1245,6 +1258,7 @@ function buildExperienceController(deps: Record<string, any>) {
       deps.adapter?.dispose();
       deps.performanceTracker?.reset();
       deps.getAdaptiveQualityUnsubscribe?.()?.();
+      deps.unsubscribeLivePerformance?.();
       deps.getDisposeKeyboardShortcuts?.()?.();
       deps.getDisposeRequestedPresetListener?.()?.();
       deps.catalogCoordinator?.dispose();

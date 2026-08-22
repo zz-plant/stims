@@ -16,6 +16,7 @@ export type ShortcutActionId =
   | 'compile'
   | 'queue-add'
   | 'autoplay'
+  | 'live-performance'
   | 'record'
   | 'generate'
   | 'theme';
@@ -169,6 +170,15 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // Not Q: the overlay's nudge map owns q (and the canvas takes it too).
     defaultKeys: ['U'],
     paletteActionId: 'queue-add',
+    dispatchViaPalette: true,
+  },
+  {
+    // Shift+L: L alone is close enough to the preset-navigation keys that a
+    // mis-hit during a set would be costly, and this is a mode you set once.
+    id: 'live-performance',
+    label: 'Toggle live performance mode',
+    defaultKeys: ['Shift+L'],
+    paletteActionId: 'toggle-live-performance',
     dispatchViaPalette: true,
   },
   {
