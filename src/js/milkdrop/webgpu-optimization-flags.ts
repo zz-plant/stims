@@ -23,6 +23,7 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS = {
   descriptorFallbackToWebgl: 'milkdrop-webgpu-fallback',
   gpuComputeVM: 'milkdrop-webgpu-compute-vm',
   renderBundles: 'milkdrop-webgpu-render-bundles',
+  shaderBranchDesugar: 'milkdrop-webgpu-branch-desugar',
 } as const;
 
 export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
@@ -35,6 +36,7 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
   descriptorFallbackToWebgl: 'stims:experiments:milkdrop-webgpu-fallback',
   gpuComputeVM: 'stims:experiments:milkdrop-webgpu-compute-vm',
   renderBundles: 'stims:experiments:milkdrop-webgpu-render-bundles',
+  shaderBranchDesugar: 'stims:experiments:milkdrop-webgpu-branch-desugar',
 } as const;
 
 export type MilkdropWebGpuOptimizationFlags = {
@@ -47,6 +49,7 @@ export type MilkdropWebGpuOptimizationFlags = {
   descriptorFallbackToWebgl: boolean;
   gpuComputeVM: boolean;
   renderBundles: boolean;
+  shaderBranchDesugar: boolean;
 };
 
 export type MilkdropWebGpuOptimizationFlagName =
@@ -93,6 +96,18 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   // ?milkdrop-webgpu-compute-vm=1.
   gpuComputeVM: false,
   renderBundles: false,
+  // Measured OFF (2026-08-22). Flattening `if`/`else` into masked assignments
+  // and unrolling bounded `for` loops moves ~150 shader bodies off the
+  // uniform-only approximation and onto direct WebGPU execution. The rewrite
+  // itself is sound — see the module docstring in
+  // compiler/shader-branch-desugar.ts — but it hands those bodies to the
+  // WebGPU node executor for the first time, and the executor still has gaps
+  // that show as wrong pixels on a handful of them and, on
+  // flexi-lorenz-chaser-...-discombobule-lose, as a dead GPU process with no
+  // WebGPU error emitted. A crash reachable from a bundled preset cannot be
+  // allowlisted, so the reach stays behind this flag until those are closed.
+  // Opt in with ?milkdrop-webgpu-branch-desugar=1.
+  shaderBranchDesugar: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
 
 export function applyNativeWebGpuMaterialCompatibilityFlags(

@@ -41,6 +41,7 @@ import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createToyRuntimeStarter } from '../core/toy-runtime-starter.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
+import { setShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
 import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import { encodePresetPreviewImage } from './preset-preview.ts';
@@ -163,6 +164,12 @@ export function createMilkdropExperience({
     blendDuration: number;
   };
 
+  // Before ANY preset compiles — the deep-link prefetch below and the default
+  // preset both compile, and a preset compiled under the wrong setting would
+  // carry the wrong backend classification for the rest of the session.
+  const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
+  setShaderBranchDesugarEnabled(webgpuOptimizationFlags.shaderBranchDesugar);
+
   const catalogStore = createMilkdropCatalogStore();
   // Deep-link boots used to fetch the requested preset's source only after
   // engine mount + catalog projection + the route effect round-tripped.
@@ -192,7 +199,6 @@ export function createMilkdropExperience({
     },
   );
   const preferences = createMilkdropRuntimePreferences();
-  const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
   const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
   const performanceTracker = createMilkdropRuntimePerformanceTracker();
   const signalTracker = createMilkdropSignalTracker();

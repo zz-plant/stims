@@ -65,18 +65,30 @@ describe('butterchurn preset corpus support', () => {
       });
       expect(unexplainedPartials.map(({ file }) => file)).toEqual([]);
 
-      // Measured baseline (2026-08-22): 135 presets execute shader programs
+      // Measured baseline (2026-08-22): 226 presets execute shader programs
       // directly on WebGL but fall back to extracted scalar controls on
       // WebGPU, and 9 presets reference EEL identifiers the expression VM
-      // evaluates to 0. The WebGPU count was 169 until `if`/`else` bodies
-      // were flattened into masked assignments and the shader tokenizer
-      // learned scientific notation, then 40 until bounded `for` loops were
-      // unrolled, then 19. It went back up to 135 when matrix element writes
-      // stopped claiming to be WebGPU-executable: 116 bodies assign to a
-      // `mat2`/`mat3`/`mat4` element, the node executor has no way to express
-      // that, and what it built instead was a 44641-member WGSL uniform
-      // struct that crashed the GPU process. What is left besides those are 7
-      // `while (true)` bodies and 7 loops whose trip count is a runtime value.
+      // evaluates to 0.
+      //
+      // This number is a SHIPPED-DEFAULT number, and most of the reach it
+      // reports as missing is gated rather than lost. Flattening `if`/`else`
+      // into masked assignments and unrolling bounded `for` loops takes it to
+      // 19, but that work is behind the `shaderBranchDesugar` flag
+      // (`?milkdrop-webgpu-branch-desugar=1`), off by default while the WebGPU
+      // executor gaps it exposes are closed — one of them kills the GPU
+      // process. Turn the flag on and this assertion is expected to fail; the
+      // desugar's own coverage in
+      // tests/unit/milkdrop-compiler-shader-analysis.test.ts enables it
+      // explicitly so the rewrite stays exercised either way.
+      //
+      // Of the 226, 168 is what this was before the desugar existed at all —
+      // 7 `while (true)` bodies, 7 loops whose trip count is a runtime value,
+      // and the branchy bodies the statement model cannot express. The other
+      // 58 are bodies that assign to a `mat2`/`mat3`/`mat4` element, which is
+      // NOT gated: the node executor has no way to express that write, and
+      // what it built instead was a 44641-member WGSL uniform struct that
+      // took the GPU process down.
+      //
       // These counts moving DOWN means gaps were closed — update the
       // baseline. Moving UP means a regression introduced new degradation.
       const translatedOnWebgpu = corpus.filter(({ compiled }) =>
@@ -84,7 +96,7 @@ describe('butterchurn preset corpus support', () => {
           (entry) => entry.code === 'shader-text-translated',
         ),
       );
-      expect(translatedOnWebgpu.length).toBe(135);
+      expect(translatedOnWebgpu.length).toBe(226);
 
       const missingIdentifiers = corpus.filter(
         ({ compiled }) =>
@@ -92,15 +104,15 @@ describe('butterchurn preset corpus support', () => {
       );
       expect(missingIdentifiers.length).toBe(9);
 
-      // Everything else stays fully supported on both backends. 1577 until
-      // branch flattening moved 125 presets off the WebGPU control fallback,
-      // 1702 until loop unrolling moved 21 more, and 1723 until the matrix
-      // element writes above moved 111 back onto it.
+      // Everything else stays fully supported on both backends. Measured on
+      // the same corpus: 1578 with the branch desugar gated off and matrix
+      // element writes still claiming to be executable, 1521 once the matrix
+      // gate lands, and 1612 with `shaderBranchDesugar` turned on as well.
       const fullySupported = corpus.filter(({ compiled }) => {
         const { webgl, webgpu } = compiled.ir.compatibility.backends;
         return webgl.status === 'supported' && webgpu.status === 'supported';
       });
-      expect(fullySupported.length).toBe(1612);
+      expect(fullySupported.length).toBe(1521);
     },
     { timeout: 30000 },
   );

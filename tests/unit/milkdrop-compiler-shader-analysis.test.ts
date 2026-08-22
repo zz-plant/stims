@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -10,6 +17,7 @@ import {
   splitShaderGlobalsAndBody,
 } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
 import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
+import { setShaderBranchDesugarEnabled } from '../../src/js/milkdrop/compiler/shader-branch-desugar.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
 
@@ -398,6 +406,15 @@ test('keeps native shader-body aspect as a runtime uniform', () => {
 });
 
 describe('branch flattening for direct shader execution', () => {
+  // The rewrite ships behind `shaderBranchDesugar`, off by default while the
+  // WebGPU executor gaps it exposes are closed. Turning it on here is what
+  // keeps this coverage exercising the rewrite rather than the disabled path.
+  beforeAll(() => {
+    setShaderBranchDesugarEnabled(true);
+  });
+  afterAll(() => {
+    setShaderBranchDesugarEnabled(false);
+  });
   beforeEach(() => {
     clearShaderAnalysisCaches();
   });

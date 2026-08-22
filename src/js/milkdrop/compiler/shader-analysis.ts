@@ -85,7 +85,10 @@ import {
   type ShaderExpressionEnv,
   type ShaderRuntimeEnv,
 } from './shader-analysis-helpers';
-import { desugarShaderBranches } from './shader-branch-desugar';
+import {
+  desugarShaderBranches,
+  isShaderBranchDesugarEnabled,
+} from './shader-branch-desugar';
 import {
   applyShaderHeuristicControlStatement,
   applyShaderScalarAliasControl,
@@ -1590,7 +1593,11 @@ function evictOldest(cache: Map<string, unknown>, limit: number) {
 }
 
 function prepareShaderSource(shaderText: string): ShaderSourcePrep {
-  const cached = shaderSourcePrepCache.get(shaderText);
+  // The branch desugar is a session flag, and a prepared source is only valid
+  // for the setting it was prepared under, so the setting is part of the key
+  // rather than something a flag flip has to remember to invalidate.
+  const cacheKey = `${isShaderBranchDesugarEnabled() ? '1' : '0'}\u0000${shaderText}`;
+  const cached = shaderSourcePrepCache.get(cacheKey);
   if (cached) {
     return cached;
   }
@@ -1621,7 +1628,7 @@ function prepareShaderSource(shaderText: string): ShaderSourcePrep {
           .map((line) => line.replace(/\/\/.*$/u, '').trim())
           .filter(Boolean),
   };
-  shaderSourcePrepCache.set(shaderText, prep);
+  shaderSourcePrepCache.set(cacheKey, prep);
   evictOldest(shaderSourcePrepCache, MAX_CACHED_SHADER_SOURCES);
   return prep;
 }
