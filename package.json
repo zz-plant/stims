@@ -84,6 +84,7 @@
     "check:seo": "bun run scripts/check-seo.ts",
     "check:css-tokens": "bun run scripts/check-css-tokens.ts",
     "check:agent-action-ids": "bun run scripts/check-agent-action-ids.ts",
+    "check:webgpu-target-sampling": "bun run scripts/check-webgpu-target-sampling.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
     "check:script-docs": "bun run scripts/scripts-list.ts --check",
