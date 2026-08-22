@@ -30,6 +30,16 @@ export type VisualReferencePresetEntry = {
     height: number;
     warmupMs: number;
     captureOffsetMs: number;
+    /**
+     * Simulation frames to render before capturing, which is what actually
+     * has to match: `warmupMs` describes how long native projectM ran, and
+     * projectM renders that warmup as fast as it can rather than at 60fps.
+     * Reproducing its frame — not its wall clock — is what makes a Stims
+     * capture comparable, and it is the only figure that means the same
+     * thing on a 1.7ms/frame WebGPU device and a 105ms/frame software
+     * WebGL one.
+     */
+    warmupFrames: number;
   };
   provenance: {
     label: string;
@@ -37,6 +47,14 @@ export type VisualReferencePresetEntry = {
     sourceArtifactId?: string | null;
   };
 };
+
+/**
+ * Calibrated against the checked-in projectM references, not derived: at 300
+ * frames (5000ms at 60fps) captures land far short of the reference state —
+ * 250-wavecode scored 88% mismatch there and 0.50% at 900 — so 900 is where
+ * our render of the warmup reproduces projectM's.
+ */
+export const DEFAULT_WARMUP_FRAMES = 900;
 
 export type VisualReferenceManifest = {
   version: 1;
@@ -51,6 +69,7 @@ export type VisualReferenceManifest = {
     height: number;
     warmupMs: number;
     captureOffsetMs: number;
+    warmupFrames: number;
     toleranceProfile: MilkdropParityToleranceProfile;
     threshold: number;
     failThreshold: number;
@@ -72,6 +91,7 @@ export function createDefaultVisualReferenceManifest(): VisualReferenceManifest 
       height: 720,
       warmupMs: 5000,
       captureOffsetMs: 0,
+      warmupFrames: DEFAULT_WARMUP_FRAMES,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -139,6 +159,10 @@ export function loadVisualReferenceManifest(
                 normalizedPreset.capture?.captureOffsetMs ??
                 parsed.defaults?.captureOffsetMs ??
                 0,
+              warmupFrames:
+                normalizedPreset.capture?.warmupFrames ??
+                parsed.defaults?.warmupFrames ??
+                DEFAULT_WARMUP_FRAMES,
             },
             provenance: normalizedPreset.provenance ?? {
               label: 'checked-in Stims reference capture',

@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "300-beatdetect-bassmidtreb",
   "title": "300 Beatdetect Bassmidtreb",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260808163806",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260822004308",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
@@ -25,12 +25,12 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 0,
-    "mismatchRatio": 0,
-    "maxChannelDelta": 0,
-    "meanAbsoluteError": 0,
-    "rmse": 0,
-    "exactMatch": true,
+    "mismatchedPixels": 1569,
+    "mismatchRatio": 0.0017024739583333334,
+    "maxChannelDelta": 227,
+    "meanAbsoluteError": 0.0005429077591684822,
+    "rmse": 0.013922959580432711,
+    "exactMatch": false,
     "threshold": 16
   },
   "status": "pass"
