@@ -142,6 +142,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:guardrails-doc'],
       },
       {
+        label: 'First-run preset evidence freshness',
+        cmd: ['bun', 'run', 'check:first-run-evidence'],
+      },
+      {
         label: 'Authoring examples and reference',
         cmd: ['bun', 'run', 'check:authoring-docs'],
       },

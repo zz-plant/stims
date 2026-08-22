@@ -1,0 +1,36 @@
+{
+  "presetId": "shifter-glassworms-flare",
+  "presetSha256": "e16da26d9f5afe7bb3c82178ef3b0bc0ab237083eb1266dd49140f23b8573a94",
+  "backends": {
+    "webgpu": {
+      "meanLuminance": 45.57,
+      "visiblePixelRatio": 0.8415,
+      "nearBlackFrameRatio": 0,
+      "colorfulness": 0.0191,
+      "luminanceDelta": -24.52,
+      "audioMotionRatio": 0.8378,
+      "verdict": "ambient-motion",
+      "captureBackend": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
+    },
+    "webgl": {
+      "meanLuminance": 93.88,
+      "visiblePixelRatio": 0.8203,
+      "nearBlackFrameRatio": 0,
+      "colorfulness": 0.1206,
+      "luminanceDelta": -4.25,
+      "audioMotionRatio": 0.9981,
+      "verdict": "ambient-motion",
+      "captureBackend": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
+    }
+  },
+  "reactivity": {
+    "reactiveVariables": 8,
+    "totalVariables": 36,
+    "motionBearing": [
+      {
+        "variable": "zoom",
+        "correlation": 0.873
+      }
+    ]
+  }
+}
