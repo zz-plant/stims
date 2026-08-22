@@ -1,0 +1,5 @@
+{
+  "notes": "Presets whose WebGL/native-WebGPU frames are EXPECTED to differ, consumed by `bun run lab:backend-diff` (scripts/preset-lab-backend-diff.ts). Anything not listed here that diverges past its own same-backend noise floor is reported as a suspect. Every entry needs a reason naming the mechanism, not just the symptom — an entry with no mechanism is a bug someone stopped looking at. Remove the entry when the gap is closed.",
+  "presets": {},
+  "patterns": []
+}

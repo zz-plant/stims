@@ -75,6 +75,7 @@ Reach for these before inventing a measurement; each one already exists.
 |--------|---------|
 | Capture → diff → promote a MilkDrop parity reference | `bun run parity:capture`, `parity:diff`, `parity:promote-result` |
 | Diff every certified reference against latest captures | `bun run parity:suite` |
+| Check WebGL and native WebGPU render the same frame (no external reference) | `bun run lab:backend-diff -- --sample 24` |
 | Measure a preset's run-to-run parity noise before believing a delta | `bun run parity:noise -- --preset <id> --repeats 5 --write` |
 | Find certified references a blank frame would pass | `bun run parity:check-references` |
 | Frame-time budget across the certification corpus | `bun run perf:certification-corpus` (`perf:low-resource` for throttled) |

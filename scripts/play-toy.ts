@@ -6,7 +6,9 @@
  * audio, and records FPS/frame-cost samples, the actual backend, and any
  * WebGPU-to-WebGL fallback. Flags include `--preset`, `--port`, `--duration`,
  * `--width`/`--height`, `--audio`, `--renderer-profile`, `--catalog-mode`,
- * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, and `--output`.
+ * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, `--random-seed` (pins
+ * the page's `Math.random`, which the per-preset MilkDrop random constants are
+ * drawn from) and `--output`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -122,6 +124,23 @@ export type PlayToyOptions = {
   lockedQualityStep?: number | null;
   recordParityArtifact?: boolean;
   browserSession?: PlayToyBrowserSession;
+  /**
+   * Seeds `Math.random` in the page before any app code runs, so a capture is
+   * reproducible across runs.
+   *
+   * MilkDrop rolls per-preset random constants (`rand_preset`) once per preset
+   * load out of `Math.random` and feeds them straight into the warp and
+   * composite shaders, so two captures of the same preset differ by
+   * construction. This removes that source.
+   *
+   * It is not the whole story, and the docblock should not pretend otherwise:
+   * measured over a 24-preset sample with `lab:backend-diff`, seeding did not
+   * move the run-to-run mismatch outside its own scatter (median 6% -> 23% on
+   * WebGL, 52% -> 36% on WebGPU, individual presets swinging both ways). The
+   * dominant term is elsewhere — see that script's docblock. Leave unset for
+   * normal runs; set it when two captures have to be comparable.
+   */
+  randomSeed?: number;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -543,6 +562,23 @@ async function createPlayToyContext({
     await context.addInitScript(() => {
       window.localStorage.setItem('stims:quality-preset', 'ultra');
     });
+  }
+
+  if (typeof options.randomSeed === 'number') {
+    // mulberry32, the same generator `src/js/core/deterministic-random.ts`
+    // uses for seeded autoplay. Installed as an init script so it is in place
+    // before any module evaluates — the per-preset random constants are drawn
+    // during preset load, well before a test could reach in and swap it.
+    await context.addInitScript((seed: number) => {
+      let state = seed >>> 0;
+      Math.random = () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }, options.randomSeed);
   }
 
   return context;
@@ -1231,20 +1267,43 @@ async function pumpDeterministicFrames(
   for (let remaining = frames; remaining > 0; ) {
     const chunk = Math.min(DETERMINISTIC_FRAME_CHUNK, remaining);
     const result = await page
-      .evaluate((count) => {
-        const hook = (
-          window as unknown as {
-            __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
-              frames?: number;
-              deltaMs?: number;
-            }) => { rendered: number } | null;
-          }
-        ).__STIMS_AGENT_RENDER_FRAMES__;
-        if (typeof hook !== 'function') return null;
-        // 60fps of simulation time per frame, matching the cadence the
-        // projectM references were captured at.
-        return hook({ frames: count, deltaMs: 1000 / 60 });
-      }, chunk)
+      .evaluate(
+        ({ count, reset }: { count: number; reset: boolean }) => {
+          const hook = (
+            window as unknown as {
+              __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
+                frames?: number;
+                deltaMs?: number;
+                startTime?: number;
+              }) => { rendered: number } | null;
+            }
+          ).__STIMS_AGENT_RENDER_FRAMES__;
+          if (typeof hook !== 'function') return null;
+          // 60fps of simulation time per frame, matching the cadence the
+          // projectM references were captured at. The first chunk also resets
+          // the clock: presets read `time`, and the idle signal is a pure
+          // function of it, so a capture that starts wherever the wall clock
+          // happened to be is not reproducible — two consecutive captures of
+          // one preset differed on 4.2% of pixels before this.
+          //
+          // Deliberately NOT a silent stimulus: MilkDrop reports bass/mid/treb
+          // as 1.0 when its long average is below 0.001 (butterchurn does the
+          // same), so "true silence" is not a quiet signal — it is a full-scale
+          // one. Feeding flat zero measured worse against the references than
+          // the decorative idle wave (cubetrace 45% -> 62%).
+          return hook({
+            frames: count,
+            deltaMs: 1000 / 60,
+            ...(reset ? { startTime: 0 } : {}),
+          });
+        },
+        {
+          count: chunk,
+          reset: rendered === 0,
+          offset: rendered,
+          total: frames,
+        },
+      )
       .catch(() => null);
     if (!result) {
       if (rendered === 0) {
@@ -2130,6 +2189,7 @@ if (import.meta.main) {
   ) as PlayToyRendererProfile;
   const catalogMode = getArg('--catalog-mode', 'bundled') as PlayToyCatalogMode;
   const lockQualityStep = getArg('--lock-quality-step', -1) as number;
+  const randomSeed = getArg('--random-seed', Number.NaN) as number;
   const screenshotSurface = getArg(
     '--screenshot-surface',
     'canvas',
@@ -2152,6 +2212,7 @@ if (import.meta.main) {
       deterministicFrames:
         deterministicFrames > 0 ? deterministicFrames : undefined,
       lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
+      randomSeed: Number.isFinite(randomSeed) ? randomSeed : undefined,
       viewportWidth,
       viewportHeight,
       outputDir,
