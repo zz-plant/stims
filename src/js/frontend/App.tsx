@@ -84,6 +84,7 @@ import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
+import { SilentAudioNotice } from './SilentAudioNotice.tsx';
 
 const NewHomePage = lazy(() =>
   import('./NewHomePage.tsx').then((m) => ({
@@ -1557,6 +1558,7 @@ function StimsWorkspaceAppShell() {
           exactly when those panels open, so unmounting on panel-open made
           them unreachable. */}
       <div className="stims-shell__toast-stack">
+        <SilentAudioNotice active={liveMode} />
         <ContextualHelp hint={visibleHint} />
         <AudioMatchToast
           match={audioMatch}

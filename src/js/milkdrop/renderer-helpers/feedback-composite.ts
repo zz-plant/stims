@@ -11,6 +11,20 @@ import type {
 // them, so everything else can skip the softness taps and blur passes.
 const BLUR_TEXTURE_SAMPLE_PATTERN = /texture2D\s*\(\s*blur[123]Tex\b/i;
 
+/**
+ * One per-frame warp variable off the VM's variable bag, guarded: the bag is
+ * preset-controlled, and the warp pass divides by zoom, so a NaN would take
+ * the whole feedback chain to a black frame.
+ */
+function readWarpVariable(
+  variables: Record<string, number> | undefined,
+  key: string,
+  fallback: number,
+): number {
+  const value = variables?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
 export function buildFeedbackCompositeState({
   frameState,
   backend,
@@ -31,6 +45,20 @@ export function buildFeedbackCompositeState({
   getShaderSampleDimensionId: (dimension: '2d' | '3d') => number;
 }): MilkdropFeedbackCompositeState {
   const controls = frameState.post.shaderControls;
+  // The preset's own per-frame warp, which the feedback pass never used to
+  // see: `shaderControls` is produced by parsing warp/comp *shader text*, so
+  // a classic preset (no warp shader) left zoom/rot/dx/dy at their 1/0
+  // defaults and the previous frame was sampled untransformed.
+  //
+  // Shader-derived controls still win — a preset that writes its transform in
+  // a warp shader is described by that shader, and on WebGPU a lowered
+  // per-pixel program overrides these uniforms per fragment anyway.
+  const presetWarp = {
+    zoom: readWarpVariable(frameState.variables, 'zoom', 1),
+    rot: readWarpVariable(frameState.variables, 'rot', 0),
+    dx: readWarpVariable(frameState.variables, 'dx', 0),
+    dy: readWarpVariable(frameState.variables, 'dy', 0),
+  };
   const feedbackOptimizationEnabled =
     backend !== 'webgpu' || directFeedbackShaders;
   // When the descriptor plan reports shaderExecution === 'direct', the preset's
@@ -120,10 +148,10 @@ export function buildFeedbackCompositeState({
     textureWrap: frameState.post.textureWrap ? 1 : 0,
     feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
     warpScale: controls.warpScale,
-    offsetX: controls.offsetX,
-    offsetY: controls.offsetY,
-    rotation: controls.rotation,
-    zoomMul: controls.zoom,
+    offsetX: controls.offsetX || presetWarp.dx,
+    offsetY: controls.offsetY || presetWarp.dy,
+    rotation: controls.rotation || presetWarp.rot,
+    zoomMul: controls.zoom !== 1 ? controls.zoom : presetWarp.zoom,
     saturation: controls.saturation,
     contrast: controls.contrast,
     colorScale: {

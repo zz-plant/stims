@@ -30,6 +30,7 @@ import {
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
+import { reportAudioAwaitingGesture } from './audio-gesture-gate.ts';
 import {
   type AudioEnergySnapshot,
   type AudioReactivityInterpolator,
@@ -1075,8 +1076,27 @@ export type AudioInitOptions = {
 const activeContexts = new Set<AudioContext>();
 const activeStreams = new Set<MediaStream>();
 const unmuteHandlerTracks = new WeakSet<MediaStreamTrack>();
+const stateChangeHandlers = new WeakMap<AudioContext, () => void>();
 
 let resumeOnVisibleInstalled = false;
+
+/**
+ * Publish "audio is set up but silent, waiting for a gesture" so the UI can
+ * say so. A suspended context looks exactly like a working one from the
+ * outside — the session is active, the analyser just returns zeros — and the
+ * deep-link path deliberately starts audio without a click, so without this
+ * the visitor gets silence with no explanation. See audio-gesture-gate.ts.
+ */
+function publishGestureGate() {
+  let suspended = false;
+  for (const context of activeContexts) {
+    if (context.state === 'suspended') {
+      suspended = true;
+      break;
+    }
+  }
+  reportAudioAwaitingGesture(suspended);
+}
 
 function tryResumeAllActiveContexts() {
   for (const context of activeContexts) {
@@ -1134,10 +1154,27 @@ function installResumeOnVisible() {
 export function registerAudioContext(context: AudioContext) {
   activeContexts.add(context);
   installResumeOnVisible();
+
+  // `statechange` rather than a poll: it covers every route out of suspended
+  // — our own resume, the browser resuming on its own, and the context being
+  // closed — so the notice cannot outlive the silence it describes.
+  if (typeof context.addEventListener === 'function') {
+    const handler = () => publishGestureGate();
+    stateChangeHandlers.set(context, handler);
+    context.addEventListener('statechange', handler);
+  }
+  publishGestureGate();
 }
 
 export function unregisterAudioContext(context: AudioContext) {
   activeContexts.delete(context);
+
+  const handler = stateChangeHandlers.get(context);
+  if (handler && typeof context.removeEventListener === 'function') {
+    context.removeEventListener('statechange', handler);
+    stateChangeHandlers.delete(context);
+  }
+  publishGestureGate();
 }
 
 export function registerMediaStream(stream: MediaStream) {

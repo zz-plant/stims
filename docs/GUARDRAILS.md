@@ -25,6 +25,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
+| [`check:first-run-evidence`](#checkfirst-run-evidence) | `check:quick` | Record the measured evidence behind the first-run preset. |
 | [`check:guard-registry`](#checkguard-registry) | `check:quick` | Blocks banned patterns in changed source files before they land. |
 | [`check:guardrails-doc`](#checkguardrails-doc) | `check:quick` | Generates `docs/GUARDRAILS.md` — the rules this repo enforces — from the guard scripts themselves. |
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
@@ -260,6 +261,40 @@ of the global `fade-in`. Duplicates *within* a single file are still
 caught (two `@keyframes spin` in the same file is always a mistake).
 
 Run it directly: `bun run check:duplicate-css`
+
+## check:first-run-evidence
+
+Record the measured evidence behind the first-run preset.
+
+The landing page makes one claim — "full-screen visuals that move to
+whatever you're listening to" — and the first-run preset is the only proof
+of it most visitors ever see. The previous default was chosen on a variable
+count (8 of 36 parameters read audio) that turned out not to predict
+anything visible: measured at the pixel level it moved the same with demo
+audio as in silence, and every parameter that drives visible motion — zoom,
+rot, warp, sx, sy, decay — was static.
+
+So the choice is pinned to measurement instead of judgement, and the
+measurement is checked in. `tests/unit/first-run-preset.test.ts` reads this
+file and fails when the shipped default no longer matches the evidence, the
+preset's bytes change, or the numbers fall below the bar. Regenerating is
+the deliberate act of re-measuring.
+
+Merges one backend at a time, because `lab:visual` writes both renderers to
+the same path. Full refresh:
+
+  bun run lab:visual -- --preset <id> --renderer webgl
+  bun run generate:first-run-evidence
+  bun run lab:visual -- --preset <id> --renderer webgpu
+  bun run generate:first-run-evidence
+  bun run lab:reactivity -- --preset <id>
+  bun run generate:first-run-evidence
+
+Usage:
+  bun run scripts/generate-first-run-evidence.ts
+  bun run scripts/generate-first-run-evidence.ts --check
+
+Run it directly: `bun run check:first-run-evidence`
 
 ## check:guard-registry
 

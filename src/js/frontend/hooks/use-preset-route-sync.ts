@@ -7,6 +7,7 @@ import {
 import { resolvePresetId } from '../../milkdrop/preset-id-resolution.ts';
 import type { SessionRouteState } from '../contracts.ts';
 import type { EngineSnapshot } from '../engine/milkdrop-engine-adapter.ts';
+import { decideEngineRoutePublish } from '../engine-route-publish.ts';
 
 export function usePresetRouteSync({
   engineSnapshot,
@@ -21,7 +22,16 @@ export function usePresetRouteSync({
 }) {
   // Sync active preset from engine → URL
   useEffect(() => {
-    if (!engineSnapshot?.activePresetId || !engineSnapshot?.runtimeReady) {
+    const snapshot = engineSnapshot;
+    if (
+      !snapshot?.activePresetId ||
+      decideEngineRoutePublish({
+        runtimeReady: snapshot.runtimeReady,
+        activePresetId: snapshot.activePresetId,
+        audioActive: snapshot.audioActive,
+        routePresetId: routeState.presetId,
+      }) !== 'publish'
+    ) {
       return;
     }
 
@@ -35,10 +45,8 @@ export function usePresetRouteSync({
     // autoplay advanced the visuals while the address bar stayed on whatever
     // preset the visitor last navigated to — an unshareable, stale link.
     const shareableActivePresetId =
-      resolvePresetId(
-        engineSnapshot.catalogEntries,
-        engineSnapshot.activePresetId,
-      ) ?? engineSnapshot.activePresetId;
+      resolvePresetId(snapshot.catalogEntries, snapshot.activePresetId) ??
+      snapshot.activePresetId;
 
     if (pendingPresetIdRef.current) {
       if (shareableActivePresetId === pendingPresetIdRef.current) {
@@ -55,13 +63,7 @@ export function usePresetRouteSync({
         return { ...current, presetId: shareableActivePresetId };
       });
     });
-  }, [
-    engineSnapshot?.activePresetId,
-    engineSnapshot?.catalogEntries,
-    engineSnapshot?.runtimeReady,
-    pendingPresetIdRef,
-    setRouteState,
-  ]);
+  }, [engineSnapshot, routeState.presetId, pendingPresetIdRef, setRouteState]);
 
   // Resolve preset IDs from engine catalog
   useEffect(() => {
