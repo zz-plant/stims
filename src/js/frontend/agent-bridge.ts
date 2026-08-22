@@ -119,6 +119,8 @@ declare global {
         frameOffset?: number;
         totalFrames?: number;
       };
+      /** Pump digital silence instead of the decorative synthetic signal. */
+      silentAudio?: boolean;
       relationshipLock?: boolean;
     }) => { rendered: number } | null;
   }

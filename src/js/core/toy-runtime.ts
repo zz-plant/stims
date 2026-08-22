@@ -161,6 +161,25 @@ export type ToyRuntimeInstance = ToyInstance & {
       totalFrames?: number;
     };
     /**
+     * Drive the pump with digital silence: every frequency bin 0 and every
+     * waveform sample at the 128 centre line.
+     *
+     * The default synthetic signal is a decorative sine spectrum in the range
+     * 12..232, which reads as loud music — a capture taken with it reported
+     * bass 0.60 / mid 0.39 / treb 0.32. That is fine for warming a preset up,
+     * but it is not what the projectM parity references were rendered
+     * against: their harness feeds `addPCMfloat_2ch` an all-zero buffer, and
+     * projectM's own beat detector divides by `fmax(0.0001, ...)` so silence
+     * lands on bass = mid = treb = 0. Comparing our synthetic-audio render to
+     * their silent one is the largest single difference in the parity suite.
+     *
+     * Note the waveform centre: zeroing the waveform buffer would read as a
+     * full-negative DC offset, not silence.
+     *
+     * Ignored when `stimulus` is set — that already replaces the signal.
+     */
+    silentAudio?: boolean;
+    /**
      * Pin the preset-facing `time` and `frame` signals at their first-locked
      * values while the internal audio-analysis clock keeps running — the
      * "relationship lock" for docs/SENSORY_ACCESSIBILITY.md. The audio->visual
@@ -590,7 +609,12 @@ export function createToyRuntime({
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
+      const silentAudio = options?.silentAudio ?? false;
       const relationshipLock = options?.relationshipLock ?? false;
+      if (silentAudio && !stimulus) {
+        previewFrequencyData.fill(0);
+        previewWaveformData.fill(128);
+      }
       let resetHistoryOnNextFrame = false;
       stopPreviewLoop();
       if (options?.startTime !== undefined) {
@@ -626,7 +650,7 @@ export function createToyRuntime({
               previewFrequencyData.length,
             ),
           );
-        } else {
+        } else if (!silentAudio) {
           updatePreviewFrequencyData(frameState.time);
           if (beatPulse) {
             // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a
