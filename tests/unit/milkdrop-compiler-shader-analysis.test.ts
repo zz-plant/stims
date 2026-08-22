@@ -442,12 +442,118 @@ describe('branch flattening for direct shader execution', () => {
     expect(analysis.directProgramLines[1]).toBe('hit_1 = 0.0');
   });
 
-  test('leaves a body with loops for the raw-GLSL fallback', () => {
+  test('unrolls a bounded loop into one copy of the body per iteration', () => {
     const analysis = extractShaderControls(
       nativeBody(`
         float acc_1;
         acc_1 = 0.0;
         for (int i_1 = 0; i_1 < 4; i_1++) {
+          acc_1 = (acc_1 + float(i_1));
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    const lines = analysis.directProgramLines;
+    // Four copies, each with the induction variable replaced by its value.
+    expect(lines.filter((line) => line.startsWith('acc_1 = (acc_1 +'))).toEqual(
+      [
+        'acc_1 = (acc_1 + float(0))',
+        'acc_1 = (acc_1 + float(1))',
+        'acc_1 = (acc_1 + float(2))',
+        'acc_1 = (acc_1 + float(3))',
+      ],
+    );
+  });
+
+  test('resolves a loop bound held in a local assigned a literal', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        float depth_1;
+        acc_1 = 0.0;
+        depth_1 = 3.0;
+        for (float n_1 = 0.0; n_1 < depth_1; n_1 += 1.0) {
+          acc_1 = (acc_1 + n_1);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.filter((line) =>
+        line.startsWith('acc_1 = (acc_1 +'),
+      ),
+    ).toEqual([
+      'acc_1 = (acc_1 + 0.0)',
+      'acc_1 = (acc_1 + 1.0)',
+      'acc_1 = (acc_1 + 2.0)',
+    ]);
+  });
+
+  test('composes unrolling with branch flattening inside the body', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 <= 1; i_1++) {
+          if ((uv.x < 0.5)) {
+            acc_1 = (acc_1 + 1.0);
+          };
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.filter((line) => line.includes('if(')),
+    ).toHaveLength(2);
+  });
+
+  test('leaves a data-dependent loop bound for the raw-GLSL fallback', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        int iter_1;
+        acc_1 = 0.0;
+        iter_1 = int((q1 * 8.0));
+        for (int i_1 = 0; i_1 < iter_1; i_1++) {
+          acc_1 = (acc_1 + 1.0);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    // Refusing has to leave today's behaviour untouched: the body stays
+    // unparsed and WebGL runs the raw GLSL.
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+
+  test('leaves an unbounded loop for the raw-GLSL fallback', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        while (true) {
+          acc_1 = (acc_1 + 1.0);
+          break;
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+
+  test('refuses a loop whose trip count exceeds the unroll budget', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 < 4096; i_1++) {
           acc_1 = (acc_1 + 1.0);
         };
         ret = vec3(acc_1, 0.0, 0.0);

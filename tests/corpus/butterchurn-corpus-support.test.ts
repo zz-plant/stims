@@ -65,21 +65,23 @@ describe('butterchurn preset corpus support', () => {
       });
       expect(unexplainedPartials.map(({ file }) => file)).toEqual([]);
 
-      // Measured baseline (2026-08-22): 40 presets execute shader programs
+      // Measured baseline (2026-08-22): 19 presets execute shader programs
       // directly on WebGL but fall back to extracted scalar controls on
       // WebGPU, and 9 presets reference EEL identifiers the expression VM
       // evaluates to 0. The WebGPU count was 169 until `if`/`else` bodies
       // were flattened into masked assignments and the shader tokenizer
-      // learned scientific notation; what is left are shader bodies with
-      // loops, which the statement model cannot express at all. These counts
-      // moving DOWN means gaps were closed — update the baseline. Moving UP
-      // means a regression introduced new degradation.
+      // learned scientific notation, then 40 until bounded `for` loops were
+      // unrolled. What is left are 7 `while (true)` bodies, 7 loops whose
+      // trip count is a runtime value, and 5 bodies that assign to `mat2`
+      // elements — none of which the statement model can express. These
+      // counts moving DOWN means gaps were closed — update the baseline.
+      // Moving UP means a regression introduced new degradation.
       const translatedOnWebgpu = corpus.filter(({ compiled }) =>
         compiled.ir.compatibility.backends.webgpu.evidence.some(
           (entry) => entry.code === 'shader-text-translated',
         ),
       );
-      expect(translatedOnWebgpu.length).toBe(40);
+      expect(translatedOnWebgpu.length).toBe(19);
 
       const missingIdentifiers = corpus.filter(
         ({ compiled }) =>
@@ -88,12 +90,13 @@ describe('butterchurn preset corpus support', () => {
       expect(missingIdentifiers.length).toBe(9);
 
       // Everything else stays fully supported on both backends. 1577 until
-      // branch flattening moved 125 presets off the WebGPU control fallback.
+      // branch flattening moved 125 presets off the WebGPU control fallback,
+      // and 1702 until loop unrolling moved 21 more.
       const fullySupported = corpus.filter(({ compiled }) => {
         const { webgl, webgpu } = compiled.ir.compatibility.backends;
         return webgl.status === 'supported' && webgpu.status === 'supported';
       });
-      expect(fullySupported.length).toBe(1702);
+      expect(fullySupported.length).toBe(1723);
     },
     { timeout: 30000 },
   );
