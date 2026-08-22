@@ -92,7 +92,11 @@ export function createMilkdropTransitionController() {
      * cut is `begin(null, ...)`, which settles immediately — one entry
      * point for both so the event log sees every switch.
      */
-    begin(nextBlendState: MilkdropBlendState | null, seconds: number) {
+    begin(
+      nextBlendState: MilkdropBlendState | null,
+      seconds: number,
+      cutReason?: string,
+    ) {
       if (phase === 'manual') {
         // A preset switch reaches this controller twice — once from the
         // navigation controller and once from the editor-session subscriber
@@ -112,7 +116,10 @@ export function createMilkdropTransitionController() {
         lastTickAt = null;
         record('blend-started', `${seconds.toFixed(2)}s`);
       } else {
-        record('cut');
+        // The detail is the whole point of the log here: "why did that
+        // switch cut instead of blending" needs an answer that distinguishes
+        // "you asked for a cut" from "a gate refused you a blend".
+        record('cut', cutReason);
         settle('cut');
       }
     },

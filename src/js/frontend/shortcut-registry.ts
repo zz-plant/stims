@@ -173,11 +173,16 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     dispatchViaPalette: true,
   },
   {
-    // Shift+L: L alone is close enough to the preset-navigation keys that a
-    // mis-hit during a set would be costly, and this is a mode you set once.
+    // Shift+D, for "display" — the mode is about driving one.
+    //
+    // Not the obvious Shift+L: the MilkDrop overlay handles both 'l' and 'L'
+    // for preset lock and calls preventDefault, so an L binding never
+    // reaches the shell at all. Across the three key layers exactly two
+    // letters were unclaimed when this shipped (d and y), which is worth
+    // knowing before adding the next binding.
     id: 'live-performance',
     label: 'Toggle live performance mode',
-    defaultKeys: ['Shift+L'],
+    defaultKeys: ['Shift+D'],
     paletteActionId: 'toggle-live-performance',
     dispatchViaPalette: true,
   },
