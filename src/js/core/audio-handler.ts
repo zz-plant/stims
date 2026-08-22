@@ -958,6 +958,18 @@ export async function getMicrophonePermissionState() {
   return queryMicrophonePermissionState();
 }
 
+import { acquireMicrophoneStream } from './audio-constants.ts';
+
+export {
+  acquireMicrophoneStream,
+  buildMicrophoneConstraints,
+  DEFAULT_MICROPHONE_CONSTRAINTS,
+  describeInputProcessing,
+  describeInputProcessingWarning,
+  EXACT_MICROPHONE_CONSTRAINTS,
+  type InputProcessingFlag,
+} from './audio-constants.ts';
+
 export class AudioAccessError extends Error {
   reason: AudioAccessReason;
 
@@ -1058,21 +1070,6 @@ export type AudioInitOptions = {
   stopStreamOnCleanup?: boolean;
   closeContextOnCleanup?: boolean;
   monitorInput?: boolean;
-};
-
-/** Ask for more than stereo so an audio interface's extra channels survive.
- * `ideal` (never `exact`) — the browser clamps to whatever the device
- * actually offers, and a hard constraint would fail outright on a laptop
- * mic. */
-const MAX_REQUESTED_INPUT_CHANNELS = 8;
-
-export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
-  audio: {
-    echoCancellation: { ideal: false },
-    noiseSuppression: { ideal: false },
-    autoGainControl: { ideal: false },
-    channelCount: { ideal: MAX_REQUESTED_INPUT_CHANNELS },
-  },
 };
 
 const activeContexts = new Set<AudioContext>();
@@ -1558,20 +1555,12 @@ export async function initAudio(options: AudioInitOptions = {}) {
           );
         }
       } else {
-        const effectiveConstraints: MediaStreamConstraints = constraints ?? {
-          audio: {
-            ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
-              ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
-              : {}),
-            ...(options.deviceId
-              ? { deviceId: { exact: options.deviceId } }
-              : {}),
-          },
-        };
-
         try {
-          resolvedStream =
-            await navigator.mediaDevices.getUserMedia(effectiveConstraints);
+          // A caller-supplied constraint set is taken literally; the default
+          // path escalates the processing flags to `exact` and falls back.
+          resolvedStream = constraints
+            ? await navigator.mediaDevices.getUserMedia(constraints)
+            : await acquireMicrophoneStream({ deviceId: options.deviceId });
           ownsStream = true;
           permissionState = permissionState ?? 'granted';
         } catch (error) {

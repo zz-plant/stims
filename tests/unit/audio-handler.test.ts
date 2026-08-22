@@ -12,6 +12,8 @@ import {
 let originalNavigatorDesc: any;
 let initAudio: any;
 let DEFAULT_MICROPHONE_CONSTRAINTS: any;
+let EXACT_MICROPHONE_CONSTRAINTS: any;
+let describeInputProcessingWarning: any;
 let getFrequencyData: any;
 let FrequencyAnalyser: any;
 let stylizeFrequencyData: any;
@@ -119,6 +121,8 @@ beforeAll(async () => {
 
   ({
     DEFAULT_MICROPHONE_CONSTRAINTS,
+    EXACT_MICROPHONE_CONSTRAINTS,
+    describeInputProcessingWarning,
     FrequencyAnalyser,
     initAudio,
     getFrequencyData,
@@ -136,6 +140,38 @@ describe('multichannel input', () => {
     // The DSP that would wreck music analysis stays off.
     expect(audio.echoCancellation).toEqual({ ideal: false });
     expect(audio.autoGainControl).toEqual({ ideal: false });
+  });
+});
+
+describe('granted input processing', () => {
+  const streamWith = (settings: Record<string, unknown>) =>
+    ({
+      getAudioTracks: () => [{ getSettings: () => settings }],
+    }) as unknown as MediaStream;
+
+  test('says nothing when the browser honoured the request', () => {
+    expect(
+      describeInputProcessingWarning(
+        streamWith({ autoGainControl: false, noiseSuppression: false }),
+      ),
+    ).toBeNull();
+  });
+
+  test('names the processors the browser left on', () => {
+    const warning = describeInputProcessingWarning(
+      streamWith({ autoGainControl: true, noiseSuppression: true }),
+    );
+    expect(warning).toContain('automatic gain control');
+    expect(warning).toContain('noise suppression');
+  });
+
+  test('abstains when the platform reports no settings', () => {
+    expect(describeInputProcessingWarning(null)).toBeNull();
+    expect(
+      describeInputProcessingWarning({
+        getAudioTracks: () => [],
+      } as unknown as MediaStream),
+    ).toBeNull();
   });
 });
 
@@ -193,12 +229,48 @@ describe('audio-handler utilities', () => {
     expect(stream).toBeDefined();
   });
 
-  test('initAudio requests microphone with non-call defaults', async () => {
+  test('initAudio hard-constrains the call DSP off', async () => {
     await initAudio();
 
+    // `ideal: false` is a preference the browser may ignore, and a feed with
+    // automatic gain control silently flattens the dynamics every
+    // beat-reactive preset keys off. Ask with `exact` so a platform that
+    // will not honour it says so instead of quietly compressing the mix.
     expect(global.navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith(
+      EXACT_MICROPHONE_CONSTRAINTS,
+    );
+  });
+
+  test('initAudio falls back to the soft request when exact is unsatisfiable', async () => {
+    const track = { stop: mock() };
+    const stream = { getTracks: mock(() => [track]) };
+    const overconstrained = Object.assign(new Error('nope'), {
+      name: 'OverconstrainedError',
+    });
+    const getUserMedia = mock()
+      .mockRejectedValueOnce(overconstrained)
+      .mockResolvedValue(stream);
+    global.navigator.mediaDevices.getUserMedia = getUserMedia;
+
+    await initAudio();
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia.mock.calls[1][0]).toEqual(
       DEFAULT_MICROPHONE_CONSTRAINTS,
     );
+  });
+
+  test('initAudio does not re-prompt after a denial', async () => {
+    const denied = Object.assign(new Error('denied'), {
+      name: 'NotAllowedError',
+    });
+    const getUserMedia = mock().mockRejectedValue(denied);
+    global.navigator.mediaDevices.getUserMedia = getUserMedia;
+
+    await expect(initAudio()).rejects.toThrow();
+    // Retrying softer cannot fix a denial, and a second prompt is worse
+    // than reporting the first one.
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
 
   test('initAudio disables monitoring by default to prevent microphone echo', async () => {
