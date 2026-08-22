@@ -40,7 +40,9 @@ import {
   buildMesh,
   buildMeshField,
   buildMotionVectors,
+  buildWarpField,
   getMeshDensity,
+  presetNeedsWarpMesh,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
 import { buildBorders, buildShapes } from './vm/shape-border-builder';
@@ -851,6 +853,9 @@ class MilkdropPresetVM implements MilkdropVM {
       post,
       signals,
       variables: this.variablesProxy,
+      warpField: presetNeedsWarpMesh(this.preset)
+        ? buildWarpField(meshField, this.geometryState)
+        : null,
       compatibility: this.preset.ir.compatibility,
       gpuGeometry,
     });

@@ -18,8 +18,11 @@
  * long enough for accumulation to show.
  */
 import {
+  BufferAttribute,
+  BufferGeometry,
   type Camera,
   Color,
+  DoubleSide,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -74,6 +77,7 @@ import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropShaderProgramPayload,
+  MilkdropWarpFieldVisual,
 } from './types';
 
 // Generated GLSL per shader-program payload. Payload objects are stable for
@@ -602,6 +606,31 @@ const MILKDROP_FEEDBACK_WARP_HELPER = `
  * never feeds the comp shader's output back into the loop; keeping this
  * blend in its own pass lets the composite pass stay display-only.
  */
+/**
+ * Warp-mesh pass. Vertex positions are the transformed lattice and the uvs are
+ * where each vertex reads from the previous frame, so an arbitrary per-pixel
+ * warp is expressed by the geometry rather than by uniforms the fragment
+ * shader would have to re-derive. This is how MilkDrop itself warps.
+ */
+const MILKDROP_WARP_MESH_VERTEX_SHADER = `
+        attribute vec2 warpUvAttr;
+        varying vec2 vWarpUv;
+        void main() {
+          vWarpUv = warpUvAttr;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `;
+
+const MILKDROP_WARP_MESH_FRAGMENT_SHADER = `
+        uniform sampler2D previousTex;
+        uniform float textureWrap;
+        varying vec2 vWarpUv;
+        void main() {
+          vec2 uv = textureWrap > 0.5 ? fract(vWarpUv) : clamp(vWarpUv, 0.0, 1.0);
+          gl_FragColor = vec4(texture2D(previousTex, uv).rgb, 1.0);
+        }
+      `;
+
 const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D warpTex;
@@ -1572,6 +1601,11 @@ class SharedMilkdropFeedbackManager
   private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
+  readonly warpMeshMaterial: ShaderMaterial;
+  readonly warpMeshGeometry: BufferGeometry;
+  readonly warpMeshScene: Scene;
+  private warpFieldDensity = 0;
+  private warpFieldReady = false;
 
   constructor(
     width: number,
@@ -1791,6 +1825,33 @@ class SharedMilkdropFeedbackManager
     });
     this.warpScene = new Scene();
     this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
+    // Mesh warp: the previous frame drawn onto the transformed grid. Kept as
+    // its own scene so the uniform path above stays intact for shader-driven
+    // presets and for frames that ship no field.
+    this.warpMeshMaterial = new ShaderMaterial({
+      uniforms: {
+        previousTex: { value: this.targets[0].texture },
+        textureWrap: { value: 0 },
+      },
+      vertexShader: MILKDROP_WARP_MESH_VERTEX_SHADER,
+      fragmentShader: MILKDROP_WARP_MESH_FRAGMENT_SHADER,
+      depthTest: false,
+      depthWrite: false,
+      // A warp can fold the grid, flipping a triangle's winding; the whole
+      // pass drew nothing at all until this, because the default FrontSide
+      // culled the lattice's own orientation.
+      side: DoubleSide,
+    });
+    this.warpMeshGeometry = new BufferGeometry();
+    const warpMesh = new Mesh(this.warpMeshGeometry, this.warpMeshMaterial);
+    // The grid's vertices move every frame and the shader ignores the camera,
+    // so a bounding sphere computed from stale positions can only be wrong —
+    // and culling this mesh leaves the warp target empty, which silently
+    // throws the feedback history away.
+    warpMesh.frustumCulled = false;
+    this.warpMeshScene = new Scene();
+    this.warpMeshScene.add(warpMesh);
+    this.warpMeshScene.matrixAutoUpdate = false;
     this.feedbackBlendMaterial = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
@@ -1948,6 +2009,49 @@ class SharedMilkdropFeedbackManager
     this.compositeScene.matrixAutoUpdate = false;
     this.presentScene.matrixAutoUpdate = false;
     this.blurScene.matrixAutoUpdate = false;
+  }
+
+  /**
+   * Hand this frame's warp grid to the mesh pass, or null to fall back to the
+   * uniform path. Buffers are owned by the VM and reused, so they are uploaded
+   * here rather than retained.
+   */
+  setWarpField(field: MilkdropWarpFieldVisual | null): void {
+    if (!field || field.density < 2) {
+      this.warpFieldReady = false;
+      return;
+    }
+    const geometry = this.warpMeshGeometry;
+    const vertexCount = field.positions.length / 2;
+    const positionAttr = geometry.getAttribute('position');
+    if (!positionAttr || positionAttr.count !== vertexCount) {
+      geometry.setAttribute(
+        'position',
+        new BufferAttribute(new Float32Array(vertexCount * 3), 3),
+      );
+      geometry.setAttribute(
+        'warpUvAttr',
+        new BufferAttribute(new Float32Array(vertexCount * 2), 2),
+      );
+    }
+    const positions = geometry.getAttribute('position') as BufferAttribute;
+    const uvs = geometry.getAttribute('warpUvAttr') as BufferAttribute;
+    const positionArray = positions.array as Float32Array;
+    const uvArray = uvs.array as Float32Array;
+    for (let index = 0; index < vertexCount; index += 1) {
+      positionArray[index * 3] = field.positions[index * 2] ?? 0;
+      positionArray[index * 3 + 1] = field.positions[index * 2 + 1] ?? 0;
+      positionArray[index * 3 + 2] = 0;
+      uvArray[index * 2] = field.uvs[index * 2] ?? 0;
+      uvArray[index * 2 + 1] = field.uvs[index * 2 + 1] ?? 0;
+    }
+    positions.needsUpdate = true;
+    uvs.needsUpdate = true;
+    if (this.warpFieldDensity !== field.density) {
+      geometry.setIndex(new BufferAttribute(field.indices, 1));
+      this.warpFieldDensity = field.density;
+    }
+    this.warpFieldReady = true;
   }
 
   setAudioTexture(texture: Texture | null): void {
@@ -2584,7 +2688,19 @@ class SharedMilkdropFeedbackManager
     );
 
     renderer.setRenderTarget(this.warpTarget);
-    renderer.render(this.warpScene, this.camera);
+    const warpShaderOwnsTransform =
+      (this.warpMaterial.uniforms.hasDirectWarp.value as number) > 0.5;
+    if (this.warpFieldReady && !warpShaderOwnsTransform) {
+      // The grid already carries the preset's whole transform, per-pixel code
+      // included; re-deriving it from uniforms here would apply it twice.
+      this.warpMeshMaterial.uniforms.previousTex.value =
+        this.readTarget.texture;
+      this.warpMeshMaterial.uniforms.textureWrap.value =
+        this.warpMaterial.uniforms.textureWrap.value;
+      renderer.render(this.warpMeshScene, this.camera);
+    } else {
+      renderer.render(this.warpScene, this.camera);
+    }
 
     // Internal frame (feedback loop): warped previous + fresh geometry.
     renderer.setRenderTarget(this.writeTarget);
