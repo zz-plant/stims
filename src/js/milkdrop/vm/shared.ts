@@ -26,6 +26,9 @@ export type MeshFieldPoint = {
   sourceY: number;
   x: number;
   y: number;
+  /** Where the warp pass reads the previous frame for this lattice point. */
+  warpU?: number;
+  warpV?: number;
 };
 
 export type MeshField = {
@@ -121,6 +124,10 @@ export type GeometryBuilderState = {
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
   meshPositions?: Float32Array;
+  /** Reused warp-field vertex buffers; see buildWarpField. */
+  warpFieldPositions?: Float32Array;
+  warpFieldUvs?: Float32Array;
+  warpFieldIndices?: Uint32Array;
   lattice?: StaticMeshLattice;
 };
 
