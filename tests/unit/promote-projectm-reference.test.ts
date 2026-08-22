@@ -144,6 +144,7 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
         height: 3,
         warmupMs: 5000,
         captureOffsetMs: 0,
+        warmupFrames: 900,
       },
     }),
   );
