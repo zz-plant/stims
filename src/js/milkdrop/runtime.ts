@@ -76,7 +76,7 @@ import { resolvePresetPerformanceOverride } from './runtime/preset-performance-o
 import { createMilkdropPresetPreviewService } from './runtime/preset-preview-service.ts';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
-import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
+import { cloneBlendState, evaluateBlendGate } from './runtime/session';
 import type { MilkdropPresetSelectionReason } from './runtime/startup.ts';
 import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
@@ -100,7 +100,13 @@ export const buildMilkdropInputSignalOverrides =
   buildMilkdropInputSignalOverridesImpl;
 export const getMilkdropDetailScale = getMilkdropDetailScaleImpl;
 
-const MAX_BLEND_WORKLOAD = 900;
+/** Why a requested crossfade became a cut, in the performer's terms. */
+const BLEND_REFUSAL_STATUS = {
+  workload: 'Too much on screen to crossfade — switched instantly.',
+  'frame-pressure':
+    'Not enough frame headroom to crossfade — switched instantly.',
+  thermal: 'Device is throttling — switched instantly instead of crossfading.',
+} as const;
 
 export function createMilkdropExperience({
   quality,
@@ -639,7 +645,7 @@ export function createMilkdropExperience({
    * Preset switches arrive on two paths — the navigation controller and the
    * editor-session subscriber below — and both need the same blend-vs-cut
    * decision over the same frame state. Each used to derive it separately,
-   * down to a second copy of `MAX_BLEND_WORKLOAD` in the controller.
+   * down to a second copy of the workload threshold in the controller.
    */
   const beginPresetTransition = () => {
     // A hand-driven crossfade is a gesture, not a persisted mode: it applies
@@ -650,22 +656,28 @@ export function createMilkdropExperience({
     const manual = pendingManualCrossfade;
     pendingManualCrossfade = false;
 
-    const canBlend =
-      (manual || transitionMode === 'blend') &&
-      (manual || blendDuration > 0) &&
-      estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
+    const quality = adaptiveQualityController?.getState() ?? null;
+    const gate = evaluateBlendGate(
+      currentFrameState,
+      quality && {
+        rollingAverageFrameMs: quality.rollingAverageFrameMs,
+        frameBudgetMs: quality.frameBudgetMs,
+        thermalState: quality.thermalState,
+      },
+    );
+    const wantsBlend =
+      (manual || transitionMode === 'blend') && (manual || blendDuration > 0);
+    const canBlend = wantsBlend && gate.canBlend;
     const nextBlendState = canBlend ? cloneBlendState(currentFrameState) : null;
     if (manual && nextBlendState) {
       transitionController.beginManual(nextBlendState);
     } else {
-      if (manual) {
-        // The workload gate refused: drawing two layers over a frame this
-        // heavy is what it exists to prevent. The switch still happens, but
-        // a requested fade that silently became a cut leaves the performer
-        // holding a fader that never appeared.
-        setOverlayStatus(
-          'Too much on screen to crossfade — switched instantly.',
-        );
+      if (wantsBlend && gate.refusal) {
+        // A fade that silently became a cut leaves the performer holding a
+        // fader that never appeared — and, in blend mode, wondering why the
+        // duration dial does nothing. Say which gate refused: the three have
+        // different remedies (simpler preset / close something / let it cool).
+        setOverlayStatus(BLEND_REFUSAL_STATUS[gate.refusal]);
       }
       transitionController.begin(nextBlendState, blendDuration);
     }
