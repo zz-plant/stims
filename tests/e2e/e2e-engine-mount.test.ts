@@ -615,19 +615,57 @@ async function verifySmartphoneMicrophoneAccess({
 
     expect(info.calls).toBe(1);
 
-    // The visualizer reacts to the raw spectrum, so the browser's voice DSP
-    // has to stay off — AGC, echo cancellation and noise suppression all
-    // reshape the signal the shaders read from. Mirrors
-    // DEFAULT_MICROPHONE_CONSTRAINTS in src/js/core/audio-handler.ts.
+    // Two separate intents live in this constraint set, both defined in
+    // src/js/core/audio-constants.ts:
+    //
+    // 1. The browser's voice-call DSP must be OFF. The visualizer reacts to
+    //    the raw spectrum, and automatic gain control normalises away
+    //    exactly the dynamics every beat-driven preset keys off — a
+    //    gain-controlled feed looks fine while the presets quietly stop
+    //    moving with the music, and nothing downstream can tell a
+    //    compressed mix from a quiet one. Echo cancellation and noise
+    //    suppression eat the low end and duck the signal against room
+    //    sound. Asked for with `exact` (not `ideal`) so a platform that
+    //    will not honour it throws OverconstrainedError, which
+    //    acquireMicrophoneStream catches and retries with the soft `ideal`
+    //    form, rather than silently applying the DSP.
+    // 2. More than stereo is *preferred*, so an audio interface's extra
+    //    channels survive for the cue-bus selection. That one stays
+    //    `ideal` on purpose — `exact` would fail outright on a phone or
+    //    laptop mic, which is precisely the device under test here.
     const audioConstraints = info.constraints?.audio as
       | MediaTrackConstraints
       | undefined;
     expect(audioConstraints).toBeTypeOf('object');
+
+    // Whichever of the two attempts was recorded, every processor is turned
+    // off; the first attempt (the only one here — see the calls check
+    // above) uses the hard form.
+    for (const flag of [
+      'echoCancellation',
+      'noiseSuppression',
+      'autoGainControl',
+    ] as const) {
+      const value = audioConstraints?.[flag] as
+        | ConstrainBooleanParameters
+        | undefined;
+      expect(value, `${flag} must be constrained off`).toBeTypeOf('object');
+      expect(value?.exact ?? value?.ideal, `${flag} must be false`).toBe(false);
+    }
     expect(audioConstraints).toMatchObject({
-      echoCancellation: { ideal: false },
-      noiseSuppression: { ideal: false },
-      autoGainControl: { ideal: false },
+      echoCancellation: { exact: false },
+      noiseSuppression: { exact: false },
+      autoGainControl: { exact: false },
     });
+
+    // Multichannel is a preference, never a requirement.
+    const channelCount = audioConstraints?.channelCount as
+      | ConstrainULongRange
+      | undefined;
+    expect(channelCount?.ideal).toBeGreaterThan(2);
+    expect(channelCount).not.toHaveProperty('exact');
+    expect(channelCount).not.toHaveProperty('min');
+
     expect(audioConstraints).not.toHaveProperty('deviceId');
 
     expect(info.route).toContain('audio=microphone');
