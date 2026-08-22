@@ -6,6 +6,8 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'main',
   'none',
   'noise',
+  'noise_lq',
+  'noisevol',
   'perlin',
   'simplex',
   'voronoi',
@@ -28,6 +30,11 @@ const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =
   new Set<MilkdropShaderTextureSampler>([
     'simplex',
     'noise',
+    // noise_lq is a 2D texture in projectM, but presets do call tex3D on it;
+    // keeping it here is what lets those lines resolve at all (dropping it
+    // made the whole shader read as unsupported-shader-text).
+    'noise_lq',
+    'noisevol',
     'perlin',
     'voronoi',
     'aura',
@@ -41,26 +48,26 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   string,
   MilkdropShaderTextureSampler | 'main'
 > = {
-  fw_noise_lq: 'noise',
+  fw_noise_lq: 'noise_lq',
   fw_noise_mq: 'noise',
   fw_noise_hq: 'noise',
   fw_noise: 'noise',
   noise: 'noise',
-  noise_lq: 'noise',
+  noise_lq: 'noise_lq',
   noise_hq: 'noise',
   noise_mq: 'noise',
-  fw_noisevol: 'simplex',
-  fw_noisevol_lq: 'simplex',
-  fw_noisevol_mq: 'simplex',
-  fw_noisevol_hq: 'simplex',
-  pw_noisevol: 'simplex',
-  pw_noisevol_lq: 'simplex',
-  pw_noisevol_mq: 'simplex',
-  pw_noisevol_hq: 'simplex',
-  noisevol: 'simplex',
-  noisevol_lq: 'simplex',
-  noisevol_mq: 'simplex',
-  noisevol_hq: 'simplex',
+  fw_noisevol: 'noisevol',
+  fw_noisevol_lq: 'noisevol',
+  fw_noisevol_mq: 'noisevol',
+  fw_noisevol_hq: 'noisevol',
+  pw_noisevol: 'noisevol',
+  pw_noisevol_lq: 'noisevol',
+  pw_noisevol_mq: 'noisevol',
+  pw_noisevol_hq: 'noisevol',
+  noisevol: 'noisevol',
+  noisevol_lq: 'noisevol',
+  noisevol_mq: 'noisevol',
+  noisevol_hq: 'noisevol',
   fc_main: 'fc_main',
   // MilkDrop names the main-texture samplers by filter and address mode:
   // f/p (filtered/point) x c/w (clamp/wrap). `fw_main` is the plain filtered
@@ -74,7 +81,7 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   sampler_pc_main: 'pc_main',
   sampler_pw_main: 'pw_main',
   sampler_fc_main: 'fc_main',
-  pw_noise_lq: 'noise',
+  pw_noise_lq: 'noise_lq',
   sampler_pw_noise_lq: 'noise',
   // MilkDrop's pw_mcode1 is a matrix-code glyph sheet; the smalltiled_*
   // names are small tileable detail textures. Both map onto the bundled
@@ -178,6 +185,12 @@ export const MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS: Readonly<
   fractal: 7,
   video: 8,
   perlin: 9,
+  // projectM generates these rather than shipping PNGs: noise_lq is 256x256
+  // grayscale white noise and noisevol a 32^3 volume of the same
+  // (PerlinNoise.cpp). They must not share the perlin/simplex slots, whose
+  // assets are smooth.
+  noise_lq: 10,
+  noisevol: 11,
   glyph: 12,
   organic: 13,
   blur1: 14,

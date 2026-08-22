@@ -96,6 +96,7 @@ export function createMilkdropExperienceFrameLoop({
     render: (args: {
       frameState: MilkdropFrameState;
       blendState: MilkdropBlendState | null;
+      resetHistory?: boolean;
     }) => boolean;
     setTransitionBlend?: (alpha: number) => void;
     isPresetPresentable?: () => boolean;
@@ -403,6 +404,7 @@ export function createMilkdropExperienceFrameLoop({
         const adapterPresentedFrame = adapter.render({
           frameState: renderFrameState,
           blendState: activeBlendState,
+          resetHistory: frame.resetHistory,
         });
         if (!adapterPresentedFrame) {
           if (

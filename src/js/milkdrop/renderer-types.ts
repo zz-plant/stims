@@ -324,6 +324,12 @@ export type MilkdropBlendState = MilkdropCpuBlendState | MilkdropGpuBlendState;
 export type MilkdropRenderPayload = {
   frameState: MilkdropFrameState;
   blendState?: MilkdropBlendState | null;
+  /**
+   * Harness-only: drop any feedback history before this frame, so a
+   * deterministic capture does not inherit whatever the boot sequence left
+   * in the buffers.
+   */
+  resetHistory?: boolean;
 };
 
 export type MilkdropFeedbackCompositeState = {
@@ -448,6 +454,8 @@ export interface MilkdropFeedbackManager {
    * uniform-driven warp, which cannot express per-pixel transforms.
    */
   setWarpField?(field: MilkdropWarpFieldVisual | null): void;
+  /** Harness-only: drop accumulated frames so a capture starts from black. */
+  clearHistory?(): void;
   setAudioTexture?(texture: Texture | null): void;
   setAdaptiveQuality?(
     multipliers: Partial<{

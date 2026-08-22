@@ -170,6 +170,10 @@ export type MilkdropShaderColorControls = {
 export type MilkdropShaderTextureSampler =
   | 'none'
   | 'noise'
+  /** projectM's generated 256x256 white noise (PerlinNoise.cpp), not a PNG. */
+  | 'noise_lq'
+  /** projectM's generated 32^3 white-noise volume, atlased. */
+  | 'noisevol'
   | 'perlin'
   | 'simplex'
   | 'voronoi'

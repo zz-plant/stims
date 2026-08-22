@@ -264,8 +264,16 @@ warp_texture_scale = bass_att * 0.5
     expect(glsl).toContain(
       'sampleUv(vec2(vUv.x, vUv.y), textureWrap), (signalTime / 5.0)',
     );
-    expect(glsl).toContain('sampleUv(vUv, textureWrap), (signalTime / 20.0)');
-    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 1.0');
+    // Source id 10 is `noise_lq`, projectM's generated 256x256 white noise —
+    // no longer sharing the smooth `noise` PNG slot (id 1). It keeps its z
+    // slice: presets do call tex3D on it, and dropping the volume treatment
+    // made those shader lines read as unsupported outright.
+    expect(glsl).toContain(
+      'sampleAuxTexture(vec4(10.0, 0, 0, 0).x, 1.0, sampleUv(vUv, textureWrap), (signalTime / 20.0))',
+    );
+    // Source id 11 is `noisevol`: projectM's generated 32^3 white-noise volume.
+    // It used to share the `noise` slot (id 1), whose asset is smooth perlin.
+    expect(glsl).toContain('sampleAuxTexture(vec4(11.0, 0, 0, 0).x, 1.0');
   });
 
   test('lowers a mix of the main sample with a scaled main sample', () => {

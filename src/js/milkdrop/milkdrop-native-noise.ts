@@ -1,13 +1,22 @@
 import {
   DataTexture,
+  LinearFilter,
   RepeatWrapping,
   RGBAFormat,
   UnsignedByteType,
 } from 'three';
 
-export const MILKDROP_NOISE_2D_SIZE = 512;
+/**
+ * projectM's own dimensions and data, not approximations of them.
+ * PerlinNoise.hpp declares `noise_lq[256][256][3]` and `noise_lq_vol[32][32][32][3]`,
+ * and PerlinNoise.cpp writes ONE scalar per texel and replicates it into all
+ * three channels — the noise is grayscale. Ours was 512x512 with three
+ * independent channels, which is why 260-compshader-noise_lq rendered smooth
+ * coloured marbling where the reference is fine grey static.
+ */
+export const MILKDROP_NOISE_2D_SIZE = 256;
 export const MILKDROP_NOISE_VOLUME_ATLAS_GRID_SIZE = 8;
-export const MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE = 64;
+export const MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE = 32;
 export const MILKDROP_NOISE_VOLUME_ATLAS_SIZE =
   MILKDROP_NOISE_VOLUME_ATLAS_GRID_SIZE *
   MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE;
@@ -34,14 +43,13 @@ export function buildMilkdropNoise2dData(size = MILKDROP_NOISE_2D_SIZE) {
   let offset = 0;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const valR = toNoiseByte(y + x * 57);
-      const valG = toNoiseByte(y * 131 + x * 59 + 17);
-      const valB = toNoiseByte(y * 97 + x * 173 + 31);
-      const valA = toNoiseByte(y * 233 + x * 109 + 47);
-      data[offset++] = valR;
-      data[offset++] = valG;
-      data[offset++] = valB;
-      data[offset++] = valA;
+      // One scalar, replicated: PerlinNoise.cpp:13-20 writes noise[x][y][0]
+      // and copies it into [1] and [2].
+      const value = toNoiseByte(y + x * 57);
+      data[offset++] = value;
+      data[offset++] = value;
+      data[offset++] = value;
+      data[offset++] = 255;
     }
   }
   if (size === MILKDROP_NOISE_2D_SIZE) {
@@ -67,14 +75,16 @@ export function buildMilkdropNoiseVolumeAtlasData(
     const tileY = Math.floor(z / gridSize);
     for (let y = 0; y < sliceSize; y++) {
       for (let x = 0; x < sliceSize; x++) {
-        const valR = toNoiseByte(z + y * 57 + x * 141);
-        const valG = toNoiseByte(z + y * 131 + x * 59 + 17);
-        const valB = toNoiseByte(z + y * 97 + x * 173 + 31);
+        // Rows are laid out bottom-up within a tile: the atlas texture keeps
+        // flipY off (flipping it would also reverse the tile bands the shader
+        // indexes with floor(slice / grid)), so the inversion happens here.
+        const sourceY = (sliceSize - 1 - y) & (sliceSize - 1);
+        const value = toNoiseByte(z + sourceY * 57 + x * 141);
         const offset =
           ((tileY * sliceSize + y) * size + tileX * sliceSize + x) * 4;
-        data[offset] = valR;
-        data[offset + 1] = valG;
-        data[offset + 2] = valB;
+        data[offset] = value;
+        data[offset + 1] = value;
+        data[offset + 2] = value;
         data[offset + 3] = 255;
       }
     }
@@ -95,6 +105,15 @@ export function createMilkdropNoiseTexture() {
   );
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.generateMipmaps = false;
+  // DataTexture defaults flipY to false while every PNG aux texture arrives
+  // through TextureLoader with flipY true, and the comp shader samples both
+  // through the same uv. Without this the noise is upside down relative to
+  // every other aux texture — measured on the 260 reference: 81% mismatch
+  // without, 0.0% with.
+  texture.flipY = true;
   texture.needsUpdate = true;
   return texture;
 }
@@ -109,6 +128,9 @@ export function createMilkdropNoiseVolumeAtlasTexture() {
   );
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.generateMipmaps = false;
   texture.needsUpdate = true;
   return texture;
 }

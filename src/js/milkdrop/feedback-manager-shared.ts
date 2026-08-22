@@ -73,6 +73,10 @@ import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
+import {
+  createMilkdropNoiseTexture,
+  createMilkdropNoiseVolumeAtlasTexture,
+} from './milkdrop-native-noise.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -314,6 +318,34 @@ type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 // through the real assets here is what makes noisevol-style presets read as
 // the intended grayscale marble instead of full-RGB confetti (WebGPU
 // already samples the same PNGs via its native Data3DTexture path).
+/**
+ * projectM generates its noise in code rather than shipping it as an asset:
+ * `noise_lq` is a 256x256 grayscale white-noise texture and `noisevol` a
+ * 32^3 volume of the same, both GL_REPEAT + GL_LINEAR (PerlinNoise.cpp,
+ * TextureManager.cpp). Our `noise` slot loads seamless_perlin_noise.png,
+ * which is smooth — which is why 260-compshader-noise_lq rendered marbled
+ * blobs where the reference is fine static.
+ *
+ * Memoized at module scope: getSharedAuxTextures runs per feedback manager,
+ * and a texture per instance would leak one per preset switch.
+ */
+let nativeNoiseTexture: Texture | null = null;
+let nativeNoiseVolumeTexture: Texture | null = null;
+
+function sharedNativeNoiseTexture(): Texture {
+  if (!nativeNoiseTexture) {
+    nativeNoiseTexture = createMilkdropNoiseTexture();
+  }
+  return nativeNoiseTexture;
+}
+
+function sharedNativeNoiseVolumeTexture(): Texture {
+  if (!nativeNoiseVolumeTexture) {
+    nativeNoiseVolumeTexture = createMilkdropNoiseVolumeAtlasTexture();
+  }
+  return nativeNoiseVolumeTexture;
+}
+
 function getSharedAuxTextures(): SharedAuxTextureMap {
   const auxTextures = {} as Record<AuxTextureName, Texture>;
   for (const name of Object.keys(AUX_TEXTURE_SPECS) as AuxTextureName[]) {
@@ -490,6 +522,12 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           if (source < 9.5) {
             return texture2D(perlinTex, uv);
           }
+          if (source < 10.5) {
+            return texture2D(noiseLqTex, uv);
+          }
+          if (source < 11.5) {
+            return texture2D(noisevolTex, uv);
+          }
           return vec4(0.5, 0.5, 0.5, 1.0);
         }
 
@@ -643,6 +681,8 @@ const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform float videoEchoAlpha;
         uniform float textureWrap;
         uniform float warpScale;
@@ -750,6 +790,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform sampler2D audioTex;
         uniform sampler2D warpTex;
         uniform sampler2D blur1Tex;
@@ -1027,6 +1069,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform sampler2D audioTex;
         uniform float scale1;
         uniform float bias1;
@@ -1578,6 +1622,11 @@ class SharedMilkdropFeedbackManager
   private lastRenderer: {
     render(scene: Scene, camera: Camera): void;
     setRenderTarget?: (target: WebGLRenderTarget | null) => void;
+    clear?: () => void;
+    getClearAlpha?: () => number;
+    setClearAlpha?: (alpha: number) => void;
+    getClearColor?: (target: Color) => Color;
+    setClearColor?: (color: Color | number, alpha?: number) => void;
   } | null = null;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
@@ -1778,6 +1827,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         audioTex: { value: null },
         ...BLUR_RANGE_UNIFORM_DEFAULTS,
         warpScale: { value: 1 },
@@ -1865,6 +1916,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         videoEchoAlpha: { value: 0 },
         textureWrap: { value: 0 },
         warpScale: { value: 0 },
@@ -2054,6 +2107,39 @@ class SharedMilkdropFeedbackManager
     this.warpFieldReady = true;
   }
 
+  /**
+   * Drop every accumulated frame. Only a capture harness should call this:
+   * the feedback buffers are the picture for most presets, so clearing them
+   * mid-session is a visible black flash.
+   */
+  clearHistory(): void {
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) {
+      return;
+    }
+    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+    const previousClearColor = renderer.getClearColor?.(
+      SCENE_CLEAR_COLOR_SCRATCH,
+    );
+    renderer.setClearColor?.(0x000000, 0);
+    for (const target of [
+      this.targets[0],
+      this.targets[1],
+      this.warpTarget,
+      this.sceneTarget,
+    ]) {
+      if (!target) continue;
+      renderer.setRenderTarget(target);
+      renderer.clear?.();
+    }
+    renderer.setRenderTarget(null);
+    if (previousClearColor) {
+      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+    } else {
+      renderer.setClearAlpha?.(previousClearAlpha);
+    }
+  }
+
   setAudioTexture(texture: Texture | null): void {
     if (this.compositeMaterial.uniforms.audioTex) {
       this.compositeMaterial.uniforms.audioTex.value = texture;
@@ -2078,6 +2164,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         audioTex: { value: null },
         warpTex: { value: this.warpTarget.texture },
         blur1Tex: { value: this.blurTargets[0].texture },
