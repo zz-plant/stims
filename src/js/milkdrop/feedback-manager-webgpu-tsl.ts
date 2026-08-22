@@ -220,6 +220,10 @@ function resolveDirectShaderTextureNode(
       return uniforms.blur3Tex;
     case 'noise':
       return uniforms.noiseTex;
+    case 'noise_lq':
+      return uniforms.noiseLqTex;
+    case 'noisevol':
+      return uniforms.noisevolTex;
     case 'perlin':
       return uniforms.perlinTex;
     case 'simplex':
@@ -2233,6 +2237,8 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
     uniforms.videoTex,
     uniforms.glyphTex,
     uniforms.organicTex,
+    uniforms.noiseLqTex,
+    uniforms.noisevolTex,
     uniforms.blur1Tex,
     uniforms.blur2Tex,
     uniforms.blur3Tex,
@@ -2245,6 +2251,7 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
       pattern: uniforms.patternTex3D,
       fractal: uniforms.fractalTex3D,
       perlin: uniforms.perlinTex3D,
+      noisevol: uniforms.noisevolTex3D,
     },
   );
 }
