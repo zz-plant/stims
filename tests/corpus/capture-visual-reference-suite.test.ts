@@ -233,10 +233,10 @@ test('parseVisualReferenceCaptureArgs keeps parity captures out of vibe mode by 
 });
 
 test('parseVisualReferenceCaptureArgs reuses one browser unless isolation is asked for', () => {
-  // The default matters: a process per preset costs ~12s of Bun start,
-  // Chromium launch and cold dev-server transform against ~4s of actual
-  // capture. Measured over the nine certified presets, reusing the browser
-  // took 35s where process-per-preset had not finished in 9 minutes.
+  // The default matters: on hardware WebGPU a process per preset costs ~12.4s
+  // of Bun start, Chromium launch and cold dev-server transform against ~3.6s
+  // reusing the browser. Measured over the nine WebGPU-certified presets:
+  // 32.8s reused against 111.5s isolated.
   expect(parseVisualReferenceCaptureArgs([]).isolateCaptures).toBe(false);
   expect(
     parseVisualReferenceCaptureArgs(['--isolate-captures']).isolateCaptures,
