@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  assertCaptureBackendMatches,
+  assertForcedBackendMatchesManifest,
   assertVisualReferenceCaptureSucceeded,
   buildVisualReferenceCaptureRequests,
   parseVisualReferenceCaptureArgs,
@@ -262,4 +264,84 @@ test('capture suite rejects captures with browser renderer errors', () => {
       consoleErrors: ['WebGPU Device Lost'],
     }),
   ).toThrow('browser reported 1 console error(s): WebGPU Device Lost');
+});
+
+test('parity captures run serially unless --concurrency asks otherwise', () => {
+  // The pool size used to be filled in here unconditionally, which meant the
+  // suite's own serial default was unreachable from the command line and every
+  // capture ran four wide — the configuration that produced a black frame for
+  // 100-square and a 24% score for 250-wavecode.
+  expect(parseVisualReferenceCaptureArgs([]).concurrency).toBeUndefined();
+  expect(
+    parseVisualReferenceCaptureArgs(['--concurrency', '4']).concurrency,
+  ).toBe(4);
+});
+
+test('assertForcedBackendMatchesManifest rejects a forced backend before capturing', () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-backend-'));
+  fs.mkdirSync(path.join(repoRoot, 'src/data/milkdrop-parity'), {
+    recursive: true,
+  });
+  fs.writeFileSync(
+    path.join(
+      repoRoot,
+      'src/data/milkdrop-parity/visual-reference-manifest.json',
+    ),
+    JSON.stringify({
+      version: 1,
+      parityTarget: 'projectm-visual-reference',
+      fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+      presets: [
+        {
+          id: 'webgpu-only',
+          title: 'WebGPU only',
+          image: 'webgpu-only.png',
+          sourceFamily: 'projectm-fixture',
+          strata: [],
+          capture: { requiredBackend: 'webgpu' },
+        },
+      ],
+    }),
+  );
+
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'compatibility',
+      allowBackendOverride: false,
+    }),
+  ).toThrow(/--force-webgl/);
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'compatibility',
+      allowBackendOverride: true,
+    }),
+  ).not.toThrow();
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'webgpu',
+      allowBackendOverride: false,
+    }),
+  ).not.toThrow();
+
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('assertCaptureBackendMatches names the flag that fixes a silent fallback', () => {
+  expect(() =>
+    assertCaptureBackendMatches({
+      presetId: 'webgpu-only',
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgl',
+    }),
+  ).toThrow(/--force-webgpu/);
+  expect(() =>
+    assertCaptureBackendMatches({
+      presetId: 'webgpu-only',
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgpu',
+    }),
+  ).not.toThrow();
 });
