@@ -530,6 +530,54 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
 /** Reused so reading the clear colour each frame allocates nothing. */
 const SCENE_CLEAR_COLOR_SCRATCH = /* @__PURE__ */ new Color();
 
+/** The subset of a renderer the scene pass needs; test doubles stay simple. */
+export type FeedbackSceneRenderer = {
+  render(scene: Scene, camera: Camera): void;
+  setRenderTarget: (target: RenderTarget | null) => void;
+  getClearAlpha?: () => number;
+  setClearAlpha?: (alpha: number) => void;
+  getClearColor?: (target: Color) => Color;
+  setClearColor?: (color: Color | number, alpha?: number) => void;
+};
+
+/**
+ * Draw the fresh scene into the feedback loop's scene target so its alpha
+ * means "geometry drew here".
+ *
+ * Both renderers are built with `alpha: false`, which sets three.js's
+ * clearAlpha to 1, and `Scene.background` is painted opaquely across the
+ * target before anything else draws. Between them the scene pass came back
+ * fully opaque, so the blend that follows could not tell a covered pixel from
+ * an empty one and replaced the whole feedback history every frame. The
+ * background is a display concern, not part of the loop.
+ *
+ * Black, not merely transparent: the blend adds `current.rgb` straight, and
+ * the app's clear colour is a themed tint, so a transparent-but-tinted clear
+ * painted that tint into the feedback loop.
+ */
+export function renderSceneIntoFeedbackTarget(
+  renderer: FeedbackSceneRenderer,
+  scene: Scene,
+  camera: Camera,
+  target: RenderTarget,
+): void {
+  const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+  const previousClearColor = renderer.getClearColor?.(
+    SCENE_CLEAR_COLOR_SCRATCH,
+  );
+  const previousBackground = scene.background;
+  scene.background = null;
+  renderer.setClearColor?.(0x000000, 0);
+  renderer.setRenderTarget(target);
+  renderer.render(scene, camera);
+  if (previousClearColor) {
+    renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+  } else {
+    renderer.setClearAlpha?.(previousClearAlpha);
+  }
+  scene.background = previousBackground;
+}
+
 const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           // Zero warp + zero rotation is an identity polar round-trip; skip
@@ -2528,36 +2576,12 @@ class SharedMilkdropFeedbackManager
     this.lastRenderer =
       renderer as SharedMilkdropFeedbackManager['lastRenderer'];
 
-    // Clear the scene target transparent so its alpha means "geometry drew
-    // here". The app builds its WebGLRenderer with `alpha: false`, which sets
-    // three.js's clearAlpha to 1 — every render target then came back fully
-    // opaque, and the blend below could not tell covered pixels from empty
-    // ones, so the feedback history was replaced wholesale every frame.
-    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
-    const previousClearColor = renderer.getClearColor?.(
-      SCENE_CLEAR_COLOR_SCRATCH,
+    renderSceneIntoFeedbackTarget(
+      renderer as FeedbackSceneRenderer,
+      sourceScene,
+      sourceCamera,
+      this.sceneTarget,
     );
-    // The scene's own `background` colour is painted opaquely across the
-    // target before anything else draws (three.js does this for
-    // Scene.background), and the renderer is built with `alpha: false`, which
-    // makes three.js clear to alpha 1. Between them the scene pass came back
-    // fully opaque, so the blend below could not tell a covered pixel from an
-    // empty one and replaced the whole feedback history every frame. The
-    // background belongs to the display, not to the feedback loop.
-    const previousBackground = sourceScene.background;
-    sourceScene.background = null;
-    // Black, not just transparent: the blend below adds `current.rgb`
-    // straight, and the app's clear colour is a themed tint, so a
-    // transparent-but-tinted clear painted that tint into the feedback loop.
-    renderer.setClearColor?.(0x000000, 0);
-    renderer.setRenderTarget(this.sceneTarget);
-    renderer.render(sourceScene, sourceCamera);
-    if (previousClearColor) {
-      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
-    } else {
-      renderer.setClearAlpha?.(previousClearAlpha);
-    }
-    sourceScene.background = previousBackground;
 
     renderer.setRenderTarget(this.warpTarget);
     renderer.render(this.warpScene, this.camera);

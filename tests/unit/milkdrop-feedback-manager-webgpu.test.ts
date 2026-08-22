@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { RepeatWrapping, SRGBColorSpace, Texture, TextureLoader } from 'three';
+import {
+  Color,
+  PerspectiveCamera,
+  RepeatWrapping,
+  Scene,
+  SRGBColorSpace,
+  Texture,
+  TextureLoader,
+} from 'three';
 import {
   createMilkdropWebGPUFeedbackManager,
   resolveDirectShaderConstructorPattern,
@@ -492,4 +500,70 @@ test('binds resolved custom sampler textures through the shared MilkDrop texture
   expect(first?.textureFile).toBe('water_caustics.png');
   expect(first?.texture).toBe(second?.texture);
   expect(bindCustomMilkdropSamplerTexture('sampler_missing', null)).toBeNull();
+});
+
+/**
+ * The native WebGPU feedback loop used to draw the fresh scene into the scene
+ * target with the renderer's own clear settings and the scene's background
+ * still attached. Both are opaque — the renderer is built with `alpha: false`,
+ * so three.js clears to alpha 1, and `Scene.background` paints across the
+ * target — which left every pixel reading as covered, so the blend pass could
+ * not tell drawn geometry from empty space. The WebGL path was fixed for this;
+ * WebGPU kept the old behaviour.
+ */
+test('draws the scene pass over a transparent black clear, background off', () => {
+  const manager = createMilkdropWebGPUFeedbackManager(64, 64) as {
+    render: (
+      renderer: unknown,
+      scene: Scene,
+      camera: PerspectiveCamera,
+    ) => void;
+    dispose: () => void;
+  };
+  const scene = new Scene();
+  const background = new Color(0x223344);
+  scene.background = background;
+  const camera = new PerspectiveCamera();
+
+  const appClearColor = new Color(0x112233);
+  let clearColor = appClearColor.clone();
+  let clearAlpha = 1;
+  const scenePassState: Array<{
+    background: Color | null;
+    clear: [number, number];
+  }> = [];
+
+  const renderer = {
+    setRenderTarget: () => {},
+    render: (rendered: Scene) => {
+      if (rendered !== scene) return;
+      scenePassState.push({
+        background: rendered.background as Color | null,
+        clear: [clearColor.getHex(), clearAlpha],
+      });
+    },
+    getClearAlpha: () => clearAlpha,
+    getClearColor: (target: Color) => target.copy(clearColor),
+    setClearColor: (color: number | Color, alpha = 1) => {
+      clearColor =
+        typeof color === 'number' ? new Color(color) : (color as Color).clone();
+      clearAlpha = alpha;
+    },
+  };
+
+  try {
+    manager.render(renderer, scene, camera);
+
+    expect(scenePassState).toHaveLength(1);
+    // Alpha means "geometry drew here", and the clear colour must not tint the
+    // loop with the app's theme.
+    expect(scenePassState[0]?.clear).toEqual([0x000000, 0]);
+    expect(scenePassState[0]?.background).toBeNull();
+    // The display's own settings survive the pass.
+    expect(scene.background).toBe(background);
+    expect(clearColor.getHex()).toBe(appClearColor.getHex());
+    expect(clearAlpha).toBe(1);
+  } finally {
+    manager.dispose();
+  }
 });
