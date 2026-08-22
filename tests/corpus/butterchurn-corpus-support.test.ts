@@ -65,23 +65,26 @@ describe('butterchurn preset corpus support', () => {
       });
       expect(unexplainedPartials.map(({ file }) => file)).toEqual([]);
 
-      // Measured baseline (2026-08-22): 19 presets execute shader programs
+      // Measured baseline (2026-08-22): 135 presets execute shader programs
       // directly on WebGL but fall back to extracted scalar controls on
       // WebGPU, and 9 presets reference EEL identifiers the expression VM
       // evaluates to 0. The WebGPU count was 169 until `if`/`else` bodies
       // were flattened into masked assignments and the shader tokenizer
       // learned scientific notation, then 40 until bounded `for` loops were
-      // unrolled. What is left are 7 `while (true)` bodies, 7 loops whose
-      // trip count is a runtime value, and 5 bodies that assign to `mat2`
-      // elements — none of which the statement model can express. These
-      // counts moving DOWN means gaps were closed — update the baseline.
-      // Moving UP means a regression introduced new degradation.
+      // unrolled, then 19. It went back up to 135 when matrix element writes
+      // stopped claiming to be WebGPU-executable: 116 bodies assign to a
+      // `mat2`/`mat3`/`mat4` element, the node executor has no way to express
+      // that, and what it built instead was a 44641-member WGSL uniform
+      // struct that crashed the GPU process. What is left besides those are 7
+      // `while (true)` bodies and 7 loops whose trip count is a runtime value.
+      // These counts moving DOWN means gaps were closed — update the
+      // baseline. Moving UP means a regression introduced new degradation.
       const translatedOnWebgpu = corpus.filter(({ compiled }) =>
         compiled.ir.compatibility.backends.webgpu.evidence.some(
           (entry) => entry.code === 'shader-text-translated',
         ),
       );
-      expect(translatedOnWebgpu.length).toBe(19);
+      expect(translatedOnWebgpu.length).toBe(135);
 
       const missingIdentifiers = corpus.filter(
         ({ compiled }) =>
@@ -91,12 +94,13 @@ describe('butterchurn preset corpus support', () => {
 
       // Everything else stays fully supported on both backends. 1577 until
       // branch flattening moved 125 presets off the WebGPU control fallback,
-      // and 1702 until loop unrolling moved 21 more.
+      // 1702 until loop unrolling moved 21 more, and 1723 until the matrix
+      // element writes above moved 111 back onto it.
       const fullySupported = corpus.filter(({ compiled }) => {
         const { webgl, webgpu } = compiled.ir.compatibility.backends;
         return webgl.status === 'supported' && webgpu.status === 'supported';
       });
-      expect(fullySupported.length).toBe(1723);
+      expect(fullySupported.length).toBe(1612);
     },
     { timeout: 30000 },
   );
