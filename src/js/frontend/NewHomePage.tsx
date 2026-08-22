@@ -3,6 +3,7 @@ import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
+import { getArrivalPresetId } from './arrival-url.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import {
   getAudioEnergy,
@@ -12,12 +13,6 @@ import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 import { STIMS_REPO_URL } from './workspace-helpers.ts';
-
-/** `?preset=` from the URL the document loaded with; see deepLinkPresetId. */
-const ARRIVAL_PRESET_ID =
-  typeof window === 'undefined'
-    ? null
-    : new URLSearchParams(window.location.search).get('preset');
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
@@ -42,13 +37,13 @@ export function NewHomePage() {
   const appliedResumeRef = useRef(false);
   const autoStartedRef = useRef(false);
 
-  // The URL the visitor actually arrived on — captured at document load, not
-  // component mount. Route state is written to by the app itself (the resume
-  // effect below, and engine startup selection once attract mode boots), and
-  // reading it here made those writes indistinguishable from a real
-  // `?preset=` arrival: a bare "/" visit could auto-start demo audio with no
-  // click the moment the startup preset landed in the route.
-  const [deepLinkPresetId] = useState(() => ARRIVAL_PRESET_ID);
+  // The URL the visitor actually arrived on — captured at document load by
+  // `arrival-url.ts`, not at component mount and not at this chunk's eval.
+  // Route state is written to by the app itself (the resume effect below, and
+  // preset navigation once a session is running), and reading it here made
+  // those writes indistinguishable from a real `?preset=` arrival: a bare "/"
+  // visit could auto-start demo audio with no click.
+  const [deepLinkPresetId] = useState(getArrivalPresetId);
 
   // Memoized: resolution of an id the catalog does NOT contain costs two
   // full catalog scans, and this component re-renders with workspace state.

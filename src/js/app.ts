@@ -9,6 +9,10 @@ import {
 import { startBatteryMonitoring } from './core/power-state.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
+// Eager, and load-bearing: this freezes the arrival URL at document load, so
+// lazy consumers can tell the visitor's link apart from the app's own
+// `replaceState` writes no matter when their chunk lands. See arrival-url.ts.
+import './frontend/arrival-url.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/browser/device-detect.ts';
