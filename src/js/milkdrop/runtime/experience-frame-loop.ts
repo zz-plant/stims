@@ -11,6 +11,10 @@ import type {
   ToyRuntimeFrame,
   ToyRuntimeInstance,
 } from '../../core/toy-runtime';
+import {
+  type OutputConversionRenderer,
+  renderWithoutOutputConversion,
+} from '../output-conversion-passthrough.ts';
 import type {
   MilkdropBlendState,
   MilkdropCapturedVideoReactiveState,
@@ -39,6 +43,24 @@ import {
 import { estimateFrameBlendWorkload, MAX_BLEND_WORKLOAD } from './session.ts';
 import type { MilkdropTraceRecorder } from './trace-recorder.ts';
 import type { MilkdropTransitionController } from './transition-controller.ts';
+
+/**
+ * Paints the MilkDrop scene straight to the canvas for presets that need no
+ * feedback chain. MilkDrop colours are display-referred, so the renderer's
+ * output tone mapping and colour encode have to stay off here exactly as they
+ * do in the feedback manager's present pass — three's WebGPU renderer applies
+ * both to every canvas-target render regardless of material flags.
+ */
+function renderMilkdropSceneDirect(runtime: {
+  toy: { renderer: unknown; render: () => void };
+}) {
+  renderWithoutOutputConversion(
+    runtime.toy.renderer as OutputConversionRenderer | null,
+    () => {
+      runtime.toy.render();
+    },
+  );
+}
 
 export function createMilkdropExperienceFrameLoop({
   getRuntime,
@@ -421,11 +443,11 @@ export function createMilkdropExperienceFrameLoop({
                 postprocessingPipeline.updateSize();
                 postprocessingPipeline.render();
               } else {
-                runtime.toy.render();
+                renderMilkdropSceneDirect(runtime);
               }
             } else {
               disposePostprocessingPipeline();
-              runtime.toy.render();
+              renderMilkdropSceneDirect(runtime);
             }
           }
         } else {

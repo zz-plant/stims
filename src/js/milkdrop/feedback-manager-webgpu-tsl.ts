@@ -29,7 +29,6 @@ import {
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
-import { resolveLinearOutputColorSpace } from '../core/wide-gamut.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -56,6 +55,10 @@ import {
   MILKDROP_TEXTURE_FILES,
   resolveAuxTextureName,
 } from './feedback-manager-webgpu-composite.ts';
+import {
+  type OutputConversionRenderer,
+  renderWithoutOutputConversion,
+} from './output-conversion-passthrough.ts';
 
 export {
   resolveDirectShaderSamplerBinding,
@@ -3249,36 +3252,13 @@ class WebGPUMilkdropFeedbackManager
     // linear→sRGB encode alone lifted geiss-game-of-life from ~14 to ~49
     // mean luminance vs WebGL. Suspend tone mapping AND the output
     // color-space transform around the present to match WebGL's luminance.
-    const toneMappedRenderer = renderer as FeedbackRendererLike & {
-      toneMapping?: number;
-      outputColorSpace?: string;
-    };
-    const savedToneMapping = toneMappedRenderer.toneMapping ?? 0;
-    if (savedToneMapping !== 0) {
-      toneMappedRenderer.toneMapping = 0;
-    }
-    // The linear counterpart of whatever gamut is configured: pinning this to
-    // linear-sRGB unconditionally would quietly undo wide-gamut output, since
-    // this suspension is exactly where the present pass's encode is chosen.
-    const linearOutputColorSpace = resolveLinearOutputColorSpace();
-    const savedOutputColorSpace = toneMappedRenderer.outputColorSpace;
-    if (
-      savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== linearOutputColorSpace
-    ) {
-      toneMappedRenderer.outputColorSpace = linearOutputColorSpace;
-    }
-    renderer.setRenderTarget(null);
-    renderer.render(this.presentScene, this.camera);
-    if (savedToneMapping !== 0) {
-      toneMappedRenderer.toneMapping = savedToneMapping;
-    }
-    if (
-      savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== linearOutputColorSpace
-    ) {
-      toneMappedRenderer.outputColorSpace = savedOutputColorSpace;
-    }
+    renderWithoutOutputConversion(
+      renderer as FeedbackRendererLike & OutputConversionRenderer,
+      () => {
+        renderer.setRenderTarget(null);
+        renderer.render(this.presentScene, this.camera);
+      },
+    );
     this.swap();
     return true;
   }
