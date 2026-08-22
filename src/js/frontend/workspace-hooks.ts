@@ -12,6 +12,10 @@ import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { createLogger } from '../core/logger.ts';
 import { noteSubstitution } from '../core/services/preset-telemetry.ts';
 import {
+  sampleStageLiveness,
+  shouldRetireAttractRender,
+} from '../core/services/stage-liveness.ts';
+import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
   setQualityPresetById,
@@ -48,6 +52,16 @@ import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
 const log = createLogger('WorkspaceHooks');
+
+/**
+ * How long the attract render gets before it is judged. Covers the gap
+ * between the runtime reporting ready and its first composited frame:
+ * shader compile, first preset apply, first present.
+ */
+const ATTRACT_LIVENESS_SETTLE_MS = 2500;
+
+/** Gap before the confirming sample, so one unlucky frame cannot condemn it. */
+const ATTRACT_LIVENESS_CONFIRM_MS = 1200;
 
 export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
@@ -161,13 +175,16 @@ export function useWorkspaceSessionState({
   // prefers-reduced-motion request — anyone who asked for less motion, or
   // whose device should not spend a GPU context on decoration, still gets the
   // static form.
-  const [attractModeEnabled] = useState(() => {
+  const [attractModeEnabled, setAttractModeEnabled] = useState(() => {
     if (routeState.previewMode) {
       return false;
     }
     const profile = getDevicePerformanceProfile();
     return !profile.lowPower && !profile.reducedMotion;
   });
+  // Latches once the attract render has been judged, so a paused-then-blank
+  // stage is not re-sampled every snapshot.
+  const attractLivenessJudgedRef = useRef(false);
 
   const {
     activityCatalog,
@@ -422,6 +439,86 @@ export function useWorkspaceSessionState({
     routeState.audioSource,
     attractModeEnabled,
     setStatusMessage,
+  ]);
+
+  // Make attract mode prove itself.
+  //
+  // Attract mode exists so the landing page for a visuals product has visuals
+  // on it. When the boot preset renders blank, none of that is delivered and
+  // the page still pays for it: a GPU device held open, a render loop at full
+  // refresh rate, and a battery cost, all to composite nothing. That is
+  // strictly worse than never booting — the visitor sees the same black
+  // rectangle either way, and the launch card's CSS signal trace (which the
+  // low-power path already relies on) is the honest fallback.
+  //
+  // Only the decorative case is judged: a route preset or an audio source is
+  // something the visitor asked for and is never paused, however it looks.
+  //
+  // Two samples, spaced, after a settle: one sample can land between the
+  // runtime reporting ready and its first composited frame, and reading an
+  // uncomposited canvas is exactly what `sampleStageLiveness` refuses to call
+  // blank. An unreadable verdict leaves attract mode alone.
+  useEffect(() => {
+    if (
+      !attractModeEnabled ||
+      attractLivenessJudgedRef.current ||
+      !engineSnapshot?.runtimeReady ||
+      routeState.presetId ||
+      routeState.audioSource
+    ) {
+      return;
+    }
+
+    const timers: number[] = [];
+    let cancelled = false;
+    const readStage = () => {
+      const canvas = stageRef.current?.querySelector('canvas');
+      return canvas ? sampleStageLiveness(canvas) : null;
+    };
+
+    timers.push(
+      window.setTimeout(() => {
+        if (cancelled) return;
+        const first = readStage();
+        if (!shouldRetireAttractRender([first])) {
+          // Rendering, or unjudgeable. Only a settled "rendering" is worth
+          // latching: an unreadable canvas may become readable later.
+          attractLivenessJudgedRef.current = first?.visible === true;
+          return;
+        }
+
+        timers.push(
+          window.setTimeout(() => {
+            if (cancelled) return;
+            const second = readStage();
+            if (!shouldRetireAttractRender([first, second])) {
+              attractLivenessJudgedRef.current = second?.visible === true;
+              return;
+            }
+
+            attractLivenessJudgedRef.current = true;
+            log.log('attract render is blank; pausing the decorative loop');
+            // Paused, not disposed: the engine stays warm so pressing Play
+            // demo is still instant, and `resumePreview()` on audio start
+            // brings it back if the visitor's own session renders fine.
+            engineRef.current?.pausePreview();
+            setAttractModeEnabled(false);
+          }, ATTRACT_LIVENESS_CONFIRM_MS),
+        );
+      }, ATTRACT_LIVENESS_SETTLE_MS),
+    );
+
+    return () => {
+      cancelled = true;
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [
+    attractModeEnabled,
+    engineSnapshot?.runtimeReady,
+    routeState.presetId,
+    routeState.audioSource,
   ]);
 
   usePresetRouteSync({

@@ -1003,6 +1003,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  /** True when this frame's picture comes from the feedback chain. */
+  private isFeedbackPathActive(
+    frameState: MilkdropRenderPayload['frameState'],
+  ): boolean {
+    return (
+      isFeedbackCapableRenderer(this.renderer) &&
+      Boolean(this.feedback) &&
+      frameState.post.shaderEnabled
+    );
+  }
+
   private buildFeedbackCompositeState(
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
@@ -1326,6 +1337,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
       const backgroundMaterial = this.background.material as MeshBasicMaterial;
       setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
+      // The background quad is opaque and covers the screen, so drawing it
+      // while the feedback loop runs repainted over the warped previous frame
+      // every frame. MilkDrop has no per-frame background fill: the decayed
+      // previous frame *is* the background, and geometry is drawn over it.
+      this.background.visible = !this.isFeedbackPathActive(payload.frameState);
 
       this.renderMesh(
         payload.frameState.mesh,

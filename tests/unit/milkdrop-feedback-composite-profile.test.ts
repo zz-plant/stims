@@ -97,7 +97,13 @@ test('samples warp textures in warp-stage UV space inside the feedback blend sha
   }
 });
 
-test('keeps the legacy echo path projectM-like by avoiding extra frame-mix fusion', () => {
+/**
+ * The internal frame carries the feedback loop for every preset. It used to
+ * blend history in by `videoEchoAlpha` for control-driven presets, which
+ * meant a preset with no video echo threw its history away every frame —
+ * fDecay was inert and no warp variable could accumulate.
+ */
+test('carries feedback for control-driven presets, not just echo ones', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,
     180,
@@ -108,13 +114,13 @@ test('keeps the legacy echo path projectM-like by avoiding extra frame-mix fusio
   };
 
   try {
-    expect(manager.feedbackBlendMaterial.fragmentShader).toContain(
-      'clamp(videoEchoAlpha, 0.0, 1.0)',
-    );
-    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
-      'clamp(mixAlpha, 0.0, 1.0)',
-    );
-    expect(manager.feedbackBlendMaterial.fragmentShader).not.toContain(
+    const shader = manager.feedbackBlendMaterial.fragmentShader;
+    // History is composited under this frame's geometry by its coverage...
+    expect(shader).toContain('previousColor * (1.0 - coverage) + current.rgb');
+    // ...and never gated on the echo amount.
+    expect(shader).not.toContain('clamp(videoEchoAlpha, 0.0, 1.0)');
+    expect(shader).not.toContain('clamp(mixAlpha, 0.0, 1.0)');
+    expect(shader).not.toContain(
       'color = mix(color, current.rgb, clamp(currentFrameBoost',
     );
   } finally {

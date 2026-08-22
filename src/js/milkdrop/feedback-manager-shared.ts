@@ -527,6 +527,57 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
 // with identical math. The warp pass must not define its own variant here —
 // divergent formulas made the feedback chain and the fresh-scene sample
 // disagree and drove WebGL away from WebGPU.
+/** Reused so reading the clear colour each frame allocates nothing. */
+const SCENE_CLEAR_COLOR_SCRATCH = /* @__PURE__ */ new Color();
+
+/** The subset of a renderer the scene pass needs; test doubles stay simple. */
+export type FeedbackSceneRenderer = {
+  render(scene: Scene, camera: Camera): void;
+  setRenderTarget: (target: RenderTarget | null) => void;
+  getClearAlpha?: () => number;
+  setClearAlpha?: (alpha: number) => void;
+  getClearColor?: (target: Color) => Color;
+  setClearColor?: (color: Color | number, alpha?: number) => void;
+};
+
+/**
+ * Draw the fresh scene into the feedback loop's scene target so its alpha
+ * means "geometry drew here".
+ *
+ * Both renderers are built with `alpha: false`, which sets three.js's
+ * clearAlpha to 1, and `Scene.background` is painted opaquely across the
+ * target before anything else draws. Between them the scene pass came back
+ * fully opaque, so the blend that follows could not tell a covered pixel from
+ * an empty one and replaced the whole feedback history every frame. The
+ * background is a display concern, not part of the loop.
+ *
+ * Black, not merely transparent: the blend adds `current.rgb` straight, and
+ * the app's clear colour is a themed tint, so a transparent-but-tinted clear
+ * painted that tint into the feedback loop.
+ */
+export function renderSceneIntoFeedbackTarget(
+  renderer: FeedbackSceneRenderer,
+  scene: Scene,
+  camera: Camera,
+  target: RenderTarget,
+): void {
+  const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+  const previousClearColor = renderer.getClearColor?.(
+    SCENE_CLEAR_COLOR_SCRATCH,
+  );
+  const previousBackground = scene.background;
+  scene.background = null;
+  renderer.setClearColor?.(0x000000, 0);
+  renderer.setRenderTarget(target);
+  renderer.render(scene, camera);
+  if (previousClearColor) {
+    renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+  } else {
+    renderer.setClearAlpha?.(previousClearAlpha);
+  }
+  scene.background = previousBackground;
+}
+
 const MILKDROP_FEEDBACK_WARP_HELPER = `
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
           // Zero warp + zero rotation is an identity polar round-trip; skip
@@ -638,16 +689,21 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
           }
           // Apply decay to the previous frame color so history dissipates over time.
           previousColor *= decay;
-          // With a direct warp shader, feedback is the warped previous frame
-          // under this frame's geometry (MilkDrop clears to the warp output);
-          // the legacy echo blend stays for control-driven presets.
+          // The internal frame is the warped, decayed previous frame with this
+          // frame's geometry drawn over it. Control-driven presets used to
+          // blend the two by videoEchoAlpha instead, so a preset without video
+          // echo (alpha 0) discarded its history outright: fDecay did nothing
+          // and no warp variable could accumulate, because there was never
+          // anything left to move. Video echo is a display-stage effect in
+          // MilkDrop, not the mechanism that carries feedback.
+          //
+          // The scene colour arrives premultiplied — three.js blends src.rgb
+          // times src.a into a target that starts at zero — so this is a
+          // straight over, not a mix (a mix darkens covered pixels twice).
+          float coverage = clamp(current.a, 0.0, 1.0);
           vec3 color = hasDirectWarp > 0.5
             ? previousColor + current.rgb
-            : mix(
-                current.rgb,
-                previousColor,
-                clamp(videoEchoAlpha, 0.0, 1.0)
-              );
+            : previousColor * (1.0 - coverage) + current.rgb;
           gl_FragColor = vec4(color, 1.0);
         }
       `;
@@ -2504,6 +2560,11 @@ class SharedMilkdropFeedbackManager
     renderer: {
       render(scene: Scene, camera: Camera): void;
       setRenderTarget?: (target: RenderTarget | null) => void;
+      /** Present on WebGLRenderer; optional so test doubles stay simple. */
+      getClearAlpha?: () => number;
+      setClearAlpha?: (alpha: number) => void;
+      getClearColor?: (target: Color) => Color;
+      setClearColor?: (color: Color | number, alpha?: number) => void;
     },
     sourceScene: Scene,
     sourceCamera: Camera,
@@ -2515,8 +2576,12 @@ class SharedMilkdropFeedbackManager
     this.lastRenderer =
       renderer as SharedMilkdropFeedbackManager['lastRenderer'];
 
-    renderer.setRenderTarget(this.sceneTarget);
-    renderer.render(sourceScene, sourceCamera);
+    renderSceneIntoFeedbackTarget(
+      renderer as FeedbackSceneRenderer,
+      sourceScene,
+      sourceCamera,
+      this.sceneTarget,
+    );
 
     renderer.setRenderTarget(this.warpTarget);
     renderer.render(this.warpScene, this.camera);

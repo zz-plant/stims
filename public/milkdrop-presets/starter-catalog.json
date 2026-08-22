@@ -1,6 +1,53 @@
 {
   "presets": [
     {
+      "id": "shifter-glassworms-flare",
+      "title": "Shifter - Glassworms - Flare",
+      "author": "Shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-glassworms-flare.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset",
+        "category:particles",
+        "category:waveform"
+      ],
+      "preview": true,
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      },
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "quality": {
+        "score": 0.47,
+        "components": {
+          "fidelity": 0.2,
+          "evidence": 0.5,
+          "staticAudio": 1,
+          "measuredReactivity": 0.9999999999999974,
+          "motion": null,
+          "flashPenalty": 0,
+          "duplicatePenalty": 0
+        }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.04622463014926661,
+        "maxLuminanceDelta": 0.004822092742847322,
+        "measuredAt": "2026-08-22T04:00:19.216Z"
+      }
+    },
+    {
       "id": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "author": "Eo.S.",
@@ -80,9 +127,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4524,
@@ -130,9 +175,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -180,9 +223,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -226,9 +267,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.432,
@@ -273,9 +312,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4522,
@@ -316,9 +353,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.47,
@@ -359,9 +394,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4537,
@@ -402,9 +435,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.47,
@@ -449,9 +480,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4338,
@@ -496,9 +525,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -542,9 +569,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4656,
@@ -588,9 +613,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -630,9 +653,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.445,
@@ -672,9 +693,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.445,
@@ -714,9 +733,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.445,
@@ -759,9 +776,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4529,
@@ -805,9 +820,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4529,
@@ -851,9 +864,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.416,
@@ -897,9 +908,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -942,9 +951,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4674,
@@ -987,9 +994,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4529,
@@ -1032,9 +1037,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4676,
@@ -1077,9 +1080,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "quality": {
         "score": 0.4529,
