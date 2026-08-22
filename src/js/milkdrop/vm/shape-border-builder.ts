@@ -189,6 +189,20 @@ export function buildShapes({
     );
     const env = createEnv(signals, locals, { reuseExtraAsEnv: true });
 
+    // MilkDrop reloads a shape's authored values before running its per-frame
+    // code, which is what makes `rad = rad*(1+q8/7)` mean "scale the authored
+    // radius by this frame's audio" rather than "compound it forever". Without
+    // the reload, eos-phat-cubetrace-v2's hexagon grew by ~1% *every frame* on
+    // silence alone and filled the screen as flat white, where projectM draws
+    // a small dark shape.
+    //
+    // t1..t8 and v1..v8 are the exception and genuinely persist; they are
+    // restored from the post-init snapshot below, after this.
+    const baseFields = shapeState.customShapeBaseFields[index];
+    if (baseFields) {
+      Object.assign(locals, baseFields);
+    }
+
     // Restore t/v from post-init snapshot before instance loop
     const tAfterInit = shapeState.customShapeTAfterInit[index];
     const baseTLocals = {
