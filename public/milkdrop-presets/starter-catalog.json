@@ -38,6 +38,13 @@
           "flashPenalty": 0,
           "duplicatePenalty": 0
         }
+      },
+      "sensoryProfile": {
+        "flashRiskLevel": "none",
+        "maxTransitionsPerSecondEstimate": 0,
+        "meanLuminance": 0.04622463014926661,
+        "maxLuminanceDelta": 0.004822092742847322,
+        "measuredAt": "2026-08-22T04:00:19.216Z"
       }
     },
     {
