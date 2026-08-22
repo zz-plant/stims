@@ -656,6 +656,25 @@ export function createMilkdropExperience({
    * decision over the same frame state. Each used to derive it separately,
    * down to a second copy of the workload threshold in the controller.
    */
+  /**
+   * The frame state the last transition decision was made against, and the
+   * decision itself.
+   *
+   * A single preset switch reaches this function TWICE — once from the
+   * navigation controller, once from the editor-session subscriber, about
+   * 2ms apart. Each call re-evaluated the gate independently against live
+   * frame timings that move in between, so the two regularly disagreed and
+   * the second silently overwrote the first: the same switch would cut or
+   * blend depending on which won. Coalescing on frame-state identity makes
+   * one switch produce one decision, because `currentFrameState` is
+   * replaced per rendered frame and both calls land inside the same one.
+   */
+  let lastTransitionFrameState: MilkdropFrameState | null | undefined;
+  let lastTransitionDecision: {
+    mode: 'blend' | 'cut';
+    durationSeconds: number;
+  } | null = null;
+
   const beginPresetTransition = () => {
     // A hand-driven crossfade is a gesture, not a persisted mode: it applies
     // to the one switch that armed it and then clears. Making it a third
@@ -664,6 +683,14 @@ export function createMilkdropExperience({
     // completes a preset change on its own.
     const manual = pendingManualCrossfade;
     pendingManualCrossfade = false;
+
+    if (
+      !manual &&
+      lastTransitionDecision !== null &&
+      lastTransitionFrameState === currentFrameState
+    ) {
+      return lastTransitionDecision;
+    }
 
     const quality = adaptiveQualityController?.getState() ?? null;
     const gate = evaluateBlendGate(
@@ -688,7 +715,11 @@ export function createMilkdropExperience({
         // different remedies (simpler preset / close something / let it cool).
         setOverlayStatus(BLEND_REFUSAL_STATUS[gate.refusal]);
       }
-      transitionController.begin(nextBlendState, blendDuration);
+      transitionController.begin(
+        nextBlendState,
+        blendDuration,
+        wantsBlend ? (gate.refusal ?? undefined) : 'transition mode: cut',
+      );
     }
     if (nextBlendState) {
       adapter?.saveFeedbackFrame?.();
@@ -699,10 +730,13 @@ export function createMilkdropExperience({
     // stale pressure evidence and, on constrained devices, pre-pays the
     // warm-up with one quality step instead of dropped frames.
     adaptiveQualityController?.notePresetApplied();
-    return {
+    const decision = {
       mode: canBlend ? ('blend' as const) : ('cut' as const),
       durationSeconds: blendDuration,
     };
+    lastTransitionFrameState = currentFrameState;
+    lastTransitionDecision = decision;
+    return decision;
   };
 
   const navigation = createMilkdropPresetNavigationController({

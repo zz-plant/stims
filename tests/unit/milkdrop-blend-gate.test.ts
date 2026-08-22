@@ -88,16 +88,19 @@ describe('blend gate', () => {
     expect(
       evaluateBlendGate(CORPUS_MEDIAN, {
         ...HEALTHY,
-        rollingAverageFrameMs: 30,
+        // ~14fps against a 60Hz budget.
+        rollingAverageFrameMs: 70,
       }),
     ).toEqual({ canBlend: false, refusal: 'frame-pressure' });
   });
 
-  test('mild overrun stays inside tolerance', () => {
+  test('a serviceable frame rate still crossfades', () => {
+    // 45fps on a laptop driving a projector is the normal case the blend
+    // exists for, not a machine in trouble. A tighter tolerance refused it.
     expect(
       evaluateBlendGate(CORPUS_MEDIAN, {
         ...HEALTHY,
-        rollingAverageFrameMs: 18,
+        rollingAverageFrameMs: 22,
       }).canBlend,
     ).toBe(true);
   });
