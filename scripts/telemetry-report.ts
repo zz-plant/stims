@@ -136,6 +136,28 @@ function buildReports(days: number): Report[] {
             GROUP BY blob1, blob4 ORDER BY count DESC LIMIT 30`,
       columns: ['event', 'detail', 'count'],
     },
+    {
+      // Shader-text execution (noteShaderExecution, preset-telemetry.ts,
+      // added 2026-08-22). 'direct' means the backend ran the preset's shader
+      // text as authored; 'translated'/'unsupported' mean it ran a
+      // uniform-only approximation instead — a plausible frame that is not
+      // the preset. Only shader-bearing presets are counted, so
+      // translated/(direct+translated+unsupported) is the approximation rate.
+      title: `Shader-text execution by backend (last ${days}d)`,
+      sql: `SELECT blob1 AS event, blob2 AS renderer, COUNT() AS count FROM ${DATASET}
+            WHERE timestamp > ${since} AND blob1 LIKE 'shader-exec-%'
+            GROUP BY blob1, blob2 ORDER BY count DESC`,
+      columns: ['event', 'renderer', 'count'],
+    },
+    {
+      title: `Presets most often approximated (last ${days}d)`,
+      sql: `SELECT blob3 AS presetId, blob2 AS renderer, COUNT() AS count FROM ${DATASET}
+            WHERE timestamp > ${since}
+              AND blob1 IN ('shader-exec-translated', 'shader-exec-unsupported')
+              AND blob3 != ''
+            GROUP BY blob3, blob2 ORDER BY count DESC LIMIT 30`,
+      columns: ['presetId', 'renderer', 'count'],
+    },
   ];
 }
 

@@ -88,6 +88,10 @@ import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
+import {
+  type MilkdropShaderExecutionMode,
+  resolveShaderExecutionMode,
+} from './shader-execution-mode.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -146,6 +150,14 @@ export function createMilkdropExperience({
      * field republishes the engine snapshot to the UI.
      */
     tempoBpm: number | null;
+    /**
+     * Whether the active preset's shader text is executing as authored on the
+     * active backend, or being approximated from its controls. Lives on the
+     * snapshot rather than being re-derived per consumer because it changes on
+     * two independent axes — the preset and the backend — and every surface
+     * that reports it must agree.
+     */
+    shaderExecution: MilkdropShaderExecutionMode | null;
     autoplay: boolean;
     transitionMode: 'blend' | 'cut';
     blendDuration: number;
@@ -437,6 +449,10 @@ export function createMilkdropExperience({
         beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
           ? Math.round(beat.bpm)
           : null,
+      shaderExecution: resolveShaderExecutionMode(
+        activeCompiled,
+        activeBackend,
+      ),
       autoplay,
       transitionMode,
       blendDuration,

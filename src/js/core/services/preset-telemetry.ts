@@ -62,6 +62,63 @@ export function notePresetShown(presetId: string) {
 }
 
 /**
+ * Counts how often a preset's shader text is executed as authored versus
+ * approximated, per backend.
+ *
+ * "How often are we approximating in the wild?" was unanswerable: the
+ * compiler has decided this per preset per backend for months, and nothing
+ * transmitted it. The answer matters because the failure is invisible to the
+ * viewer — an approximated preset still renders a plausible frame — so the
+ * only way it gets noticed is by counting.
+ *
+ * Cardinality: the mode rides in the event name and the backend in the
+ * `renderer` blob, giving at most six event/backend combinations across the
+ * whole dataset. Nothing identifying is added — presetId is a bundled catalog
+ * slug, already sent by the dwell events.
+ *
+ * `'none'` is not transmitted. A preset with no shader text has nothing to
+ * approximate, so it is neither numerator nor denominator; the rate this
+ * answers is approximated-loads over shader-bearing loads, and counting
+ * shader-free presets in the denominator would dilute it into meaninglessness
+ * (they are ~31% of the bundled corpus).
+ */
+export function noteShaderExecution(
+  presetId: string,
+  mode: 'none' | 'direct' | 'translated' | 'unsupported' | null,
+  backend: 'webgl' | 'webgpu',
+) {
+  if (mode === null || mode === 'none') return;
+  if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
+  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  if (!endpoint) return;
+  try {
+    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+      navigator.sendBeacon(
+        endpoint,
+        new Blob(
+          [
+            JSON.stringify({
+              // Event name carries the mode so it is queryable through the
+              // dataset's only index, the same trick noteSubstitution uses.
+              event: `shader-exec-${mode}`,
+              // The contract's renderer enum is the transport for "which
+              // backend decided this"; webgl2 is the spelling the rest of the
+              // dataset uses for the WebGL path.
+              renderer: backend === 'webgpu' ? 'webgpu' : 'webgl2',
+              presetId,
+            }),
+          ],
+          { type: 'application/json' },
+        ),
+      );
+      transmitted++;
+    }
+  } catch {
+    // Telemetry must never surface as a user-visible failure.
+  }
+}
+
+/**
  * Records that the app substituted something for what the visitor asked for:
  * the fallback preset replaced a deep link, the renderer fell back to WebGL,
  * or a requested preset failed to load outright. Substitutions are the

@@ -559,3 +559,23 @@
     opacity: 0.5;
   }
 }
+
+/* ── Reduced-fidelity marker ─────────────────────────────────────────
+   Shown only when the active backend is approximating the preset's
+   shader text instead of executing it (19 of the 1201 shader-bearing
+   bundled presets, on WebGPU). Warm accent rather than a red alert:
+   this is a fact about the render, not an error the viewer must act
+   on — and at 0.6rem uppercase it reads as a label beside the title,
+   not a badge competing with it. The full explanation is on the title
+   button's tooltip and accessible name, so this stays one word. */
+.fidelityMark {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  /* ink-2 weight of the warm accent: legible against the pill without
+     pulling the eye off the title it annotates. */
+  color: var(--stims-accent, #ff8a65);
+  white-space: nowrap;
+}

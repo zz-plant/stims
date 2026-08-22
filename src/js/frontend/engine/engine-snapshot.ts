@@ -1,5 +1,6 @@
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
 import type { createMilkdropExperience } from '../../milkdrop/runtime.ts';
+import type { MilkdropShaderExecutionMode } from '../../milkdrop/shader-execution-mode.ts';
 import type { AudioSource } from '../contracts.ts';
 
 type ExperienceController = ReturnType<typeof createMilkdropExperience>;
@@ -33,6 +34,14 @@ export type EngineSnapshot = {
    * material and must render as "no tempo", never as the last number that
    * worked. */
   tempoBpm: number | null;
+  /**
+   * How the active preset's shader text reaches the screen on the active
+   * backend: 'direct' is as authored, 'translated'/'unsupported' mean the
+   * renderer is substituting a uniform-only approximation, 'none' means the
+   * preset has no shader text. Null before a preset is compiled — "not known
+   * yet", never "fine". See milkdrop/shader-execution-mode.ts.
+   */
+  shaderExecution: MilkdropShaderExecutionMode | null;
   autoplay: boolean;
   transitionMode: 'blend' | 'cut';
   blendDuration: number;
@@ -56,6 +65,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     audioTreble: 0,
     audioEndedAt: null,
     tempoBpm: null,
+    shaderExecution: null,
     autoplay: false,
     transitionMode: 'blend',
     blendDuration: 0.3,
@@ -81,6 +91,7 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.audioTreble === b.audioTreble &&
     a.audioEndedAt === b.audioEndedAt &&
     a.tempoBpm === b.tempoBpm &&
+    a.shaderExecution === b.shaderExecution &&
     a.autoplay === b.autoplay &&
     a.transitionMode === b.transitionMode &&
     a.blendDuration === b.blendDuration
@@ -120,6 +131,7 @@ export function buildEngineSnapshot({
     audioTreble: snapshot?.audioTreble ?? 0,
     audioEndedAt: audioEndedAt ?? null,
     tempoBpm: snapshot?.tempoBpm ?? null,
+    shaderExecution: snapshot?.shaderExecution ?? null,
     autoplay: snapshot?.autoplay ?? false,
     transitionMode: snapshot?.transitionMode ?? 'blend',
     blendDuration: snapshot?.blendDuration ?? 0.3,
