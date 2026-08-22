@@ -95,6 +95,37 @@ export function buildVisualReferenceCaptureRequests({
     }));
 }
 
+/**
+ * Pull play-toy's trailing JSON payload out of its stdout.
+ *
+ * Was `stdout.lastIndexOf('{')`, which lands inside the payload whenever a
+ * console error it reports contains a brace — "WebGPU device lost: unknown
+ * {reason: unknown}" did exactly that, so a run that failed for a real,
+ * stated reason surfaced as an unparseable-output error instead. Walk the
+ * candidate starts from the end and take the first one that parses.
+ */
+export function parsePlayToyStdout(stdout: string): PlayToyResult {
+  const starts: number[] = [];
+  for (let index = stdout.indexOf('{'); index !== -1; ) {
+    starts.push(index);
+    index = stdout.indexOf('{', index + 1);
+  }
+  if (starts.length === 0) {
+    throw new Error('No JSON output found');
+  }
+  let lastError: unknown = null;
+  for (const start of starts.reverse()) {
+    try {
+      return JSON.parse(stdout.slice(start)) as PlayToyResult;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('No JSON output found');
+}
+
 function runPlayToyInChildProcess(
   request: VisualReferenceCaptureRequest,
   label: string,
@@ -156,12 +187,7 @@ function runPlayToyInChildProcess(
       }
 
       try {
-        const jsonStart = stdout.lastIndexOf('{');
-        if (jsonStart === -1) {
-          throw new Error('No JSON output found');
-        }
-        const jsonStr = stdout.substring(jsonStart);
-        const result = JSON.parse(jsonStr);
+        const result = parsePlayToyStdout(stdout);
         resolve(result);
       } catch (err) {
         const errMessage = err instanceof Error ? err.message : String(err);
