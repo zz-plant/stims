@@ -2160,6 +2160,72 @@ function setShaderStageUvGeometry(env: ShaderNodeEnv, uvNode: any) {
   setShaderEnvValue(env, 'ang', shaderFloat(atan(centered.y, centered.x)));
 }
 
+/**
+ * Seed the four geometry inputs MilkDrop hands every warp-mesh vertex before
+ * running the per-pixel block, in MilkDrop's own coordinate space.
+ *
+ * On WebGPU there is no CPU warp mesh at all -- vm.ts takes the procedural
+ * mesh descriptor, buildMeshField returns zero points and setWarpField only
+ * exists on the WebGL manager -- so this per-fragment program IS the per-pixel
+ * warp path. It used to seed only `x` and `y`, as raw uv(): wrong space, and
+ * `rad`/`ang` unbound entirely, which made every statement reading them
+ * compile to null and get dropped by runPerPixelProgram.
+ *
+ * The formula is butterchurn's `runPixelEquations` vertex loop
+ * (butterchurn 2.6.7, lib/butterchurn.js:2596-2610), which is the faithful
+ * MilkDrop 2 port and is already what this file's shader-stage helper
+ * (setShaderStageUvGeometry), the WebGL warp/comp templates
+ * (feedback-manager-shared.ts:970, :1161) and the CPU mesh lattice
+ * (vm/geometry-builder.ts buildStaticMeshLattice) all use:
+ *
+ *   x   = xNdc *  0.5 * aspectx + 0.5    // 0 = left,  1 = right
+ *   y   = yNdc * -0.5 * aspecty + 0.5    // 0 = TOP,   1 = bottom
+ *   rad = sqrt(xNdc^2*aspectx^2 + yNdc^2*aspecty^2)
+ *   ang = atan2(yNdc*aspecty, xNdc*aspectx)
+ *
+ * Three deliberate non-features, all three agreed on by BOTH reference
+ * implementations:
+ *   1. rad/ang are NOT re-centred on cx/cy. projectM 3.1.12 -- the native
+ *      oracle the parity corpus is captured from -- binds `rad` and `ang`
+ *      READ-ONLY to origrad/origtheta (BuiltinParams.cpp:396-398), a mesh
+ *      built once at init from the fixed screen centre
+ *      (PresetFrameIO.cpp:97-98). butterchurn likewise reads cx/cy only in
+ *      the sampling transform further down the same loop. A `warpCenter`
+ *      uniform would encode a formula neither reference has.
+ *   2. aspect is applied to the FIRST power. Squaring it (which happens if
+ *      you take the aspect-corrected x/y and multiply by aspect again) is
+ *      not what either reference does.
+ *   3. ang's y term keeps the y-UP NDC sign -- the opposite sign from the
+ *      `y` variable, which is y-down.
+ *
+ * Known oracle gap, recorded rather than encoded: projectM 3.1.12 drops
+ * aspect from rad/ang entirely and normalises by 0.7071067 (1/sqrt2), so its
+ * rad is ~1/sqrt2 of MilkDrop's even at square aspect, and its `x`/`y` carry
+ * no aspect at all. On the default 1280x720 capture (aspecty = 0.5625) that
+ * is a large, irreducible difference for rad-heavy presets. Matching it would
+ * break MilkDrop fidelity and split WebGPU from WebGL, so it is not done here.
+ */
+function setPerPixelEnvGeometry(env: ShaderNodeEnv, screenUv: any) {
+  const aspectX = env.uniforms.aspect.x;
+  const aspectY = env.uniforms.aspect.y;
+  const ndcX = screenUv.x.sub(0.5).mul(2);
+  const ndcY = screenUv.y.sub(0.5).mul(2);
+  const aspectNdcX = ndcX.mul(aspectX);
+  const aspectNdcY = ndcY.mul(aspectY);
+  setShaderEnvValue(env, 'x', shaderFloat(ndcX.mul(0.5).mul(aspectX).add(0.5)));
+  setShaderEnvValue(
+    env,
+    'y',
+    shaderFloat(ndcY.mul(-0.5).mul(aspectY).add(0.5)),
+  );
+  setShaderEnvValue(
+    env,
+    'rad',
+    shaderFloat(length(vec2(aspectNdcX, aspectNdcY))),
+  );
+  setShaderEnvValue(env, 'ang', shaderFloat(atan(aspectNdcY, aspectNdcX)));
+}
+
 function applyDirectWarpProgram(
   program: MilkdropShaderProgramPayload | null,
   env: ShaderNodeEnv,
@@ -2309,8 +2375,7 @@ function createFeedbackBlendOutputNode(
       ...shaderEnv,
       values: new Map(shaderEnv.values),
     };
-    setShaderEnvValue(perPixelEnv, 'x', shaderFloat(baseUv.x));
-    setShaderEnvValue(perPixelEnv, 'y', shaderFloat(baseUv.y));
+    setPerPixelEnvGeometry(perPixelEnv, baseUv);
     if (perPixelPrograms) {
       runPerPixelProgram(perPixelPrograms.statements, perPixelEnv);
     }
