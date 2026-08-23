@@ -57,6 +57,11 @@ export type FlashSafetyOptions = {
 export type FlashSafetyController = {
   start: () => void;
   stop: () => void;
+  /**
+   * Pre-clamp for a preset the catalog already measured above the WCAG
+   * limit, so its first flashes are mitigated rather than merely counted.
+   */
+  prime: (hold: number) => void;
   /** Runs one observation. Exposed so tests need no animation frames. */
   tick: (nowMs: number) => FlashGovernorDecision | null;
   getState: () => FlashGovernorDecision;
@@ -150,6 +155,14 @@ export function createFlashSafetyController(
 
   return {
     start,
+    prime: (initialHold: number) => {
+      // Skipped while the preference is off, and NOT replayed if the user
+      // turns it on later in the same preset: priming is a head start, not a
+      // correctness requirement, and the reactive path reaches the same
+      // clamp within about a second of the first flash either way.
+      if (!isEnabled()) return;
+      governor.prime(initialHold);
+    },
     stop: () => {
       unsubscribe?.();
       stop();
