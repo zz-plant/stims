@@ -187,6 +187,25 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
   let rising: Float32Array | null = null;
   let falling: Float32Array | null = null;
 
+  /**
+   * Pre-applies a hold before any flash has been observed.
+   *
+   * The governor is reactive: it cannot suppress a flash it has not seen, so
+   * the first one or two of an abrupt strobe reach the viewer while the
+   * clamp is being solved. That is unavoidable when measurement is the only
+   * input — but it is not the only input available. The catalog has already
+   * measured most presets offline (sensory-profile.ts), so when a preset is
+   * known to flash, the runtime can start clamped instead of discovering it
+   * the hard way.
+   *
+   * A floor, not an override: a priming value never LOWERS an existing hold,
+   * and the solved step is still free to tighten past it.
+   */
+  function prime(initialHold: number) {
+    if (!Number.isFinite(initialHold) || initialHold <= 0) return;
+    hold = Math.max(hold, Math.min(holdCeiling, initialHold));
+  }
+
   function reset() {
     previous = null;
     previousCols = 0;
@@ -323,9 +342,38 @@ export function createFlashGovernor(options: FlashGovernorOptions = {}) {
 
   return {
     sample,
+    prime,
     reset,
     getState: () => decision(false),
   };
 }
 
 export type FlashGovernor = ReturnType<typeof createFlashGovernor>;
+
+/**
+ * How hard to pre-clamp a preset the catalog has already measured.
+ *
+ * Derived from the same arithmetic the solved step uses, rather than a table
+ * of taste: a swing of `maxDelta` needs scaling by
+ * `FLASH_LUMINANCE_DELTA * margin / maxDelta` to fall under the threshold,
+ * and the hold is the complement of that scale.
+ *
+ * Only presets measured ABOVE the WCAG limit are primed. A 'medium' preset
+ * sits under the limit by definition, so pre-dimming it would be a visible
+ * cost with no safety claim behind it — the reactive path is the right
+ * answer there, and the offline measurement is a coarse instrument besides.
+ */
+export function primingHoldForProfile(profile: {
+  flashRiskLevel?: string;
+  maxLuminanceDelta?: number;
+}): number {
+  if (profile.flashRiskLevel !== 'high') return 0;
+  const delta = profile.maxLuminanceDelta;
+  if (!Number.isFinite(delta) || (delta as number) <= FLASH_LUMINANCE_DELTA) {
+    // Measured as high-risk but without a usable swing figure: clamp gently
+    // rather than guessing hard, and let the solved step take over.
+    return 0.35;
+  }
+  const needed = (FLASH_LUMINANCE_DELTA * 0.8) / (delta as number);
+  return Math.min(0.9, Math.max(0, 1 - needed));
+}

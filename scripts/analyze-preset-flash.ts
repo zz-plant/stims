@@ -22,6 +22,14 @@
  *   bun run scripts/analyze-preset-flash.ts --ids=a,b,c
  *   bun run scripts/analyze-preset-flash.ts --beat-pulse    # with kick transients
  *   bun run scripts/analyze-preset-flash.ts --out=report.json
+ *   bun run scripts/analyze-preset-flash.ts --governor       # with/without
+ *
+ * `--governor` measures each preset TWICE from one render pass: the raw
+ * timeline, and the timeline as the runtime flash governor
+ * (src/js/core/services/flash-governor.ts) would have presented it. That is
+ * the only honest way to check the governor against real content -- its unit
+ * tests use synthetic full-field strobes, which have none of the texture,
+ * localized flicker, or motion that real presets do.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -62,6 +70,9 @@ interface PresetEntry {
 }
 
 export interface PresetFlashReport extends FlashAnalysis {
+  /** Peak flashes/s the runtime governor would have presented (--governor). */
+  governedPeakFlashesPerSecond?: number;
+  governedExceedsThreshold?: boolean;
   presetId: string;
   title: string;
   author: string;
@@ -69,6 +80,7 @@ export interface PresetFlashReport extends FlashAnalysis {
 }
 
 function parseArgs(argv: string[]) {
+  const governor = argv.includes('--governor');
   const get = (flag: string) =>
     argv
       .find((a) => a.startsWith(`--${flag}=`))
@@ -87,6 +99,7 @@ function parseArgs(argv: string[]) {
     port: Number(get('port') ?? DEFAULT_PORT),
     out: get('out') ?? DEFAULT_OUT,
     headless: !argv.includes('--no-headless'),
+    governor,
   };
 }
 
@@ -181,7 +194,7 @@ async function main() {
         );
 
         const captured = await page.evaluate(
-          ({
+          async ({
             frames,
             deltaMs,
             warmup,
@@ -189,6 +202,8 @@ async function main() {
             rows,
             beatPulse,
             SAMPLE_STRIDE,
+            useGovernor,
+            governorGrid,
           }) => {
             const step = window.__STIMS_AGENT_RENDER_FRAMES__;
             if (typeof step !== 'function') {
@@ -248,6 +263,39 @@ async function main() {
             // Warm up so feedback presets are measured at steady state.
             step({ frames: warmup, deltaMs, beatPulse });
 
+            // Governed track: the same frames as the viewer would have seen
+            // with the runtime governor engaged. Computed alongside the raw
+            // track from ONE render pass, so both are measured against
+            // identical pixels.
+            let governor: {
+              sample: (
+                t: number,
+                tiles: Float32Array,
+                c: number,
+                r: number,
+              ) => { luminanceScale: number };
+            } | null = null;
+            if (useGovernor) {
+              // Vite serves this from the dev server; the specifier is a URL
+              // rather than a path tsc can resolve, so it goes through a
+              // variable to keep the module graph out of the typecheck.
+              const governorModule = '/src/js/core/services/flash-governor.ts';
+              const mod = (await import(/* @vite-ignore */ governorModule)) as {
+                createFlashGovernor: () => typeof governor;
+                RECOMMENDED_GRID: number;
+              };
+              governor = mod.createFlashGovernor();
+              governorGrid = mod.RECOMMENDED_GRID;
+            }
+            const govTiles = new Float32Array(governorGrid * governorGrid);
+            const govTileAcc = new Float64Array(governorGrid * governorGrid);
+            const govTileCount = new Float64Array(governorGrid * governorGrid);
+            let govScale = 1;
+            let prevGovLum: Float64Array | null = null;
+            const curGovLum = new Float64Array(sampleCount);
+            const govRising: number[][] = [];
+            const govFalling: number[][] = [];
+
             let prevLum: Float64Array | null = null;
             const curLum = new Float64Array(sampleCount);
             // Red-flash channel per PEAT/Harding: value = max(0, R-G-B)*320
@@ -283,6 +331,48 @@ async function main() {
               }
               frameMeanLuminance.push(lumSum / sampleCount);
 
+              if (governor) {
+                // Reduce the sampled pixels to the governor's coarse grid,
+                // scaled by the mitigation already in force — the governor
+                // must observe what the viewer sees, not the raw frame, or
+                // it never registers its own effect.
+                govTileAcc.fill(0);
+                govTileCount.fill(0);
+                // Separate scales per axis: the audit grid is 32x18, not
+                // square, so reusing one factor left the bottom half of the
+                // governor's grid permanently zero and under-reported the
+                // flashing area.
+                const gx = governorGrid / cols;
+                const gy = governorGrid / rows;
+                for (let i = 0; i < sampleCount; i += 1) {
+                  const tile = sampleTile[i];
+                  const tx = Math.min(
+                    governorGrid - 1,
+                    Math.floor((tile % cols) * gx),
+                  );
+                  const ty = Math.min(
+                    governorGrid - 1,
+                    Math.floor(Math.floor(tile / cols) * gy),
+                  );
+                  const g = ty * governorGrid + tx;
+                  govTileAcc[g] += curLum[i] * govScale;
+                  govTileCount[g] += 1;
+                }
+                for (let g = 0; g < govTiles.length; g += 1) {
+                  govTiles[g] =
+                    govTileCount[g] > 0 ? govTileAcc[g] / govTileCount[g] : 0;
+                }
+                govScale = governor.sample(
+                  f * deltaMs,
+                  govTiles,
+                  governorGrid,
+                  governorGrid,
+                ).luminanceScale;
+                for (let i = 0; i < sampleCount; i += 1) {
+                  curGovLum[i] = curLum[i] * govScale;
+                }
+              }
+
               if (prevLum && prevRed && prevRedSat) {
                 // Magnitude is decided per pixel, against the full-scale
                 // WCAG threshold, BEFORE any spatial aggregation. Averaging
@@ -317,11 +407,34 @@ async function main() {
                     else redDown[sampleTile[i]] += 1;
                   }
                 }
+                if (governor && prevGovLum) {
+                  const gUp = new Array(tileCount).fill(0);
+                  const gDown = new Array(tileCount).fill(0);
+                  for (let i = 0; i < sampleCount; i += 1) {
+                    const before = prevGovLum[i];
+                    const after = curGovLum[i];
+                    if (
+                      Math.abs(after - before) >= 0.1 &&
+                      Math.min(before, after) < 0.8
+                    ) {
+                      if (after > before) gUp[sampleTile[i]] += 1;
+                      else gDown[sampleTile[i]] += 1;
+                    }
+                  }
+                  govRising.push(gUp);
+                  govFalling.push(gDown);
+                }
                 rising.push(up);
                 falling.push(down);
                 redRising.push(redUp);
                 redFalling.push(redDown);
                 frameMeanDelta.push(deltaSum / sampleCount);
+              }
+              if (governor) {
+                prevGovLum = prevGovLum
+                  ? prevGovLum
+                  : new Float64Array(sampleCount);
+                prevGovLum.set(curGovLum);
               }
               prevLum = prevLum ? prevLum : new Float64Array(sampleCount);
               prevLum.set(curLum);
@@ -338,6 +451,8 @@ async function main() {
               falling,
               redRising,
               redFalling,
+              govRising,
+              govFalling,
               tilePixels,
               frameMeanLuminance,
               frameMeanDelta,
@@ -351,6 +466,8 @@ async function main() {
             rows: TILE_ROWS,
             beatPulse: args.beatPulse,
             SAMPLE_STRIDE,
+            useGovernor: args.governor,
+            governorGrid: 16,
           },
         );
 
@@ -380,6 +497,8 @@ async function main() {
           falling: number[][];
           redRising: number[][];
           redFalling: number[][];
+          govRising: number[][];
+          govFalling: number[][];
           tilePixels: number;
           frameMeanLuminance: number[];
           frameMeanDelta: number[];
@@ -399,14 +518,40 @@ async function main() {
           frameMeanLuminance: cap.frameMeanLuminance,
           frameMeanDelta: cap.frameMeanDelta,
         });
+        // Same render pass, scored again as the governor would have shown
+        // it. Only the general-flash channel: the governor scales luminance,
+        // which is not a claim about the red-flash criterion.
+        const governed =
+          args.governor && cap.govRising.length > 0
+            ? analyzeFlashEvents({
+                rising: cap.govRising,
+                falling: cap.govFalling,
+                redRising: cap.redRising,
+                redFalling: cap.redFalling,
+                tilePixels: cap.tilePixels,
+                cols: TILE_COLS,
+                rows: TILE_ROWS,
+                deltaMs: DELTA_MS,
+                frameMeanLuminance: cap.frameMeanLuminance,
+                frameMeanDelta: cap.frameMeanDelta,
+              })
+            : null;
+
         reports.push({
           presetId: preset.id,
           title: preset.title ?? preset.id,
           author: preset.author ?? '',
           ...analysis,
+          ...(governed
+            ? {
+                governedPeakFlashesPerSecond: governed.peakFlashesPerSecond,
+                governedExceedsThreshold: governed.exceedsThreshold,
+              }
+            : {}),
         });
         console.log(
           `${label} — peak=${analysis.peakFlashesPerSecond}/s ` +
+            (governed ? `governed=${governed.peakFlashesPerSecond}/s ` : '') +
             `red=${analysis.peakRedFlashesPerSecond}/s ` +
             `motion=${analysis.motionEnergy.toFixed(4)} ` +
             `vol=${analysis.luminanceVolatility.toFixed(4)}` +

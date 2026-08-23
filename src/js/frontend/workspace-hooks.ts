@@ -5,6 +5,7 @@ import {
   useDeferredValue,
   useEffect,
   useEffectEvent,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -326,7 +327,18 @@ export function useWorkspaceSessionState({
   );
 
   useStageCanvasSync(stageRef);
-  useFlashSafety(stageRef);
+  // The catalog's offline flash measurement for whatever is on screen, so
+  // the governor can start clamped on a preset already known to strobe
+  // rather than discovering it a flash at a time.
+  const activeSensoryProfile = useMemo(
+    () =>
+      routeState.presetId
+        ? fallbackCatalog.find((entry) => entry.id === routeState.presetId)
+            ?.sensoryProfile
+        : undefined,
+    [fallbackCatalog, routeState.presetId],
+  );
+  useFlashSafety(stageRef, activeSensoryProfile);
 
   useEffect(() => {
     if (routeState.panel === 'browse') {
