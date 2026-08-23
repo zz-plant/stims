@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "100-square",
   "title": "100 Square",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260822004241",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260823171420",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
     "imageSha256": "2675936c46efe4926b53114a1e13be1958a47461aa4ac26c6c5875836b714610",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.meta.json",
-    "metadataSha256": "19e2895ab4825f7f5d1156cd5f1b0d325c0adfa836e6480f40a401b7361422f8"
+    "metadataSha256": "f354aff56a80814222f6832df3993a052bed7a53309338c74f0b84947e8f19bd"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,13 +25,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 147388,
-    "mismatchRatio": 0.15992621527777778,
-    "maxChannelDelta": 248,
-    "meanAbsoluteError": 0.010420770073075526,
-    "rmse": 0.04243849717074878,
+    "mismatchedPixels": 17427,
+    "mismatchRatio": 0.018909505208333333,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.005228522716957153,
+    "rmse": 0.05399564381133164,
     "exactMatch": false,
     "threshold": 16
   },
-  "status": "fail"
+  "noise": {
+    "noiseBand": {
+      "min": 0.01277560763888889,
+      "max": 0.017757161458333334,
+      "width": 0.004981553819444444,
+      "repeats": 10,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-22T17:53:29.410Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": null,
+    "mismatchDelta": null,
+    "noiseResolution": null,
+    "changeVerdict": "no-baseline"
+  },
+  "status": "pass"
 }

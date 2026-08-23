@@ -132,6 +132,7 @@ export function createMilkdropExperienceFrameLoop({
       waveformData: Uint8Array;
       target?: Partial<MilkdropRuntimeSignals>;
       relationshipLock?: boolean;
+      bandOverride?: { bass: number; mid: number; treble: number };
     }) => Partial<MilkdropRuntimeSignals>;
   };
   capturedVideoReactivityTracker: {
@@ -269,6 +270,7 @@ export function createMilkdropExperienceFrameLoop({
           waveformData: frame.waveformData,
           target: mergedSignals,
           relationshipLock: frame.relationshipLock,
+          bandOverride: frame.bandOverride,
         });
         mergedSignals.aspect =
           frame.toy.viewportWidth / Math.max(1, frame.toy.viewportHeight);

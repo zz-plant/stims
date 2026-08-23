@@ -265,6 +265,30 @@ async function validateNativeSource({
   return size;
 }
 
+/**
+ * The audio the capture was rendered against, read from its own sidecar.
+ *
+ * A reference and the capture it is diffed against have to hear the same
+ * thing, so this travels with the reference rather than being a flag someone
+ * remembers to pass.
+ */
+function readReferenceAudioFromSidecar(
+  metadataPath: string | null | undefined,
+): 'silence' | 'tones' {
+  if (!metadataPath || !fs.existsSync(metadataPath)) {
+    return 'silence';
+  }
+  try {
+    const sidecar = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) as {
+      capture?: { audio?: string };
+    };
+    const audio = sidecar.capture?.audio;
+    return audio === 'tones' || audio === 'beat' ? 'tones' : 'silence';
+  } catch {
+    return 'silence';
+  }
+}
+
 function buildFixturePaths({
   repoRoot,
   presetId,
@@ -401,6 +425,9 @@ export async function promoteProjectMReference(
         manifest.defaults.captureOffsetMs,
       warmupFrames:
         existingEntry?.capture.warmupFrames ?? manifest.defaults.warmupFrames,
+      // Recorded from the capture's own sidecar: the audio the reference was
+      // rendered against is the audio our capture has to feed back.
+      referenceAudio: readReferenceAudioFromSidecar(sourceMetadataPath),
     },
     provenance: {
       label:

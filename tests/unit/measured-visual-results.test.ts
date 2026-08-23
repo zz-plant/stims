@@ -53,6 +53,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
         height: 1,
         fps: 60,
         frameCount: 300,
+        audioMode: 'silence' as const,
         projectmVersion: '3.1.12',
         projectmPrefix: '/opt/homebrew/opt/projectm',
         libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
@@ -80,6 +81,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: 900,
+      referenceAudio: 'silence' as const,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -105,6 +107,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
           warmupMs: 5000,
           captureOffsetMs: 0,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'projectM fixture',

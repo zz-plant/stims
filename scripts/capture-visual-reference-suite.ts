@@ -90,6 +90,7 @@ type VisualReferenceCaptureRequest = Required<
     | 'catalogMode'
     | 'screenshotSurface'
     | 'deterministicFrames'
+    | 'referenceAudio'
   >
 >;
 
@@ -114,6 +115,9 @@ export function buildVisualReferenceCaptureRequests({
       port,
       duration: preset.capture.warmupMs + preset.capture.captureOffsetMs,
       deterministicFrames: preset.capture.warmupFrames,
+      // The reference records what projectM heard; the capture has to hear the
+      // same thing or the diff is comparing two different performances.
+      referenceAudio: preset.capture.referenceAudio,
       viewportWidth: preset.capture.width,
       viewportHeight: preset.capture.height,
       screenshot: true,
@@ -190,6 +194,7 @@ function runPlayToyInProcess(
     port: request.port,
     duration: request.duration,
     deterministicFrames: request.deterministicFrames,
+    referenceAudio: request.referenceAudio,
     // Pin the quality ladder, exactly as the child-process argv did. Adaptive
     // quality reacts to frame time, so a capture taken while the machine is
     // busy renders at a different scale than one taken idle.
@@ -232,6 +237,8 @@ function runPlayToyInChildProcess(
       // measured on the same preset.
       '--deterministic-frames',
       String(request.deterministicFrames),
+      '--reference-audio',
+      request.referenceAudio,
       // Pin the quality ladder. Adaptive quality reacts to frame time, so a
       // capture taken while the machine is busy — several presets captured
       // at once, say — renders at a different scale than one taken idle, and
