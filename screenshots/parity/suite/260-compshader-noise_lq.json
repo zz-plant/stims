@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "260-compshader-noise_lq",
   "title": "260 Compshader Noise LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260823173509",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260823183653",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
@@ -42,10 +42,10 @@
       "measuredAt": "2026-08-22T17:57:51.421Z",
       "contended": false
     },
-    "baselineMismatchRatio": null,
-    "mismatchDelta": null,
-    "noiseResolution": null,
-    "changeVerdict": "no-baseline"
+    "baselineMismatchRatio": 0.35458441840277777,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.00022786458333334814,
+    "changeVerdict": "no-measurable-change"
   },
   "status": "fail"
 }
