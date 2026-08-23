@@ -47,6 +47,10 @@ thumbnails/
 /screenshots/certification-perf/
 /screenshots/ui-diff/
 /screenshots/ui-diff-baseline/
+# lab:backend-diff writes a per-run report plus its scratch captures; the
+# captures are cleaned up with the temp dir and the report is a diagnostic,
+# not evidence worth keeping.
+/screenshots/backend-diff/
 
 # Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
 # Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
