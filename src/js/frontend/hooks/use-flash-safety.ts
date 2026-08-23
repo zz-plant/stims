@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import type { PresetSensoryProfile } from '../../core/sensory-profile.ts';
+import { primingHoldForProfile } from '../../core/services/flash-governor.ts';
 import {
   createFlashSafetyController,
   createStageLuminanceApplier,
@@ -14,8 +16,20 @@ import {
  *
  * Gated inside the controller on the `reduceFlashing` accessibility
  * preference, so this hook can stay mounted unconditionally.
+ *
+ * `activeProfile` is the catalog's offline measurement for the preset now on
+ * screen. It is what lets the governor start clamped on content already
+ * known to flash, instead of rediscovering it a flash at a time — the
+ * reactive path's one structural weakness.
  */
-export function useFlashSafety(stageRef: { current: HTMLDivElement | null }) {
+export function useFlashSafety(
+  stageRef: { current: HTMLDivElement | null },
+  activeProfile?: PresetSensoryProfile,
+) {
+  const controllerRef = useRef<ReturnType<
+    typeof createFlashSafetyController
+  > | null>(null);
+
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage || typeof requestAnimationFrame !== 'function') {
@@ -40,6 +54,7 @@ export function useFlashSafety(stageRef: { current: HTMLDivElement | null }) {
         canvas,
         applyLuminanceScale: createStageLuminanceApplier(stage),
       });
+      controllerRef.current = controller;
       controller.start();
     };
 
@@ -54,6 +69,18 @@ export function useFlashSafety(stageRef: { current: HTMLDivElement | null }) {
     return () => {
       observer?.disconnect();
       controller?.stop();
+      controllerRef.current = null;
     };
   }, [stageRef]);
+
+  // Separate effect: the preset changes far more often than the canvas does,
+  // and rebuilding the controller on every switch would throw away the
+  // window the governor is mid-way through measuring.
+  useEffect(() => {
+    if (!activeProfile) return;
+    const hold = primingHoldForProfile(activeProfile);
+    if (hold > 0) {
+      controllerRef.current?.prime(hold);
+    }
+  }, [activeProfile]);
 }

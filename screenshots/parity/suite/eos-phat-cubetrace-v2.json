@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-phat-cubetrace-v2",
   "title": "Eo.S. + Phat - Cubetrace v2",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260823173522",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260823183758",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 626117,
-    "mismatchRatio": 0.6793804253472222,
-    "maxChannelDelta": 215,
-    "meanAbsoluteError": 0.27455908593182643,
-    "rmse": 0.3690920515108805,
+    "mismatchedPixels": 604492,
+    "mismatchRatio": 0.6559157986111112,
+    "maxChannelDelta": 213,
+    "meanAbsoluteError": 0.27948257506127455,
+    "rmse": 0.3783109659808573,
     "exactMatch": false,
     "threshold": 32
   },
@@ -43,10 +43,10 @@
       "measuredAt": "2026-08-22T18:07:34.136Z",
       "contended": false
     },
-    "baselineMismatchRatio": null,
-    "mismatchDelta": null,
-    "noiseResolution": null,
-    "changeVerdict": "no-baseline"
+    "baselineMismatchRatio": 0.631796875,
+    "mismatchDelta": 0.02411892361111112,
+    "noiseResolution": 0.11897026909722219,
+    "changeVerdict": "no-measurable-change"
   },
   "status": "fail"
 }

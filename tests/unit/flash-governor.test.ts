@@ -17,6 +17,7 @@ import { analyzeFlashTimeline } from '../../scripts/flash-analysis.ts';
 import {
   createFlashGovernor,
   MIN_USEFUL_GRID,
+  primingHoldForProfile,
   RECOMMENDED_GRID,
 } from '../../src/js/core/services/flash-governor.ts';
 
@@ -308,5 +309,79 @@ describe('flash governor', () => {
     governor.reset();
     expect(governor.getState().hold).toBe(0);
     expect(governor.getState().flashesInWindow).toBe(0);
+  });
+
+  test('priming suppresses the flashes a cold start would let through', () => {
+    // The reactive path's one structural weakness: it cannot clamp a flash
+    // it has not seen. If the catalog already measured this preset above the
+    // limit, starting clamped should remove those opening flashes.
+    const run = (prime: number) => {
+      const governor = createFlashGovernor();
+      if (prime > 0) governor.prime(prime);
+      let scale = 1 - prime;
+      let flashes = 0;
+      for (let i = 0; i < 120; i += 1) {
+        const raw = Math.floor(i / 3) % 2 === 1 ? 1 : 0;
+        const decision = governor.sample(
+          i * FRAME_MS,
+          uniformFrame(raw * scale),
+          COLS,
+          ROWS,
+        );
+        scale = decision.luminanceScale;
+        if (decision.flashed) flashes += 1;
+      }
+      return flashes;
+    };
+    const cold = run(0);
+    const primed = run(0.9);
+    expect(cold).toBeGreaterThan(0);
+    expect(primed).toBeLessThan(cold);
+  });
+
+  test('priming is a floor, never a reduction', () => {
+    const governor = createFlashGovernor();
+    for (const [index, frame] of strobeTimeline(120, 3).entries()) {
+      governor.sample(index * FRAME_MS, frame, COLS, ROWS);
+    }
+    const engaged = governor.getState().hold;
+    expect(engaged).toBeGreaterThan(0.1);
+    governor.prime(0.05);
+    expect(governor.getState().hold).toBe(engaged);
+  });
+
+  test('only measured-high presets are primed', () => {
+    // A 'medium' preset is under the WCAG limit by definition, so pre-dimming
+    // it would be a visible cost with no safety claim behind it.
+    expect(
+      primingHoldForProfile({
+        flashRiskLevel: 'medium',
+        maxLuminanceDelta: 0.9,
+      }),
+    ).toBe(0);
+    expect(
+      primingHoldForProfile({ flashRiskLevel: 'none', maxLuminanceDelta: 0.9 }),
+    ).toBe(0);
+    expect(primingHoldForProfile({ flashRiskLevel: 'unknown' })).toBe(0);
+  });
+
+  test('priming strength follows the measured swing', () => {
+    const violent = primingHoldForProfile({
+      flashRiskLevel: 'high',
+      maxLuminanceDelta: 0.9,
+    });
+    const gentler = primingHoldForProfile({
+      flashRiskLevel: 'high',
+      maxLuminanceDelta: 0.25,
+    });
+    expect(violent).toBeGreaterThan(gentler);
+    expect(violent).toBeLessThanOrEqual(0.9);
+    expect(gentler).toBeGreaterThan(0);
+  });
+
+  test('a high-risk preset with no usable swing figure still primes gently', () => {
+    const hold = primingHoldForProfile({ flashRiskLevel: 'high' });
+    expect(hold).toBeGreaterThan(0);
+    expect(hold).toBeLessThan(0.5);
   });
 });
