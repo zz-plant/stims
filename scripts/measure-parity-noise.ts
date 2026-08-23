@@ -44,10 +44,11 @@ type MeasureParityNoiseOptions = {
 
 export type NoiseSample = {
   repeat: number;
-  mismatchRatio: number;
+  /** Null when the run produced no frame at all — see measureOneCapture. */
+  mismatchRatio: number | null;
   backend: 'webgl' | 'webgpu' | null;
-  imagePath: string;
-  /** Non-null when the capture reported console errors but still produced a frame. */
+  imagePath: string | null;
+  /** Non-null when the capture errored or produced nothing. */
   captureError: string | null;
 };
 
@@ -132,10 +133,22 @@ async function measureOneCapture({
   );
   const artifact = artifacts[artifacts.length - 1];
   if (!artifact?.files.image) {
-    throw new Error(
-      `Capture ${repeat} for "${presetId}" produced no image artifact in ${runDir}.` +
-        (captureError ? ` Capture reported: ${captureError}` : ''),
-    );
+    // A capture that produced nothing is a measurement, not a crash. Presets
+    // exist that intermittently render a completely black frame — the
+    // blank-frame guard refuses to record those, and aborting here threw away
+    // the run instead of reporting it. eos-glowsticks-v2-03-music does this
+    // often enough that its band could never be measured, while the runs that
+    // did land scored 3.01/3.65/5.48% against a 5.00% fail threshold: the
+    // instability straddles the verdict, which is precisely what a noise band
+    // is for.
+    return {
+      repeat,
+      mismatchRatio: null,
+      backend: null,
+      imagePath: null,
+      captureError:
+        captureError ?? `no image artifact was written in ${runDir}`,
+    };
   }
   const imagePath = path.isAbsolute(artifact.files.image)
     ? artifact.files.image
@@ -190,12 +203,23 @@ export async function measureParityNoise(options: MeasureParityNoiseOptions) {
       });
       samples.push(sample);
       console.error(
-        `[noise] ${preset.id} run ${repeat}/${options.repeats}: ${(
-          sample.mismatchRatio * 100
-        ).toFixed(3)}% (${sample.backend ?? 'unknown backend'})`,
+        sample.mismatchRatio === null
+          ? `[noise] ${preset.id} run ${repeat}/${options.repeats}: NO FRAME (${sample.captureError})`
+          : `[noise] ${preset.id} run ${repeat}/${options.repeats}: ${(
+              sample.mismatchRatio * 100
+            ).toFixed(3)}% (${sample.backend ?? 'unknown backend'})`,
       );
     }
-    const ratios = samples.map((sample) => sample.mismatchRatio);
+    const ratios = samples
+      .map((sample) => sample.mismatchRatio)
+      .filter((ratio): ratio is number => ratio !== null);
+    const blankRuns = samples.length - ratios.length;
+    if (ratios.length === 0) {
+      throw new Error(
+        `Every capture of "${preset.id}" failed to produce a frame; there is ` +
+          `nothing to band. Last error: ${samples[samples.length - 1]?.captureError}`,
+      );
+    }
     const stats = summarizeNoiseSamples(ratios);
     bands.push({
       presetId: preset.id,
@@ -204,14 +228,20 @@ export async function measureParityNoise(options: MeasureParityNoiseOptions) {
       threshold: preset.tolerance.threshold,
       warmupFrames: preset.capture.warmupFrames,
       samples: ratios,
+      ...(blankRuns > 0 ? { blankRuns } : {}),
       ...stats,
       contended: options.concurrency > 1,
       measuredAt: new Date().toISOString(),
       ...(samples.some((sample) => sample.captureError)
         ? {
-            note: `Capture reported console errors on ${
-              samples.filter((sample) => sample.captureError).length
-            }/${samples.length} runs; the band describes an erroring capture.`,
+            note:
+              blankRuns > 0
+                ? `${blankRuns}/${samples.length} runs produced NO frame at all ` +
+                  `(the blank-frame guard refused them); the band describes ` +
+                  `only the runs that rendered something.`
+                : `Capture reported console errors on ${
+                    samples.filter((sample) => sample.captureError).length
+                  }/${samples.length} runs; the band describes an erroring capture.`,
           }
         : {}),
     });
