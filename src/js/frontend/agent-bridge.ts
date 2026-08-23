@@ -121,6 +121,8 @@ declare global {
       };
       /** Pump digital silence instead of the decorative synthetic signal. */
       silentAudio?: boolean;
+      /** Pump the signal the projectM parity references were rendered against. */
+      referenceAudio?: 'silence' | 'tones';
       relationshipLock?: boolean;
     }) => { rendered: number } | null;
   }

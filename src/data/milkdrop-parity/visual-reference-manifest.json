@@ -35,11 +35,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 5000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
-        "label": "native projectM 3.1.12 deterministic capture",
-        "importedAt": "2026-07-16T23:20:05.162Z",
+        "label": "existing repo artifact",
+        "importedAt": "2026-08-23T17:11:55.907Z",
         "sourceArtifactId": null
       }
     },
@@ -61,11 +63,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 5000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "tones",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:33:40.755Z",
+        "importedAt": "2026-08-23T17:14:08.483Z",
         "sourceArtifactId": null
       }
     },
@@ -87,11 +91,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 5000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:33:40.909Z",
+        "importedAt": "2026-08-23T17:11:56.200Z",
         "sourceArtifactId": null
       }
     },
@@ -113,11 +119,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 5000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:47:58.911Z",
+        "importedAt": "2026-08-23T17:11:56.321Z",
         "sourceArtifactId": null
       }
     },
@@ -139,11 +147,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 5000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "tones",
+        "warmupFrames": 900
       },
       "provenance": {
-        "label": "native projectM 3.1.12 deterministic capture",
-        "importedAt": "2026-07-16T23:19:37.309Z",
+        "label": "existing repo artifact",
+        "importedAt": "2026-08-23T17:14:08.606Z",
         "sourceArtifactId": null
       }
     },
@@ -165,7 +175,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -191,7 +203,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -217,7 +231,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -243,7 +259,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -269,7 +287,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -295,7 +315,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -321,7 +343,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -347,7 +371,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -373,11 +399,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "tones",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:31:48.773Z",
+        "importedAt": "2026-08-23T17:14:08.725Z",
         "sourceArtifactId": null
       }
     },
@@ -399,7 +427,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -425,7 +455,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -451,7 +483,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -477,11 +511,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:31:58.712Z",
+        "importedAt": "2026-08-23T17:11:56.670Z",
         "sourceArtifactId": null
       }
     },
@@ -503,7 +539,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -529,7 +567,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -555,7 +595,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -581,7 +623,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -607,7 +651,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -633,7 +679,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -659,7 +707,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -685,7 +735,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -711,7 +763,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -737,7 +791,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -763,7 +819,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -789,11 +847,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "warmupFrames": 900,
+        "referenceAudio": "tones"
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:31:58.857Z",
+        "importedAt": "2026-08-23T17:14:08.848Z",
         "sourceArtifactId": null
       }
     },
@@ -815,7 +875,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -841,7 +903,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -867,7 +931,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -893,7 +959,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -919,7 +987,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -945,7 +1015,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -971,7 +1043,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -997,7 +1071,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1023,7 +1099,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1049,7 +1127,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1075,7 +1155,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1101,7 +1183,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1127,11 +1211,13 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-07-19T03:31:58.560Z",
+        "importedAt": "2026-08-23T17:11:56.913Z",
         "sourceArtifactId": null
       }
     },
@@ -1153,7 +1239,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1179,7 +1267,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1205,7 +1295,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1231,7 +1323,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",
@@ -1257,7 +1351,9 @@
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
-        "captureOffsetMs": 0
+        "captureOffsetMs": 0,
+        "referenceAudio": "silence",
+        "warmupFrames": 900
       },
       "provenance": {
         "label": "checked-in Stims reference capture",

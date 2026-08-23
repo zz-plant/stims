@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "261-compshader-noisevol_lq",
   "title": "261 Compshader Noisevol LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260822004435",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260823171430",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
-    "imageSha256": "51b0a8ee993a601e6cf6a9350755541ed0230a110c2b4af5b000f541ddfc5cd2",
+    "imageSha256": "d579fffeb9c78f2758dc198d7c7468b10e43bf12c3429dcab633278623abfdad",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.meta.json",
-    "metadataSha256": "5175113f353d9f68e890f7ce3e9d6261573fb480fca2a8509280554ebe10f8fe"
+    "metadataSha256": "e3f5658cb7bdd1485fe83f70b7cd7539a18dd044ff0141588a56c16546593acf"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -24,13 +24,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 777761,
-    "mismatchRatio": 0.8439246961805555,
-    "maxChannelDelta": 179,
-    "meanAbsoluteError": 0.20660842751452432,
-    "rmse": 0.24567161852339817,
+    "mismatchedPixels": 695051,
+    "mismatchRatio": 0.7541786024305556,
+    "maxChannelDelta": 209,
+    "meanAbsoluteError": 0.1690173611111111,
+    "rmse": 0.21375395947595072,
     "exactMatch": false,
     "threshold": 16
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.7969314236111111,
+      "max": 0.8906174045138889,
+      "width": 0.0936859809027778,
+      "repeats": 10,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-22T18:00:08.255Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": null,
+    "mismatchDelta": null,
+    "noiseResolution": null,
+    "changeVerdict": "no-baseline"
   },
   "status": "fail"
 }

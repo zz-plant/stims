@@ -9,9 +9,21 @@ import {
 } from './performance-panel';
 import { getPowerSavingFrameCapHz } from './power-state';
 import {
+  fillReferenceAudioWaveform,
+  REFERENCE_AUDIO_STEADY_BAND,
+} from './testing/reference-audio.ts';
+import {
   generateStimulusFrame,
   type StimulusSpec,
 } from './testing/synthetic-stimulus.ts';
+
+/** projectM's converged bands for the reference tone signal. */
+const REFERENCE_AUDIO_BANDS = {
+  bass: REFERENCE_AUDIO_STEADY_BAND,
+  mid: REFERENCE_AUDIO_STEADY_BAND,
+  treble: REFERENCE_AUDIO_STEADY_BAND,
+} as const;
+
 import {
   resolveToyAudioOptions,
   startToyAudio,
@@ -60,6 +72,15 @@ export type ToyRuntimeFrame = {
    * `renderFrames({ startTime })` sets it; a live session never does.
    */
   resetHistory?: boolean;
+  /**
+   * Capture-only: replace the analyser-derived MilkDrop bands for this frame.
+   *
+   * The parity harness pins these to projectM's converged values for the
+   * reference signal, so the two renderers run the preset equations on
+   * identical audio instead of on two different normalisations of it. A live
+   * session never sets it.
+   */
+  bandOverride?: { bass: number; mid: number; treble: number };
 };
 
 export type ToyRuntimePlugin = {
@@ -179,6 +200,15 @@ export type ToyRuntimeInstance = ToyInstance & {
      * Ignored when `stimulus` is set — that already replaces the signal.
      */
     silentAudio?: boolean;
+    /**
+     * Drive the pump with the exact signal the projectM parity references were
+     * rendered against (`core/testing/reference-audio.ts`), and pin the
+     * preset-facing bands to that signal's analytic steady state so both
+     * renderers see identical audio. `silence` is the older behaviour: digital
+     * silence, which is what the references used before the harness grew an
+     * audio mode.
+     */
+    referenceAudio?: 'silence' | 'tones';
     /**
      * Pin the preset-facing `time` and `frame` signals at their first-locked
      * values while the internal audio-analysis clock keeps running — the
@@ -609,7 +639,9 @@ export function createToyRuntime({
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
-      const silentAudio = options?.silentAudio ?? false;
+      const referenceAudio = options?.referenceAudio;
+      const silentAudio =
+        (options?.silentAudio ?? false) || referenceAudio === 'silence';
       const relationshipLock = options?.relationshipLock ?? false;
       if (silentAudio && !stimulus) {
         previewFrequencyData.fill(0);
@@ -650,6 +682,13 @@ export function createToyRuntime({
               previewFrequencyData.length,
             ),
           );
+        } else if (referenceAudio === 'tones') {
+          // The bands are pinned below rather than derived: our analyser
+          // normalises a steady signal to 1.0 where projectM's converges to
+          // 2/3, so deriving them would put the two renderers on different
+          // audio while claiming to compare renders.
+          fillReferenceAudioWaveform(previewWaveformData, i);
+          frameState.bandOverride = REFERENCE_AUDIO_BANDS;
         } else if (!silentAudio) {
           updatePreviewFrequencyData(frameState.time);
           if (beatPulse) {

@@ -244,6 +244,7 @@ export function createMilkdropSignalTracker(options?: {
       waveformDataR,
       target,
       relationshipLock,
+      bandOverride,
     }: {
       time: number;
       deltaMs: number;
@@ -254,6 +255,8 @@ export function createMilkdropSignalTracker(options?: {
       frequencyDataR?: Uint8Array | null;
       waveformDataL?: Uint8Array | null;
       waveformDataR?: Uint8Array | null;
+      /** Capture-only band pin; see ToyRuntimeFrameState.bandOverride. */
+      bandOverride?: { bass: number; mid: number; treble: number };
       target?: Partial<MilkdropRuntimeSignals>;
       relationshipLock?: boolean;
     }): MilkdropRuntimeSignals {
@@ -285,13 +288,15 @@ export function createMilkdropSignalTracker(options?: {
         frequencyData,
         deltaMs,
       });
-      const {
-        bands,
-        relativeBands,
-        relativeAttenuatedBands,
-        rawWeightedEnergy,
-        weightedEnergy,
-      } = processedSignals;
+      const { bands, rawWeightedEnergy, weightedEnergy } = processedSignals;
+      // A capture can pin the preset-facing bands. Our analyser and
+      // projectM's beat detector normalise the same signal differently — a
+      // steady tone converges to 1.0 here and to 2/3 there — so a parity
+      // capture supplies projectM's value rather than letting the two drift
+      // apart while claiming to compare renders.
+      const relativeBands = bandOverride ?? processedSignals.relativeBands;
+      const relativeAttenuatedBands =
+        bandOverride ?? processedSignals.relativeAttenuatedBands;
 
       // Meyda performs a full FFT over the time-domain buffer. Sampling it
       // every fourth frame keeps the small spectral energy boost responsive

@@ -30,6 +30,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: 900,
+      referenceAudio: 'silence' as const,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -54,6 +55,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           warmupMs: 5000,
           captureOffsetMs: 250,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -79,6 +81,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           warmupMs: 2000,
           captureOffsetMs: 1000,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -104,6 +107,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       port: 4173,
       duration: 5250,
       deterministicFrames: 900,
+      referenceAudio: 'silence',
       viewportWidth: 2550,
       viewportHeight: 1794,
       screenshot: true,
@@ -122,6 +126,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       port: 4173,
       duration: 3000,
       deterministicFrames: 900,
+      referenceAudio: 'silence',
       viewportWidth: 640,
       viewportHeight: 360,
       screenshot: true,
@@ -155,6 +160,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: 900,
+      referenceAudio: 'silence' as const,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -179,6 +185,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           warmupMs: 5000,
           captureOffsetMs: 0,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -204,6 +211,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           warmupMs: 5000,
           captureOffsetMs: 0,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',

@@ -40,6 +40,15 @@ export type VisualReferencePresetEntry = {
      * WebGL one.
      */
     warmupFrames: number;
+    /**
+     * Audio the reference was rendered against, and the audio our own capture
+     * must feed to match it. Recorded per preset because the right answer is
+     * per preset: `tones` is the only signal that gives an audio-reactive
+     * preset a reference with any signal in it, but for a preset that ignores
+     * audio (the noise pair) or one that renders brighter under silence
+     * (cubetrace) it buys nothing. See core/testing/reference-audio.ts.
+     */
+    referenceAudio: 'silence' | 'tones';
   };
   provenance: {
     label: string;
@@ -70,6 +79,7 @@ export type VisualReferenceManifest = {
     warmupMs: number;
     captureOffsetMs: number;
     warmupFrames: number;
+    referenceAudio: 'silence' | 'tones';
     toleranceProfile: MilkdropParityToleranceProfile;
     threshold: number;
     failThreshold: number;
@@ -92,6 +102,7 @@ export function createDefaultVisualReferenceManifest(): VisualReferenceManifest 
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: DEFAULT_WARMUP_FRAMES,
+      referenceAudio: 'silence',
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -159,6 +170,10 @@ export function loadVisualReferenceManifest(
                 normalizedPreset.capture?.captureOffsetMs ??
                 parsed.defaults?.captureOffsetMs ??
                 0,
+              referenceAudio:
+                normalizedPreset.capture?.referenceAudio ??
+                parsed.defaults?.referenceAudio ??
+                'silence',
               warmupFrames:
                 normalizedPreset.capture?.warmupFrames ??
                 parsed.defaults?.warmupFrames ??

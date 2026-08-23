@@ -108,6 +108,13 @@ export type PlayToyOptions = {
    * the all-zero PCM the projectM parity references were rendered against.
    */
   silentAudio?: boolean;
+  /**
+   * Feed the capture the exact signal the projectM references were rendered
+   * against, with the preset-facing bands pinned to that signal's analytic
+   * steady state. `--audio` still controls whether a real audio graph runs;
+   * this only affects the deterministic frame pump.
+   */
+  referenceAudio?: 'silence' | 'tones';
   viewportWidth?: number;
   viewportHeight?: number;
   screenshot?: boolean;
@@ -1270,6 +1277,7 @@ async function pumpDeterministicFrames(
   page: Page,
   frames: number,
   silentAudio: boolean,
+  referenceAudio: 'silence' | 'tones' | null,
 ): Promise<number | null> {
   let rendered = 0;
   for (let remaining = frames; remaining > 0; ) {
@@ -1280,10 +1288,12 @@ async function pumpDeterministicFrames(
           count,
           reset,
           silent,
+          reference,
         }: {
           count: number;
           reset: boolean;
           silent: boolean;
+          reference: 'silence' | 'tones' | null;
         }) => {
           const hook = (
             window as unknown as {
@@ -1292,6 +1302,7 @@ async function pumpDeterministicFrames(
                 deltaMs?: number;
                 startTime?: number;
                 silentAudio?: boolean;
+                referenceAudio?: 'silence' | 'tones';
               }) => { rendered: number } | null;
             }
           ).__STIMS_AGENT_RENDER_FRAMES__;
@@ -1320,6 +1331,7 @@ async function pumpDeterministicFrames(
             frames: count,
             deltaMs: 1000 / 60,
             ...(silent ? { silentAudio: true } : {}),
+            ...(reference ? { referenceAudio: reference } : {}),
             ...(reset ? { startTime: 0 } : {}),
           });
         },
@@ -1327,6 +1339,7 @@ async function pumpDeterministicFrames(
           count: chunk,
           reset: rendered === 0,
           silent: silentAudio,
+          reference: referenceAudio,
           offset: rendered,
           total: frames,
         },
@@ -1943,6 +1956,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
             page,
             DETERMINISTIC_FRAME_CHUNK,
             normalizedOptions.silentAudio,
+            normalizedOptions.referenceAudio ?? null,
           );
           if (extra === null) break;
           settleFrames += extra;
@@ -1955,6 +1969,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         page,
         normalizedOptions.deterministicFrames,
         normalizedOptions.silentAudio,
+        normalizedOptions.referenceAudio ?? null,
       );
       if (pumpedFrames !== null) {
         console.log(
@@ -2205,6 +2220,18 @@ if (import.meta.main) {
   const duration = getArg('--duration', 3000) as number;
   const deterministicFrames = getArg('--deterministic-frames', 0) as number;
   const silentAudio = args.includes('--silent-audio');
+  const referenceAudioRaw = getArg('--reference-audio', '') as string;
+  if (
+    referenceAudioRaw &&
+    referenceAudioRaw !== 'silence' &&
+    referenceAudioRaw !== 'tones'
+  ) {
+    console.error('--reference-audio must be "silence" or "tones".');
+    process.exit(2);
+  }
+  const referenceAudio = referenceAudioRaw
+    ? (referenceAudioRaw as 'silence' | 'tones')
+    : undefined;
   const viewportWidth = getArg('--width', 1280) as number;
   const viewportHeight = getArg('--height', 720) as number;
   const presetId = getArg('--preset', '') as string;
@@ -2242,6 +2269,7 @@ if (import.meta.main) {
       deterministicFrames:
         deterministicFrames > 0 ? deterministicFrames : undefined,
       silentAudio,
+      referenceAudio,
       lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
       randomSeed: Number.isFinite(randomSeed) ? randomSeed : undefined,
       viewportWidth,

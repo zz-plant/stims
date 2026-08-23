@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "250-wavecode",
   "title": "250 Wavecode",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260822004254",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260823171423",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
-    "imageSha256": "5d21aa15c6bc362c304e6c91d1ba3e424a34f4ad1010de3d2fceb38f91ba4af8",
+    "imageSha256": "26e6622c40e72d986f732974e62493d97dc78c10372a25806c07cf5456f77818",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.meta.json",
-    "metadataSha256": "559631f28e2a2e23388270d7dd41481f193c56080b19e2e167e3bb018e799658"
+    "metadataSha256": "1fb4e792fac50495cf4af6f1bc0fc8cee0e5df15bfe6f5f5cab3045d9ccb9c5a"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -24,13 +24,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 4620,
-    "mismatchRatio": 0.005013020833333334,
-    "maxChannelDelta": 253,
-    "meanAbsoluteError": 0.0018743092433732753,
-    "rmse": 0.03104552185372482,
+    "mismatchedPixels": 68816,
+    "mismatchRatio": 0.07467013888888889,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.028844090413943355,
+    "rmse": 0.13927738421688132,
     "exactMatch": false,
     "threshold": 16
   },
-  "status": "pass"
+  "noise": {
+    "noiseBand": {
+      "min": 0.0047634548611111115,
+      "max": 0.018782552083333334,
+      "width": 0.014019097222222223,
+      "repeats": 10,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-22T17:55:34.110Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": null,
+    "mismatchDelta": null,
+    "noiseResolution": null,
+    "changeVerdict": "no-baseline"
+  },
+  "status": "fail"
 }
