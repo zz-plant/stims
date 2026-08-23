@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260823171450",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260823173528",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
-    "imageSha256": "4144b2f6574452015b63454022e93b642c29c588fb7e4dd4c0c2827b4e93b750",
+    "imageSha256": "9f7f71675a73e8c0493a87d60e9cccdecf6e98866ac0c9a4e3c6dfb3c60b8198",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.meta.json",
-    "metadataSha256": "c27b716488c146b62417bb379d0bbd1118687451b90f683eab8f5d1b242cab07"
+    "metadataSha256": "35982196fbaaa2ed12ebdb4158da2dbec2c55c7f60b8805391bce633d24e993b"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 706628,
-    "mismatchRatio": 0.7667404513888889,
+    "mismatchedPixels": 770738,
+    "mismatchRatio": 0.8363042534722223,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.1595896253177197,
-    "rmse": 0.23285904104231023,
+    "meanAbsoluteError": 0.17386908814451704,
+    "rmse": 0.24908775894906063,
     "exactMatch": false,
     "threshold": 32
   },

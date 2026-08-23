@@ -182,31 +182,21 @@ export type ToyRuntimeInstance = ToyInstance & {
       totalFrames?: number;
     };
     /**
-     * Drive the pump with digital silence: every frequency bin 0 and every
-     * waveform sample at the 128 centre line.
+     * Drive the pump with the audio a projectM parity reference was rendered
+     * against, instead of the decorative synthetic signal.
      *
-     * The default synthetic signal is a decorative sine spectrum in the range
-     * 12..232, which reads as loud music — a capture taken with it reported
-     * bass 0.60 / mid 0.39 / treb 0.32. That is fine for warming a preset up,
-     * but it is not what the projectM parity references were rendered
-     * against: their harness feeds `addPCMfloat_2ch` an all-zero buffer, and
-     * projectM's own beat detector divides by `fmax(0.0001, ...)` so silence
-     * lands on bass = mid = treb = 0. Comparing our synthetic-audio render to
-     * their silent one is the largest single difference in the parity suite.
+     * `tones` feeds the exact samples the C++ harness feeds projectM
+     * (`core/testing/reference-audio.ts`) and pins the preset-facing bands to
+     * that signal's analytic steady state, so both renderers see identical
+     * audio. `silence` is digital silence: every frequency bin 0 and every
+     * waveform sample at the 128 centre line — note the centre, since zeroing
+     * the waveform buffer reads as a full-negative DC offset, not silence.
      *
-     * Note the waveform centre: zeroing the waveform buffer would read as a
-     * full-negative DC offset, not silence.
-     *
-     * Ignored when `stimulus` is set — that already replaces the signal.
-     */
-    silentAudio?: boolean;
-    /**
-     * Drive the pump with the exact signal the projectM parity references were
-     * rendered against (`core/testing/reference-audio.ts`), and pin the
-     * preset-facing bands to that signal's analytic steady state so both
-     * renderers see identical audio. `silence` is the older behaviour: digital
-     * silence, which is what the references used before the harness grew an
-     * audio mode.
+     * Silence is not a neutral input. The default synthetic signal is a sine
+     * spectrum in the range 12..232 that reads as loud music (measured on a
+     * capture: bass 0.60 / mid 0.39 / treb 0.32), while projectM's beat
+     * detector divides by `fmax(0.0001, ...)` and lands silence on
+     * bass = mid = treb = 0. Pick the one the reference used.
      */
     referenceAudio?: 'silence' | 'tones';
     /**
@@ -640,8 +630,7 @@ export function createToyRuntime({
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
       const referenceAudio = options?.referenceAudio;
-      const silentAudio =
-        (options?.silentAudio ?? false) || referenceAudio === 'silence';
+      const silentAudio = referenceAudio === 'silence';
       const relationshipLock = options?.relationshipLock ?? false;
       if (silentAudio && !stimulus) {
         previewFrequencyData.fill(0);

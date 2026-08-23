@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "300-beatdetect-bassmidtreb",
   "title": "300 Beatdetect Bassmidtreb",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260823171433",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260823173515",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
     "imageSha256": "b963441879b56fbaa5b109a98fd025526649722aaded1fc7a28e4dd1a669a232",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.meta.json",
-    "metadataSha256": "c1fa8cfc483eb5de2f1a986a0add5dcc98e4b9848812b4b7ee172c4368dc2052"
+    "metadataSha256": "2669654ffcd14df4bee6914e0db66e44f7354434359fb6b378be31ddfc46bebc"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 54690,
-    "mismatchRatio": 0.059342447916666666,
+    "mismatchedPixels": 54705,
+    "mismatchRatio": 0.05935872395833333,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.00715938890023602,
-    "rmse": 0.049425442466438166,
+    "meanAbsoluteError": 0.00716349088825345,
+    "rmse": 0.049465659010351166,
     "exactMatch": false,
     "threshold": 16
   },

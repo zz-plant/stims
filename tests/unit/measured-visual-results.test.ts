@@ -8,7 +8,10 @@ import {
   saveMeasuredVisualResultsManifest,
   validateMeasuredVisualResultsManifest,
 } from '../../scripts/measured-visual-results.ts';
-import { buildNativeProjectMReferenceMetadata } from '../../scripts/native-projectm-reference.ts';
+import {
+  buildNativeProjectMReferenceMetadata,
+  hashNativeProjectMHarness,
+} from '../../scripts/native-projectm-reference.ts';
 import { hashFileSha256 } from '../../scripts/parity-artifacts.ts';
 import {
   fidelityClassFromSuiteReport,
@@ -40,6 +43,11 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
   fs.mkdirSync(path.dirname(harnessPath), { recursive: true });
   fs.writeFileSync(presetPath, `[preset00]\nname=${presetId}\n`);
   fs.writeFileSync(harnessPath, '// native projectM harness\n');
+  // The harness hash covers the generated audio header too.
+  fs.writeFileSync(
+    path.join(repoRoot, 'scripts/reference-audio-signal.h'),
+    '// generated reference audio\n',
+  );
   fs.writeFileSync(imagePath, 'fixture-image');
   fs.writeFileSync(
     metadataPath,
@@ -58,7 +66,7 @@ function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
         projectmPrefix: '/opt/homebrew/opt/projectm',
         libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
         librarySha256: 'b'.repeat(64),
-        harnessSha256: hashFileSha256(harnessPath),
+        harnessSha256: hashNativeProjectMHarness(repoRoot),
         createdAt: '2026-07-16T00:00:00.000Z',
         platform: 'darwin',
         arch: 'arm64',

@@ -37,11 +37,11 @@
         "warmupMs": 5000,
         "captureOffsetMs": 0,
         "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:11:55.907Z",
+        "importedAt": "2026-08-23T17:34:47.732Z",
         "sourceArtifactId": null
       }
     },
@@ -65,11 +65,11 @@
         "warmupMs": 5000,
         "captureOffsetMs": 0,
         "referenceAudio": "tones",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:14:08.483Z",
+        "importedAt": "2026-08-23T17:34:47.872Z",
         "sourceArtifactId": null
       }
     },
@@ -93,11 +93,11 @@
         "warmupMs": 5000,
         "captureOffsetMs": 0,
         "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:11:56.200Z",
+        "importedAt": "2026-08-23T17:34:48.014Z",
         "sourceArtifactId": null
       }
     },
@@ -121,11 +121,11 @@
         "warmupMs": 5000,
         "captureOffsetMs": 0,
         "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:11:56.321Z",
+        "importedAt": "2026-08-23T17:34:48.154Z",
         "sourceArtifactId": null
       }
     },
@@ -149,11 +149,11 @@
         "warmupMs": 5000,
         "captureOffsetMs": 0,
         "referenceAudio": "tones",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:14:08.606Z",
+        "importedAt": "2026-08-23T17:34:48.284Z",
         "sourceArtifactId": null
       }
     },
@@ -401,11 +401,11 @@
         "warmupMs": 3000,
         "captureOffsetMs": 0,
         "referenceAudio": "tones",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:14:08.725Z",
+        "importedAt": "2026-08-23T17:34:48.679Z",
         "sourceArtifactId": null
       }
     },
@@ -513,11 +513,11 @@
         "warmupMs": 3000,
         "captureOffsetMs": 0,
         "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:11:56.670Z",
+        "importedAt": "2026-08-23T17:34:48.414Z",
         "sourceArtifactId": null
       }
     },
@@ -848,12 +848,12 @@
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0,
-        "warmupFrames": 900,
+        "warmupFrames": 300,
         "referenceAudio": "tones"
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:14:08.848Z",
+        "importedAt": "2026-08-23T17:34:48.802Z",
         "sourceArtifactId": null
       }
     },
@@ -1213,11 +1213,11 @@
         "warmupMs": 3000,
         "captureOffsetMs": 0,
         "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
-        "importedAt": "2026-08-23T17:11:56.913Z",
+        "importedAt": "2026-08-23T17:34:48.546Z",
         "sourceArtifactId": null
       }
     },

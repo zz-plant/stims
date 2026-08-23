@@ -9,7 +9,7 @@
   "renderer": {
     "name": "projectM",
     "native": true,
-    "harnessSha256": "c12e2956fc89722e3fd41b28b4bc865761b4a663923da781efbdcf5164297374"
+    "harnessSha256": "1d7f773fbfa88c14d0d25dcf0d99dffb4d28094bae6d51e5a7939839e8ac1549"
   },
   "externalRuntime": {
     "provenanceScope": "capture-host-only",
@@ -47,5 +47,5 @@
     "platform": "darwin",
     "arch": "arm64"
   },
-  "createdAt": "2026-08-23T17:11:27.896Z"
+  "createdAt": "2026-08-23T17:34:11.200Z"
 }

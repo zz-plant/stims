@@ -107,12 +107,11 @@ export type PlayToyOptions = {
    * Pump digital silence instead of the decorative synthetic signal, matching
    * the all-zero PCM the projectM parity references were rendered against.
    */
-  silentAudio?: boolean;
   /**
-   * Feed the capture the exact signal the projectM references were rendered
-   * against, with the preset-facing bands pinned to that signal's analytic
-   * steady state. `--audio` still controls whether a real audio graph runs;
-   * this only affects the deterministic frame pump.
+   * Feed the capture the audio a projectM reference was rendered against, with
+   * the preset-facing bands pinned to that signal's analytic steady state.
+   * `--audio` still controls whether a real audio graph runs; this only
+   * affects the deterministic frame pump.
    */
   referenceAudio?: 'silence' | 'tones';
   viewportWidth?: number;
@@ -161,7 +160,6 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   duration: number;
   /** 0 when the run should watch the clock instead. */
   deterministicFrames: number;
-  silentAudio: boolean;
   viewportWidth: number;
   viewportHeight: number;
   outputDir: string;
@@ -368,7 +366,6 @@ export function normalizePlayToyOptions(
     port: options.port ?? DEFAULT_OPTIONS.port,
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
     deterministicFrames: options.deterministicFrames ?? 0,
-    silentAudio: options.silentAudio ?? false,
     viewportWidth: options.viewportWidth ?? DEFAULT_OPTIONS.viewportWidth,
     viewportHeight: options.viewportHeight ?? DEFAULT_OPTIONS.viewportHeight,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
@@ -1276,7 +1273,6 @@ async function transitionIsActive(page: Page): Promise<boolean> {
 async function pumpDeterministicFrames(
   page: Page,
   frames: number,
-  silentAudio: boolean,
   referenceAudio: 'silence' | 'tones' | null,
 ): Promise<number | null> {
   let rendered = 0;
@@ -1287,12 +1283,10 @@ async function pumpDeterministicFrames(
         ({
           count,
           reset,
-          silent,
           reference,
         }: {
           count: number;
           reset: boolean;
-          silent: boolean;
           reference: 'silence' | 'tones' | null;
         }) => {
           const hook = (
@@ -1301,7 +1295,6 @@ async function pumpDeterministicFrames(
                 frames?: number;
                 deltaMs?: number;
                 startTime?: number;
-                silentAudio?: boolean;
                 referenceAudio?: 'silence' | 'tones';
               }) => { rendered: number } | null;
             }
@@ -1325,12 +1318,12 @@ async function pumpDeterministicFrames(
           // An earlier attempt at this used a flat-zero *stimulus*, which
           // zeroes the frequency bins but leaves the waveform buffer at 0 —
           // a full-negative DC offset rather than silence — and measured
-          // worse (cubetrace 45% -> 62%). `silentAudio` centres the waveform
-          // at 128, which is what an actually-silent signal looks like.
+          // worse (cubetrace 45% -> 62%). `referenceAudio: 'silence'` centres
+          // the waveform at 128, which is what an actually-silent signal looks
+          // like.
           return hook({
             frames: count,
             deltaMs: 1000 / 60,
-            ...(silent ? { silentAudio: true } : {}),
             ...(reference ? { referenceAudio: reference } : {}),
             ...(reset ? { startTime: 0 } : {}),
           });
@@ -1338,7 +1331,6 @@ async function pumpDeterministicFrames(
         {
           count: chunk,
           reset: rendered === 0,
-          silent: silentAudio,
           reference: referenceAudio,
           offset: rendered,
           total: frames,
@@ -1955,7 +1947,6 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           const extra = await pumpDeterministicFrames(
             page,
             DETERMINISTIC_FRAME_CHUNK,
-            normalizedOptions.silentAudio,
             normalizedOptions.referenceAudio ?? null,
           );
           if (extra === null) break;
@@ -1968,7 +1959,6 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       pumpedFrames = await pumpDeterministicFrames(
         page,
         normalizedOptions.deterministicFrames,
-        normalizedOptions.silentAudio,
         normalizedOptions.referenceAudio ?? null,
       );
       if (pumpedFrames !== null) {
@@ -2219,7 +2209,6 @@ if (import.meta.main) {
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
   const deterministicFrames = getArg('--deterministic-frames', 0) as number;
-  const silentAudio = args.includes('--silent-audio');
   const referenceAudioRaw = getArg('--reference-audio', '') as string;
   if (
     referenceAudioRaw &&
@@ -2268,7 +2257,6 @@ if (import.meta.main) {
       duration,
       deterministicFrames:
         deterministicFrames > 0 ? deterministicFrames : undefined,
-      silentAudio,
       referenceAudio,
       lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
       randomSeed: Number.isFinite(randomSeed) ? randomSeed : undefined,

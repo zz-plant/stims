@@ -58,12 +58,25 @@ export type VisualReferencePresetEntry = {
 };
 
 /**
- * Calibrated against the checked-in projectM references, not derived: at 300
- * frames (5000ms at 60fps) captures land far short of the reference state —
- * 250-wavecode scored 88% mismatch there and 0.50% at 900 — so 900 is where
- * our render of the warmup reproduces projectM's.
+ * Frames to pump before capturing, when a preset does not carry its own count.
+ *
+ * This is projectM's own frame count, not a tuned number: the harness renders
+ * 300 frames (5000ms at 60fps) and reads the framebuffer, so a capture taken
+ * at any other frame is a different moment in the preset's evolution and the
+ * difference gets attributed to rendering. `promoteProjectMReference` copies
+ * `frameCount` straight out of each reference's sidecar, so per-preset values
+ * cannot drift from the reference they are diffed against; this default only
+ * covers a preset with no sidecar.
+ *
+ * It was 900 for a while, "calibrated" on 250-wavecode scoring 88% at 300 and
+ * 0.50% at 900 — but that preset's reference was a black frame at the time, so
+ * the calibration was selecting for a darker render, not a truer one. Measured
+ * again with references that carry signal, moving 900 -> 300 helps some presets
+ * and hurts others (eos-phat-cubetrace-v2 64.97% -> 56.27%,
+ * rovastar-parallel-universe 76.67% -> 81.56%), which is the point: the frame
+ * to capture is a fact about the reference, not a knob to tune.
  */
-export const DEFAULT_WARMUP_FRAMES = 900;
+export const DEFAULT_WARMUP_FRAMES = 300;
 
 export type VisualReferenceManifest = {
   version: 1;

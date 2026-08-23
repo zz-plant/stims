@@ -26,12 +26,19 @@
 export const REFERENCE_AUDIO_SAMPLE_RATE = 44100;
 export const REFERENCE_AUDIO_SAMPLES_PER_FRAME = 1024;
 
-const BASS_HZ = 110;
-const MID_HZ = 880;
-const TREB_HZ = 5000;
-const BASS_AMP = 0.0707;
-const MID_AMP = 0.2025;
-const TREB_AMP = 0.627;
+/**
+ * The tones themselves. Exported because `scripts/generate-reference-audio-header.ts`
+ * generates the C++ harness's copy from these values — the two renderers have
+ * to be fed byte-identical audio, and a hand-mirrored constant that drifts
+ * would silently invalidate every parity number with no error anywhere.
+ */
+export const REFERENCE_AUDIO_TONES = [
+  { name: 'Bass', hz: 110, amp: 0.0707 },
+  { name: 'Mid', hz: 880, amp: 0.2025 },
+  { name: 'Treb', hz: 5000, amp: 0.627 },
+] as const;
+
+const [BASS, MID, TREB] = REFERENCE_AUDIO_TONES;
 
 /**
  * projectM's converged per-band value for this signal. Derived, not measured:
@@ -44,9 +51,9 @@ export function referenceAudioSample(sampleIndex: number) {
   const t = sampleIndex / REFERENCE_AUDIO_SAMPLE_RATE;
   const twoPi = Math.PI * 2;
   return (
-    BASS_AMP * Math.sin(twoPi * BASS_HZ * t) +
-    MID_AMP * Math.sin(twoPi * MID_HZ * t) +
-    TREB_AMP * Math.sin(twoPi * TREB_HZ * t)
+    BASS.amp * Math.sin(twoPi * BASS.hz * t) +
+    MID.amp * Math.sin(twoPi * MID.hz * t) +
+    TREB.amp * Math.sin(twoPi * TREB.hz * t)
   );
 }
 

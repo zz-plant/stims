@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
-import { buildNativeProjectMReferenceMetadata } from '../../scripts/native-projectm-reference.ts';
+import {
+  buildNativeProjectMReferenceMetadata,
+  hashNativeProjectMHarness,
+} from '../../scripts/native-projectm-reference.ts';
 import {
   appendParityArtifactEntry,
   hashFileSha256,
@@ -43,6 +46,15 @@ function writeNativeMetadata({
   if (!fs.existsSync(harnessPath)) {
     fs.writeFileSync(harnessPath, '// native projectM harness\n');
   }
+  // The harness hash covers the generated signal header too, so a change to
+  // the audio invalidates references the same way a change to the .cpp does.
+  const signalHeaderPath = path.join(
+    repoRoot,
+    'scripts/reference-audio-signal.h',
+  );
+  if (!fs.existsSync(signalHeaderPath)) {
+    fs.writeFileSync(signalHeaderPath, '// generated reference audio\n');
+  }
   fs.writeFileSync(
     metadataPath,
     `${JSON.stringify(
@@ -60,7 +72,7 @@ function writeNativeMetadata({
         projectmPrefix: '/opt/homebrew/opt/projectm',
         libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
         librarySha256: 'b'.repeat(64),
-        harnessSha256: hashFileSha256(harnessPath),
+        harnessSha256: hashNativeProjectMHarness(repoRoot),
         createdAt: '2026-07-16T00:00:00.000Z',
         platform: 'darwin',
         arch: 'arm64',
@@ -145,7 +157,9 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
         height: 3,
         warmupMs: 5000,
         captureOffsetMs: 0,
-        warmupFrames: 900,
+        // Derived from the sidecar's frameCount (300 above), not the manifest
+        // default: the capture has to stop on the frame projectM stopped on.
+        warmupFrames: 300,
         // Recorded from the capture sidecar so the reference and the capture
         // it is diffed against always hear the same signal.
         referenceAudio: 'silence',

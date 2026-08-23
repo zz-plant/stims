@@ -24,6 +24,7 @@ import sharp from 'sharp';
 import {
   buildNativeProjectMReferenceMetadata,
   extractPpmPixels,
+  hashNativeProjectMHarness,
   parseNativeProjectMCaptureArgs,
   parseProjectMGlMetadata,
   resolveNativeProjectMFixture,
@@ -225,7 +226,7 @@ export async function captureNativeProjectMReference(
       projectmPrefix,
       libraryPath,
       librarySha256: hashFileSha256(libraryPath),
-      harnessSha256: hashFileSha256(harnessSource),
+      harnessSha256: hashNativeProjectMHarness(options.repoRoot),
       sdlVersion: homebrewVersion(sdlPrefix),
       sdlPrefix,
       sdlLibraryPath,
