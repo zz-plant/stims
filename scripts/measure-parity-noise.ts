@@ -28,6 +28,12 @@ import {
   summarizeNoiseSamples,
   upsertParityNoiseBands,
 } from './parity-noise-bands.ts';
+import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
+  type PlayToyBrowserSession,
+  type PlayToyRendererProfile,
+} from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 type MeasureParityNoiseOptions = {
@@ -95,10 +101,12 @@ async function measureOneCapture({
   options,
   presetId,
   repeat,
+  browserSession,
 }: {
   options: MeasureParityNoiseOptions;
   presetId: string;
   repeat: number;
+  browserSession?: PlayToyBrowserSession;
 }): Promise<NoiseSample> {
   const manifest = loadVisualReferenceManifest(options.repoRoot);
   const preset = manifest.presets.find((entry) => entry.id === presetId);
@@ -123,6 +131,7 @@ async function measureOneCapture({
       vibeMode: false,
       presetIds: [presetId],
       concurrency: options.concurrency,
+      browserSession,
     });
   } catch (error) {
     captureError = error instanceof Error ? error.message : String(error);
@@ -192,59 +201,83 @@ export async function measureParityNoise(options: MeasureParityNoiseOptions) {
     );
   }
 
+  // One browser for every repeat of every preset. Each repeat used to open
+  // and close its own Chromium, which is both the dominant cost of a noise
+  // measurement and where `launch: Timeout 180000ms exceeded` came from once
+  // the machine was busy. Every certified preset shares a renderer profile
+  // within a backend, so the session is opened for the first target's.
+  const rendererProfile: PlayToyRendererProfile =
+    targets[0].capture.requiredBackend === 'webgpu'
+      ? 'webgpu'
+      : 'compatibility';
+  const browserSession =
+    options.concurrency > 1
+      ? null
+      : await createPlayToyBrowserSession({
+          headless: options.headless,
+          rendererProfile,
+        });
+
   const bands: ParityNoiseBand[] = [];
-  for (const preset of targets) {
-    const samples: NoiseSample[] = [];
-    for (let repeat = 1; repeat <= options.repeats; repeat += 1) {
-      const sample = await measureOneCapture({
-        options,
+  try {
+    for (const preset of targets) {
+      const samples: NoiseSample[] = [];
+      for (let repeat = 1; repeat <= options.repeats; repeat += 1) {
+        const sample = await measureOneCapture({
+          options,
+          presetId: preset.id,
+          repeat,
+          browserSession: browserSession ?? undefined,
+        });
+        samples.push(sample);
+        console.error(
+          sample.mismatchRatio === null
+            ? `[noise] ${preset.id} run ${repeat}/${options.repeats}: NO FRAME (${sample.captureError})`
+            : `[noise] ${preset.id} run ${repeat}/${options.repeats}: ${(
+                sample.mismatchRatio * 100
+              ).toFixed(3)}% (${sample.backend ?? 'unknown backend'})`,
+        );
+      }
+      const ratios = samples
+        .map((sample) => sample.mismatchRatio)
+        .filter((ratio): ratio is number => ratio !== null);
+      const blankRuns = samples.length - ratios.length;
+      if (ratios.length === 0) {
+        throw new Error(
+          `Every capture of "${preset.id}" failed to produce a frame; there is ` +
+            `nothing to band. Last error: ${samples[samples.length - 1]?.captureError}`,
+        );
+      }
+      const stats = summarizeNoiseSamples(ratios);
+      bands.push({
         presetId: preset.id,
-        repeat,
+        backend: samples[0].backend ?? preset.capture.requiredBackend,
+        repeats: options.repeats,
+        threshold: preset.tolerance.threshold,
+        warmupFrames: preset.capture.warmupFrames,
+        samples: ratios,
+        ...(blankRuns > 0 ? { blankRuns } : {}),
+        ...stats,
+        contended: options.concurrency > 1,
+        measuredAt: new Date().toISOString(),
+        ...(samples.some((sample) => sample.captureError)
+          ? {
+              note:
+                blankRuns > 0
+                  ? `${blankRuns}/${samples.length} runs produced NO frame at all ` +
+                    `(the blank-frame guard refused them); the band describes ` +
+                    `only the runs that rendered something.`
+                  : `Capture reported console errors on ${
+                      samples.filter((sample) => sample.captureError).length
+                    }/${samples.length} runs; the band describes an erroring capture.`,
+            }
+          : {}),
       });
-      samples.push(sample);
-      console.error(
-        sample.mismatchRatio === null
-          ? `[noise] ${preset.id} run ${repeat}/${options.repeats}: NO FRAME (${sample.captureError})`
-          : `[noise] ${preset.id} run ${repeat}/${options.repeats}: ${(
-              sample.mismatchRatio * 100
-            ).toFixed(3)}% (${sample.backend ?? 'unknown backend'})`,
-      );
     }
-    const ratios = samples
-      .map((sample) => sample.mismatchRatio)
-      .filter((ratio): ratio is number => ratio !== null);
-    const blankRuns = samples.length - ratios.length;
-    if (ratios.length === 0) {
-      throw new Error(
-        `Every capture of "${preset.id}" failed to produce a frame; there is ` +
-          `nothing to band. Last error: ${samples[samples.length - 1]?.captureError}`,
-      );
+  } finally {
+    if (browserSession) {
+      await closePlayToyBrowserSession(browserSession).catch(() => {});
     }
-    const stats = summarizeNoiseSamples(ratios);
-    bands.push({
-      presetId: preset.id,
-      backend: samples[0].backend ?? preset.capture.requiredBackend,
-      repeats: options.repeats,
-      threshold: preset.tolerance.threshold,
-      warmupFrames: preset.capture.warmupFrames,
-      samples: ratios,
-      ...(blankRuns > 0 ? { blankRuns } : {}),
-      ...stats,
-      contended: options.concurrency > 1,
-      measuredAt: new Date().toISOString(),
-      ...(samples.some((sample) => sample.captureError)
-        ? {
-            note:
-              blankRuns > 0
-                ? `${blankRuns}/${samples.length} runs produced NO frame at all ` +
-                  `(the blank-frame guard refused them); the band describes ` +
-                  `only the runs that rendered something.`
-                : `Capture reported console errors on ${
-                    samples.filter((sample) => sample.captureError).length
-                  }/${samples.length} runs; the band describes an erroring capture.`,
-          }
-        : {}),
-    });
   }
 
   if (options.write) {

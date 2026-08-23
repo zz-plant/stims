@@ -69,6 +69,15 @@ export type CaptureVisualReferenceSuiteOptions = {
    * a capture is suspected of contaminating the next one.
    */
   isolateCaptures?: boolean;
+  /**
+   * Reuse a browser the caller already opened, instead of opening one per
+   * call. For a caller that invokes this suite in a loop — `parity:noise`
+   * captures the same preset N times — opening a Chromium per iteration is
+   * both the dominant cost and a source of `launch: Timeout 180000ms exceeded`
+   * under load. The session's renderer profile must match what the presets
+   * need; a mismatch throws rather than capturing on the wrong backend.
+   */
+  browserSession?: PlayToyBrowserSession;
 };
 
 type VisualReferenceCaptureRequest = Required<
@@ -454,6 +463,9 @@ export async function captureVisualReferenceSuite(
       }
     };
     const sessionFor = async (request: VisualReferenceCaptureRequest) => {
+      if (options.browserSession) {
+        return options.browserSession;
+      }
       if (
         browserSession &&
         (browserSession.rendererProfile !== request.rendererProfile ||
