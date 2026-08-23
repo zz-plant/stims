@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "261-compshader-noisevol_lq",
   "title": "261 Compshader Noisevol LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260823173512",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260823183755",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 725092,
-    "mismatchRatio": 0.7867751736111112,
-    "maxChannelDelta": 222,
-    "meanAbsoluteError": 0.1888129680691721,
-    "rmse": 0.23541649300410158,
+    "mismatchedPixels": 698663,
+    "mismatchRatio": 0.7580978732638889,
+    "maxChannelDelta": 221,
+    "meanAbsoluteError": 0.1683269718477669,
+    "rmse": 0.21119349735511106,
     "exactMatch": false,
     "threshold": 16
   },
@@ -42,10 +42,10 @@
       "measuredAt": "2026-08-22T18:00:08.255Z",
       "contended": false
     },
-    "baselineMismatchRatio": null,
-    "mismatchDelta": null,
-    "noiseResolution": null,
-    "changeVerdict": "no-baseline"
+    "baselineMismatchRatio": 0.7548502604166667,
+    "mismatchDelta": 0.003247612847222192,
+    "noiseResolution": 0.0936859809027778,
+    "changeVerdict": "no-measurable-change"
   },
   "status": "fail"
 }

@@ -96,6 +96,7 @@ import type {
   MilkdropShaderProgramPayload,
   MilkdropShaderStatement,
 } from './types';
+import { perPixelWritesWarpTransform } from './warp-sample-transform.ts';
 
 const {
   abs,
@@ -2205,25 +2206,53 @@ function setShaderStageUvGeometry(env: ShaderNodeEnv, uvNode: any) {
  * is a large, irreducible difference for rad-heavy presets. Matching it would
  * break MilkDrop fidelity and split WebGPU from WebGL, so it is not done here.
  */
-function setPerPixelEnvGeometry(env: ShaderNodeEnv, screenUv: any) {
+function setPerPixelEnvGeometry(
+  env: ShaderNodeEnv,
+  screenUv: any,
+  seedTransformVariables = false,
+) {
   const aspectX = env.uniforms.aspect.x;
   const aspectY = env.uniforms.aspect.y;
   const ndcX = screenUv.x.sub(0.5).mul(2);
   const ndcY = screenUv.y.sub(0.5).mul(2);
   const aspectNdcX = ndcX.mul(aspectX);
   const aspectNdcY = ndcY.mul(aspectY);
+  const radNode = length(vec2(aspectNdcX, aspectNdcY));
   setShaderEnvValue(env, 'x', shaderFloat(ndcX.mul(0.5).mul(aspectX).add(0.5)));
   setShaderEnvValue(
     env,
     'y',
     shaderFloat(ndcY.mul(-0.5).mul(aspectY).add(0.5)),
   );
-  setShaderEnvValue(
-    env,
-    'rad',
-    shaderFloat(length(vec2(aspectNdcX, aspectNdcY))),
-  );
+  setShaderEnvValue(env, 'rad', shaderFloat(radNode));
   setShaderEnvValue(env, 'ang', shaderFloat(atan(aspectNdcY, aspectNdcX)));
+  if (seedTransformVariables) {
+    // MilkDrop seeds every per-pixel vertex with the frame's cx/cy/sx/sy/
+    // zoomexp before running the block (butterchurn runPixelEquations:2610-
+    // 2621). Without these the names resolve to nothing -- there is no uniform
+    // alias for them -- so `cx = cx + 0.1` compiles to null and the whole
+    // statement is silently dropped by runPerPixelProgram.
+    //
+    // Seeded into the per-pixel env rather than added to the shared uniform
+    // alias table on purpose: that table also serves the warp/comp HLSL
+    // stages, where `cx`/`sx` are ordinary preset-declared locals and an alias
+    // would shadow them.
+    const centreScale = env.uniforms.warpCenterScale;
+    setShaderEnvValue(env, 'cx', shaderFloat(centreScale.x));
+    setShaderEnvValue(env, 'cy', shaderFloat(centreScale.y));
+    setShaderEnvValue(env, 'sx', shaderFloat(centreScale.z));
+    setShaderEnvValue(env, 'sy', shaderFloat(centreScale.w));
+    setShaderEnvValue(
+      env,
+      'zoomexp',
+      shaderFloat(env.uniforms.warpZoomExponent),
+    );
+  }
+  // The zoom exponent reads the GEOMETRIC rad, never the env one: butterchurn's
+  // `zoom2V` closes over the outer `rad` local, so a preset writing `rad` in
+  // its per-pixel block does not move its own zoom. (transformMeshPoint on the
+  // CPU disagrees and re-reads local.rad; butterchurn wins here.)
+  return radNode;
 }
 
 function applyDirectWarpProgram(
@@ -2375,7 +2404,21 @@ function createFeedbackBlendOutputNode(
       ...shaderEnv,
       values: new Map(shaderEnv.values),
     };
-    setPerPixelEnvGeometry(perPixelEnv, baseUv);
+    // Blast-radius gate. Only a preset whose per-pixel block actually assigns
+    // to cx/cy/sx/sy/zoomexp gets the full MilkDrop transform below; every
+    // other preset keeps the byte-identical legacy node graph and therefore
+    // cannot move by even one ULP. That covers presets with no per-pixel block
+    // at all (100-square) and presets whose block only touches the four
+    // variables the legacy path already consumed (rovastar-parallel-universe:
+    // dx/dy only).
+    const usesWarpTransformVariables = perPixelWritesWarpTransform(
+      perPixelPrograms?.statements,
+    );
+    const perPixelRad = setPerPixelEnvGeometry(
+      perPixelEnv,
+      baseUv,
+      usesWarpTransformVariables,
+    );
     if (perPixelPrograms) {
       runPerPixelProgram(perPixelPrograms.statements, perPixelEnv);
     }
@@ -2396,13 +2439,95 @@ function createFeedbackBlendOutputNode(
     // warp/composite shaders and the CPU/GPU mesh transform direction.
     const rotationSin = sin(activeRot).mul(-1);
     const rotationCos = cos(activeRot);
-    const rotatedUv = vec2(
-      centeredUv.x.mul(rotationCos).sub(centeredUv.y.mul(rotationSin)),
-      centeredUv.x.mul(rotationSin).add(centeredUv.y.mul(rotationCos)),
-    );
-    const transformedUv = rotatedUv
-      .div(max(activeZoom, 0.0001))
-      .add(vec2(activeOffsetX, activeOffsetY));
+    const rotateAboutOrigin = (point: any) =>
+      vec2(
+        point.x.mul(rotationCos).sub(point.y.mul(rotationSin)),
+        point.x.mul(rotationSin).add(point.y.mul(rotationCos)),
+      );
+
+    let transformedUv: any;
+    if (!usesWarpTransformVariables) {
+      transformedUv = rotateAboutOrigin(centeredUv)
+        .div(max(activeZoom, 0.0001))
+        .add(vec2(activeOffsetX, activeOffsetY));
+    } else {
+      // The MilkDrop sampling transform, ordered as butterchurn 2.6.7's
+      // runPixelEquations:2626-2657. Documented in full, with the points where
+      // the repo's CPU mesh path disagrees, in warp-sample-transform.ts --
+      // computeWarpSampleUv there is the scalar twin of this node graph and is
+      // what the unit test pins. Keep the two in step.
+      const activeCx =
+        getShaderEnvValue(perPixelEnv, 'cx')?.node ??
+        uniforms.warpCenterScale.x;
+      const activeCy =
+        getShaderEnvValue(perPixelEnv, 'cy')?.node ??
+        uniforms.warpCenterScale.y;
+      const activeSx =
+        getShaderEnvValue(perPixelEnv, 'sx')?.node ??
+        uniforms.warpCenterScale.z;
+      const activeSy =
+        getShaderEnvValue(perPixelEnv, 'sy')?.node ??
+        uniforms.warpCenterScale.w;
+      const activeZoomExp =
+        getShaderEnvValue(perPixelEnv, 'zoomexp')?.node ??
+        uniforms.warpZoomExponent;
+
+      // cx/cy are MilkDrop [0,1] coordinates: aspect-squeezed, y measured
+      // DOWNWARD. Screen uv here is aspect-free and y-up, so undo both --
+      // exactly the inverse of the `x`/`y` the program was handed.
+      const warpCentre = vec2(
+        activeCx.sub(0.5).div(uniforms.aspect.x),
+        activeCy.sub(0.5).div(uniforms.aspect.y).mul(-1),
+      );
+
+      // zoom ^ (zoomexp ^ (rad*2 - 1)), about the SCREEN centre -- never cx/cy.
+      // The zoomexp == 1 branch returns `zoom` untouched because a GPU pow() is
+      // exp2(y*log2(x)) and pow(z, 1.0) is therefore not z bit-for-bit; without
+      // the select, every preset in the gate would shift by ~1e-7 for nothing.
+      // The clamps bound the pow away from f32 overflow on presets that ship
+      // extreme zoom/zoomexp pairs; they sit on the zoomexp != 1 branch only,
+      // so the 0.0001 divisor floor below stays the sole guard on the
+      // degenerate zoom -> 0 case a passing reference depends on.
+      const zoomPowExponent = clamp(
+        pow(clamp(activeZoomExp, 0.0001, 10000), perPixelRad.mul(2).sub(1)),
+        0.0001,
+        10000,
+      );
+      const zoomDivisor = select(
+        abs(activeZoomExp.sub(1)).lessThan(0.000001),
+        activeZoom,
+        clamp(
+          pow(clamp(activeZoom, 0.0001, 10000), zoomPowExponent),
+          0.0001,
+          10000,
+        ),
+      );
+      const zoomedUv = centeredUv.div(max(zoomDivisor, 0.0001));
+
+      // (u - c)/s + c, emitted as u/s + (c - c/s). At s == 1 the bracket is
+      // `c - c` -- exactly zero -- and u/1 is exactly u, so a preset that moves
+      // only cx/cy cannot perturb the coordinate here. Writing it the obvious
+      // way instead loses ~1 ULP of the CENTRE, which is ~6e-8 of uv.
+      // sx/sy of exactly zero would make that bracket Inf - Inf; the CPU path
+      // guards the same case with `scaleX || 1`.
+      const safeScale = vec2(
+        select(abs(activeSx).lessThan(1e-8), float(1), activeSx),
+        select(abs(activeSy).lessThan(1e-8), float(1), activeSy),
+      );
+      const scaledUv = zoomedUv
+        .div(safeScale)
+        .add(warpCentre.sub(warpCentre.div(safeScale)));
+
+      // R(u - c) + c, emitted as R(u) + (c - R(c)) for the same reason: at
+      // rot == 0 the rotation is the numeric identity, so the bracket is
+      // exactly zero. This is what keeps 300-beatdetect-bassmidtreb --
+      // `per_pixel_1=cx=x` over sx=sy=1, rot unset, zoom=1 -- bit-for-bit
+      // identical to the legacy path. Its cx write is mathematically inert in
+      // MilkDrop too, and a currently-passing reference must not move for it.
+      transformedUv = rotateAboutOrigin(scaledUv)
+        .add(warpCentre.sub(rotateAboutOrigin(warpCentre)))
+        .add(vec2(activeOffsetX, activeOffsetY));
+    }
 
     // Direct warp: mirror the WebGL warp pass. MilkDrop runs the warp shader
     // as its own pass over the previous frame (sampler_main = feedback) and
@@ -3319,6 +3444,37 @@ class WebGPUMilkdropFeedbackManager
         perPixelVariables?.[`t${base + 2}`] ?? 0,
         perPixelVariables?.[`t${base + 3}`] ?? 0,
         perPixelVariables?.[`t${base + 4}`] ?? 0,
+      );
+    }
+    // Per-frame bases for the warp variables the per-pixel program may
+    // overwrite. Read off the same variable bag q/t come from rather than
+    // plumbed through MilkdropFeedbackCompositeState, and guarded the way
+    // renderer-helpers/feedback-composite.ts guards zoom/rot/dx/dy: the bag is
+    // preset-controlled and the warp divides by zoom, so one NaN would take the
+    // whole feedback chain to a black frame.
+    const readWarpBase = (key: string, fallback: number) => {
+      const value = perPixelVariables?.[key];
+      return typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : fallback;
+    };
+    const warpCentreScaleUniform =
+      this.compositeMaterial.uniforms.warpCenterScale;
+    if (
+      warpCentreScaleUniform &&
+      typeof (warpCentreScaleUniform.value as Vector4)?.set === 'function'
+    ) {
+      (warpCentreScaleUniform.value as Vector4).set(
+        readWarpBase('cx', 0.5),
+        readWarpBase('cy', 0.5),
+        readWarpBase('sx', 1),
+        readWarpBase('sy', 1),
+      );
+    }
+    if (this.compositeMaterial.uniforms.warpZoomExponent) {
+      this.compositeMaterial.uniforms.warpZoomExponent.value = readWarpBase(
+        'zoomexp',
+        1,
       );
     }
     const aspect =

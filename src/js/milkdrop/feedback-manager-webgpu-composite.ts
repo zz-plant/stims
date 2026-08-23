@@ -446,6 +446,15 @@ export function createCompositeUniforms(
     offsetY: uniform(0),
     rotation: uniform(0),
     zoomMul: uniform(1),
+    // Per-frame BASE values of the warp variables the per-fragment per-pixel
+    // program may overwrite, packed the way the q/t register banks are: one
+    // vec4 (cx, cy, sx, sy) plus the scalar exponent, rather than five
+    // separate uniform nodes. MilkDrop seeds every per-pixel vertex from these
+    // before running the block (butterchurn runPixelEquations:2610-2621), so a
+    // preset that writes only `cx` still needs correct sx/sy/zoomexp.
+    // Defaults are MilkDrop's: centre of screen, no anisotropy, flat exponent.
+    warpCenterScale: uniform(new Vector4(0.5, 0.5, 1, 1)),
+    warpZoomExponent: uniform(1),
     saturation: uniform(1),
     contrast: uniform(1),
     colorScale: uniform(new Color(1, 1, 1)),
