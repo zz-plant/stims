@@ -107,23 +107,20 @@
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "backend": "webgpu",
-      "repeats": 10,
+      "repeats": 5,
       "threshold": 32,
-      "warmupFrames": 900,
-      "samples": [
-        0.011626519097222222, 0.02653862847222222, 0.010094401041666666,
-        0.02131076388888889, 0.039953342013888886, 0.0034016927083333334,
-        0.07754231770833334, 0.036334635416666664, 0.02198784722222222,
-        0.0136328125
-      ],
-      "min": 0.0034016927083333334,
-      "max": 0.07754231770833334,
-      "median": 0.021649305555555554,
-      "mean": 0.026242296006944443,
-      "stdDev": 0.020295605830308705,
-      "width": 0.074140625,
+      "warmupFrames": 300,
+      "samples": [0.017746310763888887, 0.031544053819444445],
+      "blankRuns": 3,
+      "min": 0.017746310763888887,
+      "max": 0.031544053819444445,
+      "median": 0.024645182291666665,
+      "mean": 0.024645182291666665,
+      "stdDev": 0.006898871527777779,
+      "width": 0.013797743055555558,
       "contended": false,
-      "measuredAt": "2026-08-22T18:05:07.787Z"
+      "measuredAt": "2026-08-23T18:11:54.228Z",
+      "note": "3/5 runs produced NO frame at all (the blank-frame guard refused them); the band describes only the runs that rendered something."
     },
     {
       "presetId": "eos-phat-cubetrace-v2",
