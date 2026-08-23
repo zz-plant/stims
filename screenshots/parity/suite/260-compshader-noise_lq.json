@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "260-compshader-noise_lq",
   "title": "260 Compshader Noise LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260823171426",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260823173509",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
     "imageSha256": "3cef9c9f6bf3bc7db1170aa01c64dc4230ba4be26383d5d05e17771094bf8c62",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.meta.json",
-    "metadataSha256": "07e69a9be53ae651e73c82e4bcf996c8525a3ca9544e62c0bfae6f18efd9a2f4"
+    "metadataSha256": "85717ba19bf882a9c7b4041978510a6337dfd0745fe74caf272a01791b869416"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

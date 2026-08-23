@@ -25,6 +25,7 @@ import {
   scoreReferenceSignal,
 } from './check-parity-reference-signal.ts';
 import {
+  hashNativeProjectMHarness,
   NATIVE_PROJECTM_HARNESS_PATH,
   PROJECTM_UPSTREAM_FIXTURE_ROOT,
   resolveProjectMReferenceFixture,
@@ -260,7 +261,7 @@ async function validateNativeSource({
     width: size.width,
     height: size.height,
     presetSha256: hashFileSha256(presetPath),
-    harnessSha256: hashFileSha256(harnessPath),
+    harnessSha256: hashNativeProjectMHarness(repoRoot),
   });
   return size;
 }
@@ -272,6 +273,27 @@ async function validateNativeSource({
  * thing, so this travels with the reference rather than being a flag someone
  * remembers to pass.
  */
+function readFrameCountFromSidecar(
+  metadataPath: string | null | undefined,
+): number | null {
+  if (!metadataPath || !fs.existsSync(metadataPath)) {
+    return null;
+  }
+  try {
+    const sidecar = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) as {
+      capture?: { frameCount?: number };
+    };
+    const frames = sidecar.capture?.frameCount;
+    return typeof frames === 'number' &&
+      Number.isSafeInteger(frames) &&
+      frames > 0
+      ? frames
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function readReferenceAudioFromSidecar(
   metadataPath: string | null | undefined,
 ): 'silence' | 'tones' {
@@ -283,7 +305,7 @@ function readReferenceAudioFromSidecar(
       capture?: { audio?: string };
     };
     const audio = sidecar.capture?.audio;
-    return audio === 'tones' || audio === 'beat' ? 'tones' : 'silence';
+    return audio === 'tones' ? 'tones' : 'silence';
   } catch {
     return 'silence';
   }
@@ -423,8 +445,14 @@ export async function promoteProjectMReference(
       captureOffsetMs:
         existingEntry?.capture.captureOffsetMs ??
         manifest.defaults.captureOffsetMs,
+      // Read from the reference's own sidecar rather than carried over: the
+      // capture has to land on the same frame projectM stopped at, and a
+      // manifest value that outlives a re-capture at a different frame count
+      // silently diffs two different moments.
       warmupFrames:
-        existingEntry?.capture.warmupFrames ?? manifest.defaults.warmupFrames,
+        readFrameCountFromSidecar(sourceMetadataPath) ??
+        existingEntry?.capture.warmupFrames ??
+        manifest.defaults.warmupFrames,
       // Recorded from the capture's own sidecar: the audio the reference was
       // rendered against is the audio our capture has to feed back.
       referenceAudio: readReferenceAudioFromSidecar(sourceMetadataPath),

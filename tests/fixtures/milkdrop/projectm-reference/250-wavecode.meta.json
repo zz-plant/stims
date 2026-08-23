@@ -9,7 +9,7 @@
   "renderer": {
     "name": "projectM",
     "native": true,
-    "harnessSha256": "c12e2956fc89722e3fd41b28b4bc865761b4a663923da781efbdcf5164297374"
+    "harnessSha256": "1d7f773fbfa88c14d0d25dcf0d99dffb4d28094bae6d51e5a7939839e8ac1549"
   },
   "externalRuntime": {
     "provenanceScope": "capture-host-only",
@@ -41,11 +41,11 @@
     "timingPolicy": "projectM-renderFrame-no-external-throttle",
     "audio": "tones",
     "framebuffer": "GL_BACK",
-    "imageSha256": "26e6622c40e72d986f732974e62493d97dc78c10372a25806c07cf5456f77818"
+    "imageSha256": "11d661549b609ced9ffad531e5e0a089728ef3c6a0c43c46b21cdb0d3334141d"
   },
   "host": {
     "platform": "darwin",
     "arch": "arm64"
   },
-  "createdAt": "2026-08-23T17:13:58.633Z"
+  "createdAt": "2026-08-23T17:34:13.374Z"
 }

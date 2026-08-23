@@ -32,6 +32,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
 | [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the README's public claims aligned with what the repo actually ships. |
+| [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
@@ -399,6 +400,26 @@ rather than paths: documentation that lies is worse than documentation that
 is missing, because it is trusted.
 
 Run it directly: `bun run check:readme-claims`
+
+## check:reference-audio-header
+
+Generates the C++ harness's copy of the parity reference audio signal.
+
+`scripts/native-projectm-capture.cpp` and our own capture path must feed
+byte-identical samples to projectM and to the Stims runtime, or a parity
+diff is comparing two renderers that heard different music while reporting
+the difference as a rendering gap. Hand-mirroring the constants in two
+languages is exactly the kind of duplication that drifts silently — nothing
+errors, every number just quietly becomes wrong — so the C++ side is
+generated from `src/js/core/testing/reference-audio.ts`, which is the single
+source of truth.
+
+  bun run scripts/generate-reference-audio-header.ts [--check]
+
+`--check` fails when the checked-in header no longer matches the TypeScript,
+and runs as part of the quality gate.
+
+Run it directly: `bun run check:reference-audio-header`
 
 ## check:script-docs
 

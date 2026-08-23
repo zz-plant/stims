@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "261-compshader-noisevol_lq",
   "title": "261 Compshader Noisevol LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260823171430",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260823173512",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
-    "imageSha256": "d579fffeb9c78f2758dc198d7c7468b10e43bf12c3429dcab633278623abfdad",
+    "imageSha256": "63d5bdcd6cb043e72867049d5c16be47d4230c3a58686b11685b0b77f093bc3a",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.meta.json",
-    "metadataSha256": "e3f5658cb7bdd1485fe83f70b7cd7539a18dd044ff0141588a56c16546593acf"
+    "metadataSha256": "c5915fa49f56f32ec732a50b590b1aea66c18aa12d4f26762bb9b839627692d4"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 695051,
-    "mismatchRatio": 0.7541786024305556,
-    "maxChannelDelta": 209,
-    "meanAbsoluteError": 0.1690173611111111,
-    "rmse": 0.21375395947595072,
+    "mismatchedPixels": 725092,
+    "mismatchRatio": 0.7867751736111112,
+    "maxChannelDelta": 222,
+    "meanAbsoluteError": 0.1888129680691721,
+    "rmse": 0.23541649300410158,
     "exactMatch": false,
     "threshold": 16
   },

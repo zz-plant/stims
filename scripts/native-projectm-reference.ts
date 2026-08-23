@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,7 +15,7 @@ export type NativeProjectMCaptureOptions = {
   fps: number;
   frameCount: number;
   /** PCM fed to projectM while warming up. See the harness for the signal. */
-  audioMode: 'silence' | 'tones' | 'beat';
+  audioMode: 'silence' | 'tones';
   projectmPrefix: string;
   sdlPrefix: string;
 };
@@ -60,7 +61,7 @@ export type NativeProjectMReferenceMetadata = {
     frameCount: number;
     nominalDurationMs: number;
     timingPolicy: 'projectM-renderFrame-no-external-throttle';
-    audio: 'silence' | 'tones' | 'beat';
+    audio: 'silence' | 'tones';
     framebuffer: 'GL_BACK';
     imageSha256: string;
   };
@@ -244,6 +245,23 @@ function readPositiveInteger(argv: string[], name: string, fallback: number) {
   return value;
 }
 
+/**
+ * Hash of everything the harness binary is built from.
+ *
+ * The signal the harness feeds projectM moved into a generated header, so
+ * hashing the .cpp alone would let the audio change under a reference without
+ * invalidating it — the one failure mode this provenance check exists to catch.
+ */
+export function hashNativeProjectMHarness(repoRoot: string) {
+  const sources = [
+    path.join(repoRoot, 'scripts/native-projectm-capture.cpp'),
+    path.join(repoRoot, 'scripts/reference-audio-signal.h'),
+  ];
+  return createHash('sha256')
+    .update(sources.map((file) => hashFileSha256(file)).join('\n'))
+    .digest('hex');
+}
+
 export function parseNativeProjectMCaptureArgs(
   argv: string[],
 ): NativeProjectMCaptureOptions {
@@ -268,10 +286,8 @@ export function parseNativeProjectMCaptureArgs(
     frameCount: readPositiveInteger(argv, '--frames', 300),
     audioMode: (() => {
       const raw = (readArg(argv, '--audio', 'silence') ?? 'silence').trim();
-      if (raw !== 'silence' && raw !== 'tones' && raw !== 'beat') {
-        throw new Error(
-          `--audio must be "silence", "tones" or "beat", got "${raw}".`,
-        );
+      if (raw !== 'silence' && raw !== 'tones') {
+        throw new Error(`--audio must be "silence" or "tones", got "${raw}".`);
       }
       return raw;
     })(),
@@ -293,7 +309,7 @@ export function buildNativeProjectMReferenceMetadata(input: {
   height: number;
   fps: number;
   frameCount: number;
-  audioMode: 'silence' | 'tones' | 'beat';
+  audioMode: 'silence' | 'tones';
   projectmVersion: string;
   projectmPrefix: string;
   libraryPath: string;
@@ -438,8 +454,7 @@ export function validateNativeProjectMReferenceMetadata(
   }
   if (
     (metadata.capture.audio !== 'silence' &&
-      metadata.capture.audio !== 'tones' &&
-      metadata.capture.audio !== 'beat') ||
+      metadata.capture.audio !== 'tones') ||
     metadata.capture.framebuffer !== 'GL_BACK' ||
     !Number.isSafeInteger(metadata.capture.fps) ||
     !Number.isSafeInteger(metadata.capture.frameCount)
@@ -501,7 +516,7 @@ export function loadValidatedNativeProjectMReference({
     width: entry.capture.width,
     height: entry.capture.height,
     presetSha256: hashFileSha256(presetPath),
-    harnessSha256: hashFileSha256(harnessPath),
+    harnessSha256: hashNativeProjectMHarness(repoRoot),
   });
   return {
     imagePath,

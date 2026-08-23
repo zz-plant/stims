@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "100-square",
   "title": "100 Square",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260823171420",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260823173502",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
     "imageSha256": "2675936c46efe4926b53114a1e13be1958a47461aa4ac26c6c5875836b714610",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.meta.json",
-    "metadataSha256": "f354aff56a80814222f6832df3993a052bed7a53309338c74f0b84947e8f19bd"
+    "metadataSha256": "188056ed865151ce061513ece3905c63170674bb3d31a96587d459c5dfa5c78c"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 17427,
-    "mismatchRatio": 0.018909505208333333,
+    "mismatchedPixels": 15684,
+    "mismatchRatio": 0.017018229166666666,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.005228522716957153,
-    "rmse": 0.05399564381133164,
+    "meanAbsoluteError": 0.005021402108297023,
+    "rmse": 0.057296604240065135,
     "exactMatch": false,
     "threshold": 16
   },

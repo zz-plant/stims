@@ -4,6 +4,8 @@
 #include <OpenGL/gl3.h>
 #include <libprojectM/projectM.hpp>
 
+#include "reference-audio-signal.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -15,57 +17,23 @@
 
 namespace {
 
-// Samples handed to projectM per rendered frame. projectM's beat detector
-// windows 1024 samples, so one window per frame keeps the analysis aligned
-// with the frame the capture lands on.
-constexpr int kSamplesPerFrame = 1024;
-constexpr double kSampleRate = 44100.0;
+using stims_reference_audio::kSampleRate;
+using stims_reference_audio::kSamplesPerFrame;
 
-// A steady three-tone signal, one tone per band of projectM's own FFT split
-// (BeatDetect.cpp ranges1024: bass 0-215Hz, mid 215-1981Hz, treb 1981Hz+).
+// The signal itself lives in reference-audio-signal.h, generated from
+// src/js/core/testing/reference-audio.ts so the samples projectM hears and the
+// samples the Stims runtime hears cannot drift apart.
 //
-// The amplitudes are not equal because projectM does not weight the bands
-// equally: it scales bass by 100/5, mid by 100/41 and treb by 90/354
-// (BeatDetect::getBeatVals). These are picked so all three land on the same
-// instant energy, which makes the steady state analytically exact —
-// bass_history converges to bass_instant, vol_history to the same value, so
-// `bass = E / (1.3E + 0.2E)` = 2/3 on every band, and bass_att/mid_att/
-// treb_att/vol converge there too. A capture can therefore be matched exactly
-// on the other side without reading projectM's private BeatDetect.
-constexpr double kBassHz = 110.0;
-constexpr double kMidHz = 880.0;
-constexpr double kTrebHz = 5000.0;
-constexpr double kBassAmp = 0.0707;
-constexpr double kMidAmp = 0.2025;
-constexpr double kTrebAmp = 0.6270;
-
-// A 2Hz kick riding on the steady tones.
-//
-// The steady signal alone is self-normalising: projectM's bass converges to
-// bass_instant / (1.3*bass_history + 0.2*vol_history) = 2/3 whatever the
-// amplitude, so it never crosses the 1.0 that beat-gated presets test for and
-// they render dark. Measured on the certified corpus, steady tones lifted
-// 250-wavecode's black-frame score from 0.23% to 7.16% and 300-beatdetect's
-// from 0.00% to 5.75%, but left eos-glowsticks at 0.98% and krash at 0.17%.
-// Those two are beat-driven and need the envelope.
-double beatEnvelope(long long sampleIndex) {
-  const double beatsPerSecond = 2.0;
-  const double phase =
-      std::fmod(static_cast<double>(sampleIndex) / kSampleRate * beatsPerSecond,
-                1.0);
-  // Sharp attack, exponential tail — a kick, not a sine swell, so the
-  // instant/history ratio actually spikes.
-  return 0.35 + 1.65 * std::exp(-phase * 7.0);
-}
-
-double toneSample(long long sampleIndex, bool withBeat) {
-  const double t = static_cast<double>(sampleIndex) / kSampleRate;
-  const double twoPi = 6.283185307179586;
-  const double envelope = withBeat ? beatEnvelope(sampleIndex) : 1.0;
-  return kBassAmp * envelope * std::sin(twoPi * kBassHz * t) +
-         kMidAmp * (withBeat ? 0.5 + 0.5 * envelope : 1.0) *
-             std::sin(twoPi * kMidHz * t) +
-         kTrebAmp * std::sin(twoPi * kTrebHz * t);
+// Three steady tones, one per band of projectM's own FFT split (BeatDetect.cpp
+// ranges1024: bass below 215Hz, mid to 1981Hz, treb above). The amplitudes are
+// unequal because projectM weights the bands unequally -- 100/5, 100/41 and
+// 90/354 -- and they are chosen so all three land on the same instant energy.
+// That makes the steady state analytically exact: bass_history converges to
+// bass_instant and vol_history with it, so `bass = E / (1.3E + 0.2E)` = 2/3 on
+// every band, and bass_att/mid_att/treb_att/vol converge there too. The other
+// side can therefore match without reading projectM's private BeatDetect.
+double toneSample(long long sampleIndex) {
+  return stims_reference_audio::sampleAt(sampleIndex);
 }
 
 }  // namespace
@@ -74,7 +42,7 @@ int main(int argc, char** argv) {
   if (argc != 8 && argc != 9) {
     std::cerr << "usage: native-projectm-capture <preset-dir> <preset-id> "
                  "<output.ppm> <width> <height> <fps> <frames> [audio]\n"
-                 "  audio: silence (default) | tones | beat\n";
+                 "  audio: silence (default) | tones\n";
     return 2;
   }
 
@@ -86,8 +54,7 @@ int main(int argc, char** argv) {
   const int fps = std::stoi(argv[6]);
   const int frameCount = std::stoi(argv[7]);
   const std::string audioMode = argc == 9 ? argv[8] : "silence";
-  if (audioMode != "silence" && audioMode != "tones" &&
-      audioMode != "beat") {
+  if (audioMode != "silence" && audioMode != "tones") {
     std::cerr << "unknown audio mode: " << audioMode << "\n";
     return 2;
   }
@@ -177,10 +144,8 @@ int main(int argc, char** argv) {
     long long sampleIndex = 0;
     for (int frame = 0; frame < frameCount; ++frame) {
       if (audioMode != "silence") {
-        const bool withBeat = audioMode == "beat";
         for (int i = 0; i < kSamplesPerFrame; ++i) {
-          const float value =
-              static_cast<float>(toneSample(sampleIndex + i, withBeat));
+          const float value = static_cast<float>(toneSample(sampleIndex + i));
           samples[i * 2] = value;
           samples[i * 2 + 1] = value;
         }

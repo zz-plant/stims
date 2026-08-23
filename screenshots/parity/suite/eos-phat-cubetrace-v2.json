@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "eos-phat-cubetrace-v2",
   "title": "Eo.S. + Phat - Cubetrace v2",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260823171442",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260823173522",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
-    "imageSha256": "3501996948e1c0fce6586a7bca7e04ac66e80ee8e0cf3ff7958bf2c39084dc3f",
+    "imageSha256": "9eb87f36739f6ae43eff067d2806993f591bd74f95a208bf54fdfaaf97a2cfe9",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.meta.json",
-    "metadataSha256": "16c1e09f62af11641b00b08822ec596d7b6cfea746a247a18749409ab14673ce"
+    "metadataSha256": "10db961cd36a7d222d6cd1bbf57da48e85cb9ee185cdb441e02287b43791723c"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 598809,
-    "mismatchRatio": 0.6497493489583334,
-    "maxChannelDelta": 216,
-    "meanAbsoluteError": 0.3063660400213326,
-    "rmse": 0.4143452306593759,
+    "mismatchedPixels": 626117,
+    "mismatchRatio": 0.6793804253472222,
+    "maxChannelDelta": 215,
+    "meanAbsoluteError": 0.27455908593182643,
+    "rmse": 0.3690920515108805,
     "exactMatch": false,
     "threshold": 32
   },

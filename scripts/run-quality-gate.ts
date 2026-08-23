@@ -146,6 +146,12 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:guardrails-doc'],
       },
       {
+        // The C++ parity harness and our capture path must feed byte-identical
+        // audio; the header is generated so they cannot drift silently.
+        label: 'Reference audio header freshness',
+        cmd: ['bun', 'run', 'check:reference-audio-header'],
+      },
+      {
         label: 'First-run preset evidence freshness',
         cmd: ['bun', 'run', 'check:first-run-evidence'],
       },
