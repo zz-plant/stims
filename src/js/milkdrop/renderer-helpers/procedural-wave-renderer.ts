@@ -22,6 +22,7 @@ import type {
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
 } from '../types';
+import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout';
 import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
 import {
   getWebGpuHelperMaterialsSync,
@@ -442,6 +443,9 @@ export function syncProceduralCustomWaveObject(
   material.uniforms.signalMusic.value = wave.signals?.music ?? 0;
   material.uniforms.signalWeightedEnergy.value =
     wave.signals?.weightedEnergy ?? 0;
+  const viewport = deriveMilkdropViewportSignalValues(wave.signals ?? {});
+  material.uniforms.signalPixelsX.value = viewport.pixelsx;
+  material.uniforms.signalPixelsY.value = viewport.pixelsy;
   material.uniforms.previousSignalFrame.value = wave.signals?.frame ?? 0;
   material.uniforms.previousSignalFps.value = wave.signals?.fps ?? 60;
   material.uniforms.previousSignalAspect.value = wave.signals?.aspect ?? 1;
@@ -462,6 +466,8 @@ export function syncProceduralCustomWaveObject(
   material.uniforms.previousSignalMusic.value = wave.signals?.music ?? 0;
   material.uniforms.previousSignalWeightedEnergy.value =
     wave.signals?.weightedEnergy ?? 0;
+  material.uniforms.previousSignalPixelsX.value = viewport.pixelsx;
+  material.uniforms.previousSignalPixelsY.value = viewport.pixelsy;
   material.uniforms.blendMix.value = 1;
   material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
   material.uniforms.alpha.value = wave.alpha;
@@ -613,6 +619,11 @@ export function syncInterpolatedProceduralCustomWaveObject(
     previousWave.signals?.music ?? 0;
   material.uniforms.previousSignalWeightedEnergy.value =
     previousWave.signals?.weightedEnergy ?? 0;
+  const previousViewport = deriveMilkdropViewportSignalValues(
+    previousWave.signals ?? {},
+  );
+  material.uniforms.previousSignalPixelsX.value = previousViewport.pixelsx;
+  material.uniforms.previousSignalPixelsY.value = previousViewport.pixelsy;
   material.uniforms.blendMix.value = mix;
   material.uniforms.tint.value.setRGB(
     lerpNumber(previousWave.color.r, currentWave.color.r, mix),

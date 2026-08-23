@@ -580,23 +580,36 @@ function toUniformNodes<T extends Record<string, { value: unknown }>>(
   return nodes as TslUniformNodes<T>;
 }
 
+/** Component layout of the signalsA..signalsE vec4s, mirroring
+ * WGSL_SIGNAL_UNPACK. Every material that packs signals must declare a
+ * `${prefix}${suffix}` uniform for each entry here — a missing one reaches
+ * vec4() as `undefined`, which THREE.TSL reports as "Invalid parameter for
+ * the type vec4" and silently substitutes a constant zero vec4, blanking the
+ * other three components too. */
+export const SIGNAL_UNIFORM_VECTOR_LAYOUT = {
+  a: ['Time', 'Frame', 'Fps', 'Aspect'],
+  b: ['Bass', 'Mid', 'Mids', 'Treble'],
+  c: ['BassAtt', 'MidAtt', 'MidsAtt', 'TrebleAtt'],
+  d: ['Beat', 'BeatPulse', 'Rms', 'Vol'],
+  e: ['Music', 'WeightedEnergy', 'PixelsX', 'PixelsY'],
+} as const satisfies Record<string, readonly [string, string, string, string]>;
+
+export type SignalUniformVectorKey = keyof typeof SIGNAL_UNIFORM_VECTOR_LAYOUT;
+
 function packSignalUniformVectors(
   uniforms: Record<string, TslNode>,
   prefix: 'signal' | 'previousSignal',
 ) {
-  const get = (name: string) => uniforms[`${prefix}${name}`];
-  return {
-    a: vec4(get('Time'), get('Frame'), get('Fps'), get('Aspect')),
-    b: vec4(get('Bass'), get('Mid'), get('Mids'), get('Treble')),
-    c: vec4(get('BassAtt'), get('MidAtt'), get('MidsAtt'), get('TrebleAtt')),
-    d: vec4(get('Beat'), get('BeatPulse'), get('Rms'), get('Vol')),
-    e: vec4(
-      get('Music'),
-      get('WeightedEnergy'),
-      get('PixelsX'),
-      get('PixelsY'),
-    ),
-  };
+  const packed = {} as Record<SignalUniformVectorKey, TslNode>;
+  for (const [key, suffixes] of Object.entries(
+    SIGNAL_UNIFORM_VECTOR_LAYOUT,
+  ) as [SignalUniformVectorKey, readonly string[]][]) {
+    const [x, y, z, w] = suffixes.map(
+      (suffix) => uniforms[`${prefix}${suffix}`],
+    );
+    packed[key] = vec4(x, y, z, w) as TslNode;
+  }
+  return packed;
 }
 
 function packFieldParamVectors(uniforms: Record<string, TslNode>, prefix = '') {
@@ -1131,6 +1144,8 @@ function createCustomWaveUniformState() {
     signalVol: { value: 0 },
     signalMusic: { value: 0 },
     signalWeightedEnergy: { value: 0 },
+    signalPixelsX: { value: 1280 },
+    signalPixelsY: { value: 1280 },
     spectrum: { value: 0 },
     sampleCount: { value: 64 },
     tint: { value: new Color(1, 1, 1) },
@@ -1157,6 +1172,8 @@ function createCustomWaveUniformState() {
     previousSignalVol: { value: 0 },
     previousSignalMusic: { value: 0 },
     previousSignalWeightedEnergy: { value: 0 },
+    previousSignalPixelsX: { value: 1280 },
+    previousSignalPixelsY: { value: 1280 },
     previousSpectrum: { value: 0 },
     previousSampleCount: { value: 64 },
     blendMix: { value: 1 },
