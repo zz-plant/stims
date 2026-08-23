@@ -21,6 +21,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import {
+  DEFAULT_MIN_SIGNAL_HEADROOM,
+  scoreReferenceSignal,
+} from './check-parity-reference-signal.ts';
+import {
   NATIVE_PROJECTM_HARNESS_PATH,
   PROJECTM_UPSTREAM_FIXTURE_ROOT,
   resolveProjectMReferenceFixture,
@@ -48,6 +52,8 @@ type PromoteProjectMReferenceOptions = {
   title?: string;
   label?: string;
   fixtureRoot?: string;
+  /** Certify a reference that a blank frame would pass. Needs a stated reason. */
+  allowWeakReference?: boolean;
 };
 
 function usage() {
@@ -71,6 +77,9 @@ function usage() {
   console.error('  --label <label>     Optional provenance label override');
   console.error(
     '  --fixture-root <dir>  Preset root used to validate provenance (default: tests/fixtures/milkdrop/projectm-upstream)',
+  );
+  console.error(
+    '  --allow-weak-reference  Certify even if a solid-black frame would pass the reference',
   );
 }
 
@@ -106,6 +115,7 @@ function parseArgs(argv: string[]): PromoteProjectMReferenceOptions | null {
     fixtureRoot:
       getArg('--fixture-root', PROJECTM_UPSTREAM_FIXTURE_ROOT) ??
       PROJECTM_UPSTREAM_FIXTURE_ROOT,
+    allowWeakReference: argv.includes('--allow-weak-reference'),
   };
 }
 
@@ -255,6 +265,30 @@ async function validateNativeSource({
   return size;
 }
 
+/**
+ * The audio the capture was rendered against, read from its own sidecar.
+ *
+ * A reference and the capture it is diffed against have to hear the same
+ * thing, so this travels with the reference rather than being a flag someone
+ * remembers to pass.
+ */
+function readReferenceAudioFromSidecar(
+  metadataPath: string | null | undefined,
+): 'silence' | 'tones' {
+  if (!metadataPath || !fs.existsSync(metadataPath)) {
+    return 'silence';
+  }
+  try {
+    const sidecar = JSON.parse(fs.readFileSync(metadataPath, 'utf8')) as {
+      capture?: { audio?: string };
+    };
+    const audio = sidecar.capture?.audio;
+    return audio === 'tones' || audio === 'beat' ? 'tones' : 'silence';
+  } catch {
+    return 'silence';
+  }
+}
+
 function buildFixturePaths({
   repoRoot,
   presetId,
@@ -317,6 +351,40 @@ export async function promoteProjectMReference(
     fixtureRoot: options.fixtureRoot ?? PROJECTM_UPSTREAM_FIXTURE_ROOT,
   });
 
+  const manifest = loadVisualReferenceManifest(options.repoRoot);
+  const existingEntry = manifest.presets.find((entry) => entry.id === presetId);
+  const tolerance = existingEntry?.tolerance ?? {
+    profile: manifest.defaults.toleranceProfile,
+    threshold: manifest.defaults.threshold,
+    failThreshold: manifest.defaults.failThreshold,
+  };
+
+  // A reference that a blank frame already passes certifies nothing. Catch it
+  // here rather than after it has been diffed against for months: parity:suite
+  // will report it green whatever the renderer does.
+  const signal = await scoreReferenceSignal({
+    presetId,
+    imagePath: sourceImagePath,
+    threshold: tolerance.threshold,
+    failThreshold: tolerance.failThreshold,
+    minHeadroom: DEFAULT_MIN_SIGNAL_HEADROOM,
+  });
+  if (signal.status === 'no-signal' && !options.allowWeakReference) {
+    throw new Error(
+      `Refusing to certify "${presetId}": ${signal.reason} ` +
+        `Capture a frame with something on it (a later warmup frame, or a preset that draws under silence), ` +
+        `tighten the fail threshold, or pass --allow-weak-reference if this really is the intended reference.`,
+    );
+  }
+  if (signal.status !== 'ok') {
+    console.warn(
+      `[parity:promote-reference] ${presetId}: ${signal.reason}` +
+        (options.allowWeakReference
+          ? ' Certifying anyway (--allow-weak-reference).'
+          : ''),
+    );
+  }
+
   const fixturePaths = buildFixturePaths({
     repoRoot: options.repoRoot,
     presetId,
@@ -329,8 +397,6 @@ export async function promoteProjectMReference(
     fs.copyFileSync(sourceMetadataPath, fixturePaths.absoluteMetadataPath);
   }
 
-  const manifest = loadVisualReferenceManifest(options.repoRoot);
-  const existingEntry = manifest.presets.find((entry) => entry.id === presetId);
   const entry: VisualReferencePresetEntry = {
     id: presetId,
     title:
@@ -345,11 +411,7 @@ export async function promoteProjectMReference(
       options.strata.length > 0
         ? options.strata
         : (existingEntry?.strata ?? []),
-    tolerance: existingEntry?.tolerance ?? {
-      profile: manifest.defaults.toleranceProfile,
-      threshold: manifest.defaults.threshold,
-      failThreshold: manifest.defaults.failThreshold,
-    },
+    tolerance,
     capture: {
       renderer: 'projectm',
       requiredBackend:
@@ -363,6 +425,9 @@ export async function promoteProjectMReference(
         manifest.defaults.captureOffsetMs,
       warmupFrames:
         existingEntry?.capture.warmupFrames ?? manifest.defaults.warmupFrames,
+      // Recorded from the capture's own sidecar: the audio the reference was
+      // rendered against is the audio our capture has to feed back.
+      referenceAudio: readReferenceAudioFromSidecar(sourceMetadataPath),
     },
     provenance: {
       label:
@@ -378,6 +443,7 @@ export async function promoteProjectMReference(
   const manifestWrite = upsertVisualReferencePreset(options.repoRoot, entry);
   return {
     entry,
+    referenceSignal: signal,
     manifestPath: manifestWrite.manifestPath,
     image: fixturePaths.absoluteImagePath,
     metadata: fixturePaths.absoluteMetadataPath,

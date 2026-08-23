@@ -6,7 +6,9 @@
  * audio, and records FPS/frame-cost samples, the actual backend, and any
  * WebGPU-to-WebGL fallback. Flags include `--preset`, `--port`, `--duration`,
  * `--width`/`--height`, `--audio`, `--renderer-profile`, `--catalog-mode`,
- * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, and `--output`.
+ * `--debug-snapshot`, `--vibe-mode`, `--no-headless`, `--random-seed` (pins
+ * the page's `Math.random`, which the per-preset MilkDrop random constants are
+ * drawn from) and `--output`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -101,6 +103,18 @@ export type PlayToyOptions = {
    * because the audio loop is already driving the pipeline.
    */
   deterministicFrames?: number;
+  /**
+   * Pump digital silence instead of the decorative synthetic signal, matching
+   * the all-zero PCM the projectM parity references were rendered against.
+   */
+  silentAudio?: boolean;
+  /**
+   * Feed the capture the exact signal the projectM references were rendered
+   * against, with the preset-facing bands pinned to that signal's analytic
+   * steady state. `--audio` still controls whether a real audio graph runs;
+   * this only affects the deterministic frame pump.
+   */
+  referenceAudio?: 'silence' | 'tones';
   viewportWidth?: number;
   viewportHeight?: number;
   screenshot?: boolean;
@@ -122,6 +136,23 @@ export type PlayToyOptions = {
   lockedQualityStep?: number | null;
   recordParityArtifact?: boolean;
   browserSession?: PlayToyBrowserSession;
+  /**
+   * Seeds `Math.random` in the page before any app code runs, so a capture is
+   * reproducible across runs.
+   *
+   * MilkDrop rolls per-preset random constants (`rand_preset`) once per preset
+   * load out of `Math.random` and feeds them straight into the warp and
+   * composite shaders, so two captures of the same preset differ by
+   * construction. This removes that source.
+   *
+   * It is not the whole story, and the docblock should not pretend otherwise:
+   * measured over a 24-preset sample with `lab:backend-diff`, seeding did not
+   * move the run-to-run mismatch outside its own scatter (median 6% -> 23% on
+   * WebGL, 52% -> 36% on WebGPU, individual presets swinging both ways). The
+   * dominant term is elsewhere — see that script's docblock. Leave unset for
+   * normal runs; set it when two captures have to be comparable.
+   */
+  randomSeed?: number;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -130,6 +161,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   duration: number;
   /** 0 when the run should watch the clock instead. */
   deterministicFrames: number;
+  silentAudio: boolean;
   viewportWidth: number;
   viewportHeight: number;
   outputDir: string;
@@ -336,6 +368,7 @@ export function normalizePlayToyOptions(
     port: options.port ?? DEFAULT_OPTIONS.port,
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
     deterministicFrames: options.deterministicFrames ?? 0,
+    silentAudio: options.silentAudio ?? false,
     viewportWidth: options.viewportWidth ?? DEFAULT_OPTIONS.viewportWidth,
     viewportHeight: options.viewportHeight ?? DEFAULT_OPTIONS.viewportHeight,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
@@ -543,6 +576,23 @@ async function createPlayToyContext({
     await context.addInitScript(() => {
       window.localStorage.setItem('stims:quality-preset', 'ultra');
     });
+  }
+
+  if (typeof options.randomSeed === 'number') {
+    // mulberry32, the same generator `src/js/core/deterministic-random.ts`
+    // uses for seeded autoplay. Installed as an init script so it is in place
+    // before any module evaluates — the per-preset random constants are drawn
+    // during preset load, well before a test could reach in and swap it.
+    await context.addInitScript((seed: number) => {
+      let state = seed >>> 0;
+      Math.random = () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }, options.randomSeed);
   }
 
   return context;
@@ -1226,25 +1276,74 @@ async function transitionIsActive(page: Page): Promise<boolean> {
 async function pumpDeterministicFrames(
   page: Page,
   frames: number,
+  silentAudio: boolean,
+  referenceAudio: 'silence' | 'tones' | null,
 ): Promise<number | null> {
   let rendered = 0;
   for (let remaining = frames; remaining > 0; ) {
     const chunk = Math.min(DETERMINISTIC_FRAME_CHUNK, remaining);
     const result = await page
-      .evaluate((count) => {
-        const hook = (
-          window as unknown as {
-            __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
-              frames?: number;
-              deltaMs?: number;
-            }) => { rendered: number } | null;
-          }
-        ).__STIMS_AGENT_RENDER_FRAMES__;
-        if (typeof hook !== 'function') return null;
-        // 60fps of simulation time per frame, matching the cadence the
-        // projectM references were captured at.
-        return hook({ frames: count, deltaMs: 1000 / 60 });
-      }, chunk)
+      .evaluate(
+        ({
+          count,
+          reset,
+          silent,
+          reference,
+        }: {
+          count: number;
+          reset: boolean;
+          silent: boolean;
+          reference: 'silence' | 'tones' | null;
+        }) => {
+          const hook = (
+            window as unknown as {
+              __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
+                frames?: number;
+                deltaMs?: number;
+                startTime?: number;
+                silentAudio?: boolean;
+                referenceAudio?: 'silence' | 'tones';
+              }) => { rendered: number } | null;
+            }
+          ).__STIMS_AGENT_RENDER_FRAMES__;
+          if (typeof hook !== 'function') return null;
+          // 60fps of simulation time per frame, matching the cadence the
+          // projectM references were captured at. The first chunk also resets
+          // the clock: presets read `time`, and the idle signal is a pure
+          // function of it, so a capture that starts wherever the wall clock
+          // happened to be is not reproducible — two consecutive captures of
+          // one preset differed on 4.2% of pixels before this.
+          //
+          // `silent` matches the audio the projectM references were rendered
+          // against — their harness feeds an all-zero PCM buffer and
+          // projectM's beat detector divides by fmax(0.0001, ...), landing on
+          // bass = mid = treb = 0. The default synthetic signal is a
+          // decorative sine spectrum that reads as loud music (measured:
+          // bass 0.60 / mid 0.39 / treb 0.32), so leaving it on compares our
+          // loud render against their silent one.
+          //
+          // An earlier attempt at this used a flat-zero *stimulus*, which
+          // zeroes the frequency bins but leaves the waveform buffer at 0 —
+          // a full-negative DC offset rather than silence — and measured
+          // worse (cubetrace 45% -> 62%). `silentAudio` centres the waveform
+          // at 128, which is what an actually-silent signal looks like.
+          return hook({
+            frames: count,
+            deltaMs: 1000 / 60,
+            ...(silent ? { silentAudio: true } : {}),
+            ...(reference ? { referenceAudio: reference } : {}),
+            ...(reset ? { startTime: 0 } : {}),
+          });
+        },
+        {
+          count: chunk,
+          reset: rendered === 0,
+          silent: silentAudio,
+          reference: referenceAudio,
+          offset: rendered,
+          total: frames,
+        },
+      )
       .catch(() => null);
     if (!result) {
       if (rendered === 0) {
@@ -1856,6 +1955,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           const extra = await pumpDeterministicFrames(
             page,
             DETERMINISTIC_FRAME_CHUNK,
+            normalizedOptions.silentAudio,
+            normalizedOptions.referenceAudio ?? null,
           );
           if (extra === null) break;
           settleFrames += extra;
@@ -1867,6 +1968,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       pumpedFrames = await pumpDeterministicFrames(
         page,
         normalizedOptions.deterministicFrames,
+        normalizedOptions.silentAudio,
+        normalizedOptions.referenceAudio ?? null,
       );
       if (pumpedFrames !== null) {
         console.log(
@@ -2116,6 +2219,19 @@ if (import.meta.main) {
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
   const deterministicFrames = getArg('--deterministic-frames', 0) as number;
+  const silentAudio = args.includes('--silent-audio');
+  const referenceAudioRaw = getArg('--reference-audio', '') as string;
+  if (
+    referenceAudioRaw &&
+    referenceAudioRaw !== 'silence' &&
+    referenceAudioRaw !== 'tones'
+  ) {
+    console.error('--reference-audio must be "silence" or "tones".');
+    process.exit(2);
+  }
+  const referenceAudio = referenceAudioRaw
+    ? (referenceAudioRaw as 'silence' | 'tones')
+    : undefined;
   const viewportWidth = getArg('--width', 1280) as number;
   const viewportHeight = getArg('--height', 720) as number;
   const presetId = getArg('--preset', '') as string;
@@ -2130,6 +2246,7 @@ if (import.meta.main) {
   ) as PlayToyRendererProfile;
   const catalogMode = getArg('--catalog-mode', 'bundled') as PlayToyCatalogMode;
   const lockQualityStep = getArg('--lock-quality-step', -1) as number;
+  const randomSeed = getArg('--random-seed', Number.NaN) as number;
   const screenshotSurface = getArg(
     '--screenshot-surface',
     'canvas',
@@ -2151,7 +2268,10 @@ if (import.meta.main) {
       duration,
       deterministicFrames:
         deterministicFrames > 0 ? deterministicFrames : undefined,
+      silentAudio,
+      referenceAudio,
       lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
+      randomSeed: Number.isFinite(randomSeed) ? randomSeed : undefined,
       viewportWidth,
       viewportHeight,
       outputDir,

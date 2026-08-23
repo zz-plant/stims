@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260822004417",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260823171450",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
-    "imageSha256": "ddc7316f8bc7be618a77413eac9bc62077543dd272f3f938c436a3cb1b362e78",
+    "imageSha256": "4144b2f6574452015b63454022e93b642c29c588fb7e4dd4c0c2827b4e93b750",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.meta.json",
-    "metadataSha256": "bbf0ec2b072795d9540a9da04ea4d727e611f3ce70f3abd0794d194a6ee3456b"
+    "metadataSha256": "c27b716488c146b62417bb379d0bbd1118687451b90f683eab8f5d1b242cab07"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,13 +25,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 912765,
-    "mismatchRatio": 0.9904134114583333,
-    "maxChannelDelta": 230,
-    "meanAbsoluteError": 0.19914720775462963,
-    "rmse": 0.25858689224688813,
+    "mismatchedPixels": 706628,
+    "mismatchRatio": 0.7667404513888889,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.1595896253177197,
+    "rmse": 0.23285904104231023,
     "exactMatch": false,
     "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.4391232638888889,
+      "max": 0.7324403211805556,
+      "width": 0.2933170572916667,
+      "repeats": 10,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-22T18:12:25.655Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": null,
+    "mismatchDelta": null,
+    "noiseResolution": null,
+    "changeVerdict": "no-baseline"
   },
   "status": "fail"
 }

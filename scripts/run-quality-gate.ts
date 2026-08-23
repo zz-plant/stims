@@ -122,6 +122,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:agent-action-ids'],
       },
       {
+        label: 'WebGPU target sampling',
+        cmd: ['bun', 'run', 'check:webgpu-target-sampling'],
+      },
+      {
         label: 'Stale assets/ path check',
         cmd: ['bun', 'run', 'check:stale-paths'],
       },

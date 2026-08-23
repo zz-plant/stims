@@ -162,6 +162,12 @@ export function getShaderTextureSourceId(source: string) {
       return 9;
     case 'noise':
       return 1;
+    // projectM's noise_lq/noisevol are white noise generated in code
+    // (PerlinNoise.cpp), not the smooth perlin PNG the `noise` slot loads.
+    case 'noise_lq':
+      return 10;
+    case 'noisevol':
+      return 11;
     default:
       return 0;
   }

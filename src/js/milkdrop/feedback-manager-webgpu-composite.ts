@@ -166,6 +166,11 @@ const shared3DPlaceholderRGBA = (() => {
   tex.wrapR = RepeatWrapping;
   tex.minFilter = LinearFilter;
   tex.magFilter = LinearFilter;
+  // Same round trip as the 2D noise texture: these are projectM's stored
+  // bytes, and the renderer encodes its output back to sRGB, so leaving them
+  // linear brightens a mid-grey 127 to ~187 (measured on
+  // 261-compshader-noisevol_lq: mean 178.5 against a reference mean of 124.3).
+  tex.colorSpace = SRGBColorSpace;
   tex.needsUpdate = true;
   return tex;
 })();
@@ -389,6 +394,13 @@ export function createCompositeUniforms(
     // the internal/warped frame (rebound per frame in render()).
     warpTex: texture(shared2DPlaceholderRGBA),
     noiseTex: texture(auxTextures.noise),
+    // projectM generates these two in code (PerlinNoise.cpp) instead of
+    // shipping PNGs: noise_lq is 256x256 grayscale static and noisevol its
+    // 32^3 companion volume, both GL_REPEAT + GL_LINEAR. WebGL has bound them
+    // since the native-noise work landed; WebGPU had no binding at all.
+    noiseLqTex: texture(sharedMilkdropNativeNoiseTexture),
+    noisevolTex: texture(sharedMilkdropNativeNoiseVolumeAtlasTexture),
+    noisevolTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
     voronoiTex: texture(auxTextures.voronoi),
@@ -535,12 +547,52 @@ export function createCompositeUniforms(
   } satisfies CompositeUniformBag;
 }
 
-export function createSampleUvNode() {
+/**
+ * Turns a screen-space coordinate into the coordinate that reads the same
+ * point out of one of our own render targets.
+ *
+ * Rendering into a render target lands the image with its rows in the
+ * opposite order from the uv a later pass samples it with — measured on
+ * native WebGPU by presenting `sceneTarget` straight to the canvas (a preset
+ * with `fWaveY=0.85` drew its wave in the top third, where WebGL draws it in
+ * the bottom third). Every pass writes with that inversion, so every read of
+ * one of those targets has to undo it, or content that goes around the
+ * feedback loop comes back mirrored and accumulates in both directions at
+ * once instead of streaming.
+ *
+ * Textures that were uploaded rather than rendered — noise, aura, video —
+ * are not affected and must not be flipped.
+ */
+function flipFeedbackSampleUv(coord: any) {
+  return vec2(coord.x, float(1).sub(coord.y));
+}
+
+/**
+ * Reads one of the feedback manager's own render targets at a screen-space
+ * coordinate. This is the only sanctioned way to sample them:
+ * `check:webgpu-target-sampling` fails the build on a bare `.sample()` against
+ * a target-backed uniform, because a site that forgets the row-order flip
+ * produces a plausible-looking frame rather than an error.
+ */
+export function sampleFeedbackTarget(textureNode: any, screenUv: any) {
+  return textureNode.sample(flipFeedbackSampleUv(screenUv));
+}
+
+/** Wrap/clamp a coordinate in screen space, for an uploaded texture. */
+export function createScreenSampleUvNode() {
   return Fn(([rawUv, wrapMode]: [any, any]) => {
     const clampedUv = clamp(rawUv, vec2(0), vec2(1));
     const wrappedUv = fract(rawUv);
     return mix(clampedUv, wrappedUv, step(0.5, wrapMode));
   });
+}
+
+/** Wrap/clamp in screen space, then flip into render-target space. */
+export function createSampleUvNode() {
+  const screenUv = createScreenSampleUvNode();
+  return Fn(([rawUv, wrapMode]: [any, any]) =>
+    flipFeedbackSampleUv(screenUv(rawUv, wrapMode)),
+  );
 }
 
 export function createApplyFeedbackWarpNode() {
@@ -575,6 +627,8 @@ export function createSampleAuxTextureNode(
   videoTexNode: ReturnType<typeof texture>,
   glyphTexNode: ReturnType<typeof texture>,
   organicTexNode: ReturnType<typeof texture>,
+  noiseLqTexNode: ReturnType<typeof texture>,
+  noisevolTexNode: ReturnType<typeof texture>,
   blur1TexNode: ReturnType<typeof texture>,
   blur2TexNode: ReturnType<typeof texture>,
   blur3TexNode: ReturnType<typeof texture>,
@@ -587,10 +641,18 @@ export function createSampleAuxTextureNode(
     pattern: ReturnType<typeof texture3D>;
     fractal: ReturnType<typeof texture3D>;
     perlin: ReturnType<typeof texture3D>;
+    noisevol: ReturnType<typeof texture3D>;
   },
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
+    // Source ids come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS
+    // (shader-samplers.ts). Ids 10 (noise_lq) and 11 (noisevol) used to have
+    // no branch of their own, so they fell into glyph's `lessThan(12.5)` and
+    // every preset reading projectM's generated noise sampled the glyph asset
+    // instead: 260-compshader-noise_lq, whose whole body is
+    // `ret = tex2D(sampler_fw_noise_lq, uv).xyz`, rendered tinted
+    // (mean 120/141/133) against a neutral-grey reference (127.7 per channel).
     return select(
       source.lessThan(0.5),
       flat,
@@ -622,21 +684,35 @@ export function createSampleAuxTextureNode(
                         source.lessThan(9.5),
                         perlinTexNode.sample(sampleUv),
                         select(
-                          source.lessThan(12.5),
-                          glyphTexNode.sample(sampleUv),
+                          source.lessThan(10.5),
+                          noiseLqTexNode.sample(sampleUv),
                           select(
-                            source.lessThan(13.5),
-                            organicTexNode.sample(sampleUv),
+                            source.lessThan(11.5),
+                            noisevolTexNode.sample(sampleUv),
                             select(
-                              source.lessThan(14.5),
-                              blur1TexNode.sample(sampleUv),
+                              source.lessThan(12.5),
+                              glyphTexNode.sample(sampleUv),
                               select(
-                                source.lessThan(15.5),
-                                blur2TexNode.sample(sampleUv),
+                                source.lessThan(13.5),
+                                organicTexNode.sample(sampleUv),
                                 select(
-                                  source.lessThan(16.5),
-                                  blur3TexNode.sample(sampleUv),
-                                  flat,
+                                  source.lessThan(14.5),
+                                  sampleFeedbackTarget(blur1TexNode, sampleUv),
+                                  select(
+                                    source.lessThan(15.5),
+                                    sampleFeedbackTarget(
+                                      blur2TexNode,
+                                      sampleUv,
+                                    ),
+                                    select(
+                                      source.lessThan(16.5),
+                                      sampleFeedbackTarget(
+                                        blur3TexNode,
+                                        sampleUv,
+                                      ),
+                                      flat,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -733,7 +809,17 @@ export function createSampleAuxTextureNode(
                         select(
                           source.lessThan(9.5),
                           tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
-                          flat,
+                          // noise_lq is 2D in projectM, but presets do call
+                          // tex3D on it, so ids 10 and 11 both read the
+                          // generated volume rather than falling to the flat
+                          // grey that left 261-compshader-noisevol_lq blank.
+                          select(
+                            source.lessThan(11.5),
+                            tex3DNodes.noisevol.sample(
+                              vec3(wrappedUv, wrappedZ),
+                            ),
+                            flat,
+                          ),
                         ),
                       ),
                     ),

@@ -9,9 +9,21 @@ import {
 } from './performance-panel';
 import { getPowerSavingFrameCapHz } from './power-state';
 import {
+  fillReferenceAudioWaveform,
+  REFERENCE_AUDIO_STEADY_BAND,
+} from './testing/reference-audio.ts';
+import {
   generateStimulusFrame,
   type StimulusSpec,
 } from './testing/synthetic-stimulus.ts';
+
+/** projectM's converged bands for the reference tone signal. */
+const REFERENCE_AUDIO_BANDS = {
+  bass: REFERENCE_AUDIO_STEADY_BAND,
+  mid: REFERENCE_AUDIO_STEADY_BAND,
+  treble: REFERENCE_AUDIO_STEADY_BAND,
+} as const;
+
 import {
   resolveToyAudioOptions,
   startToyAudio,
@@ -54,6 +66,21 @@ export type ToyRuntimeFrame = {
    * keeps driving output. Set by `renderFrames({ relationshipLock })`.
    */
   relationshipLock?: boolean;
+  /**
+   * One-shot: this frame starts a deterministic capture, so anything holding
+   * history from before it (feedback buffers) must be dropped. Harness-only —
+   * `renderFrames({ startTime })` sets it; a live session never does.
+   */
+  resetHistory?: boolean;
+  /**
+   * Capture-only: replace the analyser-derived MilkDrop bands for this frame.
+   *
+   * The parity harness pins these to projectM's converged values for the
+   * reference signal, so the two renderers run the preset equations on
+   * identical audio instead of on two different normalisations of it. A live
+   * session never sets it.
+   */
+  bandOverride?: { bass: number; mid: number; treble: number };
 };
 
 export type ToyRuntimePlugin = {
@@ -114,6 +141,13 @@ export type ToyRuntimeInstance = ToyInstance & {
     frames?: number;
     deltaMs?: number;
     /**
+     * Start the simulation clock here before pumping, in seconds. Only for
+     * harnesses that need byte-comparable frames; a live session must not use
+     * it, since jumping `time` backwards is visible in any preset that reads
+     * it.
+     */
+    startTime?: number;
+    /**
      * Overlay a deterministic 2Hz beat envelope on the synthetic signal.
      * The idle preview signal is smooth sines with no transients, so
      * beat-gated visuals never fire under it; captures that want them
@@ -147,6 +181,34 @@ export type ToyRuntimeInstance = ToyInstance & {
        */
       totalFrames?: number;
     };
+    /**
+     * Drive the pump with digital silence: every frequency bin 0 and every
+     * waveform sample at the 128 centre line.
+     *
+     * The default synthetic signal is a decorative sine spectrum in the range
+     * 12..232, which reads as loud music — a capture taken with it reported
+     * bass 0.60 / mid 0.39 / treb 0.32. That is fine for warming a preset up,
+     * but it is not what the projectM parity references were rendered
+     * against: their harness feeds `addPCMfloat_2ch` an all-zero buffer, and
+     * projectM's own beat detector divides by `fmax(0.0001, ...)` so silence
+     * lands on bass = mid = treb = 0. Comparing our synthetic-audio render to
+     * their silent one is the largest single difference in the parity suite.
+     *
+     * Note the waveform centre: zeroing the waveform buffer would read as a
+     * full-negative DC offset, not silence.
+     *
+     * Ignored when `stimulus` is set — that already replaces the signal.
+     */
+    silentAudio?: boolean;
+    /**
+     * Drive the pump with the exact signal the projectM parity references were
+     * rendered against (`core/testing/reference-audio.ts`), and pin the
+     * preset-facing bands to that signal's analytic steady state so both
+     * renderers see identical audio. `silence` is the older behaviour: digital
+     * silence, which is what the references used before the harness grew an
+     * audio mode.
+     */
+    referenceAudio?: 'silence' | 'tones';
     /**
      * Pin the preset-facing `time` and `frame` signals at their first-locked
      * values while the internal audio-analysis clock keeps running — the
@@ -577,10 +639,31 @@ export function createToyRuntime({
       const deltaMs = options?.deltaMs ?? 1000 / 60;
       const beatPulse = options?.beatPulse ?? false;
       const stimulus = options?.stimulus;
+      const referenceAudio = options?.referenceAudio;
+      const silentAudio =
+        (options?.silentAudio ?? false) || referenceAudio === 'silence';
       const relationshipLock = options?.relationshipLock ?? false;
+      if (silentAudio && !stimulus) {
+        previewFrequencyData.fill(0);
+        previewWaveformData.fill(128);
+      }
+      let resetHistoryOnNextFrame = false;
       stopPreviewLoop();
+      if (options?.startTime !== undefined) {
+        // Pumped frames are only reproducible if the clock they integrate is
+        // too. The idle signal is a pure function of frameState.time, and
+        // presets read `time` directly, so starting from however many seconds
+        // of wall clock happened to elapse before the pump made every capture
+        // different: two consecutive captures of the same preset, same code,
+        // differed on 4.2% of pixels — as large as the gap being measured.
+        frameState.time = options.startTime;
+        frameState.realTimeMs = options.startTime * 1000;
+        resetHistoryOnNextFrame = true;
+      }
       let rendered = 0;
       for (let i = 0; i < frames; i += 1) {
+        frameState.resetHistory = resetHistoryOnNextFrame;
+        resetHistoryOnNextFrame = false;
         frameState.time += deltaMs / 1000;
         frameState.deltaMs = deltaMs;
         frameState.realTimeMs += deltaMs;
@@ -599,7 +682,14 @@ export function createToyRuntime({
               previewFrequencyData.length,
             ),
           );
-        } else {
+        } else if (referenceAudio === 'tones') {
+          // The bands are pinned below rather than derived: our analyser
+          // normalises a steady signal to 1.0 where projectM's converges to
+          // 2/3, so deriving them would put the two renderers on different
+          // audio while claiming to compare renders.
+          fillReferenceAudioWaveform(previewWaveformData, i);
+          frameState.bandOverride = REFERENCE_AUDIO_BANDS;
+        } else if (!silentAudio) {
           updatePreviewFrequencyData(frameState.time);
           if (beatPulse) {
             // Sharp 2Hz spikes over a quiet floor, bass-weighted the way a

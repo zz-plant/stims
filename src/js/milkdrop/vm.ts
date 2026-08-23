@@ -40,11 +40,14 @@ import {
   buildMesh,
   buildMeshField,
   buildMotionVectors,
+  buildWarpField,
   getMeshDensity,
+  presetNeedsWarpMesh,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
 import { buildBorders, buildShapes } from './vm/shape-border-builder';
 import {
+  CUSTOM_SHAPE_BASE_FIELD_KEYS,
   clamp,
   color,
   createDefaultSignalEnv,
@@ -158,6 +161,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private readonly shapeState: ShapeBuilderState = {
     customShapeLocals: [],
     customShapeTAfterInit: [],
+    customShapeBaseFields: [],
   };
   private frameVariablesSnapshot: Record<string, number> | null = null;
   private readonly frameCommonVars: Record<string, number | undefined> = {};
@@ -401,6 +405,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.shapeState.customShapeLocals = this.preset.ir.customShapes.map(
       (shape) => this.seedCustomShapeState(shape),
     );
+
     this.waveState.proceduralTrailWaves = [];
     this.waveState.pointLocalsScratch = {};
     this.geometryState.lastMotionVectorField = null;
@@ -468,6 +473,7 @@ class MilkdropPresetVM implements MilkdropVM {
     });
 
     this.shapeState.customShapeTAfterInit = [];
+    this.shapeState.customShapeBaseFields = [];
     this.preset.ir.customShapes.forEach((shape, index) => {
       this.runProgram(
         shape.programs.init,
@@ -484,6 +490,15 @@ class MilkdropPresetVM implements MilkdropVM {
         tSnapshot[`t${t}`] = shapeLocals?.[`t${t}`] ?? 0;
       }
       this.shapeState.customShapeTAfterInit[index] = tSnapshot;
+      // And the shape's base fields, which every frame's shape code reloads
+      // before it runs. Snapshotted *after* init, not from the raw shapecode:
+      // an init program writing `ang = tex_ang` is amending the base, exactly
+      // as the per-frame variable reload does for the main equation set.
+      const baseSnapshot: MutableState = {};
+      for (const key of CUSTOM_SHAPE_BASE_FIELD_KEYS) {
+        baseSnapshot[key] = shapeLocals?.[key] ?? 0;
+      }
+      this.shapeState.customShapeBaseFields[index] = baseSnapshot;
     });
   }
 
@@ -851,6 +866,9 @@ class MilkdropPresetVM implements MilkdropVM {
       post,
       signals,
       variables: this.variablesProxy,
+      warpField: presetNeedsWarpMesh(this.preset)
+        ? buildWarpField(meshField, this.geometryState)
+        : null,
       compatibility: this.preset.ir.compatibility,
       gpuGeometry,
     });

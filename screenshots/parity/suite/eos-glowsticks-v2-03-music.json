@@ -2,13 +2,13 @@
   "version": 1,
   "presetId": "eos-glowsticks-v2-03-music",
   "title": "Eo.S. - Glowsticks v2 03 Music",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260822003210",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260823171438",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
-    "imageSha256": "ae892151ef27a13059b13f671fcc3b0fa47ba59ec9cdbcb07f77417e9ed3825b",
+    "imageSha256": "e6ab508284f9a605e21c8d77152ba11943d732283ccc120e19e8f9abdeb10061",
     "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.meta.json",
-    "metadataSha256": "f2625a0841709276b86afecc0e48fac3cb5dc204d939976d271f72c4f7193d9d"
+    "metadataSha256": "478576b273aafb376336e9d5d04de36ea90a0f9d704422bbe883d85efa08afde"
   },
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
@@ -25,13 +25,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 3961,
-    "mismatchRatio": 0.004297960069444444,
-    "maxChannelDelta": 171,
-    "meanAbsoluteError": 0.0012692645924110386,
-    "rmse": 0.024848836398763348,
+    "mismatchedPixels": 9011,
+    "mismatchRatio": 0.009777560763888889,
+    "maxChannelDelta": 180,
+    "meanAbsoluteError": 0.005060541201434277,
+    "rmse": 0.037880956263857624,
     "exactMatch": false,
     "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.0034016927083333334,
+      "max": 0.07754231770833334,
+      "width": 0.074140625,
+      "repeats": 10,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-22T18:05:07.787Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": null,
+    "mismatchDelta": null,
+    "noiseResolution": null,
+    "changeVerdict": "no-baseline"
   },
   "status": "pass"
 }

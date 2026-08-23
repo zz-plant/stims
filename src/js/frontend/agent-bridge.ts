@@ -111,12 +111,18 @@ declare global {
     __STIMS_AGENT_RENDER_FRAMES__?: (options?: {
       frames?: number;
       deltaMs?: number;
+      /** Start the simulation clock here (seconds) so a capture repeats. */
+      startTime?: number;
       beatPulse?: boolean;
       stimulus?: {
         spec: import('../core/testing/synthetic-stimulus.ts').StimulusSpec;
         frameOffset?: number;
         totalFrames?: number;
       };
+      /** Pump digital silence instead of the decorative synthetic signal. */
+      silentAudio?: boolean;
+      /** Pump the signal the projectM parity references were rendered against. */
+      referenceAudio?: 'silence' | 'tones';
       relationshipLock?: boolean;
     }) => { rendered: number } | null;
   }

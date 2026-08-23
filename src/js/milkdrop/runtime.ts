@@ -41,6 +41,7 @@ import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createToyRuntimeStarter } from '../core/toy-runtime-starter.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
+import { setShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
 import { createMilkdropEditorSession } from './editor-session';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import { encodePresetPreviewImage } from './preset-preview.ts';
@@ -88,6 +89,10 @@ import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
+import {
+  type MilkdropShaderExecutionMode,
+  resolveShaderExecutionMode,
+} from './shader-execution-mode.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -146,10 +151,24 @@ export function createMilkdropExperience({
      * field republishes the engine snapshot to the UI.
      */
     tempoBpm: number | null;
+    /**
+     * Whether the active preset's shader text is executing as authored on the
+     * active backend, or being approximated from its controls. Lives on the
+     * snapshot rather than being re-derived per consumer because it changes on
+     * two independent axes — the preset and the backend — and every surface
+     * that reports it must agree.
+     */
+    shaderExecution: MilkdropShaderExecutionMode | null;
     autoplay: boolean;
     transitionMode: 'blend' | 'cut';
     blendDuration: number;
   };
+
+  // Before ANY preset compiles — the deep-link prefetch below and the default
+  // preset both compile, and a preset compiled under the wrong setting would
+  // carry the wrong backend classification for the rest of the session.
+  const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
+  setShaderBranchDesugarEnabled(webgpuOptimizationFlags.shaderBranchDesugar);
 
   const catalogStore = createMilkdropCatalogStore();
   // Deep-link boots used to fetch the requested preset's source only after
@@ -180,7 +199,6 @@ export function createMilkdropExperience({
     },
   );
   const preferences = createMilkdropRuntimePreferences();
-  const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
   const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
   const performanceTracker = createMilkdropRuntimePerformanceTracker();
   const signalTracker = createMilkdropSignalTracker();
@@ -437,6 +455,10 @@ export function createMilkdropExperience({
         beat.bpm !== null && beat.confidence >= AUTO_ADVANCE_TEMPO_CONFIDENCE
           ? Math.round(beat.bpm)
           : null,
+      shaderExecution: resolveShaderExecutionMode(
+        activeCompiled,
+        activeBackend,
+      ),
       autoplay,
       transitionMode,
       blendDuration,

@@ -51,6 +51,19 @@ export type MilkdropWaveVisual = MilkdropPolyline & {
   spectrum?: boolean;
 };
 
+/**
+ * The warp grid the feedback pass draws the previous frame onto: vertex
+ * positions are the transformed lattice (renderer space), uvs are where each
+ * vertex reads from in the previous frame. Buffers are owned by the VM and
+ * reused across frames — consumers must upload, not retain.
+ */
+export type MilkdropWarpFieldVisual = {
+  density: number;
+  positions: Float32Array;
+  uvs: Float32Array;
+  indices: Uint32Array;
+};
+
 export type MilkdropMeshVisual = {
   positions: number[] | Float32Array;
   color: MilkdropColor;
@@ -281,6 +294,8 @@ export type MilkdropFrameState = {
   variables: Record<string, number>;
   compatibility: MilkdropCompatibilityReport;
   gpuGeometry: MilkdropGpuGeometryHints;
+  /** Null when the preset's transform is identity or a shader owns the warp. */
+  warpField?: MilkdropWarpFieldVisual | null;
   interaction?: MilkdropGpuInteractionPayload | null;
 };
 
@@ -309,6 +324,12 @@ export type MilkdropBlendState = MilkdropCpuBlendState | MilkdropGpuBlendState;
 export type MilkdropRenderPayload = {
   frameState: MilkdropFrameState;
   blendState?: MilkdropBlendState | null;
+  /**
+   * Harness-only: drop any feedback history before this frame, so a
+   * deterministic capture does not inherit whatever the boot sequence left
+   * in the buffers.
+   */
+  resetHistory?: boolean;
 };
 
 export type MilkdropFeedbackCompositeState = {
@@ -428,6 +449,13 @@ export interface MilkdropFeedbackManager {
     profile: MilkdropPostprocessingProfile | null | undefined,
   ): void;
   getShapeTexture?(): Texture | null;
+  /**
+   * This frame's warp grid. Optional: a manager without it falls back to the
+   * uniform-driven warp, which cannot express per-pixel transforms.
+   */
+  setWarpField?(field: MilkdropWarpFieldVisual | null): void;
+  /** Harness-only: drop accumulated frames so a capture starts from black. */
+  clearHistory?(): void;
   setAudioTexture?(texture: Texture | null): void;
   setAdaptiveQuality?(
     multipliers: Partial<{

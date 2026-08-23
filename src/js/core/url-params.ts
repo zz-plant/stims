@@ -91,6 +91,7 @@ export interface WebGpuFlagURLParams {
   descriptorFallbackToWebgl: boolean | null;
   gpuComputeVM: boolean | null;
   renderBundles: boolean | null;
+  shaderBranchDesugar: boolean | null;
 }
 
 export interface ParsedURLParams {
@@ -380,6 +381,9 @@ export function parseURLParams(
       ),
       gpuComputeVM: parseBoolParam(get('milkdrop-webgpu-compute-vm')),
       renderBundles: parseBoolParam(get('milkdrop-webgpu-render-bundles')),
+      shaderBranchDesugar: parseBoolParam(
+        get('milkdrop-webgpu-branch-desugar'),
+      ),
     },
   };
 }

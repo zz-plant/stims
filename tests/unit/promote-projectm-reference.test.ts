@@ -55,6 +55,7 @@ function writeNativeMetadata({
         height,
         fps: 60,
         frameCount: 300,
+        audioMode: 'silence' as const,
         projectmVersion: '3.1.12',
         projectmPrefix: '/opt/homebrew/opt/projectm',
         libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
@@ -145,6 +146,9 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
         warmupMs: 5000,
         captureOffsetMs: 0,
         warmupFrames: 900,
+        // Recorded from the capture sidecar so the reference and the capture
+        // it is diffed against always hear the same signal.
+        referenceAudio: 'silence',
       },
     }),
   );

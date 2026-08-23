@@ -29,6 +29,7 @@ import type {
   MilkdropProceduralMotionVectorDescriptorPlan,
   MilkdropProceduralMotionVectorFieldVisual,
   MilkdropRuntimeSignals,
+  MilkdropWarpFieldVisual,
 } from '../types';
 import {
   clamp,
@@ -377,6 +378,8 @@ function createMeshTransformFrame({
 
 // Every transform is recomputed; callers copy x/y out before the next call.
 const transientTransformResult = { x: 0, y: 0 };
+/** Companion to {@link transientTransformResult}: the warp sampling point. */
+const transientGatherResult = { x: 0, y: 0 };
 
 /**
  * Precomputed lattice constants handed to transformMeshPoint by buildMeshField:
@@ -406,6 +409,8 @@ function transformMeshPoint(
   if (frame.isIdentity) {
     transientTransformResult.x = gridX;
     transientTransformResult.y = gridY;
+    transientGatherResult.x = gridX;
+    transientGatherResult.y = gridY;
     return transientTransformResult;
   }
   const aspectX = frame.aspectX;
@@ -570,12 +575,37 @@ function transformMeshPoint(
     }
   }
 
+  // NOTE: dx/dy are MilkDrop tu/tv deltas — [0,1] across the buffer, tv
+  // measured downward — while this runs in clip space, [-1,1] and y-up, so in
+  // principle they want doubling and a y flip. Measured, that helps one preset
+  // and badly hurts another (rovastar-parallel-universe 85.3% -> 81.3%,
+  // krash-rovastar-cerebral-demons-stars 14.8% -> 44.2%), which means the mesh
+  // mapping has a deeper error than the sign — most likely the operation order
+  // versus MilkDrop's uv map. Left alone until that is settled; do not "fix"
+  // the sign in isolation.
   const tx = wx + translateX;
   const ty = wy + translateY;
 
   const transformed = transientTransformResult;
   transformed.x = (tx - centerX) * scaleX + centerX;
   transformed.y = (ty - centerY) * scaleY + centerY;
+
+  // Sampling coordinate for the warp pass: MilkDrop *gathers* — a vertex sits
+  // at its lattice position and reads the previous frame from where the
+  // transform came from — so the same per-vertex zoom/rot/dx/dy assemble the
+  // inverse of the scatter above. Drawing the scatter instead folds the grid
+  // and loses coverage wherever it leaves the screen, which cost presets that
+  // the uniform path already rendered correctly.
+  const gatherRelX = rendererX - centerX;
+  const gatherRelY = rendererY - centerY;
+  const gatherZoom = zoomExponent === 1 ? zoom : zoom ** zoomExponent;
+  const gatherScale = 1 / clamp(gatherZoom, 0.02, 50);
+  const unrotX = gatherRelX * cosRot + gatherRelY * sinRot;
+  const unrotY = -gatherRelX * sinRot + gatherRelY * cosRot;
+  transientGatherResult.x =
+    centerX + (unrotX * gatherScale) / (scaleX || 1) - translateX;
+  transientGatherResult.y =
+    centerY + (unrotY * gatherScale) / (scaleY || 1) - translateY;
   return transformed;
 }
 
@@ -883,11 +913,15 @@ export function buildMeshField({
         sourceY: 0,
         x: 0,
         y: 0,
+        warpU: 0,
+        warpV: 0,
       };
       pointEntry.sourceX = x;
       pointEntry.sourceY = y;
       pointEntry.x = point.x;
       pointEntry.y = point.y;
+      pointEntry.warpU = transientGatherResult.x;
+      pointEntry.warpV = transientGatherResult.y;
       points[pointIndex] = pointEntry;
     }
   }
@@ -1126,6 +1160,116 @@ const MOTION_VECTOR_EVAL_ROWS = 13;
 // Reused across frames; the VM is single-threaded and buildMotionVectors is
 // not reentrant. Layout: [x0, y0, x1, y1, ...] row-major over the eval grid.
 let motionVectorEvalScratch = new Float32Array(0);
+
+/**
+ * The warp mesh, in the form the feedback pass draws it.
+ *
+ * MilkDrop warps the previous frame by drawing it onto this grid: each vertex
+ * sits at its *transformed* position and carries the *lattice* position as its
+ * texture coordinate, so the image is stretched by whatever the per-frame and
+ * per-pixel equations did. The alternative — a fullscreen quad that recomputes
+ * the transform from uniforms — can only express what fits in those uniforms,
+ * which is why per-pixel warps had no effect on WebGL at all.
+ *
+ * Buffers are reused across frames; only their contents change.
+ */
+const PER_PIXEL_WARP_TARGETS = new Set([
+  'dx',
+  'dy',
+  'zoom',
+  'zoomexp',
+  'rot',
+  'warp',
+  'sx',
+  'sy',
+  'cx',
+  'cy',
+]);
+
+/**
+ * True when a preset's per-pixel code writes a warp variable — the only case
+ * the uniform-driven warp cannot express, since it has one value per frame for
+ * the whole screen.
+ *
+ * Everything else keeps the uniform path deliberately: it is what the passing
+ * projectM references were measured against, and swapping a mesh under them
+ * moved presets that already matched (glowsticks 0.43% -> 3.4%).
+ */
+export function presetNeedsWarpMesh(preset: MilkdropCompiledPreset): boolean {
+  const statements = preset.ir.perPixelStatements;
+  if (!statements || statements.length === 0) {
+    return false;
+  }
+  return statements.some((statement) =>
+    PER_PIXEL_WARP_TARGETS.has(statement.target.toLowerCase()),
+  );
+}
+
+export function buildWarpField(
+  meshField: MeshField,
+  geometryState: GeometryBuilderState,
+): MilkdropWarpFieldVisual | null {
+  const density = meshField.density;
+  if (density < 2 || meshField.points.length < density * density) {
+    return null;
+  }
+
+  const vertexCount = density * density;
+  let positions = geometryState.warpFieldPositions;
+  let uvs = geometryState.warpFieldUvs;
+  if (!positions || positions.length !== vertexCount * 2) {
+    positions = new Float32Array(vertexCount * 2);
+    uvs = new Float32Array(vertexCount * 2);
+    geometryState.warpFieldPositions = positions;
+    geometryState.warpFieldUvs = uvs;
+    geometryState.warpFieldIndices = undefined;
+  }
+  const uvBuffer = uvs ?? new Float32Array(vertexCount * 2);
+
+  for (let index = 0; index < vertexCount; index += 1) {
+    const point = meshField.points[index];
+    if (!point) {
+      return null;
+    }
+    positions[index * 2] = point.x;
+    positions[index * 2 + 1] = point.y;
+    // Renderer space is [-1,1] with y up; texture space is [0,1] with v up,
+    // matching how the feedback targets are sampled elsewhere.
+    //
+    // Vertices carry the transformed position and read from the lattice — a
+    // scatter. MilkDrop gathers instead, and the gather variant was written
+    // and measured here: it came out worse on the one preset class this path
+    // serves (87.0% vs 82.9% against the projectM reference), so the scatter
+    // stands until the gather's sign and aspect conventions are pinned down.
+    uvBuffer[index * 2] = (point.sourceX + 1) * 0.5;
+    uvBuffer[index * 2 + 1] = (point.sourceY + 1) * 0.5;
+  }
+
+  let indices = geometryState.warpFieldIndices;
+  if (!indices) {
+    const quadCount = (density - 1) * (density - 1);
+    indices = new Uint32Array(quadCount * 6);
+    let write = 0;
+    for (let row = 0; row + 1 < density; row += 1) {
+      for (let col = 0; col + 1 < density; col += 1) {
+        const topLeft = row * density + col;
+        const topRight = topLeft + 1;
+        const bottomLeft = topLeft + density;
+        const bottomRight = bottomLeft + 1;
+        indices[write] = topLeft;
+        indices[write + 1] = bottomLeft;
+        indices[write + 2] = topRight;
+        indices[write + 3] = topRight;
+        indices[write + 4] = bottomLeft;
+        indices[write + 5] = bottomRight;
+        write += 6;
+      }
+    }
+    geometryState.warpFieldIndices = indices;
+  }
+
+  return { density, positions, uvs: uvBuffer, indices };
+}
 
 export function buildMotionVectors({
   state,

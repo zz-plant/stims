@@ -213,9 +213,13 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
       'gpu',
       'divergence',
       'tier',
+      'mirrored',
+      'flipped',
+      'upside down',
+      'tone mapped',
     ],
-    run: ['lab:gpu-differential', 'lab:replay'],
-    note: 'The two backends must agree pixel-for-pixel and nothing fails loudly when they do not. lab:replay --tier gpu names the first divergent frame.',
+    run: ['lab:backend-diff', 'lab:gpu-differential', 'lab:replay'],
+    note: 'Reach for lab:backend-diff first: it is the only one that compares RENDERED FRAMES across the two backends, scoring each preset against its own same-backend noise floor and naming a mirrored frame or a constant colour shift outright. lab:gpu-differential and lab:replay --tier gpu compare VM execution tiers instead, and name the first divergent frame once you know the backends disagree.',
   },
   {
     when: [

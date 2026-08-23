@@ -13,6 +13,8 @@ export type NativeProjectMCaptureOptions = {
   height: number;
   fps: number;
   frameCount: number;
+  /** PCM fed to projectM while warming up. See the harness for the signal. */
+  audioMode: 'silence' | 'tones' | 'beat';
   projectmPrefix: string;
   sdlPrefix: string;
 };
@@ -58,7 +60,7 @@ export type NativeProjectMReferenceMetadata = {
     frameCount: number;
     nominalDurationMs: number;
     timingPolicy: 'projectM-renderFrame-no-external-throttle';
-    audio: 'silence';
+    audio: 'silence' | 'tones' | 'beat';
     framebuffer: 'GL_BACK';
     imageSha256: string;
   };
@@ -264,6 +266,15 @@ export function parseNativeProjectMCaptureArgs(
     height: readPositiveInteger(argv, '--height', 720),
     fps: readPositiveInteger(argv, '--fps', 60),
     frameCount: readPositiveInteger(argv, '--frames', 300),
+    audioMode: (() => {
+      const raw = (readArg(argv, '--audio', 'silence') ?? 'silence').trim();
+      if (raw !== 'silence' && raw !== 'tones' && raw !== 'beat') {
+        throw new Error(
+          `--audio must be "silence", "tones" or "beat", got "${raw}".`,
+        );
+      }
+      return raw;
+    })(),
     projectmPrefix:
       readArg(argv, '--projectm-prefix', '/opt/homebrew/opt/projectm') ??
       '/opt/homebrew/opt/projectm',
@@ -282,6 +293,7 @@ export function buildNativeProjectMReferenceMetadata(input: {
   height: number;
   fps: number;
   frameCount: number;
+  audioMode: 'silence' | 'tones' | 'beat';
   projectmVersion: string;
   projectmPrefix: string;
   libraryPath: string;
@@ -342,7 +354,7 @@ export function buildNativeProjectMReferenceMetadata(input: {
       frameCount: input.frameCount,
       nominalDurationMs: Math.round((input.frameCount / input.fps) * 1000),
       timingPolicy: 'projectM-renderFrame-no-external-throttle',
-      audio: 'silence',
+      audio: input.audioMode,
       framebuffer: 'GL_BACK',
       imageSha256: input.imageSha256,
     },
@@ -425,7 +437,9 @@ export function validateNativeProjectMReferenceMetadata(
     );
   }
   if (
-    metadata.capture.audio !== 'silence' ||
+    (metadata.capture.audio !== 'silence' &&
+      metadata.capture.audio !== 'tones' &&
+      metadata.capture.audio !== 'beat') ||
     metadata.capture.framebuffer !== 'GL_BACK' ||
     !Number.isSafeInteger(metadata.capture.fps) ||
     !Number.isSafeInteger(metadata.capture.frameCount)
