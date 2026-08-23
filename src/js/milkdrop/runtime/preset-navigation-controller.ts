@@ -1,7 +1,14 @@
 import { getSessionRandom } from '../../core/deterministic-random.ts';
-import { notePresetShown } from '../../core/services/preset-telemetry';
+import {
+  notePresetShown,
+  noteShaderExecution,
+} from '../../core/services/preset-telemetry';
 import { compileMilkdropPresetSource } from '../compiler';
 import { prewarmMilkdropPrograms } from '../expression-jit.ts';
+import {
+  isShaderApproximated,
+  resolveShaderExecutionMode,
+} from '../shader-execution-mode.ts';
 import type {
   MilkdropCatalogStore,
   MilkdropCompiledPreset,
@@ -272,8 +279,29 @@ export function createMilkdropPresetNavigationController({
 
       trace.step('applyCompiledPreset');
       applyCompiledPreset(nextCompiled);
+      const shaderExecution = resolveShaderExecutionMode(
+        nextCompiled,
+        getActiveBackend(),
+      );
       notePresetShown(nextCompiled.source.id);
-      setOverlayStatus(`Loaded ${nextCompiled.title}.`);
+      noteShaderExecution(
+        nextCompiled.source.id,
+        shaderExecution,
+        getActiveBackend(),
+      );
+      // The status line is where this app already says what it just did, and
+      // it is the only place a substitution can be reported at the moment it
+      // happens. Approximated presets are rare (19 of 1201 shader-bearing
+      // bundled presets, on WebGPU), so naming it here costs nothing on a
+      // normal load and is the difference between a silently wrong picture
+      // and a reported one. It rides the existing "Loaded X." line rather
+      // than adding a surface of its own, so it is a clause on a message the
+      // viewer already sees, not a new banner.
+      setOverlayStatus(
+        isShaderApproximated(shaderExecution)
+          ? `Loaded ${nextCompiled.title} — shader text approximated on ${getActiveBackend() === 'webgpu' ? 'WebGPU' : 'WebGL'}.`
+          : `Loaded ${nextCompiled.title}.`,
+      );
       scheduleAdjacentPresetPrefetch(id);
 
       trace.step('catalogSync');

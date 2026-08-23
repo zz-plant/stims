@@ -774,6 +774,7 @@ function StimsWorkspaceAppShell() {
         mode: snap?.transitionMode ?? null,
         blendDuration: snap?.blendDuration ?? null,
       },
+      shaderExecution: snap?.shaderExecution ?? null,
     };
   }, []);
 

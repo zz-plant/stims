@@ -101,6 +101,28 @@ bun run parity:suite -- --output ./screenshots/parity --write-diff-images
 
 That suite resolves the latest Stims capture per certified preset, compares it to the checked-in projectM reference image, writes per-preset reports under `./screenshots/parity/suite/`, and ranks results by worst mismatch first.
 
+### Two things that make a parity number a lie
+
+**Captures must run one at a time.** `parity:capture` is serial by default and warns if `--concurrency` is raised. Parallel captures are not merely slower: Chromium instances contend for the GPU and lose their device, and the pre-capture transition settle loop burns a variable number of frames so the pump lands somewhere else in the preset's evolution. Measured over three passes of the nine certified presets, `100-square` scored 1.30/1.31/1.81% serially and 1.30/17.24/34.97% at concurrency 4, and every serial capture settled in 0 extra frames against up to 180 at concurrency 4.
+
+**A single capture is not evidence.** Even serially, the same build scores differently run to run, because the capture runs with live audio while the projectM reference was captured under silence, and because the frame count before the deterministic pump varies. Calibrate the spread before quoting a delta:
+
+```bash
+bun run parity:noise -- --all --repeats 10 --write
+```
+
+That writes `src/data/milkdrop-parity/parity-noise-bands.json`, and `parity:suite` then judges every result against its band and the previous summary: a delta no larger than the band is reported as `no-measurable-change` rather than as an improvement or a regression. Presets differ by two orders of magnitude here — `260-compshader-noise_lq` moves by 0.02 percentage points between runs while `rovastar-parallel-universe` moves by 20 — so a 5-point "improvement" is a result on one preset and a coin flip on the other. A preset with no band gets the verdict `noise-band-unmeasured`, which is the suite refusing to pretend the delta means something.
+
+### References that certify nothing
+
+A reference frame that is almost entirely background cannot carry parity signal: a renderer that draws nothing already scores under the fail threshold, so the preset passes whatever happens.
+
+```bash
+bun run parity:check-references
+```
+
+That scores each certified reference against a solid-black frame using the preset's own diff threshold and reports the headroom over its fail threshold. `parity:promote-reference` runs the same check and refuses to certify a reference a blank frame would pass, unless `--allow-weak-reference` is given.
+
 For the four bundled shipped presets, a successful suite result should be promoted only after the checked-in reference is present and the report points at the same preset id.
 
 Promote an individual suite result into the checked-in measured-results manifest:

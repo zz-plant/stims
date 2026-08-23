@@ -3,28 +3,54 @@
  * manifest.
  *
  * Capture stage of the parity pipeline (capture -> diff -> promote). Ensures
- * the dev server is up, then fans play-toy child processes across the manifest
- * presets using each preset's warmup/capture-offset timing, viewport and
- * required backend, writing canvas PNGs plus debug snapshots into the parity
- * artifact directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts
- * consume.
+ * the dev server is up, then walks the manifest presets on one reused browser,
+ * using each preset's warmup/capture-offset timing, viewport and required
+ * backend, writing canvas PNGs plus debug snapshots into the parity artifact
+ * directory that diff-parity-artifacts.ts and run-parity-diff-suite.ts consume.
+ *
+ * The browser is reopened only when the next preset needs a different renderer
+ * profile, not once per preset: measured over the nine WebGPU-certified
+ * presets, 32.8s against 111.5s process-per-preset (3.4x). The win is smaller
+ * on the 39 WebGL presets, whose ~90s software-rendered pump dwarfs the ~8s of
+ * process and browser start being saved. `--isolate-captures` restores the old
+ * behaviour.
  *
  *   bun run parity:capture -- [--preset <id>]... [--output <dir>] [--port <n>]
  *
- * `--force-webgl`/`--force-webgpu` override the manifest's required backend
- * (mutually exclusive), `--concurrency <n>` sizes the worker pool, and
- * `--no-headless` shows the browser.
+ * Captures run one at a time. `--concurrency <n>` opts into a worker pool and
+ * warns, because parallel captures corrupt frames (measured: 100-square scored
+ * 1.30-1.81% serially and 17.24%/34.97% at concurrency 4).
+ * `--force-webgl`/`--force-webgpu` override the manifest's required backend —
+ * mutually exclusive, and rejected before any capture runs unless
+ * `--allow-backend-override` is passed — and `--no-headless` shows the browser.
  */
 import { spawn } from 'node:child_process';
-import os from 'node:os';
 import { ensureDevServer } from './dev-server.ts';
-import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
+import { loadParityArtifactManifest } from './parity-artifacts.ts';
+import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
+  type PlayToyBrowserSession,
+  type PlayToyOptions,
+  type PlayToyResult,
+  playToy,
+} from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
-const DEFAULT_CONCURRENCY = Math.min(
-  4,
-  Math.max(1, (os.availableParallelism?.() ?? os.cpus()?.length ?? 4) - 1),
-);
+/**
+ * Captures run one at a time.
+ *
+ * Parallel captures do not just run slower, they produce different pictures.
+ * Measured on this machine across three passes of the nine certified presets:
+ * 100-square scored 1.30/1.31/1.81% serially and 1.30/17.24/34.97% at
+ * concurrency 4; 250-wavecode 0.50/0.50/1.13% against 0.51/3.02/4.24%.
+ * Two mechanisms, both driven by the host being busy: Chromium instances
+ * contend for the GPU and lose their device mid-run, and the pre-capture
+ * transition settle loop burns a variable number of frames (0 on every serial
+ * capture, up to 180 at concurrency 4) so the pump lands on a different frame
+ * of the preset's evolution.
+ */
+const DEFAULT_CONCURRENCY = 1;
 
 export type CaptureVisualReferenceSuiteOptions = {
   repoRoot: string;
@@ -35,6 +61,14 @@ export type CaptureVisualReferenceSuiteOptions = {
   presetIds?: string[];
   rendererProfile?: 'compatibility' | 'webgpu';
   concurrency?: number;
+  /** Permit `--force-webgl`/`--force-webgpu` to contradict a certified backend. */
+  allowBackendOverride?: boolean;
+  /**
+   * Spawn a fresh `bun scripts/play-toy.ts` per preset instead of reusing one
+   * browser. Costs ~60s per preset; buys total isolation. Worth it only when
+   * a capture is suspected of contaminating the next one.
+   */
+  isolateCaptures?: boolean;
 };
 
 type VisualReferenceCaptureRequest = Required<
@@ -56,6 +90,7 @@ type VisualReferenceCaptureRequest = Required<
     | 'catalogMode'
     | 'screenshotSurface'
     | 'deterministicFrames'
+    | 'referenceAudio'
   >
 >;
 
@@ -80,6 +115,9 @@ export function buildVisualReferenceCaptureRequests({
       port,
       duration: preset.capture.warmupMs + preset.capture.captureOffsetMs,
       deterministicFrames: preset.capture.warmupFrames,
+      // The reference records what projectM heard; the capture has to hear the
+      // same thing or the diff is comparing two different performances.
+      referenceAudio: preset.capture.referenceAudio,
       viewportWidth: preset.capture.width,
       viewportHeight: preset.capture.height,
       screenshot: true,
@@ -128,6 +166,54 @@ export function parsePlayToyStdout(stdout: string): PlayToyResult {
     : new Error('No JSON output found');
 }
 
+/**
+ * Run one capture on an already-open browser.
+ *
+ * The suite used to spawn `bun scripts/play-toy.ts` per preset, which pays for
+ * a Bun start, a Chromium launch and a cold dev-server transform on every
+ * preset. On hardware WebGPU that overhead is most of the run: 12.4s per
+ * preset process-per-preset against 3.6s reusing the browser, where the part
+ * that actually matters — pumping 900 deterministic frames — is about 1.5s.
+ * On WebGL the same 900 frames take ~90s of software rasterisation, so the
+ * saving is real but proportionally small.
+ *
+ * Reusing the browser is only sound because captures are already deterministic
+ * by construction: `deterministicFrames` pumps a fixed frame count through
+ * `renderFrames({ startTime: 0 })`, which resets the simulation clock and
+ * clears feedback history, so preset N+1 cannot inherit preset N's warp
+ * buffer. Without that reset this would be a correctness bug, not a speedup.
+ */
+function runPlayToyInProcess(
+  request: VisualReferenceCaptureRequest,
+  browserSession: PlayToyBrowserSession,
+): Promise<PlayToyResult> {
+  return playToy({
+    slug: request.slug,
+    presetId: request.presetId,
+    audioMode: request.audioMode,
+    port: request.port,
+    duration: request.duration,
+    deterministicFrames: request.deterministicFrames,
+    referenceAudio: request.referenceAudio,
+    // Pin the quality ladder, exactly as the child-process argv did. Adaptive
+    // quality reacts to frame time, so a capture taken while the machine is
+    // busy renders at a different scale than one taken idle.
+    lockedQualityStep: 0,
+    viewportWidth: request.viewportWidth,
+    viewportHeight: request.viewportHeight,
+    outputDir: request.outputDir,
+    rendererProfile: request.rendererProfile,
+    catalogMode: request.catalogMode,
+    screenshotSurface: request.screenshotSurface,
+    headless: request.headless,
+    vibeMode: request.vibeMode,
+    debugSnapshot: request.debugSnapshot,
+    screenshot: true,
+    video: false,
+    browserSession,
+  });
+}
+
 function runPlayToyInChildProcess(
   request: VisualReferenceCaptureRequest,
   label: string,
@@ -151,6 +237,8 @@ function runPlayToyInChildProcess(
       // measured on the same preset.
       '--deterministic-frames',
       String(request.deterministicFrames),
+      '--reference-audio',
+      request.referenceAudio,
       // Pin the quality ladder. Adaptive quality reacts to frame time, so a
       // capture taken while the machine is busy — several presets captured
       // at once, say — renders at a different scale than one taken idle, and
@@ -236,45 +324,200 @@ export function assertVisualReferenceCaptureSucceeded(
   return result;
 }
 
+/**
+ * Reject a forced backend that contradicts a certified preset before spending
+ * a capture on it.
+ *
+ * The diff suite already catches this, but only after every capture has run
+ * and only as a per-preset `backend-mismatch` line in a summary — minutes of
+ * GPU time to learn that a flag was wrong. The check is a string comparison
+ * against the manifest, so it costs nothing to do first.
+ */
+export function assertForcedBackendMatchesManifest({
+  repoRoot,
+  presetIds,
+  rendererProfile,
+  allowBackendOverride,
+}: Pick<
+  CaptureVisualReferenceSuiteOptions,
+  'repoRoot' | 'presetIds' | 'rendererProfile' | 'allowBackendOverride'
+>) {
+  if (!rendererProfile || allowBackendOverride) {
+    return;
+  }
+  const forcedBackend = rendererProfile === 'webgpu' ? 'webgpu' : 'webgl';
+  const forcingFlag =
+    rendererProfile === 'webgpu' ? '--force-webgpu' : '--force-webgl';
+  const manifest = loadVisualReferenceManifest(repoRoot);
+  const presetFilter = presetIds ? new Set(presetIds) : null;
+  const conflicting = manifest.presets.filter(
+    (preset) =>
+      (!presetFilter || presetFilter.has(preset.id)) &&
+      preset.capture.requiredBackend !== forcedBackend,
+  );
+  if (conflicting.length === 0) {
+    return;
+  }
+  const requiredFlag =
+    conflicting[0].capture.requiredBackend === 'webgpu'
+      ? '--force-webgpu'
+      : '--force-webgl';
+  const sample = conflicting
+    .slice(0, 5)
+    .map((preset) => `${preset.id} (${preset.capture.requiredBackend})`)
+    .join(', ');
+  throw new Error(
+    `${forcingFlag} would capture ${conflicting.length} preset(s) on ${forcedBackend.toUpperCase()}, ` +
+      `but their certified reference requires the other backend: ${sample}` +
+      `${conflicting.length > 5 ? ', ...' : ''}. ` +
+      `A capture on the wrong backend can only ever report backend-mismatch. ` +
+      `Drop the flag to use each preset's certified backend, pass ${requiredFlag} instead, ` +
+      `select matching presets with --preset, or pass --allow-backend-override to capture anyway.`,
+  );
+}
+
+/**
+ * Fail a capture whose actual backend is not the certified one.
+ *
+ * A WebGPU capture that quietly fell back to WebGL is not a WebGL capture of
+ * record — it is a run whose device went away — and the diff suite would have
+ * reported it as `backend-mismatch` after the whole batch finished.
+ */
+export function assertCaptureBackendMatches({
+  presetId,
+  requiredBackend,
+  actualBackend,
+}: {
+  presetId: string;
+  requiredBackend: 'webgl' | 'webgpu';
+  actualBackend: 'webgl' | 'webgpu' | null;
+}) {
+  if (actualBackend === requiredBackend) {
+    return;
+  }
+  const requiredFlag =
+    requiredBackend === 'webgpu' ? '--force-webgpu' : '--force-webgl';
+  throw new Error(
+    `Capture for "${presetId}" ran on ${
+      actualBackend ? actualBackend.toUpperCase() : 'an unrecorded backend'
+    } but its certified reference requires ${requiredBackend.toUpperCase()}. ` +
+      `Re-run with ${requiredFlag} on a host where that backend is available, ` +
+      `or re-certify the reference for the backend you can actually run.`,
+  );
+}
+
+function latestCaptureBackend(outputDir: string, presetId: string) {
+  const artifacts = loadParityArtifactManifest(outputDir).artifacts.filter(
+    (entry) => entry.kind === 'stims-capture' && entry.presetId === presetId,
+  );
+  return artifacts[artifacts.length - 1]?.capture?.backend ?? null;
+}
+
 export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
+  assertForcedBackendMatchesManifest(options);
   const server = await ensureDevServer(options.port, options.repoRoot);
   const requests = buildVisualReferenceCaptureRequests(options);
-  // WebGPU captures run one at a time unless told otherwise. Parallel
-  // Chromium instances contend for the GPU and lose their device mid-run
-  // ("A valid external Instance reference no longer exists"); the page then
-  // keeps compositing its last frame, which is the boot preset — so every
-  // preset in a batch was captured as the same magenta frame and scored
-  // ~96% against its own reference. Measured on the same three presets:
-  // 96/93/97% at concurrency 4, and 0.50/0.17/16% at 1.
-  const wantsWebGpu = requests.some(
-    (request) => request.rendererProfile === 'webgpu',
-  );
-  const concurrency =
-    options.concurrency ?? (wantsWebGpu ? 1 : DEFAULT_CONCURRENCY);
+  const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
+  if (concurrency > 1) {
+    console.warn(
+      `[parity:capture] Running ${concurrency} captures at once. Frames captured under ` +
+        `GPU contention are not trustworthy evidence: parallel Chromium instances lose their ` +
+        `device mid-run and the transition settle loop burns a variable number of frames, so ` +
+        `the capture lands on a different frame of the preset. Measured on this corpus, ` +
+        `100-square scored 1.30-1.81% serially and 17.24%/34.97% at concurrency 4. ` +
+        `Drop --concurrency before believing any number this produces.`,
+    );
+  }
   const results: PlayToyResult[] = new Array(requests.length);
   const errors: Error[] = [];
 
   let nextIndex = 0;
   async function worker() {
-    while (nextIndex < requests.length) {
-      const index = nextIndex++;
-      const request = requests[index];
-      try {
-        const result = await runPlayToyInChildProcess(
-          request,
-          `${request.presetId} (${index + 1}/${requests.length})`,
-        );
-        results[index] = assertVisualReferenceCaptureSucceeded(result);
-      } catch (error) {
-        results[index] = {
-          slug: request.slug,
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
-        errors.push(error instanceof Error ? error : new Error(String(error)));
+    // One browser per worker, opened on the first request and reused for the
+    // rest. Held here rather than hoisted to the suite so a pool of workers
+    // still gets one browser each instead of sharing one.
+    //
+    // Reopened whenever the next preset needs a different renderer profile or
+    // headless mode: those are Chromium launch flags, so playToy rejects a
+    // session that does not match rather than silently capturing on the wrong
+    // backend. This manifest is mixed — 9 certified presets require WebGPU and
+    // 39 require WebGL — so a worker that opened one browser and kept it for
+    // the whole run failed every preset after the first profile change.
+    let browserSession: PlayToyBrowserSession | null = null;
+    const releaseSession = async () => {
+      const session = browserSession;
+      browserSession = null;
+      if (session) {
+        await closePlayToyBrowserSession(session).catch(() => {});
       }
+    };
+    const sessionFor = async (request: VisualReferenceCaptureRequest) => {
+      if (
+        browserSession &&
+        (browserSession.rendererProfile !== request.rendererProfile ||
+          browserSession.headless !== request.headless)
+      ) {
+        await releaseSession();
+      }
+      if (!browserSession) {
+        browserSession = await createPlayToyBrowserSession({
+          headless: request.headless,
+          rendererProfile: request.rendererProfile,
+        });
+      }
+      return browserSession;
+    };
+
+    try {
+      while (nextIndex < requests.length) {
+        const index = nextIndex++;
+        const request = requests[index];
+        try {
+          let result: PlayToyResult;
+          if (options.isolateCaptures) {
+            result = await runPlayToyInChildProcess(
+              request,
+              `${request.presetId} (${index + 1}/${requests.length})`,
+            );
+          } else {
+            const session = await sessionFor(request);
+            try {
+              result = await runPlayToyInProcess(request, session);
+            } catch (error) {
+              // A lost GPU device kills the browser, not just this capture.
+              // Drop it so the next preset opens a fresh one rather than
+              // failing the whole remaining manifest against a dead handle.
+              await releaseSession();
+              throw error;
+            }
+          }
+          results[index] = assertVisualReferenceCaptureSucceeded(result);
+          if (!options.allowBackendOverride) {
+            assertCaptureBackendMatches({
+              presetId: request.presetId,
+              requiredBackend:
+                request.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl',
+              actualBackend: latestCaptureBackend(
+                request.outputDir,
+                request.presetId,
+              ),
+            });
+          }
+        } catch (error) {
+          results[index] = {
+            slug: request.slug,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+          errors.push(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        }
+      }
+    } finally {
+      await releaseSession();
     }
   }
 
@@ -298,7 +541,7 @@ export async function captureVisualReferenceSuite(
 
 function usage() {
   console.error(
-    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]... [--force-webgl|--force-webgpu] [--concurrency <n>]',
+    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]... [--force-webgl|--force-webgpu] [--allow-backend-override] [--concurrency <n>]',
   );
 }
 
@@ -333,12 +576,21 @@ export function parseVisualReferenceCaptureArgs(
       : argv.includes('--force-webgpu')
         ? 'webgpu'
         : undefined,
+    allowBackendOverride: argv.includes('--allow-backend-override'),
+    isolateCaptures: argv.includes('--isolate-captures'),
+    // Left undefined when the flag is absent so the serial default applies.
+    // This used to fill in a pool size unconditionally, which defeated the
+    // suite's own "WebGPU captures run one at a time" default: it was
+    // reachable from library callers and never from the command line, so
+    // every `parity:capture` run went four wide.
     concurrency: (() => {
-      const raw = getArg(
-        '--concurrency',
-        String(DEFAULT_CONCURRENCY),
-      ) as string;
-      const parsed = Number.parseInt(raw, 10);
+      if (!argv.includes('--concurrency')) {
+        return undefined;
+      }
+      const parsed = Number.parseInt(
+        getArg('--concurrency', '1') as string,
+        10,
+      );
       return Number.isFinite(parsed) && parsed >= 1
         ? parsed
         : DEFAULT_CONCURRENCY;

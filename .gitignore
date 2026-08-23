@@ -51,6 +51,9 @@ thumbnails/
 # Ad-hoc milkdrop parity captures (regenerable via scripts/capture-*.ts).
 # Curated evidence is kept: screenshots/parity/suite/, debug-canvas-*, and the
 # captures cited by src/data/milkdrop-parity/webgpu-certification-report.json.
+# parity:noise writes one scratch capture directory per repeat; only the
+# aggregated band in src/data/milkdrop-parity/parity-noise-bands.json is kept.
+/screenshots/parity-noise/
 /screenshots/parity/*.png
 /screenshots/parity/*.debug.json
 /screenshots/parity/parity-artifacts.manifest.json

@@ -1401,6 +1401,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       // applyPostprocessingProfile for when profiles are deliberately
       // (re)enabled on both backends.
       this.feedback.applyPostprocessingProfile?.(null);
+      // The warp grid carries per-pixel transforms that no uniform can, so a
+      // preset whose dx/dy vary across the screen finally warps on WebGL.
+      this.feedback.setWarpField?.(payload.frameState.warpField ?? null);
+      if (payload.resetHistory) {
+        this.feedback.clearHistory?.();
+      }
       const audioTex = this.audioTexture.getTexture();
       if (this.feedback.setAudioTexture) {
         this.feedback.setAudioTexture(audioTex);

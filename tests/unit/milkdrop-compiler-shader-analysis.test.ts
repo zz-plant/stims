@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -10,6 +17,7 @@ import {
   splitShaderGlobalsAndBody,
 } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
 import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
+import { setShaderBranchDesugarEnabled } from '../../src/js/milkdrop/compiler/shader-branch-desugar.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
 
@@ -264,8 +272,16 @@ warp_texture_scale = bass_att * 0.5
     expect(glsl).toContain(
       'sampleUv(vec2(vUv.x, vUv.y), textureWrap), (signalTime / 5.0)',
     );
-    expect(glsl).toContain('sampleUv(vUv, textureWrap), (signalTime / 20.0)');
-    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 1.0');
+    // Source id 10 is `noise_lq`, projectM's generated 256x256 white noise —
+    // no longer sharing the smooth `noise` PNG slot (id 1). It keeps its z
+    // slice: presets do call tex3D on it, and dropping the volume treatment
+    // made those shader lines read as unsupported outright.
+    expect(glsl).toContain(
+      'sampleAuxTexture(vec4(10.0, 0, 0, 0).x, 1.0, sampleUv(vUv, textureWrap), (signalTime / 20.0))',
+    );
+    // Source id 11 is `noisevol`: projectM's generated 32^3 white-noise volume.
+    // It used to share the `noise` slot (id 1), whose asset is smooth perlin.
+    expect(glsl).toContain('sampleAuxTexture(vec4(11.0, 0, 0, 0).x, 1.0');
   });
 
   test('lowers a mix of the main sample with a scaled main sample', () => {
@@ -387,4 +403,254 @@ test('keeps native shader-body aspect as a runtime uniform', () => {
   expect(
     compiled.ir.shaderText.warpProgram?.normalizedLines.join(' '),
   ).toContain('float x = aspect');
+});
+
+describe('branch flattening for direct shader execution', () => {
+  // The rewrite ships behind `shaderBranchDesugar`, off by default while the
+  // WebGPU executor gaps it exposes are closed. Turning it on here is what
+  // keeps this coverage exercising the rewrite rather than the disabled path.
+  beforeAll(() => {
+    setShaderBranchDesugarEnabled(true);
+  });
+  afterAll(() => {
+    setShaderBranchDesugarEnabled(false);
+  });
+  beforeEach(() => {
+    clearShaderAnalysisCaches();
+  });
+
+  const nativeBody = (body: string) => `shader_body {\n${body}\n}`;
+
+  test('turns an if/else into masked assignments the statement model can run', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        vec3 ret_2;
+        ret_2 = texture(sampler_pw_main, uv).xyz;
+        if ((uv.x < 0.5)) {
+          ret_2 = vec3(1.0, 0.0, 0.0);
+        } else {
+          ret_2 = vec3(0.0, 1.0, 0.0);
+        };
+        ret = ret_2;
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    const targets = analysis.directProgramStatements.map(
+      (statement) => statement.target,
+    );
+    // Both branches survive as assignments to the same variable...
+    expect(targets.filter((target) => target === 'ret_2')).toHaveLength(3);
+    // ...and the else arm is the complement of the then arm, not a second
+    // unconditional write.
+    const lines = analysis.directProgramLines.join('\n');
+    expect(lines).toContain('1.0 - (step(0.0001, abs((uv.x < 0.5))))');
+  });
+
+  test('initializes a variable a branch writes before anything else does', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        vec3 ret_2;
+        bool hit_1;
+        ret_2 = texture(sampler_pw_main, uv).xyz;
+        if ((uv.y < 0.5)) {
+          hit_1 = (uv.x < 0.5);
+        } else {
+          hit_1 = bool(0);
+        };
+        ret = ret_2;
+      `),
+    );
+
+    // Without the seed the masked assignment would read an undeclared value
+    // and the whole statement would be dropped.
+    expect(analysis.directProgramLines[1]).toBe('hit_1 = 0.0');
+  });
+
+  test('unrolls a bounded loop into one copy of the body per iteration', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 < 4; i_1++) {
+          acc_1 = (acc_1 + float(i_1));
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    const lines = analysis.directProgramLines;
+    // Four copies, each with the induction variable replaced by its value.
+    expect(lines.filter((line) => line.startsWith('acc_1 = (acc_1 +'))).toEqual(
+      [
+        'acc_1 = (acc_1 + float(0))',
+        'acc_1 = (acc_1 + float(1))',
+        'acc_1 = (acc_1 + float(2))',
+        'acc_1 = (acc_1 + float(3))',
+      ],
+    );
+  });
+
+  test('resolves a loop bound held in a local assigned a literal', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        float depth_1;
+        acc_1 = 0.0;
+        depth_1 = 3.0;
+        for (float n_1 = 0.0; n_1 < depth_1; n_1 += 1.0) {
+          acc_1 = (acc_1 + n_1);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.filter((line) =>
+        line.startsWith('acc_1 = (acc_1 +'),
+      ),
+    ).toEqual([
+      'acc_1 = (acc_1 + 0.0)',
+      'acc_1 = (acc_1 + 1.0)',
+      'acc_1 = (acc_1 + 2.0)',
+    ]);
+  });
+
+  test('composes unrolling with branch flattening inside the body', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 <= 1; i_1++) {
+          if ((uv.x < 0.5)) {
+            acc_1 = (acc_1 + 1.0);
+          };
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.filter((line) => line.includes('if(')),
+    ).toHaveLength(2);
+  });
+
+  test('leaves a data-dependent loop bound for the raw-GLSL fallback', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        int iter_1;
+        acc_1 = 0.0;
+        iter_1 = int((q1 * 8.0));
+        for (int i_1 = 0; i_1 < iter_1; i_1++) {
+          acc_1 = (acc_1 + 1.0);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    // Refusing has to leave today's behaviour untouched: the body stays
+    // unparsed and WebGL runs the raw GLSL.
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+
+  test('leaves an unbounded loop for the raw-GLSL fallback', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        while (true) {
+          acc_1 = (acc_1 + 1.0);
+          break;
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+
+  test('keeps a matrix element write, and off the WebGPU direct path', () => {
+    // The desugar's assignment pattern is narrower than the statement parser's
+    // — it does not match an indexed target — and dropping what it cannot
+    // match corrupted the preset silently: the body still looked fully parsed,
+    // so it was classified as directly executable while a matrix was declared
+    // and never assigned. A corpus sweep found 49 presets losing 469 such
+    // statements, several rendering black. So the write is passed through.
+    //
+    // Passing it through is not the same as being able to run it. The WebGPU
+    // node executor cannot write one matrix element, and what it built for a
+    // body full of them was a 44641-member WGSL uniform struct that crashed
+    // the GPU process, so the line is recorded as unparsed: WebGL keeps
+    // running the raw GLSL and WebGPU falls back to scalar controls.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat2 basis_1;
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          basis_1[uint(0)] = vec2(1.0, 0.0);
+          if ((uv.x < 0.5)) {
+            ret_2 = vec3(1.0, 0.0, 0.0);
+          };
+          ret = ret_2;
+        `),
+    );
+
+    // The HLSL-to-GLSL normalizer rewrites `uint(0)` to `int(0)` on the way
+    // through; what matters is that the matrix write survives at all.
+    const matrixWrite = /^basis_1\[[^\]]+\] = vec2\(1\.0, 0\.0\)$/u;
+    expect(
+      analysis.nativeBodyUnparsedLines.some((line) => matrixWrite.test(line)),
+    ).toBe(true);
+    expect(
+      analysis.directProgramLines.some((line) => matrixWrite.test(line)),
+    ).toBe(false);
+  });
+
+  test('refuses a body whose branch holds a statement it cannot rewrite', () => {
+    // Under a mask there is no honest pass-through: emitted unchanged, the
+    // statement would run unconditionally. The whole body falls back instead.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat2 basis_1;
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          if ((uv.x < 0.5)) {
+            basis_1[uint(0)] = vec2(1.0, 0.0);
+          };
+          ret = ret_2;
+        `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+
+  test('refuses a loop whose trip count exceeds the unroll budget', () => {
+    const analysis = extractShaderControls(
+      nativeBody(`
+        float acc_1;
+        acc_1 = 0.0;
+        for (int i_1 = 0; i_1 < 4096; i_1++) {
+          acc_1 = (acc_1 + 1.0);
+        };
+        ret = vec3(acc_1, 0.0, 0.0);
+      `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
+  });
+});
+
+describe('shader expression numbers', () => {
+  test('parses scientific notation', () => {
+    // Compiler-emitted GLSL is full of `1e-08`; stopping the scan at the `e`
+    // left a bare identifier behind and failed the whole line.
+    expect(parseMilkdropShaderStatement('x = (1e-08 * abs(y))')).not.toBeNull();
+    expect(parseMilkdropShaderStatement('x = 2.5E+3')).not.toBeNull();
+    expect(parseMilkdropShaderStatement('x = 5e')).toBeNull();
+    expect(parseMilkdropShaderStatement('x = 1.2.3')).toBeNull();
+  });
 });

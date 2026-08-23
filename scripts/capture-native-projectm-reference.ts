@@ -186,6 +186,7 @@ export async function captureNativeProjectMReference(
         String(options.height),
         String(options.fps),
         String(options.frameCount),
+        options.audioMode,
       ],
       'Native projectM render and teardown',
     );
@@ -219,6 +220,7 @@ export async function captureNativeProjectMReference(
       height: options.height,
       fps: options.fps,
       frameCount: options.frameCount,
+      audioMode: options.audioMode,
       projectmVersion: homebrewVersion(projectmPrefix),
       projectmPrefix,
       libraryPath,

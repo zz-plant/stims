@@ -17,8 +17,11 @@ describe('MilkDrop native noise textures', () => {
     expect(
       new Set(data.filter((_, index) => index % 4 === 0)).size,
     ).toBeGreaterThan(2);
-    // Verifies 2D noise packs uncorrelated RGB channels across spatial offsets
-    expect(new Set([data[0], data[1], data[2]]).size).toBeGreaterThanOrEqual(2);
+    // Grayscale, not per-channel noise: projectM's PerlinNoise.cpp writes one
+    // scalar per texel and replicates it into all three channels, and both
+    // projectM references measure exactly grayscale.
+    expect(new Set([data[0], data[1], data[2]]).size).toBe(1);
+    expect(data[3]).toBe(255);
   });
 
   test('packs native volume slices into a repeatable RGBA atlas', () => {
@@ -29,7 +32,7 @@ describe('MilkDrop native noise textures', () => {
     expect(data[0]).toBeLessThanOrEqual(255);
     expect(data[3]).toBe(255);
     expect(data[0]).not.toBe(data[64 * 4]);
-    // Verifies 3D volume noise packs uncorrelated RGB channels across spatial offsets
-    expect(new Set([data[0], data[1], data[2]]).size).toBeGreaterThanOrEqual(2);
+    // Grayscale for the same reason as the 2D texture above.
+    expect(new Set([data[0], data[1], data[2]]).size).toBe(1);
   });
 });

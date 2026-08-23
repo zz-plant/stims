@@ -162,6 +162,7 @@ describe('milkdrop webgpu descriptor gating', () => {
       descriptorFallbackToWebgl: true,
       gpuComputeVM: true,
       renderBundles: false,
+      shaderBranchDesugar: false,
     });
 
     expect(gated).toEqual({

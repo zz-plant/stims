@@ -19,6 +19,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {
+  Color,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -29,7 +30,6 @@ import {
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
-import { resolveLinearOutputColorSpace } from '../core/wide-gamut.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -45,6 +45,7 @@ import {
   createFeedbackRenderTarget,
   createSampleAuxTextureNode,
   createSampleUvNode,
+  createScreenSampleUvNode,
   type FeedbackRendererLike,
   getShared3dAuxTexture,
   getSharedMilkdropAuxTextures,
@@ -54,7 +55,12 @@ import {
   hasWarpTextureFeedback,
   MILKDROP_TEXTURE_FILES,
   resolveAuxTextureName,
+  sampleFeedbackTarget,
 } from './feedback-manager-webgpu-composite.ts';
+import {
+  type OutputConversionRenderer,
+  renderWithoutOutputConversion,
+} from './output-conversion-passthrough.ts';
 
 export {
   resolveDirectShaderSamplerBinding,
@@ -172,6 +178,27 @@ const TEXTURE_IDENTIFIER_TO_SAMPLER: Record<string, string> = {
   blur3tex: 'blur3',
 };
 
+/**
+ * Screen-space wrap/clamp for uploaded textures, built once: the sampler
+ * variants that take an explicit LOD or gradient cannot route through
+ * sampleFeedbackTarget, so they select their coordinate space by hand.
+ */
+const screenSampleUvNode = /* @__PURE__ */ createScreenSampleUvNode();
+
+/** Reused so clearing the feedback chain allocates nothing. */
+const CLEAR_HISTORY_COLOR_SCRATCH = /* @__PURE__ */ new Color();
+
+/** Shader sampler sources backed by one of the feedback manager's own targets. */
+const RENDER_TARGET_SHADER_SOURCES = new Set([
+  'main',
+  'pw_main',
+  'pc_main',
+  'fc_main',
+  'blur1',
+  'blur2',
+  'blur3',
+]);
+
 function resolveDirectShaderTextureNode(
   env: ShaderNodeEnv,
   canonicalSource: string,
@@ -193,6 +220,10 @@ function resolveDirectShaderTextureNode(
       return uniforms.blur3Tex;
     case 'noise':
       return uniforms.noiseTex;
+    case 'noise_lq':
+      return uniforms.noiseLqTex;
+    case 'noisevol':
+      return uniforms.noisevolTex;
     case 'perlin':
       return uniforms.perlinTex;
     case 'simplex':
@@ -262,18 +293,25 @@ function createGaussianBlurOutputNode(
       blurUniforms.kernelSideWeights.z,
       blurUniforms.kernelSideWeights.w,
     ];
-    let weightedColor = blurUniforms.sourceTex
-      .sample(centerUv)
-      .mul(blurUniforms.kernelCenterWeight);
+    let weightedColor = sampleFeedbackTarget(
+      blurUniforms.sourceTex,
+      centerUv,
+    ).mul(blurUniforms.kernelCenterWeight);
 
     for (let tap = 1; tap <= GAUSSIAN_BLUR_KERNEL_RADIUS; tap += 1) {
       const weight = sideWeights[tap - 1];
       const tapOffset = offset.mul(float(tap));
       weightedColor = weightedColor.add(
-        blurUniforms.sourceTex.sample(centerUv.add(tapOffset)).mul(weight),
+        sampleFeedbackTarget(
+          blurUniforms.sourceTex,
+          centerUv.add(tapOffset),
+        ).mul(weight),
       );
       weightedColor = weightedColor.add(
-        blurUniforms.sourceTex.sample(centerUv.sub(tapOffset)).mul(weight),
+        sampleFeedbackTarget(
+          blurUniforms.sourceTex,
+          centerUv.sub(tapOffset),
+        ).mul(weight),
       );
     }
 
@@ -332,8 +370,10 @@ function createPresentOutputNode(
     savedZoomDrift,
   } = MILKDROP_BLEND_DISSOLVE;
   return Fn(() => {
+    // Screen space for the effect math below, render-target space for the
+    // reads themselves.
     const presentUv = uv();
-    const current = uniforms.currentTex.sample(presentUv);
+    const current = sampleFeedbackTarget(uniforms.currentTex, presentUv);
     const base = current.rgb.toVar();
 
     // Chromatic aberration over the composited frame (profile-driven).
@@ -342,10 +382,12 @@ function createPresentOutputNode(
         .sub(0.5)
         .mul(uniforms.postChromaticAberration)
         .mul(uniforms.postTexelSize);
-      const red = uniforms.currentTex.sample(
+      const red = sampleFeedbackTarget(
+        uniforms.currentTex,
         clamp(presentUv.add(offset), vec2(0), vec2(1)),
       ).r;
-      const blue = uniforms.currentTex.sample(
+      const blue = sampleFeedbackTarget(
+        uniforms.currentTex,
         clamp(presentUv.sub(offset), vec2(0), vec2(1)),
       ).b;
       base.assign(vec3(red, base.g, blue));
@@ -356,17 +398,21 @@ function createPresentOutputNode(
       const texel = uniforms.postTexelSize.mul(
         max(uniforms.postBloomRadius, 0.0001),
       );
-      const top = uniforms.currentTex.sample(
-        clamp(presentUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+      const top = sampleFeedbackTarget(
+        uniforms.currentTex,
+        clamp(presentUv.add(vec2(0, texel.y), vec2(0), vec2(1))),
       ).rgb;
-      const bottom = uniforms.currentTex.sample(
-        clamp(presentUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+      const bottom = sampleFeedbackTarget(
+        uniforms.currentTex,
+        clamp(presentUv.sub(vec2(0, texel.y), vec2(0), vec2(1))),
       ).rgb;
-      const left = uniforms.currentTex.sample(
-        clamp(presentUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      const left = sampleFeedbackTarget(
+        uniforms.currentTex,
+        clamp(presentUv.sub(vec2(texel.x, 0), vec2(0), vec2(1))),
       ).rgb;
-      const right = uniforms.currentTex.sample(
-        clamp(presentUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      const right = sampleFeedbackTarget(
+        uniforms.currentTex,
+        clamp(presentUv.add(vec2(texel.x, 0), vec2(0), vec2(1))),
       ).rgb;
       const blurred = top.add(bottom).add(left).add(right).div(4);
       const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
@@ -397,7 +443,7 @@ function createPresentOutputNode(
       // moving instead of freezing for the whole blend.
       const drift = a.oneMinus().mul(savedZoomDrift).add(1.0);
       const savedUv = uv().sub(0.5).div(drift).add(0.5);
-      const saved = uniforms.savedTex.sample(savedUv);
+      const saved = sampleFeedbackTarget(uniforms.savedTex, savedUv);
       // Aspect-corrected sample point keeps dissolve patches round on any
       // viewport instead of stretched across the wide axis.
       const p = vec2(uv().x.mul(uniforms.patternAspect), uv().y);
@@ -813,8 +859,41 @@ function toShaderBool(value: ShaderNodeValue) {
   return step(0.0001, abs(scalarValue.node));
 }
 
+/**
+ * Smallest divisor magnitude the executor will divide by, so `x / 0` produces
+ * a large number rather than an infinity that poisons the frame.
+ */
+const DIVIDE_EPSILON = 0.000001;
+
+/**
+ * Division that neither flips the sign of its result nor manufactures one out
+ * of a NaN.
+ *
+ * The guard this replaces was `left / max(abs(right), eps)`, which got both
+ * wrong. Taking `abs` of the divisor made `x / -2.0` evaluate as `x / 2.0`, so
+ * every quotient with a negative denominator came out mirrored — which is most
+ * of the screen for the `x / y` in the inlined `atan2` that MilkDrop's shader
+ * transpiler emits. And `max(NaN, eps)` returns `eps` under WGSL's select-based
+ * max, so a NaN divisor became a divide by one millionth: `0.1 / sqrt(negative)`
+ * turned into 1e5 and saturated the whole frame white instead of producing the
+ * NaN that WebGL's raw GLSL produces and renders as black.
+ *
+ * Only a divisor whose magnitude is genuinely near zero is lifted, and it is
+ * lifted to `±eps` keeping its sign. `abs(NaN) < eps` is false, so a NaN
+ * divisor stays NaN and the NaN propagates, matching the other backend.
+ */
+function createSafeDivisorNode(right: any) {
+  const magnitude = max(abs(right), DIVIDE_EPSILON);
+  const signedFloor = select(right.lessThan(0), magnitude.mul(-1), magnitude);
+  return select(abs(right).lessThan(DIVIDE_EPSILON), signedFloor, right);
+}
+
+function createDivideNode(left: any, right: any) {
+  return left.div(createSafeDivisorNode(right));
+}
+
 function createModNode(left: any, right: any) {
-  return left.sub(floor(left.div(max(abs(right), 0.000001))).mul(right));
+  return left.sub(floor(createDivideNode(left, right)).mul(right));
 }
 
 function createComparisonNode(operator: string, left: any, right: any) {
@@ -902,7 +981,7 @@ function applyShaderBinaryNode(
     case '*':
       return shaderValueFromNode(lhs.mul(rhs), kind);
     case '/':
-      return shaderValueFromNode(lhs.div(max(abs(rhs), 0.000001)), kind);
+      return shaderValueFromNode(createDivideNode(lhs, rhs), kind);
     case '%':
       return shaderValueFromNode(createModNode(lhs, rhs), kind);
     case '^':
@@ -1490,7 +1569,15 @@ export function compileShaderExpressionNode(
           coordinate.kind === 'vec4'
             ? vec2(coordinate.node.x, coordinate.node.y)
             : coerceShaderValue(coordinate, 'vec2').node;
-        const sampleUv = env.sampleUvNode(coordUv, env.uniforms.textureWrap);
+        // These variants sample through `.grad()`/`.level()`/`.bias()`, so
+        // they cannot go through sampleFeedbackTarget and have to pick the
+        // right coordinate space themselves: render-target space for the
+        // feedback textures, plain screen space for uploaded ones.
+        const sampleUv = RENDER_TARGET_SHADER_SOURCES.has(
+          resolvedBinding.canonicalSource,
+        )
+          ? env.sampleUvNode(coordUv, env.uniforms.textureWrap)
+          : screenSampleUvNode(coordUv, env.uniforms.textureWrap);
         if (name === 'tex2dgrad') {
           const dx =
             args.length >= 2
@@ -2073,6 +2160,72 @@ function setShaderStageUvGeometry(env: ShaderNodeEnv, uvNode: any) {
   setShaderEnvValue(env, 'ang', shaderFloat(atan(centered.y, centered.x)));
 }
 
+/**
+ * Seed the four geometry inputs MilkDrop hands every warp-mesh vertex before
+ * running the per-pixel block, in MilkDrop's own coordinate space.
+ *
+ * On WebGPU there is no CPU warp mesh at all -- vm.ts takes the procedural
+ * mesh descriptor, buildMeshField returns zero points and setWarpField only
+ * exists on the WebGL manager -- so this per-fragment program IS the per-pixel
+ * warp path. It used to seed only `x` and `y`, as raw uv(): wrong space, and
+ * `rad`/`ang` unbound entirely, which made every statement reading them
+ * compile to null and get dropped by runPerPixelProgram.
+ *
+ * The formula is butterchurn's `runPixelEquations` vertex loop
+ * (butterchurn 2.6.7, lib/butterchurn.js:2596-2610), which is the faithful
+ * MilkDrop 2 port and is already what this file's shader-stage helper
+ * (setShaderStageUvGeometry), the WebGL warp/comp templates
+ * (feedback-manager-shared.ts:970, :1161) and the CPU mesh lattice
+ * (vm/geometry-builder.ts buildStaticMeshLattice) all use:
+ *
+ *   x   = xNdc *  0.5 * aspectx + 0.5    // 0 = left,  1 = right
+ *   y   = yNdc * -0.5 * aspecty + 0.5    // 0 = TOP,   1 = bottom
+ *   rad = sqrt(xNdc^2*aspectx^2 + yNdc^2*aspecty^2)
+ *   ang = atan2(yNdc*aspecty, xNdc*aspectx)
+ *
+ * Three deliberate non-features, all three agreed on by BOTH reference
+ * implementations:
+ *   1. rad/ang are NOT re-centred on cx/cy. projectM 3.1.12 -- the native
+ *      oracle the parity corpus is captured from -- binds `rad` and `ang`
+ *      READ-ONLY to origrad/origtheta (BuiltinParams.cpp:396-398), a mesh
+ *      built once at init from the fixed screen centre
+ *      (PresetFrameIO.cpp:97-98). butterchurn likewise reads cx/cy only in
+ *      the sampling transform further down the same loop. A `warpCenter`
+ *      uniform would encode a formula neither reference has.
+ *   2. aspect is applied to the FIRST power. Squaring it (which happens if
+ *      you take the aspect-corrected x/y and multiply by aspect again) is
+ *      not what either reference does.
+ *   3. ang's y term keeps the y-UP NDC sign -- the opposite sign from the
+ *      `y` variable, which is y-down.
+ *
+ * Known oracle gap, recorded rather than encoded: projectM 3.1.12 drops
+ * aspect from rad/ang entirely and normalises by 0.7071067 (1/sqrt2), so its
+ * rad is ~1/sqrt2 of MilkDrop's even at square aspect, and its `x`/`y` carry
+ * no aspect at all. On the default 1280x720 capture (aspecty = 0.5625) that
+ * is a large, irreducible difference for rad-heavy presets. Matching it would
+ * break MilkDrop fidelity and split WebGPU from WebGL, so it is not done here.
+ */
+function setPerPixelEnvGeometry(env: ShaderNodeEnv, screenUv: any) {
+  const aspectX = env.uniforms.aspect.x;
+  const aspectY = env.uniforms.aspect.y;
+  const ndcX = screenUv.x.sub(0.5).mul(2);
+  const ndcY = screenUv.y.sub(0.5).mul(2);
+  const aspectNdcX = ndcX.mul(aspectX);
+  const aspectNdcY = ndcY.mul(aspectY);
+  setShaderEnvValue(env, 'x', shaderFloat(ndcX.mul(0.5).mul(aspectX).add(0.5)));
+  setShaderEnvValue(
+    env,
+    'y',
+    shaderFloat(ndcY.mul(-0.5).mul(aspectY).add(0.5)),
+  );
+  setShaderEnvValue(
+    env,
+    'rad',
+    shaderFloat(length(vec2(aspectNdcX, aspectNdcY))),
+  );
+  setShaderEnvValue(env, 'ang', shaderFloat(atan(aspectNdcY, aspectNdcX)));
+}
+
 function applyDirectWarpProgram(
   program: MilkdropShaderProgramPayload | null,
   env: ShaderNodeEnv,
@@ -2150,6 +2303,8 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
     uniforms.videoTex,
     uniforms.glyphTex,
     uniforms.organicTex,
+    uniforms.noiseLqTex,
+    uniforms.noisevolTex,
     uniforms.blur1Tex,
     uniforms.blur2Tex,
     uniforms.blur3Tex,
@@ -2162,6 +2317,7 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
       pattern: uniforms.patternTex3D,
       fractal: uniforms.fractalTex3D,
       perlin: uniforms.perlinTex3D,
+      noisevol: uniforms.noisevolTex3D,
     },
   );
 }
@@ -2219,8 +2375,7 @@ function createFeedbackBlendOutputNode(
       ...shaderEnv,
       values: new Map(shaderEnv.values),
     };
-    setShaderEnvValue(perPixelEnv, 'x', shaderFloat(baseUv.x));
-    setShaderEnvValue(perPixelEnv, 'y', shaderFloat(baseUv.y));
+    setPerPixelEnvGeometry(perPixelEnv, baseUv);
     if (perPixelPrograms) {
       runPerPixelProgram(perPixelPrograms.statements, perPixelEnv);
     }
@@ -2514,8 +2669,14 @@ function createCompositeOutputNode(
     const chromaDir = baseUv
       .sub(0.5)
       .mul(uniforms.chromaticAberration.mul(0.02));
-    const chromaR = uniforms.internalTex.sample(baseUv.add(chromaDir)).r;
-    const chromaB = uniforms.internalTex.sample(baseUv.sub(chromaDir)).b;
+    const chromaR = sampleFeedbackTarget(
+      uniforms.internalTex,
+      baseUv.add(chromaDir),
+    ).r;
+    const chromaB = sampleFeedbackTarget(
+      uniforms.internalTex,
+      baseUv.sub(chromaDir),
+    ).b;
     color.assign(mix(color, vec3(chromaR, color.g, chromaB), chromaEnabled));
 
     // Red-blue stereo
@@ -2556,7 +2717,10 @@ function createCompositeOutputNode(
     // chroma (WebGL orders bloom before afterimage; the trails there don't
     // re-bloom either, so the visible difference is negligible).
     If(step(0.0001, uniforms.postAfterimageDamp), () => {
-      const history = uniforms.displayHistoryTex.sample(baseUv).rgb;
+      const history = sampleFeedbackTarget(
+        uniforms.displayHistoryTex,
+        baseUv,
+      ).rgb;
       const damped = history
         .mul(uniforms.postAfterimageDamp)
         .mul(step(vec3(0.1), history));
@@ -2800,6 +2964,56 @@ class WebGPUMilkdropFeedbackManager
   setAudioTexture(audioTexture: Texture | null): void {
     if (this.compositeMaterial?.uniforms?.audioTex) {
       this.compositeMaterial.uniforms.audioTex.value = audioTexture;
+    }
+  }
+
+  /**
+   * Empties the feedback chain so the next frame starts from nothing.
+   *
+   * Only the WebGL manager implemented this, so a `resetHistory` frame — what
+   * the deterministic frame pump uses to make a capture reproducible — left
+   * native WebGPU rendering on top of whatever the previous warmup had
+   * accumulated. Measured with `lab:backend-diff`, that put the same-backend
+   * run-to-run mismatch at a 48.9% median on WebGPU against 6.0% on WebGL,
+   * which buries any real disagreement between the two.
+   */
+  clearHistory(): void {
+    const renderer = this.lastRenderer as
+      | (FeedbackRendererLike & {
+          clear?: () => void;
+          getClearAlpha?: () => number;
+          setClearAlpha?: (alpha: number) => void;
+          getClearColor?: (target: Color) => Color;
+          setClearColor?: (color: Color | number, alpha?: number) => void;
+        })
+      | null;
+    if (!renderer?.setRenderTarget) {
+      return;
+    }
+    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+    const previousClearColor = renderer.getClearColor?.(
+      CLEAR_HISTORY_COLOR_SCRATCH,
+    );
+    renderer.setClearColor?.(0x000000, 0);
+    for (const target of [
+      this.targets[0],
+      this.targets[1],
+      this.displayTargets[0],
+      this.displayTargets[1],
+      this.blurTarget,
+      this.sceneTarget,
+      this.savedFrameTargets[0],
+      this.savedFrameTargets[1],
+    ]) {
+      if (!target) continue;
+      renderer.setRenderTarget(target);
+      renderer.clear?.();
+    }
+    renderer.setRenderTarget(null);
+    if (previousClearColor) {
+      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+    } else {
+      renderer.setClearAlpha?.(previousClearAlpha);
     }
   }
 
@@ -3212,36 +3426,13 @@ class WebGPUMilkdropFeedbackManager
     // linear→sRGB encode alone lifted geiss-game-of-life from ~14 to ~49
     // mean luminance vs WebGL. Suspend tone mapping AND the output
     // color-space transform around the present to match WebGL's luminance.
-    const toneMappedRenderer = renderer as FeedbackRendererLike & {
-      toneMapping?: number;
-      outputColorSpace?: string;
-    };
-    const savedToneMapping = toneMappedRenderer.toneMapping ?? 0;
-    if (savedToneMapping !== 0) {
-      toneMappedRenderer.toneMapping = 0;
-    }
-    // The linear counterpart of whatever gamut is configured: pinning this to
-    // linear-sRGB unconditionally would quietly undo wide-gamut output, since
-    // this suspension is exactly where the present pass's encode is chosen.
-    const linearOutputColorSpace = resolveLinearOutputColorSpace();
-    const savedOutputColorSpace = toneMappedRenderer.outputColorSpace;
-    if (
-      savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== linearOutputColorSpace
-    ) {
-      toneMappedRenderer.outputColorSpace = linearOutputColorSpace;
-    }
-    renderer.setRenderTarget(null);
-    renderer.render(this.presentScene, this.camera);
-    if (savedToneMapping !== 0) {
-      toneMappedRenderer.toneMapping = savedToneMapping;
-    }
-    if (
-      savedOutputColorSpace !== undefined &&
-      savedOutputColorSpace !== linearOutputColorSpace
-    ) {
-      toneMappedRenderer.outputColorSpace = savedOutputColorSpace;
-    }
+    renderWithoutOutputConversion(
+      renderer as FeedbackRendererLike & OutputConversionRenderer,
+      () => {
+        renderer.setRenderTarget(null);
+        renderer.render(this.presentScene, this.camera);
+      },
+    );
     this.swap();
     return true;
   }

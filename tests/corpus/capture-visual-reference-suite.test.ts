@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  assertCaptureBackendMatches,
+  assertForcedBackendMatchesManifest,
   assertVisualReferenceCaptureSucceeded,
   buildVisualReferenceCaptureRequests,
   parseVisualReferenceCaptureArgs,
@@ -28,6 +30,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: 900,
+      referenceAudio: 'silence' as const,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -52,6 +55,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           warmupMs: 5000,
           captureOffsetMs: 250,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -77,6 +81,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
           warmupMs: 2000,
           captureOffsetMs: 1000,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -102,6 +107,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       port: 4173,
       duration: 5250,
       deterministicFrames: 900,
+      referenceAudio: 'silence',
       viewportWidth: 2550,
       viewportHeight: 1794,
       screenshot: true,
@@ -120,6 +126,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       port: 4173,
       duration: 3000,
       deterministicFrames: 900,
+      referenceAudio: 'silence',
       viewportWidth: 640,
       viewportHeight: 360,
       screenshot: true,
@@ -153,6 +160,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
       warmupMs: 5000,
       captureOffsetMs: 0,
       warmupFrames: 900,
+      referenceAudio: 'silence' as const,
       toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
@@ -177,6 +185,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           warmupMs: 5000,
           captureOffsetMs: 0,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -202,6 +211,7 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
           warmupMs: 5000,
           captureOffsetMs: 0,
           warmupFrames: 900,
+          referenceAudio: 'silence' as const,
         },
         provenance: {
           label: 'fixture',
@@ -228,6 +238,17 @@ test('parseVisualReferenceCaptureArgs keeps parity captures out of vibe mode by 
   expect(parseVisualReferenceCaptureArgs(['--no-vibe-mode']).vibeMode).toBe(
     false,
   );
+});
+
+test('parseVisualReferenceCaptureArgs reuses one browser unless isolation is asked for', () => {
+  // The default matters: on hardware WebGPU a process per preset costs ~12.4s
+  // of Bun start, Chromium launch and cold dev-server transform against ~3.6s
+  // reusing the browser. Measured over the nine WebGPU-certified presets:
+  // 32.8s reused against 111.5s isolated.
+  expect(parseVisualReferenceCaptureArgs([]).isolateCaptures).toBe(false);
+  expect(
+    parseVisualReferenceCaptureArgs(['--isolate-captures']).isolateCaptures,
+  ).toBe(true);
 });
 
 test('parseVisualReferenceCaptureArgs honors explicit backend capture overrides', () => {
@@ -262,4 +283,84 @@ test('capture suite rejects captures with browser renderer errors', () => {
       consoleErrors: ['WebGPU Device Lost'],
     }),
   ).toThrow('browser reported 1 console error(s): WebGPU Device Lost');
+});
+
+test('parity captures run serially unless --concurrency asks otherwise', () => {
+  // The pool size used to be filled in here unconditionally, which meant the
+  // suite's own serial default was unreachable from the command line and every
+  // capture ran four wide — the configuration that produced a black frame for
+  // 100-square and a 24% score for 250-wavecode.
+  expect(parseVisualReferenceCaptureArgs([]).concurrency).toBeUndefined();
+  expect(
+    parseVisualReferenceCaptureArgs(['--concurrency', '4']).concurrency,
+  ).toBe(4);
+});
+
+test('assertForcedBackendMatchesManifest rejects a forced backend before capturing', () => {
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-backend-'));
+  fs.mkdirSync(path.join(repoRoot, 'src/data/milkdrop-parity'), {
+    recursive: true,
+  });
+  fs.writeFileSync(
+    path.join(
+      repoRoot,
+      'src/data/milkdrop-parity/visual-reference-manifest.json',
+    ),
+    JSON.stringify({
+      version: 1,
+      parityTarget: 'projectm-visual-reference',
+      fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+      presets: [
+        {
+          id: 'webgpu-only',
+          title: 'WebGPU only',
+          image: 'webgpu-only.png',
+          sourceFamily: 'projectm-fixture',
+          strata: [],
+          capture: { requiredBackend: 'webgpu' },
+        },
+      ],
+    }),
+  );
+
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'compatibility',
+      allowBackendOverride: false,
+    }),
+  ).toThrow(/--force-webgl/);
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'compatibility',
+      allowBackendOverride: true,
+    }),
+  ).not.toThrow();
+  expect(() =>
+    assertForcedBackendMatchesManifest({
+      repoRoot,
+      rendererProfile: 'webgpu',
+      allowBackendOverride: false,
+    }),
+  ).not.toThrow();
+
+  fs.rmSync(repoRoot, { recursive: true, force: true });
+});
+
+test('assertCaptureBackendMatches names the flag that fixes a silent fallback', () => {
+  expect(() =>
+    assertCaptureBackendMatches({
+      presetId: 'webgpu-only',
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgl',
+    }),
+  ).toThrow(/--force-webgpu/);
+  expect(() =>
+    assertCaptureBackendMatches({
+      presetId: 'webgpu-only',
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgpu',
+    }),
+  ).not.toThrow();
 });

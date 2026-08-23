@@ -54,20 +54,22 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(
       resolveDirectShaderSamplerBinding('sampler_fw_noise_lq', '2d'),
     ).toEqual({
-      canonicalSource: 'noise',
-      sourceId: 1,
+      // noise_lq has its own slot now: projectM generates it as 256x256 white
+      // noise, where the shared `noise` slot loads the smooth perlin PNG.
+      canonicalSource: 'noise_lq',
+      sourceId: 10,
     });
     expect(
       resolveDirectShaderSamplerBinding('sampler_fw_noisevol_lq', '3d'),
     ).toEqual({
-      canonicalSource: 'simplex',
-      sourceId: 2,
+      canonicalSource: 'noisevol',
+      sourceId: 11,
     });
     expect(
       resolveDirectShaderSamplerBinding('sampler_noisevol_hq', '3d'),
     ).toEqual({
-      canonicalSource: 'simplex',
-      sourceId: 2,
+      canonicalSource: 'noisevol',
+      sourceId: 11,
     });
     expect(resolveDirectShaderSamplerBinding('sampler_perlin', '2d')).toEqual({
       canonicalSource: 'perlin',
@@ -84,8 +86,8 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(
       resolveDirectShaderSamplerBinding('sampler_fw_noisevol_lq', '2d'),
     ).toEqual({
-      canonicalSource: 'simplex',
-      sourceId: 2,
+      canonicalSource: 'noisevol',
+      sourceId: 11,
     });
     expect(resolveDirectShaderSamplerBinding('sampler_noise', '3d')).toEqual({
       canonicalSource: 'noise',

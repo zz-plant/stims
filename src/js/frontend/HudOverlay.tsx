@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
+import { isShaderApproximated } from '../milkdrop/shader-execution-mode.ts';
 import { useEngine, useEngineSnapshot } from './engine-context.tsx';
 import { UiIcon } from './UiIcon.tsx';
 
@@ -207,6 +208,7 @@ export function HudOverlay() {
 
   if (!visible) return null;
 
+  const shaderExecution = engineSnapshot?.shaderExecution ?? null;
   const quality = engineSnapshot?.adaptiveQuality ?? null;
   const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const energyPercent = Math.round(Math.min(1, Math.max(0, audioEnergy)) * 100);
@@ -319,6 +321,23 @@ export function HudOverlay() {
                 </dd>
               </>
             )}
+            {/* The rows above answer "did the compiler lower this preset's
+                shader text?", which is not the same question as "is the
+                backend running it?". A preset can lower cleanly and still be
+                approximated at render time, because lowering and per-backend
+                executability are decided separately — so the HUD used to read
+                "lowered" over a frame that was a uniform-only substitution.
+                This row is the render-time answer. */}
+            <dt>On {engineSnapshot?.backend ?? '—'}</dt>
+            <dd
+              className={
+                isShaderApproximated(shaderExecution)
+                  ? 'stims-shell__debug-hud-warn'
+                  : undefined
+              }
+            >
+              {shaderExecution ?? '—'}
+            </dd>
             <dt>Diagnostics</dt>
             <dd
               className={

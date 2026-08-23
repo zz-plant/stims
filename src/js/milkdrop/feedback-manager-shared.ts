@@ -18,8 +18,11 @@
  * long enough for accumulation to show.
  */
 import {
+  BufferAttribute,
+  BufferGeometry,
   type Camera,
   Color,
+  DoubleSide,
   Mesh,
   OrthographicCamera,
   PlaneGeometry,
@@ -70,10 +73,15 @@ import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import { applyHarmonicPercussiveUniforms } from './harmonic-percussive-shader-signals.ts';
+import {
+  createMilkdropNoiseTexture,
+  createMilkdropNoiseVolumeAtlasTexture,
+} from './milkdrop-native-noise.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropShaderProgramPayload,
+  MilkdropWarpFieldVisual,
 } from './types';
 
 // Generated GLSL per shader-program payload. Payload objects are stable for
@@ -310,6 +318,34 @@ type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 // through the real assets here is what makes noisevol-style presets read as
 // the intended grayscale marble instead of full-RGB confetti (WebGPU
 // already samples the same PNGs via its native Data3DTexture path).
+/**
+ * projectM generates its noise in code rather than shipping it as an asset:
+ * `noise_lq` is a 256x256 grayscale white-noise texture and `noisevol` a
+ * 32^3 volume of the same, both GL_REPEAT + GL_LINEAR (PerlinNoise.cpp,
+ * TextureManager.cpp). Our `noise` slot loads seamless_perlin_noise.png,
+ * which is smooth — which is why 260-compshader-noise_lq rendered marbled
+ * blobs where the reference is fine static.
+ *
+ * Memoized at module scope: getSharedAuxTextures runs per feedback manager,
+ * and a texture per instance would leak one per preset switch.
+ */
+let nativeNoiseTexture: Texture | null = null;
+let nativeNoiseVolumeTexture: Texture | null = null;
+
+function sharedNativeNoiseTexture(): Texture {
+  if (!nativeNoiseTexture) {
+    nativeNoiseTexture = createMilkdropNoiseTexture();
+  }
+  return nativeNoiseTexture;
+}
+
+function sharedNativeNoiseVolumeTexture(): Texture {
+  if (!nativeNoiseVolumeTexture) {
+    nativeNoiseVolumeTexture = createMilkdropNoiseVolumeAtlasTexture();
+  }
+  return nativeNoiseVolumeTexture;
+}
+
 function getSharedAuxTextures(): SharedAuxTextureMap {
   const auxTextures = {} as Record<AuxTextureName, Texture>;
   for (const name of Object.keys(AUX_TEXTURE_SPECS) as AuxTextureName[]) {
@@ -486,6 +522,12 @@ const MILKDROP_AUX_SAMPLING_HELPERS = `
           if (source < 9.5) {
             return texture2D(perlinTex, uv);
           }
+          if (source < 10.5) {
+            return texture2D(noiseLqTex, uv);
+          }
+          if (source < 11.5) {
+            return texture2D(noisevolTex, uv);
+          }
           return vec4(0.5, 0.5, 0.5, 1.0);
         }
 
@@ -602,6 +644,31 @@ const MILKDROP_FEEDBACK_WARP_HELPER = `
  * never feeds the comp shader's output back into the loop; keeping this
  * blend in its own pass lets the composite pass stay display-only.
  */
+/**
+ * Warp-mesh pass. Vertex positions are the transformed lattice and the uvs are
+ * where each vertex reads from the previous frame, so an arbitrary per-pixel
+ * warp is expressed by the geometry rather than by uniforms the fragment
+ * shader would have to re-derive. This is how MilkDrop itself warps.
+ */
+const MILKDROP_WARP_MESH_VERTEX_SHADER = `
+        attribute vec2 warpUvAttr;
+        varying vec2 vWarpUv;
+        void main() {
+          vWarpUv = warpUvAttr;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `;
+
+const MILKDROP_WARP_MESH_FRAGMENT_SHADER = `
+        uniform sampler2D previousTex;
+        uniform float textureWrap;
+        varying vec2 vWarpUv;
+        void main() {
+          vec2 uv = textureWrap > 0.5 ? fract(vWarpUv) : clamp(vWarpUv, 0.0, 1.0);
+          gl_FragColor = vec4(texture2D(previousTex, uv).rgb, 1.0);
+        }
+      `;
+
 const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D warpTex;
@@ -614,6 +681,8 @@ const MILKDROP_FEEDBACK_BLEND_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform float videoEchoAlpha;
         uniform float textureWrap;
         uniform float warpScale;
@@ -721,6 +790,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform sampler2D audioTex;
         uniform sampler2D warpTex;
         uniform sampler2D blur1Tex;
@@ -998,6 +1069,8 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D noiseLqTex;
+        uniform sampler2D noisevolTex;
         uniform sampler2D audioTex;
         uniform float scale1;
         uniform float bias1;
@@ -1549,6 +1622,11 @@ class SharedMilkdropFeedbackManager
   private lastRenderer: {
     render(scene: Scene, camera: Camera): void;
     setRenderTarget?: (target: WebGLRenderTarget | null) => void;
+    clear?: () => void;
+    getClearAlpha?: () => number;
+    setClearAlpha?: (alpha: number) => void;
+    getClearColor?: (target: Color) => Color;
+    setClearColor?: (color: Color | number, alpha?: number) => void;
   } | null = null;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
@@ -1572,6 +1650,11 @@ class SharedMilkdropFeedbackManager
   private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
+  readonly warpMeshMaterial: ShaderMaterial;
+  readonly warpMeshGeometry: BufferGeometry;
+  readonly warpMeshScene: Scene;
+  private warpFieldDensity = 0;
+  private warpFieldReady = false;
 
   constructor(
     width: number,
@@ -1744,6 +1827,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         audioTex: { value: null },
         ...BLUR_RANGE_UNIFORM_DEFAULTS,
         warpScale: { value: 1 },
@@ -1791,6 +1876,33 @@ class SharedMilkdropFeedbackManager
     });
     this.warpScene = new Scene();
     this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
+    // Mesh warp: the previous frame drawn onto the transformed grid. Kept as
+    // its own scene so the uniform path above stays intact for shader-driven
+    // presets and for frames that ship no field.
+    this.warpMeshMaterial = new ShaderMaterial({
+      uniforms: {
+        previousTex: { value: this.targets[0].texture },
+        textureWrap: { value: 0 },
+      },
+      vertexShader: MILKDROP_WARP_MESH_VERTEX_SHADER,
+      fragmentShader: MILKDROP_WARP_MESH_FRAGMENT_SHADER,
+      depthTest: false,
+      depthWrite: false,
+      // A warp can fold the grid, flipping a triangle's winding; the whole
+      // pass drew nothing at all until this, because the default FrontSide
+      // culled the lattice's own orientation.
+      side: DoubleSide,
+    });
+    this.warpMeshGeometry = new BufferGeometry();
+    const warpMesh = new Mesh(this.warpMeshGeometry, this.warpMeshMaterial);
+    // The grid's vertices move every frame and the shader ignores the camera,
+    // so a bounding sphere computed from stale positions can only be wrong —
+    // and culling this mesh leaves the warp target empty, which silently
+    // throws the feedback history away.
+    warpMesh.frustumCulled = false;
+    this.warpMeshScene = new Scene();
+    this.warpMeshScene.add(warpMesh);
+    this.warpMeshScene.matrixAutoUpdate = false;
     this.feedbackBlendMaterial = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
@@ -1804,6 +1916,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         videoEchoAlpha: { value: 0 },
         textureWrap: { value: 0 },
         warpScale: { value: 0 },
@@ -1950,6 +2064,82 @@ class SharedMilkdropFeedbackManager
     this.blurScene.matrixAutoUpdate = false;
   }
 
+  /**
+   * Hand this frame's warp grid to the mesh pass, or null to fall back to the
+   * uniform path. Buffers are owned by the VM and reused, so they are uploaded
+   * here rather than retained.
+   */
+  setWarpField(field: MilkdropWarpFieldVisual | null): void {
+    if (!field || field.density < 2) {
+      this.warpFieldReady = false;
+      return;
+    }
+    const geometry = this.warpMeshGeometry;
+    const vertexCount = field.positions.length / 2;
+    const positionAttr = geometry.getAttribute('position');
+    if (!positionAttr || positionAttr.count !== vertexCount) {
+      geometry.setAttribute(
+        'position',
+        new BufferAttribute(new Float32Array(vertexCount * 3), 3),
+      );
+      geometry.setAttribute(
+        'warpUvAttr',
+        new BufferAttribute(new Float32Array(vertexCount * 2), 2),
+      );
+    }
+    const positions = geometry.getAttribute('position') as BufferAttribute;
+    const uvs = geometry.getAttribute('warpUvAttr') as BufferAttribute;
+    const positionArray = positions.array as Float32Array;
+    const uvArray = uvs.array as Float32Array;
+    for (let index = 0; index < vertexCount; index += 1) {
+      positionArray[index * 3] = field.positions[index * 2] ?? 0;
+      positionArray[index * 3 + 1] = field.positions[index * 2 + 1] ?? 0;
+      positionArray[index * 3 + 2] = 0;
+      uvArray[index * 2] = field.uvs[index * 2] ?? 0;
+      uvArray[index * 2 + 1] = field.uvs[index * 2 + 1] ?? 0;
+    }
+    positions.needsUpdate = true;
+    uvs.needsUpdate = true;
+    if (this.warpFieldDensity !== field.density) {
+      geometry.setIndex(new BufferAttribute(field.indices, 1));
+      this.warpFieldDensity = field.density;
+    }
+    this.warpFieldReady = true;
+  }
+
+  /**
+   * Drop every accumulated frame. Only a capture harness should call this:
+   * the feedback buffers are the picture for most presets, so clearing them
+   * mid-session is a visible black flash.
+   */
+  clearHistory(): void {
+    const renderer = this.lastRenderer;
+    if (!renderer?.setRenderTarget) {
+      return;
+    }
+    const previousClearAlpha = renderer.getClearAlpha?.() ?? 1;
+    const previousClearColor = renderer.getClearColor?.(
+      SCENE_CLEAR_COLOR_SCRATCH,
+    );
+    renderer.setClearColor?.(0x000000, 0);
+    for (const target of [
+      this.targets[0],
+      this.targets[1],
+      this.warpTarget,
+      this.sceneTarget,
+    ]) {
+      if (!target) continue;
+      renderer.setRenderTarget(target);
+      renderer.clear?.();
+    }
+    renderer.setRenderTarget(null);
+    if (previousClearColor) {
+      renderer.setClearColor?.(previousClearColor, previousClearAlpha);
+    } else {
+      renderer.setClearAlpha?.(previousClearAlpha);
+    }
+  }
+
   setAudioTexture(texture: Texture | null): void {
     if (this.compositeMaterial.uniforms.audioTex) {
       this.compositeMaterial.uniforms.audioTex.value = texture;
@@ -1974,6 +2164,8 @@ class SharedMilkdropFeedbackManager
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        noiseLqTex: { value: sharedNativeNoiseTexture() },
+        noisevolTex: { value: sharedNativeNoiseVolumeTexture() },
         audioTex: { value: null },
         warpTex: { value: this.warpTarget.texture },
         blur1Tex: { value: this.blurTargets[0].texture },
@@ -2584,7 +2776,19 @@ class SharedMilkdropFeedbackManager
     );
 
     renderer.setRenderTarget(this.warpTarget);
-    renderer.render(this.warpScene, this.camera);
+    const warpShaderOwnsTransform =
+      (this.warpMaterial.uniforms.hasDirectWarp.value as number) > 0.5;
+    if (this.warpFieldReady && !warpShaderOwnsTransform) {
+      // The grid already carries the preset's whole transform, per-pixel code
+      // included; re-deriving it from uniforms here would apply it twice.
+      this.warpMeshMaterial.uniforms.previousTex.value =
+        this.readTarget.texture;
+      this.warpMeshMaterial.uniforms.textureWrap.value =
+        this.warpMaterial.uniforms.textureWrap.value;
+      renderer.render(this.warpMeshScene, this.camera);
+    } else {
+      renderer.render(this.warpScene, this.camera);
+    }
 
     // Internal frame (feedback loop): warped previous + fresh geometry.
     renderer.setRenderTarget(this.writeTarget);
