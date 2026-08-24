@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { buildAgentMilkdropDebugSnapshot } from '../../src/js/milkdrop/runtime/debug-snapshot.ts';
 import { createMilkdropRuntimePerformanceTracker } from '../../src/js/milkdrop/runtime/performance-tracker.ts';
-import { createMilkdropPresentationController } from '../../src/js/milkdrop/runtime/presentation-controller.ts';
+import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 
 test('tracks rolling performance metrics and exposes p95 frame time', () => {
   const tracker = createMilkdropRuntimePerformanceTracker(5);
@@ -50,6 +50,38 @@ test('buildAgentMilkdropDebugSnapshot carries performance metrics', () => {
     maxFrameMs: 18,
     gpuTimings: null,
   });
+});
+
+test('debug snapshots detach policy-owned frame shells', () => {
+  const frameState = {
+    presetId: 'policy-test',
+    title: 'Policy test',
+    signals: {},
+    variables: {},
+    mainWave: { thickness: 4 },
+    shapes: [],
+    post: {
+      shaderEnabled: false,
+      postprocessingProfile: { enabled: false },
+    },
+  } as unknown as MilkdropFrameState;
+
+  const snapshot = buildAgentMilkdropDebugSnapshot({
+    activePresetId: 'policy-test',
+    compiledPreset: null,
+    frameState,
+    status: 'ok',
+    performance: null,
+  });
+  frameState.mainWave.thickness = 9;
+  frameState.post.shaderEnabled = true;
+  if (frameState.post.postprocessingProfile) {
+    frameState.post.postprocessingProfile.enabled = true;
+  }
+
+  expect(snapshot.frameState?.mainWave.thickness).toBe(4);
+  expect(snapshot.frameState?.post.shaderEnabled).toBe(false);
+  expect(snapshot.frameState?.post.postprocessingProfile?.enabled).toBe(false);
 });
 
 // Blend-alpha behavior now lives in runtime/transition-controller.ts and is

@@ -150,54 +150,88 @@ export function createAutoAdvanceGate({
 // and kept running through gated frames. The per-frame gates (transition
 // mode, shader quality, workload) moved to the frame loop's tick call.
 
-export function buildRenderFrameState({
-  frameState,
-  shaderQuality,
-  lowQualityPostOverride,
-}: {
+type RenderFrameStatePolicyArgs = {
   frameState: MilkdropFrameState;
   shaderQuality: 'low' | 'balanced' | 'high';
   lowQualityPostOverride: Pick<
     MilkdropPostVisual,
     'shaderEnabled' | 'videoEchoEnabled'
   >;
-}) {
-  if (
-    shaderQuality !== 'low' ||
-    (!frameState.post.shaderEnabled && !frameState.post.videoEchoEnabled)
-  ) {
-    return frameState;
-  }
+};
 
-  // Direct warp/comp programs are the preset's painter, not a decorative
-  // post pass: stripping them leaves those presets as a black screen with a
-  // bare wave line — "lighter graphics" must never mean "no graphics". Keep
-  // the shader stage for them (the low step's feedback-resolution multiplier
-  // still shrinks its pixel cost) and shed only the true extras.
-  const shaderStageIsThePainter =
-    (frameState.post.shaderPrograms?.warp ?? null) !== null ||
-    (frameState.post.shaderPrograms?.comp ?? null) !== null;
+export function createRenderFrameStateBuilder() {
+  let output: MilkdropFrameState | null = null;
+  let outputPost: MilkdropPostVisual | null = null;
+  let outputPostprocessingProfile: NonNullable<
+    MilkdropPostVisual['postprocessingProfile']
+  > | null = null;
+  let outputGpuGeometry: MilkdropFrameState['gpuGeometry'] | null = null;
+  let outputParticleField: NonNullable<
+    MilkdropFrameState['gpuGeometry']['particleField']
+  > | null = null;
 
-  return {
-    ...frameState,
-    post: Object.assign({}, frameState.post, lowQualityPostOverride, {
+  return ({
+    frameState,
+    shaderQuality,
+    lowQualityPostOverride,
+  }: RenderFrameStatePolicyArgs) => {
+    if (
+      shaderQuality !== 'low' ||
+      (!frameState.post.shaderEnabled && !frameState.post.videoEchoEnabled)
+    ) {
+      return frameState;
+    }
+
+    // Direct warp/comp programs are the preset's painter, not a decorative
+    // post pass: stripping them leaves those presets as a black screen with a
+    // bare wave line — "lighter graphics" must never mean "no graphics". Keep
+    // the shader stage for them (the low step's feedback-resolution multiplier
+    // still shrinks its pixel cost) and shed only the true extras.
+    const shaderStageIsThePainter =
+      (frameState.post.shaderPrograms?.warp ?? null) !== null ||
+      (frameState.post.shaderPrograms?.comp ?? null) !== null;
+
+    output ??= { ...frameState };
+    outputPost ??= { ...frameState.post };
+    outputGpuGeometry ??= { ...frameState.gpuGeometry };
+
+    Object.assign(output, frameState);
+    // Optional frame payloads can disappear from one frame to the next. Set
+    // them explicitly so reusable storage never resurrects an old interaction.
+    output.warpField = frameState.warpField;
+    output.interaction = frameState.interaction;
+
+    Object.assign(outputPost, frameState.post, lowQualityPostOverride, {
       shaderEnabled: shaderStageIsThePainter,
       videoEchoEnabled: false,
-      postprocessingProfile: frameState.post.postprocessingProfile
-        ? {
-            ...frameState.post.postprocessingProfile,
-            enabled: false,
-          }
-        : frameState.post.postprocessingProfile,
-    }),
-    gpuGeometry: {
-      ...frameState.gpuGeometry,
-      particleField: frameState.gpuGeometry.particleField
-        ? {
-            ...frameState.gpuGeometry.particleField,
-            enabled: false,
-          }
-        : frameState.gpuGeometry.particleField,
-    },
+    });
+    const postprocessingProfile = frameState.post.postprocessingProfile;
+    if (postprocessingProfile) {
+      outputPostprocessingProfile ??= { ...postprocessingProfile };
+      Object.assign(outputPostprocessingProfile, postprocessingProfile, {
+        enabled: false,
+      });
+      outputPost.postprocessingProfile = outputPostprocessingProfile;
+    } else {
+      outputPost.postprocessingProfile = postprocessingProfile;
+    }
+
+    Object.assign(outputGpuGeometry, frameState.gpuGeometry);
+    const particleField = frameState.gpuGeometry.particleField;
+    if (particleField) {
+      outputParticleField ??= { ...particleField };
+      Object.assign(outputParticleField, particleField, { enabled: false });
+      outputGpuGeometry.particleField = outputParticleField;
+    } else {
+      outputGpuGeometry.particleField = particleField;
+    }
+
+    output.post = outputPost;
+    output.gpuGeometry = outputGpuGeometry;
+    return output;
   };
+}
+
+export function buildRenderFrameState(args: RenderFrameStatePolicyArgs) {
+  return createRenderFrameStateBuilder()(args);
 }

@@ -8,6 +8,7 @@ import { applyMilkdropCapturedVideoFrameState } from '../../src/js/milkdrop/runt
 import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 import {
   buildRenderFrameState,
+  createRenderFrameStateBuilder,
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from '../../src/js/milkdrop/runtime/lifecycle.ts';
@@ -313,6 +314,57 @@ describe('milkdrop runtime lifecycle seams', () => {
     expect(downgraded.post.videoEchoEnabled).toBe(false);
     expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
     expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
+  });
+
+  test('reuses low-quality render policy storage without retaining stale frame fields', () => {
+    const build = createRenderFrameStateBuilder();
+    const first = {
+      title: 'first',
+      interaction: { mesh: { amount: 1 } },
+      post: {
+        shaderEnabled: true,
+        videoEchoEnabled: true,
+        postprocessingProfile: { enabled: true },
+      },
+      gpuGeometry: {
+        particleField: { enabled: true, instanceCount: 96 },
+      },
+    } as unknown as MilkdropFrameState;
+    const second = {
+      title: 'second',
+      post: {
+        shaderEnabled: true,
+        videoEchoEnabled: true,
+        postprocessingProfile: { enabled: true },
+      },
+      gpuGeometry: {
+        particleField: { enabled: true, instanceCount: 48 },
+      },
+    } as unknown as MilkdropFrameState;
+
+    const firstOutput = build({
+      frameState: first,
+      shaderQuality: 'low',
+      lowQualityPostOverride: {
+        shaderEnabled: false,
+        videoEchoEnabled: false,
+      },
+    });
+    const firstPost = firstOutput.post;
+    const secondOutput = build({
+      frameState: second,
+      shaderQuality: 'low',
+      lowQualityPostOverride: {
+        shaderEnabled: false,
+        videoEchoEnabled: false,
+      },
+    });
+
+    expect(secondOutput).toBe(firstOutput);
+    expect(secondOutput.post).toBe(firstPost);
+    expect(secondOutput.title).toBe('second');
+    expect(secondOutput.interaction).toBeUndefined();
+    expect(secondOutput.gpuGeometry.particleField?.instanceCount).toBe(48);
   });
 
   test('injects the captured video texture when shader texture slots are available', () => {
