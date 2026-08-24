@@ -4747,19 +4747,39 @@ describe('ensureGeometryPositions buffer stability', () => {
     // than the buffer bound for it and invalidated the command buffer.
     ensureGeometryPositions(geometry, new Float32Array(2913));
     const afterSmall = geometry.getAttribute('position');
-    expect(afterSmall.array.length).toBe(2913);
+    expect(afterSmall.array.length).toBe(3072);
     expect(geometry.drawRange.count).toBe(971);
 
     ensureGeometryPositions(geometry, new Float32Array(5019));
-    expect(geometry.getAttribute('position').array.length).toBe(5019);
+    expect(geometry.getAttribute('position').array.length).toBe(6144);
     expect(geometry.drawRange.count).toBe(1673);
 
     // Shrinking back must keep the larger buffer and narrow the draw instead.
     ensureGeometryPositions(geometry, new Float32Array(2913));
     const attribute = geometry.getAttribute('position');
-    expect(attribute.array.length).toBe(5019);
+    expect(attribute.array.length).toBe(6144);
     expect(geometry.drawRange.count).toBe(971);
     expect(geometry.drawRange.count).toBeLessThanOrEqual(attribute.count);
+  });
+
+  test('reserves enough headroom for the ultra wave sample step', async () => {
+    const { BufferGeometry } = await import('three');
+    const { ensureGeometryPositions } = await import(
+      '../../src/js/milkdrop/renderer-adapter-shared.ts'
+    );
+
+    const geometry = new BufferGeometry();
+    ensureGeometryPositions(geometry, new Float32Array(1997 * 3));
+    const initialAttribute = geometry.getAttribute('position');
+
+    // Ultra raised this Eo.S. wave from 1,997 to 2,047 vertices. Replacing the
+    // attribute for that 2.5% increase let WebGPU draw the new range against
+    // the prior GPUBuffer for one frame and invalidated the command buffer.
+    ensureGeometryPositions(geometry, new Float32Array(2047 * 3));
+
+    expect(geometry.getAttribute('position')).toBe(initialAttribute);
+    expect(initialAttribute.count).toBe(2048);
+    expect(geometry.drawRange.count).toBe(2047);
   });
 
   test('writes the supplied data at the start of an oversized buffer', async () => {

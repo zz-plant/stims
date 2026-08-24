@@ -57,9 +57,18 @@ export function buildAgentMilkdropDebugSnapshot({
       title: frameState.title,
       signals: sanitizeRuntimeSignals(frameState.signals),
       variables: frameState.variables,
-      mainWave: frameState.mainWave,
+      // Runtime quality policies reuse these small object shells each frame to
+      // avoid hot-loop garbage. Snapshots outlive the render call, so detach
+      // the shells at the 60ms agent sampling boundary instead of retaining a
+      // view that silently changes under the debugger.
+      mainWave: { ...frameState.mainWave },
       shapes: frameState.shapes,
-      post: frameState.post,
+      post: {
+        ...frameState.post,
+        postprocessingProfile: frameState.post.postprocessingProfile
+          ? { ...frameState.post.postprocessingProfile }
+          : frameState.post.postprocessingProfile,
+      },
     },
   };
 }

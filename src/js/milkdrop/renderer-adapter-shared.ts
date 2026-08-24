@@ -651,7 +651,8 @@ export function applyBlendModeToGroup(
 
 /**
  * Writes `data` into a dynamic float attribute, growing the underlying buffer
- * but never shrinking it, and returns the vertex count `data` occupies.
+ * to a power-of-two item capacity but never shrinking it, and returns the
+ * vertex count `data` occupies.
  *
  * The no-shrink rule is not a micro-optimisation — it is what keeps WebGPU
  * valid. Replacing the attribute changes `position.count`, which is what
@@ -664,9 +665,11 @@ export function applyBlendModeToGroup(
  *   than the bound buffer size (10932) of the vertex buffer at slot 0
  *
  * which invalidates the whole command buffer, so the frame is dropped too.
- * Keeping one monotonically-growing buffer per geometry makes the bound size
- * an upper bound on every draw range that can follow, so the mismatch cannot
- * occur regardless of upload timing.
+ * Keeping one monotonically-growing buffer per geometry plus capacity for the
+ * next nearby sample tier makes the bound size an upper bound on every draw
+ * range that follows without replacing the attribute for tiny increases. The
+ * latter matters because WebGPU can still bind the prior GPUBuffer for the
+ * first frame after a JavaScript-side attribute replacement.
  *
  * Preset transitions are where this bit: a blend renders the outgoing and
  * incoming preset into the same pooled geometries, so a wave whose sample
@@ -688,10 +691,12 @@ export function ensureDynamicFloatAttribute(
     (existing.array as Float32Array).set(data);
     existing.needsUpdate = true;
   } else {
-    // Grow to exactly what is needed rather than doubling: these buffers reach
-    // ~40k floats for a dense mesh, and the callers' lengths come from a small
-    // set of preset-driven sizes, so they settle after the first few frames.
-    const array = new Float32Array(Math.max(itemSize, data.length));
+    // Sample counts drift by small amounts as quality/detail scales change.
+    // A power-of-two item capacity absorbs those nearby steps (for example
+    // Ultra's 1,997 -> 2,047 wave vertices) while keeping overhead below 2x.
+    const itemCount = Math.max(1, Math.ceil(data.length / itemSize));
+    const capacityItems = 2 ** Math.ceil(Math.log2(itemCount));
+    const array = new Float32Array(capacityItems * itemSize);
     array.set(data);
     const attribute = new Float32BufferAttribute(array, itemSize);
     attribute.setUsage(DynamicDrawUsage);
