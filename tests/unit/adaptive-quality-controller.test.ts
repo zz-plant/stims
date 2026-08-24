@@ -540,6 +540,9 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
+    expect(controller.getState().supportsGpuTimestamps).toBe(true);
+    expect(controller.getState().timingMode).toBe('coarse-frame');
+
     for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
@@ -551,6 +554,7 @@ describe('createAdaptiveQualityController', () => {
 
     const state = controller.getState();
     expect(state.qualityStep).toBeGreaterThan(0);
+    expect(state.timingMode).toBe('gpu-phase-timestamps');
     expect(state.averageRenderMs).toBeCloseTo(2, 6);
     expect(state.averageGpuMs).toBeCloseTo(16, 6);
   });

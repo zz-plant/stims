@@ -501,7 +501,7 @@ describe('renderer capabilities', () => {
 
   test('captures high-end WebGPU feature support for richer defaults', async () => {
     await resetRenderPreferenceStore();
-    mockNavigatorWithGPU({
+    const { requestDevice } = mockNavigatorWithGPU({
       device: { label: 'device' },
       adapter: {
         features: new Set([
@@ -522,6 +522,17 @@ describe('renderer capabilities', () => {
     });
 
     const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestDevice).toHaveBeenCalledWith({
+      requiredFeatures: [
+        'timestamp-query',
+        'shader-f16',
+        'subgroups',
+        'float32-blendable',
+        'float32-filterable',
+        'bgra8unorm-storage',
+      ],
+    });
 
     expect(result.webgpu).toMatchObject({
       performanceTier: 'high-end',

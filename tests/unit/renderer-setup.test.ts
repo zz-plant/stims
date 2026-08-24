@@ -17,6 +17,7 @@ describe('renderer setup WebGPU fallback safety', () => {
   });
 
   test('falls back to WebGL when WebGPU renderer init stalls', async () => {
+    let webGpuRendererOptions: Record<string, unknown> | null = null;
     const stalledRenderer = {
       setPixelRatio: mock(),
       setSize: mock(),
@@ -77,6 +78,10 @@ describe('renderer setup WebGPU fallback safety', () => {
     }));
     mock.module('../../src/js/core/webgpu-renderer.ts', () => ({
       WebGPURenderer: class MockWebGPURenderer {
+        constructor(options: Record<string, unknown>) {
+          webGpuRendererOptions = options;
+        }
+
         init() {
           return new Promise(() => {});
         }
@@ -106,6 +111,9 @@ describe('renderer setup WebGPU fallback safety', () => {
     });
     expect(createWebGLRenderer).toHaveBeenCalledTimes(1);
     expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(webGpuRendererOptions).toEqual(
+      expect.objectContaining({ trackTimestamp: true }),
+    );
     expect(stalledRenderer.setAnimationLoop).toHaveBeenCalledWith(null);
     expect(stalledRenderer.dispose).toHaveBeenCalledTimes(1);
     expect(rememberRendererFallback).toHaveBeenCalledWith(

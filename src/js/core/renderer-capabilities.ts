@@ -616,6 +616,25 @@ interface CapabilityProbeContext {
   device: GPUDevice | null;
 }
 
+const OPTIONAL_WEBGPU_DEVICE_FEATURES = [
+  'timestamp-query',
+  'shader-f16',
+  'subgroups',
+  'float32-blendable',
+  'float32-filterable',
+  'bgra8unorm-storage',
+] as const;
+
+export function buildWebGpuDeviceDescriptor(
+  adapter: GPUAdapter,
+): GPUDeviceDescriptor {
+  return {
+    requiredFeatures: OPTIONAL_WEBGPU_DEVICE_FEATURES.filter((feature) =>
+      hasFeature(adapter.features, feature),
+    ),
+  };
+}
+
 export function resolveCapabilityProbeSuccess(
   ctx: Pick<CapabilityProbeContext, 'adapter' | 'device' | 'retry'>,
 ): RendererCapabilities {
@@ -800,7 +819,7 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
     }
     try {
       const device = await resolveWithTimeout(
-        ctx.adapter.requestDevice(),
+        ctx.adapter.requestDevice(buildWebGpuDeviceDescriptor(ctx.adapter)),
         ctx.webgpuInitTimeoutMs,
         'WebGPU device initialization timed out.',
       );
