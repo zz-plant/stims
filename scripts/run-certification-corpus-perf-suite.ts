@@ -317,6 +317,17 @@ function median(values: readonly number[]): number | null {
     : (lower + upper) / 2;
 }
 
+function isFatalPerformanceRuntimeError(message: string) {
+  return (
+    message.startsWith('PageError:') ||
+    /\bGPUValidationError\b/iu.test(message) ||
+    /\bWebGPU\b.*\b(?:uncaptured error|device lost|out of memory)\b/iu.test(
+      message,
+    ) ||
+    /\bGPUDevice\b.*\blost\b/iu.test(message)
+  );
+}
+
 function isMeasuredTrial(
   result: PlayToyResult,
   expectedBackend: 'webgl' | 'webgpu',
@@ -328,6 +339,7 @@ function isMeasuredTrial(
       performance.metricsSource === 'sampler' &&
       performance.actualBackend === expectedBackend &&
       !performance.fallbackOccurred &&
+      !(result.consoleErrors ?? []).some(isFatalPerformanceRuntimeError) &&
       typeof performance.averageFrameMs === 'number' &&
       Number.isFinite(performance.averageFrameMs),
   );
@@ -462,9 +474,13 @@ function buildPerfReport({
       ? aggregate.metrics.medianAverageFrameMs - PERF_TARGET_FRAME_MS
       : null;
   const consoleErrors = results.flatMap((result) => result.consoleErrors ?? []);
-  const errors = results.flatMap((result) =>
+  const resultErrors = results.flatMap((result) =>
     result.error ? [result.error] : [],
   );
+  const fatalRuntimeErrors = consoleErrors
+    .filter(isFatalPerformanceRuntimeError)
+    .map((error) => `Browser runtime error: ${error}`);
+  const errors = [...resultErrors, ...fatalRuntimeErrors];
 
   return {
     version: 1,

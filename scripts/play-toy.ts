@@ -1602,7 +1602,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     page.on('pageerror', (err: Error) => {
       console.error(`[Browser PageError] ${err.stack || err.message}`);
-      consoleErrors.push(err.message);
+      // Keep page exceptions distinguishable from harmless console noise
+      // (for example an optional 404) so performance evidence can reject a
+      // sampled run whose renderer threw while still preserving the message.
+      consoleErrors.push(`PageError: ${err.message}`);
     });
 
     const demoRequestedByRoute = normalizedOptions.audioMode === 'demo';
