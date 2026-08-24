@@ -256,6 +256,16 @@ function selectCertificationCorpusEntries({
   });
 }
 
+export function resolveCertificationCorpusPerfWindow({
+  warmupMs,
+  durationMs,
+}: Pick<CertificationCorpusPerfSuiteOptions, 'warmupMs' | 'durationMs'>) {
+  return {
+    warmupMs: warmupMs ?? PERF_WARMUP_MS,
+    durationMs: durationMs ?? PERF_DURATION_MS,
+  };
+}
+
 export function buildCertificationCorpusPerfRequests({
   repoRoot,
   outputDir,
@@ -271,8 +281,8 @@ export function buildCertificationCorpusPerfRequests({
   viewportWidth = DEFAULT_VIEWPORT.width,
   viewportHeight = DEFAULT_VIEWPORT.height,
 }: CertificationCorpusPerfSuiteOptions): CertificationCorpusPerfRequest[] {
-  const resolvedWarmupMs = warmupMs ?? PERF_WARMUP_MS;
-  const resolvedDurationMs = durationMs ?? PERF_DURATION_MS;
+  const { warmupMs: resolvedWarmupMs, durationMs: resolvedDurationMs } =
+    resolveCertificationCorpusPerfWindow({ warmupMs, durationMs });
   // A warmup that swallows the whole capture yields zero samples, and playToy
   // then silently falls back to debug-snapshot metrics whose cadence comes from
   // the adaptive controller rather than presented frames. That fallback reads
@@ -394,6 +404,10 @@ export async function runCertificationCorpusPerfSuite({
   viewportWidth,
   viewportHeight,
 }: CertificationCorpusPerfSuiteOptions) {
+  const evidenceWindow = resolveCertificationCorpusPerfWindow({
+    warmupMs,
+    durationMs,
+  });
   const requests = buildCertificationCorpusPerfRequests({
     repoRoot,
     outputDir,
@@ -453,8 +467,8 @@ export async function runCertificationCorpusPerfSuite({
     outputDir,
     reportDir,
     targetFrameMs: PERF_TARGET_FRAME_MS,
-    warmupMs: PERF_WARMUP_MS,
-    durationMs: PERF_DURATION_MS,
+    warmupMs: evidenceWindow.warmupMs,
+    durationMs: evidenceWindow.durationMs,
     presetCount: rankedReports.length,
     passCount: rankedReports.filter((report) => report.status === 'pass')
       .length,

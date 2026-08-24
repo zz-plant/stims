@@ -247,6 +247,32 @@ describe('compiled milkdrop programs', () => {
     );
   });
 
+  test('does not mirror local writes twice when env and locals share storage', () => {
+    const block = blockFromSource(['x = x + 0.05;', 'y = x * 2;'], 'per_pixel');
+    const scopes = makeScopes(true);
+    const writes = new Map<string, number>();
+    const sharedScope = new Proxy(
+      { ...scopes.env, ...scopes.locals },
+      {
+        set(target, property, value) {
+          if (typeof property === 'string') {
+            writes.set(property, (writes.get(property) ?? 0) + 1);
+          }
+          return Reflect.set(target, property, value);
+        },
+      },
+    );
+    scopes.env = sharedScope;
+    scopes.locals = sharedScope;
+
+    runCompiled(block, scopes);
+
+    expect(sharedScope.x).toBeCloseTo(0.3);
+    expect(sharedScope.y).toBeCloseTo(0.6);
+    expect(writes.get('x')).toBe(1);
+    expect(writes.get('y')).toBe(1);
+  });
+
   test('match the interpreter for megabuf and gmegabuf traffic', () => {
     const block = blockFromSource([
       'megabuf(3) = bass * 4;',

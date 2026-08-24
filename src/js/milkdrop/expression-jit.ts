@@ -199,13 +199,16 @@ function compileStoreExpression(target: string, valueVar: string) {
   const registerMatch = normalized.match(REGISTER_PATTERN);
   const normalizedKey = JSON.stringify(normalized);
 
-  const mirror =
-    registerMatch?.[1] === 'q'
-      ? `r[${normalizedKey}] = ${valueVar}`
-      : registerMatch
-        ? `(l !== null ? l[${rawKey}] = ${valueVar} : r[${normalizedKey}] = ${valueVar})`
-        : `(l !== null ? l[${rawKey}] = ${valueVar} : s[${rawKey}] = ${valueVar})`;
-  return `${mirror}, e[${rawKey}] = ${valueVar}`;
+  if (registerMatch?.[1] === 'q') {
+    return `r[${normalizedKey}] = ${valueVar}, e[${rawKey}] = ${valueVar}`;
+  }
+  const mirror = registerMatch
+    ? `(l !== null ? l[${rawKey}] = ${valueVar} : r[${normalizedKey}] = ${valueVar})`
+    : `(l !== null ? l[${rawKey}] = ${valueVar} : s[${rawKey}] = ${valueVar})`;
+  // Per-point/per-pixel callers deliberately use one object for both scopes.
+  // In that hot path the local store already updated the identifier source,
+  // so mirroring to `e` again only repeats the same property write.
+  return `${mirror}, (e !== l ? e[${rawKey}] = ${valueVar} : ${valueVar})`;
 }
 
 function compileStore(
@@ -292,7 +295,17 @@ function compileStatementSource(
   body.push(`_v = ${compileNode(statement.expression, context)};`);
   body.push('if (!Number.isFinite(_v)) { _v = 0; }');
   body.push(compileStore(statement, context));
-  body.push(`e[${JSON.stringify(statement.target)}] = _v;`);
+  const target = statement.target;
+  const registerMatch = target.toLowerCase().match(REGISTER_PATTERN);
+  if (
+    target === 'megabuf' ||
+    target === 'gmegabuf' ||
+    registerMatch?.[1] === 'q'
+  ) {
+    body.push(`e[${JSON.stringify(target)}] = _v;`);
+  } else {
+    body.push(`if (e !== l) { e[${JSON.stringify(target)}] = _v; }`);
+  }
 }
 
 function compileProgramSource(block: MilkdropProgramBlock) {
