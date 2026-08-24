@@ -3,10 +3,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  aggregateCertificationPerfTrials,
   buildCertificationCorpusPerfRequests,
   type CertificationCorpusPerfReport,
   rankCertificationCorpusPerfReports,
   resolveCertificationCorpusPerfWindow,
+  resolvePerfExecutionDefaults,
 } from '../../scripts/run-certification-corpus-perf-suite.ts';
 
 function writeCorpus(repoRoot: string, presets: unknown[]) {
@@ -92,6 +94,79 @@ test('resolveCertificationCorpusPerfWindow preserves requested evidence windows'
   expect(
     resolveCertificationCorpusPerfWindow({ warmupMs: 2000, durationMs: 8000 }),
   ).toEqual({ warmupMs: 2000, durationMs: 8000 });
+});
+
+test('resolvePerfExecutionDefaults uses repeated production evidence by default', () => {
+  expect(resolvePerfExecutionDefaults({})).toEqual({
+    repetitions: 3,
+    serverMode: 'production',
+    port: 4173,
+  });
+  expect(
+    resolvePerfExecutionDefaults({
+      repetitions: 5,
+      serverMode: 'development',
+      port: 5199,
+    }),
+  ).toEqual({ repetitions: 5, serverMode: 'development', port: 5199 });
+});
+
+test('aggregateCertificationPerfTrials uses the median trial and preserves spread', () => {
+  const makeResult = (averageFrameMs: number, medianFps: number) => ({
+    slug: 'milkdrop',
+    success: true,
+    fallbackOccurred: false,
+    performance: {
+      durationMs: 6000,
+      warmupMs: 2000,
+      sampleCount: 400,
+      averageFrameMs,
+      p95FrameMs: averageFrameMs + 1,
+      averageSimulationMs: averageFrameMs - 2,
+      averageRenderMs: 2,
+      averageCadenceMs: 1000 / medianFps,
+      medianCadenceMs: 1000 / medianFps,
+      p95CadenceMs: 1000 / medianFps + 1,
+      averageFps: medianFps,
+      medianFps,
+      metricsSource: 'sampler' as const,
+      actualBackend: 'webgpu' as const,
+      fallbackOccurred: false,
+      terminalAdaptiveQuality: null,
+    },
+  });
+
+  const aggregate = aggregateCertificationPerfTrials(
+    [makeResult(14, 58), makeResult(10, 60), makeResult(12, 59)],
+    'webgpu',
+  );
+
+  expect(aggregate.status).toBe('pass');
+  expect(aggregate.successfulTrialCount).toBe(3);
+  expect(aggregate.representativePerformance?.averageFrameMs).toBe(12);
+  expect(aggregate.metrics).toEqual({
+    medianAverageFrameMs: 12,
+    minAverageFrameMs: 10,
+    maxAverageFrameMs: 14,
+    medianFps: 59,
+  });
+});
+
+test('aggregateCertificationPerfTrials rejects incomplete evidence', () => {
+  const aggregate = aggregateCertificationPerfTrials(
+    [
+      {
+        slug: 'milkdrop',
+        success: false,
+        error: 'browser crashed',
+      },
+    ],
+    'webgpu',
+  );
+
+  expect(aggregate.status).toBe('error');
+  expect(aggregate.successfulTrialCount).toBe(0);
+  expect(aggregate.representativePerformance).toBeNull();
 });
 
 test('rankCertificationCorpusPerfReports puts errors first, then hottest failures', () => {
