@@ -92,10 +92,10 @@ renderers you embed or run, while Stims is the workflow around one.
 
 What that buys you in practice:
 
-- **Runtime work is measured at the frame seam.** Browser benchmarks record delivered cadence, simulation time, render time, backend selection, and adaptive-quality state instead of treating a successful load as proof of speed.
+- **Runtime work is measured at the frame seam.** Production browser benchmarks use repeated trials and record delivered cadence, simulation time, render time, resolved WebGPU hardware time when available, backend selection, and adaptive-quality state instead of treating a successful load as proof of speed.
 - **Hot equation loops avoid redundant work.** When per-point and per-pixel equations share their runtime scope, the JIT writes each ordinary local result once while retaining differential tests against the interpreter.
 - **Rhythm and melody read separately.** Presets can react to percussive and harmonic energy bands independently — transients versus sustained tones — without claiming to separate instruments.
-- **Rendering pressure has an explicit fallback path.** Adaptive quality can reduce resolution, feedback-buffer size, and visual density when measured cadence misses the device's frame budget.
+- **Rendering pressure has an explicit fallback path.** Hardware-timed WebGPU pressure can trim render and feedback resolution continuously inside a quality tier; sustained broader pressure can still reduce visual density through the discrete adaptive-quality ladder.
 - **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 - **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
 
@@ -118,8 +118,10 @@ These numbers are one preset on one host, not a device-wide FPS promise. The
 8× tier was too scheduler-sensitive to promote as a stable result. See
 [`docs/RUNTIME_PERFORMANCE.md`](./docs/RUNTIME_PERFORMANCE.md) for the exact
 2-second warmup, 8-second capture, quality lock, reproduction command, and
-interpretation rules. Frame cost is also not visual fidelity; that oracle is
-the projectM reference workflow in the next section.
+interpretation rules. Current runs default to a production build and three
+trials, report median/min/max frame work, and reject renderer validation or
+device errors as incomplete evidence. Frame cost is also not visual fidelity;
+that oracle is the projectM reference workflow in the next section.
 
 ## Compatibility and evidence
 

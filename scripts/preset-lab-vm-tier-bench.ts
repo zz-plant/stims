@@ -2,10 +2,11 @@
  * Measure what the GPU compute VM actually costs per frame, against the CPU JIT.
  *
  * The compute VM (src/js/milkdrop/vm-gpu.ts) runs a preset's per_frame block
- * as a WebGPU compute dispatch, and `gpuComputeVM` defaults ON for WebGPU
- * sessions. But `vm.ts stepAsync` needs the resulting state back on the CPU
- * to build geometry, so every frame pays an upload, a dispatch, and a
- * readback — for a program whose median size is 21 scalar statements.
+ * as a WebGPU compute dispatch. `gpuComputeVM` is deliberately opt-in: the
+ * measurements from this harness showed why. `vm.ts stepAsync` needs the
+ * resulting state back on the CPU to build geometry, so every frame pays an
+ * upload, a dispatch, and a readback — for a program whose median size is 21
+ * scalar statements.
  *
  * This harness times the REAL modules (imported in-page through Vite, not
  * reimplemented here) over real preset per_frame blocks:

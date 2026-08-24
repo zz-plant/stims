@@ -14,8 +14,11 @@ work performed inside each frame:
 - average, median, and p95 cadence;
 - average and p95 frame work;
 - simulation and render phase time;
+- resolved WebGPU render time when the browser exposes hardware timestamp
+  queries (otherwise the report remains explicitly coarse-frame timing);
 - actual renderer backend and whether fallback occurred;
-- terminal adaptive-quality step, density, render scale, and feedback scale;
+- terminal adaptive-quality step, GPU resolution multiplier, density, render
+  scale, and feedback scale;
 - browser errors encountered during playback.
 
 Delivered FPS is the user-visible result, but it is capped by the display and
@@ -31,6 +34,9 @@ Before/after comparisons must hold these inputs constant:
 3. Warmup and capture windows.
 4. CDP CPU-throttle rate.
 5. Required backend, with fallback treated as a failed measurement.
+6. Production build and repetition count. The runner defaults to three trials,
+   reports the median plus min/max spread, and alternates corpus order between
+   trials to reduce thermal-position bias.
 
 The configured benchmark lock is independent of the temporary live-performance
 hold. Releasing the live hold must reveal the configured lock rather than
@@ -39,7 +45,56 @@ step and a reason such as `Configured quality lock remains at balanced.`
 
 The benchmark summary must repeat the requested warmup and duration. The
 per-preset report is the source of truth for frame metrics; a run with browser
-errors, the wrong backend, or renderer fallback is not comparable.
+exceptions, WebGPU validation/device errors, the wrong backend, or renderer
+fallback is incomplete evidence. Non-fatal console noise remains recorded but
+does not silently erase an otherwise valid trial.
+
+## Current runtime tiering (2026-08-24)
+
+- **Hardware timing is evidence-triggered.** WebGPU requests
+  `timestamp-query` when available and drains Three.js render timestamps
+  asynchronously every 30 frames. Merely advertising the feature does not
+  change the timing label; the controller switches from `coarse-frame` to
+  `gpu-phase-timestamps` only after a finite hardware sample resolves.
+- **GPU pressure trims pixels before geometry.** Once hardware samples show
+  sustained GPU pressure, a continuous multiplier adjusts render and feedback
+  resolution inside the current discrete quality step. The square-root
+  correction models fill cost as pixel area, changes by at most six percentage
+  points at a time, and bottoms out at the greater of 72% or the feedback
+  manager's truthful scale floor. Geometry density stays fixed until the
+  existing discrete controller has evidence to change the whole step. A
+  configured quality lock freezes both lanes.
+- **Low-resource policies reuse state.** Low shader quality, low-motion, and
+  mobile-low-power paths keep one scratch shell per experience and refresh it
+  in place instead of cloning the frame-state object graph every frame. Debug
+  snapshots detach retained data so inspection cannot observe later scratch
+  mutation.
+- **Dynamic GPU uploads carry capacity headroom.** Resizable vertex attributes
+  grow to power-of-two item capacity, avoiding both validation failures at
+  non-power-of-two geometry counts and repeated near-size reallocations.
+- **GPU equation coverage fails closed.** In the bundled source corpus, 1,611
+  of 1,619 presets with parsed per-pixel programs lower to the procedural GPU
+  field path. The remaining eight stay on the compatible path: six use
+  `randint`, whose sequential RNG semantics are not reproduced by the field
+  path's stateless hash; one reads shared `gmegabuf` memory; and one depends on
+  assignment side effects inside an expression. Read-only EEL variables are
+  no longer among the blockers: both CPU and GPU now apply the language's
+  exact zero-initialization rule.
+- **Per-frame compute remains opt-in.** `bun run lab:vm-tier-bench` measures the
+  upload/dispatch/readback path against the CPU JIT. On the measured preset
+  samples, tiny per-frame programs took microseconds on CPU and milliseconds
+  through the GPU round trip, so `gpuComputeVM` remains disabled by default.
+  That result does not rule out GPU execution for parallel per-vertex work.
+
+Evidence boundary: production browser checks on this host resolved real WebGPU
+timestamps and kept native WebGPU active. Even at 4K and 6K, the sampled GPU
+time was about 7.4 ms against the browser's 60 Hz budget, so those checks did
+not trigger the continuous trim and do not support an FPS-uplift claim for it;
+deterministic controller tests currently prove the transition behavior. A
+fixed balanced-tier probe around the reusable policy shells was likewise
+within noise (2.78 ms before, 2.81 ms after), so that change is claimed as
+reduced allocation/GC pressure, not measured speedup. The dynamic-buffer check
+did remove repeatable WebGPU validation errors at the Ultra tier.
 
 ## 2026-08-24 JIT store result
 
@@ -76,13 +131,14 @@ establish the same percentage for every preset, device, renderer, or display.
 
 ## Reproduce a tier
 
-Start the normal dev server, then run the same preset at a fixed quality step:
+The runner builds and serves production output by default. Run the same preset
+at a fixed quality step and require three clean trials:
 
 ```bash
-bun run dev
-
 bun run perf:certification-corpus -- \
-  --port 5173 \
+  --server production \
+  --port 4173 \
+  --repetitions 3 \
   --preset eos-apocalypse \
   --renderer webgpu \
   --cpu-throttle 4 \
@@ -106,9 +162,13 @@ artifacts, not source files to commit.
 - `tests/unit/eel-csp-fallback.test.ts` compares the JIT and interpreter-only
   paths across seeded programs.
 - `tests/unit/adaptive-quality-controller.test.ts` pins the independence of a
-  configured benchmark lock and the live-performance hold.
-- `tests/corpus/run-certification-corpus-perf-suite.test.ts` pins custom
-  evidence windows used by the summary.
+  configured benchmark lock and the live-performance hold, hardware-timing
+  activation, and continuous GPU resolution transitions.
+- `tests/unit/gpu-render-timing.test.ts` pins non-blocking timestamp sampling
+  and renderer-generation isolation.
+- `tests/corpus/run-certification-corpus-perf-suite.test.ts` pins production
+  defaults, repeated-trial aggregation, spread reporting, and rejection of
+  fatal browser/runtime errors.
 
 Run `bun run verify --changed` during iteration and `bun run check` before
 committing runtime changes. See
