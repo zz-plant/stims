@@ -6,6 +6,7 @@ import {
   buildCertificationCorpusPerfRequests,
   type CertificationCorpusPerfReport,
   rankCertificationCorpusPerfReports,
+  resolveCertificationCorpusPerfWindow,
 } from '../../scripts/run-certification-corpus-perf-suite.ts';
 
 function writeCorpus(repoRoot: string, presets: unknown[]) {
@@ -85,6 +86,12 @@ test('buildCertificationCorpusPerfRequests standardizes certification perf runs'
       }),
     }),
   ]);
+});
+
+test('resolveCertificationCorpusPerfWindow preserves requested evidence windows', () => {
+  expect(
+    resolveCertificationCorpusPerfWindow({ warmupMs: 2000, durationMs: 8000 }),
+  ).toEqual({ warmupMs: 2000, durationMs: 8000 });
 });
 
 test('rankCertificationCorpusPerfReports puts errors first, then hottest failures', () => {

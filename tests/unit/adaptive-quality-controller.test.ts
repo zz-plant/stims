@@ -325,6 +325,28 @@ describe('createAdaptiveQualityController', () => {
     expect(controller.getState().qualityStep).toBe(initialStep);
   });
 
+  test('releasing a live-performance hold preserves a configured benchmark lock', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+      lockedQualityStep: 2,
+    });
+
+    // Runtime attachment synchronizes the current live-performance mode after
+    // construction. When that mode is off, releasing its temporary hold must
+    // not erase the independent ?lockQualityStep benchmark contract.
+    controller.setStepLocked(false);
+    for (let index = 0; index < 60; index += 1) {
+      controller.recordFrame({
+        frameMs: 40,
+        cadenceMs: 40,
+        phases: { renderMs: 30 },
+      });
+    }
+
+    expect(controller.getState().qualityStep).toBe(2);
+  });
+
   test('degrades when the 5-second rolling frame-time average exceeds budget', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',

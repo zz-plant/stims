@@ -420,13 +420,15 @@ export function createAdaptiveQualityController({
    * lower quality step beats one that visibly softens and re-sharpens as
    * the controller hunts.
    */
-  let stepLock =
+  const configuredStepLock =
     typeof lockedQualityStep === 'number' && Number.isFinite(lockedQualityStep)
       ? Math.min(
           Math.max(Math.round(lockedQualityStep), 0),
           QUALITY_STEPS.length - 1,
         )
       : null;
+  let livePerformanceStepLock: number | null = null;
+  let stepLock = configuredStepLock;
   let qualityStep = stepLock ?? heuristic.initialStep;
   let averageFrameMs: number | null = null;
   let averageCadenceMs: number | null = null;
@@ -610,14 +612,21 @@ export function createAdaptiveQualityController({
       // Freezes at the CURRENT step rather than a configured one: by the
       // time a performer asks for this, the controller has already found a
       // step the machine sustains, and that is the one to hold.
-      stepLock = locked ? qualityStep : null;
+      livePerformanceStepLock = locked ? qualityStep : null;
+      // A live-performance hold and a configured benchmark lock are
+      // independent reasons to freeze adaptation. Releasing the stage hold
+      // must reveal the configured lock again instead of silently turning a
+      // fixed-quality measurement back into an adaptive one.
+      stepLock = livePerformanceStepLock ?? configuredStepLock;
       state = {
         ...state,
         reasons: [
           ...heuristic.reasons,
           locked
             ? `Quality held at ${QUALITY_STEPS[qualityStep].id} for live performance.`
-            : 'Quality adaptation resumed.',
+            : configuredStepLock !== null
+              ? `Configured quality lock remains at ${QUALITY_STEPS[qualityStep].id}.`
+              : 'Quality adaptation resumed.',
         ],
       };
       return publish();
