@@ -153,6 +153,14 @@ describe('Workspace performance regressions', () => {
       "import { stopAllAudioForBfcache } from './core/audio-handler.ts';",
     );
     expect(appSource).toContain("import('./core/audio-handler.ts')");
+    expect(appSource).not.toContain(
+      "import { initAgentAPI } from './core/agent-api.ts';",
+    );
+    expect(appSource).not.toContain(
+      "import { installCrashTelemetry } from './core/services/crash-telemetry.ts';",
+    );
+    expect(appSource).toContain("import('./core/agent-api.ts')");
+    expect(appSource).toContain("import('./core/services/crash-telemetry.ts')");
     expect(catalogHookSource).toContain('STARTER_CATALOG_URL');
     expect(catalogHookSource).toContain('scheduleBackgroundTask');
     expect(shellHookSource).not.toContain(
