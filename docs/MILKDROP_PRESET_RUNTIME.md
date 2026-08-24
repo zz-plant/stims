@@ -82,6 +82,22 @@ When any flag is disabled and the runtime still starts on WebGPU, the overlay st
 
 Current WebGPU feedback mode is `none` on both safe and full paths until native feedback parity is stable. Native feedback has an explicit planner opt-in (`nativeWebGpuFeedbackEnabled`) for future rollout tests, but no production caller enables it yet.
 
+## JIT performance contract
+
+`src/js/milkdrop/expression-jit.ts` compiles EEL2 blocks as whole JavaScript
+functions. Per-point and per-pixel callers may deliberately use the same object
+for the engine environment and local scope. In that aliased case, an ordinary
+local assignment must write the property once; mirroring it through both
+references repeats the same hot-loop work. `q` registers and `megabuf` /
+`gmegabuf` targets retain their explicit environment/store behavior.
+
+The runtime performance harness compares changes at a fixed adaptive-quality
+step. The configured benchmark lock and the live-performance hold are separate:
+releasing a temporary live hold must not resume adaptation when
+`?lockQualityStep=` is present. See
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md) for the measured result,
+comparison contract, and reproduction command.
+
 ## Shader execution classification
 
 Direct shader payloads keep a separate execution classification in `src/js/milkdrop/compiler/shader-execution-classification.ts`. Runtime consumers should use this helper instead of checking `supportedBackends`, `rawGlsl`, and `requiresControlFallback` directly. The current categories are:
@@ -96,4 +112,6 @@ Use both layers:
 
 - Fast logic coverage in unit tests for compiler/runtime helpers, rollout-flag gating, and representative descriptor fixtures.
 - Browser-backed interaction coverage in `tests/e2e/agent-integration.test.ts` for the shipped visualizer flow.
+- JIT/interpreter differential coverage plus the aliased-scope write-count
+  regression in `tests/unit/milkdrop-program-jit.test.ts`.
 - For compatibility-specific sweeps, run `bun run test -- --profile compat` so the descriptor rollout fixtures and guard tests execute with the broader corpus checks.

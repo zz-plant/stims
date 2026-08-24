@@ -168,6 +168,22 @@ body[data-page="performance"] {
     rgba(255, 255, 255, 0.05);
 }
 
+.stims-performance__text-link {
+  color: color-mix(in srgb, var(--stims-accent) 82%, #fff8ef);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.stims-performance__text-link:hover {
+  color: #fff8ef;
+}
+
+.stims-performance__text-link:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .stims-performance__table {
   width: 100%;
   border-collapse: separate;

@@ -11,6 +11,17 @@ This document maps Stims' implemented engineering systems without turning scaffo
 
 Compilation and runtime stepping are necessary compatibility evidence. They do not, by themselves, prove visual fidelity.
 
+### Runtime performance evidence
+
+The EEL2 JIT avoids duplicate ordinary property stores when per-point or
+per-pixel callers deliberately alias the environment and local scopes. That
+hot-path change is covered by write-count and interpreter/JIT differential
+tests, then measured with a real-browser fixed-tier runner that records cadence,
+simulation/render work, backend selection, fallback, and adaptive-quality
+state. The bounded 2026-08-24 result and its reproduction contract live in
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md); it is evidence for the
+measured stress case, not a universal FPS claim.
+
 ## 2. WebGL2 baseline and guarded WebGPU path — implemented, partially certified
 
 - WebGL2 remains the compatibility baseline.
