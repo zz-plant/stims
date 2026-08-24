@@ -169,6 +169,70 @@ test('aggregateCertificationPerfTrials rejects incomplete evidence', () => {
   expect(aggregate.representativePerformance).toBeNull();
 });
 
+test('aggregateCertificationPerfTrials rejects fatal browser runtime errors', () => {
+  const measuredResult = {
+    slug: 'milkdrop',
+    success: true,
+    fallbackOccurred: false,
+    performance: {
+      durationMs: 6000,
+      warmupMs: 2000,
+      sampleCount: 400,
+      averageFrameMs: 10,
+      p95FrameMs: 11,
+      averageSimulationMs: 8,
+      averageRenderMs: 2,
+      averageCadenceMs: 16.7,
+      medianCadenceMs: 16.7,
+      p95CadenceMs: 17,
+      averageFps: 60,
+      medianFps: 60,
+      metricsSource: 'sampler' as const,
+      actualBackend: 'webgpu' as const,
+      fallbackOccurred: false,
+      terminalAdaptiveQuality: null,
+    },
+  };
+
+  expect(
+    aggregateCertificationPerfTrials(
+      [
+        {
+          ...measuredResult,
+          consoleErrors: [
+            'GPUValidationError: Vertex range (1997 - 2047) requires a larger buffer',
+          ],
+        },
+      ],
+      'webgpu',
+    ).status,
+  ).toBe('error');
+  expect(
+    aggregateCertificationPerfTrials(
+      [
+        {
+          ...measuredResult,
+          consoleErrors: ['PageError: renderer exploded'],
+        },
+      ],
+      'webgpu',
+    ).status,
+  ).toBe('error');
+  expect(
+    aggregateCertificationPerfTrials(
+      [
+        {
+          ...measuredResult,
+          consoleErrors: [
+            'Failed to load resource: the server responded with a status of 404 (Not Found)',
+          ],
+        },
+      ],
+      'webgpu',
+    ).status,
+  ).toBe('pass');
+});
+
 test('rankCertificationCorpusPerfReports puts errors first, then hottest failures', () => {
   const reports: CertificationCorpusPerfReport[] = [
     {
