@@ -643,6 +643,23 @@ async function clickVisibleButtonByText(page: Page, label: string) {
   }
 }
 
+async function clickTrustedVisibleButton(page: Page, selector: string) {
+  try {
+    const matches = page.locator(selector);
+    const count = await matches.count();
+    for (let index = 0; index < count; index += 1) {
+      const target = matches.nth(index);
+      if ((await target.isVisible()) && (await target.isEnabled())) {
+        await target.click({ timeout: 5000 });
+        return true;
+      }
+    }
+  } catch (_error) {
+    // Fall through to the agent API and DOM-click compatibility paths.
+  }
+  return false;
+}
+
 async function isAudioActive(page: Page) {
   return page.evaluate(() => {
     if (document.body.dataset.audioActive === 'true') {
@@ -713,13 +730,24 @@ export function getPlayToyAudioActivationError({
   return 'Demo audio was requested by the capture route, but audio never became active.';
 }
 
-async function requestDemoAudio(page: Page) {
+export async function requestDemoAudio(page: Page) {
   if (await isAudioActive(page)) {
     return true;
   }
 
+  // AudioContext activation is gesture-gated. Playwright's locator click is a
+  // trusted browser input; HTMLElement.click() (including the agent API's
+  // internal click) is not. Prefer the real interaction whenever the source
+  // card is on screen, especially across repeated fresh browser contexts.
+  if (
+    (await clickTrustedVisibleButton(page, SHELL_DEMO_SELECTOR)) ||
+    (await clickTrustedVisibleButton(page, CONTROL_DEMO_SELECTOR))
+  ) {
+    return true;
+  }
+
   const activatedViaAgentApi = await page
-    .evaluate(async () => {
+    .evaluate(() => {
       const stimState = (
         window as typeof window & {
           stimState?: {
@@ -732,7 +760,10 @@ async function requestDemoAudio(page: Page) {
       }
 
       try {
-        await stimState.enableDemoAudio();
+        // Activation can legitimately remain pending while the runtime and
+        // AudioContext settle. Start it here; the caller's bounded
+        // waitForAudioActive() owns the timeout and retry policy.
+        void stimState.enableDemoAudio().catch(() => {});
         return true;
       } catch (_error) {
         return false;
