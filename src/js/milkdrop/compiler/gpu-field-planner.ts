@@ -281,8 +281,6 @@ export function lowerGpuFieldProgram(
   // Pre-declaring every local the program assigns therefore matches MilkDrop
   // semantics exactly, and lets those early reads lower instead of bailing.
   // (Measured: worth ~83 further presets, `thresh` alone accounting for 73.)
-  // A name that is never assigned anywhere still bails — it cannot be told
-  // apart from a misspelled builtin.
   for (const statement of program.statements) {
     const target = lowerGpuFieldIdentifier(statement.target);
     if (
@@ -308,6 +306,24 @@ export function lowerGpuFieldProgram(
     for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
       if (!allowedIdentifiers.has(read) && availableRegisters.has(read)) {
         registerInputIdentifiers.add(read);
+        allowedIdentifiers.add(read);
+      }
+    }
+  }
+
+  // NS-EEL variables spring into existence with value 0 even when a program
+  // only reads them. Treat the remaining syntactically valid names as locals
+  // after known signals, caller bindings, and frame registers have claimed
+  // theirs. This is not a fallback guess: it is the CPU interpreter/JIT's
+  // exact lookup behavior, and it lets source such as `dy-r` (where `r` was
+  // never assigned) stay on the field path with `r = 0`.
+  for (const statement of program.statements) {
+    for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+      if (
+        !allowedIdentifiers.has(read) &&
+        isGpuFieldTemporary(read, reservedIdentifiers)
+      ) {
+        temporaries.add(read);
         allowedIdentifiers.add(read);
       }
     }
