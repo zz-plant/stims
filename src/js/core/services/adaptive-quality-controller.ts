@@ -406,9 +406,9 @@ export function createAdaptiveQualityController({
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
   const supportsGpuTimestamps =
     backend === 'webgpu' && Boolean(capabilities?.features.timestampQuery);
-  const timingMode: AdaptiveQualityTimingMode = supportsGpuTimestamps
-    ? 'gpu-phase-timestamps'
-    : 'coarse-frame';
+  // Capability alone is not a measurement. Stay truthful until the renderer
+  // actually supplies a resolved hardware timestamp.
+  let timingMode: AdaptiveQualityTimingMode = 'coarse-frame';
   const heuristic = buildHeuristicProfile(backend, capabilities);
 
   /**
@@ -686,6 +686,7 @@ export function createAdaptiveQualityController({
         Number.isFinite(gpuMs) &&
         gpuMs >= 0
       ) {
+        timingMode = 'gpu-phase-timestamps';
         averageGpuMs = updateEma(averageGpuMs, gpuMs);
       }
 
