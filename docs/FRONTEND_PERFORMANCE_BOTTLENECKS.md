@@ -31,6 +31,10 @@
 - **Repeated `Object.setPrototypeOf` in `createEnv`** — the reuse path only
   rewrites the prototype when it actually changed, so persistent shape/wave
   locals no longer trigger V8 deopts every frame.
+- **Duplicate EEL2 JIT stores for aliased scopes** — per-point and per-pixel
+  programs can use one object as both environment and locals. Ordinary results
+  are now written once instead of mirrored back onto the same object; seeded
+  interpreter/JIT differential coverage pins semantics.
 - **Live tile pool vs. the stage** — the pool's engine cap now follows the
   adaptive-quality controller via `engine-quality-store.ts`; when the stage
   degrades, browse-grid previews shed engines instead of competing.
@@ -101,6 +105,11 @@ borders, and motion vectors when a blend transition begins. Not per-frame,
 but it can spike a frame during preset switches on dense presets.
 
 ## Regression guards
+
+The fixed-tier browser method and latest measured result live in
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md). Use its quality lock,
+warmup, duration, backend, and CPU-throttle contract before claiming an FPS
+uplift; source inspection or a successful browser load is insufficient.
 
 - `bun run check:bundle-size` (scripts/check-bundle-size.ts) asserts bundle
   budgets against `dist/` after a build — run it whenever imports or vendor
