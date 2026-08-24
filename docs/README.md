@@ -54,7 +54,7 @@ Everything you need to set up your environment, run the local dev server, run qu
 | --- | --- |
 | 🧭 [**Onboarding Map**](./ONBOARDING.md) | Which parts of the codebase are hard, why, and what order to learn them in — read first |
 | 🛠️ [**Development Setup**](./DEVELOPMENT.md) | Local environment setup (Bun 1.3+), scripts, dev server, and troubleshooting |
-| 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Pages deployment pipeline, environment variables, and wrangler configuration |
+| 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Workers Builds pipeline, build cache, environment variables, and Wrangler configuration |
 | 🧪 [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
 | 🛡️ [**Guardrails**](./GUARDRAILS.md) | Every rule the repo enforces and why — generated from the guard scripts, so it cannot go stale |
 | 📝 [**Commit & Review Conventions**](./COMMIT_CONVENTIONS.md) | Git workflow, Conventional Commits format, and PR contribution rules |

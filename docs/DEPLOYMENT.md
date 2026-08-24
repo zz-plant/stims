@@ -48,7 +48,9 @@ bun run site:dev
 
 ### How the Worker build works
 
-`bun run site:build` runs the Vite build, then `wrangler pages functions build --outdir=dist/_worker.js` to compile the `functions/` directory (middleware + `/api/*` routes) into a single Worker module, then writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
+`bun run site:build` runs the Vite app build and the Pages Functions compiler concurrently because neither consumes the other's output. The Worker compiler writes to an isolated temporary directory; after both builds succeed, the script moves that bundle into `dist/_worker.js` and writes `dist/.assetsignore` so the compiled Worker and `.vite/` metadata are not uploaded as public static assets. `wrangler.site.jsonc` points `main` at that bundle, serves `dist/` as assets, and uses `assets.run_worker_first` so the OG-rewrite middleware still sees HTML navigations while pure asset paths skip the Worker.
+
+Keep the orchestration in `scripts/build-site.mjs`. Running both compilers as a shell chain makes deploy builds unnecessarily serial, while writing both into `dist/` concurrently creates a race because Vite clears that directory at startup.
 
 ### One-time Workers Builds setup
 
@@ -57,6 +59,7 @@ Done in the Cloudflare dashboard (Workers & Pages → the `stims` Worker → Set
 1. Connect the `zz-plant/stims` GitHub repository.
 2. Build command: `bun run site:build`. Deploy command: `bunx wrangler deploy --config wrangler.site.jsonc`. Non-production branch command: `bunx wrangler versions upload --config wrangler.site.jsonc`.
 3. Production branch: `main`.
+4. Enable **Build cache** under Settings → Build. Workers Builds then preserves Bun's package cache between builds; see [Cloudflare's build-caching guide](https://developers.cloudflare.com/workers/ci-cd/builds/build-caching/).
 
 This setup is complete: the `toil.fyi` custom domain is attached to the `stims` Worker and the old Pages project is retired.
 

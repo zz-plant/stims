@@ -26,6 +26,13 @@
 - **Meyda / stats-gl in the startup payload** — both are dynamic imports now;
   Meyda only loads on the AnalyserNode fallback path, stats-gl only when the
   overlay is enabled.
+- **Telemetry and automation in the startup payload** (fixed 2026-08-24) —
+  crash/renderer telemetry, the agent API/driver, and gamepad navigation start
+  after the first paint. Device-tier, refresh-rate, and battery probes remain
+  early because they affect the first renderer choice.
+- **Full-catalog parsing on the main thread** — the catalog fetch/parse/merge
+  pipeline runs in `catalog-parse-worker.ts`; unsupported browsers retain the
+  identical main-thread fallback.
 - **Per-frame Meyda FFT on the fallback path** — spectral features refresh
   every fourth frame once a snapshot exists (`audio-handler.ts`).
 - **Repeated `Object.setPrototypeOf` in `createEnv`** — the reuse path only
@@ -56,17 +63,7 @@
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Full-catalog `JSON.parse` on the main thread
-
-`use-catalog-loading.ts` parses the 1.7 MB catalog and maps every entry on
-the main thread. The work is idle-scheduled, which is right, but
-`JSON.parse` of that payload is a single non-yieldable ~80–150 ms block on
-mobile. Comlink is already a dependency: parse in a worker and transfer, or
-ship the catalog as NDJSON and stream it. (Delivery-side caching is fixed —
-catalog JSON now has stale-while-revalidate headers and the service worker
-serves preset payloads cache-first.)
-
-### 2. Stage `--energy` CSS pulse is event-driven, not frame-driven
+### 1. Stage `--energy` CSS pulse is event-driven, not frame-driven
 
 `StageControls.tsx` updates the `--energy` custom property from
 `subscribeAudioEnergy`, which is fed from engine *snapshot* changes — and
@@ -76,7 +73,7 @@ dedicated per-frame publisher across the engine seam (a rAF reader of the
 live analyser writing `style.setProperty` directly, no React), which needs a
 small API addition on the engine adapter.
 
-### 3. Spectrum processed in multiple passes per frame
+### 2. Spectrum processed in multiple passes per frame
 
 On the AnalyserNode fallback path, each frame runs: `getByteFrequencyData`
 copy, a stylize pass, a `getAverageFrequency` pass used only for a silence
@@ -85,7 +82,7 @@ threshold, and an optional blend pass (`animation-loop.ts`,
 from the stylize pass would drop 2 of the 4–5 full-array walks nearly for
 free.
 
-### 4. Blend-state cloning during preset transitions
+### 3. Blend-state cloning during preset transitions
 
 `cloneBlendState()` deep-copies wave positions, custom waves, shapes,
 borders, and motion vectors when a blend transition begins. Not per-frame,
@@ -123,3 +120,22 @@ uplift; source inspection or a successful browser load is insufficient.
   chunking change.
 - `tests/unit/app-shell-performance-regression.test.ts` pins the service
   worker's non-blocking cache-write contract and the lazy runtime imports.
+- `tests/unit/site-build.test.ts` pins the dedicated deploy packager and its
+  concurrent app/Worker build contract.
+
+## Latest startup and deploy-build evidence
+
+Measured 2026-08-24 on the same checkout and machine:
+
+- Cold Chromium production load, three fresh contexts, service workers
+  blocked, 4× CPU throttle, 150 ms latency, and 200,000 bytes/s downstream:
+  median `shell-rendered` improved from 2,288.4 ms to 2,120.7 ms, while
+  requests completed before the shell fell from 57 to 51.
+- Local `bun run site:build`, timed end to end: 3.97 s before concurrent build
+  orchestration and 2.74 s after it. The output still contains
+  `dist/_worker.js/index.js`, `.assetsignore`, and the complete public preset
+  libraries.
+
+These are focused before/after measurements, not universal production-SLA
+claims. Re-run them when the entry graph, Worker compiler, or build host
+changes.

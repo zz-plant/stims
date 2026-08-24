@@ -53,7 +53,13 @@ type AgentWindow = typeof window & {
       backend: string | null;
       lastError: string | null;
     };
-    waitFor: (predicateSource: string, timeoutMs?: number) => Promise<unknown>;
+    waitFor: (
+      predicate: (state: {
+        engineState: 'booting' | 'ready' | 'live';
+        backend: string | null;
+      }) => boolean,
+      timeoutMs?: number,
+    ) => Promise<unknown>;
     run: (
       actionId: string,
       params?: Record<string, unknown>,
@@ -148,6 +154,12 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
     });
 
     if (renderer === 'webgpu') {
+      await page.evaluate(() =>
+        (window as AgentWindow).__stims_agent?.waitFor(
+          (state) => state.backend === 'webgpu',
+          10000,
+        ),
+      );
       const backend = await page.evaluate(
         () => (window as AgentWindow).__stims_agent?.getState().backend,
       );
