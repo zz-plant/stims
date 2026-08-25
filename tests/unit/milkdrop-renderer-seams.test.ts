@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { BufferGeometry, Group, LineLoop } from 'three';
+import {
+  BufferGeometry,
+  Group,
+  LineLoop,
+  type Mesh,
+  ShaderMaterial,
+} from 'three';
 import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../src/js/milkdrop/backend-behavior.ts';
 import {
   MAX_MILKDROP_POLYGON_SIDES,
@@ -127,5 +133,27 @@ describe('milkdrop renderer seams', () => {
     expect(outlineChildren[2]?.position.y).toBeCloseTo(-0.1 + thickOffset, 6);
     expect(outlineChildren[3]?.position.x).toBeCloseTo(0.2, 6);
     expect(outlineChildren[3]?.position.y).toBeCloseTo(-0.1 + thickOffset, 6);
+  });
+
+  test('keeps shader shape colors display-referred through the raw MilkDrop present pass', () => {
+    const shape = makeShape({
+      color: { r: 0.5, g: 0.25, b: 0.75, a: 1 },
+      secondaryColor: { r: 0.75, g: 0.5, b: 0.25, a: 1 },
+    });
+    const group = createShapeObject(
+      shape,
+      WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+      makeShapeHelpers(),
+    );
+    const fill = group.children[0] as Mesh;
+    const material = fill.material as ShaderMaterial;
+
+    expect(material).toBeInstanceOf(ShaderMaterial);
+    expect(material.uniforms.primaryColor.value.toArray()).toEqual([
+      0.5, 0.25, 0.75,
+    ]);
+    expect(material.uniforms.secondaryColor.value.toArray()).toEqual([
+      0.75, 0.5, 0.25,
+    ]);
   });
 });
