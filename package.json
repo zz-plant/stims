@@ -70,6 +70,7 @@
     "check:script-docs": "bun run scripts/scripts-list.ts --check",
     "check:seo": "bun run scripts/check-seo.ts",
     "check:stale-paths": "bun run scripts/check-stale-paths.ts",
+    "check:test-source-greps": "bun run scripts/check-test-source-greps.ts",
     "check:unused-exports": "bun run scripts/check-unused-exports.ts",
     "check:webgpu-target-sampling": "bun run scripts/check-webgpu-target-sampling.ts",
     "cron:check": "bunx wrangler deploy --dry-run --config wrangler.cron.jsonc",
