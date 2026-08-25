@@ -115,15 +115,14 @@ test('recent projectM cream expansion picks compile without parser errors', () =
         origin: 'bundled',
       });
 
+      // Only the parser diagnostics are unique to this test. The three
+      // compatibility assertions that used to sit here ran over a 12-id subset
+      // of the manifest the preceding test already asserts identically over
+      // every entry, so they could never fail on their own.
       expect(
         compiled.diagnostics.filter(
           (diagnostic) => diagnostic.severity === 'error',
         ),
       ).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'supported',
-      );
-      expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
     });
 });
