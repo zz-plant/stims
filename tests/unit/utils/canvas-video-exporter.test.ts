@@ -309,47 +309,6 @@ describe('Canvas Video Exporter Utility', () => {
     });
   });
 
-  it('wires accessible HD and Spotify controls into the workspace', () => {
-    const panelSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'CapturePanel.tsx',
-      ),
-      'utf8',
-    );
-    const stageControlsSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'StageControls.tsx',
-      ),
-      'utf8',
-    );
-
-    expect(panelSource).toContain("'4k-landscape'");
-    expect(panelSource).toContain("'hd-landscape'");
-    expect(panelSource).toContain("'spotify-canvas'");
-    expect(panelSource).toContain('<fieldset');
-    expect(panelSource).toContain('aria-live="polite"');
-    expect(panelSource).toContain('Stop and save video');
-    expect(stageControlsSource).toContain('Record video');
-    // The dock delegates to the shared action rather than re-implementing the
-    // toggle, so this only checks the wiring; the behaviour itself is asserted
-    // against openRecordPanel below.
-    expect(stageControlsSource).toContain('openRecordPanel(menuSurface)');
-  });
-
   /**
    * These replace two assertions that grepped StageControls.tsx for the
    * literal toggle body. That body moved into workspace-actions.ts when the

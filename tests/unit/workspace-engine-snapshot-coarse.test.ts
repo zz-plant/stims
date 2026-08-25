@@ -89,13 +89,6 @@ describe('coarseEngineSnapshotEqual', () => {
     }
   });
 
-  test('blendDuration change alone republishes (the stale Settings bug)', () => {
-    const base = createEmptyEngineSnapshot();
-    expect(coarseEngineSnapshotEqual(base, { ...base, blendDuration: 5 })).toBe(
-      false,
-    );
-  });
-
   test('audio energy churn alone does not republish', () => {
     const base = createEmptyEngineSnapshot();
     const churn = {

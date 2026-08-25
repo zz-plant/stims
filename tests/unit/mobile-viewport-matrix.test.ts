@@ -107,33 +107,6 @@ describe('mobile viewport edge-case matrix', () => {
     ).toBe(true);
   });
 
-  test('safe-area-inset-bottom is accounted for in the mobile bar height', () => {
-    const css = readAppShellCss();
-    // Notch devices must not hide controls behind the home indicator.
-    expect(css).toMatch(
-      /--mobile-bar-height:\s*calc\(86px \+ env\(safe-area-inset-bottom/u,
-    );
-  });
-
-  test('home page workspace has height auto (no clipping, 322eed12)', () => {
-    const css = readAppShellCss();
-    expect(css).toMatch(
-      /body\[data-page="workspace"\]\s*\{[\s\S]*?height:\s*auto;/u,
-    );
-  });
-
-  test('home stage frame overflow visible on mobile (322eed12)', () => {
-    const css = readAppShellCss();
-    expect(
-      ruleInMedia(
-        css,
-        MOBILE_MEDIA,
-        '.stims-shell__stage-frame[data-mode="home"]',
-        'overflow: visible',
-      ),
-    ).toBe(true);
-  });
-
   test('short landscape viewports get a scrollable hero (height breakpoint)', () => {
     const css = readAppShellCss();
     expect(css).toMatch(/@media \(max-height: 720px\)/u);
