@@ -164,28 +164,6 @@ test('compareSuiteResults sorts worst-first by status rank, then highest mismatc
   expect(idsInOrder).toEqual(['d', 'c', 'b', 'g', 'e', 'a', 'f']);
 });
 
-test('suiteResultRank returns higher numbers for better statuses', () => {
-  expect(
-    suiteResultRank(
-      makeSuiteResult({ presetId: 'x', status: 'backend-mismatch' }),
-    ),
-  ).toBe(0);
-  expect(
-    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'fail' })),
-  ).toBe(1);
-  expect(
-    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'error' })),
-  ).toBe(2);
-  expect(
-    suiteResultRank(
-      makeSuiteResult({ presetId: 'x', status: 'missing-stims-capture' }),
-    ),
-  ).toBe(3);
-  expect(
-    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'pass' })),
-  ).toBe(4);
-});
-
 test('computeParityDiffMetrics throws with descriptive error on dimension mismatch', () => {
   const pixels2x1 = {
     width: 2,

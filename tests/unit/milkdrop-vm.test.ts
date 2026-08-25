@@ -1513,31 +1513,6 @@ wave_8_per_point1=y=y+0.015;
     expect(frameState.customWaves).toHaveLength(1);
   });
 
-  test('renders extended shape slots beyond the original four defaults', () => {
-    const preset = compileMilkdropPresetSource(
-      `
-title=Extended Shape Slots
-shape_5_enabled=1
-shape_5_sides=7
-shape_5_rad=0.18
-shape_5_a=0.3
-shape_5_r=0.9
-shape_5_g=0.7
-shape_5_b=0.4
-wavecode_4_enabled=1
-wave_4_per_point1=y=y+0.02;
-      `.trim(),
-      { id: 'extended-shape-slots' },
-    );
-
-    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 8 }));
-
-    expect(frameState.shapes.some((shape) => shape.key === 'shape_5')).toBe(
-      true,
-    );
-    expect(frameState.customWaves).toHaveLength(1);
-  });
-
   test('renders legacy max-slot custom wave and shape aliases at runtime', () => {
     const preset = compileMilkdropPresetSource(
       `

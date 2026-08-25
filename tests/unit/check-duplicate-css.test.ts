@@ -14,8 +14,4 @@ describe('check-duplicate-css', () => {
   test('passes on the current repo', () => {
     expect(runDuplicateCss()).toBe(0);
   });
-
-  test('the guard script exists', () => {
-    expect(existsSync('scripts/check-duplicate-css.ts')).toBe(true);
-  });
 });

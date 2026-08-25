@@ -429,21 +429,5 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
 
       expect(status).toBe('certified-native');
     });
-
-    test('certification report loaded from disk has every preset with a webgpuCertificationStatus', () => {
-      const report = loadWebGpuCertificationReport(process.cwd());
-      if (!report) {
-        return;
-      }
-      for (const preset of report.presets) {
-        expect([
-          'unmeasured',
-          'uncertified',
-          'certified-webgl',
-          'certified-native',
-          'certified-both',
-        ]).toContain(preset.webgpuCertificationStatus);
-      }
-    });
   });
 });

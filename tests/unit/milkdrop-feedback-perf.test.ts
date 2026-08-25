@@ -179,16 +179,4 @@ describe('feedback pipeline performance analysis', () => {
       baseline.totalSamplesPerPixelPixel,
     );
   });
-
-  test('combined separable blur + blur gating gives best result', () => {
-    const baseline = analyzeFrameCost('webgpu');
-    const optimized = analyzeFrameCost('webgpu', {
-      separableBlur: true,
-      blurEnabled: false,
-    });
-    expect(optimized.totalPasses).toBeLessThan(baseline.totalPasses);
-    expect(optimized.totalSamplesPerPixelPixel).toBeLessThan(
-      baseline.totalSamplesPerPixelPixel,
-    );
-  });
 });

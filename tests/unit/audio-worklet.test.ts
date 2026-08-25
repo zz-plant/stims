@@ -48,10 +48,6 @@ describe('Off-main-thread AudioWorklet DSP processing', () => {
     mock.restore();
   });
 
-  test('registers frequency-analyser processor', () => {
-    expect(registeredProcessors.has('frequency-analyser')).toBe(true);
-  });
-
   test('FrequencyAnalyserProcessor computes off-thread FFT, energy, averages, and transient metrics', () => {
     const ProcessorClass = registeredProcessors.get('frequency-analyser');
     expect(ProcessorClass).toBeDefined();

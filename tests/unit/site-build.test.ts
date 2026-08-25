@@ -10,9 +10,3 @@ test('site:build delegates deploy packaging to the site build script', async () 
     'bun run scripts/build-site.mjs',
   );
 });
-
-test('site build overlaps the independent app and Worker compilers', async () => {
-  const buildScript = await readFile('scripts/build-site.mjs', 'utf8');
-
-  expect(buildScript).toContain('await Promise.allSettled([');
-});

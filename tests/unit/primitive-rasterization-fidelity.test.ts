@@ -60,11 +60,4 @@ describe('milkdrop primitive rasterization fidelity fixtures', () => {
     expect(center).toEqual({ u: 0.5, v: 0.5 });
     expect(upperRight).toEqual({ u: 0.75, v: 0.75 });
   });
-
-  test('custom-wave depth fixture documents fixed procedural z for backend parity', () => {
-    const webglDepth = 0.28;
-    const webgpuProceduralCustomWaveDepth = 0.28;
-
-    expect(webgpuProceduralCustomWaveDepth).toBe(webglDepth);
-  });
 });

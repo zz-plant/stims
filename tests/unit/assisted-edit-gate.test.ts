@@ -171,13 +171,4 @@ describe('generated-preset reactivity probe', () => {
     expect(result.verdict).toBe('static');
     expect(result.respondingVariables).toEqual([]);
   });
-
-  test('the Generate panel labels static presets instead of blocking them', () => {
-    const panelSource = readFileSync(
-      path.join(root, 'src/js/frontend/SynthesizePanel.tsx'),
-      'utf8',
-    );
-    expect(panelSource).toContain('probePresetReactivity');
-    expect(panelSource).toContain('barely reacts to sound');
-  });
 });

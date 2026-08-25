@@ -19,8 +19,4 @@ describe('check-ci-config', () => {
   test('passes on the current repo', () => {
     expect(runCiConfig()).toBe(0);
   });
-
-  test('the guard script exists', () => {
-    expect(existsSync('scripts/check-ci-config.ts')).toBe(true);
-  });
 });

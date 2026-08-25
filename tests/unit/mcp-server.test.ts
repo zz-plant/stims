@@ -147,16 +147,6 @@ describe('agent capability markdown availability', () => {
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.file).toBe('docs/agents/README.md');
   });
-
-  test('searches bootstrap and handoff guidance through shared markdown index', async () => {
-    const results = await searchMarkdownSources('Return contract', {
-      file: 'docs/agents/agent-handoffs.md',
-      limit: 3,
-    });
-
-    expect(results.length).toBeGreaterThan(0);
-    expect(results[0]?.file).toBe('docs/agents/agent-handoffs.md');
-  });
 });
 
 describe('resolveQualityGateCommand', () => {

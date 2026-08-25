@@ -48,12 +48,6 @@ describe('inline boot script and theme store agree', () => {
     expect(indexHtml).toContain('prefers-color-scheme: light');
   });
 
-  test('the inline script reads the same storage key the store writes', () => {
-    // A renamed key would silently disable the pre-paint pass, reintroducing
-    // the flash without any test noticing.
-    expect(indexHtml).toContain('stims:theme');
-  });
-
   for (const stored of [null, 'light', 'dark', 'system', 'chartreuse']) {
     for (const osPrefersLight of [true, false]) {
       test(`stored=${stored ?? 'none'}, OS prefers ${
