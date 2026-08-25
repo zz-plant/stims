@@ -83,6 +83,7 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
+import { dismissLoadingScreen } from './loading-screen.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
 import { SilentAudioNotice } from './SilentAudioNotice.tsx';
 
@@ -1434,8 +1435,7 @@ function StimsWorkspaceAppShell() {
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');
-    const el = document.getElementById('stims-loading');
-    if (el) el.hidden = true;
+    dismissLoadingScreen();
   }, []);
 
   const stageAnchoredToolOpen = ui.routeState.panel === 'editor';

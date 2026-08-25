@@ -30,6 +30,10 @@
   crash/renderer telemetry, the agent API/driver, and gamepad navigation start
   after the first paint. Device-tier, refresh-rate, and battery probes remain
   early because they affect the first renderer choice.
+- **Abrupt static-loader replacement** (fixed 2026-08-24) — the loader now
+  sits outside the React root, shares the launch screen's starting geometry,
+  and crossfades after `shell-rendered`. Reduced-motion users get an immediate
+  removal, and a timeout still cleans up when a browser drops transition events.
 - **Full-catalog parsing on the main thread** — the catalog fetch/parse/merge
   pipeline runs in `catalog-parse-worker.ts`; unsupported browsers retain the
   identical main-thread fallback.
@@ -122,6 +126,8 @@ uplift; source inspection or a successful browser load is insufficient.
   worker's non-blocking cache-write contract and the lazy runtime imports.
 - `tests/unit/site-build.test.ts` pins the dedicated deploy packager and its
   concurrent app/Worker build contract.
+- `tests/unit/loading-screen.test.ts` pins the static loader outside the React
+  root and verifies its transition-driven handoff into the app shell.
 
 ## Latest startup and deploy-build evidence
 
