@@ -15,7 +15,6 @@ function frontendSource(file: string) {
 describe('passive first-use guidance', () => {
   test('lets transient guidance clear itself without dismissal controls', () => {
     const app = frontendSource('App.tsx');
-    const audioMatch = frontendSource('AudioMatchToast.tsx');
     const contextualHelp = frontendSource('ContextualHelp.tsx');
     const toast = frontendSource('WorkspaceToast.tsx');
     const workspaceUi = frontendSource('workspace-ui.tsx');
