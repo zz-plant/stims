@@ -45,7 +45,7 @@ const ALLOWED: Record<string, string> = {
   'tests/unit/app-shell-minimal-surfaces.test.ts':
     'DEBT: greps panel components and app-shell.css for copy and selectors.',
   'tests/unit/app-shell-passive-guidance.test.ts':
-    'DEBT: greps App.tsx for guidance copy.',
+    'DEBT (reduced): the audio-match toast is rendered with fake timers now; the remaining greps are App.tsx wiring and toast/hint copy, pending a harness mount of those surfaces.',
   'tests/unit/app-shell-performance-hardware.test.ts':
     'DEBT: greps for hardware-tier branching.',
   'tests/unit/app-shell-performance-regression.test.ts':
