@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { openRecordPanel } from '../../../src/js/frontend/workspace-actions.ts';
 import {
   CanvasVideoExporter,
@@ -11,40 +9,29 @@ import {
 
 describe('Canvas Video Exporter Utility', () => {
   it('defines valid export presets with correct dimensions', () => {
-    expect(EXPORT_PRESETS['spotify-canvas']).toEqual({
-      width: 1080,
-      height: 1920,
-      label: 'Spotify Canvas (9:16 Vertical)',
-      aspectRatio: '9:16',
-    });
+    // Dimensions and aspect ratio only. The `label` strings are human-facing
+    // copy: asserting them here means rewording a menu entry reddens the
+    // suite, while a wrong width — the thing that actually breaks an export —
+    // reads the same either way.
+    const expected = {
+      'spotify-canvas': { width: 1080, height: 1920, aspectRatio: '9:16' },
+      'tiktok-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
+      'youtube-shorts': { width: 1080, height: 1920, aspectRatio: '9:16' },
+      'hd-landscape': { width: 1920, height: 1080, aspectRatio: '16:9' },
+      '4k-landscape': { width: 3840, height: 2160, aspectRatio: '16:9' },
+      // `custom` was missing from the old per-key assertions entirely — the
+      // key-set check below is what surfaced it.
+      custom: { width: 1280, height: 720, aspectRatio: 'custom' },
+    } as const;
 
-    expect(EXPORT_PRESETS['tiktok-shorts']).toEqual({
-      width: 1080,
-      height: 1920,
-      label: 'TikTok Video (9:16 60FPS)',
-      aspectRatio: '9:16',
-    });
-
-    expect(EXPORT_PRESETS['youtube-shorts']).toEqual({
-      width: 1080,
-      height: 1920,
-      label: 'YouTube Shorts (9:16 60FPS)',
-      aspectRatio: '9:16',
-    });
-
-    expect(EXPORT_PRESETS['hd-landscape']).toEqual({
-      width: 1920,
-      height: 1080,
-      label: 'Full HD Landscape (16:9)',
-      aspectRatio: '16:9',
-    });
-
-    expect(EXPORT_PRESETS['4k-landscape']).toEqual({
-      width: 3840,
-      height: 2160,
-      label: 'Ultra HD 4K (16:9)',
-      aspectRatio: '16:9',
-    });
+    for (const [id, dims] of Object.entries(expected)) {
+      expect(EXPORT_PRESETS[id as keyof typeof EXPORT_PRESETS]).toMatchObject(
+        dims,
+      );
+    }
+    expect(Object.keys(EXPORT_PRESETS).sort()).toEqual(
+      Object.keys(expected).sort(),
+    );
   });
 
   it('records through a preset-sized mirror without resizing or pausing the live canvas', async () => {
@@ -307,47 +294,6 @@ describe('Canvas Video Exporter Utility', () => {
       ok: false,
       reason: 'The active WebGPU backend cannot allocate a 4K surface.',
     });
-  });
-
-  it('wires accessible HD and Spotify controls into the workspace', () => {
-    const panelSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'CapturePanel.tsx',
-      ),
-      'utf8',
-    );
-    const stageControlsSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        '..',
-        'src',
-        'js',
-        'frontend',
-        'StageControls.tsx',
-      ),
-      'utf8',
-    );
-
-    expect(panelSource).toContain("'4k-landscape'");
-    expect(panelSource).toContain("'hd-landscape'");
-    expect(panelSource).toContain("'spotify-canvas'");
-    expect(panelSource).toContain('<fieldset');
-    expect(panelSource).toContain('aria-live="polite"');
-    expect(panelSource).toContain('Stop and save video');
-    expect(stageControlsSource).toContain('Record video');
-    // The dock delegates to the shared action rather than re-implementing the
-    // toggle, so this only checks the wiring; the behaviour itself is asserted
-    // against openRecordPanel below.
-    expect(stageControlsSource).toContain('openRecordPanel(menuSurface)');
   });
 
   /**

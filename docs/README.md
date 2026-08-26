@@ -28,6 +28,7 @@ flowchart LR
   Arch --> A2["MILKDROP_PRESET_RUNTIME.md<br/>compiler + VM lifecycle"]
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
   Arch --> A4["architecture/fallback-state-machine.md<br/>renderer capability contract"]
+  Arch --> A5["RUNTIME_PERFORMANCE.md<br/>FPS evidence + reproduction"]
 
   Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
@@ -53,7 +54,7 @@ Everything you need to set up your environment, run the local dev server, run qu
 | --- | --- |
 | 🧭 [**Onboarding Map**](./ONBOARDING.md) | Which parts of the codebase are hard, why, and what order to learn them in — read first |
 | 🛠️ [**Development Setup**](./DEVELOPMENT.md) | Local environment setup (Bun 1.3+), scripts, dev server, and troubleshooting |
-| 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Pages deployment pipeline, environment variables, and wrangler configuration |
+| 🚀 [**Deployment Guide**](./DEPLOYMENT.md) | Cloudflare Workers Builds pipeline, build cache, environment variables, and Wrangler configuration |
 | 🧪 [**Testing & Quality Gate**](./TESTING.md) | Running unit/integration tests, `bun run check`, and automated verification matrices |
 | 🛡️ [**Guardrails**](./GUARDRAILS.md) | Every rule the repo enforces and why — generated from the guard scripts, so it cannot go stale |
 | 📝 [**Commit & Review Conventions**](./COMMIT_CONVENTIONS.md) | Git workflow, Conventional Commits format, and PR contribution rules |
@@ -69,6 +70,7 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | 📐 [**Architecture Overview**](./ARCHITECTURE.md) | High-level system architecture, SPA URL state, React workspace, and engine seams |
 | 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | Implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
 | ⚡ [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
+| 📈 [**Runtime Performance Evidence**](./RUNTIME_PERFORMANCE.md) | Repeated production FPS methodology, hardware GPU timing, adaptive resource tiers, measured JIT result, caveats, and reproduction command |
 | 🖥️ [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |
 | 🎯 [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
 | 🔍 [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |

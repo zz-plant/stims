@@ -15,7 +15,7 @@
 [![WebGPU & WebGL2](https://img.shields.io/badge/graphics-WebGPU%20%7C%20WebGL2-00C7B7?style=for-the-badge&logo=webgpu)](https://toil.fyi)
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=for-the-badge)](./LICENSE)
 
-[Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
+[Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Runtime performance evidence](./docs/RUNTIME_PERFORMANCE.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
 *1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · public domain (Unlicense)*
 
@@ -92,16 +92,37 @@ renderers you embed or run, while Stims is the workflow around one.
 
 What that buys you in practice:
 
-- **Frames survive UI work.** Interacting with the workspace or switching tabs does not drop render frames.
-- **Complex presets stay smooth.** Per-pixel warp math is evaluated in bulk on the GPU rather than per-pixel on the CPU, so heavy presets hold near-flat frame cost.
+- **Runtime work is measured at the frame seam.** Production browser benchmarks use repeated trials and record delivered cadence, simulation time, render time, resolved WebGPU hardware time when available, backend selection, and adaptive-quality state instead of treating a successful load as proof of speed.
+- **Hot equation loops avoid redundant work.** When per-point and per-pixel equations share their runtime scope, the JIT writes each ordinary local result once while retaining differential tests against the interpreter.
 - **Rhythm and melody read separately.** Presets can react to percussive and harmonic energy bands independently — transients versus sustained tones — without claiming to separate instruments.
-- **Runs on weak hardware.** The renderer self-tunes resolution to hold a steady frame rate, from Smart TVs and Galaxy S22 to 4K MacBooks.
+- **Rendering pressure has an explicit fallback path.** Hardware-timed WebGPU pressure can trim render and feedback resolution continuously inside a quality tier; sustained broader pressure can still reduce visual density through the discrete adaptive-quality ladder.
+- **Startup work is staged around the first paint.** Renderer-selection probes stay on the critical path; telemetry, automation, and gamepad services load after the shell. The measured cold-load and deploy-build method lives in [the front-end performance audit](./docs/FRONTEND_PERFORMANCE_BOTTLENECKS.md#latest-startup-and-deploy-build-evidence).
 - **Presets stay presets.** A `.milk` file loads, runs, edits, and exports as `.milk`. There is no conversion step to run before a preset is usable, and no converted artifact to keep in sync with the original.
 - **Editing is part of playback.** The compiler diagnostics, parameter controls, and inspector act on the preset that is on screen right now, so a change is visible in the same session that found the problem.
 
 ### Frame-cost benchmark
 
-`bun run bench:butterchurn` re-measures frame cost against Butterchurn as a developer check, not a product claim (fairness controls are documented in the script header). The durable shape across runs: Stims stays near 1 ms per frame on every preset measured, while Butterchurn ranges wider — faster on simple presets, slower on complex ones. Frame cost is not visual fidelity; that oracle is the projectM reference workflow in the next section.
+The fixed-tier browser benchmark compares code changes at the same renderer,
+viewport, preset, audio source, and adaptive-quality step. On an Apple M1 Max in
+Chromium/WebGPU at 1280×720, the `eos-apocalypse` stress case produced the
+following before/after result for commit
+[`ac2b354d`](https://github.com/zz-plant/stims/commit/ac2b354d):
+
+| CDP CPU throttle | Median delivered FPS | Average frame work |
+| --- | ---: | ---: |
+| 1× | 120.48 → 120.48 (display-capped) | 3.43 → 2.87 ms |
+| 2× | 120.48 → 120.48 (display-capped) | 7.96 → 6.75 ms |
+| 4× | 58.14 → 59.88 | 17.56 → 15.31 ms |
+| 6× | 38.61 → 39.68–39.84 | 25.91 → 24.08–24.26 ms |
+
+These numbers are one preset on one host, not a device-wide FPS promise. The
+8× tier was too scheduler-sensitive to promote as a stable result. See
+[`docs/RUNTIME_PERFORMANCE.md`](./docs/RUNTIME_PERFORMANCE.md) for the exact
+2-second warmup, 8-second capture, quality lock, reproduction command, and
+interpretation rules. Current runs default to a production build and three
+trials, report median/min/max frame work, and reject renderer validation or
+device errors as incomplete evidence. Frame cost is also not visual fidelity;
+that oracle is the projectM reference workflow in the next section.
 
 ## Compatibility and evidence
 

@@ -39,6 +39,8 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   frameBudgetMs: number;
   qualityStep: number;
   qualityStepCount: number;
+  /** Continuous GPU-only resolution trim within the discrete quality step. */
+  gpuResolutionMultiplier: number;
   averageFrameMs: number | null;
   averageCadenceMs: number | null;
   averageRenderMs: number | null;
@@ -143,6 +145,11 @@ const DEGRADE_THRESHOLD_SAMPLES = 12;
 const RECOVER_THRESHOLD_SAMPLES = 18;
 const ENHANCE_THRESHOLD_SAMPLES = 36;
 const RESET_THRESHOLD_SAMPLES = 3;
+const GPU_RESOLUTION_PRESSURE_SAMPLES = 6;
+const GPU_RESOLUTION_RECOVER_SAMPLES = 18;
+const GPU_RESOLUTION_MIN = 0.72;
+const GPU_RESOLUTION_MAX_CHANGE = 0.06;
+const GPU_RESOLUTION_TARGET_BUDGET_RATIO = 0.82;
 const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 6;
 const ROLLING_WINDOW_MS = 5000;
 /**
@@ -160,6 +167,33 @@ const CADENCE_AT_TARGET_RATIO = 1.05;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+export function resolveGpuResolutionTarget({
+  currentMultiplier,
+  averageGpuMs,
+  frameBudgetMs,
+  minimumMultiplier = GPU_RESOLUTION_MIN,
+}: {
+  currentMultiplier: number;
+  averageGpuMs: number;
+  frameBudgetMs: number;
+  minimumMultiplier?: number;
+}) {
+  if (averageGpuMs <= 0 || frameBudgetMs <= 0) {
+    return currentMultiplier;
+  }
+  // Fill cost scales approximately with pixel area, so the linear-resolution
+  // correction is the square root of the budget ratio. Slew-limit each change
+  // to avoid a visible one-frame resolution jump.
+  const desired = Math.sqrt(
+    (frameBudgetMs * GPU_RESOLUTION_TARGET_BUDGET_RATIO) / averageGpuMs,
+  );
+  return clamp(
+    Math.max(desired, currentMultiplier - GPU_RESOLUTION_MAX_CHANGE),
+    minimumMultiplier,
+    1,
+  );
 }
 
 function updateEma(previous: number | null, next: number) {
@@ -331,6 +365,7 @@ function buildState({
   profile,
   frameBudgetMs,
   qualityStep,
+  gpuResolutionMultiplier,
   averageFrameMs,
   averageCadenceMs,
   averageRenderMs,
@@ -350,6 +385,7 @@ function buildState({
   profile: string;
   frameBudgetMs: number;
   qualityStep: number;
+  gpuResolutionMultiplier: number;
   averageFrameMs: number | null;
   averageCadenceMs: number | null;
   averageRenderMs: number | null;
@@ -373,6 +409,7 @@ function buildState({
     frameBudgetMs,
     qualityStep,
     qualityStepCount: QUALITY_STEPS.length,
+    gpuResolutionMultiplier,
     averageFrameMs,
     averageCadenceMs,
     averageRenderMs,
@@ -385,10 +422,12 @@ function buildState({
     rollingWindowSize,
     adaptation,
     reasons,
-    renderScaleMultiplier: step.renderScaleMultiplier,
-    maxPixelRatioMultiplier: step.maxPixelRatioMultiplier,
+    renderScaleMultiplier: step.renderScaleMultiplier * gpuResolutionMultiplier,
+    maxPixelRatioMultiplier:
+      step.maxPixelRatioMultiplier * gpuResolutionMultiplier,
     densityMultiplier: step.densityMultiplier,
-    feedbackResolutionMultiplier: step.feedbackResolutionMultiplier,
+    feedbackResolutionMultiplier:
+      step.feedbackResolutionMultiplier * gpuResolutionMultiplier,
   } satisfies AdaptiveQualityState;
 }
 
@@ -406,9 +445,9 @@ export function createAdaptiveQualityController({
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
   const supportsGpuTimestamps =
     backend === 'webgpu' && Boolean(capabilities?.features.timestampQuery);
-  const timingMode: AdaptiveQualityTimingMode = supportsGpuTimestamps
-    ? 'gpu-phase-timestamps'
-    : 'coarse-frame';
+  // Capability alone is not a measurement. Stay truthful until the renderer
+  // actually supplies a resolved hardware timestamp.
+  let timingMode: AdaptiveQualityTimingMode = 'coarse-frame';
   const heuristic = buildHeuristicProfile(backend, capabilities);
 
   /**
@@ -420,14 +459,17 @@ export function createAdaptiveQualityController({
    * lower quality step beats one that visibly softens and re-sharpens as
    * the controller hunts.
    */
-  let stepLock =
+  const configuredStepLock =
     typeof lockedQualityStep === 'number' && Number.isFinite(lockedQualityStep)
       ? Math.min(
           Math.max(Math.round(lockedQualityStep), 0),
           QUALITY_STEPS.length - 1,
         )
       : null;
+  let livePerformanceStepLock: number | null = null;
+  let stepLock = configuredStepLock;
   let qualityStep = stepLock ?? heuristic.initialStep;
+  let gpuResolutionMultiplier = 1;
   let averageFrameMs: number | null = null;
   let averageCadenceMs: number | null = null;
   let averageRenderMs: number | null = null;
@@ -436,6 +478,8 @@ export function createAdaptiveQualityController({
   let sampleCount = 0;
   let consecutiveOverBudget = 0;
   let consecutiveUnderBudget = 0;
+  let consecutiveGpuPressure = 0;
+  let consecutiveGpuHeadroom = 0;
   /**
    * The quality step a preset switch pre-degraded *from*, while that step has
    * not been earned back yet — or null when nothing is outstanding.
@@ -486,6 +530,34 @@ export function createAdaptiveQualityController({
    * average.
    */
   let rollingFrameTimesSqSum = 0;
+
+  function getMinimumGpuResolutionMultiplier(stepIndex = qualityStep) {
+    const step = QUALITY_STEPS[stepIndex] as QualityStep;
+    // The feedback manager clamps its effective scale at 0.45. Keep telemetry
+    // truthful by never publishing a multiplier below that actual floor.
+    return Math.max(
+      GPU_RESOLUTION_MIN,
+      0.45 / step.feedbackResolutionMultiplier,
+    );
+  }
+
+  function moveQualityStepPreservingResolution(targetStep: number) {
+    if (gpuResolutionMultiplier >= 0.999) {
+      qualityStep = targetStep;
+      gpuResolutionMultiplier = 1;
+      return;
+    }
+    const previousStep = QUALITY_STEPS[qualityStep] as QualityStep;
+    const effectiveRenderScale =
+      previousStep.renderScaleMultiplier * gpuResolutionMultiplier;
+    qualityStep = targetStep;
+    const nextStep = QUALITY_STEPS[qualityStep] as QualityStep;
+    gpuResolutionMultiplier = clamp(
+      effectiveRenderScale / nextStep.renderScaleMultiplier,
+      getMinimumGpuResolutionMultiplier(),
+      1,
+    );
+  }
 
   function resetRollingWindowAfterStepChange() {
     rollingFrameTimes.fill(0);
@@ -555,6 +627,7 @@ export function createAdaptiveQualityController({
     profile: heuristic.profile,
     frameBudgetMs: heuristic.frameBudgetMs,
     qualityStep,
+    gpuResolutionMultiplier,
     averageFrameMs,
     averageCadenceMs,
     averageRenderMs,
@@ -587,6 +660,7 @@ export function createAdaptiveQualityController({
       profile: heuristic.profile,
       frameBudgetMs: heuristic.frameBudgetMs,
       qualityStep,
+      gpuResolutionMultiplier,
       averageFrameMs,
       averageCadenceMs,
       averageRenderMs,
@@ -610,14 +684,21 @@ export function createAdaptiveQualityController({
       // Freezes at the CURRENT step rather than a configured one: by the
       // time a performer asks for this, the controller has already found a
       // step the machine sustains, and that is the one to hold.
-      stepLock = locked ? qualityStep : null;
+      livePerformanceStepLock = locked ? qualityStep : null;
+      // A live-performance hold and a configured benchmark lock are
+      // independent reasons to freeze adaptation. Releasing the stage hold
+      // must reveal the configured lock again instead of silently turning a
+      // fixed-quality measurement back into an adaptive one.
+      stepLock = livePerformanceStepLock ?? configuredStepLock;
       state = {
         ...state,
         reasons: [
           ...heuristic.reasons,
           locked
             ? `Quality held at ${QUALITY_STEPS[qualityStep].id} for live performance.`
-            : 'Quality adaptation resumed.',
+            : configuredStepLock !== null
+              ? `Configured quality lock remains at ${QUALITY_STEPS[qualityStep].id}.`
+              : 'Quality adaptation resumed.',
         ],
       };
       return publish();
@@ -628,12 +709,15 @@ export function createAdaptiveQualityController({
         QUALITY_STEPS.length - 1,
       );
       qualityStep = targetStep;
+      gpuResolutionMultiplier = 1;
       // An explicit set overrides whatever the switch pre-payment was tracking;
       // holding a stale level would suppress the next switch's pre-pay.
       switchPreDegradeFromStep = null;
       adaptation = 'steady';
       consecutiveOverBudget = 0;
       consecutiveUnderBudget = 0;
+      consecutiveGpuPressure = 0;
+      consecutiveGpuHeadroom = 0;
       resetRollingWindowAfterStepChange();
       state = {
         ...state,
@@ -677,6 +761,7 @@ export function createAdaptiveQualityController({
         Number.isFinite(gpuMs) &&
         gpuMs >= 0
       ) {
+        timingMode = 'gpu-phase-timestamps';
         averageGpuMs = updateEma(averageGpuMs, gpuMs);
       }
 
@@ -753,6 +838,24 @@ export function createAdaptiveQualityController({
           averageGpuMs <= heuristic.frameBudgetMs * 0.9) &&
         !rollingFramePressure;
 
+      const hasMeasuredGpuTiming =
+        timingMode === 'gpu-phase-timestamps' && averageGpuMs !== null;
+      if (hasMeasuredGpuTiming && gpuPressure && !isTransientHitch) {
+        consecutiveGpuPressure += 1;
+        consecutiveGpuHeadroom = 0;
+      } else if (
+        hasMeasuredGpuTiming &&
+        hasHeadroom &&
+        averageGpuMs !== null &&
+        averageGpuMs < heuristic.frameBudgetMs * 0.65
+      ) {
+        consecutiveGpuHeadroom += 1;
+        consecutiveGpuPressure = 0;
+      } else {
+        consecutiveGpuPressure = Math.max(0, consecutiveGpuPressure - 1);
+        consecutiveGpuHeadroom = Math.max(0, consecutiveGpuHeadroom - 1);
+      }
+
       if (
         !isTransientHitch &&
         (renderPressure || gpuPressure || framePressure || cadencePressure)
@@ -767,6 +870,38 @@ export function createAdaptiveQualityController({
         consecutiveUnderBudget = Math.max(0, consecutiveUnderBudget - 1);
       }
 
+      const minimumGpuResolutionMultiplier =
+        getMinimumGpuResolutionMultiplier();
+      if (
+        stepLock === null &&
+        consecutiveGpuPressure >= GPU_RESOLUTION_PRESSURE_SAMPLES &&
+        averageGpuMs !== null &&
+        gpuResolutionMultiplier > minimumGpuResolutionMultiplier + 0.001
+      ) {
+        const nextMultiplier = resolveGpuResolutionTarget({
+          currentMultiplier: gpuResolutionMultiplier,
+          averageGpuMs,
+          frameBudgetMs: heuristic.frameBudgetMs,
+          minimumMultiplier: minimumGpuResolutionMultiplier,
+        });
+        if (nextMultiplier < gpuResolutionMultiplier - 0.001) {
+          gpuResolutionMultiplier = nextMultiplier;
+          adaptation = 'degraded';
+          consecutiveGpuPressure = 0;
+          consecutiveOverBudget = 0;
+          consecutiveUnderBudget = 0;
+          resetRollingWindowAfterStepChange();
+          state = {
+            ...state,
+            reasons: [
+              ...heuristic.reasons,
+              `Measured GPU pressure trimmed render resolution to ${Math.round(gpuResolutionMultiplier * 100)}% without changing geometry density.`,
+            ],
+          };
+          return publish();
+        }
+      }
+
       const triggeredByRollingWindow =
         consecutiveRollingOverBudget >=
         ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES;
@@ -776,7 +911,7 @@ export function createAdaptiveQualityController({
           triggeredByRollingWindow) &&
         qualityStep < QUALITY_STEPS.length - 1
       ) {
-        qualityStep += 1;
+        moveQualityStepPreservingResolution(qualityStep + 1);
         adaptation = 'degraded';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
@@ -799,10 +934,34 @@ export function createAdaptiveQualityController({
 
       if (
         stepLock === null &&
+        consecutiveGpuHeadroom >= GPU_RESOLUTION_RECOVER_SAMPLES &&
+        gpuResolutionMultiplier < 0.999
+      ) {
+        gpuResolutionMultiplier = Math.min(
+          1,
+          gpuResolutionMultiplier + GPU_RESOLUTION_MAX_CHANGE,
+        );
+        adaptation = 'recovering';
+        consecutiveGpuHeadroom = 0;
+        consecutiveOverBudget = 0;
+        consecutiveUnderBudget = 0;
+        resetRollingWindowAfterStepChange();
+        state = {
+          ...state,
+          reasons: [
+            ...heuristic.reasons,
+            `Measured GPU headroom restored render resolution to ${Math.round(gpuResolutionMultiplier * 100)}%.`,
+          ],
+        };
+        return publish();
+      }
+
+      if (
+        stepLock === null &&
         consecutiveUnderBudget >= RECOVER_THRESHOLD_SAMPLES &&
         qualityStep > heuristic.initialStep
       ) {
-        qualityStep -= 1;
+        moveQualityStepPreservingResolution(qualityStep - 1);
         if (
           switchPreDegradeFromStep !== null &&
           qualityStep <= switchPreDegradeFromStep
@@ -831,7 +990,7 @@ export function createAdaptiveQualityController({
         qualityStep > heuristic.floorStep &&
         (heuristic.profile === 'high-end' || heuristic.profile === 'enhanced')
       ) {
-        qualityStep -= 1;
+        moveQualityStepPreservingResolution(qualityStep - 1);
         adaptation = 'enhanced';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
@@ -895,7 +1054,7 @@ export function createAdaptiveQualityController({
         qualityStep < QUALITY_STEPS.length - 1
       ) {
         switchPreDegradeFromStep = qualityStep;
-        qualityStep += 1;
+        moveQualityStepPreservingResolution(qualityStep + 1);
         adaptation = 'degraded';
         state = {
           ...state,

@@ -1,14 +1,10 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { initAgentAPI } from './core/agent-api.ts';
-import { installAgentDriver } from './core/agent-driver.ts';
 import {
   applyDeviceTierToDocument,
   startRefreshRateSampling,
 } from './core/device-profile.ts';
 import { startBatteryMonitoring } from './core/power-state.ts';
-import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
-import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 // Eager, and load-bearing: this freezes the arrival URL at document load, so
 // lazy consumers can tell the visitor's link apart from the app's own
 // `replaceState` writes no matter when their chunk lands. See arrival-url.ts.
@@ -16,7 +12,6 @@ import './frontend/arrival-url.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/browser/device-detect.ts';
-import { initGamepadNavigation } from './utils/browser/gamepad-navigation.ts';
 
 type StimsAppGlobals = typeof globalThis & {
   __stimsAppDispose?: () => void;
@@ -52,6 +47,39 @@ function ensureRootContainer() {
   return root;
 }
 
+function waitForFirstPaint() {
+  return new Promise<void>((resolve) => {
+    if (document.visibilityState === 'hidden') {
+      window.setTimeout(resolve, 0);
+      return;
+    }
+    window.requestAnimationFrame(() => window.setTimeout(resolve, 0));
+  });
+}
+
+async function startPostPaintServices() {
+  await waitForFirstPaint();
+  await Promise.allSettled([
+    import('./core/services/crash-telemetry.ts').then(
+      ({ installCrashTelemetry }) => installCrashTelemetry(),
+    ),
+    import('./core/renderer-telemetry.ts').then(
+      ({ installRendererTelemetryPersistence }) =>
+        installRendererTelemetryPersistence(),
+    ),
+    Promise.all([
+      import('./core/agent-api.ts'),
+      import('./core/agent-driver.ts'),
+    ]).then(([{ initAgentAPI }, { installAgentDriver }]) => {
+      initAgentAPI();
+      installAgentDriver();
+    }),
+    import('./utils/browser/gamepad-navigation.ts').then(
+      ({ initGamepadNavigation }) => initGamepadNavigation(),
+    ),
+  ]);
+}
+
 const startApp = async () => {
   reportLoadStatus('app-module');
   // Start early: the adaptive quality controller reads the refresh rate when it
@@ -61,11 +89,6 @@ const startApp = async () => {
   // discrete and integrated GPU, and that wait is only cheap if the probe is
   // already in flight by the time the capability probe runs.
   void startBatteryMonitoring();
-  installCrashTelemetry();
-  installRendererTelemetryPersistence();
-  initAgentAPI();
-  installAgentDriver();
-  initGamepadNavigation();
 
   if (document.body) {
     document.body.dataset.page = 'workspace';
@@ -86,6 +109,10 @@ const startApp = async () => {
       createElement(StimsWorkspaceRouterProvider, null),
     ),
   );
+  // Telemetry, automation and gamepad navigation do not affect the first
+  // frame. Start their chunks after the browser has had one paint opportunity
+  // so they cannot compete with the interactive shell on a cold connection.
+  await startPostPaintServices();
 };
 
 let appStarted = false;

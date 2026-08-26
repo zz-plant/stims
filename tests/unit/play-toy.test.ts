@@ -10,11 +10,67 @@ import {
   getPlayToyAudioActivationError,
   isPlayToyPresetReady,
   normalizePlayToyOptions,
+  requestDemoAudio,
   resolveChromiumRendererArgs,
   shouldRequestDemoAudio,
   shouldUseCanvasBitmapCapture,
   summarizePlayToyPerformanceSamples,
 } from '../../scripts/play-toy.ts';
+
+test('requestDemoAudio does not await a stalled page activation promise', async () => {
+  document.body.dataset.audioActive = 'false';
+  const stalledActivation = new Promise<void>(() => {});
+  Object.assign(window, {
+    stimState: {
+      getState: () => ({ audioActive: false }),
+      enableDemoAudio: () => stalledActivation,
+    },
+  });
+  const page = {
+    evaluate: async (callback: () => unknown) => callback(),
+  };
+
+  const started = await Promise.race([
+    requestDemoAudio(page as never),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 20)),
+  ]);
+
+  expect(started).toBe(true);
+  delete (window as typeof window & { stimState?: unknown }).stimState;
+});
+
+test('requestDemoAudio prefers a trusted visible-button click', async () => {
+  const clicks: string[] = [];
+  const locator = {
+    count: async () => 1,
+    nth: () => ({
+      isVisible: async () => true,
+      isEnabled: async () => true,
+      click: async () => {
+        clicks.push('trusted');
+      },
+    }),
+  };
+  const page = {
+    evaluate: async (callback: () => unknown) => callback(),
+    locator: () => locator,
+  };
+
+  document.body.dataset.audioActive = 'false';
+  Object.assign(window, {
+    stimState: {
+      getState: () => ({ audioActive: false }),
+      enableDemoAudio: () => {
+        clicks.push('agent-api');
+        return Promise.resolve();
+      },
+    },
+  });
+
+  expect(await requestDemoAudio(page as never)).toBe(true);
+  expect(clicks).toEqual(['trusted']);
+  delete (window as typeof window & { stimState?: unknown }).stimState;
+});
 
 test('buildPlayToyUrl includes the requested preset for milkdrop captures', () => {
   expect(

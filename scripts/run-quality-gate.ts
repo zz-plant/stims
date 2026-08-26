@@ -152,6 +152,13 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:reference-audio-header'],
       },
       {
+        // A test that greps src/ cannot fail when behaviour changes. The
+        // allowlist enumerates the ones that already exist so the class
+        // cannot grow quietly.
+        label: 'No new source-text tests',
+        cmd: ['bun', 'run', 'check:test-source-greps'],
+      },
+      {
         label: 'First-run preset evidence freshness',
         cmd: ['bun', 'run', 'check:first-run-evidence'],
       },

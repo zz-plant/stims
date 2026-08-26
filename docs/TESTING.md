@@ -117,6 +117,15 @@ Each profile maps to a set of `tests/` subdirectories (`unit`, `compat`, `corpus
 
 Integration tests run on **every PR** — not just on push to main. This is intentional: the integration harness catches shell bootstrap, audio lifecycle, and engine seam regressions that no unit test covers.
 
+## Runtime performance runs
+
+Performance reports are browser measurements, not correctness tests. Use
+`bun run perf:certification-corpus` with a fixed quality step and identical
+inputs for before/after comparisons; do not infer an FPS uplift from unit tests
+or a successful page load. The measurement fields, reproduction command, and
+current bounded result are documented in
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md).
+
 ---
 
 ## Per-change checklists

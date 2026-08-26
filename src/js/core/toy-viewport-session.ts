@@ -16,6 +16,7 @@ export function createToyViewportSession({
   let resizeHandler: (() => void) | null = null;
   let viewportResizeHandler: (() => void) | null = null;
   let resizeFrameId: number | null = null;
+  let resizeTimeoutId: number | null = null;
   let state: ToyViewportState = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -73,14 +74,39 @@ export function createToyViewportSession({
     onResize(state);
   };
 
+  // Coalesce bursts of resize events into one measurement, but not through rAF
+  // alone: a hidden document runs no animation frames, so the callback sits
+  // queued and the drawing buffer keeps its old size indefinitely. That is
+  // reachable in normal use — `orientationchange`, `visualViewport`
+  // resize/scroll and the devicePixelRatio media query are ordinary events that
+  // still fire while hidden — and it is routine in agent mode, which renders
+  // deliberately while `document.hidden` is true.
+  //
+  // Timeouts do run in hidden documents (throttled to about a second, which is
+  // fine for a coalescing window), so they are the fallback whenever frames are
+  // not being serviced. Verified in a hidden tab: an orientationchange took
+  // --app-width from 1265px to 900px and resized the buffer from 3042x1900 to
+  // 2212x1500, where before the change nothing happened at all.
+  //
+  // This does NOT make container resizes work while hidden: ResizeObserver
+  // delivers its notifications as part of the rendering steps, which a hidden
+  // document skips, so `scheduleResize` is never called on that path in the
+  // first place. Detection there resumes when the document becomes visible.
+  const runScheduledResize = () => {
+    resizeFrameId = null;
+    resizeTimeoutId = null;
+    handleResize();
+  };
+
   const scheduleResize = () => {
-    if (resizeFrameId !== null) {
+    if (resizeFrameId !== null || resizeTimeoutId !== null) {
       return;
     }
-    resizeFrameId = window.requestAnimationFrame(() => {
-      resizeFrameId = null;
-      handleResize();
-    });
+    if (document.hidden) {
+      resizeTimeoutId = window.setTimeout(runScheduledResize, 0);
+      return;
+    }
+    resizeFrameId = window.requestAnimationFrame(runScheduledResize);
   };
 
   if (typeof ResizeObserver !== 'undefined' && container) {
@@ -158,6 +184,10 @@ export function createToyViewportSession({
       if (resizeFrameId !== null) {
         window.cancelAnimationFrame(resizeFrameId);
         resizeFrameId = null;
+      }
+      if (resizeTimeoutId !== null) {
+        window.clearTimeout(resizeTimeoutId);
+        resizeTimeoutId = null;
       }
     },
   };

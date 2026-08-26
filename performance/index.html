@@ -14,6 +14,8 @@
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0f1a" />
     <link rel="canonical" href="https://toil.fyi/performance/" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -67,7 +69,7 @@
             "name": "Does Stims work on mobile phones and tablets?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes, Stims automatically adjusts to phones and tablets with a clean, touch-friendly interface and lighter rendering stack to preserve smooth animation and battery life."
+              "text": "Yes. Stims provides touch-friendly controls and can reduce rendering resolution, feedback-buffer size, and visual density when measured frame cadence misses the device budget."
             }
           },
           {
@@ -113,10 +115,11 @@
         </article>
         <article class="stims-performance__card">
           <p class="stims-performance__label">Expected fallback</p>
-          <h2>A lighter pass is still the real thing</h2>
+          <h2>The same preset with less rendering pressure</h2>
           <p>
-            If Stims eases back on rendering load, the goal is steady motion
-            and responsive controls, not a degraded experience.
+            If Stims eases back on rendering load, the preset keeps running
+            while resolution, feedback buffers, or visual density may become
+            lighter.
           </p>
         </article>
         <article class="stims-performance__card">
@@ -170,8 +173,8 @@
           <p class="stims-performance__label">When things look simpler</p>
           <h2>What fallback really means</h2>
           <ul>
-            <li>Stims may trim detail to keep motion smooth.</li>
-            <li>The animation should still feel expressive and reactive.</li>
+            <li>Stims may reduce resolution, feedback buffers, or visual density.</li>
+            <li>The preset equations and audio-reactive behavior keep running.</li>
             <li>You can keep using the app without digging through technical settings.</li>
           </ul>
         </article>
@@ -184,6 +187,32 @@
             <li>Enable the steadier-hardware toggle inside Advanced tuning.</li>
           </ul>
         </article>
+      </section>
+
+      <section class="stims-performance__section">
+        <div class="stims-performance__section-copy">
+          <p class="stims-performance__eyebrow">Measured, not universal</p>
+          <h2>How performance changes are checked</h2>
+          <p>
+            Stims compares code changes in a real browser while holding the
+            preset, audio, viewport, renderer, and quality step constant. In
+            one equation-heavy WebGPU stress case on an Apple M1 Max, a JIT
+            hot-loop change reduced average frame work from 17.56 ms to
+            15.31 ms at 4× CPU throttling, while median delivered FPS moved
+            from 58.14 to 59.88.
+          </p>
+          <p>
+            That result is evidence for one preset on one host, not an FPS
+            promise for every device. The full method and the noisy tier that
+            was not promoted are documented in the repository's
+            <a
+              class="stims-performance__text-link"
+              href="https://github.com/zz-plant/stims/blob/main/docs/RUNTIME_PERFORMANCE.md"
+            >
+              runtime performance evidence
+            </a>.
+          </p>
+        </div>
       </section>
 
       <section class="stims-performance__section">

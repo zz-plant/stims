@@ -11,6 +11,7 @@ import {
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import { resolveGpuPowerPreference } from './power-state.ts';
 import {
+  buildWebGpuDeviceDescriptor,
   getRendererCapabilities,
   type RendererBackend,
   rememberRendererFallback,
@@ -264,7 +265,7 @@ export async function initRenderer(
     if (!device) {
       try {
         device = await resolveWithTimeout(
-          adapter.requestDevice(),
+          adapter.requestDevice(buildWebGpuDeviceDescriptor(adapter)),
           webgpuInitTimeoutMs,
           'WebGPU device initialization timed out.',
           initAbortController,
@@ -302,6 +303,7 @@ export async function initRenderer(
         antialias,
         alpha,
         device,
+        trackTimestamp: true,
       });
       if ('init' in renderer && typeof renderer.init === 'function') {
         const initPromise = renderer.init();

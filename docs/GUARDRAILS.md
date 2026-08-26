@@ -36,6 +36,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
+| [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
 | [`check:unused-exports`](#checkunused-exports) | on demand | Detect exported symbols with zero importers — the "remove dead code" pattern that recurred 12+ times in the last 400 commits. Codex PRs introduced exports that nothing imported; they survived merge and were purged weeks later in bulk. |
 | [`check:webgpu-target-sampling`](#checkwebgpu-target-sampling) | `check:quick` | Blocks a bare `.sample()` against one of the WebGPU feedback manager's own render targets. |
 
@@ -467,6 +468,32 @@ examined it, so rewriting their paths would misrepresent the record. The
 guard covers material that is meant to be acted on today.
 
 Run it directly: `bun run check:stale-paths`
+
+## check:test-source-greps
+
+Fails when a test reads a production source file as text.
+
+The audit of all 303 test files found one shape repeated ~70 times:
+
+  const source = readFileSync('src/js/frontend/X.tsx', 'utf8');
+  expect(source).toContain('<a literal copied out of X.tsx>');
+
+That assertion cannot fail when behaviour changes and cannot pass when the
+behaviour is right but the spelling moved. Renaming a local, extracting a
+component, or reformatting a CSS selector reddens the suite while the app is
+identical; putting the same literal in a comment turns it green while the
+feature is gone. Tests like this also keep dead code alive, because deleting
+the code correctly is what breaks them.
+
+  bun run check:test-source-greps
+
+The rule: assert through the module's exported behaviour instead. If the
+property really is about a file's text — an HTML artifact we ship, a config
+file, a generated header — allowlist it below with a reason. That is a
+one-line edit with a justification, which is the cost this guard is trying
+to impose.
+
+Run it directly: `bun run check:test-source-greps`
 
 ## check:unused-exports
 

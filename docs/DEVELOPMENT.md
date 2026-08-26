@@ -45,8 +45,14 @@ For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFI
 | Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
 | Run browser integration tests | `bun run test:integration` |
 | Run compatibility/preset tests | `bun run test:compat` |
+| Run certification-corpus browser performance suite | `bun run perf:certification-corpus` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
+
+Performance comparisons need more controls than an ordinary smoke test. Follow
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md) to hold the preset, audio,
+viewport, backend, quality step, warmup, capture window, and CPU throttle
+constant across before/after runs.
 
 ## Hardware-aware agent sessions
 

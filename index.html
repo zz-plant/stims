@@ -16,12 +16,16 @@
     <style>
       *,:after,:before{box-sizing:border-box}
       body,html{margin:0;padding:0;min-height:100%}
-      body{background:#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif}
-      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif;animation:loading-breathe 4s ease-in-out infinite}
+      body{background:#05070c;color:#e9fbff;font-family:system-ui,sans-serif}
+      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:start;padding:calc(clamp(64px,8vh,96px) + 20px) clamp(20px,6vw,72px) 42px;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#05070c;color:#e9fbff;font-family:var(--font-family-base,system-ui,sans-serif);opacity:1;visibility:visible;transition:opacity 220ms ease-out,visibility 0s linear 220ms}
       .stims-loading[hidden]{display:none}
-      .stims-loading__spinner{width:56px;height:56px;margin:0 auto 20px;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(119,201,255,.85),rgba(95,192,181,.95));animation:stims-spin 1.2s cubic-bezier(.4,0,.2,1)infinite}
+      .stims-loading--leaving{animation:none;opacity:0;visibility:hidden;pointer-events:none}
+      .stims-loading__content{display:grid;justify-items:start;gap:18px;width:min(52rem,100%);animation:loading-breathe 4s ease-in-out infinite}
+      .stims-loading__brand{margin:0;font-family:var(--stims-display,var(--font-family-base,system-ui,sans-serif));font-size:clamp(3rem,7vw,5.5rem);font-weight:600;line-height:.92;letter-spacing:-.03em;color:var(--stims-ink-strong,#fff8ef)}
+      .stims-loading__status{display:flex;align-items:center;gap:12px;min-height:34px}
+      .stims-loading__spinner{width:28px;height:28px;flex:0 0 auto;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(119,201,255,.85),rgba(95,192,181,.95));animation:stims-spin 1.2s cubic-bezier(.4,0,.2,1)infinite}
       .stims-loading__spinner:before{content:"";position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 180deg,transparent,rgba(119,201,255,.12),transparent,rgba(95,192,181,.08));animation:stims-spin 2s cubic-bezier(.4,0,.2,1)infinite reverse;opacity:.6}
-      .stims-loading__spinner:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#0a0f19}
+      .stims-loading__spinner:after{content:"";position:absolute;inset:4px;border-radius:50%;background:#05070c}
       .stims-loading__text{font-size:.95rem;letter-spacing:.03em;opacity:.7;background:linear-gradient(135deg,#e9fbff,rgba(119,201,255,.85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:stims-pulse 2s ease-in-out infinite}
       .stims-loading__dots{display:inline-flex;gap:3px;margin-left:2px}
       .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
@@ -34,7 +38,8 @@
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
       @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
-      @media(prefers-reduced-motion:reduce){.stims-loading,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
+      @media(max-width:767px){.stims-loading{padding:84px 14px 34px}}
+      @media(prefers-reduced-motion:reduce){.stims-loading{transition:none}.stims-loading__content,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
       .stims-loading__fallback{background:#0d121c;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.5);margin:20px}
       .stims-loading__fallback p{margin:0 0 24px;font-size:1rem;line-height:1.6;opacity:0.85}
       .stims-loading__retry{display:inline-block;background:#5fc0b5;color:#0a0f19;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;font-size:0.9rem;letter-spacing:0.02em;transition:transform 150ms ease,opacity 150ms ease}
@@ -133,30 +138,32 @@
     </script>
   </head>
   <body data-page="experience">
-    <div id="app">
-      <div
-        class="stims-loading"
-        id="stims-loading"
-        role="status"
-        aria-live="polite"
-        aria-label="Loading Stims"
-      >
-        <div>
+    <div
+      class="stims-loading"
+      id="stims-loading"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading Stims"
+    >
+      <div class="stims-loading__content">
+        <div class="stims-loading__brand" aria-hidden="true">Stims</div>
+        <div class="stims-loading__status">
           <div class="stims-loading__spinner" aria-hidden="true"></div>
           <div class="stims-loading__text" id="stims-loading-text">
             Loading MilkDrop visualizer
           </div>
-          <button
-            class="stims-loading__exit"
-            type="button"
-            aria-label="Dismiss loading screen"
-            onclick="document.getElementById('stims-loading').hidden=true"
-          >
-            ✕
-          </button>
         </div>
+        <button
+          class="stims-loading__exit"
+          type="button"
+          aria-label="Dismiss loading screen"
+          onclick="this.closest('.stims-loading').remove()"
+        >
+          ✕
+        </button>
       </div>
     </div>
+    <div id="app"></div>
 
 
     <!-- inert: these exist for crawlers reading the HTML source; without it
