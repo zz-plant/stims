@@ -69,8 +69,8 @@ const ALLOWED: Record<string, string> = {
     'DEBT: greps renderer source for rasterisation constants.',
   'tests/unit/scripts-list-routing.test.ts':
     'Reads scripts/ to check `bun run help --for` does not route at a deleted script — a dangling-reference check over live data.',
-  'tests/unit/workspace-first-fold-actions.test.ts':
-    'DEBT: greps App.tsx for first-fold actions.',
+  'tests/unit/workspace-first-fold-actions.test.tsx':
+    'Renders the real NewHomePage/AudioSourcePanel through the harness; the one remaining read checks app-shell.css styles the classes the RENDERED page produces (no style engine here).',
 };
 
 const READS_SOURCE =
