@@ -1,7 +1,29 @@
+/**
+ * The editable-preset half of a Milkdrop session: it owns the source buffer,
+ * the compile that turns it into a renderable artifact, and the last-good
+ * artifact to keep showing when a compile fails.
+ *
+ * Compiles run in a worker, because preset loads and live field edits happen
+ * mid-playback and a heavy preset compiled on the main thread stalls the
+ * visual for hundreds of milliseconds (seconds on mobile). Everything awkward
+ * in here follows from that: a lease so a burst of keystrokes spawns one
+ * worker rather than one per keystroke, a per-compile watchdog so a wedged
+ * worker hands the work back to the main thread instead of stranding it, a
+ * commit id so a preset swap cannot be overwritten by an older compile still
+ * in flight, and an explicit push of the session's branch-desugar setting,
+ * since the worker is its own module instance and sees none of the page's
+ * module-level state.
+ *
+ * What it does not own: choosing which preset to load or when (the runtime's
+ * preset-navigation controller), the compiler itself (`./compiler`), and
+ * anything about rendering — this module's output is an artifact, and someone
+ * else decides what to do with it.
+ */
 import { type Remote, releaseProxy, wrap } from 'comlink';
 import { createLogger } from '../core/logger';
 import { isAgentMode } from '../core/url-params';
 import { compileMilkdropPresetSource } from './compiler';
+import { isShaderBranchDesugarEnabled } from './compiler/shader-branch-desugar';
 import { upsertMilkdropField, upsertMilkdropFields } from './formatter';
 import type {
   MilkdropCompiledPreset,
@@ -54,6 +76,13 @@ type WorkerLease = {
   retired: Promise<typeof RETIRED>;
   markRetired: (value: typeof RETIRED) => void;
   isRetired: boolean;
+  /**
+   * The `shaderBranchDesugar` value this worker was last told about, or null
+   * before it has been told anything. The flag lives in a module-level boolean
+   * that a worker's own module instance defaults to `false`, so an unsynced
+   * worker silently compiles every preset as if the session had opted out.
+   */
+  shaderBranchDesugar: boolean | null;
 };
 
 type CompileOutcome =
@@ -118,6 +147,32 @@ export function createMilkdropEditorSession({
     target.worker.terminate();
   };
 
+  /**
+   * Pushes the session's branch-desugar setting into the worker before it
+   * compiles anything. Sent, not awaited: comlink delivers messages in order
+   * and the worker sets the flag synchronously while handling this one, so the
+   * compile that follows already sees it. Awaiting a round-trip here would put
+   * an unwatchdogged wait in front of every preset load, and a wedged worker
+   * would strand the load instead of falling back to the main thread.
+   */
+  const syncShaderBranchDesugar = (target: WorkerLease) => {
+    const enabled = isShaderBranchDesugarEnabled();
+    if (target.shaderBranchDesugar === enabled) {
+      return;
+    }
+    target.shaderBranchDesugar = enabled;
+    void target.compiler.setShaderBranchDesugar(enabled).catch((error) => {
+      // A worker that cannot take the setting will compile with the default,
+      // which is the pre-flag behaviour — wrong classification, not a crash.
+      target.shaderBranchDesugar = null;
+      editorWarn(
+        sourceMeta.id,
+        'worker refused the shader-branch-desugar setting',
+        error,
+      );
+    });
+  };
+
   const acquireLease = async (): Promise<WorkerLease | null> => {
     if (disposed || workerUnavailable || typeof Worker === 'undefined') {
       return null;
@@ -141,7 +196,9 @@ export function createMilkdropEditorSession({
             retired,
             markRetired,
             isRetired: false,
+            shaderBranchDesugar: null,
           };
+          syncShaderBranchDesugar(next);
           lease = next;
           return next;
         } catch (error) {
@@ -190,6 +247,8 @@ export function createMilkdropEditorSession({
         ),
       };
     }
+
+    syncShaderBranchDesugar(activeLease);
 
     editorLog(meta.id, 'compile via worker');
     // Each compile owns its watchdog. A single shared timer handle let one
