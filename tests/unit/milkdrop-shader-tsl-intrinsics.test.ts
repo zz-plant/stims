@@ -6,6 +6,7 @@ import {
   createSampleAuxTextureNode,
   createSampleUvNode,
 } from '../../src/js/milkdrop/feedback-manager-webgpu-composite.ts';
+import type { ShaderNodeEnv } from '../../src/js/milkdrop/feedback-manager-webgpu-tsl.ts';
 import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
 
 function buildShaderEnv() {
@@ -22,6 +23,10 @@ function buildShaderEnv() {
   };
   const uniforms = createCompositeUniforms(new Texture(), new Texture(), aux);
   const sampleUvNode = createSampleUvNode();
+  // Narrowed the same way production does (see `createCompositeAuxSampler`):
+  // the factory's inferred return widens to `Node<'float' | 'vec4'>` across
+  // its ~15-branch select chain, and ShaderNodeEnv declares the vec4 that
+  // every branch actually builds.
   const sampleAuxTextureNode = createSampleAuxTextureNode(
     uniforms.noiseTex,
     uniforms.perlinTex,
@@ -57,7 +62,8 @@ function buildShaderEnv() {
     ]),
     uniforms,
     sampleUvNode,
-    sampleAuxTextureNode,
+    sampleAuxTextureNode:
+      sampleAuxTextureNode as unknown as ShaderNodeEnv['sampleAuxTextureNode'],
   } as const;
 }
 

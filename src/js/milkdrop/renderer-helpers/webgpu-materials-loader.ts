@@ -20,7 +20,6 @@
  * WebGPU never fetch it.
  */
 
-// @ts-expect-error - 'three/webgpu' resolves at runtime via the bundler but not under moduleResolution: "node".
 import type { NodeMaterial, TSL } from 'three/webgpu';
 import type {
   createProceduralCustomWaveMaterial,
@@ -70,7 +69,16 @@ export function getWebGpuHelperMaterialsSync(): WebGpuHelperMaterials {
  * shared chunk. When the toolkit has not loaded, no NodeMaterial can exist,
  * so the answer is false.
  */
-export function isWebGpuNodeMaterial(value: unknown): boolean {
+/**
+ * Type predicate, not a bare boolean: callers immediately reach for
+ * `.userData` on the narrowed value, and `material` on a three Object3D is
+ * `Material | Material[]`. Returning `boolean` left that union intact, so
+ * every guarded access was unchecked — which went unnoticed while this whole
+ * layer was untyped.
+ */
+export function isWebGpuNodeMaterial(
+  value: unknown,
+): value is InstanceType<typeof NodeMaterial> {
   return registeredMaterials
     ? value instanceof registeredMaterials.NodeMaterial
     : false;
