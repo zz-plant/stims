@@ -108,11 +108,15 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   // uniform-only approximation and onto direct WebGPU execution. The rewrite
   // itself is sound — see the module docstring in
   // compiler/shader-branch-desugar.ts — but it hands those bodies to the
-  // WebGPU node executor for the first time, and the executor still has gaps
-  // that show as wrong pixels on a handful of them and, on
-  // flexi-lorenz-chaser-...-discombobule-lose, as a dead GPU process with no
-  // WebGPU error emitted. A crash reachable from a bundled preset cannot be
-  // allowlisted, so the reach stays behind this flag until those are closed.
+  // WebGPU node executor for the first time, and the executor still has gaps.
+  // The worst of them is closed: flexi-lorenz-chaser-...-discombobule-lose
+  // killed the GPU process with no WebGPU error emitted, because every
+  // texture read in a directly executed body went through the aux sampler's
+  // runtime slot-select chain, which TSL inlines at each call site. Six reads
+  // became 451 `textureSample` calls and 367 KB of WGSL, and Dawn's shader
+  // compiler died on it. What is left is wrong pixels on a handful of presets
+  // (six named in that docstring), not a crash, so this stays off until those
+  // are closed rather than because anything is unsafe.
   // Opt in with ?milkdrop-webgpu-branch-desugar=1.
   shaderBranchDesugar: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;

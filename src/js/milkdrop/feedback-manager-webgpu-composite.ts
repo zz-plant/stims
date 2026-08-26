@@ -789,7 +789,7 @@ export function createSampleAuxTextureNode(
     },
   );
 
-  return Fn(
+  const dynamic = Fn(
     // Typed rather than `any`: `fract(sampleUv)` feeds `vec3(uv, z)` below,
     // which needs the uv to still be a vec2. Left as `any` the whole chain
     // degrades to float and every 3D sample loses its overload.
@@ -841,4 +841,100 @@ export function createSampleAuxTextureNode(
       );
     },
   );
+
+  const tex2dBySource: Readonly<Record<string, ReturnType<typeof texture>>> = {
+    noise: noiseTexNode,
+    simplex: simplexTexNode,
+    voronoi: voronoiTexNode,
+    aura: auraTexNode,
+    caustics: causticsTexNode,
+    pattern: patternTexNode,
+    fractal: fractalTexNode,
+    video: videoTexNode,
+    perlin: perlinTexNode,
+    noise_lq: noiseLqTexNode,
+    noisevol: noisevolTexNode,
+    glyph: glyphTexNode,
+    organic: organicTexNode,
+  };
+  const feedbackTargetBySource: Readonly<
+    Record<string, ReturnType<typeof texture>>
+  > = {
+    blur1: blur1TexNode,
+    blur2: blur2TexNode,
+    blur3: blur3TexNode,
+  };
+  /**
+   * Volume each source reads on the 3D path, mirroring `native3dSample`
+   * above: `noise_lq` deliberately shares `noisevol`'s volume, and video,
+   * glyph, organic and the blur targets have none and fall to flat.
+   */
+  const tex3dBySource: Readonly<Record<string, ReturnType<typeof texture3D>>> =
+    {
+      noise: tex3DNodes.noise,
+      simplex: tex3DNodes.simplex,
+      voronoi: tex3DNodes.voronoi,
+      aura: tex3DNodes.aura,
+      caustics: tex3DNodes.caustics,
+      pattern: tex3DNodes.pattern,
+      fractal: tex3DNodes.fractal,
+      perlin: tex3DNodes.perlin,
+      noise_lq: tex3DNodes.noisevol,
+      noisevol: tex3DNodes.noisevol,
+    };
+
+  /**
+   * The same fetch, for a source that is already known while the node graph
+   * is being built.
+   *
+   * `dynamic` picks its texture at RUN time, so it carries every slot's fetch
+   * — sixteen 2D samples, ten 3D ones, and video's two-slice atlas blend on
+   * top — behind a `select` chain, and TSL inlines a `Fn` at every call site.
+   * A directly-executed shader body therefore paid ~58 `textureSample` calls
+   * for each ONE texture it read. Measured on the four-statement composite
+   * prefix of flexi-lorenz-chaser-...-discombobule-lose (7 texture reads):
+   * 451 `textureSample` calls in 367 KB of WGSL, which killed the GPU process
+   * inside Dawn's shader compiler with no WebGPU error emitted — a silent
+   * "Page crashed", reproducible 3/3.
+   *
+   * A shader body names its sampler in its own source text, so the slot is a
+   * constant: `resolveDirectShaderSamplerBinding` has resolved it before the
+   * node is built. Emitting that one fetch keeps the chain's semantics — the
+   * same `fract` wrap, the same row flip on feedback targets, the same flat
+   * grey for a slot with no texture — and drops the other 57. The genuinely
+   * runtime-selected uses (the warp and overlay texture uniforms, whose
+   * source changes per frame) still call `dynamic`.
+   */
+  const sampleStatic = (
+    canonicalSource: string,
+    sampleDimension: '2d' | '3d',
+    sampleUv: TslNode<'vec2'>,
+    sliceZ: TslNode<'float'>,
+  ) => {
+    const flat = vec4(0.5, 0.5, 0.5, 1);
+    const wrappedUv = fract(sampleUv);
+    if (sampleDimension === '3d') {
+      if (canonicalSource === 'video') {
+        // A video frame is not a volume, so this is the one static source
+        // that still needs the atlas emulation.
+        return atlasTrilinearSample(
+          float(MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS.video),
+          wrappedUv,
+          sliceZ,
+        );
+      }
+      const volumeNode = tex3dBySource[canonicalSource];
+      return volumeNode
+        ? volumeNode.sample(vec3(wrappedUv, fract(sliceZ)))
+        : flat;
+    }
+    const targetNode = feedbackTargetBySource[canonicalSource];
+    if (targetNode) {
+      return sampleFeedbackTarget(targetNode, wrappedUv);
+    }
+    const textureNode = tex2dBySource[canonicalSource];
+    return textureNode ? textureNode.sample(wrappedUv) : flat;
+  };
+
+  return { dynamic, sampleStatic };
 }

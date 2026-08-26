@@ -67,6 +67,16 @@ function buildShaderEnv() {
   } as const;
 }
 
+/**
+ * Node the swizzle in a compiled texture read is taken from. A direct fetch
+ * leaves a TextureNode/Texture3DNode here; a read routed through an inlined
+ * TSL `Fn` leaves that function's VarNode instead.
+ */
+function sampledNodeType(value: unknown) {
+  const node = (value as { node?: { node?: object } } | null)?.node?.node;
+  return node?.constructor?.name ?? null;
+}
+
 function compileExpression(source: string) {
   const statement = parseMilkdropShaderStatement(source);
   if (!statement) {
@@ -170,5 +180,36 @@ describe('milkdrop WebGPU TSL extended intrinsics', () => {
 
   test('still rejects unknown calls instead of silently building', () => {
     expect(compileExpression('x = unknownIntrinsic(1.0)')).toBeNull();
+  });
+
+  /**
+   * One texture read in a shader body must fetch ONE texture.
+   *
+   * The aux sampler also has a runtime-selected form, which carries every
+   * slot's fetch behind a `select` chain — sixteen 2D textures, ten 3D ones,
+   * and video's two-slice atlas blend. TSL inlines it at each call site, so
+   * routing a body's reads through it cost ~58 `textureSample` calls apiece:
+   * the four-statement composite prefix of
+   * flexi-lorenz-chaser-...-discombobule-lose compiled to 451 of them in
+   * 367 KB of WGSL and killed the GPU process inside Dawn's shader compiler,
+   * with no WebGPU validation error to say why.
+   *
+   * A body names its sampler in its own text, so counting texture nodes is
+   * the cheap invariant that catches a regression here without a GPU: a
+   * single read that reaches the runtime chain again jumps back into the
+   * dozens.
+   */
+  test('a shader body texture read fetches one texture, not every slot', () => {
+    for (const source of [
+      'x = texture(sampler_blur1, uv)',
+      'x = texture(sampler_blur3, uv)',
+      'x = texture(sampler_noise, uv)',
+      'x = tex2d(simplexTex, uv)',
+      'x = tex3D(sampler_noisevol, vec3(0.1, 0.2, 0.3))',
+    ]) {
+      const value = compileExpression(source);
+      expect(value, source).not.toBeNull();
+      expect(sampledNodeType(value), source).toMatch(/^Texture(3D)?Node$/);
+    }
   });
 });
