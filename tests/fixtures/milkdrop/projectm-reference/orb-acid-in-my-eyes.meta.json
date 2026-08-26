@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-projectm-reference",
+  "preset": {
+    "id": "orb-acid-in-my-eyes",
+    "path": "/Users/kanav/Dev/stims/public/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-acid-in-my-eyes.milk",
+    "sha256": "ee43bf3bb322bed7d5160c5e75a632f2268bf5ae34bf9b316d2215de61c549cf"
+  },
+  "renderer": {
+    "name": "projectM",
+    "native": true,
+    "harnessSha256": "1d7f773fbfa88c14d0d25dcf0d99dffb4d28094bae6d51e5a7939839e8ac1549"
+  },
+  "externalRuntime": {
+    "provenanceScope": "capture-host-only",
+    "projectM": {
+      "version": "3.1.12",
+      "prefix": "/opt/homebrew/opt/projectm",
+      "libraryPath": "/opt/homebrew/opt/projectm/lib/libprojectM.dylib",
+      "librarySha256": "763b0e3961cb01bc4353ebb1c1485ad5b85bcf962f8827665b4a939dc07eef05"
+    },
+    "sdl": {
+      "version": "2.32.70",
+      "prefix": "/opt/homebrew/opt/sdl2",
+      "libraryPath": "/opt/homebrew/opt/sdl2/lib/libSDL2.dylib",
+      "librarySha256": "ce26c5b25ddb03f07327cecf8fff04a57b7ff1187feb4ac9458a9559e17f1d98"
+    },
+    "macOSVersion": "27.0",
+    "openGL": {
+      "vendor": "Apple",
+      "renderer": "Apple M1 Max",
+      "version": "4.1 Metal - 91.7"
+    }
+  },
+  "capture": {
+    "width": 1280,
+    "height": 720,
+    "fps": 60,
+    "frameCount": 900,
+    "nominalDurationMs": 15000,
+    "timingPolicy": "projectM-renderFrame-no-external-throttle",
+    "audio": "tones",
+    "framebuffer": "GL_BACK",
+    "imageSha256": "927f3e4d980b1c119a8abeb5b50f449dc36b4ae21b096bff307097baae28737b"
+  },
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "createdAt": "2026-08-26T18:58:18.842Z"
+}

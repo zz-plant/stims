@@ -27,7 +27,7 @@ import {
   hashNativeProjectMHarness,
   parseNativeProjectMCaptureArgs,
   parseProjectMGlMetadata,
-  resolveNativeProjectMFixture,
+  resolveProjectMReferenceFixture,
   withTemporaryDirectory,
 } from './native-projectm-reference.ts';
 import { hashFileSha256 } from './parity-artifacts.ts';
@@ -96,7 +96,13 @@ export async function captureNativeProjectMReference(
       'The checked-in native capture harness currently supports macOS only.',
     );
   }
-  const presetPath = resolveNativeProjectMFixture({
+  // Not `resolveNativeProjectMFixture`: that only looks in the one root it is
+  // handed, so capturing any shipped preset — every certified reference that
+  // is not an upstream compatibility fixture — failed with "Upstream fixture
+  // not found" unless the caller already knew which library directory it lived
+  // in. Promotion has always resolved through the fallback chain; capture now
+  // matches it.
+  const presetPath = resolveProjectMReferenceFixture({
     repoRoot: options.repoRoot,
     fixtureRoot: options.fixtureRoot,
     presetId: options.presetId,
