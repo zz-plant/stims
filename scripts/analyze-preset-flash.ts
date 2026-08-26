@@ -23,6 +23,28 @@
  *   bun run scripts/analyze-preset-flash.ts --beat-pulse    # with kick transients
  *   bun run scripts/analyze-preset-flash.ts --out=report.json
  *   bun run scripts/analyze-preset-flash.ts --governor       # with/without
+ *   bun run scripts/analyze-preset-flash.ts --all --shard=1/4 # one of 4 runs
+ *
+ * `--shard=k/n` takes every nth preset starting at k-1, so n processes cover
+ * the corpus with no overlap. The measurement is wall-clock independent --
+ * frames are stepped through the agent hook, not sampled in real time -- so
+ * running shards concurrently is safe: it changes throughput and nothing
+ * else.
+ *
+ * It changes throughput less than you would hope. Measured on an M-series
+ * laptop: one shard alone managed 0.73 presets/min, and four concurrent
+ * shards managed 0.8/min BETWEEN them -- about 1.1x, not 4x. The bottleneck
+ * is not CPU but the per-frame `gl.readPixels` of a 960x540 buffer, 390
+ * times per preset, which the GPU serialises no matter how many browsers ask
+ * at once. So shard across MACHINES, not across cores; on one box, two
+ * shards is already past the point of return.
+ *
+ * The honest consequence: a full 1787-preset pass is on the order of 40
+ * hours here, and no amount of sharding fixes that. Cutting it needs a
+ * cheaper per-frame read, and the obvious move -- reading a downscaled
+ * buffer -- is not free: the analysis deliberately thresholds per pixel
+ * BEFORE any spatial averaging, because averaging first scales sparse
+ * bright-on-black flashes below the threshold entirely.
  *
  * `--governor` measures each preset TWICE from one render pass: the raw
  * timeline, and the timeline as the runtime flash governor
@@ -81,6 +103,22 @@ export interface PresetFlashReport extends FlashAnalysis {
 
 function parseArgs(argv: string[]) {
   const governor = argv.includes('--governor');
+  const shardArg = argv.find((a) => a.startsWith('--shard='))?.split('=')[1];
+  let shardIndex = 0;
+  let shardCount = 1;
+  if (shardArg) {
+    const [k, n] = shardArg.split('/').map(Number);
+    if (!Number.isFinite(k) || !Number.isFinite(n) || k < 1 || n < 1 || k > n) {
+      throw new Error(
+        `--shard expects k/n with 1 <= k <= n, got "${shardArg}"`,
+      );
+    }
+    shardIndex = k - 1;
+    shardCount = n;
+  }
+  const swapTimeoutArg = argv
+    .find((a) => a.startsWith('--swap-timeout='))
+    ?.split('=')[1];
   const get = (flag: string) =>
     argv
       .find((a) => a.startsWith(`--${flag}=`))
@@ -100,6 +138,9 @@ function parseArgs(argv: string[]) {
     out: get('out') ?? DEFAULT_OUT,
     headless: !argv.includes('--no-headless'),
     governor,
+    shardIndex,
+    shardCount,
+    swapTimeoutMs: swapTimeoutArg ? Number(swapTimeoutArg) : SWAP_TIMEOUT_MS,
   };
 }
 
@@ -128,14 +169,24 @@ async function main() {
     ? raw
     : (raw.presets ?? []);
 
-  const targets = args.ids
+  const selected = args.ids
     ? allPresets.filter((p) => args.ids?.includes(p.id))
     : args.all
       ? allPresets
       : sampleEvenly(allPresets, args.count);
+  // Stride rather than block: consecutive catalog entries tend to come from
+  // the same pack, so a block split would give one shard all the heavy
+  // presets from one library and skew both runtime and what each shard sees.
+  const targets =
+    args.shardCount > 1
+      ? selected.filter((_, i) => i % args.shardCount === args.shardIndex)
+      : selected;
 
   console.log(
-    `Auditing ${targets.length} of ${allPresets.length} presets ` +
+    (args.shardCount > 1
+      ? `[shard ${args.shardIndex + 1}/${args.shardCount}] `
+      : '') +
+      `Auditing ${targets.length} of ${allPresets.length} presets ` +
       `(${CAPTURE_FRAMES} frames @ ${DELTA_MS.toFixed(2)}ms, ` +
       `beatPulse=${args.beatPulse})`,
   );
@@ -145,6 +196,29 @@ async function main() {
   const ctx = await browser.newContext({ viewport: VIEWPORT });
 
   const reports: PresetFlashReport[] = [];
+
+  /**
+   * Persist after every preset, not just at the end.
+   *
+   * A full-corpus audit is hours of work, and writing only on completion
+   * means an interrupted run -- a timeout, a GPU reset, a closed laptop --
+   * yields nothing at all. That made the instrument unusable for the one job
+   * it is most needed for. Partial output is still valid: the merge step is
+   * additive and treats absent presets as unmeasured, so a half-finished run
+   * contributes exactly what it measured.
+   */
+  const flush = () => {
+    try {
+      writeFileSync(
+        args.out,
+        `${JSON.stringify({ summary: { partial: true, analysed: reports.length }, reports }, null, 2)}\n`,
+      );
+    } catch {
+      // A failed intermediate write must not abort the run; the final write
+      // reports the real error.
+    }
+  };
+
   let page = await ctx.newPage();
 
   const bootPage = async (avoidId: string) => {
@@ -190,7 +264,7 @@ async function main() {
             );
           },
           preset.id,
-          { timeout: SWAP_TIMEOUT_MS },
+          { timeout: args.swapTimeoutMs },
         );
 
         const captured = await page.evaluate(
@@ -549,6 +623,7 @@ async function main() {
               }
             : {}),
         });
+        flush();
         console.log(
           `${label} — peak=${analysis.peakFlashesPerSecond}/s ` +
             (governed ? `governed=${governed.peakFlashesPerSecond}/s ` : '') +
