@@ -19,6 +19,20 @@ to:
 
 ## Current status snapshot
 
+> **2026-08-26 update.** The snapshot below predates the corpus re-certification
+> and understates what exists. Since it was written: all nine references were
+> re-captured against audio the presets can react to (per-preset
+> `referenceAudio`, tone signal shared byte-for-byte with the runtime via a
+> generated header); captures run at native resolution, at projectM's own
+> frame 300, on one reused browser (~33s for the nine); the deterministic pump
+> resets clock, GPU history **and the VM**, which eliminated krash's bimodal
+> renders and eos-glowsticks' intermittent blank frames (bands now
+> 0.000-2.4pp); and the harness provenance hash invalidates every reference
+> when the C++ harness *or* the audio signal changes. Current medians and the
+> measurement rules live in `MILKDROP_PROJECTM_PARITY_PLAN.md` — read its
+> "Measurement rules" section before trusting or producing any parity number.
+
+
 Corpus integrity (resolved):
 - The bundled butterchurn import used to drop every equation block. 1739 of the 1791 catalogued presets shipped with base values and shader text only, so no per-frame, per-pixel, per-point, or per-shape code ran for them. Wave and shape base values were also written into `[wave00_N]` / `[shape00_N]` sections that the compiler does not read.
 - `scripts/butterchurn-eel-transpiler.ts` now converts the upstream JavaScript equation strings back to EEL, and `scripts/import-butterchurn-presets.ts --rewrite` emits canonical single-section `.milk` files. 157,950 statements were recovered and the whole bundled corpus compiles without error diagnostics.
