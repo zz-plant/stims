@@ -123,6 +123,9 @@ export function createMilkdropExperienceFrameLoop({
   vm: {
     setDetailScale: (value: number) => void;
     step: (signals: MilkdropRuntimeSignals) => MilkdropFrameState;
+    /** Re-runs per-frame init and restores base state — see the resetHistory
+     * branch in the frame loop. */
+    reset: () => void;
   };
   signalTracker: {
     update: (args: {
@@ -267,6 +270,20 @@ export function createMilkdropExperienceFrameLoop({
         const adaptiveDensityMultiplier =
           runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1;
         vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
+        if (frame.resetHistory) {
+          // A deterministic capture asked for a clean start. Clearing the GPU
+          // feedback chain alone is not one: the VM's per-frame state — q/t
+          // registers, per-frame accumulators, megabuf — carries the previous
+          // pump's evolution, so two pumps with identical inputs rendered
+          // different pictures. Measured on krash (whose feedback loop
+          // amplifies any difference): three consecutive
+          // `renderFrames({ startTime: 0 })` pumps came back at mean
+          // luminance 2.4, 90.2, 167.9. With the VM re-initialised they
+          // repeat exactly. This is also what made capture results bimodal —
+          // the transition-settle loop racily pre-pumps frames, so whether
+          // the main pump started from a virgin VM was a coin flip.
+          vm.reset();
+        }
         signalTracker.update({
           time: frame.time,
           deltaMs: frame.deltaMs,
