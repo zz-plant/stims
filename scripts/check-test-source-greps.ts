@@ -52,8 +52,8 @@ const ALLOWED: Record<string, string> = {
     'DEBT: greps for import specifiers and memo/cache spellings.',
   'tests/unit/app-shell-route-sync.test.ts':
     'The route-sync test renders the real hook now; the remaining source read is the toast attribute/media-query pair, a cross-artifact presentational contract with no layout engine in this suite.',
-  'tests/unit/app-shell-skip-flow.test.ts':
-    'DEBT: greps App.tsx for the skip flow.',
+  'tests/unit/app-shell-skip-flow.test.tsx':
+    'Renders the real StimsStageFrame for the focus-target and data-mode halves; the remaining reads are the App.tsx anchor (the shell does not mount in this suite) and the CSS rules (no style engine).',
   'tests/unit/app-shell-stage-tools.test.ts':
     'DEBT: greps App.tsx/workspace-ui.tsx for stage tool classes.',
   'tests/unit/app-shell-ui-simplification.test.ts':
