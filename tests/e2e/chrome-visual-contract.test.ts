@@ -310,3 +310,70 @@ for (const theme of ['dark', 'light'] as const) {
     60000,
   );
 }
+
+/**
+ * Mobile viewport invariants, rendered. These used to live only as CSS-text
+ * regexes in tests/unit/mobile-viewport-matrix.test.ts; each one here measures
+ * the computed result at a phone viewport instead. The unit file keeps the
+ * declarations a desktop Chromium cannot observe (safe-area env() resolves to
+ * 0 outside a notched device).
+ */
+chromeTest(
+  'mobile: the page never scrolls horizontally',
+  async () => {
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 375, height: 812 },
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell', { timeout: 30000 });
+      // Overflowing rail actions were the shipped defect (5619d17a): the
+      // action row refused to wrap and dragged the whole document wider than
+      // the phone.
+      const overflow = await page.evaluate(() => ({
+        doc: document.documentElement.scrollWidth - window.innerWidth,
+        body: document.body.scrollWidth - window.innerWidth,
+      }));
+      expect(overflow.doc).toBeLessThanOrEqual(0);
+      expect(overflow.body).toBeLessThanOrEqual(0);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'short landscape: the launch hero scrolls instead of clipping',
+  async () => {
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 812, height: 375 },
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__stage-hero', {
+        timeout: 30000,
+      });
+      // The shipped defect: at phone-landscape heights the hero was taller
+      // than the viewport with no scroll path, so the launch actions below
+      // the fold were unreachable.
+      const hero = await page.evaluate(() => {
+        const el = document.querySelector('.stims-shell__stage-hero');
+        if (!el) return null;
+        return {
+          overflowY: getComputedStyle(el).overflowY,
+          scrollable: el.scrollHeight > el.clientHeight,
+        };
+      });
+      expect(hero).not.toBeNull();
+      expect(['auto', 'scroll']).toContain(hero?.overflowY ?? 'missing');
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);

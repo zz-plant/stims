@@ -62,7 +62,7 @@ const ALLOWED: Record<string, string> = {
   'tests/unit/keyboard-shortcut-matching.test.ts':
     'Generates its rows from the live registry; the source read is a dangling-reference check, not a copy assertion.',
   'tests/unit/mobile-viewport-matrix.test.ts':
-    'DEBT: greps app-shell.css for viewport rules.',
+    'Reduced to declarations a rendered check cannot observe (safe-area env() math, live-mode rules needing a booted engine); the overflow and short-landscape invariants moved to chrome-visual-contract e2e as computed measurements.',
   'tests/unit/primitive-rasterization-fidelity.test.ts':
     'DEBT: greps renderer source for rasterisation constants.',
   'tests/unit/scripts-list-routing.test.ts':
