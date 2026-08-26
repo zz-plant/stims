@@ -55,6 +55,21 @@ const FRAMES = Number(flag('frames', '16'));
 const TOP = Number(flag('top', '15'));
 /** Relative step. Large enough to clear f32 noise, small enough to stay local. */
 const EPSILON = Number(flag('epsilon', '0.05'));
+const ALL_FIELDS = args.includes('--all-fields');
+
+/**
+ * Per-shape and per-custom-wave parameters, which cannot move the warp mesh.
+ *
+ * They are 1504 of a typical preset's 1594 numeric fields — 960 `shape_*` and
+ * 544 `custom_wave*` — so scanning them costs ~17x the runtime for results
+ * that are structurally zero: shapes and waves are drawn over the warp, they
+ * do not feed it. Exhaustive runs on geiss-sunsets and
+ * unchained-cranked-on-failure confirm it, with every live field in both
+ * coming from the warp/motion base set and not one shape or wave field
+ * registering. `--all-fields` restores the exhaustive scan for anyone who
+ * wants to re-check that on a different preset.
+ */
+const NON_MESH_FIELD = /^(shape_|custom_wave)/;
 
 function findPresetFile(id: string): string | null {
   const roots = ['public/milkdrop-presets', 'tests/fixtures/milkdrop'];
@@ -162,9 +177,13 @@ if (!baseline.positions) {
   process.exit(1);
 }
 
-const candidates = Object.entries(baseline.fields)
+const allNumeric = Object.entries(baseline.fields)
   .filter(([, v]) => Number.isFinite(v))
   .map(([k]) => k);
+const candidates = ALL_FIELDS
+  ? allNumeric
+  : allNumeric.filter((k) => !NON_MESH_FIELD.test(k));
+const skipped = allNumeric.length - candidates.length;
 
 type Row = { field: string; base: number; sensitivity: number };
 const rows: Row[] = [];
@@ -199,8 +218,12 @@ const live = rows.filter((r) => r.sensitivity > 1e-9);
 
 console.log(`\n  ${PRESET}`);
 console.log(
-  `  ${candidates.length} numeric fields, ${live.length} move the mesh ` +
-    `(${FRAMES} frames, central difference, eps=${EPSILON})\n`,
+  `  ${candidates.length} candidate fields, ${live.length} move the mesh ` +
+    `(${FRAMES} frames, central difference, eps=${EPSILON})` +
+    (skipped > 0
+      ? `\n  ${skipped} shape/custom-wave fields skipped — pass --all-fields to include them`
+      : '') +
+    '\n',
 );
 console.log('  field                        base        sensitivity');
 console.log(`  ${'-'.repeat(56)}`);
