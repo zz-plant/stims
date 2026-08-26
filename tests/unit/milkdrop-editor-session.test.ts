@@ -6,6 +6,10 @@ import {
   expect,
   test,
 } from 'bun:test';
+import {
+  isShaderBranchDesugarEnabled,
+  setShaderBranchDesugarEnabled,
+} from '../../src/js/milkdrop/compiler/shader-branch-desugar.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { createMilkdropEditorSession } from '../../src/js/milkdrop/editor-session.ts';
 import type { MilkdropPresetSource } from '../../src/js/milkdrop/types.ts';
@@ -112,6 +116,164 @@ describe('milkdrop editor session', () => {
     session.dispose();
   });
 
+  test('compiles worker presets under the session branch-desugar setting', async () => {
+    // The desugar is a module-level boolean, and the compile worker is its own
+    // module instance: it defaults to "off" no matter what the page resolved.
+    // Before the session pushed the setting across, every preset loaded while
+    // ?milkdrop-webgpu-branch-desugar=1 was set came back classified
+    // `translated` — the uniform-only approximation — because the worker that
+    // compiled it had never heard of the flag.
+    //
+    // WorkerWithOwnDesugarState models that separation: it holds its own copy
+    // of the setting, starts it off, and compiles with that copy swapped in.
+    let workerDesugar = false;
+    const settingsReceived: boolean[] = [];
+
+    class WorkerWithOwnDesugarState extends DefaultMockWorker {
+      postMessage(message: unknown) {
+        const msg = message as {
+          type?: string;
+          path?: string[];
+          argumentList: { value: unknown }[];
+        } | null;
+        if (
+          msg &&
+          msg.type === 'APPLY' &&
+          msg.path?.[0] === 'setShaderBranchDesugar'
+        ) {
+          workerDesugar = msg.argumentList[0].value as boolean;
+          settingsReceived.push(workerDesugar);
+          return;
+        }
+        const pageDesugar = isShaderBranchDesugarEnabled();
+        setShaderBranchDesugarEnabled(workerDesugar);
+        try {
+          super.postMessage(message);
+        } finally {
+          setShaderBranchDesugarEnabled(pageDesugar);
+        }
+      }
+    }
+
+    const branching = [
+      'MILKDROP_PRESET_VERSION=201',
+      'PSVERSION=2',
+      '[preset00]',
+      'warp=1.0',
+      'comp_1=shader_body {',
+      'comp_2=float3 c = tex2D(sampler_main, uv).xyz;',
+      'comp_3=if (c.x > 0.5) { c = float3(1,0,0); } else { c = float3(0,0,1); }',
+      'comp_4=ret = c;',
+      'comp_5=}',
+      '',
+    ].join('\n');
+
+    const pageDesugar = isShaderBranchDesugarEnabled();
+    globalThis.Worker = WorkerWithOwnDesugarState as unknown as typeof Worker;
+    setShaderBranchDesugarEnabled(true);
+    try {
+      const session = createMilkdropEditorSession({
+        initialPreset: {
+          id: 'desugar-session',
+          title: 'Desugar Session',
+          raw: 'title=Desugar Session\nwave_r=0.4\n',
+          origin: 'user',
+        },
+      });
+
+      const loaded = await session.loadPreset({
+        id: 'desugar-session-branching',
+        title: 'Desugar Session Branching',
+        raw: branching,
+        origin: 'bundled',
+      });
+
+      expect(settingsReceived).toEqual([true]);
+      expect(
+        loaded.activeCompiled?.ir.compatibility.featureAnalysis
+          .shaderTextExecution.webgpu,
+      ).toBe('direct');
+
+      session.dispose();
+    } finally {
+      setShaderBranchDesugarEnabled(pageDesugar);
+    }
+  });
+
+  test('leaves worker presets approximated when the desugar is off', async () => {
+    // The flag has to stay a real gate: with it off the branching body is
+    // still unparseable and the backend still approximates it.
+    let workerDesugar = false;
+
+    class WorkerWithOwnDesugarState extends DefaultMockWorker {
+      postMessage(message: unknown) {
+        const msg = message as {
+          type?: string;
+          path?: string[];
+          argumentList: { value: unknown }[];
+        } | null;
+        if (
+          msg &&
+          msg.type === 'APPLY' &&
+          msg.path?.[0] === 'setShaderBranchDesugar'
+        ) {
+          workerDesugar = msg.argumentList[0].value as boolean;
+          return;
+        }
+        const pageDesugar = isShaderBranchDesugarEnabled();
+        setShaderBranchDesugarEnabled(workerDesugar);
+        try {
+          super.postMessage(message);
+        } finally {
+          setShaderBranchDesugarEnabled(pageDesugar);
+        }
+      }
+    }
+
+    const branching = [
+      'MILKDROP_PRESET_VERSION=201',
+      'PSVERSION=2',
+      '[preset00]',
+      'warp=1.0',
+      'comp_1=shader_body {',
+      'comp_2=float3 c = tex2D(sampler_main, uv).xyz;',
+      'comp_3=if (c.x > 0.5) { c = float3(1,0,0); } else { c = float3(0,0,1); }',
+      'comp_4=ret = c;',
+      'comp_5=}',
+      '',
+    ].join('\n');
+
+    const pageDesugar = isShaderBranchDesugarEnabled();
+    globalThis.Worker = WorkerWithOwnDesugarState as unknown as typeof Worker;
+    setShaderBranchDesugarEnabled(false);
+    try {
+      const session = createMilkdropEditorSession({
+        initialPreset: {
+          id: 'desugar-session-off',
+          title: 'Desugar Session Off',
+          raw: 'title=Desugar Session Off\nwave_r=0.4\n',
+          origin: 'user',
+        },
+      });
+
+      const loaded = await session.loadPreset({
+        id: 'desugar-session-off-branching',
+        title: 'Desugar Session Off Branching',
+        raw: branching,
+        origin: 'bundled',
+      });
+
+      expect(
+        loaded.activeCompiled?.ir.compatibility.featureAnalysis
+          .shaderTextExecution.webgpu,
+      ).toBe('translated');
+
+      session.dispose();
+    } finally {
+      setShaderBranchDesugarEnabled(pageDesugar);
+    }
+  });
+
   test('keeps the last good preset active when new source has errors', async () => {
     const session = createMilkdropEditorSession({
       initialPreset: {
@@ -207,6 +369,12 @@ describe('milkdrop editor session', () => {
       }
 
       postMessage(payload: unknown) {
+        // Only compiles are of interest here; the session also pushes its
+        // branch-desugar setting across, and that message answers nothing.
+        const path = (payload as { path?: string[] } | null)?.path;
+        if (path?.[0] !== 'compile') {
+          return;
+        }
         postedMessages.push(payload);
       }
 

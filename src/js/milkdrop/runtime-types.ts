@@ -227,4 +227,13 @@ export interface MilkdropEditorCompiler {
     preset: Partial<MilkdropPresetSource>,
     options?: { cacheCompile?: boolean },
   ): Promise<MilkdropCompiledPreset>;
+  /**
+   * Mirrors the main thread's `shaderBranchDesugar` session flag into the
+   * worker. The flag is a module-level boolean, so a worker — its own module
+   * instance — defaults to `false` no matter what the page resolved, and every
+   * preset it compiles carries the wrong backend classification. The session
+   * calls this before the worker's first compile and again whenever the value
+   * drifts.
+   */
+  setShaderBranchDesugar(enabled: boolean): Promise<void>;
 }

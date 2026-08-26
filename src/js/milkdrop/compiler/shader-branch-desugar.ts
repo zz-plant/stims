@@ -75,8 +75,17 @@
  * Gate state for the whole module. A plain module-level boolean rather than a
  * parameter because the decision is per session, not per body, and every
  * caller between the runtime and here would otherwise have to thread it
- * through. Compilation that never sets it — worker entry points, catalog
- * tooling, tests — gets the safe answer.
+ * through. Compilation that never sets it — catalog tooling, tests — gets the
+ * safe answer.
+ *
+ * The cost of that convenience: a worker is its own module instance, so it
+ * starts at `false` no matter what the page resolved. That silently defeated
+ * the flag for its first months — the runtime set it on the main thread, but
+ * live preset loads compile in the editor worker, so every preset a session
+ * actually played came back classified as if the flag were off. Any worker
+ * that compiles presets has to be told; `editor-worker.ts` exposes
+ * `setShaderBranchDesugar` for exactly that, and `editor-session.ts` pushes
+ * the value across before the worker's first compile.
  */
 let branchDesugarEnabled = false;
 
