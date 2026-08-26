@@ -133,6 +133,24 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   solarize: 0,
   invert: 0,
   red_blue_stereo: 0,
+  // MilkDrop's composite gamma, and the default a preset inherits by omitting
+  // `fGammaAdj` — 291 of the 2,686 bundled presets do.
+  //
+  // MEASURED, not inferred: apply a comp shader that outputs a constant via
+  // `__STIMS_AGENT_BRIDGE__.applyEditorSource`, pump frames, read the canvas
+  // back. Across inputs 0.05/0.1/0.25/0.5/0.75/0.9 the implied exponent is
+  // 0.500/0.498/0.503/0.503/0.497/0.497 — the present path applies
+  // `out = in^(1/gammaAdj)`. It is not an sRGB encode and not colour
+  // management, and three separate attempts to derive it from the renderer
+  // source got it wrong.
+  //
+  // Do NOT "correct" this to 1 on the strength of projectM's
+  // `presetOutputs->fGammaAdj = 1.0` (MilkdropPresetFactory.cpp:90 and :178).
+  // That line is an initialisation the preset parser overwrites. Setting it to
+  // 1 here was measured and destroys the two certified presets that pass:
+  // 100-square 1.43% -> 85.74% against a 0.5pp band, and 250-wavecode
+  // 8.41% -> 55.33%. Both omit fGammaAdj, so if projectM rendered them at
+  // gamma 1 they would have improved.
   gammaadj: 2,
   video_echo_enabled: 0,
   video_echo_alpha: 0,
