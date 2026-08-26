@@ -141,7 +141,17 @@ test('codex session script prints a review profile plan', () => {
     },
   );
 
-  expect(result.status).toBe(0);
+  if (result.status !== 0) {
+    // This spawn failed exactly once in a full `bun run check` under load and
+    // has never reproduced in isolation. When it happens again, the exit code
+    // and stderr are the difference between a diagnosable failure and an
+    // opaque flake.
+    throw new Error(
+      `codex-session.sh exited ${result.status}` +
+        `${result.error ? ` (spawn error: ${result.error.message})` : ''}` +
+        `\nstderr: ${result.stderr?.slice(0, 2000) ?? '(none)'}`,
+    );
+  }
   expect(result.stdout).toContain('Profile: review');
   expect(result.stdout).toContain('Local models: skipped');
   expect(result.stdout).toContain('Dev server: skipped');
@@ -165,7 +175,17 @@ test('codex session script maps compat profile to the compatibility watcher', ()
     },
   );
 
-  expect(result.status).toBe(0);
+  if (result.status !== 0) {
+    // This spawn failed exactly once in a full `bun run check` under load and
+    // has never reproduced in isolation. When it happens again, the exit code
+    // and stderr are the difference between a diagnosable failure and an
+    // opaque flake.
+    throw new Error(
+      `codex-session.sh exited ${result.status}` +
+        `${result.error ? ` (spawn error: ${result.error.message})` : ''}` +
+        `\nstderr: ${result.stderr?.slice(0, 2000) ?? '(none)'}`,
+    );
+  }
   expect(result.stdout).toContain('Profile: compat');
   expect(result.stdout).toContain('Watcher: compatibility watcher');
 });
@@ -199,7 +219,17 @@ test('codex session status reports persisted session metadata instead of CLI def
     },
   });
 
-  expect(result.status).toBe(0);
+  if (result.status !== 0) {
+    // This spawn failed exactly once in a full `bun run check` under load and
+    // has never reproduced in isolation. When it happens again, the exit code
+    // and stderr are the difference between a diagnosable failure and an
+    // opaque flake.
+    throw new Error(
+      `codex-session.sh exited ${result.status}` +
+        `${result.error ? ` (spawn error: ${result.error.message})` : ''}` +
+        `\nstderr: ${result.stderr?.slice(0, 2000) ?? '(none)'}`,
+    );
+  }
   expect(result.stdout).toContain('Session: 127.0.0.1:4173');
   expect(result.stdout).toContain('Profile: full');
   expect(result.stdout).toContain('Watcher mode: unit');
@@ -250,7 +280,17 @@ test('codex session stop is scoped to the requested port', async () => {
     },
   );
 
-  expect(result.status).toBe(0);
+  if (result.status !== 0) {
+    // This spawn failed exactly once in a full `bun run check` under load and
+    // has never reproduced in isolation. When it happens again, the exit code
+    // and stderr are the difference between a diagnosable failure and an
+    // opaque flake.
+    throw new Error(
+      `codex-session.sh exited ${result.status}` +
+        `${result.error ? ` (spawn error: ${result.error.message})` : ''}` +
+        `\nstderr: ${result.stderr?.slice(0, 2000) ?? '(none)'}`,
+    );
+  }
   await waitForExit(dev4173);
   await waitForExit(watch4173);
   expect(() => process.kill(requirePid(dev5173.pid), 0)).not.toThrow();

@@ -51,7 +51,7 @@ const ALLOWED: Record<string, string> = {
   'tests/unit/app-shell-performance-regression.test.ts':
     'DEBT: greps for import specifiers and memo/cache spellings.',
   'tests/unit/app-shell-route-sync.test.ts':
-    'DEBT: greps App.tsx for route-sync wiring.',
+    'The route-sync test renders the real hook now; the remaining source read is the toast attribute/media-query pair, a cross-artifact presentational contract with no layout engine in this suite.',
   'tests/unit/app-shell-skip-flow.test.ts':
     'DEBT: greps App.tsx for the skip flow.',
   'tests/unit/app-shell-stage-tools.test.ts':
@@ -61,7 +61,6 @@ const ALLOWED: Record<string, string> = {
   'tests/unit/arrival-url.test.ts': 'DEBT: greps for arrival URL handling.',
   'tests/unit/assisted-edit-gate.test.ts':
     'One remaining routing check on editor-panel source (all AI actions go through the proposal path); the exact-count brittleness is gone and the rest of the file is behavioural.',
-  'tests/unit/audio-gesture-gate.test.ts': 'DEBT: greps for the gesture gate.',
   'tests/unit/keyboard-shortcut-matching.test.ts':
     'Generates its rows from the live registry; the source read is a dangling-reference check, not a copy assertion.',
   'tests/unit/mobile-viewport-matrix.test.ts':
