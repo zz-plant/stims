@@ -12,6 +12,10 @@ import {
   resetAudioGestureGate,
   subscribeAudioGestureGate,
 } from '../../src/js/core/audio-gesture-gate.ts';
+import {
+  registerAudioContext,
+  unregisterAudioContext,
+} from '../../src/js/core/audio-handler.ts';
 
 afterEach(() => {
   resetAudioGestureGate();
@@ -77,19 +81,38 @@ describe('audio gesture gate', () => {
 });
 
 describe('audio gesture gate wiring', () => {
-  test('audio-handler publishes the gate from real context state', async () => {
-    const source = await Bun.file('src/js/core/audio-handler.ts').text();
+  test('audio-handler publishes the gate from real context state', () => {
+    // Drives the real registerAudioContext/unregisterAudioContext with a fake
+    // context instead of grepping audio-handler's source. The gate must be
+    // recomputed from the live contexts, not set optimistically at start: the
+    // browser can resume on its own, and a stale `true` would leave "click
+    // for sound" on screen over working audio.
+    const listeners = new Set<() => void>();
+    const fakeContext = {
+      state: 'suspended' as AudioContextState,
+      addEventListener: (_type: string, handler: () => void) => {
+        listeners.add(handler);
+      },
+      removeEventListener: (_type: string, handler: () => void) => {
+        listeners.delete(handler);
+      },
+    } as unknown as AudioContext;
 
-    // The gate must be recomputed from the live contexts, not set optimistically
-    // at start: the browser can resume on its own, and a stale `true` would
-    // leave "click for sound" on screen over working audio.
-    expect(source).toContain('reportAudioAwaitingGesture');
-    expect(source).toMatch(/addEventListener\('statechange'/u);
-    expect(source).toMatch(/function publishGestureGate\(\)/u);
-    // Registering and unregistering both republish, so the notice cannot
-    // survive the session it describes.
-    expect(
-      source.match(/publishGestureGate\(\);/gu)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(2);
+    registerAudioContext(fakeContext);
+    // Registering a suspended context publishes the gate immediately.
+    expect(isAudioAwaitingGesture()).toBe(true);
+
+    // The browser resumes on its own; the statechange handler must clear it.
+    (fakeContext as { state: AudioContextState }).state = 'running';
+    for (const handler of listeners) handler();
+    expect(isAudioAwaitingGesture()).toBe(false);
+
+    // Suspend again, then unregister: the notice cannot survive the session
+    // it describes.
+    (fakeContext as { state: AudioContextState }).state = 'suspended';
+    for (const handler of listeners) handler();
+    expect(isAudioAwaitingGesture()).toBe(true);
+    unregisterAudioContext(fakeContext);
+    expect(isAudioAwaitingGesture()).toBe(false);
   });
 });
