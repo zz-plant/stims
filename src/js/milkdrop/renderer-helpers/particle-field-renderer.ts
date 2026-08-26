@@ -22,6 +22,7 @@ import type {
   MilkdropRenderPayload,
   MilkdropRuntimeSignals,
 } from '../types';
+import { typedAttribute, typedUniform } from './tsl-node-types.ts';
 import {
   getWebGpuHelperMaterialsSync,
   isWebGpuNodeMaterial,
@@ -114,12 +115,10 @@ function createParticleFieldNodeMaterial(
 ) {
   const { NodeMaterial, TSL } = getWebGpuHelperMaterialsSync();
   const {
-    attribute,
     cameraProjectionMatrix,
     modelViewMatrix,
     positionGeometry,
     smoothstep,
-    uniform,
     uv,
     varying,
     vec3,
@@ -132,12 +131,15 @@ function createParticleFieldNodeMaterial(
     alphaMultiplier,
   );
   const uniforms = Object.fromEntries(
-    Object.entries(state).map(([key, entry]) => [key, uniform(entry.value)]),
+    Object.entries(state).map(([key, entry]) => [
+      key,
+      typedUniform(entry.value),
+    ]),
   );
 
-  const instanceAnchor = attribute('instanceAnchor', 'vec3');
-  const instanceSeed = attribute('instanceSeed', 'float');
-  const instanceId = attribute('instanceId', 'float');
+  const instanceAnchor = typedAttribute('instanceAnchor', 'vec3');
+  const instanceSeed = typedAttribute('instanceSeed', 'float');
+  const instanceId = typedAttribute('instanceId', 'float');
 
   const phase = instanceSeed
     .mul(6.2831853)

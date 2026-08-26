@@ -17,6 +17,7 @@
  * are not fully typed under the repo's current module resolution.
  */
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
+
 import type { Camera, Texture } from 'three';
 import {
   Color,
@@ -27,7 +28,6 @@ import {
   Vector2,
   Vector4,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
@@ -61,6 +61,7 @@ import {
   type OutputConversionRenderer,
   renderWithoutOutputConversion,
 } from './output-conversion-passthrough.ts';
+import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
 
 export {
   resolveDirectShaderSamplerBinding,
@@ -352,7 +353,9 @@ function createPresentOutputNode(
     const q = p3.add(dot(p3, p3.yzx.add(33.33)));
     return fract(q.x.add(q.y).mul(q.z));
   };
-  const valueNoise = (p: any) => {
+  // p is a 2D sample point: `u` below swizzles .x/.y, which only exists if
+  // the parameter says it is a vec2 rather than `any`.
+  const valueNoise = (p: TslNode<'vec2'>) => {
     const i = floor(p);
     const f = fract(p);
     const u = f.mul(f).mul(f.mul(-2.0).add(3.0));
@@ -490,11 +493,21 @@ type ShaderBinaryOperator =
   | '&'
   | '|';
 
-type ShaderNodeEnv = {
+export type ShaderNodeEnv = {
   values: Map<string, ShaderNodeValue>;
   uniforms: CompositeUniformBag;
   sampleUvNode: ReturnType<typeof createSampleUvNode>;
-  sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
+  /**
+   * Declared as returning a vec4 rather than inheriting the factory's
+   * inferred type. That factory is a single `select()` chain over ~15
+   * branches, every one of which constructs a vec4; three widens the chain
+   * to `Node<'float' | 'vec4'>`, which is an artifact of the operand count
+   * and not a path that yields a scalar. Callers immediately take `.rgb` or
+   * `.rg`, which the union does not carry.
+   */
+  sampleAuxTextureNode: (
+    ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
+  ) => TslNode<'vec4'>;
   /** Stage-specific meaning of sampler_main. The comp stage sets this to the
    * reconstructed composited frame (feedback + geometry); without it, main
    * samples fall back to the geometry-only scene texture. */
@@ -503,7 +516,13 @@ type ShaderNodeEnv = {
 
 type DirectShaderSwizzleComponent = 'x' | 'y' | 'z' | 'w';
 
-function hueRotateNode(colorValue: any, angle: any) {
+/**
+ * `colorValue` is declared as a vec3 rather than `any` so the mat3 multiply
+ * below resolves to the vec3 overload. Left as `any`, three infers
+ * `mat3.mul(any)` as returning another mat3, and the surrounding `clamp`
+ * against vec3 bounds then has no matching overload.
+ */
+function hueRotateNode(colorValue: TslNode<'vec3'>, angle: TslNode<'float'>) {
   return Fn(() => {
     const s = sin(angle);
     const c = cos(angle);
@@ -2319,7 +2338,20 @@ function applyDirectCompProgram(
   ).node;
 }
 
-function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
+/**
+ * The aux-texture sampler, typed as returning the vec4 it always builds.
+ *
+ * `createSampleAuxTextureNode` is one `select()` chain over ~15 branches,
+ * each constructing a vec4; three widens the chain to
+ * `Node<'float' | 'vec4'>` because of the operand count, not because any
+ * path yields a scalar. Callers take `.rgb`/`.rg`, which the union does not
+ * carry, so the narrowing is stated once here rather than at every use.
+ */
+function createCompositeAuxSampler(
+  uniforms: CompositeUniformBag,
+): (
+  ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
+) => TslNode<'vec4'> {
   return createSampleAuxTextureNode(
     uniforms.noiseTex,
     uniforms.perlinTex,
@@ -2348,7 +2380,9 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
       perlin: uniforms.perlinTex3D,
       noisevol: uniforms.noisevolTex3D,
     },
-  );
+  ) as unknown as (
+    ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
+  ) => TslNode<'vec4'>;
 }
 
 /**
@@ -2569,9 +2603,14 @@ function createFeedbackBlendOutputNode(
     const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
       step(0.0001, uniforms.warpTextureAmount),
     );
+    // `CompositeUniformBag` is `Record<string, any>`, so `.mul(any)` resolves
+    // to the widest overload (vec3) and the uv chain stops being a vec2.
+    // These two are `uniform(new Vector2(...))` at their declaration
+    // (feedback-manager-webgpu-composite.ts), so saying so here keeps the
+    // chain honest without typing all 114 uniforms.
     const warpUv = currentUv
-      .mul(uniforms.warpTextureScale)
-      .add(uniforms.warpTextureOffset);
+      .mul(uniforms.warpTextureScale as TslNode<'vec2'>)
+      .add(uniforms.warpTextureOffset as TslNode<'vec2'>);
     const warpVector = sampleAuxTextureNode(
       uniforms.warpTextureSource,
       uniforms.warpTextureSampleDimension,
@@ -2686,9 +2725,14 @@ function createCompositeOutputNode(
     const overlayMask = overlaySourceMask.mul(
       max(overlayReplaceMask, overlayBlendMask),
     );
+    // `CompositeUniformBag` is `Record<string, any>`, so `.mul(any)` resolves
+    // to the widest overload (vec3) and the uv chain stops being a vec2.
+    // These two are `uniform(new Vector2(...))` at their declaration
+    // (feedback-manager-webgpu-composite.ts), so saying so here keeps the
+    // chain honest without typing all 114 uniforms.
     const overlayUv = baseUv
-      .mul(uniforms.overlayTextureScale)
-      .add(uniforms.overlayTextureOffset);
+      .mul(uniforms.overlayTextureScale as TslNode<'vec2'>)
+      .add(uniforms.overlayTextureOffset as TslNode<'vec2'>);
     const overlaySample = sampleAuxTextureNode(
       uniforms.overlayTextureSource,
       uniforms.overlayTextureSampleDimension,

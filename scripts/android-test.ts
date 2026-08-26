@@ -10,7 +10,6 @@
  * quality preset, a 2s FPS sample, and live telemetry.
  */
 import { $ } from 'bun';
-// @ts-expect-error - resolved at runtime via vite
 import { createServer } from 'vite';
 
 const DEV_SERVER_PORT = 5173;

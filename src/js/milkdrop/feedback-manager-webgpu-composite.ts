@@ -1,4 +1,5 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
+
 import type { Camera, Scene, Texture } from 'three';
 import {
   ClampToEdgeWrapping,
@@ -16,7 +17,6 @@ import {
   Vector2,
   Vector4,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { RenderTarget, TSL } from 'three/webgpu';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
@@ -30,6 +30,7 @@ import {
   createMilkdropNoiseVolumeAtlasTexture,
   MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 } from './milkdrop-native-noise.ts';
+import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
 import { MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS } from './shader-samplers.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
@@ -620,7 +621,16 @@ function selectBySourceId(
   return chain;
 }
 
-export function sampleFeedbackTarget(textureNode: any, screenUv: any) {
+/**
+ * Return type stated rather than inferred: `textureNode` is `any` (three has
+ * no single type covering every texture node these managers hold), so
+ * without this the sampled texel is `any` too, and every `.rgb`/`.a` derived
+ * from it silently degrades to a scalar downstream. A sample is a vec4.
+ */
+export function sampleFeedbackTarget(
+  textureNode: any,
+  screenUv: any,
+): TslNode<'vec4'> {
   return textureNode.sample(flipFeedbackSampleUv(screenUv));
 }
 
@@ -642,23 +652,31 @@ export function createSampleUvNode() {
 }
 
 export function createApplyFeedbackWarpNode() {
-  return Fn(([sampleUv, amount, rotationAmount]: [any, any, any]) => {
-    const centered = sampleUv.sub(0.5);
-    const radius = length(centered);
-    const angle = atan(centered.y, centered.x);
-    const spiral = sin(radius.mul(18).sub(angle.mul(4)))
-      .mul(amount)
-      .mul(0.08);
-    const warpedAngle = angle.add(spiral).add(rotationAmount.mul(0.22));
-    const warpedRadius = radius.mul(
-      float(1).add(
-        cos(warpedAngle.mul(3).add(radius.mul(10)))
-          .mul(amount)
-          .mul(0.05),
-      ),
-    );
-    return vec2(cos(warpedAngle), sin(warpedAngle)).mul(warpedRadius).add(0.5);
-  });
+  return Fn(
+    ([sampleUv, amount, rotationAmount]: [
+      TslNode<'vec2'>,
+      TslNode<'float'>,
+      TslNode<'float'>,
+    ]) => {
+      const centered = sampleUv.sub(0.5);
+      const radius = length(centered);
+      const angle = atan(centered.y, centered.x);
+      const spiral = sin(radius.mul(18).sub(angle.mul(4)))
+        .mul(amount)
+        .mul(0.08);
+      const warpedAngle = angle.add(spiral).add(rotationAmount.mul(0.22));
+      const warpedRadius = radius.mul(
+        float(1).add(
+          cos(warpedAngle.mul(3).add(radius.mul(10)))
+            .mul(amount)
+            .mul(0.05),
+        ),
+      );
+      return vec2(cos(warpedAngle), sin(warpedAngle))
+        .mul(warpedRadius)
+        .add(0.5);
+    },
+  );
 }
 
 export function createSampleAuxTextureNode(
@@ -753,9 +771,17 @@ export function createSampleAuxTextureNode(
       // margins so cross-slice color never bleeds near atlas seams.
       const edgeMargin = 0.02;
       const blended = mix(lowerSample, upperSample, blend);
-      const snapLow = select(step(edgeMargin, blend), blended, lowerSample);
+      // `select()` takes a boolean condition. These two read the same as the
+      // `step(edge, blend)` they replace — step is 1 exactly when
+      // blend >= edge — but say the predicate directly instead of routing it
+      // through a float that then has to be reinterpreted as a bool.
+      const snapLow = select(
+        blend.greaterThanEqual(edgeMargin),
+        blended,
+        lowerSample,
+      );
       const snapHigh = select(
-        step(float(1).sub(edgeMargin), blend),
+        blend.greaterThanEqual(float(1).sub(edgeMargin)),
         upperSample,
         snapLow,
       );
@@ -764,7 +790,15 @@ export function createSampleAuxTextureNode(
   );
 
   return Fn(
-    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
+    // Typed rather than `any`: `fract(sampleUv)` feeds `vec3(uv, z)` below,
+    // which needs the uv to still be a vec2. Left as `any` the whole chain
+    // degrades to float and every 3D sample loses its overload.
+    ([source, sampleDimension, sampleUv, sliceZ]: [
+      TslNode<'float'>,
+      TslNode<'float'>,
+      TslNode<'vec2'>,
+      TslNode<'float'>,
+    ]) => {
       const wrappedUv = fract(sampleUv);
       const wrappedZ = fract(sliceZ);
       const flat = vec4(0.5, 0.5, 0.5, 1);
