@@ -29,7 +29,7 @@ const ALLOWED: Record<string, string> = {
   // The shipped artifact IS the text. jsdom computes no layout or stacking
   // contexts, so there is no behavioural observation point in this suite.
   'tests/unit/theme-boot-parity.test.ts':
-    'index.html carries a pre-paint theme IIFE that runs before any module loads; the storage key it reads must match the one the store writes, and no module-level test can observe it.',
+    'Extracts and EXECUTES the pre-paint theme IIFE from index.html against the real resolveTheme — the script runs before any module loads, so reading the shipped HTML is the only way to test it.',
   'tests/unit/seo-canonical-intent.test.ts':
     'index.html and milkdrop/index.html are the crawlable artifacts; the meta tags are the contract a crawler sees.',
   'tests/unit/site-build.test.ts':
@@ -60,7 +60,7 @@ const ALLOWED: Record<string, string> = {
     'DEBT: greps eight components for copy.',
   'tests/unit/arrival-url.test.ts': 'DEBT: greps for arrival URL handling.',
   'tests/unit/assisted-edit-gate.test.ts':
-    'DEBT: counts occurrences of proposeAssistedEdit and requires exactly five.',
+    'One remaining routing check on editor-panel source (all AI actions go through the proposal path); the exact-count brittleness is gone and the rest of the file is behavioural.',
   'tests/unit/audio-gesture-gate.test.ts': 'DEBT: greps for the gesture gate.',
   'tests/unit/keyboard-shortcut-matching.test.ts':
     'Generates its rows from the live registry; the source read is a dangling-reference check, not a copy assertion.',
