@@ -20,11 +20,59 @@ The first bundled shipped presets to carry through that flow are:
 
 These four IDs are the smallest evidence loop that can move the shipped catalog from inferred runtime labels to checked-in `projectM` references and measured results without expanding the corpus prematurely.
 
-## Current state
+## Current state (2026-08-26)
 
-- Upstream `projectM` fixtures are used for parser/compiler/VM compatibility coverage, not frame-by-frame render parity.
-- The certified local parity corpus validates runtime summaries and selected post fields, but it does not diff rendered frames against `projectM`.
-- The compiler compatibility tables are currently optimistic enough that many presets can be classified as supported while still rendering differently.
+Frame-by-frame diffing against native projectM exists and runs: `parity:capture`
+walks the certified manifest on one reused browser, `parity:suite` diffs each
+capture against a checked-in projectM reference, and per-preset noise bands
+(`parity:noise`, stored in `src/data/milkdrop-parity/parity-noise-bands.json`)
+decide whether a delta is real.
+
+- Nine presets are certified, all judged on WebGPU. References are projectM
+  3.1.12 at frame 300, rendered against per-preset audio (`silence` or the
+  generated tone signal in `src/js/core/testing/reference-audio.ts`, which the
+  C++ harness mirrors via a generated header).
+- The capture path is deterministic: `renderFrames({ startTime: 0 })` resets
+  the clock, clears the GPU feedback chain, and re-initialises the VM. Bands
+  are 0.000-2.4pp on every preset; 260-compshader-noise_lq repeats exactly.
+- Honest scoreboard, 3-repeat medians: 100-square 1.20% PASS, glowsticks
+  1.08% PASS, 300-beatdetect 5.79%, 250-wavecode 7.36%, 260 33.72%,
+  cubetrace 64.59%, 261 75.55%, rovastar-parallel-universe 82.21%,
+  krash 86.29%. Two of nine pass.
+- krash and glowsticks are certified via `--allow-weak-reference`: projectM
+  renders both near-black under every audio condition tried, so their
+  references cannot discriminate. Use butterchurn (vendored) as the oracle for
+  krash; its remaining defect is the textured-shape multiply
+  (`texture(prev, uv) * vertexColor`), with a secondary resolution-dependent
+  feedback attractor.
+- WebGL has no parity coverage. The 39 `renderer: 'stims'` manifest entries
+  are placeholders with no image files.
+
+## Measurement rules (learned the expensive way)
+
+1. **Never trust a single capture on a preset whose band is wide.** Check
+   `parity-noise-bands.json` first. To attribute a delta to a change: capture
+   with it, revert, capture again — if reverting does not restore the old
+   number, the delta was noise.
+2. **A better score on one preset is not evidence.** Two errors cancelling
+   produce beautiful numbers: defaulting `gammaadj` to 1 put 260's mean at
+   exactly the reference's 127.7 while taking 100-square from 1.43% to 85.74%.
+   Always re-measure 100-square (band 0.015pp) alongside any tonal change.
+3. **Measure transfers, don't derive them.** The present path applies
+   `out = in^(1/gammaAdj)` with gammaAdj defaulting to 2 — established by
+   rendering a constant-output comp shader via
+   `__STIMS_AGENT_BRIDGE__.applyEditorSource` and reading the canvas back,
+   after three source-reading attempts got it wrong. projectM's
+   `fGammaAdj = 1.0` init line is overwritten by the parser; do not "fix" our
+   default to match it.
+4. **Reference implementations tell you what to try, not what to ship.** The
+   shape `a2 = 0` semantics are verifiably butterchurn's, and applying them
+   alone took krash from 47% to ~90% — they are only correct together with the
+   textured-shape multiply.
+5. **Captures must not supersample.** The suite passes `--native-resolution`
+   so frames render at capture size like the reference does. Do not get native
+   resolution by locking the `full` quality step: that also drops mesh density
+   and takes 100-square to 15.85%.
 
 ## Certification scope
 
