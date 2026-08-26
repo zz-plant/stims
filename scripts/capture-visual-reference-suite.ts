@@ -26,7 +26,7 @@
  */
 import { spawn } from 'node:child_process';
 import { ensureDevServer } from './dev-server.ts';
-import { loadParityArtifactManifest } from './parity-artifacts.ts';
+import { latestStimsCapture } from './parity-artifacts.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,
@@ -422,13 +422,6 @@ export function assertCaptureBackendMatches({
   );
 }
 
-function latestCaptureBackend(outputDir: string, presetId: string) {
-  const artifacts = loadParityArtifactManifest(outputDir).artifacts.filter(
-    (entry) => entry.kind === 'stims-capture' && entry.presetId === presetId,
-  );
-  return artifacts[artifacts.length - 1]?.capture?.backend ?? null;
-}
-
 export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
@@ -518,10 +511,9 @@ export async function captureVisualReferenceSuite(
               presetId: request.presetId,
               requiredBackend:
                 request.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl',
-              actualBackend: latestCaptureBackend(
-                request.outputDir,
-                request.presetId,
-              ),
+              actualBackend:
+                latestStimsCapture(request.outputDir, request.presetId)
+                  ?.backend ?? null,
             });
           }
         } catch (error) {
