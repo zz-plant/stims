@@ -40,8 +40,6 @@ const ALLOWED: Record<string, string> = {
   // Known debt, enumerated so it cannot grow silently. Each of these asserts
   // component or CSS source text and should become a behavioural test or move
   // to tests/e2e/chrome-visual-contract.test.ts. See the 2026-08-25 audit.
-  'tests/unit/app-shell-first-run-recovery.test.ts':
-    'DEBT: greps App.tsx and workspace-*.ts for the first-run recovery path.',
   'tests/unit/app-shell-minimal-surfaces.test.ts':
     'DEBT: greps panel components and app-shell.css for copy and selectors.',
   'tests/unit/app-shell-passive-guidance.test.ts':
