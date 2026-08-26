@@ -497,17 +497,7 @@ export type ShaderNodeEnv = {
   values: Map<string, ShaderNodeValue>;
   uniforms: CompositeUniformBag;
   sampleUvNode: ReturnType<typeof createSampleUvNode>;
-  /**
-   * Declared as returning a vec4 rather than inheriting the factory's
-   * inferred type. That factory is a single `select()` chain over ~15
-   * branches, every one of which constructs a vec4; three widens the chain
-   * to `Node<'float' | 'vec4'>`, which is an artifact of the operand count
-   * and not a path that yields a scalar. Callers immediately take `.rgb` or
-   * `.rg`, which the union does not carry.
-   */
-  sampleAuxTextureNode: (
-    ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
-  ) => TslNode<'vec4'>;
+  sampleAuxTextureNode: CompositeAuxSampler;
   /** Stage-specific meaning of sampler_main. The comp stage sets this to the
    * reconstructed composited frame (feedback + geometry); without it, main
    * samples fall back to the geometry-only scene texture. */
@@ -1487,15 +1477,15 @@ export function compileShaderExpressionNode(
         const explicitVolumeSample = name === 'tex3d' || name === 'texture3d';
         const inferredVolumeSample =
           name === 'texture' && coordinate.kind === 'vec3';
+        const sampleDimension =
+          explicitVolumeSample || inferredVolumeSample ? '3d' : '2d';
         const resolvedBinding = resolveDirectShaderSamplerBinding(
           sourceName,
-          explicitVolumeSample || inferredVolumeSample ? '3d' : '2d',
+          sampleDimension,
         );
         if (!resolvedBinding) {
           return null;
         }
-        const sampleDimension =
-          explicitVolumeSample || inferredVolumeSample ? float(1) : float(0);
         const sampleUv =
           coordinate.kind === 'vec3'
             ? vec2(coordinate.node.x, coordinate.node.y)
@@ -1534,8 +1524,8 @@ export function compileShaderExpressionNode(
         }
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(
-            float(resolvedBinding.sourceId),
+          env.sampleAuxTextureNode.sampleStatic(
+            resolvedBinding.canonicalSource,
             sampleDimension,
             sampleUv,
             sampleZ,
@@ -1545,7 +1535,7 @@ export function compileShaderExpressionNode(
       if (name === 'samplenoisevolume' && args.length >= 1) {
         // Native bodies rewrite texture(sampler_noisevol*, vec3) to the
         // sampleNoiseVolume helper; mirror the GLSL atlas-slice emulation by
-        // routing through the simplex volume slot (source 2, dimension 1).
+        // routing through the simplex volume slot.
         const coordinate = args[0];
         const sampleUv =
           coordinate.kind === 'vec3'
@@ -1555,7 +1545,12 @@ export function compileShaderExpressionNode(
           coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(float(2), float(1), sampleUv, sampleZ).rgb,
+          env.sampleAuxTextureNode.sampleStatic(
+            'simplex',
+            '3d',
+            sampleUv,
+            sampleZ,
+          ).rgb,
         );
       }
       if (
@@ -2347,11 +2342,27 @@ function applyDirectCompProgram(
  * path yields a scalar. Callers take `.rgb`/`.rg`, which the union does not
  * carry, so the narrowing is stated once here rather than at every use.
  */
+type AuxSamplerFactory = ReturnType<typeof createSampleAuxTextureNode>;
+
+/**
+ * Both halves declared as returning a vec4 rather than inheriting the
+ * factory's inferred types: each is a `select()` chain over ~15 branches,
+ * every one of which constructs a vec4, and three widens the chain to
+ * `Node<'float' | 'vec4'>` because of the operand count, not because any path
+ * yields a scalar. Callers take `.rgb`/`.rg`, which the union does not carry.
+ */
+type CompositeAuxSampler = {
+  dynamic: (
+    ...args: Parameters<AuxSamplerFactory['dynamic']>
+  ) => TslNode<'vec4'>;
+  sampleStatic: (
+    ...args: Parameters<AuxSamplerFactory['sampleStatic']>
+  ) => TslNode<'vec4'>;
+};
+
 function createCompositeAuxSampler(
   uniforms: CompositeUniformBag,
-): (
-  ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
-) => TslNode<'vec4'> {
+): CompositeAuxSampler {
   return createSampleAuxTextureNode(
     uniforms.noiseTex,
     uniforms.perlinTex,
@@ -2380,9 +2391,7 @@ function createCompositeAuxSampler(
       perlin: uniforms.perlinTex3D,
       noisevol: uniforms.noisevolTex3D,
     },
-  ) as unknown as (
-    ...args: Parameters<ReturnType<typeof createSampleAuxTextureNode>>
-  ) => TslNode<'vec4'>;
+  ) as unknown as CompositeAuxSampler;
 }
 
 /**
@@ -2611,12 +2620,13 @@ function createFeedbackBlendOutputNode(
     const warpUv = currentUv
       .mul(uniforms.warpTextureScale as TslNode<'vec2'>)
       .add(uniforms.warpTextureOffset as TslNode<'vec2'>);
-    const warpVector = sampleAuxTextureNode(
-      uniforms.warpTextureSource,
-      uniforms.warpTextureSampleDimension,
-      warpUv,
-      uniforms.warpTextureVolumeSliceZ,
-    )
+    const warpVector = sampleAuxTextureNode
+      .dynamic(
+        uniforms.warpTextureSource,
+        uniforms.warpTextureSampleDimension,
+        warpUv,
+        uniforms.warpTextureVolumeSliceZ,
+      )
       .rg.sub(0.5)
       .toVar();
     currentUv.addAssign(
@@ -2733,7 +2743,7 @@ function createCompositeOutputNode(
     const overlayUv = baseUv
       .mul(uniforms.overlayTextureScale as TslNode<'vec2'>)
       .add(uniforms.overlayTextureOffset as TslNode<'vec2'>);
-    const overlaySample = sampleAuxTextureNode(
+    const overlaySample = sampleAuxTextureNode.dynamic(
       uniforms.overlayTextureSource,
       uniforms.overlayTextureSampleDimension,
       overlayUv,
