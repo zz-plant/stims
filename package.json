@@ -104,6 +104,7 @@
     "lab:blend-gate": "bun run scripts/preset-lab-blend-gate.ts",
     "lab:flash-audit": "bun run scripts/analyze-preset-flash.ts",
     "lab:flash-risk": "bun run scripts/preset-lab-flash-risk.ts",
+    "lab:sensitivity": "bun run scripts/preset-lab-sensitivity.ts",
     "lab:flash-sampler-bench": "bun run scripts/preset-lab-flash-sampler-bench.ts",
     "lab:glsl-corpus-scan": "bun run scripts/preset-lab-glsl-corpus-scan.ts",
     "lab:gpu-differential": "bun run scripts/preset-lab-gpu-differential.ts",
