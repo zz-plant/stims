@@ -30,6 +30,7 @@ import {
   createMilkdropNoiseVolumeAtlasTexture,
   MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 } from './milkdrop-native-noise.ts';
+import { MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS } from './shader-samplers.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
 const {
@@ -583,6 +584,42 @@ function flipFeedbackSampleUv(coord: any) {
  * a target-backed uniform, because a site that forgets the row-order flip
  * produces a plausible-looking frame rather than an error.
  */
+/**
+ * Folds a per-source-id node table into the nested `select()` chain TSL needs.
+ *
+ * The ids come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS, and every id from
+ * 0 to the table's maximum gets its own bucket — an id with no node maps to
+ * `fallback` explicitly. That property is the point: the chains this replaces
+ * were nested by hand, and when ids 10 (noise_lq) and 11 (noisevol) were added
+ * to the id table without a branch of their own, they silently fell into
+ * glyph's `lessThan(12.5)` range and every preset reading projectM's generated
+ * noise sampled the glyph asset. Hand-editing the nesting also broke twice
+ * during the fix — sixteen levels of matched parentheses is not an edit, it is
+ * a transcription. Here, adding a texture slot is one entry in `nodes`.
+ */
+function selectBySourceId(
+  source: any,
+  nodes: Readonly<Record<string, any>>,
+  fallback: any,
+) {
+  const byId = new Map<number, any>();
+  for (const [name, id] of Object.entries(
+    MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS,
+  )) {
+    if (nodes[name] !== undefined) {
+      byId.set(id, nodes[name]);
+    }
+  }
+  const maxId = Math.max(
+    ...Object.values(MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS),
+  );
+  let chain = fallback;
+  for (let id = maxId; id >= 0; id -= 1) {
+    chain = select(source.lessThan(id + 0.5), byId.get(id) ?? fallback, chain);
+  }
+  return chain;
+}
+
 export function sampleFeedbackTarget(textureNode: any, screenUv: any) {
   return textureNode.sample(flipFeedbackSampleUv(screenUv));
 }
@@ -655,87 +692,30 @@ export function createSampleAuxTextureNode(
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
-    // Source ids come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS
-    // (shader-samplers.ts). Ids 10 (noise_lq) and 11 (noisevol) used to have
-    // no branch of their own, so they fell into glyph's `lessThan(12.5)` and
-    // every preset reading projectM's generated noise sampled the glyph asset
-    // instead: 260-compshader-noise_lq, whose whole body is
-    // `ret = tex2D(sampler_fw_noise_lq, uv).xyz`, rendered tinted
-    // (mean 120/141/133) against a neutral-grey reference (127.7 per channel).
-    return select(
-      source.lessThan(0.5),
+    // Source ids and names both come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS;
+    // an id with no entry here falls to the flat neutral, never into a
+    // neighbouring texture's bucket (the id-10/11 glyph-bleed bug).
+    return selectBySourceId(
+      source,
+      {
+        noise: noiseTexNode.sample(sampleUv),
+        simplex: simplexTexNode.sample(sampleUv),
+        voronoi: voronoiTexNode.sample(sampleUv),
+        aura: auraTexNode.sample(sampleUv),
+        caustics: causticsTexNode.sample(sampleUv),
+        pattern: patternTexNode.sample(sampleUv),
+        fractal: fractalTexNode.sample(sampleUv),
+        video: videoTexNode.sample(sampleUv),
+        perlin: perlinTexNode.sample(sampleUv),
+        noise_lq: noiseLqTexNode.sample(sampleUv),
+        noisevol: noisevolTexNode.sample(sampleUv),
+        glyph: glyphTexNode.sample(sampleUv),
+        organic: organicTexNode.sample(sampleUv),
+        blur1: sampleFeedbackTarget(blur1TexNode, sampleUv),
+        blur2: sampleFeedbackTarget(blur2TexNode, sampleUv),
+        blur3: sampleFeedbackTarget(blur3TexNode, sampleUv),
+      },
       flat,
-      select(
-        source.lessThan(1.5),
-        noiseTexNode.sample(sampleUv),
-        select(
-          source.lessThan(2.5),
-          simplexTexNode.sample(sampleUv),
-          select(
-            source.lessThan(3.5),
-            voronoiTexNode.sample(sampleUv),
-            select(
-              source.lessThan(4.5),
-              auraTexNode.sample(sampleUv),
-              select(
-                source.lessThan(5.5),
-                causticsTexNode.sample(sampleUv),
-                select(
-                  source.lessThan(6.5),
-                  patternTexNode.sample(sampleUv),
-                  select(
-                    source.lessThan(7.5),
-                    fractalTexNode.sample(sampleUv),
-                    select(
-                      source.lessThan(8.5),
-                      videoTexNode.sample(sampleUv),
-                      select(
-                        source.lessThan(9.5),
-                        perlinTexNode.sample(sampleUv),
-                        select(
-                          source.lessThan(10.5),
-                          noiseLqTexNode.sample(sampleUv),
-                          select(
-                            source.lessThan(11.5),
-                            noisevolTexNode.sample(sampleUv),
-                            select(
-                              source.lessThan(12.5),
-                              glyphTexNode.sample(sampleUv),
-                              select(
-                                source.lessThan(13.5),
-                                organicTexNode.sample(sampleUv),
-                                select(
-                                  source.lessThan(14.5),
-                                  sampleFeedbackTarget(blur1TexNode, sampleUv),
-                                  select(
-                                    source.lessThan(15.5),
-                                    sampleFeedbackTarget(
-                                      blur2TexNode,
-                                      sampleUv,
-                                    ),
-                                    select(
-                                      source.lessThan(16.5),
-                                      sampleFeedbackTarget(
-                                        blur3TexNode,
-                                        sampleUv,
-                                      ),
-                                      flat,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   });
 
@@ -788,56 +768,25 @@ export function createSampleAuxTextureNode(
       const wrappedUv = fract(sampleUv);
       const wrappedZ = fract(sliceZ);
       const flat = vec4(0.5, 0.5, 0.5, 1);
-      const native3dSample = select(
-        source.lessThan(0.5),
+      const native3dSample = selectBySourceId(
+        source,
+        {
+          noise: tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
+          simplex: tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
+          voronoi: tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
+          aura: tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
+          caustics: tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
+          pattern: tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
+          fractal: tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
+          perlin: tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+          // noise_lq is 2D in projectM, but presets do call tex3D on it, so
+          // ids 10 and 11 both read the generated volume rather than the flat
+          // grey that left 261-compshader-noisevol_lq blank. video/glyph/
+          // organic/blur have no volume and fall to flat by omission.
+          noise_lq: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
+          noisevol: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
+        },
         flat,
-        select(
-          source.lessThan(1.5),
-          tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
-          select(
-            source.lessThan(2.5),
-            tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
-            select(
-              source.lessThan(3.5),
-              tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
-              select(
-                source.lessThan(4.5),
-                tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
-                select(
-                  source.lessThan(5.5),
-                  tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
-                  select(
-                    source.lessThan(6.5),
-                    tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
-                    select(
-                      source.lessThan(7.5),
-                      tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
-                      select(
-                        source.lessThan(8.5),
-                        flat,
-                        select(
-                          source.lessThan(9.5),
-                          tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
-                          // noise_lq is 2D in projectM, but presets do call
-                          // tex3D on it, so ids 10 and 11 both read the
-                          // generated volume rather than falling to the flat
-                          // grey that left 261-compshader-noisevol_lq blank.
-                          select(
-                            source.lessThan(11.5),
-                            tex3DNodes.noisevol.sample(
-                              vec3(wrappedUv, wrappedZ),
-                            ),
-                            flat,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
       );
       // `video` has no real 3D texture (a video frame isn't a volume) so it
       // always needs the 2D-atlas emulation. `simplex` used to be force-
