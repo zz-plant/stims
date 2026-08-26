@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import { saveMeasuredVisualResultsManifest } from '../../scripts/measured-visual-results.ts';
-import { buildNativeProjectMReferenceMetadata } from '../../scripts/native-projectm-reference.ts';
+import {
+  buildNativeProjectMReferenceMetadata,
+  hashNativeProjectMHarness,
+} from '../../scripts/native-projectm-reference.ts';
 import {
   appendParityArtifactEntry,
   hashFileSha256,
@@ -25,6 +28,16 @@ function saveVisualReferenceManifest(
   );
   fs.mkdirSync(path.dirname(harnessPath), { recursive: true });
   fs.writeFileSync(harnessPath, '// native projectM harness\n');
+  // The harness hash covers the generated audio-signal header as well as the
+  // capture source, so that the signal cannot change under a reference without
+  // invalidating it. A fixture repo that writes only the .cpp fails the
+  // provenance check on every preset, which turned each suite result into
+  // `error: Untrusted projectM reference` and stopped these tests exercising
+  // the ordering, missing-capture and backend-mismatch behaviour they pin.
+  fs.writeFileSync(
+    path.join(repoRoot, 'scripts/reference-audio-signal.h'),
+    '// generated reference audio signal\n',
+  );
   for (const entry of manifest.presets) {
     if (entry.capture.renderer !== 'projectm') continue;
     const imagePath = path.join(repoRoot, manifest.fixtureRoot, entry.image);
@@ -59,7 +72,7 @@ function saveVisualReferenceManifest(
           projectmPrefix: '/opt/homebrew/opt/projectm',
           libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
           librarySha256: 'b'.repeat(64),
-          harnessSha256: hashFileSha256(harnessPath),
+          harnessSha256: hashNativeProjectMHarness(repoRoot),
           createdAt: '2026-07-16T00:00:00.000Z',
           platform: 'darwin',
           arch: 'arm64',

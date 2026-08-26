@@ -30,6 +30,7 @@ import {
 } from 'three';
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
+import { createLogger } from '../core/logger.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -98,6 +99,8 @@ import type {
   MilkdropShaderStatement,
 } from './types';
 import { perPixelWritesWarpTransform } from './warp-sample-transform.ts';
+
+const tslLog = createLogger('MilkdropTSL');
 
 const {
   abs,
@@ -496,6 +499,14 @@ type ShaderBinaryOperator =
 export type ShaderNodeEnv = {
   values: Map<string, ShaderNodeValue>;
   uniforms: CompositeUniformBag;
+  /**
+   * When present, every name `getShaderEnvValue` fails to resolve is recorded
+   * here instead of vanishing. A null resolution is not an error by itself —
+   * `runPerPixelProgram` drops the whole statement, which is the correct
+   * fallback — but it must never be silent: an unbound `rad` once dropped the
+   * per-pixel warp of 922 bundled presets and nothing anywhere said so.
+   */
+  unresolvedNames?: Set<string>;
   sampleUvNode: ReturnType<typeof createSampleUvNode>;
   sampleAuxTextureNode: CompositeAuxSampler;
   /** Stage-specific meaning of sampler_main. The comp stage sets this to the
@@ -1246,6 +1257,8 @@ function getShaderEnvValue(
     : (uniformMap[normalized]?.() ?? null);
   if (resolved) {
     env.values.set(normalized, resolved);
+  } else {
+    env.unresolvedNames?.add(normalized);
   }
   return resolved;
 }
@@ -2142,12 +2155,36 @@ function runPerPixelProgram(
   >['statements'],
   env: ShaderNodeEnv,
 ) {
+  // Collect rather than throw: a statement whose RHS cannot compile is
+  // skipped, which is the right fallback — but it has to be visible. Before
+  // this, an unbound name nulled the expression, the statement evaporated,
+  // and the preset rendered with a silently different warp. 922 bundled
+  // presets lost their rad/ang-driven per-pixel warp that way and no log
+  // line existed to say so. This runs once per node-graph build (per preset
+  // compile), not per frame, so logging here is cheap.
+  if (!env.unresolvedNames) {
+    env.unresolvedNames = new Set<string>();
+  }
+  const unresolved = env.unresolvedNames;
+  const dropped: string[] = [];
   statements.forEach((statement) => {
+    unresolved.clear();
     const value = compileShaderExpressionNode(statement.expression, env);
     if (value) {
       setShaderEnvValue(env, statement.target, value);
+    } else {
+      dropped.push(
+        unresolved.size > 0
+          ? `${statement.target} (unresolved: ${[...unresolved].join(', ')})`
+          : statement.target,
+      );
     }
   });
+  if (dropped.length > 0) {
+    tslLog.warn(
+      `Dropped ${dropped.length}/${statements.length} per-pixel statement(s): ${dropped.join('; ')}`,
+    );
+  }
 }
 
 /**

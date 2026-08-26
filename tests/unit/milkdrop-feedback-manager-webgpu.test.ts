@@ -21,6 +21,10 @@ import {
   getSharedMilkdropAuxTextures,
   resolveAuxTextureName,
 } from '../../src/js/milkdrop/feedback-manager-webgpu-composite.ts';
+import {
+  compileShaderExpressionNode,
+  type ShaderNodeEnv,
+} from '../../src/js/milkdrop/feedback-manager-webgpu-tsl.ts';
 import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
 import type {
   MilkdropFeedbackCompositeState,
@@ -552,4 +556,32 @@ test('draws the scene pass over a transparent black clear, background off', () =
   } finally {
     manager.dispose();
   }
+});
+
+describe('per-pixel unresolved-name diagnostics', () => {
+  test('a name the env cannot supply is recorded, not silently swallowed', () => {
+    // The regression class under guard: an unbound built-in (rad/ang before
+    // e076b419) nulled the expression, runPerPixelProgram dropped the whole
+    // statement, and 922 bundled presets lost their per-pixel warp with no
+    // log line anywhere. The env now records every failed lookup so the drop
+    // site can name what was missing.
+    const env = {
+      values: new Map(),
+      uniforms: {},
+      unresolvedNames: new Set<string>(),
+    } as unknown as ShaderNodeEnv;
+
+    const compiled = compileShaderExpressionNode(
+      {
+        type: 'binary',
+        operator: '*',
+        left: { type: 'identifier', name: 'definitely_not_bound' },
+        right: { type: 'literal', value: 2 },
+      } as never,
+      env,
+    );
+
+    expect(compiled).toBeNull();
+    expect([...(env.unresolvedNames ?? [])]).toEqual(['definitely_not_bound']);
+  });
 });
