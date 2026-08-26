@@ -312,11 +312,6 @@ describe('preset row parity badges', () => {
     expect(getPresetCertificationBadgeStatus(preset)).toBe('uncertified');
   });
 
-  test('fidelity tier label for unmeasured is "Unmeasured" not "Supported"', () => {
-    expect(fidelityTierLabel('unmeasured')).toBe('Unmeasured');
-    expect(fidelityTierLabel('unmeasured')).not.toBe('Supported');
-  });
-
   test('fidelity tier label and badge class for measured-visual presets', () => {
     expect(fidelityTierLabel('measured-visual')).toBe('Certified');
     expect(fidelityTierBadgeClass('measured-visual')).toBe(

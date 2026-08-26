@@ -4,6 +4,40 @@ import { createAdaptiveQualityController } from '../../src/js/core/services/adap
 const originalMatchMedia = globalThis.window?.matchMedia;
 const originalNavigator = globalThis.navigator;
 
+const highEndTimestampCapabilities = {
+  preferredCanvasFormat: 'bgra8unorm' as const,
+  performanceTier: 'high-end' as const,
+  recommendedQualityPreset: 'hi-fi' as const,
+  workers: {
+    workers: true,
+    offscreenCanvas: true,
+    transferControlToOffscreen: true,
+  },
+  optimization: {
+    timestampQuery: true,
+    shaderF16: true,
+    subgroups: true,
+    workers: true,
+    offscreenCanvas: true,
+    transferControlToOffscreen: true,
+    workerOffscreenPipeline: true,
+  },
+  features: {
+    bgra8unormStorage: true,
+    float32Blendable: true,
+    float32Filterable: true,
+    shaderF16: true,
+    subgroups: true,
+    timestampQuery: true,
+  },
+  limits: {
+    maxColorAttachments: 8,
+    maxComputeInvocationsPerWorkgroup: 1_024,
+    maxStorageBufferBindingSize: 1_073_741_824,
+    maxTextureDimension2D: 16_384,
+  },
+};
+
 /**
  * The controller reads pointer/reduced-motion media queries and touch points
  * when choosing a starting quality step. Other suites replace matchMedia
@@ -81,6 +115,65 @@ afterEach(() => {
 });
 
 describe('createAdaptiveQualityController', () => {
+  test('trims measured GPU resolution before changing CPU geometry density', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: highEndTimestampCapabilities,
+    });
+
+    for (let index = 0; index < 24; index += 1) {
+      controller.recordFrame({
+        frameMs: 5,
+        cadenceMs: 8.33,
+        gpuMs: 5,
+        phases: { renderMs: 0.5 },
+      });
+    }
+    const initial = controller.getState();
+    for (let index = 0; index < 12; index += 1) {
+      controller.recordFrame({
+        frameMs: 5,
+        cadenceMs: 16.67,
+        gpuMs: 24,
+        phases: { renderMs: 0.5 },
+      });
+    }
+
+    const trimmed = controller.getState();
+    expect(trimmed.qualityStep).toBe(initial.qualityStep);
+    expect(trimmed.densityMultiplier).toBe(initial.densityMultiplier);
+    expect(trimmed.gpuResolutionMultiplier).toBeLessThan(1);
+    expect(trimmed.renderScaleMultiplier).toBeLessThan(
+      initial.renderScaleMultiplier,
+    );
+    expect(trimmed.feedbackResolutionMultiplier).toBeLessThan(
+      initial.feedbackResolutionMultiplier,
+    );
+  });
+
+  test('configured quality locks also freeze continuous GPU resolution', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: highEndTimestampCapabilities,
+      lockedQualityStep: 2,
+    });
+
+    for (let index = 0; index < 80; index += 1) {
+      controller.recordFrame({
+        frameMs: 20,
+        cadenceMs: 20,
+        gpuMs: 18,
+        phases: { renderMs: 1 },
+      });
+    }
+
+    const state = controller.getState();
+    expect(state.qualityStep).toBe(2);
+    expect(state.gpuResolutionMultiplier).toBe(1);
+    expect(state.renderScaleMultiplier).toBeCloseTo(0.96, 6);
+    expect(state.densityMultiplier).toBeCloseTo(0.88, 6);
+  });
+
   test('starts from capability heuristics for baseline webgpu devices', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',
@@ -325,6 +418,28 @@ describe('createAdaptiveQualityController', () => {
     expect(controller.getState().qualityStep).toBe(initialStep);
   });
 
+  test('releasing a live-performance hold preserves a configured benchmark lock', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+      lockedQualityStep: 2,
+    });
+
+    // Runtime attachment synchronizes the current live-performance mode after
+    // construction. When that mode is off, releasing its temporary hold must
+    // not erase the independent ?lockQualityStep benchmark contract.
+    controller.setStepLocked(false);
+    for (let index = 0; index < 60; index += 1) {
+      controller.recordFrame({
+        frameMs: 40,
+        cadenceMs: 40,
+        phases: { renderMs: 30 },
+      });
+    }
+
+    expect(controller.getState().qualityStep).toBe(2);
+  });
+
   test('degrades when the 5-second rolling frame-time average exceeds budget', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',
@@ -518,6 +633,9 @@ describe('createAdaptiveQualityController', () => {
       },
     });
 
+    expect(controller.getState().supportsGpuTimestamps).toBe(true);
+    expect(controller.getState().timingMode).toBe('coarse-frame');
+
     for (let index = 0; index < 42; index += 1) {
       controller.recordFrame({
         frameMs: 5,
@@ -528,7 +646,10 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const state = controller.getState();
-    expect(state.qualityStep).toBeGreaterThan(0);
+    expect(state.qualityStep).toBe(0);
+    expect(state.densityMultiplier).toBeCloseTo(1.35, 6);
+    expect(state.gpuResolutionMultiplier).toBeLessThan(1);
+    expect(state.timingMode).toBe('gpu-phase-timestamps');
     expect(state.averageRenderMs).toBeCloseTo(2, 6);
     expect(state.averageGpuMs).toBeCloseTo(16, 6);
   });

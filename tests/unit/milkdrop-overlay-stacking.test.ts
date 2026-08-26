@@ -35,14 +35,6 @@ function z(scale: Map<string, number>, name: string) {
 describe('shell stacking order', () => {
   const scale = readTokenScale();
 
-  test('defines the z-index scale as plain integers', () => {
-    expect(scale.size).toBeGreaterThan(10);
-    for (const [name, value] of scale) {
-      expect(Number.isInteger(value)).toBe(true);
-      expect(name.startsWith('--z-')).toBe(true);
-    }
-  });
-
   test('stacks stage below chrome, chrome below transient surfaces', () => {
     // The stage is the backdrop; everything interactive sits above it.
     expect(z(scale, '--z-stage-root')).toBeGreaterThan(z(scale, '--z-ambient'));

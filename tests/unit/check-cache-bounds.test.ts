@@ -21,10 +21,6 @@ function runScript(...args: string[]): number {
 }
 
 describe('check-cache-bounds', () => {
-  test('the guard script exists', () => {
-    expect(existsSync('scripts/check-cache-bounds.ts')).toBe(true);
-  });
-
   test('advisory mode exits 0 on the current repo', () => {
     expect(runScript()).toBe(0);
   });

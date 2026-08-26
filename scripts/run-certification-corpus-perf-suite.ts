@@ -23,7 +23,10 @@ import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
-import { ensureDevServer } from './dev-server.ts';
+import {
+  ensurePerformanceServer,
+  type PerformanceServerMode,
+} from './dev-server.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,
@@ -39,6 +42,7 @@ const PERF_DURATION_MS = 4500;
 const PERF_WARMUP_MS = 1000;
 const PERF_REPORT_DIR = 'reports';
 const PERF_SUMMARY_FILE = 'summary.json';
+const PERF_REPETITIONS = 3;
 const CERTIFICATION_GROUP_ORDER: readonly CertificationCorpusGroup[] = [
   'bundled-shipped',
   'local-custom-shape',
@@ -71,6 +75,10 @@ export type CertificationCorpusPerfSuiteOptions = {
   /** Viewport override; low-resource runs use a smaller stage. */
   viewportWidth?: number;
   viewportHeight?: number;
+  /** Independent browser runs per preset; median metrics are reported. */
+  repetitions?: number;
+  /** Production builds are the evidence default; development is for iteration. */
+  serverMode?: PerformanceServerMode;
 };
 
 type CertificationCorpusPerfRequest = CertificationCorpusEntry & {
@@ -114,6 +122,27 @@ export type CertificationCorpusPerfReport = {
   performance: PlayToyPerformanceMetrics | null;
   playToySuccess: boolean;
   reportPath: string;
+  trialCount?: number;
+  successfulTrialCount?: number;
+  aggregateMetrics?: CertificationPerfAggregateMetrics | null;
+  trials?: CertificationPerfTrial[];
+};
+
+export type CertificationPerfAggregateMetrics = {
+  medianAverageFrameMs: number;
+  minAverageFrameMs: number;
+  maxAverageFrameMs: number;
+  medianFps: number | null;
+};
+
+export type CertificationPerfTrial = {
+  index: number;
+  success: boolean;
+  actualBackend: 'webgl' | 'webgpu' | null;
+  fallbackOccurred: boolean;
+  error: string | null;
+  consoleErrors: string[] | null;
+  performance: PlayToyPerformanceMetrics | null;
 };
 
 export type CertificationCorpusPerfSummary = {
@@ -131,6 +160,8 @@ export type CertificationCorpusPerfSummary = {
   outlierGroups: Record<string, number>;
   outlierStrata: Record<string, number>;
   reports: CertificationCorpusPerfReport[];
+  repetitions: number;
+  serverMode: PerformanceServerMode;
 };
 
 function sanitizeArtifactSegment(value: string) {
@@ -152,22 +183,6 @@ function buildPerfReportPath(outputDir: string, presetId: string) {
     PERF_REPORT_DIR,
     buildPerfReportFileName(presetId),
   );
-}
-
-function loadPerfReports(reportDir: string) {
-  if (!fs.existsSync(reportDir)) {
-    return [] as CertificationCorpusPerfReport[];
-  }
-
-  return fs
-    .readdirSync(reportDir)
-    .filter((fileName) => fileName.endsWith('.json'))
-    .map(
-      (fileName) =>
-        JSON.parse(
-          fs.readFileSync(path.join(reportDir, fileName), 'utf8'),
-        ) as CertificationCorpusPerfReport,
-    );
 }
 
 function groupRank(group: CertificationCorpusGroup) {
@@ -256,6 +271,129 @@ function selectCertificationCorpusEntries({
   });
 }
 
+export function resolveCertificationCorpusPerfWindow({
+  warmupMs,
+  durationMs,
+}: Pick<CertificationCorpusPerfSuiteOptions, 'warmupMs' | 'durationMs'>) {
+  return {
+    warmupMs: warmupMs ?? PERF_WARMUP_MS,
+    durationMs: durationMs ?? PERF_DURATION_MS,
+  };
+}
+
+export function resolvePerfExecutionDefaults({
+  repetitions,
+  serverMode,
+  port,
+}: {
+  repetitions?: number;
+  serverMode?: PerformanceServerMode;
+  port?: number;
+}) {
+  const resolvedServerMode = serverMode ?? 'production';
+  return {
+    repetitions: Math.max(
+      1,
+      Math.round(
+        typeof repetitions === 'number' && Number.isFinite(repetitions)
+          ? repetitions
+          : PERF_REPETITIONS,
+      ),
+    ),
+    serverMode: resolvedServerMode,
+    port: port ?? (resolvedServerMode === 'production' ? 4173 : 5173),
+  };
+}
+
+function median(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[middle] ?? null;
+  const lower = sorted[middle - 1];
+  const upper = sorted[middle];
+  return lower === undefined || upper === undefined
+    ? null
+    : (lower + upper) / 2;
+}
+
+function isFatalPerformanceRuntimeError(message: string) {
+  return (
+    message.startsWith('PageError:') ||
+    /\bGPUValidationError\b/iu.test(message) ||
+    /\bWebGPU\b.*\b(?:uncaptured error|device lost|out of memory)\b/iu.test(
+      message,
+    ) ||
+    /\bGPUDevice\b.*\blost\b/iu.test(message)
+  );
+}
+
+function isMeasuredTrial(
+  result: PlayToyResult,
+  expectedBackend: 'webgl' | 'webgpu',
+) {
+  const performance = result.performance;
+  return Boolean(
+    result.success &&
+      performance &&
+      performance.metricsSource === 'sampler' &&
+      performance.actualBackend === expectedBackend &&
+      !performance.fallbackOccurred &&
+      !(result.consoleErrors ?? []).some(isFatalPerformanceRuntimeError) &&
+      typeof performance.averageFrameMs === 'number' &&
+      Number.isFinite(performance.averageFrameMs),
+  );
+}
+
+export function aggregateCertificationPerfTrials(
+  results: readonly PlayToyResult[],
+  expectedBackend: 'webgl' | 'webgpu',
+) {
+  const measuredResults = results.filter((result) =>
+    isMeasuredTrial(result, expectedBackend),
+  );
+  const orderedResults = [...measuredResults].sort(
+    (left, right) =>
+      (left.performance?.averageFrameMs ?? Number.POSITIVE_INFINITY) -
+      (right.performance?.averageFrameMs ?? Number.POSITIVE_INFINITY),
+  );
+  const representativeResult =
+    orderedResults[Math.floor(orderedResults.length / 2)] ?? null;
+  const frameTimes = measuredResults.flatMap((result) =>
+    typeof result.performance?.averageFrameMs === 'number'
+      ? [result.performance.averageFrameMs]
+      : [],
+  );
+  const fpsValues = measuredResults.flatMap((result) =>
+    typeof result.performance?.medianFps === 'number'
+      ? [result.performance.medianFps]
+      : [],
+  );
+  const medianAverageFrameMs = median(frameTimes);
+  const complete =
+    measuredResults.length === results.length && results.length > 0;
+  const status: CertificationCorpusPerfReport['status'] = !complete
+    ? 'error'
+    : (medianAverageFrameMs ?? Number.POSITIVE_INFINITY) <= PERF_TARGET_FRAME_MS
+      ? 'pass'
+      : 'fail';
+
+  return {
+    status,
+    successfulTrialCount: measuredResults.length,
+    representativePerformance: representativeResult?.performance ?? null,
+    metrics:
+      medianAverageFrameMs === null
+        ? null
+        : {
+            medianAverageFrameMs,
+            minAverageFrameMs: Math.min(...frameTimes),
+            maxAverageFrameMs: Math.max(...frameTimes),
+            medianFps: median(fpsValues),
+          },
+  };
+}
+
 export function buildCertificationCorpusPerfRequests({
   repoRoot,
   outputDir,
@@ -271,8 +409,8 @@ export function buildCertificationCorpusPerfRequests({
   viewportWidth = DEFAULT_VIEWPORT.width,
   viewportHeight = DEFAULT_VIEWPORT.height,
 }: CertificationCorpusPerfSuiteOptions): CertificationCorpusPerfRequest[] {
-  const resolvedWarmupMs = warmupMs ?? PERF_WARMUP_MS;
-  const resolvedDurationMs = durationMs ?? PERF_DURATION_MS;
+  const { warmupMs: resolvedWarmupMs, durationMs: resolvedDurationMs } =
+    resolveCertificationCorpusPerfWindow({ warmupMs, durationMs });
   // A warmup that swallows the whole capture yields zero samples, and playToy
   // then silently falls back to debug-snapshot metrics whose cadence comes from
   // the adaptive controller rather than presented frames. That fallback reads
@@ -313,40 +451,36 @@ export function buildCertificationCorpusPerfRequests({
 
 function buildPerfReport({
   request,
-  result,
+  results,
   reportPath,
 }: {
   request: CertificationCorpusPerfRequest;
-  result: PlayToyResult;
+  results: PlayToyResult[];
   reportPath: string;
 }): CertificationCorpusPerfReport {
-  const performance = result.performance ?? null;
-  const actualBackend = performance?.actualBackend ?? null;
-  const fallbackOccurred =
-    result.fallbackOccurred ?? performance?.fallbackOccurred ?? false;
-  // A compatibility (SwiftShader) run legitimately certifies on WebGL, so the
-  // expected backend follows the requested renderer profile rather than always
-  // demanding WebGPU.
   const expectedBackend =
     request.playToy.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl';
-  const measured =
-    result.success &&
-    performance &&
-    actualBackend === expectedBackend &&
-    !fallbackOccurred &&
-    typeof performance.averageFrameMs === 'number';
-  const perfStatus = measured
-    ? (performance.averageFrameMs as number) <= PERF_TARGET_FRAME_MS
-      ? 'pass'
-      : 'fail'
-    : 'error';
+  const aggregate = aggregateCertificationPerfTrials(results, expectedBackend);
+  const performance = aggregate.representativePerformance;
+  const actualBackend = performance?.actualBackend ?? null;
+  const fallbackOccurred = results.some(
+    (result) =>
+      result.fallbackOccurred ?? result.performance?.fallbackOccurred ?? false,
+  );
+  const perfStatus = aggregate.status;
 
   const overBudgetMs =
-    performance?.averageFrameMs !== null &&
-    performance?.averageFrameMs !== undefined &&
-    Number.isFinite(performance.averageFrameMs)
-      ? performance.averageFrameMs - PERF_TARGET_FRAME_MS
+    aggregate.metrics?.medianAverageFrameMs !== undefined
+      ? aggregate.metrics.medianAverageFrameMs - PERF_TARGET_FRAME_MS
       : null;
+  const consoleErrors = results.flatMap((result) => result.consoleErrors ?? []);
+  const resultErrors = results.flatMap((result) =>
+    result.error ? [result.error] : [],
+  );
+  const fatalRuntimeErrors = consoleErrors
+    .filter(isFatalPerformanceRuntimeError)
+    .map((error) => `Browser runtime error: ${error}`);
+  const errors = [...resultErrors, ...fatalRuntimeErrors];
 
   return {
     version: 1,
@@ -363,12 +497,28 @@ function buildPerfReport({
     rendererProfile: request.playToy.rendererProfile,
     overBudgetMs:
       perfStatus === 'pass' || perfStatus === 'fail' ? overBudgetMs : null,
-    consoleErrors: result.consoleErrors ?? null,
-    error: result.error ?? null,
+    consoleErrors:
+      consoleErrors.length > 0 ? [...new Set(consoleErrors)] : null,
+    error: errors.length > 0 ? [...new Set(errors)].join('; ') : null,
     fallbackOccurred,
     performance,
-    playToySuccess: result.success,
+    playToySuccess: results.every((result) => result.success),
     reportPath,
+    trialCount: results.length,
+    successfulTrialCount: aggregate.successfulTrialCount,
+    aggregateMetrics: aggregate.metrics,
+    trials: results.map((result, index) => ({
+      index: index + 1,
+      success: result.success,
+      actualBackend: result.performance?.actualBackend ?? null,
+      fallbackOccurred:
+        result.fallbackOccurred ??
+        result.performance?.fallbackOccurred ??
+        false,
+      error: result.error ?? null,
+      consoleErrors: result.consoleErrors ?? null,
+      performance: result.performance ?? null,
+    })),
   };
 }
 
@@ -393,7 +543,18 @@ export async function runCertificationCorpusPerfSuite({
   rendererProfile = 'webgpu',
   viewportWidth,
   viewportHeight,
+  repetitions,
+  serverMode,
 }: CertificationCorpusPerfSuiteOptions) {
+  const execution = resolvePerfExecutionDefaults({
+    repetitions,
+    serverMode,
+    port,
+  });
+  const evidenceWindow = resolveCertificationCorpusPerfWindow({
+    warmupMs,
+    durationMs,
+  });
   const requests = buildCertificationCorpusPerfRequests({
     repoRoot,
     outputDir,
@@ -416,7 +577,11 @@ export async function runCertificationCorpusPerfSuite({
     );
   }
 
-  const devServer = await ensureDevServer(port, repoRoot);
+  const performanceServer = await ensurePerformanceServer({
+    mode: execution.serverMode,
+    port: execution.port,
+    repoRoot,
+  });
   const reportDir = path.join(outputDir, PERF_REPORT_DIR);
   fs.mkdirSync(reportDir, { recursive: true });
   const browserSession = await createPlayToyBrowserSession({
@@ -424,28 +589,46 @@ export async function runCertificationCorpusPerfSuite({
     rendererProfile,
   });
 
+  const resultsByPreset = new Map<string, PlayToyResult[]>();
+  const currentReports: CertificationCorpusPerfReport[] = [];
   try {
+    for (
+      let trialIndex = 0;
+      trialIndex < execution.repetitions;
+      trialIndex += 1
+    ) {
+      // Alternate order so presets at the end of a large corpus are not always
+      // measured at the same point in the host's thermal trajectory.
+      const trialRequests =
+        trialIndex % 2 === 0 ? requests : [...requests].reverse();
+      for (const request of trialRequests) {
+        const result = await playToy({
+          ...request.playToy,
+          port: execution.port,
+          browserSession,
+        });
+        const presetResults = resultsByPreset.get(request.id) ?? [];
+        presetResults.push(result);
+        resultsByPreset.set(request.id, presetResults);
+      }
+    }
+
     for (const request of requests) {
-      const result = await playToy({
-        ...request.playToy,
-        browserSession,
-      });
       const reportPath = buildPerfReportPath(outputDir, request.id);
       const report = buildPerfReport({
         request,
-        result,
+        results: resultsByPreset.get(request.id) ?? [],
         reportPath,
       });
+      currentReports.push(report);
       fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
     }
   } finally {
     await closePlayToyBrowserSession(browserSession);
-    devServer.close();
+    performanceServer.close();
   }
 
-  const rankedReports = rankCertificationCorpusPerfReports(
-    loadPerfReports(reportDir),
-  );
+  const rankedReports = rankCertificationCorpusPerfReports(currentReports);
   const outliers = rankedReports.filter((report) => report.status !== 'pass');
   const summary: CertificationCorpusPerfSummary = {
     version: 1,
@@ -453,8 +636,10 @@ export async function runCertificationCorpusPerfSuite({
     outputDir,
     reportDir,
     targetFrameMs: PERF_TARGET_FRAME_MS,
-    warmupMs: PERF_WARMUP_MS,
-    durationMs: PERF_DURATION_MS,
+    warmupMs: evidenceWindow.warmupMs,
+    durationMs: evidenceWindow.durationMs,
+    repetitions: execution.repetitions,
+    serverMode: execution.serverMode,
     presetCount: rankedReports.length,
     passCount: rankedReports.filter((report) => report.status === 'pass')
       .length,
@@ -481,7 +666,7 @@ export async function runCertificationCorpusPerfSuite({
 
 function usage() {
   console.error(
-    'Usage: bun scripts/run-certification-corpus-perf-suite.ts [--output <dir>] [--port <number>] [--group <group>] [--preset <id>]... [--cpu-throttle <rate>] [--renderer compatibility|webgpu] [--viewport-width <px>] [--viewport-height <px>]',
+    'Usage: bun scripts/run-certification-corpus-perf-suite.ts [--output <dir>] [--port <number>] [--server production|development] [--repetitions <count>] [--group <group>] [--preset <id>]... [--cpu-throttle <rate>] [--renderer compatibility|webgpu] [--viewport-width <px>] [--viewport-height <px>]',
   );
 }
 
@@ -507,10 +692,22 @@ function parseArgs(argv: string[]): CertificationCorpusPerfSuiteOptions {
     ? (groupArg as CertificationCorpusGroup)
     : undefined;
 
+  const serverMode =
+    getStringArg('--server', 'production') === 'development'
+      ? 'development'
+      : 'production';
+  const execution = resolvePerfExecutionDefaults({
+    repetitions: getNumberArg('--repetitions', PERF_REPETITIONS),
+    serverMode,
+    port: argv.includes('--port')
+      ? getNumberArg('--port', serverMode === 'production' ? 4173 : 5173)
+      : undefined,
+  });
+
   return {
     repoRoot: getStringArg('--repo-root', process.cwd()),
     outputDir: getStringArg('--output', './screenshots/certification-perf'),
-    port: getNumberArg('--port', 5173),
+    port: execution.port,
     headless: !argv.includes('--no-headless'),
     strict: argv.includes('--strict'),
     presetIds: parsePresetIds(argv),
@@ -527,6 +724,8 @@ function parseArgs(argv: string[]): CertificationCorpusPerfSuiteOptions {
         : 'webgpu',
     viewportWidth: getNumberArg('--viewport-width', DEFAULT_VIEWPORT.width),
     viewportHeight: getNumberArg('--viewport-height', DEFAULT_VIEWPORT.height),
+    repetitions: execution.repetitions,
+    serverMode: execution.serverMode,
   };
 }
 

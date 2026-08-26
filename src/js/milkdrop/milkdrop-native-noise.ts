@@ -96,6 +96,27 @@ export function buildMilkdropNoiseVolumeAtlasData(
   return data;
 }
 
+/**
+ * Tonal calibration note, so the next attempt starts from measurement.
+ *
+ * The present path applies `out = in^(1/gammaAdj)` with gammaAdj defaulting to
+ * 2 (see compiler/default-state.ts). That means a raw, untagged noise texture
+ * renders brighter than its stored bytes — uniform noise has mean (2/3)*255 =
+ * 170, and 260-compshader-noise_lq measured 176.6 against a reference mean of
+ * 127.7.
+ *
+ * Two "fixes" for that have now been tried and reverted, both of which are two
+ * errors cancelling rather than one being corrected:
+ *   - tagging this texture sRGB (mean 134.3, mismatch 35.46%)
+ *   - dropping the tag AND defaulting gammaAdj to 1, which lands 260's mean on
+ *     exactly 127.7 and drops it to 31.52% — while taking 100-square from
+ *     1.43% to 85.74%.
+ *
+ * 260's band is 0.000pp, so it is a perfect signal but an insufficient oracle;
+ * always re-measure 100-square alongside it. With the level demonstrably
+ * correct the residual was still ~31%, which makes the remaining gap SPATIAL
+ * (sub-texel alignment), not tonal. Chase the pattern, not the brightness.
+ */
 export function createMilkdropNoiseTexture() {
   const texture = new DataTexture(
     buildMilkdropNoise2dData(),

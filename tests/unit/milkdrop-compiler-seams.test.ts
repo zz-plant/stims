@@ -490,18 +490,23 @@ describe('milkdrop compiler seams', () => {
       expect(lowered?.temporaries).toEqual(['thresh']);
     });
 
-    test('still bails on an identifier that is never assigned anywhere', () => {
-      expect(
-        lowerGpuFieldProgram({
-          statements: [
-            statement('zoom', 'zoom = nosuchthing', {
-              type: 'identifier',
-              name: 'nosuchthing',
-            }),
-          ],
-          sourceLines: ['zoom = nosuchthing'],
-        }),
-      ).toBeNull();
+    test('zero-initialises an identifier that is only read', () => {
+      const lowered = lowerGpuFieldProgram({
+        statements: [
+          statement('zoom', 'zoom = nosuchthing', {
+            type: 'identifier',
+            name: 'nosuchthing',
+          }),
+        ],
+        sourceLines: ['zoom = nosuchthing'],
+      });
+
+      expect(lowered).not.toBeNull();
+      expect(lowered?.temporaries).toEqual(['nosuchthing']);
+      expect(lowered?.statements[0]?.expression).toEqual({
+        type: 'identifier',
+        name: 'nosuchthing',
+      });
     });
 
     test('refuses to turn a signal into a local', () => {

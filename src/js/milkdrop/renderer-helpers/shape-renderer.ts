@@ -108,8 +108,8 @@ function syncShapeShaderUniforms(
   // conversion here because the renderer's outputColorSpace = SRGBColorSpace
   // re-encodes colors during output. Without this, the encoder treats sRGB
   // input as linear and applies a second gamma curve, producing darker fills.
-  const primaryColor = toLinearColor(shape.color);
-  const secondaryColor = toLinearColor(
+  const primaryColor = toShapeColor(shape.color);
+  const secondaryColor = toShapeColor(
     shape.secondaryColor ?? { r: 0, g: 0, b: 0 },
   );
   material.uniforms.primaryColor.value.setRGB(
@@ -137,8 +137,22 @@ function syncShapeShaderUniforms(
   material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
 }
 
-function toLinearColor(color: { r: number; g: number; b: number }) {
-  return new Color(color.r, color.g, color.b).convertSRGBToLinear();
+/**
+ * A shape colour as the preset wrote it, with no colour-space conversion.
+ *
+ * MilkDrop's picture is display-referred: `shapecode_N_r` is the literal value
+ * that lands on screen, and the present pass suspends the renderer's output
+ * encode precisely so it stays that way (see output-conversion-passthrough.ts).
+ * This used to call `convertSRGBToLinear()`, which darkened every shape —
+ * nothing downstream re-encodes it, so the conversion was one-way. Shapes were
+ * the only renderer doing it; waves, borders, particle fields and procedural
+ * waves have always passed their colours through untouched.
+ *
+ * `new Color(r, g, b)` sets the components in the working colour space, so it
+ * performs no conversion of its own.
+ */
+function toShapeColor(color: { r: number; g: number; b: number }) {
+  return new Color(color.r, color.g, color.b);
 }
 
 // The WebGPU path needs a NodeMaterial (WebGPURenderer's NodeBuilder throws
@@ -167,10 +181,10 @@ function createShapeFillNodeMaterial(
     vec4,
   } = TSL;
   const uniforms = {
-    primaryColor: uniform(toLinearColor(shape.color)),
+    primaryColor: uniform(toShapeColor(shape.color)),
     secondaryColor: uniform(
       shape.secondaryColor
-        ? toLinearColor(shape.secondaryColor)
+        ? toShapeColor(shape.secondaryColor)
         : new Color(0, 0, 0),
     ),
     primaryAlpha: uniform((shape.color.a ?? 0.4) * alphaMultiplier),

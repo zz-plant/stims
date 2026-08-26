@@ -7,6 +7,7 @@ import {
 } from '../../core/postprocessing.ts';
 import { getPowerSavingFrameCapHz } from '../../core/power-state.ts';
 import { isMilkdropCapturedVideoReady } from '../../core/services/captured-video-texture.ts';
+import { createGpuRenderTimingSampler } from '../../core/services/gpu-render-timing.ts';
 import type {
   ToyRuntimeFrame,
   ToyRuntimeInstance,
@@ -27,7 +28,7 @@ import {
   type CapturedVideoSignals,
   updateCapturedVideoReactivityIfReady,
 } from './captured-video-reactivity.ts';
-import { applyMilkdropEnhancedEffectsPolicy } from './enhanced-effects-policy.ts';
+import { createMilkdropEnhancedEffectsPolicy } from './enhanced-effects-policy.ts';
 import {
   applyMilkdropInteractionResponse,
   buildMilkdropInputSignalOverrides,
@@ -35,8 +36,8 @@ import {
 } from './interaction-response.ts';
 import {
   AUTO_ADVANCE_TEMPO_CONFIDENCE,
-  buildRenderFrameState,
   createAutoAdvanceGate,
+  createRenderFrameStateBuilder,
   shouldAutoAdvancePreset,
   shouldPrepareNextPreset,
 } from './lifecycle.ts';
@@ -190,6 +191,10 @@ export function createMilkdropExperienceFrameLoop({
   let autoAdvanceInFlight = false;
   let consecutiveFrameFailures = 0;
   const autoAdvanceGate = createAutoAdvanceGate();
+  const buildRenderFrameState = createRenderFrameStateBuilder();
+  const applyMilkdropEnhancedEffectsPolicy =
+    createMilkdropEnhancedEffectsPolicy();
+  const gpuRenderTimingSampler = createGpuRenderTimingSampler();
   // `signals.beat` is a level, not an edge: it holds at 1 for as long as the
   // tracker considers the frame a beat, so feeding it straight to the clock
   // would count one kick several times and halve the estimated interval.
@@ -473,6 +478,7 @@ export function createMilkdropExperienceFrameLoop({
           // overload is still caught.
           cadenceMs:
             getPowerSavingFrameCapHz() === null ? frame.deltaMs : undefined,
+          gpuMs: gpuRenderTimingSampler.sample(runtime.toy.renderer),
           phases: {
             simulationMs: renderStartAt - frameStartAt,
             renderMs: frameEndAt - renderStartAt,

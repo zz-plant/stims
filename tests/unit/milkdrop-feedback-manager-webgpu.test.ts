@@ -121,31 +121,15 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(resolveDirectShaderSwizzle('vec3', 'xyzw')).toBeNull();
   });
 
-  test('keeps only unique direct shader swizzles valid for assignment targets', () => {
-    const xy = resolveDirectShaderSwizzle('vec2', 'yx');
-    expect(xy).toEqual({
-      kind: 'vec2',
-      components: ['y', 'x'],
-    });
-    expect(new Set(xy?.components ?? []).size).toBe(xy?.components.length ?? 0);
-
-    const rgb = resolveDirectShaderSwizzle('vec3', 'bgr');
-    expect(rgb).toEqual({
-      kind: 'vec3',
-      components: ['z', 'y', 'x'],
-    });
-    expect(new Set(rgb?.components ?? []).size).toBe(
-      rgb?.components.length ?? 0,
-    );
-
-    const duplicate = resolveDirectShaderSwizzle('vec3', 'rr');
-    expect(duplicate).toEqual({
+  test('a repeated swizzle channel narrows the result kind', () => {
+    // The vec2 'yx' and vec3 'bgr' cases are already asserted by the preceding
+    // test with the same expected objects; only the repeated-channel case is
+    // unique to this one. The old Set-size assertions compared the returned
+    // array against its own length, which no implementation can fail.
+    expect(resolveDirectShaderSwizzle('vec3', 'rr')).toEqual({
       kind: 'vec2',
       components: ['x', 'x'],
     });
-    expect(new Set(duplicate?.components ?? []).size).toBeLessThan(
-      duplicate?.components.length ?? 0,
-    );
   });
 
   test('prefers explicit direct vector constructor arity over scalar splat fallbacks', () => {

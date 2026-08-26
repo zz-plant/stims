@@ -26,56 +26,48 @@
 - **Meyda / stats-gl in the startup payload** — both are dynamic imports now;
   Meyda only loads on the AnalyserNode fallback path, stats-gl only when the
   overlay is enabled.
+- **Telemetry and automation in the startup payload** (fixed 2026-08-24) —
+  crash/renderer telemetry, the agent API/driver, and gamepad navigation start
+  after the first paint. Device-tier, refresh-rate, and battery probes remain
+  early because they affect the first renderer choice.
+- **Abrupt static-loader replacement** (fixed 2026-08-24) — the loader now
+  sits outside the React root, shares the launch screen's starting geometry,
+  and crossfades after `shell-rendered`. Reduced-motion users get an immediate
+  removal, and a timeout still cleans up when a browser drops transition events.
+- **Full-catalog parsing on the main thread** — the catalog fetch/parse/merge
+  pipeline runs in `catalog-parse-worker.ts`; unsupported browsers retain the
+  identical main-thread fallback.
 - **Per-frame Meyda FFT on the fallback path** — spectral features refresh
   every fourth frame once a snapshot exists (`audio-handler.ts`).
 - **Repeated `Object.setPrototypeOf` in `createEnv`** — the reuse path only
   rewrites the prototype when it actually changed, so persistent shape/wave
   locals no longer trigger V8 deopts every frame.
+- **Duplicate EEL2 JIT stores for aliased scopes** — per-point and per-pixel
+  programs can use one object as both environment and locals. Ordinary results
+  are now written once instead of mirrored back onto the same object; seeded
+  interpreter/JIT differential coverage pins semantics.
 - **Live tile pool vs. the stage** — the pool's engine cap now follows the
   adaptive-quality controller via `engine-quality-store.ts`; when the stage
   degrades, browse-grid previews shed engines instead of competing.
+- **Low-tier frame-state cloning** (fixed 2026-08-24) — lifecycle and enhanced
+  effects policies now reuse one scratch shell per experience. Adapter calls
+  consume it synchronously, while debug snapshots explicitly detach any data
+  they retain.
+- **Unwired continuous resolution controller** (fixed 2026-08-24) — resolved
+  WebGPU hardware timestamps now drive a continuous resolution multiplier
+  inside each discrete quality step. GPU fill pressure can shed pixels without
+  immediately reducing mesh density; quality locks freeze both lanes.
+- **Exact-size dynamic GPU buffers** (fixed 2026-08-24) — resizable vertex
+  attributes now grow with power-of-two item capacity, which removes validation
+  failures at awkward geometry counts and absorbs nearby size changes.
+- **Read-only EEL field locals** (fixed 2026-08-24) — variables that are read
+  but never assigned lower as zero-initialized GPU temporaries, matching
+  NS-EEL/CPU semantics and moving procedural field coverage to 1,611 of 1,619
+  bundled per-pixel programs.
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Low-quality path clones the frame state every frame
-
-`runtime/lifecycle.ts` (`buildRenderFrameState`) and
-`runtime/enhanced-effects-policy.ts` early-return the frame state unchanged
-on the fast path, but when `shaderQuality === 'low'`, `low-motion`, or
-mobile-low-power is active they clone the full `MilkdropFrameState` plus
-nested `post` / `postprocessingProfile` / `gpuGeometry` / `particleField`
-objects — 120–180 large objects per second, imposed exactly on the devices
-that can least afford GC.
-
-Why it is not a one-line fix: the derived state is consumed by
-`adapter.render()` in the same frame, but the adapters' retention semantics
-are not locally provable, and the tile pool runs up to 10 engines through
-the same code path — a shared scratch object would alias state across
-engines if any consumer holds the reference. The fix needs either a
-per-experience scratch object with an audited no-retention contract on the
-adapter seam, or mutable render flags the adapter reads instead of a derived
-state object.
-
-### 2. Full-catalog `JSON.parse` on the main thread
-
-`use-catalog-loading.ts` parses the 1.7 MB catalog and maps every entry on
-the main thread. The work is idle-scheduled, which is right, but
-`JSON.parse` of that payload is a single non-yieldable ~80–150 ms block on
-mobile. Comlink is already a dependency: parse in a worker and transfer, or
-ship the catalog as NDJSON and stream it. (Delivery-side caching is fixed —
-catalog JSON now has stale-while-revalidate headers and the service worker
-serves preset payloads cache-first.)
-
-### 3. Continuous dynamic resolution scaling is written but not wired
-
-`core/services/continuous-drs.ts` implements a PID-style analog render-scale
-controller, unit-tested, referenced only by its test. The shipping path uses
-the discrete `adaptive-quality-controller.ts` steps — exactly the
-step-hunting the DRS controller's header says it exists to eliminate.
-Wiring it in behind the existing controller's sampling seam should produce
-visibly smoother degradation than the current stepped drops.
-
-### 4. Stage `--energy` CSS pulse is event-driven, not frame-driven
+### 1. Stage `--energy` CSS pulse is event-driven, not frame-driven
 
 `StageControls.tsx` updates the `--energy` custom property from
 `subscribeAudioEnergy`, which is fed from engine *snapshot* changes — and
@@ -85,7 +77,7 @@ dedicated per-frame publisher across the engine seam (a rAF reader of the
 live analyser writing `style.setProperty` directly, no React), which needs a
 small API addition on the engine adapter.
 
-### 5. Spectrum processed in multiple passes per frame
+### 2. Spectrum processed in multiple passes per frame
 
 On the AnalyserNode fallback path, each frame runs: `getByteFrequencyData`
 copy, a stylize pass, a `getAverageFrequency` pass used only for a silence
@@ -94,16 +86,62 @@ threshold, and an optional blend pass (`animation-loop.ts`,
 from the stylize pass would drop 2 of the 4–5 full-array walks nearly for
 free.
 
-### 6. Blend-state cloning during preset transitions
+### 3. Blend-state cloning during preset transitions
 
 `cloneBlendState()` deep-copies wave positions, custom waves, shapes,
 borders, and motion vectors when a blend transition begins. Not per-frame,
 but it can spike a frame during preset switches on dense presets.
 
+## Deliberate boundaries and remaining approximations
+
+- **Random per-pixel equations stay off the procedural field path.** Six of
+  the eight remaining bundled lowering misses call `randint`. The field
+  renderer has a stateless hash approximation for `rand`, not MilkDrop's
+  sequential per-vertex RNG state. Adding an allowlist entry would be faster
+  but would widen the visual approximation, so these presets remain on the
+  compatible path until RNG state or a parity-validated equivalent exists.
+- **Shared guest memory stays on the VM path.** One miss reads `gmegabuf` from
+  per-pixel code. Moving it requires a coherent storage binding and ordering
+  contract; substituting zero or a stale CPU snapshot would only disguise the
+  dependency.
+- **Expression-side assignments stay on the CPU path.** One miss uses nested
+  `exec2` assignments. The current field descriptor is a pure expression tree,
+  so lowering it would lose evaluation order and side effects.
+- **Per-frame GPU compute is not an automatic upgrade.** The compute VM remains
+  opt-in because dispatch and readback dominate the small scalar workloads in
+  the measured harness. The useful GPU lane is the parallel field/geometry
+  work that does not round-trip state to the CPU every frame.
+
 ## Regression guards
+
+The fixed-tier browser method and latest measured result live in
+[`RUNTIME_PERFORMANCE.md`](./RUNTIME_PERFORMANCE.md). Use its quality lock,
+warmup, duration, backend, and CPU-throttle contract before claiming an FPS
+uplift; source inspection or a successful browser load is insufficient.
 
 - `bun run check:bundle-size` (scripts/check-bundle-size.ts) asserts bundle
   budgets against `dist/` after a build — run it whenever imports or vendor
   chunking change.
 - `tests/unit/app-shell-performance-regression.test.ts` pins the service
   worker's non-blocking cache-write contract and the lazy runtime imports.
+- `tests/unit/site-build.test.ts` pins the dedicated deploy packager and its
+  concurrent app/Worker build contract.
+- `tests/unit/loading-screen.test.ts` pins the static loader outside the React
+  root and verifies its transition-driven handoff into the app shell.
+
+## Latest startup and deploy-build evidence
+
+Measured 2026-08-24 on the same checkout and machine:
+
+- Cold Chromium production load, three fresh contexts, service workers
+  blocked, 4× CPU throttle, 150 ms latency, and 200,000 bytes/s downstream:
+  median `shell-rendered` improved from 2,288.4 ms to 2,120.7 ms, while
+  requests completed before the shell fell from 57 to 51.
+- Local `bun run site:build`, timed end to end: 3.97 s before concurrent build
+  orchestration and 2.74 s after it. The output still contains
+  `dist/_worker.js/index.js`, `.assetsignore`, and the complete public preset
+  libraries.
+
+These are focused before/after measurements, not universal production-SLA
+claims. Re-run them when the entry graph, Worker compiler, or build host
+changes.

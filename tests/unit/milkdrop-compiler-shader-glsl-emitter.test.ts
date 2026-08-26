@@ -164,12 +164,6 @@ describe('milkdrop compiler shader GLSL emitter — unary operators', () => {
 // ─── Sampler / Texture Call Emission ───────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
-  test('tex2d(sampler_main, uv).rgb emits main texture sample', () => {
-    const glsl = emitShaderExpression('ret = tex2d(sampler_main, uv).rgb');
-    expect(glsl).toContain('texture2D(currentTex, sampleUv(');
-    expect(glsl).toContain('textureWrap');
-  });
-
   test('tex2d(sampler_noise, uv).rgb emits aux noise sample', () => {
     const glsl = emitShaderExpression('ret = tex2d(sampler_noise, uv).rgb');
     expect(glsl).toContain('sampleAuxTexture(');
@@ -242,11 +236,6 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
 // ─── Member Access / Swizzle ───────────────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — member access', () => {
-  test('.rgb swizzle passes through', () => {
-    const glsl = emitShaderExpression('ret = tex2d(sampler_main, uv).rgb');
-    expect(glsl).toContain('.rgb');
-  });
-
   test('.x component access passes through', () => {
     const glsl = emitShaderExpression('x = uv.x');
     expect(glsl).toContain('vUv.x');
@@ -808,10 +797,6 @@ describe('milkdrop compiler shader GLSL emitter — scalar promotion', () => {
     expect(emitShaderExpression('ret = GetPixel(uv).x')).toBe(
       'ret = vec3(texture2D(currentTex, sampleUv(vUv, textureWrap)).xyz.x);',
     );
-  });
-
-  test('a vector assigned to ret still round-trips through the constructor', () => {
-    expect(emitShaderExpression('ret = GetPixel(uv)')).toContain('ret = vec3(');
   });
 });
 

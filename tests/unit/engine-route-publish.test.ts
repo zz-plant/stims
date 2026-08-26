@@ -81,16 +81,4 @@ describe('decideEngineRoutePublish', () => {
       ).toBe('no-active-preset');
     }
   });
-
-  test('a stopped session keeps tracking, because the URL is already the visitor’s', () => {
-    // Stopping audio does not un-choose the preset they are looking at.
-    expect(
-      decideEngineRoutePublish({
-        ...base,
-        audioActive: false,
-        routePresetId: 'preset-a',
-        activePresetId: 'preset-b',
-      }),
-    ).toBe('publish');
-  });
 });

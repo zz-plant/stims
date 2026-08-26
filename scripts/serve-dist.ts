@@ -48,6 +48,7 @@ const server = Bun.serve({
     }
 
     const headers = new Headers();
+    headers.set('X-Stims-Server', 'production');
     const contentType = file.type || 'application/octet-stream';
     const lastModified = new Date(file.lastModified).toUTCString();
     const etag = makeEtag(file);
