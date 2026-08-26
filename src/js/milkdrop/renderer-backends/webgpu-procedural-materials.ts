@@ -11,7 +11,6 @@
  * the author does not have.
  */
 import { Color } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial, TSL } from 'three/webgpu';
 import {
   EEL_BINARY_OPERATORS,
@@ -28,6 +27,14 @@ import {
   createProceduralFieldUniformState,
   createProceduralInteractionUniformState,
 } from '../renderer-helpers/procedural-field-uniforms';
+import {
+  asColorNode,
+  type TslNode,
+  type TslUniformNode,
+  type TslUniformNodes,
+  typedAttribute,
+  typedUniform,
+} from '../renderer-helpers/tsl-node-types.ts';
 import { registerWebGpuHelperMaterials } from '../renderer-helpers/webgpu-materials-loader';
 import type {
   MilkdropGpuFieldExpression,
@@ -57,7 +64,6 @@ import type {
 const {
   Discard,
   Fn,
-  attribute,
   cameraProjectionMatrix,
   modelViewMatrix,
   uniform,
@@ -67,20 +73,16 @@ const {
   wgslFn,
 } = TSL;
 
-type TslNode = {
-  value: number & Color;
-  x: TslNode;
-  y: TslNode;
-  z: TslNode;
-  w: TslNode;
-  mul: (other: unknown) => TslNode;
-  lessThanEqual: (other: unknown) => TslNode;
-  [key: string]: unknown;
-};
-
-type TslVertexFn = (inputs: object) => TslNode;
-
-type TslUniformNodes<T> = { [K in keyof T]: TslNode };
+/**
+ * A compiled TSL vertex function: takes the graph inputs, returns a vec4.
+ *
+ * `wgslFn()` is typed as a variadic callable over `number | Node`, which is
+ * how three describes ANY generated function. These are all called with a
+ * single named-inputs object and all return a vec4, so this states the
+ * calling convention this file actually uses; the conversion at each
+ * `wgslFn()` site is the one place that knowledge is asserted.
+ */
+type TslVertexFn = (inputs: object) => TslNode<'vec4'>;
 
 // The per-preset field programs arrive as expression ASTs and historically
 // compiled to GLSL. On WebGPU they must compile to WGSL instead; the
@@ -556,7 +558,14 @@ const WGSL_APPLY_INTERACTION = `
     );
 `;
 
-const transformIncludeCache = new Map<string, unknown>();
+/**
+ * Cached `wgsl()` includes, keyed by field-program signature.
+ *
+ * Typed as what `wgsl()` returns rather than `unknown`: these are handed
+ * straight to `wgslFn()`'s includes list, which wants `CodeNodeInclude[]`.
+ */
+type WgslInclude = ReturnType<typeof wgsl>;
+const transformIncludeCache = new Map<string, WgslInclude>();
 
 function getTransformInclude(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
@@ -570,12 +579,12 @@ function getTransformInclude(
   return include;
 }
 
-function toUniformNodes<T extends Record<string, { value: unknown }>>(
+function toUniformNodes<T extends Record<string, { value: number | Color }>>(
   state: T,
 ): TslUniformNodes<T> {
-  const nodes: Record<string, TslNode> = {};
+  const nodes: Record<string, TslUniformNode<number | Color>> = {};
   for (const [key, entry] of Object.entries(state)) {
-    nodes[key] = uniform(entry.value);
+    nodes[key] = typedUniform(entry.value);
   }
   return nodes as TslUniformNodes<T>;
 }
@@ -600,19 +609,22 @@ function packSignalUniformVectors(
   uniforms: Record<string, TslNode>,
   prefix: 'signal' | 'previousSignal',
 ) {
-  const packed = {} as Record<SignalUniformVectorKey, TslNode>;
+  const packed = {} as Record<SignalUniformVectorKey, TslNode<'vec4'>>;
   for (const [key, suffixes] of Object.entries(
     SIGNAL_UNIFORM_VECTOR_LAYOUT,
   ) as [SignalUniformVectorKey, readonly string[]][]) {
     const [x, y, z, w] = suffixes.map(
       (suffix) => uniforms[`${prefix}${suffix}`],
     );
-    packed[key] = vec4(x, y, z, w) as TslNode;
+    packed[key] = vec4(x, y, z, w);
   }
   return packed;
 }
 
-function packFieldParamVectors(uniforms: Record<string, TslNode>, prefix = '') {
+function packFieldParamVectors(
+  uniforms: Record<string, TslUniformNode>,
+  prefix = '',
+) {
   const get = (name: string) =>
     uniforms[
       prefix === ''
@@ -643,7 +655,10 @@ function packRegisterVectorArgs(
   uniforms: Record<string, TslNode>,
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
 ) {
-  const args: Record<string, TslNode> = {};
+  // The inputs bag for a generated WGSL function: heterogeneous by nature
+  // (vec4 register banks here, vec3 positions and scalars elsewhere), and
+  // consumed through TslVertexFn's `inputs: object`.
+  const args: Record<string, TslNode<'vec4'>> = {};
   for (const vector of getRegisterVectorIndices(program)) {
     const base = vector * 4;
     args[`registers${REGISTER_VECTOR_LETTERS[vector]}`] = vec4(
@@ -651,7 +666,7 @@ function packRegisterVectorArgs(
       uniforms[`registerSlot${base + 1}`],
       uniforms[`registerSlot${base + 2}`],
       uniforms[`registerSlot${base + 3}`],
-    ) as TslNode;
+    );
   }
   return args;
 }
@@ -712,7 +727,7 @@ function getProceduralMeshVertexFn(
   const fn = wgslFn(buildProceduralMeshVertexFnWgsl(program), [
     MILKDROP_FIELD_WGSL_HELPERS,
     getTransformInclude(program),
-  ]) as TslVertexFn;
+  ]) as unknown as TslVertexFn;
   meshVertexFnCache.set(key, fn);
   return fn;
 }
@@ -727,7 +742,7 @@ export function createProceduralMeshMaterial(
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const fieldParams = packFieldParamVectors(uniforms);
   const vertex = getProceduralMeshVertexFn(program)({
-    sourcePosition: attribute('sourcePosition', 'vec3'),
+    sourcePosition: typedAttribute('sourcePosition', 'vec3'),
     fieldParamsA: fieldParams.a,
     fieldParamsB: fieldParams.b,
     fieldParamsC: fieldParams.c,
@@ -747,7 +762,7 @@ export function createProceduralMeshMaterial(
     .mul(modelViewMatrix)
     .mul(vec4(vertex, 1.0));
   material.colorNode = vec4(
-    uniforms.tint,
+    asColorNode(uniforms.tint),
     uniforms.alpha.mul(uniforms.interactionAlpha),
   );
 
@@ -863,7 +878,7 @@ function getProceduralMotionVectorVertexFn(
   const fn = wgslFn(buildProceduralMotionVectorVertexFnWgsl(program), [
     MILKDROP_FIELD_WGSL_HELPERS,
     getTransformInclude(program),
-  ]) as TslVertexFn;
+  ]) as unknown as TslVertexFn;
   motionVectorVertexFnCache.set(key, fn);
   return fn;
 }
@@ -925,8 +940,8 @@ export function createProceduralMotionVectorMaterial(
   const previousFieldParams = packFieldParamVectors(uniforms, 'previous');
   const result = varying(
     getProceduralMotionVectorVertexFn(program)({
-      sourcePosition: attribute('sourcePosition', 'vec3'),
-      endpointWeight: attribute('endpointWeight', 'float'),
+      sourcePosition: typedAttribute('sourcePosition', 'vec3'),
+      endpointWeight: typedAttribute('endpointWeight', 'float'),
       fieldParamsA: fieldParams.a,
       fieldParamsB: fieldParams.b,
       fieldParamsC: fieldParams.c,
@@ -958,7 +973,7 @@ export function createProceduralMotionVectorMaterial(
       ),
       interactionTransform: packInteractionVector(uniforms),
     }),
-  ) as TslNode;
+  );
 
   const material = new NodeMaterial();
   material.transparent = true;
@@ -968,7 +983,7 @@ export function createProceduralMotionVectorMaterial(
     .mul(vec4(result.x, result.y, result.w, 1.0));
   material.colorNode = Fn(() => {
     Discard(result.z.lessThanEqual(0.0));
-    return vec4(uniforms.tint, result.z);
+    return vec4(asColorNode(uniforms.tint), result.z);
   })();
 
   return Object.assign(material, { uniforms });
@@ -1108,14 +1123,14 @@ function getProceduralCustomWaveVertexFn(
   if (cached) {
     return cached;
   }
-  const includes: unknown[] = [MILKDROP_FIELD_WGSL_HELPERS];
+  const includes: WgslInclude[] = [MILKDROP_FIELD_WGSL_HELPERS];
   if (program) {
     includes.push(wgsl(buildCustomWaveProgramWgslCode(program)));
   }
   const fn = wgslFn(
     buildCustomWaveVertexWgslCode(Boolean(program)),
     includes,
-  ) as TslVertexFn;
+  ) as unknown as TslVertexFn;
   customWaveVertexFnCache.set(key, fn);
   return fn;
 }
@@ -1188,11 +1203,11 @@ export function createProceduralCustomWaveMaterial(
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const previousSignals = packSignalUniformVectors(uniforms, 'previousSignal');
   const point = getProceduralCustomWaveVertexFn(program)({
-    sampleT: attribute('sampleT', 'float'),
-    sampleValue: attribute('sampleValue', 'float'),
-    sampleValue2: attribute('sampleValue2', 'float'),
-    previousSampleValue: attribute('previousSampleValue', 'float'),
-    previousSampleValue2: attribute('previousSampleValue2', 'float'),
+    sampleT: typedAttribute('sampleT', 'float'),
+    sampleValue: typedAttribute('sampleValue', 'float'),
+    sampleValue2: typedAttribute('sampleValue2', 'float'),
+    previousSampleValue: typedAttribute('previousSampleValue', 'float'),
+    previousSampleValue2: typedAttribute('previousSampleValue2', 'float'),
     waveParams: vec4(
       uniforms.centerX,
       uniforms.centerY,
@@ -1237,7 +1252,7 @@ export function createProceduralCustomWaveMaterial(
     .mul(modelViewMatrix)
     .mul(vec4(point.x, point.y, 0.28, 1.0));
   material.colorNode = vec4(
-    uniforms.tint,
+    asColorNode(uniforms.tint),
     uniforms.alpha.mul(uniforms.interactionAlpha),
   );
 
@@ -1373,7 +1388,9 @@ const PROCEDURAL_WAVE_POINT_WGSL = `
   }
 `;
 
-const computeProceduralWavePoint = wgslFn(PROCEDURAL_WAVE_POINT_WGSL);
+const computeProceduralWavePoint = wgslFn(
+  PROCEDURAL_WAVE_POINT_WGSL,
+) as unknown as TslVertexFn;
 
 export function createProceduralWaveMaterial() {
   const uniforms = {
@@ -1385,7 +1402,7 @@ export function createProceduralWaveMaterial() {
     signalTime: uniform(0),
     beatPulse: uniform(0),
     trebleAtt: uniform(0),
-    tint: uniform(new Color(1, 1, 1)),
+    tint: typedUniform(new Color(1, 1, 1)),
     alpha: uniform(1),
     previousCenterX: uniform(0),
     previousCenterY: uniform(0),
@@ -1404,10 +1421,10 @@ export function createProceduralWaveMaterial() {
 
   const point = computeProceduralWavePoint({
     mode: uniforms.mode,
-    t: attribute('sampleT', 'float'),
-    sampleData: attribute('sampleData', 'vec4'),
-    previousSampleData: attribute('previousSampleData', 'vec4'),
-    sampleMisc: attribute('sampleMisc', 'vec3'),
+    t: typedAttribute('sampleT', 'float'),
+    sampleData: typedAttribute('sampleData', 'vec4'),
+    previousSampleData: typedAttribute('previousSampleData', 'vec4'),
+    sampleMisc: typedAttribute('sampleMisc', 'vec3'),
     centerX: uniforms.centerX,
     centerY: uniforms.centerY,
     scale: uniforms.scale,
@@ -1435,7 +1452,7 @@ export function createProceduralWaveMaterial() {
     .mul(modelViewMatrix)
     .mul(vec4(point.x, point.y, 0.24, 1.0));
   material.colorNode = vec4(
-    uniforms.tint,
+    asColorNode(uniforms.tint),
     uniforms.alpha.mul(uniforms.interactionAlpha),
   );
 

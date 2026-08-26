@@ -21,7 +21,6 @@ import {
   WebGLRenderer,
   ZeroFactor,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial } from 'three/webgpu';
 import { getFeedbackBackendProfile } from '../../src/js/milkdrop/backend-behavior';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
