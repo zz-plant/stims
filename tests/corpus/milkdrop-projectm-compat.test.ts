@@ -1,6 +1,16 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+// The corpus loader and the snapshot builder live with the generator that
+// rewrites the committed snapshot, so the two cannot drift: `bun run
+// generate:projectm-snapshot` and this test build the value the same way.
+import {
+  buildCompatibilitySnapshot,
+  loadProjectMPresetCorpus,
+  PROJECTM_COMPATIBILITY_SNAPSHOT_PATH,
+  PROJECTM_CORPUS_DIR,
+  PROJECTM_PRESET_FILES,
+} from '../../scripts/generate-projectm-compat-snapshot.ts';
 import { DEFAULT_MILKDROP_STATE } from '../../src/js/milkdrop/compiler/default-state.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type {
@@ -9,58 +19,6 @@ import type {
   MilkdropRuntimeSignals,
 } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
-
-const PROJECTM_CORPUS_DIR = join(
-  process.cwd(),
-  'tests',
-  'fixtures',
-  'milkdrop',
-  'projectm-upstream',
-);
-const PROJECTM_COMPATIBILITY_SNAPSHOT_PATH = join(
-  PROJECTM_CORPUS_DIR,
-  'compatibility-metadata.snapshot.json',
-);
-
-const PROJECTM_PRESET_FILES = [
-  '000-empty.milk',
-  '001-line.milk',
-  '100-square.milk',
-  '101-per_frame.milk',
-  '102-per_frame3.milk',
-  '103-multiple-eqn.milk',
-  '104-continued-eqn.milk',
-  '105-per_frame_init.milk',
-  '110-per_pixel.milk',
-  '200-wave.milk',
-  '201-wave.milk',
-  '202-wave.milk',
-  '203-wave.milk',
-  '204-wave.milk',
-  '205-wave.milk',
-  '206-wave.milk',
-  '207-wave.milk',
-  '208-wave.milk',
-  '209-wave.milk',
-  '210-wave.milk',
-  '211-wave.milk',
-  '212-wave.milk',
-  '213-wave.milk',
-  '214-wave.milk',
-  '215-wave.milk',
-  '240-wave-smooth-00.milk',
-  '241-wave-smooth-01.milk',
-  '242-wave-smooth-80.milk',
-  '243-wave-smooth-90.milk',
-  '244-wave-smooth-99.milk',
-  '245-wave-smooth-100.milk',
-  '250-wavecode.milk',
-  '251-wavecode-spectrum.milk',
-  '252-wavecode-spectrum2.milk',
-  '260-compshader-noise_lq.milk',
-  '261-compshader-noisevol_lq.milk',
-  '300-beatdetect-bassmidtreb.milk',
-] as const;
 
 type ProjectMFixtureExpectation = {
   diagnostics: readonly string[];
@@ -300,124 +258,6 @@ function collectFrameNumbers(frameState: MilkdropFrameState) {
   ].forEach((entry) => collectNumbers(entry, values));
 
   return values;
-}
-
-function loadProjectMPresetCorpus() {
-  return PROJECTM_PRESET_FILES.map((file) => {
-    const raw = readFileSync(join(PROJECTM_CORPUS_DIR, file), 'utf8');
-    return {
-      file,
-      compiled: compileMilkdropPresetSource(raw, {
-        id: basename(file, '.milk'),
-        title: file,
-        fileName: file,
-        path: join(PROJECTM_CORPUS_DIR, file),
-        origin: 'user',
-      }),
-    };
-  });
-}
-
-function buildCompatibilitySnapshot(
-  file: string,
-  compiled: MilkdropCompiledPreset,
-) {
-  return {
-    file,
-    diagnostics: compiled.diagnostics.map((entry) => ({
-      severity: entry.severity,
-      code: entry.code,
-      field: entry.field ?? null,
-    })),
-    normalizedPrograms: {
-      init: compiled.ir.programs.init.sourceLines,
-      perFrame: compiled.ir.programs.perFrame.sourceLines,
-      perPixel: compiled.ir.programs.perPixel.sourceLines,
-      customWaves: compiled.ir.customWaves.map((wave) => ({
-        index: wave.index,
-        init: wave.programs.init.sourceLines,
-        perFrame: wave.programs.perFrame.sourceLines,
-        perPoint: wave.programs.perPoint.sourceLines,
-      })),
-      customShapes: compiled.ir.customShapes.map((shape) => ({
-        index: shape.index,
-        init: shape.programs.init.sourceLines,
-        perFrame: shape.programs.perFrame.sourceLines,
-      })),
-    },
-    compatibility: {
-      unsupportedKeys: compiled.ir.compatibility.unsupportedKeys,
-      warnings: compiled.ir.compatibility.warnings,
-      featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
-      gpuDescriptorPlan: {
-        routing: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
-        proceduralWaves:
-          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
-        proceduralMesh:
-          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
-        proceduralMotionVectors:
-          compiled.ir.compatibility.gpuDescriptorPlans.webgpu
-            .proceduralMotionVectors,
-        feedback: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-          ? {
-              kind: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                .kind,
-              shaderExecution:
-                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                  .shaderExecution,
-              usesFeedbackTexture:
-                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                  .usesFeedbackTexture,
-              usesVideoEcho:
-                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                  .usesVideoEcho,
-              usesPostEffects:
-                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                  .usesPostEffects,
-              fallbackToLegacyFeedback:
-                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
-                  .fallbackToLegacyFeedback,
-            }
-          : null,
-        unsupported:
-          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported,
-      },
-      backends: {
-        webgl: {
-          status: compiled.ir.compatibility.backends.webgl.status,
-          evidence: compiled.ir.compatibility.backends.webgl.evidence.map(
-            (entry) => ({
-              scope: entry.scope,
-              status: entry.status,
-              code: entry.code,
-              feature: entry.feature ?? null,
-            }),
-          ),
-        },
-        webgpu: {
-          status: compiled.ir.compatibility.backends.webgpu.status,
-          evidence: compiled.ir.compatibility.backends.webgpu.evidence.map(
-            (entry) => ({
-              scope: entry.scope,
-              status: entry.status,
-              code: entry.code,
-              feature: entry.feature ?? null,
-            }),
-          ),
-        },
-      },
-      parity: {
-        fidelityClass: compiled.ir.compatibility.parity.fidelityClass,
-        backendDivergence: compiled.ir.compatibility.parity.backendDivergence,
-        ignoredFields: compiled.ir.compatibility.parity.ignoredFields,
-        blockedConstructs: compiled.ir.compatibility.parity.blockedConstructs,
-        approximatedShaderLines:
-          compiled.ir.compatibility.parity.approximatedShaderLines,
-        missingAliasesOrFunctions:
-          compiled.ir.compatibility.parity.missingAliasesOrFunctions,
-      },
-    },
-  };
 }
 
 describe('milkdrop vendored projectM fixture corpus', () => {
