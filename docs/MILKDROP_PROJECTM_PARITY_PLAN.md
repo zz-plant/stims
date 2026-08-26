@@ -28,24 +28,45 @@ capture against a checked-in projectM reference, and per-preset noise bands
 (`parity:noise`, stored in `src/data/milkdrop-parity/parity-noise-bands.json`)
 decide whether a delta is real.
 
-- Nine presets are certified, all judged on WebGPU. References are projectM
-  3.1.12 at frame 300, rendered against per-preset audio (`silence` or the
+- Thirteen presets are certified, all judged on WebGPU. References are
+  projectM 3.1.12, rendered against per-preset audio (`silence` or the
   generated tone signal in `src/js/core/testing/reference-audio.ts`, which the
-  C++ harness mirrors via a generated header).
+  C++ harness mirrors via a generated header). The original nine stopped at
+  frame 300; the four added on 2026-08-26 stop at frame 900.
 - The capture path is deterministic: `renderFrames({ startTime: 0 })` resets
   the clock, clears the GPU feedback chain, and re-initialises the VM. Bands
-  are 0.000-2.4pp on every preset; 260-compshader-noise_lq repeats exactly.
+  are 0.000-4.7pp on every preset; 260-compshader-noise_lq repeats exactly.
 - Honest scoreboard, 3-repeat medians: 100-square 1.20% PASS, glowsticks
   1.08% PASS, 300-beatdetect 5.79%, 250-wavecode 7.36%, 260 33.72%,
   cubetrace 64.59%, 261 75.55%, rovastar-parallel-universe 82.21%,
-  krash 86.29%. Two of nine pass.
-- krash and glowsticks are certified via `--allow-weak-reference`: projectM
-  renders both near-black under every audio condition tried, so their
-  references cannot discriminate. Use butterchurn (vendored) as the oracle for
-  krash; its remaining defect is the textured-shape multiply
-  (`texture(prev, uv) * vertexColor`), with a secondary resolution-dependent
-  feedback attractor.
-- WebGL has no parity coverage. The 39 `renderer: 'stims'` manifest entries
+  krash 86.29%, dark-heart 93.37%, orb-acid-in-my-eyes 97.73%,
+  mosaics-of-ages 99.71%, magnetosphere-13-pulsar 100.00%. Two of thirteen
+  pass.
+- krash and glowsticks are certified via `--allow-weak-reference` and should be
+  retired. They are not under-warmed: native re-captures at 300/450/.../3000
+  frames (and krash out to 7200) leave a solid-black frame scoring 0.17-0.35%
+  at most sample points, and the frames that do carry signal are isolated
+  spikes — krash peaks at 16.56% on frame 1200 with 4.28% and 0.28% at
+  1050/1350; glowsticks peaks at 13.07% on 2250 with 1.51% and 3.19% either
+  side. A reference on a spike that narrow measures frame alignment, not
+  rendering. Use butterchurn (vendored) as the oracle for krash; its remaining
+  defect is the textured-shape multiply (`texture(prev, uv) * vertexColor`),
+  with a secondary resolution-dependent feedback attractor.
+- The four references added on 2026-08-26 —
+  `eos-phat-dark-heart` (11.1x), `orb-acid-in-my-eyes` (20.0x),
+  `rovastar-mosaics-of-ages` (19.5x), `eos-phat-magnetosphere-13-pulsar`
+  (6.9x) — were picked by sweeping all 39 uncertified manifest entries through
+  native projectM at 900 and 1200 frames and keeping the ones that were both
+  bright and frame-stable (headroom drift under 15%).
+- The three remaining `weak` references cannot be strengthened by re-capture.
+  250-wavecode scores 7.14-7.19% across 300-3000 frames, 300-beatdetect
+  5.57-5.81%, and eos-phat-cubetrace-v2 is bit-identical at every frame count
+  tried. They are line-art and bar-chart presets whose coverage is fixed by the
+  preset; the 4x headroom rule is the wrong shape for them, not the capture.
+- `eos-matrix-cube-c` is the strongest remaining candidate by entropy (6.45,
+  8.7x) but Stims renders it blank on WebGPU, so `parity:noise` refuses the
+  capture rather than scoring it. Certify it once that renders.
+- WebGL has no parity coverage. The 35 `renderer: 'stims'` manifest entries
   are placeholders with no image files.
 
 ## Measurement rules (learned the expensive way)

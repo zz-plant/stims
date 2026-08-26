@@ -525,27 +525,27 @@
       "id": "eos-phat-dark-heart",
       "title": "Eos - Phat - Dark - Heart",
       "image": "eos-phat-dark-heart.png",
-      "metadata": null,
+      "metadata": "eos-phat-dark-heart.meta.json",
       "sourceFamily": "bundled",
-      "strata": ["bundled", "cream-of-the-crop"],
+      "strata": ["bundled", "cream-of-the-crop", "feedback"],
       "tolerance": {
         "profile": "loose",
         "threshold": 32,
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
-        "warmupMs": 3000,
+        "warmupMs": 5000,
         "captureOffsetMs": 0,
-        "referenceAudio": "silence",
+        "referenceAudio": "tones",
         "warmupFrames": 900
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "native projectM capture",
+        "importedAt": "2026-08-26T19:01:17.363Z",
         "sourceArtifactId": null
       }
     },
@@ -581,7 +581,7 @@
       "id": "eos-phat-magnetosphere-13-pulsar",
       "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
       "image": "eos-phat-magnetosphere-13-pulsar.png",
-      "metadata": null,
+      "metadata": "eos-phat-magnetosphere-13-pulsar.meta.json",
       "sourceFamily": "bundled",
       "strata": ["bundled", "cream-of-the-crop"],
       "tolerance": {
@@ -590,18 +590,18 @@
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
-        "warmupMs": 3000,
+        "warmupMs": 5000,
         "captureOffsetMs": 0,
-        "referenceAudio": "silence",
-        "warmupFrames": 900
+        "warmupFrames": 900,
+        "referenceAudio": "tones"
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "native projectM capture",
+        "importedAt": "2026-08-26T19:04:19.865Z",
         "sourceArtifactId": null
       }
     },
@@ -848,8 +848,8 @@
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0,
-        "warmupFrames": 300,
-        "referenceAudio": "tones"
+        "referenceAudio": "tones",
+        "warmupFrames": 300
       },
       "provenance": {
         "label": "existing repo artifact",
@@ -861,7 +861,7 @@
       "id": "orb-acid-in-my-eyes",
       "title": "Orb - Acid - In - My - Eyes",
       "image": "orb-acid-in-my-eyes.png",
-      "metadata": null,
+      "metadata": "orb-acid-in-my-eyes.meta.json",
       "sourceFamily": "bundled",
       "strata": ["bundled", "cream-of-the-crop"],
       "tolerance": {
@@ -870,18 +870,18 @@
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
-        "warmupMs": 3000,
+        "warmupMs": 5000,
         "captureOffsetMs": 0,
-        "referenceAudio": "silence",
+        "referenceAudio": "tones",
         "warmupFrames": 900
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "native projectM capture",
+        "importedAt": "2026-08-26T19:04:19.637Z",
         "sourceArtifactId": null
       }
     },
@@ -1141,7 +1141,7 @@
       "id": "rovastar-mosaics-of-ages",
       "title": "Rovastar - Mosaics - Of - Ages",
       "image": "rovastar-mosaics-of-ages.png",
-      "metadata": null,
+      "metadata": "rovastar-mosaics-of-ages.meta.json",
       "sourceFamily": "bundled",
       "strata": ["bundled", "cream-of-the-crop"],
       "tolerance": {
@@ -1150,18 +1150,18 @@
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
-        "warmupMs": 3000,
+        "warmupMs": 5000,
         "captureOffsetMs": 0,
-        "referenceAudio": "silence",
+        "referenceAudio": "tones",
         "warmupFrames": 900
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "native projectM capture",
+        "importedAt": "2026-08-26T19:04:19.749Z",
         "sourceArtifactId": null
       }
     },

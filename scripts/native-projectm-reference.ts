@@ -78,6 +78,20 @@ const SAFE_PRESET_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 export const PROJECTM_UPSTREAM_FIXTURE_ROOT =
   'tests/fixtures/milkdrop/projectm-upstream';
 export const BUNDLED_PRESET_FIXTURE_ROOT = 'public/milkdrop-presets';
+/**
+ * Where a shipped preset can live, in the order the resolver tries them.
+ *
+ * Most of the corpus is not in `public/milkdrop-presets` itself — that
+ * directory holds the handful copied up for the current references plus the
+ * bundled libraries. A preset id that resolves in the visual reference
+ * manifest but not in any of these roots is genuinely unavailable; before this
+ * list, every cream-of-the-crop preset looked that way and had to be captured
+ * with an explicit `--fixture-root`.
+ */
+export const BUNDLED_PRESET_FIXTURE_ROOTS = [
+  BUNDLED_PRESET_FIXTURE_ROOT,
+  'public/milkdrop-presets/libraries/projectm-cream-of-the-crop',
+];
 export const NATIVE_PROJECTM_HARNESS_PATH =
   'scripts/native-projectm-capture.cpp';
 
@@ -193,11 +207,18 @@ export function resolveProjectMReferenceFixture({
   // Shipped presets are valid projectM inputs but are not duplicated into the
   // smaller upstream compatibility fixture corpus.
   if (fixtureRoot === PROJECTM_UPSTREAM_FIXTURE_ROOT) {
-    return resolveNativeProjectMFixture({
-      repoRoot,
-      fixtureRoot: BUNDLED_PRESET_FIXTURE_ROOT,
-      presetId,
-    });
+    let lastCandidate = requestedPath;
+    for (const bundledRoot of BUNDLED_PRESET_FIXTURE_ROOTS) {
+      lastCandidate = resolveNativeProjectMFixture({
+        repoRoot,
+        fixtureRoot: bundledRoot,
+        presetId,
+      });
+      if (fs.existsSync(lastCandidate)) {
+        return lastCandidate;
+      }
+    }
+    return lastCandidate;
   }
   return requestedPath;
 }
