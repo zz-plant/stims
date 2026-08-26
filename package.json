@@ -94,6 +94,7 @@
     "generate:descriptions": "bun run scripts/build-preset-descriptions.ts",
     "generate:first-run-evidence": "bun run scripts/generate-first-run-evidence.ts",
     "generate:guardrails": "bun run scripts/generate-guardrails-doc.ts",
+    "generate:projectm-snapshot": "bun run scripts/generate-projectm-compat-snapshot.ts",
     "generate:previews": "bun run scripts/generate-thumbnails.ts",
     "generate:reference-audio-header": "bun run scripts/generate-reference-audio-header.ts",
     "generate:search-index": "bun run scripts/generate-catalog-search-index.ts",

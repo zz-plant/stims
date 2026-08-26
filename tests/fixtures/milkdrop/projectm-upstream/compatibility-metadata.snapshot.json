@@ -2594,6 +2594,414 @@
               "registerInputs": [],
               "signature": "{\"temporaries\":[],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"identifier\",\"name\":\"sample\"}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"y\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}}]}"
             }
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "custom-wave",
+            "slotIndex": 2,
+            "sampleSource": "spectrum",
+            "fieldProgram": {
+              "kind": "gpu-field-program",
+              "statements": [
+                {
+                  "target": "sw",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "*",
+                    "left": {
+                      "type": "binary",
+                      "operator": "-",
+                      "left": {
+                        "type": "literal",
+                        "value": 1
+                      },
+                      "right": {
+                        "type": "identifier",
+                        "name": "sw"
+                      }
+                    },
+                    "right": {
+                      "type": "call",
+                      "name": "below",
+                      "args": [
+                        {
+                          "type": "identifier",
+                          "name": "sample"
+                        },
+                        {
+                          "type": "literal",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "target": "osa",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "*",
+                    "left": {
+                      "type": "identifier",
+                      "name": "sample"
+                    },
+                    "right": {
+                      "type": "call",
+                      "name": "above",
+                      "args": [
+                        {
+                          "type": "identifier",
+                          "name": "sample"
+                        },
+                        {
+                          "type": "literal",
+                          "value": 0
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "target": "mod",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "-",
+                    "left": {
+                      "type": "identifier",
+                      "name": "value2"
+                    },
+                    "right": {
+                      "type": "identifier",
+                      "name": "value1"
+                    }
+                  }
+                },
+                {
+                  "target": "mod",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "*",
+                    "left": {
+                      "type": "identifier",
+                      "name": "mod"
+                    },
+                    "right": {
+                      "type": "identifier",
+                      "name": "sw"
+                    }
+                  }
+                },
+                {
+                  "target": "y",
+                  "expression": {
+                    "type": "call",
+                    "name": "if",
+                    "args": [
+                      {
+                        "type": "identifier",
+                        "name": "sw"
+                      },
+                      {
+                        "type": "identifier",
+                        "name": "osa"
+                      },
+                      {
+                        "type": "identifier",
+                        "name": "sample"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "target": "y",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "binary",
+                        "operator": "-",
+                        "left": {
+                          "type": "literal",
+                          "value": 1
+                        },
+                        "right": {
+                          "type": "binary",
+                          "operator": "*",
+                          "left": {
+                            "type": "identifier",
+                            "name": "sample"
+                          },
+                          "right": {
+                            "type": "literal",
+                            "value": 1.6
+                          }
+                        }
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 0.4
+                      }
+                    },
+                    "right": {
+                      "type": "literal",
+                      "value": 0.42
+                    }
+                  }
+                },
+                {
+                  "target": "x",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "binary",
+                      "operator": "+",
+                      "left": {
+                        "type": "literal",
+                        "value": 0
+                      },
+                      "right": {
+                        "type": "binary",
+                        "operator": "*",
+                        "left": {
+                          "type": "identifier",
+                          "name": "mod"
+                        },
+                        "right": {
+                          "type": "literal",
+                          "value": 0.5
+                        }
+                      }
+                    },
+                    "right": {
+                      "type": "literal",
+                      "value": 0.5
+                    }
+                  }
+                },
+                {
+                  "target": "mo",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "binary",
+                      "operator": "+",
+                      "left": {
+                        "type": "literal",
+                        "value": 3.7
+                      },
+                      "right": {
+                        "type": "binary",
+                        "operator": "*",
+                        "left": {
+                          "type": "identifier",
+                          "name": "mod"
+                        },
+                        "right": {
+                          "type": "literal",
+                          "value": 6
+                        }
+                      }
+                    },
+                    "right": {
+                      "type": "identifier",
+                      "name": "q1"
+                    }
+                  }
+                },
+                {
+                  "target": "r",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.5
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "call",
+                        "name": "sin",
+                        "args": [
+                          {
+                            "type": "identifier",
+                            "name": "mo"
+                          }
+                        ]
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 0.5
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "g",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.5
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "call",
+                        "name": "sin",
+                        "args": [
+                          {
+                            "type": "binary",
+                            "operator": "+",
+                            "left": {
+                              "type": "identifier",
+                              "name": "mo"
+                            },
+                            "right": {
+                              "type": "literal",
+                              "value": 1.0472
+                            }
+                          }
+                        ]
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 0.5
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "b",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.5
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "call",
+                        "name": "sin",
+                        "args": [
+                          {
+                            "type": "binary",
+                            "operator": "+",
+                            "left": {
+                              "type": "identifier",
+                              "name": "mo"
+                            },
+                            "right": {
+                              "type": "literal",
+                              "value": 2.0944
+                            }
+                          }
+                        ]
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 0.5
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "a",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "-",
+                    "left": {
+                      "type": "literal",
+                      "value": 1
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "call",
+                        "name": "abs",
+                        "args": [
+                          {
+                            "type": "identifier",
+                            "name": "mod"
+                          }
+                        ]
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 12
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "a",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "-",
+                    "left": {
+                      "type": "literal",
+                      "value": 1
+                    },
+                    "right": {
+                      "type": "identifier",
+                      "name": "sw"
+                    }
+                  }
+                },
+                {
+                  "target": "a",
+                  "expression": {
+                    "type": "call",
+                    "name": "max",
+                    "args": [
+                      {
+                        "type": "literal",
+                        "value": 0
+                      },
+                      {
+                        "type": "call",
+                        "name": "min",
+                        "args": [
+                          {
+                            "type": "identifier",
+                            "name": "a"
+                          },
+                          {
+                            "type": "literal",
+                            "value": 1
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "temporaries": [
+                "a",
+                "b",
+                "g",
+                "mo",
+                "mod",
+                "osa",
+                "q1",
+                "r",
+                "sw"
+              ],
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[\"a\",\"b\",\"g\",\"mo\",\"mod\",\"osa\",\"q1\",\"r\",\"sw\"],\"registerInputs\":[],\"statements\":[{\"target\":\"sw\",\"expression\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":1},\"right\":{\"type\":\"identifier\",\"name\":\"sw\"}},\"right\":{\"type\":\"call\",\"name\":\"below\",\"args\":[{\"type\":\"identifier\",\"name\":\"sample\"},{\"type\":\"literal\",\"value\":1}]}}},{\"target\":\"osa\",\"expression\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"sample\"},\"right\":{\"type\":\"call\",\"name\":\"above\",\"args\":[{\"type\":\"identifier\",\"name\":\"sample\"},{\"type\":\"literal\",\"value\":0}]}}},{\"target\":\"mod\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"identifier\",\"name\":\"value2\"},\"right\":{\"type\":\"identifier\",\"name\":\"value1\"}}},{\"target\":\"mod\",\"expression\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"mod\"},\"right\":{\"type\":\"identifier\",\"name\":\"sw\"}}},{\"target\":\"y\",\"expression\":{\"type\":\"call\",\"name\":\"if\",\"args\":[{\"type\":\"identifier\",\"name\":\"sw\"},{\"type\":\"identifier\",\"name\":\"osa\"},{\"type\":\"identifier\",\"name\":\"sample\"}]}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":1},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"sample\"},\"right\":{\"type\":\"literal\",\"value\":1.6}}},\"right\":{\"type\":\"literal\",\"value\":0.4}},\"right\":{\"type\":\"literal\",\"value\":0.42}}},{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"mod\"},\"right\":{\"type\":\"literal\",\"value\":0.5}}},\"right\":{\"type\":\"literal\",\"value\":0.5}}},{\"target\":\"mo\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":3.7},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"mod\"},\"right\":{\"type\":\"literal\",\"value\":6}}},\"right\":{\"type\":\"identifier\",\"name\":\"q1\"}}},{\"target\":\"r\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.5},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"call\",\"name\":\"sin\",\"args\":[{\"type\":\"identifier\",\"name\":\"mo\"}]},\"right\":{\"type\":\"literal\",\"value\":0.5}}}},{\"target\":\"g\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.5},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"call\",\"name\":\"sin\",\"args\":[{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"mo\"},\"right\":{\"type\":\"literal\",\"value\":1.0472}}]},\"right\":{\"type\":\"literal\",\"value\":0.5}}}},{\"target\":\"b\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.5},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"call\",\"name\":\"sin\",\"args\":[{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"mo\"},\"right\":{\"type\":\"literal\",\"value\":2.0944}}]},\"right\":{\"type\":\"literal\",\"value\":0.5}}}},{\"target\":\"a\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":1},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"call\",\"name\":\"abs\",\"args\":[{\"type\":\"identifier\",\"name\":\"mod\"}]},\"right\":{\"type\":\"literal\",\"value\":12}}}},{\"target\":\"a\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":1},\"right\":{\"type\":\"identifier\",\"name\":\"sw\"}}},{\"target\":\"a\",\"expression\":{\"type\":\"call\",\"name\":\"max\",\"args\":[{\"type\":\"literal\",\"value\":0},{\"type\":\"call\",\"name\":\"min\",\"args\":[{\"type\":\"identifier\",\"name\":\"a\"},{\"type\":\"literal\",\"value\":1}]}]}}]}"
+            }
           }
         ],
         "proceduralMesh": {
@@ -2815,6 +3223,186 @@
             "slotIndex": null,
             "sampleSource": "waveform",
             "fieldProgram": null
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "custom-wave",
+            "slotIndex": 1,
+            "sampleSource": "waveform",
+            "fieldProgram": {
+              "kind": "gpu-field-program",
+              "statements": [
+                {
+                  "target": "x",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.01666
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "literal",
+                        "value": 0.3
+                      },
+                      "right": {
+                        "type": "identifier",
+                        "name": "sample"
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "y",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "identifier",
+                      "name": "t1"
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "/",
+                      "left": {
+                        "type": "identifier",
+                        "name": "value1"
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 20
+                      }
+                    }
+                  }
+                }
+              ],
+              "temporaries": ["t1"],
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[\"t1\"],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.01666},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"literal\",\"value\":0.3},\"right\":{\"type\":\"identifier\",\"name\":\"sample\"}}}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"t1\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value1\"},\"right\":{\"type\":\"literal\",\"value\":20}}}}]}"
+            }
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "custom-wave",
+            "slotIndex": 2,
+            "sampleSource": "waveform",
+            "fieldProgram": {
+              "kind": "gpu-field-program",
+              "statements": [
+                {
+                  "target": "x",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.35
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "literal",
+                        "value": 0.3
+                      },
+                      "right": {
+                        "type": "identifier",
+                        "name": "sample"
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "y",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "identifier",
+                      "name": "t1"
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "/",
+                      "left": {
+                        "type": "identifier",
+                        "name": "value2"
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 20
+                      }
+                    }
+                  }
+                }
+              ],
+              "temporaries": ["t1"],
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[\"t1\"],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.35},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"literal\",\"value\":0.3},\"right\":{\"type\":\"identifier\",\"name\":\"sample\"}}}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"t1\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value2\"},\"right\":{\"type\":\"literal\",\"value\":20}}}}]}"
+            }
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "custom-wave",
+            "slotIndex": 3,
+            "sampleSource": "waveform",
+            "fieldProgram": {
+              "kind": "gpu-field-program",
+              "statements": [
+                {
+                  "target": "x",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "literal",
+                      "value": 0.6833
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "*",
+                      "left": {
+                        "type": "literal",
+                        "value": 0.3
+                      },
+                      "right": {
+                        "type": "identifier",
+                        "name": "sample"
+                      }
+                    }
+                  }
+                },
+                {
+                  "target": "y",
+                  "expression": {
+                    "type": "binary",
+                    "operator": "+",
+                    "left": {
+                      "type": "identifier",
+                      "name": "t1"
+                    },
+                    "right": {
+                      "type": "binary",
+                      "operator": "/",
+                      "left": {
+                        "type": "identifier",
+                        "name": "value1"
+                      },
+                      "right": {
+                        "type": "literal",
+                        "value": 20
+                      }
+                    }
+                  }
+                }
+              ],
+              "temporaries": ["t1"],
+              "registerInputs": [],
+              "signature": "{\"temporaries\":[\"t1\"],\"registerInputs\":[],\"statements\":[{\"target\":\"x\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"literal\",\"value\":0.6833},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"literal\",\"value\":0.3},\"right\":{\"type\":\"identifier\",\"name\":\"sample\"}}}},{\"target\":\"y\",\"expression\":{\"type\":\"binary\",\"operator\":\"+\",\"left\":{\"type\":\"identifier\",\"name\":\"t1\"},\"right\":{\"type\":\"binary\",\"operator\":\"/\",\"left\":{\"type\":\"identifier\",\"name\":\"value1\"},\"right\":{\"type\":\"literal\",\"value\":20}}}}]}"
+            }
           }
         ],
         "proceduralMesh": {
