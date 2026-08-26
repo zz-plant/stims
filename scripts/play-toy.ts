@@ -133,6 +133,12 @@ export type PlayToyOptions = {
   cpuThrottleRate?: number;
   /** Pins adaptive quality to a fixed step so timings stay comparable. */
   lockedQualityStep?: number | null;
+  /**
+   * Render at the capture's own resolution instead of the quality step's
+   * supersample. Parity captures need it: `ultra` renders 1.25x and the
+   * screenshot downsamples, where the projectM reference renders natively.
+   */
+  nativeResolution?: boolean;
   recordParityArtifact?: boolean;
   browserSession?: PlayToyBrowserSession;
   /**
@@ -171,6 +177,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   perfCapture?: PlayToyPerformanceCaptureOptions;
   cpuThrottleRate: number;
   lockedQualityStep: number | null;
+  nativeResolution: boolean;
   recordParityArtifact: boolean;
 };
 
@@ -380,6 +387,7 @@ export function normalizePlayToyOptions(
         ? options.cpuThrottleRate
         : 1,
     lockedQualityStep: options.lockedQualityStep ?? null,
+    nativeResolution: options.nativeResolution ?? false,
     recordParityArtifact: options.recordParityArtifact !== false,
   };
 }
@@ -463,6 +471,7 @@ export function buildPlayToyUrl({
   rendererProfile = 'compatibility',
   catalogMode = 'bundled',
   lockedQualityStep,
+  nativeResolution = false,
 }: {
   port: number;
   slug: string;
@@ -471,6 +480,7 @@ export function buildPlayToyUrl({
   rendererProfile?: PlayToyRendererProfile;
   catalogMode?: PlayToyCatalogMode;
   lockedQualityStep?: number | null;
+  nativeResolution?: boolean;
 }) {
   const params = new URLSearchParams({
     agent: 'true',
@@ -491,6 +501,9 @@ export function buildPlayToyUrl({
   }
   if (typeof lockedQualityStep === 'number') {
     params.set('lockQualityStep', String(lockedQualityStep));
+  }
+  if (nativeResolution) {
+    params.set('nativeResolution', '1');
   }
   return `http://127.0.0.1:${port}${routePath}?${params.toString()}`;
 }
@@ -1617,6 +1630,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       rendererProfile: normalizedOptions.rendererProfile,
       catalogMode: normalizedOptions.catalogMode,
       lockedQualityStep: normalizedOptions.lockedQualityStep,
+      nativeResolution: normalizedOptions.nativeResolution,
     });
     console.log(`Navigating to ${url}...`);
 
@@ -2243,6 +2257,7 @@ if (import.meta.main) {
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
   const deterministicFrames = getArg('--deterministic-frames', 0) as number;
+  const nativeResolution = args.includes('--native-resolution');
   const referenceAudioRaw = getArg('--reference-audio', '') as string;
   if (
     referenceAudioRaw &&
@@ -2292,6 +2307,7 @@ if (import.meta.main) {
       deterministicFrames:
         deterministicFrames > 0 ? deterministicFrames : undefined,
       referenceAudio,
+      nativeResolution,
       lockedQualityStep: lockQualityStep >= 0 ? lockQualityStep : undefined,
       randomSeed: Number.isFinite(randomSeed) ? randomSeed : undefined,
       viewportWidth,

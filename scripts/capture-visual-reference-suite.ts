@@ -208,6 +208,9 @@ function runPlayToyInProcess(
     // quality reacts to frame time, so a capture taken while the machine is
     // busy renders at a different scale than one taken idle.
     lockedQualityStep: 0,
+    // The reference renders at its native size; `ultra` supersamples 1.25x and
+    // the screenshot downsamples, softening every captured frame against it.
+    nativeResolution: true,
     viewportWidth: request.viewportWidth,
     viewportHeight: request.viewportHeight,
     outputDir: request.outputDir,
@@ -255,6 +258,10 @@ function runPlayToyInChildProcess(
       // two cases.
       '--lock-quality-step',
       '0',
+      // Match the in-process path: the reference renders natively, so the
+      // capture must not supersample and downsample.
+      '--native-resolution',
+      '--native-resolution',
       '--width',
       String(request.viewportWidth),
       '--height',
