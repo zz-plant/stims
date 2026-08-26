@@ -191,7 +191,7 @@
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^18.2.0",
     "esbuild": "^0.28.1",
-    "happy-dom": "20.11.1",
+    "happy-dom": "20.11.6",
     "husky": "^9.1.7",
     "pixelmatch": "^7.2.0",
     "playwright": "1.62.1",
