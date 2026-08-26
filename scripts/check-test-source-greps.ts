@@ -52,8 +52,8 @@ const ALLOWED: Record<string, string> = {
     'The route-sync test renders the real hook now; the remaining source read is the toast attribute/media-query pair, a cross-artifact presentational contract with no layout engine in this suite.',
   'tests/unit/app-shell-skip-flow.test.tsx':
     'Renders the real StimsStageFrame for the focus-target and data-mode halves; the remaining reads are the App.tsx anchor (the shell does not mount in this suite) and the CSS rules (no style engine).',
-  'tests/unit/app-shell-stage-tools.test.ts':
-    'DEBT: greps App.tsx/workspace-ui.tsx for stage tool classes.',
+  'tests/unit/app-shell-stage-tools.test.tsx':
+    'The no-backdrop invariant renders the real SidePanel both ways; the remaining read is the App.tsx wiring of stageAnchored to the editor panel, since the shell does not mount here.',
   'tests/unit/app-shell-ui-simplification.test.ts':
     'DEBT: greps eight components for copy.',
   'tests/unit/arrival-url.test.ts': 'DEBT: greps for arrival URL handling.',
