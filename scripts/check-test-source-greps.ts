@@ -65,14 +65,10 @@ const ALLOWED: Record<string, string> = {
     'Generates its rows from the live registry; the source read is a dangling-reference check, not a copy assertion.',
   'tests/unit/mobile-viewport-matrix.test.ts':
     'DEBT: greps app-shell.css for viewport rules.',
-  'tests/unit/model-preset-generation.test.ts':
-    'DEBT: greps generation prompts.',
   'tests/unit/primitive-rasterization-fidelity.test.ts':
     'DEBT: greps renderer source for rasterisation constants.',
   'tests/unit/scripts-list-routing.test.ts':
     'Reads scripts/ to check `bun run help --for` does not route at a deleted script — a dangling-reference check over live data.',
-  'tests/unit/utils/canvas-video-exporter.test.ts':
-    'DEBT: reads exporter source.',
   'tests/unit/workspace-first-fold-actions.test.ts':
     'DEBT: greps App.tsx for first-fold actions.',
 };
