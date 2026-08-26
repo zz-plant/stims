@@ -184,6 +184,8 @@ export function createMilkdropExperienceAttachmentController({
               : null,
           lockedQualityStep:
             getPerformanceOverrideParams().lockedQualityStep ?? null,
+          nativeResolution:
+            getPerformanceOverrideParams().nativeResolution ?? false,
         });
         setAdaptiveQualityController(adaptiveQualityController);
         const disabledWebGpuOptimizationFlags =

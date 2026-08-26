@@ -87,6 +87,22 @@ type AdaptiveQualityControllerOptions = {
    * change under test instead of the controller re-balancing quality.
    */
   lockedQualityStep?: number | null;
+  /**
+   * Pin the resolution multipliers to 1 while leaving the step's mesh/wave
+   * density alone.
+   *
+   * Parity captures need this. The `ultra` step supersamples at 1.25x and the
+   * screenshot then downsamples to the capture size, where projectM renders at
+   * native resolution and does not — so every captured frame was softer than
+   * the reference it is diffed against. Measured on the deterministic pair:
+   * 260-compshader-noise_lq 34.25% -> 33.45% (its band is 0.000pp, so that is
+   * signal) and 250-wavecode 8.41% -> 7.36%, with 100-square unmoved at 1.45%.
+   *
+   * Locking to the `full` step instead would also drop densityMultiplier from
+   * 1.35 to 1, which is a different variable and takes 100-square from 1.43%
+   * to 15.85%.
+   */
+  nativeResolution?: boolean;
 };
 
 type QualityStep = AdaptiveQualityMultipliers & {
@@ -359,6 +375,7 @@ function buildHeuristicProfile(
 }
 
 function buildState({
+  nativeResolution,
   backend,
   timingMode,
   supportsGpuTimestamps,
@@ -379,6 +396,7 @@ function buildState({
   adaptation,
   reasons,
 }: {
+  nativeResolution: boolean;
   backend: RendererBackend;
   timingMode: AdaptiveQualityTimingMode;
   supportsGpuTimestamps: boolean;
@@ -422,12 +440,16 @@ function buildState({
     rollingWindowSize,
     adaptation,
     reasons,
-    renderScaleMultiplier: step.renderScaleMultiplier * gpuResolutionMultiplier,
-    maxPixelRatioMultiplier:
-      step.maxPixelRatioMultiplier * gpuResolutionMultiplier,
+    renderScaleMultiplier: nativeResolution
+      ? 1
+      : step.renderScaleMultiplier * gpuResolutionMultiplier,
+    maxPixelRatioMultiplier: nativeResolution
+      ? 1
+      : step.maxPixelRatioMultiplier * gpuResolutionMultiplier,
     densityMultiplier: step.densityMultiplier,
-    feedbackResolutionMultiplier:
-      step.feedbackResolutionMultiplier * gpuResolutionMultiplier,
+    feedbackResolutionMultiplier: nativeResolution
+      ? 1
+      : step.feedbackResolutionMultiplier * gpuResolutionMultiplier,
   } satisfies AdaptiveQualityState;
 }
 
@@ -441,6 +463,7 @@ export function createAdaptiveQualityController({
   backend,
   capabilities,
   lockedQualityStep = null,
+  nativeResolution = false,
 }: AdaptiveQualityControllerOptions): AdaptiveQualityController {
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
   const supportsGpuTimestamps =
@@ -621,6 +644,7 @@ export function createAdaptiveQualityController({
   }
 
   let state = buildState({
+    nativeResolution,
     backend,
     timingMode,
     supportsGpuTimestamps,
@@ -654,6 +678,7 @@ export function createAdaptiveQualityController({
   const publish = () => {
     updateThermalState();
     state = buildState({
+      nativeResolution,
       backend,
       timingMode,
       supportsGpuTimestamps,
