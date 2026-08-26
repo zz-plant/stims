@@ -50,13 +50,15 @@
  * the rewrite does is hand ~150 bodies to the WebGPU node executor for the
  * first time, and the executor's own gaps then show up as wrong pixels. Two
  * were found and fixed (a sign- and NaN-destroying division guard, and matrix
- * element writes claiming to be WebGPU-executable). These remain:
+ * element writes claiming to be WebGPU-executable). A third — the GPU-process
+ * death on flexi-lorenz-chaser-...-discombobule-lose, which was the reason
+ * this flag exists rather than an allowlist — is fixed too: the executor sent
+ * every texture read through the aux sampler's RUNTIME slot-select chain, and
+ * TSL inlines that per call site, so a body's six texture reads compiled to
+ * 451 `textureSample` calls in 367 KB of WGSL and killed Dawn's shader
+ * compiler. See `sampleStatic` in feedback-manager-webgpu-composite.ts. These
+ * remain:
  *
- *   - flexi-lorenz-chaser-...-discombobule-lose kills the GPU process,
- *     reproducibly, with no WebGPU validation error emitted. Its desugared
- *     body is small (28 warp / 18 comp statements), so it is not the uniform
- *     explosion that matrix writes caused. Undiagnosed, and the reason this
- *     flag exists rather than an allowlist.
  *   - flexi-psychenapping, flexi-geiss-infused-with-the-spiral-...-rapery and
  *     rediculator-qrem-glob render near-uniform white (~255 mean).
  *   - flexi-area-51, benjam-...-understarted and
