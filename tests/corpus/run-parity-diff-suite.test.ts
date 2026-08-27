@@ -18,6 +18,14 @@ import {
   type VisualReferenceManifest,
 } from '../../scripts/visual-reference-manifest.ts';
 
+/**
+ * Red level for fixture reference frames. Any value above a preset's
+ * per-channel `threshold` (16 here) makes every pixel count as lit, so a
+ * solid-black frame mismatches 100% of the reference — the signal the parity
+ * suite requires before it will grade a preset at all.
+ */
+const REFERENCE_SIGNAL_LEVEL = 200;
+
 function saveVisualReferenceManifest(
   repoRoot: string,
   manifest: VisualReferenceManifest,
@@ -113,9 +121,19 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
       .toFile(filePath);
   };
 
-  await writeImage(path.join(fixtureRoot, 'pass.png'), 0);
-  await writeImage(path.join(fixtureRoot, 'fail.png'), 0);
-  await writeImage(path.join(outputDir, 'pass-stims.png'), 0);
+  // The projectM references must carry signal: the suite refuses to grade
+  // against a reference a solid-black frame would pass, so black fixtures
+  // score `reference-no-signal` and never reach the pass/fail ranking this
+  // test asserts. A fully lit reference scores 100% against a black frame,
+  // 50x the 2% fail threshold and well clear of the 4x headroom floor.
+  await writeImage(path.join(fixtureRoot, 'pass.png'), REFERENCE_SIGNAL_LEVEL);
+  await writeImage(path.join(fixtureRoot, 'fail.png'), REFERENCE_SIGNAL_LEVEL);
+  // Matches its reference exactly -> pass.
+  await writeImage(
+    path.join(outputDir, 'pass-stims.png'),
+    REFERENCE_SIGNAL_LEVEL,
+  );
+  // Differs by far more than the 16 per-channel threshold -> fail.
   await writeImage(path.join(outputDir, 'fail-stims.png'), 64);
 
   saveVisualReferenceManifest(repoRoot, {
@@ -244,6 +262,119 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
   expect(fs.readFileSync(failReportPath, 'utf8')).toBe(
     failReportBeforeFocusedRun,
   );
+});
+
+test('runParityDiffSuite refuses to grade a preset against a black reference', async () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-parity-suite-repo-'),
+  );
+  const fixtureRoot = path.join(
+    repoRoot,
+    'tests',
+    'fixtures',
+    'milkdrop',
+    'projectm-reference',
+  );
+  const outputDir = path.join(repoRoot, 'screenshots', 'parity');
+  fs.mkdirSync(fixtureRoot, { recursive: true });
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  const writeImage = async (filePath: string, color: number) => {
+    await sharp({
+      create: {
+        width: 2,
+        height: 1,
+        channels: 4,
+        background: { r: color, g: 0, b: 0, alpha: 1 },
+      },
+    })
+      .png()
+      .toFile(filePath);
+  };
+
+  // A solid-black reference: a renderer that draws nothing scores 0% against
+  // it, at or under the 2% fail threshold. Any verdict here would be vacuous.
+  await writeImage(path.join(fixtureRoot, 'blank.png'), 0);
+  // The capture is lit, so this preset would otherwise grade as a clear FAIL.
+  // The point of the guard is that it must not: the reference cannot fail for
+  // a real reason, so a `fail` here would be measuring nothing.
+  await writeImage(path.join(outputDir, 'blank-stims.png'), 200);
+
+  saveVisualReferenceManifest(repoRoot, {
+    version: 1,
+    parityTarget: 'projectm-visual-reference',
+    fixtureRoot: path.join(
+      'tests',
+      'fixtures',
+      'milkdrop',
+      'projectm-reference',
+    ),
+    minimumPresetCount: 0,
+    presetCount: 1,
+    defaults: {
+      renderer: 'projectm',
+      requiredBackend: 'webgpu' as const,
+      width: 2,
+      height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      warmupFrames: 900,
+      referenceAudio: 'silence' as const,
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+    },
+    presets: [
+      {
+        id: 'blank-preset',
+        title: 'Blank Preset',
+        image: 'blank.png',
+        sourceFamily: 'bundled',
+        strata: ['feedback'],
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 2,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+          warmupFrames: 900,
+          referenceAudio: 'silence' as const,
+        },
+        provenance: {
+          label: 'fixture',
+          importedAt: '2026-03-28T00:00:00.000Z',
+        },
+      },
+    ],
+  });
+
+  appendParityArtifactEntry(outputDir, {
+    kind: 'stims-capture',
+    slug: 'milkdrop',
+    presetId: 'blank-preset',
+    files: { image: path.join(outputDir, 'blank-stims.png') },
+    capture: { backend: 'webgpu' },
+    createdAt: '2026-03-28T01:00:00.000Z',
+  });
+
+  const result = await runParityDiffSuite({
+    repoRoot,
+    outputDir,
+    writeDiffImages: false,
+    strict: false,
+  });
+
+  expect(result.summary.results).toHaveLength(1);
+  expect(result.summary.results[0]?.status).toBe('reference-no-signal');
+  // Ungraded is neither a pass nor a fail — it must not inflate either tally.
+  expect(result.summary.passCount).toBe(0);
+  expect(result.summary.failCount).toBe(0);
 });
 
 test('runParityDiffSuite reports missing stims captures', async () => {
@@ -525,12 +656,14 @@ test('runParityDiffSuite surfaces measured source report provenance drift', asyn
   fs.mkdirSync(fixtureRoot, { recursive: true });
   fs.mkdirSync(suiteDir, { recursive: true });
 
+  // Lit for the same reason as above: a black reference is ungradeable, and
+  // this test asserts a `pass`, which only the graded path can produce.
   await sharp({
     create: {
       width: 1,
       height: 1,
       channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 1 },
+      background: { r: REFERENCE_SIGNAL_LEVEL, g: 0, b: 0, alpha: 1 },
     },
   })
     .png()
@@ -540,7 +673,7 @@ test('runParityDiffSuite surfaces measured source report provenance drift', asyn
       width: 1,
       height: 1,
       channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 1 },
+      background: { r: REFERENCE_SIGNAL_LEVEL, g: 0, b: 0, alpha: 1 },
     },
   })
     .png()
