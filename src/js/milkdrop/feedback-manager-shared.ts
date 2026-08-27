@@ -478,6 +478,45 @@ const MILKDROP_NOISE_VOLUME_HELPERS = `
         }
 `;
 
+/**
+ * MilkDrop's video echo: the display stage draws the frame a second time,
+ * zoomed by fVideoEchoZoom and flipped per nVideoEchoOrientation (bit 0 = x,
+ * bit 1 = y), blended over the first by fVideoEchoAlpha. It is a display
+ * effect and must not touch the accumulator — flipping the feedback sample
+ * instead rotates the carried history every frame, which breaks the
+ * invariant the effect is defined by: at alpha 0.5 with orientation 3 the
+ * output is exactly its own 180-degree rotation (projectM reference:
+ * self-correlation 0.9994; ours before this fix: 0.66).
+ */
+const MILKDROP_VIDEO_ECHO_HELPER = `
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
+        vec3 applyVideoEcho(
+          sampler2D tex,
+          vec2 uv,
+          vec3 base,
+          float alpha,
+          float zoom,
+          float orientation,
+          float wrap
+        ) {
+          if (alpha < 0.0001) {
+            return base;
+          }
+          vec2 echoUv = (uv - 0.5) / max(zoom, 0.0001) + 0.5;
+          echoUv = applyVideoEchoOrientationTransform(echoUv, orientation);
+          vec3 echo = texture2D(tex, sampleUv(echoUv, wrap)).rgb;
+          return mix(base, echo, clamp(alpha, 0.0, 1.0));
+        }
+`;
+
 // Aux-texture sampling and the control-driven feedback warp are needed by
 // both the feedback-blend pass (warp-texture displacement, legacy warp) and
 // the composite pass (overlay/comp-body sampling), so they live in one
@@ -944,6 +983,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
 
 ${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
+${MILKDROP_VIDEO_ECHO_HELPER}
         // MilkDrop's comp shader reads sampler_main as the current
         // *composited* frame — the internal image the feedback-blend pass
         // wrote this frame (warped feedback + geometry). Injected comp
@@ -1071,45 +1111,6 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
         }
       `;
 
-/**
- * MilkDrop's video echo: the display stage draws the frame a second time,
- * zoomed by fVideoEchoZoom and flipped per nVideoEchoOrientation (bit 0 = x,
- * bit 1 = y), blended over the first by fVideoEchoAlpha. It is a display
- * effect and must not touch the accumulator — flipping the feedback sample
- * instead rotates the carried history every frame, which breaks the
- * invariant the effect is defined by: at alpha 0.5 with orientation 3 the
- * output is exactly its own 180-degree rotation (projectM reference:
- * self-correlation 0.9994; ours before this fix: 0.66).
- */
-const MILKDROP_VIDEO_ECHO_HELPER = `
-        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
-          float flipU = step(0.5, mod(orientation, 2.0));
-          float flipV = step(1.5, mod(orientation, 4.0));
-          return vec2(
-            mix(uv.x, 1.0 - uv.x, flipU),
-            mix(uv.y, 1.0 - uv.y, flipV)
-          );
-        }
-
-        vec3 applyVideoEcho(
-          sampler2D tex,
-          vec2 uv,
-          vec3 base,
-          float alpha,
-          float zoom,
-          float orientation,
-          float wrap
-        ) {
-          if (alpha < 0.0001) {
-            return base;
-          }
-          vec2 echoUv = (uv - 0.5) / max(zoom, 0.0001) + 0.5;
-          echoUv = applyVideoEchoOrientationTransform(echoUv, orientation);
-          vec3 echo = texture2D(tex, sampleUv(echoUv, wrap)).rgb;
-          return mix(base, echo, clamp(alpha, 0.0, 1.0));
-        }
-`;
-
 const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
@@ -1192,7 +1193,6 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
 ${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
 ${MILKDROP_FEEDBACK_WARP_HELPER}
-${MILKDROP_VIDEO_ECHO_HELPER}
 
         // --- DIRECT_WARP_GLOBALS_START ---
         // --- DIRECT_WARP_GLOBALS_END ---
