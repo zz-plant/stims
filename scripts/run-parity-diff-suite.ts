@@ -26,6 +26,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  DEFAULT_MIN_SIGNAL_HEADROOM,
+  scoreReferenceSignal,
+} from './check-parity-reference-signal.ts';
+import {
   computeParityDiffMetrics,
   loadImagePixels,
   writeDiffImage,
@@ -74,8 +78,16 @@ export type SuitePresetResult = {
     | 'backend-mismatch'
     | 'pass'
     | 'fail'
+    | 'reference-no-signal'
     | 'missing-stims-capture'
     | 'error';
+  /**
+   * Whether the reference frame itself carries enough signal to prove
+   * anything (check-parity-reference-signal). 'no-signal' means a renderer
+   * that draws nothing would pass, so the suite refuses to grade against it
+   * — the mismatch ratio is still reported for information.
+   */
+  referenceSignal: 'ok' | 'weak' | 'no-signal' | null;
   mismatchRatio: number | null;
   reportPath: string | null;
   diffImagePath: string | null;
@@ -117,6 +129,8 @@ type SuiteSummary = {
   backendMismatchCount: number;
   passCount: number;
   failCount: number;
+  /** Presets whose reference frame a black render would pass — ungraded. */
+  referenceNoSignalCount: number;
   missingCount: number;
   errorCount: number;
   /**
@@ -247,6 +261,8 @@ export function suiteResultRank(result: SuitePresetResult) {
       return 0;
     case 'fail':
       return 1;
+    case 'reference-no-signal':
+      return 2;
     case 'error':
       return 2;
     case 'missing-stims-capture':
@@ -366,6 +382,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         title: preset.title,
         status: 'error',
         mismatchRatio: null,
+        referenceSignal: null,
         reportPath: null,
         diffImagePath: null,
         stimsArtifactId: null,
@@ -390,6 +407,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         title: preset.title,
         status: 'missing-stims-capture',
         mismatchRatio: null,
+        referenceSignal: null,
         reportPath: null,
         diffImagePath: null,
         stimsArtifactId: null,
@@ -412,6 +430,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         title: preset.title,
         status: 'error',
         mismatchRatio: null,
+        referenceSignal: null,
         reportPath: null,
         diffImagePath: null,
         stimsArtifactId: stimsArtifact.id,
@@ -466,6 +485,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         title: preset.title,
         status: 'backend-mismatch',
         mismatchRatio: null,
+        referenceSignal: null,
         reportPath,
         diffImagePath: null,
         stimsArtifactId: stimsArtifact.id,
@@ -502,8 +522,24 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
           )
         : preset.tolerance.failThreshold;
 
+      // A reference a black frame would pass cannot certify anything: a
+      // "pass" against it is vacuous and a "fail" only measures how much we
+      // draw where projectM drew nothing (native projectM renders some
+      // presets black at every frame). Grade only against references with
+      // signal; report the ratio either way.
+      const signal = await scoreReferenceSignal({
+        presetId: preset.id,
+        imagePath: projectmImagePath,
+        threshold: preset.tolerance.threshold,
+        failThreshold: preset.tolerance.failThreshold,
+        minHeadroom: DEFAULT_MIN_SIGNAL_HEADROOM,
+      });
       const status =
-        metrics.mismatchRatio <= effectiveFailThreshold ? 'pass' : 'fail';
+        signal.status === 'no-signal'
+          ? 'reference-no-signal'
+          : metrics.mismatchRatio <= effectiveFailThreshold
+            ? 'pass'
+            : 'fail';
 
       fs.writeFileSync(
         reportPath,
@@ -525,6 +561,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
             metrics,
             noise: noiseFields(metrics.mismatchRatio),
             status,
+            referenceSignal: signal.status,
           },
           null,
           2,
@@ -550,6 +587,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         projectmImagePath,
         requiredBackend: preset.capture.requiredBackend,
         actualBackend,
+        referenceSignal: signal.status,
         ...noiseFields(metrics.mismatchRatio),
       });
     } catch (error) {
@@ -559,6 +597,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         title: preset.title,
         status: 'error',
         mismatchRatio: null,
+        referenceSignal: null,
         reportPath: null,
         diffImagePath: null,
         stimsArtifactId: stimsArtifact.id,
@@ -592,6 +631,9 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     ).length,
     passCount: results.filter((result) => result.status === 'pass').length,
     failCount: results.filter((result) => result.status === 'fail').length,
+    referenceNoSignalCount: results.filter(
+      (result) => result.status === 'reference-no-signal',
+    ).length,
     missingCount: results.filter(
       (result) => result.status === 'missing-stims-capture',
     ).length,
