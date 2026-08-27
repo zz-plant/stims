@@ -30,6 +30,7 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
+import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
@@ -160,6 +161,32 @@ export function useWorkspaceSessionState({
   // the guard in that effect.
   const handledRouteRequestRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
+
+  // Frame-fresh energy for UI that pulses with the music (stage --energy,
+  // launch trace): the engine snapshot only refreshes on discrete
+  // emitChange events, so while audio is live poll the signal tracker each
+  // animation frame and feed the audio-energy store directly. The store's
+  // dead-band keeps quiet frames free, and rAF stops on hidden tabs where
+  // nothing pulses anyway.
+  const audioActive = engineSnapshot?.audioActive ?? false;
+  useEffect(() => {
+    if (!audioActive) return;
+    let frameId = 0;
+    const publish = () => {
+      const levels = engineRef.current?.getAudioLevels();
+      if (levels) {
+        setAudioEnergy(levels.energy);
+        setAudioBands({
+          bass: levels.bass,
+          mid: levels.mid,
+          treble: levels.treble,
+        });
+      }
+      frameId = requestAnimationFrame(publish);
+    };
+    frameId = requestAnimationFrame(publish);
+    return () => cancelAnimationFrame(frameId);
+  }, [audioActive]);
 
   // The landing page is the pitch for a visuals product and contained no
   // visuals: a full-viewport canvas sat behind the launch form with nothing

@@ -1,16 +1,24 @@
+<!--
+These headings are a starting point, not a form. Write the description the
+change deserves — a different shape is fine, and a better one is welcome. The
+only thing CI insists on is that the description is not empty and that it says
+how you know the change works: a command you ran, a test that covers it, or a
+before/after measurement.
+-->
+
 ## Summary
 
-<!-- Briefly describe the changes and their purpose. -->
+<!-- What changed and why. -->
 
 ## Testing
 
-<!-- List the tests you ran and the results. Include commands when possible. -->
+<!-- The tests or checks you ran, with commands and results. -->
 
 -
 
 ## Docs touched
 
-<!-- List docs updated/added, or write "None". -->
+<!-- Docs updated/added, or "None". -->
 
 -
 

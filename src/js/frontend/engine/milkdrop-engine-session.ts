@@ -514,6 +514,11 @@ export function createMilkdropEngineAdapter() {
       return lastSnapshot;
     },
 
+    /** Frame-fresh audio levels; null before the engine mounts. */
+    getAudioLevels() {
+      return experience?.getAudioLevels() ?? null;
+    },
+
     getDiagnostics() {
       return {
         snapshot: lastSnapshot,
