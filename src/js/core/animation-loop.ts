@@ -1,5 +1,5 @@
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
-import { getAverageFrequency, getFrequencyData } from './audio-handler';
+import { getFrequencyFrame } from './audio-handler';
 import { createFrameGate } from './frame-pacing';
 import { getPowerSavingFrameCapHz } from './power-state';
 
@@ -178,13 +178,12 @@ export function getContextFrequencyData(ctx: AnimationContext): Uint8Array {
     return fillSyntheticFrequencyData(buffer, time);
   }
 
-  const data = getFrequencyData(ctx.analyser);
+  const { data, average } = getFrequencyFrame(ctx.analyser);
   if (data.length === 0) {
     const buffer = getFallbackBuffer(FALLBACK_BIN_COUNT);
     return fillSyntheticFrequencyData(buffer, time);
   }
 
-  const average = getAverageFrequency(data);
   if (average >= SILENCE_THRESHOLD) {
     return data;
   }

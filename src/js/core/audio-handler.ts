@@ -1773,6 +1773,19 @@ export async function initAudio(options: AudioInitOptions = {}) {
 }
 
 export function getFrequencyData(analyser: FrequencyAnalyser) {
+  return getFrequencyFrame(analyser).data;
+}
+
+/**
+ * One fused pass over the analyser spectrum: copy the raw bins into a reused
+ * per-analyser buffer while accumulating peak and sum, then stylize in place.
+ * Returns the stylized data together with its mean so per-frame callers
+ * (animation-loop) don't re-walk the array to compute the average again.
+ */
+export function getFrequencyFrame(analyser: FrequencyAnalyser): {
+  data: Uint8Array;
+  average: number;
+} {
   const rawFrequencyData = analyser.getFrequencyData();
   const key = analyser as unknown as object;
   let stylized = stylizedFrequencyBuffers.get(key);
@@ -1780,24 +1793,18 @@ export function getFrequencyData(analyser: FrequencyAnalyser) {
     stylized = new Uint8Array(rawFrequencyData.length);
     stylizedFrequencyBuffers.set(key, stylized);
   }
-  stylized.set(rawFrequencyData);
 
-  return stylizeFrequencyData(stylized);
-}
-
-/**
- * Compute the average value of frequency data.
- * Replaces the repeated inline `data.reduce((a, b) => a + b, 0) / data.length` pattern.
- */
-export function getAverageFrequency(data: Uint8Array): number {
-  if (data.length === 0) return 0;
-
+  let peak = 0;
   let sum = 0;
-  for (let i = 0; i < data.length; i += 1) {
-    sum += data[i];
+  for (let i = 0; i < rawFrequencyData.length; i += 1) {
+    const value = rawFrequencyData[i] ?? 0;
+    stylized[i] = value;
+    if (value > peak) peak = value;
+    sum += value;
   }
 
-  return sum / data.length;
+  const average = stylizeFrequencyDataInPlace(stylized, peak, sum);
+  return { data: stylized, average };
 }
 
 /**
@@ -1806,27 +1813,45 @@ export function getAverageFrequency(data: Uint8Array): number {
  * preserves enough treble sparkle that most toys feel more musical.
  */
 export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
-  const len = data.length;
-  if (len === 0) return data;
-
   let peak = 0;
-  for (let i = 0; i < len; i += 1) {
-    peak = Math.max(peak, data[i] ?? 0);
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    const value = data[i] ?? 0;
+    if (value > peak) peak = value;
+    sum += value;
   }
+  stylizeFrequencyDataInPlace(data, peak, sum);
+  return data;
+}
+
+/**
+ * Core of stylizeFrequencyData with the input peak/sum precomputed by the
+ * caller (so getFrequencyFrame can fuse them into its copy loop). Mutates
+ * `data` and returns the mean of the stylized output.
+ */
+function stylizeFrequencyDataInPlace(
+  data: Uint8Array,
+  peak: number,
+  rawSum: number,
+): number {
+  const len = data.length;
+  if (len === 0) return 0;
 
   if (peak === 0) {
-    return data;
+    return 0;
   }
 
-  const average = getAverageFrequency(data);
+  const average = rawSum / len;
   const averageNormalized = average / 255;
   const activity = clamp((averageNormalized - 0.045) / 0.22, 0, 1);
 
   if (activity === 0 && peak < 26) {
+    let outSum = 0;
     for (let i = 0; i < len; i += 1) {
       data[i] = Math.max(0, Math.round((data[i] ?? 0) * 0.55));
+      outSum += data[i];
     }
-    return data;
+    return outSum / len;
   }
 
   const peakNormalization = clamp(160 / Math.max(72, peak), 0.96, 1.38);
@@ -1835,6 +1860,7 @@ export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
   const highLift = 1 + activity * (0.12 + averageNormalized * 0.08);
 
   let previousValue = data[0] ?? 0;
+  let outSum = 0;
   for (let i = 0; i < len; i += 1) {
     const raw = (data[i] ?? 0) / 255;
     const ratio = len > 1 ? i / (len - 1) : 0;
@@ -1864,43 +1890,8 @@ export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
 
     data[i] = Math.round(clamp(blended, 0, 1) * 255);
     previousValue = data[i];
+    outSum += previousValue;
   }
 
-  return data;
-}
-
-/**
- * Compute a weighted, slightly boosted average that leans into bass/mid energy.
- * Useful for more expressive audio-driven motion.
- */
-export function getWeightedAverageFrequency(data: Uint8Array): number {
-  const len = data.length;
-  if (len === 0) return 0;
-
-  const bassEnd = Math.max(1, Math.floor(len * 0.12));
-  const midEnd = Math.max(bassEnd + 1, Math.floor(len * 0.5));
-
-  let bassSum = 0;
-  for (let i = 0; i < bassEnd; i += 1) {
-    bassSum += data[i];
-  }
-
-  let midSum = 0;
-  for (let i = bassEnd; i < midEnd; i += 1) {
-    midSum += data[i];
-  }
-
-  let trebleSum = 0;
-  for (let i = midEnd; i < len; i += 1) {
-    trebleSum += data[i];
-  }
-
-  const bassAvg = bassSum / bassEnd / 255;
-  const midAvg = midSum / Math.max(1, midEnd - bassEnd) / 255;
-  const trebleAvg = trebleSum / Math.max(1, len - midEnd) / 255;
-
-  const weighted = bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15;
-  const boosted = Math.min(1, weighted ** 0.65 * 1.2);
-
-  return boosted * 255;
+  return outSum / len;
 }

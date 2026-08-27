@@ -18,6 +18,18 @@
   consumer asks for it.
 - **Duplicate drag-magnitude computation** — `interaction-response.ts`
   computes `inputSpeed` once.
+- **Stage `--energy` pulse was event-driven** (fixed 2026-08-26) — the CSS
+  custom property only updated on discrete snapshot emits, so the visual did
+  not track the music. `getAudioLevels()` on the experience controller +
+  engine session now exposes the live signal tracker, and a rAF loop in
+  `useWorkspaceSessionState` feeds the audio-energy store per frame while
+  audio is active (verified: 30/30 distinct values over 30 frames).
+- **Spectrum processed in 5 full-array passes per frame** (fixed 2026-08-26)
+  — `getFrequencyFrame()` fuses the copy/peak/sum walks into one loop, the
+  stylize transform accumulates its own output mean, and `animation-loop.ts`
+  consumes that mean instead of re-walking the array: 5 walks → 2. The
+  now-unused `getAverageFrequency`/`getWeightedAverageFrequency` exports
+  were deleted.
 - **Overlay browse-list full DOM re-render** — the browse UI is React with
   deferred search values and a capped result list.
 - **Renderer-service Proxy churn** — bound renderer methods are now cached
@@ -67,26 +79,7 @@
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Stage `--energy` CSS pulse is event-driven, not frame-driven
-
-`StageControls.tsx` updates the `--energy` custom property from
-`subscribeAudioEnergy`, which is fed from engine *snapshot* changes — and
-snapshots emit on discrete events (preset change, audio start/stop), not per
-frame. The "energy" visual therefore does not track the music. The fix is a
-dedicated per-frame publisher across the engine seam (a rAF reader of the
-live analyser writing `style.setProperty` directly, no React), which needs a
-small API addition on the engine adapter.
-
-### 2. Spectrum processed in multiple passes per frame
-
-On the AnalyserNode fallback path, each frame runs: `getByteFrequencyData`
-copy, a stylize pass, a `getAverageFrequency` pass used only for a silence
-threshold, and an optional blend pass (`animation-loop.ts`,
-`audio-handler.ts`). Fusing the copy+stylize passes and returning the mean
-from the stylize pass would drop 2 of the 4–5 full-array walks nearly for
-free.
-
-### 3. Blend-state cloning during preset transitions
+### 1. Blend-state cloning during preset transitions
 
 `cloneBlendState()` deep-copies wave positions, custom waves, shapes,
 borders, and motion vectors when a blend transition begins. Not per-frame,

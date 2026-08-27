@@ -1086,6 +1086,7 @@ export function createMilkdropExperience({
     // setLiveField/applyFields drive the running VM directly (Tune drags,
     // MIDI, the agent API); omitting vm here made them throw.
     vm,
+    signalTracker,
     // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
   } as any);
 }
@@ -1099,6 +1100,21 @@ function buildExperienceController(deps: Record<string, any>) {
     },
     getStateSnapshot() {
       return deps.buildSnapshot();
+    },
+    /**
+     * Live audio levels straight off the signal tracker, cheap enough to
+     * poll per animation frame. The snapshot carries the same numbers but
+     * only refreshes on discrete emitChange events, so UI that pulses with
+     * the music (stage --energy) reads this instead.
+     */
+    getAudioLevels() {
+      const bands = deps.signalTracker.getLatestAudioBands();
+      return {
+        energy: deps.signalTracker.getLatestAudioEnergy() as number,
+        bass: bands.bass as number,
+        mid: bands.mid as number,
+        treble: bands.treble as number,
+      };
     },
     applyFields(updates: unknown) {
       return deps.applyFieldValues(updates);
