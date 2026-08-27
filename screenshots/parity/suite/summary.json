@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-27T02:51:55.140Z",
+  "generatedAt": "2026-08-27T02:56:38.966Z",
   "outputDir": "./screenshots/parity",
   "suiteDir": "screenshots/parity/suite",
   "certifiedPresetCount": 13,
@@ -9,8 +9,9 @@
   "measuredSourceReportMissingCount": 0,
   "measuredSourceReportMismatchCount": 3,
   "backendMismatchCount": 3,
-  "passCount": 2,
-  "failCount": 8,
+  "passCount": 1,
+  "failCount": 7,
+  "referenceNoSignalCount": 2,
   "missingCount": 0,
   "errorCount": 0,
   "noMeasurableChangeCount": 10,
@@ -24,6 +25,7 @@
       "title": "Eos - Phat - Dark - Heart",
       "status": "backend-mismatch",
       "mismatchRatio": null,
+      "referenceSignal": null,
       "reportPath": "screenshots/parity/suite/eos-phat-dark-heart.json",
       "diffImagePath": null,
       "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260821232440",
@@ -50,6 +52,7 @@
       "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
       "status": "backend-mismatch",
       "mismatchRatio": null,
+      "referenceSignal": null,
       "reportPath": "screenshots/parity/suite/eos-phat-magnetosphere-13-pulsar.json",
       "diffImagePath": null,
       "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260821232517",
@@ -76,6 +79,7 @@
       "title": "Orb - Acid - In - My - Eyes",
       "status": "backend-mismatch",
       "mismatchRatio": null,
+      "referenceSignal": null,
       "reportPath": "screenshots/parity/suite/orb-acid-in-my-eyes.json",
       "diffImagePath": null,
       "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260821232828",
@@ -108,6 +112,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "ok",
       "noiseBand": {
         "min": 0.9970247395833334,
         "max": 0.9971799045138889,
@@ -123,31 +128,6 @@
       "changeVerdict": "no-measurable-change"
     },
     {
-      "presetId": "krash-rovastar-cerebral-demons-stars",
-      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-      "status": "fail",
-      "mismatchRatio": 0.8435199652777777,
-      "reportPath": "screenshots/parity/suite/krash-rovastar-cerebral-demons-stars.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260827025036",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgpu",
-      "noiseBand": {
-        "min": 0.8599240451388889,
-        "max": 0.871171875,
-        "width": 0.01124782986111117,
-        "repeats": 3,
-        "backend": "webgpu",
-        "measuredAt": "2026-08-26T15:23:33.768Z",
-        "contended": false
-      },
-      "baselineMismatchRatio": 0.8435199652777777,
-      "mismatchDelta": 0,
-      "noiseResolution": 0.013464774138453272,
-      "changeVerdict": "no-measurable-change"
-    },
-    {
       "presetId": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "status": "fail",
@@ -158,6 +138,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "ok",
       "noiseBand": {
         "min": 0.812275390625,
         "max": 0.859345703125,
@@ -183,6 +164,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "ok",
       "noiseBand": {
         "min": 0.7552647569444444,
         "max": 0.7575260416666667,
@@ -208,6 +190,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "weak",
       "noiseBand": {
         "min": 0.6329079861111111,
         "max": 0.6567751736111112,
@@ -233,6 +216,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "ok",
       "noiseBand": {
         "min": 0.33717447916666665,
         "max": 0.33717447916666665,
@@ -258,6 +242,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "weak",
       "noiseBand": {
         "min": 0.07326714409722222,
         "max": 0.08078559027777778,
@@ -283,6 +268,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "weak",
       "noiseBand": {
         "min": 0.05790581597222222,
         "max": 0.05866427951388889,
@@ -298,34 +284,35 @@
       "changeVerdict": "no-measurable-change"
     },
     {
-      "presetId": "100-square",
-      "title": "100 Square",
-      "status": "pass",
-      "mismatchRatio": 0.014403211805555555,
-      "reportPath": "screenshots/parity/suite/100-square.json",
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "status": "reference-no-signal",
+      "mismatchRatio": 0.8435199652777777,
+      "reportPath": "screenshots/parity/suite/krash-rovastar-cerebral-demons-stars.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260827025119",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260827025036",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "no-signal",
       "noiseBand": {
-        "min": 0.011884765625,
-        "max": 0.012034505208333334,
-        "width": 0.0001497395833333342,
+        "min": 0.8599240451388889,
+        "max": 0.871171875,
+        "width": 0.01124782986111117,
         "repeats": 3,
         "backend": "webgpu",
-        "measuredAt": "2026-08-26T15:22:23.880Z",
+        "measuredAt": "2026-08-26T15:23:33.768Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.014403211805555555,
+      "baselineMismatchRatio": 0.8435199652777777,
       "mismatchDelta": 0,
-      "noiseResolution": 0.00018687291542207897,
+      "noiseResolution": 0.013464774138453272,
       "changeVerdict": "no-measurable-change"
     },
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
-      "status": "pass",
+      "status": "reference-no-signal",
       "mismatchRatio": 0.010791015625,
       "reportPath": "screenshots/parity/suite/eos-glowsticks-v2-03-music.json",
       "diffImagePath": null,
@@ -333,6 +320,7 @@
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
+      "referenceSignal": "no-signal",
       "noiseBand": {
         "min": 0.010576171875,
         "max": 0.010793185763888888,
@@ -345,6 +333,32 @@
       "baselineMismatchRatio": 0.010791015625,
       "mismatchDelta": 0,
       "noiseResolution": 0.0002830661301412369,
+      "changeVerdict": "no-measurable-change"
+    },
+    {
+      "presetId": "100-square",
+      "title": "100 Square",
+      "status": "pass",
+      "mismatchRatio": 0.014403211805555555,
+      "reportPath": "screenshots/parity/suite/100-square.json",
+      "diffImagePath": null,
+      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260827025119",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "referenceSignal": "ok",
+      "noiseBand": {
+        "min": 0.011884765625,
+        "max": 0.012034505208333334,
+        "width": 0.0001497395833333342,
+        "repeats": 3,
+        "backend": "webgpu",
+        "measuredAt": "2026-08-26T15:22:23.880Z",
+        "contended": false
+      },
+      "baselineMismatchRatio": 0.014403211805555555,
+      "mismatchDelta": 0,
+      "noiseResolution": 0.00018687291542207897,
       "changeVerdict": "no-measurable-change"
     }
   ]

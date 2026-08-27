@@ -47,5 +47,6 @@
     "noiseResolution": 0.00982627801691557,
     "changeVerdict": "no-measurable-change"
   },
-  "status": "fail"
+  "status": "fail",
+  "referenceSignal": "weak"
 }

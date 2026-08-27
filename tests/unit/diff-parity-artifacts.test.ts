@@ -20,7 +20,6 @@ import {
 import {
   compareSuiteResults,
   type SuitePresetResult,
-  suiteResultRank,
 } from '../../scripts/run-parity-diff-suite.ts';
 
 test('computeParityDiffMetrics reports exact matches', () => {
@@ -126,6 +125,7 @@ function makeSuiteResult(
     projectmImagePath: '',
     requiredBackend: 'webgpu',
     actualBackend: null,
+    referenceSignal: null,
     stimsArtifactId: null,
     baselineMismatchRatio: null,
     mismatchDelta: null,
