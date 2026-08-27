@@ -64,6 +64,7 @@ export default class WebToy {
   viewportHeight: number;
   viewportCssWidth: number;
   viewportCssHeight: number;
+  viewportDpr: number;
   resizeFrameId: number | null;
   private viewportSession: ReturnType<typeof createToyViewportSession> | null;
   private rendererSession: ReturnType<typeof createToyRendererSession>;
@@ -133,6 +134,7 @@ export default class WebToy {
     this.viewportHeight = window.innerHeight;
     this.viewportCssWidth = window.innerWidth;
     this.viewportCssHeight = window.innerHeight;
+    this.viewportDpr = window.devicePixelRatio || 1;
     this.resizeFrameId = null;
     this.viewportSession = createToyViewportSession({
       container: this.container,
@@ -151,7 +153,8 @@ export default class WebToy {
       state.width === this.viewportWidth &&
       state.height === this.viewportHeight &&
       state.cssWidth === this.viewportCssWidth &&
-      state.cssHeight === this.viewportCssHeight
+      state.cssHeight === this.viewportCssHeight &&
+      state.dpr === this.viewportDpr
     ) {
       return;
     }
@@ -160,6 +163,7 @@ export default class WebToy {
     this.viewportHeight = state.height;
     this.viewportCssWidth = state.cssWidth;
     this.viewportCssHeight = state.cssHeight;
+    this.viewportDpr = state.dpr;
 
     const aspect = state.width / state.height;
     if (
@@ -198,6 +202,7 @@ export default class WebToy {
       height: this.viewportHeight,
       cssWidth: this.viewportCssWidth,
       cssHeight: this.viewportCssHeight,
+      dpr: this.viewportDpr,
     });
   }
 

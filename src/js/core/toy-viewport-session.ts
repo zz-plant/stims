@@ -3,7 +3,20 @@ export type ToyViewportState = {
   height: number;
   cssWidth: number;
   cssHeight: number;
+  /**
+   * devicePixelRatio at measurement time. Part of the state so a display
+   * move that changes DPR without changing CSS dimensions still reaches
+   * onResize — the renderer derives its buffer size from this.
+   */
+  dpr: number;
 };
+
+/**
+ * Minimum gap between onResize deliveries during a resize burst. Chosen to
+ * sit well above one frame (so per-frame viewport animation coalesces) and
+ * well below human "the window looks wrong" latency.
+ */
+const RESIZE_SETTLE_MS = 250;
 
 export function createToyViewportSession({
   container,
@@ -22,7 +35,12 @@ export function createToyViewportSession({
     height: window.innerHeight,
     cssWidth: window.innerWidth,
     cssHeight: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
   };
+  // Burst deferral (see handleResize): timestamp of the last state actually
+  // delivered to onResize, and the pending re-measure timer for a burst.
+  let lastResizeAppliedAt = Number.NEGATIVE_INFINITY;
+  let settleTimeoutId: number | null = null;
 
   const applyViewportVariables = (cssWidth: number, cssHeight: number) => {
     document.documentElement.style.setProperty(
@@ -50,6 +68,8 @@ export function createToyViewportSession({
       height = Math.max(1, container.clientHeight);
     }
 
+    const dpr = window.devicePixelRatio || 1;
+
     const cssChanged =
       viewportWidth !== state.cssWidth || viewportHeight !== state.cssHeight;
     if (cssChanged) {
@@ -60,16 +80,39 @@ export function createToyViewportSession({
       width === state.width &&
       height === state.height &&
       viewportWidth === state.cssWidth &&
-      viewportHeight === state.cssHeight
+      viewportHeight === state.cssHeight &&
+      dpr === state.dpr
     ) {
       return;
     }
+
+    // Rate-limit the expensive path. onResize ends in a drawing-buffer
+    // resize, and WebGPU rebuilds its color/depth attachments on every one —
+    // the iOS URL-bar animation and desktop window drags emit a resize per
+    // frame, which meant a rebuild per frame for the whole gesture. The CSS
+    // variables above still track every tick (layout must follow the
+    // viewport live); the buffer applies at most once per settle window,
+    // with a timer re-measuring after the burst so the final size always
+    // lands. The canvas is CSS-sized, so mid-burst frames render slightly
+    // stretched rather than wrong.
+    const now = performance.now();
+    if (now - lastResizeAppliedAt < RESIZE_SETTLE_MS) {
+      if (settleTimeoutId === null) {
+        settleTimeoutId = window.setTimeout(() => {
+          settleTimeoutId = null;
+          handleResize();
+        }, RESIZE_SETTLE_MS);
+      }
+      return;
+    }
+    lastResizeAppliedAt = now;
 
     state = {
       width,
       height,
       cssWidth: viewportWidth,
       cssHeight: viewportHeight,
+      dpr,
     };
     onResize(state);
   };
@@ -131,21 +174,39 @@ export function createToyViewportSession({
     passive: true,
   });
 
-  // Track devicePixelRatio changes (e.g., moving between displays)
+  // Track devicePixelRatio changes (e.g., moving between displays). The
+  // query only matches the CURRENT ratio, so it must be re-created after
+  // every change — a listener left on the old query fires once and then
+  // never again for moves between two further displays.
   let currentDpr = window.devicePixelRatio || 1;
-  const dprQuery = window.matchMedia(`(resolution: ${currentDpr}dppx)`);
+  let dprQuery: MediaQueryList | null = null;
   const handleDprChange = () => {
     const newDpr = window.devicePixelRatio || 1;
     if (newDpr !== currentDpr) {
       currentDpr = newDpr;
+      bindDprQuery();
       scheduleResize();
     }
   };
-  if (typeof dprQuery.addEventListener === 'function') {
-    dprQuery.addEventListener('change', handleDprChange);
-  } else {
-    dprQuery.addListener?.(handleDprChange);
-  }
+  const unbindDprQuery = () => {
+    if (!dprQuery) return;
+    if (typeof dprQuery.removeEventListener === 'function') {
+      dprQuery.removeEventListener('change', handleDprChange);
+    } else {
+      dprQuery.removeListener?.(handleDprChange);
+    }
+    dprQuery = null;
+  };
+  const bindDprQuery = () => {
+    unbindDprQuery();
+    dprQuery = window.matchMedia(`(resolution: ${currentDpr}dppx)`);
+    if (typeof dprQuery.addEventListener === 'function') {
+      dprQuery.addEventListener('change', handleDprChange);
+    } else {
+      dprQuery.addListener?.(handleDprChange);
+    }
+  };
+  bindDprQuery();
 
   handleResize();
 
@@ -173,11 +234,7 @@ export function createToyViewportSession({
         viewportResizeHandler = null;
       }
 
-      if (typeof dprQuery.removeEventListener === 'function') {
-        dprQuery.removeEventListener('change', handleDprChange);
-      } else {
-        dprQuery.removeListener?.(handleDprChange);
-      }
+      unbindDprQuery();
 
       window.removeEventListener('orientationchange', handleOrientationChange);
 
@@ -188,6 +245,10 @@ export function createToyViewportSession({
       if (resizeTimeoutId !== null) {
         window.clearTimeout(resizeTimeoutId);
         resizeTimeoutId = null;
+      }
+      if (settleTimeoutId !== null) {
+        window.clearTimeout(settleTimeoutId);
+        settleTimeoutId = null;
       }
     },
   };
