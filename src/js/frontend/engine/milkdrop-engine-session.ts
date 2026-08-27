@@ -267,6 +267,9 @@ export function createMilkdropEngineAdapter() {
       if (intent.agentMode && typeof window !== 'undefined') {
         window.__STIMS_AGENT_RENDER_FRAMES__ = (options) =>
           runtime?.renderFrames?.(options) ?? null;
+        window.__STIMS_AGENT_FREEZE_RENDERING__ = () => {
+          runtime?.freezeRendering?.();
+        };
       }
 
       if (intent.collectionTag) {

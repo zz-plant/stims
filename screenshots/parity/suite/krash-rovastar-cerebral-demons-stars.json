@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "krash-rovastar-cerebral-demons-stars",
   "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260827025036",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260827171616",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 777388,
-    "mismatchRatio": 0.8435199652777777,
-    "maxChannelDelta": 230,
-    "meanAbsoluteError": 0.1529438458832607,
-    "rmse": 0.25092447123029527,
+    "mismatchedPixels": 798944,
+    "mismatchRatio": 0.8669097222222222,
+    "maxChannelDelta": 228,
+    "meanAbsoluteError": 0.14658973595225128,
+    "rmse": 0.25304605677978553,
     "exactMatch": false,
     "threshold": 32
   },
@@ -44,9 +44,9 @@
       "contended": false
     },
     "baselineMismatchRatio": 0.8435199652777777,
-    "mismatchDelta": 0,
+    "mismatchDelta": 0.02338975694444445,
     "noiseResolution": 0.013464774138453272,
-    "changeVerdict": "no-measurable-change"
+    "changeVerdict": "regressed"
   },
   "status": "reference-no-signal",
   "referenceSignal": "no-signal"

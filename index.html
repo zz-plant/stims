@@ -17,7 +17,7 @@
       *,:after,:before{box-sizing:border-box}
       body,html{margin:0;padding:0;min-height:100%}
       body{background:#05070c;color:#e9fbff;font-family:system-ui,sans-serif}
-      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:start;padding:calc(clamp(64px,8vh,96px) + 20px) clamp(20px,6vw,72px) 42px;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#05070c;color:#e9fbff;font-family:var(--font-family-base,system-ui,sans-serif);opacity:1;visibility:visible;transition:opacity 220ms ease-out,visibility 0s linear 220ms}
+      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:start;padding:calc(clamp(64px,8vh,96px) + 14px) calc(clamp(20px,6vw,72px) + 24px) 42px;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#05070c;color:#e9fbff;font-family:var(--font-family-base,system-ui,sans-serif);opacity:1;visibility:visible;transition:opacity 220ms ease-out,visibility 0s linear 220ms}
       .stims-loading[hidden]{display:none}
       .stims-loading--leaving{animation:none;opacity:0;visibility:hidden;pointer-events:none}
       .stims-loading__content{display:grid;justify-items:start;gap:18px;width:min(52rem,100%);animation:loading-breathe 4s ease-in-out infinite}
@@ -38,7 +38,7 @@
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
       @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
-      @media(max-width:767px){.stims-loading{padding:84px 14px 34px}}
+      @media(max-width:767px){.stims-loading{padding:90px 28px 34px}}
       @media(prefers-reduced-motion:reduce){.stims-loading{transition:none}.stims-loading__content,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
       .stims-loading__fallback{background:#0d121c;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.5);margin:20px}
       .stims-loading__fallback p{margin:0 0 24px;font-size:1rem;line-height:1.6;opacity:0.85}

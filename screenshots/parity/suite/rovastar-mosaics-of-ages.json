@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "rovastar-mosaics-of-ages",
   "title": "Rovastar - Mosaics - Of - Ages",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260808171122",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260827171620",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 897317,
-    "mismatchRatio": 0.9736512586805556,
-    "maxChannelDelta": 204,
-    "meanAbsoluteError": 0.1496742125090777,
-    "rmse": 0.18963759416698445,
+    "mismatchedPixels": 918762,
+    "mismatchRatio": 0.9969205729166667,
+    "maxChannelDelta": 253,
+    "meanAbsoluteError": 0.42071203959014164,
+    "rmse": 0.5192241151953583,
     "exactMatch": false,
     "threshold": 32
   },
@@ -43,9 +43,9 @@
       "contended": false
     },
     "baselineMismatchRatio": 0.9736512586805556,
-    "mismatchDelta": 0,
+    "mismatchDelta": 0.023269314236111116,
     "noiseResolution": 0.00018056691596797893,
-    "changeVerdict": "no-measurable-change"
+    "changeVerdict": "regressed"
   },
   "status": "fail",
   "referenceSignal": "ok"
