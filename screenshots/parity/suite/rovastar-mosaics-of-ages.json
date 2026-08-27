@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "presetId": "rovastar-mosaics-of-ages",
+  "title": "Rovastar - Mosaics - Of - Ages",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260808171122",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
+    "imageSha256": "17bf81faddc8563835ec2b79b3dc20ad0ae1e8c983fa8a23452f50610b9f87df",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.meta.json",
+    "metadataSha256": "5e73eabdab05a4ee5ee653148d5dddba55b1315837e76a6ba7eee9446a718202"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "bundled",
+  "strata": [
+    "bundled",
+    "cream-of-the-crop"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 897317,
+    "mismatchRatio": 0.9736512586805556,
+    "maxChannelDelta": 204,
+    "meanAbsoluteError": 0.1496742125090777,
+    "rmse": 0.18963759416698445,
+    "exactMatch": false,
+    "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.9970247395833334,
+      "max": 0.9971799045138889,
+      "width": 0.00015516493055556246,
+      "repeats": 3,
+      "backend": "webgpu",
+      "measuredAt": "2026-08-26T19:05:10.687Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": 0.9736512586805556,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.00018056691596797893,
+    "changeVerdict": "no-measurable-change"
+  },
+  "status": "fail"
+}

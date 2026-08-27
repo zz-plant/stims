@@ -851,9 +851,11 @@ shapecode_0_tex_ang=0.35
     expect(batchedFill?.material?.fragmentShader).toContain(
       'textureAspectY / max(vTextureZoom, 0.0001)',
     );
+    // useGradient is 1 even with no r2/a2 declared: MilkDrop always
+    // interpolates the fill toward the rim color, whose default alpha is 0.
     expect(
       getFloat32AttributeArray(batchedFill, 'instanceFillControl'),
-    ).toEqual(Float32Array.from([0, 1, 0.8, 0.35]));
+    ).toEqual(Float32Array.from([1, 1, 0.8, 0.35]));
     expect(meshFills).toHaveLength(0);
   });
 
@@ -3362,9 +3364,13 @@ shapecode_0_a=0.9
       | undefined;
 
     expect(blendShapeGroup.children).toHaveLength(2);
-    expect(extraFill?.material).toBeInstanceOf(MeshBasicMaterial);
+    // Fills use the gradient shader now that every shape carries a rim
+    // color; the invariant under test is that the previous-only shape stays
+    // visible at the blend-scaled alpha.
+    expect(extraFill?.material).toBeInstanceOf(ShaderMaterial);
     expect(
-      (extraFill?.material as MeshBasicMaterial | undefined)?.opacity,
+      (extraFill?.material as ShaderMaterial | undefined)?.uniforms
+        ?.primaryAlpha?.value,
     ).toBeCloseTo(0.175, 6);
   });
 
