@@ -432,6 +432,7 @@ export function createCompositeUniforms(
     fractalTex3D: texture3D(shared3DPlaceholderRGBA),
     mixAlpha: uniform(0.18),
     videoEchoAlpha: uniform(0),
+    videoEchoZoom: uniform(1),
     zoom: uniform(1.02),
     videoEchoOrientation: uniform(0),
     brighten: uniform(0),

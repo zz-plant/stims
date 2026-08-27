@@ -128,6 +128,8 @@ export type ToyRuntimeInstance = ToyInstance & {
   pausePreview?: () => void;
   /** Resume the idle preview loop. */
   resumePreview?: () => void;
+  /** Stop every render driver until `resumePreview()`. Capture harnesses. */
+  freezeRendering?: () => void;
   /**
    * Synchronously pump N frames through the plugin pipeline with synthetic
    * time and audio data, decoupling simulation time from wall-clock time.
@@ -181,6 +183,16 @@ export type ToyRuntimeInstance = ToyInstance & {
        */
       totalFrames?: number;
     };
+    /**
+     * Leave the runtime frozen on the last pumped frame instead of letting
+     * the preview loop resume. A capture harness needs exactly the frame it
+     * asked for: every async step between the pump and the screenshot
+     * (backend probe, audio probe, the screenshot itself) is another chance
+     * for the live loop to render over it, and measured parity captures
+     * landed 28-162 frames past the pump with the decorative audio signal
+     * driving them. Cleared by `resumePreview()`.
+     */
+    holdAfterPump?: boolean;
     /**
      * Drive the pump with the audio a projectM parity reference was rendered
      * against, instead of the decorative synthetic signal.
@@ -475,6 +487,11 @@ export function createToyRuntime({
     }
   };
 
+  // Set by `renderFrames({ holdAfterPump })`; keeps every restart path
+  // (visibility changes, stopAudio, React effects) from rendering over a
+  // frame a capture harness is about to read.
+  let deterministicHold = false;
+
   const stopPreviewLoop = () => {
     if (!previewActive) return;
     previewActive = false;
@@ -488,6 +505,7 @@ export function createToyRuntime({
     if (
       !previewOptions.enabled ||
       previewActive ||
+      deterministicHold ||
       (typeof document !== 'undefined' && document.hidden)
     ) {
       return;
@@ -622,8 +640,24 @@ export function createToyRuntime({
       lastFrameTime = 0;
       startPreviewLoop();
     },
+    /**
+     * Stop every render driver and refuse to restart until `resumePreview()`.
+     * `pausePreview` only stops the pre-audio preview loop; a capture harness
+     * needs the audio-driven `setAnimationLoop` callback stopped too, since
+     * that is what kept rendering live, decorative-audio frames over pumped
+     * deterministic ones (measured: the screenshot showed t=5.598s where the
+     * pump had left t=4.913s).
+     */
+    freezeRendering: () => {
+      deterministicHold = true;
+      stopPreviewLoop();
+      toy.renderer?.setAnimationLoop?.(null);
+    },
     pausePreview: stopPreviewLoop,
-    resumePreview: startPreviewLoop,
+    resumePreview: () => {
+      deterministicHold = false;
+      startPreviewLoop();
+    },
     renderFrames: (options) => {
       const frames = Math.max(1, Math.floor(options?.frames ?? 1));
       const deltaMs = options?.deltaMs ?? 1000 / 60;
@@ -638,6 +672,9 @@ export function createToyRuntime({
       }
       let resetHistoryOnNextFrame = false;
       stopPreviewLoop();
+      if (options?.holdAfterPump) {
+        deterministicHold = true;
+      }
       if (options?.startTime !== undefined) {
         // Pumped frames are only reproducible if the clock they integrate is
         // too. The idle signal is a pure function of frameState.time, and
