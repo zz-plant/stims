@@ -20,7 +20,46 @@ The first bundled shipped presets to carry through that flow are:
 
 These four IDs are the smallest evidence loop that can move the shipped catalog from inferred runtime labels to checked-in `projectM` references and measured results without expanding the corpus prematurely.
 
-## Current state (2026-08-26)
+## Current state (2026-08-27)
+
+Two defects found on 2026-08-27 changed both the numbers and how much the old
+ones can be trusted; the 2026-08-26 scoreboard below them is superseded.
+
+- **The capture harness was measuring the wrong frame.** The deterministic
+  pump stops the preview loop, but rendering resumed the moment it returned
+  and ran live frames — on the decorative audio signal, not the pinned
+  reference one — through every remaining probe before the screenshot.
+  Measured on 260: the pump left the engine at t=4.913s with bass 0.00, the
+  screenshot showed t=5.598s with bass 2.47; captures landed 28-162 frames
+  past the pump. `renderFrames({ holdAfterPump })` plus `freezeRendering()`
+  (which also clears the audio-driven `setAnimationLoop` callback, the actual
+  driver) fix it, and `play-toy` now records pumped-vs-captured clock and
+  bands and warns when they differ. 261's run-to-run spread collapsed from
+  14.7pp (73.4-88.1% same-day) to 0.52pp over 4 repeats. **Every band
+  measured before this is stale**; the graded set has been re-banded.
+- **Video echo was applied to the accumulator instead of at display.** Both
+  backends flipped the uv the feedback pass samples history with, so the
+  carried frame was re-flipped every frame and no echo was ever blended
+  (`fVideoEchoZoom` never reached a shader). The effect defines its own test:
+  at alpha 0.5 with orientation 3 the output must equal its own 180-degree
+  rotation. projectM scores 0.9994 self-correlation on
+  rovastar-parallel-universe; we scored 0.665, now 0.973 (and 0.992 on krash,
+  from ~0.5) — measured without consulting a reference.
+- Scoreboard after both fixes, judged against re-measured bands: 100-square
+  1.50% PASS (band 1.36-1.55), glowsticks 1.08% and krash 95.26% both
+  **ungraded** (`reference-no-signal`), 300-beatdetect 5.79%, 250-wavecode
+  7.30%, cubetrace 29.25%, 260 33.72% (still bit-exact repeatable),
+  261 76.24%, rovastar-parallel-universe 67.99%, mosaics 100.00%.
+- `parity:suite` no longer returns pass/fail for a preset whose reference a
+  blank render would pass; those report `reference-no-signal` with the ratio
+  attached for information.
+- Two presets remain non-deterministic after the harness fix: mosaics swings
+  66.3-99.7% and cubetrace 29.3-38.3% across repeats. Prime suspect is the
+  per-preset `Math.random` constants drawn at preset load, which the capture
+  path does not seed (`play-toy` has a `randomSeed` option that
+  `lab:backend-diff` passes and the parity capture does not).
+
+## Superseded snapshot (2026-08-26)
 
 Frame-by-frame diffing against native projectM exists and runs: `parity:capture`
 walks the certified manifest on one reused browser, `parity:suite` diffs each
@@ -223,8 +262,13 @@ That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured 
 
 ### Feedback and video echo
 
+- Echo now matches MilkDrop's shape: a display-stage second draw, zoomed by
+  `fVideoEchoZoom` and flipped per `nVideoEchoOrientation`, blended by
+  `fVideoEchoAlpha` (`MILKDROP_VIDEO_ECHO_HELPER` in
+  `feedback-manager-shared.ts`, mirrored in the WebGPU TSL composite). The
+  180-degree self-correlation invariant is the regression test.
 - Replace heuristic composite state with projectM-matching pass ordering and math.
-- Verify `video_echo_*`, feedback mix, zoom, orientation, wrap, and post effects against reference renders.
+- Verify feedback mix, wrap, and the remaining post effects against reference renders.
 - Eliminate backend-specific shortcuts that change visible output.
 
 ### Shader text
