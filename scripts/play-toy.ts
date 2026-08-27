@@ -29,6 +29,17 @@ export type PlayToyResult = {
   success: boolean;
   presetId?: string;
   screenshot?: string;
+  /**
+   * Simulation clock and bass reading at the end of the deterministic pump
+   * versus at the moment the screenshot was taken. Equal times mean the
+   * captured image is the frame that was asked for.
+   */
+  deterministicDrift?: {
+    pumpedTime: number;
+    capturedTime: number | null;
+    pumpedBass: number;
+    capturedBass: number | null;
+  };
   debugSnapshot?: string;
   video?: string;
   error?: string;
@@ -857,6 +868,34 @@ async function getErrorStatus(page: Page) {
   }
 }
 
+/**
+ * The simulation clock and audio bands of the last frame the engine actually
+ * rendered. A deterministic capture must read exactly the pumped time with
+ * the pumped audio; anything else means live frames landed on top of the one
+ * being captured (see the drift guard at the capture site).
+ */
+async function readDeterministicSignals(page: Page) {
+  return page
+    .evaluate(() => {
+      const signals = (
+        window as typeof window & {
+          stimState?: { getDebugSnapshot?: (key: string) => unknown | null };
+        }
+      ).stimState?.getDebugSnapshot?.('milkdrop') as
+        | { frameState?: { signals?: Record<string, number> } }
+        | null
+        | undefined;
+      const frame = signals?.frameState?.signals;
+      if (!frame) return null;
+      return {
+        time: Number(frame.time ?? 0),
+        bass: Number(frame.bass ?? 0),
+        treb: Number(frame.treb ?? 0),
+      };
+    })
+    .catch(() => null);
+}
+
 async function getMilkdropDebugSnapshot(page: Page) {
   return page
     .evaluate(() => {
@@ -1340,6 +1379,7 @@ async function pumpDeterministicFrames(
                 deltaMs?: number;
                 startTime?: number;
                 referenceAudio?: 'silence' | 'tones';
+                holdAfterPump?: boolean;
               }) => { rendered: number } | null;
             }
           ).__STIMS_AGENT_RENDER_FRAMES__;
@@ -1368,6 +1408,15 @@ async function pumpDeterministicFrames(
           return hook({
             frames: count,
             deltaMs: 1000 / 60,
+            // Freeze on the final pumped frame. Without this the preview
+            // loop resumes the moment the pump returns and renders live,
+            // decorative-audio frames over the deterministic one while the
+            // harness runs its remaining probes: captures were landing
+            // 28-162 frames past the pump, at time 5.25-5.76 instead of the
+            // requested 5.000, with bass reading 2.1-5.0 instead of the
+            // pinned reference band. That drift is what made 261 swing
+            // 73-88% between same-day captures.
+            holdAfterPump: true,
             ...(reference ? { referenceAudio: reference } : {}),
             ...(reset ? { startTime: 0 } : {}),
           });
@@ -1941,6 +1990,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     // Wait for visualization to run
     let pumpedFrames: number | null = null;
+    let pumpedSignals: { time: number; bass: number; treb: number } | null =
+      null;
     if (normalizedOptions.deterministicFrames > 0) {
       // Autoplay is the other thing that changes what is on screen without
       // being asked. A capture is evidence about one named preset, and a
@@ -2017,6 +2068,20 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
               : ''
           }.`,
         );
+        // Freeze before any further probing: everything between here and
+        // the screenshot (backend probe, audio probe, the capture itself) is
+        // wall-clock time in which live frames would render over the
+        // deterministic one.
+        await page
+          .evaluate(() => {
+            (
+              window as typeof window & {
+                __STIMS_AGENT_FREEZE_RENDERING__?: () => void;
+              }
+            ).__STIMS_AGENT_FREEZE_RENDERING__?.();
+          })
+          .catch(() => undefined);
+        pumpedSignals = await readDeterministicSignals(page);
       }
     }
     if (pumpedFrames === null) {
@@ -2101,6 +2166,31 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       }
       result.screenshot = screenshotPath;
       console.log(`Screenshot saved to ${screenshotPath}`);
+      if (pumpedSignals) {
+        const captured = await readDeterministicSignals(page);
+        const drift = captured
+          ? Math.abs(captured.time - pumpedSignals.time)
+          : null;
+        // A deterministic capture is only worth diffing if the frame on
+        // screen is the frame that was pumped. Live frames rendering over it
+        // is not a small perturbation: they run on the decorative audio
+        // signal, so the preset sees loud music where the reference saw the
+        // pinned one.
+        if (drift !== null && drift > 1 / 120) {
+          console.warn(
+            `Deterministic capture drifted: pumped to t=${pumpedSignals.time.toFixed(3)}s ` +
+              `(bass ${pumpedSignals.bass.toFixed(2)}) but the screen shows ` +
+              `t=${captured?.time.toFixed(3)}s (bass ${captured?.bass.toFixed(2)}). ` +
+              `Live frames rendered over the pumped frame.`,
+          );
+        }
+        result.deterministicDrift = {
+          pumpedTime: pumpedSignals.time,
+          capturedTime: captured?.time ?? null,
+          pumpedBass: pumpedSignals.bass,
+          capturedBass: captured?.bass ?? null,
+        };
+      }
     }
 
     if (options.debugSnapshot) {

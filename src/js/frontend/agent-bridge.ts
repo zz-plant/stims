@@ -121,8 +121,16 @@ declare global {
       };
       /** Pump the audio a projectM parity reference was rendered against. */
       referenceAudio?: 'silence' | 'tones';
+      /** Freeze on the last pumped frame until `resumePreview()`. */
+      holdAfterPump?: boolean;
       relationshipLock?: boolean;
     }) => { rendered: number } | null;
+    /**
+     * Agent-mode only: stop every render driver (preview loop and the
+     * audio-driven animation loop) so a capture harness can screenshot the
+     * exact frame it pumped. Released by resuming the preview.
+     */
+    __STIMS_AGENT_FREEZE_RENDERING__?: () => void;
   }
 }
 

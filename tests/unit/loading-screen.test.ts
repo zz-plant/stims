@@ -49,3 +49,23 @@ test('loading screen remains for the crossfade and is removed when opacity finis
 
   expect(loading?.isConnected).toBe(false);
 });
+
+test('reduced motion removes the loading screen immediately', () => {
+  document.body.innerHTML = '<div id="stims-loading"></div>';
+  const loading = document.getElementById('stims-loading');
+  const matchMedia = window.matchMedia;
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({ matches: true }),
+  });
+
+  try {
+    dismissLoadingScreen();
+    expect(loading?.isConnected).toBe(false);
+  } finally {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: matchMedia,
+    });
+  }
+});

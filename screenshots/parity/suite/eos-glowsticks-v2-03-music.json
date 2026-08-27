@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-glowsticks-v2-03-music",
   "title": "Eo.S. - Glowsticks v2 03 Music",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260827025134",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260827171610",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 9945,
-    "mismatchRatio": 0.010791015625,
+    "mismatchedPixels": 9953,
+    "mismatchRatio": 0.010799696180555556,
     "maxChannelDelta": 219,
-    "meanAbsoluteError": 0.0045188192175018155,
-    "rmse": 0.03863291377710418,
+    "meanAbsoluteError": 0.004516281715232389,
+    "rmse": 0.038608645516335076,
     "exactMatch": false,
     "threshold": 32
   },
@@ -44,7 +44,7 @@
       "contended": false
     },
     "baselineMismatchRatio": 0.010791015625,
-    "mismatchDelta": 0,
+    "mismatchDelta": 0.000008680555555555178,
     "noiseResolution": 0.0002830661301412369,
     "changeVerdict": "no-measurable-change"
   },
