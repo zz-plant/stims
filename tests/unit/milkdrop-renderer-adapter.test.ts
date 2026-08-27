@@ -2149,12 +2149,11 @@ video_echo_orientation=3
   );
 
   test.each(['webgl', 'webgpu'] as const)(
-    'drops the echo orientation flip for presets with a warp shader on %s',
+    'keeps the echo orientation for warp-shader presets on %s',
     (backend) => {
-      // A preset whose feedback is driven by a warp shader must not get the
-      // legacy echo orientation flip: the direct warp path never applies it,
-      // so applying it in the legacy fallback would rotate the whole previous
-      // frame 180° and render the theme upside down.
+      // Echo reaches the display stage as a second, reoriented draw, so a
+      // warp-shader preset keeps its orientation: the flip never touches the
+      // accumulator the warp shader feeds.
       const preset = compileMilkdropPresetSource(
         `
 title=Feedback Orientation Gating
@@ -2204,9 +2203,13 @@ shader_body {
         }),
       ).toBe(true);
 
+      // Echo is a display-stage blend now, so the orientation flip only
+      // reorients the echoed copy and is safe for warp-shader presets. It
+      // was suppressed while the flip was applied to the accumulator, where
+      // it rotated the carried history and flipped whole shader themes.
       expect(compositeStates[0]).toMatchObject({
         videoEchoAlpha: 0.42,
-        videoEchoOrientation: 0,
+        videoEchoOrientation: 3,
       });
     },
   );

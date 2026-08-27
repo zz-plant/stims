@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "250-wavecode",
   "title": "250 Wavecode",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260827171559",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260827172523",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
@@ -24,28 +24,28 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 74567,
-    "mismatchRatio": 0.08091037326388889,
+    "mismatchedPixels": 67306,
+    "mismatchRatio": 0.07303168402777778,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.031032347834967323,
-    "rmse": 0.1436257317828704,
+    "meanAbsoluteError": 0.028507696191902687,
+    "rmse": 0.13863322497718117,
     "exactMatch": false,
     "threshold": 16
   },
   "noise": {
     "noiseBand": {
-      "min": 0.07326714409722222,
-      "max": 0.08078559027777778,
-      "width": 0.007518446180555555,
+      "min": 0.07319444444444445,
+      "max": 0.0734353298611111,
+      "width": 0.00024088541666665575,
       "repeats": 3,
       "backend": "webgpu",
-      "measuredAt": "2026-08-26T15:22:33.040Z",
+      "measuredAt": "2026-08-27T17:20:03.211Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.07977105034722222,
-    "mismatchDelta": 0.0011393229166666713,
-    "noiseResolution": 0.00982627801691557,
-    "changeVerdict": "no-measurable-change"
+    "baselineMismatchRatio": 0.08091037326388889,
+    "mismatchDelta": -0.007878689236111111,
+    "noiseResolution": 0.0003204596252832493,
+    "changeVerdict": "improved"
   },
   "status": "fail",
   "referenceSignal": "weak"

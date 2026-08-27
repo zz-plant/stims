@@ -226,6 +226,14 @@ export function applyCompositeUniformState(
   uniforms.scale3.value = blurShaderRanges[2].scale;
   uniforms.bias3.value = blurShaderRanges[2].bias;
   uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
+  // Echo is applied at display on both backends; the zoom and orientation
+  // ride along with the alpha rather than being applied to the accumulator.
+  if (uniforms.videoEchoZoom) {
+    uniforms.videoEchoZoom.value = state.videoEchoZoom;
+  }
+  if (uniforms.videoEchoOrientation) {
+    uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
+  }
   uniforms.brighten.value = state.brighten;
   uniforms.darken.value = state.darken;
   uniforms.darkenCenter.value = state.darkenCenter;
@@ -804,6 +812,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float scale3;
         uniform float bias3;
         uniform float videoEchoAlpha;
+        uniform float videoEchoZoom;
+        uniform float videoEchoOrientation;
         uniform float brighten;
         uniform float darken;
         uniform float darkenCenter;
@@ -953,6 +963,15 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
           // image (warped feedback + geometry). This pass is display-only,
           // matching MilkDrop: nothing computed here feeds the next frame.
           vec3 color = texture2D(internalTex, sampleUv(vUv, textureWrap)).rgb;
+          color = applyVideoEcho(
+            internalTex,
+            vUv,
+            color,
+            videoEchoAlpha,
+            videoEchoZoom,
+            videoEchoOrientation,
+            textureWrap
+          );
           // Uniform branch: skip the sin/cos + mat3 build when no hue shift
           // is active (the common case) — mobile GPUs run transcendentals on
           // a slow special-function unit.
@@ -1052,6 +1071,45 @@ ${MILKDROP_NOISE_VOLUME_HELPERS}
         }
       `;
 
+/**
+ * MilkDrop's video echo: the display stage draws the frame a second time,
+ * zoomed by fVideoEchoZoom and flipped per nVideoEchoOrientation (bit 0 = x,
+ * bit 1 = y), blended over the first by fVideoEchoAlpha. It is a display
+ * effect and must not touch the accumulator — flipping the feedback sample
+ * instead rotates the carried history every frame, which breaks the
+ * invariant the effect is defined by: at alpha 0.5 with orientation 3 the
+ * output is exactly its own 180-degree rotation (projectM reference:
+ * self-correlation 0.9994; ours before this fix: 0.66).
+ */
+const MILKDROP_VIDEO_ECHO_HELPER = `
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
+        vec3 applyVideoEcho(
+          sampler2D tex,
+          vec2 uv,
+          vec3 base,
+          float alpha,
+          float zoom,
+          float orientation,
+          float wrap
+        ) {
+          if (alpha < 0.0001) {
+            return base;
+          }
+          vec2 echoUv = (uv - 0.5) / max(zoom, 0.0001) + 0.5;
+          echoUv = applyVideoEchoOrientationTransform(echoUv, orientation);
+          vec3 echo = texture2D(tex, sampleUv(echoUv, wrap)).rgb;
+          return mix(base, echo, clamp(alpha, 0.0, 1.0));
+        }
+`;
+
 const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
@@ -1134,14 +1192,7 @@ ${MILKDROP_SHADER_BUILTIN_DECLARATIONS}
 ${MILKDROP_AUX_SAMPLING_HELPERS}
 ${MILKDROP_NOISE_VOLUME_HELPERS}
 ${MILKDROP_FEEDBACK_WARP_HELPER}
-        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
-          float flipU = step(0.5, mod(orientation, 2.0));
-          float flipV = step(1.5, mod(orientation, 4.0));
-          return vec2(
-            mix(uv.x, 1.0 - uv.x, flipU),
-            mix(uv.y, 1.0 - uv.y, flipV)
-          );
-        }
+${MILKDROP_VIDEO_ECHO_HELPER}
 
         // --- DIRECT_WARP_GLOBALS_START ---
         // --- DIRECT_WARP_GLOBALS_END ---
@@ -1192,7 +1243,6 @@ ${MILKDROP_FEEDBACK_WARP_HELPER}
               ).rg - 0.5;
             prevUv += warpVector * warpTextureAmount * 0.08;
           }
-          prevUv = applyVideoEchoOrientationTransform(prevUv, videoEchoOrientation);
           gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
         }
       `;
@@ -2173,6 +2223,8 @@ class SharedMilkdropFeedbackManager
         blur3Tex: { value: this.blurTargets[2].texture },
         ...BLUR_RANGE_UNIFORM_DEFAULTS,
         videoEchoAlpha: { value: 0 },
+        videoEchoZoom: { value: 1 },
+        videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
         darkenCenter: { value: 0 },
