@@ -38,6 +38,7 @@ describe('toy renderer native capture override', () => {
       height: 360,
       cssWidth: 640,
       cssHeight: 360,
+      dpr: 1,
     });
 
     const restore = session.beginNativeCapture(3840, 2160);
