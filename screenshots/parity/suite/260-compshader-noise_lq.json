@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "260-compshader-noise_lq",
   "title": "260 Compshader Noise LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260823183653",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260827025126",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
@@ -24,27 +24,27 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 326785,
-    "mismatchRatio": 0.35458441840277777,
-    "maxChannelDelta": 125,
-    "meanAbsoluteError": 0.06130440240332244,
-    "rmse": 0.08196975623431403,
+    "mismatchedPixels": 310740,
+    "mismatchRatio": 0.33717447916666665,
+    "maxChannelDelta": 116,
+    "meanAbsoluteError": 0.059716013922930286,
+    "rmse": 0.08006215907052311,
     "exactMatch": false,
     "threshold": 16
   },
   "noise": {
     "noiseBand": {
-      "min": 0.9900271267361112,
-      "max": 0.9902549913194445,
-      "width": 0.00022786458333334814,
-      "repeats": 10,
+      "min": 0.33717447916666665,
+      "max": 0.33717447916666665,
+      "width": 0,
+      "repeats": 3,
       "backend": "webgpu",
-      "measuredAt": "2026-08-22T17:57:51.421Z",
+      "measuredAt": "2026-08-26T15:22:43.433Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.35458441840277777,
+    "baselineMismatchRatio": 0.33717447916666665,
     "mismatchDelta": 0,
-    "noiseResolution": 0.00022786458333334814,
+    "noiseResolution": 0,
     "changeVerdict": "no-measurable-change"
   },
   "status": "fail"
