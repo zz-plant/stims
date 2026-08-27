@@ -349,6 +349,7 @@ export type MilkdropFeedbackCompositeState = {
   perPixelVariables?: Readonly<Record<string, number>>;
   mixAlpha: number;
   videoEchoAlpha: number;
+  videoEchoZoom: number;
   zoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;

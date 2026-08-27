@@ -2438,6 +2438,18 @@ function createCompositeAuxSampler(
  * comp program, color adjustments, and post chain all live in the
  * display-only composite node instead.
  */
+/** nVideoEchoOrientation bit 0 flips x, bit 1 flips y. */
+const applyVideoEchoOrientationNode = Fn(
+  ([sampleUv, orientation]: [any, any]) => {
+    const flipX = step(0.5, orientation.sub(floor(orientation.div(2)).mul(2)));
+    const flipY = step(1.5, orientation.sub(floor(orientation.div(4)).mul(4)));
+    return vec2(
+      mix(sampleUv.x, float(1).sub(sampleUv.x), flipX),
+      mix(sampleUv.y, float(1).sub(sampleUv.y), flipY),
+    );
+  },
+);
+
 function createFeedbackBlendOutputNode(
   uniforms: CompositeUniformBag,
   shaderPrograms: {
@@ -2451,22 +2463,6 @@ function createFeedbackBlendOutputNode(
 ) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
-  const applyVideoEchoOrientationNode = Fn(
-    ([sampleUv, orientation]: [any, any]) => {
-      const flipX = step(
-        0.5,
-        orientation.sub(floor(orientation.div(2)).mul(2)),
-      );
-      const flipY = step(
-        1.5,
-        orientation.sub(floor(orientation.div(4)).mul(4)),
-      );
-      return vec2(
-        mix(sampleUv.x, float(1).sub(sampleUv.x), flipX),
-        mix(sampleUv.y, float(1).sub(sampleUv.y), flipY),
-      );
-    },
-  );
   const sampleAuxTextureNode = createCompositeAuxSampler(uniforms);
 
   return Fn(() => {
@@ -2672,9 +2668,6 @@ function createFeedbackBlendOutputNode(
     previousUv.addAssign(
       warpVector.mul(uniforms.warpTextureAmount).mul(0.08).mul(warpTextureMask),
     );
-    previousUv.assign(
-      applyVideoEchoOrientationNode(previousUv, uniforms.videoEchoOrientation),
-    );
 
     const current = uniforms.currentTex.sample(
       sampleUvNode(currentUv, uniforms.textureWrap),
@@ -2739,6 +2732,21 @@ function createCompositeOutputNode(
       ).rgb;
 
     const color = sampleMainNode(baseUv).toVar();
+
+    // MilkDrop's video echo is a display effect: the frame is drawn a second
+    // time, zoomed by fVideoEchoZoom and flipped per nVideoEchoOrientation,
+    // blended over the first by fVideoEchoAlpha. Flipping the feedback sample
+    // instead (what this did) rotated the carried history every frame and
+    // broke the invariant the effect is defined by — at alpha 0.5 with
+    // orientation 3 the output equals its own 180-degree rotation (projectM
+    // reference self-correlation 0.9994, ours 0.66 before this).
+    const echoUv = applyVideoEchoOrientationNode(
+      baseUv.sub(0.5).div(max(uniforms.videoEchoZoom, 0.0001)).add(0.5),
+      uniforms.videoEchoOrientation,
+    );
+    color.assign(
+      mix(color, sampleMainNode(echoUv), clamp(uniforms.videoEchoAlpha, 0, 1)),
+    );
 
     // Apply color adjustments in MilkDrop order — before the comp program,
     // matching the WebGL composite pass
