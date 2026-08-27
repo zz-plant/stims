@@ -15,6 +15,7 @@ let DEFAULT_MICROPHONE_CONSTRAINTS: any;
 let EXACT_MICROPHONE_CONSTRAINTS: any;
 let describeInputProcessingWarning: any;
 let getFrequencyData: any;
+let getFrequencyFrame: any;
 let FrequencyAnalyser: any;
 let stylizeFrequencyData: any;
 let resolveAdaptiveFftSize: any;
@@ -126,6 +127,7 @@ beforeAll(async () => {
     FrequencyAnalyser,
     initAudio,
     getFrequencyData,
+    getFrequencyFrame,
     stylizeFrequencyData,
     resolveAdaptiveFftSize,
   } = await import('../../src/js/core/audio-handler.ts'));
@@ -409,6 +411,26 @@ describe('audio-handler utilities', () => {
     expect([...data]).toEqual([8, 12, 17, 15, 10, 7, 4, 2]);
     expect(Math.max(...result)).toBeLessThan(17);
     expect(analyser.getFrequencyData).toHaveBeenCalled();
+  });
+
+  test('getFrequencyFrame average matches the mean of the stylized data', () => {
+    // The fused path accumulates the mean inside the stylize loops instead of
+    // re-walking the array; the two must never drift apart.
+    const cases = [
+      new Uint8Array(64).map((_, i) => (i * 37 + 90) % 256), // loud / active
+      new Uint8Array(64).map((_, i) => (i % 5 === 0 ? 12 : 3)), // quiet path
+      new Uint8Array(64), // silent path
+    ];
+    for (const data of cases) {
+      const analyser = { getFrequencyData: mock(() => data) };
+      const { data: stylized, average } = getFrequencyFrame(analyser);
+      const mean =
+        stylized.length === 0
+          ? 0
+          : [...stylized].reduce((a: number, b: number) => a + b, 0) /
+            stylized.length;
+      expect(average).toBeCloseTo(mean, 10);
+    }
   });
 
   test('FrequencyAnalyser exposes time-domain waveform data', async () => {
