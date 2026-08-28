@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to `.github/workflows/ci.yml`
 
 ## Why this exists
 
-~16% of fix commits (125 sampled) are deploy/tooling: CI config, wrangler, build scripts, and deploy pipeline — the #3 category. This skill prevents those regressions.
+**25% of fix commits — the #2 category**, up from ~16% at the previous audit, which ranked it #3. Deploy and tooling: CI config, wrangler, build scripts, the deploy pipeline, and the growing set of guard/measurement scripts. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 

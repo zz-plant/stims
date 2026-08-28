@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
 
 ## Why this exists
 
-~8% of fix commits are in the fallback chain — now the smallest category: WebGPU timeout regressions, renderScale propagation failures, analyser worklet path breaks, and capability probe drift. The fallback state machine (Sprint 7) may have reduced the rate further. This skill hardens that boundary.
+**1.5% of fix commits — two commits in the last 400**, down from ~8%. This skill previously guessed that the Sprint 7 fallback state machine had reduced the rate; that is now measured, and the answer is yes. The failure modes it guards (WebGPU timeout regressions, renderScale propagation failures, analyser worklet path breaks, capability probe drift) are severe but rare, so use this as a correctness checklist when you do touch the chain — not as a reason to expect breakage. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 

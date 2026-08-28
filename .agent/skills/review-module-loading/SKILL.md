@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to [`src/js/app.ts`](../../..
 
 ## Why this exists
 
-~11% of fix commits (125 sampled) are module-loading regressions: bundle load failures, manifest resolution drift, boot order, and gamepad/input polling lifecycle — the #5 category. This skill prevents those at review time.
+**3% of fix commits**, down from ~11% at the previous audit — the single boot path documented below did its job. Module-loading regressions: bundle load failures, manifest resolution drift, boot order, and gamepad/input polling lifecycle. Still worth reviewing because each one breaks the app outright, but do not treat this as a high-churn surface. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Boot path as it stands today
 
