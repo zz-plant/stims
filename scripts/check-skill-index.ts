@@ -17,6 +17,12 @@
  *   2. `name` matches the directory (routing tables address skills by path,
  *      and a mismatch makes the two ways of naming a skill disagree)
  *   3. the skill is listed in the capability index
+ *   4. the skill is served over MCP (`scripts/mcp-shared.ts`), so clients
+ *      reaching the repo that way see the same skill set as a CLI agent
+ *
+ * `guard-agent-work` states requirement 4 as a manual checklist item, which is
+ * exactly as reliable as it sounds: the skill added alongside this guard was
+ * itself missed. A checklist that can be enforced should be.
  *
  * The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
  * so — and is not required to carry every skill.
@@ -26,6 +32,7 @@ import { join } from 'node:path';
 
 const SKILLS_ROOT = '.agent/skills';
 const CAPABILITY_INDEX = 'docs/agents/custom-capabilities.md';
+const MCP_SURFACE = 'scripts/mcp-shared.ts';
 /** Long enough to say when the skill applies, not just restate its name. */
 const MIN_DESCRIPTION_LENGTH = 40;
 
@@ -36,6 +43,14 @@ const capabilityIndex = existsSync(CAPABILITY_INDEX)
   : '';
 if (!capabilityIndex) {
   console.error(`✖ Missing capability index: ${CAPABILITY_INDEX}`);
+  process.exit(1);
+}
+
+const mcpSurface = existsSync(MCP_SURFACE)
+  ? readFileSync(MCP_SURFACE, 'utf8')
+  : '';
+if (!mcpSurface) {
+  console.error(`✖ Missing MCP surface: ${MCP_SURFACE}`);
   process.exit(1);
 }
 
@@ -79,9 +94,21 @@ for (const dir of skillDirs) {
     );
   }
 
-  if (!capabilityIndex.includes(`${SKILLS_ROOT}/${dir}/SKILL.md`)) {
+  const skillReference = `${SKILLS_ROOT}/${dir}/SKILL.md`;
+
+  if (!capabilityIndex.includes(skillReference)) {
     offenders.push(
       `${dir} is not listed in ${CAPABILITY_INDEX} — agents will never find it`,
+    );
+  }
+
+  // The MCP surface needs three mentions (import, markdownSources entry,
+  // agentCapabilities record); requiring the path twice catches a skill that
+  // was imported but never registered, which serves no one.
+  const mcpMentions = mcpSurface.split(skillReference).length - 1;
+  if (mcpMentions < 2) {
+    offenders.push(
+      `${dir} is not served over MCP — add the import, the \`markdownSources\` entry and the \`agentCapabilities\` record in ${MCP_SURFACE}`,
     );
   }
 }
@@ -90,12 +117,13 @@ if (offenders.length > 0) {
   console.error(`✖ Found ${offenders.length} skill index problem(s):\n`);
   for (const offender of offenders) console.error(`  ${offender}`);
   console.error(
-    `\nAdd a row to ${CAPABILITY_INDEX} for a new skill, and consider ` +
-      `.claude/CLAUDE.md's routing table when it covers a common task class.`,
+    `\nAdding a skill means: a row in ${CAPABILITY_INDEX}, registration in ` +
+      `${MCP_SURFACE}, and — when it covers a common task class — a row in ` +
+      `.claude/CLAUDE.md's routing table.`,
   );
   process.exit(1);
 }
 
 console.log(
-  `✔ ${skillDirs.length} agent skills are well-formed and listed in the capability index`,
+  `✔ ${skillDirs.length} agent skills are well-formed, indexed, and served over MCP`,
 );

@@ -473,6 +473,12 @@ Checks per `.agent/skills/<dir>/SKILL.md`:
   2. `name` matches the directory (routing tables address skills by path,
      and a mismatch makes the two ways of naming a skill disagree)
   3. the skill is listed in the capability index
+  4. the skill is served over MCP (`scripts/mcp-shared.ts`), so clients
+     reaching the repo that way see the same skill set as a CLI agent
+
+`guard-agent-work` states requirement 4 as a manual checklist item, which is
+exactly as reliable as it sounds: the skill added alongside this guard was
+itself missed. A checklist that can be enforced should be.
 
 The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
 so — and is not required to carry every skill.

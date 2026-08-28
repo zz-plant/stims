@@ -6,11 +6,13 @@ import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/t
 import { z } from 'zod';
 import agentAgentErgonomicsSkill from '../.agent/skills/agent-ergonomics/SKILL.md';
 import agentAuditRecurringFixesSkill from '../.agent/skills/audit-recurring-fixes/SKILL.md';
+import agentCloseParityGapSkill from '../.agent/skills/close-parity-gap/SKILL.md';
 import agentGuardAgentWorkSkill from '../.agent/skills/guard-agent-work/SKILL.md';
 import agentImprovePresetFidelitySkill from '../.agent/skills/improve-preset-fidelity/SKILL.md';
 import agentIterateVisualizerUiSkill from '../.agent/skills/iterate-visualizer-ui/SKILL.md';
 import agentModifyPresetWorkflowSkill from '../.agent/skills/modify-preset-workflow/SKILL.md';
 import agentModifyVisualizerRuntimeSkill from '../.agent/skills/modify-visualizer-runtime/SKILL.md';
+import agentPerformLivecodingSkill from '../.agent/skills/perform-livecoding/SKILL.md';
 import agentPlayVisualizerSkill from '../.agent/skills/play-visualizer/SKILL.md';
 import agentQaSkill from '../.agent/skills/qa/SKILL.md';
 import agentQuickStartSkill from '../.agent/skills/quick-start/SKILL.md';
@@ -91,6 +93,7 @@ const markdownSources = {
     agentModifyPresetWorkflowSkill,
   '.agent/skills/modify-visualizer-runtime/SKILL.md':
     agentModifyVisualizerRuntimeSkill,
+  '.agent/skills/perform-livecoding/SKILL.md': agentPerformLivecodingSkill,
   '.agent/skills/play-visualizer/SKILL.md': agentPlayVisualizerSkill,
   '.agent/skills/ship-visualizer-change/SKILL.md':
     agentShipVisualizerChangeSkill,
@@ -118,6 +121,7 @@ const markdownSources = {
   '.agent/skills/guard-agent-work/SKILL.md': agentGuardAgentWorkSkill,
   '.agent/skills/improve-preset-fidelity/SKILL.md':
     agentImprovePresetFidelitySkill,
+  '.agent/skills/close-parity-gap/SKILL.md': agentCloseParityGapSkill,
   '.agent/skills/qa/SKILL.md': agentQaSkill,
   '.agent/skills/verify-visualizer-work/SKILL.md':
     agentVerifyVisualizerWorkSkill,
@@ -180,6 +184,14 @@ const agentCapabilities: AgentCapability[] = [
     description:
       'Modify shared runtime, loader, shell, renderer, audio, or capability behavior.',
     command: '/modify-visualizer-runtime',
+  },
+  {
+    name: 'perform-livecoding',
+    kind: 'skill',
+    path: '.agent/skills/perform-livecoding/SKILL.md',
+    description:
+      'Perform or jam on the instrument: live-coded Strudel audio driving the visuals, plus timed visual gestures.',
+    command: '/perform-livecoding',
   },
   {
     name: 'play-visualizer',
@@ -338,6 +350,14 @@ const agentCapabilities: AgentCapability[] = [
     description:
       "Improve a preset's visual fidelity and audio reactivity against measured lab reports.",
     command: '/improve-preset-fidelity',
+  },
+  {
+    name: 'close-parity-gap',
+    kind: 'skill',
+    path: '.agent/skills/close-parity-gap/SKILL.md',
+    description:
+      'Diagnose and close a rendering gap against native projectM with measured evidence.',
+    command: '/close-parity-gap',
   },
   {
     name: 'qa',
