@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-28T03:26:51.888Z",
+  "generatedAt": "2026-08-28T03:45:18.138Z",
   "outputDir": "./screenshots/parity",
   "suiteDir": "screenshots/parity/suite",
   "certifiedPresetCount": 13,
@@ -11,12 +11,13 @@
   "backendMismatchCount": 0,
   "passCount": 1,
   "failCount": 10,
+  "staleCaptureCount": 0,
   "referenceNoSignalCount": 2,
   "missingCount": 0,
   "errorCount": 0,
-  "noMeasurableChangeCount": 10,
+  "noMeasurableChangeCount": 11,
   "improvedCount": 0,
-  "regressedCount": 0,
+  "regressedCount": 2,
   "unmeasuredNoiseCount": 0,
   "baselinePath": "screenshots/parity/suite/summary.json",
   "results": [
@@ -41,10 +42,12 @@
         "measuredAt": "2026-08-26T19:04:39.785Z",
         "contended": false
       },
-      "baselineMismatchRatio": null,
-      "mismatchDelta": null,
-      "noiseResolution": null,
-      "changeVerdict": "no-baseline"
+      "baselineMismatchRatio": 1,
+      "mismatchDelta": 0,
+      "noiseResolution": 0,
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:26:38.403Z",
+      "staleCapture": false
     },
     {
       "presetId": "rovastar-mosaics-of-ages",
@@ -53,7 +56,7 @@
       "mismatchRatio": 1,
       "reportPath": "screenshots/parity/suite/rovastar-mosaics-of-ages.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260827172550",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260828034506",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -70,7 +73,9 @@
       "baselineMismatchRatio": 1,
       "mismatchDelta": 0,
       "noiseResolution": 0.4454752604325245,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:45:06.598Z",
+      "staleCapture": false
     },
     {
       "presetId": "orb-acid-in-my-eyes",
@@ -93,10 +98,12 @@
         "measuredAt": "2026-08-26T19:04:55.976Z",
         "contended": false
       },
-      "baselineMismatchRatio": null,
-      "mismatchDelta": null,
-      "noiseResolution": null,
-      "changeVerdict": "no-baseline"
+      "baselineMismatchRatio": 0.963828125,
+      "mismatchDelta": 0,
+      "noiseResolution": 0.002646848733746298,
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:26:43.359Z",
+      "staleCapture": false
     },
     {
       "presetId": "eos-phat-dark-heart",
@@ -119,10 +126,12 @@
         "measuredAt": "2026-08-26T19:02:56.075Z",
         "contended": false
       },
-      "baselineMismatchRatio": null,
-      "mismatchDelta": null,
-      "noiseResolution": null,
-      "changeVerdict": "no-baseline"
+      "baselineMismatchRatio": 0.9358138020833333,
+      "mismatchDelta": 0,
+      "noiseResolution": 0.0004903831005119161,
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:26:02.635Z",
+      "staleCapture": false
     },
     {
       "presetId": "261-compshader-noisevol_lq",
@@ -145,19 +154,21 @@
         "measuredAt": "2026-08-26T15:22:53.957Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.7624045138888889,
-      "mismatchDelta": 0.0014138454861111205,
+      "baselineMismatchRatio": 0.763818359375,
+      "mismatchDelta": 0,
       "noiseResolution": 0.0028655871207068635,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T01:26:17.393Z",
+      "staleCapture": false
     },
     {
       "presetId": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "status": "fail",
-      "mismatchRatio": 0.6798882378472222,
+      "mismatchRatio": 0.6695073784722222,
       "reportPath": "screenshots/parity/suite/rovastar-parallel-universe.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260827172553",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260828034509",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -172,9 +183,39 @@
         "contended": false
       },
       "baselineMismatchRatio": 0.6798882378472222,
-      "mismatchDelta": 0,
+      "mismatchDelta": -0.010380859374999996,
       "noiseResolution": 0.013978963423542873,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:45:09.594Z",
+      "staleCapture": false
+    },
+    {
+      "presetId": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "status": "fail",
+      "mismatchRatio": 0.3829752604166667,
+      "reportPath": "screenshots/parity/suite/eos-phat-cubetrace-v2.json",
+      "diffImagePath": null,
+      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260828034459",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "referenceSignal": "weak",
+      "noiseBand": {
+        "min": 0.3396039496527778,
+        "max": 0.38302625868055556,
+        "width": 0.04342230902777777,
+        "repeats": 3,
+        "backend": "webgpu",
+        "measuredAt": "2026-08-27T17:21:15.664Z",
+        "contended": false
+      },
+      "baselineMismatchRatio": 0.2925271267361111,
+      "mismatchDelta": 0.0904481336805556,
+      "noiseResolution": 0.05016423909048996,
+      "changeVerdict": "regressed",
+      "capturedAt": "2026-08-28T03:44:59.381Z",
+      "staleCapture": false
     },
     {
       "presetId": "260-compshader-noise_lq",
@@ -200,42 +241,18 @@
       "baselineMismatchRatio": 0.33717447916666665,
       "mismatchDelta": 0,
       "noiseResolution": 0.8560633680555556,
-      "changeVerdict": "no-measurable-change"
-    },
-    {
-      "presetId": "eos-phat-cubetrace-v2",
-      "title": "Eo.S. + Phat - Cubetrace v2",
-      "status": "fail",
-      "mismatchRatio": 0.2925271267361111,
-      "reportPath": "screenshots/parity/suite/eos-phat-cubetrace-v2.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260827172540",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgpu",
-      "referenceSignal": "weak",
-      "noiseBand": {
-        "min": 0.3396039496527778,
-        "max": 0.38302625868055556,
-        "width": 0.04342230902777777,
-        "repeats": 3,
-        "backend": "webgpu",
-        "measuredAt": "2026-08-27T17:21:15.664Z",
-        "contended": false
-      },
-      "baselineMismatchRatio": 0.2925271267361111,
-      "mismatchDelta": 0,
-      "noiseResolution": 0.05016423909048996,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T01:26:14.444Z",
+      "staleCapture": false
     },
     {
       "presetId": "250-wavecode",
       "title": "250 Wavecode",
       "status": "fail",
-      "mismatchRatio": 0.07303168402777778,
+      "mismatchRatio": 0.07794379340277778,
       "reportPath": "screenshots/parity/suite/250-wavecode.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260827172523",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260828034453",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -250,9 +267,11 @@
         "contended": false
       },
       "baselineMismatchRatio": 0.07303168402777778,
-      "mismatchDelta": 0,
+      "mismatchDelta": 0.004912109375000001,
       "noiseResolution": 0.0003204596252832493,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "regressed",
+      "capturedAt": "2026-08-28T03:44:53.924Z",
+      "staleCapture": false
     },
     {
       "presetId": "300-beatdetect-bassmidtreb",
@@ -275,19 +294,21 @@
         "measuredAt": "2026-08-27T17:20:56.632Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.057909071180555556,
-      "mismatchDelta": 0.00041883680555555164,
+      "baselineMismatchRatio": 0.05832790798611111,
+      "mismatchDelta": 0,
       "noiseResolution": 0.00046635943059582734,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T01:26:20.147Z",
+      "staleCapture": false
     },
     {
       "presetId": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "status": "reference-no-signal",
-      "mismatchRatio": 0.9525846354166667,
+      "mismatchRatio": 0.95251953125,
       "reportPath": "screenshots/parity/suite/krash-rovastar-cerebral-demons-stars.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260827172546",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260828034502",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -302,18 +323,20 @@
         "contended": false
       },
       "baselineMismatchRatio": 0.9525846354166667,
-      "mismatchDelta": 0,
+      "mismatchDelta": -0.00006510416666671848,
       "noiseResolution": 0.013464774138453272,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:45:02.683Z",
+      "staleCapture": false
     },
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "status": "reference-no-signal",
-      "mismatchRatio": 0.010791015625,
+      "mismatchRatio": 0.010801866319444445,
       "reportPath": "screenshots/parity/suite/eos-glowsticks-v2-03-music.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260827172537",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260828034456",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -328,9 +351,11 @@
         "contended": false
       },
       "baselineMismatchRatio": 0.010791015625,
-      "mismatchDelta": 0,
+      "mismatchDelta": 0.000010850694444444406,
       "noiseResolution": 0.0002830661301412369,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T03:44:56.513Z",
+      "staleCapture": false
     },
     {
       "presetId": "100-square",
@@ -353,10 +378,12 @@
         "measuredAt": "2026-08-27T17:19:44.636Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.015006510416666667,
-      "mismatchDelta": -0.0005349392361111115,
+      "baselineMismatchRatio": 0.014471571180555556,
+      "mismatchDelta": 0,
       "noiseResolution": 0.00221370052080684,
-      "changeVerdict": "no-measurable-change"
+      "changeVerdict": "no-measurable-change",
+      "capturedAt": "2026-08-28T01:26:11.469Z",
+      "staleCapture": false
     }
   ]
 }
