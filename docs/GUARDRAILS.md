@@ -35,6 +35,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
+| [`check:skill-index`](#checkskill-index) | `check:quick` | Keep the agent skill set discoverable and well-formed. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
 | [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
 | [`check:unused-exports`](#checkunused-exports) | on demand | Detect exported symbols with zero importers — the "remove dead code" pattern that recurred 12+ times in the last 400 commits. Codex PRs introduced exports that nothing imported; they survived merge and were purged weeks later in bulk. |
@@ -451,6 +452,32 @@ the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`
+
+## check:skill-index
+
+Keep the agent skill set discoverable and well-formed.
+
+Skills are how repeatable work classes are handed to agents, but an agent
+only ever finds a skill through an index: the capability table in
+`docs/agents/custom-capabilities.md` and the routing table in
+`.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
+an index row is invisible — the work class it encodes gets re-derived from
+scratch every time, which is the exact cost skills exist to remove.
+
+`check-doc-references.ts` verifies that links in the docs point at files
+that exist. This is the other direction: that files which exist are
+reachable from the docs.
+
+Checks per `.agent/skills/<dir>/SKILL.md`:
+  1. YAML frontmatter with `name` and a non-trivial `description`
+  2. `name` matches the directory (routing tables address skills by path,
+     and a mismatch makes the two ways of naming a skill disagree)
+  3. the skill is listed in the capability index
+
+The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
+so — and is not required to carry every skill.
+
+Run it directly: `bun run check:skill-index`
 
 ## check:stale-paths
 

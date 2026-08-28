@@ -171,6 +171,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:duplicate-css'],
       },
       {
+        label: 'Agent skill index',
+        cmd: ['bun', 'run', 'check:skill-index'],
+      },
+      {
         label: 'Architecture boundary check',
         cmd: ['bun', 'run', 'check:architecture'],
       },
