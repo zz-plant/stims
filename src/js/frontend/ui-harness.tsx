@@ -84,8 +84,21 @@ function SingleViewport({
   component: string;
   props: Record<string, unknown>;
 }) {
+  // An unregistered name used to fall back to the stage panel, which renders
+  // something plausible and lets you iterate confidently on the wrong
+  // component — the skill documenting this harness spent its life citing two
+  // names that were never in the registry. Say so instead.
   const renderComponent =
-    COMPONENT_REGISTRY[component] ?? MockWorkspaceStagePanel;
+    COMPONENT_REGISTRY[component] ??
+    (() => (
+      <div style={{ padding: 24, color: '#ffb4a2' }}>
+        <h2 style={{ margin: '0 0 8px' }}>Unknown component "{component}"</h2>
+        <p style={{ margin: 0 }}>
+          Registered: {Object.keys(COMPONENT_REGISTRY).join(', ')}. Add it to
+          COMPONENT_REGISTRY in <code>src/js/frontend/ui-harness.tsx</code>.
+        </p>
+      </div>
+    ));
   return (
     <div
       style={{

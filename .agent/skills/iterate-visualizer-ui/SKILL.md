@@ -22,7 +22,12 @@ The current workflow (`bun run dev` + `?agent=true`) is great for end-to-end pre
 bun run dev:ui
 ```
 
-This launches a secondary Vite server at `http://localhost:5174/` with:
+This launches a secondary Vite server on port 5174. **The harness is at
+`/ui-harness.html`, not at `/`** — the dev server's root is the repo root, so
+`http://localhost:5174/` serves the ordinary app and silently ignores
+`?component=`. Only the production build uses the harness as its entry.
+
+What the harness gives you:
 - HMR for `src/js/frontend/*` and `src/css/*`
 - Component isolation harness
 - Responsive preview grid
@@ -30,13 +35,13 @@ This launches a secondary Vite server at `http://localhost:5174/` with:
 ### 2. Open the iteration dashboard
 
 ```text
-http://localhost:5174/?component=WorkspaceLaunchPanel
+http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel
 ```
 
 **Query parameters:**
 | Param | Default | Description |
 |-------|---------|-------------|
-| `component` | `WorkspaceLaunchPanel` | Component to render |
+| `component` | none | Registered component name; an unknown name reports itself |
 | `props` | `{}` | JSON-encoded props override |
 | `grid` | none | Comma-separated viewport widths (e.g. `375,768,1024,1920`) |
 
@@ -50,30 +55,32 @@ http://localhost:5174/?component=WorkspaceLaunchPanel
 
 ### Registered components
 
-The harness exposes mock wrappers for these components:
-- `WorkspaceLaunchPanel` — launch/shell chrome
-- `WorkspaceStagePanel` — stage frame with ambient chrome
-- `WorkspaceToolSheet` — browse/settings sheet panel
-- `WorkspaceToast` — toast notifications
+Two components are registered today — check
+`COMPONENT_REGISTRY` in `src/js/frontend/ui-harness.tsx` rather than trusting
+this list, and note the page footer prints the live set:
 
-Add more by editing `src/js/frontend/ui-harness.tsx` and updating `COMPONENT_REGISTRY`.
+- `WorkspaceStagePanel` — the real component, wrapped with placeholder props
+- `WorkspaceToast` — the real component, with a sample warn-tone message
+
+These are the shipped components from `workspace-ui.tsx` with default props
+supplied, not reimplementations, so layout and styling here are real. Anything
+not registered renders an explicit "Unknown component" panel listing what is —
+it used to fall back to the stage panel, which let you iterate confidently on
+the wrong thing. Add a component by editing `COMPONENT_REGISTRY`.
 
 ### Mock data
 
-The harness provides default mocks for:
-- `catalog` (4 bundled presets with certification metadata)
-- `routeState` (static URL state)
-- `presetPreviews` (empty)
-- `recentYouTubeVideos` (empty)
-
-Override via query params or edit the harness file directly.
+Components mount inside a `WorkspaceProvider`, so context-dependent chrome
+renders without the engine. Props come from the wrapper's defaults and are
+overridable per URL with `&props={...}` (JSON). Read the wrappers at the top of
+`src/js/frontend/ui-harness.tsx` for what each component is handed.
 
 ## Responsive preview grid
 
 Render the same component at multiple viewports simultaneously:
 
 ```text
-http://localhost:5174/?component=WorkspaceToolSheet&grid=375,768,1024,1920
+http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel&grid=375,768,1024,1920
 ```
 
 Each viewport is rendered in its own bordered container with a width label.
@@ -90,10 +97,10 @@ Open `http://localhost:5173/?agent=true` and verify the same component in contex
 
 ## Common workflows
 
-### Iterating on launch panel layout
+### Iterating on stage-panel layout
 
 1. `bun run dev:ui`
-2. Open `http://localhost:5174/?component=WorkspaceLaunchPanel&grid=375,768,1024,1920`
+2. Open `http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel&grid=375,768,1024,1920`
 3. Edit `src/js/frontend/workspace-ui.tsx`
 4. See all breakpoints update simultaneously via HMR
 5. Switch to `bun run dev` to verify in the full app
@@ -101,7 +108,7 @@ Open `http://localhost:5173/?agent=true` and verify the same component in contex
 ### Refactoring workspace layout for mobile
 
 1. `bun run dev:ui`
-2. Open `http://localhost:5174/?component=WorkspaceStagePanel&grid=375,768`
+2. Open `http://localhost:5174/ui-harness.html?component=WorkspaceStagePanel&grid=375,768`
 3. Edit `src/js/frontend/workspace-ui.tsx` and `src/css/app-shell.css`
 4. See mobile vs desktop behavior side by side
 5. Commit with confidence
