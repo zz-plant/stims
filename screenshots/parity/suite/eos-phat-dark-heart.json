@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-phat-dark-heart",
   "title": "Eos - Phat - Dark - Heart",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260821232440",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260828032602",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
@@ -11,7 +11,7 @@
     "metadataSha256": "aea14b6677ee5c9b426cf79a6ac19f568d77dc6176dd983008217c8cc6713534"
   },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "bundled",
   "strata": [
     "bundled",
@@ -22,7 +22,16 @@
   "threshold": 32,
   "failThreshold": 0.05,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 862446,
+    "mismatchRatio": 0.9358138020833333,
+    "maxChannelDelta": 206,
+    "meanAbsoluteError": 0.21742258986928104,
+    "rmse": 0.3570954041592992,
+    "exactMatch": false,
+    "threshold": 32
   },
   "noise": {
     "noiseBand": {
@@ -39,6 +48,6 @@
     "noiseResolution": null,
     "changeVerdict": "no-baseline"
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail",
+  "referenceSignal": "ok"
 }

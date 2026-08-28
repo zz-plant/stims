@@ -50,6 +50,23 @@ ones can be trusted; the 2026-08-26 scoreboard below them is superseded.
   **ungraded** (`reference-no-signal`), 300-beatdetect 5.79%, 250-wavecode
   7.30%, cubetrace 29.25%, 260 33.72% (still bit-exact repeatable),
   261 76.24%, rovastar-parallel-universe 67.99%, mosaics 100.00%.
+- **Top open defect: feedback accumulates without bound on `fDecay=1.0`
+  presets.** All thirteen certified presets are now graded (the three that
+  reported `backend-mismatch` were stale WebGL captures, re-captured on
+  WebGPU), and the four worst all render far brighter than projectM:
+  magnetosphere 24.7 -> 76.9 mean luminance, dark-heart 22.1 -> 74.5 (red
+  channel 62 -> 196), mosaics 38.2 -> 137.3, i.e. 3.2-3.6x. The brightness
+  grows with frame count — mosaics reads 77.3 / 121.9 / 142.0 at 150 / 300 /
+  900 frames against a reference that sits at 38.2 — so this is accumulation,
+  not a tone curve. Three of the four have `fDecay=1.000000` (the fourth,
+  magnetosphere, has 0.96) and none has a warp shader, so the additive
+  direct-warp composite is not the mechanism. Leading hypothesis: geometry
+  drawn with additive blending leaves `current.a` (coverage) near zero, so
+  `previousColor * (1 - coverage) + current.rgb` degenerates to
+  `previous + current` and grows without bound when decay cannot pull it back.
+  Discriminating test: sample the scene target's alpha for one of these
+  presets, or clamp the blend and re-measure — if coverage is ~0 the
+  hypothesis holds. Fixing it should move four of the ten failing presets.
 - `parity:suite` no longer returns pass/fail for a preset whose reference a
   blank render would pass; those report `reference-no-signal` with the ratio
   attached for information.

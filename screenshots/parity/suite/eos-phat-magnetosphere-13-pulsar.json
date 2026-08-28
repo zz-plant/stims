@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-phat-magnetosphere-13-pulsar",
   "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260821232517",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260828032638",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
@@ -11,7 +11,7 @@
     "metadataSha256": "3d4741d7988b4fdf3a6461709a429f23f2d2b3a38bd508617345d80771673012"
   },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "bundled",
   "strata": [
     "bundled",
@@ -21,7 +21,16 @@
   "threshold": 32,
   "failThreshold": 0.05,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 921600,
+    "mismatchRatio": 1,
+    "maxChannelDelta": 184,
+    "meanAbsoluteError": 0.2051002717637981,
+    "rmse": 0.21483312319510628,
+    "exactMatch": false,
+    "threshold": 32
   },
   "noise": {
     "noiseBand": {
@@ -38,6 +47,6 @@
     "noiseResolution": null,
     "changeVerdict": "no-baseline"
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail",
+  "referenceSignal": "ok"
 }

@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "orb-acid-in-my-eyes",
   "title": "Orb - Acid - In - My - Eyes",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260821232828",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260828032643",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
@@ -11,7 +11,7 @@
     "metadataSha256": "5a8605503798d5cfe6935c89e9025f9cc101c9ad12c4a9148733d580aa8a33ce"
   },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "bundled",
   "strata": [
     "bundled",
@@ -21,7 +21,16 @@
   "threshold": 32,
   "failThreshold": 0.05,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 888264,
+    "mismatchRatio": 0.963828125,
+    "maxChannelDelta": 161,
+    "meanAbsoluteError": 0.17861886403867103,
+    "rmse": 0.21805458040581222,
+    "exactMatch": false,
+    "threshold": 32
   },
   "noise": {
     "noiseBand": {
@@ -38,6 +47,6 @@
     "noiseResolution": null,
     "changeVerdict": "no-baseline"
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail",
+  "referenceSignal": "ok"
 }
