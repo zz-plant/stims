@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "100-square",
   "title": "100 Square",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260827172520",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260828012611",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 13830,
-    "mismatchRatio": 0.015006510416666667,
+    "mismatchedPixels": 13337,
+    "mismatchRatio": 0.014471571180555556,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.0038041910629992735,
-    "rmse": 0.04446385118620132,
+    "meanAbsoluteError": 0.0035944535221496005,
+    "rmse": 0.043291388077407865,
     "exactMatch": false,
     "threshold": 16
   },
@@ -43,8 +43,8 @@
       "measuredAt": "2026-08-27T17:19:44.636Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.013882378472222222,
-    "mismatchDelta": 0.001124131944444445,
+    "baselineMismatchRatio": 0.015006510416666667,
+    "mismatchDelta": -0.0005349392361111115,
     "noiseResolution": 0.00221370052080684,
     "changeVerdict": "no-measurable-change"
   },

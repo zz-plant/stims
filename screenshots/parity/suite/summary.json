@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-27T17:26:02.376Z",
+  "generatedAt": "2026-08-28T03:26:51.888Z",
   "outputDir": "./screenshots/parity",
   "suiteDir": "screenshots/parity/suite",
   "certifiedPresetCount": 13,
@@ -8,57 +8,30 @@
   "measuredValidationIssueCount": 3,
   "measuredSourceReportMissingCount": 0,
   "measuredSourceReportMismatchCount": 3,
-  "backendMismatchCount": 3,
+  "backendMismatchCount": 0,
   "passCount": 1,
-  "failCount": 7,
+  "failCount": 10,
   "referenceNoSignalCount": 2,
   "missingCount": 0,
   "errorCount": 0,
-  "noMeasurableChangeCount": 6,
-  "improvedCount": 3,
-  "regressedCount": 1,
+  "noMeasurableChangeCount": 10,
+  "improvedCount": 0,
+  "regressedCount": 0,
   "unmeasuredNoiseCount": 0,
   "baselinePath": "screenshots/parity/suite/summary.json",
   "results": [
     {
-      "presetId": "eos-phat-dark-heart",
-      "title": "Eos - Phat - Dark - Heart",
-      "status": "backend-mismatch",
-      "mismatchRatio": null,
-      "referenceSignal": null,
-      "reportPath": "screenshots/parity/suite/eos-phat-dark-heart.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260821232440",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgl",
-      "noiseBand": {
-        "min": 0.9336349826388889,
-        "max": 0.9340256076388889,
-        "width": 0.0003906249999999778,
-        "repeats": 3,
-        "backend": "webgpu",
-        "measuredAt": "2026-08-26T19:02:56.075Z",
-        "contended": false
-      },
-      "baselineMismatchRatio": null,
-      "mismatchDelta": null,
-      "noiseResolution": null,
-      "changeVerdict": "no-baseline",
-      "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
-    },
-    {
       "presetId": "eos-phat-magnetosphere-13-pulsar",
       "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
-      "status": "backend-mismatch",
-      "mismatchRatio": null,
-      "referenceSignal": null,
+      "status": "fail",
+      "mismatchRatio": 1,
       "reportPath": "screenshots/parity/suite/eos-phat-magnetosphere-13-pulsar.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260821232517",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260828032638",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
       "requiredBackend": "webgpu",
-      "actualBackend": "webgl",
+      "actualBackend": "webgpu",
+      "referenceSignal": "ok",
       "noiseBand": {
         "min": 1,
         "max": 1,
@@ -71,35 +44,7 @@
       "baselineMismatchRatio": null,
       "mismatchDelta": null,
       "noiseResolution": null,
-      "changeVerdict": "no-baseline",
-      "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
-    },
-    {
-      "presetId": "orb-acid-in-my-eyes",
-      "title": "Orb - Acid - In - My - Eyes",
-      "status": "backend-mismatch",
-      "mismatchRatio": null,
-      "referenceSignal": null,
-      "reportPath": "screenshots/parity/suite/orb-acid-in-my-eyes.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260821232828",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgl",
-      "noiseBand": {
-        "min": 0.9752766927083333,
-        "max": 0.9772634548611111,
-        "width": 0.001986762152777821,
-        "repeats": 3,
-        "backend": "webgpu",
-        "measuredAt": "2026-08-26T19:04:55.976Z",
-        "contended": false
-      },
-      "baselineMismatchRatio": null,
-      "mismatchDelta": null,
-      "noiseResolution": null,
-      "changeVerdict": "no-baseline",
-      "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+      "changeVerdict": "no-baseline"
     },
     {
       "presetId": "rovastar-mosaics-of-ages",
@@ -122,19 +67,71 @@
         "measuredAt": "2026-08-27T17:22:11.511Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.9969205729166667,
-      "mismatchDelta": 0.003079427083333308,
+      "baselineMismatchRatio": 1,
+      "mismatchDelta": 0,
       "noiseResolution": 0.4454752604325245,
       "changeVerdict": "no-measurable-change"
+    },
+    {
+      "presetId": "orb-acid-in-my-eyes",
+      "title": "Orb - Acid - In - My - Eyes",
+      "status": "fail",
+      "mismatchRatio": 0.963828125,
+      "reportPath": "screenshots/parity/suite/orb-acid-in-my-eyes.json",
+      "diffImagePath": null,
+      "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260828032643",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "referenceSignal": "ok",
+      "noiseBand": {
+        "min": 0.9752766927083333,
+        "max": 0.9772634548611111,
+        "width": 0.001986762152777821,
+        "repeats": 3,
+        "backend": "webgpu",
+        "measuredAt": "2026-08-26T19:04:55.976Z",
+        "contended": false
+      },
+      "baselineMismatchRatio": null,
+      "mismatchDelta": null,
+      "noiseResolution": null,
+      "changeVerdict": "no-baseline"
+    },
+    {
+      "presetId": "eos-phat-dark-heart",
+      "title": "Eos - Phat - Dark - Heart",
+      "status": "fail",
+      "mismatchRatio": 0.9358138020833333,
+      "reportPath": "screenshots/parity/suite/eos-phat-dark-heart.json",
+      "diffImagePath": null,
+      "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260828032602",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "referenceSignal": "ok",
+      "noiseBand": {
+        "min": 0.9336349826388889,
+        "max": 0.9340256076388889,
+        "width": 0.0003906249999999778,
+        "repeats": 3,
+        "backend": "webgpu",
+        "measuredAt": "2026-08-26T19:02:56.075Z",
+        "contended": false
+      },
+      "baselineMismatchRatio": null,
+      "mismatchDelta": null,
+      "noiseResolution": null,
+      "changeVerdict": "no-baseline"
     },
     {
       "presetId": "261-compshader-noisevol_lq",
       "title": "261 Compshader Noisevol LQ",
       "status": "fail",
-      "mismatchRatio": 0.7624045138888889,
+      "mismatchRatio": 0.763818359375,
       "reportPath": "screenshots/parity/suite/261-compshader-noisevol_lq.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260827172532",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260828012617",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -148,10 +145,10 @@
         "measuredAt": "2026-08-26T15:22:53.957Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.7656564670138889,
-      "mismatchDelta": -0.00325195312500004,
+      "baselineMismatchRatio": 0.7624045138888889,
+      "mismatchDelta": 0.0014138454861111205,
       "noiseResolution": 0.0028655871207068635,
-      "changeVerdict": "improved"
+      "changeVerdict": "no-measurable-change"
     },
     {
       "presetId": "rovastar-parallel-universe",
@@ -174,10 +171,10 @@
         "measuredAt": "2026-08-27T17:21:34.918Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.738466796875,
-      "mismatchDelta": -0.058578559027777866,
+      "baselineMismatchRatio": 0.6798882378472222,
+      "mismatchDelta": 0,
       "noiseResolution": 0.013978963423542873,
-      "changeVerdict": "improved"
+      "changeVerdict": "no-measurable-change"
     },
     {
       "presetId": "260-compshader-noise_lq",
@@ -186,7 +183,7 @@
       "mismatchRatio": 0.33717447916666665,
       "reportPath": "screenshots/parity/suite/260-compshader-noise_lq.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260827172528",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260828012614",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -226,8 +223,8 @@
         "measuredAt": "2026-08-27T17:21:15.664Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.2981640625,
-      "mismatchDelta": -0.005636935763888906,
+      "baselineMismatchRatio": 0.2925271267361111,
+      "mismatchDelta": 0,
       "noiseResolution": 0.05016423909048996,
       "changeVerdict": "no-measurable-change"
     },
@@ -252,19 +249,19 @@
         "measuredAt": "2026-08-27T17:20:03.211Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.08091037326388889,
-      "mismatchDelta": -0.007878689236111111,
+      "baselineMismatchRatio": 0.07303168402777778,
+      "mismatchDelta": 0,
       "noiseResolution": 0.0003204596252832493,
-      "changeVerdict": "improved"
+      "changeVerdict": "no-measurable-change"
     },
     {
       "presetId": "300-beatdetect-bassmidtreb",
       "title": "300 Beatdetect Bassmidtreb",
       "status": "fail",
-      "mismatchRatio": 0.057909071180555556,
+      "mismatchRatio": 0.05832790798611111,
       "reportPath": "screenshots/parity/suite/300-beatdetect-bassmidtreb.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260827172535",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260828012620",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -278,8 +275,8 @@
         "measuredAt": "2026-08-27T17:20:56.632Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.05805989583333333,
-      "mismatchDelta": -0.00015082465277777707,
+      "baselineMismatchRatio": 0.057909071180555556,
+      "mismatchDelta": 0.00041883680555555164,
       "noiseResolution": 0.00046635943059582734,
       "changeVerdict": "no-measurable-change"
     },
@@ -304,10 +301,10 @@
         "measuredAt": "2026-08-26T15:23:33.768Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.8669097222222222,
-      "mismatchDelta": 0.08567491319444454,
+      "baselineMismatchRatio": 0.9525846354166667,
+      "mismatchDelta": 0,
       "noiseResolution": 0.013464774138453272,
-      "changeVerdict": "regressed"
+      "changeVerdict": "no-measurable-change"
     },
     {
       "presetId": "eos-glowsticks-v2-03-music",
@@ -330,8 +327,8 @@
         "measuredAt": "2026-08-26T15:23:12.427Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.010799696180555556,
-      "mismatchDelta": -0.000008680555555555178,
+      "baselineMismatchRatio": 0.010791015625,
+      "mismatchDelta": 0,
       "noiseResolution": 0.0002830661301412369,
       "changeVerdict": "no-measurable-change"
     },
@@ -339,10 +336,10 @@
       "presetId": "100-square",
       "title": "100 Square",
       "status": "pass",
-      "mismatchRatio": 0.015006510416666667,
+      "mismatchRatio": 0.014471571180555556,
       "reportPath": "screenshots/parity/suite/100-square.json",
       "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260827172520",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260828012611",
       "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -356,8 +353,8 @@
         "measuredAt": "2026-08-27T17:19:44.636Z",
         "contended": false
       },
-      "baselineMismatchRatio": 0.013882378472222222,
-      "mismatchDelta": 0.001124131944444445,
+      "baselineMismatchRatio": 0.015006510416666667,
+      "mismatchDelta": -0.0005349392361111115,
       "noiseResolution": 0.00221370052080684,
       "changeVerdict": "no-measurable-change"
     }

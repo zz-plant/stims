@@ -43,10 +43,10 @@
       "measuredAt": "2026-08-26T15:23:33.768Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.8669097222222222,
-    "mismatchDelta": 0.08567491319444454,
+    "baselineMismatchRatio": 0.9525846354166667,
+    "mismatchDelta": 0,
     "noiseResolution": 0.013464774138453272,
-    "changeVerdict": "regressed"
+    "changeVerdict": "no-measurable-change"
   },
   "status": "reference-no-signal",
   "referenceSignal": "no-signal"
