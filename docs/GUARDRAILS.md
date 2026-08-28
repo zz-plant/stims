@@ -112,7 +112,15 @@ against `dist/` output:
 
   - per-chunk ceiling for the largest JS chunk,
   - total JS payload ceiling,
-  - total CSS payload ceiling.
+  - total CSS payload ceiling,
+  - gzipped ceilings for the catalog manifests.
+
+The manifests are guarded separately because they are the largest things
+the app downloads and nothing watched them: `public/_headers` described
+catalog.json as ~1.7 MB while it had already reached 2.4 MB. They are
+budgeted gzipped, since that is what crosses the wire (2.4 MB of highly
+repetitive JSON is 100 KB compressed) and raw size would fail for growth
+that costs a visitor nothing.
 
 Budgets are deliberately generous versus today's output — they exist to
 catch step-change regressions, not to fight every kilobyte. Run with a
