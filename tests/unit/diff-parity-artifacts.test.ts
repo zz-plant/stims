@@ -126,6 +126,8 @@ function makeSuiteResult(
     requiredBackend: 'webgpu',
     actualBackend: null,
     referenceSignal: null,
+    capturedAt: null,
+    staleCapture: false,
     stimsArtifactId: null,
     baselineMismatchRatio: null,
     mismatchDelta: null,

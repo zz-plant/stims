@@ -23,6 +23,7 @@
  * summary instead of the one in place; `--output` and `--repo-root` relocate
  * the artifact directory and the checked-in manifests.
  */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -54,6 +55,28 @@ import {
   type ParityNoiseBand,
 } from './parity-noise-bands.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
+
+/**
+ * Commit time of the newest change to the renderer, in ms. Used to tell a
+ * capture that describes the current build from one taken before it.
+ *
+ * Deliberately git, not file mtime: checking a file out (or reverting an
+ * experiment) rewrites mtimes without changing what the renderer does, and
+ * that read every capture in the corpus as stale.
+ */
+function newestRendererCommitMs(): number {
+  try {
+    const iso = execFileSync(
+      'git',
+      ['log', '-1', '--format=%cI', '--', 'src/js/milkdrop', 'src/js/core'],
+      { encoding: 'utf8' },
+    ).trim();
+    const parsed = Date.parse(iso);
+    return Number.isFinite(parsed) ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
 
 type RunParityDiffSuiteOptions = {
   repoRoot: string;
@@ -96,6 +119,9 @@ export type SuitePresetResult = {
   requiredBackend: 'webgl' | 'webgpu';
   actualBackend: 'webgl' | 'webgpu' | null;
   /** Measured run-to-run spread for this preset, or null if never calibrated. */
+  /** When the graded capture was taken, and whether it predates the renderer. */
+  capturedAt: string | null;
+  staleCapture: boolean;
   noiseBand: SuiteNoiseBand | null;
   /** Mismatch ratio this preset scored in the baseline summary. */
   baselineMismatchRatio: number | null;
@@ -131,6 +157,8 @@ type SuiteSummary = {
   failCount: number;
   /** Presets whose reference frame a black render would pass — ungraded. */
   referenceNoSignalCount: number;
+  /** Presets graded against a capture older than the renderer source. */
+  staleCaptureCount: number;
   missingCount: number;
   errorCount: number;
   /**
@@ -326,6 +354,12 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
 
   const results: SuitePresetResult[] = [];
 
+  // A capture taken before the newest renderer change describes a build that
+  // no longer exists. The suite always graded the latest capture per preset
+  // and said nothing about when it was taken, so presets nobody re-captured
+  // silently kept representing old code.
+  const newestRendererSourceMs = newestRendererCommitMs();
+
   let certifiedPresetCount = 0;
   for (const preset of projectmCandidates) {
     const calibratedBand = findNoiseBand(
@@ -339,6 +373,16 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
      * Attach the measured spread to whatever this preset scored, so no caller
      * ever sees a delta without the resolution it was measured at.
      */
+    const captureFields = (artifact: ParityArtifactEntry | undefined) => {
+      const capturedAt = artifact?.createdAt ?? null;
+      const capturedMs = capturedAt ? Date.parse(capturedAt) : Number.NaN;
+      return {
+        capturedAt,
+        staleCapture:
+          Number.isFinite(capturedMs) && capturedMs < newestRendererSourceMs,
+      };
+    };
+
     const noiseFields = (mismatchRatio: number | null) => {
       const { verdict, delta, resolution } = judgeAgainstNoiseBand({
         current: mismatchRatio,
@@ -390,6 +434,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         requiredBackend: preset.capture.requiredBackend,
         actualBackend: null,
         ...noiseFields(null),
+        ...captureFields(undefined),
         error: `Untrusted projectM reference for preset "${preset.id}": ${
           error instanceof Error ? error.message : String(error)
         }`,
@@ -415,6 +460,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         requiredBackend: preset.capture.requiredBackend,
         actualBackend: null,
         ...noiseFields(null),
+        ...captureFields(stimsArtifact),
       });
       continue;
     }
@@ -438,6 +484,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         requiredBackend: preset.capture.requiredBackend,
         actualBackend: stimsArtifact.capture?.backend ?? null,
         ...noiseFields(null),
+        ...captureFields(stimsArtifact),
         error:
           `Missing Stims capture image for preset "${preset.id}" (artifact "${stimsArtifact.id}"). ` +
           `Expected file not found at "${resolvedPath}". ` +
@@ -493,6 +540,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         requiredBackend: preset.capture.requiredBackend,
         actualBackend,
         ...noiseFields(null),
+        ...captureFields(stimsArtifact),
         error: mismatchError,
       });
       continue;
@@ -589,6 +637,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         actualBackend,
         referenceSignal: signal.status,
         ...noiseFields(metrics.mismatchRatio),
+        ...captureFields(stimsArtifact),
       });
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : String(error);
@@ -605,6 +654,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         requiredBackend: preset.capture.requiredBackend,
         actualBackend,
         ...noiseFields(null),
+        ...captureFields(stimsArtifact),
         error:
           `Diff failed for preset "${preset.id}" while comparing Stims image "${stimsImagePath}" ` +
           `against projectM reference "${projectmImagePath}": ${rawMessage}`,
@@ -631,6 +681,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     ).length,
     passCount: results.filter((result) => result.status === 'pass').length,
     failCount: results.filter((result) => result.status === 'fail').length,
+    staleCaptureCount: results.filter((result) => result.staleCapture).length,
     referenceNoSignalCount: results.filter(
       (result) => result.status === 'reference-no-signal',
     ).length,

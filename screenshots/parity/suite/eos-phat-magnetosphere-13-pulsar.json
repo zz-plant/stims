@@ -42,10 +42,10 @@
       "measuredAt": "2026-08-26T19:04:39.785Z",
       "contended": false
     },
-    "baselineMismatchRatio": null,
-    "mismatchDelta": null,
-    "noiseResolution": null,
-    "changeVerdict": "no-baseline"
+    "baselineMismatchRatio": 1,
+    "mismatchDelta": 0,
+    "noiseResolution": 0,
+    "changeVerdict": "no-measurable-change"
   },
   "status": "fail",
   "referenceSignal": "ok"
