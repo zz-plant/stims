@@ -28,6 +28,23 @@ git log --oneline --grep="revert" -i -300 > /tmp/revert_commits.txt
 
 ### 2. Categorize fixes
 
+Categorize by **files touched**, not by words in the subject line, and assign
+each commit exactly one category — the one holding most of its changed files.
+Counting a commit once per matching category double-counts every fix that
+ships with its own regression test, which is most of them: by that method
+`tests/` appears in 50% of fix commits, against 16% when the question is
+"is this commit mostly a test change?".
+
+```bash
+bun run audit:fix-categories                 # ranked table
+bun run audit:fix-categories -- --limit 200  # shorter window
+bun run audit:fix-categories -- --json       # machine-readable
+```
+
+The percentages quoted in each `review-*` skill's "Why this exists" section
+come from this script; re-run it before trusting or citing them, and update
+the skills together with the date stamp they carry.
+
 Look for these recurring themes:
 
 | Theme | Keywords in commit messages | Typical files |
@@ -78,6 +95,11 @@ Update `docs/evidence/RECURRING_FIX_PATTERNS_AUDIT_YYYY-MM.md` with:
 ## Maintenance rules
 
 - Run this audit quarterly or after any sprint with >5 fix commits.
+- Re-stamp every `review-*` skill you touch with the measurement date and
+  sample size. An undated percentage is unfalsifiable, and these numbers set
+  review priority: the 2026-08-27 run found module-loading had fallen from
+  ~11% to 3% and the fallback chain from ~8% to two commits in 400, while
+  deploy/tooling had climbed from ~16% to 25%.
 - When creating a new review skill, register it in:
   - `scripts/mcp-shared.ts` (import, `markdownSources`, `agentCapabilities`)
   - `docs/agents/custom-capabilities.md` (skills table)

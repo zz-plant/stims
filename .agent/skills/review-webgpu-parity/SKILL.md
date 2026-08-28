@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to `src/js/milkdrop/feedback-
 
 ## Why this exists
 
-The most frequent source of fixes in this repo (~22% of fix commits) is parity drift between WebGPU and WebGL — still the #1 category: alpha blending order, feedback color math, wave interpolation, resolution scales, and shader lowering. This skill prevents those regressions at review time.
+**28% of fix commits — the #1 category.** Parity drift between WebGPU and WebGL: alpha blending order, feedback color math, wave interpolation, resolution scales, and shader lowering. The share has grown since the previous audit (~22%), so this surface is getting more fragile, not less. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 

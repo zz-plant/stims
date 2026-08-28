@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to any file under `tests/`, `
 
 ## Why this exists
 
-~15% of fix commits are test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. This skill prevents that tax.
+**16% of fix commits — the #4 category** (steady). Test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. Counting only commits that are *mostly* test changes; half of all fix commits touch `tests/` at all, since a fix and its regression test land together. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 
