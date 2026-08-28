@@ -93,6 +93,14 @@ but it can spike a frame during preset switches on dense presets.
   sequential per-vertex RNG state. Adding an allowlist entry would be faster
   but would widen the visual approximation, so these presets remain on the
   compatible path until RNG state or a parity-validated equivalent exists.
+  This is a semantic boundary rather than an unfinished optimisation: the VM's
+  RNG is a linear congruential generator advanced once per call in program
+  order (`vm.ts` `nextRandom`), so its sequence is defined by evaluation order,
+  which per-pixel GPU execution does not have. Lowering it would change what
+  these presets draw, not merely where they draw it — and it is not a small
+  cost: the heaviest preset in the certification corpus,
+  `shifter-glassworms-flare`, calls `randint` 59 times and profiles at ~59%
+  EEL VM (`bun run profile:frame -- --preset shifter-glassworms-flare`).
 - **Shared guest memory stays on the VM path.** One miss reads `gmegabuf` from
   per-pixel code. Moving it requires a coherent storage binding and ordering
   contract; substituting zero or a stale CPU snapshot would only disguise the
@@ -100,6 +108,28 @@ but it can spike a frame during preset switches on dense presets.
 - **Expression-side assignments stay on the CPU path.** One miss uses nested
   `exec2` assignments. The current field descriptor is a pure expression tree,
   so lowering it would lose evaluation order and side effects.
+- **Shipping less three.js to WebGPU sessions is blocked upstream, not by us.**
+  `three.core.js` holds the classes both renderers share; only
+  `three.module.js` adds `WebGLRenderer`, and splitting them in `manualChunks`
+  isolates 82 KB gzipped that a WebGPU session never executes. It does not
+  help: 43 of our modules import from `'three'`, which *is* `three.module.js`,
+  so it stays eagerly reachable and rolldown correctly merges it back into the
+  core chunk (verified — the split chunk hash returns byte-identical). Making
+  `webgl-renderer.ts` a dynamic import, mirroring the WebGPU path, changes the
+  eager payload by nothing (503 KB / 43 files either way) and was reverted.
+  Avoiding it needs either per-backend builds or a public core-only entry from
+  three; `three/src/*` is exported but mixing it with the prebuilt
+  `three.core.js` that `three.webgpu.js` imports would duplicate the core
+  instead of sharing it. Measured 2026-08-27.
+- **The many small chunks are the price of four HTML entries.** 61 of 102
+  chunks are under 5 KB (105 KB total), which looks like pure request
+  overhead. Grouping app code by directory in `manualChunks` cuts the count to
+  60 — and takes the *eager* payload from 503 KB to 2237 KB, because the
+  groups drag lazily-imported renderer code into the entry graph. A narrower
+  utils-only grouping still traded 3 fewer requests for 39 KB of extra
+  critical-path bytes. The fine-grained split is load-bearing: chunks differ by
+  which of the four HTML entries reach them. Measured 2026-08-27; do not
+  re-attempt without a per-entry reachability model.
 - **Per-frame GPU compute is not an automatic upgrade.** The compute VM remains
   opt-in because dispatch and readback dominate the small scalar workloads in
   the measured harness. The useful GPU lane is the parallel field/geometry
