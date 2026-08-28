@@ -24,8 +24,11 @@
 /milkdrop-presets/*.milk
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-# Catalog manifests are the largest payloads in the app (catalog.json ~1.7 MB,
-# search-index.json ~1.1 MB) and change only on deploy. A short max-age keeps
+# Catalog manifests are the largest payloads in the app (catalog.json ~2.4 MB
+# raw / ~100 KB gzipped, search-index.json ~1.1 MB / ~61 KB gzipped) and change
+# only on deploy. `check:bundle-size` budgets the gzipped sizes so growth here
+# cannot go unnoticed again — the catalog had reached 2.4 MB while this comment
+# still said 1.7 MB. A short max-age keeps
 # them fresh within the hour while stale-while-revalidate makes repeat visits
 # serve instantly from HTTP cache instead of re-downloading on every load.
 /milkdrop-presets/*.json
