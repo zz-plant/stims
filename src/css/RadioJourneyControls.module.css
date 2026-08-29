@@ -1,0 +1,50 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--stims-border);
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-color);
+  user-select: none;
+}
+
+.radioActive {
+  color: var(--stims-cool);
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radioIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--stims-cool);
+  box-shadow: 0 0 8px var(--glow-color);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.modeSelect {
+  background: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--stims-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 10px;
+}

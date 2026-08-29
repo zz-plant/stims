@@ -25,21 +25,25 @@
 
 <table>
   <tr>
-    <td width="33%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
-    <td width="33%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
-    <td width="33%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/geiss-casino.gif" alt="Geiss — Casino" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.gif" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
-    <td align="center"><sub><b>Zylot</b> — Crosshair Dimension</sub></td>
+    <td align="center"><sub><b>Geiss</b> — Casino</sub></td>
+    <td align="center"><sub><b>Eo.S.</b> — Glowsticks v2</sub></td>
     <td align="center"><sub><b>Martin</b> — Neon Space PS3</sub></td>
+    <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
   </tr>
   <tr>
-    <td><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
-    <td><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
-    <td><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
+    <td width="25%"><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
   </tr>
   <tr>
+    <td align="center"><sub><b>Zylot</b> — Crosshair Dimension</sub></td>
     <td align="center"><sub><b>Eo.S.</b> — Starburst 05 Phasing</sub></td>
     <td align="center"><sub><b>Aderrasi</b> — Potion of Spirits</sub></td>
     <td align="center"><sub><b>Orb</b> — Radiation</sub></td>
@@ -50,7 +54,7 @@
 
 </div>
 
-[Why Stims](#why-stims) · [Core Strengths](#where-stims-succeeds) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start)
+[Why Stims](#why-stims) · [Breakthrough Pillars](#breakthrough-pillars) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start)
 
 ---
 
@@ -58,8 +62,8 @@
 
 Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM. It is built as a complete creative product rather than only an embeddable renderer:
 
-- **Explore** a large preset library with previews, search, collections, favorites, queues, history, and deep links.
-- **Author** directly in `.milk` with live editing, compiler diagnostics, parameter controls, import, and export.
+- **Explore** a 1,787-preset library with previews, fast pre-compiled search, collections, favorites, queues, history, and deep links.
+- **Author & Remix** directly in `.milk` with live editing, compiler diagnostics, parameter controls, instant A/B snapshotting, import, and export.
 - **Verify** compatibility through backend-aware captures and checked-in projectM reference comparisons.
 - **Extend** the format through a guarded WebGPU path without treating a newer graphics API as proof of visual fidelity.
 
@@ -67,22 +71,30 @@ The goal is not to claim that every imported preset is visually exact. The goal 
 
 ---
 
-## Where Stims Succeeds
+## Breakthrough Pillars
 
-### 🎨 1. Native Preset Ecosystem & Direct `.milk` Workflow
-Unlike converters that compile presets to proprietary JSON blobs ahead of time, Stims treats native `.milk` files as first-class citizens. Presets are parsed, compiled, executed, edited, and exported as `.milk` in real time—with zero intermediate translation loss.
+### ⚡ 1. Direct In-Browser `.milk` Compiler & Multi-Tier VM
+Unlike web ports that require presets to be pre-transpiled offline into proprietary JSON files, Stims compiles raw `.milk` code on the fly in the browser:
+- **EEL2 Intermediate Representation (IR):** Parses equations into a structured AST and intermediate representation that lowers to an interpreter, high-performance CPU JIT, or WebGPU WGSL compute pipelines.
+- **Hot-Path Scope Optimization:** Eliminates redundant property stores when per-point and per-pixel equations share execution scope.
+- **Unified Guest Memory Model:** Implements MilkDrop's 4MB `megabuf` (per-VM) and 4MB `gmegabuf` (shared globally across preset switches throughout process lifetime) with coherent CPU/GPU buffer synchronization.
 
-### ⚡ 2. Zero-GC Real-Time Audio Pipeline
-The audio analysis engine runs in an isolated `AudioWorklet` thread with zero-allocation ping-pong buffer pooling. It extracts multi-band energy (`bass`, `mid`, `treble`), transient envelopes (`kick`, `snare`, `sub-bass`), harmonic/percussive levels, and stereo correlation metrics at 120Hz/240Hz without causing main-thread garbage collection stutter.
+### 🎛️ 2. In-Session Remix Studio & Live A/B Snapshotting
+Author and tweak equations during active audio-reactive playback:
+- **CodeMirror Integration:** Full syntax highlighting, MilkDrop completions, snippets, and real-time AST compiler diagnostics.
+- **Live Tune Sliders & Shadowed Variable Detection:** Direct sliders for `zoom`, `warp`, `rot`, `decay`, `dx`, `dy`. Static analysis detects when a preset's own equations will overwrite a parameter adjustment.
+- **Instant A/B Snapshot Comparison:** Capture baseline state into Slot A, experiment with code in Slot B, and toggle between them in real-time (`Cmd/Ctrl+Shift+B` or toolbar button) to compare visual iterations on stage.
 
-### 🛠️ 3. Integrated Live Studio & Parameter Lab
-Edit equations directly during live playback. The built-in CodeMirror studio provides MilkDrop syntax completions, AST-level compiler diagnostics, and live parameter sliders (`zoom`, `warp`, `rot`, `decay`, `dx`, `dy`) that immediately morph the active canvas.
+### 🔬 3. Scientific Parity & Noise-Banded Reference Diffing
+Stims replaces visual guesswork with reproducible empirical evidence:
+- **Headless C++ Reference Harness:** Captures gold-standard frames from native `projectM` (C++/SDL2/OpenGL) in offscreen contexts with hash-bound provenance sidecars.
+- **Empirical Noise-Banded Diffing (`parity:noise`):** Measures each preset's natural run-to-run variance floor so real mathematical deltas are separated from harmless procedural jitter.
+- **Deterministic Clock Pumping:** Bit-exact simulation stepping (`renderFrames({ holdAfterPump })` and frozen clocks) ensures exact frame-by-frame synchronization.
 
-### 🚀 4. Resilient Dual-Backend Rendering
-WebGL2 delivers a rock-solid, 100% compatible baseline for every browser. When WebGPU is supported, Stims unlocks hardware-timed GPU compute dispatches, vectorized WGSL shaders, and RenderBundle pre-recording—with automatic, glitch-free fallback if an unsupported construct is detected.
-
-### 🔬 5. Provenance-Backed Visual Parity
-Every rendering improvement is verified against bit-accurate C++ projectM ground truth captures. Compatibility claims are strictly categorized into runtime evidence and measured reference diffs.
+### 🌊 4. Off-Main-Thread Audio Analysis & Shared GPU Textures
+- **Zero-Hitch AudioWorklet:** Computes FFT waveforms, frequency bands, transient envelopes, and energy dynamics in a dedicated audio worklet thread off the main JS loop.
+- **GPU Spectral Textures:** Packs audio frequencies and waveforms directly into a shared GPU texture for single-pass sampling in warp and composite shaders.
+- **Flexible Input Routing:** Seamlessly switch between demo audio, live microphone input, browser tab audio, YouTube audio streams, and local files.
 
 ---
 
