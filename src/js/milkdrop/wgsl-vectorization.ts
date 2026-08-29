@@ -40,20 +40,87 @@ export function fuseAdjacentWgslScalars(
 ): WgslVectorCandidate[] {
   const fused: WgslVectorCandidate[] = [];
   for (let index = 0; index < candidates.length; index += 1) {
-    const current = candidates[index];
-    const next = candidates[index + 1];
-    if (next && current.target.endsWith('.x') && next.target.endsWith('.y')) {
-      const targetBase = current.target.slice(0, -2);
-      if (next.target.slice(0, -2) === targetBase) {
-        fused.push({
-          target: targetBase,
-          expression: `vec2f(${current.expression}, ${next.expression})`,
-        });
-        index += 1;
-        continue;
-      }
+    const c0 = candidates[index];
+    const c1 = candidates[index + 1];
+    const c2 = candidates[index + 2];
+    const c3 = candidates[index + 3];
+
+    // 4-component match (.x, .y, .z, .w) or (.r, .g, .b, .a)
+    if (
+      c0 &&
+      c1 &&
+      c2 &&
+      c3 &&
+      ((c0.target.endsWith('.x') &&
+        c1.target.endsWith('.y') &&
+        c2.target.endsWith('.z') &&
+        c3.target.endsWith('.w') &&
+        c1.target.slice(0, -2) === c0.target.slice(0, -2) &&
+        c2.target.slice(0, -2) === c0.target.slice(0, -2) &&
+        c3.target.slice(0, -2) === c0.target.slice(0, -2)) ||
+        (c0.target.endsWith('.r') &&
+          c1.target.endsWith('.g') &&
+          c2.target.endsWith('.b') &&
+          c3.target.endsWith('.a') &&
+          c1.target.slice(0, -2) === c0.target.slice(0, -2) &&
+          c2.target.slice(0, -2) === c0.target.slice(0, -2) &&
+          c3.target.slice(0, -2) === c0.target.slice(0, -2)))
+    ) {
+      const targetBase = c0.target.slice(0, -2);
+      fused.push({
+        target: targetBase,
+        expression: `vec4f(${c0.expression}, ${c1.expression}, ${c2.expression}, ${c3.expression})`,
+      });
+      index += 3;
+      continue;
     }
-    fused.push(current);
+
+    // 3-component match (.x, .y, .z) or (.r, .g, .b)
+    if (
+      c0 &&
+      c1 &&
+      c2 &&
+      ((c0.target.endsWith('.x') &&
+        c1.target.endsWith('.y') &&
+        c2.target.endsWith('.z') &&
+        c1.target.slice(0, -2) === c0.target.slice(0, -2) &&
+        c2.target.slice(0, -2) === c0.target.slice(0, -2)) ||
+        (c0.target.endsWith('.r') &&
+          c1.target.endsWith('.g') &&
+          c2.target.endsWith('.b') &&
+          c1.target.slice(0, -2) === c0.target.slice(0, -2) &&
+          c2.target.slice(0, -2) === c0.target.slice(0, -2)))
+    ) {
+      const targetBase = c0.target.slice(0, -2);
+      fused.push({
+        target: targetBase,
+        expression: `vec3f(${c0.expression}, ${c1.expression}, ${c2.expression})`,
+      });
+      index += 2;
+      continue;
+    }
+
+    // 2-component match (.x, .y) or (.r, .g)
+    if (
+      c0 &&
+      c1 &&
+      ((c0.target.endsWith('.x') &&
+        c1.target.endsWith('.y') &&
+        c1.target.slice(0, -2) === c0.target.slice(0, -2)) ||
+        (c0.target.endsWith('.r') &&
+          c1.target.endsWith('.g') &&
+          c1.target.slice(0, -2) === c0.target.slice(0, -2)))
+    ) {
+      const targetBase = c0.target.slice(0, -2);
+      fused.push({
+        target: targetBase,
+        expression: `vec2f(${c0.expression}, ${c1.expression})`,
+      });
+      index += 1;
+      continue;
+    }
+
+    fused.push(c0);
   }
   return fused;
 }

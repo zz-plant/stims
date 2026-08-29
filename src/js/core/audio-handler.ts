@@ -337,6 +337,46 @@ export class FrequencyAnalyser {
       if (typeof rms === 'number') {
         this.rms = rms;
       }
+
+      const returnFreq: ArrayBuffer[] = [];
+      const returnWave: ArrayBuffer[] = [];
+      const returnTime: ArrayBuffer[] = [];
+      const transfers: ArrayBuffer[] = [];
+
+      const collect = (buf: unknown, list: ArrayBuffer[]) => {
+        if (buf instanceof ArrayBuffer) {
+          list.push(buf);
+          transfers.push(buf);
+        } else if (
+          ArrayBuffer.isView(buf) &&
+          buf.buffer instanceof ArrayBuffer
+        ) {
+          list.push(buf.buffer);
+          transfers.push(buf.buffer);
+        }
+      };
+
+      if (frequencyData) collect(frequencyData, returnFreq);
+      if (frequencyDataR) collect(frequencyDataR, returnFreq);
+      if (waveformData) collect(waveformData, returnWave);
+      if (waveformDataR) collect(waveformDataR, returnWave);
+      if (timeDomainData) collect(timeDomainData, returnTime);
+
+      if (transfers.length > 0 && workletNode.port) {
+        try {
+          workletNode.port.postMessage(
+            {
+              type: 'recycle-buffers',
+              freq: returnFreq,
+              wave: returnWave,
+              timeDomain: returnTime,
+            },
+            transfers,
+          );
+        } catch {
+          // Silently fall back if port or environment does not support transfer
+        }
+      }
     };
   }
 

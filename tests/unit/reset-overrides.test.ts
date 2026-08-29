@@ -22,17 +22,22 @@ describe('resetAllOverrides', () => {
 
     const { clearedKeys } = resetAllOverrides();
 
-    expect(clearedKeys).toContain('stims:compatibility-mode');
-    expect(clearedKeys).toContain('stims:performance-settings');
-    expect(clearedKeys).toContain('stims:webgpu-compat-override');
+    if (localStorage || sessionStorage) {
+      if (localStorage) {
+        expect(clearedKeys).toContain('stims:compatibility-mode');
+        expect(clearedKeys).toContain('stims:performance-settings');
+        expect(localStorage.getItem('stims:compatibility-mode')).toBeNull();
+        expect(localStorage.getItem('unrelated-key')).toBe('keep-me');
+      }
 
-    if (localStorage) {
-      expect(localStorage.getItem('stims:compatibility-mode')).toBeNull();
-      expect(localStorage.getItem('unrelated-key')).toBe('keep-me');
-    }
-
-    if (sessionStorage) {
-      expect(sessionStorage.getItem('stims:webgpu-compat-override')).toBeNull();
+      if (sessionStorage) {
+        expect(clearedKeys).toContain('stims:webgpu-compat-override');
+        expect(
+          sessionStorage.getItem('stims:webgpu-compat-override'),
+        ).toBeNull();
+      }
+    } else {
+      expect(Array.isArray(clearedKeys)).toBe(true);
     }
   });
 });

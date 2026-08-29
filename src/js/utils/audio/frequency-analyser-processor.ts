@@ -240,7 +240,53 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       resolvedOptions.processorOptions?.messageEvery ?? 1,
     );
     this.hpAnalyser = createHarmonicPercussiveAnalyser();
+
+    this.port.onmessage = (event) => {
+      if (event.data?.type === 'recycle-buffers') {
+        const { freq, wave, timeDomain } = event.data;
+        if (Array.isArray(freq)) {
+          for (let i = 0; i < freq.length; i += 1) {
+            const buf = freq[i];
+            if (
+              buf instanceof ArrayBuffer &&
+              buf.byteLength === this.frequencyBinCount &&
+              this.freeFreqBuffers.length < 16
+            ) {
+              this.freeFreqBuffers.push(buf);
+            }
+          }
+        }
+        if (Array.isArray(wave)) {
+          for (let i = 0; i < wave.length; i += 1) {
+            const buf = wave[i];
+            if (
+              buf instanceof ArrayBuffer &&
+              buf.byteLength === this.fftSize &&
+              this.freeWaveBuffers.length < 16
+            ) {
+              this.freeWaveBuffers.push(buf);
+            }
+          }
+        }
+        if (Array.isArray(timeDomain)) {
+          for (let i = 0; i < timeDomain.length; i += 1) {
+            const buf = timeDomain[i];
+            if (
+              buf instanceof ArrayBuffer &&
+              buf.byteLength === this.fftSize * 4 &&
+              this.freeTimeDomainBuffers.length < 16
+            ) {
+              this.freeTimeDomainBuffers.push(buf);
+            }
+          }
+        }
+      }
+    };
   }
+
+  private readonly freeFreqBuffers: ArrayBuffer[] = [];
+  private readonly freeWaveBuffers: ArrayBuffer[] = [];
+  private readonly freeTimeDomainBuffers: ArrayBuffer[] = [];
 
   private analyse() {
     for (let i = 0; i < this.fftSize; i += 1) {
@@ -532,12 +578,32 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         transfers.push(freqRTransfer, waveRTransfer);
       }
       this.port.postMessage(payload, transfers);
-      this.freqBuf = new Uint8Array(this.frequencyBinCount);
-      this.waveBuf = new Uint8Array(this.fftSize);
-      this.timeDomainBuf = new Float32Array(this.fftSize);
+
+      const nextFreq = this.freeFreqBuffers.pop();
+      this.freqBuf = nextFreq
+        ? new Uint8Array(nextFreq)
+        : new Uint8Array(this.frequencyBinCount);
+
+      const nextWave = this.freeWaveBuffers.pop();
+      this.waveBuf = nextWave
+        ? new Uint8Array(nextWave)
+        : new Uint8Array(this.fftSize);
+
+      const nextTimeDomain = this.freeTimeDomainBuffers.pop();
+      this.timeDomainBuf = nextTimeDomain
+        ? new Float32Array(nextTimeDomain)
+        : new Float32Array(this.fftSize);
+
       if (this.hasStereoInput) {
-        this.freqBufR = new Uint8Array(this.frequencyBinCount);
-        this.waveBufR = new Uint8Array(this.fftSize);
+        const nextFreqR = this.freeFreqBuffers.pop();
+        this.freqBufR = nextFreqR
+          ? new Uint8Array(nextFreqR)
+          : new Uint8Array(this.frequencyBinCount);
+
+        const nextWaveR = this.freeWaveBuffers.pop();
+        this.waveBufR = nextWaveR
+          ? new Uint8Array(nextWaveR)
+          : new Uint8Array(this.fftSize);
       }
     }
   }

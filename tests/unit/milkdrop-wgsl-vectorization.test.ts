@@ -26,4 +26,23 @@ describe('WGSL vectorization helpers', () => {
       { target: 'zoom', expression: '1.0' },
     ]);
   });
+
+  test('fuses adjacent color channels into vec3 and vec4 expressions', () => {
+    expect(
+      fuseAdjacentWgslScalars([
+        { target: 'color.r', expression: '0.8' },
+        { target: 'color.g', expression: '0.2' },
+        { target: 'color.b', expression: '0.5' },
+        { target: 'color.a', expression: '1.0' },
+      ]),
+    ).toEqual([{ target: 'color', expression: 'vec4f(0.8, 0.2, 0.5, 1.0)' }]);
+
+    expect(
+      fuseAdjacentWgslScalars([
+        { target: 'light.x', expression: '1.0' },
+        { target: 'light.y', expression: '2.0' },
+        { target: 'light.z', expression: '3.0' },
+      ]),
+    ).toEqual([{ target: 'light', expression: 'vec3f(1.0, 2.0, 3.0)' }]);
+  });
 });

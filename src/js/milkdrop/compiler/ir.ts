@@ -34,6 +34,7 @@ import type {
   MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
+import { buildParityReport } from './compatibility-report.ts';
 import { extractCustomSamplerDeclarations } from './custom-samplers';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
 import type {
@@ -924,7 +925,7 @@ export function createMilkdropIr({
     reasons: ['No measured WebGPU reference capture is recorded yet.'],
   };
 
-  const parity: MilkdropParityReport = {
+  const parity: MilkdropParityReport = buildParityReport({
     ignoredFields,
     approximatedShaderLines,
     missingAliasesOrFunctions,
@@ -938,7 +939,7 @@ export function createMilkdropIr({
     visualEvidenceTier,
     semanticSupport,
     visualCertification,
-  };
+  });
 
   const title = stringFields.title || 'MilkDrop Session';
   const author = stringFields.author;
