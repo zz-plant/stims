@@ -149,6 +149,7 @@
     "serve:dist": "bun run scripts/serve-dist.ts",
     "session:codex": "bash scripts/codex-session.sh",
     "setup": "mise trust && bun run setup:codex",
+    "setup:browsers": "bun run scripts/link-preinstalled-browsers.ts",
     "setup:codex": "bash scripts/codex-setup.sh",
     "site:build": "bun run scripts/build-site.mjs",
     "site:check": "bun run site:build && bunx wrangler deploy --dry-run --config wrangler.site.jsonc",

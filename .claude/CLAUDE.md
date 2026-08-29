@@ -33,6 +33,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Start dev server | `bun run dev` | — |
 | Find the right script | `bun run help` | < 2s |
 | Diagnose a broken environment | `bun run doctor` | < 30s |
+| Fix "Executable doesn't exist" from a browser tool | `bun run setup:browsers` | < 5s |
 | Fast syntax/lint/type check | `bun run check:quick` | < 30s |
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |

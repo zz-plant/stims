@@ -21,6 +21,7 @@ import { chromium } from 'playwright';
 import { captureAgentStats, writeAgentFailureArtifact } from './agent-api.ts';
 import { hasChromium as sharedHasChromium } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import { HEADLESS_ENVIRONMENT } from './headless-environment.ts';
 import {
   HEADLESS,
   WEBGL_RENDERER_ARGS as RENDERER_ARGS,
@@ -29,8 +30,14 @@ import {
 // Local-only by design (needs a real GPU), so a missing browser is not a fault.
 const hasChromium = sharedHasChromium;
 
-/** Skip without Playwright browsers (matches the other e2e suites) or on CI. */
-const localWebGpuTest = hasChromium ? test.skipIf(!!process.env.CI) : test.skip;
+/**
+ * Skip without Playwright browsers (matches the other e2e suites), and
+ * anywhere only a headless, software-rendered browser can run — CI and cloud
+ * agent containers alike, since native WebGPU needs a real adapter.
+ */
+const localWebGpuTest = hasChromium
+  ? test.skipIf(HEADLESS_ENVIRONMENT)
+  : test.skip;
 
 const TEST_PORT = 5185;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -56,7 +63,7 @@ type RuntimeDebugWindow = typeof window & {
 
 beforeAll(
   async () => {
-    if (!hasChromium || process.env.CI) return;
+    if (!hasChromium || HEADLESS_ENVIRONMENT) return;
     devServer = await startDevServer({ port: TEST_PORT });
   },
   { timeout: 60000 },

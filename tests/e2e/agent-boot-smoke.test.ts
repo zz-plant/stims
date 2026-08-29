@@ -89,6 +89,32 @@ afterAll(async () => {
   await server?.stop();
 });
 
+/** Chromium's console text for a request that never completed. */
+const RESOURCE_LOAD_ERROR = 'Failed to load resource';
+
+/**
+ * Drops up to `offOriginFailures` resource-load console errors, leaving every
+ * other console error — and any same-origin resource failure — intact.
+ *
+ * The smoke test asserts a clean console to catch app errors. It must not also
+ * assert that the machine running it has egress to every CDN the page
+ * references: in a cloud agent container the Google Fonts stylesheet is reset
+ * at the proxy, which is a fact about the sandbox, not a regression.
+ */
+export function discountOffOriginResourceErrors(
+  consoleErrors: readonly string[],
+  offOriginFailures: number,
+): string[] {
+  let remaining = offOriginFailures;
+  return consoleErrors.filter((message) => {
+    if (remaining > 0 && message.includes(RESOURCE_LOAD_ERROR)) {
+      remaining -= 1;
+      return false;
+    }
+    return true;
+  });
+}
+
 async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
   const browser = await chromium.launch({
     headless: HEADLESS,
@@ -104,6 +130,16 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
   const consoleErrors: string[] = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') consoleErrors.push(msg.text());
+  });
+  // A blocked third-party request (the Google Fonts stylesheet, in a sandbox
+  // with no egress to it) surfaces only as a generic "Failed to load resource"
+  // console error with no URL, so the console alone cannot tell it from a
+  // broken local asset. Record which off-origin requests actually failed, and
+  // discount exactly that many resource errors below. A failed same-origin
+  // request stays a failure.
+  let offOriginRequestFailures = 0;
+  page.on('requestfailed', (request) => {
+    if (!request.url().startsWith(SERVER_URL)) offOriginRequestFailures += 1;
   });
 
   try {
@@ -220,7 +256,11 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
         .filter((e) => e.type === 'error'),
     );
     expect(errorEvents ?? []).toEqual([]);
-    expect(consoleErrors).toEqual([]);
+    const appConsoleErrors = discountOffOriginResourceErrors(
+      consoleErrors,
+      offOriginRequestFailures,
+    );
+    expect(appConsoleErrors).toEqual([]);
 
     const lastError = await page.evaluate(
       () => (window as AgentWindow).__stims_agent?.getState().lastError,
@@ -228,7 +268,7 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
     expect(lastError).toBeNull();
   } catch (error) {
     console.error(
-      `[agent-boot-smoke:${renderer}] console errors seen: ${JSON.stringify(consoleErrors)}`,
+      `[agent-boot-smoke:${renderer}] console errors seen: ${JSON.stringify(consoleErrors)} (${offOriginRequestFailures} off-origin request failure(s) discounted)`,
     );
     throw error;
   } finally {
