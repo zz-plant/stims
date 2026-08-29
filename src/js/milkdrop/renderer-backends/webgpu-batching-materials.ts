@@ -17,7 +17,6 @@ import {
 // and per-fragment math must stay in lockstep with the GLSL sources; the
 // batch classes upload identical buffers to both.
 const {
-  attribute,
   cameraProjectionMatrix,
   clamp,
   cos,

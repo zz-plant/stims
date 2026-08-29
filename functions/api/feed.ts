@@ -89,7 +89,8 @@ export async function onRequest(context: EventContext): Promise<Response> {
     title: 'Stims — Featured Music Visualizers Feed',
     home_page_url: url.origin,
     feed_url: `${url.origin}/api/feed`,
-    description: 'Live feed of MilkDrop audio visualizers and presets running in your browser on Stims.',
+    description:
+      'Live feed of MilkDrop audio visualizers and presets running in your browser on Stims.',
     icon: `${url.origin}/icons/icon-512.png`,
     favicon: `${url.origin}/icons/favicon-32.png`,
     items,

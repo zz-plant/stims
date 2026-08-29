@@ -100,7 +100,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const entry = presetId ? presetMeta?.[presetId] : null;
 
   const title = entry ? entry[0] : 'Stims — MilkDrop-Inspired Audio Visualizer';
-  const author = entry && entry[1] ? entry[1] : undefined;
+  const author = entry?.[1];
   const authorCredit = author ? ` by ${author}` : '';
 
   const embedWidth = Math.min(

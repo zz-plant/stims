@@ -5,6 +5,9 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+const isLinux = process.platform === 'linux';
+const linuxOnlyTest = isLinux ? test : test.skip;
+
 const script = path.join(
   process.cwd(),
   'scripts',
@@ -49,56 +52,64 @@ function pinnedRevisionDirs(root: string, prefix: string) {
   );
 }
 
-test('links a shipped Chromium into the layout the pinned Playwright expects', async () => {
-  const root = await createShippedBrowsersRoot();
-  try {
-    const result = run(root);
+linuxOnlyTest(
+  'links a shipped Chromium into the layout the pinned Playwright expects',
+  async () => {
+    const root = await createShippedBrowsersRoot();
+    try {
+      const result = run(root);
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('shipped revision 1');
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('shipped revision 1');
 
-    const [chromiumDir] = pinnedRevisionDirs(root, 'chromium');
-    expect(chromiumDir).toBeDefined();
-    const chromeShim = path.join(root, chromiumDir, 'chrome-linux64', 'chrome');
-    expect(existsSync(chromeShim)).toBe(true);
-    expect(readlinkSync(chromeShim)).toBe(
-      path.join(root, 'chromium-1', 'chrome-linux', 'chrome'),
-    );
-    // Playwright rejects a revision directory without the completion marker.
-    expect(
-      existsSync(path.join(root, chromiumDir, 'INSTALLATION_COMPLETE')),
-    ).toBe(true);
-
-    // The pre-rename `headless_shell` binary is aliased to the name the pinned
-    // Playwright launches, not just copied across under its old name.
-    const [shellDir] = pinnedRevisionDirs(root, 'chromium_headless_shell');
-    expect(shellDir).toBeDefined();
-    const shellShim = path.join(
-      root,
-      shellDir,
-      'chrome-headless-shell-linux64',
-      'chrome-headless-shell',
-    );
-    expect(existsSync(shellShim)).toBe(true);
-    expect(readlinkSync(shellShim)).toBe(
-      path.join(
+      const [chromiumDir] = pinnedRevisionDirs(root, 'chromium');
+      expect(chromiumDir).toBeDefined();
+      const chromeShim = path.join(
         root,
-        'chromium_headless_shell-1',
-        'chrome-linux',
-        'headless_shell',
-      ),
-    );
+        chromiumDir,
+        'chrome-linux64',
+        'chrome',
+      );
+      expect(existsSync(chromeShim)).toBe(true);
+      expect(readlinkSync(chromeShim)).toBe(
+        path.join(root, 'chromium-1', 'chrome-linux', 'chrome'),
+      );
+      // Playwright rejects a revision directory without the completion marker.
+      expect(
+        existsSync(path.join(root, chromiumDir, 'INSTALLATION_COMPLETE')),
+      ).toBe(true);
 
-    // The shipped build is never mutated.
-    expect(existsSync(path.join(root, 'chromium-1', 'chrome-linux64'))).toBe(
-      false,
-    );
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+      // The pre-rename `headless_shell` binary is aliased to the name the pinned
+      // Playwright launches, not just copied across under its old name.
+      const [shellDir] = pinnedRevisionDirs(root, 'chromium_headless_shell');
+      expect(shellDir).toBeDefined();
+      const shellShim = path.join(
+        root,
+        shellDir,
+        'chrome-headless-shell-linux64',
+        'chrome-headless-shell',
+      );
+      expect(existsSync(shellShim)).toBe(true);
+      expect(readlinkSync(shellShim)).toBe(
+        path.join(
+          root,
+          'chromium_headless_shell-1',
+          'chrome-linux',
+          'headless_shell',
+        ),
+      );
 
-test('--check reports the work without writing anything', async () => {
+      // The shipped build is never mutated.
+      expect(existsSync(path.join(root, 'chromium-1', 'chrome-linux64'))).toBe(
+        false,
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
+
+linuxOnlyTest('--check reports the work without writing anything', async () => {
   const root = await createShippedBrowsersRoot();
   try {
     const result = run(root, ['--check']);
@@ -111,7 +122,7 @@ test('--check reports the work without writing anything', async () => {
   }
 });
 
-test('re-running is a no-op once the shim exists', async () => {
+linuxOnlyTest('re-running is a no-op once the shim exists', async () => {
   const root = await createShippedBrowsersRoot();
   try {
     expect(run(root).status).toBe(0);
@@ -124,7 +135,7 @@ test('re-running is a no-op once the shim exists', async () => {
   }
 });
 
-test('refuses to replace a real Playwright install', async () => {
+linuxOnlyTest('refuses to replace a real Playwright install', async () => {
   const root = await createShippedBrowsersRoot();
   try {
     // Claim the pinned revision directory without the shim marker, the way a
@@ -148,14 +159,17 @@ test('refuses to replace a real Playwright install', async () => {
   }
 });
 
-test('reports the surviving tooling when no shipped build can stand in', async () => {
-  const root = await mkdtemp(path.join(tmpdir(), 'stims-pw-empty-'));
-  try {
-    const result = run(root);
+linuxOnlyTest(
+  'reports the surviving tooling when no shipped build can stand in',
+  async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'stims-pw-empty-'));
+    try {
+      const result = run(root);
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('lab:reactivity');
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('lab:reactivity');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);

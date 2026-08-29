@@ -3,10 +3,10 @@
  * Records the full-screen splash window, long tasks, and what element actually
  * receives early pointer events.
  */
-import { chromium } from 'playwright';
-import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
+import { chromium } from 'playwright';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html',
@@ -18,6 +18,15 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json',
   '.wasm': 'application/wasm',
+};
+
+type AuditData = {
+  domContentLoaded: number;
+  overlayHidden: number | null;
+  shellMounted: number | null;
+  firstInput: number | null;
+  longTasks: Array<{ start: number; dur: number }>;
+  earlyPointerTargets: string[];
 };
 
 function serveDist() {
@@ -168,32 +177,47 @@ async function runAudit({ cpuThrottle }: { cpuThrottle: number }) {
   const probes = [100, 300, 600, 1000, 2000, 4000];
   for (const offset of probes) {
     const at = offset - probes[0];
-    await page.waitForTimeout(at === 0 ? 100 : offset - (probes[probes.indexOf(offset) - 1] ?? 0));
+    await page.waitForTimeout(
+      at === 0 ? 100 : offset - (probes[probes.indexOf(offset) - 1] ?? 0),
+    );
     await page.mouse.click(640, 400);
   }
 
   // Wait for the shell to mount and overlay to clear.
   try {
     await page.waitForFunction(
-      () => (window as any).__audit?.shellMounted ?? false,
+      () =>
+        (
+          window as unknown as {
+            __audit?: { shellMounted?: boolean };
+          }
+        ).__audit?.shellMounted ?? false,
       undefined,
       { timeout: 30000 },
     );
   } catch (error) {
-    const diag = await page.evaluate(() => ({
-      audit: (window as any).__audit,
-      auditError: (window as any).__auditError ?? null,
-      hasMain: !!document.getElementById('stims-main'),
-      hasApp: !!document.getElementById('app'),
-      bodyChildren: document.body?.childElementCount ?? -1,
-      overlayHidden: document.getElementById('stims-loading')?.hidden ?? null,
-    }));
+    const diag = await page.evaluate(() => {
+      const win = window as unknown as {
+        __audit?: unknown;
+        __auditError?: unknown;
+      };
+      return {
+        audit: win.__audit,
+        auditError: win.__auditError ?? null,
+        hasMain: !document.getElementById('stims-main'),
+        hasApp: !document.getElementById('app'),
+        bodyChildren: document.body?.childElementCount ?? -1,
+        overlayHidden: document.getElementById('stims-loading')?.hidden ?? null,
+      };
+    });
     console.log('DIAG', JSON.stringify(diag, null, 2));
     throw error;
   }
   await page.waitForTimeout(500);
 
-  const data = await page.evaluate(() => (window as any).__audit);
+  const data = await page.evaluate(
+    () => (window as unknown as { __audit?: AuditData }).__audit,
+  );
   await browser.close();
   return { cpuThrottle, commitMs, data };
 }
@@ -202,6 +226,7 @@ for (const rate of [1, 4]) {
   const { cpuThrottle, commitMs, data } = await runAudit({
     cpuThrottle: rate,
   });
+  if (!data) continue;
   console.log(`\n=== CPU throttle ${cpuThrottle}x ===`);
   console.log(`commit ~${commitMs}ms after navigation`);
   console.log(
@@ -214,7 +239,10 @@ for (const rate of [1, 4]) {
     `input-blocked window (DCL -> overlay hidden): ${Math.round((data.overlayHidden ?? 0) - data.domContentLoaded)}ms`,
   );
   console.log('long tasks (start,dur):', JSON.stringify(data.longTasks));
-  console.log('early pointer targets:', JSON.stringify(data.earlyPointerTargets));
+  console.log(
+    'early pointer targets:',
+    JSON.stringify(data.earlyPointerTargets),
+  );
   console.log('first pointerdown at:', Math.round(data.firstInput ?? -1), 'ms');
 }
 

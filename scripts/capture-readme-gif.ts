@@ -23,8 +23,6 @@ export {};
 
 // Hardcoded preset dimensions for hd-landscape (no module imports needed)
 const PRESET = 'hd-landscape';
-const PRESET_WIDTH = 1920;
-const PRESET_HEIGHT = 1080;
 const CAPTURE_DURATION_MS = 5_000; // 5 seconds
 
 function sleep(ms: number): Promise<void> {
@@ -82,7 +80,7 @@ async function main(): Promise<void> {
   const chunks: Blob[] = [];
 
   recorder.ondataavailable = (event: BlobEvent) => {
-    const data = (event as any).data;
+    const data = event.data;
     if (data && data.size > 0) {
       chunks.push(data);
     }
@@ -115,7 +113,7 @@ async function main(): Promise<void> {
   console.log('Stopping recording...');
   let blob: Blob | null = null;
   await new Promise<void>((resolve) => {
-    (recorder as any).onstop = () => {
+    recorder.onstop = () => {
       blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null;
       resolve();
     };
@@ -134,33 +132,14 @@ async function main(): Promise<void> {
 
   // Build ffmpeg command lines
   const baseName = filename.replace('.webm', '');
-  const cmd1 =
-    'ffmpeg -i ' +
-    filename +
-    ' -vf "fps=10,scale=320:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=10,scale=320:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' +
-    PRESET +
-    '-' +
-    timestamp +
-    '.gif';
-
-  const cmd2 =
-    'ffmpeg -i ' +
-    filename +
-    ' -vf "fps=8,scale=300:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=8,scale=300:-1:flags=lanczos[x];[x][1]paletteuse" stims-readme-' +
-    PRESET +
-    '-' +
-    timestamp +
-    '-small.gif';
-
-  const cmd3 =
-    'gifsicle --optimize=3 --colors 64 --lossy 90 ' +
-    filename.replace('.webm', '') +
-    '.gif -o output.gif';
+  const cmd1 = `ffmpeg -i ${filename} -vf "fps=10,scale=320:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=10,scale=320:-1:flags=lanczos[x];[x][1]paletteuse" ${baseName}.gif`;
+  const cmd2 = `ffmpeg -i ${filename} -vf "fps=8,scale=300:-1:flags=lanczos,palettegen" palette.png -i palette.png -filter_complex "fps=8,scale=300:-1:flags=lanczos[x];[x][1]paletteuse" ${baseName}-small.gif`;
+  const cmd3 = `gifsicle --optimize=3 --colors 64 --lossy 90 ${baseName}.gif -o output.gif`;
 
   console.log(
     `\n================================================================================`,
   );
-  console.log('Captured WebM video: ' + filename);
+  console.log(`Captured WebM video: ${filename}`);
   console.log(
     '================================================================================',
   );

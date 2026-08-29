@@ -1,8 +1,5 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
-import {
-  allowedModelOrNull,
-  enforceAiRateLimit,
-} from './_ai-guard.ts';
+import { allowedModelOrNull, enforceAiRateLimit } from './_ai-guard.ts';
 
 interface Env {
   AI?: WorkersAI;

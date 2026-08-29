@@ -334,7 +334,7 @@ async function traceStims(
           const out: Array<Record<string, number>> = [];
           for (let i = 0; i < frameCount; i++) {
             const step = win.__STIMS_AGENT_RENDER_FRAMES__({ frames: 1 });
-            if (!step || step.rendered !== 1) {
+            if (step?.rendered !== 1) {
               return null;
             }
             const snapshot = win.stimState.getDebugSnapshot('milkdrop');

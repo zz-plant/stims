@@ -50,14 +50,14 @@ type TierStats = { median: number; p95: number };
 type BenchRow = {
   id: string;
   statements: number;
-  compiledFrameStatements: number;
-  pixelStatements: number;
-  compiledPixelStatements: number;
+  compiledFrameStatements?: number;
+  pixelStatements?: number;
+  compiledPixelStatements?: number;
   usesGuestMemory?: boolean;
   gpuExecutable?: boolean;
-  cpu: TierStats;
-  gpu: TierStats | null;
-  perVertex: TierStats | null;
+  cpu?: TierStats;
+  gpu?: TierStats | null;
+  perVertex?: TierStats | null;
   error?: string;
 };
 
@@ -203,7 +203,7 @@ try {
       // program and reported CPU cost as 0.000us. The src/compiled counts in
       // the output exist so that can never pass unnoticed again.
       const parseBlock = (lines: string[]) => {
-        const statements: any[] = [];
+        const statements: unknown[] = [];
         for (const [index, line] of lines.entries()) {
           for (const piece of splitMilkdropStatements(line)) {
             const parsed = parseMilkdropStatement(piece, index + 1);
@@ -229,7 +229,7 @@ try {
         treb: 1,
         vol: 1,
       };
-      const out: any[] = [];
+      const out: BenchRow[] = [];
 
       for (const sample of pageSamples) {
         const state: Record<string, number> = {
@@ -359,7 +359,7 @@ try {
   console.log(
     '\n  program                                     stmts   CPU µs   GPU µs    ratio',
   );
-  console.log('  ' + '-'.repeat(78));
+  console.log(`  ${'-'.repeat(78)}`);
   for (const row of (results as { results: BenchRow[] }).results) {
     const name = String(row.id).slice(0, 40).padEnd(42);
     if (row.error) {
@@ -368,9 +368,9 @@ try {
       );
       continue;
     }
-    if (!row.gpuExecutable || !row.gpu) {
+    if (!row.gpuExecutable || !row.gpu || !row.cpu) {
       console.log(
-        `  ${name}${String(row.statements).padStart(5)}   ${row.cpu.median.toFixed(2).padStart(7)}   (not GPU-executable)`,
+        `  ${name}${String(row.statements).padStart(5)}   ${row.cpu ? row.cpu.median.toFixed(2).padStart(7) : '       -'}   (not GPU-executable)`,
       );
       continue;
     }
@@ -379,7 +379,7 @@ try {
       ? `${row.perVertex.median.toFixed(0).padStart(9)}`
       : '        -';
     console.log(
-      `  ${name}${`${row.statements}/${row.compiledFrameStatements}`.padStart(9)}   ${row.cpu.median.toFixed(3).padStart(7)}   ${row.gpu.median.toFixed(1).padStart(7)}   ${ratio.toFixed(0).padStart(6)}x   ${`${row.pixelStatements}/${row.compiledPixelStatements}`.padStart(8)}  ${pv}`,
+      `  ${name}${`${row.statements}/${row.compiledFrameStatements ?? 0}`.padStart(9)}   ${row.cpu.median.toFixed(3).padStart(7)}   ${row.gpu.median.toFixed(1).padStart(7)}   ${ratio.toFixed(0).padStart(6)}x   ${`${row.pixelStatements ?? 0}/${row.compiledPixelStatements ?? 0}`.padStart(8)}  ${pv}`,
     );
   }
   console.log(
