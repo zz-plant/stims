@@ -1482,6 +1482,19 @@ function StimsWorkspaceAppShell() {
         onOpenPalette={() => setPaletteOpen(true)}
       />
 
+      {ui.routeState.previewMode ? (
+        <a
+          className="stims-shell__embed-brand"
+          data-embed-brand-link
+          href="https://toil.fyi/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open Stims in a new tab"
+        >
+          Stims ↗
+        </a>
+      ) : null}
+
       <SidePanel
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}

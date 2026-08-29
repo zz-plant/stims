@@ -1,3 +1,4 @@
+import { resolveSemanticRoute } from '../../../functions/discover-slugs.ts';
 import { normalizeCollectionTag, parseURLParams } from '../core/url-params.ts';
 import type {
   AudioSource,
@@ -17,6 +18,8 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'agent',
   'embedded',
   'preview',
+  'embed',
+  'chromeless',
   'yt',
   't',
 ] as const;
@@ -138,7 +141,16 @@ export function readSessionRouteState(
         ? input
         : new URL(input?.href ?? 'https://toil.fyi/');
 
-  return readSessionRouteStateFromSearch(parsePlainSearch(url.search));
+  const state = readSessionRouteStateFromSearch(parsePlainSearch(url.search));
+  const discovery = resolveSemanticRoute(url.pathname);
+  if (!discovery) return state;
+
+  return {
+    ...state,
+    collectionTag: state.collectionTag ?? discovery.collectionTag ?? null,
+    panel: state.panel ?? 'browse',
+    discovery,
+  };
 }
 
 export function buildCanonicalUrl(

@@ -334,7 +334,11 @@ export function parseURLParams(
         LEGACY_AUDIO_ALIASES,
       ),
       agentMode: isAgent,
-      previewMode: get('embedded') === 'true' || get('preview') === 'true',
+      previewMode:
+        get('embedded') === 'true' ||
+        get('preview') === 'true' ||
+        get('embed') === 'true' ||
+        get('chromeless') === 'true',
       invalidExperienceSlug:
         legacyExperience && legacyExperience !== 'milkdrop'
           ? legacyExperience

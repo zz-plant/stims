@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://toil.fyi/</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,7 +13,7 @@
   </url>
   <url>
     <loc>https://toil.fyi/performance/</loc>
-    <lastmod>2026-08-15</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -24,156 +24,189 @@
   </url>
   <url>
     <loc>https://toil.fyi/discover/audio-reactive</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>Audio Reactive Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Audio Reactive MilkDrop visualizers running live in the browser.</image:caption>
+      <image:title>Audio-Reactive Music Visualizers | Stims</image:title>
+      <image:caption>Explore audio-reactive MilkDrop presets that turn music into motion in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/ambient</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Ambient Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Ambient MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore ambient MilkDrop presets for slow, atmospheric music visualization.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/fractal</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Fractal Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Fractal MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore recursive and fractal MilkDrop presets running live in your browser.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/geometric</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Geometric Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Geometric MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore geometric MilkDrop presets built from lines, shapes, symmetry, and motion.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/hall-of-fame</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>Hall Of Fame Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Hall Of Fame MilkDrop visualizers running live in the browser.</image:caption>
+      <image:title>Hall of Fame Music Visualizers | Stims</image:title>
+      <image:caption>Explore standout MilkDrop presets selected from the Stims catalog.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/neon</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Neon Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Neon MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore neon MilkDrop presets with luminous color and high-contrast motion.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/particles</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>Particles Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Particles MilkDrop visualizers running live in the browser.</image:caption>
+      <image:title>Particle Music Visualizers | Stims</image:title>
+      <image:caption>Explore particle-driven MilkDrop presets that react live to music.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/psychedelic</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Psychedelic Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Psychedelic MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore psychedelic MilkDrop presets with fluid color, feedback, and motion.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/retro</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Retro Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Retro MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore retro MilkDrop presets inspired by classic music visualizers.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/space</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Space Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Space MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore space-themed MilkDrop presets with stars, tunnels, and cosmic motion.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/trippy</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Trippy Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Trippy MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore trippy MilkDrop presets with animated feedback and shifting geometry.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/tunnel</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Tunnel Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Tunnel MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore tunnel MilkDrop presets that turn music into forward motion.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/waveform</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>Waveform Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Waveform MilkDrop visualizers running live in the browser.</image:caption>
+      <image:caption>Explore MilkDrop presets that make the live audio waveform part of the artwork.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://toil.fyi/discover/webgpu-showcase</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
-      <image:title>Webgpu Showcase Music Visualizers | Stims</image:title>
-      <image:caption>Sound-reactive Webgpu Showcase MilkDrop visualizers running live in the browser.</image:caption>
+      <image:title>WebGPU Showcase Music Visualizers | Stims</image:title>
+      <image:caption>Explore MilkDrop presets available through Stims guarded WebGPU renderer path.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/geiss</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Geiss MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Geiss and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/rovastar</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Rovastar MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Rovastar and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/martin</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Martin MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Martin and run them live in your browser.</image:caption>
     </image:image>
   </url>
 </urlset>

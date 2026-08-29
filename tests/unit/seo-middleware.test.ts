@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { onRequest } from '../../functions/_middleware.ts';
 import {
+  AUTHOR_SLUGS,
   DISCOVER_SLUGS,
+  isAllowedAuthorSlug,
   isAllowedDiscoverSlug,
 } from '../../functions/discover-slugs.ts';
 
@@ -72,7 +74,10 @@ function applyHandlers(selector: string): FakeElement {
 function htmlResponse() {
   return new Response('<html><head></head><body></body></html>', {
     status: 200,
-    headers: { 'content-type': 'text/html; charset=utf-8' },
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'x-frame-options': 'SAMEORIGIN',
+    },
   });
 }
 
@@ -116,6 +121,13 @@ describe('discover slug allowlist', () => {
     expect(isAllowedDiscoverSlug('totally-made-up-topic')).toBe(false);
     expect(isAllowedDiscoverSlug('')).toBe(false);
   });
+
+  test('accepts only curated author slugs', () => {
+    for (const slug of AUTHOR_SLUGS) {
+      expect(isAllowedAuthorSlug(slug)).toBe(true);
+    }
+    expect(isAllowedAuthorSlug('made-up-author')).toBe(false);
+  });
 });
 
 describe('/discover/<slug> middleware', () => {
@@ -133,7 +145,9 @@ describe('/discover/<slug> middleware', () => {
     expect(title.innerContent).toContain('Fractal Music Visualizers');
 
     const description = applyHandlers('meta[name="description"]');
-    expect(description.attributes.get('content')).toContain('Fractal');
+    expect(description.attributes.get('content')?.toLowerCase()).toContain(
+      'fractal',
+    );
 
     const head = applyHandlers('head');
     expect(head.appended.join('')).toContain('application/ld+json');
@@ -146,6 +160,32 @@ describe('/discover/<slug> middleware', () => {
 
     expect(transformCalls).toBe(0);
     expect(recordedHandlers).toHaveLength(0);
+    expect(response.status).toBe(200);
+  });
+});
+
+describe('/author/<slug> middleware', () => {
+  test('rewrites a curated author page with person-backed metadata', async () => {
+    await onRequest(makeContext('https://toil.fyi/author/geiss'));
+
+    expect(transformCalls).toBe(1);
+    expect(applyHandlers('title').innerContent).toContain(
+      'Geiss MilkDrop Presets',
+    );
+    expect(applyHandlers('link[rel="canonical"]').attributes.get('href')).toBe(
+      'https://toil.fyi/author/geiss',
+    );
+    expect(applyHandlers('head').appended.join('')).toContain(
+      '"@type":"Person"',
+    );
+  });
+
+  test('leaves unknown author slugs consolidated onto the root page', async () => {
+    const response = await onRequest(
+      makeContext('https://toil.fyi/author/made-up-author'),
+    );
+
+    expect(transformCalls).toBe(0);
     expect(response.status).toBe(200);
   });
 });
@@ -184,5 +224,22 @@ describe('/?preset=<id> middleware', () => {
 
     expect(transformCalls).toBe(0);
     expect(recordedHandlers).toHaveLength(0);
+  });
+});
+
+describe('embedded player framing', () => {
+  test('allows external framing only for an explicit embed request', async () => {
+    const embedded = await onRequest(
+      makeContext('https://toil.fyi/?preset=test-preset&embed=true', {
+        'test-preset': ['Test Preset', 'Test Author'],
+      }),
+    );
+    const ordinary = await onRequest(makeContext('https://toil.fyi/'));
+
+    expect(embedded.headers.get('x-frame-options')).toBeNull();
+    expect(embedded.headers.get('content-security-policy')).toContain(
+      'frame-ancestors *',
+    );
+    expect(ordinary.headers.get('x-frame-options')).toBe('SAMEORIGIN');
   });
 });

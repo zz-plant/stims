@@ -8,7 +8,7 @@
 //      site root, so every preset told crawlers it was the same page and every
 //      social share collapsed onto `/`.
 
-import { isAllowedDiscoverSlug } from './discover-slugs.ts';
+import { resolveSemanticRoute } from './discover-slugs.ts';
 import { presentTitle } from './shared/preset-title.ts';
 
 interface EventContext {
@@ -68,9 +68,40 @@ function escapeAttribute(value: string) {
     .replace(/"/g, '&quot;');
 }
 
+function isEmbedRequest(url: URL) {
+  return ['embedded', 'preview', 'embed', 'chromeless'].some(
+    (key) => url.searchParams.get(key) === 'true',
+  );
+}
+
+function allowExternalFraming(response: Response, enabled: boolean) {
+  if (!enabled) return response;
+
+  const headers = new Headers(response.headers);
+  headers.delete('x-frame-options');
+
+  const directives = (headers.get('content-security-policy') ?? '')
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter(
+      (directive) =>
+        directive.length > 0 &&
+        !directive.toLowerCase().startsWith('frame-ancestors '),
+    );
+  directives.push('frame-ancestors *');
+  headers.set('content-security-policy', directives.join('; '));
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export async function onRequest(context: EventContext): Promise<Response> {
   const { request, next } = context;
   const url = new URL(request.url);
+  const embedRequest = isEmbedRequest(url);
 
   // Immediately skip middleware for static assets or API routes
   if (
@@ -101,92 +132,96 @@ export async function onRequest(context: EventContext): Promise<Response> {
     }
   }
 
-  // `/discover/<slug>` semantic discovery route handler for curated topic
-  // hubs. Slugs outside the allowlist fall through to the app shell with its
-  // default root-canonical metadata — generating unique self-canonical pages
-  // for arbitrary slugs would mint an unbounded crawlable space of thin
-  // near-duplicate pages.
-  if (url.pathname.startsWith('/discover/')) {
-    const slug = url.pathname.slice('/discover/'.length).split('/')[0];
-    if (slug && isAllowedDiscoverSlug(slug)) {
-      const formattedName = slug
-        .split('-')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-      const fullTitle = `${formattedName} Music Visualizers — Stims`;
-      const description = `Explore sound-reactive ${formattedName} MilkDrop music visualizers running live in your browser on Stims — high-performance WebGL & WebGPU visual experience.`;
-      const canonical = new URL(
-        `/discover/${encodeURIComponent(slug)}`,
-        url.origin,
-      ).toString();
-      const oembedUrl = new URL(
-        `/api/oembed?url=${encodeURIComponent(canonical)}`,
-        url.origin,
-      ).toString();
+  // Curated semantic topic and author pages. Unknown slugs fall through to
+  // the root-canonical shell so arbitrary paths cannot mint doorway pages.
+  const semanticRoute = resolveSemanticRoute(url.pathname);
+  if (semanticRoute) {
+    const isAuthor = semanticRoute.kind === 'author';
+    const fullTitle = isAuthor
+      ? `${semanticRoute.label} MilkDrop Presets — Stims`
+      : `${semanticRoute.label} Music Visualizers — Stims`;
+    const description = semanticRoute.description;
+    const canonical = new URL(url.pathname, url.origin).toString();
+    const oembedUrl = new URL(
+      `/api/oembed?url=${encodeURIComponent(canonical)}`,
+      url.origin,
+    ).toString();
 
-      const response = await next();
-      if (
-        response.status !== 200 ||
-        !response.headers.get('content-type')?.includes('text/html')
-      ) {
-        return response;
-      }
-      if (typeof HTMLRewriter === 'undefined') return response;
-
-      const setContent = (value: string) => ({
-        element(el: { setAttribute: (name: string, value: string) => void }) {
-          el.setAttribute('content', value);
-        },
-      });
-
-      const jsonLd = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        name: fullTitle,
-        description,
-        url: canonical,
-        isPartOf: {
-          '@type': 'SoftwareApplication',
-          name: 'Stims',
-          url: url.origin,
-        },
-      });
-
-      return new HTMLRewriter()
-        .on('title', {
-          element(el) {
-            el.setInnerContent(fullTitle);
-          },
-        })
-        .on('link[rel="canonical"]', {
-          element(el) {
-            el.setAttribute('href', canonical);
-          },
-        })
-        .on('meta[name="description"]', setContent(description))
-        .on('meta[property="og:title"]', setContent(fullTitle))
-        .on('meta[property="og:description"]', setContent(description))
-        .on('meta[property="og:url"]', setContent(canonical))
-        .on('meta[name="twitter:title"]', setContent(fullTitle))
-        .on('meta[name="twitter:description"]', setContent(description))
-        .on('head', {
-          element(el) {
-            el.append(
-              `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script>`,
-              { html: true },
-            );
-          },
-        })
-        .on('noscript', {
-          element(el) {
-            el.append(
-              `<h1>${escapeAttribute(formattedName)} Music Visualizers</h1><p>${escapeAttribute(description)}</p>`,
-              { html: true },
-            );
-          },
-        })
-        .transform(response);
+    const response = await next();
+    if (
+      response.status !== 200 ||
+      !response.headers.get('content-type')?.includes('text/html')
+    ) {
+      return response;
     }
+    if (typeof HTMLRewriter === 'undefined') return response;
+
+    const setContent = (value: string) => ({
+      element(el: { setAttribute: (name: string, value: string) => void }) {
+        el.setAttribute('content', value);
+      },
+    });
+
+    const jsonLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: fullTitle,
+      description,
+      url: canonical,
+      ...(isAuthor
+        ? {
+            mainEntity: {
+              '@type': 'Person',
+              name: semanticRoute.label,
+            },
+          }
+        : {}),
+      isPartOf: {
+        '@type': 'SoftwareApplication',
+        name: 'Stims',
+        url: url.origin,
+      },
+    });
+
+    const rewritten = new HTMLRewriter()
+      .on('title', {
+        element(el) {
+          el.setInnerContent(fullTitle);
+        },
+      })
+      .on('link[rel="canonical"]', {
+        element(el) {
+          el.setAttribute('href', canonical);
+        },
+      })
+      .on('meta[name="description"]', setContent(description))
+      .on('meta[property="og:title"]', setContent(fullTitle))
+      .on('meta[property="og:description"]', setContent(description))
+      .on('meta[property="og:url"]', setContent(canonical))
+      .on('meta[name="twitter:title"]', setContent(fullTitle))
+      .on('meta[name="twitter:description"]', setContent(description))
+      .on('head', {
+        element(el) {
+          el.append(
+            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><script type="application/ld+json">${jsonLd}</script>`,
+            { html: true },
+          );
+        },
+      })
+      .on('noscript', {
+        element(el) {
+          el.append(
+            `<h1>${escapeAttribute(
+              isAuthor
+                ? `${semanticRoute.label} MilkDrop Presets`
+                : `${semanticRoute.label} Music Visualizers`,
+            )}</h1><p>${escapeAttribute(description)}</p>`,
+            { html: true },
+          );
+        },
+      })
+      .transform(response);
+    return allowExternalFraming(rewritten, embedRequest);
   }
 
   const presetId = url.searchParams.get('preset');
@@ -200,11 +235,11 @@ export async function onRequest(context: EventContext): Promise<Response> {
     response.status !== 200 ||
     !response.headers.get('content-type')?.includes('text/html')
   ) {
-    return response;
+    return allowExternalFraming(response, embedRequest);
   }
 
   if (typeof HTMLRewriter === 'undefined') {
-    return response;
+    return allowExternalFraming(response, embedRequest);
   }
 
   const presetMeta = await loadPresetMeta(context, url.origin);
@@ -214,7 +249,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
   // title and canonical for arbitrary `?preset=` values would turn the query
   // string into unbounded crawlable space full of near-duplicate pages.
   if (!entry) {
-    return response;
+    return allowExternalFraming(response, embedRequest);
   }
 
   const [rawTitle, author] = entry;
@@ -311,52 +346,51 @@ export async function onRequest(context: EventContext): Promise<Response> {
     ],
   });
 
-  return (
-    new HTMLRewriter()
-      .on('title', {
-        element(el) {
-          el.setInnerContent(fullTitle);
-        },
-      })
-      .on('link[rel="canonical"]', {
-        element(el) {
-          el.setAttribute('href', canonical);
-        },
-      })
-      .on('meta[name="description"]', setContent(description))
-      .on('meta[property="og:title"]', setContent(fullTitle))
-      .on('meta[property="og:description"]', setContent(description))
-      .on('meta[property="og:url"]', setContent(canonical))
-      .on('meta[property="og:image"]', setContent(imageUrl))
-      .on('meta[property="og:image:alt"]', setContent(imageAlt))
-      .on('meta[name="twitter:card"]', setContent('player'))
-      .on('meta[name="twitter:title"]', setContent(fullTitle))
-      .on('meta[name="twitter:description"]', setContent(description))
-      .on('meta[name="twitter:image"]', setContent(imageUrl))
-      .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
-      .on('head', {
-        element(el) {
-          el.append(
-            `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
-            {
-              html: true,
-            },
-          );
-        },
-      })
-      // A crawler that renders no JavaScript otherwise sees 212 characters of
-      // "JavaScript is required". This gives the preset page a real indexable
-      // sentence naming the preset and its author.
-      .on('noscript', {
-        element(el) {
-          el.append(
-            `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
-              `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
-            )}</p>`,
-            { html: true },
-          );
-        },
-      })
-      .transform(response)
-  );
+  const rewritten = new HTMLRewriter()
+    .on('title', {
+      element(el) {
+        el.setInnerContent(fullTitle);
+      },
+    })
+    .on('link[rel="canonical"]', {
+      element(el) {
+        el.setAttribute('href', canonical);
+      },
+    })
+    .on('meta[name="description"]', setContent(description))
+    .on('meta[property="og:title"]', setContent(fullTitle))
+    .on('meta[property="og:description"]', setContent(description))
+    .on('meta[property="og:url"]', setContent(canonical))
+    .on('meta[property="og:image"]', setContent(imageUrl))
+    .on('meta[property="og:image:alt"]', setContent(imageAlt))
+    .on('meta[name="twitter:card"]', setContent('player'))
+    .on('meta[name="twitter:title"]', setContent(fullTitle))
+    .on('meta[name="twitter:description"]', setContent(description))
+    .on('meta[name="twitter:image"]', setContent(imageUrl))
+    .on('meta[name="twitter:image:alt"]', setContent(imageAlt))
+    .on('head', {
+      element(el) {
+        el.append(
+          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
+          {
+            html: true,
+          },
+        );
+      },
+    })
+    // A crawler that renders no JavaScript otherwise sees 212 characters of
+    // "JavaScript is required". This gives the preset page a real indexable
+    // sentence naming the preset and its author.
+    .on('noscript', {
+      element(el) {
+        el.append(
+          `<h1>${escapeAttribute(title)}</h1><p>${escapeAttribute(
+            `${title}${authorCredit} is a MilkDrop preset you can run live in your browser on Stims.`,
+          )}</p>`,
+          { html: true },
+        );
+      },
+    })
+    .transform(response);
+  return allowExternalFraming(rewritten, embedRequest);
 }

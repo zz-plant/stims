@@ -95,6 +95,32 @@ body[data-page="workspace"][data-live="true"] {
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
   }
+
+  .stims-shell__embed-brand {
+    position: fixed;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    z-index: 12;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--radius-pill);
+    background: rgba(3, 5, 11, 0.76);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+  }
+
+  .stims-shell__embed-brand:hover,
+  .stims-shell__embed-brand:focus-visible {
+    border-color: rgba(100, 220, 255, 0.72);
+    color: #fff;
+  }
   :scope {
     min-height: 100svh;
   }
