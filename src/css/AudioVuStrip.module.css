@@ -1,0 +1,92 @@
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--stims-border);
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-color);
+  user-select: none;
+  box-shadow: 0 4px 12px var(--stims-shadow-22);
+}
+
+.masterMeter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--stims-ink-muted);
+}
+
+.meterTrack {
+  position: relative;
+  width: 64px;
+  height: 8px;
+  background: var(--bg-color);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--stims-border-08);
+}
+
+.meterFillMaster {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--stims-cool),
+    var(--stims-warn),
+    var(--stims-bad)
+  );
+  transition: width 40ms ease-out;
+}
+
+.bandMeters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bandLabel {
+  font-size: 10px;
+  color: var(--stims-ink-dim);
+}
+
+.meterFillBass {
+  height: 100%;
+  background: var(--stims-bad);
+  transition: width 40ms ease-out;
+}
+
+.meterFillMid {
+  height: 100%;
+  background: var(--stims-warn);
+  transition: width 40ms ease-out;
+}
+
+.meterFillTreb {
+  height: 100%;
+  background: var(--stims-cool);
+  transition: width 40ms ease-out;
+}
+
+.peakMarker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent-contrast);
+  pointer-events: none;
+  transition: left 60ms ease-out;
+}
