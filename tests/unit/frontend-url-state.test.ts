@@ -245,6 +245,47 @@ describe('frontend url state', () => {
     );
   });
 
+  test('accepts public embed and chromeless aliases', () => {
+    expect(
+      readSessionRouteState('https://toil.fyi/?embed=true').previewMode,
+    ).toBe(true);
+    expect(
+      readSessionRouteState('https://toil.fyi/?chromeless=true').previewMode,
+    ).toBe(true);
+
+    const canonical = buildCanonicalUrl(
+      readSessionRouteState(
+        'https://toil.fyi/?preset=signal-bloom&chromeless=true',
+      ),
+      'https://toil.fyi/?preset=signal-bloom&chromeless=true',
+    );
+    expect(canonical.search).toBe('?preset=signal-bloom&embedded=true');
+  });
+
+  test('opens semantic discovery and author paths as filtered browse views', () => {
+    const topic = readSessionRouteState('https://toil.fyi/discover/fractal');
+    expect(topic.panel).toBe('browse');
+    expect(topic.discovery).toEqual(
+      expect.objectContaining({
+        kind: 'topic',
+        slug: 'fractal',
+        label: 'Fractal',
+        searchQuery: 'fractal',
+      }),
+    );
+
+    const author = readSessionRouteState('https://toil.fyi/author/geiss');
+    expect(author.panel).toBe('browse');
+    expect(author.discovery).toEqual(
+      expect.objectContaining({
+        kind: 'author',
+        slug: 'geiss',
+        label: 'Geiss',
+        author: 'Geiss',
+      }),
+    );
+  });
+
   test('encodes and decodes preset source code in url hash fragments', () => {
     const {
       buildPresetCodeHash,

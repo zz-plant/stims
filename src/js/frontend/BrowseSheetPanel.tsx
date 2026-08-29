@@ -120,7 +120,12 @@ export function BrowseSheetPanel({
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const deferredSearch = useDeferredValue(localSearch);
-  const [authorFilter, setAuthorFilter] = useState<string | null>(null);
+  const [authorFilter, setAuthorFilter] = useState<string | null>(
+    routeState.discovery?.author ?? null,
+  );
+  useEffect(() => {
+    setAuthorFilter(routeState.discovery?.author ?? null);
+  }, [routeState.discovery?.author]);
   const [gridView, setGridView] = useState(readGridView);
   const resultsRef = useRef<HTMLElement | null>(null);
 

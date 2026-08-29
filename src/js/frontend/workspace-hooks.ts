@@ -127,7 +127,12 @@ export function useWorkspaceSessionState({
   const [engineSnapshot, setEngineSnapshot] = useState<EngineSnapshot | null>(
     null,
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(
+    routeState.discovery?.searchQuery ?? '',
+  );
+  useEffect(() => {
+    setSearchQuery(routeState.discovery?.searchQuery ?? '');
+  }, [routeState.discovery?.searchQuery]);
   const { motionPreference, qualityPreset, renderPreferences } =
     useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
