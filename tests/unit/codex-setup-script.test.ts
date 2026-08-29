@@ -41,12 +41,19 @@ async function installFakeBun(
   rootDir: string,
   {
     bunVersion = '1.3.4',
+    installFailures = 0,
+    installFailureOutput = 'error: connection reset by peer',
   }: {
     bunVersion?: string;
+    /** How many leading `bun install` attempts fail before one succeeds. */
+    installFailures?: number;
+    /** stderr the failing attempts emit, so tests can pick the failure class. */
+    installFailureOutput?: string;
   } = {},
 ) {
   const fakeBinDir = path.join(rootDir, 'bin');
   const bunLogFile = path.join(rootDir, 'bun.log');
+  const attemptFile = path.join(rootDir, 'install-attempts');
   const bunPath = path.join(fakeBinDir, 'bun');
 
   await mkdir(fakeBinDir, { recursive: true });
@@ -54,8 +61,9 @@ async function installFakeBun(
   await writeFile(
     bunPath,
     `#!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 bun_log_file=${JSON.stringify(bunLogFile)}
+attempt_file=${JSON.stringify(attemptFile)}
 if [[ "$#" -gt 0 ]]; then
   printf '%s\\n' "$*" >>"$bun_log_file"
 fi
@@ -64,13 +72,16 @@ if [[ "\${1:-}" == "--version" ]]; then
   exit 0
 fi
 if [[ "\${1:-}" == "install" ]]; then
+  printf 'x' >>"$attempt_file"
+  attempts=$(wc -c <"$attempt_file" | tr -d ' ')
+  if (( attempts <= ${installFailures} )); then
+    echo ${JSON.stringify(installFailureOutput)} >&2
+    exit 1
+  fi
   mkdir -p node_modules
   exit 0
 fi
-if [[ "\${1:-}" == "run" && "\${2:-}" == "check:quick" ]]; then
-  exit 0
-fi
-if [[ "\${1:-}" == "run" && "\${2:-}" == "check" ]]; then
+if [[ "\${1:-}" == "run" ]]; then
   exit 0
 fi
 echo "unexpected bun invocation: $*" >&2
@@ -193,4 +204,143 @@ test('codex setup status reports missing installs and suggests setup', async () 
   expect(result.stdout).toContain('Local setup status for stims');
   expect(result.stdout).toContain('- Dependency install: missing');
   expect(result.stdout).toContain('- Suggested next step: bun run setup');
+});
+
+test('codex setup status reports without a setup banner so agents can parse it', async () => {
+  const rootDir = await createTempRepo();
+  const { env } = await installFakeBun(rootDir);
+
+  const result = spawnSync('bash', ['scripts/codex-setup.sh', '--status'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    env,
+  });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).not.toContain('Starting Codex setup');
+  expect(result.stdout.split('\n')[0]).toBe('Local setup status for stims');
+});
+
+test('codex setup reinstalls when the cached install used a different Bun', async () => {
+  const rootDir = await createTempRepo();
+  const { bunLogFile, env } = await installFakeBun(rootDir, {
+    bunVersion: '1.4.0',
+  });
+
+  await mkdir(path.join(rootDir, 'node_modules'), { recursive: true });
+  await mkdir(path.join(rootDir, '.codex', 'setup'), { recursive: true });
+  await writeFile(
+    path.join(rootDir, '.codex', 'setup', 'install-state.meta'),
+    `fingerprint=${manifestFingerprint(rootDir)}
+bun_version=1.3.4
+installed_at=2026-04-15T12:00:00-0500
+`,
+  );
+
+  const result = spawnSync('bash', ['scripts/codex-setup.sh', '--skip-check'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    env,
+  });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain(
+    'installed with Bun 1.3.4, now running Bun 1.4.0',
+  );
+
+  const bunInvocations = readLoggedBunInvocations(
+    await readFile(bunLogFile, 'utf8'),
+  );
+  expect(bunInvocations).toContain('install');
+
+  const state = await readFile(
+    path.join(rootDir, '.codex', 'setup', 'install-state.meta'),
+    'utf8',
+  );
+  expect(state).toContain('bun_version=1.4.0');
+});
+
+test('codex setup retries a transient install failure', async () => {
+  const rootDir = await createTempRepo();
+  const { bunLogFile, env } = await installFakeBun(rootDir, {
+    installFailures: 1,
+  });
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/codex-setup.sh', '--skip-check', '--install-retries', '1'],
+    { cwd: rootDir, encoding: 'utf8', env },
+  );
+
+  expect(result.status).toBe(0);
+  expect(result.stderr).toContain('Dependency installation failed; retrying');
+
+  const bunInvocations = readLoggedBunInvocations(
+    await readFile(bunLogFile, 'utf8'),
+  );
+  expect(bunInvocations.filter((line) => line === 'install')).toHaveLength(2);
+});
+
+test('codex setup fails fast on lockfile drift instead of retrying', async () => {
+  const rootDir = await createTempRepo();
+  const { bunLogFile, env } = await installFakeBun(rootDir, {
+    installFailures: 5,
+    installFailureOutput: 'error: lockfile had changes, but lockfile is frozen',
+  });
+
+  const result = spawnSync(
+    'bash',
+    [
+      'scripts/codex-setup.sh',
+      '--frozen-lockfile',
+      '--skip-check',
+      '--install-retries',
+      '3',
+    ],
+    { cwd: rootDir, encoding: 'utf8', env },
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain('bun.lock does not match package.json');
+  expect(result.stderr).not.toContain('retrying');
+
+  const bunInvocations = readLoggedBunInvocations(
+    await readFile(bunLogFile, 'utf8'),
+  );
+  expect(
+    bunInvocations.filter((line) => line === 'install --frozen-lockfile'),
+  ).toHaveLength(1);
+});
+
+test('codex setup gives up after exhausting install retries', async () => {
+  const rootDir = await createTempRepo();
+  const { env } = await installFakeBun(rootDir, { installFailures: 5 });
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/codex-setup.sh', '--skip-check', '--install-retries', '0'],
+    { cwd: rootDir, encoding: 'utf8', env },
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(
+    'dependency installation failed after 1 attempt(s)',
+  );
+  expect(result.stderr).toContain('.codex/setup/last-install.log');
+});
+
+test('codex setup rejects a non-numeric retry count', async () => {
+  const rootDir = await createTempRepo();
+  const { env } = await installFakeBun(rootDir);
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/codex-setup.sh', '--install-retries', 'lots'],
+    { cwd: rootDir, encoding: 'utf8', env },
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain(
+    '--install-retries expects a non-negative integer',
+  );
 });

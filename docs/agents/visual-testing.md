@@ -165,6 +165,21 @@ blank capture that looks like a rendering bug.
   artifacts). Check it before trusting a result — SwiftShader and real-GPU
   captures are not pixel-comparable, and `lab:visual --compare` refuses to
   diff across a backend mismatch.
+- **"Executable doesn't exist" is usually an environment mismatch, not a
+  broken repo.** Cloud containers pre-install Chromium under
+  `PLAYWRIGHT_BROWSERS_PATH` and forbid `playwright install`, but Playwright
+  only looks for the exact revision its own version pins — a Playwright bump
+  leaves every browser tool dead on arrival. `bun run setup:browsers`
+  (`scripts/link-preinstalled-browsers.ts`) links the shipped build into the
+  layout the pinned Playwright expects; `bun run setup` runs it automatically,
+  and `bun run doctor` reports which binary resolved. The linked build is not
+  the pinned one, so read an unexplained protocol error as version skew.
+- **The e2e suites decide headed-vs-headless by the display, not by `CI`.**
+  `tests/e2e/headless-environment.ts` treats a Linux box with no `DISPLAY` the
+  same as CI: headless, SwiftShader, and skip the suites that need a real GPU
+  or a headed window. Keying on `CI` alone sent cloud containers down the
+  headed path, where Chromium exits with "Missing X server or $DISPLAY" before
+  the first assertion.
 - `bun run lab:reactivity` needs no browser or GPU at all — it drives the
   MilkDrop VM directly in-process. Prefer it when you only need to know
   "does this preset respond to audio," not "what does it look like."

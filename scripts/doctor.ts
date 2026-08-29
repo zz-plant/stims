@@ -2,9 +2,10 @@
  * Diagnoses whether this machine's dev environment can build, test, and deploy
  * the visualizer.
  *
- * Reports Bun, tsc, Biome, Playwright, and Wrangler availability plus the
- * bundled MilkDrop catalog, then launches headless Chromium to classify the
- * advisory visual-verification tier (GPU vs. software rendering vs. no
+ * Reports Bun, tsc, Biome, Playwright, and Wrangler availability, whether
+ * node_modules still matches the manifests, and the bundled MilkDrop catalog,
+ * then resolves the Chromium binary and launches headless Chromium to classify
+ * the advisory visual-verification tier (GPU vs. software rendering vs. no
  * browser). Exits non-zero when any counted check fails.
  */
 import { $ } from 'bun';
@@ -43,6 +44,29 @@ report('Biome Linter/Formatter', biomeOk, biomeRes.trim());
 const pwOk = await Bun.file('node_modules/playwright/package.json').exists();
 report('Playwright Test Harness', pwOk, pwOk ? 'installed' : 'missing');
 
+// 4b. Chromium binary. The package being installed says nothing about whether
+// a browser exists: remote containers ship one via PLAYWRIGHT_BROWSERS_PATH
+// (so `playwright install` is wrong there), while a fresh local clone has the
+// package and no binary. Advisory — a browserless box is an environment fact,
+// and check 7 below classifies what still works there.
+let chromiumStatus = 'unknown (Playwright package missing)';
+if (pwOk) {
+  const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  const suffix = browsersPath
+    ? ` via PLAYWRIGHT_BROWSERS_PATH=${browsersPath}`
+    : '';
+  try {
+    const { chromium } = await import('playwright');
+    const executable = chromium.executablePath();
+    chromiumStatus = (await Bun.file(executable).exists())
+      ? `${executable}${suffix}`
+      : `missing — expected at ${executable}${suffix}; run 'bun run setup:browsers' to link a pre-installed build, or 'bunx playwright install chromium' where downloads are allowed`;
+  } catch (error) {
+    chromiumStatus = `unresolvable (${(error as Error).message.split('\n')[0]})${suffix}`;
+  }
+}
+console.log(`  🌐 Chromium binary: ${chromiumStatus}`);
+
 // 5. Cloudflare Wrangler Tooling
 const wrangRes = await $`./node_modules/.bin/wrangler --version`
   .nothrow()
@@ -50,7 +74,29 @@ const wrangRes = await $`./node_modules/.bin/wrangler --version`
 const wrangOk = wrangRes.length > 0;
 report('Cloudflare Wrangler CLI', wrangOk, wrangRes.trim().split('\n')[0]);
 
-// 6. Bundled Catalog Integrity
+// 6. Dependency install freshness. A node_modules tree that predates a
+// package.json/bun.lock or Bun change is the most common source of
+// inexplicable failures, and it looks identical to a healthy one. Reuse the
+// setup script's own fingerprint rather than reimplementing it here.
+const setupStatus = await $`bash scripts/codex-setup.sh --status`
+  .nothrow()
+  .text();
+const installLine =
+  setupStatus
+    .split('\n')
+    .find((line) => line.startsWith('- Dependency install:'))
+    ?.replace('- Dependency install:', '')
+    .trim() ?? 'unknown';
+// `uncached` means node_modules exists but was installed outside the setup
+// script (a plain `bun install`), so there is nothing to contradict — only
+// states that positively disagree with the manifests count as failures.
+report(
+  'Dependency install state',
+  installLine.startsWith('current') || installLine.startsWith('uncached'),
+  installLine,
+);
+
+// 7. Bundled Catalog Integrity
 const catalogOk = await Bun.file(
   'public/milkdrop-presets/catalog.json',
 ).exists();
@@ -60,7 +106,7 @@ report(
   'public/milkdrop-presets/catalog.json',
 );
 
-// 7. Visual-verification tier (GPU vs. software rendering vs. no browser)
+// 8. Visual-verification tier (GPU vs. software rendering vs. no browser)
 //
 // Advisory only — doesn't count toward checksPassed/totalChecks, since
 // missing a GPU is an environment fact, not a broken setup. Tells an agent
