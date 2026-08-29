@@ -12,6 +12,11 @@ Options:
   --force-install     Run dependency installation even if local install state looks current.
   --skip-install      Skip dependency installation.
   --skip-check        Skip all quality checks.
+  --skip-browsers     Skip linking a container's pre-installed Chromium into
+                      the layout the pinned Playwright expects.
+  --install-retries <n>
+                      Retry a failed install up to n times with exponential
+                      backoff (default: 3). Lockfile drift never retries.
   --quick-check       Run bun run check:quick (default).
   --full-check        Run bun run check.
   --status            Print local setup status and exit.
@@ -115,6 +120,10 @@ saved_install_fingerprint() {
   metadata_value "$(install_state_file)" "fingerprint"
 }
 
+saved_install_bun_version() {
+  metadata_value "$(install_state_file)" "bun_version"
+}
+
 install_state_label() {
   if ! install_artifacts_present; then
     echo "missing"
@@ -129,12 +138,93 @@ install_state_label() {
     return 0
   fi
 
-  if [[ "$saved_fingerprint" == "$CURRENT_MANIFEST_FINGERPRINT" ]]; then
-    echo "current"
+  if [[ "$saved_fingerprint" != "$CURRENT_MANIFEST_FINGERPRINT" ]]; then
+    echo "stale"
     return 0
   fi
 
-  echo "stale"
+  # node_modules carries binaries built against the Bun that installed it
+  # (sharp, resvg-wasm and friends). A Bun upgrade invalidates the tree even
+  # though every manifest still matches, so the fingerprint alone is not
+  # enough to call the install current.
+  local saved_bun
+  saved_bun="$(saved_install_bun_version || true)"
+
+  if [[ -n "$saved_bun" && "$saved_bun" != "$CURRENT_BUN_VERSION" ]]; then
+    echo "bun-changed"
+    return 0
+  fi
+
+  echo "current"
+}
+
+install_state_detail() {
+  case "$1" in
+    missing) echo "node_modules is absent" ;;
+    uncached) echo "no recorded install state; cannot tell whether node_modules matches the manifests" ;;
+    stale) echo "package.json/bun.lock changed since the last recorded install" ;;
+    bun-changed)
+      echo "installed with Bun $(saved_install_bun_version || echo unknown), now running Bun $CURRENT_BUN_VERSION"
+      ;;
+    current) echo "node_modules matches the manifests and the running Bun" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
+install_log_file() {
+  echo "$(install_state_dir)/last-install.log"
+}
+
+# Bun's own wording when the lockfile and package.json disagree under
+# --frozen-lockfile. Deterministic: retrying cannot fix it.
+lockfile_drift_detected() {
+  grep -qiE 'lockfile had changes|lockfile is frozen|frozen lockfile' "$1"
+}
+
+run_install() {
+  local -a install_command=(bun install)
+  if [[ "$INSTALL_MODE" == "frozen" ]]; then
+    install_command+=(--frozen-lockfile)
+  fi
+
+  local log_file
+  log_file="$(install_log_file)"
+  mkdir -p "$(dirname -- "$log_file")"
+
+  local attempt=1
+  local delay=2
+  local max_attempts=$((INSTALL_RETRIES + 1))
+
+  while true; do
+    if [[ "$attempt" -gt 1 ]]; then
+      log "Retrying dependency installation (attempt ${attempt}/${max_attempts})"
+    fi
+
+    if "${install_command[@]}" 2>&1 | tee "$log_file"; then
+      return 0
+    fi
+
+    if lockfile_drift_detected "$log_file"; then
+      fail "$(cat <<DRIFT
+bun.lock does not match package.json, so --frozen-lockfile refused to install.
+This is dependency drift, not a flake, so it was not retried. To fix it:
+  1. bun install            # updates bun.lock to match package.json
+  2. git diff bun.lock      # confirm the change is the one you expect
+  3. commit the lockfile alongside the package.json change
+Full install output: ${log_file}
+DRIFT
+)"
+    fi
+
+    if [[ "$attempt" -ge "$max_attempts" ]]; then
+      fail "dependency installation failed after ${attempt} attempt(s). Full output: ${log_file}"
+    fi
+
+    warn "Dependency installation failed; retrying in ${delay}s (attempt ${attempt}/${max_attempts})."
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+  done
 }
 
 write_install_state() {
@@ -164,7 +254,7 @@ print_setup_status() {
   echo "- Repository root: $REPO_ROOT"
   echo "- Bun version: $CURRENT_BUN_VERSION"
   echo "- node_modules: $(if install_artifacts_present; then echo present; else echo missing; fi)"
-  echo "- Dependency install: $install_state"
+  echo "- Dependency install: $install_state ($(install_state_detail "$install_state"))"
   echo "- Install cache file: $(if [[ -f "$(install_state_file)" ]]; then echo present; else echo missing; fi)"
   echo "- Local model routing helper: $(helper_status lmstudio-route)"
   echo "- Local model warmup helper: $(helper_status lmstudio-ensure-model)"
@@ -187,6 +277,8 @@ CHECK_MODE="quick"
 FORCE_INSTALL=0
 PRINT_PLAN=0
 STATUS_ONLY=0
+INSTALL_RETRIES=3
+DO_BROWSERS=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -204,6 +296,21 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-check)
       DO_CHECK=0
+      shift
+      ;;
+    --skip-browsers)
+      DO_BROWSERS=0
+      shift
+      ;;
+    --install-retries)
+      [[ $# -ge 2 ]] || fail "--install-retries requires a value."
+      [[ "$2" =~ ^[0-9]+$ ]] || fail "--install-retries expects a non-negative integer (got '$2')."
+      INSTALL_RETRIES="$2"
+      shift 2
+      ;;
+    --install-retries=*)
+      INSTALL_RETRIES="${1#*=}"
+      [[ "$INSTALL_RETRIES" =~ ^[0-9]+$ ]] || fail "--install-retries expects a non-negative integer (got '$INSTALL_RETRIES')."
       shift
       ;;
     --quick-check)
@@ -249,27 +356,37 @@ CURRENT_BUN_VERSION="$(bun --version)"
 CURRENT_MANIFEST_FINGERPRINT="$(manifest_fingerprint)"
 CURRENT_INSTALL_STATE="$(install_state_label)"
 
-log "Starting Codex setup for stims"
-log "Repository root: $REPO_ROOT"
-log "Bun version: $CURRENT_BUN_VERSION"
-
+# --status and --print-plan are read by agents and by `bun run agent:status`;
+# keep their output to the report itself rather than a setup banner.
 if [[ "$STATUS_ONLY" -eq 1 ]]; then
   print_setup_status
   exit 0
 fi
 
+if [[ "$PRINT_PLAN" -eq 0 ]]; then
+  log "Starting Codex setup for stims"
+  log "Repository root: $REPO_ROOT"
+  log "Bun version: $CURRENT_BUN_VERSION"
+fi
+
 if [[ "$PRINT_PLAN" -eq 1 ]]; then
-  log "Plan"
+  echo "Plan"
   if [[ "$DO_INSTALL" -eq 1 ]]; then
     if [[ "$FORCE_INSTALL" -eq 0 && "$CURRENT_INSTALL_STATE" == "current" ]]; then
-      echo "- Install: skipped (node_modules and manifest fingerprint are current)"
+      echo "- Install: skipped ($(install_state_detail current))"
     elif [[ "$INSTALL_MODE" == "frozen" ]]; then
-      echo "- Install: bun install --frozen-lockfile"
+      echo "- Install: bun install --frozen-lockfile ($(install_state_detail "$CURRENT_INSTALL_STATE"))"
     else
-      echo "- Install: bun install"
+      echo "- Install: bun install ($(install_state_detail "$CURRENT_INSTALL_STATE"))"
     fi
   else
     echo "- Install: skipped"
+  fi
+
+  if [[ "$DO_BROWSERS" -eq 1 ]]; then
+    echo "- Browsers: link pre-installed Chromium if the pinned revision is missing"
+  else
+    echo "- Browsers: skipped"
   fi
 
   if [[ "$DO_CHECK" -eq 1 ]]; then
@@ -288,17 +405,32 @@ fi
 if [[ "$DO_INSTALL" -eq 1 ]]; then
   if [[ "$FORCE_INSTALL" -eq 0 && "$CURRENT_INSTALL_STATE" == "current" ]]; then
     log "Skipping dependency installation; node_modules and manifest fingerprint are current"
-  elif [[ "$INSTALL_MODE" == "frozen" ]]; then
-    log "Installing dependencies with frozen lockfile"
-    bun install --frozen-lockfile
-    write_install_state
   else
-    log "Installing dependencies"
-    bun install
+    if [[ "$INSTALL_MODE" == "frozen" ]]; then
+      log "Installing dependencies with frozen lockfile ($(install_state_detail "$CURRENT_INSTALL_STATE"))"
+    else
+      log "Installing dependencies ($(install_state_detail "$CURRENT_INSTALL_STATE"))"
+    fi
+    run_install
     write_install_state
   fi
 else
   log "Skipping dependency installation"
+fi
+
+# Advisory: a container without a usable browser still runs every text-only
+# instrument, so a failure here must not fail the bootstrap.
+if [[ "$DO_BROWSERS" -eq 1 ]]; then
+  if install_artifacts_present; then
+    log "Linking pre-installed browsers"
+    if ! bun run scripts/link-preinstalled-browsers.ts; then
+      warn "browser linking failed; browser-backed tooling may be unavailable. Run 'bun run doctor' for the tier that still works."
+    fi
+  else
+    log "Skipping browser linking; node_modules is absent"
+  fi
+else
+  log "Skipping browser linking"
 fi
 
 if [[ "$DO_CHECK" -eq 1 ]]; then
