@@ -23,6 +23,7 @@ import {
   EEL_UNARY_OPERATORS,
   type EelEvalHelpers,
   evaluateEelCall,
+  finiteOrZero,
   MILKDROP_EEL_CLOSE_FACTOR,
   toMilkdropInt,
 } from './compiler/eel-function-table.ts';
@@ -70,7 +71,22 @@ type ParseResult<T> = {
   diagnostics: MilkdropDiagnostic[];
 };
 
-const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
+/**
+ * EEL compound assignment. ns-eel supports these and the corpus uses them
+ * (`exec2(k1 += 0.05 * bass_att, k1)`), so they must tokenize as one operator
+ * rather than as `+` followed by `=`.
+ */
+const COMPOUND_ASSIGNMENT_OPERATORS = ['+=', '-=', '*=', '/=', '%='] as const;
+
+const operatorTokens = [
+  '<=',
+  '>=',
+  '==',
+  '!=',
+  '&&',
+  '||',
+  ...COMPOUND_ASSIGNMENT_OPERATORS,
+];
 
 // The names live in `builtin-docs.ts` (the single source of truth shared with
 // the editor's highlighter, autocomplete, and hover docs); these sets remain
@@ -151,7 +167,7 @@ function tokenize(source: string, line: number): ParseResult<Token[]> {
       continue;
     }
 
-    if ('+-*/%^<>!|&='.includes(current)) {
+    if ('+-*/%^<>!|&=?:'.includes(current)) {
       tokens.push({ type: 'operator', value: current });
       index += 1;
       continue;
@@ -290,27 +306,78 @@ class ExpressionParser {
   }
 
   /** Assignment has the lowest precedence and is right-associative, so a=b=c
-   * parses as a=(b=c). */
+   * parses as a=(b=c). Compound assignment (`x += y`) desugars here into
+   * `x = x + y`, which is exactly what EEL does; every downstream tier then
+   * sees an ordinary assignment and needs no compound-operator handling. */
   private parseAssignment(): MilkdropExpressionNode {
     if (!this.enterDepth()) {
       return { type: 'literal', value: 0 };
     }
     try {
-      const left = this.parseLogicalOr();
-      const operator = this.matchOperator('=');
+      const left = this.parseConditional();
+      const operator = this.matchOperator(
+        '=',
+        ...COMPOUND_ASSIGNMENT_OPERATORS,
+      );
       if (!operator) {
         return left;
       }
       const right = this.parseAssignment();
+      if (operator === '=') {
+        return { type: 'binary', operator: '=', left, right };
+      }
       return {
         type: 'binary',
         operator: '=',
         left,
-        right,
+        // The target is re-read, not re-evaluated for effect: for the
+        // identifier and megabuf targets EEL allows, reading is pure.
+        right: {
+          type: 'binary',
+          operator: operator[0] as '+' | '-' | '*' | '/' | '%',
+          left,
+          right,
+        },
       };
     } finally {
       this.leaveDepth();
     }
+  }
+
+  /**
+   * The EEL ternary, which binds tighter than assignment and looser than
+   * `||`, and is right-associative (`a ? b : c ? d : e` groups to the right).
+   *
+   * It desugars to the intrinsic `if(cond, then, else)` — the same node the
+   * parser already produces for the call form — so every tier keeps its
+   * existing lazy-branch semantics and needs no new case.
+   */
+  private parseConditional(): MilkdropExpressionNode {
+    const condition = this.parseLogicalOr();
+    if (!this.matchOperator('?')) {
+      return condition;
+    }
+    const whenTrue = this.parseAssignment();
+    if (!this.matchOperator(':')) {
+      this.diagnostics.push(
+        createDiagnostic(
+          this.line,
+          'expr_expected_conditional_colon',
+          'Expected ":" to complete a "?:" conditional.',
+        ),
+      );
+      return condition;
+    }
+    // The else branch parses as a full assignment, matching how JS (and how
+    // preset authors) read `c ? a = 5 : a = 9`. Recursing through
+    // parseAssignment still reaches parseConditional, so a chained
+    // `a ? b : c ? d : e` stays right-associative.
+    const whenFalse = this.parseAssignment();
+    return {
+      type: 'call',
+      name: 'if',
+      args: [condition, whenTrue, whenFalse],
+    };
   }
 
   private peek() {
@@ -589,7 +656,16 @@ export function evaluateMilkdropExpression(
     case 'binary': {
       // Assignment is handled specially to allow side effects on LHS
       if (node.operator === '=') {
-        const rvalue = evaluateMilkdropExpression(node.right, env, helpers);
+        // Clamp before the store, not after: the JIT emits the same clamp on
+        // its nested-assignment temporary, and without it an assignment
+        // nested inside an expression (`zoom = (q1 = 1e300 * 1e300)`) writes
+        // a raw Infinity/NaN straight into the persistent register/state
+        // mirrors, where it survives every later frame. The statement-level
+        // clamp in expression-jit's interpreted runner only covers the
+        // outermost value, so it never caught these.
+        const rvalue = finiteOrZero(
+          evaluateMilkdropExpression(node.right, env, helpers),
+        );
         // Perform assignment to the left side
         if (node.left.type === 'identifier') {
           const key = node.left.name.toLowerCase();
@@ -692,19 +768,51 @@ export function splitMilkdropStatements(source: string) {
   return statements;
 }
 
-function findAssignmentIndex(source: string) {
+/**
+ * Locates the top-level assignment operator, returning where it starts and
+ * which one it is (`=` or a compound form).
+ *
+ * The `=` in `==`, `<=`, `>=` and `!=` is NOT an assignment: matching it split
+ * `x == 1` into the target `x` and the expression `= 1`, reporting a bogus
+ * invalid-target error for a statement that is merely a (useless but legal)
+ * comparison.
+ */
+function findAssignmentIndex(source: string): {
+  index: number;
+  operator: string;
+} {
   let depth = 0;
+  let sawConditional = false;
   for (let index = 0; index < source.length; index += 1) {
     const char = source[index];
     if (char === '(') {
       depth += 1;
-    } else if (char === ')') {
-      depth = Math.max(0, depth - 1);
-    } else if (char === '=' && depth === 0) {
-      return index;
+      continue;
     }
+    if (char === ')') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (char === '?' && depth === 0) {
+      // Past a top-level `?` every `=` belongs to a ternary branch
+      // (`c ? x = 1 : x = 2`), not to a statement-level assignment.
+      sawConditional = true;
+      continue;
+    }
+    if (char !== '=' || depth !== 0 || sawConditional) {
+      continue;
+    }
+    if (source[index + 1] === '=' || '<>!='.includes(source[index - 1] ?? '')) {
+      continue;
+    }
+    const compound = COMPOUND_ASSIGNMENT_OPERATORS.find(
+      (operator) => operator[0] === source[index - 1],
+    );
+    return compound
+      ? { index: index - 1, operator: compound }
+      : { index, operator: '=' };
   }
-  return -1;
+  return { index: -1, operator: '=' };
 }
 
 export function parseMilkdropExpression(
@@ -723,19 +831,23 @@ export function parseMilkdropExpression(
   };
 }
 
-const CONTROL_LOOP_PREFIX = 'loop(';
-const CONTROL_WHILE_PREFIX = 'while(';
 const CONTROL_TARGET_SENTINEL = '__control';
+
+/**
+ * `loop`/`while` at the head of a statement, allowing whitespace before the
+ * `(` and any casing. EEL is whitespace-insensitive and its identifiers are
+ * case-insensitive, and the corpus uses both: matching the bare `'loop('`
+ * prefix dropped `loop (10000, ...)` — and with it the entire loop body —
+ * off the front of 12 shipped presets.
+ */
+const CONTROL_FLOW_PATTERN = /^(loop|while)\s*\(/iu;
 
 /** True when `source` is a single `loop(...)` or `while(...)` call (possibly
  * trailing a `;`). These lines have no top-level `=`, so the flat-statement
  * parser would otherwise drop them. */
 function isControlFlowStatement(source: string) {
   const trimmed = source.trim().replace(/;+\s*$/u, '');
-  return (
-    trimmed.startsWith(CONTROL_LOOP_PREFIX) ||
-    trimmed.startsWith(CONTROL_WHILE_PREFIX)
-  );
+  return CONTROL_FLOW_PATTERN.test(trimmed);
 }
 
 /** Returns the text between the outer `(` and its matching `)`, or null when
@@ -804,10 +916,20 @@ function parseControlFlowStatement(
   line: number,
 ): ParseResult<MilkdropCompiledStatement> {
   const trimmed = source.trim().replace(/;+\s*$/u, '');
-  const isLoop = trimmed.startsWith(CONTROL_LOOP_PREFIX);
+  const isLoop =
+    CONTROL_FLOW_PATTERN.exec(trimmed)?.[1]?.toLowerCase() === 'loop';
   const inner = extractCallInner(trimmed);
   if (inner === null) {
-    return { value: null, diagnostics: [] };
+    return {
+      value: null,
+      diagnostics: [
+        createDiagnostic(
+          line,
+          'statement_invalid_target',
+          `Unterminated ${isLoop ? 'loop' : 'while'} control statement.`,
+        ),
+      ],
+    };
   }
   const split = splitControlHeadAndBody(inner);
   if (!split) {
@@ -869,7 +991,7 @@ export function parseMilkdropStatement(
     return parseControlFlowStatement(source, line);
   }
 
-  const index = findAssignmentIndex(source);
+  const { index, operator } = findAssignmentIndex(source);
 
   // Skip empty or missing assignments — common in .milk preset files with
   // blank per-frame/per-pixel lines used as visual spacing between blocks
@@ -882,7 +1004,12 @@ export function parseMilkdropStatement(
     }
     const exprResult = parseMilkdropExpression(trimmed, line);
     if (!exprResult.value) {
-      return { value: null, diagnostics: [] };
+      // Report, don't swallow. Dropping the diagnostics here made every
+      // unparseable statement without a top-level `=` disappear in total
+      // silence — no error, no warning, just a preset quietly missing an
+      // equation. That is how the `loop (` and `+=` gaps above survived a
+      // corpus that otherwise compiles with zero errors.
+      return { value: null, diagnostics: exprResult.diagnostics };
     }
     // Accept any valid expression as an expression statement
     return {
@@ -896,12 +1023,18 @@ export function parseMilkdropStatement(
     };
   }
 
-  if (!source.slice(index + 1).trim()) {
+  const rawValueSource = source.slice(index + operator.length).trim();
+  if (!rawValueSource) {
     return { value: null, diagnostics: [] };
   }
 
   const target = source.slice(0, index).trim();
-  const expressionSource = source.slice(index + 1).trim();
+  // `x += v` is `x = x + (v)`. Parenthesising the value keeps the compound
+  // operator's precedence: without it `x *= a + b` would become `x = x * a + b`.
+  const expressionSource =
+    operator === '='
+      ? rawValueSource
+      : `${target} ${operator[0]} (${rawValueSource})`;
   const megabufTarget = target.match(/^(g?megabuf)\((.+)\)$/iu);
 
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(target) && !megabufTarget) {
