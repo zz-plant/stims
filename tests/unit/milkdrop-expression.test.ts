@@ -210,4 +210,159 @@ describe('milkdrop expression', () => {
       expect(evaluate('2*e')).toBeCloseTo(2 * Math.E, 12);
     });
   });
+
+  describe('compound assignment', () => {
+    const runStatement = (source: string, env: Record<string, number>) => {
+      const parsed = parseMilkdropStatement(source, 1);
+      expect(parsed.diagnostics.filter((d) => d.severity === 'error')).toEqual(
+        [],
+      );
+      if (!parsed.value) {
+        throw new Error(`Expected "${source}" to parse.`);
+      }
+      const value = evaluateMilkdropExpression(parsed.value.expression, env);
+      if (parsed.value.target !== '__control') {
+        env[parsed.value.target] = value;
+      }
+      return env;
+    };
+
+    test('desugars every compound operator at statement level', () => {
+      // ns-eel supports these and the shipped corpus uses them; before, the
+      // `=` of `+=` was read as the assignment and `k1 +` as the target, so
+      // the statement was rejected as an invalid target.
+      expect(runStatement('k1 += 3', { k1: 2 }).k1).toBe(5);
+      expect(runStatement('k1 -= 3', { k1: 10 }).k1).toBe(7);
+      expect(runStatement('k1 *= 3', { k1: 10 }).k1).toBe(30);
+      expect(runStatement('k1 /= 4', { k1: 10 }).k1).toBe(2.5);
+      expect(runStatement('k1 %= 3', { k1: 10 }).k1).toBe(1);
+    });
+
+    test('keeps the compound operator binding tighter than the value', () => {
+      // `x *= 3 + 1` is `x = x * (3 + 1)`, not `x = x * 3 + 1`.
+      expect(runStatement('k1 *= 3 + 1', { k1: 2 }).k1).toBe(8);
+      expect(runStatement('k1 -= 3 - 1', { k1: 10 }).k1).toBe(8);
+    });
+
+    test('desugars nested compound assignment inside an expression', () => {
+      // The shape five shipped presets use: `exec2(k1 += v, k1)`. This has no
+      // top-level `=`, so failing to parse it dropped the whole statement.
+      const env: Record<string, number> = { k1: 2, bass_att: 1 };
+      const parsed = parseMilkdropStatement(
+        'exec2(k1 += 0.05 * bass_att, k1)',
+        1,
+      );
+      expect(parsed.diagnostics).toEqual([]);
+      if (!parsed.value) {
+        throw new Error('Expected the exec2 statement to parse.');
+      }
+      expect(evaluateMilkdropExpression(parsed.value.expression, env)).toBe(
+        2.05,
+      );
+      expect(env.k1).toBe(2.05);
+    });
+
+    test('does not mistake a comparison operator for an assignment', () => {
+      // `==`, `<=`, `>=` and `!=` all contain an `=`; treating it as the
+      // assignment split `x == 1` into the target `x` and the value `= 1`.
+      for (const source of ['x == 1', 'x <= 1', 'x >= 1', 'x != 1']) {
+        const parsed = parseMilkdropStatement(source, 1);
+        expect(
+          parsed.diagnostics.filter((d) => d.severity === 'error'),
+          source,
+        ).toEqual([]);
+      }
+      expect(runStatement('y = x >= 2', { x: 3 }).y).toBe(1);
+    });
+  });
+
+  describe('control-flow statements', () => {
+    const bodyLength = (source: string) => {
+      const parsed = parseMilkdropStatement(source, 1);
+      expect(parsed.diagnostics.filter((d) => d.severity === 'error')).toEqual(
+        [],
+      );
+      return parsed.value?.control?.body.length ?? 0;
+    };
+
+    test('accepts whitespace and any casing before the opening paren', () => {
+      // EEL is whitespace-insensitive and its identifiers are case
+      // insensitive. Matching the bare `loop(` prefix dropped `loop (10000,`
+      // — head and body together — from shipped presets.
+      expect(bodyLength('loop(2, k1 = k1 + 1)')).toBe(1);
+      expect(bodyLength('loop (2, k1 = k1 + 1)')).toBe(1);
+      expect(bodyLength('LOOP (2, k1 = k1 + 1)')).toBe(1);
+      expect(bodyLength('while (below(n, 4), n = n + 1)')).toBe(1);
+      expect(bodyLength('While(below(n, 4), n = n + 1)')).toBe(1);
+    });
+
+    test('reports an unterminated control statement instead of dropping it', () => {
+      const parsed = parseMilkdropStatement('loop (10000,', 1);
+      expect(parsed.value).toBeNull();
+      expect(parsed.diagnostics.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('ternary conditional', () => {
+    const evaluateStatement = (source: string, env: Record<string, number>) => {
+      const parsed = parseMilkdropStatement(source, 1);
+      expect(parsed.diagnostics.filter((d) => d.severity === 'error')).toEqual(
+        [],
+      );
+      if (!parsed.value) {
+        throw new Error(`Expected "${source}" to parse.`);
+      }
+      return evaluateMilkdropExpression(parsed.value.expression, env);
+    };
+
+    test('picks the branch and binds looser than every other operator', () => {
+      expect(evaluateStatement('x = 1 > 0 ? 10 : 20', {})).toBe(10);
+      expect(evaluateStatement('x = 0 > 1 ? 10 : 20', {})).toBe(20);
+      expect(evaluateStatement('x = 1 + (0 ? 5 : 2) * 3', {})).toBe(7);
+      expect(evaluateStatement('y = x > 1 ? x + 1 : x - 1', { x: 2 })).toBe(3);
+    });
+
+    test('chains right-associatively', () => {
+      expect(evaluateStatement('x = 1 ? 2 : 3 ? 4 : 5', {})).toBe(2);
+      expect(evaluateStatement('x = 0 ? 2 : 0 ? 4 : 5', {})).toBe(5);
+    });
+
+    test('evaluates only the taken branch', () => {
+      // It desugars to the intrinsic `if()`, which is lazy — preset code
+      // relies on that for side effects.
+      const taken: Record<string, number> = { a: 0, b: 0 };
+      evaluateStatement('x = 1 ? (a = 7) : (b = 9)', taken);
+      expect(taken).toEqual({ a: 7, b: 0 });
+
+      const notTaken: Record<string, number> = { a: 0, b: 0 };
+      evaluateStatement('x = 0 ? (a = 7) : (b = 9)', notTaken);
+      expect(notTaken).toEqual({ a: 0, b: 9 });
+    });
+
+    test('allows an unparenthesised assignment in either branch', () => {
+      const env: Record<string, number> = { a: 0 };
+      evaluateStatement('1 > 0 ? a = 5 : a = 9', env);
+      expect(env.a).toBe(5);
+    });
+
+    test('reports a missing colon', () => {
+      const parsed = parseMilkdropStatement('x = 1 ? 2', 1);
+      expect(parsed.diagnostics.map((d) => d.code)).toContain(
+        'expr_expected_conditional_colon',
+      );
+    });
+  });
+
+  test('reports a malformed expression statement rather than swallowing it', () => {
+    // A statement with no top-level `=` used to return no diagnostics at all
+    // when it failed to parse, so a preset could quietly lose an equation —
+    // which is how the `loop (` and `+=` gaps survived a corpus that
+    // otherwise compiled with zero errors. `)` is the exact orphan a
+    // mis-split multi-line loop body left behind.
+    const parsed = parseMilkdropStatement(')', 1);
+    expect(parsed.value).toBeNull();
+    expect(parsed.diagnostics.map((d) => d.code)).toContain(
+      'expr_expected_primary',
+    );
+  });
 });
