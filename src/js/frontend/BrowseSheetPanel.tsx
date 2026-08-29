@@ -30,6 +30,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   type BrowseSortMode,
   buildAppliedFilterSummary,
+  createFieldMatcher,
   describePresetMood,
   getAuthorOptions,
   getCollectionCounts,
@@ -199,30 +200,31 @@ export function BrowseSheetPanel({
     () => false,
   );
 
-  const browseEntries = useMemo(
-    () =>
-      catalog.filter((entry) => {
-        if (
-          routeState.collectionTag &&
-          routeState.collectionTag !== 'collection:community' &&
-          !entry.tags?.includes(routeState.collectionTag)
-        ) {
-          return false;
-        }
-        return (
-          passesFlashPreference(entry, reduceFlashing) &&
-          matchesPreset(entry, deferredSearch) &&
-          matchesAuthor(entry, authorFilter)
-        );
-      }),
-    [
-      catalog,
-      routeState.collectionTag,
-      deferredSearch,
-      authorFilter,
-      reduceFlashing,
-    ],
-  );
+  const browseEntries = useMemo(() => {
+    const matcher = deferredSearch
+      ? createFieldMatcher(deferredSearch, { allowSubsequence: false })
+      : null;
+    return catalog.filter((entry) => {
+      if (
+        routeState.collectionTag &&
+        routeState.collectionTag !== 'collection:community' &&
+        !entry.tags?.includes(routeState.collectionTag)
+      ) {
+        return false;
+      }
+      return (
+        passesFlashPreference(entry, reduceFlashing) &&
+        (matcher ? matchesPreset(entry, matcher) : true) &&
+        matchesAuthor(entry, authorFilter)
+      );
+    });
+  }, [
+    catalog,
+    routeState.collectionTag,
+    deferredSearch,
+    authorFilter,
+    reduceFlashing,
+  ]);
 
   const sorted = useMemo(
     () => sortBrowseEntries(browseEntries, sortMode, randomSeed),

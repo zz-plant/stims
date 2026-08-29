@@ -227,6 +227,12 @@ html.light .stims-editor {
   border-bottom-left-radius: 0;
 }
 
+.stims-editor__btn[data-action="ab-toggle"][data-slot="A"],
+.stims-editor__btn[data-action="ab-toggle"][data-slot="B"] {
+  border-color: color-mix(in srgb, var(--stims-accent) 60%, transparent);
+  color: var(--stims-ink);
+}
+
 .stims-editor__spacer {
   flex: 1;
 }
