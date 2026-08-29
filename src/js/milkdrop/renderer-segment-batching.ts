@@ -2,7 +2,6 @@ import type { Group, Mesh } from 'three';
 import {
   AdditiveBlending,
   DoubleSide,
-  InstancedBufferGeometry,
   NormalBlending,
   ShaderMaterial,
   Group as ThreeGroup,

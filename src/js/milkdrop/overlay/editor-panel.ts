@@ -1463,8 +1463,8 @@ export class EditorPanel {
         count.className = 'stims-editor__jump-count';
         count.textContent =
           variable.occurrences.length === 1
-            ? 'line ' + String(variable.occurrences[0].line)
-            : String(variable.occurrences.length) + '×';
+            ? `line ${String(variable.occurrences[0].line)}`
+            : `${String(variable.occurrences.length)}×`;
         item.append(name, count);
         item.addEventListener('mousedown', (event) => {
           // mousedown, not click: keeps focus in the input so the popover

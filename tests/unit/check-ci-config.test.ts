@@ -5,7 +5,6 @@ import { describe, expect, test } from 'bun:test';
  * current tree and fails on a planted npm-leaking workflow.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 
 function runCiConfig(): number {
   const result = spawnSync('bun', ['run', 'scripts/check-ci-config.ts'], {

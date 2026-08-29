@@ -14,7 +14,6 @@ import {
 import { DEFAULT_MILKDROP_STATE } from '../../src/js/milkdrop/compiler/default-state.ts';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type {
-  MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../../src/js/milkdrop/types.ts';

@@ -34,22 +34,28 @@ class Scene {
 
   add(light: BaseLight) {
     this.children.push(light);
-    return this as any;
+    return this;
   }
 }
 
-const lightingConstructors: any = {
-  DirectionalLight,
-  SpotLight,
-  HemisphereLight,
-  PointLight,
+const lightingConstructors = {
+  DirectionalLight:
+    DirectionalLight as unknown as typeof import('three').DirectionalLight,
+  SpotLight: SpotLight as unknown as typeof import('three').SpotLight,
+  HemisphereLight:
+    HemisphereLight as unknown as typeof import('three').HemisphereLight,
+  PointLight: PointLight as unknown as typeof import('three').PointLight,
 };
 
 describe('initLighting', () => {
   test('uses default position values when position is omitted', () => {
     const scene = new Scene();
 
-    initLighting(scene, { type: 'DirectionalLight' }, lightingConstructors);
+    initLighting(
+      scene as unknown as Parameters<typeof initLighting>[0],
+      { type: 'DirectionalLight' },
+      lightingConstructors,
+    );
 
     expect(scene.children).toHaveLength(1);
     const light = scene.children[0];
@@ -63,8 +69,11 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     initLighting(
-      scene as any,
-      { type: 'DirectionalLight', position: { y: 5 } } as any,
+      scene as unknown as Parameters<typeof initLighting>[0],
+      {
+        type: 'DirectionalLight',
+        position: { y: 5 } as unknown as { x: number; y: number; z: number },
+      },
       lightingConstructors,
     );
 
@@ -78,7 +87,11 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     expect(() =>
-      initLighting(scene, { type: 'HemisphereLight' }, lightingConstructors),
+      initLighting(
+        scene as unknown as Parameters<typeof initLighting>[0],
+        { type: 'HemisphereLight' },
+        lightingConstructors,
+      ),
     ).not.toThrow();
     expect(scene.children[0]).toBeInstanceOf(HemisphereLight);
   });

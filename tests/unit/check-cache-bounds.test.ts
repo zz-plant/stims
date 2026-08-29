@@ -6,7 +6,6 @@ import { describe, expect, test } from 'bun:test';
  * fails when a growth container without a bound is planted.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 
 function runScript(...args: string[]): number {
   const result = spawnSync(

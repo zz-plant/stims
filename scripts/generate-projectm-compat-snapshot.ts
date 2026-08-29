@@ -76,16 +76,6 @@ export const PROJECTM_PRESET_FILES = [
   '300-beatdetect-bassmidtreb.milk',
 ] as const;
 
-type ProjectMFixtureExpectation = {
-  diagnostics: readonly string[];
-  webgl: 'supported' | 'partial' | 'unsupported';
-  webgpu: 'supported' | 'partial' | 'unsupported';
-  divergence: readonly string[];
-  warnings: readonly string[];
-  blockedConstructs: readonly string[];
-  unsupportedKeys: readonly string[];
-};
-
 export function loadProjectMPresetCorpus() {
   return PROJECTM_PRESET_FILES.map((file) => {
     const raw = readFileSync(join(PROJECTM_CORPUS_DIR, file), 'utf8');
