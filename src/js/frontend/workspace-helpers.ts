@@ -20,6 +20,8 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import {
+  type CompiledFieldMatcher,
+  createFieldMatcher,
   FIELD_PENALTY,
   type MatchField,
   matchesFields,
@@ -28,6 +30,8 @@ import {
   scoreFields,
   toMatchField,
 } from './preset-matching.ts';
+
+export { type CompiledFieldMatcher, createFieldMatcher };
 
 /** Stims' own repository — surfaced on the launch screen and in credits. */
 export const STIMS_REPO_URL = 'https://github.com/zz-plant/stims';
@@ -192,8 +196,14 @@ const normalizeSearchText = normalizeMatchText;
  * palette agree about what matches. `scorePresetEntry` gives the same answer
  * with ordering attached.
  */
-export function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  return matchesFields(query, getPresetMatchFields(entry));
+export function matchesPreset(
+  entry: PresetCatalogEntry,
+  queryOrMatcher: string | CompiledFieldMatcher,
+) {
+  if (typeof queryOrMatcher === 'string') {
+    return matchesFields(queryOrMatcher, getPresetMatchFields(entry));
+  }
+  return queryOrMatcher.matches(getPresetMatchFields(entry));
 }
 
 /**
@@ -202,10 +212,13 @@ export function matchesPreset(entry: PresetCatalogEntry, query: string) {
  */
 export function scorePresetEntry(
   entry: PresetCatalogEntry,
-  query: string,
+  queryOrMatcher: string | CompiledFieldMatcher,
   options?: ScoreFieldsOptions,
 ) {
-  return scoreFields(query, getPresetMatchFields(entry), options);
+  if (typeof queryOrMatcher === 'string') {
+    return scoreFields(queryOrMatcher, getPresetMatchFields(entry), options);
+  }
+  return queryOrMatcher.score(getPresetMatchFields(entry));
 }
 
 export type BrowseSortMode =

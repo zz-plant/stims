@@ -20,6 +20,7 @@ import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
+  createFieldMatcher,
   getCollectionTags,
   isDocumentAudioActive,
   mapRuntimeCatalogEntry,
@@ -146,19 +147,20 @@ export function useWorkspaceShellOrchestration({
     [enrichedCatalog, fallbackCatalogError],
   );
 
-  const filteredCatalog = useMemo(
-    () =>
-      enrichedCatalog.filter((entry) => {
-        if (
-          routeState.collectionTag &&
-          !entry.tags?.includes(routeState.collectionTag)
-        ) {
-          return false;
-        }
-        return matchesPreset(entry, deferredSearch);
-      }),
-    [enrichedCatalog, routeState.collectionTag, deferredSearch],
-  );
+  const filteredCatalog = useMemo(() => {
+    const matcher = deferredSearch
+      ? createFieldMatcher(deferredSearch, { allowSubsequence: false })
+      : null;
+    return enrichedCatalog.filter((entry) => {
+      if (
+        routeState.collectionTag &&
+        !entry.tags?.includes(routeState.collectionTag)
+      ) {
+        return false;
+      }
+      return matcher ? matchesPreset(entry, matcher) : true;
+    });
+  }, [enrichedCatalog, routeState.collectionTag, deferredSearch]);
 
   const currentPreset = useMemo(
     () =>

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  createFieldMatcher,
   FIELD_PENALTY,
   type MatchField,
   matchesFields,
@@ -136,5 +137,27 @@ describe('multi-token AND', () => {
     expect(scoreFields('neon tunnel', spread) ?? 0).toBeGreaterThan(
       scoreFields('neon tunnel', fuzzy) ?? Number.NEGATIVE_INFINITY,
     );
+  });
+});
+
+describe('createFieldMatcher', () => {
+  const fields = presetFields({
+    title: 'Neon Drive',
+    author: 'Rovastar',
+    tags: ['tunnel'],
+  });
+
+  test('pre-compiles tokens and performs identical matches and scores', () => {
+    const matcher = createFieldMatcher('neon tunnel');
+    expect(matcher.normalizedQuery).toBe('neon tunnel');
+    expect(matcher.tokens).toEqual(['neon', 'tunnel']);
+    expect(matcher.matches(fields)).toBe(true);
+    expect(matcher.score(fields)).toBe(scoreFields('neon tunnel', fields));
+  });
+
+  test('handles empty query gracefully', () => {
+    const emptyMatcher = createFieldMatcher('   ');
+    expect(emptyMatcher.matches(fields)).toBe(true);
+    expect(emptyMatcher.score(fields)).toBe(0);
   });
 });

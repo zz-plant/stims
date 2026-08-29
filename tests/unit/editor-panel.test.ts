@@ -449,4 +449,47 @@ describe('EditorPanel class integration', () => {
       panel.dispose();
     });
   });
+
+  describe('A/B snapshot and comparison', () => {
+    test('takes snapshot and toggles between Slot A and Slot B', () => {
+      const callbacks = createMockCallbacks();
+      const panel = new EditorPanel(callbacks);
+
+      panel.setSessionState({
+        source: 'title=Original\nzoom=1.000\n',
+        diagnostics: [],
+        latestCompiled: null,
+        activeCompiled: null,
+        dirty: false,
+      });
+
+      // Snapshot current doc as Slot A
+      panel.snapshotSlotA();
+      expect(panel.getSnapshotState().slot).toBe('A');
+      expect(panel.getSnapshotState().sourceA).toContain('zoom=1.000');
+
+      // Edit doc for Slot B
+      panel.writeVariableToEditor('zoom', 1.5);
+      panel.snapshotSlotB();
+      expect(panel.getSnapshotState().slot).toBe('B');
+      expect(panel.getSnapshotState().sourceB).toContain('zoom=1.5');
+
+      // Toggle back to Slot A
+      panel.toggleAbSnapshot();
+      expect(panel.getSnapshotState().slot).toBe('A');
+      expect(panel.getEditorSource()).toContain('zoom=1.000');
+
+      // Toggle forward to Slot B
+      panel.toggleAbSnapshot();
+      expect(panel.getSnapshotState().slot).toBe('B');
+      expect(panel.getEditorSource()).toContain('zoom=1.5');
+
+      // Clear snapshots
+      panel.clearSnapshots();
+      expect(panel.getSnapshotState().sourceA).toBeNull();
+      expect(panel.getSnapshotState().sourceB).toBeNull();
+
+      panel.dispose();
+    });
+  });
 });

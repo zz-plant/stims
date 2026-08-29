@@ -628,6 +628,7 @@ function createEditorView({
   onQuickFixDiagnostic,
   onEscapeBlur,
   onJumpToVariable,
+  onToggleAbSnapshot,
 }: {
   parent: HTMLElement;
   onDocChange: (source: string) => void;
@@ -639,6 +640,8 @@ function createEditorView({
   onEscapeBlur: () => void;
   /** Opens the panel's "Jump to variable" popover (Cmd/Ctrl+J). */
   onJumpToVariable: () => void;
+  /** Toggles A/B snapshot comparison (Cmd/Ctrl+Shift+B). */
+  onToggleAbSnapshot?: () => void;
 }) {
   let debounceId: number | null = null;
   let view: EditorView;
@@ -718,6 +721,16 @@ function createEditorView({
             run: () => {
               onJumpToVariable();
               return true;
+            },
+          },
+          {
+            key: 'Mod-Shift-b',
+            run: () => {
+              if (onToggleAbSnapshot) {
+                onToggleAbSnapshot();
+                return true;
+              }
+              return false;
             },
           },
           ...defaultEditorKeymap,
@@ -936,6 +949,10 @@ export class EditorPanel {
   // scoped to "was it *this* editor's UI that armed it", so a learn
   // started from the Performance hardware panel doesn't light up a slider.
   private learningSliderKey: string | null = null;
+  private snapshotSlot: 'A' | 'B' = 'A';
+  private snapshotSourceA: string | null = null;
+  private snapshotSourceB: string | null = null;
+  private abButton: HTMLButtonElement | null = null;
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
@@ -1117,6 +1134,9 @@ export class EditorPanel {
     this.deleteButton.hidden = true;
     menu.append(
       menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
+      menuItem('Snapshot as Slot A', () => this.snapshotSlotA()),
+      menuItem('Snapshot as Slot B', () => this.snapshotSlotB()),
+      menuItem('Clear snapshots', () => this.clearSnapshots()),
       menuItem('Import…', () => this.callbacks.onRequestImport()),
       menuItem('Export', () => this.callbacks.onExport()),
       menuSeparator,
@@ -1146,6 +1166,13 @@ export class EditorPanel {
       document.removeEventListener('keydown', dismissMenuOnEscape, true);
     };
 
+    this.abButton = this.createButton('A/B', {
+      title: 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)',
+      ariaLabel: 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)',
+      onClick: () => this.toggleAbSnapshot(),
+    });
+    this.abButton.dataset.action = 'ab-toggle';
+
     const jumpButton = this.createButton('Jump', {
       ariaLabel: 'Jump to variable (Cmd/Ctrl+J)',
       onClick: () => this.openVariableJump(),
@@ -1155,6 +1182,7 @@ export class EditorPanel {
     toolbar.append(
       applyButton,
       revertButton,
+      this.abButton,
       undoRedo,
       jumpButton,
       spacer,
@@ -1210,6 +1238,7 @@ export class EditorPanel {
       // dropping focus on <body>.
       onEscapeBlur: () => applyButton.focus(),
       onJumpToVariable: () => this.openVariableJump(),
+      onToggleAbSnapshot: () => this.toggleAbSnapshot(),
     });
     this.editor = editorViewState.view;
     this.clearEditorDebounce = editorViewState.clearDebounce;
@@ -2217,6 +2246,96 @@ export class EditorPanel {
     }
     this.flushEditorDocChange();
     this.editor.focus();
+  }
+
+  public toggleAbSnapshot(): void {
+    const currentDoc = this.editor.state.doc.toString();
+    if (this.snapshotSourceA === null) {
+      this.snapshotSourceA = currentDoc;
+    }
+
+    if (this.snapshotSlot === 'A') {
+      this.snapshotSourceA = currentDoc;
+      if (this.snapshotSourceB !== null) {
+        this.suppressEditorChange = true;
+        this.editor.dispatch({
+          changes: {
+            from: 0,
+            to: this.editor.state.doc.length,
+            insert: this.snapshotSourceB,
+          },
+        });
+        this.suppressEditorChange = false;
+        this.snapshotSlot = 'B';
+      } else {
+        this.snapshotSlot = 'B';
+      }
+    } else {
+      this.snapshotSourceB = currentDoc;
+      if (this.snapshotSourceA !== null) {
+        this.suppressEditorChange = true;
+        this.editor.dispatch({
+          changes: {
+            from: 0,
+            to: this.editor.state.doc.length,
+            insert: this.snapshotSourceA,
+          },
+        });
+        this.suppressEditorChange = false;
+      }
+      this.snapshotSlot = 'A';
+    }
+
+    if (this.abButton) {
+      this.abButton.dataset.slot = this.snapshotSlot;
+      this.abButton.textContent = `Slot ${this.snapshotSlot}`;
+      this.abButton.title = `Active Slot ${this.snapshotSlot} (Cmd/Ctrl+Shift+B to toggle)`;
+    }
+
+    this.applyCurrentSource();
+  }
+
+  public snapshotSlotA(): void {
+    this.snapshotSourceA = this.editor.state.doc.toString();
+    this.snapshotSlot = 'A';
+    if (this.abButton) {
+      this.abButton.dataset.slot = 'A';
+      this.abButton.textContent = 'Slot A';
+      this.abButton.title = 'Active Slot A (Cmd/Ctrl+Shift+B to toggle)';
+    }
+  }
+
+  public snapshotSlotB(): void {
+    this.snapshotSourceB = this.editor.state.doc.toString();
+    this.snapshotSlot = 'B';
+    if (this.abButton) {
+      this.abButton.dataset.slot = 'B';
+      this.abButton.textContent = 'Slot B';
+      this.abButton.title = 'Active Slot B (Cmd/Ctrl+Shift+B to toggle)';
+    }
+  }
+
+  public clearSnapshots(): void {
+    this.snapshotSourceA = null;
+    this.snapshotSourceB = null;
+    this.snapshotSlot = 'A';
+    if (this.abButton) {
+      this.abButton.dataset.slot = 'none';
+      this.abButton.textContent = 'A/B';
+      this.abButton.title = 'Compare A/B snapshots (Cmd/Ctrl+Shift+B)';
+    }
+  }
+
+  public getSnapshotState(): {
+    slot: 'A' | 'B';
+    sourceA: string | null;
+    sourceB: string | null;
+  } {
+    return {
+      slot: this.snapshotSlot,
+      sourceA: this.snapshotSourceA,
+      sourceB: this.snapshotSourceB,
+    };
   }
 
   private insertSnippet(snippet: string) {
