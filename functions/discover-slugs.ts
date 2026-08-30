@@ -135,11 +135,11 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
   },
   {
     kind: 'author',
-    slug: 'rovastar',
-    label: 'Rovastar',
-    author: 'Rovastar',
+    slug: 'flexi',
+    label: 'Flexi',
+    author: 'Flexi',
     description:
-      'Explore MilkDrop presets credited to Rovastar and run them live in your browser.',
+      'Explore MilkDrop presets credited to Flexi and run them live in your browser.',
   },
   {
     kind: 'author',
@@ -148,6 +148,86 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     author: 'Martin',
     description:
       'Explore MilkDrop presets credited to Martin and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'rovastar',
+    label: 'Rovastar',
+    author: 'Rovastar',
+    description:
+      'Explore MilkDrop presets credited to Rovastar and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'eo-s',
+    label: 'Eo.S.',
+    author: 'Eo.S.',
+    description:
+      'Explore MilkDrop presets credited to Eo.S. and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'phat',
+    label: 'Phat',
+    author: 'Phat',
+    description:
+      'Explore MilkDrop presets credited to Phat and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'stahlregen',
+    label: 'Stahlregen',
+    author: 'Stahlregen',
+    description:
+      'Explore MilkDrop presets credited to Stahlregen and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'unchained',
+    label: 'Unchained',
+    author: 'Unchained',
+    description:
+      'Explore MilkDrop presets credited to Unchained and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'fishbrain',
+    label: 'Fishbrain',
+    author: 'Fishbrain',
+    description:
+      'Explore MilkDrop presets credited to Fishbrain and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'aderrasi',
+    label: 'Aderrasi',
+    author: 'Aderrasi',
+    description:
+      'Explore MilkDrop presets credited to Aderrasi and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'zylot',
+    label: 'Zylot',
+    author: 'Zylot',
+    description:
+      'Explore MilkDrop presets credited to Zylot and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'shifter',
+    label: 'Shifter',
+    author: 'Shifter',
+    description:
+      'Explore MilkDrop presets credited to Shifter and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'mig',
+    label: 'Mig',
+    author: 'Mig',
+    description:
+      'Explore MilkDrop presets credited to Mig and run them live in your browser.',
   },
 ];
 
