@@ -161,3 +161,39 @@ describe('createFieldMatcher', () => {
     expect(emptyMatcher.score(fields)).toBe(0);
   });
 });
+
+describe('workspace semantic vibe matching', () => {
+  const {
+    matchesPreset,
+  } = require('../../src/js/frontend/workspace-helpers.ts');
+
+  test('matches cyberpunk vibe to neon laser grid presets', () => {
+    const preset = {
+      id: 'cyber-grid-neon',
+      title: 'Neon Grid Vector',
+      tags: ['grid', 'lasers'],
+    };
+    expect(matchesPreset(preset, 'cyberpunk')).toBe(true);
+    expect(matchesPreset(preset, 'futuristic')).toBe(true);
+  });
+
+  test('matches ambient cosmic vibe to space galaxy presets', () => {
+    const preset = {
+      id: 'space-drift-01',
+      title: 'Deep Ether Galaxy',
+      tags: ['space', 'cosmos'],
+    };
+    expect(matchesPreset(preset, 'ambient')).toBe(true);
+    expect(matchesPreset(preset, 'chill')).toBe(true);
+  });
+
+  test('matches psychedelic vibe to acid fractal kaleidoscope presets', () => {
+    const preset = {
+      id: 'acid-spin-vortex',
+      title: 'Mandelbrot Spiral',
+      tags: ['spiral'],
+    };
+    expect(matchesPreset(preset, 'psychedelic')).toBe(true);
+    expect(matchesPreset(preset, 'trippy')).toBe(true);
+  });
+});

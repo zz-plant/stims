@@ -21,11 +21,20 @@ export function resetAllOverrides(): { clearedKeys: string[] } {
 
   const localStorage = getBrowserStorage();
   if (localStorage) {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('stims:')) {
-        keysToRemove.push(key);
+    const keysToRemove = new Set<string>();
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('stims:')) {
+          keysToRemove.add(key);
+        }
+      }
+    } catch {
+      // ignore index access error
+    }
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('stims:')) {
+        keysToRemove.add(key);
       }
     }
     keysToRemove.forEach((key) => {
@@ -36,11 +45,20 @@ export function resetAllOverrides(): { clearedKeys: string[] } {
 
   const sessionStorage = getBrowserSessionStorage();
   if (sessionStorage) {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key?.startsWith('stims:')) {
-        keysToRemove.push(key);
+    const keysToRemove = new Set<string>();
+    try {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith('stims:')) {
+          keysToRemove.add(key);
+        }
+      }
+    } catch {
+      // ignore index access error
+    }
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith('stims:')) {
+        keysToRemove.add(key);
       }
     }
     keysToRemove.forEach((key) => {

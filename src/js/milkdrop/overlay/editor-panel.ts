@@ -100,6 +100,7 @@ import {
   type ToggleControlConfig,
   valueToPosition,
 } from '../preset-controls.ts';
+import { analyzePresetMath } from '../preset-math-analyzer.ts';
 import {
   MODULATION_SOURCES,
   type Modulation,
@@ -108,6 +109,11 @@ import {
   readModulation,
   writeModulation,
 } from '../preset-modulation.ts';
+import {
+  blendPresetSources,
+  mutatePresetStyle,
+  type PresetMutationStyle,
+} from '../preset-mutations.ts';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
 import { numberScrubExtension } from './editor-number-scrub.ts';
@@ -1754,6 +1760,37 @@ export class EditorPanel {
         blendTextarea.value = '';
       },
     });
+    const mutationsHeading = document.createElement('h3');
+    mutationsHeading.className = 'stims-editor__section-heading';
+    mutationsHeading.textContent = 'Instant Style Morphs';
+
+    const mutationsGrid = document.createElement('div');
+    mutationsGrid.className = 'stims-editor__assist-actions';
+    mutationsGrid.style.display = 'flex';
+    mutationsGrid.style.flexWrap = 'wrap';
+    mutationsGrid.style.gap = '6px';
+    mutationsGrid.style.marginTop = '8px';
+
+    const mutationStyles: Array<{ id: PresetMutationStyle; label: string }> = [
+      { id: 'cyberpunk', label: '⚡ Cyberpunk' },
+      { id: 'hyperspace', label: '🚀 Hyperspace' },
+      { id: 'ambient-glow', label: '🌿 Ambient' },
+      { id: 'kaleidoscope', label: '🔮 Kaleidoscope' },
+      { id: 'bass-surge', label: '💥 Bass Surge' },
+    ];
+
+    mutationStyles.forEach(({ id, label }) => {
+      const btn = this.createButton(label, {
+        onClick: () => {
+          if (this.aiPending) return;
+          const currentSource = this.editor.state.doc.toString();
+          const mutated = mutatePresetStyle(currentSource, id);
+          this.proposeAssistedEdit(mutated, `Style: ${label}`);
+        },
+      });
+      mutationsGrid.appendChild(btn);
+    });
+
     blendActions.append(blendSubmit, blendCancel);
     blend.append(blendTextarea, blendActions);
 
@@ -1763,7 +1800,7 @@ export class EditorPanel {
     this.blendSubmitButton = blendSubmit;
     this.assistPane = pane;
 
-    pane.append(hint, form, actions, blend);
+    pane.append(hint, form, actions, mutationsHeading, mutationsGrid, blend);
     return pane;
   }
 
@@ -1802,7 +1839,18 @@ export class EditorPanel {
       options.button.textContent = options.label;
       this.setRefinePending(false);
     } catch (err) {
-      console.error(`${options.label} failed:`, err);
+      console.warn(
+        `${options.label} API failed, checking local math analyzer:`,
+        err,
+      );
+      if (options.instruction === 'explain this preset') {
+        const currentSource = this.editor.state.doc.toString();
+        const mathAnalysis = analyzePresetMath(currentSource);
+        this.showExplanation(mathAnalysis.summary);
+        options.button.textContent = options.label;
+        this.setRefinePending(false);
+        return;
+      }
       this.setRefinePending(false);
       options.button.textContent = 'Error';
       options.button.disabled = true;
@@ -3504,10 +3552,17 @@ export class EditorPanel {
       .then((data) => {
         if (data.milkSource) {
           this.proposeAssistedEdit(data.milkSource, 'Blend');
+        } else {
+          const blended = blendPresetSources(source, sourceB);
+          this.proposeAssistedEdit(blended, 'Blend');
         }
         this.setRefinePending(false);
       })
-      .catch(() => this.setRefinePending(false));
+      .catch(() => {
+        const blended = blendPresetSources(source, sourceB);
+        this.proposeAssistedEdit(blended, 'Blend');
+        this.setRefinePending(false);
+      });
   }
 
   private setRefinePending(pending: boolean) {
