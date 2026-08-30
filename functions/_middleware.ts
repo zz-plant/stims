@@ -258,7 +258,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const title = presentTitle(rawTitle, author);
   const authorCredit = author ? ` by ${author}` : '';
   const fullTitle = `${title}${authorCredit} — MilkDrop preset on Stims`;
-  const description = `${title}${authorCredit} is a MilkDrop preset running live in your browser on Stims. It reacts to the demo track, your microphone, or audio from another tab.`;
+  const description = `${title}${authorCredit} — a MilkDrop-inspired visualizer preset you can watch react to any song, your microphone, or audio from another tab. Live in your browser, no install.`;
 
   // Crawlers require absolute image URLs; /api/og-preset rasterizes the
   // per-preset card to PNG via resvg-wasm (SVG is refused by every major
@@ -363,7 +363,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('meta[property="og:url"]', setContent(canonical))
     .on('meta[property="og:image"]', setContent(imageUrl))
     .on('meta[property="og:image:alt"]', setContent(imageAlt))
-    .on('meta[name="twitter:card"]', setContent('player'))
+    .on('meta[name="twitter:card"]', setContent('summary_large_image'))
     .on('meta[name="twitter:title"]', setContent(fullTitle))
     .on('meta[name="twitter:description"]', setContent(description))
     .on('meta[name="twitter:image"]', setContent(imageUrl))

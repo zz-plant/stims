@@ -495,8 +495,14 @@ export async function onRequest(context: OgPresetContext): Promise<Response> {
   }
 
   const cache = edgeCache();
+  // `tweak` is drawn onto the card as "EDITED · <tweak>", so it is part of the
+  // rendered output and must seed the cache key. Keying only on the preset id
+  // would let whichever tweak rendered first win the shared entry and serve the
+  // wrong card to every other variant for up to s-maxage (7 days).
+  const query = new URLSearchParams({ id: presetId });
+  if (tweak) query.set('tweak', tweak);
   const cacheKey = new Request(
-    new URL(`/api/og-preset?id=${presetId}`, url.origin).toString(),
+    new URL(`/api/og-preset?${query}`, url.origin).toString(),
     { method: 'GET' },
   );
   if (cache) {
