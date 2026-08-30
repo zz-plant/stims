@@ -8,6 +8,7 @@ import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
 } from '../core/audio-constants.ts';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
@@ -643,6 +644,17 @@ export function useWorkspaceShellOrchestration({
       title: shareTitle,
       text: shareText,
     });
+
+    noteGrowthEvent(
+      result === 'shared'
+        ? 'share-shared'
+        : result === 'copied'
+          ? 'share-copied'
+          : result === 'cancelled'
+            ? 'share-cancelled'
+            : 'share-unavailable',
+      selectedPreset?.id,
+    );
 
     if (result === 'shared') {
       setStatusMessage('Link shared.');

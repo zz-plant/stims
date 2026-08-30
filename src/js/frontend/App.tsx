@@ -37,6 +37,7 @@ import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import {
   VIRTUAL_CLAUDE_DEVICE_ID,
   webMidiService,
@@ -85,7 +86,10 @@ import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
-import { SilentAudioNotice } from './SilentAudioNotice.tsx';
+import {
+  SilentAudioNotice,
+  useAudioAwaitingGesture,
+} from './SilentAudioNotice.tsx';
 
 const NewHomePage = lazy(() =>
   import('./NewHomePage.tsx').then((m) => ({
@@ -254,6 +258,35 @@ function StimsWorkspaceAppShell() {
   const uiRef = useRef(ui);
   uiRef.current = ui;
   const { engineSnapshot } = useEngineSnapshot();
+  const awaitingAudioGesture = useAudioAwaitingGesture();
+  const growthLandingEventsRef = useRef<Set<string>>(new Set());
+  const audioStartedReportedRef = useRef(false);
+
+  useEffect(() => {
+    const route = ui.routeState;
+    if (route.previewMode && !growthLandingEventsRef.current.has('embed')) {
+      growthLandingEventsRef.current.add('embed');
+      noteGrowthEvent('embed-landing');
+    }
+    if (route.discovery && !growthLandingEventsRef.current.has('discovery')) {
+      growthLandingEventsRef.current.add('discovery');
+      noteGrowthEvent('discovery-landing');
+    }
+  }, [ui.routeState]);
+
+  useEffect(() => {
+    if (
+      !audioStartedReportedRef.current &&
+      engineSnapshot?.audioActive &&
+      !awaitingAudioGesture
+    ) {
+      audioStartedReportedRef.current = true;
+      noteGrowthEvent('audio-started');
+    }
+    if (!engineSnapshot?.audioActive) {
+      audioStartedReportedRef.current = false;
+    }
+  }, [awaitingAudioGesture, engineSnapshot?.audioActive]);
   // Latest-value refs for the agent bridge: the bridge must be installed
   // exactly once. Depending on `engine`/`engineSnapshot` re-ran the install
   // effect on every snapshot emit, and each re-run tore the window `message`
