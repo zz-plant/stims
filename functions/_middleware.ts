@@ -329,11 +329,6 @@ export async function onRequest(context: EventContext): Promise<Response> {
     ],
   });
 
-  const playerUrl = new URL('/', url.origin);
-  playerUrl.searchParams.set('preset', presetId);
-  playerUrl.searchParams.set('embedded', 'true');
-  const embedPlayerUrl = playerUrl.toString();
-
   const speculationRulesJson = JSON.stringify({
     prefetch: [
       {
@@ -371,7 +366,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     .on('head', {
       element(el) {
         el.append(
-          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta name="twitter:player" content="${escapeAttribute(embedPlayerUrl)}" /><meta name="twitter:player:width" content="1200" /><meta name="twitter:player:height" content="630" /><meta property="og:video" content="${escapeAttribute(embedPlayerUrl)}" /><meta property="og:video:type" content="text/html" /><meta property="og:video:width" content="1200" /><meta property="og:video:height" content="630" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
+          `<link rel="alternate" type="application/json+oembed" href="${escapeAttribute(oembedUrl)}" title="${escapeAttribute(fullTitle)}" /><meta property="og:image:url" content="${escapeAttribute(imageUrl)}" /><meta property="og:image:secure_url" content="${escapeAttribute(imageUrl)}" /><script type="application/ld+json">${jsonLd}</script><script type="speculationrules">${speculationRulesJson}</script>`,
           {
             html: true,
           },
