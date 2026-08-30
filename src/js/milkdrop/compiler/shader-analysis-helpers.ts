@@ -330,12 +330,10 @@ export function toMilkdropExpression(
       if (
         name === 'vec2' ||
         name === 'vec3' ||
+        name === 'vec4' ||
         name === 'tex2d' ||
         name === 'tex3d'
       ) {
-        console.warn(
-          `[ShaderCompat] ${name}() call cannot be converted to a scalar Milkdrop expression — control extraction degraded`,
-        );
         return null;
       }
       const args = node.args
@@ -350,8 +348,23 @@ export function toMilkdropExpression(
         args,
       };
     }
-    case 'member':
+    case 'member': {
+      const prop = node.property.toLowerCase();
+      if (node.object.type === 'call') {
+        const objName = normalizeShaderCallName(node.object.name);
+        if (objName === 'vec2' || objName === 'vec3' || objName === 'vec4') {
+          let index = -1;
+          if (prop === 'x' || prop === 'r' || prop === 's') index = 0;
+          else if (prop === 'y' || prop === 'g' || prop === 't') index = 1;
+          else if (prop === 'z' || prop === 'b' || prop === 'p') index = 2;
+          else if (prop === 'w' || prop === 'a' || prop === 'q') index = 3;
+          if (index >= 0 && index < node.object.args.length) {
+            return toMilkdropExpression(node.object.args[index]);
+          }
+        }
+      }
       return null;
+    }
     case 'index':
       return null;
   }

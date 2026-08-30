@@ -653,4 +653,11 @@ describe('shader expression numbers', () => {
     expect(parseMilkdropShaderStatement('x = 5e')).toBeNull();
     expect(parseMilkdropShaderStatement('x = 1.2.3')).toBeNull();
   });
+
+  test('extracts scalar components from swizzled vector constructors', () => {
+    const analysis = extractShaderControls(
+      'x = vec2(0.75, 1.25).x; y = vec3(0.1, 0.2, 0.3).z;',
+    );
+    expect(analysis).not.toBeNull();
+  });
 });
