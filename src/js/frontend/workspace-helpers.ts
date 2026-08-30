@@ -1,3 +1,8 @@
+/**
+ * Workspace Helpers & State Utilities — provides shared utility functions for preset scoring,
+ * query normalization, route state transitions, catalog transformation, and accessibility filtering.
+ */
+
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {

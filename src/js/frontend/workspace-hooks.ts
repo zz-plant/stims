@@ -1,3 +1,8 @@
+/**
+ * Workspace React Hooks — encapsulates core state orchestration for panels, dialogs, fullscreen
+ * events, auto-play queues, and stage liveness tracking inside the workspace shell.
+ */
+
 import {
   type Dispatch,
   type SetStateAction,

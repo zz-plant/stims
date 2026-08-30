@@ -1,3 +1,8 @@
+/**
+ * Workspace Shell Lifecycle Hooks — coordinates URL routing synchronizations, microphone
+ * permissions, link sharing, and canonical state transitions across the top-level visualizer shell.
+ */
+
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   acquireMicrophoneStream,

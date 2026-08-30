@@ -1,3 +1,8 @@
+/**
+ * Preset Source Formatter & Serializer — formats, cleans, reads, and upserts MilkDrop `.milk`
+ * INI-format configuration blocks, preserving equation order, custom waves/shapes, and scalar fields.
+ */
+
 import { normalizeProgramAssignmentTarget } from './field-normalization.ts';
 import type {
   MilkdropCompiledPreset,

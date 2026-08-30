@@ -1,3 +1,8 @@
+/**
+ * WebGPU Composite Feedback Manager — implements WebGPU composite shader rendering, texture
+ * ping-pong feedback passes, 3D noise textures, and TSL compute graph bindings.
+ */
+
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 
 import type { Camera, Scene, Texture } from 'three';

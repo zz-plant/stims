@@ -1,3 +1,8 @@
+/**
+ * AI Synthesize Panel Component — provides prompt-to-preset generation, image-to-preset translation,
+ * and tournament candidate evaluation with reactivity metrics and direct canvas stage updates.
+ */
+
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
@@ -140,7 +145,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           localModel,
         } satisfies StoredSynthesizeSettings),
       );
-    } catch {}
+    } catch (err) {
+      console.debug('Failed to persist synthesize settings:', err);
+    }
   }, [palette, intensity, reactivity, provider, localEndpoint, localModel]);
 
   const handleProviderChange = useCallback(

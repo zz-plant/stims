@@ -1,3 +1,8 @@
+/**
+ * Home & Launch Page Component — implements the flagship launch landing page with session resumption,
+ * curated starter presets, audio source selectors, and quick-start actions.
+ */
+
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ResumableAudioSource } from '../core/state/last-session-store.ts';
 import { getLastSession } from '../core/state/last-session-store.ts';

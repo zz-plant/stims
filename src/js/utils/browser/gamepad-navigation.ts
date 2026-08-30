@@ -1,3 +1,8 @@
+/**
+ * Gamepad Navigation Controller — implements directional D-pad and analog stick focus navigation,
+ * repeat timers, and button mappings across DOM interactive elements for full controller support.
+ */
+
 type GamepadNavigationOptions = {
   focusableSelector?: string;
   activeClass?: string;

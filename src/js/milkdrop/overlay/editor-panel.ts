@@ -1,3 +1,8 @@
+/**
+ * In-Session MilkDrop IDE & Editor Panel — implements the live CodeMirror preset IDE with syntax
+ * autocompletions, AST diagnostics, parameter sliders, A/B snapshot toggling, and instant compilation.
+ */
+
 import type { Completion, CompletionSource } from '@codemirror/autocomplete';
 import {
   autocompletion,

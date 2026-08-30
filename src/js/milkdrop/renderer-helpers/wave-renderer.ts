@@ -1,3 +1,8 @@
+/**
+ * Custom Waveform Mesh Renderer — renders custom waveform point arrays, connected lines, closed loops,
+ * and thick ribbon strokes driven by per-point EEL2 equations and audio waveform buffers.
+ */
+
 import type { Group, Line, LineLoop, Points } from 'three';
 import {
   AdditiveBlending,

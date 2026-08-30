@@ -1,3 +1,8 @@
+/**
+ * Workspace Context & Provider — exposes core workspace state, UI actions, engine commands,
+ * and shell telemetry to React components through a unified context provider with scoped re-renders.
+ */
+
 import {
   createContext,
   type ReactNode,

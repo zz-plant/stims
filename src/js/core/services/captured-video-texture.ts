@@ -1,3 +1,8 @@
+/**
+ * Captured Video Texture Service — manages GPU video texture bindings and offscreen canvas
+ * blits for camera, screen share, and video elements with zero-copy transfer.
+ */
+
 import {
   CanvasTexture,
   ClampToEdgeWrapping,

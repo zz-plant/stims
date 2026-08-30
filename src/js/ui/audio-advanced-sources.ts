@@ -1,3 +1,8 @@
+/**
+ * Advanced Audio Sources Controller — coordinates stream acquisition, YouTube iframe embedding,
+ * tab audio capture, and audio permission handshakes across advanced input source modalities.
+ */
+
 import { YouTubeController } from './youtube-controller';
 import {
   hideYouTubeStageLayer,

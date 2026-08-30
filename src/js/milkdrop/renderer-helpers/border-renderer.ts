@@ -1,3 +1,8 @@
+/**
+ * Border Visual Renderer — constructs and renders MilkDrop outer and inner border geometries,
+ * outline loops, and aspect-ratio-corrected margin frame triangles across render passes.
+ */
+
 import type { Group, Line, LineLoop, Mesh } from 'three';
 import {
   BufferGeometry,

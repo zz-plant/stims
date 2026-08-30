@@ -1,3 +1,8 @@
+/**
+ * Adaptive Quality Controller — dynamically adjusts rendering scale, feedback
+ * buffer resolution, and particle/mesh densities to sustain target refresh rates across GPU tiers.
+ */
+
 import {
   getDisplayRefreshRate,
   getHardwareSignals,

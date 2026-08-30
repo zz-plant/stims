@@ -1,3 +1,8 @@
+/**
+ * Shader Analysis Evaluation — evaluates dynamic shader control expressions during runtime execution,
+ * computing dynamic uniforms, texture scales, and blend coefficients from AST environments.
+ */
+
 import { evaluateMilkdropExpression } from '../expression';
 import type {
   MilkdropExpressionNode,

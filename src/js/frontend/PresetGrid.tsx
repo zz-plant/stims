@@ -1,3 +1,8 @@
+/**
+ * Preset Grid Component — renders high-performance virtualized grid layouts of preset tiles with
+ * dynamic column calculations, keyboard navigation, animated previews, and favorite/history toggles.
+ */
+
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   memo,

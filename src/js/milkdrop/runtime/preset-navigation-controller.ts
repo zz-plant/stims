@@ -1,3 +1,8 @@
+/**
+ * Preset Navigation Controller — controls preset switching, random shuffle order, JIT prewarming,
+ * history navigation, and smooth blend transition triggers between active visualizer scenes.
+ */
+
 import { getSessionRandom } from '../../core/deterministic-random.ts';
 import {
   notePresetShown,

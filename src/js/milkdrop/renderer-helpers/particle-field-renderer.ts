@@ -1,3 +1,8 @@
+/**
+ * Particle Field Renderer — implements GPU-instanced sprite particle swarms, billboard quads,
+ * lifecycle velocity integration, and additive color blending for MilkDrop particle systems.
+ */
+
 import type { Group, Mesh } from 'three';
 import {
   AdditiveBlending,

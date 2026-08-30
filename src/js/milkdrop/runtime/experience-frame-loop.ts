@@ -1,3 +1,8 @@
+/**
+ * Experience Frame Loop Driver — drives the continuous animation render loop for MilkDrop playback,
+ * orchestrating VM simulation steps, GPU phase timings, postprocessing passes, and video capture.
+ */
+
 import { isLivePerformanceModeActive } from '../../core/live-performance-mode.ts';
 import {
   createMilkdropPostprocessingComposer,

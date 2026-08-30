@@ -1,3 +1,8 @@
+/**
+ * MilkDrop Renderer Type Definitions — defines TypeScript contracts for rendering adapters,
+ * postprocessing profiles, feedback render targets, viewport states, and backend capabilities.
+ */
+
 import type { Camera, Scene, Texture } from 'three';
 import type { MilkdropExpressionNode } from './common-types.ts';
 import type {

@@ -1,3 +1,8 @@
+/**
+ * Browse Sheet Panel Component — renders the virtualized 1,787-preset library browser with search
+ * filtering, collection tabs, mood curation, live animated previews, and queue management.
+ */
+
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   useCallback,

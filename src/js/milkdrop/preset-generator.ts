@@ -1,3 +1,8 @@
+/**
+ * Preset Generator Service — orchestrates text-prompt-to-preset compilation, image-guided synthesis,
+ * tournament candidate evaluation, and offline algorithmic template generation.
+ */
+
 import { compileMilkdropPresetSource } from './compiler.ts';
 import { buildGeneratePrompt } from './preset-prompt.ts';
 import {
