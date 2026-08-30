@@ -27,7 +27,7 @@ describe('preset social sharing', () => {
 
       expect(copy.title).toBe('Parallel Universe by Rovastar | Stims');
       expect(copy.text).toBe(
-        'Experience "Parallel Universe" by Rovastar live on Stims audio visualizer.',
+        '"Parallel Universe" by Rovastar — a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.',
       );
       expect(copy.url).toBe(
         'https://toil.fyi/?preset=rovastar-parallel-universe',
@@ -42,7 +42,7 @@ describe('preset social sharing', () => {
 
       expect(copy.title).toBe('Signal Bloom | Stims');
       expect(copy.text).toBe(
-        'Experience "Signal Bloom" live on Stims audio visualizer.',
+        '"Signal Bloom" — a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.',
       );
       expect(copy.url).toBe('https://toil.fyi/?preset=signal-bloom');
     });
@@ -323,6 +323,37 @@ describe('preset social sharing', () => {
       expect(response.headers.get('content-type')).toBe('image/png');
       const bytes = new Uint8Array(await response.arrayBuffer());
       expect(Array.from(bytes)).toEqual(Array.from(staticPng));
+    });
+
+    test('cache key includes tweak so one variant cannot shadow another', async () => {
+      const putKeys: string[] = [];
+      const cacheStore = new Map<string, Response>();
+      const originalCaches = (globalThis as { caches?: unknown }).caches;
+      (globalThis as { caches?: unknown }).caches = {
+        default: {
+          match: async (request: Request) =>
+            cacheStore.get(request.url) ?? undefined,
+          put: async (request: Request, response: Response) => {
+            putKeys.push(request.url);
+            cacheStore.set(request.url, response.clone());
+          },
+        },
+      };
+      try {
+        const plain = new Request(
+          'https://toil.fyi/api/og-preset?id=rovastar-parallel-universe',
+        );
+        const tweaked = new Request(
+          'https://toil.fyi/api/og-preset?id=rovastar-parallel-universe&tweak=abc123',
+        );
+        await ogPresetRequest({ request: plain, renderAssets });
+        await ogPresetRequest({ request: tweaked, renderAssets });
+      } finally {
+        (globalThis as { caches?: unknown }).caches = originalCaches;
+      }
+
+      expect(putKeys).toHaveLength(2);
+      expect(new Set(putKeys).size).toBe(2);
     });
   });
 
