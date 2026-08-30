@@ -29,7 +29,9 @@ function writeStoredQueue(presetIds: string[]) {
         presetIds: presetIds.slice(0, MAX_QUEUE_SIZE),
       } satisfies QueueSnapshot),
     );
-  } catch {}
+  } catch (error) {
+    console.debug('Failed to write stored preset queue', error);
+  }
 }
 
 export function usePersistentPresetQueue(catalog: PresetCatalogEntry[]) {
@@ -38,7 +40,10 @@ export function usePersistentPresetQueue(catalog: PresetCatalogEntry[]) {
   useEffect(() => writeStoredQueue(presetIds), [presetIds]);
 
   const entries = useMemo(() => {
-    const byId = new Map(catalog.map((entry) => [entry.id, entry]));
+    const byId = new Map<string, PresetCatalogEntry>();
+    for (const entry of catalog) {
+      byId.set(entry.id, entry);
+    }
     return presetIds
       .map((id) => byId.get(id))
       .filter((entry): entry is PresetCatalogEntry => Boolean(entry));

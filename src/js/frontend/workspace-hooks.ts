@@ -30,7 +30,10 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
-import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
+import {
+  setAudioBandScalars,
+  setAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
@@ -181,11 +184,7 @@ export function useWorkspaceSessionState({
       const levels = engineRef.current?.getAudioLevels();
       if (levels) {
         setAudioEnergy(levels.energy);
-        setAudioBands({
-          bass: levels.bass,
-          mid: levels.mid,
-          treble: levels.treble,
-        });
+        setAudioBandScalars(levels.bass, levels.mid, levels.treble);
       }
       frameId = requestAnimationFrame(publish);
     };

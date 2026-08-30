@@ -773,10 +773,13 @@ export function mergeCatalogActivity(
   baseEntries: PresetCatalogEntry[],
   activityEntries: PresetCatalogEntry[],
 ) {
-  const activityById = new Map(
-    activityEntries.map((entry) => [entry.id, entry] as const),
-  );
+  const activityById = new Map<string, PresetCatalogEntry>();
+  for (const entry of activityEntries) {
+    activityById.set(entry.id, entry);
+  }
+  const seenIds = new Set<string>();
   const merged = baseEntries.map((entry) => {
+    seenIds.add(entry.id);
     const activityEntry = activityById.get(entry.id);
     if (!activityEntry) {
       return entry;
@@ -790,12 +793,12 @@ export function mergeCatalogActivity(
     };
   });
 
-  const seenIds = new Set(merged.map((entry) => entry.id));
-  activityEntries.forEach((entry) => {
+  for (const entry of activityEntries) {
     if (!seenIds.has(entry.id)) {
+      seenIds.add(entry.id);
       merged.push(entry);
     }
-  });
+  }
 
   return merged;
 }
