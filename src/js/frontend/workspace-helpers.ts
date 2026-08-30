@@ -472,6 +472,55 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
   return normalizeSearchText(rawTerms);
 }
 
+function deriveSemanticVibeTerms(entry: PresetCatalogEntry): string[] {
+  const text =
+    `${entry.id} ${entry.title ?? ''} ${(entry.tags ?? []).join(' ')}`.toLowerCase();
+  const vibes: string[] = [];
+
+  if (
+    /\b(?:neon|cyber|grid|laser|matrix|wire|synth|glow|future)\b/u.test(text)
+  ) {
+    vibes.push('cyberpunk', 'synthwave', 'techno', 'neon', 'futuristic');
+  }
+  if (
+    /\b(?:calm|ambient|space|cosmos|galaxy|ether|drift|zen|relax|float|ocean|water|fluid)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push(
+      'ambient',
+      'chill',
+      'cosmic',
+      'meditative',
+      'deep-space',
+      'liquid',
+    );
+  }
+  if (
+    /\b(?:acid|trippy|psycho|psych|kaleido|mirror|fractal|mandelbrot|spiral|vortex|spin|dimension)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('psychedelic', 'trippy', 'kaleidoscope', 'fractal', 'hypnotic');
+  }
+  if (
+    /\b(?:bass|kick|drum|rave|strobe|speed|intense|energy|power|shock|quake|pulse)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('bass-heavy', 'rave', 'strobe', 'high-energy', 'percussive');
+  }
+  if (
+    /\b(?:cube|sphere|polygon|shape|geometry|poly|vector|line|ring)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('geometric', 'minimalist', 'clean', '3d');
+  }
+
+  return vibes;
+}
+
 const presetMatchFieldsCache = new WeakMap<PresetCatalogEntry, MatchField[]>();
 
 /**
@@ -499,6 +548,9 @@ function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
         toMatchField(prettifyCollectionTag(tag), FIELD_PENALTY.tag),
       ),
     ...(entry.searchTerms ?? []).map((term) =>
+      toMatchField(term, FIELD_PENALTY.semantic),
+    ),
+    ...deriveSemanticVibeTerms(entry).map((term) =>
       toMatchField(term, FIELD_PENALTY.semantic),
     ),
   ].filter((field) => field.text.length > 0);
