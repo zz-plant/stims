@@ -235,7 +235,10 @@ export function createCatalogPersistence({ dbName }: { dbName: string }) {
       if (memoryPresets.size === 0) {
         return stored;
       }
-      const merged = new Map(stored.map((record) => [record.id, record]));
+      const merged = new Map<string, StoredPresetRecord>();
+      for (const record of stored) {
+        merged.set(record.id, record);
+      }
       for (const [id, record] of memoryPresets) {
         merged.set(id, record);
       }
@@ -295,7 +298,10 @@ export function createCatalogPersistence({ dbName }: { dbName: string }) {
       if (memoryMeta.size === 0) {
         return stored;
       }
-      const merged = new Map(stored.map((record) => [record.id, record]));
+      const merged = new Map<string, StoredMetaRecord>();
+      for (const record of stored) {
+        merged.set(record.id, record);
+      }
       for (const [id, record] of memoryMeta) {
         merged.set(id, record);
       }

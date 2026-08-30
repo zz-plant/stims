@@ -22,18 +22,24 @@ export function setAudioEnergy(value: number): void {
   for (const sub of subscribers) sub();
 }
 
-export function setAudioBands(bands: AudioBands): void {
-  // Same dead-band as the energy setter: these update every frame during
-  // playback and every change wakes every subscriber.
+export function setAudioBandScalars(
+  bass: number,
+  mid: number,
+  treble: number,
+): void {
   if (
-    Math.abs(bands.bass - currentBands.bass) < 0.001 &&
-    Math.abs(bands.mid - currentBands.mid) < 0.001 &&
-    Math.abs(bands.treble - currentBands.treble) < 0.001
+    Math.abs(bass - currentBands.bass) < 0.001 &&
+    Math.abs(mid - currentBands.mid) < 0.001 &&
+    Math.abs(treble - currentBands.treble) < 0.001
   ) {
     return;
   }
-  currentBands = bands;
+  currentBands = { bass, mid, treble };
   for (const sub of subscribers) sub();
+}
+
+export function setAudioBands(bands: AudioBands): void {
+  setAudioBandScalars(bands.bass, bands.mid, bands.treble);
 }
 
 export function subscribeAudioEnergy(callback: () => void): () => void {
