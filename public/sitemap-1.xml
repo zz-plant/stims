@@ -319,4 +319,59 @@
       <image:caption>Explore MilkDrop presets credited to Mig and run them live in your browser.</image:caption>
     </image:image>
   </url>
+  <url>
+    <loc>https://toil.fyi/author/orb</loc>
+    <lastmod>2026-08-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>ORB MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to ORB and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/suksma</loc>
+    <lastmod>2026-08-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Suksma MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Suksma and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/cope</loc>
+    <lastmod>2026-08-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Cope MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Cope and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/goody</loc>
+    <lastmod>2026-08-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Goody MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Goody and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://toil.fyi/author/krash</loc>
+    <lastmod>2026-08-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
+      <image:title>Krash MilkDrop Presets | Stims</image:title>
+      <image:caption>Explore MilkDrop presets credited to Krash and run them live in your browser.</image:caption>
+    </image:image>
+  </url>
 </urlset>

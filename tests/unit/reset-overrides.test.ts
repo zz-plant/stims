@@ -10,6 +10,9 @@ describe('resetAllOverrides', () => {
     const localStorage = getBrowserStorage();
     const sessionStorage = getBrowserSessionStorage();
 
+    localStorage?.clear();
+    sessionStorage?.clear();
+
     if (localStorage) {
       localStorage.setItem('stims:compatibility-mode', 'true');
       localStorage.setItem('stims:performance-settings', '{"maxPixelRatio":1}');

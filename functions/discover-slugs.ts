@@ -229,17 +229,64 @@ export const AUTHOR_ROUTES: readonly SemanticDiscoveryRoute[] = [
     description:
       'Explore MilkDrop presets credited to Mig and run them live in your browser.',
   },
+  {
+    kind: 'author',
+    slug: 'orb',
+    label: 'ORB',
+    author: 'ORB',
+    description:
+      'Explore MilkDrop presets credited to ORB and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'suksma',
+    label: 'Suksma',
+    author: 'suksma',
+    description:
+      'Explore MilkDrop presets credited to Suksma and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'cope',
+    label: 'Cope',
+    author: 'cope',
+    description:
+      'Explore MilkDrop presets credited to Cope and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'goody',
+    label: 'Goody',
+    author: 'Goody',
+    description:
+      'Explore MilkDrop presets credited to Goody and run them live in your browser.',
+  },
+  {
+    kind: 'author',
+    slug: 'krash',
+    label: 'Krash',
+    author: 'Krash',
+    description:
+      'Explore MilkDrop presets credited to Krash and run them live in your browser.',
+  },
 ];
 
 export const DISCOVER_SLUGS = DISCOVER_ROUTES.map((route) => route.slug);
 export const AUTHOR_SLUGS = AUTHOR_ROUTES.map((route) => route.slug);
 
+const DISCOVER_ROUTES_BY_SLUG = new Map(
+  DISCOVER_ROUTES.map((route) => [route.slug, route] as const),
+);
+const AUTHOR_ROUTES_BY_SLUG = new Map(
+  AUTHOR_ROUTES.map((route) => [route.slug, route] as const),
+);
+
 export function isAllowedDiscoverSlug(slug: string): boolean {
-  return DISCOVER_SLUGS.includes(slug);
+  return DISCOVER_ROUTES_BY_SLUG.has(slug);
 }
 
 export function isAllowedAuthorSlug(slug: string): boolean {
-  return AUTHOR_SLUGS.includes(slug);
+  return AUTHOR_ROUTES_BY_SLUG.has(slug);
 }
 
 export function resolveSemanticRoute(
@@ -248,10 +295,10 @@ export function resolveSemanticRoute(
   const [, namespace, slug, extra] = pathname.split('/');
   if (!slug || extra) return null;
   if (namespace === 'discover') {
-    return DISCOVER_ROUTES.find((route) => route.slug === slug) ?? null;
+    return DISCOVER_ROUTES_BY_SLUG.get(slug) ?? null;
   }
   if (namespace === 'author') {
-    return AUTHOR_ROUTES.find((route) => route.slug === slug) ?? null;
+    return AUTHOR_ROUTES_BY_SLUG.get(slug) ?? null;
   }
   return null;
 }
