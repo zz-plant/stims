@@ -213,6 +213,12 @@ describe('/?preset=<id> middleware', () => {
     expect(ogUrl.attributes.get('content')).toBe(
       'https://toil.fyi/?preset=test-preset',
     );
+
+    const head = applyHandlers('head');
+    expect(head.appended[0]).toContain('property="og:image:url"');
+    expect(head.appended[0]).toContain('property="og:image:secure_url"');
+    expect(head.appended[0]).not.toContain('twitter:player');
+    expect(head.appended[0]).not.toContain('property="og:video"');
   });
 
   test('leaves unknown preset ids with the default metadata', async () => {
