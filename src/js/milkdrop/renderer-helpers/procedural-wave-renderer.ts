@@ -1,3 +1,8 @@
+/**
+ * Procedural Waveform Renderer — evaluates and renders mathematical oscilloscope wave forms, frequency
+ * spectrum ribbon lines, radial rings, and audio-reactive vertex ribbons with dynamic smoothing.
+ */
+
 import {
   AdditiveBlending,
   BufferGeometry,

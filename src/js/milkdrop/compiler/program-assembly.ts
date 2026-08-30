@@ -1,3 +1,8 @@
+/**
+ * Compiler Program Assembly — assembles parsed EEL2 expression blocks into structured executable
+ * program units, lowering per-frame, per-pixel, custom wave, and custom shape equations.
+ */
+
 import {
   evaluateMilkdropExpression,
   MILKDROP_INTRINSIC_FUNCTIONS,

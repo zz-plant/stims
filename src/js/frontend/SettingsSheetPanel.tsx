@@ -1,3 +1,8 @@
+/**
+ * Settings Sheet Panel Component — provides configuration controls for graphics backend preference,
+ * rendering resolution, accessibility options, audio buffers, and hardware telemetry.
+ */
+
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   applyAccessibility,

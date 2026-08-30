@@ -1,15 +1,7 @@
-// Live tile pool: runs a bounded set of real MilkDrop pipelines at micro
-// resolution (one canvas + WebGL context each) so catalog tiles can show the
-// actual preset, animated, instead of a static preview frame.
-//
-// Validated by the tile-lab experiment (see docs in memory + tests/manual/tile-lab.html):
-// GL cost per tile is ~0.5ms; the budget is CPU vm.step (~2ms for classic
-// presets after the invisible-motion-vector fix), so a pool of ~10 tiles
-// stepping at ~15fps fits comfortably on the main thread. Browsers cap live
-// WebGL contexts (~16 per page), which is what `maxEngines` really guards.
-//
-// The pool is framework-free. React integration lives in
-// src/js/frontend/hooks/use-live-preset-tile.ts.
+/**
+ * Live Tile Pool — runs a bounded set of real MilkDrop pipelines at micro-resolution (one canvas +
+ * WebGL context each) so catalog tiles can display the actual preset, animated, in real time.
+ */
 
 import { Scene, WebGLRenderer } from 'three';
 import { initCamera } from '../core/camera-setup.ts';

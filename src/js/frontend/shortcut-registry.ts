@@ -1,3 +1,8 @@
+/**
+ * Keyboard Shortcut Registry — defines global keyboard shortcuts, platform-specific key combinations
+ * (Mac vs Windows/Linux), priority scopes, and visual shortcut cheat sheets.
+ */
+
 export type ShortcutActionId =
   | 'palette'
   | 'audio'

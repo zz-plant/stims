@@ -1,3 +1,8 @@
+/**
+ * Catalog Store Projection — projects raw catalog JSON data and stored metadata records into
+ * typed, verified MilkDrop catalog entries with compatibility tiers and backend support flags.
+ */
+
 import {
   deriveFidelityTier,
   getConservativeBundledCatalogProjectionDefaults,

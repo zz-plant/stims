@@ -1,3 +1,8 @@
+/**
+ * Stage Controls Overlay Component — renders the floating on-stage navigation bar, playback toggles,
+ * PiP controls, audio volume meters, preset transition progress, and overlay dialog triggers.
+ */
+
 import {
   useCallback,
   useEffect,

@@ -1,3 +1,8 @@
+/**
+ * AudioWorklet Frequency Analyser Processor — runs zero-allocation audio analysis in an isolated
+ * AudioWorklet thread, computing multi-band FFT spectra, harmonic/percussive separation, and beat envelopes.
+ */
+
 /* global AudioWorkletProcessor, registerProcessor, currentTime */
 
 import {

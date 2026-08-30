@@ -1,3 +1,8 @@
+/**
+ * Audio Source Panel Component — provides user interface controls for switching live audio
+ * input sources: demo tracks, microphone capture, system tab audio, local files, and YouTube streams.
+ */
+
 import type { ClipboardEvent } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { parseYouTubeVideoReference } from '../ui/youtube-controller.ts';

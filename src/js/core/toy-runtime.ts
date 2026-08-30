@@ -1,3 +1,8 @@
+/**
+ * Toy Runtime Engine — provides the lifecycle container, simulation clock pacing, and audio
+ * integration for interactive visualizer toys, managing animation loops and frame gating.
+ */
+
 import type { AnimationContext } from './animation-loop';
 import { getContextFrequencyData, virtualTimeSource } from './animation-loop';
 import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';

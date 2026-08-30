@@ -1,3 +1,8 @@
+/**
+ * Shared VM State & Constants — defines common buffer limits, memory structures, clamping helpers,
+ * and visual element descriptor builders shared across the MilkDrop VM and WebGPU pipelines.
+ */
+
 import type {
   MilkdropColor,
   MilkdropGpuFieldSignalInputs,

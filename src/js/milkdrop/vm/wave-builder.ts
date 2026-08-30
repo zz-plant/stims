@@ -1,3 +1,8 @@
+/**
+ * Wave Visual & Geometry Builder — generates main oscilloscope ribbons, multi-trail history buffers,
+ * and custom per-point waveform samples driven by EEL2 equations and audio signal spectrum buffers.
+ */
+
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,

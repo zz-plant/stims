@@ -1,3 +1,8 @@
+/**
+ * Shared MilkDrop Renderer Adapter — implements common mesh construction, instanced buffer management,
+ * custom shape geometries, particle vertices, and blending state setups for WebGL2 and WebGPU.
+ */
+
 import type { Camera, PointsMaterial, Scene, Texture } from 'three';
 import {
   AddEquation,

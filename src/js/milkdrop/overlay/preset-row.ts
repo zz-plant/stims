@@ -1,3 +1,8 @@
+/**
+ * Preset Row Component Renderer — renders individual preset list item rows with metadata tags,
+ * fidelity badges, author attribution, action menus, and compatibility indicators.
+ */
+
 import { renderIconSvg } from '../../ui/icon-library.ts';
 import type { VisualFidelityTier } from '../catalog-store-analysis.ts';
 import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';

@@ -1,3 +1,8 @@
+/**
+ * Renderer Segment Batching — implements batched quad segment rendering for waveform ribbons and
+ * border strokes, minimizing draw calls and optimizing GPU vertex buffer updates.
+ */
+
 import type { Group, Mesh } from 'three';
 import {
   AdditiveBlending,

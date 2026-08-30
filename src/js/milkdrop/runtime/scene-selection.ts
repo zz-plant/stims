@@ -1,3 +1,8 @@
+/**
+ * Scene Selection & Raycasting — implements GPU-screen raycasting and hit testing for visual elements
+ * (shapes, custom waves, border frames, mesh grid) to support direct interactive inspector probing.
+ */
+
 import type {
   MilkdropBorderVisual,
   MilkdropCompiledPreset,

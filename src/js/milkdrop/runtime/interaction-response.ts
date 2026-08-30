@@ -1,3 +1,8 @@
+/**
+ * MilkDrop Interaction Response — translates multi-touch gestures, pointer coordinates, and gamepad
+ * inputs into interactive EEL2 signals (`input_x`, `input_y`, `gesture_pinch`) for touch-reactive presets.
+ */
+
 import type { ShaderQuality } from '../../core/performance-panel';
 import type { UnifiedInputState } from '../../core/unified-input.ts';
 import { isMobileDevice } from '../../utils/browser/device-detect';
