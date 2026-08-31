@@ -319,6 +319,18 @@ async function main() {
 
   await assertNoUncategorizedTests();
 
+  // `integration` stays a single-file profile: CI runs it as its own job.
+  if (profile === 'integration') {
+    process.exit(
+      await runBunTest({
+        files: [INTEGRATION_TEST],
+        watch,
+        changed,
+        maxConcurrency: 1,
+      }),
+    );
+  }
+
   // `--changed` hands the profile's file list to a single `bun test --changed`
   // pass, which builds the import graph and keeps only files transitively
   // affected by uncommitted git changes. Sharding is skipped: the affected
@@ -328,17 +340,6 @@ async function main() {
     const categories = resolveProfileCategories(profile);
     const files = (await Promise.all(categories.map(listCategoryFiles))).flat();
     process.exit(await runBunTest({ files, watch, changed }));
-  }
-
-  // `integration` stays a single-file profile: CI runs it as its own job.
-  if (profile === 'integration') {
-    process.exit(
-      await runBunTest({
-        files: [INTEGRATION_TEST],
-        watch,
-        maxConcurrency: 1,
-      }),
-    );
   }
 
   const categories = resolveProfileCategories(profile);
