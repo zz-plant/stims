@@ -68,7 +68,7 @@ if (isCloudflarePages) {
 if (isCI || isCloudflarePages) {
   console.log('[postinstall] Husky install skipped (CI/CF Pages).');
 } else if (isBunUserAgent) {
-  run('husky install');
+  run('husky');
 } else {
   console.log(
     '[postinstall] Husky install skipped (Bun not detected as installer).',

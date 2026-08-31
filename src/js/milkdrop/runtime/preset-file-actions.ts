@@ -38,9 +38,21 @@ export function createMilkdropPresetFileActions({
       const skipped: Array<{ name: string; reason: string }> = [];
       let importedCount = 0;
       let lastImportedId: string | null = null;
+      const MAX_PRESET_SIZE = 2 * 1024 * 1024; // 2MB limit per preset file
       for (const file of Array.from(files)) {
         try {
+          if (file.size > MAX_PRESET_SIZE) {
+            throw new Error(
+              `File exceeds maximum size of 2MB (${(file.size / 1024 / 1024).toFixed(1)}MB).`,
+            );
+          }
           const raw = await file.text();
+          if (raw.trim().length === 0) {
+            throw new Error('File is empty.');
+          }
+          if (raw.includes('\0')) {
+            throw new Error('Binary or non-text file.');
+          }
           const compiled = compileMilkdropPresetSource(raw, {
             title: file.name.replace(/\.[^.]+$/u, ''),
             origin: 'imported',

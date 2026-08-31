@@ -52,9 +52,37 @@ export class StimsErrorBoundary extends Component<
               Stims encountered an issue. Reload to retry, or try compatibility
               mode.
             </p>
+            {this.state.error && (
+              <details className="stims-shell__error-details">
+                <summary className="stims-shell__error-details-summary">
+                  Error details ({this.state.error.name})
+                </summary>
+                <pre className="stims-shell__error-stack">
+                  {this.state.error.name}: {this.state.error.message}
+                  {this.state.error.stack
+                    ? `\n\n${this.state.error.stack}`
+                    : ''}
+                </pre>
+              </details>
+            )}
             <div className="stims-shell__error-actions">
               <ErrorButton primary onClick={() => window.location.reload()}>
                 Reload page
+              </ErrorButton>
+              <ErrorButton
+                onClick={() => {
+                  const text = `${this.state.error?.name}: ${this.state.error?.message}\n\n${this.state.error?.stack ?? ''}`;
+                  if (navigator?.clipboard?.writeText) {
+                    navigator.clipboard.writeText(text).catch((err) => {
+                      console.warn(
+                        'Could not copy error details to clipboard:',
+                        err,
+                      );
+                    });
+                  }
+                }}
+              >
+                Copy error details
               </ErrorButton>
               <ErrorButton
                 onClick={() => {
@@ -62,13 +90,20 @@ export class StimsErrorBoundary extends Component<
                     window.sessionStorage.removeItem(
                       'stims:webgpu-compat-override',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn(
+                      'Failed to clear sessionStorage override:',
+                      error,
+                    );
+                  }
                   try {
                     window.localStorage.setItem(
                       'stims:compatibility-mode',
                       'true',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn('Failed to enable compatibility mode:', error);
+                  }
                   window.location.reload();
                 }}
               >
@@ -88,7 +123,12 @@ export class StimsErrorBoundary extends Component<
                     window.sessionStorage.removeItem(
                       'stims:webgpu-compat-override',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn(
+                      'Failed to reset localStorage settings:',
+                      error,
+                    );
+                  }
                   window.location.href = '/';
                 }}
               >

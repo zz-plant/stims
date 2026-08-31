@@ -3432,8 +3432,40 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__error-copy {
   opacity: 0.8;
   font-size: 0.95rem;
-  margin: 0 0 24px;
+  margin: 0 0 16px;
   line-height: 1.5;
+}
+
+.stims-shell__error-details {
+  margin: 0 0 16px;
+  text-align: left;
+  font-size: 0.8rem;
+  background: var(--stims-white-04);
+  border: 1px solid var(--stims-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stims-shell__error-details-summary {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--stims-ink-dim);
+  user-select: none;
+}
+
+.stims-shell__error-stack {
+  margin: 0;
+  padding: 8px 12px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--stims-bad);
+  border-top: 1px solid var(--stims-line);
 }
 
 .stims-shell__error-actions {

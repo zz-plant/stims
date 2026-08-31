@@ -28,25 +28,48 @@ const commands: Array<{ name: string; cmd: string[] }> = [
 ];
 
 const procs = commands.map(({ name, cmd }) => {
-  const proc = spawn(cmd[0], cmd.slice(1), { stdio: 'inherit' });
+  const isPosix = process.platform !== 'win32';
+  const proc = spawn(cmd[0], cmd.slice(1), {
+    stdio: 'inherit',
+    detached: isPosix,
+  });
   proc.on('exit', (code) => {
     console.log(`[dev:agent] ${name} exited (${code ?? 'signal'})`);
   });
-  return proc;
+  return { name, proc };
 });
 
 let shuttingDown = false;
 const shutdown = () => {
   if (shuttingDown) return;
   shuttingDown = true;
-  for (const proc of procs) proc.kill();
+  for (const { proc } of procs) {
+    try {
+      if (proc.pid && process.platform !== 'win32') {
+        process.kill(-proc.pid, 'SIGTERM');
+      } else {
+        proc.kill('SIGTERM');
+      }
+    } catch {}
+  }
+  setTimeout(() => {
+    for (const { proc } of procs) {
+      try {
+        if (proc.pid && process.platform !== 'win32') {
+          process.kill(-proc.pid, 'SIGKILL');
+        } else {
+          proc.kill('SIGKILL');
+        }
+      } catch {}
+    }
+  }, 1000).unref();
 };
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 await new Promise<void>((resolve) => {
-  for (const proc of procs) {
+  for (const { proc } of procs) {
     proc.once('exit', () => {
       shutdown();
       resolve();

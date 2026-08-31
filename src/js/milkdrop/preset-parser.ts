@@ -47,12 +47,17 @@ export function parseMilkdropPreset(source: string): {
   ast: MilkdropPresetAST;
   diagnostics: MilkdropDiagnostic[];
 } {
+  const safeSource = typeof source === 'string' ? source : '';
   const diagnostics: MilkdropDiagnostic[] = [];
   const fields: MilkdropPresetField[] = [];
   const sections: string[] = [];
   let currentSection: string | null = null;
 
-  if (source.length > MAX_SOURCE_BYTES) {
+  if (!safeSource) {
+    return { ast: { source: '', fields: [], sections: [] }, diagnostics };
+  }
+
+  if (safeSource.length > MAX_SOURCE_BYTES) {
     diagnostics.push({
       severity: 'error',
       category: 'parse',
@@ -63,7 +68,7 @@ export function parseMilkdropPreset(source: string): {
     return { ast: { source: '', fields: [], sections: [] }, diagnostics };
   }
 
-  const lines = source.split(/\r?\n/u);
+  const lines = safeSource.split(/\r?\n/u);
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     if (fields.length >= MAX_PRESET_FIELDS) {
       diagnostics.push({
