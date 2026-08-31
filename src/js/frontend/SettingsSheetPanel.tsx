@@ -23,6 +23,11 @@ import {
 import { getLastRendererFallbackReason } from '../core/renderer-telemetry.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import {
+  getStageOverlayPreference,
+  setStageOverlayPreference,
+  subscribeToStageOverlayPreference,
+} from '../core/stage-overlay-preferences.ts';
+import {
   DEFAULT_PERFORMANCE_SETTINGS,
   type PerformanceSettings,
   type ShaderQuality,
@@ -553,6 +558,11 @@ export function SettingsSheetPanel({
   const qualityPreset = ui.qualityPreset;
   const renderPreferences = ui.renderPreferences;
   const qualityOptions = getSettingsPresetOptions();
+  const overlays = useSyncExternalStore(
+    subscribeToStageOverlayPreference,
+    getStageOverlayPreference,
+    getStageOverlayPreference,
+  );
 
   const backendLabel = engineSnapshot?.backend
     ? engineSnapshot.backend === 'webgpu'
@@ -821,6 +831,26 @@ export function SettingsSheetPanel({
                 <option value="webgl">WebGL</option>
               </select>
             </div>
+          </section>
+
+          <section className="ctl-section">
+            <div className="ctl-section__head">
+              <h3 className="ctl-section__title">Stage overlays</h3>
+            </div>
+            <SwitchRow
+              label="Strudel live-coding lab"
+              hint="Code music patterns on the stage and drive the visuals with them."
+              checked={overlays.strudelLab}
+              onChange={(next) =>
+                setStageOverlayPreference({ strudelLab: next })
+              }
+            />
+            <SwitchRow
+              label="Debug HUD"
+              hint="Overlays frames-per-second, quality and uniform readouts."
+              checked={overlays.debugHud}
+              onChange={(next) => setStageOverlayPreference({ debugHud: next })}
+            />
           </section>
         </div>
       ) : null}

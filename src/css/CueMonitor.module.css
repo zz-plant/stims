@@ -31,6 +31,28 @@
   gap: 8px;
 }
 
+.dismiss {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dismiss:hover,
+.dismiss:focus-visible {
+  color: var(--text-color);
+}
+
+.emptyHint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .label {
   font-size: 0.68rem;
   font-weight: 700;

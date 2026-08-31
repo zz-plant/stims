@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/CueMonitor.module.css';
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
@@ -15,6 +16,13 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * giving up on it. Generous enough for a cold compile, short enough that a
  * switch that never lands does not strand the panel. */
 const ARM_TIMEOUT_MS = 6000;
+
+/**
+ * The empty-state affordance shows once and stays gone once dismissed, so the
+ * cue deck surfaces its existence to a first-time visitor without permanently
+ * squatting on the stage the way a pinned (non-empty) deck must.
+ */
+const CUE_HINT_DISMISSED_KEY = 'stims:cue-empty-hint-dismissed';
 
 function CueScreen({ entry }: { entry: PresetCatalogEntry }) {
   // `audition: true` opts this one tile into the live pool without the global
@@ -63,6 +71,13 @@ export function CueMonitor() {
   // gap, taking the last queued preset emptied the queue and unmounted this
   // panel — taking the fader with it — before the fade ever began.
   const [arming, setArming] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(() => {
+    try {
+      return getBrowserStorage()?.getItem(CUE_HINT_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
   useEffect(() => {
     if (!arming) return;
     // Bounded: if the switch never lands (an already-active preset, a failed
@@ -137,7 +152,36 @@ export function CueMonitor() {
   // otherwise unmount this panel — and the fader with it — halfway through
   // the gesture. An in-flight fade keeps the panel alive on its own.
   if (!next && !fading && !arming) {
-    return null;
+    // An armed queue is the only thing that makes this deck visible, so an
+    // empty queue renders nothing — except the one-time hint below, whose job
+    // is to tell a first-time visitor the deck exists at all. Once dismissed
+    // (or once the user actually queues something) it stays gone.
+    if (hintDismissed) return null;
+    return (
+      <aside className={styles.cue} aria-label="Cue monitor">
+        <div className={styles.header}>
+          <span className={styles.label}>Cue deck</span>
+          <button
+            type="button"
+            className={styles.dismiss}
+            onClick={() => {
+              setHintDismissed(true);
+              try {
+                getBrowserStorage()?.setItem(CUE_HINT_DISMISSED_KEY, '1');
+              } catch {
+                console.debug('Unable to persist cue hint dismissal');
+              }
+            }}
+            aria-label="Dismiss cue deck hint"
+          >
+            ×
+          </button>
+        </div>
+        <p className={styles.emptyHint}>
+          Queue presets to preview the next one here before it hits the stage.
+        </p>
+      </aside>
+    );
   }
 
   const { title, byline } = next

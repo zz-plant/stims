@@ -4,6 +4,7 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
+import { AIBadge } from './AIBadge.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
 import {
   getAudioBands,
@@ -189,7 +190,10 @@ export function PresetFinderPanel({
           className="stims-finder__icon"
           aria-hidden="true"
         />
-        <h3 className="stims-finder__title">Find a preset</h3>
+        <h3 className="stims-finder__title">
+          Find a preset
+          <AIBadge />
+        </h3>
       </div>
 
       <div
@@ -214,7 +218,9 @@ export function PresetFinderPanel({
                 setMode(candidate.id);
                 try {
                   localStorage.setItem(FINDER_MODE_STORAGE_KEY, candidate.id);
-                } catch {}
+                } catch {
+                  console.debug('Unable to persist finder mode');
+                }
               }}
             />
             {candidate.label}

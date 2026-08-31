@@ -6,6 +6,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
 import {
@@ -34,6 +35,10 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  *
  * Empty by default: an unpinned visitor never sees it.
  */
+
+/** The one-time empty-state hint shows once, then stays gone once dismissed. */
+const PERFORM_HINT_DISMISSED_KEY = 'stims:perform-empty-hint-dismissed';
+
 export function PerformSurface() {
   const { engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -47,6 +52,13 @@ export function PerformSurface() {
   const [picking, setPicking] = useState(false);
   const [values, setValues] = useState<Record<string, number>>({});
   const [modulated, setModulated] = useState<string[]>([]);
+  const [hintDismissed, setHintDismissed] = useState(() => {
+    try {
+      return getBrowserStorage()?.getItem(PERFORM_HINT_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
 
   const activeSource = engineSnapshot?.currentSource ?? '';
   const activePresetId = engineSnapshot?.activePresetId ?? null;
@@ -107,7 +119,45 @@ export function PerformSurface() {
   }, []);
 
   if (pinned.length === 0 && !picking) {
-    return null;
+    // A performer with no pinned controls sees this surface for the first time
+    // as a hint, not as nothing — there is nothing on it yet, so it tells them
+    // what it is for and how to open it. Dismissed once, it stays hidden until
+    // they actually pin something.
+    if (hintDismissed) return null;
+    return (
+      <aside className={styles.surface} aria-label="Performance controls">
+        <div className={styles.header}>
+          <span className={styles.label}>Perform</span>
+          <button
+            type="button"
+            className={styles.pick}
+            onClick={() => setPicking(true)}
+            data-action="perform-pin"
+          >
+            Pin…
+          </button>
+        </div>
+        <p className={styles.empty}>
+          Put your go-to parameters here as sliders you can drive live on the
+          stage. Nothing pinned yet — pick one to begin.
+          <button
+            type="button"
+            className={styles.dismiss}
+            onClick={() => {
+              setHintDismissed(true);
+              try {
+                getBrowserStorage()?.setItem(PERFORM_HINT_DISMISSED_KEY, '1');
+              } catch {
+                console.debug('Unable to persist perform hint dismissal');
+              }
+            }}
+            aria-label="Dismiss perform surface hint"
+          >
+            Dismiss
+          </button>
+        </p>
+      </aside>
+    );
   }
 
   return (

@@ -84,9 +84,53 @@ Exit criteria:
 - a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
 - a default-on flash-rate cap ships as a visible safety control, not a buried setting.
 
-## Next: compatibility depth beyond the floor
+## Next: compatibility depth & runtime compiler milestones
 
-These deepen the compatibility lane only after the studio loop above is stable.
+These deepen the compatibility lane and compiler runtime based on evidence from our AST/IR compiler architecture, headless diffing pipeline, and low-resource profiling:
+
+### Dual-backend differential evidence (Closing the WebGL2 gap)
+
+- Extend the automated differential test harness (`tests/compatibility/test_preset_diffs.py` and `scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU.
+- Verify that both backends maintain structural difference $< 1.5\%$ against native C++ projectM references.
+- Eliminate the unmeasured status of the WebGL2 baseline so that fidelity claims reflect the renderer the majority of web users run.
+
+Exit criteria:
+- Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and
+- zero silent divergence between WebGL2 GLSL 300 es and WebGPU WGSL shader lowering.
+
+### Close the 169-preset WebGPU shader translation gap
+
+- Resolve the packed feedback composite sampler (`sampler_fc_main` and `sampler_fw_main`) binding in WebGPU shader generation (`src/js/milkdrop/compiler/wgsl-generator.ts`).
+- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the scalar approximation fallback.
+- Promote the 169 affected presets from `webgpu-partial` to `exact` / `near-exact` certified status in `src/data/milkdrop-parity/measured-results.json`.
+
+Exit criteria:
+- `tests/corpus/butterchurn-corpus-support.test.ts` reports 0 presets falling back to scalar approximations on the WebGPU path.
+
+### Vectorized GPU compute offloading for waveforms & geometry
+
+- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from CPU JavaScript JIT to WebGPU compute storage buffers.
+- Implement AST SIMD/vec4 vectorization in the WGSL generator for per-vertex grid transformations.
+- Eliminate remaining main-thread CPU spikes, building on the 16.5% frame work reduction ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1× and $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle).
+
+Exit criteria:
+- Median frame work under 4× CPU throttle remains under $12.0 \text{ ms}$ on standard $1280 \times 720$ benchmarks.
+
+### Chaotic attractor numerical stabilization (Long-duration determinism)
+
+- Implement compiler-level compensated summation (Kahan / Neumaier algorithm) in EEL2 accumulator lowering to mitigate $f32$ floating-point precision drift in recursive non-linear equations.
+- Prevent spatial deformation divergence in chaotic attractors (e.g. Lorenz loops) during long-duration playback ($t > 300\text{ s}$) for venue, kiosk, and live-coding performances.
+
+Exit criteria:
+- Frame drift test suite passes on 10-minute continuous execution benchmark against native $f64$ baseline.
+
+### Deterministic creator-grade export via headless compute
+
+- Connect the headless browser rendering engine and WebCodecs (`VideoEncoder` + `OffscreenCanvas`) to the studio export panel.
+- Enable frame-exact, non-realtime 4K 60fps video and audio multiplexing without dropped frames or thermal throttling on consumer laptops.
+
+Exit criteria:
+- Deterministic frame export completes 60 seconds of 4K 60fps video matching audio waveforms sample-for-sample.
 
 ## Later: platform expansion
 
@@ -110,3 +154,4 @@ These workstreams begin only after their prerequisite user flows and proof contr
 Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.
 
 AI-assisted authoring — text/image-to-preset generation, blending, and diff-inspectable assisted edits in the editor — is studio scope and already wired to the Remix workflow. It is distinct from "neural audio-to-visual generation" above, which is the unbuilt research direction.
+
