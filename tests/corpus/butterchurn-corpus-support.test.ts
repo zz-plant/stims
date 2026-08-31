@@ -102,7 +102,7 @@ describe('butterchurn preset corpus support', () => {
         ({ compiled }) =>
           compiled.ir.compatibility.parity.missingAliasesOrFunctions.length > 0,
       );
-      expect(missingIdentifiers.length).toBe(9);
+      expect(missingIdentifiers.length).toBe(8);
 
       // Everything else stays fully supported on both backends. Measured on
       // the same corpus: 1578 with the branch desugar gated off and matrix

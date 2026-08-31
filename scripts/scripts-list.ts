@@ -293,7 +293,12 @@ const ROUTES: Array<{ when: string[]; run: string[]; note: string }> = [
     note: 'doctor diagnoses environment dependencies, browsers, and port collisions; setup synchronizes packages and links browser binaries.',
   },
   {
-    when: ['production bundle', 'build bundle', 'bundle size', 'dist artifacts'],
+    when: [
+      'production bundle',
+      'build bundle',
+      'bundle size',
+      'dist artifacts',
+    ],
     run: ['build', 'site:build', 'check:bundle-size'],
     note: 'build produces the visualizer bundle; site:build packages the Cloudflare worker and site assets.',
   },

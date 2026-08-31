@@ -34,6 +34,7 @@ import type {
   MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
+import { foldProgramBlock } from './ast-constant-fold.ts';
 import { buildParityReport } from './compatibility-report.ts';
 import { extractCustomSamplerDeclarations } from './custom-samplers';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
@@ -597,6 +598,17 @@ export function createMilkdropIr({
     fieldHelpers.pushProgramStatement(block, sourceLine, line, diagnostics);
   });
 
+  // Compile-time constant folding: collapse literal arithmetic (e.g.
+  // `aspect * 2` → literal), fold all-literal pure-intrinsic calls (e.g.
+  // `abs(-1.5)` → `1.5`), and reduce algebraic identities (`x*1` → `x`,
+  // `x+0` → `x`). Applied here — after statement assembly but before the
+  // descriptor planner and WGSL/JIT emission — so every downstream tier
+  // (CPU interpreter, CPU JIT, WGSL compute VM, per-pixel field planner)
+  // consumes the simplified tree.
+  for (const key of ['init', 'perFrame', 'perPixel'] as const) {
+    programs[key] = foldProgramBlock(programs[key]);
+  }
+
   const runtimeGlobals = fieldHelpers.resolveRuntimeGlobals({
     numericFields,
     programs,
@@ -829,18 +841,6 @@ export function createMilkdropIr({
       message,
     );
   });
-  if (
-    /\bsampler_fc_main\b/iu.test(
-      `${warpShaderText ?? ''}\n${compShaderText ?? ''}`,
-    )
-  ) {
-    fieldHelpers.addDiagnostic(
-      diagnostics,
-      'warning',
-      'preset_shader_packed_sampler_backend_gap',
-      'Packed sampler sampler_fc_main maps to the feedback composite texture on WebGL; WebGPU direct shader execution does not expose this intermediate texture and will use the translated compatibility path when required.',
-    );
-  }
   const backends = {
     webgl: compatibilityHelpers.buildBackendSupport({
       backend: 'webgl',

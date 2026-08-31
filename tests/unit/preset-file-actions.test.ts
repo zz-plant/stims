@@ -140,7 +140,9 @@ describe('importFiles input validation', () => {
       { type: 'text/plain' },
     );
 
-    await expect(actions.importFiles(toFileList(oversizedFile))).rejects.toThrow(
+    await expect(
+      actions.importFiles(toFileList(oversizedFile)),
+    ).rejects.toThrow(
       'Failed to import "oversized.milk": the file is larger than the 2 MB limit. Choose a smaller plain-text .milk file.',
     );
   });
