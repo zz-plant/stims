@@ -122,6 +122,72 @@ describe('AST constant folding', () => {
     expectLiteral(foldExpression({ type: 'identifier', name: 'e' }), Math.E);
   });
 
+  test('keeps pi as an identifier when the block assigns it', () => {
+    // MilkDrop presets legitimately overwrite pi (`per_pixel_1=pi=3.14159;`).
+    // Inlining the builtin value at the read site would drop the override.
+    const block = foldProgramBlock({
+      statements: [
+        {
+          target: 'pi',
+          // A value nothing like pi, so a folded read is unmistakable.
+          expression: { type: 'literal', value: 1.5 },
+          line: 1,
+          source: 'pi = 1.5',
+        },
+        {
+          target: 'dx',
+          expression: {
+            type: 'binary',
+            operator: '*',
+            left: { type: 'identifier', name: 'pi' },
+            right: { type: 'literal', value: 2 },
+          },
+          line: 2,
+          source: 'dx = pi * 2',
+        },
+      ],
+      sourceLines: [],
+    });
+
+    const read = block.statements[1]?.expression;
+    expect(read?.type).toBe('binary');
+    expect((read as { left: { type: string } }).left.type).toBe('identifier');
+  });
+
+  test('an assignment inside a loop body still shadows the constant', () => {
+    const block = foldProgramBlock({
+      statements: [
+        {
+          target: 'loop',
+          expression: { type: 'literal', value: 0 },
+          line: 1,
+          source: '',
+          control: {
+            kind: 'loop',
+            count: { type: 'literal', value: 4 },
+            body: [
+              {
+                target: 'e',
+                expression: { type: 'literal', value: 2 },
+                line: 2,
+                source: 'e = 2',
+              },
+            ],
+          },
+        },
+        {
+          target: 'q1',
+          expression: { type: 'identifier', name: 'e' },
+          line: 3,
+          source: 'q1 = e',
+        },
+      ],
+      sourceLines: [],
+    });
+
+    expect(block.statements[1]?.expression.type).toBe('identifier');
+  });
+
   test('folds a full program block', () => {
     const block = foldProgramBlock({
       statements: [

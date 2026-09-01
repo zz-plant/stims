@@ -152,6 +152,7 @@
     "setup:browsers": "bun run scripts/link-preinstalled-browsers.ts",
     "setup:codex": "bash scripts/codex-setup.sh",
     "site:build": "bun run scripts/build-site.mjs",
+    "site:build:gated": "bun run test:fast && bun run scripts/build-site.mjs",
     "site:check": "bun run site:build && bunx wrangler deploy --dry-run --config wrangler.site.jsonc",
     "site:deploy": "bun run site:build && bunx wrangler deploy --config wrangler.site.jsonc",
     "site:dev": "bun run site:build && bunx wrangler dev --config wrangler.site.jsonc",
