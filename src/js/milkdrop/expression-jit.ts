@@ -92,7 +92,7 @@ function compileNode(
 ): string {
   switch (node.type) {
     case 'literal':
-      return String(node.value);
+      return Object.is(node.value, -0) ? '-0.0' : String(node.value);
     case 'identifier': {
       const name = node.name.toLowerCase();
       // Env-first like the interpreter: pi/e are ordinary prepopulated EEL

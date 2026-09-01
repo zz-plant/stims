@@ -40,6 +40,16 @@ function makeHarness({
   return { actions, saved };
 }
 
+function toFileList(...files: File[]) {
+  return {
+    length: files.length,
+    item: (index: number) => files[index] ?? null,
+    [Symbol.iterator]: function* () {
+      yield* files;
+    },
+  } as unknown as FileList;
+}
+
 describe('duplicatePreset mints remix credits', () => {
   test('a root work gains the mix slot and a lineage ref', async () => {
     const { actions, saved } = makeHarness({
@@ -115,6 +125,47 @@ describe('duplicatePreset mints remix credits', () => {
 
     expect(saved[0].title).toBe(
       'Stahlregen + Geiss + Shifter - Babylon (Remix)',
+    );
+  });
+});
+
+describe('importFiles input validation', () => {
+  test('rejects files larger than 2 MB with a recovery action', async () => {
+    const { actions } = makeHarness({
+      compiled: { id: 'test', title: 'Test' },
+    });
+    const oversizedFile = new File(
+      [new Uint8Array(2 * 1024 * 1024 + 1)],
+      'oversized.milk',
+      { type: 'text/plain' },
+    );
+
+    await expect(
+      actions.importFiles(toFileList(oversizedFile)),
+    ).rejects.toThrow(
+      'Failed to import "oversized.milk": the file is larger than the 2 MB limit. Choose a smaller plain-text .milk file.',
+    );
+  });
+
+  test('rejects empty or whitespace-only files', async () => {
+    const { actions } = makeHarness({
+      compiled: { id: 'test', title: 'Test' },
+    });
+    const emptyFile = new File(['   '], 'empty.milk', { type: 'text/plain' });
+    await expect(actions.importFiles(toFileList(emptyFile))).rejects.toThrow(
+      'Failed to import "empty.milk": the file is empty. Choose a .milk file that contains preset text.',
+    );
+  });
+
+  test('rejects binary files containing null bytes', async () => {
+    const { actions } = makeHarness({
+      compiled: { id: 'test', title: 'Test' },
+    });
+    const binaryFile = new File(['[preset00]\x00\x01\x02'], 'binary.milk', {
+      type: 'text/plain',
+    });
+    await expect(actions.importFiles(toFileList(binaryFile))).rejects.toThrow(
+      'Failed to import "binary.milk": binary data was detected. Choose a plain-text .milk file.',
     );
   });
 });

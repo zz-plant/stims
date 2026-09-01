@@ -15,34 +15,57 @@ console.log('🩺 Running Stims Dev Environment Doctor...\n');
 let checksPassed = 0;
 let totalChecks = 0;
 
-function report(name: string, ok: boolean, details?: string) {
+function report(
+  name: string,
+  ok: boolean,
+  details?: string,
+  remediation?: string,
+) {
   totalChecks++;
   if (ok) {
     checksPassed++;
     console.log(`  ✅ ${name}${details ? ` (${details})` : ''}`);
   } else {
     console.error(`  ❌ ${name}${details ? ` (${details})` : ''}`);
+    if (remediation) {
+      console.error(`     ↳ Remediation: ${remediation}`);
+    }
   }
 }
 
 // 1. Bun Runtime
 const bunVer = Bun.version;
 const bunOk = !!bunVer;
-report('Bun Runtime', bunOk, `v${bunVer}`);
+report('Bun Runtime', bunOk, `v${bunVer}`, 'install Bun from https://bun.sh');
 
 // 2. TypeScript Compiler
 const tscRes = await $`./node_modules/.bin/tsc --version`.nothrow().text();
 const tscOk = tscRes.includes('Version');
-report('TypeScript Compiler', tscOk, tscRes.trim());
+report(
+  'TypeScript Compiler',
+  tscOk,
+  tscRes.trim(),
+  "run 'bun install' to restore local tooling",
+);
 
 // 3. Biome Linter
 const biomeRes = await $`./node_modules/.bin/biome --version`.nothrow().text();
 const biomeOk = biomeRes.includes('2.');
-report('Biome Linter/Formatter', biomeOk, biomeRes.trim());
+report(
+  'Biome Linter/Formatter',
+  biomeOk,
+  biomeRes.trim(),
+  "run 'bun install' to restore local tooling",
+);
 
 // 4. Playwright Browser
 const pwOk = await Bun.file('node_modules/playwright/package.json').exists();
-report('Playwright Test Harness', pwOk, pwOk ? 'installed' : 'missing');
+report(
+  'Playwright Test Harness',
+  pwOk,
+  pwOk ? 'installed' : 'missing',
+  "run 'bun install' to restore local tooling",
+);
 
 // 4b. Chromium binary. The package being installed says nothing about whether
 // a browser exists: remote containers ship one via PLAYWRIGHT_BROWSERS_PATH
@@ -67,12 +90,33 @@ if (pwOk) {
 }
 console.log(`  🌐 Chromium binary: ${chromiumStatus}`);
 
+// 4c. Dev server port availability check (advisory).
+let devPortStatus = 'port 5173 available';
+try {
+  const listener = Bun.listen({
+    port: 5173,
+    hostname: '127.0.0.1',
+    socket: {
+      data() {},
+    },
+  });
+  listener.stop();
+} catch (error) {
+  devPortStatus = `port 5173 in use (${(error as Error).message.split('\n')[0]}) — a dev server or background process is active`;
+}
+console.log(`  🔌 Dev server port: ${devPortStatus}`);
+
 // 5. Cloudflare Wrangler Tooling
 const wrangRes = await $`./node_modules/.bin/wrangler --version`
   .nothrow()
   .text();
 const wrangOk = wrangRes.length > 0;
-report('Cloudflare Wrangler CLI', wrangOk, wrangRes.trim().split('\n')[0]);
+report(
+  'Cloudflare Wrangler CLI',
+  wrangOk,
+  wrangRes.trim().split('\n')[0],
+  "run 'bun install' to restore local tooling",
+);
 
 // 6. Dependency install freshness. A node_modules tree that predates a
 // package.json/bun.lock or Bun change is the most common source of
@@ -94,6 +138,7 @@ report(
   'Dependency install state',
   installLine.startsWith('current') || installLine.startsWith('uncached'),
   installLine,
+  "run 'bun run setup' to synchronize dependencies and lockfile state",
 );
 
 // 7. Bundled Catalog Integrity
@@ -104,6 +149,7 @@ report(
   'MilkDrop Bundled Catalog',
   catalogOk,
   'public/milkdrop-presets/catalog.json',
+  "run 'bun run catalog:generate' or restore public/milkdrop-presets/catalog.json",
 );
 
 // 8. Visual-verification tier (GPU vs. software rendering vs. no browser)
