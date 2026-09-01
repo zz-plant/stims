@@ -3206,59 +3206,6 @@ body[data-page="workspace"][data-live="true"] {
   display: inline;
 }
 
-/* View Transitions API — shell chrome swaps. Only the home<->live flip and
-   the audio-match pill run transitions (wired at the audioActive edge in
-   workspace-hooks.ts). The stage is named so it is excluded from the root
-   page snapshot, but its own snapshots crossfade fast and are masked by the
-   engine's preset blend happening at the same moment. Panel opens/closes keep
-   their CSS animations and never touch view transitions, so the canvas never
-   freezes while music plays. */
-.stims-shell__stage-root {
-  view-transition-name: stims-stage;
-}
-
-::view-transition-old(stims-stage) {
-  animation: 0.15s ease both;
-}
-
-::view-transition-new(stims-stage) {
-  animation: 0.25s ease both;
-}
-
-.stims-shell__stage-hero {
-  view-transition-name: stims-launch;
-}
-
-::view-transition-old(stims-launch) {
-  animation: launch-exit 0.22s ease both;
-}
-
-::view-transition-new(stims-launch) {
-  animation: launch-enter 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) both;
-}
-
-.stims-shell__audio-match {
-  view-transition-name: stims-audio-match;
-}
-
-::view-transition-old(stims-audio-match) {
-  animation: 0.15s ease both;
-}
-::view-transition-new(stims-audio-match) {
-  animation: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(stims-stage),
-  ::view-transition-new(stims-stage),
-  ::view-transition-old(stims-launch),
-  ::view-transition-new(stims-launch),
-  ::view-transition-old(stims-audio-match),
-  ::view-transition-new(stims-audio-match) {
-    animation-duration: 1ms;
-  }
-}
-
 .stims-shell__mobile-notice,
 .stims-shell__rotate-hint {
   position: fixed;
