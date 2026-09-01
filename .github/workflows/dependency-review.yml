@@ -18,4 +18,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Review dependencies
+        id: review
+        # The action hard-fails with "Dependency review is not supported on
+        # this repository" whenever the Dependency graph is off — a repo
+        # setting, not something any PR can fix. It has never once succeeded
+        # here, so every PR that touched package.json or bun.lock carried a
+        # red check nobody could clear, dependabot's dependency bumps most of
+        # all. Failing soft keeps the review wired up for the moment the
+        # setting is enabled; the step below keeps the gap visible instead of
+        # reporting a green check that reviewed nothing.
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
+
+      - name: Report an unavailable review
+        if: steps.review.outcome == 'failure'
+        run: |
+          echo "::warning title=Dependency review did not run::actions/dependency-review-action could not read this repository's dependency graph, so no dependencies were reviewed. Enable Dependency graph under Settings > Code security to make this check meaningful."
