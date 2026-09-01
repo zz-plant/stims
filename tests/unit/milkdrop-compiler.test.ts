@@ -2677,7 +2677,7 @@ describe('packed MilkDrop sampler compatibility', () => {
     });
   });
 
-  test('preserves packed sampler aliases and reports WebGPU fc_main gaps clearly', () => {
+  test('preserves packed sampler aliases and executes fc_main directly on WebGPU', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Packed Sampler Smoke
@@ -2698,12 +2698,13 @@ comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
     expect(compiled.ir.shaderText.compProgram?.source).toContain(
       'sampler_fc_main',
     );
-    expect(compiled.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'preset_shader_packed_sampler_backend_gap',
-        }),
-      ]),
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.supportedBackends,
+    ).toEqual(expect.arrayContaining(['webgpu']));
+    expect(compiled.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        code: 'preset_shader_packed_sampler_backend_gap',
+      }),
     );
   });
   test('resolves aliased custom shader sampler declarations case-insensitively', () => {

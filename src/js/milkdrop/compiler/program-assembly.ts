@@ -85,6 +85,7 @@ function buildSupportedExpressionIdentifierSet() {
     ...Object.keys(DEFAULT_MILKDROP_STATE),
     ...Object.keys(aliasMap).filter((key) => aliasMap[key] !== null),
     ...MILKDROP_INTRINSIC_IDENTIFIERS,
+    'else',
     'time',
     'frame',
     'fps',
