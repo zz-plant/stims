@@ -34,7 +34,7 @@ import type {
   MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
-import { foldProgramBlock } from './ast-constant-fold.ts';
+import { collectAssignedNames, foldProgramBlock } from './ast-constant-fold.ts';
 import { buildParityReport } from './compatibility-report.ts';
 import { extractCustomSamplerDeclarations } from './custom-samplers';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
@@ -605,8 +605,21 @@ export function createMilkdropIr({
   // descriptor planner and WGSL/JIT emission — so every downstream tier
   // (CPU interpreter, CPU JIT, WGSL compute VM, per-pixel field planner)
   // consumes the simplified tree.
-  for (const key of ['init', 'perFrame', 'perPixel'] as const) {
-    programs[key] = foldProgramBlock(programs[key]);
+  //
+  // `pi`/`e` are foldable constants only until a program assigns them, and an
+  // assignment in one block is visible to the others (init runs before
+  // per-frame, per-frame before per-pixel), so the shadow set is collected
+  // across all three before any block is folded.
+  const foldKeys = ['init', 'perFrame', 'perPixel'] as const;
+  let assignedNames = collectAssignedNames(programs.init.statements);
+  for (const key of ['perFrame', 'perPixel'] as const) {
+    assignedNames = collectAssignedNames(
+      programs[key].statements,
+      assignedNames,
+    );
+  }
+  for (const key of foldKeys) {
+    programs[key] = foldProgramBlock(programs[key], assignedNames);
   }
 
   const runtimeGlobals = fieldHelpers.resolveRuntimeGlobals({

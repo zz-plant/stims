@@ -41,6 +41,8 @@ describe('StimsErrorBoundary recovery details', () => {
           <p>Visualizer</p>
         </StimsErrorBoundary>,
       );
+    });
+    act(() => {
       boundaryRef.current?.setState({ error });
     });
 

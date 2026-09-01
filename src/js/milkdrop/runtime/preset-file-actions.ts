@@ -12,6 +12,8 @@ import type {
 import { downloadPresetFile } from './persistence';
 import { isEditablePreset } from './session';
 
+const MAX_PRESET_FILE_BYTES = 2 * 1024 * 1024;
+
 export function createMilkdropPresetFileActions({
   catalogStore,
   getActiveCatalogEntry,
@@ -38,20 +40,23 @@ export function createMilkdropPresetFileActions({
       const skipped: Array<{ name: string; reason: string }> = [];
       let importedCount = 0;
       let lastImportedId: string | null = null;
-      const MAX_PRESET_SIZE = 2 * 1024 * 1024; // 2MB limit per preset file
       for (const file of Array.from(files)) {
         try {
-          if (file.size > MAX_PRESET_SIZE) {
+          if (file.size > MAX_PRESET_FILE_BYTES) {
             throw new Error(
-              `File exceeds maximum size of 2MB (${(file.size / 1024 / 1024).toFixed(1)}MB).`,
+              'the file is larger than the 2 MB limit. Choose a smaller plain-text .milk file.',
             );
           }
           const raw = await file.text();
           if (raw.trim().length === 0) {
-            throw new Error('File is empty.');
+            throw new Error(
+              'the file is empty. Choose a .milk file that contains preset text.',
+            );
           }
           if (raw.includes('\0')) {
-            throw new Error('Binary or non-text file.');
+            throw new Error(
+              'binary data was detected. Choose a plain-text .milk file.',
+            );
           }
           const compiled = compileMilkdropPresetSource(raw, {
             title: file.name.replace(/\.[^.]+$/u, ''),
@@ -95,17 +100,19 @@ export function createMilkdropPresetFileActions({
       }
 
       if (skipped.length > 0) {
-        const names = skipped.map((entry) => entry.name).join(', ');
+        const details = skipped
+          .map((entry) => `"${entry.name}": ${entry.reason}`)
+          .join(' ');
         console.warn('[milkdrop] Skipped preset imports:', skipped);
         if (importedCount === 0) {
           throw new Error(
             skipped.length === 1
-              ? `Could not import ${names}: ${skipped[0].reason}`
-              : `Could not import ${skipped.length} presets (${names}).`,
+              ? `Failed to import ${details}`
+              : `Failed to import ${skipped.length} presets. ${details}`,
           );
         }
         setStatus?.(
-          `Imported ${importedCount} preset${importedCount === 1 ? '' : 's'}; skipped ${skipped.length} (${names}).`,
+          `Imported ${importedCount} preset${importedCount === 1 ? '' : 's'}; skipped ${skipped.length}. ${details}`,
         );
       } else if (importedCount > 1) {
         setStatus?.(`Imported ${importedCount} presets.`);

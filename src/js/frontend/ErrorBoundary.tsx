@@ -24,14 +24,14 @@ function ErrorButton({
 
 export class StimsErrorBoundary extends Component<
   { children: ReactNode },
-  { error: Error | null }
+  { error: Error | null; copyStatus: 'idle' | 'copied' | 'failed' }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, copyStatus: 'idle' };
   }
   static getDerivedStateFromError(error: Error) {
-    return { error };
+    return { error, copyStatus: 'idle' as const };
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Stims crashed:', error, info);
@@ -58,10 +58,8 @@ export class StimsErrorBoundary extends Component<
                   Error details ({this.state.error.name})
                 </summary>
                 <pre className="stims-shell__error-stack">
-                  {this.state.error.name}: {this.state.error.message}
-                  {this.state.error.stack
-                    ? `\n\n${this.state.error.stack}`
-                    : ''}
+                  {this.state.error.stack?.trim() ||
+                    `${this.state.error.name}: ${this.state.error.message}`}
                 </pre>
               </details>
             )}
@@ -70,19 +68,32 @@ export class StimsErrorBoundary extends Component<
                 Reload page
               </ErrorButton>
               <ErrorButton
-                onClick={() => {
-                  const text = `${this.state.error?.name}: ${this.state.error?.message}\n\n${this.state.error?.stack ?? ''}`;
-                  if (navigator?.clipboard?.writeText) {
-                    navigator.clipboard.writeText(text).catch((err) => {
-                      console.warn(
-                        'Could not copy error details to clipboard:',
-                        err,
-                      );
-                    });
+                onClick={async () => {
+                  const error = this.state.error;
+                  const clipboard = globalThis.navigator?.clipboard;
+                  if (!error || !clipboard?.writeText) {
+                    this.setState({ copyStatus: 'failed' });
+                    return;
+                  }
+                  const text =
+                    error.stack?.trim() || `${error.name}: ${error.message}`;
+                  try {
+                    await clipboard.writeText(text);
+                    this.setState({ copyStatus: 'copied' });
+                  } catch (err) {
+                    this.setState({ copyStatus: 'failed' });
+                    console.warn(
+                      'Could not copy error details to clipboard:',
+                      err,
+                    );
                   }
                 }}
               >
-                Copy error details
+                {this.state.copyStatus === 'copied'
+                  ? 'Copied error details'
+                  : this.state.copyStatus === 'failed'
+                    ? 'Copy unavailable'
+                    : 'Copy error details'}
               </ErrorButton>
               <ErrorButton
                 onClick={() => {
