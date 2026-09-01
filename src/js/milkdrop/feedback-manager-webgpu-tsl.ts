@@ -2748,6 +2748,13 @@ function createCompositeOutputNode(
       mix(color, sampleMainNode(echoUv), clamp(uniforms.videoEchoAlpha, 0, 1)),
     );
 
+    // Gamma is a straight multiply immediately after the echo, before the
+    // comp program: ret *= gammaAdj, as MilkDrop and Butterchurn do it. It
+    // used to be pow(color, 1/gammaAdj) at the end of the chain, a different
+    // curve in the wrong place — at fGammaAdj=3.87 that lifts a 0.01 pixel to
+    // 0.32 instead of 0.04, turning dark presets into white fields.
+    color.assign(color.mul(uniforms.gammaAdj));
+
     // Apply color adjustments in MilkDrop order — before the comp program,
     // matching the WebGL composite pass
     color.assign(hueRotateNode(color, uniforms.hueShift));
@@ -2830,29 +2837,25 @@ function createCompositeOutputNode(
     );
     color.assign(mix(color, overlayResult, overlayMask));
 
-    // Brighten
-    const brightenMask = max(
-      step(0.01, uniforms.brighten),
-      step(0.01, uniforms.brightenBoost),
-    );
-    const brightened = min(
-      vec3(1),
-      mix(
-        color,
-        color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
-        clamp(max(uniforms.brighten, uniforms.brightenBoost), 0, 1),
-      ),
-    );
-    color.assign(mix(color, brightened, brightenMask));
-
-    // Darken
-    color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-
-    // Solarize
+    // MilkDrop's own curves — brighten = sqrt, darken = square, solarize =
+    // c(1-c)4 — matching the WebGL composite and Butterchurn's shader. The
+    // previous approximations changed each curve's shape, and solarize's was
+    // wrong at the black end: abs(c - 0.5) * 2 maps 0 to WHITE, so a dark
+    // preset with bSolarize rendered as a white field.
     color.assign(
       mix(
         color,
-        abs(color.sub(0.5)).mul(2.0),
+        max(color, vec3(0)).sqrt(),
+        clamp(max(uniforms.brighten, uniforms.brightenBoost), 0, 1),
+      ),
+    );
+
+    color.assign(mix(color, color.mul(color), step(0.5, uniforms.darken)));
+
+    color.assign(
+      mix(
+        color,
+        color.mul(float(1).sub(color)).mul(4.0),
         clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
       ),
     );
@@ -2914,13 +2917,6 @@ function createCompositeOutputNode(
     ).rgb;
     const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
     color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
-
-    // Gamma correction (always applied last)
-    const gammaAdjusted = pow(
-      max(color, vec3(0)),
-      vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
-    );
-    color.assign(gammaAdjusted);
 
     // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
     // Only pointwise effects run in-pass. The old in-pass bloom, chromatic

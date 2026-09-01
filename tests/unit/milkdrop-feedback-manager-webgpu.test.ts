@@ -389,8 +389,13 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       // feedback chain). Bloom and chromatic aberration moved to the PRESENT
       // pass over the composited frame — their old in-pass versions sampled
       // the pre-comp internal image and corrupted comp-program output.
-      const gammaIndex = source.indexOf('gammaAdjusted');
-      expect(gammaIndex).toBeGreaterThanOrEqual(0);
+      // Gamma is a multiply applied straight after the video echo, matching
+      // the WebGL composite and Butterchurn (`ret *= gammaAdj`). It was
+      // previously `pow(color, 1/gammaAdj)` at the end of the chain under the
+      // name `gammaAdjusted` — a different curve in the wrong place, which
+      // turned dark presets with a high fGammaAdj into white fields.
+      expect(source).toContain('color.mul(uniforms.gammaAdj)');
+      expect(source).not.toContain('gammaAdjusted');
       expect(source).toContain('applyPostFilmGrainNode');
       expect(source).toContain('displayHistoryTex');
       expect(source).toContain('postAfterimageDamp');

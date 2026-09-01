@@ -229,16 +229,28 @@ test('applies comp-stage color controls and overlay work before legacy post effe
     const brightenIndex = fragmentShader.indexOf(
       'if (brighten > 0.01 || brightenBoost > 0.01) {',
     );
-    const gammaIndex = fragmentShader.indexOf(
-      'color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));',
-    );
+    const gammaIndex = fragmentShader.indexOf('color *= gammaAdj;');
 
     expect(hueIndex).toBeGreaterThanOrEqual(0);
     expect(overlayIndex).toBeGreaterThan(hueIndex);
     expect(brightenIndex).toBeGreaterThan(overlayIndex);
-    // projectM post-effects order: brighten → darken → solarize → invert →
-    // gamma_adj (last). Gamma is applied after all other post effects.
-    expect(gammaIndex).toBeGreaterThan(brightenIndex);
+    // MilkDrop applies gamma as a multiply straight after the video echo and
+    // before the post chain — `ret *= gammaAdj` in Butterchurn's composite,
+    // which is the reference this was checked against. This assertion used to
+    // say the opposite (gamma last, as `pow(color, 1/gammaAdj)`), which is a
+    // different curve in the wrong place: at the corpus-typical
+    // fGammaAdj=3.87 it lifted a 0.01 pixel to 0.32 instead of 0.04 and
+    // turned dark presets into white fields.
+    expect(gammaIndex).toBeGreaterThanOrEqual(0);
+    expect(gammaIndex).toBeLessThan(brightenIndex);
+
+    // The curves themselves, which the same defect had approximated away.
+    // Solarize is the one that showed: `abs(c - 0.5) * 2` maps black to
+    // WHITE, so any preset with bSolarize over a dark frame rendered as a
+    // white rectangle.
+    expect(fragmentShader).toContain('sqrt(max(color, vec3(0.0)))');
+    expect(fragmentShader).toContain('color = color * color;');
+    expect(fragmentShader).toContain('color * (1.0 - color) * 4.0');
   } finally {
     manager.dispose();
   }
