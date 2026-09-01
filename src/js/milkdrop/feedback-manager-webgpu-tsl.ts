@@ -2748,13 +2748,6 @@ function createCompositeOutputNode(
       mix(color, sampleMainNode(echoUv), clamp(uniforms.videoEchoAlpha, 0, 1)),
     );
 
-    // Gamma is a straight multiply immediately after the echo, before the
-    // comp program: ret *= gammaAdj, as MilkDrop and Butterchurn do it. It
-    // used to be pow(color, 1/gammaAdj) at the end of the chain, a different
-    // curve in the wrong place — at fGammaAdj=3.87 that lifts a 0.01 pixel to
-    // 0.32 instead of 0.04, turning dark presets into white fields.
-    color.assign(color.mul(uniforms.gammaAdj));
-
     // Apply color adjustments in MilkDrop order — before the comp program,
     // matching the WebGL composite pass
     color.assign(hueRotateNode(color, uniforms.hueShift));
@@ -2917,6 +2910,17 @@ function createCompositeOutputNode(
     ).rgb;
     const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
     color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
+
+    // Gamma stays a power at the END of the chain, matching the WebGL
+    // composite. See the note there: the exponent form is what projectM was
+    // measured to do, and moving it to Butterchurn's position regressed the
+    // comp-shader references hard.
+    color.assign(
+      pow(
+        max(color, vec3(0)),
+        vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
+      ),
+    );
 
     // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
     // Only pointwise effects run in-pass. The old in-pass bloom, chromatic

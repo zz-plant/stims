@@ -1012,16 +1012,6 @@ ${MILKDROP_VIDEO_ECHO_HELPER}
             videoEchoOrientation,
             textureWrap
           );
-          // Gamma is a straight multiply here, immediately after the echo and
-          // before the comp shader: ret *= gammaAdj, as MilkDrop and
-          // Butterchurn's composite both do it. It used to be
-          // pow(color, 1/gammaAdj) at the very end of the chain, which is a
-          // different curve in the wrong place -- at fGammaAdj=3.87 that
-          // lifts a 0.01 pixel to 0.32 instead of leaving it at 0.04,
-          // turning dark presets into white fields.
-          if (abs(gammaAdj - 1.0) > 0.0001) {
-            color *= gammaAdj;
-          }
           // Uniform branch: skip the sin/cos + mat3 build when no hue shift
           // is active (the common case) — mobile GPUs run transcendentals on
           // a slow special-function unit.
@@ -1120,6 +1110,18 @@ ${MILKDROP_VIDEO_ECHO_HELPER}
             vec3 leftColor = texture2D(internalTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
             vec3 rightColor = texture2D(internalTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
+          }
+          // Gamma stays a power at the END of the chain. Butterchurn's
+          // composite reads as ret *= gammaAdj immediately after the echo,
+          // and moving it there to match cost 260-compshader-noise_lq
+          // 0.337 -> 0.916 mismatch against a 0.002-wide noise band, plus
+          // 261-compshader and rovastar-parallel-universe. The exponent form
+          // is what projectM was MEASURED to do -- see the note on
+          // DEFAULT_PROJECTM_GAMMA_ADJ in compiler/default-state.ts, which
+          // warns that three attempts to derive this from renderer source got
+          // it wrong. projectM, not Butterchurn, is this repo's oracle.
+          if (abs(gammaAdj - 1.0) > 0.0001) {
+            color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           }
           gl_FragColor = vec4(color, 1.0);
         }
