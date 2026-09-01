@@ -1012,6 +1012,16 @@ ${MILKDROP_VIDEO_ECHO_HELPER}
             videoEchoOrientation,
             textureWrap
           );
+          // Gamma is a straight multiply here, immediately after the echo and
+          // before the comp shader: ret *= gammaAdj, as MilkDrop and
+          // Butterchurn's composite both do it. It used to be
+          // pow(color, 1/gammaAdj) at the very end of the chain, which is a
+          // different curve in the wrong place -- at fGammaAdj=3.87 that
+          // lifts a 0.01 pixel to 0.32 instead of leaving it at 0.04,
+          // turning dark presets into white fields.
+          if (abs(gammaAdj - 1.0) > 0.0001) {
+            color *= gammaAdj;
+          }
           // Uniform branch: skip the sin/cos + mat3 build when no hue shift
           // is active (the common case) — mobile GPUs run transcendentals on
           // a slow special-function unit.
@@ -1059,19 +1069,29 @@ ${MILKDROP_VIDEO_ECHO_HELPER}
               color = max(vec3(0.0), color - overlayColor * amount);
             }
           }
-          // projectM post-effects order: brighten → darken → solarize → invert
-          // → gamma_adj (last). The extra MilkDrop 2/3 effects (darken_center,
-          // vignette, chromatic aberration, red-blue stereo) are applied after
-          // the core sequence but before gamma.
+          // MilkDrop's own curves, in MilkDrop's order (gamma already applied
+          // above): brighten = sqrt, darken = square, solarize = c(1-c)4,
+          // invert = 1-c. Verified against Butterchurn's composite shader.
+          //
+          // Each was previously an approximation that changed the shape of the
+          // curve, and solarize's was wrong at the black end in a way that
+          // showed: abs(c - 0.5) * 2 maps 0 to WHITE, so any preset with
+          // bSolarize on a dark frame rendered as a white field. MilkDrop's
+          // curve maps 0 to 0 and peaks at c=0.5.
+          //
+          // The boosts stay as the mix amount so the audio-reactive
+          // modulation still rides on top of the correct curve; a plain flag
+          // (amount 1) now reproduces MilkDrop exactly.
           if (brighten > 0.01 || brightenBoost > 0.01) {
-            color = min(vec3(1.0), mix(color, color * (1.0 + 0.18 + brightenBoost * 0.35), clamp(max(brighten, brightenBoost), 0.0, 1.0)));
+            float amount = clamp(max(brighten, brightenBoost), 0.0, 1.0);
+            color = mix(color, sqrt(max(color, vec3(0.0))), amount);
           }
           if (darken > 0.5) {
-            color = mix(color, color * 0.82, 1.0);
+            color = color * color;
           }
           if (solarize > 0.01 || solarizeBoost > 0.01) {
             float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
-            color = mix(color, abs(color - 0.5) * 2.0, amount);
+            color = mix(color, color * (1.0 - color) * 4.0, amount);
           }
           if (invert > 0.01 || invertBoost > 0.01) {
             float amount = clamp(max(invert, invertBoost), 0.0, 1.0);
@@ -1100,12 +1120,6 @@ ${MILKDROP_VIDEO_ECHO_HELPER}
             vec3 leftColor = texture2D(internalTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
             vec3 rightColor = texture2D(internalTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
-          }
-          // Uniform branch: gamma is 1.0 for most presets, and pow costs
-          // three log/exp pairs per pixel. Sibling effects above are already
-          // uniform-guarded; this was the one that wasn't.
-          if (abs(gammaAdj - 1.0) > 0.0001) {
-            color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           }
           gl_FragColor = vec4(color, 1.0);
         }
