@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    Stims Motion Design System
-   Spring physics, view transitions, and coordinated animations.
+   Spring physics and coordinated animations.
    Tokens defined in tokens.css — this file adds keyframes + utilities.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -141,30 +141,6 @@
   }
 }
 
-/* Launch form stepping aside for the live stage, and back. Applied to the
-   `stims-launch` view-transition snapshot in app-shell.css. */
-@keyframes launch-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.98);
-  }
-}
-
-@keyframes launch-enter {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Utility classes for coordinated entry animations */
 
 /* Preset card stagger — each card enters with a delay */
@@ -190,9 +166,6 @@
 .stims-shell__preset-list > li:nth-child(n + 6) {
   animation-delay: 0.17s;
 }
-
-/* View-transition names and animations for the shell live in app-shell.css.
-   This file keeps the motion primitives (keyframes, utilities). */
 
 /* Reduced motion: disable all animations */
 @media (prefers-reduced-motion: reduce) {

@@ -47,3 +47,21 @@ export function saveLastSession(session: Omit<LastSession, 'savedAt'>) {
     // Storage unavailable or full — resume is a convenience, not required.
   }
 }
+
+// Captured once at module evaluation — the bundle loads before any user
+// gesture can start audio and save the *current* session, so this stays an
+// honest "had they been here before this visit" for the whole page life.
+// Reading getLastSession() at component mount time cannot answer that
+// question: entering live mode is what mounts the stage panels, and by then
+// the session-save effect has usually already run.
+const hadSessionAtBoot = getLastSession() !== null;
+
+/**
+ * True when a previous session existed before this page load — the same
+ * signal the landing page uses for its "Welcome back" variant. First-use
+ * teaching UI (the empty-state hints on the stage panels) keys off this so a
+ * brand-new visitor's first minutes stay free of chrome.
+ */
+export function hadSessionBeforeBoot(): boolean {
+  return hadSessionAtBoot;
+}

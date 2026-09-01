@@ -31,7 +31,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
-| [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the README's public claims aligned with what the repo actually ships. |
+| [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the repo's public claims aligned with what it actually ships. |
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
@@ -397,13 +397,27 @@ Run it directly: `bun run check:production-edge`
 
 ## check:readme-claims
 
-Keeps the README's public claims aligned with what the repo actually ships.
+Keeps the repo's public claims aligned with what it actually ships.
 
 Docs that oversell are a support cost and an onboarding trap: a contributor
 who reads that a foundation is shipped, then finds it experimental, has to
-re-derive the real state from the code. This guard checks the README's preset
-count against the bundled catalog and rejects wording that promotes known
-experimental work as finished.
+re-derive the real state from the code. This guard checks preset counts
+against the bundled catalog, rejects README wording that promotes known
+experimental work as finished, and rejects fidelity claims that no data file
+in the repo supports.
+
+It covers `README.md` and the live docs under `docs/`, because the claim that
+actually shipped a contradiction was in `docs/`, not the README:
+`CASE_STUDY_COMPILER_RUNTIME.md` asserted a `< 1.5%` parity gate and "over
+99% compatibility" on the same day `MILKDROP_PROJECTM_PARITY_PLAN.md`
+recorded most of the certified set diverging by 5–100%. Two rules follow from
+that: a parity gate has to be one the manifest configures, and there is no
+corpus-wide fidelity percentage to quote — visual evidence is per preset, and
+`catalog.json` records how few presets carry it.
+
+Historical records (audits, critiques, dated status docs, `docs/archive`,
+`docs/evidence`) are exempt: they describe a tree as it was, and rewriting
+them would misrepresent the record. `docs/GUARDRAILS.md` is generated.
 
 It is the same principle as `check-doc-references.ts` applied to claims
 rather than paths: documentation that lies is worse than documentation that

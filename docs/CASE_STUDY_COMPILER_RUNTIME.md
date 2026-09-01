@@ -12,7 +12,7 @@ MilkDrop, created in 2001 by Ryan Geiss for Winamp, represents one of the most e
 
 Historically, running these presets outside Winamp required C++ runtimes such as `projectM`, which depend on desktop OpenGL and platform-native audio pipelines.
 
-This case study documents the engineering architecture of **Stims**, a browser-native compiler and graphics runtime that brings 20-year-old MilkDrop presets into modern **WebGPU** and **WebGL2** without C++ / WebAssembly emulation bottlenecks. We detail the end-to-end multi-tier compiler architecture (EEL2 Lexer/Parser $\rightarrow$ Semantic AST $\rightarrow$ Normalized IR $\rightarrow$ JavaScript JIT / WGSL Compute Kernels), the automated differential image testing harness that verifies numerical parity against native C++ `projectM`, the micro-architectural interventions that achieved a **16.5% frame work reduction (3.43 ms $\rightarrow$ 2.87 ms unthrottled, 17.56 ms $\rightarrow$ 15.31 ms at 4× CPU throttle)**, and the fundamental compatibility boundaries inherent in browser graphics standards.
+This case study documents the engineering architecture of **Stims**, a browser-native compiler and graphics runtime that brings 20-year-old MilkDrop presets into modern **WebGPU** and **WebGL2** without C++ / WebAssembly emulation bottlenecks. We detail the end-to-end multi-tier compiler architecture (EEL2 Lexer/Parser $\rightarrow$ Semantic AST $\rightarrow$ Normalized IR $\rightarrow$ JavaScript JIT / WGSL Compute Kernels), the differential image-diff harness that measures divergence from native C++ `projectM` — which currently grades most of the certified set as failing — the micro-architectural interventions that achieved a **16.5% frame work reduction (3.43 ms $\rightarrow$ 2.87 ms unthrottled, 17.56 ms $\rightarrow$ 15.31 ms at 4× CPU throttle)**, and the fundamental compatibility boundaries inherent in browser graphics standards.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@ This case study documents the engineering architecture of **Stims**, a browser-n
                          ▼
      ┌───────────────────────────────────────────┐
      │ Automated Differential Testing Harness    │ ──► [Headless Chrome, Perceptual Diffing,
-     │ vs Native C++ projectM 3.1.12 Reference   │      < 1.5% Structural Parity Gate]
+     │ vs Native C++ projectM 3.1.12 Reference   │      Noise-Banded Pass/Fail]
      └───────────────────────────────────────────┘
 ```
 
@@ -316,11 +316,11 @@ MilkDrop 2.0 presets feature custom DirectX 9 pixel shaders (`ps_2_0` / `ps_3_0`
 
 ## 3. Numerical Compatibility Verification
 
-To verify that the browser-native compiler matches native C++ `projectM 3.1.12` pixel-for-pixel, the repository maintains an automated differential test suite.
+The repository maintains a differential image-diff harness that measures how far the browser runtime lands from native C++ `projectM 3.1.12`. It is a measurement instrument rather than a passing gate: as of the 2026-08-27 re-measurement, most of the certified set diverges from its reference by far more than the configured tolerance. [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) is the source of truth for current numbers; this section describes the instrument.
 
 ### 3.1 Headless Diff Testing Pipeline
 
-The verification harness runs headless Chromium instances under Playwright, renders presets with fixed synthetic audio stimuli (`silence`, `tones`, `demo`), and performs per-pixel perceptual difference analysis against certified C++ reference fixtures (`tests/fixtures/milkdrop/projectm-reference/`).
+`bun run parity:capture` walks the certified manifest (`src/data/milkdrop-parity/visual-reference-manifest.json`) on one reused headless Chromium instance under Playwright, rendering each preset against the audio its reference was captured with — `silence` or the generated tone signal in `src/js/core/testing/reference-audio.ts`, which the C++ harness mirrors through a generated header. `bun run parity:suite` diffs each capture against the checked-in projectM fixture in `tests/fixtures/milkdrop/projectm-reference/`, and `bun run parity:noise` measures a preset's run-to-run variance floor so a real delta can be told apart from procedural jitter. Only `parity:promote-result` writes a graded outcome into `src/data/milkdrop-parity/measured-results.json`.
 
 ```
 ┌─────────────────────────┐         ┌─────────────────────────┐
@@ -338,33 +338,36 @@ The verification harness runs headless Chromium instances under Playwright, rend
                                │
                                ▼
               ┌─────────────────────────────────┐
-              │   Assertion: Mismatch < 1.5%    │
+              │  Gate: mismatch ≤ failThreshold │
+              │  (0.02 manifest / 0.04 report)  │
               └─────────────────────────────────┘
 ```
 
 The difference metric calculates channel deltas across 24-bit RGB space:
 $$\Delta_{\text{pixel}} = \max\left(|R_{\text{stims}} - R_{\text{ref}}|, |G_{\text{stims}} - G_{\text{ref}}|, |B_{\text{stims}} - B_{\text{ref}}|\right)$$
 
-A pixel is marked as mismatched if $\Delta_{\text{pixel}} > \text{Threshold}$ (where $\text{Threshold} \in [16, 32]$ depending on feedback intensity).
+A pixel is marked as mismatched if $\Delta_{\text{pixel}} > \text{Threshold}$ (16 in the shipped manifest). A preset fails when its mismatch ratio exceeds the `failThreshold` configured for it — `0.02` in `visual-reference-manifest.json`, `0.04` in the bounded WebGPU certification report. Two further conditions apply before a number is a result at all: the reference must carry signal a blank frame would not also pass (otherwise the suite reports `reference-no-signal` and declines to grade), and the delta must exceed the preset's own measured noise band.
 
 ### 3.2 Canonical Preset Parity Results
 
-Below are measured differential results across 10 canonical reference presets, verified by `tests/compatibility/test_preset_diffs.py`:
+Thirteen presets are certified, all judged on WebGPU. The scoreboard below is the 2026-08-27 re-measurement recorded in [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) — the ten it reports numbers for, of which one passes. Every band measured before that date is stale, because two harness defects found the same day invalidated the earlier numbers — the capture was screenshotting 28–162 frames past the deterministic pump on live decorative audio, and video echo was applied to the accumulator instead of at display, so `fVideoEchoZoom` never reached a shader.
 
-| Preset Identifier | Category / Strata | ProjectM Reference Fixture | Measured Mismatch % | Mean Absolute Error (MAE) | Status ($\Delta < 1.5\%$) |
-| :--- | :--- | :--- | :---: | :---: | :---: |
-| `100-square` | Geometry / Mesh Quad | `100-square.png` | **0.0000%** | $0.0000$ | **PASS (Exact)** |
-| `250-wavecode` | Custom Wavecode | `250-wavecode.png` | **0.2297%** | $0.0012$ | **PASS** |
-| `260-compshader-noise_lq` | 2D Noise Texture Shader | `260-compshader-noise_lq.png` | **0.4100%** | $0.0018$ | **PASS** |
-| `261-compshader-noisevol_lq` | 3D Noise Volume Shader | `261-compshader-noisevol_lq.png` | **0.5200%** | $0.0024$ | **PASS** |
-| `300-beatdetect-bassmidtreb` | Audio Reactivity / Beat | `300-beatdetect-bassmidtreb.png` | **0.0000%** | $0.0000$ | **PASS (Exact)** |
-| `eos-glowsticks-v2-03-music` | Waveform / Glowsticks | `eos-glowsticks-v2-03-music.png` | **0.6697%** | $0.0031$ | **PASS** |
-| `eos-phat-cubetrace-v2` | Procedural 3D Mesh | `eos-phat-cubetrace-v2.png` | **0.8400%** | $0.0039$ | **PASS** |
-| `eos-phat-dark-heart` | High-order Feedback Loop| `eos-phat-dark-heart.png` | **0.7900%** | $0.0035$ | **PASS** |
-| `eos-phat-magnetosphere-13-pulsar` | Polar Particle Swarm | `eos-phat-magnetosphere-13-pulsar.png`| **0.9100%** | $0.0042$ | **PASS** |
-| `krash-rovastar-cerebral-demons-stars` | Multi-pass Composite | `krash-rovastar-cerebral-demons-stars.png` | **0.9500%** | $0.0046$ | **PASS** |
+| Preset Identifier | Category / Strata | Measured Mismatch % | Grade |
+| :--- | :--- | ---: | :--- |
+| `100-square` | Geometry / Mesh Quad | 1.50% | PASS (noise band 1.36–1.55) |
+| `eos-glowsticks-v2-03-music` | Waveform / Glowsticks | 1.08% | Ungraded (`reference-no-signal`) |
+| `300-beatdetect-bassmidtreb` | Audio Reactivity / Beat | 5.79% | FAIL |
+| `250-wavecode` | Custom Wavecode | 7.30% | FAIL |
+| `eos-phat-cubetrace-v2` | Procedural 3D Mesh | 29.25% | FAIL (non-deterministic, 29.3–38.3% across repeats) |
+| `260-compshader-noise_lq` | 2D Noise Texture Shader | 33.72% | FAIL (bit-exact repeatable) |
+| `rovastar-parallel-universe` | Feedback / Video Echo | 67.99% | FAIL |
+| `261-compshader-noisevol_lq` | 3D Noise Volume Shader | 76.24% | FAIL |
+| `krash-rovastar-cerebral-demons-stars` | Multi-pass Composite | 95.26% | Ungraded (`reference-no-signal`) |
+| `mosaics` | High-order Feedback Loop | 100.00% | FAIL (non-deterministic, 66.3–99.7% across repeats) |
 
-All 10 canonical presets comfortably satisfy the structural divergence criteria of $< 1.5\%$.
+The dominant open defect is unbounded feedback accumulation on `fDecay=1.0` presets: magnetosphere renders at 76.9 mean luminance against a reference at 24.7, dark-heart at 74.5 against 22.1, mosaics at 137.3 against 38.2 — 3.2–3.6× too bright, and growing with frame count rather than sitting on a tone curve. Fixing it should move four of the ten failing presets.
+
+`src/data/milkdrop-parity/measured-results.json` holds three promoted results, last updated 2026-07-19. Those predate the harness fix and are not evidence for the current runtime; treat the parity plan's scoreboard as current and the promoted file as the last set of numbers that survived promotion.
 
 ---
 
@@ -404,7 +407,8 @@ Benchmarks were conducted on an **Apple M1 Max (64 GB RAM)** running Chromium wi
 | **1× (Unthrottled)** | 120.48 | 120.48 | **3.43 ms** | **2.87 ms** | **16.5% reduction in frame work** (display-capped at 120 FPS) |
 | **2× CPU Throttle** | 120.48 | 120.48 | **7.96 ms** | **6.75 ms** | **15.2% reduction in frame work** (display-capped) |
 | **4× CPU Throttle** | 58.14 | **59.88** | **17.56 ms** | **15.31 ms** | **Crossed 60 FPS frame deadline** ($17.56 \text{ ms} \rightarrow 15.31 \text{ ms} < 16.67 \text{ ms}$) |
-| **6× CPU Throttle** | 38.61 | **39.76** | **25.91 ms** | **24.17 ms** | **6.7% sustained frame-time reduction** on low-end hardware |
+| **6× CPU Throttle** | 38.61 | **39.68–39.84** | **25.91 ms** | **24.08–24.26 ms** | **6.4–7.1% sustained frame-time reduction** on low-end hardware |
+| **8× CPU Throttle** | 24.57 | 23.92 / 29.59 | **35.51 ms** | 40.45 / 33.09 ms | Scheduler-sensitive across repeats; not a stable uplift |
 
 ```
 FRAME WORK DURATION COMPARISON (Lower is Better)
@@ -441,7 +445,7 @@ CPU PROFILING BREAKDOWN (Per Frame @ 120 FPS, 2.87 ms total work)
 
 ## 5. Unsolved Edge Cases & Explicit Compatibility Boundaries
 
-While the Stims compiler achieves over 99% compatibility across the 1,787 presets in the bundled library, certain legacy hardware assumptions cannot be reconciled across Web standards:
+Compiling and running a preset is not the same as rendering it correctly, and the two are measured separately. On runtime support, `tests/corpus/butterchurn-corpus-support.test.ts` measures the 1,787-preset catalog at 1,521 presets fully supported on both backends, 226 that execute their shader programs directly on WebGL but fall back to extracted scalar controls on WebGPU, and 8 that reference EEL identifiers the expression VM evaluates to `0`. On visual evidence the picture is far narrower: `public/milkdrop-presets/catalog.json` carries `visualEvidenceTier: "visual"` on 1 entry and `"runtime"` on the other 1,786. Beyond those measured gaps, some legacy hardware assumptions cannot be reconciled across Web standards at all:
 
 ### 5.1 Float32 vs Float64 Precision Drift in Chaotic Attractors
 Native C++ `projectM` executes EEL2 math using IEEE-754 double-precision `f64` floats on CPU. WebGPU compute shaders operate in single-precision `f32`. For presets containing iterative chaotic differential equations (e.g. Lorenz attractors accumulating state across thousands of frames: `x = x + dt * sigma * (y - x)`), trajectory divergence occurs after approximately 300 seconds ($t > 300\text{ s}$).
@@ -453,10 +457,10 @@ for (int i = 0; i < int(q1); i++) {
     color += tex2D(sampler_main, uv + offset * float(i));
 }
 ```
-WGSL explicitly prohibits implicit-derivative `textureSample` operations in non-uniform control flow. The Stims compiler detects these constructs during IR analysis and automatically converts them to explicit-gradient sampling (`textureSampleLevel` or `textureSampleGrad`).
+WGSL explicitly prohibits implicit-derivative `textureSample` operations in non-uniform control flow. Stims does not translate these bodies. The compiler classifies them as not directly executable, and the preset falls back to extracted scalar controls on WebGPU while still running its shader text on WebGL — 226 of the bundled corpus land here. Flattening `if`/`else` into masked assignments and unrolling bounded loops takes that count to 19, but the rewrite sits behind the `shaderBranchDesugar` flag (`?milkdrop-webgpu-branch-desugar=1`), off by default while the WebGPU executor gaps it exposes are closed — one of them takes down the GPU process.
 
-### 5.3 3D Texture Support in WebGL2 Fallback Mode
-MilkDrop 2.0 presets utilizing volumetric 3D noise (`sampler_noisevol_lq`) require `3D` texture targets. On mobile Safari / iOS WebGL2 implementations where 3D texture filtering extensions are restricted, the runtime lowers the 3D sampler to a 2D atlas slice with software bilinear interpolation.
+### 5.3 Volumetric Noise Has No 3D Texture Path on Either Backend
+MilkDrop 2.0 presets using volumetric noise (`sampler_noisevol_lq`) expect a `3D` texture target. Stims binds no 3D texture on either backend: `tex3D(sampler_noisevol*, …)` is emulated by sampling the shared simplex noise atlas with slice blending (`src/js/milkdrop/feedback-manager-shared.ts`). The approximation is therefore the shipped path everywhere, not a mobile-only degradation, and `261-compshader-noisevol_lq` is among the worst-diffing certified presets. Lowering volumetric noise to real 3D bindings on WebGPU is tracked in [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
@@ -464,16 +468,17 @@ MilkDrop 2.0 presets utilizing volumetric 3D noise (`sampler_noisevol_lq`) requi
 
 All tests and performance benchmarks documented in this case study can be reproduced locally:
 
-### 1. Run Headless Differential Test Suite
+### 1. Capture and Diff Against the projectM References
 ```bash
-# Execute the Python Headless Compatibility Diff Suite
-python3 tests/compatibility/test_preset_diffs.py
+# Capture the certified manifest on one reused browser, then diff every capture
+bun run parity:capture
+bun run parity:suite -- --strict
 ```
 
-### 2. Run the Full TypeScript Parity Diff Suite
+### 2. Measure a Preset's Noise Floor Before Believing a Delta
 ```bash
-# Run batch image diffing against native projectM fixtures
-bun run parity:suite -- --strict
+# Run-to-run variance band; a delta inside the band is not a result
+bun run parity:noise -- --preset 260-compshader-noise_lq --repeats 5 --write
 ```
 
 ### 3. Reproduce Runtime Performance Benchmarks (4× CPU Throttle)
@@ -508,4 +513,6 @@ bun run check
 
 ## 7. Conclusion
 
-By treating 20-year-old MilkDrop presets not as legacy binaries to be emulated, but as domain-specific reactive math specifications to be compiled, Stims demonstrates that high-performance, deterministic graphics runtimes can thrive natively in modern WebGPU and WebGL2. The combination of an optimizing AST $\rightarrow$ IR $\rightarrow$ WGSL/JIT compiler, dual-tier CPU/GPU execution, and automated numerical image-diff testing establishes a new gold standard for retro-graphics preservation on the open web.
+By treating 20-year-old MilkDrop presets not as legacy binaries to be emulated but as domain-specific reactive math specifications to be compiled, Stims runs the bundled corpus natively on WebGPU and WebGL2 without a WASM runtime: 1,521 of 1,787 presets are fully supported on both backends, and the per-frame cost of the equation-heavy stress case fits inside a 60 FPS budget at 4× CPU throttle.
+
+Visual fidelity is a separate claim, and the honest version of it is that the measurement exists and mostly is not met yet: one of thirteen certified presets currently passes its reference diff. What the architecture establishes is the loop — capture, diff against native projectM, band the noise, and promote only what survives — which is what makes the remaining gap a list of defects with owners rather than an open question. 

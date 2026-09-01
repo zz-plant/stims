@@ -86,26 +86,28 @@ Exit criteria:
 
 ## Next: compatibility depth & runtime compiler milestones
 
-These deepen the compatibility lane and compiler runtime based on evidence from our AST/IR compiler architecture, headless diffing pipeline, and low-resource profiling:
+These deepen the compatibility lane and compiler runtime. Each item names the measurement it moves; where a count appears, it is the one the cited test or data file reports today.
 
 ### Dual-backend differential evidence (Closing the WebGL2 gap)
 
-- Extend the automated differential test harness (`tests/compatibility/test_preset_diffs.py` and `scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU.
-- Verify that both backends maintain structural difference $< 1.5\%$ against native C++ projectM references.
+- Extend the parity diff harness (`scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU, which is currently the only judged backend.
+- Grade both backends against the same contract the suite already uses: mismatch below the preset's configured `failThreshold` (`0.02` in `visual-reference-manifest.json`), outside its measured noise band, and against a reference a blank frame would not also pass.
 - Eliminate the unmeasured status of the WebGL2 baseline so that fidelity claims reflect the renderer the majority of web users run.
 
 Exit criteria:
 - Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and
 - zero silent divergence between WebGL2 GLSL 300 es and WebGPU WGSL shader lowering.
 
-### Close the 169-preset WebGPU shader translation gap
+### Close the 226-preset WebGPU shader-translation gap
+
+Measured by `tests/corpus/butterchurn-corpus-support.test.ts` on the bundled corpus: 1,521 presets are fully supported on both backends, 226 execute their shader programs directly on WebGL but fall back to extracted scalar controls on WebGPU, and 8 reference EEL identifiers the expression VM evaluates to `0`.
 
 - Resolve the packed feedback composite sampler (`sampler_fc_main` and `sampler_fw_main`) binding in WebGPU shader generation (`src/js/milkdrop/compiler/wgsl-generator.ts`).
-- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the scalar approximation fallback.
-- Promote the 169 affected presets from `webgpu-partial` to `exact` / `near-exact` certified status in `src/data/milkdrop-parity/measured-results.json`.
+- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the simplex-atlas approximation that both backends use today.
+- Close the WebGPU executor gaps that keep the `shaderBranchDesugar` rewrite (226 → 19) behind a flag, starting with the one that takes down the GPU process, and the `mat2`/`mat3`/`mat4` element writes the node executor cannot express.
 
 Exit criteria:
-- `tests/corpus/butterchurn-corpus-support.test.ts` reports 0 presets falling back to scalar approximations on the WebGPU path.
+- `tests/corpus/butterchurn-corpus-support.test.ts` reports 0 presets falling back to extracted scalar controls on the WebGPU path, with `fullySupported` at the full corpus count.
 
 ### Vectorized GPU compute offloading for waveforms & geometry
 

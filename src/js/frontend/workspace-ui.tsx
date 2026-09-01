@@ -79,8 +79,9 @@ export function WorkspaceStagePanel({
         {/* Only while the editor is open — it renders its own null otherwise.
             The handle is the one thing on this layer that takes the pointer. */}
         {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
-        {/* Both render themselves away when empty — an unpinned visitor with
-            no queue sees neither. */}
+        {/* Both render themselves away when empty. Their one-time empty-state
+            hints wait for a returning visitor on a wide screen — a first
+            session stays free of stage chrome. */}
         {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
         {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its

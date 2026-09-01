@@ -166,7 +166,6 @@
     "test:audio-rig": "bun run scripts/test-audio-rig.ts",
     "test:changed": "bun run scripts/run-tests.ts --changed",
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
-    "test:compat-diff": "python3 tests/compatibility/test_preset_diffs.py",
     "test:corpus": "bun run scripts/run-tests.ts --profile corpus",
     "test:e2e": "bun run scripts/run-tests.ts --profile e2e",
     "test:fast": "bun run scripts/run-tests.ts --profile fast",

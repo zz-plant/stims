@@ -56,7 +56,6 @@ import {
   stringifyPlainSearch,
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
-import { runViewTransition } from './view-transition.ts';
 import { buildLaunchIntent } from './workspace-helpers.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -299,20 +298,8 @@ export function useWorkspaceSessionState({
       // after createLazyFactory has confirmed this call still owns the slot.
       install: (adapter) => {
         engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-          const audioFlipped =
-            Boolean(engineSnapshotRef.current?.audioActive) !==
-            Boolean(snapshot.audioActive);
           engineSnapshotRef.current = snapshot;
-          if (audioFlipped) {
-            // The home<->live swap (launch form <-> live stage) is the one
-            // transition worth the view-transition snapshot freeze: the
-            // engine is crossfading presets at the same moment, which masks
-            // the brief static canvas frame. In-live interactions are left
-            // out so the canvas never freezes while music plays.
-            runViewTransition(() => setEngineSnapshot(snapshot));
-          } else {
-            setEngineSnapshot(snapshot);
-          }
+          setEngineSnapshot(snapshot);
         });
       },
       getRef: () => engineRef.current,

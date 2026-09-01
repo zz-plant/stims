@@ -7,6 +7,7 @@ import {
 } from 'react';
 import styles from '../../css/PerformSurface.module.css';
 import { getBrowserStorage } from '../core/state/browser-storage.ts';
+import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { readMilkdropField } from '../milkdrop/formatter.ts';
 import { listModulators } from './live-modulation.ts';
 import {
@@ -33,7 +34,8 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
  * nothing — which is the single most confusing thing a control on this
  * surface can do, and the reason the state vocabulary had to exist first.
  *
- * Empty by default: an unpinned visitor never sees it.
+ * Empty by default: an unpinned visitor sees nothing — except a one-time
+ * returning-visitor hint (see below) that introduces the surface.
  */
 
 /** The one-time empty-state hint shows once, then stays gone once dismissed. */
@@ -119,11 +121,16 @@ export function PerformSurface() {
   }, []);
 
   if (pinned.length === 0 && !picking) {
-    // A performer with no pinned controls sees this surface for the first time
-    // as a hint, not as nothing — there is nothing on it yet, so it tells them
-    // what it is for and how to open it. Dismissed once, it stays hidden until
-    // they actually pin something.
+    // A performer with no pinned controls sees this surface as a hint, not as
+    // nothing — there is nothing on it yet, so it tells them what it is for
+    // and how to open it. Dismissed once, it stays hidden until they actually
+    // pin something.
     if (hintDismissed) return null;
+    // Not on the very first visit, and not on phones — same reasoning as the
+    // cue deck's hint: a first session belongs to the visuals, and on a
+    // narrow screen this card ate half the stage.
+    if (!hadSessionBeforeBoot()) return null;
+    if (window.matchMedia('(max-width: 719px)').matches) return null;
     return (
       <aside className={styles.surface} aria-label="Performance controls">
         <div className={styles.header}>

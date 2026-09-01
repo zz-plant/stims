@@ -1,35 +1,35 @@
 {
-  "presetId": "shifter-glassworms-flare",
-  "presetSha256": "e16da26d9f5afe7bb3c82178ef3b0bc0ab237083eb1266dd49140f23b8573a94",
+  "presetId": "krash-rovastar-cerebral-demons-stars",
+  "presetSha256": "ec26ba2a4367c294342eafa3054c0911508106d4496c153282218e290f7ba4a4",
   "backends": {
     "webgpu": {
-      "meanLuminance": 45.57,
-      "visiblePixelRatio": 0.8415,
+      "meanLuminance": 88.05,
+      "visiblePixelRatio": 0.9122,
       "nearBlackFrameRatio": 0,
-      "colorfulness": 0.0191,
-      "luminanceDelta": -24.52,
-      "audioMotionRatio": 0.8378,
+      "colorfulness": 0.4913,
+      "luminanceDelta": 26.04,
+      "audioMotionRatio": 1.0087,
       "verdict": "ambient-motion",
       "captureBackend": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
     },
     "webgl": {
-      "meanLuminance": 93.88,
-      "visiblePixelRatio": 0.8203,
+      "meanLuminance": 25.83,
+      "visiblePixelRatio": 0.376,
       "nearBlackFrameRatio": 0,
-      "colorfulness": 0.1206,
-      "luminanceDelta": -4.25,
-      "audioMotionRatio": 0.9981,
-      "verdict": "ambient-motion",
+      "colorfulness": 0.0978,
+      "luminanceDelta": 24.14,
+      "audioMotionRatio": 1.7614,
+      "verdict": "audio-reactive",
       "captureBackend": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
     }
   },
   "reactivity": {
-    "reactiveVariables": 8,
+    "reactiveVariables": 6,
     "totalVariables": 36,
     "motionBearing": [
       {
-        "variable": "zoom",
-        "correlation": 0.873
+        "variable": "shapes.motion",
+        "correlation": 0.362
       }
     ]
   }
