@@ -28,7 +28,10 @@ import type {
   MilkdropProceduralWaveVisual,
 } from '../types';
 import { deriveMilkdropViewportSignalValues } from '../wgsl-signal-layout';
-import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
+import {
+  FIELD_REGISTER_UNIFORM_COUNT,
+  syncProceduralInteractionUniforms,
+} from './procedural-field-uniforms';
 import {
   getWebGpuHelperMaterialsSync,
   isWebGpuNodeMaterial,
@@ -474,8 +477,21 @@ export function syncProceduralCustomWaveObject(
   material.uniforms.previousSignalPixelsX.value = viewport.pixelsx;
   material.uniforms.previousSignalPixelsY.value = viewport.pixelsy;
   material.uniforms.blendMix.value = 1;
+  // Slots are positional in the lowered program's registerInputs order, the
+  // same contract syncProceduralFieldUniforms uses for the mesh path. Without
+  // this the per-point block read its q registers and the wave's own per-frame
+  // variables as zero.
+  const registerInputs = wave.fieldProgram?.registerInputs;
+  for (let slot = 0; slot < FIELD_REGISTER_UNIFORM_COUNT; slot += 1) {
+    const name = registerInputs?.[slot];
+    material.uniforms[`registerSlot${slot}`].value =
+      name !== undefined ? (wave.registers?.[name] ?? 0) : 0;
+  }
   material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
   material.uniforms.alpha.value = wave.alpha;
+  if (material.uniforms.waveAlphaMultiplier) {
+    material.uniforms.waveAlphaMultiplier.value = 1;
+  }
   syncProceduralInteractionUniforms(material, interaction);
   material.blending = wave.additive ? AdditiveBlending : NormalBlending;
   return next;
@@ -635,7 +651,15 @@ export function syncInterpolatedProceduralCustomWaveObject(
     lerpNumber(previousWave.color.g, currentWave.color.g, mix),
     lerpNumber(previousWave.color.b, currentWave.color.b, mix),
   );
-  material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
+  // Seed and blend weight stay separate where the material supports it: the
+  // per-point block may overwrite `a` outright, and folding the crossfade
+  // weight into its seed would drop the fade the moment a block does.
+  if (material.uniforms.waveAlphaMultiplier) {
+    material.uniforms.alpha.value = previousWave.alpha;
+    material.uniforms.waveAlphaMultiplier.value = alphaMultiplier;
+  } else {
+    material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
+  }
   material.blending =
     previousWave.additive || currentWave.additive
       ? AdditiveBlending

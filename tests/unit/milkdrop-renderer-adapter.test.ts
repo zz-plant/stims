@@ -3182,7 +3182,16 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       );
     const material = line.material as ShaderMaterial;
 
-    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+    // The seed and the crossfade weight are separate uniforms: `alpha` seeds
+    // the per-point block's `a` (which the block may overwrite outright), and
+    // the blend weight is applied after it. Their product is the 0.07 the
+    // single folded uniform used to carry.
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.2, 6);
+    expect(material.uniforms.waveAlphaMultiplier.value).toBeCloseTo(0.35, 6);
+    expect(
+      material.uniforms.alpha.value *
+        material.uniforms.waveAlphaMultiplier.value,
+    ).toBeCloseTo(0.07, 6);
   });
 
   test('keeps interpolated shape blend alpha anchored to the previous frame on webgl', async () => {
@@ -3471,9 +3480,16 @@ wavecode_0_a=0.8
 
     expect(blendCustomWaveGroup.children).toHaveLength(2);
     expect(extraBlendedWave?.material).toBeInstanceOf(NodeMaterial);
+    const blendedUniforms = (
+      extraBlendedWave?.material as ShaderMaterial | undefined
+    )?.uniforms;
+    // Seed times crossfade weight, split across two uniforms so a per-point
+    // block that overwrites `a` cannot swallow the fade.
+    expect(blendedUniforms?.alpha.value).toBeCloseTo(0.4, 6);
+    expect(blendedUniforms?.waveAlphaMultiplier.value).toBeCloseTo(0.35, 6);
     expect(
-      (extraBlendedWave?.material as ShaderMaterial | undefined)?.uniforms.alpha
-        .value,
+      (blendedUniforms?.alpha.value ?? 0) *
+        (blendedUniforms?.waveAlphaMultiplier.value ?? 0),
     ).toBeCloseTo(0.14, 6);
   });
 

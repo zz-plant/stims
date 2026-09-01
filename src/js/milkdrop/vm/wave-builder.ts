@@ -108,6 +108,25 @@ export function commitMainWaveFrame({
   waveState.lastProceduralWave = proceduralMainWave;
 }
 
+/** Copies only the frame-constant registers the lowered per-point program
+ * reads (`registerInputs`), into a pooled object so a steady preset does not
+ * allocate one map per wave per frame. */
+function collectCustomWaveFieldRegisters(
+  frameLocals: MutableState,
+  program: { registerInputs?: readonly string[] } | null | undefined,
+  reuse: MilkdropProceduralCustomWaveVisual['registers'],
+): MilkdropProceduralCustomWaveVisual['registers'] {
+  const inputs = program?.registerInputs;
+  if (!inputs || inputs.length === 0) {
+    return undefined;
+  }
+  const registers: Partial<Record<string, number>> = reuse ?? {};
+  for (const name of inputs) {
+    registers[name] = frameLocals[name] ?? 0;
+  }
+  return registers;
+}
+
 export function buildCustomWaves({
   preset,
   signals,
@@ -254,6 +273,7 @@ export function buildCustomWaves({
       visualWaveWithColorCache._colorsCache = pointColors;
     }
     let hasPerPointColors = false;
+    let hasPerPointAlpha = false;
 
     if (positions) {
       const targetLength = sampleCount * 3;
@@ -273,7 +293,9 @@ export function buildCustomWaves({
     }
 
     if (pointColors) {
-      const targetLength = sampleCount * 3;
+      // Four floats per point, not three: the per-point block's alpha rides in
+      // the fourth slot (see MilkdropWaveVisual.colors).
+      const targetLength = sampleCount * 4;
       if (pointColors instanceof Float32Array) {
         if (pointColors.length !== targetLength) {
           pointColors = new Float32Array(targetLength);
@@ -431,16 +453,26 @@ export function buildCustomWaves({
         positions[writeIndex + 2] = 0.28;
       }
       if (pointColors) {
+        const colorIndex = point * 4;
         const pointR = clamp(pointLocals.r ?? waveColor.r, 0, 1);
         const pointG = clamp(pointLocals.g ?? waveColor.g, 0, 1);
         const pointB = clamp(pointLocals.b ?? waveColor.b, 0, 1);
-        pointColors[writeIndex] = pointR;
-        pointColors[writeIndex + 1] = pointG;
-        pointColors[writeIndex + 2] = pointB;
+        // `pointLocals.a` was seeded with waveAlpha before the block ran, so
+        // a block that never touches `a` reads back unchanged and the wave
+        // keeps its authored alpha. A block that does write `a` — 629 of the
+        // 2686 bundled presets — used to have that write thrown away, which
+        // drew every point at full wave alpha and over-injected the feedback
+        // loop by orders of magnitude.
+        const pointA = clamp(pointLocals.a ?? waveAlpha, 0, 1);
+        pointColors[colorIndex] = pointR;
+        pointColors[colorIndex + 1] = pointG;
+        pointColors[colorIndex + 2] = pointB;
+        pointColors[colorIndex + 3] = pointA;
         hasPerPointColors ||=
           pointR !== waveColor.r ||
           pointG !== waveColor.g ||
           pointB !== waveColor.b;
+        hasPerPointAlpha ||= pointA !== waveAlpha;
       }
     }
 
@@ -451,10 +483,12 @@ export function buildCustomWaves({
       visualWave.additive = additive;
       visualWave.pointSize = clamp((frameLocals.thick ?? 1) * 3.2, 1, 14);
       visualWave.spectrum = (frameLocals.spectrum ?? 0) >= 0.5;
-      if (hasPerPointColors && pointColors) {
+      if ((hasPerPointColors || hasPerPointAlpha) && pointColors) {
         visualWave.colors = pointColors;
+        visualWave.perPointAlpha = hasPerPointAlpha;
       } else {
         visualWave.colors = undefined;
+        visualWave.perPointAlpha = false;
       }
       waves[visualWaveCount] = visualWave;
       visualWaveCount += 1;
@@ -488,6 +522,15 @@ export function buildCustomWaves({
       proceduralWave.time = signals.time;
       proceduralWave.sampleCount = sampleCount;
       proceduralWave.fieldProgram = proceduralDescriptor?.fieldProgram ?? null;
+      // Frame constants the lowered block reads, copied by name. `frameLocals`
+      // is prototyped onto the signal env (and through it the q register
+      // bank), so one lookup resolves the wave's own t registers and per-frame
+      // user variables as well as q1..q32.
+      proceduralWave.registers = collectCustomWaveFieldRegisters(
+        frameLocals,
+        proceduralWave.fieldProgram,
+        proceduralWave.registers,
+      );
       if (!proceduralWave.color) {
         proceduralWave.color = { r: 1, g: 1, b: 1, a: 1 };
       }

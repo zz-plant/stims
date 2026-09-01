@@ -40,8 +40,38 @@ function syncWaveVertexColors(
   // vertex buffer can be a frame behind the draw range that references it, and
   // a colour buffer smaller than the draw range fails validation on slot 1
   // exactly as an undersized position buffer does on slot 0.
-  ensureDynamicFloatAttribute(geometry, 'color', colors, 3);
+  //
+  // itemSize 4, not 3: three.js only enables per-vertex alpha (USE_COLOR_ALPHA
+  // on WebGL, the vec4 vertexColor() node on WebGPU) when the colour attribute
+  // carries four components.
+  ensureDynamicFloatAttribute(geometry, 'color', colors, 4);
   material.vertexColors = true;
+}
+
+/**
+ * The opacity to hand the material. A per-point alpha is already seeded from
+ * the wave's own alpha, so applying `wave.alpha` on top of it would dim the
+ * wave twice — the multiplier is all that is left to apply.
+ */
+function getWaveMaterialOpacity(
+  wave: MilkdropWaveVisual,
+  alphaMultiplier: number,
+) {
+  return wave.perPointAlpha ? alphaMultiplier : wave.alpha * alphaMultiplier;
+}
+
+/**
+ * `setMaterialColor` only turns on transparency when opacity < 1, which a
+ * per-point-alpha wave at full multiplier is not — and an opaque material
+ * discards the vertex alpha entirely.
+ */
+function applyWaveMaterialAlpha(
+  material: LineBasicMaterial | PointsMaterial,
+  wave: MilkdropWaveVisual,
+) {
+  if (wave.perPointAlpha) {
+    material.transparent = true;
+  }
 }
 
 function getWaveLayerCount(wave: MilkdropWaveVisual) {
@@ -86,6 +116,7 @@ function createWaveLayerObject(
   offsetY: number,
 ) {
   const positions = helpers.getWaveLinePositions(wave, behavior);
+  const opacity = getWaveMaterialOpacity(wave, alphaMultiplier);
   if (wave.drawMode === 'dots') {
     const object = new ThreePoints(
       new BufferGeometry(),
@@ -94,18 +125,15 @@ function createWaveLayerObject(
         sizeAttenuation: false,
         transparent: true,
         depthWrite: false,
-        opacity: wave.alpha * alphaMultiplier,
+        opacity,
         ...(wave.additive ? { blending: AdditiveBlending } : {}),
       }),
     );
     object.geometry.userData.skipDynamicBounds = true;
     helpers.ensureGeometryPositions(object.geometry, positions);
-    helpers.setMaterialColor(
-      object.material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
-    );
+    helpers.setMaterialColor(object.material, wave.color, opacity);
     syncWaveVertexColors(object.geometry, object.material, wave.colors);
+    applyWaveMaterialAlpha(object.material, wave);
     object.position.set(offsetX, offsetY, 0.24);
     return object;
   }
@@ -118,18 +146,15 @@ function createWaveLayerObject(
       linewidth: 1,
       transparent: true,
       depthWrite: false,
-      opacity: wave.alpha * alphaMultiplier,
+      opacity,
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
   object.geometry.userData.skipDynamicBounds = true;
   helpers.ensureGeometryPositions(object.geometry, positions);
-  helpers.setMaterialColor(
-    object.material,
-    wave.color,
-    wave.alpha * alphaMultiplier,
-  );
+  helpers.setMaterialColor(object.material, wave.color, opacity);
   syncWaveVertexColors(object.geometry, object.material, wave.colors);
+  applyWaveMaterialAlpha(object.material, wave);
   object.position.set(offsetX, offsetY, 0.24);
   return object;
 }
@@ -192,27 +217,22 @@ function syncWaveLayerObject(
     existing.geometry,
     helpers.getWaveLinePositions(wave, behavior),
   );
+  const opacity = getWaveMaterialOpacity(wave, alphaMultiplier);
   if (existing instanceof ThreePoints) {
     const material = existing.material as PointsMaterial;
     material.size = wave.pointSize;
     material.sizeAttenuation = false;
     material.blending = wave.additive ? AdditiveBlending : NormalBlending;
-    helpers.setMaterialColor(
-      material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
-    );
+    helpers.setMaterialColor(material, wave.color, opacity);
     syncWaveVertexColors(existing.geometry, material, wave.colors);
+    applyWaveMaterialAlpha(material, wave);
   } else {
     const material = existing.material as LineBasicMaterial;
     material.linewidth = 1;
     material.blending = wave.additive ? AdditiveBlending : NormalBlending;
-    helpers.setMaterialColor(
-      material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
-    );
+    helpers.setMaterialColor(material, wave.color, opacity);
     syncWaveVertexColors(existing.geometry, material, wave.colors);
+    applyWaveMaterialAlpha(material, wave);
   }
   existing.position.set(offsetX, offsetY, 0.24);
   return existing;

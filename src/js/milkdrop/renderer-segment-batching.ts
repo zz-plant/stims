@@ -146,6 +146,14 @@ class CompactSegmentUploadBuffer {
     alpha: number,
     width: number,
     closeLoop = false,
+    /**
+     * Optional per-point RGBA (stride 4) from a custom wave's per-point block.
+     * A segment carries one style, so each takes the mean of its two
+     * endpoints — for an additive wave that preserves the light the
+     * Gouraud-interpolated span would have injected. Omit it and the emitted
+     * buffers stay bit-identical to the flat-styled path.
+     */
+    pointColors?: ArrayLike<number> | null,
   ) {
     const pointCount = Math.floor(positions.length / 3);
     const segmentCount = closeLoop ? pointCount : Math.max(0, pointCount - 1);
@@ -203,6 +211,8 @@ class CompactSegmentUploadBuffer {
     const colorR = color.r;
     const colorG = color.g;
     const colorB = color.b;
+    const perPoint =
+      pointColors && pointColors.length >= pointCount * 4 ? pointColors : null;
     const halfWidth = width * 0.5;
     const lastPointIndex = pointCount - 1;
     let cursor = this.count;
@@ -225,10 +235,27 @@ class CompactSegmentUploadBuffer {
       lineData[quadOffset + 2] = endX - startX;
       lineData[quadOffset + 3] = endY - startY;
 
-      styleData[quadOffset] = colorR;
-      styleData[quadOffset + 1] = colorG;
-      styleData[quadOffset + 2] = colorB;
-      styleData[quadOffset + 3] = alpha;
+      if (perPoint) {
+        const startStyle = segmentIndex * 4;
+        const endStyle = endPointIndex * 4;
+        styleData[quadOffset] =
+          ((perPoint[startStyle] ?? 0) + (perPoint[endStyle] ?? 0)) * 0.5;
+        styleData[quadOffset + 1] =
+          ((perPoint[startStyle + 1] ?? 0) + (perPoint[endStyle + 1] ?? 0)) *
+          0.5;
+        styleData[quadOffset + 2] =
+          ((perPoint[startStyle + 2] ?? 0) + (perPoint[endStyle + 2] ?? 0)) *
+          0.5;
+        styleData[quadOffset + 3] =
+          ((perPoint[startStyle + 3] ?? 0) + (perPoint[endStyle + 3] ?? 0)) *
+          0.5 *
+          alpha;
+      } else {
+        styleData[quadOffset] = colorR;
+        styleData[quadOffset + 1] = colorG;
+        styleData[quadOffset + 2] = colorB;
+        styleData[quadOffset + 3] = alpha;
+      }
 
       const controlOffset = cursor * 3;
       controlData[controlOffset] = startZ;
@@ -449,9 +476,12 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
       destination.appendPolyline(
         wave.positions,
         wave.color,
-        wave.alpha * alphaMultiplier,
+        // A per-point alpha is already seeded from the wave's own alpha, so
+        // only the blend multiplier is left to apply on top of it.
+        wave.perPointAlpha ? alphaMultiplier : wave.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(wave.thickness),
         wave.closed,
+        wave.colors,
       );
     }
     this.getTarget(target).syncSplit(this.normalUploads, this.additiveUploads);
