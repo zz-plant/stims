@@ -68,6 +68,7 @@ const {
   modelViewMatrix,
   uniform,
   varying,
+  vec3,
   vec4,
   wgsl,
   wgslFn,
@@ -989,10 +990,35 @@ export function createProceduralMotionVectorMaterial(
   return Object.assign(material, { uniforms });
 }
 
+/**
+ * The per-point program, emitted once per output it feeds.
+ *
+ * MilkDrop runs a custom wave's per-point block to produce BOTH the point and
+ * that point's colour: r/g/b start at the wavecode's own colour and the block
+ * may rewrite them per sample. A wgslFn returns one value, so the block is
+ * emitted twice — once ending in the position, once in the colour — and the
+ * material varies each separately, which is also what keeps the colour
+ * Gouraud-interpolated along the line the way MilkDrop draws it. The
+ * duplicated run is a vertex-stage cost over a wave's samples (512 at most),
+ * next to nothing beside the per-pixel work it feeds.
+ */
 function buildCustomWaveProgramWgslCode(
   program: MilkdropGpuFieldProgramDescriptor,
+  output: 'point' | 'color',
 ) {
-  return `fn milkdropCustomWavePointWithProgram(
+  const name =
+    output === 'point'
+      ? 'milkdropCustomWavePointWithProgram'
+      : 'milkdropCustomWaveColorWithProgram';
+  const returnType = output === 'point' ? 'vec2<f32>' : 'vec3<f32>';
+  const returnCode =
+    output === 'point'
+      ? 'return vec2<f32>((field_x - 0.5) * 2.0, (0.5 - field_y) * 2.0);'
+      : // Clamped exactly as the CPU wave-builder clamps its per-point
+        // colours, so an out-of-range write cannot inject more light into the
+        // feedback loop than the same preset does on WebGL.
+        'return clamp(vec3<f32>(field_r, field_g, field_b), vec3<f32>(0.0), vec3<f32>(1.0));';
+  return `fn ${name}(
     sampleTValue: f32,
     sampleValue1: f32,
     sampleValue2: f32,
@@ -1001,8 +1027,9 @@ function buildCustomWaveProgramWgslCode(
     paramScaling: f32,
     paramMystery: f32,
     paramSpectrum: f32,
-    paramSamples: f32,${WGSL_SIGNAL_PARAMETERS}
-  ) -> vec2<f32> {
+    paramSamples: f32,
+    baseColor: vec3<f32>,${WGSL_SIGNAL_PARAMETERS}
+  ) -> ${returnType} {
 ${WGSL_SIGNAL_UNPACK}
     var field_sample = sampleTValue;
     var field_value = sampleValue1;
@@ -1032,9 +1059,15 @@ ${WGSL_SIGNAL_UNPACK}
     var field_y = 0.5 - rendererPointY / 2.0;
     var field_rad = length(vec2<f32>(rendererPointX, rendererPointY));
     var field_ang = atan2(rendererPointY, rendererPointX);
+    // Seeded, not zeroed: MilkDrop hands the per-point block the wavecode's
+    // colour, so a block that only touches one channel leaves the other two
+    // at the authored value.
+    var field_r = baseColor.x;
+    var field_g = baseColor.y;
+    var field_b = baseColor.z;
     ${buildGpuFieldTemporaryDeclarations(program)}
     ${buildGpuFieldStatementCode(program)}
-    return vec2<f32>((field_x - 0.5) * 2.0, (0.5 - field_y) * 2.0);
+    ${returnCode}
   }`;
 }
 
@@ -1050,6 +1083,7 @@ function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
       blendedMystery,
       blendedSpectrum,
       blendedSampleCount,
+      baseColor,
       blendedSignalsA,
       blendedSignalsB,
       blendedSignalsC,
@@ -1088,7 +1122,8 @@ function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
     previousSignalsC: vec4<f32>,
     previousSignalsD: vec4<f32>,
     previousSignalsE: vec4<f32>,
-    interactionTransform: vec4<f32>
+    interactionTransform: vec4<f32>,
+    baseColor: vec3<f32>
   ) -> vec2<f32> {
     let blendMix = waveExtras.z;
     let blendedSampleValue = mix(previousSampleValue, sampleValue, blendMix);
@@ -1113,7 +1148,71 @@ ${WGSL_APPLY_INTERACTION}
   }`;
 }
 
+/**
+ * Per-point colour, in the same blended per-sample terms as the vertex fn.
+ * With no per-point program the wave keeps its flat wavecode colour.
+ */
+function buildCustomWaveColorWgslCode(hasProgram: boolean) {
+  const colorCode = hasProgram
+    ? `color = milkdropCustomWaveColorWithProgram(
+      sampleT,
+      blendedSampleValue,
+      blendedSampleValue2,
+      blendedCenterX,
+      blendedCenterY,
+      blendedScaling,
+      blendedMystery,
+      blendedSpectrum,
+      blendedSampleCount,
+      baseColor,
+      blendedSignalsA,
+      blendedSignalsB,
+      blendedSignalsC,
+      blendedSignalsD,
+      blendedSignalsE
+    );`
+    : 'color = baseColor;';
+
+  return `fn computeProceduralCustomWaveColor(
+    sampleT: f32,
+    sampleValue: f32,
+    sampleValue2: f32,
+    previousSampleValue: f32,
+    previousSampleValue2: f32,
+    waveParams: vec4<f32>,
+    previousWaveParams: vec4<f32>,
+    waveExtras: vec4<f32>,
+    previousWaveExtras: vec4<f32>,${WGSL_SIGNAL_PARAMETERS},
+    previousSignalsA: vec4<f32>,
+    previousSignalsB: vec4<f32>,
+    previousSignalsC: vec4<f32>,
+    previousSignalsD: vec4<f32>,
+    previousSignalsE: vec4<f32>,
+    baseColor: vec3<f32>
+  ) -> vec3<f32> {
+    let blendMix = waveExtras.z;
+    let blendedSampleValue = mix(previousSampleValue, sampleValue, blendMix);
+    let blendedSampleValue2 = mix(previousSampleValue2, sampleValue2, blendMix);
+    let blendedParams = mix(previousWaveParams, waveParams, blendMix);
+    let blendedCenterX = blendedParams.x;
+    let blendedCenterY = blendedParams.y;
+    let blendedScaling = blendedParams.z;
+    let blendedMystery = blendedParams.w;
+    let blendedSpectrum = mix(previousWaveExtras.x, waveExtras.x, blendMix);
+    let blendedSampleCount = mix(previousWaveExtras.y, waveExtras.y, blendMix);
+    let blendedSignalsA = mix(previousSignalsA, signalsA, blendMix);
+    let blendedSignalsB = mix(previousSignalsB, signalsB, blendMix);
+    let blendedSignalsC = mix(previousSignalsC, signalsC, blendMix);
+    let blendedSignalsD = mix(previousSignalsD, signalsD, blendMix);
+    let blendedSignalsE = mix(previousSignalsE, signalsE, blendMix);
+    var color = vec3<f32>(0.0, 0.0, 0.0);
+    ${colorCode}
+    return color;
+  }`;
+}
+
 const customWaveVertexFnCache = new Map<string, TslVertexFn>();
+const customWaveColorFnCache = new Map<string, TslVertexFn>();
 
 function getProceduralCustomWaveVertexFn(
   program: MilkdropGpuFieldProgramDescriptor | null | undefined,
@@ -1125,13 +1224,33 @@ function getProceduralCustomWaveVertexFn(
   }
   const includes: WgslInclude[] = [MILKDROP_FIELD_WGSL_HELPERS];
   if (program) {
-    includes.push(wgsl(buildCustomWaveProgramWgslCode(program)));
+    includes.push(wgsl(buildCustomWaveProgramWgslCode(program, 'point')));
   }
   const fn = wgslFn(
     buildCustomWaveVertexWgslCode(Boolean(program)),
     includes,
   ) as unknown as TslVertexFn;
   customWaveVertexFnCache.set(key, fn);
+  return fn;
+}
+
+function getProceduralCustomWaveColorFn(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const key = program?.signature ?? 'default';
+  const cached = customWaveColorFnCache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const includes: WgslInclude[] = [MILKDROP_FIELD_WGSL_HELPERS];
+  if (program) {
+    includes.push(wgsl(buildCustomWaveProgramWgslCode(program, 'color')));
+  }
+  const fn = wgslFn(
+    buildCustomWaveColorWgslCode(Boolean(program)),
+    includes,
+  ) as unknown as TslVertexFn;
+  customWaveColorFnCache.set(key, fn);
   return fn;
 }
 
@@ -1202,6 +1321,7 @@ export function createProceduralCustomWaveMaterial(
   const uniforms = toUniformNodes(createCustomWaveUniformState());
   const signals = packSignalUniformVectors(uniforms, 'signal');
   const previousSignals = packSignalUniformVectors(uniforms, 'previousSignal');
+  const baseColor = asColorNode(uniforms.tint);
   const point = getProceduralCustomWaveVertexFn(program)({
     sampleT: typedAttribute('sampleT', 'float'),
     sampleValue: typedAttribute('sampleValue', 'float'),
@@ -1243,7 +1363,54 @@ export function createProceduralCustomWaveMaterial(
     previousSignalsD: previousSignals.d,
     previousSignalsE: previousSignals.e,
     interactionTransform: packInteractionVector(uniforms),
+    baseColor,
   });
+  // Varied, not recomputed in the fragment stage: MilkDrop shades a custom
+  // wave per point and lets the rasteriser interpolate between them.
+  const pointColor = varying(
+    getProceduralCustomWaveColorFn(program)({
+      sampleT: typedAttribute('sampleT', 'float'),
+      sampleValue: typedAttribute('sampleValue', 'float'),
+      sampleValue2: typedAttribute('sampleValue2', 'float'),
+      previousSampleValue: typedAttribute('previousSampleValue', 'float'),
+      previousSampleValue2: typedAttribute('previousSampleValue2', 'float'),
+      waveParams: vec4(
+        uniforms.centerX,
+        uniforms.centerY,
+        uniforms.scaling,
+        uniforms.mystery,
+      ),
+      previousWaveParams: vec4(
+        uniforms.previousCenterX,
+        uniforms.previousCenterY,
+        uniforms.previousScaling,
+        uniforms.previousMystery,
+      ),
+      waveExtras: vec4(
+        uniforms.spectrum,
+        uniforms.sampleCount,
+        uniforms.blendMix,
+        0,
+      ),
+      previousWaveExtras: vec4(
+        uniforms.previousSpectrum,
+        uniforms.previousSampleCount,
+        0,
+        0,
+      ),
+      signalsA: signals.a,
+      signalsB: signals.b,
+      signalsC: signals.c,
+      signalsD: signals.d,
+      signalsE: signals.e,
+      previousSignalsA: previousSignals.a,
+      previousSignalsB: previousSignals.b,
+      previousSignalsC: previousSignals.c,
+      previousSignalsD: previousSignals.d,
+      previousSignalsE: previousSignals.e,
+      baseColor,
+    }),
+  );
 
   const material = new NodeMaterial();
   material.transparent = true;
@@ -1252,7 +1419,7 @@ export function createProceduralCustomWaveMaterial(
     .mul(modelViewMatrix)
     .mul(vec4(point.x, point.y, 0.28, 1.0));
   material.colorNode = vec4(
-    asColorNode(uniforms.tint),
+    vec3(pointColor.x, pointColor.y, pointColor.z),
     uniforms.alpha.mul(uniforms.interactionAlpha),
   );
 
