@@ -17,6 +17,15 @@
  * Deliberately on-demand. Reading back a WebGPU canvas can stall the main
  * thread, so this belongs in one-off checks, never in a frame loop — the
  * per-frame flash sampler is a separate, cheaper path.
+ *
+ * On-demand does not mean any time. A WebGPU canvas only holds its image
+ * until the end of the task that presented it, so a read from a timer or a
+ * promise composites fully transparent — measured 0 of 1024 opaque pixels
+ * against 1024 of 1024 for the same frame read one rAF later, while the
+ * frame itself was visibly at luminance 165. That is why
+ * {@link sampleStageLiveness} is async and schedules its own frame callback:
+ * a synchronous read is unreadable by construction on the default backend,
+ * which left the attract-mode guard permanently unable to reach a verdict.
  */
 
 /** Longest edge of the downsample used for the readback. */
@@ -110,10 +119,14 @@ export function summarizeStagePixels(
 
 /**
  * Composite the stage canvas into a small 2D canvas and summarize it.
- * Returns an unreadable verdict rather than throwing on any failure —
- * callers should treat "unknown" as "leave things alone".
+ *
+ * Synchronous, and therefore only correct inside a frame callback — see
+ * {@link sampleStageLiveness}, which is what callers should reach for.
+ * Exported for the WebGL path and for tests that already own the frame.
  */
-export function sampleStageLiveness(canvas: HTMLCanvasElement): StageLiveness {
+export function sampleStageLivenessNow(
+  canvas: HTMLCanvasElement,
+): StageLiveness {
   const sourceWidth = canvas.width;
   const sourceHeight = canvas.height;
   if (sourceWidth <= 0 || sourceHeight <= 0) {
@@ -150,6 +163,24 @@ export function sampleStageLiveness(canvas: HTMLCanvasElement): StageLiveness {
   } catch {
     return UNREADABLE;
   }
+}
+
+/**
+ * Read the stage inside a frame callback, which is the only moment a WebGPU
+ * canvas can be composited. Resolves to an unreadable verdict rather than
+ * rejecting, so callers keep treating "unknown" as "leave things alone".
+ */
+export function sampleStageLiveness(
+  canvas: HTMLCanvasElement,
+): Promise<StageLiveness> {
+  if (typeof requestAnimationFrame !== 'function') {
+    return Promise.resolve(sampleStageLivenessNow(canvas));
+  }
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve(sampleStageLivenessNow(canvas));
+    });
+  });
 }
 
 /**

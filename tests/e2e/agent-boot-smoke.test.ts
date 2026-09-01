@@ -40,10 +40,9 @@ let devServer: DevServerHandle | null = null;
 
 /** Shape of window.__stims_agent; kept minimal to what this test reads. */
 type AgentWindow = typeof window & {
-  // Registered alongside __stims_agent when ?agent=true; used only for the
-  // WebGPU path below, where a pixel readback (captureStats) always sees
-  // transparent black — WebGPU does not retain presented frames the way
-  // WebGL's preserveDrawingBuffer does (see webgpu-engine-mount.test.ts).
+  // Registered alongside __stims_agent when ?agent=true. Kept as a
+  // supplementary signal now that captureStats reads inside a frame callback
+  // and so works on WebGPU too.
   __milkdropRuntimeDebug?: {
     getPerformance: () => { sampleCount: number } | null;
   };
@@ -67,11 +66,11 @@ type AgentWindow = typeof window & {
     getEvents: (
       sinceSeq?: number,
     ) => Array<{ seq: number; type: string; data: Record<string, unknown> }>;
-    captureStats: () => {
+    captureStats: () => Promise<{
       histogram: number[];
       edgeDensity: number;
       motionEstimate: number;
-    } | null;
+    } | null>;
   };
 };
 
@@ -204,48 +203,29 @@ async function runBootSmoke(renderer: 'webgl' | 'webgpu') {
       expect(backend).toBe('webgpu');
     }
 
-    if (renderer === 'webgpu') {
-      // captureStats' pixel readback cannot see a WebGPU canvas (see the
-      // type comment above), so use the same real-frames signal the deep
-      // WebGPU suite does — just a much smaller bar, since this is a smoke
-      // check, not exhaustive coverage.
-      await page.waitForFunction(
-        () => (window as AgentWindow).__milkdropRuntimeDebug !== undefined,
-        undefined,
-        { timeout: 10000 },
+    // Confirm the canvas is actually animating, not just present. Poll
+    // captureStats a few times with real gaps rather than trusting one
+    // 400ms window — some presets/moments have near-static motion over
+    // any single short interval, but genuine animation shows a delta
+    // somewhere across a handful of samples. On-demand calls only (per
+    // its own contract): never per-frame.
+    //
+    // Both backends take this path. WebGPU used to be exempted because the
+    // readback always saw transparent black; it reads inside a frame
+    // callback now, so the default backend gets the same pixel-level
+    // assertion instead of a proxy frame counter.
+    let observedMotion = 0;
+    for (let i = 0; i < 5; i += 1) {
+      await page.waitForTimeout(400);
+      const stats = await page.evaluate(
+        async () =>
+          (await (window as AgentWindow).__stims_agent?.captureStats()) ?? null,
       );
-      const baseline = await page.evaluate(
-        () =>
-          (window as AgentWindow).__milkdropRuntimeDebug?.getPerformance()
-            ?.sampleCount ?? 0,
-      );
-      await page.waitForFunction(
-        (base) =>
-          ((window as AgentWindow).__milkdropRuntimeDebug?.getPerformance()
-            ?.sampleCount ?? 0) >=
-          base + 10,
-        baseline,
-        { timeout: 15000, polling: 250 },
-      );
-    } else {
-      // Confirm the canvas is actually animating, not just present. Poll
-      // captureStats a few times with real gaps rather than trusting one
-      // 400ms window — some presets/moments have near-static motion over
-      // any single short interval, but genuine animation shows a delta
-      // somewhere across a handful of samples. On-demand calls only (per
-      // its own contract): never per-frame.
-      let observedMotion = 0;
-      for (let i = 0; i < 5; i += 1) {
-        await page.waitForTimeout(400);
-        const stats = await page.evaluate(
-          () => (window as AgentWindow).__stims_agent?.captureStats() ?? null,
-        );
-        expect(stats).not.toBeNull();
-        observedMotion = Math.max(observedMotion, stats?.motionEstimate ?? 0);
-        if (observedMotion > 0) break;
-      }
-      expect(observedMotion).toBeGreaterThan(0);
+      expect(stats).not.toBeNull();
+      observedMotion = Math.max(observedMotion, stats?.motionEstimate ?? 0);
+      if (observedMotion > 0) break;
     }
+    expect(observedMotion).toBeGreaterThan(0);
 
     // No error events on the agent's own log, and no console errors either
     // — the two catch different failure shapes (thrown-and-caught vs.

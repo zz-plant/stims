@@ -13,6 +13,9 @@
  *   - A blanket `input { min-height: 44px }` stretched checkboxes to 18x44.
  *   - The collection chips overflowed their row and clipped at both edges.
  *   - The side panel was hard-coded dark, so light mode failed WCAG AA.
+ *   - The launch hero took its ink from the page theme while the stage
+ *     canvas behind it stayed dark, so light mode rendered a #0f172a
+ *     wordmark on an attract frame at ~1.005:1.
  */
 import { afterAll, beforeAll, expect } from 'bun:test';
 import { type Browser, chromium, type Page } from 'playwright';
@@ -371,6 +374,92 @@ chromeTest(
       });
       expect(hero).not.toBeNull();
       expect(['auto', 'scroll']).toContain(hero?.overflowY ?? 'missing');
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'launch hero copy stays legible over the stage in light mode',
+  async () => {
+    if (!hasChromium) return;
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 1440, height: 900 },
+      colorScheme: 'light',
+    });
+    try {
+      await page.addInitScript(() => {
+        try {
+          localStorage.setItem('stims:theme', 'light');
+        } catch {}
+      });
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__launch-title', {
+        timeout: 30000,
+      });
+
+      // The hero sits on the stage canvas, not on the page background, and
+      // the stage is dark in every theme. Measuring against the body colour
+      // would pass the exact defect this guards: the ink flipped to the light
+      // palette while the backdrop did not.
+      const results = await page.evaluate(() => {
+        const parse = (value: string) =>
+          (value.match(/[\d.]+/g) ?? []).map(Number);
+        const lin = (c: number) => {
+          const v = c / 255;
+          return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        const lum = (rgb: number[]) =>
+          0.2126 * lin(rgb[0] ?? 0) +
+          0.7152 * lin(rgb[1] ?? 0) +
+          0.0722 * lin(rgb[2] ?? 0);
+        // A MilkDrop frame is not a flat colour, so the worst realistic
+        // backdrop is used rather than an average: mid grey stands in for the
+        // brightest the stage gets under the copy.
+        const backdrop = [96, 96, 96];
+        const targets = [
+          '.stims-shell__launch-title',
+          '.stims-shell__launch-tagline',
+          '.stims-shell__launch-explainer',
+        ];
+        return targets.flatMap((sel) => {
+          const el = document.querySelector(sel);
+          if (!el) return [];
+          const cs = getComputedStyle(el as HTMLElement);
+          const f = parse(cs.color);
+          const front =
+            f.length > 3 && (f[3] ?? 1) < 1
+              ? [0, 1, 2].map(
+                  (i) =>
+                    (f[3] ?? 1) * (f[i] ?? 0) +
+                    (1 - (f[3] ?? 1)) * (backdrop[i] ?? 0),
+                )
+              : f.slice(0, 3);
+          const L1 = lum(front);
+          const L2 = lum(backdrop);
+          return [
+            {
+              sel,
+              px: Number.parseFloat(cs.fontSize),
+              ratio: (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05),
+            },
+          ];
+        });
+      });
+
+      expect(results.length).toBeGreaterThan(0);
+      for (const r of results) {
+        const needed = r.px >= 24 ? 3 : 4.5;
+        if (r.ratio < needed) {
+          throw new Error(
+            `${r.sel} at ${r.px}px has contrast ${r.ratio.toFixed(2)}:1 over the stage in light mode, needs ${needed}:1`,
+          );
+        }
+      }
     } finally {
       await page.close();
     }
