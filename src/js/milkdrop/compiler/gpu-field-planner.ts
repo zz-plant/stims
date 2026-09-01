@@ -1,3 +1,22 @@
+/**
+ * Decides whether one MilkDrop program block can run as a GPU field program,
+ * and lowers it if so.
+ *
+ * A per-pixel or per-point block is a scalar EEL program the CPU tier runs
+ * once per mesh vertex or wave sample. The GPU tiers instead want it as a
+ * shader body evaluated for every vertex in parallel, which is only sound
+ * when the block reads nothing but its own inputs: this module classifies
+ * every identifier the block touches as a seeded state slot, a per-frame
+ * signal, a per-frame register input, or a per-invocation temporary, and
+ * returns null the moment one cannot be placed. Returning null is the normal,
+ * safe outcome — the caller keeps that program on the CPU path.
+ *
+ * It deliberately owns only the classification and the expression lowering.
+ * Which state slots exist for a given call site comes from the caller
+ * (gpu-descriptor-plan.ts), the WGSL text is emitted by the renderer backends
+ * from the descriptor this returns, and which EEL calls have a GPU form is
+ * the shared function table's business, not this module's.
+ */
 import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,
@@ -60,6 +79,9 @@ const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
 // declarative table: exactly the entries with a `wgslField` renderer.
 const GPU_FIELD_FUNCTIONS = GPU_FIELD_FUNCTION_NAMES;
 
+/** MilkDrop's per-wave persistent register bank, `t1` through `t8`. */
+const CARRIED_REGISTER_PATTERN = /^t\d+$/;
+
 type LowerGpuFieldProgramOptions = {
   additionalStateIdentifiers?: Iterable<string>;
   additionalAllowedIdentifiers?: Iterable<string>;
@@ -71,6 +93,30 @@ type LowerGpuFieldProgramOptions = {
    * wave-local `t` bank, which is per-wave state and never a per-pixel input.
    */
   registerInputs?: Iterable<string>;
+  /**
+   * Reject a program that carries a `t` register from one invocation to the
+   * next.
+   *
+   * MilkDrop runs a custom wave's per-point block as a sequential loop over
+   * the wave's samples, and `t1`..`t8` are the wave's own persistent bank, so
+   * a block reading one before assigning it is reading the PREVIOUS point's
+   * value. Presets unroll real loops that way — eos-matrix-cube-c steps
+   * `t3 = t3 + 1` to draw one cube edge per sample. A vertex shader computes
+   * every point in parallel with no such carry, so lowering one of these
+   * yields plausible-looking but wrong geometry rather than an error: that
+   * preset rendered pure black on native WebGPU while WebGL drew the cube.
+   *
+   * Deliberately scoped to the `t` bank. The same read-before-write test over
+   * every local rejects 1443 of the corpus's 2485 lowerable custom waves (540
+   * presets, including the healthy first-run default) where the carried value
+   * is incidental — measured 2026-09-01. The `t` bank is the documented
+   * per-wave state and the idiom presets actually loop with: 169 waves across
+   * 89 presets.
+   *
+   * Only names the program itself assigns count: a register that is never
+   * assigned is 0 at every point on both paths.
+   */
+  rejectCarriedRegisters?: boolean;
 };
 
 /** Capacity of the packed per-frame register uniform bank (8 vec4s). */
@@ -244,6 +290,7 @@ export function lowerGpuFieldProgram(
     additionalStateIdentifiers = [],
     additionalAllowedIdentifiers = [],
     registerInputs = [],
+    rejectCarriedRegisters = false,
   }: LowerGpuFieldProgramOptions = {},
 ): MilkdropGpuFieldProgramDescriptor | null {
   if (program.statements.length === 0) {
@@ -328,6 +375,28 @@ export function lowerGpuFieldProgram(
       }
     }
   }
+  if (rejectCarriedRegisters) {
+    const assignedSomewhere = new Set(
+      program.statements.map((statement) =>
+        lowerGpuFieldIdentifier(statement.target),
+      ),
+    );
+    const assignedSoFar = new Set<string>();
+    for (const statement of program.statements) {
+      for (const read of collectGpuFieldIdentifierReads(statement.expression)) {
+        if (
+          temporaries.has(read) &&
+          assignedSomewhere.has(read) &&
+          !assignedSoFar.has(read) &&
+          CARRIED_REGISTER_PATTERN.test(read)
+        ) {
+          return null;
+        }
+      }
+      assignedSoFar.add(lowerGpuFieldIdentifier(statement.target));
+    }
+  }
+
   // The uniform bank holds MAX_FIELD_REGISTER_INPUTS packed scalars; a
   // program reading more frame constants than that cannot be fed and bails
   // to the CPU path.

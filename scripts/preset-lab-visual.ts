@@ -55,7 +55,22 @@ const TILE_HEIGHT = 180;
 const SHEET_LABEL_HEIGHT = 34;
 const SHEET_ROW_LABEL_WIDTH = 96;
 
-type VisualScenario = 'silence' | 'demo';
+/**
+ * `steady` is `demo` again after a long settle. Everything else here samples
+ * t≈1.5-7s, which is blind to the failure that only appears once the feedback
+ * loop reaches its fixed point — a preset can look right for its first seconds
+ * and be a white or black rectangle by the time anyone watches it.
+ */
+type VisualScenario = 'silence' | 'demo' | 'steady';
+
+const VISUAL_SCENARIOS = ['silence', 'demo', 'steady'] as const;
+
+/**
+ * How long the settled state takes to appear. Measured on the WebGPU washout
+ * class (2026-08-31): eos-phat-linear-clouds-v2 saturates by t≈12s, so 30s
+ * samples well past the knee for the presets this scenario exists to catch.
+ */
+const DEFAULT_STEADY_SETTLE_MS = 30_000;
 
 type SampledFrame = {
   metrics: ImageMetrics;
@@ -118,6 +133,14 @@ export type PresetVisualReport = {
       | 'static'
       | 'blank'
       | 'broken';
+    /**
+     * What the preset looks like once the feedback loop has settled, which
+     * the other fields never sample. `saturated` and `collapsed` are the two
+     * ends of an unbounded loop; both render as a flat rectangle.
+     */
+    steadyState: 'healthy' | 'saturated' | 'collapsed';
+    steadyMeanLuminance: number;
+    steadyLuminanceStdDev: number;
     reasons: string[];
   };
   artifacts: {
@@ -265,7 +288,7 @@ async function captureScenario({
       STAGE_CANVAS_SELECTOR,
       PRESET_READY_TIMEOUT_MS,
     );
-    if (scenario === 'demo') {
+    if (scenario !== 'silence') {
       audioActive = await waitForAudioActive(page);
       if (!audioActive) {
         loadError = 'Demo audio did not activate within the timeout';
@@ -343,12 +366,53 @@ function summarizeScenario(capture: ScenarioCapture) {
   };
 }
 
+/**
+ * A settled frame is broken when it has lost its picture: pinned near white
+ * (an unbounded feedback loop reaching its fixed point) or near black, in
+ * both cases with almost no spatial variation left. The standard-deviation
+ * arm is what separates those from a legitimately bright or dark preset —
+ * a real frame at mean luminance 240 still has structure in it.
+ */
+const STEADY_SATURATION_LUMINANCE = 235;
+const STEADY_COLLAPSE_LUMINANCE = 2;
+const STEADY_FLATNESS_STD_DEV = 12;
+
+function classifySteadyState(steady: ReturnType<typeof summarizeScenario>): {
+  steadyState: PresetVisualReport['summary']['steadyState'];
+  reason: string | null;
+} {
+  if (steady.loadError) {
+    return { steadyState: 'healthy', reason: null };
+  }
+  if (
+    steady.meanLuminance >= STEADY_SATURATION_LUMINANCE &&
+    steady.luminanceStdDev <= STEADY_FLATNESS_STD_DEV
+  ) {
+    return {
+      steadyState: 'saturated',
+      reason: `Settled frame is a flat near-white field (luma ${steady.meanLuminance.toFixed(1)}, sd ${steady.luminanceStdDev.toFixed(1)})`,
+    };
+  }
+  if (
+    steady.meanLuminance <= STEADY_COLLAPSE_LUMINANCE &&
+    steady.luminanceStdDev <= STEADY_FLATNESS_STD_DEV
+  ) {
+    return {
+      steadyState: 'collapsed',
+      reason: `Settled frame is a flat near-black field (luma ${steady.meanLuminance.toFixed(1)}, sd ${steady.luminanceStdDev.toFixed(1)})`,
+    };
+  }
+  return { steadyState: 'healthy', reason: null };
+}
+
 function summarizeRun(
   silence: ScenarioCapture,
   demo: ScenarioCapture,
+  steady: ScenarioCapture,
 ): PresetVisualReport['summary'] {
   const silenceSummary = summarizeScenario(silence);
   const demoSummary = summarizeScenario(demo);
+  const steadySummary = summarizeScenario(steady);
   const reasons: string[] = [];
 
   const audioMotionRatio =
@@ -403,6 +467,11 @@ function summarizeRun(
     reasons.push(`${demo.consoleErrors.length} browser console error(s)`);
   }
 
+  const steadyVerdict = classifySteadyState(steadySummary);
+  if (steadyVerdict.reason) {
+    reasons.push(steadyVerdict.reason);
+  }
+
   return {
     audioMotionRatio,
     motionDelta,
@@ -411,6 +480,9 @@ function summarizeRun(
     colorfulnessDelta: demoSummary.colorfulness - silenceSummary.colorfulness,
     nearBlackFrameRatio: demoSummary.nearBlackFrameRatio,
     verdict,
+    steadyState: steadyVerdict.steadyState,
+    steadyMeanLuminance: steadySummary.meanLuminance,
+    steadyLuminanceStdDev: steadySummary.luminanceStdDev,
     reasons,
   };
 }
@@ -633,6 +705,11 @@ export function formatVisualReportText(report: PresetVisualReport): string {
   lines.push(
     `- luminance delta (demo − silence): ${report.summary.luminanceDelta.toFixed(1)}`,
   );
+  lines.push(
+    `- steady state (t≈30s): ${report.summary.steadyState} ` +
+      `(luma ${report.summary.steadyMeanLuminance.toFixed(1)}, ` +
+      `sd ${report.summary.steadyLuminanceStdDev.toFixed(1)})`,
+  );
   lines.push('');
   lines.push(
     `Contact sheet (for vision-capable agents): ${report.artifacts.contactSheet}`,
@@ -650,6 +727,7 @@ export async function runPresetVisualLab({
   samples,
   intervalMs,
   settleMs,
+  steadySettleMs,
   headless,
 }: {
   repoRoot: string;
@@ -660,6 +738,7 @@ export async function runPresetVisualLab({
   samples: number;
   intervalMs: number;
   settleMs: number;
+  steadySettleMs: number;
   headless: boolean;
 }): Promise<PresetVisualReport> {
   const visualDir = path.join(outputDir, presetId, 'visual');
@@ -683,7 +762,7 @@ export async function runPresetVisualLab({
     });
     captureBackend = await probeCaptureBackend(context);
 
-    for (const scenario of ['silence', 'demo'] as const) {
+    for (const scenario of VISUAL_SCENARIOS) {
       const page = await context.newPage();
       const consoleErrors: string[] = [];
       page.on('console', (message) => {
@@ -697,7 +776,7 @@ export async function runPresetVisualLab({
         url.searchParams.set('agent', 'true');
         url.searchParams.set('renderer', renderer);
         url.searchParams.set('preset', presetId);
-        if (scenario === 'demo') {
+        if (scenario !== 'silence') {
           url.searchParams.set('audio', 'demo');
         }
         await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
@@ -708,7 +787,7 @@ export async function runPresetVisualLab({
           renderer,
           samples,
           intervalMs,
-          settleMs,
+          settleMs: scenario === 'steady' ? steadySettleMs : settleMs,
           framesDir,
           consoleErrors,
         });
@@ -726,7 +805,7 @@ export async function runPresetVisualLab({
   await writeContactSheet({
     outputPath: contactSheetPath,
     presetId,
-    rows: (['silence', 'demo'] as const).map((scenario) => ({
+    rows: VISUAL_SCENARIOS.map((scenario) => ({
       label: scenario,
       frames: captures[scenario].frames.map((frame) => frame.pngPath),
     })),
@@ -743,8 +822,9 @@ export async function runPresetVisualLab({
     scenarios: {
       silence: summarizeScenario(captures.silence),
       demo: summarizeScenario(captures.demo),
+      steady: summarizeScenario(captures.steady),
     },
-    summary: summarizeRun(captures.silence, captures.demo),
+    summary: summarizeRun(captures.silence, captures.demo, captures.steady),
     artifacts: {
       reportJson: reportJsonPath,
       contactSheet: contactSheetPath,
@@ -764,6 +844,7 @@ type CliOptions = {
   samples: number;
   intervalMs: number;
   settleMs: number;
+  steadySettleMs: number;
   headless: boolean;
   writeBaseline: boolean;
   compare: boolean;
@@ -796,6 +877,10 @@ function parseArgs(argv: string[]): CliOptions {
       readArg(argv, '--settle-ms', `${DEFAULT_SETTLE_MS}`),
       10,
     ),
+    steadySettleMs: Number.parseInt(
+      readArg(argv, '--steady-settle-ms', `${DEFAULT_STEADY_SETTLE_MS}`),
+      10,
+    ),
     headless: !argv.includes('--no-headless'),
     writeBaseline: argv.includes('--baseline'),
     compare: argv.includes('--compare'),
@@ -809,6 +894,7 @@ async function main() {
     console.error(
       'Usage: bun run lab:visual -- --preset <id> [--preset <id> …]\n' +
         '  [--samples 8] [--interval-ms 700] [--settle-ms 1500]\n' +
+        '  [--steady-settle-ms 30000]\n' +
         '  [--renderer webgl|webgpu] [--port 5197] [--out scratch/preset-lab]\n' +
         '  [--baseline] [--compare] [--json] [--no-headless]',
     );
@@ -826,6 +912,7 @@ async function main() {
       samples: options.samples,
       intervalMs: options.intervalMs,
       settleMs: options.settleMs,
+      steadySettleMs: options.steadySettleMs,
       headless: options.headless,
     });
 

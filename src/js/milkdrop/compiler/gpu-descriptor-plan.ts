@@ -96,6 +96,7 @@ export function buildWebGpuDescriptorPlan({
       additionalStateIdentifiers?: Iterable<string>;
       additionalAllowedIdentifiers?: Iterable<string>;
       registerInputs?: Iterable<string>;
+      rejectCarriedRegisters?: boolean;
     },
   ) => MilkdropProceduralMeshDescriptorPlan['fieldProgram'];
   perFrameFieldRegisterInputs?: Iterable<string>;
@@ -162,7 +163,19 @@ export function buildWebGpuDescriptorPlan({
                   'value',
                   'value1',
                   'value2',
+                  // MilkDrop seeds a custom wave's per-point r/g/b from the
+                  // wavecode's own colour and reads them back after the
+                  // program runs. Left as ordinary temporaries they start at
+                  // 0 and nothing consumes them, so the GPU path painted every
+                  // custom wave in its flat base colour — see
+                  // createProceduralCustomWaveMaterial.
+                  'r',
+                  'g',
+                  'b',
                 ],
+                // MilkDrop's per-point block is a sequential loop over the
+                // wave's samples; a vertex shader is not.
+                rejectCarriedRegisters: true,
                 additionalAllowedIdentifiers: [
                   'samples',
                   'spectrum',
