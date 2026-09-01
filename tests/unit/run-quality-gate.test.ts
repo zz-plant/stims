@@ -34,12 +34,14 @@ test('quick gate plan keeps tests out of the concurrent lane', () => {
   expect(plan.postflight).toHaveLength(0);
 });
 
-test('full gate plan runs the fast test suite after the concurrent lane', () => {
+test('full gate plan runs the gate test suite after the concurrent lane', () => {
   const plan = buildGatePlan('full', 'parallel');
 
   expect(plan.postflight).toHaveLength(1);
-  expect(plan.postflight[0].label).toBe('Fast test suite');
-  expect(plan.postflight[0].cmd).toContain('test:fast');
+  expect(plan.postflight[0].label).toBe('Gate test suite');
+  // Not test:fast — corpus carries the parity and golden-snapshot tests, and
+  // running them only in CI let a compiler change pass here and fail on push.
+  expect(plan.postflight[0].cmd).toContain('test:gate');
 });
 
 test('all gate plan runs the complete test suite after the concurrent lane', () => {

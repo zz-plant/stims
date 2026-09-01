@@ -6,12 +6,15 @@
  *
  * - `quick`  — lint + typecheck only, no tests (~10s). Use constantly during
  *              development to catch type/style errors early.
- * - `full`   — lint + typecheck + fast test suite (~2min). This is the default
- *              `bun run check` mode. Excludes slow corpus/certification/integration
- *              tests so it remains a fast feedback loop.
- * - `all`    — lint + typecheck + full test suite including corpus/certification
- *              tests (~5min+). Use before merging changes to the MilkDrop
- *              compiler, renderer adapter, or parity pipeline.
+ * - `full`   — lint + typecheck + gate test suite (unit + compat + corpus).
+ *              This is the default `bun run check` mode. Corpus is in the gate
+ *              because its parity and golden-snapshot tests guard the
+ *              dual-backend boundary: leaving them to CI let a compiler change
+ *              pass here and fail after push. Excludes e2e, which is serial,
+ *              browser-backed, and slow.
+ * - `all`    — lint + typecheck + every profile including e2e (~5min+). Use
+ *              before merging changes to the MilkDrop compiler, renderer
+ *              adapter, or parity pipeline.
  */
 type GateMode = 'quick' | 'full' | 'all';
 
@@ -199,9 +202,13 @@ export function buildGatePlan(
         : mode === 'full'
           ? [
               {
-                // fast profile: all tests except slow corpus/certification/integration
-                label: 'Fast test suite',
-                cmd: ['bun', 'run', 'test:fast'],
+                // gate profile: unit + compat + corpus. Corpus carries the
+                // parity and golden-snapshot tests for the dual-backend
+                // boundary; running them only in CI let a compiler change go
+                // green here and red after push. e2e stays out — it is serial,
+                // browser-backed, and slow.
+                label: 'Gate test suite',
+                cmd: ['bun', 'run', 'test:gate'],
               },
             ]
           : [

@@ -77,13 +77,16 @@ jobs:
   parity:
     name: Parity corpus
     runs-on: ubuntu-latest
-    # `bun run check` runs the `fast` profile (unit + compat), so everything in
-    # tests/corpus/ — the MilkDrop/projectM parity certification corpus, the
-    # compiler/IR/codegen goldens and the pixel-diff suite — ran nowhere in CI.
-    # The dual-backend boundary those tests cover is the repo's densest source
-    # of regressions, so it was the least-guarded thing in the build.
-    # This job runs the corpus-only profile: the compat category it used to
-    # duplicate already runs in the quality gate above.
+    # tests/corpus/ holds the MilkDrop/projectM parity certification corpus,
+    # the compiler/IR/codegen goldens and the pixel-diff suite. The
+    # dual-backend boundary they cover is the repo's densest source of
+    # regressions.
+    #
+    # `bun run check` now runs them too, via the `gate` profile — they used to
+    # be CI-only, which meant a compiler change could pass the local gate and
+    # only fail here, after push. That is exactly how 83d2f274 left the
+    # projectM snapshot stale and main red for a day. This job stays as the
+    # backstop for anyone who pushes without running the gate.
     #
     # This is deliberately not the e2e visual-regression test, which stays
     # local-only: that one renders through SwiftShader on a 2-core runner, and
