@@ -685,6 +685,58 @@ export function StageControls({
             </button>
           ) : null}
 
+          {/* Promoted out of the overflow menu, not duplicated for taste.
+              That menu is 24 items and 90% of viewport height, so it scrolls:
+              at 1280x720 its last 396px sit below the fold, and Stop audio is
+              the second-to-last item. The one control that ends what the page
+              is doing, and the one every visualizer is expected to have, were
+              both unreachable without scrolling a menu that covers the stage.
+              They stay in the menu too, so the keyboard hints and the palette
+              still have one place that lists everything. */}
+          {engineSnapshot?.audioSource ? (
+            <button
+              type="button"
+              className={styles.navBtn}
+              data-action="stop-audio"
+              aria-label="Stop audio"
+              title={withHint('Stop audio', 'stop-audio')}
+              aria-keyshortcuts={ariaKeyShortcutsFor('stop-audio')}
+              onClick={() => {
+                signalActivity();
+                pulseHaptic(10);
+                void engine.handleAudioStop();
+              }}
+            >
+              <UiIcon
+                name="volume-off"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.navBtn}
+            data-action="toggle-fullscreen"
+            aria-pressed={isFullscreen}
+            aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+            title={withHint(
+              isFullscreen ? 'Exit full screen' : 'Full screen',
+              'toggle-fullscreen',
+            )}
+            aria-keyshortcuts={ariaKeyShortcutsFor('toggle-fullscreen')}
+            onClick={() => {
+              signalActivity();
+              pulseHaptic(10);
+              onToggleFullscreen();
+            }}
+          >
+            <UiIcon
+              name="expand"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </button>
+
           <button
             ref={menuBtnRef}
             type="button"
