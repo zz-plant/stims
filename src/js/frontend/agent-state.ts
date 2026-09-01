@@ -329,7 +329,12 @@ export interface AgentGlobal {
    * Luminance/coverage/motion stats from the live stage canvas, via the
    * visual-search readback. On demand only — WebGPU readback can stall.
    */
-  captureStats: () => FrameStats | null;
+  /**
+   * Resolves inside a frame callback: a WebGPU canvas only holds its image
+   * until the presenting task ends, so a synchronous read composites
+   * transparent and every stat comes back zero on the default backend.
+   */
+  captureStats: () => Promise<FrameStats | null>;
 }
 
 declare global {
@@ -476,8 +481,15 @@ export function installAgentStateGlobal(
       }),
     captureStats: () => {
       const canvas = providers.getStageCanvas();
-      if (!canvas) return null;
-      return extractFrameStats(canvas);
+      if (!canvas) return Promise.resolve(null);
+      if (typeof requestAnimationFrame !== 'function') {
+        return Promise.resolve(extractFrameStats(canvas));
+      }
+      return new Promise<FrameStats | null>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve(extractFrameStats(canvas));
+        });
+      });
     },
   };
 

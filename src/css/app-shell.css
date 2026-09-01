@@ -357,6 +357,32 @@ body[data-page="workspace"][data-live="true"] {
     width: min(72rem, 100%);
   }
 
+  /* The launch copy sits directly on the stage canvas, and the stage is a
+     dark surface whatever the visitor's OS theme says — attract mode paints
+     a MilkDrop frame behind this text, not the page background (html/body
+     are transparent here by design).
+
+     Without this the light theme wins and the hero renders its own ink over
+     that frame: measured #0f172a wordmark against an attract render at
+     luminance ~26/255, a contrast ratio of about 1.005:1. The page looked
+     blank to anyone whose system was in light mode, which is most visitors.
+
+     Pinned rather than made conditional on attract mode: the stage frame is
+     dark in every state this copy is shown over, including the paused and
+     retired ones, so a conditional would only add a way to get it wrong. */
+  .stims-shell__launch {
+    --stims-ink: var(--stims-on-stage-ink);
+    --stims-ink-strong: var(--stims-on-stage-ink-strong);
+    --stims-muted: var(--stims-on-stage-muted);
+    --stims-line: var(--stims-on-stage-line);
+    --stims-line-strong: var(--stims-on-stage-line-strong);
+    --stims-line-soft: var(--stims-on-stage-line-soft);
+    --stims-cool: var(--stims-on-stage-cool);
+    --stims-control-fill: var(--stims-on-stage-control-fill);
+    --stims-control-fill-hover: var(--stims-on-stage-control-fill-hover);
+    color: var(--stims-ink);
+  }
+
   .stims-shell__workspace {
     padding: 0;
   }

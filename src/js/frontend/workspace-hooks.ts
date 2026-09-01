@@ -506,40 +506,51 @@ export function useWorkspaceSessionState({
 
     const timers: number[] = [];
     let cancelled = false;
-    const readStage = () => {
+    // Awaited, not called inline: the read has to happen inside a frame
+    // callback or a WebGPU canvas composites transparent and every verdict
+    // comes back unreadable, which is what kept this guard from ever firing
+    // on the default backend.
+    const readStage = async () => {
       const canvas = stageRef.current?.querySelector('canvas');
-      return canvas ? sampleStageLiveness(canvas) : null;
+      return canvas ? await sampleStageLiveness(canvas) : null;
     };
 
     timers.push(
       window.setTimeout(() => {
-        if (cancelled) return;
-        const first = readStage();
-        if (!shouldRetireAttractRender([first])) {
-          // Rendering, or unjudgeable. Only a settled "rendering" is worth
-          // latching: an unreadable canvas may become readable later.
-          attractLivenessJudgedRef.current = first?.visible === true;
-          return;
-        }
+        void (async () => {
+          if (cancelled) return;
+          const first = await readStage();
+          if (cancelled) return;
+          if (!shouldRetireAttractRender([first])) {
+            // Rendering, or unjudgeable. Only a settled "rendering" is worth
+            // latching: an unreadable canvas may become readable later.
+            attractLivenessJudgedRef.current = first?.visible === true;
+            return;
+          }
 
-        timers.push(
-          window.setTimeout(() => {
-            if (cancelled) return;
-            const second = readStage();
-            if (!shouldRetireAttractRender([first, second])) {
-              attractLivenessJudgedRef.current = second?.visible === true;
-              return;
-            }
+          timers.push(
+            window.setTimeout(() => {
+              void (async () => {
+                if (cancelled) return;
+                const second = await readStage();
+                if (cancelled) return;
+                if (!shouldRetireAttractRender([first, second])) {
+                  attractLivenessJudgedRef.current = second?.visible === true;
+                  return;
+                }
 
-            attractLivenessJudgedRef.current = true;
-            log.log('attract render is blank; pausing the decorative loop');
-            // Paused, not disposed: the engine stays warm so pressing Play
-            // demo is still instant, and `resumePreview()` on audio start
-            // brings it back if the visitor's own session renders fine.
-            engineRef.current?.pausePreview();
-            setAttractModeEnabled(false);
-          }, ATTRACT_LIVENESS_CONFIRM_MS),
-        );
+                attractLivenessJudgedRef.current = true;
+                log.log('attract render is blank; pausing the decorative loop');
+                // Paused, not disposed: the engine stays warm so pressing
+                // Play demo is still instant, and `resumePreview()` on audio
+                // start brings it back if the visitor's own session renders
+                // fine.
+                engineRef.current?.pausePreview();
+                setAttractModeEnabled(false);
+              })();
+            }, ATTRACT_LIVENESS_CONFIRM_MS),
+          );
+        })();
       }, ATTRACT_LIVENESS_SETTLE_MS),
     );
 

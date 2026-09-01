@@ -68,6 +68,23 @@
   --hover-bg: rgba(119, 201, 255, 0.14);
   --highlight-glow: rgba(244, 122, 84, 0.22);
 
+  /* Ink for copy that sits ON the stage canvas rather than on the page.
+     The stage is a dark surface in every theme, so these never flip with
+     the light palette below — see .stims-shell__launch in app-shell.css. */
+  --stims-on-stage-ink: #f6efe4;
+  --stims-on-stage-ink-strong: #fff8ef;
+  /* 0.9, not the 0.74 the dark panel palette uses: that alpha was tuned
+     against a near-black panel, and this copy sits on a MilkDrop frame whose
+     bright passes reach mid grey. Against a #606060 backdrop 0.74 measures
+     3.85:1 and 0.9 measures 4.83:1, clearing AA for body text. */
+  --stims-on-stage-muted: rgba(246, 239, 228, 0.9);
+  --stims-on-stage-line: rgba(255, 255, 255, 0.12);
+  --stims-on-stage-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-on-stage-line-soft: rgba(255, 255, 255, 0.08);
+  --stims-on-stage-cool: #77c9ff;
+  --stims-on-stage-control-fill: rgba(255, 255, 255, 0.05);
+  --stims-on-stage-control-fill-hover: rgba(255, 255, 255, 0.08);
+
   /* ── App-shell semantic colors ──────────────────────────────── */
   --stims-ink: var(--text-color);
   --stims-ink-strong: #fff8ef;
