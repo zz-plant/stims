@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import {
@@ -10,28 +9,9 @@ import {
   rankLoopPresetSweepSamples,
   resolveLoopSweepChromiumArgs,
 } from '../../scripts/run-milkdrop-loop-visual-sweep.ts';
+import { browserTest } from '../test-helpers.ts';
 
 const repoRoot = new URL('../..', import.meta.url).pathname;
-
-/**
- * This file is the only browser-backed test in `tests/corpus/`, and corpus now
- * runs in `bun run check`. Playwright's browsers are a separate download that
- * `bun install` does not perform, so on a fresh clone the launch below would
- * fail the gate for a missing binary rather than a real defect.
- *
- * The skip is local-only: CI installs Chromium before the corpus job, so a
- * skip there would quietly drop the coverage this test exists to provide.
- */
-function chromiumAvailable(): boolean {
-  if (process.env.CI) return true;
-  try {
-    return existsSync(chromium.executablePath());
-  } catch {
-    return false;
-  }
-}
-
-const browserTest = chromiumAvailable() ? test : test.skip;
 
 describe('MilkDrop loop preset visual sweep', () => {
   test('selects the unique catalog presets whose compiled IR executes loop control flow', () => {
