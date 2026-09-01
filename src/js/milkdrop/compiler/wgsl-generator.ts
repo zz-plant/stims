@@ -265,10 +265,17 @@ function buildWgslExpression(
       // renderer-backends/webgpu-procedural-materials.ts: an f32-unrepresentable
       // literal is a WGSL shader-creation error, and 0.0 is what
       // milkdropFinite gives that magnitude on every other path.
-      return Number.isFinite(expression.value) &&
-        Math.abs(expression.value) < EEL_F32_MAX
-        ? expression.value.toString()
-        : '0.0';
+      if (
+        !Number.isFinite(expression.value) ||
+        Math.abs(expression.value) >= EEL_F32_MAX
+      ) {
+        return '0.0';
+      }
+      // Preserve negative zero: (-0).toString() would drop the sign, but the
+      // interpreter keeps it and the CPU JIT must match.
+      return Object.is(expression.value, -0)
+        ? '-0.0'
+        : expression.value.toString();
 
     case 'identifier': {
       const name = expression.name.toLowerCase();

@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { getBrowserStorage } from '../core/state/browser-storage.ts';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  getStageOverlayPreference,
+  setStageOverlayPreference,
+  subscribeToStageOverlayPreference,
+} from '../core/stage-overlay-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import type { MilkdropCompiledPreset } from '../milkdrop/compiler-types.ts';
 import { isShaderApproximated } from '../milkdrop/shader-execution-mode.ts';
@@ -100,14 +104,6 @@ function summarizeLowering(
 }
 
 /**
- * Persisted opt-in inherited from the retired stats overlay. `?stats=1` was
- * sticky across reloads — which is what makes it usable in agent mode, where
- * the page reloads between steps — so the alias keeps that behaviour instead of
- * silently becoming a one-shot flag.
- */
-const HUD_STORAGE_KEY = 'stims:debug:hud';
-
-/**
  * Resolves the HUD's visibility from the URL and the persisted flag.
  *
  * `?debug=hud` is the primary spelling and is not sticky. `?stats=1` / `?stats=0`
@@ -128,21 +124,31 @@ export function shouldEnableDebugHud({
 }
 
 function useHudEnabled(): boolean {
-  const [enabled, setEnabled] = useState(false);
+  // Reactive: the Settings toggle writes through the stage-overlay store, so
+  // flipping it mounts or unmounts the HUD without a reload.
+  const hudEnabled = useSyncExternalStore(
+    subscribeToStageOverlayPreference,
+    () => getStageOverlayPreference().debugHud,
+    () => false,
+  );
+  // One-shot URL overrides, preserved from the old flag behaviour:
+  // `?debug=hud` shows the HUD for this load; `?stats=1`/`?stats=0` persist.
+  const [flagOverride, setFlagOverride] = useState<boolean | null>(null);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const storage = getBrowserStorage();
-    const stats = parseURLParams().stats;
-    if (stats === '1' || stats === '0') {
-      storage?.setItem(HUD_STORAGE_KEY, stats);
+    const params = parseURLParams();
+    const stats = params.stats;
+    if (stats === '1') {
+      setStageOverlayPreference({ debugHud: true });
+      setFlagOverride(true);
+    } else if (stats === '0') {
+      setStageOverlayPreference({ debugHud: false });
+      setFlagOverride(false);
+    } else if (params.flags.debug === 'hud') {
+      setFlagOverride(true);
     }
-    setEnabled(
-      shouldEnableDebugHud({
-        storageValue: storage?.getItem(HUD_STORAGE_KEY) ?? null,
-      }),
-    );
   }, []);
-  return enabled;
+  return flagOverride ?? hudEnabled;
 }
 
 /**
