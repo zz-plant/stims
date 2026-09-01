@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/CueMonitor.module.css';
 import { getBrowserStorage } from '../core/state/browser-storage.ts';
+import { hadSessionBeforeBoot } from '../core/state/last-session-store.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
@@ -154,9 +155,16 @@ export function CueMonitor() {
   if (!next && !fading && !arming) {
     // An armed queue is the only thing that makes this deck visible, so an
     // empty queue renders nothing — except the one-time hint below, whose job
-    // is to tell a first-time visitor the deck exists at all. Once dismissed
-    // (or once the user actually queues something) it stays gone.
+    // is to tell a visitor the deck exists at all. Once dismissed (or once
+    // the user actually queues something) it stays gone.
     if (hintDismissed) return null;
+    // Not on the very first visit: someone who just clicked "Play demo" came
+    // for the visuals, and a cue-deck card covering them is chrome before
+    // content. The hint waits for the second session — the same signal the
+    // landing page's "Welcome back" uses — and never shows on narrow screens,
+    // where it collided with the swipe hint and there is no room for a deck.
+    if (!hadSessionBeforeBoot()) return null;
+    if (window.matchMedia('(max-width: 719px)').matches) return null;
     return (
       <aside className={styles.cue} aria-label="Cue monitor">
         <div className={styles.header}>

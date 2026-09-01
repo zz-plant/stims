@@ -1,95 +1,124 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import {
+  markPresetNeedsWebgl,
+  presetNeedsWebgl,
+} from '../../src/js/core/state/preset-webgl-fallback.ts';
 
 /**
  * `markPresetNeedsWebgl` returning false is what stops the WebGPU->WebGL
  * failover from reloading into an unbounded loop, so the return value needs
  * coverage of its own — see backend-webgl-fallback.test.ts for the caller.
  *
- * The storage seam is mocked rather than the `sessionStorage` global: the
- * failure modes worth pinning are "the global throws on access" and "setItem
- * throws", and both are only observable through this helper.
+ * The `sessionStorage` global is swapped here rather than `mock.module`'ing
+ * the `browser-storage.ts` seam. `mock.module` is process-global *and*
+ * permanent in Bun: the stub this file used to install was what every file
+ * loaded after it saw, and it implemented only getItem/setItem/removeItem —
+ * enough for these tests, but `reset-overrides.test.ts` (which sorts later)
+ * then crashed on the missing `clear`, and `resetAllOverrides` itself
+ * enumerates storage through the missing `length`/`key`. Both files passed
+ * alone. A global swapped in `beforeEach` and restored in `afterEach` cannot
+ * outlive this file.
+ *
+ * The two failure modes worth pinning are "touching the global throws"
+ * (cross-origin embed with third-party storage blocked) and "setItem throws"
+ * (Safari private mode quota). Modelling them on the global rather than on the
+ * seam means the real `getBrowserSessionStorage()` swallow-to-null path is
+ * exercised too instead of being stubbed away.
  */
 
 type StorageMode = 'working' | 'unreachable' | 'quota-exceeded';
 
 let mode: StorageMode = 'working';
 let backing = new Map<string, string>();
+let savedDescriptor: PropertyDescriptor | undefined;
 
-mock.module('../../src/js/core/state/browser-storage.ts', () => ({
-  // Only the *session* seam is under test here, but `mock.module` is
-  // process-global and permanent in Bun: whatever this returns is what every
-  // test file loaded afterwards sees. Stubbing this to `null` silently
-  // disabled localStorage for the rest of the run, so
-  // milkdrop-webgpu-feature-routing's setWebGpuForceMode() wrote nowhere and
-  // the suite failed while the file passed alone. Keep the real behaviour.
-  getBrowserStorage: () => {
-    try {
-      return typeof localStorage !== 'undefined' ? localStorage : null;
-    } catch {
-      return null;
-    }
-  },
-  getBrowserSessionStorage: () => {
-    // Mirrors the real helper: a global that throws on access (cross-origin
-    // embed with third-party storage blocked) is swallowed into null.
-    if (mode === 'unreachable') return null;
-    return {
-      getItem: (key: string) => backing.get(key) ?? null,
-      setItem: (key: string, value: string) => {
-        if (mode === 'quota-exceeded') {
-          throw new Error('QuotaExceededError');
-        }
-        backing.set(key, value);
-      },
-      removeItem: (key: string) => void backing.delete(key),
-    } as unknown as Storage;
-  },
-}));
-
-const STORE = '../../src/js/core/state/preset-webgl-fallback.ts';
+function createFakeStorage(): Storage {
+  return {
+    get length() {
+      return backing.size;
+    },
+    key: (index: number) => [...backing.keys()][index] ?? null,
+    getItem: (key: string) => backing.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      if (mode === 'quota-exceeded') {
+        throw new Error('QuotaExceededError');
+      }
+      backing.set(key, value);
+    },
+    removeItem: (key: string) => void backing.delete(key),
+    clear: () => backing.clear(),
+  } as unknown as Storage;
+}
 
 beforeEach(() => {
   mode = 'working';
   backing = new Map();
+  savedDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'sessionStorage',
+  );
+
+  const storage = createFakeStorage();
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    get() {
+      if (mode === 'unreachable') {
+        // The property access itself throws, before any method is called —
+        // which is what the helper's try/catch exists for.
+        throw new Error('SecurityError: storage is not available');
+      }
+      return storage;
+    },
+  });
+});
+
+afterEach(() => {
+  if (savedDescriptor) {
+    Object.defineProperty(globalThis, 'sessionStorage', savedDescriptor);
+  } else {
+    Reflect.deleteProperty(globalThis, 'sessionStorage');
+  }
+  savedDescriptor = undefined;
 });
 
 describe('markPresetNeedsWebgl persistence reporting', () => {
-  test('reports true when the write lands', async () => {
-    const { markPresetNeedsWebgl, presetNeedsWebgl } = await import(STORE);
-
+  test('reports true when the write lands', () => {
     expect(markPresetNeedsWebgl('preset-a')).toBe(true);
     expect(presetNeedsWebgl('preset-a')).toBe(true);
   });
 
-  test('reports true for an already-recorded preset', async () => {
-    const { markPresetNeedsWebgl } = await import(STORE);
-
+  test('reports true for an already-recorded preset', () => {
     expect(markPresetNeedsWebgl('preset-a')).toBe(true);
     // Already durable, so the caller may still reload.
     expect(markPresetNeedsWebgl('preset-a')).toBe(true);
   });
 
-  test('reports false when session storage is unreachable', async () => {
+  test('reports false when session storage is unreachable', () => {
     mode = 'unreachable';
-    const { markPresetNeedsWebgl, presetNeedsWebgl } = await import(STORE);
+    // The helper console.debug()s each swallowed access. That is the
+    // behaviour under test, not three "error: SecurityError" lines worth
+    // printing into every suite run.
+    const debug = console.debug;
+    console.debug = () => {};
 
-    expect(markPresetNeedsWebgl('preset-a')).toBe(false);
-    // Which is exactly why the caller must not reload: the reload's renderer
-    // selection reads this back and gets nothing.
-    expect(presetNeedsWebgl('preset-a')).toBe(false);
+    try {
+      expect(markPresetNeedsWebgl('preset-a')).toBe(false);
+      // Which is exactly why the caller must not reload: the reload's
+      // renderer selection reads this back and gets nothing.
+      expect(presetNeedsWebgl('preset-a')).toBe(false);
+    } finally {
+      console.debug = debug;
+    }
   });
 
-  test('reports false when setItem throws on quota', async () => {
+  test('reports false when setItem throws on quota', () => {
     mode = 'quota-exceeded';
-    const { markPresetNeedsWebgl, presetNeedsWebgl } = await import(STORE);
 
     expect(markPresetNeedsWebgl('preset-a')).toBe(false);
     expect(presetNeedsWebgl('preset-a')).toBe(false);
   });
 
-  test('ignores an empty preset id', async () => {
-    const { markPresetNeedsWebgl } = await import(STORE);
-
+  test('ignores an empty preset id', () => {
     expect(markPresetNeedsWebgl('')).toBe(false);
   });
 });
