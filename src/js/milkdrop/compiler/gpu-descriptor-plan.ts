@@ -18,6 +18,16 @@ import {
 } from './gpu-field-planner.ts';
 
 const POST_PASS_EPSILON = 0.0001;
+
+/** MilkDrop's per-wave register bank. A custom wave's per-frame block writes
+ * `t1`..`t8` and its per-point block reads them back as frame constants, so
+ * they are register INPUTS to the per-point program even though
+ * collectProgramAssignmentTargets excludes them (there they are the preset's
+ * own t registers, which never land in VM state). */
+const CUSTOM_WAVE_REGISTER_BANK_INPUTS = Array.from(
+  { length: 8 },
+  (_, index) => `t${index + 1}`,
+);
 const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
 
 const EXCLUDED_ASSIGNMENT_TARGET_PATTERN = /^(?:[qt]\d+|megabuf|gmegabuf)$/u;
@@ -158,6 +168,22 @@ export function buildWebGpuDescriptorPlan({
         const loweredPerPointProgram =
           wave.programs.perPoint.statements.length > 0
             ? lowerGpuFieldProgram(wave.programs.perPoint, {
+                // Frame constants the per-point block may read: the preset's
+                // q registers plus everything the wave's own init/per-frame
+                // blocks left behind (its t bank and any user variable).
+                // Without these the block read them as zero-initialised
+                // temporaries — eos-glowsticks-v2-03-music takes every colour
+                // channel from t1..t6 and all of its motion from q1, so the
+                // GPU path drew it in pure black and the whole preset, whose
+                // only light source is those waves, rendered blank.
+                registerInputs: [
+                  ...perFrameFieldRegisterInputs,
+                  ...CUSTOM_WAVE_REGISTER_BANK_INPUTS,
+                  ...collectProgramAssignmentTargets([
+                    wave.programs.init,
+                    wave.programs.perFrame,
+                  ]),
+                ],
                 additionalStateIdentifiers: [
                   'sample',
                   'value',
@@ -172,6 +198,10 @@ export function buildWebGpuDescriptorPlan({
                   'r',
                   'g',
                   'b',
+                  // Same story for alpha, and it matters more: a dropped
+                  // colour repaints a wave, a dropped alpha draws every point
+                  // at full strength into an additive feedback loop.
+                  'a',
                 ],
                 // MilkDrop's per-point block is a sequential loop over the
                 // wave's samples; a vertex shader is not.

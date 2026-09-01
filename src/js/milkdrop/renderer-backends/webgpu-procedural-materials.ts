@@ -24,6 +24,7 @@ import {
   MILKDROP_WAVE_Z,
 } from '../renderer-helpers/primitive-rasterization-metrics';
 import {
+  createFieldRegisterUniformState,
   createProceduralFieldUniformState,
   createProceduralInteractionUniformState,
 } from '../renderer-helpers/procedural-field-uniforms';
@@ -1010,14 +1011,14 @@ function buildCustomWaveProgramWgslCode(
     output === 'point'
       ? 'milkdropCustomWavePointWithProgram'
       : 'milkdropCustomWaveColorWithProgram';
-  const returnType = output === 'point' ? 'vec2<f32>' : 'vec3<f32>';
+  const returnType = output === 'point' ? 'vec2<f32>' : 'vec4<f32>';
   const returnCode =
     output === 'point'
       ? 'return vec2<f32>((field_x - 0.5) * 2.0, (0.5 - field_y) * 2.0);'
       : // Clamped exactly as the CPU wave-builder clamps its per-point
         // colours, so an out-of-range write cannot inject more light into the
         // feedback loop than the same preset does on WebGL.
-        'return clamp(vec3<f32>(field_r, field_g, field_b), vec3<f32>(0.0), vec3<f32>(1.0));';
+        'return clamp(vec4<f32>(field_r, field_g, field_b, field_a), vec4<f32>(0.0), vec4<f32>(1.0));';
   return `fn ${name}(
     sampleTValue: f32,
     sampleValue1: f32,
@@ -1028,9 +1029,13 @@ function buildCustomWaveProgramWgslCode(
     paramMystery: f32,
     paramSpectrum: f32,
     paramSamples: f32,
-    baseColor: vec3<f32>,${WGSL_SIGNAL_PARAMETERS}
+    baseColor: vec3<f32>,
+    baseAlpha: f32,${WGSL_SIGNAL_PARAMETERS}${buildGpuFieldRegisterParamDecls(
+      program,
+    )}
   ) -> ${returnType} {
 ${WGSL_SIGNAL_UNPACK}
+    ${buildGpuFieldRegisterBindings(program)}
     var field_sample = sampleTValue;
     var field_value = sampleValue1;
     var field_value1 = sampleValue1;
@@ -1065,14 +1070,19 @@ ${WGSL_SIGNAL_UNPACK}
     var field_r = baseColor.x;
     var field_g = baseColor.y;
     var field_b = baseColor.z;
+    // Seeded like r/g/b: a block that never writes 'a' leaves the wavecode's
+    // own alpha in place, and one that does writes the vertex alpha itself.
+    var field_a = baseAlpha;
     ${buildGpuFieldTemporaryDeclarations(program)}
     ${buildGpuFieldStatementCode(program)}
     ${returnCode}
   }`;
 }
 
-function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
-  const pointCode = hasProgram
+function buildCustomWaveVertexWgslCode(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const pointCode = program
     ? `point = milkdropCustomWavePointWithProgram(
       sampleT,
       blendedSampleValue,
@@ -1084,11 +1094,12 @@ function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
       blendedSpectrum,
       blendedSampleCount,
       baseColor,
+      baseAlpha,
       blendedSignalsA,
       blendedSignalsB,
       blendedSignalsC,
       blendedSignalsD,
-      blendedSignalsE
+      blendedSignalsE${buildGpuFieldRegisterCallArgs(program)}
     );`
     : `let x = blendedCenterX + (-1.0 + sampleT * 2.0);
     let baseY =
@@ -1123,7 +1134,8 @@ function buildCustomWaveVertexWgslCode(hasProgram: boolean) {
     previousSignalsD: vec4<f32>,
     previousSignalsE: vec4<f32>,
     interactionTransform: vec4<f32>,
-    baseColor: vec3<f32>
+    baseColor: vec3<f32>,
+    baseAlpha: f32${buildGpuFieldRegisterParamDecls(program)}
   ) -> vec2<f32> {
     let blendMix = waveExtras.z;
     let blendedSampleValue = mix(previousSampleValue, sampleValue, blendMix);
@@ -1152,8 +1164,10 @@ ${WGSL_APPLY_INTERACTION}
  * Per-point colour, in the same blended per-sample terms as the vertex fn.
  * With no per-point program the wave keeps its flat wavecode colour.
  */
-function buildCustomWaveColorWgslCode(hasProgram: boolean) {
-  const colorCode = hasProgram
+function buildCustomWaveColorWgslCode(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  const colorCode = program
     ? `color = milkdropCustomWaveColorWithProgram(
       sampleT,
       blendedSampleValue,
@@ -1165,13 +1179,14 @@ function buildCustomWaveColorWgslCode(hasProgram: boolean) {
       blendedSpectrum,
       blendedSampleCount,
       baseColor,
+      baseAlpha,
       blendedSignalsA,
       blendedSignalsB,
       blendedSignalsC,
       blendedSignalsD,
-      blendedSignalsE
+      blendedSignalsE${buildGpuFieldRegisterCallArgs(program)}
     );`
-    : 'color = baseColor;';
+    : 'color = vec4<f32>(baseColor, baseAlpha);';
 
   return `fn computeProceduralCustomWaveColor(
     sampleT: f32,
@@ -1188,8 +1203,9 @@ function buildCustomWaveColorWgslCode(hasProgram: boolean) {
     previousSignalsC: vec4<f32>,
     previousSignalsD: vec4<f32>,
     previousSignalsE: vec4<f32>,
-    baseColor: vec3<f32>
-  ) -> vec3<f32> {
+    baseColor: vec3<f32>,
+    baseAlpha: f32${buildGpuFieldRegisterParamDecls(program)}
+  ) -> vec4<f32> {
     let blendMix = waveExtras.z;
     let blendedSampleValue = mix(previousSampleValue, sampleValue, blendMix);
     let blendedSampleValue2 = mix(previousSampleValue2, sampleValue2, blendMix);
@@ -1205,7 +1221,7 @@ function buildCustomWaveColorWgslCode(hasProgram: boolean) {
     let blendedSignalsC = mix(previousSignalsC, signalsC, blendMix);
     let blendedSignalsD = mix(previousSignalsD, signalsD, blendMix);
     let blendedSignalsE = mix(previousSignalsE, signalsE, blendMix);
-    var color = vec3<f32>(0.0, 0.0, 0.0);
+    var color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
     ${colorCode}
     return color;
   }`;
@@ -1227,7 +1243,7 @@ function getProceduralCustomWaveVertexFn(
     includes.push(wgsl(buildCustomWaveProgramWgslCode(program, 'point')));
   }
   const fn = wgslFn(
-    buildCustomWaveVertexWgslCode(Boolean(program)),
+    buildCustomWaveVertexWgslCode(program),
     includes,
   ) as unknown as TslVertexFn;
   customWaveVertexFnCache.set(key, fn);
@@ -1247,7 +1263,7 @@ function getProceduralCustomWaveColorFn(
     includes.push(wgsl(buildCustomWaveProgramWgslCode(program, 'color')));
   }
   const fn = wgslFn(
-    buildCustomWaveColorWgslCode(Boolean(program)),
+    buildCustomWaveColorWgslCode(program),
     includes,
   ) as unknown as TslVertexFn;
   customWaveColorFnCache.set(key, fn);
@@ -1283,7 +1299,14 @@ function createCustomWaveUniformState() {
     spectrum: { value: 0 },
     sampleCount: { value: 64 },
     tint: { value: new Color(1, 1, 1) },
+    /** The wave's own alpha, which seeds the per-point block's `a`. */
     alpha: { value: 1 },
+    /**
+     * Transition/blend weight, applied AFTER the per-point block. Kept apart
+     * from `alpha` because a block that overwrites `a` discards its seed, and
+     * folding the blend weight into that seed would drop it mid-crossfade.
+     */
+    waveAlphaMultiplier: { value: 1 },
     previousCenterX: { value: 0 },
     previousCenterY: { value: 0 },
     previousScaling: { value: 1 },
@@ -1311,6 +1334,7 @@ function createCustomWaveUniformState() {
     previousSpectrum: { value: 0 },
     previousSampleCount: { value: 64 },
     blendMix: { value: 1 },
+    ...createFieldRegisterUniformState(),
     ...createProceduralInteractionUniformState(),
   };
 }
@@ -1364,6 +1388,8 @@ export function createProceduralCustomWaveMaterial(
     previousSignalsE: previousSignals.e,
     interactionTransform: packInteractionVector(uniforms),
     baseColor,
+    baseAlpha: uniforms.alpha,
+    ...packRegisterVectorArgs(uniforms, program),
   });
   // Varied, not recomputed in the fragment stage: MilkDrop shades a custom
   // wave per point and lets the rasteriser interpolate between them.
@@ -1409,6 +1435,8 @@ export function createProceduralCustomWaveMaterial(
       previousSignalsD: previousSignals.d,
       previousSignalsE: previousSignals.e,
       baseColor,
+      baseAlpha: uniforms.alpha,
+      ...packRegisterVectorArgs(uniforms, program),
     }),
   );
 
@@ -1418,9 +1446,14 @@ export function createProceduralCustomWaveMaterial(
   material.vertexNode = cameraProjectionMatrix
     .mul(modelViewMatrix)
     .mul(vec4(point.x, point.y, 0.28, 1.0));
+  // The wave-level alpha is already the seed for `field_a`, so the per-point
+  // alpha the block leaves behind IS the vertex alpha — multiplying by
+  // uniforms.alpha again here would dim the wave twice.
   material.colorNode = vec4(
     vec3(pointColor.x, pointColor.y, pointColor.z),
-    uniforms.alpha.mul(uniforms.interactionAlpha),
+    pointColor.w
+      .mul(uniforms.interactionAlpha)
+      .mul(uniforms.waveAlphaMultiplier),
   );
 
   return Object.assign(material, { uniforms });

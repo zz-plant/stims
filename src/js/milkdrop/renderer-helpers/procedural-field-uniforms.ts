@@ -58,7 +58,7 @@ export type ProceduralFieldRegisterUniformState = Record<
   { value: number }
 >;
 
-function createFieldRegisterUniformState(): ProceduralFieldRegisterUniformState {
+export function createFieldRegisterUniformState(): ProceduralFieldRegisterUniformState {
   const state: Record<string, { value: number }> = {};
   for (let index = 0; index < FIELD_REGISTER_UNIFORM_COUNT; index += 1) {
     state[`registerSlot${index}`] = { value: 0 };

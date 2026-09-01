@@ -47,8 +47,19 @@ export type MilkdropPolyline = {
 };
 
 export type MilkdropWaveVisual = MilkdropPolyline & {
-  /** Optional RGB triplets, one per vertex, used for custom-wave per-point colors. */
+  /**
+   * Optional RGBA quadruplets, one per vertex, used for custom-wave per-point
+   * colours and alpha. MilkDrop seeds the per-point block with the wavecode's
+   * `r/g/b/a` and reads all four back, so the alpha a block computes is the
+   * vertex alpha — not a modulation of `alpha` below. When `perPointAlpha` is
+   * set the consumer must NOT also apply `alpha`, or the wave is dimmed twice.
+   */
   colors?: number[] | Float32Array;
+  /**
+   * True when the per-point block wrote an alpha that differs from the
+   * wave-level `alpha`, so `colors[i * 4 + 3]` is authoritative.
+   */
+  perPointAlpha?: boolean;
   drawMode: 'line' | 'dots';
   additive: boolean;
   blendMode?: 'subtractive' | 'multiplicative';
@@ -190,6 +201,9 @@ export type MilkdropProceduralCustomWaveVisual = {
   time: number;
   sampleCount?: number;
   signals?: MilkdropGpuFieldSignalInputs;
+  /** Frame constants the lowered per-point program reads: the preset's q
+   * registers and the wave's own per-frame variables, keyed by name. */
+  registers?: MilkdropPerFrameFieldRegisters;
   fieldProgram?: MilkdropGpuFieldProgramDescriptor | null;
   color: MilkdropColor;
   alpha: number;

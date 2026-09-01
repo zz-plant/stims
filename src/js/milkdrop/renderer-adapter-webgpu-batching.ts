@@ -138,6 +138,13 @@ type BorderRingInstance = {
 };
 
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
+
+/**
+ * Scratch for a segment's averaged per-point colour. Segments are appended
+ * synchronously inside one frame and never re-entrantly, so a module-level
+ * scratch keeps the hot path allocation-free.
+ */
+const segmentPointColor = { r: 0, g: 0, b: 0 };
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const SHAPE_OUTLINE_INNER_OFFSET = 0;
 const SHAPE_THICK_OUTLINE_OUTER_OFFSET = MILKDROP_THICK_SHAPE_PASS_OFFSET;
@@ -598,9 +605,18 @@ class CompactSegmentUploadBuffer {
     alpha: number,
     width: number,
     closeLoop = false,
+    /**
+     * Optional per-point RGBA (stride 4) from a custom wave's per-point block.
+     * A segment carries one style, so each takes the mean of its two
+     * endpoints — for an additive wave that preserves the light the
+     * Gouraud-interpolated span would have injected.
+     */
+    pointColors?: ArrayLike<number> | null,
   ) {
     const pointCount = Math.floor(positions.length / 3);
     const segmentCount = closeLoop ? pointCount : Math.max(0, pointCount - 1);
+    const perPoint =
+      pointColors && pointColors.length >= pointCount * 4 ? pointColors : null;
 
     for (let segmentIndex = 0; segmentIndex < segmentCount; segmentIndex += 1) {
       const startPointIndex = segmentIndex;
@@ -637,6 +653,26 @@ class CompactSegmentUploadBuffer {
             )
           : null;
 
+      let segmentColor = color;
+      let segmentAlpha = alpha;
+      if (perPoint) {
+        const startStyle = startPointIndex * 4;
+        const endStyle = endPointIndex * 4;
+        segmentPointColor.r =
+          ((perPoint[startStyle] ?? 0) + (perPoint[endStyle] ?? 0)) * 0.5;
+        segmentPointColor.g =
+          ((perPoint[startStyle + 1] ?? 0) + (perPoint[endStyle + 1] ?? 0)) *
+          0.5;
+        segmentPointColor.b =
+          ((perPoint[startStyle + 2] ?? 0) + (perPoint[endStyle + 2] ?? 0)) *
+          0.5;
+        segmentColor = segmentPointColor;
+        segmentAlpha =
+          ((perPoint[startStyle + 3] ?? 0) + (perPoint[endStyle + 3] ?? 0)) *
+          0.5 *
+          alpha;
+      }
+
       this.appendSegment(
         startX,
         startY,
@@ -644,8 +680,8 @@ class CompactSegmentUploadBuffer {
         endX,
         endY,
         endZ,
-        color,
-        alpha,
+        segmentColor,
+        segmentAlpha,
         width,
         {
           startExtension: computeJoinExtension(
@@ -1766,9 +1802,12 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       this.segmentUploads[getVisualBlendMode(wave)].appendPolyline(
         wave.positions,
         wave.color,
-        wave.alpha * alphaMultiplier,
+        // A per-point alpha is already seeded from the wave's own alpha, so
+        // only the blend multiplier is left to apply on top of it.
+        wave.perPointAlpha ? alphaMultiplier : wave.alpha * alphaMultiplier,
         getMilkdropSegmentWidth(wave.thickness),
         wave.closed,
+        wave.colors,
       );
     }
     this.getWaveTarget(`wave:${target}`).syncSplit(this.segmentUploads);
