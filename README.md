@@ -226,7 +226,7 @@ See [Technical Foundations](./docs/TECHNICAL_ACHIEVEMENTS.md) for the implementa
 
 ## Quick start
 
-Prerequisites: Bun 1.3+ and a browser with WebGL2 support. WebGPU is optional.
+Prerequisites: Bun 1.3.14+ and a browser with WebGL2 support. WebGPU is optional.
 
 ```bash
 git clone https://github.com/zz-plant/stims.git
@@ -244,7 +244,8 @@ Open `http://localhost:5173`.
 ```bash
 bun run check:quick   # Fast lint, types, metadata, and claim-drift checks
 bun run test          # Unit, integration, and compatibility test profiles
-bun run check         # Full PR gate (all 2,700+ tests, linter, architecture)
+bun run check         # PR gate (fast suite — 2,700+ tests, linter, architecture)
+bun run check:all     # Adds the slow corpus and certification tests
 bun run build         # Production bundle build
 ```
 
