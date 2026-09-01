@@ -320,12 +320,65 @@ function foldBinary(
   return null;
 }
 
+const EMPTY_NAMES: ReadonlySet<string> = new Set<string>();
+
+/**
+ * Names the program writes to, lowercased. A written name is never treated as
+ * a compile-time constant, because a later read of it must see the assigned
+ * value rather than the builtin one.
+ *
+ * Deliberately flow-insensitive: a single assignment anywhere in the block
+ * (including inside a loop or conditional body) disqualifies the name for the
+ * whole block. Reads that precede the first write lose a fold they could have
+ * kept; nothing loses correctness.
+ */
+export function collectAssignedNames(
+  statements: readonly import('../types').MilkdropCompiledStatement[],
+  inherited: ReadonlySet<string> = EMPTY_NAMES,
+): ReadonlySet<string> {
+  const names = new Set<string>(inherited);
+  const visitExpression = (node: MilkdropExpressionNode): void => {
+    switch (node.type) {
+      case 'binary':
+        if (node.operator === '=' && node.left.type === 'identifier') {
+          names.add(node.left.name.toLowerCase());
+        }
+        visitExpression(node.left);
+        visitExpression(node.right);
+        return;
+      case 'unary':
+        visitExpression(node.operand);
+        return;
+      case 'call':
+        node.args.forEach(visitExpression);
+        return;
+      default:
+    }
+  };
+  const visitStatement = (
+    stmt: import('../types').MilkdropCompiledStatement,
+  ): void => {
+    if (stmt.control) {
+      if (stmt.control.count) visitExpression(stmt.control.count);
+      if (stmt.control.condition) visitExpression(stmt.control.condition);
+      stmt.control.body.forEach(visitStatement);
+      return;
+    }
+    names.add(stmt.target.toLowerCase());
+    if (stmt.targetExpression) visitExpression(stmt.targetExpression);
+    visitExpression(stmt.expression);
+  };
+  statements.forEach(visitStatement);
+  return names;
+}
+
 /**
  * Recursively fold an expression tree. Returns a (possibly simplified) node.
  * Does not mutate the input.
  */
 export function foldExpression(
   node: MilkdropExpressionNode,
+  shadowed: ReadonlySet<string> = EMPTY_NAMES,
 ): MilkdropExpressionNode {
   switch (node.type) {
     case 'literal':
@@ -333,14 +386,18 @@ export function foldExpression(
 
     case 'identifier': {
       const name = node.name.toLowerCase();
-      // Resolve known constants inline
+      // Resolve known constants inline — but only while the preset leaves
+      // them alone. MilkDrop lets a program assign `pi`/`e` like any other
+      // variable, and presets do (`per_pixel_1=pi=3.14159;`). Inlining the
+      // builtin value there would silently ignore the override.
+      if (shadowed.has(name)) return node;
       if (name === 'pi') return { type: 'literal', value: Math.PI };
       if (name === 'e') return { type: 'literal', value: Math.E };
       return node;
     }
 
     case 'unary': {
-      const operand = foldExpression(node.operand);
+      const operand = foldExpression(node.operand, shadowed);
       const simplified = foldUnary(node.operator, operand);
       return simplified;
     }
@@ -348,13 +405,13 @@ export function foldExpression(
     case 'binary': {
       // Do not fold assignment operators — they have side effects
       if (node.operator === '=') {
-        const left = foldExpression(node.left);
-        const right = foldExpression(node.right);
+        const left = foldExpression(node.left, shadowed);
+        const right = foldExpression(node.right, shadowed);
         return { type: 'binary', operator: '=', left, right };
       }
 
-      const left = foldExpression(node.left);
-      const right = foldExpression(node.right);
+      const left = foldExpression(node.left, shadowed);
+      const right = foldExpression(node.right, shadowed);
       const folded = foldBinary(node.operator, left, right);
       if (folded) return folded;
       return { type: 'binary', operator: node.operator, left, right };
@@ -362,7 +419,7 @@ export function foldExpression(
 
     case 'call': {
       const name = node.name.toLowerCase();
-      const args = node.args.map(foldExpression);
+      const args = node.args.map((arg) => foldExpression(arg, shadowed));
 
       // Fold pure functions with all-literal args
       if (PURE_FUNCTIONS.has(name) && isAllLiterals(args)) {
@@ -383,12 +440,15 @@ export function foldExpression(
  */
 export function foldStatement(
   stmt: import('../types').MilkdropCompiledStatement,
+  shadowed: ReadonlySet<string> = EMPTY_NAMES,
 ): import('../types').MilkdropCompiledStatement {
-  const expression = foldExpression(stmt.expression);
+  const expression = foldExpression(stmt.expression, shadowed);
   const targetExpression = stmt.targetExpression
-    ? foldExpression(stmt.targetExpression)
+    ? foldExpression(stmt.targetExpression, shadowed)
     : undefined;
-  const control = stmt.control ? foldControlFlow(stmt.control) : undefined;
+  const control = stmt.control
+    ? foldControlFlow(stmt.control, shadowed)
+    : undefined;
 
   if (
     expression === stmt.expression &&
@@ -408,12 +468,15 @@ export function foldStatement(
 
 function foldControlFlow(
   control: import('../types').MilkdropControlFlowStatement,
+  shadowed: ReadonlySet<string> = EMPTY_NAMES,
 ): import('../types').MilkdropControlFlowStatement {
-  const count = control.count ? foldExpression(control.count) : undefined;
-  const condition = control.condition
-    ? foldExpression(control.condition)
+  const count = control.count
+    ? foldExpression(control.count, shadowed)
     : undefined;
-  const body = control.body.map(foldStatement);
+  const condition = control.condition
+    ? foldExpression(control.condition, shadowed)
+    : undefined;
+  const body = control.body.map((stmt) => foldStatement(stmt, shadowed));
 
   if (
     count === control.count &&
@@ -432,8 +495,14 @@ function foldControlFlow(
  */
 export function foldProgramBlock(
   block: import('../types').MilkdropProgramBlock,
+  shadowed: ReadonlySet<string> = EMPTY_NAMES,
 ): import('../types').MilkdropProgramBlock {
-  const statements = block.statements.map(foldStatement);
-  if (statements === block.statements) return block;
+  const blockShadowed = collectAssignedNames(block.statements, shadowed);
+  const statements = block.statements.map((stmt) =>
+    foldStatement(stmt, blockShadowed),
+  );
+  if (statements.every((stmt, index) => stmt === block.statements[index])) {
+    return block;
+  }
   return { ...block, statements };
 }
