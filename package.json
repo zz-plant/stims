@@ -169,6 +169,7 @@
     "test:corpus": "bun run scripts/run-tests.ts --profile corpus",
     "test:e2e": "bun run scripts/run-tests.ts --profile e2e",
     "test:fast": "bun run scripts/run-tests.ts --profile fast",
+    "test:gate": "bun run scripts/run-tests.ts --profile gate",
     "test:integration": "bun run scripts/run-tests.ts --profile integration",
     "test:unit": "bun run scripts/run-tests.ts --profile unit",
     "test:watch": "bun run scripts/run-tests.ts --watch",

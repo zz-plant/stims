@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import {
@@ -11,6 +12,26 @@ import {
 } from '../../scripts/run-milkdrop-loop-visual-sweep.ts';
 
 const repoRoot = new URL('../..', import.meta.url).pathname;
+
+/**
+ * This file is the only browser-backed test in `tests/corpus/`, and corpus now
+ * runs in `bun run check`. Playwright's browsers are a separate download that
+ * `bun install` does not perform, so on a fresh clone the launch below would
+ * fail the gate for a missing binary rather than a real defect.
+ *
+ * The skip is local-only: CI installs Chromium before the corpus job, so a
+ * skip there would quietly drop the coverage this test exists to provide.
+ */
+function chromiumAvailable(): boolean {
+  if (process.env.CI) return true;
+  try {
+    return existsSync(chromium.executablePath());
+  } catch {
+    return false;
+  }
+}
+
+const browserTest = chromiumAvailable() ? test : test.skip;
 
 describe('MilkDrop loop preset visual sweep', () => {
   test('selects the unique catalog presets whose compiled IR executes loop control flow', () => {
@@ -129,39 +150,43 @@ describe('MilkDrop loop preset visual sweep', () => {
     expect(LOOP_PRESET_CANVAS_SELECTOR).toBe('#stims-visualizer > canvas');
   });
 
-  test('isolates canvas pixels from visualizer UI layered above it', async () => {
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage({
-        viewport: { width: 80, height: 80 },
-      });
-      await page.setContent(`
+  browserTest(
+    'isolates canvas pixels from visualizer UI layered above it',
+    async () => {
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage({
+          viewport: { width: 80, height: 80 },
+        });
+        await page.setContent(`
         <div id="stims-visualizer" style="position: relative; width: 64px; height: 64px">
           <canvas width="64" height="64" style="display: block; width: 64px; height: 64px"></canvas>
           <div id="overlay" style="position: absolute; inset: 0; background: white"></div>
         </div>
       `);
-      await page.locator('canvas').evaluate((canvas) => {
-        const el = canvas as HTMLCanvasElement;
-        const context = el.getContext('2d');
-        if (!context) throw new Error('Missing test canvas context');
-        context.fillStyle = 'black';
-        context.fillRect(0, 0, el.width, el.height);
-      });
-      const capture = await captureIsolatedVisualizerCanvas(page);
-      const { data } = await sharp(capture).removeAlpha().raw().toBuffer({
-        resolveWithObject: true,
-      });
-      expect([...data.subarray(0, 3)]).toEqual([0, 0, 0]);
-      expect(
-        await page
-          .locator('#overlay')
-          .evaluate((element) => getComputedStyle(element).visibility),
-      ).toBe('visible');
-    } finally {
-      await browser.close();
-    }
-  }, 30000);
+        await page.locator('canvas').evaluate((canvas) => {
+          const el = canvas as HTMLCanvasElement;
+          const context = el.getContext('2d');
+          if (!context) throw new Error('Missing test canvas context');
+          context.fillStyle = 'black';
+          context.fillRect(0, 0, el.width, el.height);
+        });
+        const capture = await captureIsolatedVisualizerCanvas(page);
+        const { data } = await sharp(capture).removeAlpha().raw().toBuffer({
+          resolveWithObject: true,
+        });
+        expect([...data.subarray(0, 3)]).toEqual([0, 0, 0]);
+        expect(
+          await page
+            .locator('#overlay')
+            .evaluate((element) => getComputedStyle(element).visibility),
+        ).toBe('visible');
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
 
   test('uses native WebGL for browser sweeps, headed and headless', () => {
     // Headless no longer implies SwiftShader: sweeps launch full Chromium

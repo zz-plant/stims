@@ -244,8 +244,8 @@ Open `http://localhost:5173`.
 ```bash
 bun run check:quick   # Fast lint, types, metadata, and claim-drift checks
 bun run test          # Unit, integration, and compatibility test profiles
-bun run check         # PR gate (fast suite — 2,700+ tests, linter, architecture)
-bun run check:all     # Adds the slow corpus and certification tests
+bun run check         # PR gate (unit + compat + parity corpus — 2,800+ tests)
+bun run check:all     # Adds the serial, browser-backed e2e suite
 bun run build         # Production bundle build
 ```
 
