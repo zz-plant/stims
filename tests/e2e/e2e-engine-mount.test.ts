@@ -236,10 +236,24 @@ function browserTest(
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });
+/**
+ * 30s, not bun's 5s default for a hook.
+ *
+ * This teardown does two slow things — it shuts down a Chromium that has been
+ * software-rasterizing WebGL frames, then stops vite — while `beforeAll` above
+ * only starts vite and was still given 60s. That asymmetry was the bug: on the
+ * 2-core runner the close ran past 5s, bun cut the hook, and the whole job
+ * failed red with all six tests passing, leaving an orphaned
+ * `chrome-headless-shell` behind for the runner to reap.
+ *
+ * 30s matches what the two sibling suites that also close a browser here
+ * (`agent-integration`, `chrome-visual-contract`) already use; the suites left
+ * on the default only stop a server, which is cheap.
+ */
 afterAll(async () => {
   await releaseSharedBrowser();
-  stopServer();
-});
+  await stopServer();
+}, 30000);
 
 browserTest(
   'mounts engine, loads preset, and renders a silent preview frame',
