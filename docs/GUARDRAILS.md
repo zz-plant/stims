@@ -20,9 +20,10 @@ become fast feedback instead of a surprise at PR time.
 | [`check:cache-bounds`](#checkcache-bounds) | `check:quick` | Detect new unbounded growth containers — the "map/set that only ever grows" pattern the #1105–#1111 bounding series kept chasing (compiled-preset warmup, preview caches, idle renderer pools, source-diff memory, offscreen identicons all shipped unbounded and had to be bounded reactively). |
 | [`check:catalog-fidelity`](#checkcatalog-fidelity) | `check:quick` | Verifies the bundled preset catalog's fidelity fields still match the measured visual results manifest. |
 | [`check:catalog-integrity`](#checkcatalog-integrity) | `check:quick` | Validates the bundled MilkDrop catalog: every entry's required fields, the preset file on disk, and its preview image. |
-| [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, husky blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
+| [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, git hooks blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
 | [`check:commit-msg`](#checkcommit-msg) | on demand | Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes". |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
+| [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
 | [`check:first-run-evidence`](#checkfirst-run-evidence) | `check:quick` | Record the measured evidence behind the first-run preset. |
@@ -175,7 +176,7 @@ Run it directly: `bun run check:catalog-integrity`
 
 ## check:ci-config
 
-Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, husky blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them.
+Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, git hooks blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them.
 
 Checks:
  1. Every `bun run <script>` in workflow files resolves to a package.json
@@ -183,10 +184,10 @@ Checks:
  2. `.bun-version` exists — workflows reference it via `bun-version-file`.
  3. No `npm `/`npx ` invocations in `.github/workflows/**` — the repo
     standardised on Bun; an npm command silently falls back to the npm
-    registry and can re-introduce the husky-in-CI and lockfile drift.
+    registry and can re-introduce the hooks-in-CI and lockfile drift.
  4. No git conflict markers in build/config files — `build.mjs` shipped
     with `<<<<<<<` markers once (`5e4fb1df`).
- 5. husky hook stubs referenced by `prepare` exist.
+ 5. the lefthook config the postinstall hook installer expects exists.
 
 Run it directly: `bun run check:ci-config`
 
@@ -195,13 +196,13 @@ Run it directly: `bun run check:ci-config`
 Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes".
 
 Also enforces Conventional Commits type prefix (feat/fix/refactor/...).
-Exits non-zero on a violation so a husky `commit-msg` hook or CI can
+Exits non-zero on a violation so a lefthook `commit-msg` hook or CI can
 gate on it.
 
 `--range` exists because the hook alone did not hold: commits authored
 outside the local hook path (the GitHub web editor's "Update <file>"
 commits among them) landed on main with subjects this guard rejects, and
-CI had dropped its own commit-message job on the assumption that husky
+CI had dropped its own commit-message job on the assumption that the hook
 covered every path. Range mode is that missing backstop.
 
 Usage: bun run scripts/check-commit-msg.ts <commit-msg-file>
@@ -225,6 +226,22 @@ A usage is considered safe when the property is defined anywhere in the CSS,
 set from JS via setProperty, or the `var()` supplies a fallback.
 
 Run it directly: `bun run check:css-tokens`
+
+## check:dead-code
+
+Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc).
+
+The diff-scoped `check:unused-exports` guard only sees exports a change
+adds; this is the whole-repo view — files nothing imports, dependencies
+nothing requires, binaries nothing declares. Unused files and dependency
+findings exit non-zero; unused exports and types are reported as warnings
+(the codebase exports test seams and public-surface barrels on purpose),
+so treat that section as a review aid rather than a gate.
+
+  bun run check:dead-code            # full report
+  bun run check:dead-code -- --fix   # let knip delete unused exports/files
+
+Run it directly: `bun run check:dead-code`
 
 ## check:doc-references
 

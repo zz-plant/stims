@@ -136,7 +136,7 @@ export default defineConfig({
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
-    rollupOptions: {
+    rolldownOptions: {
       // Keep the visualizer entry exports intact so dynamic imports from the homepage
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
@@ -148,6 +148,16 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
+        // Vite 8 deprecates the function form of manualChunks in favour of
+        // Rolldown's codeSplitting groups, but the two are not equivalent for
+        // this graph and the difference is measurable (see
+        // docs/TECH_STACK_MODERNIZATION_2026-09.md): groups with recursive
+        // dependency capture move ~250 kB of three's core into
+        // vendor-three-webgpu, and turning capture off forces
+        // preserveEntrySignatures off, which lets the entry absorb shared
+        // modules and doubles the eager index chunk. The function form still
+        // reproduces the intended split byte-for-byte, so it stays until
+        // Rolldown offers a non-recursive group mode under 'strict'.
         manualChunks: (id) => {
           if (id.includes('/node_modules/')) {
             if (

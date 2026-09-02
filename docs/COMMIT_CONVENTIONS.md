@@ -70,8 +70,11 @@ Below is a retrospective audit of recent commit history, mapping original non-de
 To ensure commit messages adhere to Conventional Commit guidelines:
 
 1. **Commitlint Configuration**: Install and configure `@commitlint/cli` and `@commitlint/config-conventional`.
-2. **Git Hook Enforcement**: Add a `commit-msg` hook via Husky:
+2. **Git Hook Enforcement**: the `commit-msg` hook in `lefthook.yml` already
+   runs `scripts/check-commit-msg.ts` on every commit (installed by
+   `bun install` via `scripts/postinstall.mjs`). To layer commitlint on top,
+   add a second command to that hook:
    ```bash
-   bun add -d @commitlint/cli @commitlint/config-conventional husky
-   npx husky add .husky/commit-msg 'npx --no -- commitlint --edit "$1"'
+   bun add -d @commitlint/cli @commitlint/config-conventional
+   # lefthook.yml → commit-msg.commands.commitlint.run: bunx commitlint --edit {1}
    ```

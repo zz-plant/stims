@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 jobs:
-  # Commit-message hygiene was left to the husky commit-msg hook alone, on the
+  # Commit-message hygiene was left to the local commit-msg hook alone, on the
   # assumption that every commit passes through it. It does not: 20+ commits
   # whose subjects this guard rejects are on main, including a run of GitHub
   # web-editor "Update <file>.ts" commits, which never touch a local hook. This
