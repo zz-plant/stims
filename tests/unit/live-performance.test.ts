@@ -22,6 +22,41 @@ function harness(overrides: Partial<LivePerformanceDeps> = {}) {
   return { applied, live, uninstall };
 }
 
+/**
+ * Drive `requestAnimationFrame` and `performance.now` off a virtual clock.
+ *
+ * `ramp` derives its progress from wall-clock elapsed time, so controlling
+ * frames alone is not enough — the clock has to advance with them or every
+ * frame reports progress 0. Each frame advances the clock by `stepMs`, which
+ * makes the sampled progress values exact and independent of how loaded the
+ * machine running the suite happens to be.
+ *
+ * The ramp's watchdog still runs on real timers, and still wins if this driver
+ * is never pumped.
+ */
+function driveFrames({ stepMs }: { stepMs: number }) {
+  const realRaf = globalThis.requestAnimationFrame;
+  const realNow = performance.now;
+  let clock = 0;
+
+  performance.now = () => clock;
+  globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+    setTimeout(() => {
+      clock += stepMs;
+      cb(clock);
+    }, 0);
+    return 0;
+  }) as typeof realRaf;
+
+  return {
+    now: () => clock,
+    restore: () => {
+      globalThis.requestAnimationFrame = realRaf;
+      performance.now = realNow;
+    },
+  };
+}
+
 describe('live performance runtime', () => {
   test('installs the performance API on window and tears down cleanly', () => {
     const { live, uninstall } = harness();
@@ -48,29 +83,104 @@ describe('live performance runtime', () => {
   });
 
   test('ramp glides through intermediate values and lands exactly', async () => {
+    // Frames and the clock are both driven here rather than taken from the
+    // machine. Left to the real scheduler this asserted that a 2-core CI
+    // runner delivers a rAF callback inside 120ms, which it does not always:
+    // when the first frame lands after the window has already closed the ramp
+    // legitimately snaps to its endpoint, no intermediate value is ever
+    // applied, and the test fails for a reason that is about the runner
+    // rather than the code. The sibling watchdog test below already stubs rAF
+    // for the same reason.
+    const { now, restore } = driveFrames({ stepMs: 30 });
+
+    try {
+      const { applied, live, uninstall } = harness();
+
+      const result = await live.ramp({
+        targets: { warp: 3 },
+        durationMs: 120,
+        curve: 'linear',
+        from: { warp: 1 },
+      });
+
+      expect(result.final.warp).toBe(3);
+      expect(applied.at(-1)).toEqual(['warp', 3]);
+      // Frames arrived inside the window, so this was a real glide.
+      expect(result.landing).toBe('glided');
+      expect(result.forcedLanding).toBe(false);
+
+      // The point of a ramp: values between the endpoints, not just the
+      // endpoint. At 30ms steps over 120ms that is progress .25/.5/.75.
+      const midway = applied.filter(
+        ([, value]) => value > 1.0001 && value < 2.9999,
+      );
+      expect(midway.length).toBeGreaterThan(0);
+
+      const values = applied.map(([, value]) => value);
+      expect(Math.min(...values)).toBeGreaterThanOrEqual(1);
+      expect(Math.max(...values)).toBeLessThanOrEqual(3);
+      expect(now()).toBeGreaterThan(0);
+
+      uninstall();
+    } finally {
+      restore();
+    }
+  });
+
+  test('a zero-duration ramp is an instant set, not a failed glide', async () => {
+    // The third way to arrive without gliding, and the one that is not a
+    // fault: durationMs 0 asks for an immediate set. Reporting it as a forced
+    // landing would cry wolf on every deliberate snap.
     const { applied, live, uninstall } = harness();
 
     const result = await live.ramp({
-      targets: { warp: 3 },
-      durationMs: 120,
-      curve: 'linear',
+      targets: { warp: 2 },
+      durationMs: 0,
       from: { warp: 1 },
     });
 
-    expect(result.final.warp).toBe(3);
-    expect(applied.at(-1)).toEqual(['warp', 3]);
-
-    // The point of a ramp: values between the endpoints, not just the endpoint.
-    const midway = applied.filter(
-      ([, value]) => value > 1.0001 && value < 2.9999,
-    );
-    expect(midway.length).toBeGreaterThan(0);
-
-    const values = applied.map(([, value]) => value);
-    expect(Math.min(...values)).toBeGreaterThanOrEqual(1);
-    expect(Math.max(...values)).toBeLessThanOrEqual(3);
+    expect(result.landing).toBe('instant');
+    expect(result.forcedLanding).toBe(false);
+    expect(result.final.warp).toBe(2);
+    expect(applied.at(-1)).toEqual(['warp', 2]);
 
     uninstall();
+  });
+
+  test('a ramp starved of frames reports that it did not glide', async () => {
+    // The other side of the contract above, and the case that used to be
+    // silent: when the first frame arrives after the whole duration has
+    // elapsed there is nothing left to travel, so the ramp snaps to its
+    // destination. It still lands exactly — but it did not glide, and saying
+    // otherwise would tell a caller the gesture was smooth when it was a
+    // teleport.
+    const { restore } = driveFrames({ stepMs: 500 });
+
+    try {
+      const { applied, live, uninstall } = harness();
+
+      const result = await live.ramp({
+        targets: { warp: 3 },
+        durationMs: 120,
+        curve: 'linear',
+        from: { warp: 1 },
+      });
+
+      expect(result.final.warp).toBe(3);
+      expect(applied.at(-1)).toEqual(['warp', 3]);
+      // 'starved', not 'watchdog': the frame loop did run, it was just too
+      // late to travel. The watchdog never fired, and saying it did would
+      // point a reader at a hidden tab that was not the problem.
+      expect(result.landing).toBe('starved');
+      expect(result.forcedLanding).toBe(true);
+      expect(
+        applied.filter(([, value]) => value > 1.0001 && value < 2.9999),
+      ).toHaveLength(0);
+
+      uninstall();
+    } finally {
+      restore();
+    }
   });
 
   test('ramp moves multiple targets as one gesture', async () => {
@@ -159,6 +269,7 @@ describe('live performance runtime', () => {
         from: { warp: 1 },
       });
 
+      expect(result.landing).toBe('watchdog');
       expect(result.forcedLanding).toBe(true);
       expect(result.final.warp).toBe(4);
       expect(applied.at(-1)).toEqual(['warp', 4]);

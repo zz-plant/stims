@@ -59,12 +59,35 @@ export interface RampRequest {
   from?: Record<string, number>;
 }
 
+/**
+ * How a ramp reached its destination.
+ *
+ * - `glided`   — travelled through intermediate values, as asked.
+ * - `instant`  — `durationMs: 0`, a deliberate immediate set.
+ * - `starved`  — the rAF loop ran, but its first frame arrived after the whole
+ *                duration had elapsed, so there was nothing left to travel and
+ *                the value snapped. The watchdog was not involved.
+ * - `watchdog` — rAF never fired at all (a hidden tab throttles it), and the
+ *                timer landed the value.
+ *
+ * `starved` and `watchdog` are both failures to glide but have different
+ * causes and different fixes, so they are reported separately rather than
+ * collapsed into one flag.
+ */
+export type RampLanding = 'glided' | 'instant' | 'starved' | 'watchdog';
+
 export interface RampResult {
   targets: string[];
   durationMs: number;
   curve: RampCurve;
   steps: number;
-  /** True when the rAF loop was throttled and the watchdog landed the value. */
+  /** Why the gesture ended the way it did. */
+  landing: RampLanding;
+  /**
+   * True when the ramp did not glide — `starved` or `watchdog`. Kept as the
+   * one-bit summary callers had before `landing` existed; read `landing` when
+   * the cause matters.
+   */
   forcedLanding: boolean;
   final: Record<string, number>;
 }
@@ -191,6 +214,14 @@ export function getCps(): number | null {
  * suspended when the tab is hidden (which the Browser pane reports even when
  * visible to the user), and a ramp that silently stalls mid-travel would
  * leave the instrument in a half-state with no error.
+ *
+ * `landing` reports how the gesture actually ended, and `forcedLanding` is the
+ * one-bit summary of it. Two distinct things stop a ramp gliding: the watchdog
+ * lands the value because rAF never fired, or rAF fires but its first frame
+ * arrives after the whole duration has elapsed, leaving nothing to travel. The
+ * second used to report `forcedLanding: false`, claiming a healthy glide for
+ * what was really a teleport under a starved main thread — and the two have
+ * different causes, so `landing` keeps them apart.
  */
 export function ramp(request: RampRequest): Promise<RampResult> {
   const { setTarget } = requireDeps();
@@ -215,6 +246,8 @@ export function ramp(request: RampRequest): Promise<RampResult> {
     const started = performance.now();
     let steps = 0;
     let settled = false;
+    /** Whether any frame landed strictly between the endpoints. */
+    let glided = false;
 
     const apply = (progress: number) => {
       const eased = ease(Math.min(1, Math.max(0, progress)));
@@ -228,17 +261,28 @@ export function ramp(request: RampRequest): Promise<RampResult> {
       }
     };
 
-    const finish = (forcedLanding: boolean) => {
+    const finish = (byWatchdog: boolean) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(watchdog);
       apply(1);
+      // A ramp that never got a frame inside its own window did not glide,
+      // however it was landed. `durationMs === 0` is its own case: an instant
+      // set is a deliberate request, not a starved gesture.
+      const landing: RampLanding = byWatchdog
+        ? 'watchdog'
+        : durationMs === 0
+          ? 'instant'
+          : glided
+            ? 'glided'
+            : 'starved';
       resolve({
         targets: plan.map((leg) => leg.target),
         durationMs,
         curve,
         steps,
-        forcedLanding,
+        landing,
+        forcedLanding: landing === 'starved' || landing === 'watchdog',
         final: Object.fromEntries(plan.map((leg) => [leg.target, leg.to])),
       });
     };
@@ -251,6 +295,7 @@ export function ramp(request: RampRequest): Promise<RampResult> {
         finish(false);
         return;
       }
+      glided = true;
       apply(elapsed / durationMs);
       requestAnimationFrame(step);
     };
