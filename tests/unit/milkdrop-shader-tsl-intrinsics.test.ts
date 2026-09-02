@@ -231,6 +231,7 @@ describe('milkdrop WebGPU TSL mat2 element writes', () => {
     // The shared env seeds `uv` with a placeholder object, which is enough
     // for the intrinsic tests above but not for arithmetic on it.
     env.values.set('uv', { kind: 'vec2', node: vec2(0.25, 0.75) });
+    env.unresolvedNames = new Set<string>();
     const statements = lines.map((line) => {
       const statement = parseMilkdropShaderStatement(line);
       if (!statement) {
@@ -249,6 +250,30 @@ describe('milkdrop WebGPU TSL mat2 element writes', () => {
     }
     return env;
   }
+
+  test('binds a per-frame register read as a uniform, never a scratch local', () => {
+    // martin-adrift-on-a-dead-planet-lard-mix reads `tele` and `hordist`
+    // in its warp body: per_frame code writes them, the shader only reads
+    // them. WebGL declares those as `uniform float`; the executor has to
+    // bind them too, or the statements silently vanish. A name the body
+    // assigns before reading is its own scratch variable and must not become
+    // a uniform, and a sampler identifier must not either.
+    const env = runBody([
+      'xlat_mutableuv2 = ((uv * aspect.xy) * tele)',
+      'tmpvar_7 = (32.0 * hordist)',
+      'foo = 1.0',
+      'foo = (foo + tmpvar_7)',
+      'ret_1 = texture2D(currentTex, xlat_mutableuv2).xyz',
+      'ret = (ret_1 * foo)',
+    ]);
+    const bound = env.uniforms.perFrameVariables as Map<string, unknown>;
+    expect([...bound.keys()].sort()).toEqual(['hordist', 'tele']);
+    // The diagnostics set also records first-write base lookups and sampler
+    // identifiers by design; what must not be there is a bound register.
+    expect(env.unresolvedNames?.has('tele')).toBe(false);
+    expect(env.unresolvedNames?.has('hordist')).toBe(false);
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+  });
 
   test('builds a mat2 column by column and multiplies uv through it', () => {
     const env = runBody([

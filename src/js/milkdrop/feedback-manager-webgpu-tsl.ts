@@ -1056,9 +1056,27 @@ function setShaderEnvValue(
   env.values.set(key.toLowerCase(), value);
 }
 
+/**
+ * A name that, when a directly executed body reads it without ever having
+ * assigned it, is a MilkDrop per-frame register the VM owns (`tele`,
+ * `hordist`, `vshift`, …) rather than anything this executor could resolve
+ * on its own. Sampler identifiers are the one other thing that reaches the
+ * scalar env unresolved — `tex2d(currentTex, uv)` compiles its arguments
+ * before the sampler name is looked up in the binding table — so those are
+ * excluded by shape.
+ */
+function isPerFrameVariableCandidate(name: string): boolean {
+  return (
+    /^[a-z][a-z0-9_]*$/u.test(name) &&
+    !name.endsWith('tex') &&
+    !name.startsWith('sampler_')
+  );
+}
+
 function getShaderEnvValue(
   env: ShaderNodeEnv,
   key: string,
+  options: { bindPerFrameVariable?: boolean } = {},
 ): ShaderNodeValue | null {
   const normalized = key.toLowerCase();
   const existing = env.values.get(normalized);
@@ -1281,9 +1299,32 @@ function getShaderEnvValue(
       ? registerUniforms[Math.floor(registerIndex / 4)]
       : null;
   const registerComponent = (['x', 'y', 'z', 'w'] as const)[registerIndex % 4];
-  const resolved = registerVector
+  let resolved = registerVector
     ? shaderFloat(registerVector[registerComponent])
     : (uniformMap[normalized]?.() ?? null);
+  // A read of a name nothing above supplies is a per-frame register the VM
+  // computes (martin-adrift-on-a-dead-planet reads `tele` and `hordist` in
+  // its warp body). WebGL declares these as `uniform float` and drives them
+  // from the frame state; do the same here with one uniform node per name.
+  // Only reads bind — assignShaderTarget passes bindPerFrameVariable: false,
+  // so a body's own scratch locals never turn into uniforms, matching the
+  // WebGL classifier's "first occurrence is an assignment ⇒ scratch" rule.
+  const perFrameVariables = env.uniforms.perFrameVariables as
+    | Map<string, ReturnType<typeof uniform>>
+    | undefined;
+  if (
+    !resolved &&
+    options.bindPerFrameVariable !== false &&
+    perFrameVariables instanceof Map &&
+    isPerFrameVariableCandidate(normalized)
+  ) {
+    let node = perFrameVariables.get(normalized);
+    if (!node) {
+      node = uniform(0);
+      perFrameVariables.set(normalized, node);
+    }
+    resolved = shaderFloat(node);
+  }
   if (resolved) {
     env.values.set(normalized, resolved);
   } else {
@@ -2011,7 +2052,11 @@ function assignShaderTarget(
     rawTarget === 'return' ? (env.values.has('ret') ? 'ret' : 'uv') : rawTarget;
   const segments = target.split('.');
   const baseKey = segments[0] ?? target;
-  const baseValue = getShaderEnvValue(env, baseKey);
+  // A write never binds a per-frame register: the base lookup is only for
+  // compound assignment and swizzle writes into an existing value.
+  const baseValue = getShaderEnvValue(env, baseKey, {
+    bindPerFrameVariable: false,
+  });
   const nextValue =
     statement.operator === '=' || !baseValue
       ? value
@@ -2033,7 +2078,9 @@ function assignShaderTarget(
     if (index === null) {
       return;
     }
-    const matrixValue = getShaderEnvValue(env, matrixName);
+    const matrixValue = getShaderEnvValue(env, matrixName, {
+      bindPerFrameVariable: false,
+    });
     if (segments.length === 1) {
       setShaderEnvValue(
         env,
@@ -3398,6 +3445,13 @@ class WebGPUMilkdropFeedbackManager
       state.perPixelVariables,
     );
     if (compositeStateIdentityChanged(this.compositeIdentity, state)) {
+      // The bound per-frame registers belong to the outgoing preset's
+      // bodies; the rebuild below re-binds whatever the new ones read.
+      (
+        this.compositeMaterial.uniforms.perFrameVariables as
+          | Map<string, unknown>
+          | undefined
+      )?.clear();
       this.compositeIdentity = {
         shaderExecution: state.shaderExecution,
         warp: state.shaderPrograms.warp,
@@ -3576,6 +3630,19 @@ class WebGPUMilkdropFeedbackManager
         perPixelVariables?.[`t${base + 3}`] ?? 0,
         perPixelVariables?.[`t${base + 4}`] ?? 0,
       );
+    }
+    // Per-frame registers the directly executed bodies read (`tele`,
+    // `hordist`, …), bound by the executor on first read. Same source and
+    // same zero default as the WebGL path's per-frame uniforms; non-finite
+    // values are clamped to 0 for the same reason the warp bases below are.
+    const perFrameVariableUniforms = this.compositeMaterial.uniforms
+      .perFrameVariables as Map<string, { value: number }> | undefined;
+    if (perFrameVariableUniforms) {
+      for (const [name, node] of perFrameVariableUniforms) {
+        const value = perPixelVariables?.[name];
+        node.value =
+          typeof value === 'number' && Number.isFinite(value) ? value : 0;
+      }
     }
     // Per-frame bases for the warp variables the per-pixel program may
     // overwrite. Read off the same variable bag q/t come from rather than
