@@ -33,7 +33,7 @@ per area; read the file itself for details.
 
 | What lives here | Tests | Guards |
 | --- | --- | --- |
-| `App.tsx`, app shell, workspace panels, `url-state.ts`, `engine/*` (video-export, preview), `HudOverlay.tsx`, `CapturePanel.tsx` | `app-shell.test.ts`, `app-shell-*.test.ts`, `frontend-url-state.test.ts`, `frontend-video-export-runtime.test.ts`, `split-view-browse.test.ts`, `workspace-*.test.ts`, `stage-*.test.tsx` | `check:architecture` (frontend → engine boundary) |
+| `App.tsx`, app shell, workspace panels, `url-state.ts`, `engine/*` (video-export, preview), `HudOverlay.tsx`, `CapturePanel.tsx` | `app-shell.test.ts`, `app-shell-*.test.ts`, `frontend-url-state.test.ts`, `frontend-video-export-runtime.test.ts`, `split-view-browse.test.ts`, `workspace-*.test.ts`, `stage-*.test.tsx` | `check:architecture` (import cycles only; the frontend → engine seam rule is proposed in `docs/architecture/architectural-changes-proposal-2026-09.md`) |
 
 ## `src/js/ui/`, `src/js/utils/`, `src/js/lighting/`
 
