@@ -8,8 +8,9 @@
  * automata, thresholded colour picks) therefore had no WebGPU path at all —
  * WebGL runs their raw GLSL, while WebGPU dropped to uniform-only "controls",
  * which approximates a neighbour-tap CA as a smear. Measured over the bundled
- * corpus, 127 of the 169 shader presets that WebGPU could not execute directly
- * were blocked by nothing but `if`/`else`.
+ * corpus (2026-09-02), 154 of the 168 shader presets that WebGPU cannot
+ * execute directly with shipped defaults are unblocked by this rewrite; the
+ * 14 left are `while (true)` bodies and loops with a runtime trip count.
  *
  * Each branch statement becomes `target = if(mask, value, target)`, where the
  * mask is the branch condition normalized to 0/1 and multiplied through nested
@@ -31,11 +32,13 @@
  * shape. Unrolling took the bundled corpus from 1161 to 1182 of the 1201
  * shader presets running directly on WebGPU.
  *
- * Anything outside the supported grammar — `while`, `discard`, indexed
- * assignment targets, statements that are not assignments, loops whose trip
- * count depends on runtime state, or an unroll that would exceed the statement
- * budget — returns null, and the caller keeps the existing behaviour: the body
- * stays unparsed, and the preset falls back to raw GLSL on WebGL.
+ * Anything outside the supported grammar — `while`, `discard`, statements
+ * that are not assignments, loops whose trip count depends on runtime state,
+ * or an unroll that would exceed the statement budget — returns null, and the
+ * caller keeps the existing behaviour: the body stays unparsed, and the preset
+ * falls back to raw GLSL on WebGL. A matrix element write (`M[int(0)].x = s`)
+ * is an assignment like any other and is masked the same way; the node
+ * executor reads the target back as a column swizzle.
  *
  * OFF BY DEFAULT, behind the `shaderBranchDesugar` flag
  * (`?milkdrop-webgpu-branch-desugar=1`, or the matching
@@ -64,6 +67,25 @@
  *   - flexi-area-51, benjam-...-understarted and
  *     eo-s-phat-technicolor-...-gaia-pussy render black where WebGL has a
  *     picture.
+ *
+ * Ruled out for those six (2026-09-02, by running each desugared body
+ * through the node executor headlessly and reading both backends' plumbing;
+ * headless Chromium exposes no WebGPU adapter, so nothing was rendered):
+ * every statement compiles — none is dropped and no name falls through to
+ * the per-frame register binding; `q1..q32` come from the same
+ * `perPixelVariables` on both backends; both feedback targets are half-float
+ * and both blend `previous * decay + scene`; `&&` and the masked `if(...)`
+ * compile to exact 0/1 products and a `mix`. What is left is inside the
+ * intrinsics themselves, on a device. Five of the six run
+ * `sampleNoiseVolume` — the WebGL preamble slices the 2D simplex atlas
+ * (`sampleAuxTexture(2.0, 1.0, …)`), the executor samples the native
+ * simplex volume (`sampleStatic('simplex', '3d', …)`) — and gate a
+ * noise add/subtract on `qNN` products, and all six carry an unbounded term
+ * (`ret - 0.005` every frame, `ret * 5 * sqrt(ret)`) that a small per-frame
+ * divergence in that call would push to a rail in the direction observed:
+ * the presets that add noise go black, the ones that subtract it go white.
+ * Check the noise-volume sample first, with `bun run lab:backend-diff` on a
+ * WebGPU machine and the flag on, against WebGL with audio.
  *
  * A trap for whoever picks this up: WebGL is NOT a usable oracle for several
  * of these under silent audio. Captured with `audioMode: 'none'` (what
@@ -114,8 +136,12 @@ const MAX_LOOP_TRIP_COUNT = 64;
 const MAX_LOOP_NESTING = 2;
 const MAX_UNROLLED_STATEMENTS = 2048;
 
+// The target admits one index (`M[int(0)]`, `M[1u].x`) so a matrix element
+// write inside a branch can be masked like any other assignment; the node
+// executor reads `M[int(0)].x` back as a column swizzle. A double index has
+// no read form the executor resolves and stays outside the grammar.
 const ASSIGNMENT_PATTERN =
-  /^(?:(?:const|highp|mediump|lowp)\s+)*(?:(float|int|bool|vec2|vec3|vec4|mat2|mat3|mat4|float2|float3|float4)\s+)?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\s*(=|\+=|-=|\*=|\/=)\s*([\s\S]+)$/u;
+  /^(?:(?:const|highp|mediump|lowp)\s+)*(?:(float|int|bool|vec2|vec3|vec4|mat2|mat3|mat4|float2|float3|float4)\s+)?([A-Za-z_]\w*(?:\[[^\]]+\])?(?:\.[A-Za-z_]\w*)?)\s*(=|\+=|-=|\*=|\/=)\s*([\s\S]+)$/u;
 
 /** Guards against pathological nesting producing unreadable mask products. */
 const MAX_BRANCH_DEPTH = 4;
@@ -151,6 +177,9 @@ const ZERO_BY_TYPE: Record<string, string> = {
   float3: 'vec3(0.0, 0.0, 0.0)',
   vec4: 'vec4(0.0, 0.0, 0.0, 0.0)',
   float4: 'vec4(0.0, 0.0, 0.0, 0.0)',
+  mat2: 'mat2(0.0)',
+  mat3: 'mat3(0.0)',
+  mat4: 'mat4(0.0)',
 };
 
 const BARE_DECLARATION_PATTERN =
@@ -207,9 +236,10 @@ function recordConstValue(
   scope.constValues.set(base, literal);
 }
 
-/** The variable a target writes to, ignoring any swizzle or member suffix. */
+/** The variable a target writes to, ignoring any index, swizzle or member
+ * suffix. */
 function targetBaseName(target: string): string {
-  return target.split('.')[0] ?? target;
+  return target.split(/[.[]/u)[0] ?? target;
 }
 
 function stripComments(source: string): string {
@@ -288,10 +318,8 @@ function emitStatement(
     }
     // A statement this module cannot rewrite is still a statement. Passing it
     // through unchanged is the only honest option at the top level: the
-    // downstream parser is wider than ASSIGNMENT_PATTERN — it accepts indexed
-    // targets like `tmpvar_1[uint(0)].x = q20`, which this one does not — so
-    // it can either execute the line or record it as unparsed and send the
-    // preset to the raw-GLSL fallback.
+    // downstream parser may still execute the line or record it as unparsed
+    // and send the preset to the raw-GLSL fallback.
     //
     // Dropping it instead was a silent corruption: a body that lost its matrix
     // writes still looked fully parsed, so the preset was classified as

@@ -365,6 +365,21 @@ function applyShaderAstStatement({
     );
 
   if (
+    statement.declaration === 'mat2' ||
+    statement.declaration === 'mat3' ||
+    statement.declaration === 'mat4'
+  ) {
+    // An initialized matrix local (`mat2 r = mat2(0.7, -0.7, 0.7, 0.7)`) has
+    // no scalar-control meaning, and the four-scalar mat2 form used to be
+    // swallowed by the heuristic line matcher as if it were a control,
+    // leaving the direct program to read a name that was never assigned.
+    // Record the expression and let the statement stay on the direct
+    // program, where the node executor builds the matrix.
+    shaderExpressionEnv[key] = statement.expression;
+    return true;
+  }
+
+  if (
     (statement.declaration === 'vec2' || statement.declaration === 'vec3') &&
     key !== 'uv' &&
     key !== 'tint' &&
@@ -1651,6 +1666,10 @@ export function clearShaderAnalysisCaches() {
 const MATRIX_DECLARATION_PATTERN =
   /^(?:const\s+)?(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)/u;
 
+/** The same declaration with no initializer: `mat3 a` or `mat2 a, b`. */
+const BARE_MATRIX_DECLARATION_PATTERN =
+  /^(mat[234])\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/u;
+
 type MatrixLocalKind = 'mat2' | 'mat3' | 'mat4';
 
 /** Names declared `mat2`/`mat3`/`mat4` anywhere in this body, by size. */
@@ -1669,16 +1688,24 @@ function collectMatrixLocals(lines: string[]): Map<string, MatrixLocalKind> {
   return locals;
 }
 
+/** `0`, `1u`, `int(2)`, `uint(0)` — the index shapes the executor resolves. */
+const LITERAL_MATRIX_INDEX_PATTERN = /^(?:u?int\s*\(\s*)?\d+u?\s*\)?$/iu;
+
 /**
- * True for an assignment that writes one element of a matrix local the WebGPU
- * node executor cannot represent — `tmpvar_1[int(0)].x = q20` where
- * `tmpvar_1` is a `mat3` or `mat4`. The statement grammar parses these, but
- * only the raw-GLSL backend can execute them.
+ * True for an assignment that writes one element of a matrix local at an
+ * index the WebGPU node executor cannot resolve — `M[i] = v` where `i` is a
+ * loop variable or any other runtime expression. The executor keeps a matrix
+ * as its column vectors and turns `M[int(0)].x = s` into a swizzle write on
+ * column 0, which needs the column to be known when the node graph is built.
+ * The statement grammar parses the runtime-index form too, but only the
+ * raw-GLSL backend can execute it, so it is recorded as unparsed and the
+ * preset falls back to WebGL for that body.
  *
- * `mat2` writes are NOT matched: the executor packs a mat2 as a vec4 of its
- * two columns and handles column (`M[i] = v`) and component (`M[i].x = s`)
- * writes, products, and constructors on it. Measured over the bundled corpus,
- * 87 of the 107 shader bodies with matrix element writes touch only mat2.
+ * Literal-index writes on every matrix size run directly: mat2 is packed as a
+ * vec4 of its columns, mat3/mat4 carry their columns explicitly (see
+ * shaderMatrix in feedback-manager-webgpu-tsl.ts). Every matrix element write
+ * in the bundled corpus — 180 of them, all `M[i].c = qNN` on a mat3 — uses a
+ * literal index.
  */
 function isUnexecutableMatrixElementAssignment(
   target: string,
@@ -1688,8 +1715,12 @@ function isUnexecutableMatrixElementAssignment(
   if (bracket <= 0) {
     return false;
   }
-  const kind = matrixLocals.get(target.slice(0, bracket).trim());
-  return kind === 'mat3' || kind === 'mat4';
+  if (!matrixLocals.has(target.slice(0, bracket).trim())) {
+    return false;
+  }
+  const close = target.indexOf(']', bracket);
+  const index = target.slice(bracket + 1, close < 0 ? undefined : close).trim();
+  return !LITERAL_MATRIX_INDEX_PATTERN.test(index);
 }
 
 export function extractShaderControls(
@@ -1760,17 +1791,16 @@ export function extractShaderControls(
           matrixLocals,
         )
       ) {
-        // The statement parser accepts `tmpvar_1[int(0)].x = q20`, but the
-        // WebGPU node executor has no way to write one element of a mat3 or
-        // mat4, and what it builds instead is unbounded: martin-city-of-
-        // shadows, whose warp body opens with nine of these on a mat3,
-        // compiled to a WGSL `objectStruct` of 44641 mat3x3 members behind a
-        // 2.1 MB uniform binding — past both the 16383-member and 65536-byte
-        // limits — and took the GPU process down with it.
-        //
-        // Recording it as unparsed is what keeps the preset honest: WebGL
-        // still runs the raw GLSL, which handles the write fine, and WebGPU
-        // drops back to the uniform-only approximation instead of crashing.
+        // The statement parser accepts `tmpvar_1[i] = v` for any index
+        // expression, but the WebGPU node executor can only write a column
+        // it can name at graph-build time. Recording the runtime-index form
+        // as unparsed is what keeps the preset honest: WebGL still runs the
+        // raw GLSL, which handles the write fine, and WebGPU drops back to
+        // the uniform-only approximation instead of silently losing the
+        // statement. (Before matrices had a representation at all, a body
+        // full of mat3 element writes — martin-city-of-shadows — compiled to
+        // a 44641-member WGSL uniform struct and took the GPU process down;
+        // that is the failure this gate originally existed to stop.)
         trackUnsupported(line);
         return;
       }
@@ -1858,6 +1888,33 @@ export function extractShaderControls(
       /^(?:(?:const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
     );
     if (!fallbackAssignment) {
+      // A bare matrix declaration (`mat3 tmpvar_1`) is the one declaration
+      // that has to leave a statement behind. Its element writes come next
+      // (`tmpvar_1[int(0)].x = q20`, nine of them for a rotation), and the
+      // WebGPU node executor needs to know the matrix's size before the first
+      // of those to pick the right column layout — nothing about
+      // `M[int(0)].x` says whether M has two, three or four rows. Seeding
+      // `tmpvar_1 = mat3(0.0)` is also what GLSL's raw path effectively does:
+      // every corpus body writes all elements before reading any.
+      const matrixDeclaration = nativeShaderBody
+        ? line.match(BARE_MATRIX_DECLARATION_PATTERN)
+        : null;
+      if (matrixDeclaration) {
+        const kind = matrixDeclaration[1];
+        for (const name of (matrixDeclaration[2] ?? '').split(',')) {
+          const seeded = `${name.trim()} = ${kind}(0.0)`;
+          const seededStatement = parseShaderStatementCached(seeded);
+          if (seededStatement) {
+            // Both lists, so the direct program still covers every parsed
+            // statement: ir.ts reads a length mismatch between them as "the
+            // direct program is partial, keep the control fallback".
+            statements.push(seededStatement);
+            directProgramStatements.push(seededStatement);
+            directProgramLines.push(seeded);
+          }
+        }
+        return;
+      }
       // Pure GLSL declarations (e.g. `vec2 tmpvar_1`, `vec4 tmpvar_2`) carry
       // no executable logic — silently skip them instead of marking them
       // unsupported. This lets native shader_body lines flow through the
