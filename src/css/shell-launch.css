@@ -30,7 +30,7 @@
     min-width: 104px;
     min-height: 66px;
     aspect-ratio: 16 / 9;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
   }
 
   .stims-shell__launch-recommendation strong,
@@ -62,7 +62,7 @@
     min-height: 52px;
     padding: 10px 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.02);
     transition:
       background-color 160ms ease,
@@ -75,18 +75,18 @@
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-card strong {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 600;
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
-    font-size: 0.62rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.04em;
     opacity: 0.7;
   }
 
   .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
 
   .stims-shell__sheet-panel--browse .stims-shell__preset-list {
@@ -99,7 +99,7 @@
     align-items: center;
     gap: 10px;
     padding: 8px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
   }
 
   .stims-shell__sheet-panel--browse
@@ -109,7 +109,7 @@
     min-width: 104px;
     min-height: 68px;
     height: 68px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
   }
 
   .stims-shell__sheet-panel--browse .stims-shell__preset-card-copy {
@@ -140,7 +140,7 @@
     flex: 0 0 auto;
     min-height: 38px;
     padding: 7px 11px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     box-shadow: none;
   }
 

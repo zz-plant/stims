@@ -22,6 +22,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:catalog-integrity`](#checkcatalog-integrity) | `check:quick` | Validates the bundled MilkDrop catalog: every entry's required fields, the preset file on disk, and its preview image. |
 | [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, husky blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
 | [`check:commit-msg`](#checkcommit-msg) | on demand | Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes". |
+| [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
@@ -211,6 +212,27 @@ Usage: bun run scripts/check-commit-msg.ts <commit-msg-file>
 
 Run it directly: `bun run check:commit-msg`
 
+## check:css-scale
+
+Fail on `border-radius` and `font-size` values that are not on the scale.
+
+Both scales existed on paper and neither was followed. The radius block in
+tokens.css described a "sharp and angular" system topping out at 6px while
+the stylesheets carried nineteen literal pixel radii up to 28px; the type
+scale was declared once and then bypassed by 41 distinct rem sizes, 13 of
+them inside the 0.6–0.85rem band where the steps are smaller than a pixel.
+
+Nothing caught either, because a stylesheet with a hand-picked radius is
+still valid CSS that renders fine on its own — it only shows up as
+incoherence across surfaces, which no single diff reveals. Hence this
+check: the scale is only real if something enforces it.
+
+A literal is allowed when it lands on a scale step. Preferring the token
+(`var(--radius-md)`) is better still and always passes, since this only
+inspects literal values.
+
+Run it directly: `bun run check:css-scale`
+
 ## check:css-tokens
 
 Fail on `var(--token)` references that resolve to nothing.
@@ -265,7 +287,7 @@ Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, rem
 
 Catches:
  1. Duplicate `@keyframes` names across global CSS files.
- 2. Duplicate `@font-face` declarations with the same font-family.
+ 2. Duplicate `@font-face` faces (same family + weight + style).
 
 `.module.css` files are excluded from cross-file checks — CSS modules
 scope keyframes locally, so a `fade-in` in a module is not a duplicate

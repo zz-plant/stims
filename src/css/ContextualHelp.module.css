@@ -3,7 +3,7 @@
      the audio-match toast together so they can no longer overlap. */
   max-width: min(340px, calc(100vw - 32px));
   padding: 12px 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line-strong);
   border-left: 3px solid var(--stims-accent);
@@ -12,7 +12,7 @@
     0 0 16px rgba(244, 122, 84, 0.08);
   color: var(--stims-ink);
   font-family: var(--font-family-base);
-  font-size: 0.84rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
   letter-spacing: -0.005em;
   -webkit-font-smoothing: antialiased;
@@ -36,5 +36,26 @@
 @media (prefers-reduced-motion: reduce) {
   .toast {
     animation-duration: 0.01ms;
+  }
+}
+
+/* Panel-anchored hints sit at the top of the panel they describe, inside its
+   flow, rather than in the stage's fixed bottom-centre toast slot. A tip about
+   the browse grid or the code editor belongs next to the grid or the code, not
+   floating over the visuals on the opposite side of the screen. */
+.toast[data-anchor="panel"] {
+  max-width: none;
+  margin: 12px 16px 0;
+  animation-name: help-enter-panel;
+}
+
+@keyframes help-enter-panel {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

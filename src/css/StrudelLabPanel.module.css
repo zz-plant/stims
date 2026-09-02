@@ -8,7 +8,7 @@
   width: min(360px, calc(100vw - 32px));
   padding: 14px 16px 16px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--stims-panel-strong, #14100c);
   color: var(--stims-ink-strong, #fff8ef);
 }
@@ -54,7 +54,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   color: var(--stims-muted, rgba(246, 239, 228, 0.74));
   cursor: pointer;
   user-select: none;
@@ -73,7 +73,7 @@
 
 .title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   letter-spacing: 0.04em;
 }
 
@@ -82,7 +82,7 @@
   border: 0;
   background: none;
   color: var(--stims-muted, rgba(246, 239, 228, 0.74));
-  font-size: 1.1rem;
+  font-size: 1.125rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -93,7 +93,7 @@
 }
 
 .moveButton {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .examples {
@@ -120,11 +120,11 @@
   resize: vertical;
   padding: 10px 12px;
   border: 1px solid var(--stims-line, rgba(255, 255, 255, 0.12));
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: rgba(0, 0, 0, 0.4);
   color: inherit;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.5;
 }
 
@@ -142,8 +142,8 @@
 .playButton,
 .stopButton {
   padding: 7px 18px;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -206,7 +206,7 @@
   height: 112px;
   padding: 6px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--stims-panel-strong, #14100c);
   cursor: grab;
   touch-action: none;
@@ -229,10 +229,10 @@
   z-index: 1;
   padding: 2px 6px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: none;
   color: var(--stims-muted, rgba(246, 239, 228, 0.74));
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -258,7 +258,7 @@
   border-radius: var(--radius-round);
   background: var(--stims-panel-strong, #14100c);
   color: var(--stims-cool, #77c9ff);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 

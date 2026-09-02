@@ -16,6 +16,20 @@ export type UseFocusTrapOptions<T extends HTMLElement = HTMLDivElement> = {
   // restore but must not fence focus in: the stage and its dock stay
   // interactive beside the panel for keyboard users too.
   trapFocus?: boolean;
+  /**
+   * Where autofocus lands when no `initialFocusRef` is supplied.
+   *
+   * `'first'` takes the first focusable descendant. For a panel whose header
+   * comes first in DOM order that is the close button — so opening a panel
+   * lit up its own dismiss control, and a screen reader announced "Close,
+   * button" instead of the panel you just asked for.
+   *
+   * `'container'` focuses the dialog element itself (it must carry
+   * `tabIndex={-1}`), which is the standard dialog behaviour: the accessible
+   * name is announced, and the first Tab moves into the content rather than
+   * out of the close button.
+   */
+  initialFocus?: 'first' | 'container';
 };
 
 export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
@@ -25,6 +39,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
   initialFocusRef,
   externalContainerRef,
   trapFocus = true,
+  initialFocus = 'first',
 }: UseFocusTrapOptions<T>): RefObject<T | null> {
   const localContainerRef = useRef<T | null>(null);
   const containerRef = externalContainerRef ?? localContainerRef;
@@ -45,6 +60,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
       const initialTarget = initialFocusRef?.current;
       if (initialTarget && container.contains(initialTarget)) {
         initialTarget.focus();
+      } else if (initialFocus === 'container') {
+        container.focus();
       } else {
         const focusables = getFocusableElements(container);
         if (focusables.length > 0) {
@@ -77,6 +94,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>({
     initialFocusRef,
     containerRef,
     trapFocus,
+    initialFocus,
   ]);
 
   return containerRef;
