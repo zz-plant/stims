@@ -171,20 +171,26 @@ scoped to the fields already clean, and ratchet the rest field by field.
 
 1. Define the engine's public surface as an explicit allowlist in the
    cruiser config, seeded with exactly the 20 modules imported today, so the
-   rule lands green and any new deep import is a violation from day one.
-   Shrink the list deliberately afterwards; change 5 replaces it with
-   folder indexes.
+   rules land green and any new deep import is a violation from day one.
+   The allowlist is the exception for both rules below. Shrink it
+   deliberately afterwards; change 5 replaces it with folder indexes.
 2. Add two rules to `.dependency-cruiser.mjs`:
    - `frontend-engine-seam` (`error`): from `^src/js/frontend/(?!engine/)`
      to `^src/js/milkdrop/`, except the allowlist.
    - `engine-runtime-only-via-adapter` (`error`): only
      `src/js/frontend/engine/` may import `milkdrop/runtime.ts`,
      `milkdrop/runtime/*`, `renderer-*`, `feedback-*`, `vm*`, and
-     `compiler.ts`.
+     `compiler.ts`, except the allowlist. The exception matters on day one:
+     on `main`, `App.tsx` imports `runtime/interaction-response.ts`, and
+     `workspace-hooks.ts` and `workspace-shell-hooks.ts` import
+     `runtime/first-run-preset.ts`. Those two helper modules are on the seed
+     allowlist and stay there until change 5 moves them to the preset
+     surface; without the exemption this rule is red on `main` from its
+     first run.
    Apply the same allowlist to `scripts/` at `warn` severity so the report
    shows the coupling without blocking the lab tooling.
 3. Delete the two dead `info` rules, and give the guard the docblock
-   `check:module-docs` and `generate:guardrails` expect, so it leaves the
+   `check:script-docs` and `generate:guardrails` expect, so it leaves the
    "Not yet documented" list.
 
 **Verification.** `bun run check:architecture` (15 s measured). The rule
@@ -284,15 +290,21 @@ test of its own.
 2. Split `EngineContextValue` by change cadence into an actions context
    (stable function identities) and a data context, the same split the file
    already makes between the per-frame snapshot and everything else.
-3. Add `tests/unit/app-shell-effect-budget.test.ts` (NEW): a ratchet that
-   counts `useEffect(` in `App.tsx` and fails when the count rises above the
-   current value. Lower the budget in the same PR as each extraction.
+3. Add `scripts/check-app-shell-effects.ts` (NEW) as a `check:*` guard in
+   `check:quick`: a ratchet that counts `useEffect(` in `App.tsx` and fails
+   when the count rises above the budget. Lower the budget in the same PR
+   as each extraction. This has to be a registered guard, not a unit test:
+   `check:test-source-greps` rejects any new unit test that reads
+   production source as text, and a structural count is exactly the shape
+   that guard exists to keep out of the suite. Guards that measure
+   structure, such as `check:module-docs` and `check:cache-bounds`, are the
+   precedent.
 4. While moving hooks, settle the naming: `hooks/` currently mixes
    `use-audio-source-sync.ts` with `useFullscreen.ts`. Kebab-case matches
    the rest of `src/`.
 
 **Verification.** The existing `app-shell-*` unit tests, `bun run ui:diff`
-for the screenshot surface, and the ratchet test. Do this after change 1,
+for the screenshot surface, and the ratchet guard. Do this after change 1,
 because a typed snapshot is what makes moving effects out of `App.tsx` safe
 to review.
 
@@ -373,13 +385,26 @@ uniform or a pass the other lacks, and nothing but a parity capture notices.
 consumer on day one:
 
 1. Add `src/js/milkdrop/feedback-composite-contract.ts` (NEW) holding the
-   composite's uniform names, defaults, and pass order as data.
+   composite's shared semantics as data: each entry names the semantic
+   (the per-pixel `q` and `t` registers, decay, echo, the noise samplers,
+   and so on), its default, its pass, and its binding on each backend. The
+   backends do not share spellings today and should not be forced to: the
+   WebGL manager packs the registers as `_qa` through `_qh`, the WebGPU
+   manager exposes `perPixelQ` and `perPixelT`, and WebGPU carries
+   3D-texture and post-processing uniforms with no WebGL counterpart. The
+   table therefore also lists backend-specific entries explicitly, each
+   with the reason it exists on one side only.
 2. Make both managers read their defaults from it, so the table is owned,
    not restated. This is the step the stubs skipped.
 3. Add `tests/unit/milkdrop-feedback-uniform-contract.test.ts` (NEW): a
-   differential test asserting that each manager's registered uniform set
-   equals the table. A uniform added on one backend and not the other fails
-   in `bun run check` instead of in a parity capture.
+   differential test that normalizes each manager's registered uniforms
+   through the table's per-backend bindings, then asserts two things: every
+   shared semantic is bound on both backends, and every uniform a backend
+   registers is either a shared semantic or a declared backend-specific
+   entry. Drift is a uniform that is on one backend and in neither list. It
+   fails in `bun run check` instead of in a parity capture, while a
+   deliberate backend-only uniform is a one-line table entry rather than
+   a forced no-op on the other side.
 4. Only then evaluate generating either backend's shader from the table.
    That decision stays with the revamp plan; this proposal only makes it
    possible to start.
@@ -412,11 +437,13 @@ tree in a worse state than today.
 | `engine-runtime-only-via-adapter` cruiser rule | `check:architecture` | Only `frontend/engine/` imports the runtime, renderers, feedback managers, VM, or compiler entry |
 | `tests/unit/engine-seam-types.test.ts` (NEW) | `check` | No `any` reaches the seam |
 | `tests/unit/catalog-projection-contract.test.ts` (NEW) | `check` | Every measured catalog field survives to the rendered row |
-| `tests/unit/app-shell-effect-budget.test.ts` (NEW) | `check` | Raw effects in `App.tsx` only go down |
-| `tests/unit/milkdrop-feedback-uniform-contract.test.ts` (NEW) | `check` | Both backends register the same composite uniforms |
+| `scripts/check-app-shell-effects.ts` (NEW) | `check:quick` | Raw effects in `App.tsx` only go down |
+| `tests/unit/milkdrop-feedback-uniform-contract.test.ts` (NEW) | `check` | Every composite uniform is a shared semantic bound on both backends or a declared backend-specific entry |
 
-New guard scripts need the docblock `check:module-docs` and
-`generate:guardrails` expect; the four tests above are ordinary unit tests
+The effect guard is a script rather than a unit test because
+`check:test-source-greps` rejects new unit tests that read production
+source as text. New guard scripts need the docblock `check:script-docs` and
+`generate:guardrails` expect; the three tests above are ordinary unit tests
 and need nothing extra.
 
 ## Non-goals and deferred items
