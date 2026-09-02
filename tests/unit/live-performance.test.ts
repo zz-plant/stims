@@ -106,6 +106,7 @@ describe('live performance runtime', () => {
       expect(result.final.warp).toBe(3);
       expect(applied.at(-1)).toEqual(['warp', 3]);
       // Frames arrived inside the window, so this was a real glide.
+      expect(result.landing).toBe('glided');
       expect(result.forcedLanding).toBe(false);
 
       // The point of a ramp: values between the endpoints, not just the
@@ -124,6 +125,26 @@ describe('live performance runtime', () => {
     } finally {
       restore();
     }
+  });
+
+  test('a zero-duration ramp is an instant set, not a failed glide', async () => {
+    // The third way to arrive without gliding, and the one that is not a
+    // fault: durationMs 0 asks for an immediate set. Reporting it as a forced
+    // landing would cry wolf on every deliberate snap.
+    const { applied, live, uninstall } = harness();
+
+    const result = await live.ramp({
+      targets: { warp: 2 },
+      durationMs: 0,
+      from: { warp: 1 },
+    });
+
+    expect(result.landing).toBe('instant');
+    expect(result.forcedLanding).toBe(false);
+    expect(result.final.warp).toBe(2);
+    expect(applied.at(-1)).toEqual(['warp', 2]);
+
+    uninstall();
   });
 
   test('a ramp starved of frames reports that it did not glide', async () => {
@@ -147,6 +168,10 @@ describe('live performance runtime', () => {
 
       expect(result.final.warp).toBe(3);
       expect(applied.at(-1)).toEqual(['warp', 3]);
+      // 'starved', not 'watchdog': the frame loop did run, it was just too
+      // late to travel. The watchdog never fired, and saying it did would
+      // point a reader at a hidden tab that was not the problem.
+      expect(result.landing).toBe('starved');
       expect(result.forcedLanding).toBe(true);
       expect(
         applied.filter(([, value]) => value > 1.0001 && value < 2.9999),
@@ -244,6 +269,7 @@ describe('live performance runtime', () => {
         from: { warp: 1 },
       });
 
+      expect(result.landing).toBe('watchdog');
       expect(result.forcedLanding).toBe(true);
       expect(result.final.warp).toBe(4);
       expect(applied.at(-1)).toEqual(['warp', 4]);
