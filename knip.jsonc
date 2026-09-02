@@ -1,0 +1,60 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "index.html",
+    "certify/index.html",
+    "performance/index.html",
+    "ui-harness.html",
+    "src/js/app.ts",
+    "src/js/frontend/ui-harness.tsx",
+    // Workers and the AudioWorklet processor are reached through Vite's
+    // `?worker` / `?worklet` query imports, which knip cannot follow.
+    "src/js/**/*-worker.ts",
+    "src/js/**/*-processor.ts",
+    // Every file under scripts/ is a `bun run` target or a Worker `main`.
+    "scripts/*.{ts,mjs}",
+    "functions/**/*.ts",
+    "tests/**/*.test.ts",
+    "tests/setup.ts",
+    // Hand-driven harnesses, opened by URL rather than imported.
+    "tests/manual/**/*.ts",
+    "tests/demo-toy.ts",
+    "terminal/server.ts",
+    "audit-input-blocking.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx,js,mjs}",
+    "scripts/**/*.{ts,mjs}",
+    "tests/**/*.ts",
+    "functions/**/*.ts"
+  ],
+  "ignore": [
+    // Vendored third-party code, excluded from lint and format as well.
+    "src/js/lib/**",
+    // The only member of the `milkdrop-public` architecture layer that
+    // tests/unit/check-architecture.test.ts classifies by path; nothing
+    // imports it today, but deleting it would leave the layer with no file.
+    "src/js/milkdrop/public/launch-intents.ts"
+  ],
+  "ignoreDependencies": [
+    // Resolved at runtime by @modelcontextprotocol/server's cf-worker
+    // validator, which lists it only as a devDependency of its own.
+    "@cfworker/json-schema",
+    // Loaded by file path into a Playwright page as the parity oracle
+    // (scripts/bench-vs-butterchurn.ts, scripts/trace-vs-butterchurn.ts).
+    "butterchurn",
+    "butterchurn-presets"
+  ],
+  "ignoreBinaries": ["mise", "adb", "rsvg-convert"],
+  "rules": {
+    // The codebase exports test seams and public-surface barrels on
+    // purpose; report them without failing the run.
+    "exports": "warn",
+    "types": "warn",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "enumMembers": "warn",
+    "classMembers": "warn",
+    "duplicates": "warn"
+  }
+}

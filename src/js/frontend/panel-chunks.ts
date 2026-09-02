@@ -14,8 +14,9 @@
  * registry dedupes, and a chunk already in flight or resolved is not refetched.
  */
 
-/** Panel route ids, as they appear in `routeState.panel`. */
-export type PanelChunkId =
+/** Panel route ids, as they appear in `routeState.panel`. Internal: callers
+ * pass a plain string, which is what the route state actually holds. */
+type PanelChunkId =
   | 'browse'
   | 'capture'
   | 'editor'

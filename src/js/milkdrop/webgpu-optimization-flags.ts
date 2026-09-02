@@ -103,9 +103,9 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   // Opt in with ?milkdrop-webgpu-compute-vm=1.
   gpuComputeVM: false,
   renderBundles: false,
-  // Measured OFF (2026-08-22). Flattening `if`/`else` into masked assignments
-  // and unrolling bounded `for` loops moves ~150 shader bodies off the
-  // uniform-only approximation and onto direct WebGPU execution. The rewrite
+  // Measured OFF (2026-09-02). Flattening `if`/`else` into masked assignments
+  // and unrolling bounded `for` loops moves 154 shader bodies (168 → 14) off
+  // the uniform-only approximation and onto direct WebGPU execution. The rewrite
   // itself is sound — see the module docstring in
   // compiler/shader-branch-desugar.ts — but it hands those bodies to the
   // WebGPU node executor for the first time, and the executor still has gaps.

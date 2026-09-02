@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
+import {
+  type jsonSchemaValidator,
+  McpServer,
+} from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import agentAgentErgonomicsSkill from '../.agent/skills/agent-ergonomics/SKILL.md';
 import agentAuditRecurringFixesSkill from '../.agent/skills/audit-recurring-fixes/SKILL.md';

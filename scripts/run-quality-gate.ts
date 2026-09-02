@@ -185,6 +185,17 @@ export function buildGatePlan(
         label: 'Architecture boundary check',
         cmd: ['bun', 'run', 'check:architecture'],
       },
+      // Whole-repo dead-code scan (unused files, dependencies, binaries).
+      // Full mode only: ~2s, but it reads every module and the quick gate is
+      // meant to stay diff-scoped.
+      ...(mode === 'quick'
+        ? []
+        : [
+            {
+              label: 'Dead code scan (knip)',
+              cmd: ['bun', 'run', 'check:dead-code'],
+            },
+          ]),
       {
         label: 'Unbounded cache check',
         cmd: ['bun', 'run', 'check:cache-bounds'],

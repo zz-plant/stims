@@ -98,13 +98,14 @@ Exit criteria:
 - Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and
 - zero silent divergence between WebGL2 GLSL 300 es and WebGPU WGSL shader lowering.
 
-### Close the 226-preset WebGPU shader-translation gap
+### Close the 168-preset WebGPU shader-translation gap
 
-Measured by `tests/corpus/butterchurn-corpus-support.test.ts` on the bundled corpus: 1,521 presets are fully supported on both backends, 226 execute their shader programs directly on WebGL but fall back to extracted scalar controls on WebGPU, and 8 reference EEL identifiers the expression VM evaluates to `0`.
+Measured by `tests/corpus/butterchurn-corpus-support.test.ts` on the bundled corpus (2026-09-02): 1,578 presets are fully supported on both backends, 168 execute their shader programs directly on WebGL but fall back to extracted scalar controls on WebGPU, and 8 reference EEL identifiers the expression VM evaluates to `0`. (Was 226 / 1,521 before `mat2` element writes were let through to the WebGPU node executor, and 169 / 1,577 before `mat3`/`mat4` had a representation there.)
 
-- Resolve the packed feedback composite sampler (`sampler_fc_main` and `sampler_fw_main`) binding in WebGPU shader generation (`src/js/milkdrop/compiler/wgsl-generator.ts`).
-- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the simplex-atlas approximation that both backends use today.
-- Close the WebGPU executor gaps that keep the `shaderBranchDesugar` rewrite (226 → 19) behind a flag, starting with the one that takes down the GPU process, and the `mat2`/`mat3`/`mat4` element writes the node executor cannot express.
+- ~~Resolve the packed feedback composite sampler (`sampler_fc_main` and `sampler_fw_main`) binding on WebGPU.~~ Done: both resolve to real bindings (`warpTex` / `currentTex`) end to end, covered by `tests/unit/milkdrop-shader-sampler-aliases.test.ts`. None of the remaining 168 is attributable to sampler binding.
+- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the simplex-atlas approximation the WebGL preamble uses. Note the backends already differ here: `sampleNoiseVolume` slices the 2D simplex atlas on WebGL but samples the native simplex volume in the WebGPU node executor.
+- ~~Give the WebGPU node executor a `mat3`/`mat4` representation.~~ Done: a mat3/mat4 is carried as its column vectors (`shaderMatrix` in `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`), an element write is a swizzle on one column, products are spelled out column-major (`M * v`, `v * M`, `M * M`, `mul`, `transpose`), and shader analysis seeds each bare `matN` declaration with `matN(0.0)` so the size is known before the first write. The analysis gate now covers only writes at a runtime index, of which the corpus has none. The branch desugar masks indexed targets too, so the flag-on count went from 50 to 14; with shipped defaults only one of the 20 mat3 presets moved, because the other 19 also branch.
+- Close the WebGPU executor gaps that keep the `shaderBranchDesugar` rewrite (168 → 14) behind a flag: the GPU-process crash is fixed; six presets still render white or black under the flag. They are named in `src/js/milkdrop/compiler/shader-branch-desugar.ts` together with what has been ruled out (every statement compiles; q-registers, feedback format and decay blend are shared with WebGL) and the lead to check first (`sampleNoiseVolume` samples different textures on the two backends). This needs a WebGPU device: headless Chromium exposes no adapter, so it cannot be done from a container.
 
 Exit criteria:
 - `tests/corpus/butterchurn-corpus-support.test.ts` reports 0 presets falling back to extracted scalar controls on the WebGPU path, with `fullySupported` at the full corpus count.

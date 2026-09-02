@@ -573,7 +573,7 @@ describe('branch flattening for direct shader execution', () => {
     expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
   });
 
-  test('keeps a matrix element write, and off the WebGPU direct path', () => {
+  test('keeps a mat2 element write on the WebGPU direct path', () => {
     // The desugar's assignment pattern is narrower than the statement parser's
     // — it does not match an indexed target — and dropping what it cannot
     // match corrupted the preset silently: the body still looked fully parsed,
@@ -581,11 +581,9 @@ describe('branch flattening for direct shader execution', () => {
     // and never assigned. A corpus sweep found 49 presets losing 469 such
     // statements, several rendering black. So the write is passed through.
     //
-    // Passing it through is not the same as being able to run it. The WebGPU
-    // node executor cannot write one matrix element, and what it built for a
-    // body full of them was a 44641-member WGSL uniform struct that crashed
-    // the GPU process, so the line is recorded as unparsed: WebGL keeps
-    // running the raw GLSL and WebGPU falls back to scalar controls.
+    // For a mat2 that is also enough to run it: the WebGPU node executor packs
+    // a mat2 as a vec4 of its columns and handles column and component writes
+    // on it, so the statement stays on the direct program.
     const analysis = extractShaderControls(
       nativeBody(`
           mat2 basis_1;
@@ -602,6 +600,92 @@ describe('branch flattening for direct shader execution', () => {
     // The HLSL-to-GLSL normalizer rewrites `uint(0)` to `int(0)` on the way
     // through; what matters is that the matrix write survives at all.
     const matrixWrite = /^basis_1\[[^\]]+\] = vec2\(1\.0, 0\.0\)$/u;
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.some((line) => matrixWrite.test(line)),
+    ).toBe(true);
+  });
+
+  test('keeps a mat3 element write on the WebGPU direct path, seeded from its declaration', () => {
+    // The node executor carries a mat3/mat4 as explicit column vectors, so a
+    // component write is a swizzle on one column. What it cannot infer is the
+    // matrix's size: `basis_1[int(0)].x = q20` looks the same on a mat2, a
+    // mat3 and a mat4. The bare declaration is the only place the size is
+    // stated, so analysis turns it into `basis_1 = mat3(0.0)` ahead of the
+    // first element write. (Before matrices had a representation at all, a
+    // body of nine mat3 writes compiled to a 44641-member WGSL uniform struct
+    // and took the GPU process down — that is what the gate used to guard.)
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat3 basis_1;
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          basis_1[uint(0)].x = q20;
+          ret = ret_2;
+        `),
+    );
+
+    const matrixWrite = /^basis_1\[[^\]]+\]\.x = q20$/u;
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    const seedIndex = analysis.directProgramLines.indexOf(
+      'basis_1 = mat3(0.0)',
+    );
+    const writeIndex = analysis.directProgramLines.findIndex((line) =>
+      matrixWrite.test(line),
+    );
+    expect(seedIndex).toBeGreaterThanOrEqual(0);
+    expect(writeIndex).toBeGreaterThan(seedIndex);
+  });
+
+  test('keeps an initialized matrix declaration on the WebGPU direct path', () => {
+    // `mat3 m = mat3(1.0);` is the standard GLSL form; the statement grammar
+    // only knew the vec2/vec3 declarations, so the line was recorded as
+    // unparsed and the whole body fell back to controls over it. The
+    // four-scalar mat2 form was worse: parsed, then swallowed as if it were
+    // a control, so the direct program read an `r` nothing had assigned.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat3 m = mat3(1.0);
+          mat2 rot_1 = mat2(0.7, -0.7, 0.7, 0.7);
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          m[uint(0)].x = q20;
+          ret = vec3(uv * rot_1, 0.0) + (ret_2 * m);
+        `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(analysis.directProgramLines).toContain('mat3 m = mat3(1.0)');
+    expect(analysis.directProgramLines).toContain(
+      'mat2 rot_1 = mat2(0.7, -0.7, 0.7, 0.7)',
+    );
+    expect(
+      analysis.directProgramLines.indexOf('mat3 m = mat3(1.0)'),
+    ).toBeLessThan(
+      analysis.directProgramLines.findIndex((line) => /^m\[/u.test(line)),
+    );
+  });
+
+  test('keeps a matrix write at a runtime index off the WebGPU direct path', () => {
+    // A column the executor cannot name when it builds the node graph has no
+    // swizzle to write through. The line is recorded as unparsed: WebGL keeps
+    // running the raw GLSL and WebGPU falls back to scalar controls, instead
+    // of silently dropping the statement. Every matrix element write in the
+    // bundled corpus uses a literal index; this is the shape none of them
+    // has.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat2 basis_1;
+          vec3 ret_2;
+          int column_3;
+          column_3 = int(uv.x * 2.0);
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          basis_1[column_3] = vec2(1.0, 0.0);
+          ret = ret_2;
+        `),
+    );
+
+    const matrixWrite = /^basis_1\[column_3\] = vec2\(1\.0, 0\.0\)$/u;
     expect(
       analysis.nativeBodyUnparsedLines.some((line) => matrixWrite.test(line)),
     ).toBe(true);
@@ -610,9 +694,12 @@ describe('branch flattening for direct shader execution', () => {
     ).toBe(false);
   });
 
-  test('refuses a body whose branch holds a statement it cannot rewrite', () => {
-    // Under a mask there is no honest pass-through: emitted unchanged, the
-    // statement would run unconditionally. The whole body falls back instead.
+  test('masks a matrix element write inside a branch', () => {
+    // `M[int(0)].x = s` is an assignment like any other to the desugar: the
+    // target admits one index, and the executor reads `M[int(0)].x` back as a
+    // column swizzle, so the branch flattens to a masked write. 14 bundled
+    // presets put a mat2 column write under an `if`; refusing the whole body
+    // for it sent them to the scalar-controls approximation.
     const analysis = extractShaderControls(
       nativeBody(`
           mat2 basis_1;
@@ -620,6 +707,34 @@ describe('branch flattening for direct shader execution', () => {
           ret_2 = texture(sampler_pw_main, uv).xyz;
           if ((uv.x < 0.5)) {
             basis_1[uint(0)] = vec2(1.0, 0.0);
+          };
+          ret = ret_2;
+        `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(analysis.directProgramLines).toContain('basis_1 = mat2(0.0)');
+    expect(
+      analysis.directProgramLines.some((line) =>
+        /^basis_1\[[^\]]+\] = if\(.*, \(vec2\(1\.0, 0\.0\)\), basis_1\[[^\]]+\]\)$/u.test(
+          line,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  test('refuses a body whose branch holds a statement it cannot rewrite', () => {
+    // Under a mask there is no honest pass-through: emitted unchanged, the
+    // statement would run unconditionally. A double-indexed target is outside
+    // both the desugar's grammar and the executor's, so the whole body falls
+    // back instead.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat2 basis_1;
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          if ((uv.x < 0.5)) {
+            basis_1[uint(0)][1] = 1.0;
           };
           ret = ret_2;
         `),

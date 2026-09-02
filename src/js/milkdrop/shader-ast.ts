@@ -75,6 +75,18 @@ function normalizeShaderDeclaration(value: string | undefined) {
   if (normalized === 'float3') {
     return 'vec3';
   }
+  if (normalized === 'float4') {
+    return 'vec4';
+  }
+  if (normalized === 'float2x2') {
+    return 'mat2';
+  }
+  if (normalized === 'float3x3') {
+    return 'mat3';
+  }
+  if (normalized === 'float4x4') {
+    return 'mat4';
+  }
   return normalized;
 }
 const operatorTokens = ['<=', '>=', '==', '!=', '&&', '||'];
@@ -603,8 +615,12 @@ export function parseMilkdropShaderStatement(
     };
   }
 
+  // Initialized declarations of every vector and matrix width parse as the
+  // assignment they carry (`mat3 m = mat3(1.0)` is `m = mat3(1.0)` with the
+  // kind recorded), so a body that declares this way is not sent to the
+  // uniform-only approximation over its first line.
   const assignment = line.match(
-    /^(?:(const|float|vec2|vec3|float2|float3)\s+)?([a-z_][a-z0-9_]*(?:\[[^\]]+\])?(?:\.[a-z_][a-z0-9_]*)*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    /^(?:(const|float|vec2|vec3|vec4|float2|float3|float4|mat2|mat3|mat4|float2x2|float3x3|float4x4)\s+)?([a-z_][a-z0-9_]*(?:\[[^\]]+\])?(?:\.[a-z_][a-z0-9_]*)*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
   );
   if (!assignment) {
     return null;
@@ -624,6 +640,10 @@ export function parseMilkdropShaderStatement(
         | 'float'
         | 'vec2'
         | 'vec3'
+        | 'vec4'
+        | 'mat2'
+        | 'mat3'
+        | 'mat4'
         | undefined) ?? null,
     target: assignment[2]?.toLowerCase() ?? '',
     operator: (assignment[3] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=',

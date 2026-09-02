@@ -27,9 +27,12 @@
  *                   known-lossy at parse time.
  *
  * Measured over the bundled corpus (1750 presets, 1201 carrying shader text)
- * on 2026-08-22: WebGL is 'direct' for all 1201; WebGPU is 'direct' for 1182
- * and 'translated' for 19. Approximation is rare, which is exactly why it
- * needs reporting — 19 quietly-wrong presets do not show up in an average.
+ * on 2026-09-02 with shipped defaults: WebGL is 'direct' for all 1201; WebGPU
+ * is 'direct' for 1033 and 'translated' for 168 (14 with the gated
+ * `shaderBranchDesugar` rewrite on). Approximation is the minority, which is
+ * exactly why it needs reporting — quietly-wrong presets do not show up in
+ * an average. tests/corpus/butterchurn-corpus-support.test.ts pins the
+ * counts.
  */
 import type {
   MilkdropFeatureAnalysis,
