@@ -191,6 +191,14 @@ export function getCps(): number | null {
  * suspended when the tab is hidden (which the Browser pane reports even when
  * visible to the user), and a ramp that silently stalls mid-travel would
  * leave the instrument in a half-state with no error.
+ *
+ * `forcedLanding` reports that the gesture did not glide — it arrived at the
+ * destination without passing through it. Two things cause that, and they are
+ * the same fact to a caller: the watchdog had to land the value because rAF
+ * never fired, or the first frame arrived after the whole duration had already
+ * elapsed, so the ramp had nothing left to travel and snapped. The second case
+ * used to report `forcedLanding: false`, claiming a healthy glide for what was
+ * really a teleport under a starved main thread.
  */
 export function ramp(request: RampRequest): Promise<RampResult> {
   const { setTarget } = requireDeps();
@@ -215,6 +223,8 @@ export function ramp(request: RampRequest): Promise<RampResult> {
     const started = performance.now();
     let steps = 0;
     let settled = false;
+    /** Whether any frame landed strictly between the endpoints. */
+    let glided = false;
 
     const apply = (progress: number) => {
       const eased = ease(Math.min(1, Math.max(0, progress)));
@@ -238,7 +248,10 @@ export function ramp(request: RampRequest): Promise<RampResult> {
         durationMs,
         curve,
         steps,
-        forcedLanding,
+        // A ramp that never got a frame inside its own window did not glide,
+        // however it was landed. `durationMs === 0` is excluded because an
+        // instant set is a deliberate request, not a starved gesture.
+        forcedLanding: forcedLanding || (durationMs > 0 && !glided),
         final: Object.fromEntries(plan.map((leg) => [leg.target, leg.to])),
       });
     };
@@ -251,6 +264,7 @@ export function ramp(request: RampRequest): Promise<RampResult> {
         finish(false);
         return;
       }
+      glided = true;
       apply(elapsed / durationMs);
       requestAnimationFrame(step);
     };
