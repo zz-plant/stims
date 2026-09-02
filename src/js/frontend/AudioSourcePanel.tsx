@@ -17,7 +17,6 @@ import {
   createFileAudioStream,
   type FileAudioHandle,
 } from './file-audio.ts';
-import { ShaderIdenticon } from './ShaderIdenticon.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -217,8 +216,13 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
       aria-busy={!engineReady}
     >
       <div className="stims-shell__source-heading">
+        {/* "Audio source" in both cases. This heading names the whole
+            section — YouTube, microphone, a file and this tab — so labelling
+            it "YouTube playback" whenever tab capture happens to be available
+            named one of its four children and mis-described the other three,
+            which is also what a screen reader announced on entering it. */}
         <h2 id={sourceHeadingId} className="stims-shell__section-label">
-          {canCaptureDisplayAudio ? 'YouTube playback' : 'Audio source'}
+          Audio source
         </h2>
       </div>
       {isAppBrowser ? (
@@ -418,16 +422,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('demo')}
         >
-          <div className="stims-shell__source-card-header">
-            <span className="stims-shell__source-card-kicker">No setup</span>
-            <ShaderIdenticon
-              seed="audio-demo-source"
-              size={28}
-              mode="3d-polyhedron"
-            />
-          </div>
+          <UiIcon
+            name="pulse"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
           <strong>Demo audio</strong>
-          <span>Start with demo audio — no permission needed</span>
+          <span>No permission needed</span>
         </button>
         <button
           id={`${sourcePanelId}-start-audio-btn`}
@@ -443,16 +443,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             )
           }
         >
-          <div className="stims-shell__source-card-header">
-            <span className="stims-shell__source-card-kicker">Live source</span>
-            <ShaderIdenticon
-              seed="audio-mic-source"
-              size={28}
-              mode="3d-polyhedron"
-            />
-          </div>
+          <UiIcon
+            name="mic"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
           <strong>Microphone</strong>
-          <span>Live mic input</span>
+          <span>Whatever is playing in the room</span>
         </button>
         {audioDevices.length > 1 ? (
           <label className="stims-shell__device-select">
@@ -495,14 +491,10 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             if (file) void playFile(file);
           }}
         >
-          <div className="stims-shell__source-card-header">
-            <span className="stims-shell__source-card-kicker">Your music</span>
-            <ShaderIdenticon
-              seed="audio-file-source"
-              size={28}
-              mode="3d-polyhedron"
-            />
-          </div>
+          <UiIcon
+            name="music"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
           <strong>Audio file</strong>
           <span>
             {fileState?.loading
@@ -540,18 +532,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             aria-describedby={!engineReady ? disabledDescription : undefined}
             onClick={() => onAudioStart('tab')}
           >
-            <div className="stims-shell__source-card-header">
-              <span className="stims-shell__source-card-kicker">
-                Browser audio
-              </span>
-              <ShaderIdenticon
-                seed="audio-tab-source"
-                size={28}
-                mode="3d-polyhedron"
-              />
-            </div>
+            <UiIcon
+              name="video"
+              className="stims-shell__source-card-icon stims-icon-slot"
+            />
             <strong>This tab</strong>
-            <span>Audio from this browser tab</span>
+            <span>Audio playing in this browser tab</span>
           </button>
         ) : null}
       </div>

@@ -80,17 +80,19 @@ export function SidePanel({
   const closeTimerRef = useRef<number | null>(null);
 
   const isActive = open && !exiting;
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useFocusTrap<HTMLDivElement>({
     active: isActive,
     autoFocus: true,
     restoreFocusOnUnmount: true,
     // Stage-anchored panels are non-modal: the stage and dock stay usable
     // beside them (for pointer AND keyboard), so focus must not be fenced in.
-    // The seam is first in DOM order but is the wrong first landing — start
-    // on the close button, a control every panel shares.
     trapFocus: !stageAnchored,
-    initialFocusRef: stageAnchored ? closeBtnRef : undefined,
+    // Land on the dialog itself, never on a control inside it. The two
+    // candidates in DOM order are both wrong as an opening move: the editor's
+    // resize seam, and the close button — which made "dismiss this" the
+    // highlighted default of every panel you deliberately opened, and had
+    // screen readers announce "Close, button" in place of the panel's name.
+    initialFocus: 'container',
   });
 
   const startClose = useCallback(() => {
@@ -387,7 +389,6 @@ export function SidePanel({
           <div className={styles.grabber} aria-hidden="true" />
           <h2 className={styles.title}>{title}</h2>
           <button
-            ref={closeBtnRef}
             type="button"
             className={styles.closeBtn}
             onClick={startClose}

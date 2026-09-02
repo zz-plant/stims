@@ -31,8 +31,6 @@
       .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
       .stims-loading__dots span:first-child{animation-delay:-.32s}
       .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
-      .stims-loading__exit{position:absolute;top:12px;right:12px;width:24px;height:24px;background:rgba(0,0,0,.3);border-radius:50%;color:#e9fbff;font-size:1.2rem;line-height:24px;text-align:center;transition:background .2s;cursor:pointer;}
-      .stims-loading__exit:hover{background:rgba(0,0,0,.5)}
       .stims-crawl-links{position:absolute;top:0;left:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
       @keyframes stims-spin{to{transform:rotate(360deg)}}
       @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
@@ -50,8 +48,16 @@
          A modulepreload for /src/js/app.ts is redundant there, and Rolldown
          emits it as a data:video/mp2t link that fails every page load. -->
     <link rel="preload" href="/milkdrop-presets/starter-catalog.json" as="fetch" crossorigin="anonymous" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts are same-origin now (src/css/fonts.css), so there is nothing to
+         preconnect to. The Sans face is preloaded because the wordmark that
+         paints first is set in it. -->
+    <link
+      rel="preload"
+      href="/fonts/ibm-plex-sans-latin-var.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="/icons/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
@@ -84,18 +90,7 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap"
-      />
-    </noscript>
+    <link rel="stylesheet" href="src/css/fonts.css" />
     <link rel="stylesheet" href="src/css/tokens.css" />
     <link rel="stylesheet" href="src/css/motion.css" />
     <link
@@ -152,17 +147,9 @@
         <div class="stims-loading__status">
           <div class="stims-loading__spinner" aria-hidden="true"></div>
           <div class="stims-loading__text" id="stims-loading-text">
-            Loading MilkDrop visualizer
+            Warming up the visuals
           </div>
         </div>
-        <button
-          class="stims-loading__exit"
-          type="button"
-          aria-label="Dismiss loading screen"
-          onclick="this.closest('.stims-loading').remove()"
-        >
-          ✕
-        </button>
       </div>
     </div>
     <div id="app"></div>
@@ -192,24 +179,30 @@
     <script>
       (() => {
         const TIMEOUT_MS = 15000;
-        const phaseLabels = {
-          'app-module': 'Starting app shell',
-          'shell-rendered': 'Showing controls',
-          'starter-catalog': 'Loading featured presets',
-          'full-catalog': 'Preparing full preset library',
-          runtime: 'Starting visualizer runtime',
-        };
+        // Deliberately not a per-phase readout. The boot phases are real, but
+        // "Starting app shell" / "Starting visualizer runtime" describe our
+        // architecture, not anything the visitor asked about or can act on,
+        // and they flicker past in well under a second on a warm load. One
+        // calm line holds, and only a genuinely slow load says more — with a
+        // reason the visitor can understand.
+        const SLOW_MS = 6000;
         const text = () => document.querySelector('.stims-loading__text');
         window.addEventListener('stims:load-status', (event) => {
-          const phase = event?.detail?.phase;
-          const label = phaseLabels[phase];
-          const target = text();
-          if (target && label) target.textContent = label;
-          if (phase === 'shell-rendered') clearTimeout(timer);
+          if (event?.detail?.phase === 'shell-rendered') {
+            clearTimeout(timer);
+            clearTimeout(slowTimer);
+          }
         });
+        const slowTimer = setTimeout(() => {
+          const target = text();
+          if (target && !document.getElementById('stims-main')) {
+            target.textContent = 'Still loading — first visit sets up the preset library';
+          }
+        }, SLOW_MS);
         const timer = setTimeout(() => {
           const loading = document.getElementById('stims-loading');
           if (!loading || document.getElementById('stims-main')) return;
+          clearTimeout(slowTimer);
           loading.innerHTML =
             '<div class="stims-loading__fallback">' +
             '<p>Stims is taking longer than expected to load.</p>' +

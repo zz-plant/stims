@@ -27,7 +27,7 @@
   min-height: 0;
   height: 100%;
   color: var(--stims-ink);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
 }
 
 /* The light theme's accent is a dark rust, so accent-filled controls need
@@ -40,7 +40,7 @@ html.light .stims-editor {
    label voice, so sections read as instrument legends rather than headings. */
 .stims-editor__legend {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -62,7 +62,7 @@ html.light .stims-editor {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--ed-muted);
@@ -116,7 +116,7 @@ html.light .stims-editor {
   border-radius: var(--stims-radius);
   background: transparent;
   color: var(--ed-muted);
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.03em;
   white-space: nowrap;
@@ -134,7 +134,7 @@ html.light .stims-editor {
 
 .stims-editor__shortcut {
   font-family: var(--font-family-mono);
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   color: var(--ed-dim);
   white-space: nowrap;
 }
@@ -160,7 +160,7 @@ html.light .stims-editor {
   background: var(--stims-control-fill);
   color: var(--ed-muted);
   font: inherit;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -208,7 +208,7 @@ html.light .stims-editor {
 .stims-editor__btn--icon {
   min-width: 30px;
   padding: 0 7px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 /* Undo/redo read as one control, not two unrelated buttons. */
@@ -274,7 +274,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-muted);
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
 }
@@ -319,7 +319,7 @@ html.light .stims-editor {
   border-bottom: 1px solid var(--stims-line-soft);
   background: var(--ed-tint-3);
   color: var(--ed-muted);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -374,7 +374,7 @@ html.light .stims-editor {
   padding: 8px 10px;
   border-bottom: 1px solid var(--stims-line-soft);
   color: var(--stims-cool);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -387,7 +387,7 @@ html.light .stims-editor {
   padding: 8px 10px;
   overflow: auto;
   font-family: var(--font-family-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.55;
   white-space: pre;
 }
@@ -463,7 +463,7 @@ html.light .stims-editor {
 .stims-editor__count {
   margin-left: auto;
   font-family: var(--font-family-mono);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   color: var(--ed-dim);
 }
@@ -479,7 +479,7 @@ html.light .stims-editor {
 .stims-editor__caret {
   width: 0.7em;
   color: var(--ed-dim);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   transition: transform 0.12s ease;
 }
 
@@ -503,7 +503,7 @@ html.light .stims-editor {
   gap: 7px;
   padding: 4px 2px;
   border-radius: var(--radius-sm);
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: var(--ed-muted);
 }
@@ -530,7 +530,7 @@ html.light .stims-editor {
   flex: none;
   width: 3.4em;
   font-family: var(--font-family-mono);
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -551,7 +551,7 @@ html.light .stims-editor {
 .stims-editor__problem-line {
   flex: none;
   font-family: var(--font-family-mono);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   color: var(--ed-dim);
 }
@@ -559,7 +559,7 @@ html.light .stims-editor {
 .stims-editor__problems-empty {
   padding: 4px 2px;
   color: var(--ed-dim);
-  font-size: 0.73rem;
+  font-size: 0.75rem;
 }
 
 /* ── Bottom dock ──────────────────────────────────────────────────── */
@@ -599,7 +599,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-dim);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -628,7 +628,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-dim);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   cursor: pointer;
 }
 
@@ -659,7 +659,7 @@ html.light .stims-editor {
 .stims-editor__hint {
   margin: 0 0 8px;
   color: var(--ed-dim);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
@@ -694,7 +694,7 @@ html.light .stims-editor {
 }
 
 .stims-editor__slider-label {
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--ed-muted);
   cursor: pointer;
@@ -702,7 +702,7 @@ html.light .stims-editor {
 
 .stims-editor__slider-value {
   font-family: var(--font-family-mono);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   color: var(--stims-ink);
 }
@@ -741,7 +741,7 @@ html.light .stims-editor {
   margin-top: -5px;
   appearance: none;
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
   background: var(--stims-ink);
 }
 
@@ -749,7 +749,7 @@ html.light .stims-editor {
   width: 4px;
   height: 12px;
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
   background: var(--stims-ink);
 }
 
@@ -767,7 +767,7 @@ html.light .stims-editor {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ed-dim);
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -807,7 +807,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-dim);
   font-family: var(--font-family-mono);
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   letter-spacing: 0.02em;
   cursor: default;
@@ -850,7 +850,7 @@ html.light .stims-editor {
 .stims-editor__live-hint:not([hidden]) {
   grid-column: 1 / -1;
   padding: 1px 2px 0;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--stims-warn);
 }
@@ -908,7 +908,7 @@ html.light .stims-editor {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ed-muted);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.6;
   cursor: pointer;
 }
@@ -954,7 +954,7 @@ html.light .stims-editor {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ed-muted);
-  font-size: 0.66rem;
+  font-size: 0.6875rem;
   line-height: 1.6;
   cursor: pointer;
 }
@@ -1033,7 +1033,7 @@ html.light .stims-editor {
   height: 12px;
   appearance: none;
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
   background: var(--stims-ink);
   pointer-events: auto;
   cursor: pointer;
@@ -1043,7 +1043,7 @@ html.light .stims-editor {
   width: 4px;
   height: 12px;
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
   background: var(--stims-ink);
   pointer-events: auto;
   cursor: pointer;
@@ -1104,7 +1104,7 @@ html.light .stims-editor {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ed-muted);
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
 }
 
 .stims-editor__mod-select:focus-visible {
@@ -1121,7 +1121,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--stims-ink);
   font-family: var(--font-family-mono);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -1140,7 +1140,7 @@ html.light .stims-editor {
   min-width: 2.6rem;
   color: var(--stims-cool);
   font-family: var(--font-family-mono);
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1157,7 +1157,7 @@ html.light .stims-editor {
   padding-top: 10px;
   border-top: 1px solid var(--stims-line);
   color: var(--ed-muted);
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1183,7 +1183,7 @@ html.light .stims-editor {
 
 .stims-editor__color-hex {
   font-family: var(--font-family-mono);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   color: var(--stims-ink);
 }
@@ -1207,12 +1207,12 @@ html.light .stims-editor {
 
 .stims-editor__color-swatch::-webkit-color-swatch {
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
 }
 
 .stims-editor__color-swatch::-moz-color-swatch {
   border: 0;
-  border-radius: 1px;
+  border-radius: var(--radius-hairline);
 }
 
 .stims-editor__color-swatch:focus-visible {
@@ -1256,13 +1256,13 @@ html.light .stims-editor {
 
 .stims-editor__insert strong {
   font-family: var(--font-family-mono);
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--stims-ink);
 }
 
 .stims-editor__insert span {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.35;
   color: var(--ed-dim);
 }
@@ -1335,7 +1335,7 @@ html.light .stims-editor {
   border-left: 2px solid var(--stims-cool);
   background: var(--ed-tint-3);
   color: var(--ed-muted);
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   line-height: 1.5;
 }
 
@@ -1349,7 +1349,7 @@ html.light .stims-editor {
   border: 0;
   background: transparent;
   color: var(--ed-dim);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   cursor: pointer;
 }
 
@@ -1380,7 +1380,7 @@ html.light .stims-editor {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   color: var(--ed-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1388,7 +1388,7 @@ html.light .stims-editor {
 
 .stims-editor__history-empty {
   color: var(--ed-dim);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.45;
 }
 
@@ -1418,7 +1418,7 @@ html.light .stims-editor {
   width: min(320px, calc(100% - 24px));
   background: var(--ed-panel, #131a22);
   border: 1px solid var(--ed-line, rgba(255, 255, 255, 0.14));
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
@@ -1431,7 +1431,7 @@ html.light .stims-editor {
   background: transparent;
   color: var(--ed-ink, #e8ecf4);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .stims-editor__jump-input:focus-visible {
@@ -1453,9 +1453,9 @@ html.light .stims-editor {
   justify-content: space-between;
   gap: 10px;
   padding: 5px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-family: var(--font-family-mono, monospace);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--ed-ink, #e8ecf4);
   cursor: pointer;
 }
@@ -1467,11 +1467,11 @@ html.light .stims-editor {
 
 .stims-editor__jump-count {
   color: var(--ed-muted, rgba(232, 236, 244, 0.55));
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .stims-editor__jump-empty {
   padding: 8px;
   color: var(--ed-muted, rgba(232, 236, 244, 0.55));
-  font-size: 0.78rem;
+  font-size: 0.75rem;
 }

@@ -84,6 +84,20 @@
   --stims-on-stage-cool: #77c9ff;
   --stims-on-stage-control-fill: rgba(255, 255, 255, 0.05);
   --stims-on-stage-control-fill-hover: rgba(255, 255, 255, 0.08);
+  /* Surfaces for the same "sits on the stage" case as the inks above, and
+     just as unconditional. The ink half of this palette was pinned but the
+     surface half was not, so in the light theme the launch hero drew its
+     panels, cards and fields in cream (--card-bg) and then wrote on them in
+     the near-white on-stage ink: the YouTube field and all four audio-source
+     cards rendered as blank slabs with their labels invisible on top. A
+     surface and the ink that goes on it have to come from the same palette. */
+  --stims-on-stage-card: rgba(10, 14, 22, 0.6);
+  --stims-on-stage-panel: rgba(8, 12, 18, 0.82);
+  --stims-on-stage-panel-strong: rgba(10, 14, 22, 0.95);
+  --stims-on-stage-accent: #f47a54;
+  --stims-on-stage-on-accent: #14100c;
+  --stims-on-stage-skeleton-fill: rgba(255, 255, 255, 0.06);
+  --stims-on-stage-skeleton-sheen: rgba(255, 255, 255, 0.1);
 
   /* ── App-shell semantic colors ──────────────────────────────── */
   --stims-ink: var(--text-color);
@@ -151,6 +165,13 @@
   );
   --stims-control-fill: var(--stims-white-05);
   --stims-control-fill-hover: var(--stims-white-08);
+  /* Skeleton placeholder fill and its shimmer. Tokens rather than the raw
+     white-alpha primitives the skeletons used to reach for: a 4%-white block
+     on a 4%-white sheen is invisible against the light theme's cream panel, so
+     every panel that loaded in light mode showed a completely blank sheet for
+     as long as its chunk took to arrive. */
+  --stims-skeleton-fill: var(--stims-white-04);
+  --stims-skeleton-sheen: var(--stims-white-08);
   /* ── Shadows ───────────────────────────────────────────────── */
   --shadow-strong:
     0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(119, 201, 255, 0.18);
@@ -176,19 +197,35 @@
   --shadow-panel-hover:
     0 24px 46px rgba(0, 0, 0, 0.38), 0 6px 16px rgba(0, 0, 0, 0.22);
 
-  /* ── Radii (Kiki: Sharp & Angular Geometry) ───────────────── */
-  --radius-sm: 0.125rem;
-  --radius-md: 0.25rem;
-  --radius-lg: 0.375rem;
+  /* ── Radii ──────────────────────────────────────────────────
+     The header here used to read "Kiki: Sharp & Angular Geometry" and the
+     scale under it topped out at 6px — but the shipped UI rounds its panels
+     at 14px, its cards at 12px and its docks at 18px, and the stylesheets
+     between them used nineteen different literal pixel radii. The declared
+     system described a product that does not exist, so nothing could be
+     checked against it and every new component picked a number by eye.
+
+     This is the scale the app actually draws, in steps far enough apart to
+     be choices rather than noise. Nothing outside it should appear in a
+     stylesheet; `bun run check:css-scale` enforces that. */
+  --radius-hairline: 2px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-round: 999px;
   /* Sharp-cornered tag/badge geometry (intentionally squared, not a
      capsule). For fully-rounded switches, chips, and dock pills use
-     --radius-round below. */
-  --radius-pill: 2px;
-  --radius-round: 999px;
-  --stims-radius: 4px;
-  --stims-radius-panel: 4px;
-  --stims-radius-card: 4px;
-  --stims-radius-control: 4px;
+     --radius-round above. */
+  --radius-pill: var(--radius-hairline);
+  /* Semantic aliases. Prefer these in component CSS — they say what is being
+     rounded, so the scale can be retuned in one place. */
+  --stims-radius: var(--radius-md);
+  --stims-radius-panel: var(--radius-lg);
+  --stims-radius-card: var(--radius-lg);
+  --stims-radius-control: var(--radius-md);
 
   /* ── Typography ────────────────────────────────────────────── */
   --font-family-base:
@@ -199,14 +236,33 @@
      separate family. A third typeface was declared here for a long time but was
      never actually loaded, so it silently rendered as base anyway. */
   --stims-display: var(--font-family-base);
-  /* Type scale shared across all pages */
+  /* Type scale shared across all pages.
+     This scale existed before and was almost entirely unused: the stylesheets
+     carried 41 distinct rem font sizes, 13 of them packed between 0.6rem and
+     0.85rem — differences of a third of a pixel, which are not decisions,
+     just drift. They are snapped onto these steps now, and
+     `bun run check:css-scale` keeps them there.
+
+     --text-2xs is the floor, and it is a floor on purpose: sizes down to
+     0.6rem (9.6px at a default root) were in use for real UI copy — MIDI
+     badges, preset credits, button labels — which is below what most people
+     can read comfortably and below where the contrast ratios those colours
+     were chosen against even apply.
+
+     The rungs, smallest first. Every name that existed before keeps the exact
+     value it had, so nothing already reading one changes size; the new names
+     fill the gaps that the literals were being written into. */
+  --text-2xs: 0.6875rem;
   --text-xs: 0.75rem;
+  --text-xs-plus: 0.8125rem;
   --text-sm: 0.875rem;
+  --text-sm-plus: 0.9375rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
   --text-3xl: 1.875rem;
+  --text-display: 2.5rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-bold: 700;
@@ -378,6 +434,9 @@ html.light {
   --stims-panel-strong: rgba(255, 250, 240, 0.94);
   --stims-control-fill: #f7f3ea;
   --stims-control-fill-hover: #eef2f1;
+  /* Ink-on-cream, mirroring the dark theme's white-on-ink. */
+  --stims-skeleton-fill: rgba(35, 48, 56, 0.09);
+  --stims-skeleton-sheen: rgba(35, 48, 56, 0.05);
   color-scheme: light;
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);

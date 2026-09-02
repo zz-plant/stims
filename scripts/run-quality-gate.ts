@@ -121,6 +121,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:css-tokens'],
       },
       {
+        label: 'CSS radius/type scale',
+        cmd: ['bun', 'run', 'check:css-scale'],
+      },
+      {
         label: 'Agent action id drift',
         cmd: ['bun', 'run', 'check:agent-action-ids'],
       },

@@ -34,8 +34,8 @@
   --ctl-panel-bg: rgba(10, 14, 22, 0.97);
   --ctl-panel-line: rgba(255, 255, 255, 0.08);
 
-  --ctl-radius: 10px;
-  --ctl-radius-lg: 12px;
+  --ctl-radius: var(--radius-md);
+  --ctl-radius-lg: var(--radius-lg);
   --ctl-ease: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -69,13 +69,17 @@ html.light .stims-shell {
     gap: 18px;
   }
 
+  /* Tokens, not literal whites. The three rules below painted a white track,
+     a white hover and a white active fill with `color: #fff` on top — which in
+     the light theme put white label text on a near-white pill, so the Settings
+     tab you were actually on was the only one you could not read. */
   .ctl-tabs {
     display: flex;
     gap: 6px;
     margin-bottom: 16px;
     padding: 3px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    background: var(--ctl-fill);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -84,7 +88,7 @@ html.light .stims-shell {
     flex: 1;
     padding: 7px 10px;
     border: none;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--ctl-ink-2);
     font-size: 0.75rem;
@@ -98,12 +102,12 @@ html.light .stims-shell {
 
   .ctl-tab:hover {
     color: var(--ctl-ink);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--ctl-fill-hover);
   }
 
   .ctl-tab--active {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-ink);
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
@@ -288,13 +292,13 @@ html.light .stims-shell {
   .ctl-midi-binding-badge {
     flex-shrink: 0;
     font-family: var(--font-family-mono);
-    font-size: 0.62rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--ctl-ink-3);
     background: var(--ctl-fill-sunk);
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
   }
 
   .ctl-midi-binding-row .ctl-row__hint {
@@ -756,7 +760,7 @@ html.light .stims-shell {
     overflow: hidden;
     width: 56px;
     height: 36px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--ctl-fill-sunk);
   }
 
@@ -778,8 +782,14 @@ html.light .stims-shell {
     object-fit: cover;
   }
 
-  .ctl-preset__art .stims-shell__preset-art-fallback {
-    display: none;
+  /* The old fallback was the mood as text, which at this size was an unreadable
+     word in a 44px box — hence the display:none that used to live here, and the
+     empty art slot it left on every un-thumbnailed row. The generated artwork is
+     a picture, so it survives the shrink and the slot is never empty now. */
+  .ctl-preset__art .stims-shell__preset-art-generated {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .ctl-preset__copy {
@@ -846,7 +856,7 @@ html.light .stims-shell {
     margin-right: 6px;
     padding: 0;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--ctl-ink-3);
     cursor: pointer;
@@ -970,7 +980,7 @@ html.light .stims-shell {
     min-width: 0;
     min-height: 0;
     margin: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     aspect-ratio: auto;
     transition: transform var(--ctl-ease);
   }
@@ -1068,10 +1078,10 @@ html.light .stims-shell {
   .ctl-lineage__shader {
     flex: none;
     padding: 1px 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: var(--ctl-fill-sunk);
     color: var(--ctl-ink-3);
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
   }
@@ -1229,11 +1239,11 @@ html.light .stims-shell {
     margin-right: 1px;
     padding: 1px 5px;
     border: 1px solid var(--ctl-line-strong);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: var(--ctl-fill);
     color: var(--ctl-ink-2);
     font-family: var(--font-family-mono, monospace);
-    font-size: 0.7rem;
+    font-size: 0.6875rem;
   }
 
   @media (any-hover: none) and (any-pointer: coarse) {
@@ -1439,7 +1449,7 @@ html.light .stims-shell {
 
   .ctl-section .stims-shell__source-card-kicker {
     color: var(--ctl-ink-3);
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;

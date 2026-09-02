@@ -103,11 +103,23 @@ export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
   offline = false,
+  onPresetChosen,
   sessionHistory = [],
 }: {
   onCollectionTagChange: (tag: string | null) => void;
   onImport: (files: FileList | File[] | null) => void;
   offline?: boolean;
+  /**
+   * Fired when the visitor picks a preset from this panel — a click, a tap or
+   * an Enter on a tile, a row, or a lineage entry.
+   *
+   * Deliberately distinct from "the playing preset changed", which is a much
+   * weaker signal: the engine also changes presets on its own (idle autoplay
+   * on arrival, autoplay shuffling during a session), and on a mobile or
+   * low-power `/discover/…` arrival that automatic start lands while the
+   * browse panel is open and nothing has been tapped.
+   */
+  onPresetChosen?: (presetId: string) => void;
   sessionHistory?: Array<{ presetId: string; title: string; at: number }>;
 }) {
   const { ui, engine } = useWorkspace();
@@ -117,6 +129,21 @@ export function BrowseSheetPanel({
   const catalogReady = engine.catalogReady;
   const collectionTags = engine.collectionTags;
   const currentPresetId = engineSnapshot?.activePresetId ?? null;
+
+  /**
+   * The one path a preset is chosen through from this panel.
+   *
+   * Every selection site below routes here rather than calling the engine
+   * directly, so "the visitor picked this" has a single definition that
+   * callers can hook — and so a new selection site cannot quietly skip it.
+   */
+  const selectPreset = useCallback(
+    (presetId: string) => {
+      onPresetChosen?.(presetId);
+      engine.handlePresetSelection(presetId);
+    },
+    [engine.handlePresetSelection, onPresetChosen],
+  );
   const presetPreviews = engine.presetPreviews;
   const routeState = ui.routeState;
   const searchQuery = ui.searchQuery;
@@ -139,6 +166,12 @@ export function BrowseSheetPanel({
     presetId: string | null;
     audioSource: AudioSource | null;
   }) => {
+    // The grid opens a preset by committing route state rather than calling
+    // the engine, so this is the other half of the selection path and has to
+    // report a choice too — it is in fact the primary one, since the grid is
+    // the default browse view and a tile click is the "tap a card" this
+    // panel's first-use hint is about.
+    if (next.presetId) onPresetChosen?.(next.presetId);
     ui.commitRoute({
       ...ui.routeState,
       ...next,
@@ -800,7 +833,7 @@ export function BrowseSheetPanel({
                       sourceElement: event.currentTarget,
                       presetId: entry.id,
                     });
-                    engine.handlePresetSelection(entry.id);
+                    selectPreset(entry.id);
                   }}
                 >
                   <PresetArtwork
@@ -876,7 +909,7 @@ export function BrowseSheetPanel({
           <PresetLineageSection
             catalog={catalog}
             currentPresetId={currentPresetId}
-            onSelect={(presetId) => engine.handlePresetSelection(presetId)}
+            onSelect={selectPreset}
           />
         ) : null}
 
@@ -931,7 +964,7 @@ export function BrowseSheetPanel({
               <PresetLineageSection
                 catalog={catalog}
                 currentPresetId={currentPresetId}
-                onSelect={(presetId) => engine.handlePresetSelection(presetId)}
+                onSelect={selectPreset}
               />
             </div>
             <ul
@@ -990,7 +1023,7 @@ export function BrowseSheetPanel({
                           sourceElement: event.currentTarget,
                           presetId: entry.id,
                         });
-                        engine.handlePresetSelection(entry.id);
+                        selectPreset(entry.id);
                       }}
                     >
                       <span className="ctl-preset__art">

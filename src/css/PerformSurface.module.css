@@ -16,7 +16,7 @@
   overflow-y: auto;
   padding: 10px;
   border: 1px solid var(--stims-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   box-shadow: 0 8px 24px var(--stims-shadow-34);
   color: var(--text-color);
@@ -31,7 +31,7 @@
 }
 
 .label {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -41,11 +41,11 @@
 .pick {
   padding: 2px 8px;
   border: 1px solid var(--stims-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   cursor: pointer;
 }
 
@@ -66,11 +66,11 @@
   width: 100%;
   padding: 4px 6px;
   border: 1px solid var(--stims-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-color);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   cursor: pointer;
 }
 
@@ -95,7 +95,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -105,7 +105,7 @@
   padding: 1px 6px;
   border: 1px solid var(--stims-border);
   border-radius: var(--radius-pill, 999px);
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -126,7 +126,7 @@
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -142,14 +142,14 @@
 
 .warning {
   margin: 0;
-  font-size: 0.66rem;
+  font-size: 0.6875rem;
   line-height: 1.35;
   color: var(--stims-focus-95, #f47a54);
 }
 
 .empty {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--text-muted);
 }

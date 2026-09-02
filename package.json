@@ -55,6 +55,7 @@
     "check:catalog-integrity": "bun run scripts/check-catalog-integrity.ts",
     "check:ci-config": "bun run scripts/check-ci-config.ts",
     "check:commit-msg": "bun run scripts/check-commit-msg.ts",
+    "check:css-scale": "bun run scripts/check-css-scale.ts",
     "check:dead-code": "bun run scripts/check-dead-code.ts",
     "check:css-tokens": "bun run scripts/check-css-tokens.ts",
     "check:doc-references": "bun run scripts/check-doc-references.ts",
