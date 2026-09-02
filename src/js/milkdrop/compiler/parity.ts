@@ -284,8 +284,8 @@ export function buildBackendSupport({
   }
 
   // When the other backend executes this preset's shader programs directly
-  // but this one falls back to extracted scalar controls (e.g. the packed
-  // sampler_fc_main gap on WebGPU), the translation is a real visual
+  // but this one falls back to extracted scalar controls (e.g. a `mat3`
+  // element write the WebGPU node executor cannot represent), the translation is a real visual
   // approximation and must surface as backend evidence instead of silently
   // reporting full support. Symmetric 'translated' (control-syntax shader
   // text with no direct programs) is the designed exact path and stays

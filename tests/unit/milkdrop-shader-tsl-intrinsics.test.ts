@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { Texture } from 'three';
-import { compileShaderExpressionNode } from '../../src/js/milkdrop/feedback-manager-webgpu.ts';
+import { getCurrentStack, setCurrentStack, stack, vec2 } from 'three/tsl';
+import {
+  compileShaderExpressionNode,
+  runShaderProgram,
+} from '../../src/js/milkdrop/feedback-manager-webgpu.ts';
 import {
   createCompositeUniforms,
   createSampleAuxTextureNode,
@@ -211,5 +215,70 @@ describe('milkdrop WebGPU TSL extended intrinsics', () => {
       expect(value, source).not.toBeNull();
       expect(sampledNodeType(value), source).toMatch(/^Texture(3D)?Node$/);
     }
+  });
+});
+
+describe('milkdrop WebGPU TSL mat2 element writes', () => {
+  // The shader-analysis gate lets `mat2` element writes through to this
+  // executor (only `mat3`/`mat4` writes are held back — see
+  // isUnexecutableMatrixElementAssignment in compiler/shader-analysis.ts),
+  // so every form the bundled corpus uses has to build a node here rather
+  // than silently drop the statement: column writes, component writes on a
+  // bare-declared matrix, matrix products in both orders, and the mat2
+  // constructor. 87 of the 107 gap presets with matrix writes are mat2-only.
+  function runBody(lines: string[]) {
+    const env = buildShaderEnv() as unknown as ShaderNodeEnv;
+    // The shared env seeds `uv` with a placeholder object, which is enough
+    // for the intrinsic tests above but not for arithmetic on it.
+    env.values.set('uv', { kind: 'vec2', node: vec2(0.25, 0.75) });
+    const statements = lines.map((line) => {
+      const statement = parseMilkdropShaderStatement(line);
+      if (!statement) {
+        throw new Error(`Failed to parse: ${line}`);
+      }
+      return statement;
+    });
+    // Component writes go through TSL `.toVar().assign()`, which needs the
+    // stack a `Fn()` body provides in production; open one here.
+    const previous = getCurrentStack();
+    setCurrentStack(stack());
+    try {
+      runShaderProgram(statements, env);
+    } finally {
+      setCurrentStack(previous);
+    }
+    return env;
+  }
+
+  test('builds a mat2 column by column and multiplies uv through it', () => {
+    const env = runBody([
+      'tmpvar_16[int(0)] = vec2(1.0, 0.0)',
+      'tmpvar_16[1] = vec2(0.0, 1.0)',
+      'xlat_mutableuv6 = (uv * tmpvar_16)',
+      'ret = vec3(xlat_mutableuv6, 0.0)',
+    ]);
+    expect(env.values.get('tmpvar_16')?.kind).toBe('mat2');
+    expect(env.values.get('xlat_mutableuv6')?.kind).toBe('vec2');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+  });
+
+  test('builds a mat2 component by component from a bare declaration', () => {
+    // `mat2 tmpvar_13;` carries no statement; the first component write has
+    // to materialise the matrix on its own.
+    const env = runBody([
+      'tmpvar_13[int(0)].x = 1.0',
+      'tmpvar_13[int(0)].y = -0.0',
+      'tmpvar_13[1].x = 0.0',
+      'tmpvar_13[1].y = 1.0',
+      'xlat_mutablerss = (tmpvar_13 * mat2(0.7, -0.7, 0.7, 0.7))',
+      'zz_1 = (((uv - vec2(0.5, 0.5)) * 0.01) * xlat_mutablerss)',
+      'ofs = (tmpvar_13 * 2.0)',
+      'ret = vec3(zz_1, ofs[int(0)].x)',
+    ]);
+    expect(env.values.get('tmpvar_13')?.kind).toBe('mat2');
+    expect(env.values.get('xlat_mutablerss')?.kind).toBe('mat2');
+    expect(env.values.get('zz_1')?.kind).toBe('vec2');
+    expect(env.values.get('ofs')?.kind).toBe('mat2');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
   });
 });

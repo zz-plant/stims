@@ -653,6 +653,35 @@ function parseShaderIndex(expression: string): number | null {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
+/**
+ * Column index of a read like `M[0]` or `M[int(0)]`. The HLSL normalizer
+ * rewrites `uint(0)` to `int(0)`, so every indexed read in a native body
+ * arrives as an `int(...)` call around a literal; the write side already
+ * accepts that shape through `parseShaderIndex`, and reads were dropping the
+ * whole statement on it.
+ */
+function resolveShaderIndexExpression(
+  index: MilkdropShaderExpressionNode | null | undefined,
+): number | null {
+  if (!index) {
+    return null;
+  }
+  const literal =
+    index.type === 'literal'
+      ? index
+      : index.type === 'call' &&
+          (index.name === 'int' || index.name === 'uint') &&
+          index.args.length === 1 &&
+          index.args[0]?.type === 'literal'
+        ? index.args[0]
+        : null;
+  if (!literal) {
+    return null;
+  }
+  const value = Number(literal.value);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
 /** mat2 * v and v * mat2 and mat2 * mat2 column-major products. */
 function multiplyMat2(
   operator: '*' | '/' | '%',
@@ -1311,11 +1340,8 @@ export function compileShaderExpressionNode(
       if (object?.kind !== 'mat2') {
         return null;
       }
-      if (node.index?.type !== 'literal') {
-        return null;
-      }
-      const index = Number(node.index.value);
-      if (!Number.isInteger(index) || index < 0 || index > 1) {
+      const index = resolveShaderIndexExpression(node.index);
+      if (index === null || index > 1) {
         return null;
       }
       return shaderMat2Column(object, index);
@@ -2136,7 +2162,13 @@ function resolveSwizzleAssignmentKind(
   return 'vec2';
 }
 
-function runShaderProgram(
+/**
+ * Execute a direct shader program statement by statement against `env`,
+ * building the TSL node for each right-hand side and assigning it to the
+ * statement's target. Exported for the headless executor tests: they run a
+ * body through this and inspect the value kinds the env ends up holding.
+ */
+export function runShaderProgram(
   statements: MilkdropShaderStatement[],
   env: ShaderNodeEnv,
 ) {
