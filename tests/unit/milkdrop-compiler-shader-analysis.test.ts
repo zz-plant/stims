@@ -573,7 +573,7 @@ describe('branch flattening for direct shader execution', () => {
     expect(analysis.nativeBodyUnparsedLines.length).toBeGreaterThan(0);
   });
 
-  test('keeps a matrix element write, and off the WebGPU direct path', () => {
+  test('keeps a mat2 element write on the WebGPU direct path', () => {
     // The desugar's assignment pattern is narrower than the statement parser's
     // — it does not match an indexed target — and dropping what it cannot
     // match corrupted the preset silently: the body still looked fully parsed,
@@ -581,11 +581,9 @@ describe('branch flattening for direct shader execution', () => {
     // and never assigned. A corpus sweep found 49 presets losing 469 such
     // statements, several rendering black. So the write is passed through.
     //
-    // Passing it through is not the same as being able to run it. The WebGPU
-    // node executor cannot write one matrix element, and what it built for a
-    // body full of them was a 44641-member WGSL uniform struct that crashed
-    // the GPU process, so the line is recorded as unparsed: WebGL keeps
-    // running the raw GLSL and WebGPU falls back to scalar controls.
+    // For a mat2 that is also enough to run it: the WebGPU node executor packs
+    // a mat2 as a vec4 of its columns and handles column and component writes
+    // on it, so the statement stays on the direct program.
     const analysis = extractShaderControls(
       nativeBody(`
           mat2 basis_1;
@@ -602,6 +600,30 @@ describe('branch flattening for direct shader execution', () => {
     // The HLSL-to-GLSL normalizer rewrites `uint(0)` to `int(0)` on the way
     // through; what matters is that the matrix write survives at all.
     const matrixWrite = /^basis_1\[[^\]]+\] = vec2\(1\.0, 0\.0\)$/u;
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(
+      analysis.directProgramLines.some((line) => matrixWrite.test(line)),
+    ).toBe(true);
+  });
+
+  test('keeps a mat3 element write, and off the WebGPU direct path', () => {
+    // Passing a matrix write through is not the same as being able to run
+    // it. The WebGPU node executor has no mat3/mat4 representation, and what
+    // it built for a body full of mat3 element writes was a 44641-member WGSL
+    // uniform struct that crashed the GPU process, so the line is recorded
+    // as unparsed: WebGL keeps running the raw GLSL and WebGPU falls back to
+    // scalar controls.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat3 basis_1;
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          basis_1[uint(0)].x = q20;
+          ret = ret_2;
+        `),
+    );
+
+    const matrixWrite = /^basis_1\[[^\]]+\]\.x = q20$/u;
     expect(
       analysis.nativeBodyUnparsedLines.some((line) => matrixWrite.test(line)),
     ).toBe(true);

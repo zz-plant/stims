@@ -514,6 +514,14 @@ export function createCompositeUniforms(
     signalTime: uniform(0),
     signalFrame: uniform(0),
     signalFps: uniform(60),
+    // MilkDrop per-frame registers (`tele`, `hordist`, …) that a directly
+    // executed shader body reads without ever assigning. WebGL declares each
+    // as `uniform float` and drives it from the VM's frame state; here the
+    // executor binds one uniform node per name on first read (see
+    // getShaderEnvValue in feedback-manager-webgpu-tsl.ts) and the manager
+    // writes the values every frame next to the q/t banks. Cleared when the
+    // composite graph is rebuilt for a new preset.
+    perFrameVariables: new Map<string, ReturnType<typeof uniform>>(),
     // q/t register banks packed four-per-vec4 (q1..q4 in [0], q5..q8 in [1],
     // …), matching the WebGL path's _qa.._qh packing: 16 uniform nodes and 16
     // per-frame writes instead of 64 scalars.
