@@ -19,6 +19,7 @@
 - `docs/architecture/shader-support-inventory.md` — full compiler support audit: ~50 supported patterns, 10 unsupported/partial, 6 silent fallback locations, priority-ranked fixes.
 - `docs/architecture/fallback-state-machine.md` — renderer setup FSM design: 28 transitions across 12 states, 6 implicit ordering risks, implementation plan.
 - `docs/architecture/rasterization-fidelity-audit.md` — WebGL vs WebGPU divergence: 7 known divergence points, blend order audit, 10 object-count-only tests identified.
+- `docs/architecture/architectural-changes-proposal-2026-09.md` — measured architecture proposal: `any`-typed engine seam, unenforced frontend → engine boundary, four hand-listed catalog projections, 33-effect `App.tsx`, flat engine directory; six changes with guards and sequencing.
 
 ## High-signal code locations
 

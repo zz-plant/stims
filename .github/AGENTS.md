@@ -91,7 +91,7 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
 - `check:stale-paths` — references to the removed `assets/` tree, including the root entry HTML files.
-- `check:architecture` — the `frontend/*` → engine boundary; only the engine adapter may cross it.
+- `check:architecture` — no import cycles, and no production code importing test helpers. The `frontend/*` → engine seam is documented in `docs/ARCHITECTURE.md` but not yet enforced; the rule that would enforce it is proposed in [`docs/architecture/architectural-changes-proposal-2026-09.md`](./docs/architecture/architectural-changes-proposal-2026-09.md).
 - `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
 - `check:css-tokens` — CSS custom properties resolve to a defined token.
 - `check:cache-bounds` — new `Map`/`Set`/`WeakMap` growth containers added in the diff must share their file with an explicit bound (a `MAX_*`/`*_LIMIT`/`capacity`/`maxSize` constant or an eviction path), or be allowlisted with a reason. Strict mode runs at commit; advisory in `bun run check`.
