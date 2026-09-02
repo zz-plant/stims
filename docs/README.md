@@ -115,6 +115,7 @@ Roadmap priorities, QA verification suites, and historical context.
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
 | 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
+| 🧰 [**Tech Stack Modernization (2026-09)**](./TECH_STACK_MODERNIZATION_2026-09.md) | Ranked dependency and toolchain audit: what landed (TS 7, MCP v2, lefthook, knip), what is next, and what to keep |
 | 📊 [**Release Evidence Ledger**](./evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) | Source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem |
 | 🧹 [**Recurring Fix Patterns Audit**](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) | Root-cause analysis of the recurring regression clusters |
 | 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |

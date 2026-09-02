@@ -1,7 +1,7 @@
 /**
  * Guard against CI/build/config drift — the class of break that recurred
  * 14+ times in the last 400 commits: deleted workflows, npm→bun switches,
- * husky blocking deploys, build.mjs conflict markers, and scripts that
+ * git hooks blocking deploys, build.mjs conflict markers, and scripts that
  * vanish while workflows still reference them.
  *
  * Checks:
@@ -10,10 +10,10 @@
  *  2. `.bun-version` exists — workflows reference it via `bun-version-file`.
  *  3. No `npm `/`npx ` invocations in `.github/workflows/**` — the repo
  *     standardised on Bun; an npm command silently falls back to the npm
- *     registry and can re-introduce the husky-in-CI and lockfile drift.
+ *     registry and can re-introduce the hooks-in-CI and lockfile drift.
  *  4. No git conflict markers in build/config files — `build.mjs` shipped
  *     with `<<<<<<<` markers once (`5e4fb1df`).
- *  5. husky hook stubs referenced by `prepare` exist.
+ *  5. the lefthook config the postinstall hook installer expects exists.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -109,10 +109,16 @@ for (const file of MARKER_FILES) {
   }
 }
 
-/* 5: husky prepare hook */
-const prepare = pkg.scripts?.prepare;
-if (prepare && !existsSync(join(ROOT, '.husky'))) {
-  errors.push("package.json 'prepare' references husky but .husky/ is missing");
+/* 5: lefthook config */
+const postinstall = pkg.scripts?.postinstall ?? '';
+if (
+  (postinstall.includes('postinstall.mjs') ||
+    postinstall.includes('lefthook')) &&
+  !existsSync(join(ROOT, 'lefthook.yml'))
+) {
+  errors.push(
+    'package.json postinstall installs lefthook hooks but lefthook.yml is missing',
+  );
 }
 
 /*
