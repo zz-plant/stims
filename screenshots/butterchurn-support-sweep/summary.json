@@ -1,31 +1,22 @@
 {
-  "total": 1743,
+  "total": 1748,
   "webgl": {
-    "supported": 1735,
-    "partial": 8,
+    "supported": 1748,
+    "partial": 0,
     "unsupported": 0
   },
   "webgpu": {
-    "supported": 1570,
-    "partial": 173,
+    "supported": 1748,
+    "partial": 0,
     "unsupported": 0
   },
-  "bothSupported": 1570,
-  "eitherSupported": 1735,
+  "bothSupported": 1748,
+  "eitherSupported": 1748,
   "softUnknownKeyFrequency": [],
-  "evidenceCodeFrequency": [
-    {
-      "code": "shader-text-translated",
-      "count": 169
-    },
-    {
-      "code": "unknown-function",
-      "count": 8
-    }
-  ],
+  "evidenceCodeFrequency": [],
   "unsupportedFeatureFrequency": [],
-  "presetsWithShaderBody": 1201,
-  "presetsWithoutShaderBody": 542,
+  "presetsWithShaderBody": 1205,
+  "presetsWithoutShaderBody": 543,
   "topBlockers": [],
   "results": [
     {
@@ -33,12 +24,12 @@
       "title": "!!!---flexi + amandio c - organic12-3d-2",
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "royal-mashup-160",
@@ -117,9 +108,9 @@
       "title": "$$$ Royal - Mashup (253)",
       "file": "/milkdrop-presets/butterchurn/royal-mashup-253.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -206,7 +197,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "11",
@@ -266,7 +257,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "27-super-goats-neon-country-frequent-flier-program",
@@ -278,7 +269,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "27-super-goats-orbus-maximus",
@@ -350,7 +341,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "444",
@@ -393,12 +384,12 @@
       "title": "A Milk Art Detail 2 flexi - moebius transformation ft Martin With AdamFX B sentensual",
       "file": "/milkdrop-presets/butterchurn/a-milk-art-detail-2-flexi-moebius-transformation-ft-martin-with-adamfx-b-sentensual.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "a-new-wave-trend-in-milk-martin-discomix-3-ft-phat-yin-n-adamfx-a",
@@ -494,7 +485,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adam-fx-2-zylot-age-of-science-fierceness-beast2-mash0000-ethics-is-for-weiner-dogs",
@@ -506,7 +497,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adam-fx-2-zylot-age-of-science-fierceness-starburst-5-mash0000",
@@ -602,7 +593,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye6",
@@ -614,7 +605,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adamfx-2-geiss-mash-up-sphere-xibit-graffiti-warp-me-tydye7",
@@ -626,7 +617,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adamfx-mashup-2-martin-reflections-on-black-tile-raron-n-flexi",
@@ -650,7 +641,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "adamfx-2-geiss-somewhat-distort-me-3-1",
@@ -722,7 +713,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "aderrasi-geiss-airhandler-painterly-relief-mix",
@@ -734,7 +725,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "aderrasi-geiss-airhandler-square-mix",
@@ -1226,7 +1217,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "aderrasi-variants-of-eternity",
@@ -1281,9 +1272,9 @@
       "title": "An AdamFX n Martin Infusion 2 flexi - Why The Sky Looks Diffrent Today - AdamFx n Martin Infusion - Tack Tile Disfunction B",
       "file": "/milkdrop-presets/butterchurn/an-adamfx-n-martin-infusion-2-flexi-why-the-sky-looks-diffrent-today-adamfx-n-martin-infusion-tack-tile-disfunction-b.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -1401,9 +1392,9 @@
       "title": "Benjam and Zylot - Tie-Dye Supernova (Sunspots Mix) - praise martin and flexi forever nz+ understarted",
       "file": "/milkdrop-presets/butterchurn/benjam-and-zylot-tie-dye-supernova-sunspots-mix-praise-martin-and-flexi-forever-nz-understarted.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -1473,9 +1464,9 @@
       "title": "Bmelgren & Unchained - Effort (Remix) - the city of glass that i live in, the coldness from my brother′s skin nz+",
       "file": "/milkdrop-presets/butterchurn/bmelgren-unchained-effort-remix-the-city-of-glass-that-i-live-in-the-coldness-from-my-brother-s-skin-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -1521,12 +1512,12 @@
       "title": "Boz - Flip′d Moshun - mash0000 - forced to exist freely",
       "file": "/milkdrop-presets/butterchurn/boz-flip-d-moshun-mash0000-forced-to-exist-freely.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "brainstain-boiling-mix2-redi-jedi-full-carb-mix",
@@ -1562,7 +1553,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "brainstain-re-entry",
@@ -1665,9 +1656,9 @@
       "title": "Cope - Passage (mandala mix)[Flexis kaleidoscope] - ap3 colonosc roam3",
       "file": "/milkdrop-presets/butterchurn/cope-passage-mandala-mix-flexis-kaleidoscope-ap3-colonosc-roam3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -1682,7 +1673,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-the-red",
@@ -1694,7 +1685,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-wip-strange-attractor-2",
@@ -1706,16 +1697,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "demonld-toxic-water-diffusion-threx-angela-vs-debi-brown-nice",
       "title": "DemonLD_-_Toxic_water_diffusion threx angela vs debi brown (nice)",
       "file": "/milkdrop-presets/butterchurn/demonld-toxic-water-diffusion-threx-angela-vs-debi-brown-nice.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -1754,7 +1745,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "eo-s-geiss-glowsticks-v2-02-relief-mix",
@@ -1766,7 +1757,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "eo-s-geiss-glowsticks-v2-03-music-shifter-edit-b-psychedelic-mix",
@@ -2065,8 +2056,8 @@
       "softUnknownKeys": [],
       "evidenceCodes": [],
       "unsupportedFeatures": [],
-      "hasShaderBody": false,
-      "diagnostics": 0
+      "hasShaderBody": true,
+      "diagnostics": 1
     },
     {
       "id": "eo-s-flexi-glowsticks-v2-05-and-proton-lights-krash-s-beat-code-phat-remix02b-illumination-stahl-s-mix",
@@ -2637,9 +2628,9 @@
       "title": "Eo.S._Phat technicolor F breather E god cock gaia pussy",
       "file": "/milkdrop-presets/butterchurn/eo-s-phat-technicolor-f-breather-e-god-cock-gaia-pussy.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -2774,19 +2765,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix",
       "title": "Flexi + Geiss - pogo-cubes on tokamak matter [mind over matter remix]",
       "file": "/milkdrop-presets/butterchurn/flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-pogo-cubes-on-tokamak-matter",
@@ -2798,7 +2789,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-relief-2-anim-remix",
@@ -2810,7 +2801,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-martin-astral-projection",
@@ -2822,7 +2813,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-martin-cascading-decay-swing",
@@ -2858,7 +2849,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-phat-fractal-star-child-restless",
@@ -2877,12 +2868,12 @@
       "title": "Flexi + Rovastar - Fractopia [blame hexcollie]",
       "file": "/milkdrop-presets/butterchurn/flexi-rovastar-fractopia-blame-hexcollie.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-rovastar-fractopia-lovecraft",
@@ -2894,7 +2885,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-rovastar-landing-on-fractopia",
@@ -2906,7 +2897,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-shifter-sublimal-spaceship",
@@ -2918,7 +2909,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-piercing-05-kopie-2-kopie",
@@ -2930,7 +2921,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bdrv-va-ultramix-148-fucking-infinity-mix",
@@ -2966,16 +2957,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-operation-fatcap-techstyle-random-mashup",
       "title": "Flexi + fiShbRaiN - operation fatcap [techstyle] [random mashup]",
       "file": "/milkdrop-presets/butterchurn/flexi-fishbrain-operation-fatcap-techstyle-random-mashup.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3002,7 +2993,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-jelly-showoff-parade",
@@ -3014,7 +3005,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-jelly-space",
@@ -3026,31 +3017,31 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-sto-aftermath",
       "title": "Flexi + sto - aftermath",
       "file": "/milkdrop-presets/butterchurn/flexi-sto-aftermath.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-sto-learning-curve",
       "title": "Flexi + sto - learning curve ",
       "file": "/milkdrop-presets/butterchurn/flexi-sto-learning-curve.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-100-shader-fractal-origami-edit",
@@ -3062,7 +3053,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishies",
@@ -3086,7 +3077,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-milkcore-martin-s-ripple-on-water-insertion",
@@ -3098,7 +3089,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-milkcore",
@@ -3110,7 +3101,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-age-of-shading-chaos",
@@ -3122,19 +3113,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-alien-fader",
       "title": "Flexi - alien fader",
       "file": "/milkdrop-presets/butterchurn/flexi-alien-fader.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-alien-fish-pond",
@@ -3170,7 +3161,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-area-51-reaction-diffusion-on-lotka-volterra-vertex-warp-alien-edge-glow-kaleidoscope-version",
@@ -3189,9 +3180,9 @@
       "title": "Flexi - area 51",
       "file": "/milkdrop-presets/butterchurn/flexi-area-51.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3201,12 +3192,12 @@
       "title": "Flexi - blame hexcollie twice",
       "file": "/milkdrop-presets/butterchurn/flexi-blame-hexcollie-twice.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-braggadocio",
@@ -3254,19 +3245,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-dimensions-projection-and-abstraction",
       "title": "Flexi - dimensions, projection and abstraction",
       "file": "/milkdrop-presets/butterchurn/flexi-dimensions-projection-and-abstraction.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-disruptor",
@@ -3302,7 +3293,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-gold-plated-maelstrom-of-chaos-mirrorized",
@@ -3314,7 +3305,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-gold-plated-maelstrom-of-chaos",
@@ -3326,7 +3317,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-hue-burst",
@@ -3338,7 +3329,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-impulse-drive",
@@ -3374,7 +3365,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-intensive-shader-fractal",
@@ -3386,7 +3377,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-intention-focus",
@@ -3422,7 +3413,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julian-affairs-remix",
@@ -3434,7 +3425,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-kaleidoscope-template-commented-composite-shader",
@@ -3446,7 +3437,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-layered-boz-buckwild",
@@ -3458,7 +3449,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-layered",
@@ -3470,19 +3461,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-learning-curve",
       "title": "Flexi - learning curve",
       "file": "/milkdrop-presets/butterchurn/flexi-learning-curve.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-meta4free-3-my-time-is-not-your-time",
@@ -3525,12 +3516,12 @@
       "title": "Flexi - mindblob mix [random mashup]",
       "file": "/milkdrop-presets/butterchurn/flexi-mindblob-mix-random-mashup.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-mindblob-mix",
@@ -3554,7 +3545,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-motion-blurred-moebius-fractal-early-alpha-version",
@@ -3566,7 +3557,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-multiverse-random-mashup",
@@ -3590,7 +3581,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-never-expected-to-play-the-game-on-this-level",
@@ -3602,7 +3593,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-oldschool-tree",
@@ -3626,7 +3617,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-predator-prey-spirals-geiss-laplacian-finish",
@@ -3669,9 +3660,9 @@
       "title": "Flexi - psychenapping",
       "file": "/milkdrop-presets/butterchurn/flexi-psychenapping.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3698,7 +3689,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-science-fraction",
@@ -3710,7 +3701,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-self-similarity-7",
@@ -3729,9 +3720,9 @@
       "title": "Flexi - self-lubricating",
       "file": "/milkdrop-presets/butterchurn/flexi-self-lubricating.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3746,7 +3737,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-smashing-fractals-geiss-bas-relief-finish",
@@ -3758,7 +3749,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-smashing-fractals-acid-etching-mix",
@@ -3770,7 +3761,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-strangely-dynamic-world",
@@ -3782,7 +3773,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-supersonic",
@@ -3813,9 +3804,9 @@
       "title": "Flexi - the bouncer and the crasher [random mashup 2]",
       "file": "/milkdrop-presets/butterchurn/flexi-the-bouncer-and-the-crasher-random-mashup-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3837,12 +3828,12 @@
       "title": "Flexi - the bouncer and the crasher [random mashup 4]",
       "file": "/milkdrop-presets/butterchurn/flexi-the-bouncer-and-the-crasher-random-mashup-4.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-the-bouncer-and-the-crasher-random-mashup",
@@ -3861,9 +3852,9 @@
       "title": "Flexi - the bouncer and the crasher",
       "file": "/milkdrop-presets/butterchurn/flexi-the-bouncer-and-the-crasher.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3878,7 +3869,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-truly-soft-piece-of-software-this-is-generic-texturing-jelly",
@@ -3890,7 +3881,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-using-jedi-forces",
@@ -3902,7 +3893,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-when-monopolies-were-the-future-simple-warp-non-reactive-moebius",
@@ -3938,16 +3929,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bdrv-aderrasi-et-al-potion-of-resurrection-rosswell",
       "title": "Flexi, BDRV, Aderrasi et al - Potion of Resurrection [rosswell]",
       "file": "/milkdrop-presets/butterchurn/flexi-bdrv-aderrasi-et-al-potion-of-resurrection-rosswell.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -3962,7 +3953,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-martin-phat-zylot-eo-s-one-way-trip-trap-proof-of-concept-epileptic-zoom-tunnel-edit",
@@ -3974,7 +3965,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-phat-zylot-eo-s-work-with-lines-of-code",
@@ -3986,7 +3977,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-rovastar-geiss-fractopia-vs-bas-relief",
@@ -3998,7 +3989,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-nitorami-shifter-shader-authoring-motivation-set",
@@ -4064,10 +4055,10 @@
       "id": "fumbling-foo-flexi-martin-orb-star-forge-v16",
       "title": "Fumbling_Foo & Flexi, Martin, Orb - Star Forge v16",
       "file": "/milkdrop-presets/butterchurn/fumbling-foo-flexi-martin-orb-star-forge-v16.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 1
@@ -4076,13 +4067,13 @@
       "id": "fumbling-foo-flexi-martin-orb-unchained-star-nova-v7b",
       "title": "Fumbling_Foo & Flexi, Martin, Orb, Unchained - Star Nova v7b",
       "file": "/milkdrop-presets/butterchurn/fumbling-foo-flexi-martin-orb-unchained-star-nova-v7b.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "future-ligh-show-adamfx-2-martin-flexi-lodus-geiss-ludicrous-speed-baked-hexocollie-eos-suksma-adamfx-ft-che-fishbrain-bmelgren-4",
@@ -4473,9 +4464,9 @@
       "title": "Geiss - Bas Relief - mash0000 - restructure society one sheep at a time",
       "file": "/milkdrop-presets/butterchurn/geiss-bas-relief-mash0000-restructure-society-one-sheep-at-a-time.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -4946,7 +4937,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-reverse-jelly-v3",
@@ -4958,16 +4949,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-game-of-life-mix",
       "title": "Geiss - Cosmic Dust 2 - Game of Life mix",
       "file": "/milkdrop-presets/butterchurn/geiss-cosmic-dust-2-game-of-life-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -4982,7 +4973,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-tiny-reaction-diffusion-mix",
@@ -5042,7 +5033,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-quasistatic-noise-desat-trails-2",
@@ -5054,7 +5045,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-quasistatic-noise-desat-trails",
@@ -5066,7 +5057,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-cosmic-dust-2-quasistatic-noise-dual-pane-window",
@@ -5162,7 +5153,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-dancing-spirits",
@@ -5174,7 +5165,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-de-la-moutard-1",
@@ -5198,7 +5189,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-desert-rose-2",
@@ -5342,7 +5333,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-el-cubismo",
@@ -5541,9 +5532,9 @@
       "title": "Geiss - Game of Life 2",
       "file": "/milkdrop-presets/butterchurn/geiss-game-of-life-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -5553,9 +5544,9 @@
       "title": "Geiss - Game of Life 3",
       "file": "/milkdrop-presets/butterchurn/geiss-game-of-life-3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -5565,9 +5556,9 @@
       "title": "Geiss - Game of Life",
       "file": "/milkdrop-presets/butterchurn/geiss-game-of-life.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -6265,7 +6256,7 @@
       "softUnknownKeys": [],
       "evidenceCodes": [],
       "unsupportedFeatures": [],
-      "hasShaderBody": false,
+      "hasShaderBody": true,
       "diagnostics": 0
     },
     {
@@ -6578,7 +6569,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-soft",
@@ -6626,7 +6617,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-spiral-artifact",
@@ -6921,9 +6912,9 @@
       "title": "Geiss, Nitorami + MackTuesday - Twitchy Paint fact fuct nz+",
       "file": "/milkdrop-presets/butterchurn/geiss-nitorami-macktuesday-twitchy-paint-fact-fuct-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -6933,9 +6924,9 @@
       "title": "Goody + flexi - Irdu Lili",
       "file": "/milkdrop-presets/butterchurn/goody-flexi-irdu-lili.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -6945,45 +6936,45 @@
       "title": "Goody + martin - crystal palace - Aqua Lumens",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-aqua-lumens.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-martin-crystal-palace-ocular-anima",
       "title": "Goody + martin - crystal palace - Ocular Anima",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-ocular-anima.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics",
       "title": "Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - Darkening mathematics",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-darkening-mathematics.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one",
       "title": "Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom - mess2 nz+ i have no character and feel entitled to one",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-mess2-nz-i-have-no-character-and-feel-entitled-to-one.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -6993,12 +6984,12 @@
       "title": "Goody + martin - crystal palace - Schizotoxin - The Wild Iris Bloom",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-acid-angel-fallen-angel",
@@ -7034,7 +7025,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-clouded-reason-revisited",
@@ -7082,7 +7073,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-need-desire-remix",
@@ -7130,7 +7121,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-sonic-infection",
@@ -7226,7 +7217,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "hexcollie-cell-division",
@@ -7298,7 +7289,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "hexcollie-personal-mashup3-flexis-portal-mix",
@@ -7382,7 +7373,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "hexcollie-bdrv-n-unchained-the-hive",
@@ -7565,6 +7556,18 @@
       "diagnostics": 0
     },
     {
+      "id": "illusion-unchained-new-strategy",
+      "title": "Illusion & Unchained - New Strategy",
+      "file": "/milkdrop-presets/butterchurn/illusion-unchained-new-strategy.milk",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
+      "softUnknownKeys": [],
+      "evidenceCodes": [],
+      "unsupportedFeatures": [],
+      "hasShaderBody": false,
+      "diagnostics": 0
+    },
+    {
       "id": "illusion-dance-of-the-planets",
       "title": "Illusion - Dance Of The Planets",
       "file": "/milkdrop-presets/butterchurn/illusion-dance-of-the-planets.milk",
@@ -7617,9 +7620,9 @@
       "title": "Inside A Black Whole AdamFX 2 martin - another kind of groove (Ati Fix)Ft Raron Flexi and Rovastar (AdamFX Remix)Uh huh 6 ngorng",
       "file": "/milkdrop-presets/butterchurn/inside-a-black-whole-adamfx-2-martin-another-kind-of-groove-ati-fix-ft-raron-flexi-and-rovastar-adamfx-remix-uh-huh-6-ngorng.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -7658,7 +7661,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "jim-geiss-bass-zoom-symmetry-mash0000-the-god-damn-pen-is-rrrroyal-blue",
@@ -7741,7 +7744,7 @@
       "softUnknownKeys": [],
       "evidenceCodes": [],
       "unsupportedFeatures": [],
-      "hasShaderBody": false,
+      "hasShaderBody": true,
       "diagnostics": 0
     },
     {
@@ -7772,6 +7775,18 @@
       "id": "krash-illusion-spiral-movement",
       "title": "Krash + Illusion - Spiral Movement",
       "file": "/milkdrop-presets/butterchurn/krash-illusion-spiral-movement.milk",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
+      "softUnknownKeys": [],
+      "evidenceCodes": [],
+      "unsupportedFeatures": [],
+      "hasShaderBody": false,
+      "diagnostics": 0
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-phat-eo-s-stars-remix",
+      "title": "Krash + Rovastar - Cerebral Demons - Phat + Eo.S. Stars Remix",
+      "file": "/milkdrop-presets/butterchurn/krash-rovastar-cerebral-demons-phat-eo-s-stars-remix.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -7893,9 +7908,9 @@
       "title": "Krash - interwoven (nightmare weft)_Phats_I_Wana_Fuck_Some_Candy_Kids... - mash0000 - elevator to the drugged up runaway penthouse",
       "file": "/milkdrop-presets/butterchurn/krash-interwoven-nightmare-weft-phats-i-wana-fuck-some-candy-kids-mash0000-elevator-to-the-drugged-up-runaway-penthouse.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -7934,7 +7949,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "luxxx-chillflower-blurface-ib",
@@ -7994,7 +8009,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "luxxx-fuck-your-code-ii",
@@ -8090,7 +8105,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "luxxx-melt-ur-face-i-b",
@@ -8210,7 +8225,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-diabolo",
@@ -8229,9 +8244,9 @@
       "title": "Martin - QBikal - Surface Turbulence II",
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence-ii.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8241,9 +8256,9 @@
       "title": "Martin - QBikal - Surface Turbulence IIb",
       "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence-iib.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8265,9 +8280,9 @@
       "title": "Martin - acid wiring",
       "file": "/milkdrop-presets/butterchurn/martin-acid-wiring.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8277,9 +8292,9 @@
       "title": "Martin - bombyx mori mix2",
       "file": "/milkdrop-presets/butterchurn/martin-bombyx-mori-mix2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8373,9 +8388,9 @@
       "title": "Martin - underwater cathedral",
       "file": "/milkdrop-presets/butterchurn/martin-underwater-cathedral.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8409,21 +8424,21 @@
       "title": "Martin+Anandamide - Mandelbox_Explorer Quantum_Timepiece_remix",
       "file": "/milkdrop-presets/butterchurn/martin-anandamide-mandelbox-explorer-quantum-timepiece-remix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2",
       "title": "Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 2]",
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8433,9 +8448,9 @@
       "title": "Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup 3]",
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup-3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8445,9 +8460,9 @@
       "title": "Martin, Fishbrain + Flexi - lasercutting binary trees [random mashup]",
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees-random-mashup.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8457,12 +8472,12 @@
       "title": "Martin, Fishbrain + Flexi - lasercutting binary trees",
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-lasercutting-binary-trees.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "milk-artist-at-our-best-fed-slowfast-ft-adamfx-n-martin-hd-cosmofx",
@@ -8481,9 +8496,9 @@
       "title": "Milk King to the ExtreemFX flexi - divine struggle - Ft AdamFX n Martin - Picasso In Milk Molten Meltdown E",
       "file": "/milkdrop-presets/butterchurn/milk-king-to-the-extreemfx-flexi-divine-struggle-ft-adamfx-n-martin-picasso-in-milk-molten-meltdown-e.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -8570,7 +8585,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "nighthawk-eye-of-gawd-phat-spiral-edit-v2",
@@ -8762,7 +8777,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "orb-magma-pool",
@@ -8930,7 +8945,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "orb-waaa",
@@ -8942,7 +8957,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "phat-eo-s-data-swimmer",
@@ -9077,9 +9092,9 @@
       "diagnostics": 0
     },
     {
-      "id": "phat-eo-s-rainbow-bubble-mid3-f-me-dood-alt",
+      "id": "phat-eo-s-rainbow-bubble-mid3-f-me-dood",
       "title": "Phat_Eo.S. rainbow bubble_mid3-f. me dood",
-      "file": "/milkdrop-presets/butterchurn/phat-eo-s-rainbow-bubble-mid3-f-me-dood-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/phat-eo-s-rainbow-bubble-mid3-f-me-dood.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -9245,9 +9260,9 @@
       "diagnostics": 0
     },
     {
-      "id": "phat-zylot-eo-s-work-with-lines-alt",
+      "id": "phat-zylot-eo-s-work-with-lines",
       "title": "Phat_Zylot_Eo.S. work with lines",
-      "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-work-with-lines-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/phat-zylot-eo-s-work-with-lines.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -9897,9 +9912,9 @@
       "title": "Rovastar + Loadus + Geiss - FractalDrop (Spinning Mix)",
       "file": "/milkdrop-presets/butterchurn/rovastar-loadus-geiss-fractaldrop-spinning-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -10028,6 +10043,18 @@
       "id": "rovastar-telek-altars-of-madness-rolling-oceans-mix",
       "title": "Rovastar + Telek - Altars of Madness (Rolling Oceans Mix)",
       "file": "/milkdrop-presets/butterchurn/rovastar-telek-altars-of-madness-rolling-oceans-mix.milk",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
+      "softUnknownKeys": [],
+      "evidenceCodes": [],
+      "unsupportedFeatures": [],
+      "hasShaderBody": false,
+      "diagnostics": 0
+    },
+    {
+      "id": "rovastar-unchained-ambrosia-mystic-dark-heart-mix",
+      "title": "Rovastar + Unchained - Ambrosia Mystic (Dark Heart Mix)",
+      "file": "/milkdrop-presets/butterchurn/rovastar-unchained-ambrosia-mystic-dark-heart-mix.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -10634,7 +10661,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "rovastar-voov-s-light-pattern",
@@ -10893,9 +10920,9 @@
       "title": "ShadowHarlequin - Fitting Butterfly - v4 - [Loadus & Geiss - FractalDrop 22] v2v2v2v2newcolorsv2v2-22v2-NEWv222v2 bennett",
       "file": "/milkdrop-presets/butterchurn/shadowharlequin-fitting-butterfly-v4-loadus-geiss-fractaldrop-22-v2v2v2v2newcolorsv2v2-22v2-newv222v2-bennett.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -10982,7 +11009,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-adamfx-eo-s-flexi-geiss-phat-rovastar-zylot-fractopia-kaleidoscope",
@@ -10994,7 +11021,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-aderrasi-eo-s-geiss-fishbrain-prickly-abyss",
@@ -11018,7 +11045,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-aderrasi-flexi-rovastar-fractal-twist-a-feat-hexcollie",
@@ -11030,7 +11057,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-aderrasi-flexi-rovastar-fractal-twist-b",
@@ -11042,7 +11069,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-aderrasi-flexi-rovastar-fractal-twist-g",
@@ -11054,7 +11081,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-benski-fvese-geiss-rovastar-voyager-spark-call-jester-s-smashing-atoms-rmx-1",
@@ -11078,7 +11105,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-relief-block-mix",
@@ -11090,7 +11117,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-boz-eo-s-geiss-phat-rovastar-zylot-machine-code-jelly",
@@ -11102,7 +11129,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-che-geiss-illusion-unchained-shifty-jelly-v2",
@@ -11126,7 +11153,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-eo-s-geiss-orb-phat-fruitsticks-flexi-tex-shader",
@@ -11270,7 +11297,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-geiss-mashup-16-seizure-inducing-confetti-kaleidoscope-rmx",
@@ -11378,7 +11405,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-fishbrain-geiss-martin-flowercraft",
@@ -11402,7 +11429,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-flexi-geiss-rovastar-shifter-even-more-fractals-for-hexcollie-reflecto-fcukup",
@@ -11414,7 +11441,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-flexi-geiss-rovastar-shifter-fractal-feedback-for-hexcollie",
@@ -11426,7 +11453,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-flexi-geiss-martin-rovastar-tides-martin-s-metallics",
@@ -11462,7 +11489,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-flexi-psychotic-flower-gelatine-burst",
@@ -11474,7 +11501,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-geiss-martin-ouboros-metal-finish-2",
@@ -11486,16 +11513,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-geiss-old-school-baby-flower-v2-1-lack-of-torture-torture-mess",
       "title": "Stahlregen + Geiss - Old school, baby (Flower V2)_1 - lack-of-torture torture mess",
       "file": "/milkdrop-presets/butterchurn/stahlregen-geiss-old-school-baby-flower-v2-1-lack-of-torture-torture-mess.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -11534,7 +11561,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "stahlregen-dots-pixels-blocky-jelly-v2",
@@ -11657,6 +11684,18 @@
       "diagnostics": 0
     },
     {
+      "id": "techno-sandstorm-psychodelic-highway",
+      "title": "TEcHNO + SandStorm - Psychodelic Highway",
+      "file": "/milkdrop-presets/butterchurn/techno-sandstorm-psychodelic-highway.milk",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
+      "softUnknownKeys": [],
+      "evidenceCodes": [],
+      "unsupportedFeatures": [],
+      "hasShaderBody": false,
+      "diagnostics": 0
+    },
+    {
       "id": "tag-cradle-of-life-remix-of-yin-315",
       "title": "Tag - Cradle of Life(remix of yin 315)",
       "file": "/milkdrop-presets/butterchurn/tag-cradle-of-life-remix-of-yin-315.milk",
@@ -11738,7 +11777,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "tonymilkdrop-magellan-s-nebula-flexi-fancy-this-shall-not-retain",
@@ -11750,7 +11789,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "tonymilkdrop-magellan-s-nebula-flexi-grind-this-shall-not-retain",
@@ -11786,7 +11825,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "tripgnosis-negative-photon-burn",
@@ -12506,7 +12545,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "various-artists-goo",
@@ -12614,19 +12653,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "zylot-age-of-science-seeking-truth-mix",
       "title": "Zylot - Age of Science (seeking truth mix)",
       "file": "/milkdrop-presets/butterchurn/zylot-age-of-science-seeking-truth-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "zylot-block-of-sound-abstract-architecture-mix",
@@ -12674,7 +12713,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "zylot-crossing-over-paint-spatter-mix",
@@ -12686,7 +12725,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "zylot-digiscape-advanced-processor",
@@ -12729,9 +12768,9 @@
       "title": "Zylot - Heaven Bloom nz+",
       "file": "/milkdrop-presets/butterchurn/zylot-heaven-bloom-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -12801,9 +12840,9 @@
       "title": "Zylot - Paint Spill (Music Reactive Paint Mix)",
       "file": "/milkdrop-presets/butterchurn/zylot-paint-spill-music-reactive-paint-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -12890,7 +12929,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "aderrasi-wanderer-in-curved-space-mash0000-faclempt-kibitzing-meshuggana-schmaltz-geiss-color-mix",
@@ -12953,16 +12992,16 @@
       "diagnostics": 0
     },
     {
-      "id": "eo-s-zylot-skylight-stained-glass-majesty-mix-alt",
+      "id": "eo-s-zylot-skylight-stained-glass-majesty-mix",
       "title": "_Eo.S. + Zylot - skylight (Stained Glass Majesty mix)",
-      "file": "/milkdrop-presets/butterchurn/eo-s-zylot-skylight-stained-glass-majesty-mix-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/eo-s-zylot-skylight-stained-glass-majesty-mix.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "eo-s-glowsticks-v2-02-geiss-hpf",
@@ -12974,7 +13013,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-mindblob-where-it-s-at-now-broth-mix",
@@ -13265,9 +13304,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-confetti-kaleidoscope-mix-alt",
+      "id": "geiss-confetti-kaleidoscope-mix",
       "title": "_Geiss - Confetti (Kaleidoscope Mix)",
-      "file": "/milkdrop-presets/butterchurn/geiss-confetti-kaleidoscope-mix-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-confetti-kaleidoscope-mix.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13289,9 +13328,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-desert-rose-2-alt",
+      "id": "geiss-desert-rose-2",
       "title": "_Geiss - Desert Rose 2",
-      "file": "/milkdrop-presets/butterchurn/geiss-desert-rose-2-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-desert-rose-2.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13337,9 +13376,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-kaleidoscope-1-alt",
+      "id": "geiss-kaleidoscope-1",
       "title": "_Geiss - Kaleidoscope 1",
-      "file": "/milkdrop-presets/butterchurn/geiss-kaleidoscope-1-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-kaleidoscope-1.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13397,9 +13436,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-reaction-diffusion-relief-mix-alt",
+      "id": "geiss-reaction-diffusion-relief-mix",
       "title": "_Geiss - Reaction Diffusion (Relief Mix)",
-      "file": "/milkdrop-presets/butterchurn/geiss-reaction-diffusion-relief-mix-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-reaction-diffusion-relief-mix.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13421,9 +13460,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-reducto-absurdum-alt",
+      "id": "geiss-reducto-absurdum",
       "title": "_Geiss - Reducto Absurdum",
-      "file": "/milkdrop-presets/butterchurn/geiss-reducto-absurdum-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-reducto-absurdum.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13457,9 +13496,9 @@
       "diagnostics": 0
     },
     {
-      "id": "geiss-skin-dots-multi-layer-3-alt",
+      "id": "geiss-skin-dots-multi-layer-3",
       "title": "_Geiss - Skin Dots Multi-layer 3",
-      "file": "/milkdrop-presets/butterchurn/geiss-skin-dots-multi-layer-3-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/geiss-skin-dots-multi-layer-3.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -13478,7 +13517,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-spiral-artifact-filament-mix-beat-dots-mix",
@@ -13490,7 +13529,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-spiral-artifact-filament-mix-rad8-mix",
@@ -13502,7 +13541,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-beetle-bore-color-invert-mirror-animated",
@@ -13529,9 +13568,9 @@
       "diagnostics": 0
     },
     {
-      "id": "krash-eo-s-photographic-sentinel-alt",
+      "id": "krash-eo-s-photographic-sentinel",
       "title": "_Krash + Eo.S. - Photographic Sentinel",
-      "file": "/milkdrop-presets/butterchurn/krash-eo-s-photographic-sentinel-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/krash-eo-s-photographic-sentinel.milk",
       "webglStatus": "supported",
       "webgpuStatus": "supported",
       "softUnknownKeys": [],
@@ -14330,7 +14369,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "geiss-flexi-lorenz-chaser-accidental-shader-lock-mashup-ripples-emboss",
@@ -14433,9 +14472,9 @@
       "title": "a crappy reality = you did well",
       "file": "/milkdrop-presets/butterchurn/a-crappy-reality-you-did-well.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14493,9 +14532,9 @@
       "title": "amandio c - fume",
       "file": "/milkdrop-presets/butterchurn/amandio-c-fume.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14553,9 +14592,9 @@
       "title": "amandio c - pole - shf fab candiria pull ap5+ made to believe i don′t matter",
       "file": "/milkdrop-presets/butterchurn/amandio-c-pole-shf-fab-candiria-pull-ap5-made-to-believe-i-don-t-matter.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14565,9 +14604,9 @@
       "title": "amandio c - pole - shf fab candiria pull ap5+ selectro-electronic afield asquid",
       "file": "/milkdrop-presets/butterchurn/amandio-c-pole-shf-fab-candiria-pull-ap5-selectro-electronic-afield-asquid.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14829,9 +14868,9 @@
       "title": "beta106.S. + Phat - sentinel linearity b nz+ mbinistre ov mbajiq",
       "file": "/milkdrop-presets/butterchurn/beta106-s-phat-sentinel-linearity-b-nz-mbinistre-ov-mbajiq.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14889,9 +14928,9 @@
       "title": "beta106i - Airhandler (Radial Dreamers) - mash0000 - unload stones into black market torture houses",
       "file": "/milkdrop-presets/butterchurn/beta106i-airhandler-radial-dreamers-mash0000-unload-stones-into-black-market-torture-houses.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -14925,9 +14964,9 @@
       "title": "beta106i - Have at You (Spin Strike) - mash0000 - more the game of death, jesus conway",
       "file": "/milkdrop-presets/butterchurn/beta106i-have-at-you-spin-strike-mash0000-more-the-game-of-death-jesus-conway.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -15050,7 +15089,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-flexi-cartune-extrusion-machine-mix-inside-the-hive",
@@ -15081,9 +15120,9 @@
       "title": "cope + flexi - cartune (extrusion machine mix) [spiral out]",
       "file": "/milkdrop-presets/butterchurn/cope-flexi-cartune-extrusion-machine-mix-spiral-out.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -15093,21 +15132,21 @@
       "title": "cope + flexi - colorful marble (ghost mix) - rand wave 4 nz+",
       "file": "/milkdrop-presets/butterchurn/cope-flexi-colorful-marble-ghost-mix-rand-wave-4-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-flexi-mother-of-whirl-composition-from-fractopia-roam3-nz",
       "title": "cope + flexi - mother-of-whirl [composition from fractopia] roam3 nz+",
       "file": "/milkdrop-presets/butterchurn/cope-flexi-mother-of-whirl-composition-from-fractopia-roam3-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -15242,7 +15281,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-strange-attractor-flexis-let-it-grow-mix-stahlregens-jelly-after-burner",
@@ -15254,7 +15293,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-strange-attractor-flexis-let-it-grow-mix-jelly-5-56-volume-noise-zoom-in",
@@ -15266,7 +15305,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-the-drain-to-heaven",
@@ -15285,12 +15324,12 @@
       "title": "cope, flexi + martin - cartune [reinventing the scene]",
       "file": "/milkdrop-presets/butterchurn/cope-flexi-martin-cartune-reinventing-the-scene.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "cope-martin-flexi-the-slickery-of-alternative-varnish",
@@ -15338,7 +15377,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "ech0-liquid-firesticks-i",
@@ -15362,7 +15401,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "eo-s-phat-chasers-11-sentinel-c-jelly-v4-x",
@@ -15374,7 +15413,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fed-slowfast-1-1-geiss-composite-remix",
@@ -15405,12 +15444,12 @@
       "title": "felix capacitor",
       "file": "/milkdrop-presets/butterchurn/felix-capacitor.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-eo-s-phat-starburst-totem-pole",
@@ -15494,7 +15533,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-witchcraft-glow-mix",
@@ -15518,7 +15557,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-witchcraft-grow-mix-3",
@@ -15530,7 +15569,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-witchcraft-grow-mix-3c-finally-mirrored-mash0000-rituals-on-water-skin",
@@ -15542,7 +15581,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-witchcraft-grow-mix",
@@ -15554,7 +15593,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-witchcraft-stahl-s-mirror-crossfire-mix",
@@ -15566,7 +15605,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-a-quiet-death",
@@ -15782,7 +15821,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-geiss-stahlregen-orb-witchcraft-yabm-tiled",
@@ -15794,7 +15833,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "fishbrain-flexi-stitchcraft",
@@ -15818,7 +15857,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic-random-mashup-2",
@@ -15830,7 +15869,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic-random-mashup",
@@ -15857,64 +15896,64 @@
       "diagnostics": 0
     },
     {
-      "id": "flexi-amandio-c-organic12-3d-2-alt",
+      "id": "flexi-amandio-c-organic12-3d-2",
       "title": "flexi + amandio c - organic12-3d-2",
-      "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d-2-alt.milk",
+      "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic12-3d3",
       "title": "flexi + amandio c - organic12-3d3",
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic12-3d4-2",
       "title": "flexi + amandio c - organic12-3d4-2",
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d4-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic12-3d4",
       "title": "flexi + amandio c - organic12-3d4",
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic12-3d4.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-amandio-c-organic4-columns",
       "title": "flexi + amandio c - organic4-columns",
       "file": "/milkdrop-presets/butterchurn/flexi-amandio-c-organic4-columns.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bdrv-acid-etching-jelly-v5-5",
@@ -15933,9 +15972,9 @@
       "title": "flexi + cope - i blew you a soap bubble now what - feel the projection you are, connected to it all nz+ wrepwrimindloss w8",
       "file": "/milkdrop-presets/butterchurn/flexi-cope-i-blew-you-a-soap-bubble-now-what-feel-the-projection-you-are-connected-to-it-all-nz-wrepwrimindloss-w8.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -15945,9 +15984,9 @@
       "title": "flexi + cope - i blew you a soap bubble now what - feel the projection you are, connected to it all nz+",
       "file": "/milkdrop-presets/butterchurn/flexi-cope-i-blew-you-a-soap-bubble-now-what-feel-the-projection-you-are-connected-to-it-all-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -15974,7 +16013,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-warpcraft-random-mashup-2",
@@ -15986,7 +16025,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-warpcraft-random-mashup-3",
@@ -16034,7 +16073,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-warpcraft",
@@ -16058,7 +16097,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-witchcraft-complex-terraforming",
@@ -16070,7 +16109,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-redi-jedi-stahlregen-thumbdrum-tokamak-crossfiring-aftermath-mashup",
@@ -16101,9 +16140,9 @@
       "title": "flexi + geiss - infused with the spiral (Heavy Oil Mix) nz+ rapery",
       "file": "/milkdrop-presets/butterchurn/flexi-geiss-infused-with-the-spiral-heavy-oil-mix-nz-rapery.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -16113,9 +16152,9 @@
       "title": "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
       "file": "/milkdrop-presets/butterchurn/flexi-geiss-pogo-cubes-vs-tokamak-vs-game-of-life-stahls-jelly-4-5-finish.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -16130,19 +16169,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix-2",
       "title": "flexi + geiss - pogo-cubes on tokamak matter [mind over matter remix]2",
       "file": "/milkdrop-presets/butterchurn/flexi-geiss-pogo-cubes-on-tokamak-matter-mind-over-matter-remix-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-geiss-tokamak-fallout-repellor",
@@ -16154,16 +16193,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-goody-the-prayerwheel-misplaced-prayers",
       "title": "flexi + goody - the prayerwheel - misplaced prayers",
       "file": "/milkdrop-presets/butterchurn/flexi-goody-the-prayerwheel-misplaced-prayers.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -16178,7 +16217,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-nitorami-beat-explorer-cn-bc-jelly-4",
@@ -16214,7 +16253,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-gimme-color-spinner-mix-v2",
@@ -16226,7 +16265,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-gimme-color-spinner-mix",
@@ -16238,7 +16277,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-jelly-spin-off",
@@ -16250,7 +16289,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-jelly-strike",
@@ -16262,7 +16301,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-jewelry-tiles",
@@ -16274,7 +16313,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-julian-tiles-3-mirror-mode-eo-s-spiral-chaos",
@@ -16334,7 +16373,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-alien-canvas-learning",
@@ -16358,7 +16397,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-alien-canvas",
@@ -16394,7 +16433,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-alien-web-bouncer-edit-for-hexcollie",
@@ -16406,7 +16445,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-black-holes-sucking-fractals-for-breakfast",
@@ -16418,16 +16457,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-blame-moebius",
       "title": "flexi - blame moebius",
       "file": "/milkdrop-presets/butterchurn/flexi-blame-moebius.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -16442,7 +16481,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bouncing-balls-double-mindblob-gastrointestinal-mix",
@@ -16454,7 +16493,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bouncing-balls-double-mindblob-neon-mix",
@@ -16466,7 +16505,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bouncing-balls-grafitti-mix",
@@ -16490,7 +16529,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-bouncing-balls-neon-mix",
@@ -16502,19 +16541,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-can-t-think-of-mosaic-cages",
       "title": "flexi - can′t think of mosaic cages",
       "file": "/milkdrop-presets/butterchurn/flexi-can-t-think-of-mosaic-cages.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-color-strike",
@@ -16526,7 +16565,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-crank-prototype",
@@ -16538,7 +16577,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-flow",
@@ -16550,7 +16589,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fractal-descent",
@@ -16562,7 +16601,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fractal-seafood",
@@ -16574,7 +16613,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-gimme-color-bc-cn-jelly-4",
@@ -16586,7 +16625,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-gimme-color",
@@ -16598,7 +16637,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-gravitational-chaos",
@@ -16622,7 +16661,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-hyperspaceflight-bn-cn-jelly-4",
@@ -16670,7 +16709,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-jelly-fish-mandala",
@@ -16682,7 +16721,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-island-output-stage",
@@ -16694,7 +16733,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-set-illuminating-example-parameter-play",
@@ -16706,7 +16745,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-set-illuminating-example",
@@ -16718,7 +16757,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-set-shader-neocortex-wiretapping",
@@ -16742,7 +16781,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-set-shader-example-2",
@@ -16754,7 +16793,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julia-set-shader-example",
@@ -16778,7 +16817,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-julian-affairs-bc-cn-jelly-v4",
@@ -16802,7 +16841,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-lollipop-overkill-bccn-jelly-v4",
@@ -16869,9 +16908,9 @@
       "title": "flexi - lorenz chaser [accidental shader-lock mashup] (ripples)2 nz+ discombobule lose",
       "file": "/milkdrop-presets/butterchurn/flexi-lorenz-chaser-accidental-shader-lock-mashup-ripples-2-nz-discombobule-lose.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -16886,7 +16925,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-mindblob-2-0-bc-cn-jelly-4",
@@ -16910,19 +16949,19 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-mom-why-the-sky-looks-different-today",
       "title": "flexi - mom, why the sky looks different today",
       "file": "/milkdrop-presets/butterchurn/flexi-mom-why-the-sky-looks-different-today.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-patternton-district-of-media-capitol-of-the-united-abstractions-of-fractopia",
@@ -16934,7 +16973,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-predator-prey-seminar-paper-visualization-05-mathematical-biology-concepts-reaction-diffusion-on-predator-prey-spirals",
@@ -16958,7 +16997,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-romanesco-fantasies",
@@ -16970,7 +17009,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-smouldering",
@@ -17001,9 +17040,9 @@
       "title": "flexi - swing out on the spiral",
       "file": "/milkdrop-presets/butterchurn/flexi-swing-out-on-the-spiral.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17030,16 +17069,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-the-prayerwheel",
       "title": "flexi - the prayerwheel",
       "file": "/milkdrop-presets/butterchurn/flexi-the-prayerwheel.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17049,9 +17088,9 @@
       "title": "flexi - trickster zenarchy",
       "file": "/milkdrop-presets/butterchurn/flexi-trickster-zenarchy.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17078,7 +17117,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-undercurrents-3-psychodelic-mix-mash0001-planck-based-dematerializer",
@@ -17102,16 +17141,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-what-to-do-with-the-inside-of-a-torus-easily-customizable-moebius-spiral-template",
       "title": "flexi - what to do with the inside of a torus [easily customizable moebius spiral template]",
       "file": "/milkdrop-presets/butterchurn/flexi-what-to-do-with-the-inside-of-a-torus-easily-customizable-moebius-spiral-template.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17126,16 +17165,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-why-random-mashups-should-be-forbidden",
       "title": "flexi - why random mashups should be forbidden",
       "file": "/milkdrop-presets/butterchurn/flexi-why-random-mashups-should-be-forbidden.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17150,7 +17189,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-fishbrain-stahlregen-witchcraft-jelly5-5",
@@ -17186,7 +17225,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-martin-indoctrinutrition",
@@ -17198,7 +17237,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "flexi-stahlregen-geiss-tobias-wolfboi-space-gelatine-burst-mash0000-chromatidal-pool-mirror-blasphemy",
@@ -17217,9 +17256,21 @@
       "title": "geiss + martin - mandelbox explorer - high speed demo version (fire mix)",
       "file": "/milkdrop-presets/butterchurn/geiss-martin-mandelbox-explorer-high-speed-demo-version-fire-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
+      "unsupportedFeatures": [],
+      "hasShaderBody": true,
+      "diagnostics": 1
+    },
+    {
+      "id": "geiss-mstress-cleaning-a-path-painterly-crossfire-crisp-emboss-mix",
+      "title": "geiss + mstress - Cleaning a path - Painterly Crossfire (Crisp Emboss Mix)",
+      "file": "/milkdrop-presets/butterchurn/geiss-mstress-cleaning-a-path-painterly-crossfire-crisp-emboss-mix.milk",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
+      "softUnknownKeys": [],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17277,12 +17328,12 @@
       "title": "goody + martin - crystal palace - schizotoxin - the wild iris bloom - 16 iterations",
       "file": "/milkdrop-presets/butterchurn/goody-martin-crystal-palace-schizotoxin-the-wild-iris-bloom-16-iterations.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-shadowharlequin-red-blue-chase-megatrip-geiss-aurora-2-v22-2222-v2-shader-fixed",
@@ -17294,7 +17345,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "goody-shadowharlequin-red-blue-chase-megatrip-geiss-aurora-2-v22-2222-v2-shader",
@@ -17306,7 +17357,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "had-to-cum-that-jaben",
@@ -17337,9 +17388,9 @@
       "title": "hexcollie(1), goody(3), stahlregen(3), fed(1) - 2nd collaboration(ps2.0) - 8",
       "file": "/milkdrop-presets/butterchurn/hexcollie-1-goody-3-stahlregen-3-fed-1-2nd-collaboration-ps2-0-8.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17349,9 +17400,9 @@
       "title": "high-altitude basket unraveling - singh grooves nitrogen argon nz+",
       "file": "/milkdrop-presets/butterchurn/high-altitude-basket-unraveling-singh-grooves-nitrogen-argon-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17385,9 +17436,9 @@
       "title": "lit claw (explorers grid) - i don′t have either a belfry or bats bitch",
       "file": "/milkdrop-presets/butterchurn/lit-claw-explorers-grid-i-don-t-have-either-a-belfry-or-bats-bitch.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17397,21 +17448,21 @@
       "title": "martin  - mandelbox explorer - high speed demo  [flexi's complex polynomial version]",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-flexi-s-complex-polynomial-version.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-flexi-bombyx-mori-mix2-in-the-beehive",
       "title": "martin + flexi - bombyx mori mix2 in the beehive",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-bombyx-mori-mix2-in-the-beehive.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17433,21 +17484,21 @@
       "title": "martin + flexi - mandelbox explorer - high speed oversustained bipolar",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-mandelbox-explorer-high-speed-oversustained-bipolar.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-flexi-mandelbox-stepper-mix-kinetic-triangles-gossip-matrix",
       "title": "martin + flexi - mandelbox stepper mix [kinetic triangles gossip matrix]",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-mandelbox-stepper-mix-kinetic-triangles-gossip-matrix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17469,9 +17520,9 @@
       "title": "martin + stahlregen - martin in da mash 10 (infinity mix)",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-10-infinity-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17481,9 +17532,9 @@
       "title": "martin + stahlregen - martin in da mash 11",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-11.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17493,9 +17544,9 @@
       "title": "martin + stahlregen - martin in da mash 12",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-12.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17505,9 +17556,9 @@
       "title": "martin + stahlregen - martin in da mash 12a",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-12a.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17541,9 +17592,9 @@
       "title": "martin + stahlregen - martin in da mash 18",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-18.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17553,9 +17604,9 @@
       "title": "martin + stahlregen - martin in da mash 3",
       "file": "/milkdrop-presets/butterchurn/martin-stahlregen-martin-in-da-mash-3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17618,7 +17669,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-thinking-about-you",
@@ -17661,9 +17712,9 @@
       "title": "martin - alien grand theft water",
       "file": "/milkdrop-presets/butterchurn/martin-alien-grand-theft-water.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17781,9 +17832,9 @@
       "title": "martin - bombyx mori [flexi′s logarithmic edit]",
       "file": "/milkdrop-presets/butterchurn/martin-bombyx-mori-flexi-s-logarithmic-edit.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17793,9 +17844,9 @@
       "title": "martin - bombyx mori",
       "file": "/milkdrop-presets/butterchurn/martin-bombyx-mori.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17822,7 +17873,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-carpet-weaver",
@@ -17834,16 +17885,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-castle-in-the-air",
       "title": "martin - castle in the air",
       "file": "/milkdrop-presets/butterchurn/martin-castle-in-the-air.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17877,9 +17928,9 @@
       "title": "martin - cherry brain 2",
       "file": "/milkdrop-presets/butterchurn/martin-cherry-brain-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17901,9 +17952,9 @@
       "title": "martin - city of shadows",
       "file": "/milkdrop-presets/butterchurn/martin-city-of-shadows.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17925,9 +17976,9 @@
       "title": "martin - cope - laser dome",
       "file": "/milkdrop-presets/butterchurn/martin-cope-laser-dome.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17949,9 +18000,9 @@
       "title": "martin - crystal palace nz+",
       "file": "/milkdrop-presets/butterchurn/martin-crystal-palace-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17961,9 +18012,9 @@
       "title": "martin - crystal palace",
       "file": "/milkdrop-presets/butterchurn/martin-crystal-palace.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -17996,13 +18047,13 @@
       "id": "martin-diamond-cutter",
       "title": "martin - diamond cutter",
       "file": "/milkdrop-presets/butterchurn/martin-diamond-cutter.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "martin-disco-mix-1",
@@ -18069,9 +18120,9 @@
       "title": "martin - dont drink and drive (police mix)",
       "file": "/milkdrop-presets/butterchurn/martin-dont-drink-and-drive-police-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18080,13 +18131,13 @@
       "id": "martin-dune-racer",
       "title": "martin - dune racer",
       "file": "/milkdrop-presets/butterchurn/martin-dune-racer.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "martin-electric-pool",
@@ -18105,9 +18156,9 @@
       "title": "martin - elusive impressions mix1",
       "file": "/milkdrop-presets/butterchurn/martin-elusive-impressions-mix1.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18117,9 +18168,9 @@
       "title": "martin - elusive impressions mix2 - flacc mess proph nz+2",
       "file": "/milkdrop-presets/butterchurn/martin-elusive-impressions-mix2-flacc-mess-proph-nz-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18129,9 +18180,9 @@
       "title": "martin - elusive impressions mix2",
       "file": "/milkdrop-presets/butterchurn/martin-elusive-impressions-mix2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18165,9 +18216,9 @@
       "title": "martin - flexi - laser dome [bipolar focus intent]",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-laser-dome-bipolar-focus-intent.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18189,12 +18240,12 @@
       "title": "martin - frosty caves 2",
       "file": "/milkdrop-presets/butterchurn/martin-frosty-caves-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-fruit-machine",
@@ -18249,9 +18300,9 @@
       "title": "martin - girlie affairs",
       "file": "/milkdrop-presets/butterchurn/martin-girlie-affairs.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18296,22 +18347,22 @@
       "id": "martin-hardcore-mix-1",
       "title": "martin - hardcore mix 1",
       "file": "/milkdrop-presets/butterchurn/martin-hardcore-mix-1.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function", "shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "martin-hardcore-mix-2",
       "title": "martin - hardcore mix 2",
       "file": "/milkdrop-presets/butterchurn/martin-hardcore-mix-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18333,9 +18384,9 @@
       "title": "martin - infinity (2008)",
       "file": "/milkdrop-presets/butterchurn/martin-infinity-2008.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18345,9 +18396,9 @@
       "title": "martin - infinity (2010 update)",
       "file": "/milkdrop-presets/butterchurn/martin-infinity-2010-update.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18357,9 +18408,9 @@
       "title": "martin - infinity",
       "file": "/milkdrop-presets/butterchurn/martin-infinity.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18393,9 +18444,9 @@
       "title": "martin - jellyfish dance",
       "file": "/milkdrop-presets/butterchurn/martin-jellyfish-dance.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18405,9 +18456,9 @@
       "title": "martin - liquid gold",
       "file": "/milkdrop-presets/butterchurn/martin-liquid-gold.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18441,9 +18492,9 @@
       "title": "martin - ludicrous speed",
       "file": "/milkdrop-presets/butterchurn/martin-ludicrous-speed.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18453,9 +18504,9 @@
       "title": "martin - mandelbox explorer - high speed demo version [Flexi's diffuse wave] [random mashup]",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave-random-mashup.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18465,33 +18516,33 @@
       "title": "martin - mandelbox explorer - high speed demo version [Flexi's diffuse wave]",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version-flexi-s-diffuse-wave.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-mandelbox-explorer-high-speed-demo-version",
       "title": "martin - mandelbox explorer - high speed demo version",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-explorer-high-speed-demo-version.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-mandelbox-stepper",
       "title": "martin - mandelbox stepper",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbox-stepper.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18500,13 +18551,13 @@
       "id": "martin-mandelbulb-slideshow",
       "title": "martin - mandelbulb slideshow",
       "file": "/milkdrop-presets/butterchurn/martin-mandelbulb-slideshow.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function", "shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 8
+      "diagnostics": 1
     },
     {
       "id": "martin-moonlight-splash",
@@ -18549,9 +18600,9 @@
       "title": "martin - musicogenic epilepsy",
       "file": "/milkdrop-presets/butterchurn/martin-musicogenic-epilepsy.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18596,13 +18647,13 @@
       "id": "martin-night-cathedral",
       "title": "martin - night cathedral",
       "file": "/milkdrop-presets/butterchurn/martin-night-cathedral.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function", "shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "martin-night-in-the-forest",
@@ -18621,9 +18672,9 @@
       "title": "martin - on silent paths",
       "file": "/milkdrop-presets/butterchurn/martin-on-silent-paths.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18633,9 +18684,9 @@
       "title": "martin - orbit trap playground",
       "file": "/milkdrop-presets/butterchurn/martin-orbit-trap-playground.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18669,9 +18720,9 @@
       "title": "martin - purple pulsator",
       "file": "/milkdrop-presets/butterchurn/martin-purple-pulsator.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18693,9 +18744,9 @@
       "title": "martin - resonant twister - steel spring",
       "file": "/milkdrop-presets/butterchurn/martin-resonant-twister-steel-spring.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18777,9 +18828,9 @@
       "title": "martin - silversmith",
       "file": "/milkdrop-presets/butterchurn/martin-silversmith.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18789,9 +18840,9 @@
       "title": "martin - skywards",
       "file": "/milkdrop-presets/butterchurn/martin-skywards.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18825,9 +18876,9 @@
       "title": "martin - sparky caleidoscope",
       "file": "/milkdrop-presets/butterchurn/martin-sparky-caleidoscope.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18866,7 +18917,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-starfield-sectors",
@@ -18957,9 +19008,9 @@
       "title": "martin - the Dome ps3",
       "file": "/milkdrop-presets/butterchurn/martin-the-dome-ps3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -18993,9 +19044,9 @@
       "title": "martin - the forge of isengard [flexi′s moebius transformation vs. logarithmic spiral mix]",
       "file": "/milkdrop-presets/butterchurn/martin-the-forge-of-isengard-flexi-s-moebius-transformation-vs-logarithmic-spiral-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19052,13 +19103,13 @@
       "id": "martin-tunnel-race",
       "title": "martin - tunnel race",
       "file": "/milkdrop-presets/butterchurn/martin-tunnel-race.milk",
-      "webglStatus": "partial",
-      "webgpuStatus": "partial",
+      "webglStatus": "supported",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["unknown-function", "shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 1
+      "diagnostics": 0
     },
     {
       "id": "martin-unholy-amulet-2",
@@ -19113,9 +19164,9 @@
       "title": "martin - witchcraft reloaded",
       "file": "/milkdrop-presets/butterchurn/martin-witchcraft-reloaded.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19137,9 +19188,9 @@
       "title": "martin, fishbrain + flexi - mandelbox explorer v1 Eo.S. optimize [bipolar witchcraft mix]",
       "file": "/milkdrop-presets/butterchurn/martin-fishbrain-flexi-mandelbox-explorer-v1-eo-s-optimize-bipolar-witchcraft-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19149,21 +19200,21 @@
       "title": "martin, flexi + sto - traumflug",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-sto-traumflug.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-flexi-fishbrain-sto-enterstate-random-mashup-2",
       "title": "martin, flexi, fishbrain + sto - enterstate [random mashup 2]",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup-2.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19173,9 +19224,9 @@
       "title": "martin, flexi, fishbrain + sto - enterstate [random mashup 3]",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup-3.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19185,33 +19236,33 @@
       "title": "martin, flexi, fishbrain + sto - enterstate [random mashup]",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate-random-mashup.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "martin-flexi-fishbrain-sto-enterstate",
       "title": "martin, flexi, fishbrain + sto - enterstate",
       "file": "/milkdrop-presets/butterchurn/martin-flexi-fishbrain-sto-enterstate.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "massive-crack-hit-maggot-trace",
       "title": "massive crack hit maggot trace",
       "file": "/milkdrop-presets/butterchurn/massive-crack-hit-maggot-trace.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19221,9 +19272,9 @@
       "title": "menstruating in reverse in reverse time max out crap roam3 nz+",
       "file": "/milkdrop-presets/butterchurn/menstruating-in-reverse-in-reverse-time-max-out-crap-roam3-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19262,7 +19313,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "nil-did-you-speak-with-the-orb",
@@ -19293,12 +19344,12 @@
       "title": "no good rnz",
       "file": "/milkdrop-presets/butterchurn/no-good-rnz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "orb-fireworks-fusion",
@@ -19526,16 +19577,16 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "random-mash-up-round-47",
       "title": "random mash-up round 47",
       "file": "/milkdrop-presets/butterchurn/random-mash-up-round-47.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19550,7 +19601,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "raron-a-grayish-blob-mash0000-pungent-gastric-automata-cloud-fumes",
@@ -19581,21 +19632,21 @@
       "title": "rce-ordinary + flexi - far away distance (custom beat detection + bipolar colour ghost mix)",
       "file": "/milkdrop-presets/butterchurn/rce-ordinary-flexi-far-away-distance-custom-beat-detection-bipolar-colour-ghost-mix.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "rediculator-qrem-glob",
       "title": "rediculator qrem glob",
       "file": "/milkdrop-presets/butterchurn/rediculator-qrem-glob.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -19610,7 +19661,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "schglasmia-danqueer",
@@ -19658,7 +19709,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "shadowharlequin-cope-alternative-energy-antimatter-mod-1-rave-dreams",
@@ -19682,7 +19733,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "shifter-aderrasi-airhandler-sadako",
@@ -19965,9 +20016,9 @@
       "title": "shifter - liquid circuitry",
       "file": "/milkdrop-presets/butterchurn/shifter-liquid-circuitry.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20157,21 +20208,21 @@
       "title": "skipper skipper kiss me hard - if it weren′t for you wonderful role playing ′people′ parts of my solipsistic overmind, i′d be ungrateful",
       "file": "/milkdrop-presets/butterchurn/skipper-skipper-kiss-me-hard-if-it-weren-t-for-you-wonderful-role-playing-people-parts-of-my-solipsistic-overmind-i-d-be-ungrateful.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-tgfmn",
       "title": "skipper skipper kiss me hard - thank god for martin nitorami - tgfmn",
       "file": "/milkdrop-presets/butterchurn/skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-tgfmn.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20181,9 +20232,9 @@
       "title": "skipper skipper kiss me hard - thank god for martin nitorami nz",
       "file": "/milkdrop-presets/butterchurn/skipper-skipper-kiss-me-hard-thank-god-for-martin-nitorami-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20277,9 +20328,9 @@
       "title": "suksma + aderassi geiss - the sick assumptions you make about my car [shifter′s esc shader] nz+",
       "file": "/milkdrop-presets/butterchurn/suksma-aderassi-geiss-the-sick-assumptions-you-make-about-my-car-shifter-s-esc-shader-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20354,7 +20405,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "suksma-blatantic-emissarial-crotch",
@@ -20433,9 +20484,9 @@
       "title": "suksma - eternal pain and misery is a small price to pay for being able to say i destroyed you - masticate my bowels like you′re bored",
       "file": "/milkdrop-presets/butterchurn/suksma-eternal-pain-and-misery-is-a-small-price-to-pay-for-being-able-to-say-i-destroyed-you-masticate-my-bowels-like-you-re-bored.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20457,12 +20508,12 @@
       "title": "suksma - fiShbRaiN - white sceam firefly - mash0000 - liquid oxygen, jet fuel, and maybe some plutonium too",
       "file": "/milkdrop-presets/butterchurn/suksma-fishbrain-white-sceam-firefly-mash0000-liquid-oxygen-jet-fuel-and-maybe-some-plutonium-too.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "suksma-flexi-lorenz-chaser-heretical-tribal-necklace",
@@ -20517,9 +20568,9 @@
       "title": "suksma - in madness i purposely convince myself of all your lies, then slice you open and eat your lungs only nz+",
       "file": "/milkdrop-presets/butterchurn/suksma-in-madness-i-purposely-convince-myself-of-all-your-lies-then-slice-you-open-and-eat-your-lungs-only-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20558,7 +20609,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "suksma-question-authority-take-what-you-want-be-a-nihilist",
@@ -20601,9 +20652,9 @@
       "title": "suksma - sun pod gambit couch nz+2 satangastriq",
       "file": "/milkdrop-presets/butterchurn/suksma-sun-pod-gambit-couch-nz-2-satangastriq.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20654,7 +20705,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "suksma-water-cooled-red-uranium-vs-dotes-freeenergynow-net",
@@ -20673,9 +20724,9 @@
       "title": "suksma - yin - 100 - Through the ether - Bitcore Tweak - mash0000 - dmt eye rub spher nz+",
       "file": "/milkdrop-presets/butterchurn/suksma-yin-100-through-the-ether-bitcore-tweak-mash0000-dmt-eye-rub-spher-nz.milk",
       "webglStatus": "supported",
-      "webgpuStatus": "partial",
+      "webgpuStatus": "supported",
       "softUnknownKeys": [],
-      "evidenceCodes": ["shader-text-translated"],
+      "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
       "diagnostics": 0
@@ -20714,7 +20765,7 @@
       "evidenceCodes": [],
       "unsupportedFeatures": [],
       "hasShaderBody": true,
-      "diagnostics": 0
+      "diagnostics": 1
     },
     {
       "id": "yin-030-dance-with-the-ocean",
