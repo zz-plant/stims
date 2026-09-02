@@ -89,7 +89,10 @@ describe('milkdrop wave renderer', () => {
     expect(helpers.getWaveLinePositions).toHaveBeenCalledTimes(4);
   });
 
-  test('renders dotted waves as four offset point passes', () => {
+  // Dots are rasterised at their own point size. The four-pass offset spread
+  // is line-thickness emulation, and applying it to dots drew each one four
+  // times — measured as 202 lit pixels against projectM's 16.
+  test('renders dotted waves as a single point pass', () => {
     const helpers = makeHelpers();
     const behavior = {
       useLineLoopPrimitives: true,
@@ -103,7 +106,7 @@ describe('milkdrop wave renderer', () => {
 
     expect(group).toBeInstanceOf(Group);
     expect(group).not.toBeNull();
-    expectLayerPositions(group as Group, 1);
+    expect((group as Group).children).toHaveLength(1);
 
     const firstLayer = (group as Group).children[0] as Points;
     expect(firstLayer).toBeInstanceOf(Points);

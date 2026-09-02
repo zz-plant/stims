@@ -1,7 +1,7 @@
 {
   "version": 1,
   "presetId": "martin-the-bridge-of-khazad-dum",
-  "capturedAt": "2026-08-20T20:32:31.329Z",
+  "capturedAt": "2026-09-01T23:00:49.531Z",
   "fps": 60,
   "scenario": "full-mix",
   "frameCount": 120,
@@ -2177,7 +2177,7 @@
       }
     },
     {
-      "digest": "ea28e530",
+      "digest": "87e5e01a",
       "geometry": {
         "mainWave": 279.992691,
         "customWaves": 0,
@@ -4474,7 +4474,7 @@
       }
     },
     {
-      "digest": "c939c0be",
+      "digest": "98b55c0a",
       "geometry": {
         "mainWave": 279.633304,
         "customWaves": 0,
@@ -4554,7 +4554,7 @@
       }
     },
     {
-      "digest": "63e427e9",
+      "digest": "7bbe045d",
       "geometry": {
         "mainWave": 279.785357,
         "customWaves": 0,
@@ -4578,7 +4578,7 @@
       }
     },
     {
-      "digest": "c164cd84",
+      "digest": "4e57e081",
       "geometry": {
         "mainWave": 279.793439,
         "customWaves": 0,
@@ -4626,7 +4626,7 @@
       }
     },
     {
-      "digest": "1445261e",
+      "digest": "efc0cd0d",
       "geometry": {
         "mainWave": 280.029368,
         "customWaves": 0,
@@ -6739,7 +6739,7 @@
       }
     },
     {
-      "digest": "aba3147b",
+      "digest": "0a06f707",
       "geometry": {
         "mainWave": 280.789246,
         "customWaves": 0,
@@ -6763,7 +6763,7 @@
       }
     },
     {
-      "digest": "0761d4c2",
+      "digest": "6d60c530",
       "geometry": {
         "mainWave": 280.392392,
         "customWaves": 0,
@@ -6795,7 +6795,7 @@
       }
     },
     {
-      "digest": "1c042452",
+      "digest": "2e2d88a9",
       "geometry": {
         "mainWave": 280.051194,
         "customWaves": 0,
@@ -9068,7 +9068,7 @@
       }
     },
     {
-      "digest": "202a2b5a",
+      "digest": "0659cb39",
       "geometry": {
         "mainWave": 279.404254,
         "customWaves": 0,
@@ -9084,7 +9084,7 @@
       }
     },
     {
-      "digest": "14cb6883",
+      "digest": "f58cce17",
       "geometry": {
         "mainWave": 279.317749,
         "customWaves": 0,
@@ -9260,7 +9260,7 @@
       }
     },
     {
-      "digest": "0027a133",
+      "digest": "f525c078",
       "geometry": {
         "mainWave": 279.900332,
         "customWaves": 0,

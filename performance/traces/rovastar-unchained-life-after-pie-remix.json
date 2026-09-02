@@ -1,7 +1,7 @@
 {
   "version": 1,
   "presetId": "rovastar-unchained-life-after-pie-remix",
-  "capturedAt": "2026-08-20T20:32:32.212Z",
+  "capturedAt": "2026-09-01T23:00:49.892Z",
   "fps": 60,
   "scenario": "full-mix",
   "frameCount": 120,
@@ -3838,7 +3838,7 @@
       "geometry": { "mainWave": 270.738444, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "a71c9d86",
+      "digest": "8f9f107f",
       "geometry": { "mainWave": 270.470357, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5771,7 +5771,7 @@
       "geometry": { "mainWave": 272.900887, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "6c2c9cf4",
+      "digest": "8c22adce",
       "geometry": { "mainWave": 272.918164, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5791,7 +5791,7 @@
       "geometry": { "mainWave": 272.008324, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "ebb28ab7",
+      "digest": "4e3900e9",
       "geometry": { "mainWave": 272.730568, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5799,7 +5799,7 @@
       "geometry": { "mainWave": 272.419322, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "efee4072",
+      "digest": "839e1384",
       "geometry": { "mainWave": 272.315053, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5823,7 +5823,7 @@
       "geometry": { "mainWave": 272.568594, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "b8415a56",
+      "digest": "88e97539",
       "geometry": { "mainWave": 272.617486, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5847,11 +5847,11 @@
       "geometry": { "mainWave": 272.215327, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "1c1b5e24",
+      "digest": "72d12a2b",
       "geometry": { "mainWave": 272.377103, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "7765b725",
+      "digest": "302fbb3f",
       "geometry": { "mainWave": 272.149208, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -5859,7 +5859,7 @@
       "geometry": { "mainWave": 271.972066, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "f5791482",
+      "digest": "a335b8bc",
       "geometry": { "mainWave": 272.135354, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -7748,7 +7748,7 @@
       "geometry": { "mainWave": 271.020225, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "2ad9eab7",
+      "digest": "223a0650",
       "geometry": { "mainWave": 270.811892, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -7760,7 +7760,7 @@
       "geometry": { "mainWave": 270.791178, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "09d1c658",
+      "digest": "d7c4d100",
       "geometry": { "mainWave": 270.719636, "customWaves": 0, "shapes": 0 }
     },
     {

@@ -75,7 +75,11 @@ function applyWaveMaterialAlpha(
 }
 
 function getWaveLayerCount(wave: MilkdropWaveVisual) {
-  return wave.drawMode === 'dots' || wave.thickness > 1 ? 4 : 1;
+  // The four-pass offset spread is how a thick LINE is emulated. Dots are
+  // rasterised at their own point size and never needed it — applying it to
+  // them drew each dot four times, which measured as 202 lit pixels against
+  // projectM's 16 for the same eight-dot preset.
+  return wave.drawMode !== 'dots' && wave.thickness > 1 ? 4 : 1;
 }
 
 function getWaveLayerOffsets(layerCount: number, thickness: number) {

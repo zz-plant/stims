@@ -12,30 +12,61 @@ import type {
   MilkdropWaveDefinition,
   MilkdropWaveVisual,
 } from '../types';
+import {
+  fillCustomWaveSampleValues,
+  getMilkdropWaveChannels,
+  MILKDROP_WAVE_ARRAY_LENGTH,
+} from './custom-wave-samples';
 import { buildMainWaveFrame } from './frame-generation';
 import {
   clamp,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
   MAX_TRAILS,
   type MutableState,
-  sampleCustomWaveChannels,
   type WaveBuilderState,
 } from './shared';
 
-const BALANCED_CUSTOM_WAVE_SAMPLE_LIMIT = 1024;
-const HIGH_DETAIL_CUSTOM_WAVE_SAMPLE_LIMIT = 2048;
-const HIGH_DETAIL_WAVE_THRESHOLD = 1.5;
-
-export function getCustomWaveSampleLimit(detailScale: number) {
-  return detailScale >= HIGH_DETAIL_WAVE_THRESHOLD
-    ? HIGH_DETAIL_CUSTOM_WAVE_SAMPLE_LIMIT
-    : BALANCED_CUSTOM_WAVE_SAMPLE_LIMIT;
+/**
+ * MilkDrop's custom-wave arrays are 512 long and a preset never gets more,
+ * whatever it asks for. The detail scale may only reduce this — it used to
+ * MULTIPLY the preset's `samples`, which is harmless retessellation for a line
+ * wave but a direct light multiplier for a dot one.
+ */
+function getCustomWaveSampleLimit(detailScale: number) {
+  return Math.max(
+    8,
+    Math.round(MILKDROP_WAVE_ARRAY_LENGTH * Math.min(1, detailScale)),
+  );
 }
+
+/**
+ * Grow-only scratch for one wave's value1/value2. Waves are built one at a time
+ * within a frame, so a single pair is enough and the hot path stays
+ * allocation-free.
+ */
+let customWaveSampleBuffers: {
+  value1: Float32Array;
+  value2: Float32Array;
+} | null = null;
+
+function ensureCustomWaveSampleBuffers(sampleCount: number) {
+  if (
+    !customWaveSampleBuffers ||
+    customWaveSampleBuffers.value1.length < sampleCount
+  ) {
+    customWaveSampleBuffers = {
+      value1: new Float32Array(sampleCount),
+      value2: new Float32Array(sampleCount),
+    };
+  }
+  return customWaveSampleBuffers;
+}
+
+/** projectM's custom-wave dot footprint, in device pixels. */
+const MILKDROP_CUSTOM_WAVE_DOT_SIZE = 1;
 
 const toRendererWaveX = (value: number) => (value - 0.5) * 2;
 const toRendererWaveY = (value: number) => (0.5 - value) * 2;
-const toMilkdropWaveX = (value: number) => value / 2 + 0.5;
-const toMilkdropWaveY = (value: number) => 0.5 - value / 2;
 
 export function buildMainWave({
   state,
@@ -168,7 +199,6 @@ export function buildCustomWaves({
   const nextFrameIndex = (waveState.customWaveFrameIndex ^ 1) as 0 | 1;
   const waves = waveState.customWaveVisualFrames[nextFrameIndex];
   const proceduralWaves = waveState.proceduralCustomWaveFrames[nextFrameIndex];
-  const channelSample = waveState.channelSample;
   let visualWaveCount = 0;
   let proceduralWaveCount = 0;
 
@@ -214,10 +244,24 @@ export function buildCustomWaves({
       continue;
     }
 
-    const sampleCount = clamp(
-      Math.round((frameLocals.samples ?? 64) * detailScale),
-      8,
-      getCustomWaveSampleLimit(detailScale),
+    // MilkDrop honours the preset's `samples` verbatim (capped at its 512-long
+    // arrays) and then draws `samples - sep` points. We used to multiply it by
+    // the quality detail scale, which is harmless retessellation for a line
+    // wave but a direct light multiplier for a dot one — it drew ~2x the dots
+    // the preset asked for. The detail scale may still cap DOWNWARD on a
+    // constrained device; it must never scale up past what the preset wants.
+    const requestedSamples = clamp(
+      Math.round(frameLocals.samples ?? 512),
+      1,
+      MILKDROP_WAVE_ARRAY_LENGTH,
+    );
+    const separation = Math.max(0, Math.floor(frameLocals.sep ?? 0));
+    const sampleCount = Math.max(
+      1,
+      Math.min(
+        requestedSamples - separation,
+        getCustomWaveSampleLimit(detailScale),
+      ),
     );
     const centerX = ((frameLocals.x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (frameLocals.y ?? 0.5)) * 2;
@@ -375,10 +419,24 @@ export function buildCustomWaves({
         }
       }
     }
-    channelSample.sample = 0;
-    channelSample.value = 0;
-    channelSample.value1 = 0;
-    channelSample.value2 = 0;
+    // MilkDrop's value1/value2 are the LEFT and RIGHT channel samples, with
+    // separation, stride, a two-pass smoothing and a scale applied — see
+    // custom-wave-samples.ts. They have to be built for the whole wave up
+    // front because the backward smoothing pass reads ahead.
+    const waveSpectrum = (frameLocals.spectrum ?? 0) >= 0.5;
+    const sampleValues = ensureCustomWaveSampleBuffers(sampleCount);
+    fillCustomWaveSampleValues(
+      getMilkdropWaveChannels(signals, waveSpectrum),
+      {
+        sampleCount,
+        separation,
+        spectrum: waveSpectrum,
+        scaling,
+        smoothing: frameLocals.smoothing ?? 0,
+      },
+      sampleValues.value1,
+      sampleValues.value2,
+    );
 
     // Initialize per-point locals from frame locals (t/v carry point-to-point)
     pointLocals.t1 = frameLocals.t1 ?? 0;
@@ -400,44 +458,37 @@ export function buildCustomWaves({
 
     for (let point = 0; point < sampleCount; point += 1) {
       const sample = point / Math.max(1, sampleCount - 1);
-      const waveChannels = sampleCustomWaveChannels(
-        signals,
-        sample,
-        (frameLocals.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
-        channelSample,
-      );
-      const spectrumValue = waveChannels.value1;
-      const baseY =
-        centerY +
-        (spectrumValue - 0.5) *
-          0.55 *
-          scaling *
-          (1 + (frameLocals.mystery ?? 0) * 0.25);
+      const pointValue1 = sampleValues.value1[point] ?? 0;
+      const pointValue2 = sampleValues.value2[point] ?? 0;
 
       if (proceduralSamples) {
-        proceduralSamples[point] = spectrumValue;
+        proceduralSamples[point] = pointValue1;
         if (proceduralSampleValues2) {
-          proceduralSampleValues2[point] = waveChannels.value2;
+          proceduralSampleValues2[point] = pointValue2;
         }
         continue;
       }
 
       // Update audio-sample-driven and geometry values per point
       // (t/v already initialized above and carry between points)
-      pointLocals.sample = waveChannels.sample;
-      pointLocals.value = waveChannels.value;
-      pointLocals.value1 = waveChannels.value1;
-      pointLocals.value2 = waveChannels.value2;
-      const rendererPointX = centerX + (-1 + sample * 2);
-      const rendererPointY =
-        (frameLocals.spectrum ?? 0) >= 0.5
-          ? baseY
-          : centerY + waveChannels.value * scaling;
+      pointLocals.sample = sample;
+      // MilkDrop has no separate `value` for custom waves; keep it aliased to
+      // the left channel so a preset that reads it still gets something sane.
+      pointLocals.value = pointValue1;
+      pointLocals.value1 = pointValue1;
+      pointLocals.value2 = pointValue2;
+      // MilkDrop's default position, straight from the port: the block is
+      // handed x/y already offset by the two channels, and 1016 of the 1018
+      // presets with a per-point block overwrite both anyway.
+      const milkdropX = 0.5 + pointValue1;
+      const milkdropY = 0.5 + pointValue2;
+      const rendererPointX = toRendererWaveX(milkdropX);
+      const rendererPointY = toRendererWaveY(milkdropY);
       // Per-point code reads (and may write) x/y in MilkDrop [0,1] space
       // (y-down), matching the mesh per-pixel convention; rad/ang measure
       // distance from screen center in renderer (zero-centered) space.
-      pointLocals.x = toMilkdropWaveX(rendererPointX);
-      pointLocals.y = toMilkdropWaveY(rendererPointY);
+      pointLocals.x = milkdropX;
+      pointLocals.y = milkdropY;
       pointLocals.a = waveAlpha;
       pointLocals.rad = Math.sqrt(
         rendererPointX * rendererPointX + rendererPointY * rendererPointY,
@@ -476,12 +527,21 @@ export function buildCustomWaves({
       }
     }
 
-    if (visualWave && (positions || useProcedural)) {
+    // Only waves that actually built CPU geometry belong in the visual list.
+    // A wave on the procedural path used to be pushed here too, as an entry
+    // with zero positions — the renderer then had to skip it every frame, and
+    // because syncWaveObject disposes on an empty wave it disposed and rebuilt
+    // the NEXT wave's objects on every frame instead.
+    if (visualWave && positions) {
       visualWave.alpha = waveAlpha;
       visualWave.thickness = clamp(frameLocals.thick ?? 1, 1, 6);
       visualWave.drawMode = drawMode;
       visualWave.additive = additive;
-      visualWave.pointSize = clamp((frameLocals.thick ?? 1) * 3.2, 1, 14);
+      // projectM rasterises a custom-wave dot at 2 device pixels and ignores
+      // bDrawThick entirely (measured: thin and thick captures were identical,
+      // 2px per dot both times). The old `thick * 3.2` spread each dot over
+      // ~10px, so a dot wave injected an order of magnitude too much light.
+      visualWave.pointSize = MILKDROP_CUSTOM_WAVE_DOT_SIZE;
       visualWave.spectrum = (frameLocals.spectrum ?? 0) >= 0.5;
       if ((hasPerPointColors || hasPerPointAlpha) && pointColors) {
         visualWave.colors = pointColors;
