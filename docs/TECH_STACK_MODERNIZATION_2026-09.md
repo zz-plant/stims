@@ -23,7 +23,7 @@ and behind a seam.
 
 | Dependency | Before | Now / latest | Verdict |
 | --- | --- | --- | --- |
-| TypeScript | 6.0.3 (`ignoreDeprecations: "6.0"`) | **7.0.2** — Go-native compiler, stable 2026-07-08 | **Landed.** Cold typecheck 33.6s → 3.0s, warm 3.9s → 0.9s |
+| TypeScript | 6.0.3 (`ignoreDeprecations: "6.0"`) | **7.0.2** — Go-native compiler, stable 2026-07-08 | **Landed** for `bun run typecheck` (pinned via `bunx`); `typescript` stays 6.0.3 for API consumers. Cold typecheck 33.6s → 3.3s, warm 3.9s → 0.8s |
 | MCP SDK | `@modelcontextprotocol/sdk` 1.30.0 | **`@modelcontextprotocol/server` 2.0.0** — spec 2026-07-28 | **Landed.** stdio + Worker, both eras served |
 | esbuild (direct) | 0.28.1, one call site | Rolldown `build()` (already Vite's bundler) | Tier 2 — ported and reverted; browser gate flaked 3/14 vs 4/5 (details in §7) |
 | Vite | 8.0.16, `rollupOptions` | 8.2.2, `rolldownOptions` | **Landed** (rename). `codeSplitting` deferred with measurements below |
@@ -49,18 +49,38 @@ to migrate to, only removed options. This repo's `tsconfig.json` already
 used `moduleResolution: "bundler"` and `esModuleInterop: true`, so the only
 change was deleting `ignoreDeprecations`.
 
-| | TS 6.0.3 | TS 7.0.2 |
-| --- | --- | --- |
-| Cold `bun run typecheck` | 33.6s | 3.0s |
-| Warm (incremental) | 3.9s | 0.9s |
+**The trap:** TS 7 does not yet publish the compiler *API*, only the CLI.
+dependency-cruiser 18 pins `typescript <7` and, when it finds 7, silently
+falls back to its JavaScript-only parser: `check:architecture` reported
+"no violations" while cruising **96 modules / 184 edges instead of 1,764 /
+5,227** — every rule was passing on an almost empty graph. dependency-cruiser's
+swc parser was tried as a way out and is not viable here (its visitor is broken
+under Bun and `@swc/core` 1.16 segfaults under Node on a `.tsx` file).
+An npm alias (`typescript-native: npm:typescript@7.0.2` next to
+`typescript@6`) was tried first and is also a trap: Bun's isolated linker
+hoists one `typescript` into `node_modules/.bun/node_modules/`, picked the
+7.0.2 target, and dependency-cruiser's `createRequire` found that copy before
+the repo root — same blind guard, one level further down. (The same directory
+kept a removed `@swc/core` around until `bun install` pruned it; treat that
+folder as part of the picture when a tool "sees" a package that is not in
+`package.json`.)
+**Done:** `typescript` stays at 6.0.3 so every API consumer (dependency-cruiser,
+editors) keeps working, and `bun run typecheck` / `typecheck:watch` run
+`bunx --bun --package typescript@7.0.2 tsc`, which keeps TS 7 out of the
+dependency graph entirely (bunx installs it once into Bun's global cache,
+which CI already caches keyed on `bun.lock`). `ignoreDeprecations` is
+removed; TS 6's `tsc --noEmit` still passes on the same tsconfig, and
+`check:architecture` cruises the full graph again.
 
-The `bun --bun ./node_modules/typescript/bin/tsc` invocation is unchanged;
-TS 7 ships a `bin/tsc` shim that launches the native binary. The language
-service (editor) side is still in progress upstream, so IDEs keep using their
-bundled TypeScript until they opt in.
-**Done:** `typescript@7.0.2`, `ignoreDeprecations` removed.
-**Remains:** nothing. Watch for `@types/*` packages that still emit
-TS-6-only syntax; none in this tree did.
+| | TS 6.0.3 | TS 7.0.2 via bunx |
+| --- | --- | --- |
+| Cold `bun run typecheck` | 33.6s | 3.3s |
+| Warm (incremental) | 3.9s | 0.8s |
+
+**Remains:** move `typescript` itself to 7 once dependency-cruiser ships TS 7
+API support (it says so in its `missing-typescript-transpiler` warning), and
+check any new `@types/*` package for TS-6-only syntax; none in this tree used
+any.
 
 ### 2. MCP SDK v2 (spec 2026-07-28)
 **Area:** agent tooling. The monolithic SDK split into

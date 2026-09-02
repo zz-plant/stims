@@ -176,8 +176,8 @@
     "test:watch": "bun run scripts/run-tests.ts --watch",
     "test:watch:milkdrop": "bun run scripts/run-tests.ts --watch tests/unit/milkdrop-compiler tests/unit/milkdrop-expression tests/unit/milkdrop-shader tests/unit/milkdrop-wgsl-vectorization",
     "trace:butterchurn": "bun run scripts/trace-vs-butterchurn.ts",
-    "typecheck": "bun --bun ./node_modules/typescript/bin/tsc --noEmit",
-    "typecheck:watch": "bun --bun ./node_modules/typescript/bin/tsc --noEmit --watch",
+    "typecheck": "bunx --bun --package typescript@7.0.2 tsc --noEmit",
+    "typecheck:watch": "bunx --bun --package typescript@7.0.2 tsc --noEmit --watch",
     "ui:diff": "bun run scripts/ui-diff.ts",
     "verify": "bun run scripts/agent-verify.ts"
   },
@@ -205,7 +205,7 @@
     "playwright": "1.62.1",
     "postcss": "8",
     "sharp": "^0.35.2",
-    "typescript": "7",
+    "typescript": "^6.0.3",
     "vite": "8.2.2",
     "wrangler": "^4.123.0",
     "zod": "4.4.3"
