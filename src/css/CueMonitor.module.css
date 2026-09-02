@@ -17,7 +17,7 @@
   width: 208px;
   padding: 10px;
   border: 1px solid var(--stims-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   box-shadow: 0 8px 24px var(--stims-shadow-34);
   color: var(--text-color);
@@ -48,13 +48,13 @@
 
 .emptyHint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: var(--text-muted);
 }
 
 .label {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -62,7 +62,7 @@
 }
 
 .tempo {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
@@ -76,7 +76,7 @@
   display: block;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   /* Black, not transparent: an engine tile that has not painted yet should
      read as a dark screen, not as a hole punched through to the stage. This
      is a video letterbox behind a rendered canvas — it is the absence of
@@ -90,7 +90,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -117,12 +117,12 @@
 }
 
 .title {
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .author {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
@@ -137,9 +137,9 @@
   min-height: 32px;
   padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -178,7 +178,7 @@
 
 .remaining {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   color: var(--text-muted);
   display: flex;
   align-items: baseline;
@@ -229,7 +229,7 @@
 }
 
 .faderLabel {
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;

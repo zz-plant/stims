@@ -25,7 +25,16 @@ describe('passive first-use guidance', () => {
 
     expect(contextualHelp).not.toContain('aria-label="Dismiss hint"');
     expect(contextualHelp).not.toContain('closeButton');
-    expect(app).toContain('<ContextualHelp hint={visibleHint} />');
+    // The hint element now names the slot it is being rendered into, because
+    // there are two: the stage's bottom-centre toast area, and the side panel
+    // for hints that describe a panel. What this guards is unchanged — the
+    // hint carries no dismiss control and clears itself.
+    expect(app).toContain(
+      '<ContextualHelp hint={visibleHint} anchor="stage" />',
+    );
+    expect(app).toContain(
+      '<ContextualHelp hint={visibleHint} anchor="panel" />',
+    );
 
     expect(app).toContain('onDismiss={() => setAudioMatch(null)}');
   });

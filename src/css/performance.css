@@ -39,7 +39,7 @@ body[data-page="performance"] {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--stims-line);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   background:
     linear-gradient(180deg, rgba(10, 14, 22, 0.96), rgba(7, 10, 17, 0.88)),
     radial-gradient(
@@ -76,7 +76,7 @@ body[data-page="performance"] {
 .stims-performance__eyebrow,
 .stims-performance__label {
   margin: 0 0 8px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -181,7 +181,7 @@ body[data-page="performance"] {
 .stims-performance__text-link:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: var(--radius-hairline);
 }
 
 .stims-performance__table {
@@ -190,7 +190,7 @@ body[data-page="performance"] {
   border-spacing: 0;
   margin-top: 18px;
   border: 1px solid var(--stims-line);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
@@ -249,7 +249,7 @@ body[data-page="performance"] {
   .stims-performance__section,
   .stims-performance__card {
     padding: 20px;
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
   }
 
   .stims-performance__table,

@@ -85,6 +85,7 @@ import { LiveParameterHud } from './LiveParameterHud.tsx';
 import { installLivePerformance } from './live-performance.ts';
 import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
+import { prefetchPanelChunk } from './panel-chunks.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
 import {
   SilentAudioNotice,
@@ -170,22 +171,8 @@ const SidePanel = lazy(() =>
  * not deferred to idle: unlike a speculative prewarm, this chunk is on the
  * critical path of the page the user actually requested.
  */
-const ROUTED_PANEL_CHUNKS: Record<string, () => void> = {
-  browse: () => void import('./BrowseSheetPanel.tsx'),
-  capture: () => void import('./CapturePanel.tsx'),
-  editor: () => {
-    void import('./EditorPanel.tsx');
-    void import('../milkdrop/overlay/editor-panel.ts');
-  },
-  finder: () => void import('./PresetFinderPanel.tsx'),
-  refine: () => void import('./RefinePanel.tsx'),
-  settings: () => void import('./SettingsSheetPanel.tsx'),
-  synthesize: () => void import('./SynthesizePanel.tsx'),
-};
-
 try {
-  const routedPanel = parseURLParams().routing.panel;
-  if (routedPanel) ROUTED_PANEL_CHUNKS[routedPanel]?.();
+  prefetchPanelChunk(parseURLParams().routing.panel);
 } catch (error) {
   // A malformed URL must never keep the shell from booting.
   console.debug('Routed panel prefetch skipped', error);
@@ -198,9 +185,57 @@ try {
 // beatIntensity gate, so it's the canonical threshold, not an arbitrary pick.
 const QUIET_AUDIO_RMS_THRESHOLD = 0.04;
 
-// Rendered while a lazy panel chunk downloads. On a cold cache that can take
-// seconds, and an empty sheet reads as broken — announce and show progress.
-function PanelLoadingFallback() {
+/** Stable keys for the browse skeleton's placeholder tiles. */
+const BROWSE_SKELETON_TILES = [
+  't1',
+  't2',
+  't3',
+  't4',
+  't5',
+  't6',
+  't7',
+  't8',
+  't9',
+];
+
+/**
+ * Rendered while a lazy panel chunk downloads. On a cold cache that can take
+ * seconds, and an empty sheet reads as broken — announce and show progress.
+ *
+ * Shaped per panel rather than four identical bars. A skeleton earns its place
+ * by predicting the layout that replaces it, so the panel appears to resolve
+ * into focus; four grey rows that then get swapped for a search field and a
+ * grid of tiles is just a different loading state, and reads as one more thing
+ * to wait through. `browse` is the panel this matters most for — it is the
+ * most-opened surface in the app, and the only one whose shape is nothing like
+ * a stack of rows.
+ */
+function PanelLoadingFallback({ panel }: { panel?: string | null }) {
+  if (panel === 'browse') {
+    return (
+      <div
+        className="stims-shell__panel-loading"
+        data-shape="browse"
+        role="status"
+        aria-label="Loading panel"
+      >
+        <div className="stims-shell__skeleton stims-shell__skeleton--search" />
+        <div className="stims-shell__skeleton-chips">
+          <div className="stims-shell__skeleton stims-shell__skeleton--chip" />
+          <div className="stims-shell__skeleton stims-shell__skeleton--chip" />
+          <div className="stims-shell__skeleton stims-shell__skeleton--chip" />
+        </div>
+        <div className="stims-shell__skeleton-grid">
+          {BROWSE_SKELETON_TILES.map((id) => (
+            <div
+              key={id}
+              className="stims-shell__skeleton stims-shell__skeleton--tile"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className="stims-shell__panel-loading"
@@ -352,6 +387,11 @@ function StimsWorkspaceAppShell() {
   const creditsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
+  // Read inside dismissBrowseHint below, which must keep a stable identity:
+  // it is handed to a lazy panel, and a new function each time a hint changes
+  // would re-render that panel for no reason.
+  const visibleHintRef = useRef(visibleHint);
+  visibleHintRef.current = visibleHint;
 
   // Stable identity matters here: SidePanel's open-effect keys off this
   // callback's reference (`[open, onOpen]`), so an inline arrow function
@@ -968,7 +1008,7 @@ function StimsWorkspaceAppShell() {
     // navigation surface, a likely first interaction on any device, and
     // small (~5KB gzipped) — cheap enough not to contend for bandwidth.
     return deferToIdle(() => {
-      void import('./BrowseSheetPanel.tsx');
+      prefetchPanelChunk('browse');
     });
   }, []);
 
@@ -993,9 +1033,8 @@ function StimsWorkspaceAppShell() {
     if (!finePointer || saveData) return;
     return deferToIdle(
       () => {
-        void import('./EditorPanel.tsx');
-        void import('./RefinePanel.tsx');
-        void import('../milkdrop/overlay/editor-panel.ts');
+        prefetchPanelChunk('editor');
+        prefetchPanelChunk('refine');
       },
       { idleTimeout: 6000, fallbackDelay: 2000 },
     );
@@ -1163,6 +1202,22 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.toast, visibleHint, dismissHint]);
 
+  // A hint that has been acted on has nothing left to say, so it goes as soon
+  // as the action lands rather than sitting out its timer. "Tap a card to play
+  // it" outliving the card you just tapped is the clearest case: the advice is
+  // now describing something you have already done.
+  //
+  // Driven by the panel reporting a real choice, not by watching which preset
+  // is playing. That weaker signal moves on its own — the idle autoplay above
+  // starts the featured preset on arrival, and on a mobile or low-power
+  // `/discover/…` visit (no attract mode) it lands while the browse panel is
+  // open and nothing has been tapped. Since showing a hint also marks it seen
+  // for good, dismissing on that would have burned the guidance permanently,
+  // for exactly the visitors who most need it.
+  const dismissBrowseHint = useCallback(() => {
+    if (visibleHintRef.current?.id === 'browse-open') dismissHint();
+  }, [dismissHint]);
+
   useEffect(() => {
     if (
       !liveMode ||
@@ -1291,11 +1346,22 @@ function StimsWorkspaceAppShell() {
     }
   }, [liveMode, engineSnapshot?.audioActive, showRotateHint, showHint]);
 
+  // Gated on the grid actually having cards in it, not merely on the panel
+  // being routed to. "Tap a card to play it" fired the moment the route said
+  // browse — which on a cold load, and on the /discover entry points, is
+  // several seconds before the catalog lands. The hint marks itself seen the
+  // first time it shows, so it was spent pointing at an empty sheet and never
+  // appeared again once there was something to point at.
   useEffect(() => {
-    if (ui.routeState.panel === 'browse') {
-      showHint('browse-open');
-    }
-  }, [ui.routeState.panel, showHint]);
+    if (ui.routeState.panel !== 'browse') return;
+    if (!engine.catalogReady || engine.catalog.length === 0) return;
+    showHint('browse-open');
+  }, [
+    ui.routeState.panel,
+    engine.catalogReady,
+    engine.catalog.length,
+    showHint,
+  ]);
 
   useEffect(() => {
     if (ui.routeState.panel === 'editor') {
@@ -1536,12 +1602,18 @@ function StimsWorkspaceAppShell() {
         fillBody={sidePanelFillBody}
         onOpen={handleSidePanelOpen}
       >
-        <Suspense fallback={<PanelLoadingFallback />}>
+        {/* Panel-anchored hints render inside the panel they describe, not in
+            the stage's toast slot on the far side of the screen. */}
+        <ContextualHelp hint={visibleHint} anchor="panel" />
+        <Suspense
+          fallback={<PanelLoadingFallback panel={ui.routeState.panel} />}
+        >
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
           {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
               offline={offline}
+              onPresetChosen={dismissBrowseHint}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
                 ui.commitRoute({ ...ui.routeState, collectionTag })
@@ -1606,7 +1678,7 @@ function StimsWorkspaceAppShell() {
           them unreachable. */}
       <div className="stims-shell__toast-stack">
         <SilentAudioNotice active={liveMode} />
-        <ContextualHelp hint={visibleHint} />
+        <ContextualHelp hint={visibleHint} anchor="stage" />
         <AudioMatchToast
           match={audioMatch}
           onSelect={engine.handlePresetSelection}

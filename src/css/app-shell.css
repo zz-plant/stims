@@ -23,6 +23,14 @@ html:has(body[data-page="workspace"]) {
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  /* base.css reserves a stable scrollbar gutter document-wide, which is right
+     for the prose pages: content grows past the fold there and a gutter that
+     appears on load would shift the whole layout sideways. The workspace is
+     the opposite case — it is sized to the viewport and does not scroll, so
+     the gutter never fills, and a permanent 15px strip of page ground down the
+     right edge is the one thing standing between this and an actual
+     full-screen stage. */
+  scrollbar-gutter: auto;
 }
 
 body[data-page="workspace"] {
@@ -69,6 +77,18 @@ body[data-page="workspace"][data-live="true"] {
     background: #03050b;
   }
 
+  /* Home is full-bleed for the same reason live is: the landing copy promises
+     "full-screen visuals", and a padded, bordered frame delivered a letterbox
+     instead — a band of visuals with the page ground around it. The shell's
+     own padding also made the workspace (100dvh - 40px) taller than the
+     content box it sat in (100dvh - 48px), so every desktop load overflowed
+     by 8px, raised a scrollbar, and shifted the "centered" frame off-centre by
+     the scrollbar's width. */
+  :scope[data-mode="home"] {
+    padding: 0;
+    background: #03050b;
+  }
+
   :scope [id] {
     scroll-margin-top: var(--stims-header-top);
   }
@@ -109,7 +129,7 @@ body[data-page="workspace"][data-live="true"] {
     border-radius: var(--radius-pill);
     background: rgba(3, 5, 11, 0.76);
     color: rgba(255, 255, 255, 0.9);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 650;
     letter-spacing: 0.04em;
     text-decoration: none;
@@ -191,7 +211,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__skeleton {
     position: relative;
     overflow: hidden;
-    background: var(--stims-white-04);
+    background: var(--stims-skeleton-fill);
     border-radius: var(--stims-radius-card);
   }
 
@@ -212,6 +232,42 @@ body[data-page="workspace"][data-live="true"] {
     width: 55%;
   }
 
+  /* Browse-shaped variant: search field, filter chips, tile grid — the layout
+     that is about to replace it, so the panel resolves into focus instead of
+     swapping one loading state for a different one. */
+  .stims-shell__panel-loading[data-shape="browse"] {
+    gap: 10px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--search {
+    height: 40px;
+    width: 100%;
+  }
+
+  .stims-shell__skeleton-chips {
+    display: flex;
+    gap: 8px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--chip {
+    height: 26px;
+    width: 84px;
+    border-radius: var(--radius-round);
+  }
+
+  .stims-shell__skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--tile {
+    aspect-ratio: 4 / 3;
+  }
+
   .stims-shell__skeleton::after {
     content: "";
     position: absolute;
@@ -219,7 +275,7 @@ body[data-page="workspace"][data-live="true"] {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      var(--stims-white-08) 50%,
+      var(--stims-skeleton-sheen) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
@@ -233,7 +289,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__skeleton--text {
     height: 1em;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
   }
 
   .stims-shell__skeleton--text-sm {
@@ -380,6 +436,26 @@ body[data-page="workspace"][data-live="true"] {
     --stims-cool: var(--stims-on-stage-cool);
     --stims-control-fill: var(--stims-on-stage-control-fill);
     --stims-control-fill-hover: var(--stims-on-stage-control-fill-hover);
+    /* The surfaces those inks are written on, pinned for the same reason and
+       on the same terms. Anything inside the hero that paints a background
+       reaches one of these, so pinning them here covers the audio-source
+       cards, the YouTube field, the primary button and every skeleton without
+       each needing a light-theme rule of its own. */
+    --card-bg: var(--stims-on-stage-card);
+    --bg-color-secondary: var(--stims-on-stage-panel);
+    --panel-solid: var(--stims-on-stage-panel-strong);
+    --panel-subtle: var(--stims-on-stage-panel);
+    --panel-glass: var(--stims-on-stage-panel);
+    --stims-panel: var(--stims-on-stage-panel);
+    --stims-panel-strong: var(--stims-on-stage-panel-strong);
+    --interactive-bg: var(--stims-on-stage-panel);
+    --interactive-bg-hover: var(--stims-on-stage-control-fill-hover);
+    --text-color: var(--stims-on-stage-ink);
+    --text-muted: var(--stims-on-stage-muted);
+    --stims-accent: var(--stims-on-stage-accent);
+    --stims-on-accent: var(--stims-on-stage-on-accent);
+    --stims-skeleton-fill: var(--stims-on-stage-skeleton-fill);
+    --stims-skeleton-sheen: var(--stims-on-stage-skeleton-sheen);
     color: var(--stims-ink);
   }
 
@@ -410,8 +486,11 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__workspace[data-mode="home"] {
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
     overflow: visible;
@@ -434,7 +513,7 @@ body[data-page="workspace"][data-live="true"] {
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.22em;
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--stims-cool, #77c9ff);
     text-shadow: 0 0 10px rgba(119, 201, 255, 0.25);
@@ -444,7 +523,7 @@ body[data-page="workspace"][data-live="true"] {
     width: 64px;
     min-width: 64px;
     min-height: 64px;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
   }
 
   .stims-shell__stage-section {
@@ -462,7 +541,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__input {
     width: 100%;
     border: 1px solid rgba(119, 201, 255, 0.15);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 12px 14px;
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
@@ -529,7 +608,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__preset-list .stims-shell__preset-meta-row {
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
   }
 
   .stims-shell__preset-art[data-preview-status="ready"]
@@ -575,7 +654,7 @@ body[data-page="workspace"][data-live="true"] {
     height: 100%;
     padding: 11px 12px;
     border: 1px solid rgba(119, 201, 255, 0.12);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.02), transparent 50%),
       rgba(10, 14, 22, 0.6);
@@ -616,10 +695,10 @@ body[data-page="workspace"][data-live="true"] {
     z-index: 1;
     padding: 3px 9px;
     border: 1px solid rgba(119, 201, 255, 0.22);
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: rgba(6, 9, 15, 0.82);
     color: color-mix(in srgb, var(--stims-cool) 70%, var(--stims-ink));
-    font-size: 0.68rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -645,7 +724,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__starter-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -664,8 +743,8 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
-    min-height: calc(100vh - 40px);
-    min-height: calc(100dvh - 40px);
+    min-height: 100vh;
+    min-height: 100dvh;
     overflow: visible;
     border: 0;
     border-radius: 0;
@@ -748,7 +827,7 @@ body[data-page="workspace"][data-live="true"] {
     width: min(300px, calc(100% - 28px));
     max-height: calc(100dvh - max(72px, 10vh) - 180px);
     overflow: auto;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     background: rgba(6, 10, 17, 0.97);
     border: 1px solid rgba(119, 201, 255, 0.16);
     box-shadow:
@@ -822,7 +901,7 @@ body[data-page="workspace"][data-live="true"] {
     button {
     min-height: 36px;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     border: 1px solid
       var(--milkdrop-overlay-button-border, rgba(119, 201, 255, 0.4));
     background: var(--milkdrop-overlay-button, rgba(108, 176, 255, 0.22));
@@ -856,7 +935,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay__toolbar-group
     > label {
     color: rgba(231, 242, 255, 0.86);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"]
@@ -879,7 +958,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay--compact
     .milkdrop-overlay__title {
     padding: 12px 12px 0;
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -889,7 +968,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay--compact
     .milkdrop-overlay__status {
     padding: 0 12px 12px;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
@@ -933,10 +1012,10 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: auto;
   }
   @media (min-width: 1281px) {
-    .stims-shell__stage-frame[data-mode="home"] {
-      min-height: min(680px, calc(100dvh - 40px));
-    }
-
+    /* No height cap here. A large display is exactly where "full-screen
+       visuals" should read as full-screen; the cap that used to live on this
+       rule pinned the stage to 680px, so a 1080p viewport spent its lower
+       third on empty page ground. */
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       inset: 64px 44px 40px;
     }
@@ -1095,7 +1174,7 @@ body[data-page="workspace"][data-live="true"] {
     background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
     color: #e5f1ff;
     font-family: var(--font-family-mono);
-    font-size: 0.6rem;
+    font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.6;
     white-space: nowrap;
@@ -1142,7 +1221,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__launch-tagline {
     margin: 0;
     color: var(--stims-muted);
-    font-size: 1.05rem;
+    font-size: 1rem;
     line-height: 1.6;
   }
 
@@ -1197,7 +1276,7 @@ body[data-page="workspace"][data-live="true"] {
     margin: 0;
     max-width: 38rem;
     color: var(--stims-muted);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     line-height: 1.55;
   }
 
@@ -1212,7 +1291,7 @@ body[data-page="workspace"][data-live="true"] {
     width: 100%;
     margin: 0;
     color: var(--stims-muted);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     line-height: 1.5;
   }
 
@@ -1229,7 +1308,7 @@ body[data-page="workspace"][data-live="true"] {
     padding: 12px 22px;
     border-radius: var(--stims-radius-control);
     font-family: var(--font-family-base);
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -1297,7 +1376,7 @@ body[data-page="workspace"][data-live="true"] {
     gap: 6px;
     padding: 4px 0;
     color: var(--stims-muted);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     cursor: pointer;
     list-style: none;
     transition: color var(--transition-fast);
@@ -1337,7 +1416,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__launch-meta {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
   }
 
@@ -1390,7 +1469,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__settings-summary::after {
     content: "+";
-    font-size: 1.1rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--stims-ink-strong);
   }
@@ -1432,7 +1511,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__youtube-primary {
     padding: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(
         180deg,
@@ -1459,9 +1538,14 @@ body[data-page="workspace"][data-live="true"] {
     gap: 10px;
   }
 
+  /* auto-fit, not a fixed 2-up. The four sources are peers — one choice, four
+     equally valid answers — and a 2x2 block reads as two ranked pairs while
+     also being twice as tall as it needs to be, which is what pushed the
+     landing page's disclosure past the bottom of the stage frame and clipped
+     it. Given room they form a single row; given a phone they stack. */
   .stims-shell__source-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
     gap: 6px;
   }
 
@@ -1472,7 +1556,7 @@ body[data-page="workspace"][data-live="true"] {
     min-height: 74px;
     padding: 12px 13px;
     border: 1px solid rgba(119, 201, 255, 0.15);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
       rgba(10, 14, 22, 0.6);
@@ -1514,31 +1598,28 @@ body[data-page="workspace"][data-live="true"] {
     min-width: 0;
   }
 
-  .stims-shell__source-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .stims-shell__source-card-kicker {
+  /* One icon that says what the source *is*, leading the card.
+     What used to sit here was a tracked uppercase kicker ("NO SETUP", "LIVE
+     SOURCE") paired with a small WebGL identicon — a generated abstract shape
+     with no meaning, which at 28px in a card corner read as a coloured status
+     light reporting something. Between them they spent the card's whole top
+     edge saying less than its own title does, and cost four live WebGL
+     contexts on the landing page to do it. */
+  .stims-shell__source-card-icon {
+    width: 20px;
+    height: 20px;
     color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1.1;
-    text-transform: uppercase;
   }
 
   .stims-shell__source-card strong {
     color: var(--stims-ink-strong);
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     line-height: 1.2;
   }
 
   .stims-shell__source-card span {
     color: var(--stims-muted);
-    font-size: 0.84rem;
+    font-size: 0.8125rem;
     line-height: 1.35;
   }
 
@@ -1576,7 +1657,7 @@ body[data-page="workspace"][data-live="true"] {
     gap: 0;
     overflow: hidden;
     border: 1px solid var(--stims-line-soft);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: rgba(255, 255, 255, 0.025);
   }
 
@@ -1615,7 +1696,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__youtube-feedback {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--stims-muted);
   }
@@ -1663,7 +1744,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__chip {
     border: 1px solid var(--stims-line-soft);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: var(--stims-white-04);
     color: inherit;
     font: inherit;
@@ -1679,12 +1760,12 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__chip-copy strong {
     color: var(--stims-ink-strong);
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
   }
 
   .stims-shell__chip-copy span {
     color: var(--stims-muted);
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
   }
 
   /* Recents carry an oEmbed thumbnail when one was fetched; the chip has to
@@ -1702,7 +1783,7 @@ body[data-page="workspace"][data-live="true"] {
     width: 56px;
     height: 32px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--stims-white-04);
   }
 
@@ -1728,11 +1809,11 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__transport-button {
     border: 1px solid var(--stims-line-soft);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--stims-white-04);
     color: inherit;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
     padding: 6px 10px;
     min-width: 56px;
   }
@@ -1745,7 +1826,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__transport-time {
     color: var(--stims-muted);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
   }
 
@@ -1762,7 +1843,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__field-label {
     display: block;
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
     color: var(--stims-muted);
     letter-spacing: 0.02em;
   }
@@ -1771,7 +1852,7 @@ body[data-page="workspace"][data-live="true"] {
     position: relative;
     overflow: hidden;
     min-height: 164px;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     border: 1px solid var(--stims-white-12);
     background:
       radial-gradient(
@@ -1795,21 +1876,16 @@ body[data-page="workspace"][data-live="true"] {
     opacity: 0.88;
   }
 
-  .stims-shell__preset-art-fallback {
+  /* Generated stand-in artwork (PresetArtworkFallback). Fills the art slot
+     exactly as a real thumbnail would, so a catalog that is part thumbnailed
+     and part generated still reads as one grid rather than two. */
+  .stims-shell__preset-art-generated {
     position: absolute;
     inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-align: center;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    z-index: var(--z-stage-root);
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   .stims-parametric-identicon {
@@ -1827,7 +1903,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shader-identicon {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     box-shadow:
       inset 0 0 0 1px var(--stims-white-12),
       0 4px 12px var(--stims-shadow-22);
@@ -1910,7 +1986,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__section-label {
     margin: 4px 0 0;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1988,7 +2064,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__sheet-callout h3 {
     margin: 0;
     font-family: var(--font-family-base);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
   }
 
   .stims-shell__toast {
@@ -2055,7 +2131,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .cta-button {
     min-height: 46px;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     padding: 0.82rem 1.05rem;
     letter-spacing: 0.05em;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2074,16 +2150,19 @@ body[data-page="workspace"][data-live="true"] {
       background 0.2s ease;
   }
 
+  /* The product has one primary action colour, and it is the warm accent that
+     "Play demo" is painted in. This rule used to hardcode a lime-green
+     gradient found nowhere else in the palette, so the two most prominent
+     buttons on the landing page — "Play demo" and, one disclosure below it,
+     "Load" — were different colours making the same promise, and the second
+     one belonged to no theme this app has. Tokens now, so it tracks the light
+     palette too. */
   .cta-button.primary {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, #e8f5c8 78%, #fff9e9),
-      color-mix(in srgb, #9fd98b 74%, #d9efc4)
-    );
-    border-color: color-mix(in srgb, #ffffff 24%, rgba(166, 207, 138, 0.64));
-    color: #101610;
+    background: var(--stims-accent);
+    border-color: color-mix(in srgb, #ffffff 24%, var(--stims-accent));
+    color: var(--stims-on-accent);
     box-shadow:
-      0 10px 24px rgba(166, 207, 138, 0.18),
+      0 10px 24px var(--stims-accent-glow),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
@@ -2105,8 +2184,8 @@ body[data-page="workspace"][data-live="true"] {
   .cta-button.primary:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
     box-shadow:
-      0 14px 32px rgba(166, 207, 138, 0.35),
-      0 0 24px rgba(202, 230, 170, 0.25),
+      0 14px 32px var(--stims-accent-soft),
+      0 0 24px var(--stims-accent-glow),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
@@ -2116,7 +2195,7 @@ body[data-page="workspace"][data-live="true"] {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(148, 163, 184, 0.18);
     box-shadow: none;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     letter-spacing: 0.04em;
     color: rgba(226, 232, 240, 0.7);
     transition:
@@ -2268,7 +2347,7 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__workspace {
       padding: 12px;
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__workspace[data-mode="home"] {
@@ -2285,7 +2364,7 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__field-label,
     .stims-shell__preset-meta,
     .stims-shell__preset-tech {
-      font-size: 0.84rem;
+      font-size: 0.8125rem;
     }
     .stims-shell__sheet-panel,
     .stims-shell__sheet-callout {
@@ -2325,7 +2404,7 @@ body[data-page="workspace"][data-live="true"] {
       min-height: auto;
       flex: 1 1 auto;
       overflow: visible;
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
@@ -2432,7 +2511,7 @@ body[data-page="workspace"][data-live="true"] {
       gap: 6px;
       width: 100%;
       max-width: none;
-      border-radius: 20px;
+      border-radius: var(--radius-xl);
     }
 
     .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
@@ -2475,7 +2554,7 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
       .stims-shell__preset-art {
       min-height: 64px;
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
@@ -2619,11 +2698,11 @@ body[data-page="workspace"][data-live="true"] {
     }
 
     .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
-      font-size: 0.62rem;
+      font-size: 0.6875rem;
     }
 
     .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
-      font-size: 0.82rem;
+      font-size: 0.8125rem;
       line-height: 1.38;
     }
 
@@ -2684,13 +2763,13 @@ body[data-page="workspace"][data-live="true"] {
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.96);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   animation: fade-in 0.3s ease;
 }
 
 .stims-shell__audio-match .stims-shell__eyebrow {
   color: var(--stims-accent-blue);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin: 0;
@@ -2701,7 +2780,7 @@ body[data-page="workspace"][data-live="true"] {
   border: none;
   color: var(--stims-ink);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 0;
 }
@@ -2732,7 +2811,7 @@ body[data-page="workspace"][data-live="true"] {
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.86);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   pointer-events: auto;
 }
 
@@ -2757,7 +2836,7 @@ body[data-page="workspace"][data-live="true"] {
   color: var(--stims-ink-dim);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
 }
 
 .stims-shell__midi-hud-value {
@@ -2790,7 +2869,7 @@ body[data-page="workspace"][data-live="true"] {
   background: var(--stims-panel-strong);
   color: var(--stims-ink);
   font-family: var(--font-family-mono);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   pointer-events: auto;
 }
@@ -2817,7 +2896,7 @@ body[data-page="workspace"][data-live="true"] {
   background: none;
   color: var(--stims-ink-dim);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1;
 }
 
@@ -2862,7 +2941,7 @@ body[data-page="workspace"][data-live="true"] {
   color: var(--stims-ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 600;
 }
 
@@ -2941,7 +3020,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__credits-card {
   background: #0c1117;
   border: 1px solid #1e293b;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   max-width: 520px;
   width: 92%;
@@ -2997,7 +3076,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-card h3 {
   margin: 0 0 14px;
   font-family: var(--font-family-base);
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--stims-ink);
@@ -3013,11 +3092,11 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-grid kbd,
 .stims-shell__shortcut-row kbd {
   font-family: var(--font-family-mono);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 4px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(
     180deg,
     rgba(119, 201, 255, 0.14),
@@ -3047,7 +3126,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-grid span,
 .stims-shell__shortcut-row span {
   font-family: var(--font-family-base);
-  font-size: 0.88rem;
+  font-size: 0.875rem;
   color: var(--stims-ink-muted);
   letter-spacing: -0.005em;
 }
@@ -3064,7 +3143,7 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-credits-section-title {
   font-family: var(--font-family-base);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   margin: 0 0 0.75rem 0;
   text-transform: uppercase;
@@ -3076,7 +3155,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-credits-body {
   font-family: var(--font-family-base);
   line-height: 1.65;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--stims-ink-muted);
 }
 
@@ -3115,7 +3194,7 @@ body[data-page="workspace"][data-live="true"] {
 }
 
 .stims-credits-disclaimer {
-  font-size: 0.84rem;
+  font-size: 0.8125rem;
   opacity: 0.75;
   margin-top: 0.65rem;
   line-height: 1.55;
@@ -3178,7 +3257,7 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-ink);
     text-decoration: underline;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     opacity: 0.8;
   }
 
@@ -3249,11 +3328,11 @@ body[data-page="workspace"][data-live="true"] {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--stims-line-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(5, 7, 13, 0.97);
   color: var(--stims-ink);
   box-shadow: var(--stims-shadow);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   pointer-events: none;
 }
 @keyframes mobile-hint-enter {
@@ -3324,7 +3403,7 @@ body[data-page="workspace"][data-live="true"] {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   transition:
     background 0.18s ease,
@@ -3371,7 +3450,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__error-card {
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-white-08);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 32px 40px;
   max-width: 460px;
   width: 100%;
@@ -3404,7 +3483,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 
 .stims-shell__error-copy {
   opacity: 0.8;
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   margin: 0 0 16px;
   line-height: 1.5;
 }
@@ -3412,10 +3491,10 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__error-details {
   margin: 0 0 16px;
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   background: var(--stims-white-04);
   border: 1px solid var(--stims-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -3454,9 +3533,9 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   background: var(--stims-white-06);
   color: var(--text-color);
   border: 1px solid var(--stims-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   transition:
@@ -3883,7 +3962,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   height: 26px;
   padding: 0;
   border: 1px solid var(--stims-line);
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   /* Opaque-ish disc: the art underneath is arbitrary and often bright, so a
      transparent star disappears against roughly half the catalog. */
   background: color-mix(in srgb, var(--stims-panel-strong) 78%, transparent);
@@ -4017,7 +4096,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   top: var(--space-xs, 4px);
   right: var(--space-xs, 4px);
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
   border: 1px solid var(--stims-line);
   color: var(--stims-ink-soft, var(--stims-ink));
@@ -4051,7 +4130,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 }
 
 .stims-preset-signals__chip {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.4;
   letter-spacing: 0.01em;
   padding: 1px 7px 2px;

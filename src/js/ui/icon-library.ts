@@ -226,6 +226,14 @@ const ICON_NODES = {
     { tag: 'circle', attrs: { cx: 6, cy: 18, r: 3 } },
     { tag: 'circle', attrs: { cx: 18, cy: 16, r: 3 } },
   ],
+  mic: [
+    {
+      tag: 'rect',
+      attrs: { x: 9, y: 2, width: 6, height: 11, rx: 3, ry: 3 },
+    },
+    { tag: 'path', attrs: { d: 'M5 10v1a7 7 0 0 0 14 0v-1' } },
+    { tag: 'path', attrs: { d: 'M12 18v4' } },
+  ],
   refresh: [
     { tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-2.64-6.36L21 8' } },
     { tag: 'path', attrs: { d: 'M21 3v5h-5' } },

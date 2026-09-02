@@ -2,16 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useLivePresetTile } from './hooks/use-live-preset-tile.ts';
+import {
+  PresetArtworkFallback,
+  type PresetArtworkTone,
+} from './PresetArtworkFallback.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
-
-type PresetArtworkTone =
-  | 'bright'
-  | 'geometry'
-  | 'space'
-  | 'moody'
-  | 'psychedelic'
-  | 'classic'
-  | 'instant';
 
 /**
  * Static thumbnail URLs that already 404'd this session.
@@ -59,7 +54,7 @@ export function PresetArtwork({
   /** Render a live engine tile while true (grid hover/focus audition). */
   audition?: boolean;
 }) {
-  const mood = describePresetMood(entry);
+  const tone = getPresetArtworkTone(entry);
   const liveTile = useLivePresetTile(entry, { audition });
   const staticThumbUrl = `/milkdrop-presets/previews/${entry.id}.png`;
   // The static R2 thumbnail is the default artwork; a ready runtime snapshot
@@ -89,7 +84,7 @@ export function PresetArtwork({
   return (
     <div
       className="stims-shell__preset-art"
-      data-tone={getPresetArtworkTone(entry)}
+      data-tone={tone}
       data-compact={String(compact)}
       data-preview-status={previewStatus}
       aria-hidden="true"
@@ -111,7 +106,7 @@ export function PresetArtwork({
         style={imageError ? { display: 'none' } : undefined}
       />
       {imageError ? (
-        <span className="stims-shell__preset-art-fallback">{mood}</span>
+        <PresetArtworkFallback presetId={entry.id} tone={tone} />
       ) : null}
       {liveTile.enabled ? (
         <div

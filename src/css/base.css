@@ -289,7 +289,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(148, 165, 180, 0.6);
   background: linear-gradient(
     135deg,
@@ -378,7 +378,7 @@ body {
   pointer-events: auto;
   width: min(760px, calc(100vw - 32px));
   padding: 28px 30px 26px;
-  border-radius: 28px;
+  border-radius: var(--radius-2xl);
   background:
     radial-gradient(
       circle at top right,
@@ -423,7 +423,7 @@ body {
   grid-area: eyebrow;
   margin: 0;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   color: rgba(200, 255, 116, 0.88);
@@ -434,7 +434,7 @@ body {
   margin: 0;
   max-width: 42ch;
   color: rgba(233, 251, 255, 0.82);
-  font-size: 0.96rem;
+  font-size: 0.9375rem;
   line-height: 1.55;
 }
 
@@ -447,7 +447,7 @@ body {
   color: rgba(233, 251, 255, 0.82);
   display: grid;
   gap: 8px;
-  font-size: 0.92rem;
+  font-size: 0.9375rem;
 }
 
 .rendering-overlay__links {
@@ -476,7 +476,7 @@ body {
   min-height: 44px;
   min-width: 44px;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(208, 226, 255, 0.16);
   background:
     linear-gradient(180deg, var(--stims-white-05), transparent 44%),
@@ -528,7 +528,7 @@ body {
   display: grid;
   gap: 10px;
   border: 1px solid rgba(208, 226, 255, 0.12);
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   padding: 14px;
   background:
     linear-gradient(180deg, var(--stims-white-05), transparent 44%),
@@ -538,13 +538,13 @@ body {
 .rendering-overlay__preview p {
   margin: 0;
   color: rgba(233, 251, 255, 0.72);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
 }
 
 .rendering-overlay__preview-pane {
   min-height: 220px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at 25% 40%, var(--stims-muted-35), transparent 45%),
     radial-gradient(
@@ -616,7 +616,7 @@ body {
   );
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 18px 42px var(--stims-shadow-34);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   z-index: var(--z-control-panel);
   overflow: hidden;
   overscroll-behavior: contain;
@@ -677,7 +677,7 @@ body {
 .control-panel::after {
   inset: 6px;
   border: 1px solid var(--stims-white-04);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .control-panel__heading {
@@ -688,7 +688,7 @@ body {
 
 .control-panel__description {
   margin: 0 0 8px;
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   color: rgba(245, 245, 245, 0.76);
 }
 
@@ -700,7 +700,7 @@ body {
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(148, 165, 180, 0.24);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.01em;
   color: rgba(233, 251, 255, 0.9);
   background: var(--stims-white-05);
@@ -788,7 +788,7 @@ body {
   align-items: center;
   min-height: 44px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
 }
 
 .control-panel__info-wrap {
@@ -809,7 +809,7 @@ body {
   background: none;
   padding: 0;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: rgba(155, 243, 255, 0.85);
   cursor: pointer;
   text-decoration: underline;
@@ -836,22 +836,22 @@ body {
 .control-panel__info:focus-visible {
   outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .control-panel__info-text {
   max-width: min(32rem, 100%);
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(155, 243, 255, 0.22);
   background: rgba(10, 18, 28, 0.72);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   line-height: 1.45;
   color: rgba(233, 251, 255, 0.9);
 }
 
 .control-panel__label.small {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.9;
@@ -862,7 +862,7 @@ body {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(148, 165, 180, 0.6);
   background: rgba(8, 12, 20, 0.85);
   color: #e9fbff;
@@ -895,7 +895,7 @@ body {
   background: var(--stims-white-04);
   border: 1px solid rgba(148, 165, 180, 0.24);
   color: var(--stims-cool);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -927,7 +927,7 @@ body {
 
 .control-panel__chip-meta {
   color: rgba(155, 243, 255, 0.78);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .control-panel__chip:hover {
@@ -940,7 +940,7 @@ body {
   width: 100%;
   min-height: 180px;
   aspect-ratio: 16 / 9;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #000;
@@ -964,7 +964,7 @@ body {
   accent-color: #70f0ff;
   filter: drop-shadow(0 0 6px rgba(148, 165, 180, 0.5));
   border: 1px solid rgba(148, 165, 180, 0.55);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -972,7 +972,7 @@ body {
   background: rgba(11, 17, 29, 0.92);
   color: #e9fbff;
   border: 1px solid rgba(148, 165, 180, 0.5);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   min-width: 150px;
   min-height: 44px;
@@ -1118,7 +1118,7 @@ body {
     padding: 10px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     clip-path: none;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     max-height: min(
       44svh,
       calc(
@@ -1172,7 +1172,7 @@ body {
   }
 
   .control-panel__heading {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
   }
 
   .control-panel__text {
@@ -1182,16 +1182,16 @@ body {
 
   .control-panel__label {
     min-height: auto;
-    font-size: 0.88rem;
+    font-size: 0.875rem;
     line-height: 1.2;
   }
 
   .control-panel__microcopy {
-    font-size: 0.7rem;
+    font-size: 0.6875rem;
   }
 
   .control-panel__description {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     margin-bottom: 6px;
   }
 
@@ -1217,7 +1217,7 @@ body {
     .active-toy-status__content {
     width: min(100%, 420px);
     padding: 20px 18px;
-    border-radius: 22px;
+    border-radius: var(--radius-xl);
     margin-inline: auto;
   }
 
@@ -1338,7 +1338,7 @@ body {
   color: #ff7b7b;
   background: rgba(0, 0, 0, 0.78);
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 123, 123, 0.35);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
   z-index: var(--z-active-nav);
@@ -1426,10 +1426,10 @@ body.tv-mode .control-panel input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: rgba(15, 23, 42, 0.5);
   color: var(--stims-ink);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   outline: none;
   transition:
     border-color 0.15s ease,
@@ -1458,7 +1458,7 @@ body.tv-mode .control-panel input {
   padding: 2px 0;
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -1472,7 +1472,7 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__preset-launch:focus-visible {
   outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .milkdrop-overlay__preset-header {
@@ -1518,7 +1518,7 @@ body.tv-mode .control-panel input {
   border-radius: var(--radius-pill);
   background: rgba(148, 163, 184, 0.14);
   color: rgba(226, 232, 240, 0.86);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -1556,7 +1556,7 @@ body.tv-mode .control-panel input {
 
 .milkdrop-overlay__preset-warning {
   grid-column: 1 / -1;
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   line-height: 1.25;
   color: rgba(253, 230, 138, 0.9);
   padding: 0;
@@ -1567,7 +1567,7 @@ body.tv-mode .control-panel input {
   min-height: 28px;
   padding: 4px 8px;
   border-radius: var(--radius-pill);
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   background: rgba(15, 23, 42, 0.42);
   color: rgba(226, 232, 240, 0.82);
 }
@@ -1598,7 +1598,7 @@ body.tv-mode .control-panel input {
   .milkdrop-overlay__rating-select {
     min-height: 34px;
     padding: 6px 10px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
 
   .milkdrop-overlay__preset {
@@ -1660,7 +1660,7 @@ body {
     0 18px 32px rgba(0, 0, 0, 0.46),
     0 2px 0 rgba(255, 255, 255, 0.12) inset,
     0 -2px 0 var(--toy-shell-shadow) inset;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .active-toy-status__content::before {
@@ -1684,7 +1684,7 @@ body {
 }
 
 .active-toy-status__content {
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   box-shadow:
     0 18px 32px rgba(0, 0, 0, 0.46),
     0 1px 0 rgba(255, 255, 255, 0.18) inset,
@@ -1708,8 +1708,8 @@ body {
 .toy-nav__back {
   min-height: 40px;
   padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 0.84rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
 }
 
 .milkdrop-overlay__preset {
@@ -1717,7 +1717,7 @@ body {
   padding: 12px 12px 10px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-top: 0;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(15, 23, 42, 0.36);
 }
 
@@ -1727,12 +1727,12 @@ body {
 }
 
 .milkdrop-overlay__preset-title {
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   line-height: 1.3;
 }
 
 .milkdrop-overlay__preset-meta {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .milkdrop-overlay__preset-badges {
@@ -1742,7 +1742,7 @@ body {
 .milkdrop-overlay__support,
 .milkdrop-overlay__preset-tag {
   padding: 4px 8px;
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
 }
 
 .milkdrop-overlay__preset-warning {
@@ -1754,7 +1754,7 @@ body {
   gap: 12px;
   padding: 13px 14px 12px;
   border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(
     180deg,
     rgba(15, 23, 42, 0.46),
@@ -1775,7 +1775,7 @@ body {
 }
 
 .milkdrop-overlay__preset-title {
-  font-size: 0.98rem;
+  font-size: 1rem;
 }
 
 .milkdrop-overlay__preset-meta {
@@ -1817,7 +1817,7 @@ body {
   .milkdrop-overlay__rating-select {
     min-height: 44px;
     padding: 8px 11px;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
   }
 
   .milkdrop-overlay__search {
@@ -1831,11 +1831,11 @@ body {
   }
 
   .milkdrop-overlay__preset-title {
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
   }
 
   .milkdrop-overlay__preset-meta {
-    font-size: 0.74rem;
+    font-size: 0.75rem;
   }
 
   .milkdrop-overlay__preset-badges {
@@ -1845,7 +1845,7 @@ body {
   .milkdrop-overlay__support,
   .milkdrop-overlay__preset-tag {
     padding: 3px 7px;
-    font-size: 0.64rem;
+    font-size: 0.6875rem;
   }
 
   .milkdrop-overlay__browse-support {
@@ -1905,6 +1905,9 @@ body {
   opacity: 0.35;
 }
 
+/* Not a control corner: this and the rule below shape a blurred ambient glow
+   (see the filter on the focused variant), so the radius is a parameter of
+   that shape and deliberately sits outside the radius scale. */
 .active-toy-container::after {
   inset: 8% 6% 12%;
   border-radius: 48px;
@@ -1937,7 +1940,7 @@ body {
   aspect-ratio: 16 / 9;
   pointer-events: none;
   z-index: var(--z-frame-chrome);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   isolation: isolate;
   opacity: 0.34;
@@ -2084,7 +2087,7 @@ body {
   min-height: 38px;
   padding: 0.6rem 0.95rem;
   border-radius: var(--radius-pill);
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -2100,7 +2103,7 @@ body {
 .milkdrop-overlay__preset {
   gap: 0.85rem;
   padding: 14px;
-  border-radius: 22px;
+  border-radius: var(--radius-xl);
   border-color: var(--stims-border-08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 54%),
@@ -2122,11 +2125,11 @@ body {
 }
 
 .milkdrop-overlay__preset-title {
-  font-size: 1.04rem;
+  font-size: 1rem;
 }
 
 .milkdrop-overlay__preset-meta {
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
 }
 
 .milkdrop-overlay__preset-launch {
@@ -2138,7 +2141,7 @@ body {
   overflow: hidden;
   min-height: 132px;
   border: 1px solid rgba(153, 217, 255, 0.12);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background:
     radial-gradient(circle at top, rgba(124, 232, 255, 0.22), transparent 42%),
     linear-gradient(160deg, rgba(14, 28, 47, 0.92), rgba(5, 9, 17, 0.98));
@@ -2159,7 +2162,7 @@ body {
   display: grid;
   place-items: center;
   padding: 1rem;
-  font-size: 0.84rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2174,7 +2177,7 @@ body {
   border-radius: var(--radius-pill);
   background: rgba(5, 13, 22, 0.96);
   color: rgba(236, 244, 255, 0.92);
-  font-size: 0.69rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -2238,7 +2241,7 @@ body {
   .toy-nav__back {
     min-height: 34px;
     padding: 0.5rem 0.8rem;
-    font-size: 0.68rem;
+    font-size: 0.6875rem;
   }
 
   .milkdrop-overlay__toolbar-group,

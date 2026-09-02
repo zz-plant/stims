@@ -2,16 +2,30 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/ContextualHelp.module.css';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
 
+/**
+ * Where a hint is drawn.
+ *
+ * `stage` is the bottom-centre toast slot, which is right for a hint about the
+ * stage itself. `panel` puts the hint over the side panel it is talking about:
+ * a tip about the browse grid or the code editor rendered in the stage slot
+ * pointed at nothing, sitting on the opposite side of the screen from the
+ * thing it described — and on the discover route, where no grid is on screen
+ * at all, it pointed at nothing that existed.
+ */
+type HelpHintAnchor = 'stage' | 'panel';
+
 type HelpHint = {
   id: string;
   message: string;
   autoHideMs: number;
+  anchor: HelpHintAnchor;
 };
 
 type HelpHintDef = {
   id: string;
   message: string | (() => string);
   autoHideMs: number;
+  anchor: HelpHintAnchor;
 };
 
 const HINTS: HelpHintDef[] = [
@@ -22,11 +36,13 @@ const HINTS: HelpHintDef[] = [
         ? 'Swipe to change the visuals — double-tap to fill the screen'
         : 'Press → for a different visual. Move the mouse for controls.',
     autoHideMs: 6000,
+    anchor: 'stage',
   },
   {
     id: 'browse-open',
     message: 'Tap a card to play it',
     autoHideMs: 5000,
+    anchor: 'panel',
   },
   {
     // Interaction-reactive presets were completely silent about being
@@ -39,12 +55,14 @@ const HINTS: HelpHintDef[] = [
         ? 'This visual reacts to you — drag, pinch and twist it'
         : 'This visual reacts to you — click it and drag, or press Q, R, [ and ]',
     autoHideMs: 7000,
+    anchor: 'stage',
   },
   {
     id: 'editor-open',
     message:
       'This is the preset’s source code. Edits show up in the visuals live.',
     autoHideMs: 6000,
+    anchor: 'panel',
   },
 ];
 
@@ -85,6 +103,7 @@ export function useHelpHints() {
     setVisibleHint({
       id: hint.id,
       autoHideMs: hint.autoHideMs,
+      anchor: hint.anchor,
       message:
         typeof hint.message === 'function' ? hint.message() : hint.message,
     });
@@ -109,11 +128,25 @@ export function useHelpHints() {
   return { visibleHint, showHint, dismissHint };
 }
 
-export function ContextualHelp({ hint }: { hint: HelpHint | null }) {
-  if (!hint) return null;
+export function ContextualHelp({
+  hint,
+  anchor = 'stage',
+}: {
+  hint: HelpHint | null;
+  /** Which slot is rendering this instance. */
+  anchor?: HelpHintAnchor;
+}) {
+  // One <ContextualHelp> is mounted per slot; each renders only the hints
+  // addressed to it, so a hint about a panel cannot appear over the stage.
+  if (!hint || hint.anchor !== anchor) return null;
 
   return (
-    <div className={styles.toast} role="status" aria-live="polite">
+    <div
+      className={styles.toast}
+      data-anchor={hint.anchor}
+      role="status"
+      aria-live="polite"
+    >
       <span>{hint.message}</span>
     </div>
   );

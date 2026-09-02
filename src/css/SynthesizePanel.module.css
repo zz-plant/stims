@@ -12,7 +12,7 @@
 
 .heading {
   margin: 0 0 6px;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .intro {
@@ -27,7 +27,7 @@
 }
 
 .label {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -38,7 +38,7 @@
   resize: vertical;
   padding: 10px 12px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.12));
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--ctl-bg, rgba(0, 0, 0, 0.3));
   color: inherit;
   font: inherit;
@@ -79,9 +79,9 @@
   gap: 6px;
   padding: 6px 12px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.12));
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .palette:has(input:checked) {
@@ -96,7 +96,7 @@
 .providerNote {
   margin: 0;
   color: var(--ctl-ink-2, var(--stims-ink));
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
 }
 
@@ -121,7 +121,7 @@
 .regenerateButton {
   padding: 4px 10px;
   border: 1px solid var(--stims-accent);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -138,7 +138,7 @@
   min-height: 48px;
   padding: 12px 16px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--stims-accent);
   color: var(--stims-on-accent, #071019);
   font: inherit;

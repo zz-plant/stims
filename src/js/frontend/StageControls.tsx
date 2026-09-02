@@ -23,6 +23,7 @@ import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
+import { prefetchMenuPanelChunks } from './panel-chunks.ts';
 import { openPerformPicker } from './perform-pins.ts';
 import { ariaKeyShortcutsFor, shortcutHintFor } from './shortcut-registry.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
@@ -192,6 +193,14 @@ export function StageControls({
     const firstItem =
       menuRef.current?.querySelector<HTMLElement>('[role^="menuitem"]');
     firstItem?.focus();
+  }, [showMenu]);
+
+  // Opening this menu is the strongest signal of intent the UI gets before a
+  // click: nearly every item in it opens a code-split panel, and the download
+  // could not start until one was picked. Start them here instead, while the
+  // menu is being read. Idempotent, so reopening the menu costs nothing.
+  useEffect(() => {
+    if (showMenu) prefetchMenuPanelChunks();
   }, [showMenu]);
 
   useEffect(() => {
@@ -598,6 +607,7 @@ export function StageControls({
           <button
             type="button"
             className={styles.navBtn}
+            data-primary="true"
             data-action="previous-preset"
             aria-label="Previous preset"
             title={withHint('Previous', 'previous-preset')}
@@ -612,6 +622,7 @@ export function StageControls({
           <button
             type="button"
             className={styles.navBtn}
+            data-primary="true"
             data-action="next-preset"
             aria-label="Shuffle to random preset"
             title={withHint('Surprise me', 'next-preset')}
@@ -852,25 +863,35 @@ export function StageControls({
         </div>
       ) : null}
 
-      {!visible ? (
-        <button
-          type="button"
-          className={styles.handle}
-          aria-label="Show controls"
-          title="Show controls"
-          onClick={() => signalActivity()}
-        >
-          <span className={styles.handleIcon} aria-hidden="true">
-            <UiIcon
-              name="chevron-up"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </span>
-          {/* A bare chevron on an unlabeled pill was the only visible UI on
-              an idle stage; first-time visitors had to guess what it did. */}
-          <span>Controls</span>
-        </button>
-      ) : null}
+      {/* Always mounted, never conditional. The handle and the transport are
+          two states of one control, and rendering the handle only while
+          `visible` is false let both occupy the same patch of screen at once:
+          the bar takes 300ms to fade out, the handle appeared instantly, and
+          for that window the preset title sat underneath the word "Controls".
+          Driving both from the same flag lets the CSS hand off cleanly — the
+          incoming one waits for the outgoing one to clear. */}
+      <button
+        type="button"
+        className={styles.handle}
+        data-visible={String(!visible)}
+        aria-label="Show controls"
+        title="Show controls"
+        // Hidden by `visibility` in CSS, which already removes it from the
+        // tab order; `inert` additionally keeps a mid-transition frame from
+        // catching a click aimed at the transport underneath it.
+        inert={visible || undefined}
+        onClick={() => signalActivity()}
+      >
+        <span className={styles.handleIcon} aria-hidden="true">
+          <UiIcon
+            name="chevron-up"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+        </span>
+        {/* A bare chevron on an unlabeled pill was the only visible UI on
+            an idle stage; first-time visitors had to guess what it did. */}
+        <span>Controls</span>
+      </button>
     </>
   );
 }
