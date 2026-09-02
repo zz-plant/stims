@@ -585,23 +585,20 @@ export function syncSegmentMesh(
  * WGSL (buildCustomWaveVertexWgslCode in webgpu-procedural-materials.ts).
  * Returns x/y zero-centered like the WGSL point.
  */
+/**
+ * MilkDrop's default custom-wave position: the per-point block is handed
+ * `x = 0.5 + value1`, `y = 0.5 + value2` in MilkDrop space, which this returns
+ * already converted to renderer space. The wave's own x/y fields do not
+ * participate — MilkDrop overwrites them per point.
+ *
+ * Only 33 of 2686 bundled presets leave this default in place; the other 1016
+ * with a per-point block assign x/y themselves.
+ */
 export function buildMilkdropCustomWavePoint(
-  centerX: number,
-  centerY: number,
-  scaling: number,
-  mystery: number,
-  spectrum: number,
-  time: number,
-  sampleT: number,
-  sampleValue: number,
+  sampleValue1: number,
+  sampleValue2: number,
 ) {
-  const x = centerX + (-1 + sampleT * 2);
-  const baseY =
-    centerY + (sampleValue - 0.5) * 0.55 * scaling * (1 + mystery * 0.25);
-  const orbitalY =
-    centerY +
-    Math.sin(sampleT * Math.PI * 2 * (1 + mystery) + time) * 0.18 * scaling;
-  return { x, y: spectrum >= 0.5 ? baseY : orbitalY };
+  return { x: sampleValue1 * 2, y: sampleValue2 * -2 };
 }
 
 export function setMaterialBlendMode(

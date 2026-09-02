@@ -717,16 +717,9 @@ class CompactSegmentUploadBuffer {
     const positions: number[] = [];
     const width = getMilkdropSegmentWidth(wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
-      const sampleT = index / Math.max(1, wave.samples.length - 1);
       const point = buildMilkdropCustomWavePoint(
-        wave.centerX,
-        wave.centerY,
-        wave.scaling,
-        wave.mystery,
-        wave.spectrum ? 1 : 0,
-        wave.time,
-        sampleT,
         wave.samples[index] ?? 0,
+        wave.sampleValues2?.[index] ?? 0,
       );
       positions.push(point.x, point.y, MILKDROP_CUSTOM_WAVE_Z);
     }

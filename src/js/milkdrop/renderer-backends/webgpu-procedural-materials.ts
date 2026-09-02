@@ -1044,24 +1044,15 @@ ${WGSL_SIGNAL_UNPACK}
     var field_spectrum = paramSpectrum;
     var field_scaling = paramScaling;
     var field_mystery = paramMystery;
-    let baseY =
-      paramCenterY +
-      (sampleValue1 - 0.5) * 0.55 * paramScaling * (1.0 + paramMystery * 0.25);
-    let orbitalY =
-      paramCenterY +
-      sin(
-        sampleTValue * 3.141592653589793 * 2.0 * (1.0 + paramMystery) +
-          signalTimeValue
-      ) *
-        0.18 *
-        paramScaling;
-    let rendererPointX = paramCenterX + (-1.0 + sampleTValue * 2.0);
-    let rendererPointY = mix(orbitalY, baseY, paramSpectrum);
+    // MilkDrop's default position: the block is handed x/y already offset by
+    // the two channel values, and overwrites the wave's own x/y fields.
     // Per-point code reads/writes x,y in MilkDrop [0,1] space (y-down),
     // matching the CPU wave-builder path; rad/ang measure distance from
     // screen center in renderer (zero-centered) space.
-    var field_x = rendererPointX / 2.0 + 0.5;
-    var field_y = 0.5 - rendererPointY / 2.0;
+    var field_x = 0.5 + sampleValue1;
+    var field_y = 0.5 + sampleValue2;
+    let rendererPointX = (field_x - 0.5) * 2.0;
+    let rendererPointY = (0.5 - field_y) * 2.0;
     var field_rad = length(vec2<f32>(rendererPointX, rendererPointY));
     var field_ang = atan2(rendererPointY, rendererPointX);
     // Seeded, not zeroed: MilkDrop hands the per-point block the wavecode's
@@ -1101,22 +1092,7 @@ function buildCustomWaveVertexWgslCode(
       blendedSignalsD,
       blendedSignalsE${buildGpuFieldRegisterCallArgs(program)}
     );`
-    : `let x = blendedCenterX + (-1.0 + sampleT * 2.0);
-    let baseY =
-      blendedCenterY +
-      (blendedSampleValue - 0.5) *
-        0.55 *
-        blendedScaling *
-        (1.0 + blendedMystery * 0.25);
-    let orbitalY =
-      blendedCenterY +
-      sin(
-        sampleT * 3.141592653589793 * 2.0 * (1.0 + blendedMystery) +
-          blendedSignalTime
-      ) *
-        0.18 *
-        blendedScaling;
-    point = vec2<f32>(x, mix(orbitalY, baseY, blendedSpectrum));`;
+    : `point = vec2<f32>(blendedSampleValue * 2.0, blendedSampleValue2 * -2.0);`;
 
   return `fn computeProceduralCustomWaveVertex(
     sampleT: f32,

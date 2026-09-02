@@ -5,6 +5,7 @@
 
 /* global AudioWorkletProcessor, registerProcessor, currentTime */
 
+import { buildTwiddleTable, fft } from './fft';
 import {
   createHarmonicPercussiveAnalyser,
   type HarmonicPercussiveLevels,
@@ -50,68 +51,6 @@ function validateFftSize(value: unknown): number {
     );
   }
   return fftSize;
-}
-
-function reverseBits(value: number, bits: number): number {
-  let reversed = 0;
-  for (let i = 0; i < bits; i += 1) {
-    reversed = (reversed << 1) | ((value >>> i) & 1);
-  }
-  return reversed;
-}
-
-function buildTwiddleTable(length: number) {
-  const cos = new Float32Array(length / 2);
-  const sin = new Float32Array(length / 2);
-  for (let index = 0; index < length / 2; index += 1) {
-    const phase = (-TWO_PI * index) / length;
-    cos[index] = Math.cos(phase);
-    sin[index] = Math.sin(phase);
-  }
-  return { cos, sin };
-}
-
-function fft(
-  real: Float32Array,
-  imag: Float32Array,
-  twiddles: ReturnType<typeof buildTwiddleTable>,
-): void {
-  const n = real.length;
-  const bits = Math.log2(n);
-
-  for (let i = 0; i < n; i += 1) {
-    const j = reverseBits(i, bits);
-    if (j > i) {
-      [real[i], real[j]] = [real[j], real[i]];
-      [imag[i], imag[j]] = [imag[j], imag[i]];
-    }
-  }
-
-  for (let size = 2; size <= n; size <<= 1) {
-    const halfSize = size >> 1;
-    const tableStep = n / size;
-
-    for (let start = 0; start < n; start += size) {
-      for (let i = 0; i < halfSize; i += 1) {
-        const twiddleIndex = i * tableStep;
-        const cos = twiddles.cos[twiddleIndex] ?? 1;
-        const sin = twiddles.sin[twiddleIndex] ?? 0;
-
-        const evenReal = real[start + i];
-        const evenImag = imag[start + i];
-        const oddReal = real[start + i + halfSize];
-        const oddImag = imag[start + i + halfSize];
-
-        const tempReal = oddReal * cos - oddImag * sin;
-        const tempImag = oddReal * sin + oddImag * cos;
-
-        real[start + i] = evenReal + tempReal;
-        imag[start + i] = evenImag + tempImag;
-        real[start + i + halfSize] = evenReal - tempReal;
-        imag[start + i + halfSize] = evenImag - tempImag;
-      }
-    }
-  }
 }
 
 function computeBandAverage(

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "presetId": "geiss-game-of-life",
-  "capturedAt": "2026-08-20T20:32:29.857Z",
+  "capturedAt": "2026-09-01T23:00:48.954Z",
   "fps": 60,
   "scenario": "full-mix",
   "frameCount": 120,
@@ -6344,7 +6344,7 @@
       "geometry": { "mainWave": 72.67653, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "01fb36bf",
+      "digest": "c6261441",
       "geometry": { "mainWave": 72.748172, "customWaves": 0, "shapes": 0 }
     },
     {
@@ -8520,7 +8520,7 @@
       "geometry": { "mainWave": 72.48591, "customWaves": 0, "shapes": 0 }
     },
     {
-      "digest": "8497dd1f",
+      "digest": "67ae1495",
       "geometry": { "mainWave": 72.537083, "customWaves": 0, "shapes": 0 }
     },
     {

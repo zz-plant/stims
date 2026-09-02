@@ -434,7 +434,11 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
   });
 
-  test('reserves 2048-sample custom waves for high-detail headroom', () => {
+  // MilkDrop's custom-wave arrays are 512 long, so a preset asking for more
+  // gets 512. The detail scale may only reduce that: multiplying it up drew
+  // more dots than the preset asked for, and for a dot wave every extra dot is
+  // extra light injected into the feedback loop.
+  test("caps custom-wave samples at MilkDrop's 512 and never scales up", () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Adaptive High Sample Custom Wave
@@ -448,12 +452,16 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     const vm = createMilkdropVM(preset);
 
     const balanced = vm.step(makeSignals({ frame: 1 }));
-    const balancedPositionCount = balanced.customWaves[0]?.positions.length;
+    expect(balanced.customWaves[0]?.positions).toHaveLength(512 * 3);
+
     vm.setDetailScale(2);
     const highDetail = vm.step(makeSignals({ frame: 2 }));
+    expect(highDetail.customWaves[0]?.positions).toHaveLength(512 * 3);
 
-    expect(balancedPositionCount).toBe(1024 * 3);
-    expect(highDetail.customWaves[0]?.positions).toHaveLength(2048 * 3);
+    // A device that asked for reduced detail still renders fewer points.
+    vm.setDetailScale(0.5);
+    const lowDetail = vm.step(makeSignals({ frame: 3 }));
+    expect(lowDetail.customWaves[0]?.positions).toHaveLength(256 * 3);
   });
 
   test('emits custom-wave per-point colors when points override frame color', () => {
@@ -926,26 +934,41 @@ wave_scale=1
     );
   });
 
-  test('maps custom-wave value aliases onto the runtime sample channels', () => {
+  // value1/value2 are MilkDrop's LEFT and RIGHT channel samples. They used to
+  // be aliased to a single mono [0,1] frequency magnitude, which made every
+  // value2-derived expression (alpha especially) run orders of magnitude hot.
+  test('gives custom waves the two audio channels, not one aliased value', () => {
     const preset = compileMilkdropPresetSource(
       `
-title=Wave Alias Runtime
+title=Wave Channel Split
 wavecode_0_enabled=1
 wavecode_0_samples=8
-wavecode_0_spectrum=1
-wave_0_per_point1=x = value + value1;
+wavecode_0_spectrum=0
+wavecode_0_scaling=1
+wave_0_per_point1=x = value1;
 wave_0_per_point2=y = value2;
       `.trim(),
-      { id: 'wave-alias-runtime' },
+      { id: 'wave-channel-split' },
     );
 
-    const normalizedValue = 160 / 255;
-    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
-    const firstPoint = frameState.customWaves[0]?.positions;
+    // Constant DC per channel: the smoothing passes and the 2-tap undersample
+    // both leave a constant alone, so the expected value is exactly the
+    // measured projectM waveform constant times the signed sample.
+    const left = new Uint8Array(64).fill(228); // signed +100
+    const right = new Uint8Array(64).fill(28); // signed -100
+    const signals = {
+      ...makeSignals({ frame: 1 }),
+      waveformDataL: left,
+      waveformDataR: right,
+    };
 
-    expect(firstPoint).toBeDefined();
-    expect(firstPoint?.[0]).toBeCloseTo((normalizedValue * 2 - 0.5) * 2, 6);
-    expect(firstPoint?.[1]).toBeCloseTo((0.5 - normalizedValue) * 2, 6);
+    const frameState = createMilkdropVM(preset).step(signals);
+    const positions = frameState.customWaves[0]?.positions;
+    expect(positions).toBeDefined();
+    // value1 = +100 * 0.002 = 0.2, value2 = -100 * 0.002 = -0.2, and the
+    // block writes them straight into MilkDrop-space x/y.
+    expect(positions?.[0]).toBeCloseTo((0.2 - 0.5) * 2, 4);
+    expect(positions?.[1]).toBeCloseTo((0.5 - -0.2) * 2, 4);
   });
 
   test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {
@@ -1197,8 +1220,10 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals({ frame: 4, time: 0.2 }));
 
-    expect(frameState.customWaves).toHaveLength(1);
-    expect(frameState.customWaves[0]?.positions).toHaveLength(0);
+    // A wave that went to the GPU leaves NO entry in the CPU visual list.
+    // It used to leave one with zero positions, which the renderer had to
+    // skip every frame — and skipping it disposed the next wave's objects.
+    expect(frameState.customWaves).toHaveLength(0);
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
     expect(
       frameState.gpuGeometry.customWaves[0]?.samples.length,

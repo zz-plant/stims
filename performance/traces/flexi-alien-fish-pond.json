@@ -1,14 +1,14 @@
 {
   "version": 1,
   "presetId": "flexi-alien-fish-pond",
-  "capturedAt": "2026-08-20T20:32:28.957Z",
+  "capturedAt": "2026-09-01T23:00:48.579Z",
   "fps": 60,
   "scenario": "full-mix",
   "frameCount": 120,
   "inputs": null,
   "frames": [
     {
-      "digest": "fb6eb9cf",
+      "digest": "5ef88b32",
       "variables": {
         "acceleration": 0,
         "attributes": 32,
@@ -853,7 +853,7 @@
         "shape4_v6": 0,
         "shape4_v7": 0,
         "shape4_v8": 0,
-        "shape4_x": 0.07056442000143243,
+        "shape4_x": 0.07056442000143237,
         "shape4_y": 0.6153858695333416,
         "shape_10_a": 1,
         "shape_10_a2": 0,
@@ -2082,244 +2082,244 @@
       },
       "geometry": {
         "mainWave": 1403.591834,
-        "customWaves": 37.684905,
+        "customWaves": 228.720339,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "7df96d93",
+      "digest": "75e510c0",
       "geometry": {
         "mainWave": 1404.528869,
-        "customWaves": -35.083718,
+        "customWaves": 228.756658,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "1afea0c3",
+      "digest": "31dac05f",
       "geometry": {
         "mainWave": 1404.278823,
-        "customWaves": -67.005285,
+        "customWaves": 228.792106,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "7dcda55c",
+      "digest": "aba3ae19",
       "geometry": {
         "mainWave": 1404.648411,
-        "customWaves": -77.624892,
+        "customWaves": 228.826603,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "c0e4a9e8",
+      "digest": "2e75800d",
       "geometry": {
         "mainWave": 1404.387126,
-        "customWaves": -80.401363,
+        "customWaves": 228.863178,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "b3791d94",
+      "digest": "d376f07a",
       "geometry": {
         "mainWave": 1405.09694,
-        "customWaves": -80.558225,
+        "customWaves": 228.899689,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "a7106729",
+      "digest": "33857ec2",
       "geometry": {
         "mainWave": 1404.870296,
-        "customWaves": -78.89548,
+        "customWaves": 228.939176,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "e2e2627e",
+      "digest": "d8599d1b",
       "geometry": {
         "mainWave": 1404.123884,
-        "customWaves": -75.679794,
+        "customWaves": 228.980015,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "c00ea000",
+      "digest": "2bc107e6",
       "geometry": {
         "mainWave": 1404.806972,
-        "customWaves": -70.581755,
+        "customWaves": 229.0225,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "e8dfafa5",
+      "digest": "92e31d77",
       "geometry": {
         "mainWave": 1403.93583,
-        "customWaves": -63.319011,
+        "customWaves": 229.066858,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "dcc14d07",
+      "digest": "ba0ee1d9",
       "geometry": {
         "mainWave": 1403.625299,
-        "customWaves": -56.228815,
+        "customWaves": 229.111865,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "170c299a",
+      "digest": "f17627ca",
       "geometry": {
         "mainWave": 1403.617449,
-        "customWaves": -50.001364,
+        "customWaves": 229.110964,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "a4f517d8",
+      "digest": "b10f5651",
       "geometry": {
         "mainWave": 1403.875578,
-        "customWaves": -44.166071,
-        "shapes": 2647.502489
+        "customWaves": 229.110436,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "3c637996",
+      "digest": "59692ce4",
       "geometry": {
         "mainWave": 1403.660412,
-        "customWaves": -39.083718,
-        "shapes": 2647.502489
+        "customWaves": 229.109869,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "c6e19766",
+      "digest": "5270852d",
       "geometry": {
         "mainWave": 1403.641772,
-        "customWaves": -34.36215,
-        "shapes": 2647.502489
+        "customWaves": 229.109537,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "6dad979d",
+      "digest": "a8b79a39",
       "geometry": {
         "mainWave": 1403.794344,
-        "customWaves": -282.299406,
+        "customWaves": 229.109708,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "7a53fba0",
+      "geometry": {
+        "mainWave": 1403.403201,
+        "customWaves": 229.109928,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "45e41518",
+      "geometry": {
+        "mainWave": 1403.767409,
+        "customWaves": 229.109479,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "c7a5dd9e",
+      "geometry": {
+        "mainWave": 1403.352586,
+        "customWaves": 229.109929,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "6836bb86",
+      "geometry": {
+        "mainWave": 1403.283799,
+        "customWaves": 229.110807,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "4a91380e",
+      "geometry": {
+        "mainWave": 1403.96127,
+        "customWaves": 229.111224,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "a0ba4f17",
+      "geometry": {
+        "mainWave": 1403.541589,
+        "customWaves": 229.111592,
+        "shapes": 2647.502488
+      }
+    },
+    {
+      "digest": "56ad1d3d",
+      "geometry": {
+        "mainWave": 1402.926013,
+        "customWaves": 229.112906,
         "shapes": 2647.502489
       }
     },
     {
-      "digest": "8277a331",
-      "geometry": {
-        "mainWave": 1403.403201,
-        "customWaves": -356.260186,
-        "shapes": 2647.979178
-      }
-    },
-    {
-      "digest": "254719db",
-      "geometry": {
-        "mainWave": 1403.767409,
-        "customWaves": -375.993518,
-        "shapes": 2648.30205
-      }
-    },
-    {
-      "digest": "f7de0981",
-      "geometry": {
-        "mainWave": 1403.352586,
-        "customWaves": -372.071948,
-        "shapes": 2648.300655
-      }
-    },
-    {
-      "digest": "2be2d0c4",
-      "geometry": {
-        "mainWave": 1403.283799,
-        "customWaves": -365.295478,
-        "shapes": 2648.352853
-      }
-    },
-    {
-      "digest": "d233d415",
-      "geometry": {
-        "mainWave": 1403.96127,
-        "customWaves": -355.460184,
-        "shapes": 2648.445986
-      }
-    },
-    {
-      "digest": "095003a0",
-      "geometry": {
-        "mainWave": 1403.541589,
-        "customWaves": -341.12293,
-        "shapes": 2649.195284
-      }
-    },
-    {
-      "digest": "9826df39",
-      "geometry": {
-        "mainWave": 1402.926013,
-        "customWaves": -322.597441,
-        "shapes": 2650.593758
-      }
-    },
-    {
-      "digest": "0f54b405",
+      "digest": "27ad6e8c",
       "geometry": {
         "mainWave": 1403.705466,
-        "customWaves": -298.471952,
-        "shapes": 2651.34341
+        "customWaves": 229.11452,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "508ea19a",
+      "digest": "4110f978",
       "geometry": {
         "mainWave": 1403.119712,
-        "customWaves": -268.605287,
-        "shapes": 2652.324874
+        "customWaves": 229.115458,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "f99bdf35",
+      "digest": "15f87a74",
       "geometry": {
         "mainWave": 1402.950932,
-        "customWaves": -241.891563,
-        "shapes": 2652.863617
+        "customWaves": 229.117332,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "3ebd0ce2",
+      "digest": "b748916d",
       "geometry": {
         "mainWave": 1403.33215,
-        "customWaves": -217.389603,
-        "shapes": 2652.647791
+        "customWaves": 229.119237,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "3ebfef94",
+      "digest": "7fe94b84",
       "geometry": {
         "mainWave": 1402.505594,
-        "customWaves": -195.287644,
-        "shapes": 2651.872618
+        "customWaves": 229.120597,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "96dfa73d",
+      "digest": "7c110c9d",
       "geometry": {
         "mainWave": 1402.938563,
-        "customWaves": -174.456273,
-        "shapes": 2651.081557
+        "customWaves": 229.122485,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "e4b2df82",
+      "digest": "0315d2cf",
       "geometry": {
         "mainWave": 1402.820214,
-        "customWaves": -156.338626,
-        "shapes": 2650.01127
+        "customWaves": 229.124813,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "44b26b36",
+      "digest": "c564eed5",
       "variables": {
         "acceleration": 0,
         "attributes": 32,
@@ -3120,15 +3120,15 @@
         "shape4_a": 0.5,
         "shape4_a2": 0,
         "shape4_additive": 1,
-        "shape4_ang": 8.168859590401759,
+        "shape4_ang": 8.09274290766862,
         "shape4_b": 1,
         "shape4_b2": 0,
-        "shape4_bending": -0.17909806221723557,
+        "shape4_bending": 1.4801915249051945e-8,
         "shape4_border_a": 0,
         "shape4_border_b": 1,
         "shape4_border_g": 1,
         "shape4_border_r": 1,
-        "shape4_dir": -5.821620003320277,
+        "shape4_dir": -5.73654841673618,
         "shape4_enabled": 1,
         "shape4_g": 1,
         "shape4_g2": 0,
@@ -3164,8 +3164,8 @@
         "shape4_v6": 0,
         "shape4_v7": 0,
         "shape4_v8": 0,
-        "shape4_x": 0.0666342431926435,
-        "shape4_y": 0.6127409491749201,
+        "shape4_x": 0.0705644199921534,
+        "shape4_y": 0.615385869548591,
         "shape_10_a": 1,
         "shape_10_a2": 0,
         "shape_10_additive": 0,
@@ -4393,244 +4393,244 @@
       },
       "geometry": {
         "mainWave": 1401.521905,
-        "customWaves": -193.734702,
-        "shapes": 2648.883193
+        "customWaves": 228.712843,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "724b32d1",
+      "digest": "939342b3",
       "geometry": {
         "mainWave": 1401.62593,
-        "customWaves": -203.240583,
-        "shapes": 2648.267168
+        "customWaves": 228.75968,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "39adcb64",
+      "digest": "05c4e815",
       "geometry": {
         "mainWave": 1401.368644,
-        "customWaves": -199.601367,
-        "shapes": 2648.064877
+        "customWaves": 228.799983,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "90f4172a",
+      "digest": "cc6edbc4",
       "geometry": {
         "mainWave": 1401.002375,
-        "customWaves": -188.495484,
-        "shapes": 2648.402384
+        "customWaves": 228.836514,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "9412a061",
+      "digest": "a7fa45df",
       "geometry": {
         "mainWave": 1401.12224,
-        "customWaves": -176.824896,
-        "shapes": 2648.898531
+        "customWaves": 228.871072,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "fea833bb",
+      "digest": "d1fdf747",
       "geometry": {
         "mainWave": 1400.831823,
-        "customWaves": -164.542543,
-        "shapes": 2649.501813
+        "customWaves": 228.907903,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "91473a50",
+      "digest": "186e1e99",
       "geometry": {
         "mainWave": 1400.577305,
-        "customWaves": -152.934699,
-        "shapes": 2650.439483
+        "customWaves": 228.945511,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "cbb534de",
+      "digest": "21627146",
       "geometry": {
         "mainWave": 1400.86441,
-        "customWaves": -140.856268,
-        "shapes": 2651.771759
+        "customWaves": 228.985339,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "b6b9a804",
+      "digest": "aedbb49f",
       "geometry": {
         "mainWave": 1401.640525,
-        "customWaves": -127.789602,
-        "shapes": 2653.409756
+        "customWaves": 229.027128,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "ab32f267",
+      "digest": "ba03ccb4",
       "geometry": {
         "mainWave": 1401.814338,
-        "customWaves": -113.169994,
-        "shapes": 2655.21834
+        "customWaves": 229.070084,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "f95e7aaa",
+      "digest": "2d51c41d",
       "geometry": {
         "mainWave": 1401.90268,
-        "customWaves": -100.275877,
-        "shapes": 2656.896559
+        "customWaves": 229.113766,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "40c562aa",
+      "digest": "a8403145",
       "geometry": {
         "mainWave": 1401.565667,
-        "customWaves": -87.397446,
-        "shapes": 2658.614869
+        "customWaves": 229.112434,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "3ec8e0d1",
+      "digest": "014ec98f",
       "geometry": {
         "mainWave": 1401.589025,
-        "customWaves": -76.369994,
-        "shapes": 2660.272455
+        "customWaves": 229.111527,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "d0e0eecb",
+      "digest": "39c013e3",
       "geometry": {
         "mainWave": 1402.047222,
-        "customWaves": -66.095485,
-        "shapes": 2661.672908
+        "customWaves": 229.111518,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "6ea32228",
+      "digest": "62e764c4",
       "geometry": {
         "mainWave": 1401.615679,
-        "customWaves": -56.511172,
-        "shapes": 2662.858463
+        "customWaves": 229.110651,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "91fef3d9",
+      "digest": "1d60fa0e",
       "geometry": {
         "mainWave": 1401.504198,
-        "customWaves": -284.856268,
-        "shapes": 2663.724008
+        "customWaves": 229.109584,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "5aec5afb",
+      "digest": "e5a93ed2",
       "geometry": {
         "mainWave": 1402.182984,
-        "customWaves": -347.02097,
-        "shapes": 2663.934594
+        "customWaves": 229.110159,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "44e5cac6",
+      "digest": "b4155498",
       "geometry": {
         "mainWave": 1401.257691,
-        "customWaves": -364.589597,
-        "shapes": 2664.303897
+        "customWaves": 229.109824,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "984e131c",
+      "digest": "966ea91b",
       "geometry": {
         "mainWave": 1402.088491,
-        "customWaves": -360.040577,
-        "shapes": 2665.139036
+        "customWaves": 229.109683,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "3babf865",
+      "digest": "b3722272",
       "geometry": {
         "mainWave": 1401.982024,
-        "customWaves": -352.401361,
-        "shapes": 2665.962863
+        "customWaves": 229.110259,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "e680a552",
+      "digest": "6e2f7faf",
       "geometry": {
         "mainWave": 1401.52567,
-        "customWaves": -341.107244,
-        "shapes": 2666.245619
+        "customWaves": 229.110082,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "530b9ec1",
+      "digest": "5fba2870",
       "geometry": {
         "mainWave": 1402.126684,
-        "customWaves": -326.738617,
-        "shapes": 2666.1395
+        "customWaves": 229.110757,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "13074ef6",
+      "digest": "c4566821",
       "geometry": {
         "mainWave": 1402.068232,
-        "customWaves": -307.585677,
-        "shapes": 2665.654074
+        "customWaves": 229.111255,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "6c4cab13",
+      "digest": "a55c4a40",
       "geometry": {
         "mainWave": 1401.935359,
-        "customWaves": -282.895482,
-        "shapes": 2665.955808
+        "customWaves": 229.112317,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "bc2dc333",
+      "digest": "8a4c8b7d",
       "geometry": {
         "mainWave": 1402.185782,
-        "customWaves": -253.075876,
-        "shapes": 2666.157682
+        "customWaves": 229.11327,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "c8dda125",
+      "digest": "6259cc93",
       "geometry": {
         "mainWave": 1402.539274,
-        "customWaves": -226.001368,
-        "shapes": 2667.120543
+        "customWaves": 229.114627,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "ec623c71",
+      "digest": "f7a78a92",
       "geometry": {
         "mainWave": 1402.446508,
-        "customWaves": -201.311173,
-        "shapes": 2668.810712
+        "customWaves": 229.116529,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "9455eaa6",
+      "digest": "33df5f9f",
       "geometry": {
         "mainWave": 1402.716609,
-        "customWaves": -178.597449,
-        "shapes": 2670.196234
+        "customWaves": 229.118095,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "b6f9a1de",
+      "digest": "057e93e0",
       "geometry": {
         "mainWave": 1402.647053,
-        "customWaves": -158.236666,
-        "shapes": 2672.067627
+        "customWaves": 229.120127,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "58435654",
+      "digest": "867382cd",
       "geometry": {
         "mainWave": 1402.697269,
-        "customWaves": -140.401372,
-        "shapes": 2674.126332
+        "customWaves": 229.121498,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "f20384f7",
+      "digest": "570a38db",
       "variables": {
         "acceleration": 0,
         "attributes": 32,
@@ -5431,15 +5431,15 @@
         "shape4_a": 0.5,
         "shape4_a2": 0,
         "shape4_additive": 1,
-        "shape4_ang": 8.086522758563866,
+        "shape4_ang": 8.092742905935154,
         "shape4_b": 1,
         "shape4_b2": 0,
-        "shape4_bending": 0.014635659754276276,
+        "shape4_bending": 1.888066591959614e-8,
         "shape4_border_a": 0,
         "shape4_border_b": 1,
         "shape4_border_g": 1,
         "shape4_border_r": 1,
-        "shape4_dir": -5.729596485383809,
+        "shape4_dir": -5.736548414798774,
         "shape4_enabled": 1,
         "shape4_g": 1,
         "shape4_g2": 0,
@@ -5475,8 +5475,8 @@
         "shape4_v6": 0,
         "shape4_v7": 0,
         "shape4_v8": 0,
-        "shape4_x": 0.02733047991111076,
-        "shape4_y": 0.5890993434537113,
+        "shape4_x": 0.0705644199895965,
+        "shape4_y": 0.615385869552793,
         "shape_10_a": 1,
         "shape_10_a2": 0,
         "shape_10_additive": 0,
@@ -6704,244 +6704,244 @@
       },
       "geometry": {
         "mainWave": 1402.925103,
-        "customWaves": -177.671958,
-        "shapes": 2676.152224
+        "customWaves": 228.700567,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "0edb0a5e",
+      "digest": "379902a2",
       "geometry": {
         "mainWave": 1402.779749,
-        "customWaves": -188.103329,
-        "shapes": 2678.466438
+        "customWaves": 228.751902,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "e100afdd",
+      "digest": "b7c96222",
       "geometry": {
         "mainWave": 1404.336265,
-        "customWaves": -184.98176,
-        "shapes": 2680.864085
+        "customWaves": 228.799109,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "8a1c5355",
+      "digest": "74668bf3",
       "geometry": {
         "mainWave": 1404.111422,
-        "customWaves": -175.569994,
-        "shapes": 2683.109034
+        "customWaves": 228.842281,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "852ccdd9",
+      "digest": "062c385f",
       "geometry": {
         "mainWave": 1404.210874,
-        "customWaves": -164.68372,
-        "shapes": 2685.1775
+        "customWaves": 228.879978,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "7929fd76",
+      "digest": "eaed8fd8",
       "geometry": {
         "mainWave": 1404.585723,
-        "customWaves": -153.719014,
-        "shapes": 2686.795977
+        "customWaves": 228.916612,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "4e1e0e10",
+      "digest": "b9c17400",
       "geometry": {
         "mainWave": 1404.604745,
-        "customWaves": -142.66019,
-        "shapes": 2687.942183
+        "customWaves": 228.954053,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "27ed5735",
+      "digest": "7694a07f",
       "geometry": {
         "mainWave": 1404.624038,
-        "customWaves": -131.726857,
-        "shapes": 2688.857392
+        "customWaves": 228.991507,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "c6d65e17",
+      "digest": "f7228bf1",
       "geometry": {
         "mainWave": 1404.126629,
-        "customWaves": -119.271955,
-        "shapes": 2689.452778
+        "customWaves": 229.031744,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "35f2ee5c",
+      "digest": "7716ea23",
       "geometry": {
         "mainWave": 1404.23882,
-        "customWaves": -105.468034,
-        "shapes": 2699.176735
+        "customWaves": 229.072582,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "5e06d49e",
+      "digest": "040aacfb",
       "geometry": {
         "mainWave": 1403.456215,
-        "customWaves": -93.138623,
-        "shapes": 2757.239721
+        "customWaves": 229.11636,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "cb06a912",
+      "digest": "7c01b80f",
       "geometry": {
         "mainWave": 1404.360011,
-        "customWaves": -81.389604,
-        "shapes": 2814.754432
+        "customWaves": 229.11485,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "f9d6ff1f",
+      "digest": "56eec423",
       "geometry": {
         "mainWave": 1403.968068,
-        "customWaves": -71.350387,
-        "shapes": 2871.724726
+        "customWaves": 229.113203,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "2e003331",
+      "digest": "7893efd7",
       "geometry": {
         "mainWave": 1403.835496,
-        "customWaves": -61.969995,
-        "shapes": 2928.264315
+        "customWaves": 229.112309,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "e1531dca",
+      "digest": "569bb8da",
       "geometry": {
         "mainWave": 1404.582092,
-        "customWaves": -53.389603,
-        "shapes": 2984.283168
+        "customWaves": 229.111114,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "398681bb",
+      "digest": "277f18f3",
       "geometry": {
         "mainWave": 1404.042145,
-        "customWaves": -282.456268,
-        "shapes": 3039.890155
+        "customWaves": 229.110639,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "4e8fe6f1",
+      "digest": "6fb4f7ac",
       "geometry": {
         "mainWave": 1404.019566,
-        "customWaves": -345.264108,
-        "shapes": 3095.348002
+        "customWaves": 229.110202,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "fc0ca73d",
+      "digest": "dfa0f71f",
       "geometry": {
         "mainWave": 1404.021627,
-        "customWaves": -363.491558,
-        "shapes": 3149.706337
+        "customWaves": 229.109745,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "f1a5dbac",
+      "digest": "14c768b5",
       "geometry": {
         "mainWave": 1404.145915,
-        "customWaves": -359.695479,
-        "shapes": 3203.260434
+        "customWaves": 229.109812,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "d1b3fab3",
+      "digest": "c665be9b",
       "geometry": {
         "mainWave": 1404.205862,
-        "customWaves": -353.201361,
-        "shapes": 3257.01282
+        "customWaves": 229.109395,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "ae1a6240",
+      "digest": "034215a3",
       "geometry": {
         "mainWave": 1404.077649,
-        "customWaves": -343.240577,
-        "shapes": 3309.749215
+        "customWaves": 229.109432,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "11475ad9",
+      "digest": "4cd49e7e",
       "geometry": {
         "mainWave": 1403.97769,
-        "customWaves": -330.001362,
-        "shapes": 3362.664775
+        "customWaves": 229.110129,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "12ca6a98",
+      "digest": "2ea39758",
       "geometry": {
         "mainWave": 1404.000106,
-        "customWaves": -312.056265,
-        "shapes": 3415.226812
+        "customWaves": 229.110645,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "94df3d5f",
+      "digest": "8c2cbfd1",
       "geometry": {
         "mainWave": 1404.020583,
-        "customWaves": -288.71509,
-        "shapes": 3467.025534
+        "customWaves": 229.110759,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "9a645465",
+      "digest": "1b47ec3c",
       "geometry": {
         "mainWave": 1403.694951,
-        "customWaves": -260.228817,
-        "shapes": 3518.442574
+        "customWaves": 229.11182,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "35b699eb",
+      "digest": "51084ed2",
       "geometry": {
         "mainWave": 1403.896627,
-        "customWaves": -234.315093,
-        "shapes": 3569.366039
+        "customWaves": 229.112944,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "9a53de59",
+      "digest": "12d3386d",
       "geometry": {
         "mainWave": 1403.609599,
-        "customWaves": -210.471957,
-        "shapes": 3619.746976
+        "customWaves": 229.114543,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "fe909bb0",
+      "digest": "0534e2a8",
       "geometry": {
         "mainWave": 1403.386749,
-        "customWaves": -189.185683,
-        "shapes": 3669.252559
+        "customWaves": 229.115656,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "0612fa85",
+      "digest": "89369c9d",
       "geometry": {
         "mainWave": 1403.589776,
-        "customWaves": -169.483724,
-        "shapes": 3717.964465
+        "customWaves": 229.117468,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "98780912",
+      "digest": "9ece8751",
       "geometry": {
         "mainWave": 1403.32426,
-        "customWaves": -152.150391,
-        "shapes": 3766.360051
+        "customWaves": 229.119332,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "88741cbc",
+      "digest": "09ce79a3",
       "variables": {
         "acceleration": 0,
         "attributes": 32,
@@ -7742,15 +7742,15 @@
         "shape4_a": 0.5,
         "shape4_a2": 0,
         "shape4_additive": 1,
-        "shape4_ang": 9.863355323297789,
+        "shape4_ang": 8.092742884393903,
         "shape4_b": 1,
         "shape4_b2": 0,
-        "shape4_bending": 1.9584528356790543,
+        "shape4_bending": 6.956595743901062e-8,
         "shape4_border_a": 0,
         "shape4_border_b": 1,
         "shape4_border_g": 1,
         "shape4_border_r": 1,
-        "shape4_dir": -7.409238191321492,
+        "shape4_dir": -5.73654839072326,
         "shape4_enabled": 1,
         "shape4_g": 1,
         "shape4_g2": 0,
@@ -7786,8 +7786,8 @@
         "shape4_v6": 0,
         "shape4_v7": 0,
         "shape4_v8": 0,
-        "shape4_x": 0.03277312752300271,
-        "shape4_y": 0.5460223313214339,
+        "shape4_x": 0.07056441995782298,
+        "shape4_y": 0.6153858696050102,
         "shape_10_a": 1,
         "shape_10_a2": 0,
         "shape_10_additive": 0,
@@ -9015,240 +9015,240 @@
       },
       "geometry": {
         "mainWave": 1403.473373,
-        "customWaves": -191.97784,
-        "shapes": 3814.389492
+        "customWaves": 228.686723,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "4a7d0c9e",
+      "digest": "2db73bf6",
       "geometry": {
         "mainWave": 1402.953908,
-        "customWaves": -203.381759,
-        "shapes": 3862.045974
+        "customWaves": 228.740295,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "e13dfd62",
+      "digest": "40aff46e",
       "geometry": {
         "mainWave": 1403.285601,
-        "customWaves": -201.264112,
-        "shapes": 3909.364967
+        "customWaves": 228.789855,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "ef813628",
+      "digest": "b727637f",
       "geometry": {
         "mainWave": 1402.15222,
-        "customWaves": -191.883719,
-        "shapes": 3956.348169
+        "customWaves": 228.837654,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "72a09969",
+      "digest": "e2536f88",
       "geometry": {
         "mainWave": 1401.565494,
-        "customWaves": -181.31117,
-        "shapes": 4002.851246
+        "customWaves": 228.882803,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "55a1ad5c",
+      "digest": "d1984480",
       "geometry": {
         "mainWave": 1401.504952,
-        "customWaves": -170.48764,
-        "shapes": 4048.95163
+        "customWaves": 228.922311,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "f9e00123",
+      "digest": "11d239d2",
       "geometry": {
         "mainWave": 1401.51791,
-        "customWaves": -159.617052,
-        "shapes": 4094.880543
+        "customWaves": 228.959807,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "5434f8aa",
+      "digest": "c641c833",
       "geometry": {
         "mainWave": 1401.158417,
-        "customWaves": -148.793523,
-        "shapes": 4140.623244
+        "customWaves": 228.997025,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "ff6f993b",
+      "digest": "c6ba1133",
       "geometry": {
         "mainWave": 1402.146713,
-        "customWaves": -136.307248,
-        "shapes": 4186.144553
+        "customWaves": 229.036686,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "4f897157",
+      "digest": "3d6995a1",
       "geometry": {
         "mainWave": 1401.639813,
-        "customWaves": -122.252346,
-        "shapes": 4231.560903
+        "customWaves": 229.076173,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "ed6ccbaa",
+      "digest": "e27f914d",
       "geometry": {
         "mainWave": 1402.334686,
-        "customWaves": -109.781759,
-        "shapes": 4276.800626
+        "customWaves": 229.118108,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "576708b4",
+      "digest": "fc0d79b2",
       "geometry": {
         "mainWave": 1402.180198,
-        "customWaves": -97.954308,
-        "shapes": 4321.913364
+        "customWaves": 229.116793,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "b3ec9145",
+      "digest": "baa95a4f",
       "geometry": {
         "mainWave": 1401.917615,
-        "customWaves": -87.868033,
-        "shapes": 4366.916017
+        "customWaves": 229.115105,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "cfdd3131",
+      "digest": "8cf0d175",
       "geometry": {
         "mainWave": 1401.983998,
-        "customWaves": -78.707249,
-        "shapes": 4411.789038
+        "customWaves": 229.113632,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "b4a94067",
+      "digest": "1a3f40ad",
       "geometry": {
         "mainWave": 1401.891554,
-        "customWaves": -70.173916,
-        "shapes": 4456.478597
+        "customWaves": 229.11213,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "3ab843fd",
+      "digest": "9f2f2519",
       "geometry": {
         "mainWave": 1401.800911,
-        "customWaves": -299.083718,
-        "shapes": 4501.020768
+        "customWaves": 229.111554,
+        "shapes": 2647.502488
       }
     },
     {
-      "digest": "649254bc",
+      "digest": "5cbbb400",
       "geometry": {
         "mainWave": 1401.887173,
-        "customWaves": -361.640577,
-        "shapes": 4545.838689
+        "customWaves": 229.11088,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "fde94e16",
+      "digest": "3c4a375a",
       "geometry": {
         "mainWave": 1401.809302,
-        "customWaves": -379.915086,
-        "shapes": 4590.812453
+        "customWaves": 229.109992,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "ab408117",
+      "digest": "5c7b1e35",
       "geometry": {
         "mainWave": 1401.916674,
-        "customWaves": -375.820968,
-        "shapes": 4636.164836
+        "customWaves": 229.109734,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "5525a412",
+      "digest": "7b60c495",
       "geometry": {
         "mainWave": 1401.979918,
-        "customWaves": -368.762145,
-        "shapes": 4681.146147
+        "customWaves": 229.109824,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "211eaa8f",
+      "digest": "c92ce660",
       "geometry": {
         "mainWave": 1402.067321,
-        "customWaves": -358.220968,
-        "shapes": 4725.213251
+        "customWaves": 229.109516,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "b8e005c6",
+      "digest": "ec1e85ac",
       "geometry": {
         "mainWave": 1402.162572,
-        "customWaves": -344.636655,
-        "shapes": 4768.943111
+        "customWaves": 229.109703,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "78cce980",
+      "digest": "ab39cacf",
       "geometry": {
         "mainWave": 1401.864983,
-        "customWaves": -325.860186,
-        "shapes": 4811.88971
+        "customWaves": 229.109863,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "07831551",
+      "digest": "6cc19511",
       "geometry": {
         "mainWave": 1401.875278,
-        "customWaves": -301.483716,
-        "shapes": 4854.694479
+        "customWaves": 229.11006,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "a48c3be5",
+      "digest": "b33cb186",
       "geometry": {
         "mainWave": 1402.902623,
-        "customWaves": -271.930777,
-        "shapes": 4897.534977
+        "customWaves": 229.111072,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "29ff774c",
+      "digest": "ed9ee6cf",
       "geometry": {
         "mainWave": 1402.09465,
-        "customWaves": -245.201367,
-        "shapes": 4940.540647
+        "customWaves": 229.111644,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "46bb49c2",
+      "digest": "d5782c9e",
       "geometry": {
         "mainWave": 1402.263645,
-        "customWaves": -220.887642,
-        "shapes": 4983.042825
+        "customWaves": 229.112782,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "68340d40",
+      "digest": "249a8055",
       "geometry": {
         "mainWave": 1402.698921,
-        "customWaves": -198.62882,
-        "shapes": 5025.134182
+        "customWaves": 229.114226,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "0b5d6b61",
+      "digest": "d541eba6",
       "geometry": {
         "mainWave": 1402.167195,
-        "customWaves": -178.252351,
-        "shapes": 5066.580157
+        "customWaves": 229.115363,
+        "shapes": 2647.502489
       }
     },
     {
-      "digest": "208aaa0b",
+      "digest": "60550012",
       "geometry": {
         "mainWave": 1402.952068,
-        "customWaves": -160.056273,
-        "shapes": 5107.869359
+        "customWaves": 229.117019,
+        "shapes": 2647.502489
       }
     }
   ]
