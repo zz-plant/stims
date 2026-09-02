@@ -16,6 +16,8 @@ _Current release status: actively developed. Latest release: **v1.3.0**._
 
 ### Changed
 
+- `mat2` element writes in a native `shader_body` now execute directly on WebGPU: the analysis gate that sent every matrix element write to the uniform-only approximation is narrowed to `mat3`/`mat4`, the only sizes the node executor cannot represent. 57 bundled presets move off the approximation (WebGPU shader-translation gap 226 → 169; fully supported on both backends 1521 → 1577).
+- The WebGPU node executor now binds MilkDrop per-frame registers a shader body reads without assigning (`tele`, `hordist`, `blur1_min`, …) as uniforms driven from the VM frame state, as the WebGL path already did with `uniform float` declarations. Reads of such names used to compile to nothing and silently dropped the statement and everything downstream of it (8 bundled presets, 3 of them among the `mat2` bodies above).
 - Bounded every growth path the `#1105`–`#1111` series touched: compiled-preset cache warmup, preset preview cache, idle renderer pool retention, source-diff memory, and offscreen shader identicons (`a63a1dda`, `12bd38be`, `663df8c8`, `fed4a2bb`, `9cf158e4`).
 - Coalesced stage-control activity and optimized preset stage transitions (`4d046c3d`, `d7f2e5a8`); removed redundant layers (`b28b4aa9`).
 
