@@ -365,6 +365,21 @@ function applyShaderAstStatement({
     );
 
   if (
+    statement.declaration === 'mat2' ||
+    statement.declaration === 'mat3' ||
+    statement.declaration === 'mat4'
+  ) {
+    // An initialized matrix local (`mat2 r = mat2(0.7, -0.7, 0.7, 0.7)`) has
+    // no scalar-control meaning, and the four-scalar mat2 form used to be
+    // swallowed by the heuristic line matcher as if it were a control,
+    // leaving the direct program to read a name that was never assigned.
+    // Record the expression and let the statement stay on the direct
+    // program, where the node executor builds the matrix.
+    shaderExpressionEnv[key] = statement.expression;
+    return true;
+  }
+
+  if (
     (statement.declaration === 'vec2' || statement.declaration === 'vec3') &&
     key !== 'uv' &&
     key !== 'tint' &&

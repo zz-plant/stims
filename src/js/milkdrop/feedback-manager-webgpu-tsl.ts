@@ -2505,11 +2505,75 @@ function assignShaderTarget(
     rawTarget === 'return' ? (env.values.has('ret') ? 'ret' : 'uv') : rawTarget;
   const segments = target.split('.');
   const baseKey = segments[0] ?? target;
+
+  // Matrix column writes (`M[int(0)] = ...`, `M[1u].x = ...`) build up a
+  // matrix column-by-column; treat them as component writes into the stored
+  // columns instead of opaque per-index env keys.
+  const indexedMatch = /^([a-z_][a-z0-9_]*)\[([^\]]+)\]$/i.exec(
+    segments[0] ?? '',
+  );
+  const matrixName = indexedMatch?.[1] ?? null;
+  const matrixValue = matrixName
+    ? getShaderEnvValue(env, matrixName, { bindPerFrameVariable: false })
+    : null;
+  // The matrix's size comes from the value already in the env: shader
+  // analysis seeds every bare `matN name;` declaration with `name =
+  // matN(0.0)`, so the first element write finds the right kind waiting. A
+  // write with nothing seeded is treated as the mat2 it always was.
+  const matrixKind =
+    matrixValue && isShaderMatrixKind(matrixValue.kind)
+      ? matrixValue.kind
+      : 'mat2';
+  const matrixIndex = indexedMatch ? parseShaderIndex(indexedMatch[2]) : null;
+  if (
+    indexedMatch &&
+    (matrixIndex === null || matrixIndex >= shaderMatrixSize(matrixKind))
+  ) {
+    return;
+  }
+  const indexedComponent =
+    indexedMatch && segments.length > 1
+      ? (() => {
+          const property = segments[1]?.toLowerCase();
+          return property && property.length === 1
+            ? MATRIX_COMPONENT_INDEX[property]
+            : undefined;
+        })()
+      : undefined;
+  if (
+    indexedMatch &&
+    segments.length > 1 &&
+    (indexedComponent === undefined ||
+      indexedComponent >= shaderMatrixSize(matrixKind))
+  ) {
+    return;
+  }
+
   // A write never binds a per-frame register: the base lookup is only for
-  // compound assignment and swizzle writes into an existing value.
-  const baseValue = getShaderEnvValue(env, baseKey, {
-    bindPerFrameVariable: false,
-  });
+  // compound assignment and swizzle writes into an existing value. For an
+  // indexed target the previous value is the column, or the component of
+  // it, read out of the stored matrix — `M[0] += v` has to add to the
+  // column, not replace it, and the env holds the matrix under `M`, not
+  // `M[0]`.
+  const baseValue = indexedMatch
+    ? matrixValue && matrixIndex !== null
+      ? (() => {
+          const column =
+            matrixKind === 'mat2'
+              ? shaderMat2Column(matrixValue, matrixIndex)
+              : shaderMatrixColumn(
+                  coerceToShaderMatrix(matrixValue, matrixKind),
+                  matrixIndex,
+                );
+          return indexedComponent === undefined
+            ? column
+            : buildDirectShaderSwizzleValue(
+                column,
+                (['x', 'y', 'z', 'w'] as const)[indexedComponent] ?? 'x',
+              );
+        })()
+      : null
+    : getShaderEnvValue(env, baseKey, { bindPerFrameVariable: false });
   const nextValue =
     statement.operator === '=' || !baseValue
       ? value
@@ -2519,32 +2583,8 @@ function assignShaderTarget(
           value,
         );
 
-  // Matrix column writes (`M[int(0)] = ...`, `M[1u].x = ...`) build up a
-  // mat2 column-by-column; treat them as component writes into the packed
-  // vec2 columns instead of opaque per-index env keys.
-  const indexedMatch = /^([a-z_][a-z0-9_]*)\[([^\]]+)\]$/i.exec(
-    segments[0] ?? '',
-  );
-  if (indexedMatch) {
-    const matrixName = indexedMatch[1];
-    const index = parseShaderIndex(indexedMatch[2]);
-    if (index === null) {
-      return;
-    }
-    const matrixValue = getShaderEnvValue(env, matrixName, {
-      bindPerFrameVariable: false,
-    });
-    // The matrix's size comes from the value already in the env: shader
-    // analysis seeds every bare `matN name;` declaration with `name =
-    // matN(0.0)`, so the first element write finds the right kind waiting.
-    // A write with nothing seeded is treated as the mat2 it always was.
-    const matrixKind =
-      matrixValue && isShaderMatrixKind(matrixValue.kind)
-        ? matrixValue.kind
-        : 'mat2';
-    if (index >= shaderMatrixSize(matrixKind)) {
-      return;
-    }
+  if (indexedMatch && matrixName && matrixIndex !== null) {
+    const index = matrixIndex;
     if (segments.length === 1) {
       setShaderEnvValue(
         env,
@@ -2555,14 +2595,7 @@ function assignShaderTarget(
       );
       return;
     }
-    const property = segments[1]?.toLowerCase();
-    const component =
-      property && property.length === 1
-        ? MATRIX_COMPONENT_INDEX[property]
-        : undefined;
-    if (component === undefined || component >= shaderMatrixSize(matrixKind)) {
-      return;
-    }
+    const component = indexedComponent as number;
     setShaderEnvValue(
       env,
       matrixName,

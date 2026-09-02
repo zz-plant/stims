@@ -637,6 +637,35 @@ describe('branch flattening for direct shader execution', () => {
     expect(writeIndex).toBeGreaterThan(seedIndex);
   });
 
+  test('keeps an initialized matrix declaration on the WebGPU direct path', () => {
+    // `mat3 m = mat3(1.0);` is the standard GLSL form; the statement grammar
+    // only knew the vec2/vec3 declarations, so the line was recorded as
+    // unparsed and the whole body fell back to controls over it. The
+    // four-scalar mat2 form was worse: parsed, then swallowed as if it were
+    // a control, so the direct program read an `r` nothing had assigned.
+    const analysis = extractShaderControls(
+      nativeBody(`
+          mat3 m = mat3(1.0);
+          mat2 rot_1 = mat2(0.7, -0.7, 0.7, 0.7);
+          vec3 ret_2;
+          ret_2 = texture(sampler_pw_main, uv).xyz;
+          m[uint(0)].x = q20;
+          ret = vec3(uv * rot_1, 0.0) + (ret_2 * m);
+        `),
+    );
+
+    expect(analysis.nativeBodyUnparsedLines).toEqual([]);
+    expect(analysis.directProgramLines).toContain('mat3 m = mat3(1.0)');
+    expect(analysis.directProgramLines).toContain(
+      'mat2 rot_1 = mat2(0.7, -0.7, 0.7, 0.7)',
+    );
+    expect(
+      analysis.directProgramLines.indexOf('mat3 m = mat3(1.0)'),
+    ).toBeLessThan(
+      analysis.directProgramLines.findIndex((line) => /^m\[/u.test(line)),
+    );
+  });
+
   test('keeps a matrix write at a runtime index off the WebGPU direct path', () => {
     // A column the executor cannot name when it builds the node graph has no
     // swizzle to write through. The line is recorded as unparsed: WebGL keeps

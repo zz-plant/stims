@@ -419,6 +419,28 @@ describe('milkdrop WebGPU TSL mat3/mat4 element writes', () => {
     expect([...bound.keys()]).toEqual([]);
   });
 
+  test('applies a compound operator to the previous column or component', () => {
+    // `M[0] += v` has to add to column 0, and `M[1].y *= s` has to scale the
+    // component; the env stores the matrix under `M`, so the previous value
+    // is read out of the stored columns, not looked up under `M[0]`.
+    const env = runBody([
+      'basis_1 = mat3(1.0)',
+      'basis_1[int(0)] += vec3(uv, 1.0)',
+      'basis_1[1].y *= 2.0',
+      'packed_2 = mat2(1.0, 0.0, 0.0, 1.0)',
+      'packed_2[1] -= vec2(0.5, 0.5)',
+      'ret = (basis_1 * vec3(uv * packed_2, 1.0))',
+    ]);
+    const basis = env.values.get('basis_1');
+    expect(basis?.kind).toBe('mat3');
+    // Column 0 is the sum, not the bare vec3 that was assigned. TSL hands
+    // an operator result back wrapped in a VarNode; the operator sits on the
+    // wrapped node.
+    expect(basis?.columns?.[0]?.node?.op).toBe('+');
+    expect(env.values.get('packed_2')?.kind).toBe('mat2');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+  });
+
   test('ignores an element write past the matrix size instead of corrupting it', () => {
     const env = runBody([
       'basis_1 = mat3(0.0)',
