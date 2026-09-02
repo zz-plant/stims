@@ -59,12 +59,35 @@ export interface RampRequest {
   from?: Record<string, number>;
 }
 
+/**
+ * How a ramp reached its destination.
+ *
+ * - `glided`   — travelled through intermediate values, as asked.
+ * - `instant`  — `durationMs: 0`, a deliberate immediate set.
+ * - `starved`  — the rAF loop ran, but its first frame arrived after the whole
+ *                duration had elapsed, so there was nothing left to travel and
+ *                the value snapped. The watchdog was not involved.
+ * - `watchdog` — rAF never fired at all (a hidden tab throttles it), and the
+ *                timer landed the value.
+ *
+ * `starved` and `watchdog` are both failures to glide but have different
+ * causes and different fixes, so they are reported separately rather than
+ * collapsed into one flag.
+ */
+export type RampLanding = 'glided' | 'instant' | 'starved' | 'watchdog';
+
 export interface RampResult {
   targets: string[];
   durationMs: number;
   curve: RampCurve;
   steps: number;
-  /** True when the rAF loop was throttled and the watchdog landed the value. */
+  /** Why the gesture ended the way it did. */
+  landing: RampLanding;
+  /**
+   * True when the ramp did not glide — `starved` or `watchdog`. Kept as the
+   * one-bit summary callers had before `landing` existed; read `landing` when
+   * the cause matters.
+   */
   forcedLanding: boolean;
   final: Record<string, number>;
 }
@@ -192,13 +215,13 @@ export function getCps(): number | null {
  * visible to the user), and a ramp that silently stalls mid-travel would
  * leave the instrument in a half-state with no error.
  *
- * `forcedLanding` reports that the gesture did not glide — it arrived at the
- * destination without passing through it. Two things cause that, and they are
- * the same fact to a caller: the watchdog had to land the value because rAF
- * never fired, or the first frame arrived after the whole duration had already
- * elapsed, so the ramp had nothing left to travel and snapped. The second case
- * used to report `forcedLanding: false`, claiming a healthy glide for what was
- * really a teleport under a starved main thread.
+ * `landing` reports how the gesture actually ended, and `forcedLanding` is the
+ * one-bit summary of it. Two distinct things stop a ramp gliding: the watchdog
+ * lands the value because rAF never fired, or rAF fires but its first frame
+ * arrives after the whole duration has elapsed, leaving nothing to travel. The
+ * second used to report `forcedLanding: false`, claiming a healthy glide for
+ * what was really a teleport under a starved main thread — and the two have
+ * different causes, so `landing` keeps them apart.
  */
 export function ramp(request: RampRequest): Promise<RampResult> {
   const { setTarget } = requireDeps();
@@ -238,20 +261,28 @@ export function ramp(request: RampRequest): Promise<RampResult> {
       }
     };
 
-    const finish = (forcedLanding: boolean) => {
+    const finish = (byWatchdog: boolean) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(watchdog);
       apply(1);
+      // A ramp that never got a frame inside its own window did not glide,
+      // however it was landed. `durationMs === 0` is its own case: an instant
+      // set is a deliberate request, not a starved gesture.
+      const landing: RampLanding = byWatchdog
+        ? 'watchdog'
+        : durationMs === 0
+          ? 'instant'
+          : glided
+            ? 'glided'
+            : 'starved';
       resolve({
         targets: plan.map((leg) => leg.target),
         durationMs,
         curve,
         steps,
-        // A ramp that never got a frame inside its own window did not glide,
-        // however it was landed. `durationMs === 0` is excluded because an
-        // instant set is a deliberate request, not a starved gesture.
-        forcedLanding: forcedLanding || (durationMs > 0 && !glided),
+        landing,
+        forcedLanding: landing === 'starved' || landing === 'watchdog',
         final: Object.fromEntries(plan.map((leg) => [leg.target, leg.to])),
       });
     };

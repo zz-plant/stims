@@ -204,10 +204,17 @@ export function registerPerformanceTools(
                 .map(([k, v]) => `${k}=${v}`)
                 .join(', ')
             : '';
+        // Named per cause, not per flag. These two both mean "it did not
+        // glide", but they are different faults with different fixes, and
+        // reporting a starved frame loop as a hidden tab sends the reader
+        // looking in the wrong place.
+        const landing = 'landing' in result ? result.landing : null;
         const forced =
-          'forcedLanding' in result && result.forcedLanding
-            ? '\nNote: the frame loop was throttled (hidden tab), so the values were landed by the watchdog rather than glided. The endpoint is correct; the motion was not smooth.'
-            : '';
+          landing === 'watchdog'
+            ? '\nNote: the frame loop never ran (a hidden tab throttles it), so the values were landed by the watchdog rather than glided. The endpoint is correct; the motion was not smooth.'
+            : landing === 'starved'
+              ? '\nNote: the frame loop ran but its first frame arrived after the ramp window had already closed, so the values snapped to the endpoint rather than gliding. The endpoint is correct; the motion was not smooth. A longer durationMs, or less load on the main thread, would let it glide.'
+              : '';
         return asTextResponse(
           `Ramped over ${durationMs}ms (${'curve' in result ? result.curve : 'sine'}, ${'steps' in result ? result.steps : 0} frames). Landed: ${landed}.${forced}`,
         );
