@@ -1,33 +1,38 @@
 /* global WebSocketPair, crypto */
 
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
-import { CfWorkerJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/cfworker-provider.js';
+import {
+  createMcpHandler,
+  type JSONRPCMessage,
+  type Transport,
+} from '@modelcontextprotocol/server';
+import { CfWorkerJsonSchemaValidator } from '@modelcontextprotocol/server/validators/cf-worker';
 import { createMcpServer } from './mcp-shared.ts';
 
 const MCP_PATH = '/mcp';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+  // Mcp-Method / Mcp-Name are the 2026-07-28 routing headers; the session
+  // headers stay for 2025-era clients served by the stateless legacy leg.
   'Access-Control-Allow-Headers':
-    'Content-Type,mcp-session-id,Last-Event-ID,mcp-protocol-version',
+    'Content-Type,mcp-session-id,Last-Event-ID,mcp-protocol-version,Mcp-Method,Mcp-Name',
   'Access-Control-Expose-Headers': 'mcp-session-id,mcp-protocol-version',
 };
 
 const validator = new CfWorkerJsonSchemaValidator();
 
-const httpTransport = new WebStandardStreamableHTTPServerTransport({
-  sessionIdGenerator: () => crypto.randomUUID(),
-});
-
-const httpServer = createMcpServer({
-  jsonSchemaValidator: validator,
-  instructions:
-    'Use the HTTP or WebSocket endpoint to access documentation, toy metadata, loader behavior, and development commands for the Stim Webtoys library.',
-});
-
-const httpServerReady = httpServer.connect(httpTransport);
+// One fresh McpServer per HTTP request: the 2026-07-28 transport is
+// stateless by design (no session affinity, so any isolate can answer), and
+// 2025-era clients fall through to the SDK's stateless legacy leg with the
+// same factory. Every tool here is a pure read over bundled docs/metadata,
+// so nothing was ever stored on the old sessionful transport.
+const httpHandler = createMcpHandler(() =>
+  createMcpServer({
+    jsonSchemaValidator: validator,
+    instructions:
+      'Use the HTTP or WebSocket endpoint to access documentation, toy metadata, loader behavior, and development commands for the Stim Webtoys library.',
+  }),
+);
 
 class WorkerWebSocketTransport implements Transport {
   onclose?: () => void;
@@ -111,8 +116,7 @@ class WorkerWebSocketTransport implements Transport {
 }
 
 async function handleHttp(request: Request) {
-  await httpServerReady;
-  const response = await httpTransport.handleRequest(request);
+  const response = await httpHandler.fetch(request);
 
   const headers = new Headers(response.headers);
 

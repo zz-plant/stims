@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Runs post-install setup: the resvg WASM sync, Husky hooks, and the
+ * Runs post-install setup: the resvg WASM sync, lefthook git hooks, and the
  * Cloudflare Pages build of dist/.
  *
  * Each step is skipped where it does not apply — STIMS_SKIP_POSTINSTALL_BUILD=1
@@ -17,7 +17,7 @@ const isCloudflarePages = (() => {
   return value === '1' || value === 'true';
 })();
 const skipCloudflareBuild = process.env.STIMS_SKIP_POSTINSTALL_BUILD === '1';
-const isCI = process.env.CI === 'true' || process.env.HUSKY === '0';
+const isCI = process.env.CI === 'true' || process.env.LEFTHOOK === '0';
 
 const run = (command) => {
   execSync(command, { stdio: 'inherit' });
@@ -66,11 +66,11 @@ if (isCloudflarePages) {
 }
 
 if (isCI || isCloudflarePages) {
-  console.log('[postinstall] Husky install skipped (CI/CF Pages).');
+  console.log('[postinstall] lefthook install skipped (CI/CF Pages).');
 } else if (isBunUserAgent) {
-  run('husky');
+  run('bunx lefthook install');
 } else {
   console.log(
-    '[postinstall] Husky install skipped (Bun not detected as installer).',
+    '[postinstall] lefthook install skipped (Bun not detected as installer).',
   );
 }

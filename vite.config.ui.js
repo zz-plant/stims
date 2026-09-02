@@ -19,7 +19,7 @@ export default defineConfig({
   build: {
     outDir: 'dist-ui',
     target: 'es2020',
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.resolve(rootDir, 'ui-harness.html'),
       },
