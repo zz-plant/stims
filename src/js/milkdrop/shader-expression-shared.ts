@@ -1,5 +1,8 @@
 export type MilkdropShaderValueKind = 'scalar' | 'vec2' | 'vec3' | 'vec4';
 
+/** Value kinds the WebGPU node executor adds on top of the scalar/vector set. */
+export type MilkdropShaderMatrixKind = 'mat2' | 'mat3' | 'mat4';
+
 export type MilkdropShaderConstructorPattern =
   | 'vec2-pair'
   | 'vec2-splat'
@@ -16,7 +19,17 @@ export type MilkdropShaderConstructorPattern =
   | 'vec4-vec2-vec2'
   | 'vec4-copy'
   | 'mat2-quad'
-  | 'mat2-pair';
+  | 'mat2-pair'
+  | 'mat2-splat'
+  | 'mat2-copy'
+  | 'mat3-nine'
+  | 'mat3-triple'
+  | 'mat3-splat'
+  | 'mat3-copy'
+  | 'mat4-sixteen'
+  | 'mat4-quad'
+  | 'mat4-splat'
+  | 'mat4-copy';
 
 /**
  * Fast case-insensitive check that avoids creating a new string when the
@@ -64,7 +77,7 @@ export function normalizeMilkdropShaderCallName(value: string) {
 
 export function resolveMilkdropShaderConstructorPattern(
   name: string,
-  argKinds: MilkdropShaderValueKind[],
+  argKinds: Array<MilkdropShaderValueKind | MilkdropShaderMatrixKind>,
 ): MilkdropShaderConstructorPattern | null {
   let normalizedName: string;
   if (isLowerAlphaEquals(name, 'float2')) {
@@ -149,6 +162,45 @@ export function resolveMilkdropShaderConstructorPattern(
     }
     if (argKinds[0] === 'vec2' && argKinds[1] === 'vec2') {
       return 'mat2-pair';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'scalar') {
+      return 'mat2-splat';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'mat2') {
+      return 'mat2-copy';
+    }
+  }
+
+  // GLSL matrix constructors are column-major: `mat3(a, b, c, d, e, f, g, h,
+  // i)` fills column 0 with (a, b, c). `matN(s)` is the diagonal matrix, and
+  // `matN(vecN, ...)` takes one column per argument.
+  if (isLowerAlphaEquals(normalizedName, 'mat3')) {
+    if (argKinds.length === 9 && argKinds.every((kind) => kind === 'scalar')) {
+      return 'mat3-nine';
+    }
+    if (argKinds.length === 3 && argKinds.every((kind) => kind === 'vec3')) {
+      return 'mat3-triple';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'scalar') {
+      return 'mat3-splat';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'mat3') {
+      return 'mat3-copy';
+    }
+  }
+
+  if (isLowerAlphaEquals(normalizedName, 'mat4')) {
+    if (argKinds.length === 16 && argKinds.every((kind) => kind === 'scalar')) {
+      return 'mat4-sixteen';
+    }
+    if (argKinds.length === 4 && argKinds.every((kind) => kind === 'vec4')) {
+      return 'mat4-quad';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'scalar') {
+      return 'mat4-splat';
+    }
+    if (argKinds.length === 1 && argKinds[0] === 'mat4') {
+      return 'mat4-copy';
     }
   }
 
