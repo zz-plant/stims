@@ -29,6 +29,7 @@ flowchart LR
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
   Arch --> A4["architecture/fallback-state-machine.md<br/>renderer capability contract"]
   Arch --> A5["RUNTIME_PERFORMANCE.md<br/>FPS evidence + reproduction"]
+  Arch --> A6["architecture/architectural-changes-proposal-2026-09.md<br/>seam contracts + boundary guard proposal"]
 
   Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
@@ -75,6 +76,7 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | 🎯 [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
 | 🔍 [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |
 | 📐 [**Rasterization Fidelity Audit**](./architecture/rasterization-fidelity-audit.md) | WebGL vs WebGPU output divergence across waves, shapes, and borders |
+| 🧭 [**Architectural Changes Proposal (2026-09)**](./architecture/architectural-changes-proposal-2026-09.md) | Measured proposal to type the engine seam, enforce the frontend → engine boundary, unify catalog projections, decompose the shell, and reshape the engine directory |
 
 ---
 
