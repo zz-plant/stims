@@ -129,6 +129,7 @@ const {
   log,
   log2,
   mat3,
+  mat4,
   max,
   min,
   mix,
@@ -474,8 +475,15 @@ function createPresentOutputNode(
 }
 
 type ShaderNodeValue = {
-  kind: 'scalar' | 'vec2' | 'vec3' | 'vec4' | 'mat2';
+  kind: 'scalar' | 'vec2' | 'vec3' | 'vec4' | 'mat2' | 'mat3' | 'mat4';
   node: any;
+  /**
+   * `mat3`/`mat4` only: the column vectors the matrix was built from, so
+   * element reads and writes are swizzles on a vec3/vec4 instead of dynamic
+   * indexing into the matrix node. `node` is the assembled TSL matrix for
+   * anything that consumes the value whole.
+   */
+  columns?: any[];
 };
 
 type ShaderBinaryOperator =
@@ -682,6 +690,296 @@ function resolveShaderIndexExpression(
   return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
+type ShaderLargeMatrixKind = 'mat3' | 'mat4';
+
+function isShaderMatrixKind(
+  kind: ShaderNodeValue['kind'],
+): kind is 'mat2' | ShaderLargeMatrixKind {
+  return kind === 'mat2' || kind === 'mat3' || kind === 'mat4';
+}
+
+function isShaderLargeMatrixKind(
+  kind: ShaderNodeValue['kind'],
+): kind is ShaderLargeMatrixKind {
+  return kind === 'mat3' || kind === 'mat4';
+}
+
+function shaderMatrixSize(kind: 'mat2' | ShaderLargeMatrixKind): number {
+  return kind === 'mat2' ? 2 : kind === 'mat3' ? 3 : 4;
+}
+
+function shaderMatrixColumnKind(kind: ShaderLargeMatrixKind): 'vec3' | 'vec4' {
+  return kind === 'mat3' ? 'vec3' : 'vec4';
+}
+
+const MATRIX_COMPONENT_INDEX: Record<string, number> = {
+  x: 0,
+  r: 0,
+  y: 1,
+  g: 1,
+  z: 2,
+  b: 2,
+  w: 3,
+  a: 3,
+};
+
+/**
+ * A mat3/mat4 is carried as its column vectors plus the assembled TSL matrix
+ * node. The columns are what element access works on — `M[i]` is a column
+ * read, `M[i].y = s` is a component write on one column — and the node is
+ * what a consumer that wants the whole matrix (a `mix`, a uniform-style
+ * copy) gets. GLSL and WGSL both construct matrices column by column, so
+ * `mat3(c0, c1, c2)` is the same shape on either backend.
+ */
+function shaderMatrix(kind: ShaderLargeMatrixKind, columns: any[]) {
+  const value = makeShaderValue(
+    kind,
+    kind === 'mat3'
+      ? mat3(columns[0], columns[1], columns[2])
+      : mat4(columns[0], columns[1], columns[2], columns[3]),
+  );
+  value.columns = columns;
+  return value;
+}
+
+/** Column vectors of a mat3/mat4 value, reading them off the node if the
+ * value was assembled somewhere that did not keep them (a `mix` of two
+ * matrices, for instance). */
+function shaderMatrixColumns(value: ShaderNodeValue): any[] {
+  if (value.columns) {
+    return value.columns;
+  }
+  const size = shaderMatrixSize(value.kind as ShaderLargeMatrixKind);
+  return Array.from({ length: size }, (_, index) =>
+    value.node.element(int(index)),
+  );
+}
+
+function shaderMatrixColumn(value: ShaderNodeValue, index: number) {
+  return makeShaderValue(
+    shaderMatrixColumnKind(value.kind as ShaderLargeMatrixKind),
+    shaderMatrixColumns(value)[index],
+  );
+}
+
+function shaderMatrixFromNode(kind: ShaderLargeMatrixKind, node: any) {
+  return makeShaderValue(kind, node);
+}
+
+/** `matN(s)`: `s` down the diagonal, zero elsewhere — so `mat3(0.0)` is the
+ * zero matrix a bare declaration is seeded with. */
+function diagonalShaderMatrix(kind: ShaderLargeMatrixKind, scalar: any) {
+  const size = shaderMatrixSize(kind);
+  const zero = float(0);
+  const columns = Array.from({ length: size }, (_, column) => {
+    const components = Array.from({ length: size }, (_, row) =>
+      row === column ? scalar : zero,
+    );
+    return size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  });
+  return shaderMatrix(kind, columns);
+}
+
+function coerceToShaderMatrix(
+  value: ShaderNodeValue,
+  kind: ShaderLargeMatrixKind,
+): ShaderNodeValue {
+  if (value.kind === kind) {
+    return value;
+  }
+  if (isShaderMatrixKind(value.kind)) {
+    // GLSL `mat4(mat3)` / `mat3(mat4)`: copy the overlapping block, pad the
+    // rest from the identity.
+    const size = shaderMatrixSize(kind);
+    const sourceSize = shaderMatrixSize(value.kind);
+    const sourceColumns =
+      value.kind === 'mat2'
+        ? [shaderMat2Column(value, 0).node, shaderMat2Column(value, 1).node]
+        : shaderMatrixColumns(value);
+    const columns = Array.from({ length: size }, (_, column) => {
+      const components = Array.from({ length: size }, (_, row) => {
+        if (column < sourceSize && row < sourceSize) {
+          const source = sourceColumns[column];
+          return row === 0
+            ? source.x
+            : row === 1
+              ? source.y
+              : row === 2
+                ? source.z
+                : source.w;
+        }
+        return float(row === column ? 1 : 0);
+      });
+      return size === 3
+        ? vec3(components[0], components[1], components[2])
+        : vec4(components[0], components[1], components[2], components[3]);
+    });
+    return shaderMatrix(kind, columns);
+  }
+  return diagonalShaderMatrix(kind, coerceShaderValue(value, 'scalar').node);
+}
+
+/** `M[i] = v` on a mat3/mat4 — replace one column. */
+function setMatrixColumn(
+  kind: ShaderLargeMatrixKind,
+  value: ShaderNodeValue | null,
+  index: number,
+  nextValue: ShaderNodeValue,
+): ShaderNodeValue {
+  const base = value
+    ? coerceToShaderMatrix(value, kind)
+    : diagonalShaderMatrix(kind, float(0));
+  const columns = [...shaderMatrixColumns(base)];
+  columns[index] = coerceShaderValue(
+    nextValue,
+    shaderMatrixColumnKind(kind),
+  ).node;
+  return shaderMatrix(kind, columns);
+}
+
+/** `M[i].y = s` on a mat3/mat4 — mutate one component of one column. */
+function setMatrixComponent(
+  kind: ShaderLargeMatrixKind,
+  value: ShaderNodeValue | null,
+  index: number,
+  component: number,
+  nextValue: ShaderNodeValue,
+): ShaderNodeValue {
+  const base = value
+    ? coerceToShaderMatrix(value, kind)
+    : diagonalShaderMatrix(kind, float(0));
+  const columns = [...shaderMatrixColumns(base)];
+  const columnNode = columns[index].toVar();
+  const assigned = coerceShaderValue(nextValue, 'scalar').node;
+  const target =
+    component === 0
+      ? columnNode.x
+      : component === 1
+        ? columnNode.y
+        : component === 2
+          ? columnNode.z
+          : columnNode.w;
+  target.assign(assigned);
+  columns[index] =
+    kind === 'mat3'
+      ? vec3(columnNode.x, columnNode.y, columnNode.z)
+      : vec4(columnNode.x, columnNode.y, columnNode.z, columnNode.w);
+  return shaderMatrix(kind, columns);
+}
+
+function transposeShaderMatrix(value: ShaderNodeValue): ShaderNodeValue {
+  const kind = value.kind as ShaderLargeMatrixKind;
+  const size = shaderMatrixSize(kind);
+  const columns = shaderMatrixColumns(value);
+  const component = (node: any, row: number) =>
+    row === 0 ? node.x : row === 1 ? node.y : row === 2 ? node.z : node.w;
+  const transposed = Array.from({ length: size }, (_, column) => {
+    const components = Array.from({ length: size }, (_, row) =>
+      component(columns[row], column),
+    );
+    return size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  });
+  return shaderMatrix(kind, transposed);
+}
+
+/**
+ * Column-major matrix arithmetic for mat3/mat4, written out on the columns
+ * rather than handed to TSL's operator nodes: `vec * mat` (the row-vector
+ * product MilkDrop's transpiled bodies use for rotations — `(p / q7) *
+ * tmpvar_1`) has no single TSL operator, and spelling every case the same
+ * way keeps the two backends' semantics identical by construction.
+ */
+function applyShaderMatrixBinaryNode(
+  operator: ShaderBinaryOperator,
+  left: ShaderNodeValue,
+  right: ShaderNodeValue,
+): ShaderNodeValue {
+  const kind = (
+    isShaderLargeMatrixKind(left.kind) ? left.kind : right.kind
+  ) as ShaderLargeMatrixKind;
+  const size = shaderMatrixSize(kind);
+  const columnKind = shaderMatrixColumnKind(kind);
+  const buildColumn = (components: any[]) =>
+    size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  const component = (node: any, row: number) =>
+    row === 0 ? node.x : row === 1 ? node.y : row === 2 ? node.z : node.w;
+  const matrixTimesVector = (columns: any[], vector: any) =>
+    columns
+      .slice(1)
+      .reduce(
+        (sum, column, index) =>
+          sum.add(column.mul(component(vector, index + 1))),
+        columns[0].mul(component(vector, 0)),
+      );
+
+  if (operator === '*') {
+    if (isShaderMatrixKind(left.kind) && isShaderMatrixKind(right.kind)) {
+      // Either side may still be a mat2; coerceToShaderMatrix pads it.
+      const a = shaderMatrixColumns(coerceToShaderMatrix(left, kind));
+      const b = shaderMatrixColumns(coerceToShaderMatrix(right, kind));
+      return shaderMatrix(
+        kind,
+        b.map((column) => matrixTimesVector(a, column)),
+      );
+    }
+    if (isShaderLargeMatrixKind(left.kind) && right.kind !== 'scalar') {
+      // M * v: sum of columns weighted by v's components.
+      const v = coerceShaderValue(right, columnKind).node;
+      return makeShaderValue(
+        columnKind,
+        matrixTimesVector(shaderMatrixColumns(left), v),
+      );
+    }
+    if (isShaderLargeMatrixKind(right.kind) && left.kind !== 'scalar') {
+      // v * M: one dot product per column.
+      const v = coerceShaderValue(left, columnKind).node;
+      return makeShaderValue(
+        columnKind,
+        buildColumn(shaderMatrixColumns(right).map((column) => dot(v, column))),
+      );
+    }
+    const matrix = isShaderLargeMatrixKind(left.kind) ? left : right;
+    const scalar = coerceShaderValue(
+      isShaderLargeMatrixKind(left.kind) ? right : left,
+      'scalar',
+    ).node;
+    return shaderMatrix(
+      kind,
+      shaderMatrixColumns(matrix).map((column) => column.mul(scalar)),
+    );
+  }
+  if (
+    operator === '/' &&
+    isShaderLargeMatrixKind(left.kind) &&
+    !isShaderMatrixKind(right.kind)
+  ) {
+    const divisor = createSafeDivisorNode(
+      coerceShaderValue(right, 'scalar').node,
+    );
+    return shaderMatrix(
+      kind,
+      shaderMatrixColumns(left).map((column) => column.div(divisor)),
+    );
+  }
+  if (operator === '+' || operator === '-') {
+    const a = shaderMatrixColumns(coerceToShaderMatrix(left, kind));
+    const b = shaderMatrixColumns(coerceToShaderMatrix(right, kind));
+    return shaderMatrix(
+      kind,
+      a.map((column, index) =>
+        operator === '+' ? column.add(b[index]) : column.sub(b[index]),
+      ),
+    );
+  }
+  return left;
+}
+
 /** mat2 * v and v * mat2 and mat2 * mat2 column-major products. */
 function multiplyMat2(
   operator: '*' | '/' | '%',
@@ -722,6 +1020,12 @@ function shaderValueFromNode(node: any, kind: ShaderNodeValue['kind']) {
   if (kind === 'scalar') {
     return shaderFloat(node);
   }
+  if (kind === 'mat3' || kind === 'mat4') {
+    return shaderMatrixFromNode(kind, node);
+  }
+  if (kind === 'mat2') {
+    return makeShaderValue('mat2', node);
+  }
   if (kind === 'vec2') {
     return makeShaderValue('vec2', node);
   }
@@ -758,7 +1062,7 @@ function resolveShaderSwizzle(
   components: DirectShaderSwizzleComponent[];
 } | null {
   if (kind === 'scalar') return null;
-  if (kind === 'mat2') return null;
+  if (isShaderMatrixKind(kind)) return null;
   if (kind !== 'vec4') {
     return resolveDirectShaderSwizzle(kind, property);
   }
@@ -842,6 +1146,22 @@ function coerceShaderValue(
   if (value.kind === target) {
     return value;
   }
+  if (target === 'mat3' || target === 'mat4') {
+    return coerceToShaderMatrix(value, target);
+  }
+  if (isShaderLargeMatrixKind(value.kind)) {
+    if (target === 'mat2') {
+      // GLSL `mat2(mat3)`: the top-left block.
+      const columns = shaderMatrixColumns(value);
+      return shaderMat2(
+        shaderVec2(columns[0].x, columns[0].y),
+        shaderVec2(columns[1].x, columns[1].y),
+      );
+    }
+    // A matrix where a vector is wanted: its first column, which is what the
+    // mat2 path below does through its vec4 packing.
+    return coerceShaderValue(shaderMatrixColumn(value, 0), target);
+  }
   if (target === 'mat2') {
     if (value.kind === 'vec4') {
       return makeShaderValue('mat2', value.node);
@@ -889,6 +1209,12 @@ function getShaderResultKind(
   left: ShaderNodeValue,
   right: ShaderNodeValue,
 ): ShaderNodeValue['kind'] {
+  if (isShaderLargeMatrixKind(left.kind)) {
+    return left.kind;
+  }
+  if (isShaderLargeMatrixKind(right.kind)) {
+    return right.kind;
+  }
   if (left.kind === 'mat2' || right.kind === 'mat2') {
     return 'mat2';
   }
@@ -978,6 +1304,13 @@ function applyShaderBinaryNode(
         ? leftBool.mul(rightBool)
         : min(float(1), leftBool.add(rightBool)),
     );
+  }
+
+  if (
+    isShaderLargeMatrixKind(left.kind) ||
+    isShaderLargeMatrixKind(right.kind)
+  ) {
+    return applyShaderMatrixBinaryNode(operator, left, right);
   }
 
   // mat2 arithmetic is column-major and never reduces to the generic
@@ -1378,14 +1711,59 @@ export function compileShaderExpressionNode(
     }
     case 'index': {
       const object = compileShaderExpressionNode(node.object, env);
-      if (object?.kind !== 'mat2') {
+      if (!object || object.kind === 'scalar') {
         return null;
       }
       const index = resolveShaderIndexExpression(node.index);
-      if (index === null || index > 1) {
+      if (index !== null) {
+        if (isShaderMatrixKind(object.kind)) {
+          if (index >= shaderMatrixSize(object.kind)) {
+            return null;
+          }
+          return object.kind === 'mat2'
+            ? shaderMat2Column(object, index)
+            : shaderMatrixColumn(object, index);
+        }
+        const component = (['x', 'y', 'z', 'w'] as const)[index];
+        return component
+          ? buildDirectShaderSwizzleValue(object, component)
+          : null;
+      }
+      // A runtime index — `mat4(...)[int(mod(p.y, 4.0))][int(mod(p.x, 4.0))]`
+      // in martin-city-of-shadows — has no column to pick at build time, so
+      // it goes through TSL's element access, which both backends support on
+      // vectors and on matrix columns. The index is clamped the way WGSL
+      // clamps it; GLSL leaves an out-of-range read undefined, so no preset
+      // can depend on it either way.
+      const runtimeIndex = compileShaderExpressionNode(node.index, env);
+      if (!runtimeIndex) {
         return null;
       }
-      return shaderMat2Column(object, index);
+      const indexNode: any = int(
+        coerceShaderValue(runtimeIndex, 'scalar').node,
+      );
+      if (object.kind === 'mat2') {
+        // Packed as a vec4: column i is components (2i, 2i + 1).
+        const column = indexNode.clamp(int(0), int(1));
+        const packed = object.node;
+        return shaderVec2(
+          packed.element(column.mul(int(2))),
+          packed.element(column.mul(int(2)).add(int(1))),
+        );
+      }
+      const size = isShaderLargeMatrixKind(object.kind)
+        ? shaderMatrixSize(object.kind)
+        : object.kind === 'vec4'
+          ? 4
+          : object.kind === 'vec3'
+            ? 3
+            : 2;
+      const element = object.node.element(
+        indexNode.clamp(int(0), int(size - 1)),
+      );
+      return isShaderLargeMatrixKind(object.kind)
+        ? makeShaderValue(shaderMatrixColumnKind(object.kind), element)
+        : shaderFloat(element);
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -1508,6 +1886,59 @@ export function compileShaderExpressionNode(
           coerceShaderValue(args[0], 'vec2'),
           coerceShaderValue(args[1], 'vec2'),
         );
+      }
+      if (constructorPattern === 'mat2-splat') {
+        return coerceShaderValue(args[0], 'mat2');
+      }
+      if (constructorPattern === 'mat2-copy') {
+        return args[0];
+      }
+      if (constructorPattern === 'mat3-nine') {
+        const s = args.map((arg) => coerceShaderValue(arg, 'scalar').node);
+        return shaderMatrix('mat3', [
+          vec3(s[0], s[1], s[2]),
+          vec3(s[3], s[4], s[5]),
+          vec3(s[6], s[7], s[8]),
+        ]);
+      }
+      if (constructorPattern === 'mat3-triple') {
+        return shaderMatrix(
+          'mat3',
+          args.map((arg) => coerceShaderValue(arg, 'vec3').node),
+        );
+      }
+      if (constructorPattern === 'mat3-splat') {
+        return diagonalShaderMatrix(
+          'mat3',
+          coerceShaderValue(args[0], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'mat4-sixteen') {
+        const s = args.map((arg) => coerceShaderValue(arg, 'scalar').node);
+        return shaderMatrix('mat4', [
+          vec4(s[0], s[1], s[2], s[3]),
+          vec4(s[4], s[5], s[6], s[7]),
+          vec4(s[8], s[9], s[10], s[11]),
+          vec4(s[12], s[13], s[14], s[15]),
+        ]);
+      }
+      if (constructorPattern === 'mat4-quad') {
+        return shaderMatrix(
+          'mat4',
+          args.map((arg) => coerceShaderValue(arg, 'vec4').node),
+        );
+      }
+      if (constructorPattern === 'mat4-splat') {
+        return diagonalShaderMatrix(
+          'mat4',
+          coerceShaderValue(args[0], 'scalar').node,
+        );
+      }
+      if (
+        constructorPattern === 'mat3-copy' ||
+        constructorPattern === 'mat4-copy'
+      ) {
+        return args[0];
       }
       // MilkDrop 2 preamble helpers — see the matching GLSL emitter case in
       // compiler/shader-analysis-glsl.ts. Bodies call these without defining
@@ -2014,6 +2445,15 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'mul' && args.length >= 2) {
+        // HLSL mul(a, b) is the matrix product when either side is a matrix
+        // (mul(v, M) is the row-vector form); the normalizer leaves it as a
+        // call, so route it through the same column-major arithmetic as `*`.
+        if (
+          isShaderMatrixKind(args[0].kind) ||
+          isShaderMatrixKind(args[1].kind)
+        ) {
+          return applyShaderBinaryNode('*', args[0], args[1]);
+        }
         const resultKind = getShaderResultKind(args[0], args[1]);
         return shaderValueFromNode(
           coerceShaderValue(args[0], resultKind).node.mul(
@@ -2023,6 +2463,19 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'transpose' && args.length >= 1) {
+        if (isShaderLargeMatrixKind(args[0].kind)) {
+          return transposeShaderMatrix(args[0]);
+        }
+        if (args[0].kind === 'mat2') {
+          // Packed as a vec4 of columns, so TSL's transpose would be applied
+          // to a vector; swap the off-diagonal components instead.
+          const c0 = shaderMat2Column(args[0], 0);
+          const c1 = shaderMat2Column(args[0], 1);
+          return shaderMat2(
+            shaderVec2(c0.node.x, c1.node.x),
+            shaderVec2(c0.node.y, c1.node.y),
+          );
+        }
         return shaderValueFromNode(transpose(args[0].node), args[0].kind);
       }
       if (name === 'float' && args.length >= 1) {
@@ -2081,30 +2534,52 @@ function assignShaderTarget(
     const matrixValue = getShaderEnvValue(env, matrixName, {
       bindPerFrameVariable: false,
     });
+    // The matrix's size comes from the value already in the env: shader
+    // analysis seeds every bare `matN name;` declaration with `name =
+    // matN(0.0)`, so the first element write finds the right kind waiting.
+    // A write with nothing seeded is treated as the mat2 it always was.
+    const matrixKind =
+      matrixValue && isShaderMatrixKind(matrixValue.kind)
+        ? matrixValue.kind
+        : 'mat2';
+    if (index >= shaderMatrixSize(matrixKind)) {
+      return;
+    }
     if (segments.length === 1) {
       setShaderEnvValue(
         env,
         matrixName,
-        setMat2Column(matrixValue, index, nextValue),
+        matrixKind === 'mat2'
+          ? setMat2Column(matrixValue, index, nextValue)
+          : setMatrixColumn(matrixKind, matrixValue, index, nextValue),
       );
       return;
     }
     const property = segments[1]?.toLowerCase();
-    if (
-      !property ||
-      !(
-        property === 'x' ||
-        property === 'y' ||
-        property === 'r' ||
-        property === 'g'
-      )
-    ) {
+    const component =
+      property && property.length === 1
+        ? MATRIX_COMPONENT_INDEX[property]
+        : undefined;
+    if (component === undefined || component >= shaderMatrixSize(matrixKind)) {
       return;
     }
     setShaderEnvValue(
       env,
       matrixName,
-      setMat2Component(matrixValue, index, property, nextValue),
+      matrixKind === 'mat2'
+        ? setMat2Component(
+            matrixValue,
+            index,
+            component === 0 ? 'x' : 'y',
+            nextValue,
+          )
+        : setMatrixComponent(
+            matrixKind,
+            matrixValue,
+            index,
+            component,
+            nextValue,
+          ),
     );
     return;
   }

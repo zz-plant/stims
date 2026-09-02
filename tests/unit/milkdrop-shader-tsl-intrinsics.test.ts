@@ -307,3 +307,126 @@ describe('milkdrop WebGPU TSL mat2 element writes', () => {
     expect(env.values.get('ret')?.kind).toBe('vec3');
   });
 });
+
+describe('milkdrop WebGPU TSL mat3/mat4 element writes', () => {
+  // A mat3/mat4 is carried as its column vectors (see shaderMatrix), so an
+  // element write is a swizzle on one column and a product is spelled out on
+  // the columns. Shader analysis seeds every bare `matN name;` declaration
+  // with `name = matN(0.0)`, which is how the executor learns the size before
+  // the first `name[int(0)].x = …` arrives; the bodies here start the same
+  // way. Every form comes from the bundled corpus: 20 presets build a mat3
+  // rotation from q20..q28 and apply it as `(p / q7) * M`.
+  function runBody(lines: string[]) {
+    const env = buildShaderEnv() as unknown as ShaderNodeEnv;
+    env.values.set('uv', { kind: 'vec2', node: vec2(0.25, 0.75) });
+    env.unresolvedNames = new Set<string>();
+    const statements = lines.map((line) => {
+      const statement = parseMilkdropShaderStatement(line);
+      if (!statement) {
+        throw new Error(`Failed to parse: ${line}`);
+      }
+      return statement;
+    });
+    const previous = getCurrentStack();
+    setCurrentStack(stack());
+    try {
+      runShaderProgram(statements, env);
+    } finally {
+      setCurrentStack(previous);
+    }
+    return env;
+  }
+
+  test('builds a mat3 component by component and applies it as a row-vector product', () => {
+    // martin-castle-in-the-air's warp body, reduced: nine element writes on
+    // the seeded matrix, then `(p / q7) * M` and a whole-matrix read.
+    const env = runBody([
+      'tmpvar_1 = mat3(0.0)',
+      'tmpvar_1[int(0)].x = q20',
+      'tmpvar_1[int(0)].y = q23',
+      'tmpvar_1[int(0)].z = q26',
+      'tmpvar_1[1].x = q21',
+      'tmpvar_1[1].y = q24',
+      'tmpvar_1[1].z = q27',
+      'tmpvar_1[2].x = q22',
+      'tmpvar_1[2].y = q25',
+      'tmpvar_1[2].z = q28',
+      'tmpvar_19 = vec3(uv, 0.5)',
+      'xlat_mutableuv2 = (((tmpvar_19 / q7) * tmpvar_1) + vec3(q4, q5, q6))',
+      'column_2 = tmpvar_1[1]',
+      'element_3 = tmpvar_1[2].y',
+      'ret = (xlat_mutableuv2 + (column_2 * element_3))',
+    ]);
+    expect(env.values.get('tmpvar_1')?.kind).toBe('mat3');
+    expect(env.values.get('tmpvar_1')?.columns).toHaveLength(3);
+    expect(env.values.get('xlat_mutableuv2')?.kind).toBe('vec3');
+    expect(env.values.get('column_2')?.kind).toBe('vec3');
+    expect(env.values.get('element_3')?.kind).toBe('scalar');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+    // Nothing fell back to a per-frame register: every name was resolved.
+    const bound = env.uniforms.perFrameVariables as Map<string, unknown>;
+    expect([...bound.keys()]).toEqual([]);
+  });
+
+  test('multiplies mat3 by vec3, mat3 by mat3 and by a scalar, and transposes', () => {
+    const env = runBody([
+      'rot_1 = mat3(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)',
+      'scale_2 = mat3(2.0)',
+      'combined_3 = (rot_1 * scale_2)',
+      'scaled_4 = (combined_3 * 0.5)',
+      'flipped_5 = transpose(scaled_4)',
+      'summed_6 = (flipped_5 + rot_1)',
+      'point_7 = (summed_6 * vec3(uv, 1.0))',
+      'hlsl_8 = mul(vec3(uv, 1.0), summed_6)',
+      'ret = (point_7 + hlsl_8)',
+    ]);
+    for (const name of [
+      'rot_1',
+      'scale_2',
+      'combined_3',
+      'scaled_4',
+      'flipped_5',
+      'summed_6',
+    ]) {
+      expect(env.values.get(name)?.kind).toBe('mat3');
+    }
+    expect(env.values.get('point_7')?.kind).toBe('vec3');
+    expect(env.values.get('hlsl_8')?.kind).toBe('vec3');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+  });
+
+  test('builds a mat4 from columns and reads a column at a runtime index', () => {
+    // martin-city-of-shadows indexes a constant mat4 with `int(mod(…))` on
+    // both axes; a column the executor cannot name at build time goes
+    // through element access instead of being dropped.
+    const env = runBody([
+      'basis_1 = mat4(0.0)',
+      'basis_1[int(0)] = vec4(1.0, 0.0, 0.0, 0.0)',
+      'basis_1[3].w = 1.0',
+      'cell_2 = (uv * 4.0)',
+      'mod1_3 = mat4(0.0, 0.9, 0.3, -1.2, 0.6, 0.0, -0.9, 0.3, 0.3, 0.3, 0.6, 0.6, -1.2, 1.5, -1.2, 0.0)[int(mod(cell_2.y, 4.0))][int(mod(cell_2.x, 4.0))]',
+      'column_4 = basis_1[int(mod(cell_2.x, 4.0))]',
+      'ret = (vec3(column_4.xyz) * mod1_3)',
+    ]);
+    expect(env.values.get('basis_1')?.kind).toBe('mat4');
+    expect(env.values.get('basis_1')?.columns).toHaveLength(4);
+    expect(env.values.get('mod1_3')?.kind).toBe('scalar');
+    expect(env.values.get('column_4')?.kind).toBe('vec4');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+    // The diagnostics set also records first-write base lookups by design;
+    // what must not happen is a name falling through to a per-frame register.
+    const bound = env.uniforms.perFrameVariables as Map<string, unknown>;
+    expect([...bound.keys()]).toEqual([]);
+  });
+
+  test('ignores an element write past the matrix size instead of corrupting it', () => {
+    const env = runBody([
+      'basis_1 = mat3(0.0)',
+      'basis_1[3].x = 1.0',
+      'basis_1[int(0)].w = 1.0',
+      'ret = (basis_1 * vec3(uv, 1.0))',
+    ]);
+    expect(env.values.get('basis_1')?.kind).toBe('mat3');
+    expect(env.values.get('ret')?.kind).toBe('vec3');
+  });
+});
