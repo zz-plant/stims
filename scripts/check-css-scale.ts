@@ -19,7 +19,15 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const CSS_ROOTS = ['src/css'];
+/**
+ * Directories to scan. Defaults to the app's stylesheets; a caller may pass
+ * roots as arguments, which is how the test suite runs this against fixtures
+ * rather than re-implementing the matching and drifting from it.
+ */
+const CSS_ROOTS =
+  process.argv.slice(2).filter((a) => !a.startsWith('-')).length > 0
+    ? process.argv.slice(2).filter((a) => !a.startsWith('-'))
+    : ['src/css'];
 
 /** Steps from the --radius-* ladder in tokens.css, in px. */
 const RADIUS_STEPS = new Set([0, 2, 4, 6, 10, 14, 20, 28, 999]);
@@ -92,18 +100,33 @@ function nearestOf(value: number, steps: Set<number>, unit: string): string {
 for (const file of CSS_ROOTS.flatMap((r) => walk(r))) {
   const lines = stripComments(readFileSync(file, 'utf8')).split('\n');
   lines.forEach((line, i) => {
-    // `border-radius: 12px`, and the shorthand's first value. Percentages
-    // (50% for circles) and var() references are left alone.
-    for (const m of line.matchAll(/border-radius:\s*([0-9.]+)px/g)) {
-      const raw = `${m[1]}px`;
-      if (RADIUS_STEPS.has(Number(m[1])) || isAllowed(file, raw)) continue;
-      offences.push({
-        file,
-        line: i + 1,
-        property: 'border-radius',
-        value: raw,
-        nearest: nearestOf(Number(m[1]), RADIUS_STEPS, 'px'),
-      });
+    // Every pixel literal in the declaration, not just one after the colon.
+    // `border-radius` takes up to eight values (four corners, optionally an
+    // elliptical second set after a slash), and a shorthand may lead with a
+    // token: `border-radius: var(--radius-xl) 18px 0 0` has an off-scale
+    // corner that a first-value-only check waves through — which is exactly
+    // what happened, in the same commit that added this file.
+    // Percentages (50% for circles) and var() references are left alone.
+    for (const decl of line.matchAll(/border-radius:\s*([^;{}]*)/g)) {
+      // A length inside calc() is an operand, not a corner: the concentric
+      // pattern `calc(var(--ctl-radius) - 3px)` derives an inner radius from
+      // the outer one, and the 3px is the gap between them. Blank those out
+      // rather than allowlisting each one — the derived value is on the scale
+      // by construction, because the token it is derived from is.
+      const value = decl[1].replace(/calc\(([^()]|\([^()]*\))*\)/g, (m) =>
+        ' '.repeat(m.length),
+      );
+      for (const m of value.matchAll(/(?<![\w.-])([0-9.]+)px/g)) {
+        const raw = `${m[1]}px`;
+        if (RADIUS_STEPS.has(Number(m[1])) || isAllowed(file, raw)) continue;
+        offences.push({
+          file,
+          line: i + 1,
+          property: 'border-radius',
+          value: raw,
+          nearest: nearestOf(Number(m[1]), RADIUS_STEPS, 'px'),
+        });
+      }
     }
     for (const m of line.matchAll(/font-size:\s*([0-9.]+)rem/g)) {
       const raw = `${m[1]}rem`;

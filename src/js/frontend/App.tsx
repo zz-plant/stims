@@ -387,6 +387,11 @@ function StimsWorkspaceAppShell() {
   const creditsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
+  // Read inside dismissBrowseHint below, which must keep a stable identity:
+  // it is handed to a lazy panel, and a new function each time a hint changes
+  // would re-render that panel for no reason.
+  const visibleHintRef = useRef(visibleHint);
+  visibleHintRef.current = visibleHint;
 
   // Stable identity matters here: SidePanel's open-effect keys off this
   // callback's reference (`[open, onOpen]`), so an inline arrow function
@@ -1201,23 +1206,17 @@ function StimsWorkspaceAppShell() {
   // as the action lands rather than sitting out its timer. "Tap a card to play
   // it" outliving the card you just tapped is the clearest case: the advice is
   // now describing something you have already done.
-  const activePresetId = engineSnapshot?.activePresetId ?? null;
-  // The preset that was playing when the browse hint appeared. Held in a ref
-  // so comparing against it does not itself schedule a render.
-  const hintPresetRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (visibleHint?.id !== 'browse-open') {
-      hintPresetRef.current = null;
-      return;
-    }
-    if (hintPresetRef.current === null) {
-      // The render that showed the hint. Remember what was playing then;
-      // only a *change* from here is the user acting on the advice.
-      hintPresetRef.current = activePresetId ?? '';
-      return;
-    }
-    if (hintPresetRef.current !== (activePresetId ?? '')) dismissHint();
-  }, [visibleHint, activePresetId, dismissHint]);
+  //
+  // Driven by the panel reporting a real choice, not by watching which preset
+  // is playing. That weaker signal moves on its own — the idle autoplay above
+  // starts the featured preset on arrival, and on a mobile or low-power
+  // `/discover/…` visit (no attract mode) it lands while the browse panel is
+  // open and nothing has been tapped. Since showing a hint also marks it seen
+  // for good, dismissing on that would have burned the guidance permanently,
+  // for exactly the visitors who most need it.
+  const dismissBrowseHint = useCallback(() => {
+    if (visibleHintRef.current?.id === 'browse-open') dismissHint();
+  }, [dismissHint]);
 
   useEffect(() => {
     if (
@@ -1614,6 +1613,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
               offline={offline}
+              onPresetChosen={dismissBrowseHint}
               sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
                 ui.commitRoute({ ...ui.routeState, collectionTag })
