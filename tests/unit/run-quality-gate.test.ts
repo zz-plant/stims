@@ -3,6 +3,7 @@ import {
   buildGatePlan,
   parseExecutionMode,
   parseMode,
+  parseSkipTests,
 } from '../../scripts/run-quality-gate.ts';
 
 test('quick gate defaults to parallel execution', () => {
@@ -42,6 +43,32 @@ test('full gate plan runs the gate test suite after the concurrent lane', () => 
   // Not test:fast — corpus carries the parity and golden-snapshot tests, and
   // running them only in CI let a compiler change pass here and fail on push.
   expect(plan.postflight[0].cmd).toContain('test:gate');
+});
+
+test('--no-tests drops the suite without touching the checks', () => {
+  expect(parseSkipTests([])).toBe(false);
+  expect(parseSkipTests(['--no-tests'])).toBe(true);
+
+  const full = buildGatePlan('full', 'parallel');
+  const withoutTests = buildGatePlan('full', 'parallel', true);
+
+  expect(withoutTests.postflight).toHaveLength(0);
+
+  // The point of the flag is to move the suite to another CI job, not to
+  // check less: every check the full gate runs must still run here.
+  expect(withoutTests.preflight.map((step) => step.label)).toEqual(
+    full.preflight.map((step) => step.label),
+  );
+  expect(withoutTests.concurrent.map((step) => step.label)).toEqual(
+    full.concurrent.map((step) => step.label),
+  );
+});
+
+test('the gate runs tests unless it is asked not to', () => {
+  // A local `bun run check` passes no flags, so the default must keep the
+  // suite: CI opting out must never become the behaviour everyone gets.
+  expect(buildGatePlan('full', 'parallel').postflight).toHaveLength(1);
+  expect(buildGatePlan('all', 'parallel').postflight).toHaveLength(1);
 });
 
 test('all gate plan runs the complete test suite after the concurrent lane', () => {
