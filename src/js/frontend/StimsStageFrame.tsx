@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PresetTransitionPhase } from './hooks/usePresetTransition.ts';
+import { StageSignalField } from './SignalField.tsx';
 
 export function StimsStageFrame({
   activePresetId,
@@ -26,6 +27,11 @@ export function StimsStageFrame({
         data-active-preset-id={activePresetId ?? undefined}
         data-mode={liveMode ? 'live' : 'home'}
       >
+        {/* Under the canvas, which is transparent wherever the preset draws
+            nothing. Home mode alone: in live mode a preset owns every pixel,
+            and the launch page is the one view that was left showing bare
+            frame background when attract mode had nothing to show. */}
+        {liveMode ? null : <StageSignalField />}
         <div
           id="stims-visualizer"
           ref={stageRef}
