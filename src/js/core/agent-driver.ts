@@ -147,9 +147,18 @@ async function waitForDriverHandle(
       return handle;
     }
     if (Date.now() >= deadline) {
+      // Says "timed out" deliberately. ready() arms two timeouts on the same
+      // deadline — the withTimeout() below and this poll — and whichever
+      // trips first is the error the caller sees. The old wording ("the
+      // handle never registered") described the same timeout in words that
+      // shared no phrase with the other path, so a caller could not match on
+      // one message and CI could not either: the ready() timeout test asserts
+      // /timed out/ and failed whenever contention let this branch win the
+      // race. Both branches now agree, so which timer wins stops mattering.
       throw new Error(
-        'stims.agent: the milkdrop runtime driver handle never registered ' +
-          '(the runtime may not have mounted, or agent mode is off).',
+        'stims.agent: timed out waiting for the milkdrop runtime driver ' +
+          'handle to register (the runtime may not have mounted, or agent ' +
+          'mode is off).',
       );
     }
     await sleep(100);

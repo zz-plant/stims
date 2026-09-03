@@ -74,8 +74,38 @@ jobs:
       - name: Audit dependencies
         run: bun audit --audit-level=high
 
+      # `--no-tests` leaves the checks and hands the gate test suite to the
+      # `gate-tests` job below. The two are independent, so running them in
+      # sequence here only made this job the workflow's critical path: it was
+      # the last job to finish on a normal run while four runners sat idle.
+      # Coverage is unchanged — the same `test:gate` runs over there, and
+      # `ci-status` gates on both.
       - name: Run quality gate
-        run: bun run check
+        run: bun run check -- --no-tests
+
+  # The postflight half of `bun run check`, split onto its own runner. No
+  # Playwright here, exactly as when this ran inside the quality gate job: the
+  # two browser-backed corpus tests skip without it, and the `parity` job
+  # below runs them with a browser.
+  gate-tests:
+    name: Gate test suite
+    runs-on: ubuntu-latest
+    steps:
+      # The runner must read the local composite action's action.yml from
+      # disk before it can run it, so the repository has to be checked out
+      # in the workflow itself — a local action can never perform the first
+      # checkout (newer runner versions fail the job at action-resolution
+      # time otherwise).
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-stims
+        with:
+          checkout: 'false'
+
+      - name: Run gate test suite
+        run: bun run test:gate
 
   parity:
     name: Parity corpus
@@ -278,7 +308,7 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [check, parity, build, integration, commit-messages]
+    needs: [check, gate-tests, parity, build, integration, commit-messages]
     if: always()
     steps:
       - name: Verify all required jobs passed
@@ -288,12 +318,14 @@ jobs:
           # failure should block.
           commit_outcome="${{ needs['commit-messages'].result }}"
           check_outcome="${{ needs.check.result }}"
+          gate_tests_outcome="${{ needs['gate-tests'].result }}"
           parity_outcome="${{ needs.parity.result }}"
           build_outcome="${{ needs.build.result }}"
           integration_outcome="${{ needs.integration.result }}"
 
           echo "Commit Messages: $commit_outcome"
           echo "Quality Gate: $check_outcome"
+          echo "Gate Test Suite: $gate_tests_outcome"
           echo "Parity Corpus: $parity_outcome"
           echo "Production Build: $build_outcome"
           echo "Integration Tests: $integration_outcome"
@@ -301,6 +333,7 @@ jobs:
           if [ "$commit_outcome" != "failure" ] && \
              [ "$commit_outcome" != "cancelled" ] && \
              [ "$check_outcome" = "success" ] && \
+             [ "$gate_tests_outcome" = "success" ] && \
              [ "$parity_outcome" = "success" ] && \
              [ "$build_outcome" = "success" ] && \
              [ "$integration_outcome" = "success" ]; then

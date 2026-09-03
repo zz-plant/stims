@@ -15,6 +15,10 @@
  * - `all`    — lint + typecheck + every profile including e2e (~5min+). Use
  *              before merging changes to the MilkDrop compiler, renderer
  *              adapter, or parity pipeline.
+ *
+ * `--no-tests` drops the test suite from any mode, leaving the checks. It
+ * exists for CI, which runs the suite as its own parallel job; locally,
+ * `bun run check` should stay the single command that runs everything.
  */
 type GateMode = 'quick' | 'full' | 'all';
 
@@ -53,6 +57,21 @@ export function parseExecutionMode(argv: string[]): GateExecutionMode {
   return argv.includes('--serial') ? 'serial' : 'parallel';
 }
 
+/**
+ * `--no-tests` drops the postflight test suite, leaving lint, guards and
+ * typecheck. Only CI passes it, so it can run the suite as its own parallel
+ * job instead of queueing it behind the concurrent lane in this one — the
+ * lane and the suite are independent, and serialising them made the Quality
+ * gate job the critical path of the whole workflow. Coverage is unchanged:
+ * the same `test:gate` command runs in that job, gated by `ci-status`.
+ *
+ * It stays off by default so a local `bun run check` is still the one command
+ * that runs everything before a push.
+ */
+export function parseSkipTests(argv: string[]): boolean {
+  return argv.includes('--no-tests');
+}
+
 export type OutputMode = 'text' | 'json';
 
 export function parseOutputMode(argv: string[]): OutputMode {
@@ -62,6 +81,7 @@ export function parseOutputMode(argv: string[]): OutputMode {
 export function buildGatePlan(
   mode: GateMode,
   executionMode: GateExecutionMode,
+  skipTests = false,
 ): GatePlan {
   return {
     mode,
@@ -212,7 +232,7 @@ export function buildGatePlan(
       },
     ],
     postflight:
-      mode === 'quick'
+      mode === 'quick' || skipTests
         ? []
         : mode === 'full'
           ? [
@@ -366,7 +386,7 @@ async function main() {
   const mode = parseMode(argv);
   const executionMode = parseExecutionMode(argv);
   const outputMode = parseOutputMode(argv);
-  const plan = buildGatePlan(mode, executionMode);
+  const plan = buildGatePlan(mode, executionMode, parseSkipTests(argv));
 
   await runStepListSerial(plan.preflight, outputMode);
 
