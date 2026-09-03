@@ -1,18 +1,23 @@
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
-import type { createMilkdropExperience } from '../../milkdrop/runtime.ts';
+import type {
+  MilkdropExperienceController,
+  MilkdropExperienceSnapshot,
+} from '../../milkdrop/runtime-types.ts';
 import type { MilkdropShaderExecutionMode } from '../../milkdrop/shader-execution-mode.ts';
 import type { AudioSource } from '../contracts.ts';
 
-type ExperienceController = ReturnType<typeof createMilkdropExperience>;
-type ExperienceSnapshot = ReturnType<ExperienceController['getStateSnapshot']>;
+// Named directly rather than re-derived through
+// `ReturnType<typeof createMilkdropExperience>`: the shell depends on the
+// engine's declared contract, not on whatever the factory happens to infer.
+type ExperienceController = MilkdropExperienceController;
 
 export type EngineSnapshot = {
   activePresetId: string | null;
   backend: 'webgl' | 'webgpu' | null;
   status: string | null;
-  adaptiveQuality: ExperienceSnapshot['adaptiveQuality'] | null;
-  catalogEntries: ExperienceSnapshot['catalogEntries'];
-  sessionState: ExperienceSnapshot['sessionState'] | null;
+  adaptiveQuality: MilkdropExperienceSnapshot['adaptiveQuality'] | null;
+  catalogEntries: MilkdropExperienceSnapshot['catalogEntries'];
+  sessionState: MilkdropExperienceSnapshot['sessionState'] | null;
   currentSource: string;
   runtimeReady: boolean;
   audioActive: boolean;

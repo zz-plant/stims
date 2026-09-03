@@ -5,19 +5,18 @@ import { mapRuntimeCatalogEntry } from '../../src/js/frontend/workspace-helpers.
 import type { MilkdropCatalogEntry } from '../../src/js/milkdrop/catalog-types.ts';
 
 /**
- * Lab measurements have to survive four hand-listed projections between
- * catalog.json and a rendered row: the fetch-boundary mapper in
- * catalog-bundled-pipeline, the two entry builders in
- * catalog-store-projection, and mapRuntimeCatalogEntry here.
+ * Catalog-projection contract: every measured field on a catalog entry must
+ * survive the four hand-listed projections between catalog.json and a rendered
+ * row: the fetch-boundary mapper in catalog-bundled-pipeline, the two entry
+ * builders in catalog-store-projection, and mapRuntimeCatalogEntry here.
  *
- * Every one of them constructs a fresh object instead of spreading, so a
- * field missing from any single layer vanishes with no type error and no test
+ * Each layer constructs a fresh object instead of spreading, so a field
+ * missing from any single layer vanishes with no type error and no test
  * failure — which is exactly how the reactivity band shipped reading a field
- * that never reached it. TypeScript cannot catch this: dropping a field from
- * an object literal is legal.
+ * that never reached it.
  *
- * These are the cheap end-to-end guards. If a new measurement is added to the
- * catalog, add it here too, or it will silently never arrive.
+ * If a new measurement or compatibility field is added to the catalog, add a
+ * survival assertion here, or it will silently never arrive at the browse row.
  */
 
 const PRESETS_DIR = join(
@@ -34,41 +33,146 @@ function readJson(name: string) {
   };
 }
 
-describe('mapRuntimeCatalogEntry carries measurements to the UI', () => {
-  const runtimeEntry = {
-    id: 'x',
-    title: 'X',
-    tags: [],
-    supports: {
-      webgl: { status: 'supported' },
-      webgpu: { status: 'supported' },
+const FULL_FIXTURE: MilkdropCatalogEntry = {
+  id: 'test-preset',
+  title: 'Test Preset',
+  author: 'Test Author',
+  authorUrl: 'https://example.com',
+  derivedFrom: [{ id: 'original', title: 'Original' }],
+  origin: 'bundled',
+  tags: ['test', 'fixture'],
+  curatedRank: 42,
+  similarity: { clusterId: 'cluster-1', duplicateOf: 'other-preset' },
+  isFavorite: true,
+  rating: 4,
+  lastOpenedAt: 1_700_000_000_000,
+  updatedAt: 1_700_000_000_000,
+  historyIndex: 3,
+  featuresUsed: ['motion-vectors'],
+  warnings: [],
+  supports: {
+    webgl: {
+      status: 'supported',
+      reasons: [],
+      evidence: [],
+      requiredFeatures: [],
+      unsupportedFeatures: [],
     },
-    quality: { score: 0.5, components: { measuredReactivity: 0.87 } },
-    sensoryProfile: {
-      flashRiskLevel: 'high',
-      maxTransitionsPerSecondEstimate: 5,
-      meanLuminance: 0.4,
-      maxLuminanceDelta: 0.2,
-      measuredAt: '2026-08-19T00:00:00.000Z',
+    webgpu: {
+      status: 'supported',
+      reasons: [],
+      evidence: [],
+      requiredFeatures: [],
+      unsupportedFeatures: [],
     },
-  } as unknown as MilkdropCatalogEntry;
+  },
+  fidelityClass: 'exact',
+  fidelityTier: 'measured-visual',
+  visualEvidenceTier: 'measured',
+  semanticSupport: {
+    fidelityClass: 'exact',
+    evidence: { compile: 'confirmed', runtime: 'confirmed' },
+  },
+  visualCertification: {
+    fidelityClass: 'exact',
+    visualEvidenceTier: 'measured',
+    measured: true,
+  },
+  evidence: {
+    compile: 'confirmed',
+    runtime: 'confirmed',
+    source: 'test',
+  },
+  certification: 'certified',
+  corpusTier: 'bundled',
+  parity: {
+    semanticSupport: {
+      fidelityClass: 'exact',
+      evidence: { compile: 'confirmed', runtime: 'confirmed' },
+    },
+    visualCertification: {
+      fidelityClass: 'exact',
+      visualEvidenceTier: 'measured',
+      measured: true,
+    },
+    evidence: { compile: 'confirmed', runtime: 'confirmed', source: 'test' },
+  },
+  quality: {
+    score: 0.75,
+    components: {
+      fidelity: 0.9,
+      evidence: 0.8,
+      measuredReactivity: 0.87,
+    },
+  },
+  sensoryProfile: {
+    flashRiskLevel: 'high',
+    maxTransitionsPerSecondEstimate: 5,
+    meanLuminance: 0.4,
+    maxLuminanceDelta: 0.2,
+    measuredAt: '2026-08-19T00:00:00.000Z',
+  },
+  preview: false,
+} as unknown as MilkdropCatalogEntry;
 
-  test('reactivity survives the runtime-to-frontend hop', () => {
-    const mapped = mapRuntimeCatalogEntry(runtimeEntry);
+describe('mapRuntimeCatalogEntry field-survival contract', () => {
+  test('quality scores survive the projection', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.quality?.score).toBe(0.75);
     expect(mapped.quality?.components?.measuredReactivity).toBe(0.87);
   });
 
-  test('the sensory profile survives the runtime-to-frontend hop', () => {
-    const mapped = mapRuntimeCatalogEntry(runtimeEntry);
+  test('the sensory profile (reactivity band + flash warning) survives', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
     expect(mapped.sensoryProfile?.flashRiskLevel).toBe('high');
+    expect(mapped.sensoryProfile?.maxTransitionsPerSecondEstimate).toBe(5);
+    expect(mapped.sensoryProfile?.meanLuminance).toBe(0.4);
+  });
+
+  test('visual certification survives', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.visualCertification?.fidelityClass).toBe('exact');
+    expect(mapped.visualCertification?.measured).toBe(true);
+  });
+
+  test('similarity (dedup cluster) survives', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.similarity?.clusterId).toBe('cluster-1');
+    expect(mapped.similarity?.duplicateOf).toBe('other-preset');
+  });
+
+  test('fidelity tier survives', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.fidelityTier).toBe('measured-visual');
+  });
+
+  test('expected fidelity class (legacy shell alias for fidelityClass) survives', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.expectedFidelityClass).toBe('exact');
+  });
+
+  test('supports (boolean-derived from status-object) is carried', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.supports?.webgl).toBe(true);
+    expect(mapped.supports?.webgpu).toBe(true);
+  });
+
+  test('all identity and metadata fields survive', () => {
+    const mapped = mapRuntimeCatalogEntry(FULL_FIXTURE);
+    expect(mapped.id).toBe('test-preset');
+    expect(mapped.title).toBe('Test Preset');
+    expect(mapped.author).toBe('Test Author');
+    expect(mapped.authorUrl).toBe('https://example.com');
+    expect(mapped.tags).toEqual(['test', 'fixture']);
+    expect(mapped.isFavorite).toBe(true);
+    expect(mapped.rating).toBe(4);
+    expect(mapped.historyIndex).toBe(3);
+    expect(mapped.lastOpenedAt).toBe(1_700_000_000_000);
   });
 });
 
 describe('the shipped catalogs actually carry the fields', () => {
-  test('starter-catalog.json carries reactivity for its presets', () => {
-    // The starter set is what browse shows first, and it is also — not
-    // coincidentally — almost exactly the set with measured reactivity. It
-    // previously omitted the field entirely, so the chip rendered for nobody.
+  test('starter-catalog.json carries reactivity for every preset', () => {
     const starter = readJson('starter-catalog.json');
     const measured = starter.presets.filter((p) => {
       const q = p.quality as

@@ -89,10 +89,12 @@ import { createMilkdropTraceRecorder } from './runtime/trace-recorder';
 import { createMilkdropTransitionController } from './runtime/transition-controller';
 import { installRequestedPresetListener } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
-import {
-  type MilkdropShaderExecutionMode,
-  resolveShaderExecutionMode,
-} from './shader-execution-mode.ts';
+import type {
+  ExperienceControllerDeps,
+  MilkdropExperienceController,
+  MilkdropExperienceSnapshot,
+} from './runtime-types.ts';
+import { resolveShaderExecutionMode } from './shader-execution-mode.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -131,39 +133,6 @@ export function createMilkdropExperience({
   initialPresetId?: string;
   previewMode?: boolean;
 }) {
-  type MilkdropExperienceSnapshot = {
-    activePresetId: string | null;
-    backend: 'webgl' | 'webgpu';
-    status: string | null;
-    adaptiveQuality: AdaptiveQualityState | null;
-    catalogEntries: ReturnType<typeof catalogCoordinator.getCatalogEntries>;
-    sessionState: ReturnType<typeof session.getState>;
-    audioEnergy: number;
-    audioBass: number;
-    audioMid: number;
-    audioTreble: number;
-    /**
-     * Estimated tempo, already adjudicated: a whole number of BPM when the
-     * beat clock is confident, null otherwise. One field rather than a
-     * value plus a confidence, so the "is this trustworthy" rule lives here
-     * instead of being re-decided by every consumer — and rounded, because
-     * the raw median jitters by fractions of a BPM and every change of this
-     * field republishes the engine snapshot to the UI.
-     */
-    tempoBpm: number | null;
-    /**
-     * Whether the active preset's shader text is executing as authored on the
-     * active backend, or being approximated from its controls. Lives on the
-     * snapshot rather than being re-derived per consumer because it changes on
-     * two independent axes — the preset and the backend — and every surface
-     * that reports it must agree.
-     */
-    shaderExecution: MilkdropShaderExecutionMode | null;
-    autoplay: boolean;
-    transitionMode: 'blend' | 'cut';
-    blendDuration: number;
-  };
-
   // Before ANY preset compiles — the deep-link prefetch below and the default
   // preset both compile, and a preset compiled under the wrong setting would
   // carry the wrong backend classification for the rest of the session.
@@ -1091,8 +1060,18 @@ export function createMilkdropExperience({
   } as any);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
-function buildExperienceController(deps: Record<string, any>) {
+/**
+ * Annotated with the declared seam contract rather than letting the return
+ * type be inferred. The deps bag is deliberately loose (the builder bundles
+ * ~40 runtime delegates), so an inferred return type resolved to `any` and
+ * carried that `any` all the way into the shell, where a field renamed here
+ * still compiled. Naming the contract stops the erasure at this boundary:
+ * the shell now reads a real type, and a method dropped from the object below
+ * fails to compile here instead of at runtime.
+ */
+function buildExperienceController(
+  deps: ExperienceControllerDeps,
+): MilkdropExperienceController {
   let rendererLifecycleUnsubscribe: (() => void) | null = null;
   return {
     subscribe(listener: unknown) {

@@ -477,6 +477,10 @@ export function buildCustomWaves({
     }
 
     if (visualWave && (positions || useProcedural)) {
+      // Published even when the wave went to the GPU, so a backend without a
+      // procedural path still sees every enabled wave. Flagged so a renderer
+      // drawing both lists knows not to draw this one twice.
+      visualWave.proceduralBacked = useProcedural;
       visualWave.alpha = waveAlpha;
       visualWave.thickness = clamp(frameLocals.thick ?? 1, 1, 6);
       visualWave.drawMode = drawMode;
