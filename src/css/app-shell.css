@@ -1876,16 +1876,32 @@ body[data-page="workspace"][data-live="true"] {
     opacity: 0.88;
   }
 
-  /* Generated stand-in artwork (PresetArtworkFallback). Fills the art slot
-     exactly as a real thumbnail would, so a catalog that is part thumbnailed
-     and part generated still reads as one grid rather than two. */
-  .stims-shell__preset-art-generated {
+  /* Says the preview is missing, rather than standing in for one. The rule
+     this replaces made generated artwork fill the slot "exactly as a real
+     thumbnail would", so a grid of part-real, part-invented tiles read as one
+     — which is the thing a reader needs to be able to tell apart. Kept
+     deliberately plain and typographic: any texture here would be read as the
+     preset. */
+  .stims-shell__preset-art-placeholder {
     position: absolute;
     inset: 0;
     z-index: var(--z-stage-root);
-    width: 100%;
-    height: 100%;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm);
+    text-align: center;
+  }
+
+  .stims-shell__preset-art-placeholder-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--stims-muted);
+  }
+
+  .stims-shell__preset-art-placeholder[data-state="capturing"]
+    .stims-shell__preset-art-placeholder-label {
+    color: var(--stims-muted-35);
   }
 
   .stims-parametric-identicon {

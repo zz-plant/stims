@@ -16,6 +16,10 @@ import type {
 import type { PresetCatalogEntry } from '../contracts.ts';
 import { getAudioEnergy } from '../engine-audio-energy-store.ts';
 import { getLiveTileCapacity } from '../engine-quality-store.ts';
+import {
+  markPresetUnrenderable,
+  rememberPresetStill,
+} from '../preset-still-capture.ts';
 
 export const livePresetTilesEnabled = parseURLParams().flags.liveTiles;
 
@@ -145,6 +149,17 @@ export function useLivePresetTile(
         }
         const status = handle.getStatus();
         host.dataset.liveTileReady = String(status === 'live');
+        // This tile is already rendering the preset for its own reasons, so
+        // its canvas holds a true frame of it. Keeping one costs a pixel copy
+        // and means the art slot can show something real after the audition
+        // ends, instead of the generated picture it used to invent. Booting
+        // engines *in order* to capture is the trade this deliberately avoids
+        // — see preset-still-capture.ts.
+        if (status === 'live') {
+          rememberPresetStill(entry.id, handle.canvas);
+        } else if (status === 'failed') {
+          markPresetUnrenderable(entry.id);
+        }
         return status === 'live' || status === 'failed';
       };
       if (!syncStatus()) {
