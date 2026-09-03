@@ -13,16 +13,61 @@ runs:
         restore-keys: |
           ${{ runner.os }}-playwright-
 
-    # On an exact cache hit only the apt-installed system libraries are
-    # missing (the runner image doesn't guarantee them and they can't be
-    # cached), so skip the ~150 MB browser download and install just the
-    # deps.
+    # Deliberately not `--with-deps`. That apt-installs Chromium's runtime
+    # libraries *and* a 21 MB CJK/Cyrillic/Thai font bundle. On ubuntu-latest
+    # every library it names is already on the image — the whole list comes
+    # back "libnss3 is already the newest version", xvfb included — so those
+    # nine font packages are the only thing it actually downloads, and they
+    # come from Azure's Ubuntu mirror, which throttles hard when the run's
+    # jobs hit it at once:
+    #
+    #   run 33646723575  parity  "Fetched 21.1 MB in 10min 36s (33.2 kB/s)"
+    #   run 33666962720  parity  Setup Playwright 8m34s
+    #
+    # Those two runs took 12min and 9min against a ~2min median, and this step
+    # sits on the critical path of four of the five jobs, so every run gets
+    # four chances to draw a throttled mirror. Nothing that gates a PR renders
+    # CJK text: chrome-visual-contract asserts computed styles and layout
+    # rather than pixels, precisely because font rasterisation is not portable
+    # across platforms. The fonts buy this repo nothing at up to 11 minutes a
+    # run.
     - name: Install Playwright Chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: bunx playwright install --with-deps chromium
+      run: bunx playwright install chromium
 
-    - name: Install Playwright system deps
-      if: steps.playwright-cache.outputs.cache-hit == 'true'
+    # The safety net the apt install used to provide, for about a second
+    # instead of minutes: start the browser for real. A cache restored from a
+    # prefix key can hold a build that does not match the pinned Playwright
+    # version, and a future runner image could drop a library Chromium links
+    # against — this repairs both, escalating to the full dependency install
+    # only when something is genuinely missing, rather than failing the test
+    # run with an opaque launch error.
+    - name: Verify Chromium launches
       shell: bash
-      run: bunx playwright install-deps chromium
+      run: |
+        smoke="$(mktemp -d)/smoke.png"
+        try_smoke() {
+          bunx playwright screenshot --browser chromium about:blank "$smoke" \
+            >/dev/null 2>&1
+        }
+
+        if try_smoke; then
+          echo 'Chromium launches; skipped the apt dependency install.'
+          exit 0
+        fi
+
+        echo '::group::Repairing the Chromium install'
+        bunx playwright install chromium || true
+        if try_smoke; then
+          echo '::endgroup::'
+          echo 'Chromium launches after re-downloading the browser.'
+          exit 0
+        fi
+
+        # Only now has apt earned its cost: a library is missing from the image.
+        bunx playwright install-deps chromium
+        echo '::endgroup::'
+        bunx playwright screenshot --browser chromium about:blank "$smoke" \
+          >/dev/null
+        echo 'Chromium launches after installing system dependencies.'
