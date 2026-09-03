@@ -65,6 +65,19 @@ export type MilkdropWaveVisual = MilkdropPolyline & {
   blendMode?: 'subtractive' | 'multiplicative';
   pointSize: number;
   spectrum?: boolean;
+  /**
+   * True when this wave is also published on the procedural (GPU) path, so
+   * `positions` was never filled for this frame.
+   *
+   * Custom waves route per wave, not per preset: a wave drawing dots, or one
+   * whose per-point block did not lower, stays on the CPU path while its
+   * siblings go to the GPU. Every enabled wave is still published here so a
+   * backend with no procedural path can draw the complete set — which means a
+   * renderer that draws BOTH lists must skip these, or the GPU-backed waves
+   * are drawn twice (doubling their brightness and their feedback injection)
+   * from stale pooled positions.
+   */
+  proceduralBacked?: boolean;
 };
 
 /**

@@ -1,8 +1,11 @@
+import type { AdaptiveQualityState } from '../core/services/adaptive-quality-controller.ts';
+import type { MilkdropCatalogEntry } from './catalog-types.ts';
 import type {
   MilkdropDiagnostic,
   MilkdropPresetSource,
 } from './common-types.ts';
 import type { MilkdropCompiledPreset } from './compiler-types.ts';
+import type { MilkdropShaderExecutionMode } from './shader-execution-mode.ts';
 
 export type MilkdropRuntimeSignals = {
   time: number;
@@ -237,3 +240,100 @@ export interface MilkdropEditorCompiler {
    */
   setShaderBranchDesugar(enabled: boolean): Promise<void>;
 }
+
+/**
+ * The snapshot the experience controller publishes for the shell to read.
+ * This is the engine ↔ shell seam contract: it is declared here so the shell
+ * can name it directly instead of chaining `ReturnType` through the adapter,
+ * which ends in `any`. A field renamed or removed in the engine must now fail
+ * to compile in the shell instead of silently vanishing at runtime.
+ *
+ * Concrete field types resolve the engine's own `ReturnType<...>` references
+ * (catalog coordinator entries, editor session state) to their named types so
+ * this lives at module scope rather than inside the factory that builds it.
+ */
+export interface MilkdropExperienceSnapshot {
+  activePresetId: string | null;
+  backend: 'webgl' | 'webgpu';
+  status: string | null;
+  adaptiveQuality: AdaptiveQualityState | null;
+  catalogEntries: MilkdropCatalogEntry[];
+  sessionState: MilkdropEditorSessionState;
+  audioEnergy: number;
+  audioBass: number;
+  audioMid: number;
+  audioTreble: number;
+  /**
+   * Estimated tempo, already adjudicated: a whole number of BPM when the
+   * beat clock is confident, null otherwise.
+   */
+  tempoBpm: number | null;
+  /** How the active preset's shader reaches the screen on the active backend. */
+  shaderExecution: MilkdropShaderExecutionMode | null;
+  autoplay: boolean;
+  transitionMode: 'blend' | 'cut';
+  blendDuration: number;
+}
+
+/**
+ * The public surface of a running milkdrop experience, as seen by the shell.
+ * Mirrors the object `buildExperienceController` returns in `runtime.ts`.
+ * Declared so the shell depends on a contract it can name — and swap or mock
+ * against — rather than an inferred `ReturnType<...>` that reads as `any`.
+ */
+export interface MilkdropExperienceController {
+  subscribe(
+    listener: (snapshot: MilkdropExperienceSnapshot) => void,
+  ): () => void;
+  getStateSnapshot(): MilkdropExperienceSnapshot;
+  getAudioLevels(): {
+    energy: number;
+    bass: number;
+    mid: number;
+    treble: number;
+  };
+  applyFields(updates: unknown): unknown;
+  getActiveCompiledPreset(): MilkdropCompiledPreset | null;
+  getActivePresetId(): string | null;
+  selectPreset(module: unknown, options?: unknown): Promise<unknown>;
+  goBackPreset(): Promise<unknown>;
+  setActiveCollectionTag(collectionTag: string | null): void;
+  openTab(
+    tab: 'browse' | 'editor' | 'inspector' | 'refine' | 'finder' | 'blend',
+  ): void;
+  setOverlayOpen(open: boolean): void;
+  getAutoplay(): boolean;
+  setAutoplay(enabled: boolean): void;
+  getTransitionMode(): 'blend' | 'cut';
+  setTransitionMode(mode: 'blend' | 'cut'): void;
+  startManualCrossfade(): void;
+  setCrossfade(position: number): void;
+  getCrossfade(): number | null;
+  getBlendDuration(): number;
+  setBlendDuration(value: number): void;
+  importPresetFiles(files: FileList | File[]): Promise<void>;
+  exportPreset(): void;
+  resizeForVideoExport(width: number, height: number): void;
+  duplicatePreset(): Promise<void>;
+  deleteActivePreset(): Promise<void>;
+  applyEditorSourceAwaited(source: string): Promise<MilkdropEditorSessionState>;
+  applyEditorFieldsAwaited(
+    updates: Record<string, string | number>,
+  ): Promise<MilkdropEditorSessionState>;
+  getEditorSessionState(): MilkdropEditorSessionState;
+  updateEditorSource(source: string): void;
+  revertEditorSource(): void;
+  updateInspectorField(key: string, value: string | number): void;
+  setLiveField(key: string, value: number): void;
+  setQualityPreset(presetId: string): unknown;
+  setStatus(message: string): void;
+  attachRuntime(nextRuntime: unknown): unknown;
+  update(frame: unknown, options?: unknown): void;
+  dispose(): void;
+}
+
+/** Dependencies the experience controller builder is wired with. Typed in
+ * step 2 of the seam migration; declared here so the builder can adopt it.
+ * The catch-all access is kept deliberately loose until then. */
+// biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
+export type ExperienceControllerDeps = Record<string, any>;
