@@ -76,6 +76,14 @@ export type MilkdropLiveTilePoolOptions = {
    * a whole main-thread frame. */
   maxStepMsPerTick?: number;
   createEngine?: MilkdropLiveTileEngineFactory;
+  /**
+   * Called synchronously after a tile steps, while its drawing buffer still
+   * holds the frame it just drew. Contexts are created with
+   * preserveDrawingBuffer: false, so this is the only moment a consumer can
+   * read a real frame off a tile — a read from outside the tick returns a
+   * cleared buffer. Kept cheap: it runs inside the step budget.
+   */
+  onTileStepped?: (presetId: string, canvas: HTMLCanvasElement) => void;
   scheduleFrame?: (cb: () => void) => number;
   cancelFrame?: (handle: number) => void;
   /** Defaults to an IntersectionObserver on each tile canvas; pass false in
@@ -214,6 +222,7 @@ export function createMilkdropLiveTilePool(
   const stepIntervalMs = options.stepIntervalMs ?? 66;
   const maxStepMsPerTick = options.maxStepMsPerTick ?? 6;
   const createEngine = options.createEngine ?? createMilkdropDefaultTileEngine;
+  const onTileStepped = options.onTileStepped;
   const scheduleFrame = options.scheduleFrame ?? defaultScheduleFrame;
   const cancelFrame = options.cancelFrame ?? defaultCancelFrame;
   const observeVisibility = options.observeVisibility ?? true;
@@ -408,6 +417,9 @@ export function createMilkdropLiveTilePool(
           });
           record.nextStepAt = tickStart + stepIntervalMs;
           record.lastActiveAt = tickStart;
+          if (onTileStepped && record.status === 'live') {
+            onTileStepped(record.presetId, record.canvas);
+          }
         } catch {
           record.status = 'failed';
           try {

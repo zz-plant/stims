@@ -3,6 +3,7 @@ import {
   getCapturedPresetStill,
   getPresetStillCacheSize,
   isPresetUnrenderable,
+  MAX_CAPTURE_ATTEMPTS,
   MAX_CAPTURE_CACHE_SIZE,
   markPresetUnrenderable,
   rememberPresetStill,
@@ -97,6 +98,41 @@ describe('preset still capture', () => {
     rememberPresetStill('after-unsubscribe', fakeCanvas());
 
     expect(seen).toEqual(['notify', 'other']);
+  });
+
+  // The encoder rejects a frame with nothing visible in it, because a read
+  // that lands outside the render tick returns a cleared buffer that would
+  // otherwise be stored as a black "preview". Presets commonly open on black
+  // and brighten, so rejection has to be retryable.
+  test('retries while the frame has nothing in it yet', () => {
+    let calls = 0;
+    setPresetStillEncoderForTests(() => {
+      calls += 1;
+      return calls < 5 ? '' : 'frame:eventually';
+    });
+
+    for (let i = 0; i < 5; i++) {
+      rememberPresetStill('fades-in', fakeCanvas());
+    }
+
+    expect(getCapturedPresetStill('fades-in')).toBe('frame:eventually');
+  });
+
+  test('stops retrying a preset that never paints anything', () => {
+    let calls = 0;
+    setPresetStillEncoderForTests(() => {
+      calls += 1;
+      return '';
+    });
+
+    // This runs inside the render tick, so an unbounded retry would encode on
+    // every step forever for any preset that stays blank.
+    for (let i = 0; i < MAX_CAPTURE_ATTEMPTS + 40; i++) {
+      rememberPresetStill('always-blank', fakeCanvas());
+    }
+
+    expect(calls).toBe(MAX_CAPTURE_ATTEMPTS);
+    expect(getCapturedPresetStill('always-blank')).toBeNull();
   });
 
   test('bounds how many stills it retains', () => {

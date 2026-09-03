@@ -69,6 +69,13 @@ function ensurePool(): Promise<MilkdropLiveTilePool> {
         // degrading, so browse-grid decoration stops competing with the
         // renderer the user is actually watching.
         capacityProvider: getLiveTileCapacity,
+        // Keep a real frame off tiles that are already rendering. This is the
+        // only moment it can be read: the tile's context has
+        // preserveDrawingBuffer: false, so a read from outside the tick that
+        // drew the frame comes back cleared — a black rectangle that looks
+        // like a successful capture. rememberPresetStill no-ops once a preset
+        // has a still, so the steady-state cost is a Map lookup per step.
+        onTileStepped: rememberPresetStill,
         ...(agentModeScheduler
           ? {
               scheduleFrame: (cb: () => void) =>
@@ -149,15 +156,10 @@ export function useLivePresetTile(
         }
         const status = handle.getStatus();
         host.dataset.liveTileReady = String(status === 'live');
-        // This tile is already rendering the preset for its own reasons, so
-        // its canvas holds a true frame of it. Keeping one costs a pixel copy
-        // and means the art slot can show something real after the audition
-        // ends, instead of the generated picture it used to invent. Booting
-        // engines *in order* to capture is the trade this deliberately avoids
-        // — see preset-still-capture.ts.
-        if (status === 'live') {
-          rememberPresetStill(entry.id, handle.canvas);
-        } else if (status === 'failed') {
+        // Stills are captured by the pool's onTileStepped hook, not here: a
+        // read from this poll happens between ticks, when the drawing buffer
+        // has already been cleared.
+        if (status === 'failed') {
           markPresetUnrenderable(entry.id);
         }
         return status === 'live' || status === 'failed';

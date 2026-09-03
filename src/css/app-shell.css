@@ -1896,6 +1896,8 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__preset-art-placeholder-label {
     font-size: 0.6875rem;
     letter-spacing: 0.04em;
+    /* Reads against the flat surface below rather than washing out over the
+       tone bloom the slot used to paint here. */
     color: var(--stims-muted);
   }
 
@@ -1998,6 +2000,19 @@ body[data-page="workspace"][data-live="true"] {
         transparent 24%
       ),
       linear-gradient(145deg, rgba(10, 32, 40, 0.96), rgba(6, 12, 18, 0.98));
+  }
+
+  /* The tone paintings above are backing chrome: under a real thumbnail they
+     are never seen. With no frame they become the whole tile, and since the
+     tone comes from the preset's mood keywords rather than from anything
+     rendered, a wall of differently-coloured blooms is the same claim the
+     generated artwork used to make, only quieter — 2,679 tinted squares a
+     reader can still take for previews. So a slot with no real frame drops to
+     one flat surface, identical for every preset. Must stay after the tone
+     rules: same specificity, so source order decides. */
+  .stims-shell__preset-art[data-preview-status="unavailable"],
+  .stims-shell__preset-art[data-preview-status="capturing"] {
+    background: var(--stims-white-04);
   }
 
   .stims-shell__section-label {

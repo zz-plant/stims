@@ -34,6 +34,13 @@
 import { encodePresetPreviewImage } from '../milkdrop/preset-preview.ts';
 
 export const MAX_CAPTURE_CACHE_SIZE = 120;
+/**
+ * Per-preset attempts before giving up on it painting anything visible.
+ * Generous because presets commonly open on black and brighten over a second
+ * or two, and a rejected attempt is cheap: the encoder bails right after
+ * reading pixels, before it builds a canvas or encodes anything.
+ */
+export const MAX_CAPTURE_ATTEMPTS = 90;
 
 /** presetId -> data URL of a frame that preset actually rendered. */
 const captureCache = new Map<string, string>();
@@ -44,6 +51,12 @@ const captureCache = new Map<string, string>();
  * preview is still coming.
  */
 const unrenderable = new Set<string>();
+/**
+ * presetId -> encode attempts so far. Cleared on success and bounded by
+ * MAX_CAPTURE_ATTEMPTS per preset, so it holds at most one small number per
+ * catalog entry rather than growing with session length.
+ */
+const captureAttempts = new Map<string, number>();
 
 type StillListener = (presetId: string) => void;
 const listeners = new Set<StillListener>();
@@ -51,12 +64,18 @@ const listeners = new Set<StillListener>();
 /** Injectable because the real encoder reads a WebGL drawing buffer, which a
  * DOM test environment has no way to provide. */
 export type PresetStillEncoder = (canvas: HTMLCanvasElement) => string;
-let encodeStill: PresetStillEncoder = encodePresetPreviewImage;
+let encodeStill: PresetStillEncoder = (canvas) =>
+  // requirePainted: a read that lands outside the tick that drew the frame
+  // returns a cleared buffer, and storing that would put a black rectangle in
+  // the slot as though it were a preview of the preset.
+  encodePresetPreviewImage(canvas, { requirePainted: true });
 
 export function setPresetStillEncoderForTests(
   encoder: PresetStillEncoder | null,
 ) {
-  encodeStill = encoder ?? encodePresetPreviewImage;
+  encodeStill =
+    encoder ??
+    ((canvas) => encodePresetPreviewImage(canvas, { requirePainted: true }));
 }
 
 export function subscribePresetStills(listener: StillListener): () => void {
@@ -84,6 +103,18 @@ export function rememberPresetStill(
     return captureCache.get(presetId) ?? null;
   }
 
+  // A preset that opens on a flat colour — a fade-in from black — yields
+  // nothing worth keeping for its first few frames, and the encoder rejects
+  // those rather than store a blank rectangle. Retry a bounded number of
+  // times so the fade-in case still lands, then stop: this runs inside the
+  // render tick, and an unbounded retry would encode on every step forever
+  // for any preset that never paints anything varied.
+  const attempts = captureAttempts.get(presetId) ?? 0;
+  if (attempts >= MAX_CAPTURE_ATTEMPTS) {
+    return null;
+  }
+  captureAttempts.set(presetId, attempts + 1);
+
   let dataUrl: string | null = null;
   try {
     dataUrl = encodeStill(canvas) || null;
@@ -93,6 +124,7 @@ export function rememberPresetStill(
   if (!dataUrl) {
     return null;
   }
+  captureAttempts.delete(presetId);
 
   if (captureCache.size >= MAX_CAPTURE_CACHE_SIZE) {
     const oldest = captureCache.keys().next().value;
@@ -132,5 +164,6 @@ export function getPresetStillCacheSize(): number {
 export function resetPresetStillCaptureState() {
   captureCache.clear();
   unrenderable.clear();
+  captureAttempts.clear();
   listeners.clear();
 }
