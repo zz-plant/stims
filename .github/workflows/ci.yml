@@ -64,6 +64,9 @@ jobs:
         uses: ./.github/actions/setup-stims
         with:
           checkout: 'false'
+          # The only job that runs `typecheck` and `check:architecture`, so the
+          # only one that should publish their incremental caches.
+          cache-compute: 'true'
 
       # Fails on high/critical advisories against the lockfile. Moderate and
       # below only report locally via `bun audit`; gate them here once the
