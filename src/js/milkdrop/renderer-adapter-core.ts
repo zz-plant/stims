@@ -135,6 +135,14 @@ const reusableInterpolatedCustomWaves: {
   current: import('./types').MilkdropProceduralCustomWaveVisual;
 }[] = [];
 
+/** Frozen empty lists: a lane with nothing to draw still has to be rendered so
+ * it trims last frame's geometry instead of leaving it on screen. */
+const EMPTY_PROCEDURAL_CUSTOM_WAVES: MilkdropProceduralCustomWaveVisual[] = [];
+const EMPTY_INTERPOLATED_CUSTOM_WAVES: {
+  previous: MilkdropProceduralCustomWaveVisual;
+  current: MilkdropProceduralCustomWaveVisual;
+}[] = [];
+
 function lerpColorInto(
   out: MilkdropColor,
   previousColor: MilkdropColor,
@@ -262,6 +270,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     new Group(),
     getMilkdropLayerRenderOrder('custom-wave'),
   );
+  /**
+   * Per-custom-wave-group lanes: [procedural, cpu].
+   *
+   * Custom waves route per WAVE, not per preset. A wave whose per-point block
+   * failed to lower stays on the CPU path, and so does any wave drawing dots
+   * (the procedural path only draws lines, and `usedots` is a per-frame value,
+   * so the split can change mid-preset). Both lists therefore have to draw in
+   * the same frame. renderWaveGroup and renderProceduralCustomWaveGroup each
+   * own their group's children by index and trim the tail, so they cannot
+   * share one group — each gets a lane. Before this, the adapter picked one
+   * path for the whole group and the other path's waves were silently never
+   * drawn: 205 of the 2686 bundled presets mix the two.
+   */
+  private readonly customWaveLanes = new WeakMap<Group, [Group, Group]>();
+
   private readonly trailGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('trails'),
@@ -610,6 +633,51 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       }
     }
     trimGroupChildren(group, waves.length);
+  }
+
+  /**
+   * The subset of `waves` the CPU lane should draw: everything when the
+   * procedural lane is inactive, and only the non-GPU-backed waves when it is.
+   *
+   * Filtered into a reusable scratch list (one per call site, keyed by slot)
+   * because this runs every frame and a fresh array per frame per lane is
+   * exactly the kind of allocation this renderer avoids.
+   */
+  private readonly cpuCustomWaveScratch: MilkdropWaveVisual[][] = [[], []];
+
+  private cpuOnlyCustomWaves(
+    waves: MilkdropWaveVisual[],
+    proceduralLaneActive: boolean,
+    slot: 0 | 1,
+  ): MilkdropWaveVisual[] {
+    if (!proceduralLaneActive) {
+      return waves;
+    }
+    const out = this.cpuCustomWaveScratch[slot];
+    let count = 0;
+    for (let i = 0; i < waves.length; i += 1) {
+      const wave = waves[i];
+      if (wave && !wave.proceduralBacked) {
+        out[count] = wave;
+        count += 1;
+      }
+    }
+    out.length = count;
+    return out;
+  }
+
+  /** The [procedural, cpu] lanes of a custom-wave group, attached on first
+   * use. Rebuilt when a clearGroup has detached them. */
+  private getCustomWaveLanes(group: Group): [Group, Group] {
+    const lanes = this.customWaveLanes.get(group);
+    if (lanes && lanes[0].parent === group && lanes[1].parent === group) {
+      return lanes;
+    }
+    const next: [Group, Group] = [new Group(), new Group()];
+    group.add(next[0]);
+    group.add(next[1]);
+    this.customWaveLanes.set(group, next);
+    return next;
   }
 
   private renderProceduralCustomWaveGroup(
@@ -1081,20 +1149,23 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alphaMultiplier,
       );
     }
-    if (canProceduralCustom && gpu.customWaves.length > 0) {
-      this.renderProceduralCustomWaveGroup(
-        customWaveGroup,
-        gpu.customWaves,
-        interaction?.waves,
-      );
-    } else {
-      this.renderWaveGroup(
-        'custom-wave',
-        customWaveGroup,
-        customWaves,
-        alphaMultiplier,
-      );
-    }
+    const [proceduralCustomWaveLane, cpuCustomWaveLane] =
+      this.getCustomWaveLanes(customWaveGroup);
+    this.renderProceduralCustomWaveGroup(
+      proceduralCustomWaveLane,
+      canProceduralCustom ? gpu.customWaves : EMPTY_PROCEDURAL_CUSTOM_WAVES,
+      interaction?.waves,
+    );
+    this.renderWaveGroup(
+      'custom-wave',
+      cpuCustomWaveLane,
+      // Only the waves the procedural lane is NOT drawing. The VM publishes
+      // every enabled wave here (so a backend without a procedural path sees
+      // the full set), so handing this list over unfiltered while the
+      // procedural lane also draws would render the GPU-backed waves twice.
+      this.cpuOnlyCustomWaves(customWaves, canProceduralCustom, 0),
+      alphaMultiplier,
+    );
     if (canProcedural('trail-waves') && (gpu?.trailWaves?.length ?? 0) > 0) {
       this.renderProceduralWaveGroup(
         'trail-waves',
@@ -1181,10 +1252,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           blend.alpha,
         );
       }
-      if (
-        canProcedural('custom-wave') &&
-        prev.gpuGeometry.customWaves.length > 0
-      ) {
+      const [blendProceduralCustomWaveLane, blendCpuCustomWaveLane] =
+        this.getCustomWaveLanes(this.blendCustomWaveGroup);
+      const blendProceduralLaneActive =
+        canProcedural('custom-wave') && prev.gpuGeometry.customWaves.length > 0;
+      if (blendProceduralLaneActive) {
         const interpolated = reusableInterpolatedCustomWaves;
         interpolated.length = prev.gpuGeometry.customWaves.length;
         for (let i = 0; i < prev.gpuGeometry.customWaves.length; i++) {
@@ -1204,7 +1276,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             blendMix,
           );
         this.renderInterpolatedProceduralCustomWaveGroup(
-          this.blendCustomWaveGroup,
+          blendProceduralCustomWaveLane,
           interpolated,
           blendMix,
           blend.alpha,
@@ -1217,13 +1289,23 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           },
         );
       } else {
-        this.renderWaveGroup(
-          'blend-custom-wave',
-          this.blendCustomWaveGroup,
-          prev.customWaves,
+        this.renderInterpolatedProceduralCustomWaveGroup(
+          blendProceduralCustomWaveLane,
+          EMPTY_INTERPOLATED_CUSTOM_WAVES,
+          blendMix,
           blend.alpha,
+          null,
         );
       }
+      // Outside the branch: the outgoing preset's CPU-path custom waves draw
+      // whether or not its GPU-path siblings do — minus the ones the
+      // procedural lane above is already drawing.
+      this.renderWaveGroup(
+        'blend-custom-wave',
+        blendCpuCustomWaveLane,
+        this.cpuOnlyCustomWaves(prev.customWaves, blendProceduralLaneActive, 1),
+        blend.alpha,
+      );
       renderParticleFieldGroupHelper({
         backend: this.backend,
         target: 'blend-particle-field',
@@ -1275,9 +1357,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         blend.mode === 'cpu' ? [blend.mainWave] : [],
         alpha,
       );
+      const [blendProceduralLane, blendCpuLane] = this.getCustomWaveLanes(
+        this.blendCustomWaveGroup,
+      );
+      this.renderInterpolatedProceduralCustomWaveGroup(
+        blendProceduralLane,
+        EMPTY_INTERPOLATED_CUSTOM_WAVES,
+        0,
+        alpha,
+        null,
+      );
       this.renderWaveGroup(
         'blend-custom-wave',
-        this.blendCustomWaveGroup,
+        blendCpuLane,
         blend.mode === 'cpu' ? blend.customWaves : [],
         alpha,
       );
@@ -1439,6 +1531,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   dispose() {
     clearGroup(this.mainWaveGroup);
     clearGroup(this.customWaveGroup);
+    this.customWaveLanes.delete(this.customWaveGroup);
     clearGroup(this.trailGroup);
     clearGroup(this.particleFieldGroup);
     clearGroup(this.shapesGroup);
@@ -1446,6 +1539,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.motionVectorGroup);
     clearGroup(this.blendWaveGroup);
     clearGroup(this.blendCustomWaveGroup);
+    this.customWaveLanes.delete(this.blendCustomWaveGroup);
     clearGroup(this.blendParticleFieldGroup);
     clearGroup(this.blendShapeGroup);
     clearGroup(this.blendBorderGroup);
