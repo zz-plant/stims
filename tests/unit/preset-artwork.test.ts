@@ -1,8 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
 import { PresetArtwork } from '../../src/js/frontend/PresetArtwork.tsx';
+import {
+  markPresetUnrenderable,
+  rememberPresetStill,
+  resetPresetStillCaptureState,
+  setPresetStillEncoderForTests,
+} from '../../src/js/frontend/preset-still-capture.ts';
 import type { MilkdropPresetRenderPreview } from '../../src/js/milkdrop/preset-preview.ts';
 import { createToyContainer } from '../toy-test-helpers.ts';
 
@@ -10,30 +16,22 @@ import { createToyContainer } from '../toy-test-helpers.ts';
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const entry: PresetCatalogEntry = {
-  id: 'glow',
-  title: 'Glow Preset',
-  author: 'Tester',
-  tags: ['glow'],
-};
-
-const STATIC_THUMB_PATTERN = /\/milkdrop-presets\/previews\/glow\.png$/;
-
-const GENERATED_ART_SELECTOR = '.stims-shell__preset-art-generated';
-
-function staticPreview(
-  status: MilkdropPresetRenderPreview['status'],
-): MilkdropPresetRenderPreview {
+/**
+ * Every test uses its own preset id. PresetArtwork remembers 404'd thumbnail
+ * URLs at module scope (deliberately — it outlives the virtualized grid's
+ * unmounts), so sharing an id would let one test's miss seed the next.
+ */
+function makeEntry(id: string, file?: string): PresetCatalogEntry {
   return {
-    presetId: entry.id,
-    status,
-    imageUrl: null,
-    actualBackend: null,
-    updatedAt: Date.now(),
-    error: null,
-    source: 'runtime-snapshot',
+    id,
+    title: 'Glow Preset',
+    author: 'Tester',
+    tags: ['glow'],
+    ...(file === undefined ? {} : { file }),
   };
 }
+
+const PLACEHOLDER = '.stims-shell__preset-art-placeholder';
 
 function previewImageSrc(container: HTMLElement): string | undefined {
   return container.querySelector<HTMLImageElement>(
@@ -41,154 +39,187 @@ function previewImageSrc(container: HTMLElement): string | undefined {
   )?.src;
 }
 
+function previewStatus(container: HTMLElement): string | null {
+  return (
+    container
+      .querySelector('.stims-shell__preset-art')
+      ?.getAttribute('data-preview-status') ?? null
+  );
+}
+
+function readyPreview(
+  presetId: string,
+  imageUrl: string,
+): MilkdropPresetRenderPreview {
+  return {
+    presetId,
+    status: 'ready',
+    imageUrl,
+    actualBackend: 'webgl',
+    updatedAt: Date.now(),
+    error: null,
+    source: 'runtime-snapshot',
+  };
+}
+
+/**
+ * Renders without draining. happy-dom cannot load the R2 thumbnail URL and
+ * fires `error` on it asynchronously, so anything asserted about the
+ * thumbnail-present state has to be asserted before that lands — and the
+ * component no longer keeps a hidden `img` around to paper over the
+ * difference, which is the point.
+ */
 async function renderArtwork(
   container: HTMLElement,
   props: {
     entry: PresetCatalogEntry;
     preview?: MilkdropPresetRenderPreview | null;
   },
-): Promise<{ dispose: () => void; root: ReturnType<typeof createRoot> }> {
+): Promise<{ dispose: () => void }> {
   const root = createRoot(container);
   await act(async () => {
     root.render(createElement(PresetArtwork, props));
-    // Drain any image load/error dispatch the environment queues so React
-    // never sees an unwrapped update after the act scope ends.
-    await new Promise((resolve) => setTimeout(resolve, 20));
   });
-  return {
-    root,
-    dispose: () => {
-      act(() => root.unmount());
-    },
-  };
+  return { dispose: () => act(() => root.unmount()) };
 }
 
-describe('PresetArtwork', () => {
-  test.each(['queued', 'capturing'] as const)(
-    'keeps the %s preview state on the static thumbnail',
-    async (status) => {
-      const { container, dispose } = createToyContainer(
-        `preset-artwork-${status}`,
-      );
-      const rendered = await renderArtwork(container, {
-        entry,
-        preview: staticPreview(status),
-      });
-
-      expect(previewImageSrc(container)).toMatch(STATIC_THUMB_PATTERN);
-
-      rendered.dispose();
-      dispose();
-    },
-  );
-
-  test('renders the static thumbnail while no preview result exists', async () => {
-    const { container, dispose } = createToyContainer('preset-artwork-loading');
-    const rendered = await renderArtwork(container, { entry, preview: null });
-
-    expect(previewImageSrc(container)).toMatch(STATIC_THUMB_PATTERN);
-    expect(container.querySelector('.preset-artwork-ghost')).toBeNull();
-
-    rendered.dispose();
-    dispose();
+async function drain(ms = 30) {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   });
+}
 
-  test('keeps the static thumbnail when runtime preview capture is unavailable', async () => {
-    const { container, dispose } = createToyContainer('preset-artwork-root');
-    const rendered = await renderArtwork(container, {
-      entry,
-      preview: {
-        ...staticPreview('failed'),
-        error: 'Preview canvas was not available.',
-      },
-    });
-
-    expect(previewImageSrc(container)).toMatch(STATIC_THUMB_PATTERN);
-    expect(container.textContent).not.toContain('Preview failed');
-
-    rendered.dispose();
-    dispose();
-  });
-
-  test('draws generated artwork only when the artwork image itself fails', async () => {
-    const { container, dispose } = createToyContainer(
-      'preset-artwork-image-error',
-    );
-    const rendered = await renderArtwork(container, { entry, preview: null });
-
-    // No pre-assertion that the art is absent here: an earlier test in this
-    // file has already recorded this preset's thumbnail URL in the
-    // module-scope miss cache, so the fallback is seeded on first render by
-    // design. The "only when the image fails" half of this contract is
-    // covered by the ready-preview test below.
-
-    // Fail the image deterministically: the environment's own load/error
-    // dispatch is not reliable under full-suite load.
-    const img = container.querySelector('img');
-    expect(img).not.toBeNull();
+/** Puts the tile in the "no stored thumbnail" state it is in for most of the
+ * catalog, whether or not the environment has already errored the image. */
+async function failThumbnail(container: HTMLElement) {
+  const img = container.querySelector('img');
+  if (img) {
     await act(async () => {
-      img?.dispatchEvent(new Event('error'));
+      img.dispatchEvent(new Event('error'));
+    });
+  }
+  await drain();
+}
+
+afterEach(() => {
+  setPresetStillEncoderForTests(null);
+  resetPresetStillCaptureState();
+});
+
+describe('PresetArtwork', () => {
+  // Not covered here: the stored-thumbnail-displayed state. happy-dom cannot
+  // load the R2 URL and errors it synchronously during the render flush, so
+  // that state never exists in this environment, and it has no MutationObserver
+  // to catch the img on its way through. The branch it would exercise — a real
+  // image URL means "ready" — is the same one the runtime-snapshot test below
+  // covers; a test that mocked the difference away would only be asserting the
+  // mock.
+  test('a ready runtime snapshot outranks the stored thumbnail', async () => {
+    const { container, dispose } = createToyContainer('artwork-runtime');
+    const rendered = await renderArtwork(container, {
+      entry: makeEntry('runtime-snap'),
+      preview: readyPreview('runtime-snap', 'data:image/png;base64,preview'),
     });
 
-    // A picture, not the mood as words. The art slot used to fall back to the
-    // mood label ("Bright pulse"), which restated in vaguer terms what the
-    // caption beside it already said, and gave a screen of browse tiles no
-    // visual difference to choose between.
-    expect(container.querySelector(GENERATED_ART_SELECTOR)).not.toBeNull();
-    expect(container.textContent).toBe('');
+    expect(previewImageSrc(container)).toBe('data:image/png;base64,preview');
+    expect(previewStatus(container)).toBe('ready');
+    expect(container.querySelector(PLACEHOLDER)).toBeNull();
 
     rendered.dispose();
     dispose();
   });
 
-  test('generated artwork is stable per preset and differs between presets', async () => {
-    // The whole point of generating it: two presets must not look alike, and
-    // one preset must not change appearance between sessions or devices.
-    const draw = async (id: string, key: string) => {
-      const { container, dispose } = createToyContainer(key);
-      const rendered = await renderArtwork(container, {
-        entry: { ...entry, id },
-        preview: null,
-      });
-      await act(async () => {
-        container.querySelector('img')?.dispatchEvent(new Event('error'));
-      });
-      const markup =
-        container.querySelector(GENERATED_ART_SELECTOR)?.innerHTML ?? '';
-      rendered.dispose();
-      dispose();
-      return markup;
-    };
+  // The reason this component was rewritten. The art slot used to fill with a
+  // picture generated from a hash of the preset id — a waveform over a bloom,
+  // styled to sit in the slot "exactly as a real thumbnail would". Nothing in
+  // it came from the preset, so a browse grid mixed real frames with invented
+  // ones and gave the reader no way to tell which was which.
+  test('never substitutes generated artwork for a missing preview', async () => {
+    const { container, dispose } = createToyContainer('artwork-no-fake');
+    const rendered = await renderArtwork(container, {
+      entry: makeEntry('nothing-to-render'),
+      preview: null,
+    });
+    await failThumbnail(container);
 
-    const first = await draw('glow', 'preset-artwork-gen-a');
-    const same = await draw('glow', 'preset-artwork-gen-b');
-    // Ids that differ by one trailing character are the hard case — variants
-    // of one preset are exactly what the catalog is full of.
-    const sibling = await draw('glow-2', 'preset-artwork-gen-c');
+    // Nothing is displayed that the preset did not produce: no image at all,
+    // and no drawn stand-in of any kind.
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg')).toBeNull();
+    expect(container.querySelector('canvas')).toBeNull();
 
-    expect(first.length).toBeGreaterThan(0);
-    expect(same).toBe(first);
-    expect(sibling).not.toBe(first);
+    // Instead the slot says so, and the DOM agrees.
+    expect(container.querySelector(PLACEHOLDER)).not.toBeNull();
+    expect(container.textContent).toContain('No preview');
+    expect(previewStatus(container)).toBe('unavailable');
+
+    rendered.dispose();
+    dispose();
   });
 
-  test('renders a ready preview image without fallback copy', async () => {
-    const { container, dispose } = createToyContainer('preset-artwork-ready');
-    const rendered = await renderArtwork(container, {
-      entry,
-      preview: {
-        presetId: entry.id,
-        status: 'ready',
-        imageUrl: 'data:image/png;base64,preview',
-        actualBackend: 'webgl',
-        updatedAt: Date.now(),
-        error: null,
-        source: 'runtime-snapshot',
-      },
-    });
+  test('shows a frame the preset actually rendered once one exists', async () => {
+    setPresetStillEncoderForTests(() => 'data:image/webp;base64,real');
+    // Stands in for a live tile — hover audition, or the ?liveTiles flag —
+    // having run this preset and left a true frame behind.
+    rememberPresetStill('renders-fine', {} as HTMLCanvasElement);
 
-    expect(container.textContent).toBe('');
-    expect(previewImageSrc(container)).toBe('data:image/png;base64,preview');
-    expect(container.querySelector(GENERATED_ART_SELECTOR)).toBeNull();
+    const { container, dispose } = createToyContainer('artwork-captured');
+    const rendered = await renderArtwork(container, {
+      entry: makeEntry('renders-fine', '/presets/renders-fine.milk'),
+      preview: null,
+    });
+    await failThumbnail(container);
+
+    expect(previewImageSrc(container)).toBe('data:image/webp;base64,real');
+    expect(previewStatus(container)).toBe('ready');
+    expect(container.querySelector(PLACEHOLDER)).toBeNull();
+
+    rendered.dispose();
+    dispose();
+  });
+
+  test('picks up a frame captured while the tile is already mounted', async () => {
+    setPresetStillEncoderForTests(() => 'data:image/webp;base64,late');
+
+    const { container, dispose } = createToyContainer('artwork-late');
+    const rendered = await renderArtwork(container, {
+      entry: makeEntry('late-frame', '/presets/late-frame.milk'),
+      preview: null,
+    });
+    await failThumbnail(container);
+
+    expect(container.textContent).toContain('No preview');
+
+    // The audition engine reaches `live` and leaves a frame behind.
+    await act(async () => {
+      rememberPresetStill('late-frame', {} as HTMLCanvasElement);
+    });
+    await drain();
+
+    expect(previewImageSrc(container)).toBe('data:image/webp;base64,late');
+    expect(previewStatus(container)).toBe('ready');
+
+    rendered.dispose();
+    dispose();
+  });
+
+  test('a preset whose engine failed says so rather than showing anything', async () => {
+    const { container, dispose } = createToyContainer('artwork-failed');
+    const rendered = await renderArtwork(container, {
+      entry: makeEntry('engine-failed', '/presets/engine-failed.milk'),
+      preview: null,
+    });
+    await failThumbnail(container);
+
+    await act(async () => {
+      markPresetUnrenderable('engine-failed');
+    });
+    await drain();
+
+    expect(previewStatus(container)).toBe('unavailable');
+    expect(container.textContent).toContain('No preview');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg')).toBeNull();
 
     rendered.dispose();
     dispose();
