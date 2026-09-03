@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "orb-acid-in-my-eyes",
   "title": "Orb - Acid - In - My - Eyes",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260901210311",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260901223520",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 867146,
-    "mismatchRatio": 0.9409136284722223,
+    "mismatchedPixels": 867098,
+    "mismatchRatio": 0.9408615451388889,
     "maxChannelDelta": 182,
-    "meanAbsoluteError": 0.1367660278231663,
-    "rmse": 0.1945421846468806,
+    "meanAbsoluteError": 0.13676207192946624,
+    "rmse": 0.19453085572900275,
     "exactMatch": false,
     "threshold": 32
   },
@@ -42,7 +42,7 @@
       "measuredAt": "2026-09-01T21:47:33.829Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.9409136284722223,
+    "baselineMismatchRatio": 0.9408615451388889,
     "mismatchDelta": 0,
     "noiseResolution": 0.03821784186855292,
     "changeVerdict": "no-measurable-change"

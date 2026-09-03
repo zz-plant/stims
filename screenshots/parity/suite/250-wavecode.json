@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "250-wavecode",
   "title": "250 Wavecode",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260901210237",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260901223447",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 67907,
-    "mismatchRatio": 0.07368381076388889,
+    "mismatchedPixels": 68054,
+    "mismatchRatio": 0.07384331597222223,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.02872083787218591,
-    "rmse": 0.1391505330202875,
+    "meanAbsoluteError": 0.028776518246187363,
+    "rmse": 0.13929547014540516,
     "exactMatch": false,
     "threshold": 16
   },
@@ -42,7 +42,7 @@
       "measuredAt": "2026-09-01T21:53:55.409Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.07368381076388889,
+    "baselineMismatchRatio": 0.07384331597222223,
     "mismatchDelta": 0,
     "noiseResolution": 0.00769618580663909,
     "changeVerdict": "no-measurable-change"
