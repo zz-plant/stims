@@ -18,7 +18,6 @@
  * jitter this module passes through. Measure changes with
  * `bun run lab:reactivity` rather than judging by eye.
  */
-import type { MeydaAudioFeature, MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
@@ -29,6 +28,10 @@ import {
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
+import {
+  extractSpectralFeatures,
+  type SpectralFeatureSnapshot,
+} from '../utils/audio/spectral-features.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { reportAudioAwaitingGesture } from './audio-gesture-gate.ts';
 import {
@@ -48,6 +51,7 @@ export type WorkletBeatDetection = {
   beatTreble: boolean;
   bassBeatIntensity: number;
   midBeatIntensity: number;
+  beatTrebleIntensity?: number;
   trebleBeatIntensity: number;
 };
 
@@ -58,43 +62,8 @@ type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 const FREQUENCY_ANALYSER_PROCESSOR = URL.createObjectURL(
   new Blob([workletSource], { type: 'application/javascript' }),
 );
-const MEYDA_FEATURES = [
-  'rms',
-  'spectralCentroid',
-  'spectralFlatness',
-  'spectralRolloff',
-] satisfies MeydaAudioFeature[];
 
-// Meyda is only needed on the AnalyserNode fallback path (worklet-capable
-// browsers never reach updateSpectralFeatures), so it loads on demand instead
-// of shipping in the core chunk for every session.
-type MeydaModule = typeof import('meyda')['default'];
-let meydaInstance: MeydaModule | null = null;
-let meydaLoadFailed = false;
-let meydaLoadStarted = false;
-
-function requestMeyda(): MeydaModule | null {
-  if (meydaInstance || meydaLoadFailed || meydaLoadStarted) {
-    return meydaInstance;
-  }
-  meydaLoadStarted = true;
-  import('meyda')
-    .then((module) => {
-      meydaInstance = module.default;
-    })
-    .catch((error) => {
-      meydaLoadFailed = true;
-      logger.warn('Failed to load meyda for spectral features', error);
-    });
-  return null;
-}
-
-type SpectralFeatureSnapshot = {
-  rms: number;
-  spectralCentroid: number;
-  spectralFlatness: number;
-  spectralRolloff: number;
-};
+export type { SpectralFeatureSnapshot };
 
 const DEFAULT_SAMPLE_RATE = 44_100;
 const stylizedFrequencyBuffers = new WeakMap<object, Uint8Array>();
@@ -243,6 +212,9 @@ export class FrequencyAnalyser {
         zeroCrossingRate,
         spectralFlux,
         spectralCrest,
+        spectralCentroid,
+        spectralFlatness,
+        spectralRolloff,
         stereoBalance,
         stereoWidth,
         timeDomainData,
@@ -257,6 +229,18 @@ export class FrequencyAnalyser {
         this.zeroCrossingRate = zeroCrossingRate;
       if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
       if (typeof spectralCrest === 'number') this.spectralCrest = spectralCrest;
+      if (
+        typeof spectralCentroid === 'number' &&
+        typeof spectralFlatness === 'number' &&
+        typeof spectralRolloff === 'number'
+      ) {
+        this.spectralFeatures = {
+          rms: typeof rms === 'number' ? rms : this.rms,
+          spectralCentroid,
+          spectralFlatness,
+          spectralRolloff,
+        };
+      }
       if (typeof stereoBalance === 'number') this.stereoBalance = stereoBalance;
       if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
       if (frequencyData) {
@@ -867,51 +851,19 @@ export class FrequencyAnalyser {
     }
 
     this.spectralFrameCounter = (this.spectralFrameCounter + 1) | 0;
-    // Meyda runs a full FFT on the main thread; once a snapshot exists,
-    // refreshing it every fourth frame keeps the spectral signals responsive
-    // without paying for the transform on every rendered frame.
+    // Once a snapshot exists, refreshing it every fourth frame keeps the
+    // spectral signals responsive without excessive overhead.
     if (this.spectralFeatures !== null && this.spectralFrameCounter % 4 !== 0) {
       return;
     }
 
-    const meyda = requestMeyda();
-    if (!meyda) {
-      return;
-    }
-
     try {
-      meyda.bufferSize = this.timeDomainData.length;
-      meyda.sampleRate = this.sampleRate;
-      const features = meyda.extract(
-        MEYDA_FEATURES,
+      this.spectralFeatures = extractSpectralFeatures(
         this.timeDomainData,
-      ) as Partial<MeydaFeaturesObject> | null;
-
-      if (!features) {
-        return;
-      }
-
-      this.spectralFeatures = {
-        rms:
-          typeof features.rms === 'number' && Number.isFinite(features.rms)
-            ? features.rms
-            : this.rms,
-        spectralCentroid:
-          typeof features.spectralCentroid === 'number' &&
-          Number.isFinite(features.spectralCentroid)
-            ? features.spectralCentroid
-            : 0,
-        spectralFlatness:
-          typeof features.spectralFlatness === 'number' &&
-          Number.isFinite(features.spectralFlatness)
-            ? features.spectralFlatness
-            : 0,
-        spectralRolloff:
-          typeof features.spectralRolloff === 'number' &&
-          Number.isFinite(features.spectralRolloff)
-            ? features.spectralRolloff
-            : 0,
-      };
+        this.frequencyData,
+        this.sampleRate,
+        this.frequencyBinCount * 2,
+      );
     } catch {
       // Ignore feature extraction failures and keep the last usable snapshot.
     }

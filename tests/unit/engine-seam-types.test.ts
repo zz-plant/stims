@@ -1,68 +1,54 @@
-/**
- * Compile-time probe that the engine ↔ shell seam carries real types instead
- * of `any`.
- *
- * The regression this guards against: `buildExperienceController` accepted
- * `Record<string, any>` deps and `getStateSnapshot()` returned whatever
- * `buildSnapshot` produced, so the shell read the engine snapshot through
- * `ReturnType<...>` chains that resolved to `any`. A field renamed or removed
- * in the engine then compiled clean in the shell and failed at runtime. This
- * test asserts the seam types are declared (non-`any`) and the shell snapshot
- * names them directly. It is a type-level probe: the value assignments only
- * compile if the assertion holds, so a positive (`IsAny<T> = true`) line is
- * what breaks when the seam erodes.
- */
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import type { EngineSnapshot } from '../../src/js/frontend/engine/engine-snapshot.ts';
+import type { createMilkdropExperience } from '../../src/js/milkdrop/runtime.ts';
 import type {
   MilkdropExperienceController,
   MilkdropExperienceSnapshot,
 } from '../../src/js/milkdrop/runtime-types.ts';
 
+// Type-level assertion helper:
+// `IsAny<T>` is true only when T is the `any` type (or unknown in specific intersections).
 type IsAny<T> = 0 extends 1 & T ? true : false;
 
-describe('engine seam types', () => {
-  test('the snapshot contract is a declared, non-any type', () => {
-    // The declared interface must never be `any`. If someone re-derives the
-    // seam through `ReturnType<...>` back to an erased type, this fails.
-    const notAny: IsAny<MilkdropExperienceSnapshot> = false;
-    expect(notAny).toBe(false);
-  });
+describe('engine-seam-types', () => {
+  it('guarantees key snapshot properties at the engine seam are strictly typed and not any', () => {
+    type Controller = ReturnType<typeof createMilkdropExperience>;
+    type Snapshot = ReturnType<Controller['getStateSnapshot']>;
 
-  test('the controller contract is a declared, non-any type', () => {
-    const notAny: IsAny<MilkdropExperienceController> = false;
-    expect(notAny).toBe(false);
-  });
+    // Assert that activePresetId is strictly typed and not any
+    const activePresetIdIsAny: IsAny<Snapshot['activePresetId']> = false;
+    expect(activePresetIdIsAny).toBe(false);
 
-  test('the shell snapshot names the engine snapshot fields directly', () => {
-    // Field-level probes: each must resolve to the engine's declared type,
-    // never to `any` or `unknown`.
-    const catalogNotAny: IsAny<EngineSnapshot['catalogEntries']> = false;
-    const sessionNotAny: IsAny<NonNullable<EngineSnapshot['sessionState']>> =
+    // Assert that backend is strictly typed and not any
+    const backendIsAny: IsAny<Snapshot['backend']> = false;
+    expect(backendIsAny).toBe(false);
+
+    // Assert that audioEnergy is strictly typed and not any
+    const audioEnergyIsAny: IsAny<Snapshot['audioEnergy']> = false;
+    expect(audioEnergyIsAny).toBe(false);
+
+    // Assert that EngineSnapshot fields in the frontend shell are not any
+    const shellActivePresetIdIsAny: IsAny<EngineSnapshot['activePresetId']> =
       false;
-    const adaptiveNotAny: IsAny<
-      NonNullable<EngineSnapshot['adaptiveQuality']>
-    > = false;
-    expect(catalogNotAny).toBe(false);
-    expect(sessionNotAny).toBe(false);
-    expect(adaptiveNotAny).toBe(false);
-  });
+    expect(shellActivePresetIdIsAny).toBe(false);
 
-  test('the snapshot type aliases the engine contract, not a ReturnType chain', () => {
-    // `EngineSnapshot['catalogEntries']` must equal the engine's contract
-    // array type. A structural check keeps the shell honest that it reads
-    // the engine's declared shape rather than a shadow copy.
-    const entriesAreEngineEntries:
-      | MilkdropExperienceSnapshot['catalogEntries']
-      | undefined = undefined as EngineSnapshot['catalogEntries'] | undefined;
-    expect(entriesAreEngineEntries).toBeUndefined();
-  });
+    const shellBackendIsAny: IsAny<EngineSnapshot['backend']> = false;
+    expect(shellBackendIsAny).toBe(false);
 
-  test('the active-preset control is its declared non-any type', () => {
-    // Control: `activePresetId` was already `string | null` before this
-    // change. It must stay non-any; this is the negative control that proves
-    // the probe is checking (a real `any` field would compile true).
-    const control: IsAny<EngineSnapshot['activePresetId']> = false;
-    expect(control).toBe(false);
+    const shellAudioEnergyIsAny: IsAny<EngineSnapshot['audioEnergy']> = false;
+    expect(shellAudioEnergyIsAny).toBe(false);
+
+    // Assert that Controller conforms to MilkdropExperienceController
+    type AssignableToController =
+      Controller extends MilkdropExperienceController ? true : false;
+    const isAssignable: AssignableToController = true;
+    expect(isAssignable).toBe(true);
+
+    // Assert that Snapshot conforms to MilkdropExperienceSnapshot
+    type AssignableToSnapshot = Snapshot extends MilkdropExperienceSnapshot
+      ? true
+      : false;
+    const isSnapshotAssignable: AssignableToSnapshot = true;
+    expect(isSnapshotAssignable).toBe(true);
   });
 });

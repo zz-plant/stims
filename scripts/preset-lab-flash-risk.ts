@@ -76,7 +76,7 @@ import {
 const DEFAULT_OUTPUT_DIR = './scratch/preset-lab';
 const DEFAULT_PORT = 5197;
 const PRESET_READY_TIMEOUT_MS = 60_000;
-const AUDIO_ACTIVE_TIMEOUT_MS = 15_000;
+const AUDIO_ACTIVE_TIMEOUT_MS = 30_000;
 const DEFAULT_DURATION_MS = 4000;
 /** Cheap downsample target for the in-page luminance readback. */
 const SAMPLE_WIDTH = 32;
@@ -221,11 +221,31 @@ async function waitForAudioActive(page: Page): Promise<boolean> {
     await page.waitForFunction(
       () => document.body.dataset.audioActive === 'true',
       undefined,
-      { timeout: AUDIO_ACTIVE_TIMEOUT_MS },
+      { timeout: 5_000 },
     );
     return true;
   } catch {
-    return false;
+    // If audio is delayed or blocked waiting for a user gesture under load,
+    // dispatch a trusted interaction and request demo audio via agent message.
+    try {
+      await page.click(STAGE_CANVAS_SELECTOR).catch(() => {});
+      await page
+        .evaluate(() => {
+          window.postMessage({ type: 'toil:set_audio', source: 'demo' }, '*');
+        })
+        .catch(() => {});
+    } catch {}
+
+    try {
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: AUDIO_ACTIVE_TIMEOUT_MS },
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

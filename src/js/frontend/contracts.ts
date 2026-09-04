@@ -81,6 +81,7 @@ export type PresetCatalogEntry = {
   authorUrl?: string;
   derivedFrom?: MilkdropPresetLineageRef[];
   file?: string;
+  bundledFile?: string;
   tags?: string[];
   searchTerms?: string[];
   preview?: boolean;
@@ -89,6 +90,7 @@ export type PresetCatalogEntry = {
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;
+  fidelityClass?: string;
   /** Near-duplicate cluster annotation (dedup-catalog.ts); duplicateOf names
    * the cluster representative when this entry is a non-representative. */
   similarity?: { clusterId: string; duplicateOf?: string };

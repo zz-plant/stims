@@ -9,6 +9,11 @@ import {
   createHarmonicPercussiveAnalyser,
   type HarmonicPercussiveLevels,
 } from './harmonic-percussive.ts';
+import {
+  computeSpectralCentroid,
+  computeSpectralFlatness,
+  computeSpectralRolloff,
+} from './spectral-features.ts';
 
 const TWO_PI = Math.PI * 2;
 
@@ -367,6 +372,17 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
       const meanMag = sumMag / Math.max(1, this.frequencyBinCount);
       const spectralCrest = maxMag / (meanMag + 1e-6);
+      const spectralCentroid = computeSpectralCentroid(
+        this.prevMagnitudes,
+        this.sampleRate,
+        this.fftSize,
+      );
+      const spectralFlatness = computeSpectralFlatness(this.prevMagnitudes);
+      const spectralRolloff = computeSpectralRolloff(
+        this.prevMagnitudes,
+        this.sampleRate,
+        this.fftSize,
+      );
 
       let stereoBalance = 0;
       let stereoWidth = 0;
@@ -559,6 +575,9 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         zeroCrossingRate,
         spectralFlux,
         spectralCrest,
+        spectralCentroid,
+        spectralFlatness,
+        spectralRolloff,
         stereoBalance,
         stereoWidth,
         energy: { bass, mid, treble },

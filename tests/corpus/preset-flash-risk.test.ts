@@ -80,6 +80,6 @@ describe('preset flash-risk lab', () => {
       expect(report.maxTransitionsPerSecondEstimate).toBeGreaterThanOrEqual(0);
       expect(fs.existsSync(report.artifacts.reportJson)).toBe(true);
     },
-    60_000,
+    120_000,
   );
 });

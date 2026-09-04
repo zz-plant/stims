@@ -108,8 +108,9 @@ Run it directly: `bun run check:authoring-examples`
 Bundle-size budget for the built app.
 
 The quality gate has 60+ checks but until now nothing guarded bundle
-bytes, so a stray eager import (meyda, stats-gl, a CSS file for a lazy
-panel) could silently grow the startup payload. This asserts budgets
+bytes, so a stray eager import (stats-gl, a CSS file for a lazy panel, an
+unpinned Three.js subpath) could silently grow the startup payload. This
+asserts budgets
 against `dist/` output:
 
   - per-chunk ceiling for the largest JS chunk,
