@@ -792,37 +792,58 @@ export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
 export function mapRuntimeCatalogEntry(
   entry: MilkdropCatalogEntry,
 ): PresetCatalogEntry {
+  const {
+    id,
+    title,
+    author,
+    authorUrl,
+    derivedFrom,
+    bundledFile,
+    tags,
+    isFavorite,
+    rating,
+    historyIndex,
+    lastOpenedAt,
+    fidelityClass,
+    similarity,
+    fidelityTier,
+    visualCertification,
+    quality,
+    sensoryProfile,
+    supports,
+    preview,
+    ...rest
+  } = entry;
+
   return {
-    id: entry.id,
-    title: entry.title,
-    author: entry.author,
-    authorUrl: resolveAuthorUrl(entry.author, entry.authorUrl),
-    derivedFrom: entry.derivedFrom,
-    file: entry.bundledFile,
-    tags: entry.tags,
-    isFavorite: entry.isFavorite,
-    rating: entry.rating,
+    ...rest,
+    id,
+    title,
+    author,
+    authorUrl: resolveAuthorUrl(author, authorUrl),
+    derivedFrom,
+    file: bundledFile,
+    bundledFile,
+    tags,
+    isFavorite,
+    rating,
     historyIndex:
-      entry.historyIndex !== undefined && entry.historyIndex >= 0
-        ? entry.historyIndex
+      historyIndex !== undefined && historyIndex >= 0
+        ? historyIndex
         : undefined,
-    lastOpenedAt: entry.lastOpenedAt,
-    expectedFidelityClass: entry.fidelityClass,
-    similarity: entry.similarity,
-    fidelityTier: entry.fidelityTier,
-    visualCertification: entry.visualCertification,
-    // The last of four hand-listed projections between catalog.json and a
-    // rendered row. Each builds a fresh object rather than spreading, so a
-    // field missing from any one of them disappears with no type error —
-    // which is exactly how the reactivity band shipped reading a field that
-    // never survived the trip.
-    quality: entry.quality,
-    sensoryProfile: entry.sensoryProfile,
+    lastOpenedAt,
+    expectedFidelityClass: fidelityClass,
+    fidelityClass,
+    similarity,
+    fidelityTier,
+    visualCertification,
+    quality,
+    sensoryProfile,
     supports: {
-      webgl: entry.supports.webgl.status === 'supported',
-      webgpu: entry.supports.webgpu.status === 'supported',
+      webgl: supports?.webgl?.status === 'supported',
+      webgpu: supports?.webgpu?.status === 'supported',
     },
-    preview: entry.preview,
+    preview,
   };
 }
 
