@@ -752,23 +752,149 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Scrim between the live attract-mode render and the launch copy.
-     The landing page now runs a real preset behind this text, and presets go
+     The landing page runs a real preset behind this text, and presets go
      bright and light without warning, so the copy needs a floor it can rely on
      rather than whatever frame happens to be on screen. Flat ink rather than a
-     blur: it keeps body text at full contrast against any preset, and the
-     visuals still read clearly through the lighter lower half. */
+     blur: it keeps body text at full contrast against any preset.
+
+     Steered rather than flat. The copy occupies the left of the frame, so the
+     ink is spent there and released across the rest — the old full-bleed
+     0.82-0.9 wash bought contrast for a column of text by dimming the whole
+     stage to 10-18% of whatever was behind it, which is most of why a working
+     attract render still read as a black rectangle. The vertical pass keeps
+     the top edge (wordmark, and the frame chrome above it) covered. */
   .stims-shell__stage-frame[data-mode="home"]::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: calc(var(--z-stage-hero) - 1);
     pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      rgba(3, 5, 11, 0.9) 0%,
-      rgba(3, 5, 11, 0.82) 55%,
-      rgba(3, 5, 11, 0.6) 100%
+    background:
+      radial-gradient(
+        86% 78% at 24% 46%,
+        rgba(3, 5, 11, 0.94) 0%,
+        rgba(3, 5, 11, 0.88) 40%,
+        rgba(3, 5, 11, 0.38) 76%,
+        rgba(3, 5, 11, 0.2) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(3, 5, 11, 0.46) 0%,
+        rgba(3, 5, 11, 0.12) 26%,
+        rgba(3, 5, 11, 0.12) 76%,
+        rgba(3, 5, 11, 0.4) 100%
+      );
+  }
+
+  /* One column wide, the copy needs its floor everywhere; the steered scrim
+     above assumes the copy is off to one side. */
+  @media (max-width: 900px) {
+    .stims-shell__stage-frame[data-mode="home"]::after {
+      background: linear-gradient(
+        180deg,
+        rgba(3, 5, 11, 0.88) 0%,
+        rgba(3, 5, 11, 0.8) 62%,
+        rgba(3, 5, 11, 0.58) 100%
+      );
+    }
+  }
+
+  /* ── Stage signal field ────────────────────────────────────────────
+     The landing page's floor, under the canvas. See SignalField.tsx for why
+     it exists and why it is painted here rather than over the render. */
+  .stims-shell__stage-field {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    /* One hue lifted off the base, placed where the copy is not. A flat fill
+       gave the frame no depth at all: the old landing page measured a
+       luminance range of 1.0 across its entire right half, which is what a
+       screenshot renders as a dead rectangle. */
+    background:
+      radial-gradient(
+        128% 118% at 88% 96%,
+        rgba(24, 42, 66, 0.85) 0%,
+        rgba(12, 20, 34, 0.5) 42%,
+        transparent 74%
+      ),
+      #04060c;
+  }
+
+  /* Oscilloscope graticule. Two single-hue repeating gradients, so this stays
+     a ruled surface rather than the decorative multi-stop wash the chrome
+     direction rules out. */
+  .stims-shell__stage-field-grid {
+    position: absolute;
+    inset: -1px;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        rgba(160, 200, 240, 0.09) 0 1px,
+        transparent 1px 88px
+      ),
+      repeating-linear-gradient(
+        180deg,
+        rgba(160, 200, 240, 0.09) 0 1px,
+        transparent 1px 88px
+      );
+    /* Denser toward the lower right, which is the half of a 16:9 frame the
+       launch copy leaves empty — the field is the composition's counterweight,
+       not a uniform texture. */
+    -webkit-mask-image: radial-gradient(
+      132% 140% at 8% 10%,
+      transparent 6%,
+      #000 62%
     );
+    mask-image: radial-gradient(132% 140% at 8% 10%, transparent 6%, #000 62%);
+  }
+
+  /* Every --row-* is set per row from FIELD_ROWS in SignalField.tsx. The
+     fallbacks are one plausible row, so the field still renders as a field if
+     the inline styles ever go missing rather than collapsing to nothing. */
+  .stims-shell__stage-field-row {
+    position: absolute;
+    top: var(--row-top, 50%);
+    left: 0;
+    width: 100%;
+    height: calc(var(--row-amp, 2.5) * 6vh);
+    overflow: hidden;
+    opacity: var(--row-weight, 0.45);
+  }
+
+  .stims-shell__stage-field-row svg {
+    display: block;
+    width: var(--row-span, 240%);
+    height: 100%;
+    scale: 1 var(--row-flip, 1);
+    animation: stims-launch-trace-drift var(--row-dur, 60s) linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__stage-field-row svg {
+      animation: none;
+    }
+  }
+
+  /* One column wide, the copy runs the full width of the frame, so there is no
+     "beside the text" for the field to occupy — every trace crosses a line of
+     body copy. Damped to a texture here rather than dropped: the point of the
+     field is that the landing page is never a blank rectangle, and that holds
+     most on the phones where attract mode is gated off entirely. */
+  @media (max-width: 900px) {
+    .stims-shell__stage-field {
+      opacity: 0.5;
+    }
+
+    /* Longer wavelength for a narrow frame. `span` is how wide the strip is
+       drawn, so a *bigger* span means fewer periods in view: the desktop
+       spread of 152-352% puts up to 2.7 periods across 375px, which reads as
+       noise rather than as signal. Set on the svg, not as --row-span, because
+       the per-row value is an inline style and would win. */
+    .stims-shell__stage-field-row svg {
+      width: 340%;
+    }
   }
 
   .stims-shell__stage-frame[data-mode="live"] {
@@ -1003,7 +1129,12 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
     inset: clamp(84px, 12vh, 128px) 44px 44px;
     width: auto;
-    align-content: start;
+    /* Optically centred rather than top-anchored: the column is ~420px tall
+       in a 900px frame, and starting it at 108px left the whole lower half
+       empty with the composition ending mid-page. `safe` keeps the top of the
+       column reachable when it is taller than the frame instead of clipping
+       both ends, which is what plain `center` does to an overflowing grid. */
+    align-content: safe center;
     align-items: start;
     justify-items: center;
   }
@@ -1201,10 +1332,16 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
+  /* Spacing is the hierarchy in a single column, and a uniform gap says every
+     block is equally important. Measured on the old landing page: five blocks
+     at 18px apart, and four of them (tagline, explainer, disclosure, repo
+     link) within 3px of each other in type size — nothing told the eye what to
+     read second. The gap here is the tight one, and the rules below open up
+     the joints that actually separate groups. */
   .stims-shell__launch-center {
     display: grid;
     justify-items: start;
-    gap: 18px;
+    gap: 10px;
     width: min(52rem, 100%);
   }
 
@@ -1220,9 +1357,12 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__launch-tagline {
     margin: 0;
-    color: var(--stims-muted);
-    font-size: 1rem;
-    line-height: 1.6;
+    max-width: 30rem;
+    color: var(--stims-ink-strong);
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    line-height: 1.35;
+    letter-spacing: -0.011em;
+    text-wrap: balance;
   }
 
   /* Signal trace under the wordmark: the doubled 600-unit strip drifts one
@@ -1273,18 +1413,21 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__launch-explainer {
-    margin: 0;
-    max-width: 38rem;
+    margin: 4px 0 0;
+    max-width: 34rem;
     color: var(--stims-muted);
     font-size: 0.875rem;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 
   .stims-shell__launch-actions-minimal {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    /* The two buttons are a ranked pair, not a segmented control: 12px read as
+       one object on mobile, where both go full width. */
+    gap: 16px;
+    margin-top: 18px;
   }
 
   .stims-shell__launch-status {
@@ -1348,6 +1491,18 @@ body[data-page="workspace"][data-live="true"] {
     cursor: default;
   }
 
+  /* The launch CTA takes focus on its own once the engine is ready (see
+     Actions in NewHomePage.tsx), so the global cool-accent ring lands on the
+     one warm-filled control in the app and is in every screenshot of the
+     landing page. Left touching the coral it read as a stray focus state
+     rather than an indicator; a dark separating ring gives it its own edge and
+     raises the indicator's contrast against the fill. The outline itself, and
+     the app-wide convention that focus is cool, are untouched. */
+  .stims-shell__launch-cta:focus-visible {
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px rgba(3, 5, 11, 0.9);
+  }
+
   .stims-shell__launch-secondary {
     border: 1px solid var(--stims-line-strong);
     background: var(--stims-control-fill);
@@ -1365,7 +1520,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__launch-source-minimal {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 22px;
   }
 
   /* A quiet line of text, not a card or a button: it must read as the
@@ -1415,7 +1570,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__launch-meta {
-    margin: 0;
+    margin: 6px 0 0;
     font-size: 0.8125rem;
     line-height: 1.4;
   }
@@ -3951,13 +4106,40 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 /* Dedicated scroll region for the virtualized grid — the virtualizer needs a
    bounded, measurable scroll element, which it gets from the
    [data-fill="true"] flex chain in chrome.css. */
+/* The gallery wall.
+ *
+ * Preset artwork is dark — these are MilkDrop frames, mostly luminous marks on
+ * black — and in the light chrome theme the grid mounted them straight onto
+ * cream. Every tile read as a hole punched in the panel rather than as a lit
+ * image, which inverts the whole point of a browse view: the artwork is the
+ * product and it had the lowest contrast on screen.
+ *
+ * So the art surface is dark in both themes, the way an image app keeps a dark
+ * canvas inside light chrome, and the chrome around it still follows the
+ * visitor's theme. The token pins are the same technique `.stims-shell__launch`
+ * uses to hold ink readable over the stage: everything inside the well —
+ * tile fills, hairlines, captions — resolves against a dark ground without
+ * each needing a rule of its own.
+ */
 .stims-preset-grid-scroll {
   flex: 1;
   min-height: 120px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--space-xs, 4px) 0;
+  padding: var(--space-sm, 8px);
   width: 100%;
+  border-radius: var(--radius-lg);
+  background: #080b12;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --stims-panel-strong: #12161f;
+  --stims-panel: #12161f;
+  --stims-line: rgba(255, 255, 255, 0.09);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-ink: #f2ede4;
+  --stims-muted: rgba(242, 237, 228, 0.62);
+  --stims-accent: #f47a54;
+  --stims-cool: #77c9ff;
 }
 
 /* Sized to the virtualizer's total content height; rows inside are absolutely

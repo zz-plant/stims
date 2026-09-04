@@ -47,6 +47,13 @@
   max-width: none;
   margin: 12px 16px 0;
   animation-name: help-enter-panel;
+  /* Above the panel's own sticky toolbar. The browse filter bar is
+     `position: sticky; z-index: 2` with an opaque background and a -16px top
+     margin, so it painted across the bottom third of this hint: the first
+     thing a new visitor saw in the browse panel was a callout sliced in half.
+     A hint about a panel must never be occluded by that panel's chrome. */
+  position: relative;
+  z-index: 3;
 }
 
 @keyframes help-enter-panel {

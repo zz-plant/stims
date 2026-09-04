@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "rovastar-mosaics-of-ages",
   "title": "Rovastar - Mosaics - Of - Ages",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260901210315",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-mosaics-of-ages--20260901223524",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-mosaics-of-ages.png",
@@ -26,9 +26,9 @@
     "totalPixels": 921600,
     "mismatchedPixels": 921600,
     "mismatchRatio": 1,
-    "maxChannelDelta": 252,
-    "meanAbsoluteError": 0.4239981447440087,
-    "rmse": 0.5109061304095827,
+    "maxChannelDelta": 251,
+    "meanAbsoluteError": 0.4237368983183551,
+    "rmse": 0.5116419850766588,
     "exactMatch": false,
     "threshold": 32
   },

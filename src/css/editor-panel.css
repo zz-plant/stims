@@ -343,6 +343,23 @@ html.light .stims-editor {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  /* Reads as an inset well rather than a rectangle pasted into the panel. The
+     code surface stays dark in light chrome for the same reason the preset
+     grid does — it is content, not chrome — so it gets the same treatment as
+     that well: rounded, with a hairline top highlight for the inset edge. */
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* The region's height rarely lands on a line boundary, so the last visible
+     line was sliced horizontally through its x-height — which reads as broken
+     rendering rather than as "there is more below". Dissolving the final line
+     says the same thing without the guillotine. 22px is a little over one line
+     at the editor's type size, so exactly one line is ever in the fade. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent 100%);
 }
 
 .stims-editor__code .cm-editor {

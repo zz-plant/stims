@@ -1,29 +1,108 @@
+/**
+ * Capture the site's prominent surfaces as flat screenshots, the way a visitor
+ * (or a link unfurler, or a reviewer) would first see them, so they can be
+ * critiqued as graphic design rather than as running software.
+ *
+ * Usage: bun run scripts/capture-aesthetic-audit.ts [--out <dir>] [--only <id,id>]
+ */
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
 import { ensureDevServer } from './dev-server.ts';
 
-const OUTPUT_DIR = './screenshots/aesthetic-audit';
+const DEFAULT_OUTPUT_DIR = './screenshots/aesthetic-audit';
 
-async function captureScreen(
-  page: Page,
-  urlPath: string,
-  width: number,
-  height: number,
-  outputPath: string,
-  waitMs = 1500,
-) {
-  await page.setViewportSize({ width, height });
-  await page.goto(`http://127.0.0.1:5173${urlPath}`, {
-    waitUntil: 'networkidle',
+type Shot = {
+  id: string;
+  urlPath: string;
+  width: number;
+  height: number;
+  waitMs?: number;
+};
+
+const SHOTS: Shot[] = [
+  {
+    id: '01-desktop-home',
+    urlPath: '/?agent=true',
+    width: 1440,
+    height: 900,
+    waitMs: 2000,
+  },
+  {
+    id: '02-desktop-browse',
+    urlPath: '/?agent=true&panel=browse',
+    width: 1440,
+    height: 900,
+    waitMs: 2000,
+  },
+  {
+    id: '03-desktop-settings',
+    urlPath: '/?agent=true&panel=settings',
+    width: 1440,
+    height: 900,
+    waitMs: 2000,
+  },
+  {
+    id: '04-desktop-editor',
+    urlPath: '/?agent=true&panel=editor',
+    width: 1440,
+    height: 900,
+    waitMs: 2000,
+  },
+  {
+    id: '05-desktop-live',
+    urlPath: '/?agent=true&audio=demo',
+    width: 1440,
+    height: 900,
+    waitMs: 3000,
+  },
+  {
+    id: '06-mobile-home',
+    urlPath: '/?agent=true',
+    width: 375,
+    height: 812,
+    waitMs: 2000,
+  },
+  {
+    id: '07-mobile-browse',
+    urlPath: '/?agent=true&panel=browse',
+    width: 375,
+    height: 812,
+    waitMs: 2000,
+  },
+];
+
+async function captureScreen(page: Page, shot: Shot, outputPath: string) {
+  await page.setViewportSize({ width: shot.width, height: shot.height });
+  // 'load' plus the shot's own settle, not 'networkidle': the dev server keeps
+  // an HMR socket open and the stage keeps a render loop running, so the
+  // narrow-viewport shots could sit until the navigation timed out.
+  await page.goto(`http://127.0.0.1:5173${shot.urlPath}`, {
+    waitUntil: 'load',
   });
-  await page.waitForTimeout(waitMs);
-  await page.screenshot({ path: outputPath, fullPage: false });
+  await page.waitForTimeout(shot.waitMs ?? 1500);
+  await page.screenshot({ path: outputPath, fullPage: false, timeout: 90_000 });
   console.log(`Captured ${outputPath}`);
 }
 
+function parseArgs(argv: string[]) {
+  let outputDir = DEFAULT_OUTPUT_DIR;
+  let only: Set<string> | undefined;
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === '--out' && argv[i + 1]) {
+      outputDir = argv[i + 1];
+      i += 1;
+    } else if (argv[i] === '--only' && argv[i + 1]) {
+      only = new Set(argv[i + 1].split(',').map((value) => value.trim()));
+      i += 1;
+    }
+  }
+  return { outputDir, only };
+}
+
 async function main() {
-  await mkdir(OUTPUT_DIR, { recursive: true });
+  const { outputDir, only } = parseArgs(process.argv.slice(2));
+  await mkdir(outputDir, { recursive: true });
   const server = await ensureDevServer(5173);
 
   const browser = await chromium.launch({
@@ -37,65 +116,10 @@ async function main() {
 
   const page = await browser.newPage();
 
-  // Desktop captures (1440x900)
-  await captureScreen(
-    page,
-    '/?agent=true',
-    1440,
-    900,
-    path.join(OUTPUT_DIR, '01-desktop-home.png'),
-    2000,
-  );
-  await captureScreen(
-    page,
-    '/?agent=true&panel=browse',
-    1440,
-    900,
-    path.join(OUTPUT_DIR, '02-desktop-browse.png'),
-    2000,
-  );
-  await captureScreen(
-    page,
-    '/?agent=true&panel=settings',
-    1440,
-    900,
-    path.join(OUTPUT_DIR, '03-desktop-settings.png'),
-    2000,
-  );
-  await captureScreen(
-    page,
-    '/?agent=true&panel=editor',
-    1440,
-    900,
-    path.join(OUTPUT_DIR, '04-desktop-editor.png'),
-    2000,
-  );
-  await captureScreen(
-    page,
-    '/?agent=true&audio=demo',
-    1440,
-    900,
-    path.join(OUTPUT_DIR, '05-desktop-live.png'),
-    3000,
-  );
-
-  // Mobile captures (375x812)
-  await captureScreen(
-    page,
-    '/?agent=true',
-    375,
-    812,
-    path.join(OUTPUT_DIR, '06-mobile-home.png'),
-    2000,
-  );
-  await captureScreen(
-    page,
-    '/?agent=true&panel=browse',
-    375,
-    812,
-    path.join(OUTPUT_DIR, '07-mobile-browse.png'),
-    2000,
-  );
+  for (const shot of SHOTS) {
+    if (only && !only.has(shot.id)) continue;
+    await captureScreen(page, shot, path.join(outputDir, `${shot.id}.png`));
+  }
 
   await browser.close();
   server.close();
