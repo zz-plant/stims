@@ -274,14 +274,12 @@ verification) is exactly what WebCodecs gives: encode frames from the virtual
 time source at a fixed cadence instead of whatever the realtime recorder
 sampled.
 
-### 14. Fold meyda into the AudioWorklet
-`meyda` serves only the AnalyserNode fallback path, computing four scalars
-(RMS, spectral centroid, flatness, rolloff) every fourth frame on the main
-thread. The primary path is already a hand-written AudioWorklet
-(`src/js/utils/audio/frequency-analyser-processor.ts`). Porting those four
-features into the worklet deletes the `vendor-meyda` chunk and the last
-main-thread FFT. Web Audio 1.1's configurable render quantum (targeted for
-Q4 2026) will matter for the same worklet.
+### 14. ~~Fold meyda into the AudioWorklet~~ — Shipped
+`meyda` has been eliminated. `src/js/utils/audio/spectral-features.ts`
+provides zero-dependency implementations of RMS, spectral centroid, flatness,
+and rolloff. The worklet (`frequency-analyser-processor.ts`) computes these
+natively; the AnalyserNode fallback calls `extractSpectralFeatures()` directly.
+The `vendor-meyda` chunk no longer exists.
 
 ### 15. Oxlint type-aware pass
 Biome 2's own type inference catches roughly three in four floating-promise

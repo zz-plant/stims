@@ -173,7 +173,6 @@ export default defineConfig({
             // Runtime-only vendors: reachable only from the dynamically
             // imported renderer/audio/editor chain, so keep them out of the
             // eagerly-fetched vendor-other chunk that the entry graph pulls.
-            if (id.includes('/meyda/')) return 'vendor-meyda';
             if (id.includes('/comlink/')) return 'vendor-comlink';
             // The Strudel live-coding stack is behind ?strudel=1 and its
             // bridge lazy-imports @strudel/web — but without this carve-out
