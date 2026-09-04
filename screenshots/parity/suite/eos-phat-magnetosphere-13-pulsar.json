@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-phat-magnetosphere-13-pulsar",
   "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260901210303",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260901223512",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
@@ -24,11 +24,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 229787,
-    "mismatchRatio": 0.24933485243055556,
-    "maxChannelDelta": 228,
-    "meanAbsoluteError": 0.061901793414124905,
-    "rmse": 0.08903280196712585,
+    "mismatchedPixels": 229430,
+    "mismatchRatio": 0.24894748263888888,
+    "maxChannelDelta": 225,
+    "meanAbsoluteError": 0.06210148165168845,
+    "rmse": 0.08916479630417752,
     "exactMatch": false,
     "threshold": 32
   },
@@ -42,7 +42,7 @@
       "measuredAt": "2026-09-01T21:45:53.917Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.24933485243055556,
+    "baselineMismatchRatio": 0.24894748263888888,
     "mismatchDelta": 0,
     "noiseResolution": 0.12049580810886178,
     "changeVerdict": "no-measurable-change"

@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "eos-phat-dark-heart",
   "title": "Eos - Phat - Dark - Heart",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260901210259",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260901223508",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
@@ -25,11 +25,11 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 840221,
-    "mismatchRatio": 0.9116981336805555,
-    "maxChannelDelta": 251,
-    "meanAbsoluteError": 0.20464019522739652,
-    "rmse": 0.3762233365782889,
+    "mismatchedPixels": 843921,
+    "mismatchRatio": 0.915712890625,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.20598739759213872,
+    "rmse": 0.3772223763197354,
     "exactMatch": false,
     "threshold": 32
   },
@@ -43,7 +43,7 @@
       "measuredAt": "2026-09-01T21:52:30.352Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.9116981336805555,
+    "baselineMismatchRatio": 0.915712890625,
     "mismatchDelta": 0,
     "noiseResolution": 0.008169390478469181,
     "changeVerdict": "no-measurable-change"
