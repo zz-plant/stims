@@ -2,7 +2,7 @@
 
 # Stims
 
-**A browser-native studio for audio-reactive, MilkDrop-inspired visuals**
+**Winamp's MilkDrop, alive in your browser — play and live-edit the original `.milk` presets, react to any music, and share the exact view as a link.**
 
 *Discover, inspect, remix, and record presets—with compatibility claims tied to measured evidence.*
 
@@ -17,7 +17,7 @@
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Runtime performance evidence](./docs/RUNTIME_PERFORMANCE.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
-*1,787 presets · live `.milk` editor · WebGL2 + guarded WebGPU · in-browser recording (beta) · public domain (Unlicense)*
+*1,787 presets · live `.milk` editor · deep-linkable sessions · WebGL2 + guarded WebGPU · sensory-precise controls · public domain (Unlicense)*
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 
@@ -25,10 +25,10 @@
 
 <table>
   <tr>
-    <td width="25%"><img src="./docs/assets/clips/geiss-casino.gif" alt="Geiss — Casino" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.gif" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=geiss-casino"><img src="./docs/assets/clips/geiss-casino.gif" alt="Geiss — Casino" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=eos-glowsticks-v2-03-music"><img src="./docs/assets/clips/eos-glowsticks-v2-03-music.gif" alt="Eo.S. — Glowsticks v2 03 Music" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=martin-neon-space-ps3"><img src="./docs/assets/clips/martin-neon-space-ps3.gif" alt="Martin — Neon Space PS3" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars"><img src="./docs/assets/clips/krash-rovastar-cerebral-demons-stars.gif" alt="Krash &amp; Rovastar — Cerebral Demons (Stars Remix)" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Geiss</b> — Casino</sub></td>
@@ -37,10 +37,10 @@
     <td align="center"><sub><b>Krash &amp; Rovastar</b> — Cerebral Demons</sub></td>
   </tr>
   <tr>
-    <td width="25%"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></td>
-    <td width="25%"><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=zylot-crosshair-dimension-light-of-ages"><img src="./docs/assets/clips/zylot-crosshair-dimension-light-of-ages.gif" alt="Zylot — Crosshair Dimension (Light of Ages)" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=eos-starburst-05-phasing"><img src="./docs/assets/clips/eos-starburst-05-phasing.gif" alt="Eo.S. — Starburst 05 Phasing" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=aderrasi-potion-of-spirits"><img src="./docs/assets/clips/aderrasi-potion-of-spirits.gif" alt="Aderrasi — Potion of Spirits" width="100%"></a></td>
+    <td width="25%"><a href="https://toil.fyi/?preset=orb-radiation"><img src="./docs/assets/clips/orb-radiation.gif" alt="Orb — Radiation" width="100%"></a></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Zylot</b> — Crosshair Dimension</sub></td>
@@ -50,17 +50,25 @@
   </tr>
 </table>
 
-<sub>Recorded from the WebGL2 build with <a href="./scripts/generate-readme-clips.ts"><code>scripts/generate-readme-clips.ts</code></a>. Colors are reduced by GIF quantization; the live renderer is smoother and higher-contrast.</sub>
+<sub>Recorded from the WebGL2 build with <a href="./scripts/generate-readme-clips.ts"><code>scripts/generate-readme-clips.ts</code></a>. Colors are reduced by GIF quantization; the live renderer is smoother and higher-contrast. These are deep links — click any clip and it opens live, playing, in your browser.</sub>
 
 </div>
 
-[Why Stims](#why-stims) · [Breakthrough Pillars](#breakthrough-pillars) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start)
+## Send it to someone
+
+Open [toil.fyi](https://toil.fyi) and something is already moving — the first-run preset animates on load, audio-silent until you bring music. A deep link skips straight into a full session: **demo audio auto-starts and the named preset is playing**, no landing page, nothing to click.
+
+**[toil.fyi/?preset=krash-rovastar-cerebral-demons-stars](https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars)** — *Krash & Rovastar — Cerebral Demons (Stars Remix)*, the same measured pick that greets every first run.
+
+The address bar is a promise: whatever you're watching — a preset you found in browse, a song playing in another tab, a YouTube link — is exactly what a copied URL reopens. The in-app **Share** button packages the same link with preset-titled copy when you're not near an address bar.
+
+[Send it to someone](#send-it-to-someone) · [Why Stims](#why-stims) · [Breakthrough Pillars](#breakthrough-pillars) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start)
 
 ---
 
 ## Why Stims
 
-Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM. It is built as a complete creative product rather than only an embeddable renderer:
+Stims brings Winamp's MilkDrop back as a kept tool, not a port you run once. It is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM. It is built as a complete creative product rather than only an embeddable renderer:
 
 - **Explore** a 1,787-preset library with previews, fast pre-compiled search, collections, favorites, queues, history, and deep links.
 - **Author & Remix** directly in `.milk` with live editing, compiler diagnostics, parameter controls, instant A/B snapshotting, import, and export.
@@ -68,6 +76,8 @@ Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's
 - **Extend** the format through a guarded WebGPU path without treating a newer graphics API as proof of visual fidelity.
 
 The goal is not to claim that every imported preset is visually exact. The goal is to make compatibility visible, improve it systematically, and provide a better browser workflow around the visuals.
+
+Anyone who remembers the Winamp visuals has a home here, and the presets are only half of it. Bring music you already listen to — a tab playing a song, a YouTube link, a mic, a local file — and Stims reacts to measured features of that audio (frequency bands, transients, beat timing), not a canned loop. It is also built around control, not only spectacle: nothing plays until you start it, one action stops everything, motion scales with your operating system's reduce-motion setting, and preset changes either cut or crossfade over a duration you choose. Those controls are a plain product decision, not a medical claim — here is the [plain-language story](./docs/guides/accessibility.md) and the [research program](./docs/SENSORY_ACCESSIBILITY.md) behind them.
 
 ---
 
@@ -108,9 +118,10 @@ Everything here ships in the browser today — no account, no server, no convert
 | **Direct preset workflow** | Import and export `.milk` files without converting them into a Butterchurn-specific JSON format. |
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
+| **Sensory-precise controls** | Nothing plays until you start an audio source; one action stops everything; Cut or Blend transitions over a duration you set; honors your operating system's reduce-motion setting; your last session and settings come back where you left them. |
 | **WebGL2 + guarded WebGPU** | WebGL2 is the compatibility baseline. WebGPU is additive and can fall back when a compiled preset needs unsupported behavior. |
 | **Browser recording beta** | Records the live canvas to common landscape and portrait target dimensions through `MediaRecorder`; its evidence boundary is in [docs/TECHNICAL_ACHIEVEMENTS.md](./docs/TECHNICAL_ACHIEVEMENTS.md). |
-| **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters. |
+| **Shareable sessions** | Preset, collection, audio, tool, and agent state can be retained in URL query parameters; the in-app Share button copies a ready-to-paste link. |
 | **Automation and proof tooling** | Headless session controls, deterministic capture scripts, projectM reference provenance, and image-diff reports support repeatable QA. |
 
 ---
