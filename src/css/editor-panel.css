@@ -1431,7 +1431,9 @@ html.light .stims-editor {
   top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 30;
+  /* Local to the editor, above its menu (5) and proposal (4). It was 30,
+     which read as the global toast layer while being none of it. */
+  z-index: 6;
   width: min(320px, calc(100% - 24px));
   background: var(--ed-panel, #131a22);
   border: 1px solid var(--ed-line, rgba(255, 255, 255, 0.14));
