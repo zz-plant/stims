@@ -17,7 +17,7 @@
 
 [Launch Stims](https://toil.fyi) · [Developer docs](./docs/README.md) · [Runtime performance evidence](./docs/RUNTIME_PERFORMANCE.md) · [Compatibility evidence](./docs/MILKDROP_PROJECTM_PARITY_PLAN.md) · [Discussions](https://github.com/zz-plant/stims/discussions)
 
-*1,787 presets · live `.milk` editor · deep-linkable sessions · WebGL2 + guarded WebGPU · sensory-precise controls · public domain (Unlicense)*
+*1,787 presets, curated first · live `.milk` editor · deep-linkable sessions · WebGL2 + guarded WebGPU · sensory-precise controls · public domain (Unlicense)*
 
 ![Stims — a browser-native MilkDrop-inspired visualizer](./docs/assets/stims-hero.png)
 
@@ -60,9 +60,13 @@ Open [toil.fyi](https://toil.fyi) and something is already moving — the first-
 
 **[toil.fyi/?preset=krash-rovastar-cerebral-demons-stars](https://toil.fyi/?preset=krash-rovastar-cerebral-demons-stars)** — *Krash & Rovastar — Cerebral Demons (Stars Remix)*, the same measured pick that greets every first run.
 
-The address bar is a promise: whatever you're watching — a preset you found in browse, a song playing in another tab, a YouTube link — is exactly what a copied URL reopens. The in-app **Share** button packages the same link with preset-titled copy when you're not near an address bar.
+The address bar is a promise: whatever you're watching — a preset you found in browse, a song playing in another tab, a YouTube link — is exactly what a copied URL reopens. The in-app **Share** button packages the same link with preset-titled copy when you're not near an address bar. Made an edit instead of just browsing? The edited source rides in the URL too, so the exact remix opens for whoever the link reaches.
 
-[Send it to someone](#send-it-to-someone) · [Why Stims](#why-stims) · [Breakthrough Pillars](#breakthrough-pillars) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start)
+## For stimmers
+
+MilkDrop has a real neurodivergent following, so the controls ship for them: audio-silent until you start it, one action stops everything, motion that follows your operating system's reduce-motion setting, and transitions you set. For some people — including autistic and ADHD people — that much control over the pace and intensity of sensory input is, as part of managing sensory environments generally, linked to more comfort with stimulation, not less. That is a claim about the controls existing, not a medical claim about what they do: the evidence and its limits live in the [accessibility guide](./docs/guides/accessibility.md) and the [sensory research program](./docs/SENSORY_ACCESSIBILITY.md).
+
+[Send it to someone](#send-it-to-someone) · [For stimmers](#for-stimmers) · [Why Stims](#why-stims) · [Breakthrough Pillars](#breakthrough-pillars) · [What works today](#what-works-today) · [How Stims differs](#how-stims-differs-from-other-milkdrop-lineage-projects) · [Compatibility and evidence](#compatibility-and-evidence) · [Technical foundations](#technical-foundations) · [Quick start](#quick-start) · [Contributing](#contributing)
 
 ---
 
@@ -77,7 +81,7 @@ Stims brings Winamp's MilkDrop back as a kept tool, not a port you run once. It 
 
 The goal is not to claim that every imported preset is visually exact. The goal is to make compatibility visible, improve it systematically, and provide a better browser workflow around the visuals.
 
-Anyone who remembers the Winamp visuals has a home here, and the presets are only half of it. Bring music you already listen to — a tab playing a song, a YouTube link, a mic, a local file — and Stims reacts to measured features of that audio (frequency bands, transients, beat timing), not a canned loop. It is also built around control, not only spectacle: nothing plays until you start it, one action stops everything, motion scales with your operating system's reduce-motion setting, and preset changes either cut or crossfade over a duration you choose. Those controls are a plain product decision, not a medical claim — here is the [plain-language story](./docs/guides/accessibility.md) and the [research program](./docs/SENSORY_ACCESSIBILITY.md) behind them.
+Anyone who remembers the Winamp visuals has a home here, and the presets are only half of it. Bring music you already listen to — a tab playing a song, a YouTube link, a mic, a local file — and Stims reacts to measured features of that audio (frequency bands, transients, beat timing), not a canned loop. It is also built around control, not only spectacle — who that control is for, and the evidence behind it, are covered under [For stimmers](#for-stimmers).
 
 ---
 
@@ -114,7 +118,7 @@ Everything here ships in the browser today — no account, no server, no convert
 
 | Capability | Current behavior |
 | --- | --- |
-| **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. |
+| **1,787-preset catalog** | Searchable and filterable imported catalog with previews, favorites, recent history, queues, and one-click playback. Curated picks sort first; every entry ships a measured quality score, with runtime evidence tracked separately from visual certification. |
 | **Direct preset workflow** | Import and export `.milk` files without converting them into a Butterchurn-specific JSON format. |
 | **Live preset editor** | CodeMirror editor with MilkDrop completions, diagnostics, snippets, and live controls for values such as `zoom`, `warp`, `rot`, and `decay`. |
 | **Multi-source audio** | Built-in demo audio plus microphone, tab, YouTube, and local-file source paths where browser permissions allow them. |
@@ -278,7 +282,7 @@ Architecture, authoring, parity, and QA docs are indexed at [docs/README.md](./d
 
 ## Contributing
 
-Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), and include the tests and evidence appropriate to the surface you change.
+Contributions and compatibility reports are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md); [docs/ONBOARDING.md](./docs/ONBOARDING.md) maps the codebase, and `bun run dev:agent` is the warm dev loop (dev server, typecheck watch, fast tests watch). Compatibility changes should bring a test and its evidence artifact.
 
 ---
 
