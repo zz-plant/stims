@@ -62,6 +62,44 @@ describe('check:z-layers', () => {
     expect(output).toContain('z-index:80');
   });
 
+  // Codex caught this on review: the first version matched only the
+  // hyphenated `z-index:` spelling, so the normal ways to set a layer from a
+  // component went straight through a guard that advertised scanning .tsx.
+  test('rejects a raw value in a JSX style prop', () => {
+    const { code, output } = runGuard({
+      'Comp.tsx':
+        'export function Comp() {\n' +
+        "  return <div style={{ position: 'fixed', zIndex: 40 }} />;\n" +
+        '}\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('zIndex: 40');
+  });
+
+  test('rejects a raw value assigned to element.style.zIndex', () => {
+    const { code, output } = runGuard({
+      'imperative.ts':
+        "const el = document.createElement('div');\nel.style.zIndex = '80';\n",
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('zIndex');
+  });
+
+  test('accepts a token in camel-case form too', () => {
+    const { code } = runGuard({
+      'Comp.tsx':
+        "const style = { zIndex: 'var(--z-lab-panel)' };\nexport default style;\n",
+    });
+    expect(code).toBe(0);
+  });
+
+  test('a zIndex type annotation is not a declaration', () => {
+    const { code } = runGuard({
+      'types.ts': 'export type Props = {\n  zIndex?: number;\n};\n',
+    });
+    expect(code).toBe(0);
+  });
+
   test('accepts a token', () => {
     const { code } = runGuard({
       'fixture.css': '.panel {\n  z-index: var(--z-lab-panel);\n}\n',
