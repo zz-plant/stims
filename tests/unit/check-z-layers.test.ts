@@ -100,6 +100,29 @@ describe('check:z-layers', () => {
     expect(code).toBe(0);
   });
 
+  // Also Codex, on the follow-up: parseInt(_, 10) misreads JavaScript numeric
+  // literals rather than rejecting them, so `1e3` came back 1 and `0x28` came
+  // back 0 — both sailing under a floor they are well above.
+  test('resolves exponential and hexadecimal literals before the floor', () => {
+    const { code, output } = runGuard({
+      'x.ts':
+        'export const a = { zIndex: 1e3 };\nexport const b = { zIndex: 0x28 };\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('1e3');
+    expect(output).toContain('0x28');
+  });
+
+  test('still reads a value carrying a trailing qualifier', () => {
+    // The reason resolveLayer falls back to parseInt: Number('40 !important')
+    // is NaN, and dropping to Number alone would have lost this.
+    const { code, output } = runGuard({
+      'y.css': '.a {\n  z-index: 40 !important;\n}\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('40 !important');
+  });
+
   test('accepts a token', () => {
     const { code } = runGuard({
       'fixture.css': '.panel {\n  z-index: var(--z-lab-panel);\n}\n',
