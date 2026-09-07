@@ -120,7 +120,7 @@ body[data-page="workspace"][data-live="true"] {
     position: fixed;
     right: max(0.75rem, env(safe-area-inset-right));
     bottom: max(0.75rem, env(safe-area-inset-bottom));
-    z-index: 12;
+    z-index: var(--z-embed-brand);
     display: inline-flex;
     align-items: center;
     min-height: 32px;
@@ -2024,7 +2024,10 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__preset-preview-image {
     position: absolute;
     inset: 0;
-    z-index: var(--z-stage-root);
+    /* Local: raises the frame over the tile's own surface. It read
+       var(--z-stage-root) — the stage layer — which claimed kinship with the
+       stage from inside a browse panel. Nothing global is being asked for. */
+    z-index: 1;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -2040,7 +2043,8 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__preset-art-placeholder {
     position: absolute;
     inset: 0;
-    z-index: var(--z-stage-root);
+    /* Local to the tile, as above. */
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2257,7 +2261,7 @@ body[data-page="workspace"][data-live="true"] {
     position: fixed;
     right: 24px;
     bottom: 24px;
-    z-index: var(--z-audio-match);
+    z-index: var(--z-toast-floating);
     display: flex;
     flex-wrap: wrap;
     align-items: center;

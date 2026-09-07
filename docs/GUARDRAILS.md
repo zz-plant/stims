@@ -42,6 +42,7 @@ become fast feedback instead of a surprise at PR time.
 | [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
 | [`check:unused-exports`](#checkunused-exports) | on demand | Detect exported symbols with zero importers — the "remove dead code" pattern that recurred 12+ times in the last 400 commits. Codex PRs introduced exports that nothing imported; they survived merge and were purged weeks later in bulk. |
 | [`check:webgpu-target-sampling`](#checkwebgpu-target-sampling) | `check:quick` | Blocks a bare `.sample()` against one of the WebGPU feedback manager's own render targets. |
+| [`check:z-layers`](#checkz-layers) | `check:quick` | Fail on `z-index` values that opt out of the layer scale in tokens.css. |
 
 ---
 
@@ -632,6 +633,32 @@ Uploaded textures — noise, aura, video, the glyph atlas — are NOT flipped an
 are none of this guard's business.
 
 Run it directly: `bun run check:webgpu-target-sampling`
+
+## check:z-layers
+
+Fail on `z-index` values that opt out of the layer scale in tokens.css.
+
+The scale is a shared claim about what sits above what: a lab panel below a
+dialog, a toast above the dock, a skip link above all of it. A raw number
+makes that claim privately, and privately made claims collide. They had:
+StrudelLabPanel declared `z-index: 40`, which is exactly --z-modal-backdrop,
+so an open dialog's scrim and a floating tool panel occupied one layer and
+paint order fell to DOM order. It rendered correctly only by accident of
+which element happened to come last.
+
+Nothing caught it because a hand-picked z-index is valid CSS that looks
+right in the state you tested. It surfaces as one surface covering another
+in a combination nobody opened — the same reason check-css-scale.ts exists
+for radius and type.
+
+The rule: at or above --z-nav (10), where the global chrome scale starts,
+use a token. Below that, a literal is fine and usually better — a `z-index:
+1` that lifts an image over its own tile is local stacking inside one
+component and makes no claim about the app's layers. Reaching for
+var(--z-stage-root) there would assert kinship with the stage from inside a
+browse panel, which is how the misleading ones got written.
+
+Run it directly: `bun run check:z-layers`
 
 ---
 

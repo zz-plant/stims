@@ -145,6 +145,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:css-scale'],
       },
       {
+        label: 'Z-index layer scale',
+        cmd: ['bun', 'run', 'check:z-layers'],
+      },
+      {
         label: 'Agent action id drift',
         cmd: ['bun', 'run', 'check:agent-action-ids'],
       },

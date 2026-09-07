@@ -2,7 +2,7 @@
   position: absolute;
   top: calc(var(--stims-header-top, 62px) + 12px);
   right: 16px;
-  z-index: 40;
+  z-index: var(--z-lab-panel);
   display: grid;
   gap: 12px;
   width: min(360px, calc(100vw - 32px));
@@ -28,7 +28,7 @@
 }
 
 .panel[data-dragging="true"] {
-  z-index: 41;
+  z-index: calc(var(--z-lab-panel) + 1);
   user-select: none;
 }
 
@@ -202,7 +202,7 @@
   right: 16px;
   bottom: 16px;
   left: 16px;
-  z-index: 40;
+  z-index: var(--z-lab-panel);
   height: 112px;
   padding: 6px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
@@ -218,7 +218,7 @@
 }
 
 .scopeStrip[data-dragging="true"] {
-  z-index: 41;
+  z-index: calc(var(--z-lab-panel) + 1);
   cursor: grabbing;
 }
 
@@ -252,7 +252,7 @@
   position: absolute;
   top: calc(var(--stims-header-top, 62px) + 12px);
   right: 16px;
-  z-index: 40;
+  z-index: var(--z-lab-panel);
   padding: 6px 14px;
   border: 1px solid var(--stims-line-strong, rgba(255, 255, 255, 0.2));
   border-radius: var(--radius-round);

@@ -303,15 +303,24 @@
   --z-frame-chrome: 3;
   --z-search-sticky: 6;
   --z-nav: 10;
+  /* Embed-mode branding badge: over stage chrome, under any panel. */
+  --z-embed-brand: 12;
   --z-panel: 15;
   --z-overlay: 18;
   --z-dropdown: 20;
   --z-dock: 25;
+  /* Floating lab panels (Strudel) — above the dock so stage chrome cannot
+     bury a tool the user is dragging, below toasts and modals so a notice or
+     a dialog still wins. Previously a raw 40, which tied exactly with
+     --z-modal-backdrop and left paint order to DOM order. */
+  --z-lab-panel: 26;
   --z-filter-bar: 28;
   --z-toast: 30;
   --z-alert: 35;
   --z-modal-backdrop: 40;
   --z-modal: 45;
+  /* Full-screen tile→stage promote animation; covers the UI for its duration. */
+  --z-promote-transition: 80;
   --z-shortcut-overlay: 100;
   --z-home-link: 1000;
   --z-control-panel: 1100;
@@ -322,7 +331,14 @@
   --z-settings-panel: 1250;
   --z-fullscreen-panel: 1260;
   --z-error-overlay: 2000;
-  --z-audio-match: 2100;
+  /* Named for the surface that uses it — the floating workspace toast. It was
+     --z-audio-match, whose only consumer was this toast; the audio-match toast
+     is a different component and lives in the toast stack at --z-toast. */
+  --z-toast-floating: 2100;
+  /* Nothing may cover the skip link while it is focused: it is the first
+     control a keyboard user reaches. It sat at --z-dropdown (20), under the
+     dock (25) and the toast stack (30). */
+  --z-skip-link: 2200;
   --z-loading: 9999;
 
   /* ── TV Mode Scaling ────────────────────────────────────────-- */
