@@ -68,8 +68,15 @@ function walk(dir: string): string[] {
   return out;
 }
 
-/** Matches both `z-index: 40;` in CSS and `'z-index:80'` in an inline style. */
-const Z_INDEX = /z-index\s*:\s*([^;'"`,}\n]+)/g;
+/**
+ * Every spelling a layer gets declared in: `z-index: 40` in CSS and in inline
+ * style strings, `zIndex: 40` in a JSX style prop or style object, and
+ * `el.style.zIndex = '80'` imperatively. The first version of this matched
+ * only the hyphenated form, so the camel-case ones — the normal way to do it
+ * in a component — passed straight through a guard that advertised scanning
+ * .ts/.tsx.
+ */
+const Z_INDEX = /\bz-?index\s*[:=]\s*([^;,}\n]+)/gi;
 
 const offences: Offence[] = [];
 
@@ -82,7 +89,11 @@ for (const root of ROOTS) {
       Z_INDEX.lastIndex = 0;
       let match: RegExpExecArray | null = Z_INDEX.exec(line);
       while (match !== null) {
-        const raw = match[1].trim();
+        // `zIndex: '80'` and `z-index: 80` should read the same.
+        const raw = match[1]
+          .trim()
+          .replace(/^['"`]|['"`]$/g, '')
+          .trim();
         if (!raw.includes('var(--z-')) {
           const value = Number.parseInt(raw, 10);
           if (
