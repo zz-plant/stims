@@ -135,6 +135,12 @@ Research grounding for Stims' sensory-control claims, open research questions, a
 
 ---
 
+### 🗄️ Archive
+
+Superseded plans, dated audits, and historical critiques live in [docs/archive/](./archive/) so they stay reachable without crowding the index.
+
+---
+
 ## ⚡ Quick Reference Commands
 
 ```bash
