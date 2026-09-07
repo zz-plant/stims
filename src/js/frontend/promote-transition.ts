@@ -97,7 +97,7 @@ export function runPresetPromoteTransition({
     `top:${from.top}px`,
     `width:${from.width}px`,
     `height:${from.height}px`,
-    'z-index:80',
+    'z-index:var(--z-promote-transition)',
     'pointer-events:none',
     'overflow:hidden',
     'background:#000',

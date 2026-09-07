@@ -54,7 +54,7 @@ canvas {
     box-shadow 0.2s ease,
     background 0.2s ease,
     border-color 0.2s ease;
-  z-index: var(--z-dropdown);
+  z-index: var(--z-skip-link);
   min-height: 46px;
   min-width: 44px;
   display: inline-flex;
@@ -558,7 +558,8 @@ body.tv-mode .content {
 
 .library {
   position: relative;
-  z-index: var(--z-stage-root);
+  /* Local: lifts the section over the page backdrop. */
+  z-index: 1;
 }
 
 /* UI polish v2: stronger hierarchy, better readability, and less cramped cards */
