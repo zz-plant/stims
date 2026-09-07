@@ -173,6 +173,32 @@ export function buildCanonicalUrl(
   return url;
 }
 
+/** Full URL for the current session's share state. Passing `source` adds a
+ * `#code=` hash carrying the live-edited `.milk` source; passing `null`
+ * removes any hash. Pathname and search are preserved so the preset,
+ * collection, audio, and tool state in the query string keeps working.
+ * Returns the input unchanged when the source cannot be encoded (`btoa` is
+ * Latin-1-only and `.milk` files can carry non-Latin-1 text), so an
+ * unencodable remix degrades to the plain view URL instead of wiping the
+ * session's other state off the address bar. */
+export function buildRemixShareUrl(
+  input: string | URL,
+  source: string | null,
+): string {
+  const url =
+    typeof input === 'string'
+      ? new URL(input, 'https://toil.fyi')
+      : new URL(input.toString());
+  if (source !== null) {
+    const hash = buildPresetCodeHash(source);
+    if (!hash) return typeof input === 'string' ? input : input.toString();
+    url.hash = hash;
+  } else {
+    url.hash = '';
+  }
+  return url.toString();
+}
+
 export function decodePresetCodeFromHash(
   hashInput: string = typeof window !== 'undefined' ? window.location.hash : '',
 ): string | null {

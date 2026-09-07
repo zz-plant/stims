@@ -103,7 +103,7 @@ import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { readStored, writeStored } from './safe-storage.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
-import { decodePresetCodeFromHash } from './url-state.ts';
+import { buildRemixShareUrl, decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
@@ -1531,6 +1531,25 @@ function StimsWorkspaceAppShell() {
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [editorDirty]);
+
+  // The address bar and the in-app Share button are the same surface (both
+  // read window.location), so a copied URL reproduces a session only if the
+  // URL carries what changed. Write the live-edited source into a #code=
+  // hash while the editor session is dirty and drop it once a preset load
+  // or the revert action marks the session clean. replaceState, never push:
+  // history-entry ownership belongs to the route-sync effect (workspace-hooks),
+  // and a keystroke must not add an entry.
+  const sessionSource = engineSnapshot?.currentSource ?? '';
+  useEffect(() => {
+    if (!engine.engineReady) return;
+    const nextHref = buildRemixShareUrl(
+      window.location.href,
+      editorDirty && sessionSource ? sessionSource : null,
+    );
+    if (nextHref !== window.location.href) {
+      window.history.replaceState(window.history.state, '', nextHref);
+    }
+  }, [engine.engineReady, editorDirty, sessionSource]);
 
   useEffect(() => {
     reportLoadStatus('shell-rendered');
