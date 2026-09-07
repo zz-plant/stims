@@ -62,6 +62,67 @@ describe('check:z-layers', () => {
     expect(output).toContain('z-index:80');
   });
 
+  // Codex caught this on review: the first version matched only the
+  // hyphenated `z-index:` spelling, so the normal ways to set a layer from a
+  // component went straight through a guard that advertised scanning .tsx.
+  test('rejects a raw value in a JSX style prop', () => {
+    const { code, output } = runGuard({
+      'Comp.tsx':
+        'export function Comp() {\n' +
+        "  return <div style={{ position: 'fixed', zIndex: 40 }} />;\n" +
+        '}\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('zIndex: 40');
+  });
+
+  test('rejects a raw value assigned to element.style.zIndex', () => {
+    const { code, output } = runGuard({
+      'imperative.ts':
+        "const el = document.createElement('div');\nel.style.zIndex = '80';\n",
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('zIndex');
+  });
+
+  test('accepts a token in camel-case form too', () => {
+    const { code } = runGuard({
+      'Comp.tsx':
+        "const style = { zIndex: 'var(--z-lab-panel)' };\nexport default style;\n",
+    });
+    expect(code).toBe(0);
+  });
+
+  test('a zIndex type annotation is not a declaration', () => {
+    const { code } = runGuard({
+      'types.ts': 'export type Props = {\n  zIndex?: number;\n};\n',
+    });
+    expect(code).toBe(0);
+  });
+
+  // Also Codex, on the follow-up: parseInt(_, 10) misreads JavaScript numeric
+  // literals rather than rejecting them, so `1e3` came back 1 and `0x28` came
+  // back 0 — both sailing under a floor they are well above.
+  test('resolves exponential and hexadecimal literals before the floor', () => {
+    const { code, output } = runGuard({
+      'x.ts':
+        'export const a = { zIndex: 1e3 };\nexport const b = { zIndex: 0x28 };\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('1e3');
+    expect(output).toContain('0x28');
+  });
+
+  test('still reads a value carrying a trailing qualifier', () => {
+    // The reason resolveLayer falls back to parseInt: Number('40 !important')
+    // is NaN, and dropping to Number alone would have lost this.
+    const { code, output } = runGuard({
+      'y.css': '.a {\n  z-index: 40 !important;\n}\n',
+    });
+    expect(code).toBe(1);
+    expect(output).toContain('40 !important');
+  });
+
   test('accepts a token', () => {
     const { code } = runGuard({
       'fixture.css': '.panel {\n  z-index: var(--z-lab-panel);\n}\n',
