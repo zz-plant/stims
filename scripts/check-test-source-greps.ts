@@ -56,7 +56,8 @@ const ALLOWED: Record<string, string> = {
     'The no-backdrop invariant renders the real SidePanel both ways; the remaining read is the App.tsx wiring of stageAnchored to the editor panel, since the shell does not mount here.',
   'tests/unit/app-shell-ui-simplification.test.ts':
     'DEBT: greps eight components for copy.',
-  'tests/unit/arrival-url.test.ts': 'DEBT: greps for arrival URL handling.',
+  'tests/unit/arrival-url.test.ts':
+    'The snapshot module gets a full behavioural suite (frozen-at-load, survives replaceState) in this same file; the two remaining greps are entry-graph structure — app.ts must eagerly import the snapshot (that eager import IS the load-time pin) and NewHomePage must read it rather than live location.search — wiring contracts no harness in this suite mounts to observe.',
   'tests/unit/assisted-edit-gate.test.ts':
     'One remaining routing check on editor-panel source (all AI actions go through the proposal path); the exact-count brittleness is gone and the rest of the file is behavioural.',
   'tests/unit/keyboard-shortcut-matching.test.ts':
