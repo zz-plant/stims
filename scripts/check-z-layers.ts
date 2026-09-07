@@ -68,8 +68,30 @@ function walk(dir: string): string[] {
   return out;
 }
 
-/** Matches both `z-index: 40;` in CSS and `'z-index:80'` in an inline style. */
-const Z_INDEX = /z-index\s*:\s*([^;'"`,}\n]+)/g;
+/**
+ * Every spelling a layer gets declared in: `z-index: 40` in CSS and in inline
+ * style strings, `zIndex: 40` in a JSX style prop or style object, and
+ * `el.style.zIndex = '80'` imperatively. The first version of this matched
+ * only the hyphenated form, so the camel-case ones — the normal way to do it
+ * in a component — passed straight through a guard that advertised scanning
+ * .ts/.tsx.
+ */
+const Z_INDEX = /\bz-?index\s*[:=]\s*([^;,}\n]+)/gi;
+
+/**
+ * The layer a declaration actually resolves to, or NaN if it is not a number.
+ *
+ * Both halves are load-bearing. `Number` is first because `parseInt(_, 10)`
+ * reads the JavaScript literal forms wrong rather than rejecting them —
+ * `1e3` comes back 1 and `0x28` comes back 0, so `zIndex: 1e3` would sail
+ * under a floor it is two orders of magnitude above. `parseInt` is the
+ * fallback because `Number` rejects a trailing qualifier outright, and
+ * `z-index: 40 !important` is still a 40.
+ */
+function resolveLayer(raw: string): number {
+  const exact = Number(raw);
+  return Number.isFinite(exact) ? exact : Number.parseInt(raw, 10);
+}
 
 const offences: Offence[] = [];
 
@@ -82,9 +104,13 @@ for (const root of ROOTS) {
       Z_INDEX.lastIndex = 0;
       let match: RegExpExecArray | null = Z_INDEX.exec(line);
       while (match !== null) {
-        const raw = match[1].trim();
+        // `zIndex: '80'` and `z-index: 80` should read the same.
+        const raw = match[1]
+          .trim()
+          .replace(/^['"`]|['"`]$/g, '')
+          .trim();
         if (!raw.includes('var(--z-')) {
-          const value = Number.parseInt(raw, 10);
+          const value = resolveLayer(raw);
           if (
             !Number.isNaN(value) &&
             Math.abs(value) >= GLOBAL_SCALE_FLOOR &&
