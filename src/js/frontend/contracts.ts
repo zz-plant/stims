@@ -85,6 +85,9 @@ export type PresetCatalogEntry = {
   tags?: string[];
   searchTerms?: string[];
   preview?: boolean;
+  /** Curation rank: curated tier first, mass import stamped >= 10_000 by
+   * catalog-bundled-pipeline. Drives the "curated" browse sort. */
+  curatedRank?: number;
   isFavorite?: boolean;
   rating?: number;
   historyIndex?: number;

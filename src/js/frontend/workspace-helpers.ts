@@ -228,6 +228,7 @@ export function scorePresetEntry(
 
 export type BrowseSortMode =
   | 'relevance'
+  | 'curated'
   | 'title'
   | 'author'
   | 'recent'
@@ -259,6 +260,14 @@ export function sortBrowseEntries(
 ): PresetCatalogEntry[] {
   const sorted = [...entries];
   switch (sort) {
+    case 'curated':
+      return sorted.sort(
+        (a, b) =>
+          (a.curatedRank ?? Number.MAX_SAFE_INTEGER) -
+            (b.curatedRank ?? Number.MAX_SAFE_INTEGER) ||
+          (b.quality?.score ?? 0) - (a.quality?.score ?? 0) ||
+          a.title.localeCompare(b.title),
+      );
     case 'title':
       return sorted.sort((a, b) => a.title.localeCompare(b.title));
     case 'author':
