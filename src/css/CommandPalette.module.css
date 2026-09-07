@@ -169,7 +169,7 @@
    between options as a sibling so the listbox's index mapping — which drives
    aria-activedescendant — is unaffected, and it is never highlightable. */
 .groupLabel {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;

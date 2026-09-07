@@ -20,9 +20,11 @@ become fast feedback instead of a surprise at PR time.
 | [`check:cache-bounds`](#checkcache-bounds) | `check:quick` | Detect new unbounded growth containers — the "map/set that only ever grows" pattern the #1105–#1111 bounding series kept chasing (compiled-preset warmup, preview caches, idle renderer pools, source-diff memory, offscreen identicons all shipped unbounded and had to be bounded reactively). |
 | [`check:catalog-fidelity`](#checkcatalog-fidelity) | `check:quick` | Verifies the bundled preset catalog's fidelity fields still match the measured visual results manifest. |
 | [`check:catalog-integrity`](#checkcatalog-integrity) | `check:quick` | Validates the bundled MilkDrop catalog: every entry's required fields, the preset file on disk, and its preview image. |
-| [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, husky blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
+| [`check:ci-config`](#checkci-config) | `check:quick` | Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, git hooks blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them. |
 | [`check:commit-msg`](#checkcommit-msg) | on demand | Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes". |
+| [`check:css-scale`](#checkcss-scale) | `check:quick` | Fail on `border-radius` and `font-size` values that are not on the scale. |
 | [`check:css-tokens`](#checkcss-tokens) | `check:quick` | Fail on `var(--token)` references that resolve to nothing. |
+| [`check:dead-code`](#checkdead-code) | `check` | Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc). |
 | [`check:doc-references`](#checkdoc-references) | `check:quick` | Guard against docs that point at files and commands which no longer exist. |
 | [`check:duplicate-css`](#checkduplicate-css) | `check:quick` | Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, remove duplicate keyframes" pattern recurred multiple times in the last 400 commits (`0cc04211`, `6b39eb2f`, `1d2fa2af`). Duplicates bloat the bundle and cause maintenance drift where one copy is updated and the other is forgotten. |
 | [`check:first-run-evidence`](#checkfirst-run-evidence) | `check:quick` | Record the measured evidence behind the first-run preset. |
@@ -31,10 +33,11 @@ become fast feedback instead of a surprise at PR time.
 | [`check:module-docs`](#checkmodule-docs) | `check:quick` | Requires a file-level docblock on the `src/` modules big enough to need one. |
 | [`check:no-ts-nocheck`](#checkno-ts-nocheck) | `check:quick` | Fails the build if a whole-file TypeScript suppression directive is present under src/, scripts/, or tests/. |
 | [`check:production-edge`](#checkproduction-edge) | on demand | Verifies the deployed site's edge is reachable and not gated behind a Cloudflare challenge. |
-| [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the README's public claims aligned with what the repo actually ships. |
+| [`check:readme-claims`](#checkreadme-claims) | `check:quick` | Keeps the repo's public claims aligned with what it actually ships. |
 | [`check:reference-audio-header`](#checkreference-audio-header) | `check:quick` | Generates the C++ harness's copy of the parity reference audio signal. |
 | [`check:script-docs`](#checkscript-docs) | `check:quick` | Lists package.json scripts grouped by namespace, pulling each script's one-line purpose from the docblock atop its target file. |
 | [`check:seo`](#checkseo) | `check:quick` | Asserts the shipped SEO surface still matches what `generate:seo` would produce. |
+| [`check:skill-index`](#checkskill-index) | `check:quick` | Keep the agent skill set discoverable and well-formed. |
 | [`check:stale-paths`](#checkstale-paths) | `check:quick` | Guard against references to the pre-`src/` tree. |
 | [`check:test-source-greps`](#checktest-source-greps) | `check:quick` | Fails when a test reads a production source file as text. |
 | [`check:unused-exports`](#checkunused-exports) | on demand | Detect exported symbols with zero importers — the "remove dead code" pattern that recurred 12+ times in the last 400 commits. Codex PRs introduced exports that nothing imported; they survived merge and were purged weeks later in bulk. |
@@ -105,13 +108,22 @@ Run it directly: `bun run check:authoring-examples`
 Bundle-size budget for the built app.
 
 The quality gate has 60+ checks but until now nothing guarded bundle
-bytes, so a stray eager import (meyda, stats-gl, a CSS file for a lazy
-panel) could silently grow the startup payload. This asserts budgets
+bytes, so a stray eager import (stats-gl, a CSS file for a lazy panel, an
+unpinned Three.js subpath) could silently grow the startup payload. This
+asserts budgets
 against `dist/` output:
 
   - per-chunk ceiling for the largest JS chunk,
   - total JS payload ceiling,
-  - total CSS payload ceiling.
+  - total CSS payload ceiling,
+  - gzipped ceilings for the catalog manifests.
+
+The manifests are guarded separately because they are the largest things
+the app downloads and nothing watched them: `public/_headers` described
+catalog.json as ~1.7 MB while it had already reached 2.4 MB. They are
+budgeted gzipped, since that is what crosses the wire (2.4 MB of highly
+repetitive JSON is 100 KB compressed) and raw size would fail for growth
+that costs a visitor nothing.
 
 Budgets are deliberately generous versus today's output — they exist to
 catch step-change regressions, not to fight every kilobyte. Run with a
@@ -166,7 +178,7 @@ Run it directly: `bun run check:catalog-integrity`
 
 ## check:ci-config
 
-Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, husky blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them.
+Guard against CI/build/config drift — the class of break that recurred 14+ times in the last 400 commits: deleted workflows, npm→bun switches, git hooks blocking deploys, build.mjs conflict markers, and scripts that vanish while workflows still reference them.
 
 Checks:
  1. Every `bun run <script>` in workflow files resolves to a package.json
@@ -174,10 +186,10 @@ Checks:
  2. `.bun-version` exists — workflows reference it via `bun-version-file`.
  3. No `npm `/`npx ` invocations in `.github/workflows/**` — the repo
     standardised on Bun; an npm command silently falls back to the npm
-    registry and can re-introduce the husky-in-CI and lockfile drift.
+    registry and can re-introduce the hooks-in-CI and lockfile drift.
  4. No git conflict markers in build/config files — `build.mjs` shipped
     with `<<<<<<<` markers once (`5e4fb1df`).
- 5. husky hook stubs referenced by `prepare` exist.
+ 5. the lefthook config the postinstall hook installer expects exists.
 
 Run it directly: `bun run check:ci-config`
 
@@ -186,13 +198,13 @@ Run it directly: `bun run check:ci-config`
 Reject non-descriptive commit messages — the "hopeful commit" pattern that signalled debugging-by-trial without root-cause isolation and clustered before follow-up fix flurries: "certainly this works", "hopefully works", "fixes", "fixed", "stims", "Various fixes".
 
 Also enforces Conventional Commits type prefix (feat/fix/refactor/...).
-Exits non-zero on a violation so a husky `commit-msg` hook or CI can
+Exits non-zero on a violation so a lefthook `commit-msg` hook or CI can
 gate on it.
 
 `--range` exists because the hook alone did not hold: commits authored
 outside the local hook path (the GitHub web editor's "Update <file>"
 commits among them) landed on main with subjects this guard rejects, and
-CI had dropped its own commit-message job on the assumption that husky
+CI had dropped its own commit-message job on the assumption that the hook
 covered every path. Range mode is that missing backstop.
 
 Usage: bun run scripts/check-commit-msg.ts <commit-msg-file>
@@ -201,6 +213,27 @@ Usage: bun run scripts/check-commit-msg.ts <commit-msg-file>
              [--allow-long-subjects]
 
 Run it directly: `bun run check:commit-msg`
+
+## check:css-scale
+
+Fail on `border-radius` and `font-size` values that are not on the scale.
+
+Both scales existed on paper and neither was followed. The radius block in
+tokens.css described a "sharp and angular" system topping out at 6px while
+the stylesheets carried nineteen literal pixel radii up to 28px; the type
+scale was declared once and then bypassed by 41 distinct rem sizes, 13 of
+them inside the 0.6–0.85rem band where the steps are smaller than a pixel.
+
+Nothing caught either, because a stylesheet with a hand-picked radius is
+still valid CSS that renders fine on its own — it only shows up as
+incoherence across surfaces, which no single diff reveals. Hence this
+check: the scale is only real if something enforces it.
+
+A literal is allowed when it lands on a scale step. Preferring the token
+(`var(--radius-md)`) is better still and always passes, since this only
+inspects literal values.
+
+Run it directly: `bun run check:css-scale`
 
 ## check:css-tokens
 
@@ -216,6 +249,22 @@ A usage is considered safe when the property is defined anywhere in the CSS,
 set from JS via setProperty, or the `var()` supplies a fallback.
 
 Run it directly: `bun run check:css-tokens`
+
+## check:dead-code
+
+Report unused files, exports, and dependencies across the whole tree with knip (config: knip.jsonc).
+
+The diff-scoped `check:unused-exports` guard only sees exports a change
+adds; this is the whole-repo view — files nothing imports, dependencies
+nothing requires, binaries nothing declares. Unused files and dependency
+findings exit non-zero; unused exports and types are reported as warnings
+(the codebase exports test seams and public-surface barrels on purpose),
+so treat that section as a review aid rather than a gate.
+
+  bun run check:dead-code            # full report
+  bun run check:dead-code -- --fix   # let knip delete unused exports/files
+
+Run it directly: `bun run check:dead-code`
 
 ## check:doc-references
 
@@ -256,7 +305,7 @@ Detect duplicate CSS keyframes and rule blocks — the "merge duplicate CSS, rem
 
 Catches:
  1. Duplicate `@keyframes` names across global CSS files.
- 2. Duplicate `@font-face` declarations with the same font-family.
+ 2. Duplicate `@font-face` faces (same family + weight + style).
 
 `.module.css` files are excluded from cross-file checks — CSS modules
 scope keyframes locally, so a `fade-in` in a module is not a duplicate
@@ -388,13 +437,27 @@ Run it directly: `bun run check:production-edge`
 
 ## check:readme-claims
 
-Keeps the README's public claims aligned with what the repo actually ships.
+Keeps the repo's public claims aligned with what it actually ships.
 
 Docs that oversell are a support cost and an onboarding trap: a contributor
 who reads that a foundation is shipped, then finds it experimental, has to
-re-derive the real state from the code. This guard checks the README's preset
-count against the bundled catalog and rejects wording that promotes known
-experimental work as finished.
+re-derive the real state from the code. This guard checks preset counts
+against the bundled catalog, rejects README wording that promotes known
+experimental work as finished, and rejects fidelity claims that no data file
+in the repo supports.
+
+It covers `README.md` and the live docs under `docs/`, because the claim that
+actually shipped a contradiction was in `docs/`, not the README:
+`CASE_STUDY_COMPILER_RUNTIME.md` asserted a `< 1.5%` parity gate and "over
+99% compatibility" on the same day `MILKDROP_PROJECTM_PARITY_PLAN.md`
+recorded most of the certified set diverging by 5–100%. Two rules follow from
+that: a parity gate has to be one the manifest configures, and there is no
+corpus-wide fidelity percentage to quote — visual evidence is per preset, and
+`catalog.json` records how few presets carry it.
+
+Historical records (audits, critiques, dated status docs, `docs/archive`,
+`docs/evidence`) are exempt: they describe a tree as it was, and rewriting
+them would misrepresent the record. `docs/GUARDRAILS.md` is generated.
 
 It is the same principle as `check-doc-references.ts` applied to claims
 rather than paths: documentation that lies is worse than documentation that
@@ -451,6 +514,38 @@ the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`
+
+## check:skill-index
+
+Keep the agent skill set discoverable and well-formed.
+
+Skills are how repeatable work classes are handed to agents, but an agent
+only ever finds a skill through an index: the capability table in
+`docs/agents/custom-capabilities.md` and the routing table in
+`.claude/CLAUDE.md`. Both are maintained by hand, so a skill added without
+an index row is invisible — the work class it encodes gets re-derived from
+scratch every time, which is the exact cost skills exist to remove.
+
+`check-doc-references.ts` verifies that links in the docs point at files
+that exist. This is the other direction: that files which exist are
+reachable from the docs.
+
+Checks per `.agent/skills/<dir>/SKILL.md`:
+  1. YAML frontmatter with `name` and a non-trivial `description`
+  2. `name` matches the directory (routing tables address skills by path,
+     and a mismatch makes the two ways of naming a skill disagree)
+  3. the skill is listed in the capability index
+  4. the skill is served over MCP (`scripts/mcp-shared.ts`), so clients
+     reaching the repo that way see the same skill set as a CLI agent
+
+`guard-agent-work` states requirement 4 as a manual checklist item, which is
+exactly as reliable as it sounds: the skill added alongside this guard was
+itself missed. A checklist that can be enforced should be.
+
+The `.claude/CLAUDE.md` routing table is deliberately a shortlist — it says
+so — and is not required to carry every skill.
+
+Run it directly: `bun run check:skill-index`
 
 ## check:stale-paths
 

@@ -3,6 +3,7 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
   type LineBasicMaterial,
+  type Material,
   type ShaderMaterial,
   Vector3,
 } from 'three';
@@ -104,9 +105,12 @@ export function renderMotionVectors({
   previousFrame?: MilkdropRenderPayload['frameState'] | null;
   blendMix?: number;
   cpuGroup: Group;
+  // Material is Line/Shader on WebGL and a NodeMaterial on WebGPU — this
+  // function swaps in the latter a few lines below. The union said otherwise
+  // and the assignment was simply unchecked while this layer was untyped.
   proceduralObject: LineSegments<
     BufferGeometry,
-    LineBasicMaterial | ShaderMaterial
+    LineBasicMaterial | ShaderMaterial | Material
   >;
   clearGroup: (group: Group) => void;
   renderLineVisualGroup: (

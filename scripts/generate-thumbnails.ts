@@ -81,7 +81,7 @@ interface PresetEntry {
   preview?: unknown;
 }
 
-type CaptureFailure = {
+export type CaptureFailure = {
   presetId: string;
   reason: string;
 };
@@ -276,6 +276,75 @@ function badFrameReason(stats: FrameStats): string | null {
     return `flat frame (mean=${stats.meanLuma.toFixed(1)}, std=${stats.stdLuma.toFixed(1)})`;
   }
   return null;
+}
+
+/**
+ * Rewrite the failure report, preserving what this run did not look at.
+ *
+ * check-catalog-integrity reads this file as "these presets have no usable
+ * preview" and forbids `preview: true` for anything on it. Two things make
+ * that easy to get wrong.
+ *
+ * A --force re-sweep's failures are not the same set as "has no preview": a
+ * preset whose recapture came back black keeps the good image it already had,
+ * and listing it would strip the preview flag off a picture that renders
+ * fine. Only presets actually left without a file belong on the list.
+ *
+ * And a run over a subset knows nothing about the rest of the corpus, so
+ * overwriting wholesale silently drops every id it did not visit. A 303-preset
+ * sweep emptied a 238-entry report that way, and the record only came back
+ * because it was still in git. Entries outside this run's scope are carried
+ * over untouched, and an id this run proved fine is dropped.
+ */
+export function writePreviewFailures(
+  failures: CaptureFailure[],
+  attempted: Array<{ id: string }>,
+  paths: { reportPath?: string; previewsDir?: string } = {},
+): CaptureFailure[] {
+  const previewsDir = paths.previewsDir ?? OUTPUT_DIR;
+  const reportPath =
+    paths.reportPath ?? join(previewsDir, '..', 'preview-failures.json');
+  const hasPreview = (presetId: string) =>
+    existsSync(join(previewsDir, `${presetId}.png`));
+
+  const carried: CaptureFailure[] = [];
+  if (existsSync(reportPath)) {
+    const attemptedIds = new Set(attempted.map((preset) => preset.id));
+    try {
+      const previous = JSON.parse(
+        readFileSync(reportPath, 'utf8'),
+      ) as CaptureFailure[];
+      for (const entry of previous) {
+        // Out of scope for this run, and still without an image.
+        if (!attemptedIds.has(entry.presetId) && !hasPreview(entry.presetId)) {
+          carried.push(entry);
+        }
+      }
+    } catch {
+      // An unreadable report is not worth failing a completed sweep over;
+      // this run's own findings are still recorded below.
+    }
+  }
+
+  const unusable = failures.filter((failure) => !hasPreview(failure.presetId));
+  const merged = [...carried, ...unusable].sort((a, b) =>
+    a.presetId.localeCompare(b.presetId),
+  );
+
+  // Trailing newline: this file is committed, and the repo's own formatter
+  // check fails on it otherwise.
+  writeFileSync(reportPath, `${JSON.stringify(merged, null, 2)}\n`);
+
+  if (failures.length > 0) {
+    const keptPrevious = failures.length - unusable.length;
+    console.log(
+      `${failures.length} presets failed to capture (${keptPrevious} kept the preview they already had); ${unusable.length} left with no preview`,
+    );
+  }
+  console.log(
+    `preview-failures.json: ${merged.length} preset(s) without a usable preview (${carried.length} carried over from outside this run)`,
+  );
+  return merged;
 }
 
 async function writePreview(buffer: Buffer, filePath: string): Promise<void> {
@@ -768,32 +837,17 @@ async function main() {
     );
   if (counters.success > 0)
     console.log(`Avg: ${(totalTime / counters.success).toFixed(1)}s/preset`);
-  if (failures.length > 0) {
-    const reportPath = join(OUTPUT_DIR, '..', 'preview-failures.json');
-    // check-catalog-integrity reads this file as "these presets have no usable
-    // preview" and forbids `preview: true` for anything on it. On a --force
-    // re-sweep that is not the same set as "this capture attempt failed": a
-    // preset whose recapture came back black keeps the good preview it already
-    // had, and listing it here would strip the preview flag off an image that
-    // renders fine. Only presets actually left without a file belong on the
-    // list.
-    const unusable = failures.filter(
-      (failure) => !existsSync(join(OUTPUT_DIR, `${failure.presetId}.png`)),
-    );
-    const keptPrevious = failures.length - unusable.length;
-    // Trailing newline: this file is committed, and the repo's own formatter
-    // check fails on it otherwise.
-    writeFileSync(reportPath, `${JSON.stringify(unusable, null, 2)}\n`);
-    console.log(
-      `${failures.length} presets failed to capture (${keptPrevious} kept the preview they already had); ${unusable.length} left with no preview — details in ${reportPath}`,
-    );
-  }
+  writePreviewFailures(failures, presets);
 
   await browser.close();
   server.close();
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Guarded so the module can be imported for its pure helpers (the failure
+// report merge has a unit test) without kicking off a full sweep.
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

@@ -22,7 +22,7 @@ import {
   computeParityDiffMetrics,
   loadImagePixels,
 } from './diff-parity-artifacts.ts';
-import { loadParityArtifactManifest } from './parity-artifacts.ts';
+import { latestStimsCapture } from './parity-artifacts.ts';
 import {
   type ParityNoiseBand,
   summarizeNoiseSamples,
@@ -137,11 +137,8 @@ async function measureOneCapture({
     captureError = error instanceof Error ? error.message : String(error);
   }
 
-  const artifacts = loadParityArtifactManifest(runDir).artifacts.filter(
-    (entry) => entry.kind === 'stims-capture' && entry.presetId === presetId,
-  );
-  const artifact = artifacts[artifacts.length - 1];
-  if (!artifact?.files.image) {
+  const capture = latestStimsCapture(runDir, presetId);
+  if (!capture?.imagePath) {
     // A capture that produced nothing is a measurement, not a crash. Presets
     // exist that intermittently render a completely black frame — the
     // blank-frame guard refuses to record those, and aborting here threw away
@@ -159,9 +156,7 @@ async function measureOneCapture({
         captureError ?? `no image artifact was written in ${runDir}`,
     };
   }
-  const imagePath = path.isAbsolute(artifact.files.image)
-    ? artifact.files.image
-    : path.join(runDir, artifact.files.image);
+  const imagePath = capture.imagePath;
   const referencePath = path.join(
     options.repoRoot,
     manifest.fixtureRoot,
@@ -179,7 +174,7 @@ async function measureOneCapture({
   return {
     repeat,
     mismatchRatio: metrics.mismatchRatio,
-    backend: artifact.capture?.backend ?? null,
+    backend: capture.backend,
     imagePath,
     captureError,
   };

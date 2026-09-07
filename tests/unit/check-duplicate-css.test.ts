@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 
 function runDuplicateCss(): number {
   const result = spawnSync('bun', ['run', 'scripts/check-duplicate-css.ts'], {

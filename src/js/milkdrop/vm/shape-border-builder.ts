@@ -22,7 +22,6 @@ export function shapeVisualFromLocals(
   locals: MutableState,
   _signals: MilkdropRuntimeSignals,
 ): MilkdropShapeVisual {
-  const secondaryAlpha = locals.a2 ?? 0;
   return {
     key,
     x: ((locals.x ?? 0.5) - 0.5) * 2,
@@ -42,10 +41,17 @@ export function shapeVisualFromLocals(
       locals.b ?? 0.85,
       locals.a ?? 0.24,
     ),
-    secondaryColor:
-      secondaryAlpha > 0
-        ? color(locals.r2 ?? 0, locals.g2 ?? 0, locals.b2 ?? 0, secondaryAlpha)
-        : null,
+    // MilkDrop always interpolates the fill from the center color to the
+    // rim color — a2=0 (the default and the most common authored value)
+    // means "fade to transparent at the rim", not "no gradient". Gating on
+    // a2>0 rendered every such shape as a uniform full-alpha disc, which
+    // turned krash's soft additive glow into a screen-filling flat pentagon.
+    secondaryColor: color(
+      locals.r2 ?? 0,
+      locals.g2 ?? 0,
+      locals.b2 ?? 0,
+      locals.a2 ?? 0,
+    ),
     borderColor: color(
       locals.border_r ?? 1,
       locals.border_g ?? 0.84,

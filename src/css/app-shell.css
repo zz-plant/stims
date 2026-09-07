@@ -23,6 +23,14 @@ html:has(body[data-page="workspace"]) {
   min-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  /* base.css reserves a stable scrollbar gutter document-wide, which is right
+     for the prose pages: content grows past the fold there and a gutter that
+     appears on load would shift the whole layout sideways. The workspace is
+     the opposite case — it is sized to the viewport and does not scroll, so
+     the gutter never fills, and a permanent 15px strip of page ground down the
+     right edge is the one thing standing between this and an actual
+     full-screen stage. */
+  scrollbar-gutter: auto;
 }
 
 body[data-page="workspace"] {
@@ -69,6 +77,18 @@ body[data-page="workspace"][data-live="true"] {
     background: #03050b;
   }
 
+  /* Home is full-bleed for the same reason live is: the landing copy promises
+     "full-screen visuals", and a padded, bordered frame delivered a letterbox
+     instead — a band of visuals with the page ground around it. The shell's
+     own padding also made the workspace (100dvh - 40px) taller than the
+     content box it sat in (100dvh - 48px), so every desktop load overflowed
+     by 8px, raised a scrollbar, and shifted the "centered" frame off-centre by
+     the scrollbar's width. */
+  :scope[data-mode="home"] {
+    padding: 0;
+    background: #03050b;
+  }
+
   :scope [id] {
     scroll-margin-top: var(--stims-header-top);
   }
@@ -94,6 +114,32 @@ body[data-page="workspace"][data-live="true"] {
   :scope[data-preview="true"] .stims-shell__stage-dock-wrap,
   :scope[data-preview="true"] .stims-shell__toast {
     display: none;
+  }
+
+  .stims-shell__embed-brand {
+    position: fixed;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    z-index: 12;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--radius-pill);
+    background: rgba(3, 5, 11, 0.76);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+  }
+
+  .stims-shell__embed-brand:hover,
+  .stims-shell__embed-brand:focus-visible {
+    border-color: rgba(100, 220, 255, 0.72);
+    color: #fff;
   }
   :scope {
     min-height: 100svh;
@@ -165,7 +211,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__skeleton {
     position: relative;
     overflow: hidden;
-    background: var(--stims-white-04);
+    background: var(--stims-skeleton-fill);
     border-radius: var(--stims-radius-card);
   }
 
@@ -186,6 +232,42 @@ body[data-page="workspace"][data-live="true"] {
     width: 55%;
   }
 
+  /* Browse-shaped variant: search field, filter chips, tile grid — the layout
+     that is about to replace it, so the panel resolves into focus instead of
+     swapping one loading state for a different one. */
+  .stims-shell__panel-loading[data-shape="browse"] {
+    gap: 10px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--search {
+    height: 40px;
+    width: 100%;
+  }
+
+  .stims-shell__skeleton-chips {
+    display: flex;
+    gap: 8px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--chip {
+    height: 26px;
+    width: 84px;
+    border-radius: var(--radius-round);
+  }
+
+  .stims-shell__skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stims-shell__panel-loading[data-shape="browse"]
+    .stims-shell__skeleton--tile {
+    aspect-ratio: 4 / 3;
+  }
+
   .stims-shell__skeleton::after {
     content: "";
     position: absolute;
@@ -193,7 +275,7 @@ body[data-page="workspace"][data-live="true"] {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      var(--stims-white-08) 50%,
+      var(--stims-skeleton-sheen) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
@@ -207,7 +289,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__skeleton--text {
     height: 1em;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
   }
 
   .stims-shell__skeleton--text-sm {
@@ -331,6 +413,52 @@ body[data-page="workspace"][data-live="true"] {
     width: min(72rem, 100%);
   }
 
+  /* The launch copy sits directly on the stage canvas, and the stage is a
+     dark surface whatever the visitor's OS theme says — attract mode paints
+     a MilkDrop frame behind this text, not the page background (html/body
+     are transparent here by design).
+
+     Without this the light theme wins and the hero renders its own ink over
+     that frame: measured #0f172a wordmark against an attract render at
+     luminance ~26/255, a contrast ratio of about 1.005:1. The page looked
+     blank to anyone whose system was in light mode, which is most visitors.
+
+     Pinned rather than made conditional on attract mode: the stage frame is
+     dark in every state this copy is shown over, including the paused and
+     retired ones, so a conditional would only add a way to get it wrong. */
+  .stims-shell__launch {
+    --stims-ink: var(--stims-on-stage-ink);
+    --stims-ink-strong: var(--stims-on-stage-ink-strong);
+    --stims-muted: var(--stims-on-stage-muted);
+    --stims-line: var(--stims-on-stage-line);
+    --stims-line-strong: var(--stims-on-stage-line-strong);
+    --stims-line-soft: var(--stims-on-stage-line-soft);
+    --stims-cool: var(--stims-on-stage-cool);
+    --stims-control-fill: var(--stims-on-stage-control-fill);
+    --stims-control-fill-hover: var(--stims-on-stage-control-fill-hover);
+    /* The surfaces those inks are written on, pinned for the same reason and
+       on the same terms. Anything inside the hero that paints a background
+       reaches one of these, so pinning them here covers the audio-source
+       cards, the YouTube field, the primary button and every skeleton without
+       each needing a light-theme rule of its own. */
+    --card-bg: var(--stims-on-stage-card);
+    --bg-color-secondary: var(--stims-on-stage-panel);
+    --panel-solid: var(--stims-on-stage-panel-strong);
+    --panel-subtle: var(--stims-on-stage-panel);
+    --panel-glass: var(--stims-on-stage-panel);
+    --stims-panel: var(--stims-on-stage-panel);
+    --stims-panel-strong: var(--stims-on-stage-panel-strong);
+    --interactive-bg: var(--stims-on-stage-panel);
+    --interactive-bg-hover: var(--stims-on-stage-control-fill-hover);
+    --text-color: var(--stims-on-stage-ink);
+    --text-muted: var(--stims-on-stage-muted);
+    --stims-accent: var(--stims-on-stage-accent);
+    --stims-on-accent: var(--stims-on-stage-on-accent);
+    --stims-skeleton-fill: var(--stims-on-stage-skeleton-fill);
+    --stims-skeleton-sheen: var(--stims-on-stage-skeleton-sheen);
+    color: var(--stims-ink);
+  }
+
   .stims-shell__workspace {
     padding: 0;
   }
@@ -358,8 +486,11 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__workspace[data-mode="home"] {
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
     overflow: visible;
@@ -382,7 +513,7 @@ body[data-page="workspace"][data-live="true"] {
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.22em;
-    font-size: 0.74rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--stims-cool, #77c9ff);
     text-shadow: 0 0 10px rgba(119, 201, 255, 0.25);
@@ -392,7 +523,7 @@ body[data-page="workspace"][data-live="true"] {
     width: 64px;
     min-width: 64px;
     min-height: 64px;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
   }
 
   .stims-shell__stage-section {
@@ -410,7 +541,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__input {
     width: 100%;
     border: 1px solid rgba(119, 201, 255, 0.15);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 12px 14px;
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
@@ -477,7 +608,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__preset-list .stims-shell__preset-meta-row {
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
   }
 
   .stims-shell__preset-art[data-preview-status="ready"]
@@ -523,7 +654,7 @@ body[data-page="workspace"][data-live="true"] {
     height: 100%;
     padding: 11px 12px;
     border: 1px solid rgba(119, 201, 255, 0.12);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.02), transparent 50%),
       rgba(10, 14, 22, 0.6);
@@ -564,10 +695,10 @@ body[data-page="workspace"][data-live="true"] {
     z-index: 1;
     padding: 3px 9px;
     border: 1px solid rgba(119, 201, 255, 0.22);
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: rgba(6, 9, 15, 0.82);
     color: color-mix(in srgb, var(--stims-cool) 70%, var(--stims-ink));
-    font-size: 0.68rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -593,7 +724,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__starter-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -612,8 +743,8 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
-    min-height: calc(100vh - 40px);
-    min-height: calc(100dvh - 40px);
+    min-height: 100vh;
+    min-height: 100dvh;
     overflow: visible;
     border: 0;
     border-radius: 0;
@@ -621,23 +752,149 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   /* Scrim between the live attract-mode render and the launch copy.
-     The landing page now runs a real preset behind this text, and presets go
+     The landing page runs a real preset behind this text, and presets go
      bright and light without warning, so the copy needs a floor it can rely on
      rather than whatever frame happens to be on screen. Flat ink rather than a
-     blur: it keeps body text at full contrast against any preset, and the
-     visuals still read clearly through the lighter lower half. */
+     blur: it keeps body text at full contrast against any preset.
+
+     Steered rather than flat. The copy occupies the left of the frame, so the
+     ink is spent there and released across the rest — the old full-bleed
+     0.82-0.9 wash bought contrast for a column of text by dimming the whole
+     stage to 10-18% of whatever was behind it, which is most of why a working
+     attract render still read as a black rectangle. The vertical pass keeps
+     the top edge (wordmark, and the frame chrome above it) covered. */
   .stims-shell__stage-frame[data-mode="home"]::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: calc(var(--z-stage-hero) - 1);
     pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      rgba(3, 5, 11, 0.9) 0%,
-      rgba(3, 5, 11, 0.82) 55%,
-      rgba(3, 5, 11, 0.6) 100%
+    background:
+      radial-gradient(
+        86% 78% at 24% 46%,
+        rgba(3, 5, 11, 0.94) 0%,
+        rgba(3, 5, 11, 0.88) 40%,
+        rgba(3, 5, 11, 0.38) 76%,
+        rgba(3, 5, 11, 0.2) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(3, 5, 11, 0.46) 0%,
+        rgba(3, 5, 11, 0.12) 26%,
+        rgba(3, 5, 11, 0.12) 76%,
+        rgba(3, 5, 11, 0.4) 100%
+      );
+  }
+
+  /* One column wide, the copy needs its floor everywhere; the steered scrim
+     above assumes the copy is off to one side. */
+  @media (max-width: 900px) {
+    .stims-shell__stage-frame[data-mode="home"]::after {
+      background: linear-gradient(
+        180deg,
+        rgba(3, 5, 11, 0.88) 0%,
+        rgba(3, 5, 11, 0.8) 62%,
+        rgba(3, 5, 11, 0.58) 100%
+      );
+    }
+  }
+
+  /* ── Stage signal field ────────────────────────────────────────────
+     The landing page's floor, under the canvas. See SignalField.tsx for why
+     it exists and why it is painted here rather than over the render. */
+  .stims-shell__stage-field {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    /* One hue lifted off the base, placed where the copy is not. A flat fill
+       gave the frame no depth at all: the old landing page measured a
+       luminance range of 1.0 across its entire right half, which is what a
+       screenshot renders as a dead rectangle. */
+    background:
+      radial-gradient(
+        128% 118% at 88% 96%,
+        rgba(24, 42, 66, 0.85) 0%,
+        rgba(12, 20, 34, 0.5) 42%,
+        transparent 74%
+      ),
+      #04060c;
+  }
+
+  /* Oscilloscope graticule. Two single-hue repeating gradients, so this stays
+     a ruled surface rather than the decorative multi-stop wash the chrome
+     direction rules out. */
+  .stims-shell__stage-field-grid {
+    position: absolute;
+    inset: -1px;
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        rgba(160, 200, 240, 0.09) 0 1px,
+        transparent 1px 88px
+      ),
+      repeating-linear-gradient(
+        180deg,
+        rgba(160, 200, 240, 0.09) 0 1px,
+        transparent 1px 88px
+      );
+    /* Denser toward the lower right, which is the half of a 16:9 frame the
+       launch copy leaves empty — the field is the composition's counterweight,
+       not a uniform texture. */
+    -webkit-mask-image: radial-gradient(
+      132% 140% at 8% 10%,
+      transparent 6%,
+      #000 62%
     );
+    mask-image: radial-gradient(132% 140% at 8% 10%, transparent 6%, #000 62%);
+  }
+
+  /* Every --row-* is set per row from FIELD_ROWS in SignalField.tsx. The
+     fallbacks are one plausible row, so the field still renders as a field if
+     the inline styles ever go missing rather than collapsing to nothing. */
+  .stims-shell__stage-field-row {
+    position: absolute;
+    top: var(--row-top, 50%);
+    left: 0;
+    width: 100%;
+    height: calc(var(--row-amp, 2.5) * 6vh);
+    overflow: hidden;
+    opacity: var(--row-weight, 0.45);
+  }
+
+  .stims-shell__stage-field-row svg {
+    display: block;
+    width: var(--row-span, 240%);
+    height: 100%;
+    scale: 1 var(--row-flip, 1);
+    animation: stims-launch-trace-drift var(--row-dur, 60s) linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__stage-field-row svg {
+      animation: none;
+    }
+  }
+
+  /* One column wide, the copy runs the full width of the frame, so there is no
+     "beside the text" for the field to occupy — every trace crosses a line of
+     body copy. Damped to a texture here rather than dropped: the point of the
+     field is that the landing page is never a blank rectangle, and that holds
+     most on the phones where attract mode is gated off entirely. */
+  @media (max-width: 900px) {
+    .stims-shell__stage-field {
+      opacity: 0.5;
+    }
+
+    /* Longer wavelength for a narrow frame. `span` is how wide the strip is
+       drawn, so a *bigger* span means fewer periods in view: the desktop
+       spread of 152-352% puts up to 2.7 periods across 375px, which reads as
+       noise rather than as signal. Set on the svg, not as --row-span, because
+       the per-row value is an inline style and would win. */
+    .stims-shell__stage-field-row svg {
+      width: 340%;
+    }
   }
 
   .stims-shell__stage-frame[data-mode="live"] {
@@ -696,7 +953,7 @@ body[data-page="workspace"][data-live="true"] {
     width: min(300px, calc(100% - 28px));
     max-height: calc(100dvh - max(72px, 10vh) - 180px);
     overflow: auto;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     background: rgba(6, 10, 17, 0.97);
     border: 1px solid rgba(119, 201, 255, 0.16);
     box-shadow:
@@ -770,7 +1027,7 @@ body[data-page="workspace"][data-live="true"] {
     button {
     min-height: 36px;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     border: 1px solid
       var(--milkdrop-overlay-button-border, rgba(119, 201, 255, 0.4));
     background: var(--milkdrop-overlay-button, rgba(108, 176, 255, 0.22));
@@ -804,7 +1061,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay__toolbar-group
     > label {
     color: rgba(231, 242, 255, 0.86);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"]
@@ -827,7 +1084,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay--compact
     .milkdrop-overlay__title {
     padding: 12px 12px 0;
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -837,7 +1094,7 @@ body[data-page="workspace"][data-live="true"] {
     .milkdrop-overlay--compact
     .milkdrop-overlay__status {
     padding: 0 12px 12px;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
   }
 
   .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
@@ -872,7 +1129,12 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
     inset: clamp(84px, 12vh, 128px) 44px 44px;
     width: auto;
-    align-content: start;
+    /* Optically centred rather than top-anchored: the column is ~420px tall
+       in a 900px frame, and starting it at 108px left the whole lower half
+       empty with the composition ending mid-page. `safe` keeps the top of the
+       column reachable when it is taller than the frame instead of clipping
+       both ends, which is what plain `center` does to an overflowing grid. */
+    align-content: safe center;
     align-items: start;
     justify-items: center;
   }
@@ -881,10 +1143,10 @@ body[data-page="workspace"][data-live="true"] {
     pointer-events: auto;
   }
   @media (min-width: 1281px) {
-    .stims-shell__stage-frame[data-mode="home"] {
-      min-height: min(680px, calc(100dvh - 40px));
-    }
-
+    /* No height cap here. A large display is exactly where "full-screen
+       visuals" should read as full-screen; the cap that used to live on this
+       rule pinned the stage to 680px, so a 1080p viewport spent its lower
+       third on empty page ground. */
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
       inset: 64px 44px 40px;
     }
@@ -1043,7 +1305,7 @@ body[data-page="workspace"][data-live="true"] {
     background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
     color: #e5f1ff;
     font-family: var(--font-family-mono);
-    font-size: 0.6rem;
+    font-size: 0.6875rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.6;
     white-space: nowrap;
@@ -1070,10 +1332,16 @@ body[data-page="workspace"][data-live="true"] {
     }
   }
 
+  /* Spacing is the hierarchy in a single column, and a uniform gap says every
+     block is equally important. Measured on the old landing page: five blocks
+     at 18px apart, and four of them (tagline, explainer, disclosure, repo
+     link) within 3px of each other in type size — nothing told the eye what to
+     read second. The gap here is the tight one, and the rules below open up
+     the joints that actually separate groups. */
   .stims-shell__launch-center {
     display: grid;
     justify-items: start;
-    gap: 18px;
+    gap: 10px;
     width: min(52rem, 100%);
   }
 
@@ -1089,9 +1357,12 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__launch-tagline {
     margin: 0;
-    color: var(--stims-muted);
-    font-size: 1.05rem;
-    line-height: 1.6;
+    max-width: 30rem;
+    color: var(--stims-ink-strong);
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    line-height: 1.35;
+    letter-spacing: -0.011em;
+    text-wrap: balance;
   }
 
   /* Signal trace under the wordmark: the doubled 600-unit strip drifts one
@@ -1142,25 +1413,28 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__launch-explainer {
-    margin: 0;
-    max-width: 38rem;
+    margin: 4px 0 0;
+    max-width: 34rem;
     color: var(--stims-muted);
-    font-size: 0.9rem;
-    line-height: 1.55;
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
 
   .stims-shell__launch-actions-minimal {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    /* The two buttons are a ranked pair, not a segmented control: 12px read as
+       one object on mobile, where both go full width. */
+    gap: 16px;
+    margin-top: 18px;
   }
 
   .stims-shell__launch-status {
     width: 100%;
     margin: 0;
     color: var(--stims-muted);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     line-height: 1.5;
   }
 
@@ -1177,7 +1451,7 @@ body[data-page="workspace"][data-live="true"] {
     padding: 12px 22px;
     border-radius: var(--stims-radius-control);
     font-family: var(--font-family-base);
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -1217,6 +1491,18 @@ body[data-page="workspace"][data-live="true"] {
     cursor: default;
   }
 
+  /* The launch CTA takes focus on its own once the engine is ready (see
+     Actions in NewHomePage.tsx), so the global cool-accent ring lands on the
+     one warm-filled control in the app and is in every screenshot of the
+     landing page. Left touching the coral it read as a stray focus state
+     rather than an indicator; a dark separating ring gives it its own edge and
+     raises the indicator's contrast against the fill. The outline itself, and
+     the app-wide convention that focus is cool, are untouched. */
+  .stims-shell__launch-cta:focus-visible {
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px rgba(3, 5, 11, 0.9);
+  }
+
   .stims-shell__launch-secondary {
     border: 1px solid var(--stims-line-strong);
     background: var(--stims-control-fill);
@@ -1234,7 +1520,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__launch-source-minimal {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 22px;
   }
 
   /* A quiet line of text, not a card or a button: it must read as the
@@ -1245,7 +1531,7 @@ body[data-page="workspace"][data-live="true"] {
     gap: 6px;
     padding: 4px 0;
     color: var(--stims-muted);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     cursor: pointer;
     list-style: none;
     transition: color var(--transition-fast);
@@ -1284,8 +1570,8 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__launch-meta {
-    margin: 0;
-    font-size: 0.8rem;
+    margin: 6px 0 0;
+    font-size: 0.8125rem;
     line-height: 1.4;
   }
 
@@ -1338,7 +1624,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__settings-summary::after {
     content: "+";
-    font-size: 1.1rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--stims-ink-strong);
   }
@@ -1380,7 +1666,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__youtube-primary {
     padding: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(
         180deg,
@@ -1407,9 +1693,14 @@ body[data-page="workspace"][data-live="true"] {
     gap: 10px;
   }
 
+  /* auto-fit, not a fixed 2-up. The four sources are peers — one choice, four
+     equally valid answers — and a 2x2 block reads as two ranked pairs while
+     also being twice as tall as it needs to be, which is what pushed the
+     landing page's disclosure past the bottom of the stage frame and clipped
+     it. Given room they form a single row; given a phone they stack. */
   .stims-shell__source-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
     gap: 6px;
   }
 
@@ -1420,7 +1711,7 @@ body[data-page="workspace"][data-live="true"] {
     min-height: 74px;
     padding: 12px 13px;
     border: 1px solid rgba(119, 201, 255, 0.15);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background:
       linear-gradient(135deg, rgba(119, 201, 255, 0.03), transparent 50%),
       rgba(10, 14, 22, 0.6);
@@ -1462,31 +1753,28 @@ body[data-page="workspace"][data-live="true"] {
     min-width: 0;
   }
 
-  .stims-shell__source-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .stims-shell__source-card-kicker {
+  /* One icon that says what the source *is*, leading the card.
+     What used to sit here was a tracked uppercase kicker ("NO SETUP", "LIVE
+     SOURCE") paired with a small WebGL identicon — a generated abstract shape
+     with no meaning, which at 28px in a card corner read as a coloured status
+     light reporting something. Between them they spent the card's whole top
+     edge saying less than its own title does, and cost four live WebGL
+     contexts on the landing page to do it. */
+  .stims-shell__source-card-icon {
+    width: 20px;
+    height: 20px;
     color: color-mix(in srgb, var(--stims-cool) 74%, var(--stims-ink));
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1.1;
-    text-transform: uppercase;
   }
 
   .stims-shell__source-card strong {
     color: var(--stims-ink-strong);
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     line-height: 1.2;
   }
 
   .stims-shell__source-card span {
     color: var(--stims-muted);
-    font-size: 0.84rem;
+    font-size: 0.8125rem;
     line-height: 1.35;
   }
 
@@ -1524,7 +1812,7 @@ body[data-page="workspace"][data-live="true"] {
     gap: 0;
     overflow: hidden;
     border: 1px solid var(--stims-line-soft);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: rgba(255, 255, 255, 0.025);
   }
 
@@ -1563,7 +1851,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__youtube-feedback {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--stims-muted);
   }
@@ -1611,7 +1899,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__chip {
     border: 1px solid var(--stims-line-soft);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: var(--stims-white-04);
     color: inherit;
     font: inherit;
@@ -1627,12 +1915,12 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__chip-copy strong {
     color: var(--stims-ink-strong);
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
   }
 
   .stims-shell__chip-copy span {
     color: var(--stims-muted);
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
   }
 
   /* Recents carry an oEmbed thumbnail when one was fetched; the chip has to
@@ -1650,7 +1938,7 @@ body[data-page="workspace"][data-live="true"] {
     width: 56px;
     height: 32px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--stims-white-04);
   }
 
@@ -1676,11 +1964,11 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__transport-button {
     border: 1px solid var(--stims-line-soft);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--stims-white-04);
     color: inherit;
     font: inherit;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
     padding: 6px 10px;
     min-width: 56px;
   }
@@ -1693,7 +1981,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__transport-time {
     color: var(--stims-muted);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
   }
 
@@ -1710,7 +1998,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__field-label {
     display: block;
-    font-size: 0.92rem;
+    font-size: 0.9375rem;
     color: var(--stims-muted);
     letter-spacing: 0.02em;
   }
@@ -1719,7 +2007,7 @@ body[data-page="workspace"][data-live="true"] {
     position: relative;
     overflow: hidden;
     min-height: 164px;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     border: 1px solid var(--stims-white-12);
     background:
       radial-gradient(
@@ -1743,21 +2031,34 @@ body[data-page="workspace"][data-live="true"] {
     opacity: 0.88;
   }
 
-  .stims-shell__preset-art-fallback {
+  /* Says the preview is missing, rather than standing in for one. The rule
+     this replaces made generated artwork fill the slot "exactly as a real
+     thumbnail would", so a grid of part-real, part-invented tiles read as one
+     — which is the thing a reader needs to be able to tell apart. Kept
+     deliberately plain and typographic: any texture here would be read as the
+     preset. */
+  .stims-shell__preset-art-placeholder {
     position: absolute;
     inset: 0;
+    z-index: var(--z-stage-root);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    padding: var(--space-sm);
     text-align: center;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .stims-shell__preset-art-placeholder-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    /* Reads against the flat surface below rather than washing out over the
+       tone bloom the slot used to paint here. */
+    color: var(--stims-muted);
+  }
+
+  .stims-shell__preset-art-placeholder[data-state="capturing"]
+    .stims-shell__preset-art-placeholder-label {
+    color: var(--stims-muted-35);
   }
 
   .stims-parametric-identicon {
@@ -1775,7 +2076,7 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shader-identicon {
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     box-shadow:
       inset 0 0 0 1px var(--stims-white-12),
       0 4px 12px var(--stims-shadow-22);
@@ -1856,9 +2157,22 @@ body[data-page="workspace"][data-live="true"] {
       linear-gradient(145deg, rgba(10, 32, 40, 0.96), rgba(6, 12, 18, 0.98));
   }
 
+  /* The tone paintings above are backing chrome: under a real thumbnail they
+     are never seen. With no frame they become the whole tile, and since the
+     tone comes from the preset's mood keywords rather than from anything
+     rendered, a wall of differently-coloured blooms is the same claim the
+     generated artwork used to make, only quieter — 2,679 tinted squares a
+     reader can still take for previews. So a slot with no real frame drops to
+     one flat surface, identical for every preset. Must stay after the tone
+     rules: same specificity, so source order decides. */
+  .stims-shell__preset-art[data-preview-status="unavailable"],
+  .stims-shell__preset-art[data-preview-status="capturing"] {
+    background: var(--stims-white-04);
+  }
+
   .stims-shell__section-label {
     margin: 4px 0 0;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1936,7 +2250,7 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__sheet-callout h3 {
     margin: 0;
     font-family: var(--font-family-base);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
   }
 
   .stims-shell__toast {
@@ -2003,7 +2317,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .cta-button {
     min-height: 46px;
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     padding: 0.82rem 1.05rem;
     letter-spacing: 0.05em;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2022,16 +2336,19 @@ body[data-page="workspace"][data-live="true"] {
       background 0.2s ease;
   }
 
+  /* The product has one primary action colour, and it is the warm accent that
+     "Play demo" is painted in. This rule used to hardcode a lime-green
+     gradient found nowhere else in the palette, so the two most prominent
+     buttons on the landing page — "Play demo" and, one disclosure below it,
+     "Load" — were different colours making the same promise, and the second
+     one belonged to no theme this app has. Tokens now, so it tracks the light
+     palette too. */
   .cta-button.primary {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, #e8f5c8 78%, #fff9e9),
-      color-mix(in srgb, #9fd98b 74%, #d9efc4)
-    );
-    border-color: color-mix(in srgb, #ffffff 24%, rgba(166, 207, 138, 0.64));
-    color: #101610;
+    background: var(--stims-accent);
+    border-color: color-mix(in srgb, #ffffff 24%, var(--stims-accent));
+    color: var(--stims-on-accent);
     box-shadow:
-      0 10px 24px rgba(166, 207, 138, 0.18),
+      0 10px 24px var(--stims-accent-glow),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
@@ -2053,8 +2370,8 @@ body[data-page="workspace"][data-live="true"] {
   .cta-button.primary:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
     box-shadow:
-      0 14px 32px rgba(166, 207, 138, 0.35),
-      0 0 24px rgba(202, 230, 170, 0.25),
+      0 14px 32px var(--stims-accent-soft),
+      0 0 24px var(--stims-accent-glow),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
@@ -2064,7 +2381,7 @@ body[data-page="workspace"][data-live="true"] {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(148, 163, 184, 0.18);
     box-shadow: none;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     letter-spacing: 0.04em;
     color: rgba(226, 232, 240, 0.7);
     transition:
@@ -2216,7 +2533,7 @@ body[data-page="workspace"][data-live="true"] {
 
     .stims-shell__workspace {
       padding: 12px;
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__workspace[data-mode="home"] {
@@ -2233,7 +2550,7 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__field-label,
     .stims-shell__preset-meta,
     .stims-shell__preset-tech {
-      font-size: 0.84rem;
+      font-size: 0.8125rem;
     }
     .stims-shell__sheet-panel,
     .stims-shell__sheet-callout {
@@ -2273,7 +2590,7 @@ body[data-page="workspace"][data-live="true"] {
       min-height: auto;
       flex: 1 1 auto;
       overflow: visible;
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
@@ -2380,7 +2697,7 @@ body[data-page="workspace"][data-live="true"] {
       gap: 6px;
       width: 100%;
       max-width: none;
-      border-radius: 20px;
+      border-radius: var(--radius-xl);
     }
 
     .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
@@ -2423,7 +2740,7 @@ body[data-page="workspace"][data-live="true"] {
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
       .stims-shell__preset-art {
       min-height: 64px;
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
     }
 
     .stims-shell__sheet-panel--browse[data-filter-active="true"]
@@ -2567,11 +2884,11 @@ body[data-page="workspace"][data-live="true"] {
     }
 
     .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
-      font-size: 0.62rem;
+      font-size: 0.6875rem;
     }
 
     .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
-      font-size: 0.82rem;
+      font-size: 0.8125rem;
       line-height: 1.38;
     }
 
@@ -2632,13 +2949,13 @@ body[data-page="workspace"][data-live="true"] {
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.96);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   animation: fade-in 0.3s ease;
 }
 
 .stims-shell__audio-match .stims-shell__eyebrow {
   color: var(--stims-accent-blue);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin: 0;
@@ -2649,7 +2966,7 @@ body[data-page="workspace"][data-live="true"] {
   border: none;
   color: var(--stims-ink);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 0;
 }
@@ -2680,7 +2997,7 @@ body[data-page="workspace"][data-live="true"] {
   border: 1px solid var(--stims-white-12);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.86);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   pointer-events: auto;
 }
 
@@ -2705,7 +3022,7 @@ body[data-page="workspace"][data-live="true"] {
   color: var(--stims-ink-dim);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
 }
 
 .stims-shell__midi-hud-value {
@@ -2738,7 +3055,7 @@ body[data-page="workspace"][data-live="true"] {
   background: var(--stims-panel-strong);
   color: var(--stims-ink);
   font-family: var(--font-family-mono);
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.5;
   pointer-events: auto;
 }
@@ -2765,7 +3082,7 @@ body[data-page="workspace"][data-live="true"] {
   background: none;
   color: var(--stims-ink-dim);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1;
 }
 
@@ -2810,7 +3127,7 @@ body[data-page="workspace"][data-live="true"] {
   color: var(--stims-ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 600;
 }
 
@@ -2889,7 +3206,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__credits-card {
   background: #0c1117;
   border: 1px solid #1e293b;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   max-width: 520px;
   width: 92%;
@@ -2945,7 +3262,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-card h3 {
   margin: 0 0 14px;
   font-family: var(--font-family-base);
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--stims-ink);
@@ -2961,11 +3278,11 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-grid kbd,
 .stims-shell__shortcut-row kbd {
   font-family: var(--font-family-mono);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 4px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(
     180deg,
     rgba(119, 201, 255, 0.14),
@@ -2995,7 +3312,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-shell__shortcut-grid span,
 .stims-shell__shortcut-row span {
   font-family: var(--font-family-base);
-  font-size: 0.88rem;
+  font-size: 0.875rem;
   color: var(--stims-ink-muted);
   letter-spacing: -0.005em;
 }
@@ -3012,7 +3329,7 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-credits-section-title {
   font-family: var(--font-family-base);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   margin: 0 0 0.75rem 0;
   text-transform: uppercase;
@@ -3024,7 +3341,7 @@ body[data-page="workspace"][data-live="true"] {
 .stims-credits-body {
   font-family: var(--font-family-base);
   line-height: 1.65;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--stims-ink-muted);
 }
 
@@ -3063,7 +3380,7 @@ body[data-page="workspace"][data-live="true"] {
 }
 
 .stims-credits-disclaimer {
-  font-size: 0.84rem;
+  font-size: 0.8125rem;
   opacity: 0.75;
   margin-top: 0.65rem;
   line-height: 1.55;
@@ -3126,7 +3443,7 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-ink);
     text-decoration: underline;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     opacity: 0.8;
   }
 
@@ -3180,59 +3497,6 @@ body[data-page="workspace"][data-live="true"] {
   display: inline;
 }
 
-/* View Transitions API — shell chrome swaps. Only the home<->live flip and
-   the audio-match pill run transitions (wired at the audioActive edge in
-   workspace-hooks.ts). The stage is named so it is excluded from the root
-   page snapshot, but its own snapshots crossfade fast and are masked by the
-   engine's preset blend happening at the same moment. Panel opens/closes keep
-   their CSS animations and never touch view transitions, so the canvas never
-   freezes while music plays. */
-.stims-shell__stage-root {
-  view-transition-name: stims-stage;
-}
-
-::view-transition-old(stims-stage) {
-  animation: 0.15s ease both;
-}
-
-::view-transition-new(stims-stage) {
-  animation: 0.25s ease both;
-}
-
-.stims-shell__stage-hero {
-  view-transition-name: stims-launch;
-}
-
-::view-transition-old(stims-launch) {
-  animation: launch-exit 0.22s ease both;
-}
-
-::view-transition-new(stims-launch) {
-  animation: launch-enter 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) both;
-}
-
-.stims-shell__audio-match {
-  view-transition-name: stims-audio-match;
-}
-
-::view-transition-old(stims-audio-match) {
-  animation: 0.15s ease both;
-}
-::view-transition-new(stims-audio-match) {
-  animation: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(stims-stage),
-  ::view-transition-new(stims-stage),
-  ::view-transition-old(stims-launch),
-  ::view-transition-new(stims-launch),
-  ::view-transition-old(stims-audio-match),
-  ::view-transition-new(stims-audio-match) {
-    animation-duration: 1ms;
-  }
-}
-
 .stims-shell__mobile-notice,
 .stims-shell__rotate-hint {
   position: fixed;
@@ -3250,11 +3514,11 @@ body[data-page="workspace"][data-live="true"] {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--stims-line-soft);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(5, 7, 13, 0.97);
   color: var(--stims-ink);
   box-shadow: var(--stims-shadow);
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   pointer-events: none;
 }
 @keyframes mobile-hint-enter {
@@ -3325,7 +3589,7 @@ body[data-page="workspace"][data-live="true"] {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   transition:
     background 0.18s ease,
@@ -3372,7 +3636,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__error-card {
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-white-08);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 32px 40px;
   max-width: 460px;
   width: 100%;
@@ -3405,9 +3669,41 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 
 .stims-shell__error-copy {
   opacity: 0.8;
-  font-size: 0.95rem;
-  margin: 0 0 24px;
+  font-size: 0.9375rem;
+  margin: 0 0 16px;
   line-height: 1.5;
+}
+
+.stims-shell__error-details {
+  margin: 0 0 16px;
+  text-align: left;
+  font-size: 0.8125rem;
+  background: var(--stims-white-04);
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.stims-shell__error-details-summary {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--stims-ink-dim);
+  user-select: none;
+}
+
+.stims-shell__error-stack {
+  margin: 0;
+  padding: 8px 12px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--stims-bad);
+  border-top: 1px solid var(--stims-line);
 }
 
 .stims-shell__error-actions {
@@ -3423,9 +3719,9 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   background: var(--stims-white-06);
   color: var(--text-color);
   border: 1px solid var(--stims-line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   transition:
@@ -3810,13 +4106,40 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 /* Dedicated scroll region for the virtualized grid — the virtualizer needs a
    bounded, measurable scroll element, which it gets from the
    [data-fill="true"] flex chain in chrome.css. */
+/* The gallery wall.
+ *
+ * Preset artwork is dark — these are MilkDrop frames, mostly luminous marks on
+ * black — and in the light chrome theme the grid mounted them straight onto
+ * cream. Every tile read as a hole punched in the panel rather than as a lit
+ * image, which inverts the whole point of a browse view: the artwork is the
+ * product and it had the lowest contrast on screen.
+ *
+ * So the art surface is dark in both themes, the way an image app keeps a dark
+ * canvas inside light chrome, and the chrome around it still follows the
+ * visitor's theme. The token pins are the same technique `.stims-shell__launch`
+ * uses to hold ink readable over the stage: everything inside the well —
+ * tile fills, hairlines, captions — resolves against a dark ground without
+ * each needing a rule of its own.
+ */
 .stims-preset-grid-scroll {
   flex: 1;
   min-height: 120px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--space-xs, 4px) 0;
+  padding: var(--space-sm, 8px);
   width: 100%;
+  border-radius: var(--radius-lg);
+  background: #080b12;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --stims-panel-strong: #12161f;
+  --stims-panel: #12161f;
+  --stims-line: rgba(255, 255, 255, 0.09);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-ink: #f2ede4;
+  --stims-muted: rgba(242, 237, 228, 0.62);
+  --stims-accent: #f47a54;
+  --stims-cool: #77c9ff;
 }
 
 /* Sized to the virtualizer's total content height; rows inside are absolutely
@@ -3852,7 +4175,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   height: 26px;
   padding: 0;
   border: 1px solid var(--stims-line);
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   /* Opaque-ish disc: the art underneath is arbitrary and often bright, so a
      transparent star disappears against roughly half the catalog. */
   background: color-mix(in srgb, var(--stims-panel-strong) 78%, transparent);
@@ -3986,7 +4309,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   top: var(--space-xs, 4px);
   right: var(--space-xs, 4px);
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-round);
   background: color-mix(in srgb, var(--stims-panel-strong) 82%, transparent);
   border: 1px solid var(--stims-line);
   color: var(--stims-ink-soft, var(--stims-ink));
@@ -4020,7 +4343,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 }
 
 .stims-preset-signals__chip {
-  font-size: 0.68rem;
+  font-size: 0.6875rem;
   line-height: 1.4;
   letter-spacing: 0.01em;
   padding: 1px 7px 2px;

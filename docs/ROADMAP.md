@@ -84,9 +84,56 @@ Exit criteria:
 - a corpus test in `tests/corpus/` continuously enforces the threshold, not just regression-tests the tool's report shape; and
 - a default-on flash-rate cap ships as a visible safety control, not a buried setting.
 
-## Next: compatibility depth beyond the floor
+## Next: compatibility depth & runtime compiler milestones
 
-These deepen the compatibility lane only after the studio loop above is stable.
+These deepen the compatibility lane and compiler runtime. Each item names the measurement it moves; where a count appears, it is the one the cited test or data file reports today.
+
+### Dual-backend differential evidence (Closing the WebGL2 gap)
+
+- Extend the parity diff harness (`scripts/run-parity-diff-suite.ts`) to capture and grade WebGL2 frame captures alongside WebGPU, which is currently the only judged backend.
+- Grade both backends against the same contract the suite already uses: mismatch below the preset's configured `failThreshold` (`0.02` in `visual-reference-manifest.json`), outside its measured noise band, and against a reference a blank frame would not also pass.
+- Eliminate the unmeasured status of the WebGL2 baseline so that fidelity claims reflect the renderer the majority of web users run.
+
+Exit criteria:
+- Every certified preset in `src/data/milkdrop-parity/visual-reference-manifest.json` possesses matching measured diff reports for both `webgpu` and `webgl` backends; and
+- zero silent divergence between WebGL2 GLSL 300 es and WebGPU WGSL shader lowering.
+
+### Close the 168-preset WebGPU shader-translation gap
+
+Measured by `tests/corpus/butterchurn-corpus-support.test.ts` on the bundled corpus (2026-09-02): 1,578 presets are fully supported on both backends, 168 execute their shader programs directly on WebGL but fall back to extracted scalar controls on WebGPU, and 8 reference EEL identifiers the expression VM evaluates to `0`. (Was 226 / 1,521 before `mat2` element writes were let through to the WebGPU node executor, and 169 / 1,577 before `mat3`/`mat4` had a representation there.)
+
+- ~~Resolve the packed feedback composite sampler (`sampler_fc_main` and `sampler_fw_main`) binding on WebGPU.~~ Done: both resolve to real bindings (`warpTex` / `currentTex`) end to end, covered by `tests/unit/milkdrop-shader-sampler-aliases.test.ts`. None of the remaining 168 is attributable to sampler binding.
+- Lower volumetric noise (`sampler_noisevol_lq`) directly to 3D texture bindings in WebGPU, replacing the simplex-atlas approximation the WebGL preamble uses. Note the backends already differ here: `sampleNoiseVolume` slices the 2D simplex atlas on WebGL but samples the native simplex volume in the WebGPU node executor.
+- ~~Give the WebGPU node executor a `mat3`/`mat4` representation.~~ Done: a mat3/mat4 is carried as its column vectors (`shaderMatrix` in `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`), an element write is a swizzle on one column, products are spelled out column-major (`M * v`, `v * M`, `M * M`, `mul`, `transpose`), and shader analysis seeds each bare `matN` declaration with `matN(0.0)` so the size is known before the first write. The analysis gate now covers only writes at a runtime index, of which the corpus has none. The branch desugar masks indexed targets too, so the flag-on count went from 50 to 14; with shipped defaults only one of the 20 mat3 presets moved, because the other 19 also branch.
+- Close the WebGPU executor gaps that keep the `shaderBranchDesugar` rewrite (168 → 14) behind a flag: the GPU-process crash is fixed; six presets still render white or black under the flag. They are named in `src/js/milkdrop/compiler/shader-branch-desugar.ts` together with what has been ruled out (every statement compiles; q-registers, feedback format and decay blend are shared with WebGL) and the lead to check first (`sampleNoiseVolume` samples different textures on the two backends). This needs a WebGPU device: headless Chromium exposes no adapter, so it cannot be done from a container.
+
+Exit criteria:
+- `tests/corpus/butterchurn-corpus-support.test.ts` reports 0 presets falling back to extracted scalar controls on the WebGPU path, with `fullySupported` at the full corpus count.
+
+### Vectorized GPU compute offloading for waveforms & geometry
+
+- Offload per-point custom wavecode generation ($4 \text{ waves} \times 512 \text{ points} = 2,048 \text{ evaluations/frame}$) from CPU JavaScript JIT to WebGPU compute storage buffers.
+- Implement AST SIMD/vec4 vectorization in the WGSL generator for per-vertex grid transformations.
+- Eliminate remaining main-thread CPU spikes, building on the 16.5% frame work reduction ($3.43 \text{ ms} \rightarrow 2.87 \text{ ms}$ at 1× and $17.56 \text{ ms} \rightarrow 15.31 \text{ ms}$ at 4× CPU throttle).
+
+Exit criteria:
+- Median frame work under 4× CPU throttle remains under $12.0 \text{ ms}$ on standard $1280 \times 720$ benchmarks.
+
+### Chaotic attractor numerical stabilization (Long-duration determinism)
+
+- Implement compiler-level compensated summation (Kahan / Neumaier algorithm) in EEL2 accumulator lowering to mitigate $f32$ floating-point precision drift in recursive non-linear equations.
+- Prevent spatial deformation divergence in chaotic attractors (e.g. Lorenz loops) during long-duration playback ($t > 300\text{ s}$) for venue, kiosk, and live-coding performances.
+
+Exit criteria:
+- Frame drift test suite passes on 10-minute continuous execution benchmark against native $f64$ baseline.
+
+### Deterministic creator-grade export via headless compute
+
+- Connect the headless browser rendering engine and WebCodecs (`VideoEncoder` + `OffscreenCanvas`) to the studio export panel.
+- Enable frame-exact, non-realtime 4K 60fps video and audio multiplexing without dropped frames or thermal throttling on consumer laptops.
+
+Exit criteria:
+- Deterministic frame export completes 60 seconds of 4K 60fps video matching audio waveforms sample-for-sample.
 
 ## Later: platform expansion
 
@@ -110,3 +157,4 @@ These workstreams begin only after their prerequisite user flows and proof contr
 Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.
 
 AI-assisted authoring — text/image-to-preset generation, blending, and diff-inspectable assisted edits in the editor — is studio scope and already wired to the Remix workflow. It is distinct from "neural audio-to-visual generation" above, which is the unbuilt research direction.
+

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "presetId": "eos-phat-magnetosphere-13-pulsar",
+  "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260901223512",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.png",
+    "imageSha256": "99422936c579da7e95c068387911f0b87fd1ccc374376e079dda9dc75b671535",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-magnetosphere-13-pulsar.meta.json",
+    "metadataSha256": "3d4741d7988b4fdf3a6461709a429f23f2d2b3a38bd508617345d80771673012"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "bundled",
+  "strata": [
+    "bundled",
+    "cream-of-the-crop"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 229430,
+    "mismatchRatio": 0.24894748263888888,
+    "maxChannelDelta": 225,
+    "meanAbsoluteError": 0.06210148165168845,
+    "rmse": 0.08916479630417752,
+    "exactMatch": false,
+    "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.13496636284722222,
+      "max": 0.2500358072916667,
+      "width": 0.11506944444444447,
+      "repeats": 7,
+      "backend": "webgpu",
+      "measuredAt": "2026-09-01T21:45:53.917Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": 0.24894748263888888,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.12049580810886178,
+    "changeVerdict": "no-measurable-change"
+  },
+  "status": "fail",
+  "referenceSignal": "ok"
+}

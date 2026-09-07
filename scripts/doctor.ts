@@ -2,9 +2,10 @@
  * Diagnoses whether this machine's dev environment can build, test, and deploy
  * the visualizer.
  *
- * Reports Bun, tsc, Biome, Playwright, and Wrangler availability plus the
- * bundled MilkDrop catalog, then launches headless Chromium to classify the
- * advisory visual-verification tier (GPU vs. software rendering vs. no
+ * Reports Bun, tsc, Biome, Playwright, and Wrangler availability, whether
+ * node_modules still matches the manifests, and the bundled MilkDrop catalog,
+ * then resolves the Chromium binary and launches headless Chromium to classify
+ * the advisory visual-verification tier (GPU vs. software rendering vs. no
  * browser). Exits non-zero when any counted check fails.
  */
 import { $ } from 'bun';
@@ -14,43 +15,133 @@ console.log('🩺 Running Stims Dev Environment Doctor...\n');
 let checksPassed = 0;
 let totalChecks = 0;
 
-function report(name: string, ok: boolean, details?: string) {
+function report(
+  name: string,
+  ok: boolean,
+  details?: string,
+  remediation?: string,
+) {
   totalChecks++;
   if (ok) {
     checksPassed++;
     console.log(`  ✅ ${name}${details ? ` (${details})` : ''}`);
   } else {
     console.error(`  ❌ ${name}${details ? ` (${details})` : ''}`);
+    if (remediation) {
+      console.error(`     ↳ Remediation: ${remediation}`);
+    }
   }
 }
 
 // 1. Bun Runtime
 const bunVer = Bun.version;
 const bunOk = !!bunVer;
-report('Bun Runtime', bunOk, `v${bunVer}`);
+report('Bun Runtime', bunOk, `v${bunVer}`, 'install Bun from https://bun.sh');
 
 // 2. TypeScript Compiler
 const tscRes = await $`./node_modules/.bin/tsc --version`.nothrow().text();
 const tscOk = tscRes.includes('Version');
-report('TypeScript Compiler', tscOk, tscRes.trim());
+report(
+  'TypeScript Compiler',
+  tscOk,
+  tscRes.trim(),
+  "run 'bun install' to restore local tooling",
+);
 
 // 3. Biome Linter
 const biomeRes = await $`./node_modules/.bin/biome --version`.nothrow().text();
 const biomeOk = biomeRes.includes('2.');
-report('Biome Linter/Formatter', biomeOk, biomeRes.trim());
+report(
+  'Biome Linter/Formatter',
+  biomeOk,
+  biomeRes.trim(),
+  "run 'bun install' to restore local tooling",
+);
 
 // 4. Playwright Browser
 const pwOk = await Bun.file('node_modules/playwright/package.json').exists();
-report('Playwright Test Harness', pwOk, pwOk ? 'installed' : 'missing');
+report(
+  'Playwright Test Harness',
+  pwOk,
+  pwOk ? 'installed' : 'missing',
+  "run 'bun install' to restore local tooling",
+);
+
+// 4b. Chromium binary. The package being installed says nothing about whether
+// a browser exists: remote containers ship one via PLAYWRIGHT_BROWSERS_PATH
+// (so `playwright install` is wrong there), while a fresh local clone has the
+// package and no binary. Advisory — a browserless box is an environment fact,
+// and check 7 below classifies what still works there.
+let chromiumStatus = 'unknown (Playwright package missing)';
+if (pwOk) {
+  const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  const suffix = browsersPath
+    ? ` via PLAYWRIGHT_BROWSERS_PATH=${browsersPath}`
+    : '';
+  try {
+    const { chromium } = await import('playwright');
+    const executable = chromium.executablePath();
+    chromiumStatus = (await Bun.file(executable).exists())
+      ? `${executable}${suffix}`
+      : `missing — expected at ${executable}${suffix}; run 'bun run setup:browsers' to link a pre-installed build, or 'bunx playwright install chromium' where downloads are allowed`;
+  } catch (error) {
+    chromiumStatus = `unresolvable (${(error as Error).message.split('\n')[0]})${suffix}`;
+  }
+}
+console.log(`  🌐 Chromium binary: ${chromiumStatus}`);
+
+// 4c. Dev server port availability check (advisory).
+let devPortStatus = 'port 5173 available';
+try {
+  const listener = Bun.listen({
+    port: 5173,
+    hostname: '127.0.0.1',
+    socket: {
+      data() {},
+    },
+  });
+  listener.stop();
+} catch (error) {
+  devPortStatus = `port 5173 in use (${(error as Error).message.split('\n')[0]}) — a dev server or background process is active`;
+}
+console.log(`  🔌 Dev server port: ${devPortStatus}`);
 
 // 5. Cloudflare Wrangler Tooling
 const wrangRes = await $`./node_modules/.bin/wrangler --version`
   .nothrow()
   .text();
 const wrangOk = wrangRes.length > 0;
-report('Cloudflare Wrangler CLI', wrangOk, wrangRes.trim().split('\n')[0]);
+report(
+  'Cloudflare Wrangler CLI',
+  wrangOk,
+  wrangRes.trim().split('\n')[0],
+  "run 'bun install' to restore local tooling",
+);
 
-// 6. Bundled Catalog Integrity
+// 6. Dependency install freshness. A node_modules tree that predates a
+// package.json/bun.lock or Bun change is the most common source of
+// inexplicable failures, and it looks identical to a healthy one. Reuse the
+// setup script's own fingerprint rather than reimplementing it here.
+const setupStatus = await $`bash scripts/codex-setup.sh --status`
+  .nothrow()
+  .text();
+const installLine =
+  setupStatus
+    .split('\n')
+    .find((line) => line.startsWith('- Dependency install:'))
+    ?.replace('- Dependency install:', '')
+    .trim() ?? 'unknown';
+// `uncached` means node_modules exists but was installed outside the setup
+// script (a plain `bun install`), so there is nothing to contradict — only
+// states that positively disagree with the manifests count as failures.
+report(
+  'Dependency install state',
+  installLine.startsWith('current') || installLine.startsWith('uncached'),
+  installLine,
+  "run 'bun run setup' to synchronize dependencies and lockfile state",
+);
+
+// 7. Bundled Catalog Integrity
 const catalogOk = await Bun.file(
   'public/milkdrop-presets/catalog.json',
 ).exists();
@@ -58,9 +149,10 @@ report(
   'MilkDrop Bundled Catalog',
   catalogOk,
   'public/milkdrop-presets/catalog.json',
+  "run 'bun run catalog:generate' or restore public/milkdrop-presets/catalog.json",
 );
 
-// 7. Visual-verification tier (GPU vs. software rendering vs. no browser)
+// 8. Visual-verification tier (GPU vs. software rendering vs. no browser)
 //
 // Advisory only — doesn't count toward checksPassed/totalChecks, since
 // missing a GPU is an environment fact, not a broken setup. Tells an agent

@@ -3,6 +3,8 @@
  * has to agree with the router. Re-exported here so frontend code keeps its
  * single import site.
  */
+
+import type { SemanticDiscoveryRoute } from '../../../functions/discover-slugs.ts';
 import type { AudioSource, PanelState } from '../core/url-params.ts';
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type {
@@ -33,6 +35,8 @@ export type SessionRouteState = {
   /** Video carried by a shared link, so the recipient lands on the same track. */
   youtubeVideoId?: string | null;
   youtubeStartSeconds?: number | null;
+  /** Semantic landing context retained while Browse shows its real filter. */
+  discovery?: SemanticDiscoveryRoute;
 };
 
 export type EngineAudioRequest =
@@ -77,6 +81,7 @@ export type PresetCatalogEntry = {
   authorUrl?: string;
   derivedFrom?: MilkdropPresetLineageRef[];
   file?: string;
+  bundledFile?: string;
   tags?: string[];
   searchTerms?: string[];
   preview?: boolean;
@@ -85,6 +90,7 @@ export type PresetCatalogEntry = {
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;
+  fidelityClass?: string;
   /** Near-duplicate cluster annotation (dedup-catalog.ts); duplicateOf names
    * the cluster representative when this entry is a non-representative. */
   similarity?: { clusterId: string; duplicateOf?: string };

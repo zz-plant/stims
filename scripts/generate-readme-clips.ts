@@ -48,7 +48,6 @@ const MIN_WARMUP = 90;
 /** Wall-clock settle before capturing under live audio. */
 const DEFAULT_SETTLE_MS = 3500;
 const BOOT_TIMEOUT_MS = 60000;
-const SWAP_TIMEOUT_MS = 60000;
 const CAPTURE_VIEWPORT = { width: 1280, height: 720 };
 /** Engine sim rate; the stride between captures derives from this. */
 const SIM_FPS = 60;
@@ -128,7 +127,9 @@ async function main() {
     { waitUntil: 'domcontentloaded' },
   );
   await page.waitForFunction(
-    () => typeof window.__STIMS_AGENT_RENDER_FRAMES__ === 'function',
+    () =>
+      typeof window.__STIMS_AGENT_RENDER_FRAMES__ === 'function' &&
+      typeof window.__STIMS_AGENT_BRIDGE__ === 'object',
     undefined,
     { timeout: BOOT_TIMEOUT_MS },
   );
@@ -153,19 +154,16 @@ async function main() {
 
   for (const presetId of args.ids) {
     console.log(`▶ ${presetId}`);
-    await page.evaluate((id) => {
-      window.postMessage({ type: 'toil:load_preset', presetId: id }, '*');
-    }, presetId);
+    await page.goto(
+      `${devServer}/?preset=${presetId}&agent=true&renderer=webgl&lockQualityStep=0`,
+      { waitUntil: 'domcontentloaded' },
+    );
     await page.waitForFunction(
-      (id) => {
-        const main = document.querySelector('#stims-main');
-        if (main?.getAttribute('data-active-preset-id') !== id) return false;
-        return [...document.querySelectorAll('canvas')].some(
-          (c) => c.width >= 400,
-        );
-      },
-      presetId,
-      { timeout: SWAP_TIMEOUT_MS },
+      () =>
+        typeof window.__STIMS_AGENT_RENDER_FRAMES__ === 'function' &&
+        [...document.querySelectorAll('canvas')].some((c) => c.width >= 400),
+      undefined,
+      { timeout: BOOT_TIMEOUT_MS },
     );
 
     const tmpDir = join(TMP_ROOT, presetId);

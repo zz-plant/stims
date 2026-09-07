@@ -1,3 +1,8 @@
+/**
+ * Workspace React Hooks — encapsulates core state orchestration for panels, dialogs, fullscreen
+ * events, auto-play queues, and stage liveness tracking inside the workspace shell.
+ */
+
 import {
   type Dispatch,
   type SetStateAction,
@@ -30,6 +35,10 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
+import {
+  setAudioBandScalars,
+  setAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
 import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
@@ -47,7 +56,6 @@ import {
   stringifyPlainSearch,
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
-import { runViewTransition } from './view-transition.ts';
 import { buildLaunchIntent } from './workspace-helpers.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -126,7 +134,12 @@ export function useWorkspaceSessionState({
   const [engineSnapshot, setEngineSnapshot] = useState<EngineSnapshot | null>(
     null,
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(
+    routeState.discovery?.searchQuery ?? '',
+  );
+  useEffect(() => {
+    setSearchQuery(routeState.discovery?.searchQuery ?? '');
+  }, [routeState.discovery?.searchQuery]);
   const { motionPreference, qualityPreset, renderPreferences } =
     useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
@@ -160,6 +173,28 @@ export function useWorkspaceSessionState({
   // the guard in that effect.
   const handledRouteRequestRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
+
+  // Frame-fresh energy for UI that pulses with the music (stage --energy,
+  // launch trace): the engine snapshot only refreshes on discrete
+  // emitChange events, so while audio is live poll the signal tracker each
+  // animation frame and feed the audio-energy store directly. The store's
+  // dead-band keeps quiet frames free, and rAF stops on hidden tabs where
+  // nothing pulses anyway.
+  const audioActive = engineSnapshot?.audioActive ?? false;
+  useEffect(() => {
+    if (!audioActive) return;
+    let frameId = 0;
+    const publish = () => {
+      const levels = engineRef.current?.getAudioLevels();
+      if (levels) {
+        setAudioEnergy(levels.energy);
+        setAudioBandScalars(levels.bass, levels.mid, levels.treble);
+      }
+      frameId = requestAnimationFrame(publish);
+    };
+    frameId = requestAnimationFrame(publish);
+    return () => cancelAnimationFrame(frameId);
+  }, [audioActive]);
 
   // The landing page is the pitch for a visuals product and contained no
   // visuals: a full-viewport canvas sat behind the launch form with nothing
@@ -263,20 +298,8 @@ export function useWorkspaceSessionState({
       // after createLazyFactory has confirmed this call still owns the slot.
       install: (adapter) => {
         engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-          const audioFlipped =
-            Boolean(engineSnapshotRef.current?.audioActive) !==
-            Boolean(snapshot.audioActive);
           engineSnapshotRef.current = snapshot;
-          if (audioFlipped) {
-            // The home<->live swap (launch form <-> live stage) is the one
-            // transition worth the view-transition snapshot freeze: the
-            // engine is crossfading presets at the same moment, which masks
-            // the brief static canvas frame. In-live interactions are left
-            // out so the canvas never freezes while music plays.
-            runViewTransition(() => setEngineSnapshot(snapshot));
-          } else {
-            setEngineSnapshot(snapshot);
-          }
+          setEngineSnapshot(snapshot);
         });
       },
       getRef: () => engineRef.current,
@@ -483,40 +506,51 @@ export function useWorkspaceSessionState({
 
     const timers: number[] = [];
     let cancelled = false;
-    const readStage = () => {
+    // Awaited, not called inline: the read has to happen inside a frame
+    // callback or a WebGPU canvas composites transparent and every verdict
+    // comes back unreadable, which is what kept this guard from ever firing
+    // on the default backend.
+    const readStage = async () => {
       const canvas = stageRef.current?.querySelector('canvas');
-      return canvas ? sampleStageLiveness(canvas) : null;
+      return canvas ? await sampleStageLiveness(canvas) : null;
     };
 
     timers.push(
       window.setTimeout(() => {
-        if (cancelled) return;
-        const first = readStage();
-        if (!shouldRetireAttractRender([first])) {
-          // Rendering, or unjudgeable. Only a settled "rendering" is worth
-          // latching: an unreadable canvas may become readable later.
-          attractLivenessJudgedRef.current = first?.visible === true;
-          return;
-        }
+        void (async () => {
+          if (cancelled) return;
+          const first = await readStage();
+          if (cancelled) return;
+          if (!shouldRetireAttractRender([first])) {
+            // Rendering, or unjudgeable. Only a settled "rendering" is worth
+            // latching: an unreadable canvas may become readable later.
+            attractLivenessJudgedRef.current = first?.visible === true;
+            return;
+          }
 
-        timers.push(
-          window.setTimeout(() => {
-            if (cancelled) return;
-            const second = readStage();
-            if (!shouldRetireAttractRender([first, second])) {
-              attractLivenessJudgedRef.current = second?.visible === true;
-              return;
-            }
+          timers.push(
+            window.setTimeout(() => {
+              void (async () => {
+                if (cancelled) return;
+                const second = await readStage();
+                if (cancelled) return;
+                if (!shouldRetireAttractRender([first, second])) {
+                  attractLivenessJudgedRef.current = second?.visible === true;
+                  return;
+                }
 
-            attractLivenessJudgedRef.current = true;
-            log.log('attract render is blank; pausing the decorative loop');
-            // Paused, not disposed: the engine stays warm so pressing Play
-            // demo is still instant, and `resumePreview()` on audio start
-            // brings it back if the visitor's own session renders fine.
-            engineRef.current?.pausePreview();
-            setAttractModeEnabled(false);
-          }, ATTRACT_LIVENESS_CONFIRM_MS),
-        );
+                attractLivenessJudgedRef.current = true;
+                log.log('attract render is blank; pausing the decorative loop');
+                // Paused, not disposed: the engine stays warm so pressing
+                // Play demo is still instant, and `resumePreview()` on audio
+                // start brings it back if the visitor's own session renders
+                // fine.
+                engineRef.current?.pausePreview();
+                setAttractModeEnabled(false);
+              })();
+            }, ATTRACT_LIVENESS_CONFIRM_MS),
+          );
+        })();
       }, ATTRACT_LIVENESS_SETTLE_MS),
     );
 

@@ -26,13 +26,19 @@ yarn-error.log*
 
 # Local Codex session state
 .codex/
+.playwright-cli/
 .playwright-mcp/
 .sisyphus/
 opencode.json
 
 # Tooling
 .cmux/
-.agent/
+# .agent/ holds agent scratch, but skills and workflows are checked in — an
+# unqualified ignore silently swallowed close-parity-gap/SKILL.md on `git add`
+# and broke `bun run mcp`, which imports it.
+.agent/*
+!.agent/skills/
+!.agent/workflows/
 .wrangler/
 
 scratch/

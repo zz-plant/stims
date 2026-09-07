@@ -58,7 +58,13 @@ try {
 
   const results = await page.evaluate(
     async ({ iterations }) => {
-      const load = (s: string) => import(/* @vite-ignore */ s) as Promise<any>;
+      const load = (s: string) =>
+        import(/* @vite-ignore */ s) as Promise<{
+          createFlashSampler: (grid: number) => {
+            sample: (canvas: HTMLCanvasElement) => void;
+            dispose: () => void;
+          };
+        }>;
       const { createFlashSampler } = await load(
         '/src/js/core/services/flash-sampler.ts',
       );
@@ -72,7 +78,8 @@ try {
         return { median: at(0.5), p95: at(0.95) };
       };
 
-      const rows: any[] = [];
+      type BenchResultRow = { grid: number; median: number; p95: number };
+      const rows: BenchResultRow[] = [];
       for (const grid of [8, 16, 32, 64]) {
         const sampler = createFlashSampler(grid);
         for (let i = 0; i < 30; i += 1) sampler.sample(canvas);
@@ -101,10 +108,13 @@ try {
 
   if ('error' in results && results.error)
     throw new Error(String(results.error));
-  const { rows, canvas } = results as { rows: any[]; canvas: any };
+  const { rows, canvas } = results as {
+    rows: Array<{ grid: number; median: number; p95: number }>;
+    canvas: { width: number; height: number };
+  };
   console.log(`\n  Source canvas: ${canvas.width}x${canvas.height}`);
   console.log('\n  grid    median us   p95 us   % of 16.7ms frame');
-  console.log('  ' + '-'.repeat(50));
+  console.log(`  ${'-'.repeat(50)}`);
   for (const row of rows) {
     const pct = (row.median / 1000 / 16.7) * 100;
     console.log(

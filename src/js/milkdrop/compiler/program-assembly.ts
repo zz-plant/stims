@@ -1,3 +1,8 @@
+/**
+ * Compiler Program Assembly — assembles parsed EEL2 expression blocks into structured executable
+ * program units, lowering per-frame, per-pixel, custom wave, and custom shape equations.
+ */
+
 import {
   evaluateMilkdropExpression,
   MILKDROP_INTRINSIC_FUNCTIONS,
@@ -80,6 +85,7 @@ function buildSupportedExpressionIdentifierSet() {
     ...Object.keys(DEFAULT_MILKDROP_STATE),
     ...Object.keys(aliasMap).filter((key) => aliasMap[key] !== null),
     ...MILKDROP_INTRINSIC_IDENTIFIERS,
+    'else',
     'time',
     'frame',
     'fps',
@@ -393,7 +399,26 @@ export function pushProgramStatementWithContinuation(
       return;
     }
 
-    if (!trimmedValue.includes('=')) {
+    // An unclosed `(` on the pending line beats the `=` heuristic. MilkDrop
+    // concatenates the numbered lines of a block into one source blob before
+    // parsing, so a `loop(N,` head legitimately spans many of them and its
+    // body is full of assignments:
+    //
+    //   per_frame_8 =loop(1024,  sample=i/1024;
+    //   per_frame_10=s = 5.5*6.28*sample;
+    //   per_frame_17=i=i+1;);
+    //
+    // Treating line 10's `=` as the start of a new statement flushed the
+    // half-written `loop(` head — which then failed extractCallInner and was
+    // discarded — and left the closing `);` as an orphan. Whole iterative
+    // loops disappeared from shipped presets that way.
+    const pendingContext = scanMilkdropProgramExpressionContext(
+      pending.sourceLine,
+    );
+    const pendingIsOpen =
+      pendingContext.parenthesisDepth > 0 || pendingContext.hasOpenQuote;
+
+    if (pendingIsOpen || !trimmedValue.includes('=')) {
       const combined = `${pending.sourceLine} ${trimmedValue}`.trim();
       if (canContinueMilkdropProgramLine(combined)) {
         pendingProgramSources.set(block, {
@@ -415,10 +440,12 @@ export function pushProgramStatementWithContinuation(
     return;
   }
 
-  if (
-    trimmedValue.includes('=') &&
-    canContinueMilkdropProgramLine(trimmedValue)
-  ) {
+  // Whether the line continues is decided by the line itself, not by whether
+  // it happens to contain an `=`. A bare `loop (10000,` head — the exact form
+  // several shipped presets open an init loop with — has no `=`, so requiring
+  // one pushed it immediately as a complete statement; it then failed
+  // extractCallInner and vanished, taking its body with it.
+  if (canContinueMilkdropProgramLine(trimmedValue)) {
     pendingProgramSources.set(block, { sourceLine: trimmedValue, line });
     return;
   }

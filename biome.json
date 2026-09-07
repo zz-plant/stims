@@ -47,12 +47,6 @@
       }
     },
     {
-      "includes": ["src/js/data/toy-manifest.ts"],
-      "formatter": {
-        "enabled": false
-      }
-    },
-    {
       "includes": ["terminal/**"],
       "linter": {
         "rules": {

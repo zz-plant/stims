@@ -1,0 +1,15 @@
+# Git hooks, installed by `lefthook install` from scripts/postinstall.mjs.
+# Both hooks delegate to repo scripts so the gate logic stays in one place:
+#   pre-commit → .githooks/pre-commit (format:changed --staged, check:quick,
+#                strict cache bounds)
+#   commit-msg → scripts/check-commit-msg.ts (Conventional Commits guard)
+# Skip locally with LEFTHOOK=0 (CI never installs hooks).
+pre-commit:
+  commands:
+    gate:
+      run: bun .githooks/pre-commit
+
+commit-msg:
+  commands:
+    conventional:
+      run: bun run scripts/check-commit-msg.ts {1}

@@ -71,7 +71,7 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing. If `bun run check` fails, fix the root cause — do not chain fix-attempt commits.
 - **Done criteria by change type:** JS/TS changes need `bun run check`; runtime, preset, audio, shell, or routing changes also need browser verification on `http://localhost:5173/?agent=true`; docs-only edits can skip typecheck/tests unless commands, paths, or workflow-critical instructions changed.
 - **Site deploy default:** Cloudflare Workers Builds owns preview and production deploys of the `stims` Worker on push (config: [`wrangler.site.jsonc`](../wrangler.site.jsonc)); CI in [`.github/workflows/ci.yml`](./workflows/ci.yml) only gates merges. `bun run site:deploy` is the manual fallback.
-- **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and husky `commit-msg` hook.
+- **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit. Non-descriptive subjects ("fixes", "certainly this works", "Various fixes") are rejected by the `check:commit-msg` guard and the lefthook `commit-msg` hook.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
 ## Dev modes
@@ -91,7 +91,7 @@ The quality gate (`bun run check`) runs these guards automatically. New code mus
 - `check:ci-config` — workflow/build config drift (deleted scripts, npm leakage, conflict markers).
 - `check:duplicate-css` — duplicate `@keyframes` / `@font-face` across global CSS.
 - `check:stale-paths` — references to the removed `assets/` tree, including the root entry HTML files.
-- `check:architecture` — the `frontend/*` → engine boundary; only the engine adapter may cross it.
+- `check:architecture` — no import cycles, no production code importing test helpers, and the `frontend/*` → engine seam enforced via `.dependency-cruiser.mjs` boundary rules (`frontend-engine-seam` and `engine-runtime-only-via-adapter`). See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the boundary design.
 - `check:no-ts-nocheck` — no new `@ts-nocheck` escapes.
 - `check:css-tokens` — CSS custom properties resolve to a defined token.
 - `check:cache-bounds` — new `Map`/`Set`/`WeakMap` growth containers added in the diff must share their file with an explicit bound (a `MAX_*`/`*_LIMIT`/`capacity`/`maxSize` constant or an eviction path), or be allowlisted with a reason. Strict mode runs at commit; advisory in `bun run check`.

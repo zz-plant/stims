@@ -1,3 +1,8 @@
+/**
+ * Workspace Helpers & State Utilities — provides shared utility functions for preset scoring,
+ * query normalization, route state transitions, catalog transformation, and accessibility filtering.
+ */
+
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import { hiddenByFlashPreference } from '../core/sensory-profile.ts';
 import {
@@ -20,6 +25,8 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import {
+  type CompiledFieldMatcher,
+  createFieldMatcher,
   FIELD_PENALTY,
   type MatchField,
   matchesFields,
@@ -28,6 +35,8 @@ import {
   scoreFields,
   toMatchField,
 } from './preset-matching.ts';
+
+export { type CompiledFieldMatcher, createFieldMatcher };
 
 /** Stims' own repository — surfaced on the launch screen and in credits. */
 export const STIMS_REPO_URL = 'https://github.com/zz-plant/stims';
@@ -192,8 +201,14 @@ const normalizeSearchText = normalizeMatchText;
  * palette agree about what matches. `scorePresetEntry` gives the same answer
  * with ordering attached.
  */
-export function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  return matchesFields(query, getPresetMatchFields(entry));
+export function matchesPreset(
+  entry: PresetCatalogEntry,
+  queryOrMatcher: string | CompiledFieldMatcher,
+) {
+  if (typeof queryOrMatcher === 'string') {
+    return matchesFields(queryOrMatcher, getPresetMatchFields(entry));
+  }
+  return queryOrMatcher.matches(getPresetMatchFields(entry));
 }
 
 /**
@@ -202,10 +217,13 @@ export function matchesPreset(entry: PresetCatalogEntry, query: string) {
  */
 export function scorePresetEntry(
   entry: PresetCatalogEntry,
-  query: string,
+  queryOrMatcher: string | CompiledFieldMatcher,
   options?: ScoreFieldsOptions,
 ) {
-  return scoreFields(query, getPresetMatchFields(entry), options);
+  if (typeof queryOrMatcher === 'string') {
+    return scoreFields(queryOrMatcher, getPresetMatchFields(entry), options);
+  }
+  return queryOrMatcher.score(getPresetMatchFields(entry));
 }
 
 export type BrowseSortMode =
@@ -454,6 +472,55 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
   return normalizeSearchText(rawTerms);
 }
 
+function deriveSemanticVibeTerms(entry: PresetCatalogEntry): string[] {
+  const text =
+    `${entry.id} ${entry.title ?? ''} ${(entry.tags ?? []).join(' ')}`.toLowerCase();
+  const vibes: string[] = [];
+
+  if (
+    /\b(?:neon|cyber|grid|laser|matrix|wire|synth|glow|future)\b/u.test(text)
+  ) {
+    vibes.push('cyberpunk', 'synthwave', 'techno', 'neon', 'futuristic');
+  }
+  if (
+    /\b(?:calm|ambient|space|cosmos|galaxy|ether|drift|zen|relax|float|ocean|water|fluid)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push(
+      'ambient',
+      'chill',
+      'cosmic',
+      'meditative',
+      'deep-space',
+      'liquid',
+    );
+  }
+  if (
+    /\b(?:acid|trippy|psycho|psych|kaleido|mirror|fractal|mandelbrot|spiral|vortex|spin|dimension)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('psychedelic', 'trippy', 'kaleidoscope', 'fractal', 'hypnotic');
+  }
+  if (
+    /\b(?:bass|kick|drum|rave|strobe|speed|intense|energy|power|shock|quake|pulse)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('bass-heavy', 'rave', 'strobe', 'high-energy', 'percussive');
+  }
+  if (
+    /\b(?:cube|sphere|polygon|shape|geometry|poly|vector|line|ring)\b/u.test(
+      text,
+    )
+  ) {
+    vibes.push('geometric', 'minimalist', 'clean', '3d');
+  }
+
+  return vibes;
+}
+
 const presetMatchFieldsCache = new WeakMap<PresetCatalogEntry, MatchField[]>();
 
 /**
@@ -481,6 +548,9 @@ function getPresetMatchFields(entry: PresetCatalogEntry): MatchField[] {
         toMatchField(prettifyCollectionTag(tag), FIELD_PENALTY.tag),
       ),
     ...(entry.searchTerms ?? []).map((term) =>
+      toMatchField(term, FIELD_PENALTY.semantic),
+    ),
+    ...deriveSemanticVibeTerms(entry).map((term) =>
       toMatchField(term, FIELD_PENALTY.semantic),
     ),
   ].filter((field) => field.text.length > 0);
@@ -722,37 +792,58 @@ export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
 export function mapRuntimeCatalogEntry(
   entry: MilkdropCatalogEntry,
 ): PresetCatalogEntry {
+  const {
+    id,
+    title,
+    author,
+    authorUrl,
+    derivedFrom,
+    bundledFile,
+    tags,
+    isFavorite,
+    rating,
+    historyIndex,
+    lastOpenedAt,
+    fidelityClass,
+    similarity,
+    fidelityTier,
+    visualCertification,
+    quality,
+    sensoryProfile,
+    supports,
+    preview,
+    ...rest
+  } = entry;
+
   return {
-    id: entry.id,
-    title: entry.title,
-    author: entry.author,
-    authorUrl: resolveAuthorUrl(entry.author, entry.authorUrl),
-    derivedFrom: entry.derivedFrom,
-    file: entry.bundledFile,
-    tags: entry.tags,
-    isFavorite: entry.isFavorite,
-    rating: entry.rating,
+    ...rest,
+    id,
+    title,
+    author,
+    authorUrl: resolveAuthorUrl(author, authorUrl),
+    derivedFrom,
+    file: bundledFile,
+    bundledFile,
+    tags,
+    isFavorite,
+    rating,
     historyIndex:
-      entry.historyIndex !== undefined && entry.historyIndex >= 0
-        ? entry.historyIndex
+      historyIndex !== undefined && historyIndex >= 0
+        ? historyIndex
         : undefined,
-    lastOpenedAt: entry.lastOpenedAt,
-    expectedFidelityClass: entry.fidelityClass,
-    similarity: entry.similarity,
-    fidelityTier: entry.fidelityTier,
-    visualCertification: entry.visualCertification,
-    // The last of four hand-listed projections between catalog.json and a
-    // rendered row. Each builds a fresh object rather than spreading, so a
-    // field missing from any one of them disappears with no type error —
-    // which is exactly how the reactivity band shipped reading a field that
-    // never survived the trip.
-    quality: entry.quality,
-    sensoryProfile: entry.sensoryProfile,
+    lastOpenedAt,
+    expectedFidelityClass: fidelityClass,
+    fidelityClass,
+    similarity,
+    fidelityTier,
+    visualCertification,
+    quality,
+    sensoryProfile,
     supports: {
-      webgl: entry.supports.webgl.status === 'supported',
-      webgpu: entry.supports.webgpu.status === 'supported',
+      webgl: supports?.webgl?.status === 'supported',
+      webgpu: supports?.webgpu?.status === 'supported',
     },
-    preview: entry.preview,
+    preview,
   };
 }
 
@@ -760,10 +851,13 @@ export function mergeCatalogActivity(
   baseEntries: PresetCatalogEntry[],
   activityEntries: PresetCatalogEntry[],
 ) {
-  const activityById = new Map(
-    activityEntries.map((entry) => [entry.id, entry] as const),
-  );
+  const activityById = new Map<string, PresetCatalogEntry>();
+  for (const entry of activityEntries) {
+    activityById.set(entry.id, entry);
+  }
+  const seenIds = new Set<string>();
   const merged = baseEntries.map((entry) => {
+    seenIds.add(entry.id);
     const activityEntry = activityById.get(entry.id);
     if (!activityEntry) {
       return entry;
@@ -777,12 +871,12 @@ export function mergeCatalogActivity(
     };
   });
 
-  const seenIds = new Set(merged.map((entry) => entry.id));
-  activityEntries.forEach((entry) => {
+  for (const entry of activityEntries) {
     if (!seenIds.has(entry.id)) {
+      seenIds.add(entry.id);
       merged.push(entry);
     }
-  });
+  }
 
   return merged;
 }

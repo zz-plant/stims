@@ -25,7 +25,7 @@ jobs:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
 
   validate-pr-body:
-    name: Validate PR summary/testing/docs sections
+    name: Validate PR description
     if: contains(fromJson('["opened","edited","synchronize","reopened"]'), github.event.action)
     runs-on: ubuntu-latest
     steps:
@@ -35,47 +35,49 @@ jobs:
           script: |
             const body = context.payload.pull_request.body || "";
 
-            const requiredSections = ["Summary", "Testing", "Docs touched"];
-            const missingHeaders = requiredSections.filter((section) => {
-              const headerRegex = new RegExp(`^##\\s+${section}\\s*$`, "im");
-              return !headerRegex.test(body);
-            });
+            // What this gate is for: a PR that says nothing about what it does
+            // or whether it was verified. It is NOT for enforcing a heading
+            // vocabulary — it failed a description that carried a mechanism,
+            // a measured before/after table and a named regression test,
+            // purely because the headings read "Mechanism" and "Evidence"
+            // instead of "Summary" and "Testing". Rejecting a better
+            // description than the template asks for teaches authors to
+            // paste the template and say nothing under it.
+            //
+            // So: accept the substance in whatever shape it arrives, and fail
+            // only on an empty or placeholder description.
+            const stripped = body
+              .replace(/```[\s\S]*?```/g, " ")
+              .replace(/<!--[\s\S]*?-->/g, " ")
+              .replace(/^\s*[-*]\s*$/gm, " ")
+              .trim();
 
-            const extractSection = (heading) => {
-              const sectionRegex = new RegExp(
-                `##\\s+${heading}\\s*[\\r\\n]+([\\s\\S]*?)(?=\\n##\\s+|$)`,
-                "i"
-              );
-              const match = body.match(sectionRegex);
-              return match ? match[1].trim() : "";
-            };
+            const PLACEHOLDER = /^(n\/?a|none|-|tbd|wip|\.)$/i;
+            const isEmpty = !stripped || PLACEHOLDER.test(stripped);
 
-            const sectionContentIssues = [];
-            for (const section of requiredSections) {
-              const content = extractSection(section);
-              const isDocsSection = section === "Docs touched";
-              const invalidPlaceholder = !content || content === "-" || (!isDocsSection && content === "None");
-              if (invalidPlaceholder) {
-                sectionContentIssues.push(section);
-              }
-            }
+            // Any sign the author said how they know it works: a heading that
+            // names verification, a test or gate command, or a measurement.
+            const evidence = [
+              /^#{1,6}\s*(testing|tests?|verification|evidence|how i tested|validation|proof|measured)\b/im,
+              /\b(bun run|npm run|pnpm|yarn|pytest|cargo|make)\s+[\w:.-]+/i,
+              /\b(test|tests|suite|gate|check|ci)\b[^.\n]{0,80}\b(pass|passes|passed|green|fail|red)\b/i,
+              /\b\d+(\.\d+)?\s*(%|ms|fps|px|kb|mb)\b/i,
+              /\bbefore\b[^.\n]{0,60}\bafter\b/i,
+            ].some((pattern) => pattern.test(body));
 
             const errors = [];
-            if (missingHeaders.length) {
-              errors.push(`Missing required section headers: ${missingHeaders.join(", ")}.`);
-            }
-            if (sectionContentIssues.length) {
+            if (isEmpty) {
+              errors.push("The description is empty or a placeholder. Say what changed and why.");
+            } else if (!evidence) {
               errors.push(
-                `These sections need concrete content (not empty / '-' / 'None' where inappropriate): ${sectionContentIssues.join(", ")}.`
+                "Nothing in the description says how you know this works. Name the tests or checks you ran, " +
+                "or give a measurement — a heading, a command, or a before/after number all count."
               );
             }
 
             if (errors.length) {
               core.setFailed(
-                [
-                  "PR metadata requirements failed.",
-                  ...errors,
-                  "Please update the PR description to include a short summary, explicit tests, and docs touched/added."
-                ].join("\n")
+                ["PR description needs more than this.", ...errors].join("\n")
               );
             }
+

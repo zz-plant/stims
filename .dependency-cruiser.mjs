@@ -35,27 +35,27 @@ const config = {
       },
     },
     {
-      name: 'no-ui-to-loader-internals',
-      severity: 'info',
+      name: 'frontend-engine-seam',
+      severity: 'error',
       comment:
-        'UI modules should communicate through the app/loader surface instead of importing loader internals.',
+        'Frontend shell code outside frontend/engine/ must only import the declared public surface of milkdrop.',
       from: {
-        path: '^src/js/ui/',
+        path: '^src/js/frontend/(?!engine/)',
       },
       to: {
-        path: '^src/js/loader/',
+        path: '^src/js/milkdrop/(?!(catalog-store-analysis|catalog-store|catalog-types|compiler-types|formatter|live-tile-pool|overlay/.*|preset-credit|preset-generator|preset-handles|preset-id-resolution|preset-lineage|preset-math-analyzer|preset-modulation|preset-mutations|preset-preview|reactivity-probe|runtime/first-run-preset|runtime/interaction-response|runtime/preset-preview-service|runtime-types|shader-execution-mode|types)\\.ts$)',
       },
     },
     {
-      name: 'no-bootstrap-to-milkdrop-internals',
-      severity: 'info',
+      name: 'engine-runtime-only-via-adapter',
+      severity: 'error',
       comment:
-        'Bootstrap modules should stay on public app/runtime surfaces rather than MilkDrop internals.',
+        'Only frontend/engine/ may import runtime core, renderers, feedback managers, VM, or compiler entry points.',
       from: {
-        path: '^src/js/bootstrap/',
+        path: '^src/js/frontend/(?!engine/)',
       },
       to: {
-        path: '^src/js/milkdrop/',
+        path: '^src/js/milkdrop/(runtime\\.ts|renderer-|feedback-|vm|compiler\\.ts)',
       },
     },
   ],

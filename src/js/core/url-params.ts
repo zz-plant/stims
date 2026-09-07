@@ -54,6 +54,13 @@ export interface PerformanceURLParams {
    */
   lockedQualityStep: number | null;
   /**
+   * Pins the resolution multipliers to 1 while leaving mesh/wave density at
+   * whatever the step specifies. Parity captures set it so a frame is not
+   * supersampled at 1.25x and then downsampled, where the projectM reference
+   * renders natively.
+   */
+  nativeResolution: boolean;
+  /**
    * Forces the power-saver mode (`auto`/`on`/`off`) for this session, so a QA
    * link can pin the frame cap instead of waiting for a laptop to discharge.
    * Left as a raw string; `power-saver-store` owns the normalization.
@@ -327,7 +334,11 @@ export function parseURLParams(
         LEGACY_AUDIO_ALIASES,
       ),
       agentMode: isAgent,
-      previewMode: get('embedded') === 'true' || get('preview') === 'true',
+      previewMode:
+        get('embedded') === 'true' ||
+        get('preview') === 'true' ||
+        get('embed') === 'true' ||
+        get('chromeless') === 'true',
       invalidExperienceSlug:
         legacyExperience && legacyExperience !== 'milkdrop'
           ? legacyExperience
@@ -347,6 +358,10 @@ export function parseURLParams(
       particleBudget: parseNumberParam(get('particleBudget')),
       shaderQuality: get('shaderQuality')?.trim() || null,
       lockedQualityStep: parseNumberParam(get('lockQualityStep')),
+      // `?nativeResolution=1` pins the resolution multipliers to 1 without
+      // touching mesh/wave density. Parity captures use it so a frame is not
+      // supersampled and downsampled against a reference rendered natively.
+      nativeResolution: get('nativeResolution')?.trim() === '1',
       powerSaver: get('powerSaver')?.trim() || null,
     },
     audioMock: {

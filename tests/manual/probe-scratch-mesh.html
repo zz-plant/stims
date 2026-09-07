@@ -9,7 +9,9 @@ import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 
 const out = document.getElementById('out');
-const log = (m) => { out.textContent += m + '\n'; };
+const log = (m) => {
+  if (out) out.textContent += `${m}\n`;
+};
 
 const r = new WebGPURenderer({ canvas: document.getElementById('c0'), antialias: false });
 await r.init();

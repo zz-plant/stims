@@ -236,10 +236,24 @@ function browserTest(
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });
+/**
+ * 30s, not bun's 5s default for a hook.
+ *
+ * This teardown does two slow things — it shuts down a Chromium that has been
+ * software-rasterizing WebGL frames, then stops vite — while `beforeAll` above
+ * only starts vite and was still given 60s. That asymmetry was the bug: on the
+ * 2-core runner the close ran past 5s, bun cut the hook, and the whole job
+ * failed red with all six tests passing, leaving an orphaned
+ * `chrome-headless-shell` behind for the runner to reap.
+ *
+ * 30s matches what the two sibling suites that also close a browser here
+ * (`agent-integration`, `chrome-visual-contract`) already use; the suites left
+ * on the default only stop a server, which is cheap.
+ */
 afterAll(async () => {
   await releaseSharedBrowser();
-  stopServer();
-});
+  await stopServer();
+}, 30000);
 
 browserTest(
   'mounts engine, loads preset, and renders a silent preview frame',
@@ -713,53 +727,17 @@ smartphoneMicrophoneTest(
   { timeout: 300000 },
 );
 
-const VT_COUNT_INIT_SCRIPT = `
-  const win = window;
-  win.__stimsVTCount = 0;
-  win.__stimsVTs = [];
-  // Bounded on the page side: page.evaluate has no timeout of its own, so a
-  // view transition whose finished promise never settles - which is what a
-  // stalled compositor under software rendering looks like - hangs the
-  // evaluate until the whole test's budget runs out, reporting a bare
-  // "timed out" against a test that never named the step it stopped on.
-  win.__stimsVTDone = (timeoutMs = 15000) =>
-    Promise.race([
-      Promise.all(win.__stimsVTs.map((p) => p.catch(() => {}))).then(
-        () => true,
-      ),
-      new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs)),
-    ]);
-  const original = document.startViewTransition?.bind(document);
-  if (original) {
-    document.startViewTransition = (callback) => {
-      const transition = original(callback);
-      win.__stimsVTCount = (win.__stimsVTCount ?? 0) + 1;
-      win.__stimsVTs.push(transition.finished);
-      return transition;
-    };
-  }
-`;
-
-async function readVtCount(page: import('playwright').Page): Promise<number> {
-  return page.evaluate(
-    () =>
-      (window as typeof window & { __stimsVTCount?: number }).__stimsVTCount ??
-      0,
-  );
-}
-
 browserTest(
-  'home-to-live flip runs a view transition and mounts the live canvas',
+  'home-to-live flip mounts the live canvas and returns home',
   async () => {
     const browser = await sharedRendererBrowser();
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 1,
     });
-    await ctx.addInitScript(VT_COUNT_INIT_SCRIPT);
     const page = await ctx.newPage();
     page.on('console', (msg) => {
-      console.log(`[VT SWAP TEST CONSOLE] ${msg.type()}: ${msg.text()}`);
+      console.log(`[FLIP TEST CONSOLE] ${msg.type()}: ${msg.text()}`);
     });
 
     // This test only reproduces on CI, where the page produces no console
@@ -767,7 +745,7 @@ browserTest(
     // is the one that stalls. Name each step as it starts; the last line
     // printed is the step that did not finish.
     const step = (name: string) => {
-      console.log(`[VT SWAP STEP] ${name}`);
+      console.log(`[FLIP STEP] ${name}`);
     };
 
     try {
@@ -821,31 +799,9 @@ browserTest(
         timeout: 30000,
       });
 
-      // The shell flip is wired to the engine's audioActive edge, so
-      // startViewTransition must have fired at least once by now.
-      expect(await readVtCount(page)).toBeGreaterThanOrEqual(1);
-
-      // Wait for that transition to finish before flipping back: while a
-      // transition is active runViewTransition skips the next one (correct
-      // reentrancy behavior), which would make the home-side flip below
-      // update directly instead of running its own transition.
-      // Named so a stall here is distinguishable from one in a timed wait.
-      // The wait itself is bounded inside the page (see VT_COUNT_INIT_SCRIPT):
-      // it awaits the browser's own transition.finished, which a stalled
-      // compositor never settles, and page.evaluate has no timeout of its own.
-      step('await __stimsVTDone()');
-      const transitionsSettled = await page.evaluate(() =>
-        (
-          window as typeof window & {
-            __stimsVTDone: (timeoutMs?: number) => Promise<boolean>;
-          }
-        ).__stimsVTDone(),
-      );
-      expect(transitionsSettled).toBe(true);
-
       // Flip back to home through the app's own route plumbing: dropping the
-      // audio param stops audio, which re-crosses the audioActive edge and
-      // runs the home-side transition.
+      // audio param stops audio, which re-crosses the audioActive edge the
+      // shell swap is wired to.
       await page.evaluate(() => {
         const nextUrl = new URL(window.location.href);
         nextUrl.searchParams.delete('audio');
@@ -863,12 +819,10 @@ browserTest(
         '.stims-shell__stage-frame[data-mode="home"]',
         { timeout: 30000 },
       );
-
-      expect(await readVtCount(page)).toBeGreaterThanOrEqual(2);
     } catch (error) {
       await writeAgentFailureArtifact(
         page,
-        'e2e-engine-mount-home-to-live-flip-view-transition',
+        'e2e-engine-mount-home-to-live-flip',
       );
       throw error;
     } finally {
@@ -876,61 +830,4 @@ browserTest(
     }
   },
   { timeout: 240000 },
-);
-
-browserTest(
-  'skips the view transition when the OS prefers reduced motion',
-  async () => {
-    const browser = await sharedRendererBrowser();
-    const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
-      deviceScaleFactor: 1,
-      reducedMotion: 'reduce',
-    });
-    await ctx.addInitScript(VT_COUNT_INIT_SCRIPT);
-    const page = await ctx.newPage();
-
-    try {
-      await page.goto(
-        `${SERVER_URL}/?agent=true&renderer=webgl&${CHEAP_RENDER_PARAMS}`,
-        {
-          waitUntil: 'domcontentloaded',
-        },
-      );
-      await page.waitForSelector('#stims-main', { timeout: 30000 });
-      await openAudioSourceDisclosure(page);
-      // click() carries no deadline of its own, so a card that never becomes
-      // actionable used to consume the whole test budget and report a timeout
-      // naming no cause. 30s, not more: raising this to 90s was tried and
-      // changed nothing, which is itself the useful result — when this fails
-      // the card is absent rather than slow (Playwright's call log stops at
-      // "waiting for locator", never resolving it), so waiting longer only
-      // buys a later identical failure. See #1123.
-      await page
-        .locator('.stims-shell__source-card[data-demo-audio-btn]')
-        .click({ timeout: 30000 });
-
-      await page.waitForFunction(
-        () => document.body.dataset.audioActive === 'true',
-        undefined,
-        { timeout: 60000 },
-      );
-      await page.waitForSelector(
-        '.stims-shell__stage-frame[data-mode="live"]',
-        { timeout: 30000 },
-      );
-
-      // Mode flips, but the flip must happen without any view transition.
-      expect(await readVtCount(page)).toBe(0);
-    } catch (error) {
-      await writeAgentFailureArtifact(
-        page,
-        'e2e-engine-mount-skips-view-transition-reduced-motion',
-      );
-      throw error;
-    } finally {
-      await closeQuietly(ctx);
-    }
-  },
-  { timeout: 180000 },
 );

@@ -33,6 +33,7 @@ Namespaces worth knowing before you hand-roll something: `lab:` (preset measurem
 | Start dev server | `bun run dev` | — |
 | Find the right script | `bun run help` | < 2s |
 | Diagnose a broken environment | `bun run doctor` | < 30s |
+| Fix "Executable doesn't exist" from a browser tool | `bun run setup:browsers` | < 5s |
 | Fast syntax/lint/type check | `bun run check:quick` | < 30s |
 | Full quality gate | `bun run check` | 2–5 min |
 | Run specific test | `bun run test tests/path/to/spec.test.ts` | varies |
@@ -118,6 +119,7 @@ Use `.agent/skills/*/SKILL.md` for repeatable work classes:
 | runtime, renderer, shell, controls, audio, URL state | `.agent/skills/modify-visualizer-runtime/SKILL.md` |
 | presets, catalog, editor, import/export, compatibility | `.agent/skills/modify-preset-workflow/SKILL.md` |
 | preset visual fidelity / audio reactivity tuning (measured baseline→edit→compare) | `.agent/skills/improve-preset-fidelity/SKILL.md` |
+| matching native projectM — diagnosing and closing a rendering gap | `.agent/skills/close-parity-gap/SKILL.md` |
 | browser QA or visual confirmation | `.agent/skills/play-visualizer/SKILL.md` |
 | performing / jamming — live-coded audio + timed visual gestures | `.agent/skills/perform-livecoding/SKILL.md` |
 | quick iterative verification | `.agent/skills/verify-visualizer-work/SKILL.md` |
@@ -135,8 +137,9 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 
 - Every enforced rule, with its rationale, is listed in [`docs/GUARDRAILS.md`](../docs/GUARDRAILS.md) (generated from the guard scripts by `bun run generate:guardrails`)
 - `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + toy manifest + SEO + architecture + typecheck, no tests
-- `bun run check` = everything above, preceded by `assets:check`, plus the fast test suite (`unit` + `compat`; skips the slow corpus/e2e tests)
-- `bun run check:all` = the same gate with the full test suite, including corpus and e2e
+- `bun run check` = everything above, preceded by `assets:check`, plus the gate test suite (`unit` + `compat` + `corpus`; skips the slow, serial, browser-backed e2e tests)
+- `bun run check:all` = the same gate with every profile, including e2e
+- Two `corpus` tests drive a real browser and skip when Playwright's Chromium is not installed — `bun run setup:browsers` to run them
 - Run `check:quick` often; run `check` before any commit/PR
 
 ## Progressive disclosure

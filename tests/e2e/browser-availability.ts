@@ -26,6 +26,7 @@
 import { test } from 'bun:test';
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
+import { HEADLESS_ENVIRONMENT } from './headless-environment.ts';
 
 export const chromiumExecutablePath = chromium.executablePath();
 export const hasChromium = existsSync(chromiumExecutablePath);
@@ -36,9 +37,10 @@ const MISSING_BROWSER_REASON =
   `Playwright's Chromium is not installed at ${chromiumExecutablePath}.\n` +
   'This suite cannot verify anything without it, and a skipped run must not ' +
   'be mistaken for a passing one.\n' +
-  'Install it with `bunx playwright install chromium`. If the image already ' +
-  'ships a different build, point Playwright at it (PLAYWRIGHT_BROWSERS_PATH) ' +
-  'or launch with an explicit executablePath.';
+  'If the image already ships a different build — as cloud agent containers ' +
+  'do — run `bun run setup:browsers` to link it into the layout this ' +
+  'Playwright expects. Otherwise install it with ' +
+  '`bunx playwright install chromium`.';
 
 let warned = false;
 
@@ -79,15 +81,16 @@ export function requiredBrowserTest(
 
 /**
  * For browser tests that are deliberately local-only — they need a real GPU or
- * a trusted user gesture that headless Chromium on CI will not provide.
- * Skipping is the intended outcome in CI, so a missing browser is not a fault.
+ * a trusted user gesture that a headless browser will not provide. Skipping is
+ * the intended outcome anywhere without a display, CI and cloud agent
+ * containers alike, so a missing browser is not a fault there.
  */
 export function localOnlyBrowserTest(
   name: string,
   body: () => void | Promise<void>,
   options?: TestOptions,
 ) {
-  if (hasChromium && !isCi) {
+  if (hasChromium && !HEADLESS_ENVIRONMENT) {
     return test(name, body, options);
   }
   return test.skip(name, body, options);

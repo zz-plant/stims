@@ -13,6 +13,13 @@
  *
  * Each test maps to a commit that broke and was fixed. If the CSS
  * regresses, the test that guards it fails by name.
+ *
+ * What remains here is only what a rendered check cannot observe: the
+ * safe-area env() math resolves to 0 in desktop Chromium, and the live-mode
+ * rules need a booted engine. The rendered counterparts — no horizontal
+ * overflow at a phone viewport, and a scrollable hero in short landscape —
+ * live in tests/e2e/chrome-visual-contract.test.ts and measure the computed
+ * result instead of the stylesheet text.
  */
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
@@ -93,30 +100,5 @@ describe('mobile viewport edge-case matrix', () => {
     expect(css).toMatch(
       /--mobile-control-offset:\s*var\(--mobile-bar-height\)/u,
     );
-  });
-
-  test('rail actions wrap to avoid horizontal overflow (5619d17a)', () => {
-    const css = readAppShellCss();
-    expect(
-      ruleInMedia(
-        css,
-        MOBILE_MEDIA,
-        '.stims-shell__rail-actions',
-        'flex-wrap: wrap',
-      ),
-    ).toBe(true);
-  });
-
-  test('short landscape viewports get a scrollable hero (height breakpoint)', () => {
-    const css = readAppShellCss();
-    expect(css).toMatch(/@media \(max-height: 720px\)/u);
-    expect(
-      ruleInMedia(
-        css,
-        '@media (max-height: 720px)',
-        '.stims-shell__stage-hero',
-        'overflow-y: auto',
-      ),
-    ).toBe(true);
   });
 });

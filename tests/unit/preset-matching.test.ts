@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  createFieldMatcher,
   FIELD_PENALTY,
   type MatchField,
   matchesFields,
@@ -136,5 +137,63 @@ describe('multi-token AND', () => {
     expect(scoreFields('neon tunnel', spread) ?? 0).toBeGreaterThan(
       scoreFields('neon tunnel', fuzzy) ?? Number.NEGATIVE_INFINITY,
     );
+  });
+});
+
+describe('createFieldMatcher', () => {
+  const fields = presetFields({
+    title: 'Neon Drive',
+    author: 'Rovastar',
+    tags: ['tunnel'],
+  });
+
+  test('pre-compiles tokens and performs identical matches and scores', () => {
+    const matcher = createFieldMatcher('neon tunnel');
+    expect(matcher.normalizedQuery).toBe('neon tunnel');
+    expect(matcher.tokens).toEqual(['neon', 'tunnel']);
+    expect(matcher.matches(fields)).toBe(true);
+    expect(matcher.score(fields)).toBe(scoreFields('neon tunnel', fields));
+  });
+
+  test('handles empty query gracefully', () => {
+    const emptyMatcher = createFieldMatcher('   ');
+    expect(emptyMatcher.matches(fields)).toBe(true);
+    expect(emptyMatcher.score(fields)).toBe(0);
+  });
+});
+
+describe('workspace semantic vibe matching', () => {
+  const {
+    matchesPreset,
+  } = require('../../src/js/frontend/workspace-helpers.ts');
+
+  test('matches cyberpunk vibe to neon laser grid presets', () => {
+    const preset = {
+      id: 'cyber-grid-neon',
+      title: 'Neon Grid Vector',
+      tags: ['grid', 'lasers'],
+    };
+    expect(matchesPreset(preset, 'cyberpunk')).toBe(true);
+    expect(matchesPreset(preset, 'futuristic')).toBe(true);
+  });
+
+  test('matches ambient cosmic vibe to space galaxy presets', () => {
+    const preset = {
+      id: 'space-drift-01',
+      title: 'Deep Ether Galaxy',
+      tags: ['space', 'cosmos'],
+    };
+    expect(matchesPreset(preset, 'ambient')).toBe(true);
+    expect(matchesPreset(preset, 'chill')).toBe(true);
+  });
+
+  test('matches psychedelic vibe to acid fractal kaleidoscope presets', () => {
+    const preset = {
+      id: 'acid-spin-vortex',
+      title: 'Mandelbrot Spiral',
+      tags: ['spiral'],
+    };
+    expect(matchesPreset(preset, 'psychedelic')).toBe(true);
+    expect(matchesPreset(preset, 'trippy')).toBe(true);
   });
 });

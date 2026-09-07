@@ -1,8 +1,14 @@
+/**
+ * Workspace Shell Lifecycle Hooks — coordinates URL routing synchronizations, microphone
+ * permissions, link sharing, and canonical state transitions across the top-level visualizer shell.
+ */
+
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   acquireMicrophoneStream,
   describeInputProcessingWarning,
 } from '../core/audio-constants.ts';
+import { noteGrowthEvent } from '../core/services/preset-telemetry.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { FIRST_RUN_PRESET_ID } from '../milkdrop/runtime/first-run-preset.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
@@ -20,6 +26,7 @@ import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
+  createFieldMatcher,
   getCollectionTags,
   isDocumentAudioActive,
   mapRuntimeCatalogEntry,
@@ -146,19 +153,20 @@ export function useWorkspaceShellOrchestration({
     [enrichedCatalog, fallbackCatalogError],
   );
 
-  const filteredCatalog = useMemo(
-    () =>
-      enrichedCatalog.filter((entry) => {
-        if (
-          routeState.collectionTag &&
-          !entry.tags?.includes(routeState.collectionTag)
-        ) {
-          return false;
-        }
-        return matchesPreset(entry, deferredSearch);
-      }),
-    [enrichedCatalog, routeState.collectionTag, deferredSearch],
-  );
+  const filteredCatalog = useMemo(() => {
+    const matcher = deferredSearch
+      ? createFieldMatcher(deferredSearch, { allowSubsequence: false })
+      : null;
+    return enrichedCatalog.filter((entry) => {
+      if (
+        routeState.collectionTag &&
+        !entry.tags?.includes(routeState.collectionTag)
+      ) {
+        return false;
+      }
+      return matcher ? matchesPreset(entry, matcher) : true;
+    });
+  }, [enrichedCatalog, routeState.collectionTag, deferredSearch]);
 
   const currentPreset = useMemo(
     () =>
@@ -636,6 +644,17 @@ export function useWorkspaceShellOrchestration({
       title: shareTitle,
       text: shareText,
     });
+
+    noteGrowthEvent(
+      result === 'shared'
+        ? 'share-shared'
+        : result === 'copied'
+          ? 'share-copied'
+          : result === 'cancelled'
+            ? 'share-cancelled'
+            : 'share-unavailable',
+      selectedPreset?.id,
+    );
 
     if (result === 'shared') {
       setStatusMessage('Link shared.');

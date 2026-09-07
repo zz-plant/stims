@@ -32,6 +32,7 @@ import {
 } from '../../scripts/preset-visual-regression-capture.ts';
 import { hasChromium as sharedHasChromium } from './browser-availability.ts';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+import { HEADLESS_ENVIRONMENT } from './headless-environment.ts';
 // SOFTWARE_RENDERER_ARGS, not WEBGL_RENDERER_ARGS: the dhash baselines were
 // captured under SwiftShader, so the runner must render with the same
 // software pipeline or the comparison drifts with the local GPU.
@@ -41,9 +42,10 @@ import { HEADLESS, SOFTWARE_RENDERER_ARGS } from './webgl-launch.ts';
 const hasChromium = sharedHasChromium;
 // CI runs the eight-preset burst under SwiftShader on a 2-core runner; the
 // sequential WebGL captures are too heavy for that and flake by hanging
-// mid-capture (the failing preset shifts every run). Run this suite locally
-// on a real GPU where the baseline/runner match.
-const RUNS_LOCALLY = hasChromium && !process.env.CI;
+// mid-capture (the failing preset shifts every run). A cloud agent container
+// is the same software-rendered case. Run this suite where a real GPU makes
+// the baseline and the runner match.
+const RUNS_LOCALLY = hasChromium && !HEADLESS_ENVIRONMENT;
 const browserTest = RUNS_LOCALLY ? test : test.skip;
 
 const TEST_PORT = 5184;

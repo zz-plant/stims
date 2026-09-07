@@ -23,31 +23,39 @@
  *   cy and decay — every variable that moves the whole frame — measured
  *   0.000. At the pixel level demo audio moved it no more than silence did.
  *
- * Measured on 2026-08-22 with `bun run lab:visual` (silence vs demo audio):
+ * Measured on 2026-08-22 with `bun run lab:visual` (silence vs demo audio),
+ * and re-measured on 2026-08-31 with a steady-state window after the WebGPU
+ * feedback-carry change (ea02d0b0) invalidated the first round:
  *
- * | preset (webgpu)                      | mean luma | visible | ΔL demo−silence | motion ratio |
- * | ------------------------------------ | --------- | ------- | --------------- | ------------ |
- * | krash-rovastar-cerebral-demons-stars | 65.0      | 89%     | −1.9            | 0.93         |
- * | shifter-glassworms-flare             | 45.6      | 84%     | −24.5           | 0.84         |
+ * The 08-22 numbers sampled t≈1.5–7s. Feedback accumulation only shows after
+ * ~20–30s, so the certified pick (`shifter-glassworms-flare`, ΔL −24.5) was
+ * measured in its pretty opening seconds and washes out to near-white fog
+ * (mean luma 206–220 on WebGPU, 140 on WebGL) in the steady state every
+ * visitor actually watches. Re-measuring the curated shortlist with
+ * `--settle-ms 30000` on the production backend found most of it broken the
+ * same way — saturated white, near-black, or collapsing when demo audio
+ * starts — and exactly one preset that is lit, colorful, structured and
+ * visibly audio-reactive in the state it settles into:
  *
- * A ΔL of −1.9 is the incumbent's whole answer to "does it react": audio
- * changed the image by under 1% of the luminance range. Glassworms answers
- * with −24.5 on the same instrument, and the gap is an order of magnitude
- * wider than the run-to-run variance (repeat runs put it at −17 to −25).
+ * | preset (webgpu, 30s settle)          | silence→demo luma | ΔL    | colorfulness |
+ * | ------------------------------------ | ----------------- | ----- | ------------ |
+ * | krash-rovastar-cerebral-demons-stars | 88 → 114          | +26.0 | 0.49 → 0.57  |
+ * | shifter-glassworms-flare (replaced)  | 220 → 206         | −13.6 | 0.07 → 0.10  |
  *
- * Known limit, recorded rather than hidden: the same preset measures
- * ΔL −4.2 on WebGL, where it is also much brighter (mean luma 94). The two
- * backends do not render this preset the same, which is a fidelity bug in its
- * own right — but WebGPU is the production default, and on WebGL glassworms
- * still responds twice as strongly as the preset it replaces (−4.2 vs −0.2).
+ * So the default returns to `krash-rovastar-cerebral-demons-stars` — demoted
+ * on 08-22 when it measured ΔL −1.9 under the OLD WebGPU feedback semantics
+ * (history discarded every frame), and transformed by the feedback carry into
+ * the strongest steady-state measurement in the shortlist. The lesson written
+ * into the criterion: measure the state the preset settles into, not its
+ * opening seconds, and re-measure after renderer-semantics changes.
  *
  * The measurements are checked in at `src/data/first-run-preset-evidence.json`
  * and `tests/unit/bundled-first-run-preset.test.ts` fails when the shipped id
  * stops matching them. Changing this id means re-measuring:
  *
- *   bun run lab:visual -- --preset <id> --renderer webgl
+ *   bun run lab:visual -- --preset <id> --renderer webgl --settle-ms 30000
  *   bun run generate:first-run-evidence
- *   bun run lab:visual -- --preset <id> --renderer webgpu
+ *   bun run lab:visual -- --preset <id> --renderer webgpu --settle-ms 30000
  *   bun run generate:first-run-evidence
  *   bun run lab:reactivity -- --preset <id>
  *   bun run generate:first-run-evidence
@@ -57,11 +65,12 @@
  * arrives are already this preset rather than a placeholder. Changing the id
  * here means regenerating that file — the guard test names the command.
  */
-export const FIRST_RUN_PRESET_ID = 'shifter-glassworms-flare';
+export const FIRST_RUN_PRESET_ID = 'krash-rovastar-cerebral-demons-stars';
 
 /** Catalog metadata for {@link FIRST_RUN_PRESET_ID}, needed before the catalog loads. */
-export const FIRST_RUN_PRESET_TITLE = 'Shifter - Glassworms - Flare';
-export const FIRST_RUN_PRESET_AUTHOR = 'Shifter';
+export const FIRST_RUN_PRESET_TITLE =
+  'Krash & Rovastar - Cerebral Demons (Stars Remix)';
+export const FIRST_RUN_PRESET_AUTHOR = 'Krash & Rovastar';
 
 /**
  * Crossfade length used when nothing is stored in preferences yet.

@@ -1,3 +1,8 @@
+/**
+ * Workspace Context & Provider — exposes core workspace state, UI actions, engine commands,
+ * and shell telemetry to React components through a unified context provider with scoped re-renders.
+ */
+
 import {
   createContext,
   type ReactNode,
@@ -15,7 +20,10 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
-import { setAudioBands, setAudioEnergy } from './engine-audio-energy-store.ts';
+import {
+  setAudioBandScalars,
+  setAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
   EngineCtx,
@@ -224,11 +232,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const snap = sessionState.engineSnapshot;
     if (snap) {
       setAudioEnergy(snap.audioEnergy);
-      setAudioBands({
-        bass: snap.audioBass,
-        mid: snap.audioMid,
-        treble: snap.audioTreble,
-      });
+      setAudioBandScalars(snap.audioBass, snap.audioMid, snap.audioTreble);
       setEngineQualityState(
         snap.adaptiveQuality
           ? {

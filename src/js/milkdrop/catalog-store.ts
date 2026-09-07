@@ -79,7 +79,10 @@ export function createMilkdropCatalogStore({
           persistence.listMeta(),
           getHistoryRecord(),
         ]);
-      const metaById = new Map(storedMeta.map((record) => [record.id, record]));
+      const metaById = new Map<string, StoredMetaRecord>();
+      for (const record of storedMeta) {
+        metaById.set(record.id, record);
+      }
       const history = historyRecord.stack ?? [];
       const historyIndexMap = new Map<string, number>();
       for (let i = 0; i < history.length; i += 1) {

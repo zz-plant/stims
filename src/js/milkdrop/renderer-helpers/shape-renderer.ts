@@ -1,3 +1,8 @@
+/**
+ * Custom Shape Visual Renderer — constructs and renders MilkDrop custom geometric polygons, circles,
+ * textured quads, border outlines, and per-frame parameterized shape instances.
+ */
+
 import type { Group, Line, LineLoop, Material, Mesh, Texture } from 'three';
 import {
   AdditiveBlending,

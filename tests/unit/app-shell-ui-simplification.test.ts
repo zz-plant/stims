@@ -111,9 +111,19 @@ describe('Workspace shell UI simplification regression', () => {
     expect(stageControlsSource).toContain("withHint('Surprise me'");
     expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
     expect(homeSource).toContain('Browse presets');
-    expect(audioSourcePanelSource).toContain('YouTube playback');
-    expect(audioSourcePanelSource).toContain('Live mic input');
-    expect(audioSourcePanelSource).toContain('Audio from this browser tab');
+    // The four source cards each keep one short line of copy saying what the
+    // source is. The wording changed when the cards were rebuilt around a
+    // leading icon (the uppercase kicker labels and the decorative shader
+    // identicons went with it), so these assert the current lines.
+    expect(audioSourcePanelSource).toContain('No permission needed');
+    expect(audioSourcePanelSource).toContain('Whatever is playing in the room');
+    expect(audioSourcePanelSource).toContain(
+      'Audio playing in this browser tab',
+    );
+    // The section heading names the whole section, never one of its children.
+    expect(audioSourcePanelSource).not.toContain(
+      "canCaptureDisplayAudio ? 'YouTube playback' : 'Audio source'",
+    );
     // Browse used to paginate in batches of 30 behind a "Show N more"
     // button; both views are virtualized now, so the batch constant, the
     // `visible` slice and that button are all gone. The contract that

@@ -26,7 +26,7 @@
  */
 import { spawn } from 'node:child_process';
 import { ensureDevServer } from './dev-server.ts';
-import { loadParityArtifactManifest } from './parity-artifacts.ts';
+import { latestStimsCapture } from './parity-artifacts.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,
@@ -208,6 +208,9 @@ function runPlayToyInProcess(
     // quality reacts to frame time, so a capture taken while the machine is
     // busy renders at a different scale than one taken idle.
     lockedQualityStep: 0,
+    // The reference renders at its native size; `ultra` supersamples 1.25x and
+    // the screenshot downsamples, softening every captured frame against it.
+    nativeResolution: true,
     viewportWidth: request.viewportWidth,
     viewportHeight: request.viewportHeight,
     outputDir: request.outputDir,
@@ -255,6 +258,10 @@ function runPlayToyInChildProcess(
       // two cases.
       '--lock-quality-step',
       '0',
+      // Match the in-process path: the reference renders natively, so the
+      // capture must not supersample and downsample.
+      '--native-resolution',
+      '--native-resolution',
       '--width',
       String(request.viewportWidth),
       '--height',
@@ -415,13 +422,6 @@ export function assertCaptureBackendMatches({
   );
 }
 
-function latestCaptureBackend(outputDir: string, presetId: string) {
-  const artifacts = loadParityArtifactManifest(outputDir).artifacts.filter(
-    (entry) => entry.kind === 'stims-capture' && entry.presetId === presetId,
-  );
-  return artifacts[artifacts.length - 1]?.capture?.backend ?? null;
-}
-
 export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
@@ -511,10 +511,9 @@ export async function captureVisualReferenceSuite(
               presetId: request.presetId,
               requiredBackend:
                 request.rendererProfile === 'webgpu' ? 'webgpu' : 'webgl',
-              actualBackend: latestCaptureBackend(
-                request.outputDir,
-                request.presetId,
-              ),
+              actualBackend:
+                latestStimsCapture(request.outputDir, request.presetId)
+                  ?.backend ?? null,
             });
           }
         } catch (error) {

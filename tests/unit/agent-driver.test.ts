@@ -236,6 +236,34 @@ describe('stims.agent.selectPreset', () => {
 
     expect(order).toEqual(['startup-settled', 'selected:target-preset']);
   });
+
+  // The ready() timeout test above covers the same wording, but only when the
+  // outer withTimeout() wins a race against the driver-handle poll on the
+  // shared deadline — under CI contention the poll won instead and that test
+  // failed. selectPreset awaits waitForDriverHandle() unwrapped, so this
+  // reaches the poll's own error every time, with no race to lose.
+  test('times out with a matching message when no driver handle registers', async () => {
+    setAgentMode(true);
+    const { installAgentDriver } = await importFresh<
+      typeof import('../../src/js/core/agent-driver.ts')
+    >('src/js/core/agent-driver.ts');
+    installAgentDriver();
+
+    await expect(
+      (
+        globalThis as StimsGlobals & {
+          stims: {
+            agent: {
+              selectPreset: (
+                id: string,
+                o: { timeoutMs: number },
+              ) => Promise<unknown>;
+            };
+          };
+        }
+      ).stims.agent.selectPreset('any-preset', { timeoutMs: 50 }),
+    ).rejects.toThrow(/timed out/);
+  });
 });
 
 describe('stims.agent.waitForPreset', () => {

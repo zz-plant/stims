@@ -17,6 +17,7 @@
  * are not fully typed under the repo's current module resolution.
  */
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
+
 import type { Camera, Texture } from 'three';
 import {
   Color,
@@ -27,9 +28,9 @@ import {
   Vector2,
   Vector4,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { isAgentMode } from '../core/agent-api.ts';
+import { createLogger } from '../core/logger.ts';
 import { disposeMaterial } from '../utils/three/three-dispose';
 import { MilkdropFeedbackManagerLifecycleBase } from './feedback-manager-lifecycle.ts';
 import {
@@ -61,6 +62,7 @@ import {
   type OutputConversionRenderer,
   renderWithoutOutputConversion,
 } from './output-conversion-passthrough.ts';
+import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
 
 export {
   resolveDirectShaderSamplerBinding,
@@ -98,6 +100,8 @@ import type {
 } from './types';
 import { perPixelWritesWarpTransform } from './warp-sample-transform.ts';
 
+const tslLog = createLogger('MilkdropTSL');
+
 const {
   abs,
   acos,
@@ -125,6 +129,7 @@ const {
   log,
   log2,
   mat3,
+  mat4,
   max,
   min,
   mix,
@@ -352,7 +357,9 @@ function createPresentOutputNode(
     const q = p3.add(dot(p3, p3.yzx.add(33.33)));
     return fract(q.x.add(q.y).mul(q.z));
   };
-  const valueNoise = (p: any) => {
+  // p is a 2D sample point: `u` below swizzles .x/.y, which only exists if
+  // the parameter says it is a vec2 rather than `any`.
+  const valueNoise = (p: TslNode<'vec2'>) => {
     const i = floor(p);
     const f = fract(p);
     const u = f.mul(f).mul(f.mul(-2.0).add(3.0));
@@ -468,8 +475,15 @@ function createPresentOutputNode(
 }
 
 type ShaderNodeValue = {
-  kind: 'scalar' | 'vec2' | 'vec3' | 'vec4' | 'mat2';
+  kind: 'scalar' | 'vec2' | 'vec3' | 'vec4' | 'mat2' | 'mat3' | 'mat4';
   node: any;
+  /**
+   * `mat3`/`mat4` only: the column vectors the matrix was built from, so
+   * element reads and writes are swizzles on a vec3/vec4 instead of dynamic
+   * indexing into the matrix node. `node` is the assembled TSL matrix for
+   * anything that consumes the value whole.
+   */
+  columns?: any[];
 };
 
 type ShaderBinaryOperator =
@@ -490,11 +504,19 @@ type ShaderBinaryOperator =
   | '&'
   | '|';
 
-type ShaderNodeEnv = {
+export type ShaderNodeEnv = {
   values: Map<string, ShaderNodeValue>;
   uniforms: CompositeUniformBag;
+  /**
+   * When present, every name `getShaderEnvValue` fails to resolve is recorded
+   * here instead of vanishing. A null resolution is not an error by itself —
+   * `runPerPixelProgram` drops the whole statement, which is the correct
+   * fallback — but it must never be silent: an unbound `rad` once dropped the
+   * per-pixel warp of 922 bundled presets and nothing anywhere said so.
+   */
+  unresolvedNames?: Set<string>;
   sampleUvNode: ReturnType<typeof createSampleUvNode>;
-  sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
+  sampleAuxTextureNode: CompositeAuxSampler;
   /** Stage-specific meaning of sampler_main. The comp stage sets this to the
    * reconstructed composited frame (feedback + geometry); without it, main
    * samples fall back to the geometry-only scene texture. */
@@ -503,7 +525,13 @@ type ShaderNodeEnv = {
 
 type DirectShaderSwizzleComponent = 'x' | 'y' | 'z' | 'w';
 
-function hueRotateNode(colorValue: any, angle: any) {
+/**
+ * `colorValue` is declared as a vec3 rather than `any` so the mat3 multiply
+ * below resolves to the vec3 overload. Left as `any`, three infers
+ * `mat3.mul(any)` as returning another mat3, and the surrounding `clamp`
+ * against vec3 bounds then has no matching overload.
+ */
+function hueRotateNode(colorValue: TslNode<'vec3'>, angle: TslNode<'float'>) {
   return Fn(() => {
     const s = sin(angle);
     const c = cos(angle);
@@ -633,6 +661,325 @@ function parseShaderIndex(expression: string): number | null {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
+/**
+ * Column index of a read like `M[0]` or `M[int(0)]`. The HLSL normalizer
+ * rewrites `uint(0)` to `int(0)`, so every indexed read in a native body
+ * arrives as an `int(...)` call around a literal; the write side already
+ * accepts that shape through `parseShaderIndex`, and reads were dropping the
+ * whole statement on it.
+ */
+function resolveShaderIndexExpression(
+  index: MilkdropShaderExpressionNode | null | undefined,
+): number | null {
+  if (!index) {
+    return null;
+  }
+  const literal =
+    index.type === 'literal'
+      ? index
+      : index.type === 'call' &&
+          (index.name === 'int' || index.name === 'uint') &&
+          index.args.length === 1 &&
+          index.args[0]?.type === 'literal'
+        ? index.args[0]
+        : null;
+  if (!literal) {
+    return null;
+  }
+  const value = Number(literal.value);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+type ShaderLargeMatrixKind = 'mat3' | 'mat4';
+
+function isShaderMatrixKind(
+  kind: ShaderNodeValue['kind'],
+): kind is 'mat2' | ShaderLargeMatrixKind {
+  return kind === 'mat2' || kind === 'mat3' || kind === 'mat4';
+}
+
+function isShaderLargeMatrixKind(
+  kind: ShaderNodeValue['kind'],
+): kind is ShaderLargeMatrixKind {
+  return kind === 'mat3' || kind === 'mat4';
+}
+
+function shaderMatrixSize(kind: 'mat2' | ShaderLargeMatrixKind): number {
+  return kind === 'mat2' ? 2 : kind === 'mat3' ? 3 : 4;
+}
+
+function shaderMatrixColumnKind(kind: ShaderLargeMatrixKind): 'vec3' | 'vec4' {
+  return kind === 'mat3' ? 'vec3' : 'vec4';
+}
+
+const MATRIX_COMPONENT_INDEX: Record<string, number> = {
+  x: 0,
+  r: 0,
+  y: 1,
+  g: 1,
+  z: 2,
+  b: 2,
+  w: 3,
+  a: 3,
+};
+
+/**
+ * A mat3/mat4 is carried as its column vectors plus the assembled TSL matrix
+ * node. The columns are what element access works on — `M[i]` is a column
+ * read, `M[i].y = s` is a component write on one column — and the node is
+ * what a consumer that wants the whole matrix (a `mix`, a uniform-style
+ * copy) gets. GLSL and WGSL both construct matrices column by column, so
+ * `mat3(c0, c1, c2)` is the same shape on either backend.
+ */
+function shaderMatrix(kind: ShaderLargeMatrixKind, columns: any[]) {
+  const value = makeShaderValue(
+    kind,
+    kind === 'mat3'
+      ? mat3(columns[0], columns[1], columns[2])
+      : mat4(columns[0], columns[1], columns[2], columns[3]),
+  );
+  value.columns = columns;
+  return value;
+}
+
+/** Column vectors of a mat3/mat4 value, reading them off the node if the
+ * value was assembled somewhere that did not keep them (a `mix` of two
+ * matrices, for instance). */
+function shaderMatrixColumns(value: ShaderNodeValue): any[] {
+  if (value.columns) {
+    return value.columns;
+  }
+  const size = shaderMatrixSize(value.kind as ShaderLargeMatrixKind);
+  return Array.from({ length: size }, (_, index) =>
+    value.node.element(int(index)),
+  );
+}
+
+function shaderMatrixColumn(value: ShaderNodeValue, index: number) {
+  return makeShaderValue(
+    shaderMatrixColumnKind(value.kind as ShaderLargeMatrixKind),
+    shaderMatrixColumns(value)[index],
+  );
+}
+
+function shaderMatrixFromNode(kind: ShaderLargeMatrixKind, node: any) {
+  return makeShaderValue(kind, node);
+}
+
+/** `matN(s)`: `s` down the diagonal, zero elsewhere — so `mat3(0.0)` is the
+ * zero matrix a bare declaration is seeded with. */
+function diagonalShaderMatrix(kind: ShaderLargeMatrixKind, scalar: any) {
+  const size = shaderMatrixSize(kind);
+  const zero = float(0);
+  const columns = Array.from({ length: size }, (_, column) => {
+    const components = Array.from({ length: size }, (_, row) =>
+      row === column ? scalar : zero,
+    );
+    return size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  });
+  return shaderMatrix(kind, columns);
+}
+
+function coerceToShaderMatrix(
+  value: ShaderNodeValue,
+  kind: ShaderLargeMatrixKind,
+): ShaderNodeValue {
+  if (value.kind === kind) {
+    return value;
+  }
+  if (isShaderMatrixKind(value.kind)) {
+    // GLSL `mat4(mat3)` / `mat3(mat4)`: copy the overlapping block, pad the
+    // rest from the identity.
+    const size = shaderMatrixSize(kind);
+    const sourceSize = shaderMatrixSize(value.kind);
+    const sourceColumns =
+      value.kind === 'mat2'
+        ? [shaderMat2Column(value, 0).node, shaderMat2Column(value, 1).node]
+        : shaderMatrixColumns(value);
+    const columns = Array.from({ length: size }, (_, column) => {
+      const components = Array.from({ length: size }, (_, row) => {
+        if (column < sourceSize && row < sourceSize) {
+          const source = sourceColumns[column];
+          return row === 0
+            ? source.x
+            : row === 1
+              ? source.y
+              : row === 2
+                ? source.z
+                : source.w;
+        }
+        return float(row === column ? 1 : 0);
+      });
+      return size === 3
+        ? vec3(components[0], components[1], components[2])
+        : vec4(components[0], components[1], components[2], components[3]);
+    });
+    return shaderMatrix(kind, columns);
+  }
+  return diagonalShaderMatrix(kind, coerceShaderValue(value, 'scalar').node);
+}
+
+/** `M[i] = v` on a mat3/mat4 — replace one column. */
+function setMatrixColumn(
+  kind: ShaderLargeMatrixKind,
+  value: ShaderNodeValue | null,
+  index: number,
+  nextValue: ShaderNodeValue,
+): ShaderNodeValue {
+  const base = value
+    ? coerceToShaderMatrix(value, kind)
+    : diagonalShaderMatrix(kind, float(0));
+  const columns = [...shaderMatrixColumns(base)];
+  columns[index] = coerceShaderValue(
+    nextValue,
+    shaderMatrixColumnKind(kind),
+  ).node;
+  return shaderMatrix(kind, columns);
+}
+
+/** `M[i].y = s` on a mat3/mat4 — mutate one component of one column. */
+function setMatrixComponent(
+  kind: ShaderLargeMatrixKind,
+  value: ShaderNodeValue | null,
+  index: number,
+  component: number,
+  nextValue: ShaderNodeValue,
+): ShaderNodeValue {
+  const base = value
+    ? coerceToShaderMatrix(value, kind)
+    : diagonalShaderMatrix(kind, float(0));
+  const columns = [...shaderMatrixColumns(base)];
+  const columnNode = columns[index].toVar();
+  const assigned = coerceShaderValue(nextValue, 'scalar').node;
+  const target =
+    component === 0
+      ? columnNode.x
+      : component === 1
+        ? columnNode.y
+        : component === 2
+          ? columnNode.z
+          : columnNode.w;
+  target.assign(assigned);
+  columns[index] =
+    kind === 'mat3'
+      ? vec3(columnNode.x, columnNode.y, columnNode.z)
+      : vec4(columnNode.x, columnNode.y, columnNode.z, columnNode.w);
+  return shaderMatrix(kind, columns);
+}
+
+function transposeShaderMatrix(value: ShaderNodeValue): ShaderNodeValue {
+  const kind = value.kind as ShaderLargeMatrixKind;
+  const size = shaderMatrixSize(kind);
+  const columns = shaderMatrixColumns(value);
+  const component = (node: any, row: number) =>
+    row === 0 ? node.x : row === 1 ? node.y : row === 2 ? node.z : node.w;
+  const transposed = Array.from({ length: size }, (_, column) => {
+    const components = Array.from({ length: size }, (_, row) =>
+      component(columns[row], column),
+    );
+    return size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  });
+  return shaderMatrix(kind, transposed);
+}
+
+/**
+ * Column-major matrix arithmetic for mat3/mat4, written out on the columns
+ * rather than handed to TSL's operator nodes: `vec * mat` (the row-vector
+ * product MilkDrop's transpiled bodies use for rotations — `(p / q7) *
+ * tmpvar_1`) has no single TSL operator, and spelling every case the same
+ * way keeps the two backends' semantics identical by construction.
+ */
+function applyShaderMatrixBinaryNode(
+  operator: ShaderBinaryOperator,
+  left: ShaderNodeValue,
+  right: ShaderNodeValue,
+): ShaderNodeValue {
+  const kind = (
+    isShaderLargeMatrixKind(left.kind) ? left.kind : right.kind
+  ) as ShaderLargeMatrixKind;
+  const size = shaderMatrixSize(kind);
+  const columnKind = shaderMatrixColumnKind(kind);
+  const buildColumn = (components: any[]) =>
+    size === 3
+      ? vec3(components[0], components[1], components[2])
+      : vec4(components[0], components[1], components[2], components[3]);
+  const component = (node: any, row: number) =>
+    row === 0 ? node.x : row === 1 ? node.y : row === 2 ? node.z : node.w;
+  const matrixTimesVector = (columns: any[], vector: any) =>
+    columns
+      .slice(1)
+      .reduce(
+        (sum, column, index) =>
+          sum.add(column.mul(component(vector, index + 1))),
+        columns[0].mul(component(vector, 0)),
+      );
+
+  if (operator === '*') {
+    if (isShaderMatrixKind(left.kind) && isShaderMatrixKind(right.kind)) {
+      // Either side may still be a mat2; coerceToShaderMatrix pads it.
+      const a = shaderMatrixColumns(coerceToShaderMatrix(left, kind));
+      const b = shaderMatrixColumns(coerceToShaderMatrix(right, kind));
+      return shaderMatrix(
+        kind,
+        b.map((column) => matrixTimesVector(a, column)),
+      );
+    }
+    if (isShaderLargeMatrixKind(left.kind) && right.kind !== 'scalar') {
+      // M * v: sum of columns weighted by v's components.
+      const v = coerceShaderValue(right, columnKind).node;
+      return makeShaderValue(
+        columnKind,
+        matrixTimesVector(shaderMatrixColumns(left), v),
+      );
+    }
+    if (isShaderLargeMatrixKind(right.kind) && left.kind !== 'scalar') {
+      // v * M: one dot product per column.
+      const v = coerceShaderValue(left, columnKind).node;
+      return makeShaderValue(
+        columnKind,
+        buildColumn(shaderMatrixColumns(right).map((column) => dot(v, column))),
+      );
+    }
+    const matrix = isShaderLargeMatrixKind(left.kind) ? left : right;
+    const scalar = coerceShaderValue(
+      isShaderLargeMatrixKind(left.kind) ? right : left,
+      'scalar',
+    ).node;
+    return shaderMatrix(
+      kind,
+      shaderMatrixColumns(matrix).map((column) => column.mul(scalar)),
+    );
+  }
+  if (
+    operator === '/' &&
+    isShaderLargeMatrixKind(left.kind) &&
+    !isShaderMatrixKind(right.kind)
+  ) {
+    const divisor = createSafeDivisorNode(
+      coerceShaderValue(right, 'scalar').node,
+    );
+    return shaderMatrix(
+      kind,
+      shaderMatrixColumns(left).map((column) => column.div(divisor)),
+    );
+  }
+  if (operator === '+' || operator === '-') {
+    const a = shaderMatrixColumns(coerceToShaderMatrix(left, kind));
+    const b = shaderMatrixColumns(coerceToShaderMatrix(right, kind));
+    return shaderMatrix(
+      kind,
+      a.map((column, index) =>
+        operator === '+' ? column.add(b[index]) : column.sub(b[index]),
+      ),
+    );
+  }
+  return left;
+}
+
 /** mat2 * v and v * mat2 and mat2 * mat2 column-major products. */
 function multiplyMat2(
   operator: '*' | '/' | '%',
@@ -673,6 +1020,12 @@ function shaderValueFromNode(node: any, kind: ShaderNodeValue['kind']) {
   if (kind === 'scalar') {
     return shaderFloat(node);
   }
+  if (kind === 'mat3' || kind === 'mat4') {
+    return shaderMatrixFromNode(kind, node);
+  }
+  if (kind === 'mat2') {
+    return makeShaderValue('mat2', node);
+  }
   if (kind === 'vec2') {
     return makeShaderValue('vec2', node);
   }
@@ -709,7 +1062,7 @@ function resolveShaderSwizzle(
   components: DirectShaderSwizzleComponent[];
 } | null {
   if (kind === 'scalar') return null;
-  if (kind === 'mat2') return null;
+  if (isShaderMatrixKind(kind)) return null;
   if (kind !== 'vec4') {
     return resolveDirectShaderSwizzle(kind, property);
   }
@@ -793,6 +1146,22 @@ function coerceShaderValue(
   if (value.kind === target) {
     return value;
   }
+  if (target === 'mat3' || target === 'mat4') {
+    return coerceToShaderMatrix(value, target);
+  }
+  if (isShaderLargeMatrixKind(value.kind)) {
+    if (target === 'mat2') {
+      // GLSL `mat2(mat3)`: the top-left block.
+      const columns = shaderMatrixColumns(value);
+      return shaderMat2(
+        shaderVec2(columns[0].x, columns[0].y),
+        shaderVec2(columns[1].x, columns[1].y),
+      );
+    }
+    // A matrix where a vector is wanted: its first column, which is what the
+    // mat2 path below does through its vec4 packing.
+    return coerceShaderValue(shaderMatrixColumn(value, 0), target);
+  }
   if (target === 'mat2') {
     if (value.kind === 'vec4') {
       return makeShaderValue('mat2', value.node);
@@ -840,6 +1209,12 @@ function getShaderResultKind(
   left: ShaderNodeValue,
   right: ShaderNodeValue,
 ): ShaderNodeValue['kind'] {
+  if (isShaderLargeMatrixKind(left.kind)) {
+    return left.kind;
+  }
+  if (isShaderLargeMatrixKind(right.kind)) {
+    return right.kind;
+  }
   if (left.kind === 'mat2' || right.kind === 'mat2') {
     return 'mat2';
   }
@@ -931,6 +1306,13 @@ function applyShaderBinaryNode(
     );
   }
 
+  if (
+    isShaderLargeMatrixKind(left.kind) ||
+    isShaderLargeMatrixKind(right.kind)
+  ) {
+    return applyShaderMatrixBinaryNode(operator, left, right);
+  }
+
   // mat2 arithmetic is column-major and never reduces to the generic
   // kind-coercion path (vec2 * mat2 yields vec2, mat2 * mat2 yields mat2).
   if (left.kind === 'mat2' || right.kind === 'mat2') {
@@ -1007,9 +1389,27 @@ function setShaderEnvValue(
   env.values.set(key.toLowerCase(), value);
 }
 
+/**
+ * A name that, when a directly executed body reads it without ever having
+ * assigned it, is a MilkDrop per-frame register the VM owns (`tele`,
+ * `hordist`, `vshift`, …) rather than anything this executor could resolve
+ * on its own. Sampler identifiers are the one other thing that reaches the
+ * scalar env unresolved — `tex2d(currentTex, uv)` compiles its arguments
+ * before the sampler name is looked up in the binding table — so those are
+ * excluded by shape.
+ */
+function isPerFrameVariableCandidate(name: string): boolean {
+  return (
+    /^[a-z][a-z0-9_]*$/u.test(name) &&
+    !name.endsWith('tex') &&
+    !name.startsWith('sampler_')
+  );
+}
+
 function getShaderEnvValue(
   env: ShaderNodeEnv,
   key: string,
+  options: { bindPerFrameVariable?: boolean } = {},
 ): ShaderNodeValue | null {
   const normalized = key.toLowerCase();
   const existing = env.values.get(normalized);
@@ -1232,11 +1632,36 @@ function getShaderEnvValue(
       ? registerUniforms[Math.floor(registerIndex / 4)]
       : null;
   const registerComponent = (['x', 'y', 'z', 'w'] as const)[registerIndex % 4];
-  const resolved = registerVector
+  let resolved = registerVector
     ? shaderFloat(registerVector[registerComponent])
     : (uniformMap[normalized]?.() ?? null);
+  // A read of a name nothing above supplies is a per-frame register the VM
+  // computes (martin-adrift-on-a-dead-planet reads `tele` and `hordist` in
+  // its warp body). WebGL declares these as `uniform float` and drives them
+  // from the frame state; do the same here with one uniform node per name.
+  // Only reads bind — assignShaderTarget passes bindPerFrameVariable: false,
+  // so a body's own scratch locals never turn into uniforms, matching the
+  // WebGL classifier's "first occurrence is an assignment ⇒ scratch" rule.
+  const perFrameVariables = env.uniforms.perFrameVariables as
+    | Map<string, ReturnType<typeof uniform>>
+    | undefined;
+  if (
+    !resolved &&
+    options.bindPerFrameVariable !== false &&
+    perFrameVariables instanceof Map &&
+    isPerFrameVariableCandidate(normalized)
+  ) {
+    let node = perFrameVariables.get(normalized);
+    if (!node) {
+      node = uniform(0);
+      perFrameVariables.set(normalized, node);
+    }
+    resolved = shaderFloat(node);
+  }
   if (resolved) {
     env.values.set(normalized, resolved);
+  } else {
+    env.unresolvedNames?.add(normalized);
   }
   return resolved;
 }
@@ -1286,17 +1711,59 @@ export function compileShaderExpressionNode(
     }
     case 'index': {
       const object = compileShaderExpressionNode(node.object, env);
-      if (object?.kind !== 'mat2') {
+      if (!object || object.kind === 'scalar') {
         return null;
       }
-      if (node.index?.type !== 'literal') {
+      const index = resolveShaderIndexExpression(node.index);
+      if (index !== null) {
+        if (isShaderMatrixKind(object.kind)) {
+          if (index >= shaderMatrixSize(object.kind)) {
+            return null;
+          }
+          return object.kind === 'mat2'
+            ? shaderMat2Column(object, index)
+            : shaderMatrixColumn(object, index);
+        }
+        const component = (['x', 'y', 'z', 'w'] as const)[index];
+        return component
+          ? buildDirectShaderSwizzleValue(object, component)
+          : null;
+      }
+      // A runtime index — `mat4(...)[int(mod(p.y, 4.0))][int(mod(p.x, 4.0))]`
+      // in martin-city-of-shadows — has no column to pick at build time, so
+      // it goes through TSL's element access, which both backends support on
+      // vectors and on matrix columns. The index is clamped the way WGSL
+      // clamps it; GLSL leaves an out-of-range read undefined, so no preset
+      // can depend on it either way.
+      const runtimeIndex = compileShaderExpressionNode(node.index, env);
+      if (!runtimeIndex) {
         return null;
       }
-      const index = Number(node.index.value);
-      if (!Number.isInteger(index) || index < 0 || index > 1) {
-        return null;
+      const indexNode: any = int(
+        coerceShaderValue(runtimeIndex, 'scalar').node,
+      );
+      if (object.kind === 'mat2') {
+        // Packed as a vec4: column i is components (2i, 2i + 1).
+        const column = indexNode.clamp(int(0), int(1));
+        const packed = object.node;
+        return shaderVec2(
+          packed.element(column.mul(int(2))),
+          packed.element(column.mul(int(2)).add(int(1))),
+        );
       }
-      return shaderMat2Column(object, index);
+      const size = isShaderLargeMatrixKind(object.kind)
+        ? shaderMatrixSize(object.kind)
+        : object.kind === 'vec4'
+          ? 4
+          : object.kind === 'vec3'
+            ? 3
+            : 2;
+      const element = object.node.element(
+        indexNode.clamp(int(0), int(size - 1)),
+      );
+      return isShaderLargeMatrixKind(object.kind)
+        ? makeShaderValue(shaderMatrixColumnKind(object.kind), element)
+        : shaderFloat(element);
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -1420,6 +1887,59 @@ export function compileShaderExpressionNode(
           coerceShaderValue(args[1], 'vec2'),
         );
       }
+      if (constructorPattern === 'mat2-splat') {
+        return coerceShaderValue(args[0], 'mat2');
+      }
+      if (constructorPattern === 'mat2-copy') {
+        return args[0];
+      }
+      if (constructorPattern === 'mat3-nine') {
+        const s = args.map((arg) => coerceShaderValue(arg, 'scalar').node);
+        return shaderMatrix('mat3', [
+          vec3(s[0], s[1], s[2]),
+          vec3(s[3], s[4], s[5]),
+          vec3(s[6], s[7], s[8]),
+        ]);
+      }
+      if (constructorPattern === 'mat3-triple') {
+        return shaderMatrix(
+          'mat3',
+          args.map((arg) => coerceShaderValue(arg, 'vec3').node),
+        );
+      }
+      if (constructorPattern === 'mat3-splat') {
+        return diagonalShaderMatrix(
+          'mat3',
+          coerceShaderValue(args[0], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'mat4-sixteen') {
+        const s = args.map((arg) => coerceShaderValue(arg, 'scalar').node);
+        return shaderMatrix('mat4', [
+          vec4(s[0], s[1], s[2], s[3]),
+          vec4(s[4], s[5], s[6], s[7]),
+          vec4(s[8], s[9], s[10], s[11]),
+          vec4(s[12], s[13], s[14], s[15]),
+        ]);
+      }
+      if (constructorPattern === 'mat4-quad') {
+        return shaderMatrix(
+          'mat4',
+          args.map((arg) => coerceShaderValue(arg, 'vec4').node),
+        );
+      }
+      if (constructorPattern === 'mat4-splat') {
+        return diagonalShaderMatrix(
+          'mat4',
+          coerceShaderValue(args[0], 'scalar').node,
+        );
+      }
+      if (
+        constructorPattern === 'mat3-copy' ||
+        constructorPattern === 'mat4-copy'
+      ) {
+        return args[0];
+      }
       // MilkDrop 2 preamble helpers — see the matching GLSL emitter case in
       // compiler/shader-analysis-glsl.ts. Bodies call these without defining
       // them, so both backends have to supply them or the preset renders
@@ -1468,15 +1988,15 @@ export function compileShaderExpressionNode(
         const explicitVolumeSample = name === 'tex3d' || name === 'texture3d';
         const inferredVolumeSample =
           name === 'texture' && coordinate.kind === 'vec3';
+        const sampleDimension =
+          explicitVolumeSample || inferredVolumeSample ? '3d' : '2d';
         const resolvedBinding = resolveDirectShaderSamplerBinding(
           sourceName,
-          explicitVolumeSample || inferredVolumeSample ? '3d' : '2d',
+          sampleDimension,
         );
         if (!resolvedBinding) {
           return null;
         }
-        const sampleDimension =
-          explicitVolumeSample || inferredVolumeSample ? float(1) : float(0);
         const sampleUv =
           coordinate.kind === 'vec3'
             ? vec2(coordinate.node.x, coordinate.node.y)
@@ -1515,8 +2035,8 @@ export function compileShaderExpressionNode(
         }
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(
-            float(resolvedBinding.sourceId),
+          env.sampleAuxTextureNode.sampleStatic(
+            resolvedBinding.canonicalSource,
             sampleDimension,
             sampleUv,
             sampleZ,
@@ -1526,7 +2046,7 @@ export function compileShaderExpressionNode(
       if (name === 'samplenoisevolume' && args.length >= 1) {
         // Native bodies rewrite texture(sampler_noisevol*, vec3) to the
         // sampleNoiseVolume helper; mirror the GLSL atlas-slice emulation by
-        // routing through the simplex volume slot (source 2, dimension 1).
+        // routing through the simplex volume slot.
         const coordinate = args[0];
         const sampleUv =
           coordinate.kind === 'vec3'
@@ -1536,7 +2056,12 @@ export function compileShaderExpressionNode(
           coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(float(2), float(1), sampleUv, sampleZ).rgb,
+          env.sampleAuxTextureNode.sampleStatic(
+            'simplex',
+            '3d',
+            sampleUv,
+            sampleZ,
+          ).rgb,
         );
       }
       if (
@@ -1920,6 +2445,15 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'mul' && args.length >= 2) {
+        // HLSL mul(a, b) is the matrix product when either side is a matrix
+        // (mul(v, M) is the row-vector form); the normalizer leaves it as a
+        // call, so route it through the same column-major arithmetic as `*`.
+        if (
+          isShaderMatrixKind(args[0].kind) ||
+          isShaderMatrixKind(args[1].kind)
+        ) {
+          return applyShaderBinaryNode('*', args[0], args[1]);
+        }
         const resultKind = getShaderResultKind(args[0], args[1]);
         return shaderValueFromNode(
           coerceShaderValue(args[0], resultKind).node.mul(
@@ -1929,6 +2463,19 @@ export function compileShaderExpressionNode(
         );
       }
       if (name === 'transpose' && args.length >= 1) {
+        if (isShaderLargeMatrixKind(args[0].kind)) {
+          return transposeShaderMatrix(args[0]);
+        }
+        if (args[0].kind === 'mat2') {
+          // Packed as a vec4 of columns, so TSL's transpose would be applied
+          // to a vector; swap the off-diagonal components instead.
+          const c0 = shaderMat2Column(args[0], 0);
+          const c1 = shaderMat2Column(args[0], 1);
+          return shaderMat2(
+            shaderVec2(c0.node.x, c1.node.x),
+            shaderVec2(c0.node.y, c1.node.y),
+          );
+        }
         return shaderValueFromNode(transpose(args[0].node), args[0].kind);
       }
       if (name === 'float' && args.length >= 1) {
@@ -1958,7 +2505,75 @@ function assignShaderTarget(
     rawTarget === 'return' ? (env.values.has('ret') ? 'ret' : 'uv') : rawTarget;
   const segments = target.split('.');
   const baseKey = segments[0] ?? target;
-  const baseValue = getShaderEnvValue(env, baseKey);
+
+  // Matrix column writes (`M[int(0)] = ...`, `M[1u].x = ...`) build up a
+  // matrix column-by-column; treat them as component writes into the stored
+  // columns instead of opaque per-index env keys.
+  const indexedMatch = /^([a-z_][a-z0-9_]*)\[([^\]]+)\]$/i.exec(
+    segments[0] ?? '',
+  );
+  const matrixName = indexedMatch?.[1] ?? null;
+  const matrixValue = matrixName
+    ? getShaderEnvValue(env, matrixName, { bindPerFrameVariable: false })
+    : null;
+  // The matrix's size comes from the value already in the env: shader
+  // analysis seeds every bare `matN name;` declaration with `name =
+  // matN(0.0)`, so the first element write finds the right kind waiting. A
+  // write with nothing seeded is treated as the mat2 it always was.
+  const matrixKind =
+    matrixValue && isShaderMatrixKind(matrixValue.kind)
+      ? matrixValue.kind
+      : 'mat2';
+  const matrixIndex = indexedMatch ? parseShaderIndex(indexedMatch[2]) : null;
+  if (
+    indexedMatch &&
+    (matrixIndex === null || matrixIndex >= shaderMatrixSize(matrixKind))
+  ) {
+    return;
+  }
+  const indexedComponent =
+    indexedMatch && segments.length > 1
+      ? (() => {
+          const property = segments[1]?.toLowerCase();
+          return property && property.length === 1
+            ? MATRIX_COMPONENT_INDEX[property]
+            : undefined;
+        })()
+      : undefined;
+  if (
+    indexedMatch &&
+    segments.length > 1 &&
+    (indexedComponent === undefined ||
+      indexedComponent >= shaderMatrixSize(matrixKind))
+  ) {
+    return;
+  }
+
+  // A write never binds a per-frame register: the base lookup is only for
+  // compound assignment and swizzle writes into an existing value. For an
+  // indexed target the previous value is the column, or the component of
+  // it, read out of the stored matrix — `M[0] += v` has to add to the
+  // column, not replace it, and the env holds the matrix under `M`, not
+  // `M[0]`.
+  const baseValue = indexedMatch
+    ? matrixValue && matrixIndex !== null
+      ? (() => {
+          const column =
+            matrixKind === 'mat2'
+              ? shaderMat2Column(matrixValue, matrixIndex)
+              : shaderMatrixColumn(
+                  coerceToShaderMatrix(matrixValue, matrixKind),
+                  matrixIndex,
+                );
+          return indexedComponent === undefined
+            ? column
+            : buildDirectShaderSwizzleValue(
+                column,
+                (['x', 'y', 'z', 'w'] as const)[indexedComponent] ?? 'x',
+              );
+        })()
+      : null
+    : getShaderEnvValue(env, baseKey, { bindPerFrameVariable: false });
   const nextValue =
     statement.operator === '=' || !baseValue
       ? value
@@ -1968,43 +2583,36 @@ function assignShaderTarget(
           value,
         );
 
-  // Matrix column writes (`M[int(0)] = ...`, `M[1u].x = ...`) build up a
-  // mat2 column-by-column; treat them as component writes into the packed
-  // vec2 columns instead of opaque per-index env keys.
-  const indexedMatch = /^([a-z_][a-z0-9_]*)\[([^\]]+)\]$/i.exec(
-    segments[0] ?? '',
-  );
-  if (indexedMatch) {
-    const matrixName = indexedMatch[1];
-    const index = parseShaderIndex(indexedMatch[2]);
-    if (index === null) {
-      return;
-    }
-    const matrixValue = getShaderEnvValue(env, matrixName);
+  if (indexedMatch && matrixName && matrixIndex !== null) {
+    const index = matrixIndex;
     if (segments.length === 1) {
       setShaderEnvValue(
         env,
         matrixName,
-        setMat2Column(matrixValue, index, nextValue),
+        matrixKind === 'mat2'
+          ? setMat2Column(matrixValue, index, nextValue)
+          : setMatrixColumn(matrixKind, matrixValue, index, nextValue),
       );
       return;
     }
-    const property = segments[1]?.toLowerCase();
-    if (
-      !property ||
-      !(
-        property === 'x' ||
-        property === 'y' ||
-        property === 'r' ||
-        property === 'g'
-      )
-    ) {
-      return;
-    }
+    const component = indexedComponent as number;
     setShaderEnvValue(
       env,
       matrixName,
-      setMat2Component(matrixValue, index, property, nextValue),
+      matrixKind === 'mat2'
+        ? setMat2Component(
+            matrixValue,
+            index,
+            component === 0 ? 'x' : 'y',
+            nextValue,
+          )
+        : setMatrixComponent(
+            matrixKind,
+            matrixValue,
+            index,
+            component,
+            nextValue,
+          ),
     );
     return;
   }
@@ -2109,7 +2717,13 @@ function resolveSwizzleAssignmentKind(
   return 'vec2';
 }
 
-function runShaderProgram(
+/**
+ * Execute a direct shader program statement by statement against `env`,
+ * building the TSL node for each right-hand side and assigning it to the
+ * statement's target. Exported for the headless executor tests: they run a
+ * body through this and inspect the value kinds the env ends up holding.
+ */
+export function runShaderProgram(
   statements: MilkdropShaderStatement[],
   env: ShaderNodeEnv,
 ) {
@@ -2128,12 +2742,36 @@ function runPerPixelProgram(
   >['statements'],
   env: ShaderNodeEnv,
 ) {
+  // Collect rather than throw: a statement whose RHS cannot compile is
+  // skipped, which is the right fallback — but it has to be visible. Before
+  // this, an unbound name nulled the expression, the statement evaporated,
+  // and the preset rendered with a silently different warp. 922 bundled
+  // presets lost their rad/ang-driven per-pixel warp that way and no log
+  // line existed to say so. This runs once per node-graph build (per preset
+  // compile), not per frame, so logging here is cheap.
+  if (!env.unresolvedNames) {
+    env.unresolvedNames = new Set<string>();
+  }
+  const unresolved = env.unresolvedNames;
+  const dropped: string[] = [];
   statements.forEach((statement) => {
+    unresolved.clear();
     const value = compileShaderExpressionNode(statement.expression, env);
     if (value) {
       setShaderEnvValue(env, statement.target, value);
+    } else {
+      dropped.push(
+        unresolved.size > 0
+          ? `${statement.target} (unresolved: ${[...unresolved].join(', ')})`
+          : statement.target,
+      );
     }
   });
+  if (dropped.length > 0) {
+    tslLog.warn(
+      `Dropped ${dropped.length}/${statements.length} per-pixel statement(s): ${dropped.join('; ')}`,
+    );
+  }
 }
 
 /**
@@ -2319,7 +2957,36 @@ function applyDirectCompProgram(
   ).node;
 }
 
-function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
+/**
+ * The aux-texture sampler, typed as returning the vec4 it always builds.
+ *
+ * `createSampleAuxTextureNode` is one `select()` chain over ~15 branches,
+ * each constructing a vec4; three widens the chain to
+ * `Node<'float' | 'vec4'>` because of the operand count, not because any
+ * path yields a scalar. Callers take `.rgb`/`.rg`, which the union does not
+ * carry, so the narrowing is stated once here rather than at every use.
+ */
+type AuxSamplerFactory = ReturnType<typeof createSampleAuxTextureNode>;
+
+/**
+ * Both halves declared as returning a vec4 rather than inheriting the
+ * factory's inferred types: each is a `select()` chain over ~15 branches,
+ * every one of which constructs a vec4, and three widens the chain to
+ * `Node<'float' | 'vec4'>` because of the operand count, not because any path
+ * yields a scalar. Callers take `.rgb`/`.rg`, which the union does not carry.
+ */
+type CompositeAuxSampler = {
+  dynamic: (
+    ...args: Parameters<AuxSamplerFactory['dynamic']>
+  ) => TslNode<'vec4'>;
+  sampleStatic: (
+    ...args: Parameters<AuxSamplerFactory['sampleStatic']>
+  ) => TslNode<'vec4'>;
+};
+
+function createCompositeAuxSampler(
+  uniforms: CompositeUniformBag,
+): CompositeAuxSampler {
   return createSampleAuxTextureNode(
     uniforms.noiseTex,
     uniforms.perlinTex,
@@ -2348,7 +3015,7 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
       perlin: uniforms.perlinTex3D,
       noisevol: uniforms.noisevolTex3D,
     },
-  );
+  ) as unknown as CompositeAuxSampler;
 }
 
 /**
@@ -2358,6 +3025,18 @@ function createCompositeAuxSampler(uniforms: CompositeUniformBag) {
  * comp program, color adjustments, and post chain all live in the
  * display-only composite node instead.
  */
+/** nVideoEchoOrientation bit 0 flips x, bit 1 flips y. */
+const applyVideoEchoOrientationNode = Fn(
+  ([sampleUv, orientation]: [any, any]) => {
+    const flipX = step(0.5, orientation.sub(floor(orientation.div(2)).mul(2)));
+    const flipY = step(1.5, orientation.sub(floor(orientation.div(4)).mul(4)));
+    return vec2(
+      mix(sampleUv.x, float(1).sub(sampleUv.x), flipX),
+      mix(sampleUv.y, float(1).sub(sampleUv.y), flipY),
+    );
+  },
+);
+
 function createFeedbackBlendOutputNode(
   uniforms: CompositeUniformBag,
   shaderPrograms: {
@@ -2371,22 +3050,6 @@ function createFeedbackBlendOutputNode(
 ) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
-  const applyVideoEchoOrientationNode = Fn(
-    ([sampleUv, orientation]: [any, any]) => {
-      const flipX = step(
-        0.5,
-        orientation.sub(floor(orientation.div(2)).mul(2)),
-      );
-      const flipY = step(
-        1.5,
-        orientation.sub(floor(orientation.div(4)).mul(4)),
-      );
-      return vec2(
-        mix(sampleUv.x, float(1).sub(sampleUv.x), flipX),
-        mix(sampleUv.y, float(1).sub(sampleUv.y), flipY),
-      );
-    },
-  );
   const sampleAuxTextureNode = createCompositeAuxSampler(uniforms);
 
   return Fn(() => {
@@ -2569,15 +3232,21 @@ function createFeedbackBlendOutputNode(
     const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
       step(0.0001, uniforms.warpTextureAmount),
     );
+    // `CompositeUniformBag` is `Record<string, any>`, so `.mul(any)` resolves
+    // to the widest overload (vec3) and the uv chain stops being a vec2.
+    // These two are `uniform(new Vector2(...))` at their declaration
+    // (feedback-manager-webgpu-composite.ts), so saying so here keeps the
+    // chain honest without typing all 114 uniforms.
     const warpUv = currentUv
-      .mul(uniforms.warpTextureScale)
-      .add(uniforms.warpTextureOffset);
-    const warpVector = sampleAuxTextureNode(
-      uniforms.warpTextureSource,
-      uniforms.warpTextureSampleDimension,
-      warpUv,
-      uniforms.warpTextureVolumeSliceZ,
-    )
+      .mul(uniforms.warpTextureScale as TslNode<'vec2'>)
+      .add(uniforms.warpTextureOffset as TslNode<'vec2'>);
+    const warpVector = sampleAuxTextureNode
+      .dynamic(
+        uniforms.warpTextureSource,
+        uniforms.warpTextureSampleDimension,
+        warpUv,
+        uniforms.warpTextureVolumeSliceZ,
+      )
       .rg.sub(0.5)
       .toVar();
     currentUv.addAssign(
@@ -2585,9 +3254,6 @@ function createFeedbackBlendOutputNode(
     );
     previousUv.addAssign(
       warpVector.mul(uniforms.warpTextureAmount).mul(0.08).mul(warpTextureMask),
-    );
-    previousUv.assign(
-      applyVideoEchoOrientationNode(previousUv, uniforms.videoEchoOrientation),
     );
 
     const current = uniforms.currentTex.sample(
@@ -2654,6 +3320,21 @@ function createCompositeOutputNode(
 
     const color = sampleMainNode(baseUv).toVar();
 
+    // MilkDrop's video echo is a display effect: the frame is drawn a second
+    // time, zoomed by fVideoEchoZoom and flipped per nVideoEchoOrientation,
+    // blended over the first by fVideoEchoAlpha. Flipping the feedback sample
+    // instead (what this did) rotated the carried history every frame and
+    // broke the invariant the effect is defined by — at alpha 0.5 with
+    // orientation 3 the output equals its own 180-degree rotation (projectM
+    // reference self-correlation 0.9994, ours 0.66 before this).
+    const echoUv = applyVideoEchoOrientationNode(
+      baseUv.sub(0.5).div(max(uniforms.videoEchoZoom, 0.0001)).add(0.5),
+      uniforms.videoEchoOrientation,
+    );
+    color.assign(
+      mix(color, sampleMainNode(echoUv), clamp(uniforms.videoEchoAlpha, 0, 1)),
+    );
+
     // Apply color adjustments in MilkDrop order — before the comp program,
     // matching the WebGL composite pass
     color.assign(hueRotateNode(color, uniforms.hueShift));
@@ -2686,10 +3367,15 @@ function createCompositeOutputNode(
     const overlayMask = overlaySourceMask.mul(
       max(overlayReplaceMask, overlayBlendMask),
     );
+    // `CompositeUniformBag` is `Record<string, any>`, so `.mul(any)` resolves
+    // to the widest overload (vec3) and the uv chain stops being a vec2.
+    // These two are `uniform(new Vector2(...))` at their declaration
+    // (feedback-manager-webgpu-composite.ts), so saying so here keeps the
+    // chain honest without typing all 114 uniforms.
     const overlayUv = baseUv
-      .mul(uniforms.overlayTextureScale)
-      .add(uniforms.overlayTextureOffset);
-    const overlaySample = sampleAuxTextureNode(
+      .mul(uniforms.overlayTextureScale as TslNode<'vec2'>)
+      .add(uniforms.overlayTextureOffset as TslNode<'vec2'>);
+    const overlaySample = sampleAuxTextureNode.dynamic(
       uniforms.overlayTextureSource,
       uniforms.overlayTextureSampleDimension,
       overlayUv,
@@ -2731,29 +3417,25 @@ function createCompositeOutputNode(
     );
     color.assign(mix(color, overlayResult, overlayMask));
 
-    // Brighten
-    const brightenMask = max(
-      step(0.01, uniforms.brighten),
-      step(0.01, uniforms.brightenBoost),
-    );
-    const brightened = min(
-      vec3(1),
-      mix(
-        color,
-        color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
-        clamp(max(uniforms.brighten, uniforms.brightenBoost), 0, 1),
-      ),
-    );
-    color.assign(mix(color, brightened, brightenMask));
-
-    // Darken
-    color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-
-    // Solarize
+    // MilkDrop's own curves — brighten = sqrt, darken = square, solarize =
+    // c(1-c)4 — matching the WebGL composite and Butterchurn's shader. The
+    // previous approximations changed each curve's shape, and solarize's was
+    // wrong at the black end: abs(c - 0.5) * 2 maps 0 to WHITE, so a dark
+    // preset with bSolarize rendered as a white field.
     color.assign(
       mix(
         color,
-        abs(color.sub(0.5)).mul(2.0),
+        max(color, vec3(0)).sqrt(),
+        clamp(max(uniforms.brighten, uniforms.brightenBoost), 0, 1),
+      ),
+    );
+
+    color.assign(mix(color, color.mul(color), step(0.5, uniforms.darken)));
+
+    color.assign(
+      mix(
+        color,
+        color.mul(float(1).sub(color)).mul(4.0),
         clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
       ),
     );
@@ -2816,12 +3498,16 @@ function createCompositeOutputNode(
     const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
     color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
 
-    // Gamma correction (always applied last)
-    const gammaAdjusted = pow(
-      max(color, vec3(0)),
-      vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
+    // Gamma stays a power at the END of the chain, matching the WebGL
+    // composite. See the note there: the exponent form is what projectM was
+    // measured to do, and moving it to Butterchurn's position regressed the
+    // comp-shader references hard.
+    color.assign(
+      pow(
+        max(color, vec3(0)),
+        vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
+      ),
     );
-    color.assign(gammaAdjusted);
 
     // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
     // Only pointwise effects run in-pass. The old in-pass bloom, chromatic
@@ -3267,6 +3953,13 @@ class WebGPUMilkdropFeedbackManager
       state.perPixelVariables,
     );
     if (compositeStateIdentityChanged(this.compositeIdentity, state)) {
+      // The bound per-frame registers belong to the outgoing preset's
+      // bodies; the rebuild below re-binds whatever the new ones read.
+      (
+        this.compositeMaterial.uniforms.perFrameVariables as
+          | Map<string, unknown>
+          | undefined
+      )?.clear();
       this.compositeIdentity = {
         shaderExecution: state.shaderExecution,
         warp: state.shaderPrograms.warp,
@@ -3445,6 +4138,19 @@ class WebGPUMilkdropFeedbackManager
         perPixelVariables?.[`t${base + 3}`] ?? 0,
         perPixelVariables?.[`t${base + 4}`] ?? 0,
       );
+    }
+    // Per-frame registers the directly executed bodies read (`tele`,
+    // `hordist`, …), bound by the executor on first read. Same source and
+    // same zero default as the WebGL path's per-frame uniforms; non-finite
+    // values are clamped to 0 for the same reason the warp bases below are.
+    const perFrameVariableUniforms = this.compositeMaterial.uniforms
+      .perFrameVariables as Map<string, { value: number }> | undefined;
+    if (perFrameVariableUniforms) {
+      for (const [name, node] of perFrameVariableUniforms) {
+        const value = perPixelVariables?.[name];
+        node.value =
+          typeof value === 'number' && Number.isFinite(value) ? value : 0;
+      }
     }
     // Per-frame bases for the warp variables the per-pixel program may
     // overwrite. Read off the same variable bag q/t come from rather than

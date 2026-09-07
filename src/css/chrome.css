@@ -34,8 +34,8 @@
   --ctl-panel-bg: rgba(10, 14, 22, 0.97);
   --ctl-panel-line: rgba(255, 255, 255, 0.08);
 
-  --ctl-radius: 10px;
-  --ctl-radius-lg: 12px;
+  --ctl-radius: var(--radius-md);
+  --ctl-radius-lg: var(--radius-lg);
   --ctl-ease: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -69,13 +69,17 @@ html.light .stims-shell {
     gap: 18px;
   }
 
+  /* Tokens, not literal whites. The three rules below painted a white track,
+     a white hover and a white active fill with `color: #fff` on top — which in
+     the light theme put white label text on a near-white pill, so the Settings
+     tab you were actually on was the only one you could not read. */
   .ctl-tabs {
     display: flex;
     gap: 6px;
     margin-bottom: 16px;
     padding: 3px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-md);
+    background: var(--ctl-fill);
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -84,7 +88,7 @@ html.light .stims-shell {
     flex: 1;
     padding: 7px 10px;
     border: none;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--ctl-ink-2);
     font-size: 0.75rem;
@@ -98,12 +102,12 @@ html.light .stims-shell {
 
   .ctl-tab:hover {
     color: var(--ctl-ink);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--ctl-fill-hover);
   }
 
   .ctl-tab--active {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: var(--ctl-fill-hover);
+    color: var(--ctl-ink);
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
@@ -130,9 +134,14 @@ html.light .stims-shell {
     min-height: 20px;
   }
 
+  /* These are the panel's skeleton — the labels every other row hangs off —
+     and they were set in the most tertiary ink in the system: measured 4.59:1
+     on the light panel against 14.13:1 for the row headings they organise, at
+     11px uppercase. Stepped to the secondary ink, which is what they actually
+     are in the hierarchy. */
   .ctl-section__title {
     margin: 0;
-    color: var(--ctl-ink-3);
+    color: var(--ctl-ink-2);
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.09em;
@@ -288,13 +297,13 @@ html.light .stims-shell {
   .ctl-midi-binding-badge {
     flex-shrink: 0;
     font-family: var(--font-family-mono);
-    font-size: 0.62rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--ctl-ink-3);
     background: var(--ctl-fill-sunk);
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
   }
 
   .ctl-midi-binding-row .ctl-row__hint {
@@ -423,9 +432,13 @@ html.light .stims-shell {
     outline-offset: 1px;
   }
 
+  /* Shrink-to-fit, but not below a common width: "Blend" (82px) and "2s"
+     (66px) sat in the same right-hand column of consecutive rows with their
+     left edges 10px apart, which reads as a misalignment rather than as two
+     differently-sized controls. */
   .ctl-select--auto {
     width: auto;
-    min-width: 0;
+    min-width: 6.5rem;
   }
 
   /* ── Text field ────────────────────────────────────────────────── */
@@ -547,22 +560,28 @@ html.light .stims-shell {
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
+    /* Match the inline padding, or snapping aligns the first item's start edge
+       to the scrollport's start and lands the scroller at scrollLeft: 16 on
+       load — never at 0. The overflow hook then reads "not at the start",
+       fades the left edge, and half-erases the first chip, which is the active
+       "All" filter. */
+    scroll-padding-inline: 16px;
     overscroll-behavior-x: contain;
     /* Fallback for before useScrollerOverflow has measured (and if it never
-       runs): the old symmetric fade. The data-overflow rules below replace
-       it with a fade on only the side that has something hidden. */
+       runs). Fades the end only, matching the state every scroller is
+       actually in on first paint: scrollLeft is 0, so nothing is hidden to
+       the left. The old symmetric fallback half-erased the first chip — and
+       the first chip here is the active "All" filter, which read in
+       screenshots as a chip with a gradient fill rather than a scroll edge.
+       The data-overflow rules below take over once measured. */
     -webkit-mask-image: linear-gradient(
       90deg,
-      transparent 0,
-      #000 16px,
-      #000 calc(100% - 16px),
+      #000 calc(100% - 28px),
       transparent 100%
     );
     mask-image: linear-gradient(
       90deg,
-      transparent 0,
-      #000 16px,
-      #000 calc(100% - 16px),
+      #000 calc(100% - 28px),
       transparent 100%
     );
   }
@@ -756,7 +775,7 @@ html.light .stims-shell {
     overflow: hidden;
     width: 56px;
     height: 36px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--ctl-fill-sunk);
   }
 
@@ -778,7 +797,16 @@ html.light .stims-shell {
     object-fit: cover;
   }
 
-  .ctl-preset__art .stims-shell__preset-art-fallback {
+  /* At 44px there is no room for a caption, so the placeholder's label is
+     hidden here rather than clipped mid-word. The slot is then genuinely
+     empty when no frame exists — which is the honest reading, and the tile's
+     own row already names the preset. */
+  .ctl-preset__art .stims-shell__preset-art-placeholder {
+    width: 100%;
+    height: 100%;
+  }
+
+  .ctl-preset__art .stims-shell__preset-art-placeholder-label {
     display: none;
   }
 
@@ -846,7 +874,7 @@ html.light .stims-shell {
     margin-right: 6px;
     padding: 0;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--ctl-ink-3);
     cursor: pointer;
@@ -970,7 +998,7 @@ html.light .stims-shell {
     min-width: 0;
     min-height: 0;
     margin: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     aspect-ratio: auto;
     transition: transform var(--ctl-ease);
   }
@@ -1068,10 +1096,10 @@ html.light .stims-shell {
   .ctl-lineage__shader {
     flex: none;
     padding: 1px 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-round);
     background: var(--ctl-fill-sunk);
     color: var(--ctl-ink-3);
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
   }
@@ -1229,11 +1257,11 @@ html.light .stims-shell {
     margin-right: 1px;
     padding: 1px 5px;
     border: 1px solid var(--ctl-line-strong);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: var(--ctl-fill);
     color: var(--ctl-ink-2);
     font-family: var(--font-family-mono, monospace);
-    font-size: 0.7rem;
+    font-size: 0.6875rem;
   }
 
   @media (any-hover: none) and (any-pointer: coarse) {
@@ -1308,9 +1336,11 @@ html.light .stims-shell {
     gap: 10px;
   }
 
+  /* Same rank as .ctl-section__title and now the same ink: "Audio source" and
+     "Playback" are both section headings and were rendering two steps apart. */
   .ctl-section .stims-shell__source-heading .stims-shell__section-label {
     margin: 0;
-    color: var(--ctl-ink-3);
+    color: var(--ctl-ink-2);
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.09em;
@@ -1397,18 +1427,39 @@ html.light .stims-shell {
     line-height: 1.5;
   }
 
-  /* Source picker: two flat, equal choices. */
+  /* Source picker: flat, equal choices, and no orphan on the last row.
+     The fourth card ("this tab") only exists where the browser can capture
+     display audio, so the set is three or four — and `auto-fit` at 140px chose
+     three columns for both, dealing the four-card case as 3 + 1 with the
+     orphan at a third of the width and an L-shaped hole beside it. Pick the
+     column count from the actual card count instead: three across, or a 2x2. */
   .ctl-section .stims-shell__source-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  /* Counts buttons, not children: the grid also holds an absolutely-positioned
+     sr-only file input as its 4th child, so a plain :nth-child(4) matched even
+     the three-card set and dealt it 2 + 1 — the orphan this rule exists to
+     remove. :nth-of-type ignores the input, which is not a button. */
+  .ctl-section .stims-shell__source-grid:has(> button:nth-of-type(4)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .ctl-section .stims-shell__source-card {
     display: grid;
+    /* Rows to the top. Cards in a row stretch to the tallest, and with the
+       default stretch the spare height was distributed *between* rows, so a
+       card with a one-line description carried its title 6px lower than its
+       neighbours' and no two titles in the row shared a baseline. */
+    align-content: start;
     gap: 2px;
     padding: 10px 12px;
-    border: 1px solid var(--ctl-line);
+    /* The fill sits 1.10:1 against the section ground, so the edge is what
+       actually says "card" here — a hairline at that fill contrast says
+       almost nothing. */
+    border: 1px solid var(--ctl-line-strong);
     border-radius: var(--ctl-radius);
     background: var(--ctl-fill);
     box-shadow: none;
@@ -1439,7 +1490,7 @@ html.light .stims-shell {
 
   .ctl-section .stims-shell__source-card-kicker {
     color: var(--ctl-ink-3);
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.09em;
     text-transform: uppercase;

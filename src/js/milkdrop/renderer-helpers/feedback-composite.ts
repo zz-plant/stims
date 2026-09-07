@@ -127,17 +127,20 @@ export function buildFeedbackCompositeState({
       ? frameState.post.videoEchoAlpha
       : 0,
     zoom: frameState.post.videoEchoEnabled ? frameState.post.videoEchoZoom : 1,
-    // The echo orientation flip belongs to the legacy echo effect. Presets
-    // that carry a warp shader are feedback-driven by that shader, whose own
-    // sampling defines orientation; the direct path never applies the flip.
-    // Applying it in the legacy fallback rotated the whole previous frame 180°,
-    // making shader-heavy themes render upside down on backends/paths where the
-    // warp shader cannot execute (e.g. WebGPU translated fallback).
-    videoEchoOrientation:
-      frameState.post.videoEchoEnabled &&
-      frameState.post.shaderPrograms.warp === null
-        ? frameState.post.videoEchoOrientation
-        : 0,
+    // Echo zoom for the display stage. Distinct from `zoom` above, which the
+    // feedback pass uses to scale what it samples from the accumulator.
+    videoEchoZoom: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoZoom
+      : 1,
+    // The orientation flip applies whenever echo does. It used to be
+    // suppressed for warp-shader presets because the flip was applied to the
+    // accumulator, which rotated the carried history and made shader-heavy
+    // themes render upside down; now that echo is a display-stage blend
+    // (feedback-manager-shared MILKDROP_VIDEO_ECHO_HELPER) the flip only
+    // affects the echoed copy, which is what MilkDrop does.
+    videoEchoOrientation: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoOrientation
+      : 0,
     brighten: frameState.post.brighten ? 1 : 0,
     darken: frameState.post.darken ? 1 : 0,
     darkenCenter: frameState.post.darkenCenter ? 1 : 0,

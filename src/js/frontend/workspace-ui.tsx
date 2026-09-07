@@ -1,4 +1,8 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useSyncExternalStore } from 'react';
+import {
+  getStageOverlayPreference,
+  subscribeToStageOverlayPreference,
+} from '../core/stage-overlay-preferences.ts';
 import { parseURLParams } from '../core/url-params.ts';
 import { CueMonitor } from './CueMonitor.tsx';
 import { usePresetTransition } from './hooks/usePresetTransition.ts';
@@ -18,9 +22,10 @@ export { WorkspaceToast } from './WorkspaceToast.tsx';
 export const BROWSE_PANEL_FOCUS_SELECTOR =
   '#preset-search, .milkdrop-overlay__search';
 
-// Prototype flag: `?strudel=1` mounts the Strudel live-coding lab, which
-// drives the visualizer's analyser with Strudel's audio output.
-const strudelLabEnabled = parseURLParams().flags.strudel;
+// `?strudel=1` keeps working as a one-shot prototype flag even though the lab
+// is now also controllable from Settings; the two are OR-ed on purpose so a
+// deep link to the lab still opens it.
+const strudelFlag = parseURLParams().flags.strudel;
 
 export function WorkspaceStagePanel({
   isFullscreen,
@@ -43,6 +48,12 @@ export function WorkspaceStagePanel({
   const invalidPanel = ui.routeState.invalidPanel;
   const activePresetId = engineSnapshot?.activePresetId ?? null;
   const panelOpen = ui.routeState.panel !== null;
+  const strudelLabPref = useSyncExternalStore(
+    subscribeToStageOverlayPreference,
+    () => getStageOverlayPreference().strudelLab,
+    () => false,
+  );
+  const strudelLabEnabled = strudelFlag || strudelLabPref;
   const _audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
   return (
@@ -68,8 +79,9 @@ export function WorkspaceStagePanel({
         {/* Only while the editor is open — it renders its own null otherwise.
             The handle is the one thing on this layer that takes the pointer. */}
         {liveMode && !missingRequestedPreset ? <StageWarpGizmo /> : null}
-        {/* Both render themselves away when empty — an unpinned visitor with
-            no queue sees neither. */}
+        {/* Both render themselves away when empty. Their one-time empty-state
+            hints wait for a returning visitor on a wide screen — a first
+            session stays free of stage chrome. */}
         {liveMode && !missingRequestedPreset ? <CueMonitor /> : null}
         {liveMode && !missingRequestedPreset ? <PerformSurface /> : null}
         {/* inert: the hero is pointer-events:none in live mode but its

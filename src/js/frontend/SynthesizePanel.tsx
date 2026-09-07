@@ -1,3 +1,8 @@
+/**
+ * AI Synthesize Panel Component — provides prompt-to-preset generation, image-to-preset translation,
+ * and tournament candidate evaluation with reactivity metrics and direct canvas stage updates.
+ */
+
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
 import {
@@ -6,6 +11,7 @@ import {
   generatePresetTournament,
 } from '../milkdrop/preset-generator.ts';
 import { probePresetReactivity } from '../milkdrop/reactivity-probe.ts';
+import { AIBadge } from './AIBadge.tsx';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -140,7 +146,9 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
           localModel,
         } satisfies StoredSynthesizeSettings),
       );
-    } catch {}
+    } catch (err) {
+      console.debug('Failed to persist synthesize settings:', err);
+    }
   }, [palette, intensity, reactivity, provider, localEndpoint, localModel]);
 
   const handleProviderChange = useCallback(
@@ -267,6 +275,7 @@ export function SynthesizePanel({ offline = false }: { offline?: boolean }) {
         <div>
           <h3 id="synth-heading" className={styles.heading}>
             Generate a preset
+            <AIBadge />
           </h3>
           <p className={styles.intro}>
             Describe what you want to see. AI writes a new preset for you, and

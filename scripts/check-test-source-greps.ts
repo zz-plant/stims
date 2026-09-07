@@ -29,7 +29,7 @@ const ALLOWED: Record<string, string> = {
   // The shipped artifact IS the text. jsdom computes no layout or stacking
   // contexts, so there is no behavioural observation point in this suite.
   'tests/unit/theme-boot-parity.test.ts':
-    'index.html carries a pre-paint theme IIFE that runs before any module loads; the storage key it reads must match the one the store writes, and no module-level test can observe it.',
+    'Extracts and EXECUTES the pre-paint theme IIFE from index.html against the real resolveTheme — the script runs before any module loads, so reading the shipped HTML is the only way to test it.',
   'tests/unit/seo-canonical-intent.test.ts':
     'index.html and milkdrop/index.html are the crawlable artifacts; the meta tags are the contract a crawler sees.',
   'tests/unit/site-build.test.ts':
@@ -40,42 +40,35 @@ const ALLOWED: Record<string, string> = {
   // Known debt, enumerated so it cannot grow silently. Each of these asserts
   // component or CSS source text and should become a behavioural test or move
   // to tests/e2e/chrome-visual-contract.test.ts. See the 2026-08-25 audit.
-  'tests/unit/app-shell-first-run-recovery.test.ts':
-    'DEBT: greps App.tsx and workspace-*.ts for the first-run recovery path.',
   'tests/unit/app-shell-minimal-surfaces.test.ts':
     'DEBT: greps panel components and app-shell.css for copy and selectors.',
   'tests/unit/app-shell-passive-guidance.test.ts':
-    'DEBT: greps App.tsx for guidance copy.',
+    'DEBT (reduced): the audio-match toast is rendered with fake timers now; the remaining greps are App.tsx wiring and toast/hint copy, pending a harness mount of those surfaces.',
   'tests/unit/app-shell-performance-hardware.test.ts':
     'DEBT: greps for hardware-tier branching.',
   'tests/unit/app-shell-performance-regression.test.ts':
     'DEBT: greps for import specifiers and memo/cache spellings.',
   'tests/unit/app-shell-route-sync.test.ts':
-    'DEBT: greps App.tsx for route-sync wiring.',
-  'tests/unit/app-shell-skip-flow.test.ts':
-    'DEBT: greps App.tsx for the skip flow.',
-  'tests/unit/app-shell-stage-tools.test.ts':
-    'DEBT: greps App.tsx/workspace-ui.tsx for stage tool classes.',
+    'The route-sync test renders the real hook now; the remaining source read is the toast attribute/media-query pair, a cross-artifact presentational contract with no layout engine in this suite.',
+  'tests/unit/app-shell-skip-flow.test.tsx':
+    'Renders the real StimsStageFrame for the focus-target and data-mode halves; the remaining reads are the App.tsx anchor (the shell does not mount in this suite) and the CSS rules (no style engine).',
+  'tests/unit/app-shell-stage-tools.test.tsx':
+    'The no-backdrop invariant renders the real SidePanel both ways; the remaining read is the App.tsx wiring of stageAnchored to the editor panel, since the shell does not mount here.',
   'tests/unit/app-shell-ui-simplification.test.ts':
     'DEBT: greps eight components for copy.',
   'tests/unit/arrival-url.test.ts': 'DEBT: greps for arrival URL handling.',
   'tests/unit/assisted-edit-gate.test.ts':
-    'DEBT: counts occurrences of proposeAssistedEdit and requires exactly five.',
-  'tests/unit/audio-gesture-gate.test.ts': 'DEBT: greps for the gesture gate.',
+    'One remaining routing check on editor-panel source (all AI actions go through the proposal path); the exact-count brittleness is gone and the rest of the file is behavioural.',
   'tests/unit/keyboard-shortcut-matching.test.ts':
     'Generates its rows from the live registry; the source read is a dangling-reference check, not a copy assertion.',
   'tests/unit/mobile-viewport-matrix.test.ts':
-    'DEBT: greps app-shell.css for viewport rules.',
-  'tests/unit/model-preset-generation.test.ts':
-    'DEBT: greps generation prompts.',
+    'Reduced to declarations a rendered check cannot observe (safe-area env() math, live-mode rules needing a booted engine); the overflow and short-landscape invariants moved to chrome-visual-contract e2e as computed measurements.',
   'tests/unit/primitive-rasterization-fidelity.test.ts':
     'DEBT: greps renderer source for rasterisation constants.',
   'tests/unit/scripts-list-routing.test.ts':
     'Reads scripts/ to check `bun run help --for` does not route at a deleted script — a dangling-reference check over live data.',
-  'tests/unit/utils/canvas-video-exporter.test.ts':
-    'DEBT: reads exporter source.',
-  'tests/unit/workspace-first-fold-actions.test.ts':
-    'DEBT: greps App.tsx for first-fold actions.',
+  'tests/unit/workspace-first-fold-actions.test.tsx':
+    'Renders the real NewHomePage/AudioSourcePanel through the harness; the one remaining read checks app-shell.css styles the classes the RENDERED page produces (no style engine here).',
 };
 
 const READS_SOURCE =

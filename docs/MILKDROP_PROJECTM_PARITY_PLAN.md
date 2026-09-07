@@ -20,11 +20,136 @@ The first bundled shipped presets to carry through that flow are:
 
 These four IDs are the smallest evidence loop that can move the shipped catalog from inferred runtime labels to checked-in `projectM` references and measured results without expanding the corpus prematurely.
 
-## Current state
+## Current state (2026-08-27)
 
-- Upstream `projectM` fixtures are used for parser/compiler/VM compatibility coverage, not frame-by-frame render parity.
-- The certified local parity corpus validates runtime summaries and selected post fields, but it does not diff rendered frames against `projectM`.
-- The compiler compatibility tables are currently optimistic enough that many presets can be classified as supported while still rendering differently.
+Two defects found on 2026-08-27 changed both the numbers and how much the old
+ones can be trusted; the 2026-08-26 scoreboard below them is superseded.
+
+- **The capture harness was measuring the wrong frame.** The deterministic
+  pump stops the preview loop, but rendering resumed the moment it returned
+  and ran live frames — on the decorative audio signal, not the pinned
+  reference one — through every remaining probe before the screenshot.
+  Measured on 260: the pump left the engine at t=4.913s with bass 0.00, the
+  screenshot showed t=5.598s with bass 2.47; captures landed 28-162 frames
+  past the pump. `renderFrames({ holdAfterPump })` plus `freezeRendering()`
+  (which also clears the audio-driven `setAnimationLoop` callback, the actual
+  driver) fix it, and `play-toy` now records pumped-vs-captured clock and
+  bands and warns when they differ. 261's run-to-run spread collapsed from
+  14.7pp (73.4-88.1% same-day) to 0.52pp over 4 repeats. **Every band
+  measured before this is stale**; the graded set has been re-banded.
+- **Video echo was applied to the accumulator instead of at display.** Both
+  backends flipped the uv the feedback pass samples history with, so the
+  carried frame was re-flipped every frame and no echo was ever blended
+  (`fVideoEchoZoom` never reached a shader). The effect defines its own test:
+  at alpha 0.5 with orientation 3 the output must equal its own 180-degree
+  rotation. projectM scores 0.9994 self-correlation on
+  rovastar-parallel-universe; we scored 0.665, now 0.973 (and 0.992 on krash,
+  from ~0.5) — measured without consulting a reference.
+- Scoreboard after both fixes, judged against re-measured bands: 100-square
+  1.50% PASS (band 1.36-1.55), glowsticks 1.08% and krash 95.26% both
+  **ungraded** (`reference-no-signal`), 300-beatdetect 5.79%, 250-wavecode
+  7.30%, cubetrace 29.25%, 260 33.72% (still bit-exact repeatable),
+  261 76.24%, rovastar-parallel-universe 67.99%, mosaics 100.00%.
+- **Top open defect: feedback accumulates without bound on `fDecay=1.0`
+  presets.** All thirteen certified presets are now graded (the three that
+  reported `backend-mismatch` were stale WebGL captures, re-captured on
+  WebGPU), and the four worst all render far brighter than projectM:
+  magnetosphere 24.7 -> 76.9 mean luminance, dark-heart 22.1 -> 74.5 (red
+  channel 62 -> 196), mosaics 38.2 -> 137.3, i.e. 3.2-3.6x. The brightness
+  grows with frame count — mosaics reads 77.3 / 121.9 / 142.0 at 150 / 300 /
+  900 frames against a reference that sits at 38.2 — so this is accumulation,
+  not a tone curve. Three of the four have `fDecay=1.000000` (the fourth,
+  magnetosphere, has 0.96) and none has a warp shader, so the additive
+  direct-warp composite is not the mechanism. Leading hypothesis: geometry
+  drawn with additive blending leaves `current.a` (coverage) near zero, so
+  `previousColor * (1 - coverage) + current.rgb` degenerates to
+  `previous + current` and grows without bound when decay cannot pull it back.
+  Discriminating test: sample the scene target's alpha for one of these
+  presets, or clamp the blend and re-measure — if coverage is ~0 the
+  hypothesis holds. Fixing it should move four of the ten failing presets.
+- `parity:suite` no longer returns pass/fail for a preset whose reference a
+  blank render would pass; those report `reference-no-signal` with the ratio
+  attached for information.
+- Two presets remain non-deterministic after the harness fix: mosaics swings
+  66.3-99.7% and cubetrace 29.3-38.3% across repeats. Prime suspect is the
+  per-preset `Math.random` constants drawn at preset load, which the capture
+  path does not seed (`play-toy` has a `randomSeed` option that
+  `lab:backend-diff` passes and the parity capture does not).
+
+## Superseded snapshot (2026-08-26)
+
+Frame-by-frame diffing against native projectM exists and runs: `parity:capture`
+walks the certified manifest on one reused browser, `parity:suite` diffs each
+capture against a checked-in projectM reference, and per-preset noise bands
+(`parity:noise`, stored in `src/data/milkdrop-parity/parity-noise-bands.json`)
+decide whether a delta is real.
+
+- Thirteen presets are certified, all judged on WebGPU. References are
+  projectM 3.1.12, rendered against per-preset audio (`silence` or the
+  generated tone signal in `src/js/core/testing/reference-audio.ts`, which the
+  C++ harness mirrors via a generated header). The original nine stopped at
+  frame 300; the four added on 2026-08-26 stop at frame 900.
+- The capture path is deterministic: `renderFrames({ startTime: 0 })` resets
+  the clock, clears the GPU feedback chain, and re-initialises the VM. Bands
+  are 0.000-4.7pp on every preset; 260-compshader-noise_lq repeats exactly.
+- Honest scoreboard, 3-repeat medians: 100-square 1.20% PASS, glowsticks
+  1.08% PASS, 300-beatdetect 5.79%, 250-wavecode 7.36%, 260 33.72%,
+  cubetrace 64.59%, 261 75.55%, rovastar-parallel-universe 82.21%,
+  krash 86.29%, dark-heart 93.37%, orb-acid-in-my-eyes 97.73%,
+  mosaics-of-ages 99.71%, magnetosphere-13-pulsar 100.00%. Two of thirteen
+  pass.
+- krash and glowsticks are certified via `--allow-weak-reference` and should be
+  retired. They are not under-warmed: native re-captures at 300/450/.../3000
+  frames (and krash out to 7200) leave a solid-black frame scoring 0.17-0.35%
+  at most sample points, and the frames that do carry signal are isolated
+  spikes — krash peaks at 16.56% on frame 1200 with 4.28% and 0.28% at
+  1050/1350; glowsticks peaks at 13.07% on 2250 with 1.51% and 3.19% either
+  side. A reference on a spike that narrow measures frame alignment, not
+  rendering. Use butterchurn (vendored) as the oracle for krash; its remaining
+  defect is the textured-shape multiply (`texture(prev, uv) * vertexColor`),
+  with a secondary resolution-dependent feedback attractor.
+- The four references added on 2026-08-26 —
+  `eos-phat-dark-heart` (11.1x), `orb-acid-in-my-eyes` (20.0x),
+  `rovastar-mosaics-of-ages` (19.5x), `eos-phat-magnetosphere-13-pulsar`
+  (6.9x) — were picked by sweeping all 39 uncertified manifest entries through
+  native projectM at 900 and 1200 frames and keeping the ones that were both
+  bright and frame-stable (headroom drift under 15%).
+- The three remaining `weak` references cannot be strengthened by re-capture.
+  250-wavecode scores 7.14-7.19% across 300-3000 frames, 300-beatdetect
+  5.57-5.81%, and eos-phat-cubetrace-v2 is bit-identical at every frame count
+  tried. They are line-art and bar-chart presets whose coverage is fixed by the
+  preset; the 4x headroom rule is the wrong shape for them, not the capture.
+- `eos-matrix-cube-c` is the strongest remaining candidate by entropy (6.45,
+  8.7x) but Stims renders it blank on WebGPU, so `parity:noise` refuses the
+  capture rather than scoring it. Certify it once that renders.
+- WebGL has no parity coverage. The 35 `renderer: 'stims'` manifest entries
+  are placeholders with no image files.
+
+## Measurement rules (learned the expensive way)
+
+1. **Never trust a single capture on a preset whose band is wide.** Check
+   `parity-noise-bands.json` first. To attribute a delta to a change: capture
+   with it, revert, capture again — if reverting does not restore the old
+   number, the delta was noise.
+2. **A better score on one preset is not evidence.** Two errors cancelling
+   produce beautiful numbers: defaulting `gammaadj` to 1 put 260's mean at
+   exactly the reference's 127.7 while taking 100-square from 1.43% to 85.74%.
+   Always re-measure 100-square (band 0.015pp) alongside any tonal change.
+3. **Measure transfers, don't derive them.** The present path applies
+   `out = in^(1/gammaAdj)` with gammaAdj defaulting to 2 — established by
+   rendering a constant-output comp shader via
+   `__STIMS_AGENT_BRIDGE__.applyEditorSource` and reading the canvas back,
+   after three source-reading attempts got it wrong. projectM's
+   `fGammaAdj = 1.0` init line is overwritten by the parser; do not "fix" our
+   default to match it.
+4. **Reference implementations tell you what to try, not what to ship.** The
+   shape `a2 = 0` semantics are verifiably butterchurn's, and applying them
+   alone took krash from 47% to ~90% — they are only correct together with the
+   textured-shape multiply.
+5. **Captures must not supersample.** The suite passes `--native-resolution`
+   so frames render at capture size like the reference does. Do not get native
+   resolution by locking the `full` quality step: that also drops mesh density
+   and takes 100-square to 15.85%.
 
 ## Certification scope
 
@@ -154,8 +279,13 @@ That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured 
 
 ### Feedback and video echo
 
+- Echo now matches MilkDrop's shape: a display-stage second draw, zoomed by
+  `fVideoEchoZoom` and flipped per `nVideoEchoOrientation`, blended by
+  `fVideoEchoAlpha` (`MILKDROP_VIDEO_ECHO_HELPER` in
+  `feedback-manager-shared.ts`, mirrored in the WebGPU TSL composite). The
+  180-degree self-correlation invariant is the regression test.
 - Replace heuristic composite state with projectM-matching pass ordering and math.
-- Verify `video_echo_*`, feedback mix, zoom, orientation, wrap, and post effects against reference renders.
+- Verify feedback mix, wrap, and the remaining post effects against reference renders.
 - Eliminate backend-specific shortcuts that change visible output.
 
 ### Shader text

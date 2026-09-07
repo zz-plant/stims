@@ -267,6 +267,9 @@ export function createMilkdropEngineAdapter() {
       if (intent.agentMode && typeof window !== 'undefined') {
         window.__STIMS_AGENT_RENDER_FRAMES__ = (options) =>
           runtime?.renderFrames?.(options) ?? null;
+        window.__STIMS_AGENT_FREEZE_RENDERING__ = () => {
+          runtime?.freezeRendering?.();
+        };
       }
 
       if (intent.collectionTag) {
@@ -484,9 +487,25 @@ export function createMilkdropEngineAdapter() {
       return experience?.getActiveCompiledPreset() ?? null;
     },
 
+    /**
+     * Rejects rather than resolving when the session has not mounted yet.
+     *
+     * Returning early looked harmless but dropped the file on the floor: the
+     * user drags a `.milk` in during load, the promise resolves, and nothing
+     * appears — no preset, no error, no reason to suspect the import ever
+     * happened.
+     *
+     * The wording is deliberately unlike the terse `not mounted` errors above.
+     * Those surface to callers; this one reaches a person. `handleImport` in
+     * workspace-shell-hooks passes `error.message` straight to
+     * `setStatusMessage`, so this string is the UI copy, and it has to say
+     * what to do about it.
+     */
     async importPreset(target: FileList | File[] | string) {
       if (!experience) {
-        return;
+        throw new Error(
+          'Failed to import preset because the visualizer is still loading. Wait a moment, then try importing the file again.',
+        );
       }
       await experience.importPresetFiles(toFileList(target));
       emit();
@@ -512,6 +531,11 @@ export function createMilkdropEngineAdapter() {
 
     getSnapshot() {
       return lastSnapshot;
+    },
+
+    /** Frame-fresh audio levels; null before the engine mounts. */
+    getAudioLevels() {
+      return experience?.getAudioLevels() ?? null;
     },
 
     getDiagnostics() {

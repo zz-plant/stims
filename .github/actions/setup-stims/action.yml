@@ -6,6 +6,13 @@ inputs:
     description: 'Whether to check out the repository'
     required: false
     default: 'true'
+  cache-compute:
+    description: >-
+      Cache node_modules/.cache, where `typecheck` and `check:architecture`
+      keep their incremental state. Enable it only in a job that actually runs
+      those checks — see the step below for why.
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -38,3 +45,32 @@ runs:
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile
+
+    # `typecheck` (tsBuildInfoFile) and `check:architecture` (dependency-cruiser)
+    # both keep their incremental state in node_modules/.cache, which the
+    # node_modules entry above nominally covers — except that entry is keyed on
+    # bun.lock and actions/cache skips the save on an exact key hit ("Cache hit
+    # occurred on the primary key …, not saving cache"). So the compute caches
+    # are frozen at whatever the first run for a given lockfile happened to
+    # produce, and that race is normally won by the build job, which runs
+    # neither check. Both steps therefore start cold on essentially every run.
+    # Measured on this repo, cold vs. warm:
+    #
+    #   check:architecture   21.9s -> 1.6s
+    #   typecheck            12.0s -> 1.7s
+    #
+    # A key that rotates per commit always saves; restore-keys picks up the
+    # most recent entry. Restored after the install so it wins over any stale
+    # copy inside the node_modules tarball.
+    #
+    # Enable this only in the job that runs those checks: the first job to
+    # finish writes the entry, so a job that ran neither would publish an empty
+    # cache and keep every later run cold — the bug this works around.
+    - name: Cache typecheck and dependency-cruiser state
+      if: inputs.cache-compute == 'true'
+      uses: actions/cache@v6
+      with:
+        path: node_modules/.cache
+        key: ${{ runner.os }}-compute-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-compute-

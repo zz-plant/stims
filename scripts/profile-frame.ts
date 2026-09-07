@@ -7,10 +7,19 @@
  *  - gl.finish() so queued GPU work does not leak across the timed region
  */
 import { chromium } from 'playwright';
+import { ensureDevServer } from './dev-server.ts';
 
+/**
+ * Accepts both `--name=value` and `--name value`. Only the first form used to
+ * parse, so the repo-standard `--preset <id>` was silently ignored and the
+ * script profiled its default preset while reporting no error at all.
+ */
 const arg = (name: string, fallback: string) => {
-  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
-  return hit ? hit.slice(name.length + 3) : fallback;
+  const inline = process.argv.find((a) => a.startsWith(`--${name}=`));
+  if (inline) return inline.slice(name.length + 3);
+  const index = process.argv.indexOf(`--${name}`);
+  const next = index === -1 ? undefined : process.argv[index + 1];
+  return next && !next.startsWith('--') ? next : fallback;
 };
 
 const PORT = arg('port', '5992');
@@ -33,7 +42,11 @@ type Node = {
 };
 
 async function main() {
+  // Started here rather than assumed: the script used to fail with a bare
+  // ERR_CONNECTION_REFUSED against a port nothing documents.
+  const devServer = await ensureDevServer(Number(PORT));
   const url = `http://localhost:${PORT}/?preset=${PRESET}&agent=true&renderer=${RENDERER}&lockQualityStep=${QUALITY}`;
+  console.log(`Profiling ${PRESET} on ${RENDERER} (${FRAMES} frames)...`);
   const browser = await chromium.launch({
     args: [
       '--use-gl=angle',
@@ -102,6 +115,7 @@ async function main() {
 
   const { profile } = await cdp.send('Profiler.stop');
   await browser.close();
+  devServer.close();
 
   const nodes = profile.nodes as unknown as Node[];
   const totalHits = nodes.reduce((s, n) => s + (n.hitCount ?? 0), 0) || 1;

@@ -479,11 +479,44 @@ wave_0_per_point3=b = if(equal(sample, 0), 0, if(equal(sample, 1), 1, b));
 
     const customWave = frameState.customWaves[0];
     expect(customWave?.colors).toBeDefined();
-    expect(customWave?.colors).toHaveLength(8 * 3);
+    // RGBA quadruplets: the fourth slot carries the per-point alpha.
+    expect(customWave?.colors).toHaveLength(8 * 4);
     expect(Array.from(customWave?.colors?.slice(0, 3) ?? [])).toEqual([
       1, 0, 0,
     ]);
-    expect(Array.from(customWave?.colors?.slice(-3) ?? [])).toEqual([0, 1, 1]);
+    expect(Array.from(customWave?.colors?.slice(-4, -1) ?? [])).toEqual([
+      0, 1, 1,
+    ]);
+    // Nothing wrote `a`, so every point keeps the wave's own alpha and the
+    // renderer must not treat this as a per-point-alpha wave.
+    expect(customWave?.perPointAlpha).toBe(false);
+  });
+
+  // 629 of the 2686 bundled presets write a per-point alpha. Dropping it drew
+  // every point at full wave alpha, which over-injected the feedback loop.
+  test('emits custom-wave per-point alpha when points override frame alpha', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Per Point Alpha Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wavecode_0_a=1
+wave_0_per_point1=a = 0.25 + sample * 0.5;
+      `.trim(),
+      { id: 'per-point-alpha-custom-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralCustomWaves: false,
+    }).step(makeSignals({ frame: 1 }));
+
+    const customWave = frameState.customWaves[0];
+    expect(customWave?.perPointAlpha).toBe(true);
+    expect(customWave?.colors).toHaveLength(8 * 4);
+    // sample runs 0 -> 1 across the wave, so alpha runs 0.25 -> 0.75.
+    expect(customWave?.colors?.[3]).toBeCloseTo(0.25, 6);
+    expect(customWave?.colors?.[8 * 4 - 1]).toBeCloseTo(0.75, 6);
   });
 
   test('normalizes legacy bUseDots custom-wave fields to dot draw mode', () => {

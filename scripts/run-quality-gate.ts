@@ -6,12 +6,19 @@
  *
  * - `quick`  — lint + typecheck only, no tests (~10s). Use constantly during
  *              development to catch type/style errors early.
- * - `full`   — lint + typecheck + fast test suite (~2min). This is the default
- *              `bun run check` mode. Excludes slow corpus/certification/integration
- *              tests so it remains a fast feedback loop.
- * - `all`    — lint + typecheck + full test suite including corpus/certification
- *              tests (~5min+). Use before merging changes to the MilkDrop
- *              compiler, renderer adapter, or parity pipeline.
+ * - `full`   — lint + typecheck + gate test suite (unit + compat + corpus).
+ *              This is the default `bun run check` mode. Corpus is in the gate
+ *              because its parity and golden-snapshot tests guard the
+ *              dual-backend boundary: leaving them to CI let a compiler change
+ *              pass here and fail after push. Excludes e2e, which is serial,
+ *              browser-backed, and slow.
+ * - `all`    — lint + typecheck + every profile including e2e (~5min+). Use
+ *              before merging changes to the MilkDrop compiler, renderer
+ *              adapter, or parity pipeline.
+ *
+ * `--no-tests` drops the test suite from any mode, leaving the checks. It
+ * exists for CI, which runs the suite as its own parallel job; locally,
+ * `bun run check` should stay the single command that runs everything.
  */
 type GateMode = 'quick' | 'full' | 'all';
 
@@ -50,6 +57,21 @@ export function parseExecutionMode(argv: string[]): GateExecutionMode {
   return argv.includes('--serial') ? 'serial' : 'parallel';
 }
 
+/**
+ * `--no-tests` drops the postflight test suite, leaving lint, guards and
+ * typecheck. Only CI passes it, so it can run the suite as its own parallel
+ * job instead of queueing it behind the concurrent lane in this one — the
+ * lane and the suite are independent, and serialising them made the Quality
+ * gate job the critical path of the whole workflow. Coverage is unchanged:
+ * the same `test:gate` command runs in that job, gated by `ci-status`.
+ *
+ * It stays off by default so a local `bun run check` is still the one command
+ * that runs everything before a push.
+ */
+export function parseSkipTests(argv: string[]): boolean {
+  return argv.includes('--no-tests');
+}
+
 export type OutputMode = 'text' | 'json';
 
 export function parseOutputMode(argv: string[]): OutputMode {
@@ -59,6 +81,7 @@ export function parseOutputMode(argv: string[]): OutputMode {
 export function buildGatePlan(
   mode: GateMode,
   executionMode: GateExecutionMode,
+  skipTests = false,
 ): GatePlan {
   return {
     mode,
@@ -118,6 +141,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:css-tokens'],
       },
       {
+        label: 'CSS radius/type scale',
+        cmd: ['bun', 'run', 'check:css-scale'],
+      },
+      {
         label: 'Agent action id drift',
         cmd: ['bun', 'run', 'check:agent-action-ids'],
       },
@@ -171,9 +198,24 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:duplicate-css'],
       },
       {
+        label: 'Agent skill index',
+        cmd: ['bun', 'run', 'check:skill-index'],
+      },
+      {
         label: 'Architecture boundary check',
         cmd: ['bun', 'run', 'check:architecture'],
       },
+      // Whole-repo dead-code scan (unused files, dependencies, binaries).
+      // Full mode only: ~2s, but it reads every module and the quick gate is
+      // meant to stay diff-scoped.
+      ...(mode === 'quick'
+        ? []
+        : [
+            {
+              label: 'Dead code scan (knip)',
+              cmd: ['bun', 'run', 'check:dead-code'],
+            },
+          ]),
       {
         label: 'Unbounded cache check',
         cmd: ['bun', 'run', 'check:cache-bounds'],
@@ -190,14 +232,18 @@ export function buildGatePlan(
       },
     ],
     postflight:
-      mode === 'quick'
+      mode === 'quick' || skipTests
         ? []
         : mode === 'full'
           ? [
               {
-                // fast profile: all tests except slow corpus/certification/integration
-                label: 'Fast test suite',
-                cmd: ['bun', 'run', 'test:fast'],
+                // gate profile: unit + compat + corpus. Corpus carries the
+                // parity and golden-snapshot tests for the dual-backend
+                // boundary; running them only in CI let a compiler change go
+                // green here and red after push. e2e stays out — it is serial,
+                // browser-backed, and slow.
+                label: 'Gate test suite',
+                cmd: ['bun', 'run', 'test:gate'],
               },
             ]
           : [
@@ -340,7 +386,7 @@ async function main() {
   const mode = parseMode(argv);
   const executionMode = parseExecutionMode(argv);
   const outputMode = parseOutputMode(argv);
-  const plan = buildGatePlan(mode, executionMode);
+  const plan = buildGatePlan(mode, executionMode, parseSkipTests(argv));
 
   await runStepListSerial(plan.preflight, outputMode);
 

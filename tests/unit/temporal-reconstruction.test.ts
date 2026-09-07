@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  calculateTemporalBlendWeight,
-  TEMPORAL_CLAMPING_GLSL_SNIPPET,
-  TEMPORAL_CLAMPING_WGSL_SNIPPET,
-} from '../../src/js/core/shaders/temporal-reconstruction.ts';
+import { calculateTemporalBlendWeight } from '../../src/js/core/shaders/temporal-reconstruction.ts';
 
 describe('Temporal History Neighborhood Clamping', () => {
   test('calculates motion-dependent blend weights', () => {

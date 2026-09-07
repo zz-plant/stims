@@ -11,6 +11,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 import {
+  sampleStageLiveness,
   shouldRetireAttractRender,
   summarizeStagePixels,
 } from '../../src/js/core/services/stage-liveness.ts';
@@ -134,5 +135,56 @@ describe('shouldRetireAttractRender', () => {
   test('a missing sample is not evidence', () => {
     expect(shouldRetireAttractRender([blank, null])).toBe(false);
     expect(shouldRetireAttractRender([])).toBe(false);
+  });
+});
+
+/**
+ * The readback is only valid inside a frame callback. A WebGPU canvas holds
+ * its image until the presenting task ends, so a read from a timer
+ * composites fully transparent — measured 0 of 1024 opaque pixels against
+ * 1024 of 1024 for the same frame one rAF later. Reading synchronously made
+ * every verdict "unknown" on the default backend, which is why the guard
+ * could never retire a blank attract render.
+ */
+describe('sampleStageLiveness scheduling', () => {
+  test('defers the read to a frame callback', async () => {
+    const calls: string[] = [];
+    const originalRaf = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      calls.push('scheduled');
+      setTimeout(() => {
+        calls.push('read');
+        cb(0);
+      }, 0);
+      return 1;
+    }) as typeof globalThis.requestAnimationFrame;
+
+    try {
+      // A zero-sized canvas short-circuits before any 2D work, which keeps
+      // this about the scheduling rather than about canvas support.
+      const canvas = { width: 0, height: 0 } as HTMLCanvasElement;
+      const pending = sampleStageLiveness(canvas);
+      expect(calls).toEqual(['scheduled']);
+      const result = await pending;
+      expect(calls).toEqual(['scheduled', 'read']);
+      expect(result.readable).toBe(false);
+    } finally {
+      globalThis.requestAnimationFrame = originalRaf;
+    }
+  });
+
+  test('still resolves where there is no frame clock', async () => {
+    const originalRaf = globalThis.requestAnimationFrame;
+    (globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame =
+      undefined;
+    try {
+      const result = await sampleStageLiveness({
+        width: 0,
+        height: 0,
+      } as HTMLCanvasElement);
+      expect(result.readable).toBe(false);
+    } finally {
+      globalThis.requestAnimationFrame = originalRaf;
+    }
   });
 });

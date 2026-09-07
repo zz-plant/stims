@@ -5,13 +5,13 @@
  * "hopefully works", "fixes", "fixed", "stims", "Various fixes".
  *
  * Also enforces Conventional Commits type prefix (feat/fix/refactor/...).
- * Exits non-zero on a violation so a husky `commit-msg` hook or CI can
+ * Exits non-zero on a violation so a lefthook `commit-msg` hook or CI can
  * gate on it.
  *
  * `--range` exists because the hook alone did not hold: commits authored
  * outside the local hook path (the GitHub web editor's "Update <file>"
  * commits among them) landed on main with subjects this guard rejects, and
- * CI had dropped its own commit-message job on the assumption that husky
+ * CI had dropped its own commit-message job on the assumption that the hook
  * covered every path. Range mode is that missing backstop.
  *
  * Usage: bun run scripts/check-commit-msg.ts <commit-msg-file>
@@ -21,6 +21,15 @@
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+
+/**
+ * Where a subject stops being scannable in a `git log --oneline` column.
+ *
+ * Not a correctness rule — see the note on `--allow-long-subjects`. It is here
+ * so a subject that has drifted into a sentence gets noticed, which is why
+ * going over it warns rather than blocks.
+ */
+const SUBJECT_LENGTH_LIMIT = 72;
 
 /** Returns an error string when the subject violates a rule, else null. */
 export function subjectError(
@@ -48,8 +57,8 @@ export function subjectError(
     );
   }
 
-  if (enforceLength && subject.length > 72) {
-    return `Commit subject exceeds 72 chars (${subject.length}): "${subject}"`;
+  if (enforceLength && subject.length > SUBJECT_LENGTH_LIMIT) {
+    return `Commit subject exceeds ${SUBJECT_LENGTH_LIMIT} chars (${subject.length}): "${subject}"`;
   }
 
   return null;
@@ -115,7 +124,23 @@ const raw = process.argv[2]
     : readFileSync(process.argv[2], 'utf8')
   : '';
 
-const error = subjectError(subjectOf(raw));
+const subject = subjectOf(raw);
+// Length is style; the other two rules are signal. The docblock above already
+// records that current practice breaks the ceiling routinely on subjects that
+// are otherwise good, which is why range mode can waive it — so blocking a
+// commit locally over four characters, after the message is written and the
+// gate has run, buys nothing but a retype. Say it and move on.
+const lengthOnly =
+  subjectError(subject) !== null &&
+  subjectError(subject, { enforceLength: false }) === null;
+if (lengthOnly) {
+  console.warn(
+    `! Commit subject is ${subject.length} chars; ${SUBJECT_LENGTH_LIMIT} keeps \`git log --oneline\` scannable.`,
+  );
+  process.exit(0);
+}
+
+const error = subjectError(subject);
 if (error) {
   console.error(`✖ ${error}`);
   process.exit(1);

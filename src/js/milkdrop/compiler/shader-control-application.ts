@@ -216,7 +216,7 @@ function resolveControlPath(
   for (let i = 0; i < parts.length - 1; i += 1) {
     container = container[parts[i]] as Record<string, unknown>;
   }
-  const leaf = parts[parts.length - 1]!;
+  const leaf = parts.at(-1) ?? '';
   return {
     value: container[leaf] as number,
     set: (value) => {
@@ -271,7 +271,7 @@ function resolveExpressionPath(
   for (let i = 0; i < parts.length - 1; i += 1) {
     container = container[parts[i]] as Record<string, unknown>;
   }
-  const leaf = parts[parts.length - 1]!;
+  const leaf = parts.at(-1) ?? '';
   return {
     value: container[leaf] as MilkdropExpressionNode | null,
     set: (expression) => {
@@ -320,28 +320,20 @@ export function applyShaderHeuristicControlStatement({
   }
 
   if (key === 'texture_source' || key === 'warp_texture_source') {
-    const source = parseShaderSamplerSource(rawValue);
-    if (source && isAuxShaderSamplerName(source)) {
-      if (key === 'texture_source') {
-        context.controls.textureLayer.source = source;
-        if (context.controls.textureLayer.mode === 'none') {
-          context.controls.textureLayer.mode = 'mix';
-        }
-      } else {
-        context.controls.warpTexture.source = source;
-      }
-      return true;
-    }
-    return false;
+    return applyTextureSourceAssignment({
+      target: key,
+      rawValue,
+      resolvedExpression: null,
+      context,
+    });
   }
 
   if (key === 'texture_mode') {
-    const mode = parseShaderTextureBlendMode(rawValue);
-    if (mode) {
-      context.controls.textureLayer.mode = mode;
-      return true;
-    }
-    return false;
+    return applyTextureModeAssignment({
+      rawValue,
+      resolvedExpression: null,
+      context,
+    });
   }
 
   if (

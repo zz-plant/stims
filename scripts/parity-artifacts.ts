@@ -378,6 +378,35 @@ export function appendParityArtifactEntry(
   return { entry, manifestPath, pruned, removedFiles };
 }
 
+/**
+ * The newest Stims capture recorded for a preset in an artifact directory.
+ *
+ * Three tools need "the frame the capture just produced" — the suite checks
+ * its backend, the noise tool diffs it, the promote flow inspects it — and
+ * each had grown its own filter-and-take-last over the manifest. One accessor
+ * keeps "latest" meaning the same thing everywhere: last manifest entry of
+ * kind stims-capture for the id, with the image path resolved absolute.
+ */
+export function latestStimsCapture(outputDir: string, presetId: string) {
+  const artifacts = loadParityArtifactManifest(outputDir).artifacts.filter(
+    (entry) => entry.kind === 'stims-capture' && entry.presetId === presetId,
+  );
+  const artifact = artifacts[artifacts.length - 1] ?? null;
+  if (!artifact) {
+    return null;
+  }
+  const image = artifact.files.image
+    ? path.isAbsolute(artifact.files.image)
+      ? artifact.files.image
+      : path.join(outputDir, artifact.files.image)
+    : null;
+  return {
+    artifact,
+    imagePath: image,
+    backend: artifact.capture?.backend ?? null,
+  };
+}
+
 export function hashFileSha256(filePath: string) {
   const digest = createHash('sha256');
   digest.update(fs.readFileSync(filePath));

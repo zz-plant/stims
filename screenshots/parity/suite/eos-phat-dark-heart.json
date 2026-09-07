@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "presetId": "eos-phat-dark-heart",
+  "title": "Eos - Phat - Dark - Heart",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-dark-heart--20260901223508",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.png",
+    "imageSha256": "01352892aa88010f6770f12e75afa0c9cfc66f56c769f51a8edbecede226eca3",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-dark-heart.meta.json",
+    "metadataSha256": "aea14b6677ee5c9b426cf79a6ac19f568d77dc6176dd983008217c8cc6713534"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "bundled",
+  "strata": [
+    "bundled",
+    "cream-of-the-crop",
+    "feedback"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 843921,
+    "mismatchRatio": 0.915712890625,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.20598739759213872,
+    "rmse": 0.3772223763197354,
+    "exactMatch": false,
+    "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.9055110677083333,
+      "max": 0.9114529079861111,
+      "width": 0.005941840277777777,
+      "repeats": 7,
+      "backend": "webgpu",
+      "measuredAt": "2026-09-01T21:52:30.352Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": 0.915712890625,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.008169390478469181,
+    "changeVerdict": "no-measurable-change"
+  },
+  "status": "fail",
+  "referenceSignal": "ok"
+}

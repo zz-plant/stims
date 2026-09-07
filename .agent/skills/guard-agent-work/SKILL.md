@@ -58,6 +58,11 @@ If you touch `.agent/skills/*` or `.agent/workflows/*`, you must update:
 - `docs/agents/custom-capabilities.md`
 - `docs/agents/visualizer-workflows.md`
 
+`bun run check:skill-index` enforces the first two for skills, so run it rather
+than trusting the checklist — the guard was added after a skill shipped
+unregistered, and it immediately found a second one (`perform-livecoding`) that
+had never been served over MCP at all.
+
 ## Surface-specific guards
 
 ### Parity guard (`milkdrop/feedback-*`, `milkdrop/renderer-adapter*`, `compiler/gpu-descriptor-plan.ts`)
@@ -67,10 +72,18 @@ Before saving any file in this surface:
 - [ ] Run `bun run test:compat` — does it pass?
 - [ ] Run `bun run test tests/unit/milkdrop-renderer-adapter.test.ts` — does it pass?
 - [ ] Did you add a comment explaining any new WebGPU vs. WebGL semantic difference?
-- [ ] Did you verify against at least one reference preset in the browser?
+- [ ] Did you measure against a reference preset — `bun run parity:capture` then
+      `bun run parity:suite` — rather than eyeballing it in the browser? Judge
+      the delta by `changeVerdict` against the preset's noise band, and never
+      cite krash or glowsticks, whose references a black frame would pass.
+- [ ] Did you sweep WebGL (`bun run sweep:milkdrop-loops -- --limit 40`) if you
+      touched shared shader text? The parity suite is WebGPU-only, so a WebGL
+      shader that no longer compiles passes it untouched.
 - [ ] If you changed blend alpha order, did you add a regression test?
 
 **Verify:** `bun run test:compat && bun run test tests/unit/milkdrop-renderer-adapter.test.ts`
+
+Full procedure: [`close-parity-gap`](../close-parity-gap/SKILL.md).
 
 ### Fallback guard (`core/renderer-*`, `core/audio-handler.ts`, `milkdrop/runtime/backend-fallback.ts`)
 

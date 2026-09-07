@@ -4,6 +4,7 @@ import {
   type EngineSnapshot,
 } from '../../src/js/frontend/engine/engine-snapshot.ts';
 import { coarseEngineSnapshotEqual } from '../../src/js/frontend/workspace-context.tsx';
+import { makeCatalogEntry } from '../milkdrop-fixtures.ts';
 
 /**
  * The engine snapshot context memo republishes to useEngineSnapshot consumers
@@ -41,9 +42,7 @@ const CHANGED_VALUES: { [K in keyof EngineSnapshot]: EngineSnapshot[K] } = {
   backend: 'webgpu',
   status: 'changed status',
   adaptiveQuality: { qualityStep: 1 } as EngineSnapshot['adaptiveQuality'],
-  catalogEntries: [
-    { id: 'p', title: 'P', author: 'A', tags: [] },
-  ] as EngineSnapshot['catalogEntries'],
+  catalogEntries: [makeCatalogEntry({ id: 'p', title: 'P', author: 'A' })],
   sessionState: { source: 'x' } as EngineSnapshot['sessionState'],
   currentSource: 'x',
   runtimeReady: true,

@@ -42,7 +42,6 @@ let webGpuBundleGroupCtorPromise: Promise<BundleGroupConstructor> | null = null;
 
 function loadWebGpuBundleGroupCtor(): Promise<BundleGroupConstructor> {
   if (!webGpuBundleGroupCtorPromise) {
-    // @ts-expect-error - 'three/webgpu' resolves at runtime via the bundler but not under moduleResolution: "node".
     webGpuBundleGroupCtorPromise = import('three/webgpu')
       .then((module: { BundleGroup: BundleGroupConstructor }) => {
         webGpuBundleGroupCtor = module.BundleGroup;

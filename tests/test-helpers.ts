@@ -1,4 +1,7 @@
+import { test } from 'bun:test';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { chromium } from 'playwright';
 
 /**
  * Imports a module with a cache-busting query so each call gets a fresh
@@ -42,3 +45,26 @@ export function replaceProperty<
     Reflect.deleteProperty(target, key);
   };
 }
+
+/**
+ * `test` when Playwright's Chromium is on disk, `test.skip` when it is not.
+ *
+ * Two tests in `tests/corpus/` drive a real browser, and corpus runs in
+ * `bun run check`. Playwright's browsers are a separate download that
+ * `bun install` does not perform, so without this a fresh clone fails the
+ * gate on a missing binary rather than a real defect. `bun run setup:browsers`
+ * installs them and the tests then run.
+ *
+ * Deliberately not keyed off `process.env.CI`. The Parity corpus job installs
+ * Chromium and the Quality gate job does not, so "in CI" says nothing about
+ * whether a browser exists — assuming it did is what turned this gate red.
+ * Availability is the only honest signal, and a broken install cannot hide
+ * behind it: `setup-playwright` failing fails that job before any test runs.
+ */
+export const browserTest = (() => {
+  try {
+    return existsSync(chromium.executablePath()) ? test : test.skip;
+  } catch {
+    return test.skip;
+  }
+})();

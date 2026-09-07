@@ -1,3 +1,8 @@
+/**
+ * Post-Effects & Video Echo Builder — evaluates dynamic post-processing profiles, motion blur damping,
+ * film grain, scanlines, and video echo orientation matrices for the MilkDrop simulation VM.
+ */
+
 import {
   evaluateMilkdropShaderControlExpressions,
   evaluateMilkdropShaderControlProgram,

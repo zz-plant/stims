@@ -236,9 +236,21 @@ test('applies comp-stage color controls and overlay work before legacy post effe
     expect(hueIndex).toBeGreaterThanOrEqual(0);
     expect(overlayIndex).toBeGreaterThan(hueIndex);
     expect(brightenIndex).toBeGreaterThan(overlayIndex);
-    // projectM post-effects order: brighten → darken → solarize → invert →
-    // gamma_adj (last). Gamma is applied after all other post effects.
+    // Gamma is a power, applied last. Butterchurn's composite reads as
+    // `ret *= gammaAdj` right after the echo, and matching that cost
+    // 260-compshader-noise_lq 0.337 -> 0.916 mismatch against a 0.002-wide
+    // noise band. The exponent form is what projectM was measured to do (see
+    // DEFAULT_PROJECTM_GAMMA_ADJ in compiler/default-state.ts) and projectM
+    // is the oracle the certified references come from.
     expect(gammaIndex).toBeGreaterThan(brightenIndex);
+
+    // The curves themselves, which the same defect had approximated away.
+    // Solarize is the one that showed: `abs(c - 0.5) * 2` maps black to
+    // WHITE, so any preset with bSolarize over a dark frame rendered as a
+    // white rectangle.
+    expect(fragmentShader).toContain('sqrt(max(color, vec3(0.0)))');
+    expect(fragmentShader).toContain('color = color * color;');
+    expect(fragmentShader).toContain('color * (1.0 - color) * 4.0');
   } finally {
     manager.dispose();
   }

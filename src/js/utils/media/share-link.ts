@@ -71,9 +71,17 @@ export function formatPresetShareCopy(preset: PresetShareMetadata): {
     ? `${preset.title} ${authorCredit}`
     : preset.title;
 
+  // The share text rides the native share sheet as the poster's default payload.
+  // It names the preset (credit the author, flatters the sharer's taste) and
+  // promises reactivity + zero friction to the reader — the two things that make
+  // a visualizer link worth opening and worth re-sharing. Every promise stays
+  // inside claims the product already makes elsewhere (reacts to mic / any song,
+  // runs in the browser, no install).
+  const hook = `a MilkDrop-inspired visualizer that reacts to your mic or any song, live in your browser.`;
+
   return {
     title: `${displayTitle} | Stims`,
-    text: `Experience "${preset.title}"${authorCredit ? ` by ${preset.author}` : ''} live on Stims audio visualizer.`,
+    text: `"${preset.title}"${authorCredit ? ` by ${preset.author}` : ''} — ${hook}`,
     url: buildPresetLink(preset.id),
   };
 }

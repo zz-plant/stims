@@ -17,7 +17,7 @@ import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -33,7 +33,6 @@ import { playToy } from './play-toy.ts';
 import { computeImageMetrics } from './preset-lab-metrics.ts';
 
 const server = createMcpServer();
-const transport = new StdioServerTransport();
 
 // ── Agent session manager ───────────────────────────────────────────
 // Keeps a headless browser session alive across tool calls so agents
@@ -2043,13 +2042,19 @@ server.registerTool(
 // their own module; they need the session map, so getSession is passed in.
 registerPerformanceTools(server, getSession);
 
-async function startServer() {
-  await server.connect(transport);
+function startServer() {
+  // serveStdio owns the transport and the protocol-era decision: a 2025-era
+  // client is pinned to this instance exactly as the old
+  // `server.connect(new StdioServerTransport())` wiring served it, while a
+  // 2026-07-28 client gets the modern envelope. One instance per process is
+  // fine on stdio — there is only ever one connection.
+  const handle = serveStdio(() => server);
   console.error('Stim Webtoys MCP server is running on stdio.');
+  return handle;
 }
 
 if (import.meta.main) {
-  await startServer();
+  startServer();
 }
 
 export * from './mcp-shared.ts';

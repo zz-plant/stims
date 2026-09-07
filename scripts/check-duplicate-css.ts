@@ -7,7 +7,7 @@
  *
  * Catches:
  *  1. Duplicate `@keyframes` names across global CSS files.
- *  2. Duplicate `@font-face` declarations with the same font-family.
+ *  2. Duplicate `@font-face` faces (same family + weight + style).
  *
  * `.module.css` files are excluded from cross-file checks — CSS modules
  * scope keyframes locally, so a `fade-in` in a module is not a duplicate
@@ -76,8 +76,13 @@ for (const [name, files] of keyframeNames) {
   }
 }
 
-/* 2: duplicate @font-face families — cross-file for global CSS */
-const fontFamilies = new Map<string, string[]>();
+/* 2: duplicate @font-face faces — cross-file for global CSS.
+   Keyed on family + weight + style, not family alone. A family is normally
+   several faces (regular and bold are different files and therefore
+   different @font-face blocks by necessity), so matching on the name alone
+   reported any correctly self-hosted family as a duplicate of itself. The
+   real mistake this catches is the same *face* declared twice. */
+const fontFaces = new Map<string, string[]>();
 for (const file of cssFiles) {
   if (file.endsWith('.module.css')) continue;
   const text = readFileSync(file, 'utf8');
@@ -91,15 +96,21 @@ for (const file of cssFiles) {
     const fam = block.match(/font-family:\s*['"]?([^'";]+)['"]?\s*;/);
     if (fam) {
       const name = fam[1].trim();
-      fontFamilies.set(name, [...(fontFamilies.get(name) ?? []), file]);
+      // Defaults match the CSS initial values for an omitted descriptor.
+      const weight =
+        block.match(/font-weight:\s*([^;]+);/)?.[1].trim() ?? '400';
+      const style =
+        block.match(/font-style:\s*([^;]+);/)?.[1].trim() ?? 'normal';
+      const key = `${name} / ${weight} / ${style}`;
+      fontFaces.set(key, [...(fontFaces.get(key) ?? []), file]);
     }
     idx = blockEnd + 1;
   }
 }
-for (const [name, files] of fontFamilies) {
+for (const [key, files] of fontFaces) {
   if (files.length > 1) {
     offenders.push(
-      `Duplicate @font-face "${name}" in: ${files.map((f) => f.replace('src/css/', '')).join(', ')}`,
+      `Duplicate @font-face "${key}" in: ${files.map((f) => f.replace('src/css/', '')).join(', ')}`,
     );
   }
 }

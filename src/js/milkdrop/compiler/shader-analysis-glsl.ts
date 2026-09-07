@@ -1,3 +1,8 @@
+/**
+ * GLSL Shader Lowering & Emitter — translates MilkDrop HLSL/EEL2 warp and composite shader blocks
+ * into valid, high-performance GLSL 3.00 ES shader source with auxiliary samplers and noise textures.
+ */
+
 import {
   getMilkdropShaderAuxTextureSourceId,
   isMilkdropVolumeShaderSamplerName,

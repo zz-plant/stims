@@ -17,7 +17,10 @@ const TEST_FILE_PATTERN = /\.test\.(?:ts|js)$/;
  * automatically, so a new browser or corpus test can no longer land in the
  * fast gate — or get silently quarantined out of every gate — by omission.
  *
- * - `slow`   excluded from the `fast` profile that `bun run check` runs.
+ * - `slow`   excluded from the `fast` profile. `corpus` is slow but still runs
+ *   in `bun run check` via the `gate` profile: the parity and golden-snapshot
+ *   tests it holds guard the dual-backend boundary, and leaving them to a CI
+ *   job meant a compiler change could go green locally and red after push.
  * - `serial` runs in its own pass with `--max-concurrency=1`. Browser-backed
  *   tests contend for GPU and port resources, and time out when interleaved
  *   with the rest of the suite.
@@ -38,6 +41,7 @@ const INTEGRATION_TEST = 'tests/e2e/agent-integration.test.ts';
 /** Profiles are compositions of categories. */
 const PROFILES: Record<string, Category[]> = {
   all: ['unit', 'compat', 'corpus', 'e2e'],
+  gate: ['unit', 'compat', 'corpus'],
   fast: ['unit', 'compat'],
   unit: ['unit'],
   compat: ['compat'],
@@ -319,6 +323,18 @@ async function main() {
 
   await assertNoUncategorizedTests();
 
+  // `integration` stays a single-file profile: CI runs it as its own job.
+  if (profile === 'integration') {
+    process.exit(
+      await runBunTest({
+        files: [INTEGRATION_TEST],
+        watch,
+        changed,
+        maxConcurrency: 1,
+      }),
+    );
+  }
+
   // `--changed` hands the profile's file list to a single `bun test --changed`
   // pass, which builds the import graph and keeps only files transitively
   // affected by uncommitted git changes. Sharding is skipped: the affected
@@ -328,17 +344,6 @@ async function main() {
     const categories = resolveProfileCategories(profile);
     const files = (await Promise.all(categories.map(listCategoryFiles))).flat();
     process.exit(await runBunTest({ files, watch, changed }));
-  }
-
-  // `integration` stays a single-file profile: CI runs it as its own job.
-  if (profile === 'integration') {
-    process.exit(
-      await runBunTest({
-        files: [INTEGRATION_TEST],
-        watch,
-        maxConcurrency: 1,
-      }),
-    );
   }
 
   const categories = resolveProfileCategories(profile);

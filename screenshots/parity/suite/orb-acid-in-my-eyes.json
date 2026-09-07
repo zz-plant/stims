@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "presetId": "orb-acid-in-my-eyes",
+  "title": "Orb - Acid - In - My - Eyes",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--orb-acid-in-my-eyes--20260901223520",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.png",
+    "imageSha256": "927f3e4d980b1c119a8abeb5b50f449dc36b4ae21b096bff307097baae28737b",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orb-acid-in-my-eyes.meta.json",
+    "metadataSha256": "5a8605503798d5cfe6935c89e9025f9cc101c9ad12c4a9148733d580aa8a33ce"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "bundled",
+  "strata": [
+    "bundled",
+    "cream-of-the-crop"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 867098,
+    "mismatchRatio": 0.9408615451388889,
+    "maxChannelDelta": 182,
+    "meanAbsoluteError": 0.13676207192946624,
+    "rmse": 0.19453085572900275,
+    "exactMatch": false,
+    "threshold": 32
+  },
+  "noise": {
+    "noiseBand": {
+      "min": 0.9064789496527778,
+      "max": 0.9408810763888888,
+      "width": 0.034402126736111094,
+      "repeats": 7,
+      "backend": "webgpu",
+      "measuredAt": "2026-09-01T21:47:33.829Z",
+      "contended": false
+    },
+    "baselineMismatchRatio": 0.9408615451388889,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.03821784186855292,
+    "changeVerdict": "no-measurable-change"
+  },
+  "status": "fail",
+  "referenceSignal": "ok"
+}

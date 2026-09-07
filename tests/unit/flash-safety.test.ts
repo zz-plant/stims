@@ -114,7 +114,11 @@ describe('flash safety controller', () => {
       sampler: {
         cols: GRID,
         rows: GRID,
-        sample: () => (returnNull ? null : (tiles.fill(0.5), tiles)),
+        sample: () => {
+          if (returnNull) return null;
+          tiles.fill(0.5);
+          return tiles;
+        },
         dispose: () => {},
       },
       isEnabled: () => true,

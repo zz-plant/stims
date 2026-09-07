@@ -1,3 +1,8 @@
+/**
+ * MilkDrop Runtime Signal Tracker — tracks, smooths, and packages audio-reactive signals (`bass`, `mid`,
+ * `treb`, `bass_att`, `vol`), beat triggers, and spectral analysis for per-frame EEL evaluation.
+ */
+
 import type { FrequencyAnalyser } from '../core/audio-handler';
 import { createBeatTracker } from '../utils/audio/beat';
 import { createMilkdropAudioSignalProcessor } from './audio-signal-processor';

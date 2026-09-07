@@ -29,6 +29,7 @@ flowchart LR
   Arch --> A3["WEBGPU_ARCHITECTURAL_REVAMP.md<br/>TSL/WGSL + WebGL2 fallback"]
   Arch --> A4["architecture/fallback-state-machine.md<br/>renderer capability contract"]
   Arch --> A5["RUNTIME_PERFORMANCE.md<br/>FPS evidence + reproduction"]
+  Arch --> A6["architecture/architectural-changes-proposal-2026-09.md<br/>seam contracts + boundary guard proposal"]
 
   Preset --> P0["authoring/ curriculum<br/>+ generated reference"]
   Preset --> P1["MILKDROP_CODING_GUIDE.md"]
@@ -75,6 +76,7 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | 🎯 [**Renderer Capability Contract**](./architecture/fallback-state-machine.md) | Fallback state machine, capability probing, and the renderScale propagation contract |
 | 🔍 [**Shader Support Inventory**](./architecture/shader-support-inventory.md) | MilkDrop compiler shader-capability audit |
 | 📐 [**Rasterization Fidelity Audit**](./architecture/rasterization-fidelity-audit.md) | WebGL vs WebGPU output divergence across waves, shapes, and borders |
+| 🧭 [**Architectural Changes Proposal (2026-09)**](./architecture/architectural-changes-proposal-2026-09.md) | Measured proposal to type the engine seam, enforce the frontend → engine boundary, unify catalog projections, decompose the shell, and reshape the engine directory |
 
 ---
 
@@ -113,6 +115,7 @@ Roadmap priorities, QA verification suites, and historical context.
 | 🗺️ [**Project Roadmap**](./ROADMAP.md) | Quarterly milestones, feature roadmap, and active architectural priorities |
 | 🤖 [**Generative AI Use Cases**](./GENERATIVE_AI_USE_CASES.md) | Proposal for extending the shipped AI surface: quality gates, new UI surfaces, closed-loop iteration, and benchmarks |
 | 📈 [**Implementation Status**](./IMPLEMENTATION_STATUS.md) | Consolidated tracking of refactor milestones, completed features, and active debt queues |
+| 🧰 [**Tech Stack Modernization (2026-09)**](./TECH_STACK_MODERNIZATION_2026-09.md) | Ranked dependency and toolchain audit: what landed (TS 7, MCP v2, lefthook, knip), what is next, and what to keep |
 | 📊 [**Release Evidence Ledger**](./evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md) | Source of truth on certified, baseline-measured, and unmeasured presets plus fidelity gaps by subsystem |
 | 🧹 [**Recurring Fix Patterns Audit**](./evidence/RECURRING_FIX_PATTERNS_AUDIT_2026-05.md) | Root-cause analysis of the recurring regression clusters |
 | 🔍 [**QA Plan & Baseline**](./QA_PLAN.md) | Manual smoke testing baseline, automated verification suites, and regression matrices |

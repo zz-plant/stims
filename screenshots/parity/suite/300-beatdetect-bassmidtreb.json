@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "300-beatdetect-bassmidtreb",
   "title": "300 Beatdetect Bassmidtreb",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260823183658",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260901223457",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
@@ -25,28 +25,29 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 54505,
-    "mismatchRatio": 0.05914171006944444,
+    "mismatchedPixels": 54191,
+    "mismatchRatio": 0.05880099826388889,
     "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.007130706188725491,
-    "rmse": 0.04918314954352431,
+    "meanAbsoluteError": 0.007053823699618736,
+    "rmse": 0.04893562448751142,
     "exactMatch": false,
     "threshold": 16
   },
   "noise": {
     "noiseBand": {
-      "min": 0.059204644097222224,
-      "max": 0.059380425347222224,
-      "width": 0.00017578124999999972,
-      "repeats": 3,
+      "min": 0.057876519097222225,
+      "max": 0.05807834201388889,
+      "width": 0.00020182291666666352,
+      "repeats": 7,
       "backend": "webgpu",
-      "measuredAt": "2026-08-23T17:48:30.664Z",
+      "measuredAt": "2026-09-01T21:55:13.631Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.05914171006944444,
+    "baselineMismatchRatio": 0.05880099826388889,
     "mismatchDelta": 0,
-    "noiseResolution": 0.00020523594474890336,
+    "noiseResolution": 0.00020962568763133703,
     "changeVerdict": "no-measurable-change"
   },
-  "status": "fail"
+  "status": "fail",
+  "referenceSignal": "weak"
 }

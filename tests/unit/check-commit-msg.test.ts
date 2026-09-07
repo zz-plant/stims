@@ -43,10 +43,23 @@ describe('check-commit-msg', () => {
     expect(await check('Fix the leak')).toBe(1);
   });
 
-  test('rejects subjects over 72 chars', async () => {
+  test('warns but accepts a long subject', async () => {
+    // Length is style, not signal — the guard's own docblock records that
+    // current practice breaks the ceiling routinely on otherwise-good
+    // subjects, which is why CI already waives it. Blocking the commit
+    // locally over a few characters, after the message is written, only
+    // costs a retype.
     expect(
       await check(
         'fix: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ),
+    ).toBe(0);
+  });
+
+  test('still rejects a long subject that also breaks a real rule', async () => {
+    expect(
+      await check(
+        'hopefully aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       ),
     ).toBe(1);
   });

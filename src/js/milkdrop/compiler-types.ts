@@ -1,3 +1,8 @@
+/**
+ * MilkDrop Compiler Type Definitions — defines core TypeScript interfaces and type contracts
+ * for the EEL2 AST, intermediate representations, GPU descriptor plans, and compiled preset structures.
+ */
+
 import type {
   MilkdropBackendSupport,
   MilkdropCompatibilityFeatureKey,

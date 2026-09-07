@@ -18,7 +18,6 @@
  * jitter this module passes through. Measure changes with
  * `bun run lab:reactivity` rather than judging by eye.
  */
-import type { MeydaAudioFeature, MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import workletSource from '../utils/audio/frequency-analyser-processor.ts?worklet';
@@ -29,6 +28,10 @@ import {
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
 } from '../utils/audio/reactivity.ts';
+import {
+  extractSpectralFeatures,
+  type SpectralFeatureSnapshot,
+} from '../utils/audio/spectral-features.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { reportAudioAwaitingGesture } from './audio-gesture-gate.ts';
 import {
@@ -48,6 +51,7 @@ export type WorkletBeatDetection = {
   beatTreble: boolean;
   bassBeatIntensity: number;
   midBeatIntensity: number;
+  beatTrebleIntensity?: number;
   trebleBeatIntensity: number;
 };
 
@@ -58,43 +62,8 @@ type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 const FREQUENCY_ANALYSER_PROCESSOR = URL.createObjectURL(
   new Blob([workletSource], { type: 'application/javascript' }),
 );
-const MEYDA_FEATURES = [
-  'rms',
-  'spectralCentroid',
-  'spectralFlatness',
-  'spectralRolloff',
-] satisfies MeydaAudioFeature[];
 
-// Meyda is only needed on the AnalyserNode fallback path (worklet-capable
-// browsers never reach updateSpectralFeatures), so it loads on demand instead
-// of shipping in the core chunk for every session.
-type MeydaModule = typeof import('meyda')['default'];
-let meydaInstance: MeydaModule | null = null;
-let meydaLoadFailed = false;
-let meydaLoadStarted = false;
-
-function requestMeyda(): MeydaModule | null {
-  if (meydaInstance || meydaLoadFailed || meydaLoadStarted) {
-    return meydaInstance;
-  }
-  meydaLoadStarted = true;
-  import('meyda')
-    .then((module) => {
-      meydaInstance = module.default;
-    })
-    .catch((error) => {
-      meydaLoadFailed = true;
-      logger.warn('Failed to load meyda for spectral features', error);
-    });
-  return null;
-}
-
-type SpectralFeatureSnapshot = {
-  rms: number;
-  spectralCentroid: number;
-  spectralFlatness: number;
-  spectralRolloff: number;
-};
+export type { SpectralFeatureSnapshot };
 
 const DEFAULT_SAMPLE_RATE = 44_100;
 const stylizedFrequencyBuffers = new WeakMap<object, Uint8Array>();
@@ -243,6 +212,9 @@ export class FrequencyAnalyser {
         zeroCrossingRate,
         spectralFlux,
         spectralCrest,
+        spectralCentroid,
+        spectralFlatness,
+        spectralRolloff,
         stereoBalance,
         stereoWidth,
         timeDomainData,
@@ -257,6 +229,18 @@ export class FrequencyAnalyser {
         this.zeroCrossingRate = zeroCrossingRate;
       if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
       if (typeof spectralCrest === 'number') this.spectralCrest = spectralCrest;
+      if (
+        typeof spectralCentroid === 'number' &&
+        typeof spectralFlatness === 'number' &&
+        typeof spectralRolloff === 'number'
+      ) {
+        this.spectralFeatures = {
+          rms: typeof rms === 'number' ? rms : this.rms,
+          spectralCentroid,
+          spectralFlatness,
+          spectralRolloff,
+        };
+      }
       if (typeof stereoBalance === 'number') this.stereoBalance = stereoBalance;
       if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
       if (frequencyData) {
@@ -336,6 +320,46 @@ export class FrequencyAnalyser {
       }
       if (typeof rms === 'number') {
         this.rms = rms;
+      }
+
+      const returnFreq: ArrayBuffer[] = [];
+      const returnWave: ArrayBuffer[] = [];
+      const returnTime: ArrayBuffer[] = [];
+      const transfers: ArrayBuffer[] = [];
+
+      const collect = (buf: unknown, list: ArrayBuffer[]) => {
+        if (buf instanceof ArrayBuffer) {
+          list.push(buf);
+          transfers.push(buf);
+        } else if (
+          ArrayBuffer.isView(buf) &&
+          buf.buffer instanceof ArrayBuffer
+        ) {
+          list.push(buf.buffer);
+          transfers.push(buf.buffer);
+        }
+      };
+
+      if (frequencyData) collect(frequencyData, returnFreq);
+      if (frequencyDataR) collect(frequencyDataR, returnFreq);
+      if (waveformData) collect(waveformData, returnWave);
+      if (waveformDataR) collect(waveformDataR, returnWave);
+      if (timeDomainData) collect(timeDomainData, returnTime);
+
+      if (transfers.length > 0 && workletNode.port) {
+        try {
+          workletNode.port.postMessage(
+            {
+              type: 'recycle-buffers',
+              freq: returnFreq,
+              wave: returnWave,
+              timeDomain: returnTime,
+            },
+            transfers,
+          );
+        } catch {
+          // Silently fall back if port or environment does not support transfer
+        }
       }
     };
   }
@@ -827,51 +851,19 @@ export class FrequencyAnalyser {
     }
 
     this.spectralFrameCounter = (this.spectralFrameCounter + 1) | 0;
-    // Meyda runs a full FFT on the main thread; once a snapshot exists,
-    // refreshing it every fourth frame keeps the spectral signals responsive
-    // without paying for the transform on every rendered frame.
+    // Once a snapshot exists, refreshing it every fourth frame keeps the
+    // spectral signals responsive without excessive overhead.
     if (this.spectralFeatures !== null && this.spectralFrameCounter % 4 !== 0) {
       return;
     }
 
-    const meyda = requestMeyda();
-    if (!meyda) {
-      return;
-    }
-
     try {
-      meyda.bufferSize = this.timeDomainData.length;
-      meyda.sampleRate = this.sampleRate;
-      const features = meyda.extract(
-        MEYDA_FEATURES,
+      this.spectralFeatures = extractSpectralFeatures(
         this.timeDomainData,
-      ) as Partial<MeydaFeaturesObject> | null;
-
-      if (!features) {
-        return;
-      }
-
-      this.spectralFeatures = {
-        rms:
-          typeof features.rms === 'number' && Number.isFinite(features.rms)
-            ? features.rms
-            : this.rms,
-        spectralCentroid:
-          typeof features.spectralCentroid === 'number' &&
-          Number.isFinite(features.spectralCentroid)
-            ? features.spectralCentroid
-            : 0,
-        spectralFlatness:
-          typeof features.spectralFlatness === 'number' &&
-          Number.isFinite(features.spectralFlatness)
-            ? features.spectralFlatness
-            : 0,
-        spectralRolloff:
-          typeof features.spectralRolloff === 'number' &&
-          Number.isFinite(features.spectralRolloff)
-            ? features.spectralRolloff
-            : 0,
-      };
+        this.frequencyData,
+        this.sampleRate,
+        this.frequencyBinCount * 2,
+      );
     } catch {
       // Ignore feature extraction failures and keep the last usable snapshot.
     }
@@ -1773,6 +1765,19 @@ export async function initAudio(options: AudioInitOptions = {}) {
 }
 
 export function getFrequencyData(analyser: FrequencyAnalyser) {
+  return getFrequencyFrame(analyser).data;
+}
+
+/**
+ * One fused pass over the analyser spectrum: copy the raw bins into a reused
+ * per-analyser buffer while accumulating peak and sum, then stylize in place.
+ * Returns the stylized data together with its mean so per-frame callers
+ * (animation-loop) don't re-walk the array to compute the average again.
+ */
+export function getFrequencyFrame(analyser: FrequencyAnalyser): {
+  data: Uint8Array;
+  average: number;
+} {
   const rawFrequencyData = analyser.getFrequencyData();
   const key = analyser as unknown as object;
   let stylized = stylizedFrequencyBuffers.get(key);
@@ -1780,24 +1785,18 @@ export function getFrequencyData(analyser: FrequencyAnalyser) {
     stylized = new Uint8Array(rawFrequencyData.length);
     stylizedFrequencyBuffers.set(key, stylized);
   }
-  stylized.set(rawFrequencyData);
 
-  return stylizeFrequencyData(stylized);
-}
-
-/**
- * Compute the average value of frequency data.
- * Replaces the repeated inline `data.reduce((a, b) => a + b, 0) / data.length` pattern.
- */
-export function getAverageFrequency(data: Uint8Array): number {
-  if (data.length === 0) return 0;
-
+  let peak = 0;
   let sum = 0;
-  for (let i = 0; i < data.length; i += 1) {
-    sum += data[i];
+  for (let i = 0; i < rawFrequencyData.length; i += 1) {
+    const value = rawFrequencyData[i] ?? 0;
+    stylized[i] = value;
+    if (value > peak) peak = value;
+    sum += value;
   }
 
-  return sum / data.length;
+  const average = stylizeFrequencyDataInPlace(stylized, peak, sum);
+  return { data: stylized, average };
 }
 
 /**
@@ -1806,27 +1805,45 @@ export function getAverageFrequency(data: Uint8Array): number {
  * preserves enough treble sparkle that most toys feel more musical.
  */
 export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
-  const len = data.length;
-  if (len === 0) return data;
-
   let peak = 0;
-  for (let i = 0; i < len; i += 1) {
-    peak = Math.max(peak, data[i] ?? 0);
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    const value = data[i] ?? 0;
+    if (value > peak) peak = value;
+    sum += value;
   }
+  stylizeFrequencyDataInPlace(data, peak, sum);
+  return data;
+}
+
+/**
+ * Core of stylizeFrequencyData with the input peak/sum precomputed by the
+ * caller (so getFrequencyFrame can fuse them into its copy loop). Mutates
+ * `data` and returns the mean of the stylized output.
+ */
+function stylizeFrequencyDataInPlace(
+  data: Uint8Array,
+  peak: number,
+  rawSum: number,
+): number {
+  const len = data.length;
+  if (len === 0) return 0;
 
   if (peak === 0) {
-    return data;
+    return 0;
   }
 
-  const average = getAverageFrequency(data);
+  const average = rawSum / len;
   const averageNormalized = average / 255;
   const activity = clamp((averageNormalized - 0.045) / 0.22, 0, 1);
 
   if (activity === 0 && peak < 26) {
+    let outSum = 0;
     for (let i = 0; i < len; i += 1) {
       data[i] = Math.max(0, Math.round((data[i] ?? 0) * 0.55));
+      outSum += data[i];
     }
-    return data;
+    return outSum / len;
   }
 
   const peakNormalization = clamp(160 / Math.max(72, peak), 0.96, 1.38);
@@ -1835,6 +1852,7 @@ export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
   const highLift = 1 + activity * (0.12 + averageNormalized * 0.08);
 
   let previousValue = data[0] ?? 0;
+  let outSum = 0;
   for (let i = 0; i < len; i += 1) {
     const raw = (data[i] ?? 0) / 255;
     const ratio = len > 1 ? i / (len - 1) : 0;
@@ -1864,43 +1882,8 @@ export function stylizeFrequencyData(data: Uint8Array): Uint8Array {
 
     data[i] = Math.round(clamp(blended, 0, 1) * 255);
     previousValue = data[i];
+    outSum += previousValue;
   }
 
-  return data;
-}
-
-/**
- * Compute a weighted, slightly boosted average that leans into bass/mid energy.
- * Useful for more expressive audio-driven motion.
- */
-export function getWeightedAverageFrequency(data: Uint8Array): number {
-  const len = data.length;
-  if (len === 0) return 0;
-
-  const bassEnd = Math.max(1, Math.floor(len * 0.12));
-  const midEnd = Math.max(bassEnd + 1, Math.floor(len * 0.5));
-
-  let bassSum = 0;
-  for (let i = 0; i < bassEnd; i += 1) {
-    bassSum += data[i];
-  }
-
-  let midSum = 0;
-  for (let i = bassEnd; i < midEnd; i += 1) {
-    midSum += data[i];
-  }
-
-  let trebleSum = 0;
-  for (let i = midEnd; i < len; i += 1) {
-    trebleSum += data[i];
-  }
-
-  const bassAvg = bassSum / bassEnd / 255;
-  const midAvg = midSum / Math.max(1, midEnd - bassEnd) / 255;
-  const trebleAvg = trebleSum / Math.max(1, len - midEnd) / 255;
-
-  const weighted = bassAvg * 0.6 + midAvg * 0.25 + trebleAvg * 0.15;
-  const boosted = Math.min(1, weighted ** 0.65 * 1.2);
-
-  return boosted * 255;
+  return outSum / len;
 }

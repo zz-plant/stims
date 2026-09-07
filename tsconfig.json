@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "strict": true,
     "incremental": true,
@@ -10,7 +10,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "ignoreDeprecations": "6.0",
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "types": ["bun", "node"]

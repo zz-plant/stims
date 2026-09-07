@@ -1,3 +1,8 @@
+/**
+ * Adaptive Quality Controller — dynamically adjusts rendering scale, feedback
+ * buffer resolution, and particle/mesh densities to sustain target refresh rates across GPU tiers.
+ */
+
 import {
   getDisplayRefreshRate,
   getHardwareSignals,
@@ -6,6 +11,7 @@ import type {
   RendererBackend,
   WebGPUCapabilitySummary,
 } from '../renderer-capabilities.ts';
+import { createContinuousDrsController } from './continuous-drs.ts';
 
 export type AdaptiveQualityTimingMode = 'coarse-frame' | 'gpu-phase-timestamps';
 
@@ -87,6 +93,22 @@ type AdaptiveQualityControllerOptions = {
    * change under test instead of the controller re-balancing quality.
    */
   lockedQualityStep?: number | null;
+  /**
+   * Pin the resolution multipliers to 1 while leaving the step's mesh/wave
+   * density alone.
+   *
+   * Parity captures need this. The `ultra` step supersamples at 1.25x and the
+   * screenshot then downsamples to the capture size, where projectM renders at
+   * native resolution and does not — so every captured frame was softer than
+   * the reference it is diffed against. Measured on the deterministic pair:
+   * 260-compshader-noise_lq 34.25% -> 33.45% (its band is 0.000pp, so that is
+   * signal) and 250-wavecode 8.41% -> 7.36%, with 100-square unmoved at 1.45%.
+   *
+   * Locking to the `full` step instead would also drop densityMultiplier from
+   * 1.35 to 1, which is a different variable and takes 100-square from 1.43%
+   * to 15.85%.
+   */
+  nativeResolution?: boolean;
 };
 
 type QualityStep = AdaptiveQualityMultipliers & {
@@ -148,7 +170,6 @@ const RESET_THRESHOLD_SAMPLES = 3;
 const GPU_RESOLUTION_PRESSURE_SAMPLES = 6;
 const GPU_RESOLUTION_RECOVER_SAMPLES = 18;
 const GPU_RESOLUTION_MIN = 0.72;
-const GPU_RESOLUTION_MAX_CHANGE = 0.06;
 const GPU_RESOLUTION_TARGET_BUDGET_RATIO = 0.82;
 const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 6;
 const ROLLING_WINDOW_MS = 5000;
@@ -167,33 +188,6 @@ const CADENCE_AT_TARGET_RATIO = 1.05;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
-}
-
-export function resolveGpuResolutionTarget({
-  currentMultiplier,
-  averageGpuMs,
-  frameBudgetMs,
-  minimumMultiplier = GPU_RESOLUTION_MIN,
-}: {
-  currentMultiplier: number;
-  averageGpuMs: number;
-  frameBudgetMs: number;
-  minimumMultiplier?: number;
-}) {
-  if (averageGpuMs <= 0 || frameBudgetMs <= 0) {
-    return currentMultiplier;
-  }
-  // Fill cost scales approximately with pixel area, so the linear-resolution
-  // correction is the square root of the budget ratio. Slew-limit each change
-  // to avoid a visible one-frame resolution jump.
-  const desired = Math.sqrt(
-    (frameBudgetMs * GPU_RESOLUTION_TARGET_BUDGET_RATIO) / averageGpuMs,
-  );
-  return clamp(
-    Math.max(desired, currentMultiplier - GPU_RESOLUTION_MAX_CHANGE),
-    minimumMultiplier,
-    1,
-  );
 }
 
 function updateEma(previous: number | null, next: number) {
@@ -359,6 +353,7 @@ function buildHeuristicProfile(
 }
 
 function buildState({
+  nativeResolution,
   backend,
   timingMode,
   supportsGpuTimestamps,
@@ -379,6 +374,7 @@ function buildState({
   adaptation,
   reasons,
 }: {
+  nativeResolution: boolean;
   backend: RendererBackend;
   timingMode: AdaptiveQualityTimingMode;
   supportsGpuTimestamps: boolean;
@@ -422,12 +418,16 @@ function buildState({
     rollingWindowSize,
     adaptation,
     reasons,
-    renderScaleMultiplier: step.renderScaleMultiplier * gpuResolutionMultiplier,
-    maxPixelRatioMultiplier:
-      step.maxPixelRatioMultiplier * gpuResolutionMultiplier,
+    renderScaleMultiplier: nativeResolution
+      ? 1
+      : step.renderScaleMultiplier * gpuResolutionMultiplier,
+    maxPixelRatioMultiplier: nativeResolution
+      ? 1
+      : step.maxPixelRatioMultiplier * gpuResolutionMultiplier,
     densityMultiplier: step.densityMultiplier,
-    feedbackResolutionMultiplier:
-      step.feedbackResolutionMultiplier * gpuResolutionMultiplier,
+    feedbackResolutionMultiplier: nativeResolution
+      ? 1
+      : step.feedbackResolutionMultiplier * gpuResolutionMultiplier,
   } satisfies AdaptiveQualityState;
 }
 
@@ -441,6 +441,7 @@ export function createAdaptiveQualityController({
   backend,
   capabilities,
   lockedQualityStep = null,
+  nativeResolution = false,
 }: AdaptiveQualityControllerOptions): AdaptiveQualityController {
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
   const supportsGpuTimestamps =
@@ -470,6 +471,20 @@ export function createAdaptiveQualityController({
   let stepLock = configuredStepLock;
   let qualityStep = stepLock ?? heuristic.initialStep;
   let gpuResolutionMultiplier = 1;
+  // Continuous Dynamic Resolution Scaler: a PID controller drives the
+  // within-step resolution multiplier smoothly toward the exact scale that
+  // holds the frame budget, instead of stepping it in discrete 6% jumps.
+  // Fed the average GPU/CPU frame time each sample; its output (a continuous
+  // scale in [min, 1]) replaces gpuResolutionMultiplier during adaptation.
+  const continuousDrs = createContinuousDrsController({
+    // Target 82% of the frame budget (matching the old step target) so the
+    // controller keeps headroom for compositor/compiler jitter instead of
+    // riding right at the cliff edge of the budget.
+    targetFrameBudgetMs:
+      heuristic.frameBudgetMs * GPU_RESOLUTION_TARGET_BUDGET_RATIO,
+    minScale: GPU_RESOLUTION_MIN,
+    maxScale: 1,
+  });
   let averageFrameMs: number | null = null;
   let averageCadenceMs: number | null = null;
   let averageRenderMs: number | null = null;
@@ -542,6 +557,10 @@ export function createAdaptiveQualityController({
   }
 
   function moveQualityStepPreservingResolution(targetStep: number) {
+    // Reset the continuous PID integrator when the coarse step changes: the
+    // step's own multiplier changed, so the error history no longer maps to
+    // the same physical resolution.
+    continuousDrs.reset(gpuResolutionMultiplier);
     if (gpuResolutionMultiplier >= 0.999) {
       qualityStep = targetStep;
       gpuResolutionMultiplier = 1;
@@ -621,6 +640,7 @@ export function createAdaptiveQualityController({
   }
 
   let state = buildState({
+    nativeResolution,
     backend,
     timingMode,
     supportsGpuTimestamps,
@@ -654,6 +674,7 @@ export function createAdaptiveQualityController({
   const publish = () => {
     updateThermalState();
     state = buildState({
+      nativeResolution,
       backend,
       timingMode,
       supportsGpuTimestamps,
@@ -710,6 +731,7 @@ export function createAdaptiveQualityController({
       );
       qualityStep = targetStep;
       gpuResolutionMultiplier = 1;
+      continuousDrs.reset(1);
       // An explicit set overrides whatever the switch pre-payment was tracking;
       // holding a stale level would suppress the next switch's pre-pay.
       switchPreDegradeFromStep = null;
@@ -878,12 +900,15 @@ export function createAdaptiveQualityController({
         averageGpuMs !== null &&
         gpuResolutionMultiplier > minimumGpuResolutionMultiplier + 0.001
       ) {
-        const nextMultiplier = resolveGpuResolutionTarget({
-          currentMultiplier: gpuResolutionMultiplier,
-          averageGpuMs,
-          frameBudgetMs: heuristic.frameBudgetMs,
-          minimumMultiplier: minimumGpuResolutionMultiplier,
-        });
+        // Feed the settled GPU time into the continuous PID scaler. Its
+        // output is an analog, clamped scale — no discrete resolution
+        // steps, so a heavy frame trims gradually and a light one restores
+        // gradually instead of snapping by a fixed 6% increment.
+        const nextMultiplier = clamp(
+          continuousDrs.update(averageGpuMs),
+          minimumGpuResolutionMultiplier,
+          1,
+        );
         if (nextMultiplier < gpuResolutionMultiplier - 0.001) {
           gpuResolutionMultiplier = nextMultiplier;
           adaptation = 'degraded';
@@ -895,7 +920,7 @@ export function createAdaptiveQualityController({
             ...state,
             reasons: [
               ...heuristic.reasons,
-              `Measured GPU pressure trimmed render resolution to ${Math.round(gpuResolutionMultiplier * 100)}% without changing geometry density.`,
+              `Measured GPU pressure continuously trimmed render resolution to ${Math.round(gpuResolutionMultiplier * 100)}% without changing geometry density.`,
             ],
           };
           return publish();
@@ -937,9 +962,17 @@ export function createAdaptiveQualityController({
         consecutiveGpuHeadroom >= GPU_RESOLUTION_RECOVER_SAMPLES &&
         gpuResolutionMultiplier < 0.999
       ) {
-        gpuResolutionMultiplier = Math.min(
+        // Same PID as the pressure side — feed the (now-headroom) GPU time,
+        // whose output rises toward 1 continuously.
+        const minGpuMult = getMinimumGpuResolutionMultiplier();
+        const nextMultiplier = clamp(
+          continuousDrs.update(averageGpuMs ?? 0),
+          minGpuMult,
           1,
-          gpuResolutionMultiplier + GPU_RESOLUTION_MAX_CHANGE,
+        );
+        gpuResolutionMultiplier = Math.max(
+          nextMultiplier,
+          gpuResolutionMultiplier,
         );
         adaptation = 'recovering';
         consecutiveGpuHeadroom = 0;
@@ -950,7 +983,7 @@ export function createAdaptiveQualityController({
           ...state,
           reasons: [
             ...heuristic.reasons,
-            `Measured GPU headroom restored render resolution to ${Math.round(gpuResolutionMultiplier * 100)}%.`,
+            `Measured GPU headroom continuously restored render resolution to ${Math.round(gpuResolutionMultiplier * 100)}%.`,
           ],
         };
         return publish();

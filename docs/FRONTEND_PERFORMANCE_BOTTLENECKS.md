@@ -18,6 +18,18 @@
   consumer asks for it.
 - **Duplicate drag-magnitude computation** — `interaction-response.ts`
   computes `inputSpeed` once.
+- **Stage `--energy` pulse was event-driven** (fixed 2026-08-26) — the CSS
+  custom property only updated on discrete snapshot emits, so the visual did
+  not track the music. `getAudioLevels()` on the experience controller +
+  engine session now exposes the live signal tracker, and a rAF loop in
+  `useWorkspaceSessionState` feeds the audio-energy store per frame while
+  audio is active (verified: 30/30 distinct values over 30 frames).
+- **Spectrum processed in 5 full-array passes per frame** (fixed 2026-08-26)
+  — `getFrequencyFrame()` fuses the copy/peak/sum walks into one loop, the
+  stylize transform accumulates its own output mean, and `animation-loop.ts`
+  consumes that mean instead of re-walking the array: 5 walks → 2. The
+  now-unused `getAverageFrequency`/`getWeightedAverageFrequency` exports
+  were deleted.
 - **Overlay browse-list full DOM re-render** — the browse UI is React with
   deferred search values and a capped result list.
 - **Renderer-service Proxy churn** — bound renderer methods are now cached
@@ -67,26 +79,7 @@
 
 ## Open bottlenecks (verified against current code)
 
-### 1. Stage `--energy` CSS pulse is event-driven, not frame-driven
-
-`StageControls.tsx` updates the `--energy` custom property from
-`subscribeAudioEnergy`, which is fed from engine *snapshot* changes — and
-snapshots emit on discrete events (preset change, audio start/stop), not per
-frame. The "energy" visual therefore does not track the music. The fix is a
-dedicated per-frame publisher across the engine seam (a rAF reader of the
-live analyser writing `style.setProperty` directly, no React), which needs a
-small API addition on the engine adapter.
-
-### 2. Spectrum processed in multiple passes per frame
-
-On the AnalyserNode fallback path, each frame runs: `getByteFrequencyData`
-copy, a stylize pass, a `getAverageFrequency` pass used only for a silence
-threshold, and an optional blend pass (`animation-loop.ts`,
-`audio-handler.ts`). Fusing the copy+stylize passes and returning the mean
-from the stylize pass would drop 2 of the 4–5 full-array walks nearly for
-free.
-
-### 3. Blend-state cloning during preset transitions
+### 1. Blend-state cloning during preset transitions
 
 `cloneBlendState()` deep-copies wave positions, custom waves, shapes,
 borders, and motion vectors when a blend transition begins. Not per-frame,
@@ -100,6 +93,14 @@ but it can spike a frame during preset switches on dense presets.
   sequential per-vertex RNG state. Adding an allowlist entry would be faster
   but would widen the visual approximation, so these presets remain on the
   compatible path until RNG state or a parity-validated equivalent exists.
+  This is a semantic boundary rather than an unfinished optimisation: the VM's
+  RNG is a linear congruential generator advanced once per call in program
+  order (`vm.ts` `nextRandom`), so its sequence is defined by evaluation order,
+  which per-pixel GPU execution does not have. Lowering it would change what
+  these presets draw, not merely where they draw it — and it is not a small
+  cost: the heaviest preset in the certification corpus,
+  `shifter-glassworms-flare`, calls `randint` 59 times and profiles at ~59%
+  EEL VM (`bun run profile:frame -- --preset shifter-glassworms-flare`).
 - **Shared guest memory stays on the VM path.** One miss reads `gmegabuf` from
   per-pixel code. Moving it requires a coherent storage binding and ordering
   contract; substituting zero or a stale CPU snapshot would only disguise the
@@ -107,6 +108,28 @@ but it can spike a frame during preset switches on dense presets.
 - **Expression-side assignments stay on the CPU path.** One miss uses nested
   `exec2` assignments. The current field descriptor is a pure expression tree,
   so lowering it would lose evaluation order and side effects.
+- **Shipping less three.js to WebGPU sessions is blocked upstream, not by us.**
+  `three.core.js` holds the classes both renderers share; only
+  `three.module.js` adds `WebGLRenderer`, and splitting them in `manualChunks`
+  isolates 82 KB gzipped that a WebGPU session never executes. It does not
+  help: 43 of our modules import from `'three'`, which *is* `three.module.js`,
+  so it stays eagerly reachable and rolldown correctly merges it back into the
+  core chunk (verified — the split chunk hash returns byte-identical). Making
+  `webgl-renderer.ts` a dynamic import, mirroring the WebGPU path, changes the
+  eager payload by nothing (503 KB / 43 files either way) and was reverted.
+  Avoiding it needs either per-backend builds or a public core-only entry from
+  three; `three/src/*` is exported but mixing it with the prebuilt
+  `three.core.js` that `three.webgpu.js` imports would duplicate the core
+  instead of sharing it. Measured 2026-08-27.
+- **The many small chunks are the price of four HTML entries.** 61 of 102
+  chunks are under 5 KB (105 KB total), which looks like pure request
+  overhead. Grouping app code by directory in `manualChunks` cuts the count to
+  60 — and takes the *eager* payload from 503 KB to 2237 KB, because the
+  groups drag lazily-imported renderer code into the entry graph. A narrower
+  utils-only grouping still traded 3 fewer requests for 39 KB of extra
+  critical-path bytes. The fine-grained split is load-bearing: chunks differ by
+  which of the four HTML entries reach them. Measured 2026-08-27; do not
+  re-attempt without a per-entry reachability model.
 - **Per-frame GPU compute is not an automatic upgrade.** The compute VM remains
   opt-in because dispatch and readback dominate the small scalar workloads in
   the measured harness. The useful GPU lane is the parallel field/geometry

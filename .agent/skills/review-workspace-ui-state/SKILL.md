@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 ## Why this exists
 
-~18% of fix commits are workspace UI races — now the #2 category (was understated): tool toggles double-firing, toast state leaking, URL param collisions between legacy (`experience`, `panel`) and canonical (`tool`, `collection`) keys. This skill keeps the adapter boundary clean.
+**19% of fix commits — the #3 category** (steady; it ranked #2 when deploy/tooling was lower). Workspace UI races: tool toggles double-firing, toast state leaking, URL param collisions between legacy (`experience`, `panel`) and canonical (`tool`, `collection`) keys. This skill keeps the adapter boundary clean. Measured 2026-08-27 over the last 400 commits (134 fix/revert), one category per commit by dominant file share; re-run it with [`audit-recurring-fixes`](../audit-recurring-fixes/SKILL.md) rather than trusting this number.
 
 ## Pre-merge checklist
 

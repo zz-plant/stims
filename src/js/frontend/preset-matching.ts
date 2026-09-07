@@ -122,6 +122,68 @@ export type ScoreFieldsOptions = {
   allowSubsequence?: boolean;
 };
 
+export type CompiledFieldMatcher = {
+  normalizedQuery: string;
+  tokens: string[];
+  score: (fields: readonly MatchField[]) => number | null;
+  matches: (fields: readonly MatchField[]) => boolean;
+};
+
+/**
+ * Pre-compiles query normalization and tokenization for fast batch evaluation
+ * across large collections without repeating string transforms per item.
+ */
+export function createFieldMatcher(
+  query: string,
+  { allowSubsequence = true }: ScoreFieldsOptions = {},
+): CompiledFieldMatcher {
+  const normalizedQuery = normalizeMatchText(query);
+  if (normalizedQuery.length === 0) {
+    return {
+      normalizedQuery: '',
+      tokens: [],
+      score: () => 0,
+      matches: () => true,
+    };
+  }
+
+  const tokens = normalizedQuery.split(' ').filter(Boolean);
+
+  const score = (fields: readonly MatchField[]): number | null => {
+    const phraseScore = bestFieldScore(
+      normalizedQuery,
+      fields,
+      allowSubsequence,
+    );
+    if (tokens.length < 2) return phraseScore;
+
+    let total = 0;
+    for (let i = 0; i < tokens.length; i += 1) {
+      const tokenScore = bestFieldScore(tokens[i], fields, allowSubsequence);
+      if (tokenScore === null) return phraseScore;
+      total += tokenScore;
+    }
+    const spreadScore = total / tokens.length - MULTI_TOKEN_PENALTY;
+    return phraseScore === null
+      ? spreadScore
+      : Math.max(phraseScore, spreadScore);
+  };
+
+  const matches = (fields: readonly MatchField[]): boolean => {
+    if (tokens.length <= 1) {
+      return bestFieldScore(normalizedQuery, fields, false) !== null;
+    }
+    for (let i = 0; i < tokens.length; i += 1) {
+      if (bestFieldScore(tokens[i], fields, false) === null) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  return { normalizedQuery, tokens, score, matches };
+}
+
 /**
  * Score `query` against a target's fields. Null means no match; 0 means an
  * empty query (matches everything, contributes no ordering).
@@ -134,28 +196,9 @@ export type ScoreFieldsOptions = {
 export function scoreFields(
   query: string,
   fields: readonly MatchField[],
-  { allowSubsequence = true }: ScoreFieldsOptions = {},
+  options?: ScoreFieldsOptions,
 ): number | null {
-  const normalizedQuery = normalizeMatchText(query);
-  if (normalizedQuery.length === 0) return 0;
-
-  const phraseScore = bestFieldScore(normalizedQuery, fields, allowSubsequence);
-
-  const tokens = normalizedQuery.split(' ').filter(Boolean);
-  if (tokens.length < 2) return phraseScore;
-
-  let total = 0;
-  for (const token of tokens) {
-    const tokenScore = bestFieldScore(token, fields, allowSubsequence);
-    // One missing token fails the AND; fall back to whatever the whole phrase
-    // scored (usually null).
-    if (tokenScore === null) return phraseScore;
-    total += tokenScore;
-  }
-  const spreadScore = total / tokens.length - MULTI_TOKEN_PENALTY;
-  return phraseScore === null
-    ? spreadScore
-    : Math.max(phraseScore, spreadScore);
+  return createFieldMatcher(query, options).score(fields);
 }
 
 /**
@@ -166,5 +209,5 @@ export function matchesFields(
   query: string,
   fields: readonly MatchField[],
 ): boolean {
-  return scoreFields(query, fields, { allowSubsequence: false }) !== null;
+  return createFieldMatcher(query, { allowSubsequence: false }).matches(fields);
 }

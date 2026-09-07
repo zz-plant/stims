@@ -1,3 +1,8 @@
+/**
+ * Core Render Service — orchestrates WebGL2 / WebGPU renderer initialization, canvas resizing,
+ * fallback capability state machines, and viewport frame rendering loops.
+ */
+
 import type * as THREE from 'three';
 import {
   getCurrentRetrySnapshot,

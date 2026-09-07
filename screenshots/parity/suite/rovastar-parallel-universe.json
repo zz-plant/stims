@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260823183804",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260901223527",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
@@ -25,28 +25,29 @@
     "width": 1280,
     "height": 720,
     "totalPixels": 921600,
-    "mismatchedPixels": 725321,
-    "mismatchRatio": 0.7870236545138889,
-    "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.14137724105846042,
-    "rmse": 0.2068162173794802,
+    "mismatchedPixels": 640396,
+    "mismatchRatio": 0.6948741319444445,
+    "maxChannelDelta": 218,
+    "meanAbsoluteError": 0.10824268819217502,
+    "rmse": 0.15438029552543128,
     "exactMatch": false,
     "threshold": 32
   },
   "noise": {
     "noiseBand": {
-      "min": 0.4391232638888889,
-      "max": 0.7324403211805556,
-      "width": 0.2933170572916667,
-      "repeats": 10,
+      "min": 0.6668131510416667,
+      "max": 0.69919921875,
+      "width": 0.0323860677083333,
+      "repeats": 7,
       "backend": "webgpu",
-      "measuredAt": "2026-08-22T18:12:25.655Z",
+      "measuredAt": "2026-09-01T21:49:12.790Z",
       "contended": false
     },
-    "baselineMismatchRatio": 0.8151833767361111,
-    "mismatchDelta": -0.028159722222222183,
-    "noiseResolution": 0.2933170572916667,
+    "baselineMismatchRatio": 0.6948741319444445,
+    "mismatchDelta": 0,
+    "noiseResolution": 0.03427196751872213,
     "changeVerdict": "no-measurable-change"
   },
-  "status": "fail"
+  "status": "fail",
+  "referenceSignal": "ok"
 }

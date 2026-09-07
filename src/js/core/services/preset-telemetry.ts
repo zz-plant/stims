@@ -19,6 +19,49 @@ let shownAt = 0;
 let transmitted = 0;
 let pagehideInstalled = false;
 
+export type GrowthTelemetryEvent =
+  | 'share-shared'
+  | 'share-copied'
+  | 'share-cancelled'
+  | 'share-unavailable'
+  | 'embed-landing'
+  | 'discovery-landing'
+  | 'audio-started';
+
+let growthTransmitted = 0;
+const MAX_GROWTH_TRANSMITS_PER_SESSION = 50;
+
+/** Records the small set of acquisition/conversion events needed to evaluate
+ * shared links, embed arrivals, discovery routes, and audible starts. */
+export function noteGrowthEvent(
+  event: GrowthTelemetryEvent,
+  presetId?: string,
+) {
+  if (growthTransmitted >= MAX_GROWTH_TRANSMITS_PER_SESSION) return;
+  const endpoint = resolveOptionalApiUrl('/api/telemetry');
+  if (!endpoint) return;
+  const payload: { event: string; presetId?: string } = {
+    event: `growth-${event}`,
+  };
+  if (presetId) payload.presetId = presetId.slice(0, 64);
+  try {
+    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+      navigator.sendBeacon(
+        endpoint,
+        new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+      );
+      growthTransmitted++;
+    }
+  } catch {
+    // Telemetry must never surface as a user-visible failure.
+  }
+}
+
+/** Test-only reset; harmless in production and avoids cross-test counters. */
+export function resetGrowthTelemetryForTests() {
+  growthTransmitted = 0;
+}
+
 function send(presetId: string, dwellMs: number) {
   if (transmitted >= MAX_TRANSMITS_PER_SESSION) return;
   const endpoint = resolveOptionalApiUrl('/api/telemetry');

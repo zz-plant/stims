@@ -1,4 +1,10 @@
+/**
+ * WebGPU Composite Feedback Manager — implements WebGPU composite shader rendering, texture
+ * ping-pong feedback passes, 3D noise textures, and TSL compute graph bindings.
+ */
+
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
+
 import type { Camera, Scene, Texture } from 'three';
 import {
   ClampToEdgeWrapping,
@@ -16,7 +22,6 @@ import {
   Vector2,
   Vector4,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { RenderTarget, TSL } from 'three/webgpu';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
@@ -30,6 +35,8 @@ import {
   createMilkdropNoiseVolumeAtlasTexture,
   MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 } from './milkdrop-native-noise.ts';
+import type { TslNode } from './renderer-helpers/tsl-node-types.ts';
+import { MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS } from './shader-samplers.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
 const {
@@ -430,6 +437,7 @@ export function createCompositeUniforms(
     fractalTex3D: texture3D(shared3DPlaceholderRGBA),
     mixAlpha: uniform(0.18),
     videoEchoAlpha: uniform(0),
+    videoEchoZoom: uniform(1),
     zoom: uniform(1.02),
     videoEchoOrientation: uniform(0),
     brighten: uniform(0),
@@ -506,6 +514,14 @@ export function createCompositeUniforms(
     signalTime: uniform(0),
     signalFrame: uniform(0),
     signalFps: uniform(60),
+    // MilkDrop per-frame registers (`tele`, `hordist`, …) that a directly
+    // executed shader body reads without ever assigning. WebGL declares each
+    // as `uniform float` and drives it from the VM's frame state; here the
+    // executor binds one uniform node per name on first read (see
+    // getShaderEnvValue in feedback-manager-webgpu-tsl.ts) and the manager
+    // writes the values every frame next to the q/t banks. Cleared when the
+    // composite graph is rebuilt for a new preset.
+    perFrameVariables: new Map<string, ReturnType<typeof uniform>>(),
     // q/t register banks packed four-per-vec4 (q1..q4 in [0], q5..q8 in [1],
     // …), matching the WebGL path's _qa.._qh packing: 16 uniform nodes and 16
     // per-frame writes instead of 64 scalars.
@@ -583,7 +599,52 @@ function flipFeedbackSampleUv(coord: any) {
  * a target-backed uniform, because a site that forgets the row-order flip
  * produces a plausible-looking frame rather than an error.
  */
-export function sampleFeedbackTarget(textureNode: any, screenUv: any) {
+/**
+ * Folds a per-source-id node table into the nested `select()` chain TSL needs.
+ *
+ * The ids come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS, and every id from
+ * 0 to the table's maximum gets its own bucket — an id with no node maps to
+ * `fallback` explicitly. That property is the point: the chains this replaces
+ * were nested by hand, and when ids 10 (noise_lq) and 11 (noisevol) were added
+ * to the id table without a branch of their own, they silently fell into
+ * glyph's `lessThan(12.5)` range and every preset reading projectM's generated
+ * noise sampled the glyph asset. Hand-editing the nesting also broke twice
+ * during the fix — sixteen levels of matched parentheses is not an edit, it is
+ * a transcription. Here, adding a texture slot is one entry in `nodes`.
+ */
+function selectBySourceId(
+  source: any,
+  nodes: Readonly<Record<string, any>>,
+  fallback: any,
+) {
+  const byId = new Map<number, any>();
+  for (const [name, id] of Object.entries(
+    MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS,
+  )) {
+    if (nodes[name] !== undefined) {
+      byId.set(id, nodes[name]);
+    }
+  }
+  const maxId = Math.max(
+    ...Object.values(MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS),
+  );
+  let chain = fallback;
+  for (let id = maxId; id >= 0; id -= 1) {
+    chain = select(source.lessThan(id + 0.5), byId.get(id) ?? fallback, chain);
+  }
+  return chain;
+}
+
+/**
+ * Return type stated rather than inferred: `textureNode` is `any` (three has
+ * no single type covering every texture node these managers hold), so
+ * without this the sampled texel is `any` too, and every `.rgb`/`.a` derived
+ * from it silently degrades to a scalar downstream. A sample is a vec4.
+ */
+export function sampleFeedbackTarget(
+  textureNode: any,
+  screenUv: any,
+): TslNode<'vec4'> {
   return textureNode.sample(flipFeedbackSampleUv(screenUv));
 }
 
@@ -605,23 +666,31 @@ export function createSampleUvNode() {
 }
 
 export function createApplyFeedbackWarpNode() {
-  return Fn(([sampleUv, amount, rotationAmount]: [any, any, any]) => {
-    const centered = sampleUv.sub(0.5);
-    const radius = length(centered);
-    const angle = atan(centered.y, centered.x);
-    const spiral = sin(radius.mul(18).sub(angle.mul(4)))
-      .mul(amount)
-      .mul(0.08);
-    const warpedAngle = angle.add(spiral).add(rotationAmount.mul(0.22));
-    const warpedRadius = radius.mul(
-      float(1).add(
-        cos(warpedAngle.mul(3).add(radius.mul(10)))
-          .mul(amount)
-          .mul(0.05),
-      ),
-    );
-    return vec2(cos(warpedAngle), sin(warpedAngle)).mul(warpedRadius).add(0.5);
-  });
+  return Fn(
+    ([sampleUv, amount, rotationAmount]: [
+      TslNode<'vec2'>,
+      TslNode<'float'>,
+      TslNode<'float'>,
+    ]) => {
+      const centered = sampleUv.sub(0.5);
+      const radius = length(centered);
+      const angle = atan(centered.y, centered.x);
+      const spiral = sin(radius.mul(18).sub(angle.mul(4)))
+        .mul(amount)
+        .mul(0.08);
+      const warpedAngle = angle.add(spiral).add(rotationAmount.mul(0.22));
+      const warpedRadius = radius.mul(
+        float(1).add(
+          cos(warpedAngle.mul(3).add(radius.mul(10)))
+            .mul(amount)
+            .mul(0.05),
+        ),
+      );
+      return vec2(cos(warpedAngle), sin(warpedAngle))
+        .mul(warpedRadius)
+        .add(0.5);
+    },
+  );
 }
 
 export function createSampleAuxTextureNode(
@@ -655,87 +724,30 @@ export function createSampleAuxTextureNode(
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
-    // Source ids come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS
-    // (shader-samplers.ts). Ids 10 (noise_lq) and 11 (noisevol) used to have
-    // no branch of their own, so they fell into glyph's `lessThan(12.5)` and
-    // every preset reading projectM's generated noise sampled the glyph asset
-    // instead: 260-compshader-noise_lq, whose whole body is
-    // `ret = tex2D(sampler_fw_noise_lq, uv).xyz`, rendered tinted
-    // (mean 120/141/133) against a neutral-grey reference (127.7 per channel).
-    return select(
-      source.lessThan(0.5),
+    // Source ids and names both come from MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS;
+    // an id with no entry here falls to the flat neutral, never into a
+    // neighbouring texture's bucket (the id-10/11 glyph-bleed bug).
+    return selectBySourceId(
+      source,
+      {
+        noise: noiseTexNode.sample(sampleUv),
+        simplex: simplexTexNode.sample(sampleUv),
+        voronoi: voronoiTexNode.sample(sampleUv),
+        aura: auraTexNode.sample(sampleUv),
+        caustics: causticsTexNode.sample(sampleUv),
+        pattern: patternTexNode.sample(sampleUv),
+        fractal: fractalTexNode.sample(sampleUv),
+        video: videoTexNode.sample(sampleUv),
+        perlin: perlinTexNode.sample(sampleUv),
+        noise_lq: noiseLqTexNode.sample(sampleUv),
+        noisevol: noisevolTexNode.sample(sampleUv),
+        glyph: glyphTexNode.sample(sampleUv),
+        organic: organicTexNode.sample(sampleUv),
+        blur1: sampleFeedbackTarget(blur1TexNode, sampleUv),
+        blur2: sampleFeedbackTarget(blur2TexNode, sampleUv),
+        blur3: sampleFeedbackTarget(blur3TexNode, sampleUv),
+      },
       flat,
-      select(
-        source.lessThan(1.5),
-        noiseTexNode.sample(sampleUv),
-        select(
-          source.lessThan(2.5),
-          simplexTexNode.sample(sampleUv),
-          select(
-            source.lessThan(3.5),
-            voronoiTexNode.sample(sampleUv),
-            select(
-              source.lessThan(4.5),
-              auraTexNode.sample(sampleUv),
-              select(
-                source.lessThan(5.5),
-                causticsTexNode.sample(sampleUv),
-                select(
-                  source.lessThan(6.5),
-                  patternTexNode.sample(sampleUv),
-                  select(
-                    source.lessThan(7.5),
-                    fractalTexNode.sample(sampleUv),
-                    select(
-                      source.lessThan(8.5),
-                      videoTexNode.sample(sampleUv),
-                      select(
-                        source.lessThan(9.5),
-                        perlinTexNode.sample(sampleUv),
-                        select(
-                          source.lessThan(10.5),
-                          noiseLqTexNode.sample(sampleUv),
-                          select(
-                            source.lessThan(11.5),
-                            noisevolTexNode.sample(sampleUv),
-                            select(
-                              source.lessThan(12.5),
-                              glyphTexNode.sample(sampleUv),
-                              select(
-                                source.lessThan(13.5),
-                                organicTexNode.sample(sampleUv),
-                                select(
-                                  source.lessThan(14.5),
-                                  sampleFeedbackTarget(blur1TexNode, sampleUv),
-                                  select(
-                                    source.lessThan(15.5),
-                                    sampleFeedbackTarget(
-                                      blur2TexNode,
-                                      sampleUv,
-                                    ),
-                                    select(
-                                      source.lessThan(16.5),
-                                      sampleFeedbackTarget(
-                                        blur3TexNode,
-                                        sampleUv,
-                                      ),
-                                      flat,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   });
 
@@ -773,9 +785,17 @@ export function createSampleAuxTextureNode(
       // margins so cross-slice color never bleeds near atlas seams.
       const edgeMargin = 0.02;
       const blended = mix(lowerSample, upperSample, blend);
-      const snapLow = select(step(edgeMargin, blend), blended, lowerSample);
+      // `select()` takes a boolean condition. These two read the same as the
+      // `step(edge, blend)` they replace — step is 1 exactly when
+      // blend >= edge — but say the predicate directly instead of routing it
+      // through a float that then has to be reinterpreted as a bool.
+      const snapLow = select(
+        blend.greaterThanEqual(edgeMargin),
+        blended,
+        lowerSample,
+      );
       const snapHigh = select(
-        step(float(1).sub(edgeMargin), blend),
+        blend.greaterThanEqual(float(1).sub(edgeMargin)),
         upperSample,
         snapLow,
       );
@@ -783,61 +803,38 @@ export function createSampleAuxTextureNode(
     },
   );
 
-  return Fn(
-    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
+  const dynamic = Fn(
+    // Typed rather than `any`: `fract(sampleUv)` feeds `vec3(uv, z)` below,
+    // which needs the uv to still be a vec2. Left as `any` the whole chain
+    // degrades to float and every 3D sample loses its overload.
+    ([source, sampleDimension, sampleUv, sliceZ]: [
+      TslNode<'float'>,
+      TslNode<'float'>,
+      TslNode<'vec2'>,
+      TslNode<'float'>,
+    ]) => {
       const wrappedUv = fract(sampleUv);
       const wrappedZ = fract(sliceZ);
       const flat = vec4(0.5, 0.5, 0.5, 1);
-      const native3dSample = select(
-        source.lessThan(0.5),
+      const native3dSample = selectBySourceId(
+        source,
+        {
+          noise: tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
+          simplex: tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
+          voronoi: tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
+          aura: tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
+          caustics: tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
+          pattern: tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
+          fractal: tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
+          perlin: tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+          // noise_lq is 2D in projectM, but presets do call tex3D on it, so
+          // ids 10 and 11 both read the generated volume rather than the flat
+          // grey that left 261-compshader-noisevol_lq blank. video/glyph/
+          // organic/blur have no volume and fall to flat by omission.
+          noise_lq: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
+          noisevol: tex3DNodes.noisevol.sample(vec3(wrappedUv, wrappedZ)),
+        },
         flat,
-        select(
-          source.lessThan(1.5),
-          tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
-          select(
-            source.lessThan(2.5),
-            tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
-            select(
-              source.lessThan(3.5),
-              tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
-              select(
-                source.lessThan(4.5),
-                tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
-                select(
-                  source.lessThan(5.5),
-                  tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
-                  select(
-                    source.lessThan(6.5),
-                    tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
-                    select(
-                      source.lessThan(7.5),
-                      tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
-                      select(
-                        source.lessThan(8.5),
-                        flat,
-                        select(
-                          source.lessThan(9.5),
-                          tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
-                          // noise_lq is 2D in projectM, but presets do call
-                          // tex3D on it, so ids 10 and 11 both read the
-                          // generated volume rather than falling to the flat
-                          // grey that left 261-compshader-noisevol_lq blank.
-                          select(
-                            source.lessThan(11.5),
-                            tex3DNodes.noisevol.sample(
-                              vec3(wrappedUv, wrappedZ),
-                            ),
-                            flat,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
       );
       // `video` has no real 3D texture (a video frame isn't a volume) so it
       // always needs the 2D-atlas emulation. `simplex` used to be force-
@@ -858,4 +855,100 @@ export function createSampleAuxTextureNode(
       );
     },
   );
+
+  const tex2dBySource: Readonly<Record<string, ReturnType<typeof texture>>> = {
+    noise: noiseTexNode,
+    simplex: simplexTexNode,
+    voronoi: voronoiTexNode,
+    aura: auraTexNode,
+    caustics: causticsTexNode,
+    pattern: patternTexNode,
+    fractal: fractalTexNode,
+    video: videoTexNode,
+    perlin: perlinTexNode,
+    noise_lq: noiseLqTexNode,
+    noisevol: noisevolTexNode,
+    glyph: glyphTexNode,
+    organic: organicTexNode,
+  };
+  const feedbackTargetBySource: Readonly<
+    Record<string, ReturnType<typeof texture>>
+  > = {
+    blur1: blur1TexNode,
+    blur2: blur2TexNode,
+    blur3: blur3TexNode,
+  };
+  /**
+   * Volume each source reads on the 3D path, mirroring `native3dSample`
+   * above: `noise_lq` deliberately shares `noisevol`'s volume, and video,
+   * glyph, organic and the blur targets have none and fall to flat.
+   */
+  const tex3dBySource: Readonly<Record<string, ReturnType<typeof texture3D>>> =
+    {
+      noise: tex3DNodes.noise,
+      simplex: tex3DNodes.simplex,
+      voronoi: tex3DNodes.voronoi,
+      aura: tex3DNodes.aura,
+      caustics: tex3DNodes.caustics,
+      pattern: tex3DNodes.pattern,
+      fractal: tex3DNodes.fractal,
+      perlin: tex3DNodes.perlin,
+      noise_lq: tex3DNodes.noisevol,
+      noisevol: tex3DNodes.noisevol,
+    };
+
+  /**
+   * The same fetch, for a source that is already known while the node graph
+   * is being built.
+   *
+   * `dynamic` picks its texture at RUN time, so it carries every slot's fetch
+   * — sixteen 2D samples, ten 3D ones, and video's two-slice atlas blend on
+   * top — behind a `select` chain, and TSL inlines a `Fn` at every call site.
+   * A directly-executed shader body therefore paid ~58 `textureSample` calls
+   * for each ONE texture it read. Measured on the four-statement composite
+   * prefix of flexi-lorenz-chaser-...-discombobule-lose (7 texture reads):
+   * 451 `textureSample` calls in 367 KB of WGSL, which killed the GPU process
+   * inside Dawn's shader compiler with no WebGPU error emitted — a silent
+   * "Page crashed", reproducible 3/3.
+   *
+   * A shader body names its sampler in its own source text, so the slot is a
+   * constant: `resolveDirectShaderSamplerBinding` has resolved it before the
+   * node is built. Emitting that one fetch keeps the chain's semantics — the
+   * same `fract` wrap, the same row flip on feedback targets, the same flat
+   * grey for a slot with no texture — and drops the other 57. The genuinely
+   * runtime-selected uses (the warp and overlay texture uniforms, whose
+   * source changes per frame) still call `dynamic`.
+   */
+  const sampleStatic = (
+    canonicalSource: string,
+    sampleDimension: '2d' | '3d',
+    sampleUv: TslNode<'vec2'>,
+    sliceZ: TslNode<'float'>,
+  ) => {
+    const flat = vec4(0.5, 0.5, 0.5, 1);
+    const wrappedUv = fract(sampleUv);
+    if (sampleDimension === '3d') {
+      if (canonicalSource === 'video') {
+        // A video frame is not a volume, so this is the one static source
+        // that still needs the atlas emulation.
+        return atlasTrilinearSample(
+          float(MILKDROP_SHADER_AUX_TEXTURE_SOURCE_IDS.video),
+          wrappedUv,
+          sliceZ,
+        );
+      }
+      const volumeNode = tex3dBySource[canonicalSource];
+      return volumeNode
+        ? volumeNode.sample(vec3(wrappedUv, fract(sliceZ)))
+        : flat;
+    }
+    const targetNode = feedbackTargetBySource[canonicalSource];
+    if (targetNode) {
+      return sampleFeedbackTarget(targetNode, wrappedUv);
+    }
+    const textureNode = tex2dBySource[canonicalSource];
+    return textureNode ? textureNode.sample(wrappedUv) : flat;
+  };
+
+  return { dynamic, sampleStatic };
 }

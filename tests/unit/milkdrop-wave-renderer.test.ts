@@ -120,7 +120,7 @@ describe('milkdrop wave renderer', () => {
     const group = createWaveObject(
       makeWave({
         thickness: 1,
-        colors: [1, 0, 0, 0, 1, 1],
+        colors: [1, 0, 0, 1, 0, 1, 1, 1],
       }),
       behavior,
       helpers,
@@ -129,8 +129,11 @@ describe('milkdrop wave renderer', () => {
     const line = group.children[0] as Line;
     const material = line.material as LineBasicMaterial;
     expect(material.vertexColors).toBe(true);
+    // RGBA, not RGB: three.js only enables per-vertex alpha on a
+    // four-component colour attribute.
+    expect(line.geometry.getAttribute('color').itemSize).toBe(4);
     expect(Array.from(line.geometry.getAttribute('color').array)).toEqual([
-      1, 0, 0, 0, 1, 1,
+      1, 0, 0, 1, 0, 1, 1, 1,
     ]);
 
     syncWaveObject(
@@ -162,7 +165,7 @@ describe('milkdrop wave renderer', () => {
       makeWave({
         drawMode: 'dots',
         thickness: 1,
-        colors: [1, 0, 0, 0, 0, 1],
+        colors: [1, 0, 0, 1, 0, 0, 1, 1],
       }),
       behavior,
       helpers,
@@ -171,8 +174,57 @@ describe('milkdrop wave renderer', () => {
     const points = group.children[0] as Points;
     expect((points.material as PointsMaterial).vertexColors).toBe(true);
     expect(Array.from(points.geometry.getAttribute('color').array)).toEqual([
-      1, 0, 0, 0, 0, 1,
+      1, 0, 0, 1, 0, 0, 1, 1,
     ]);
+  });
+
+  // MilkDrop seeds a custom wave's per-point block with the wavecode's own
+  // alpha and reads it back, so a block that writes `a` sets the vertex alpha
+  // outright. Applying the wave-level alpha on top would dim it twice, and
+  // leaving the material opaque would discard it altogether.
+  test('hands per-point-alpha waves the multiplier only, and keeps them transparent', () => {
+    const helpers = makeHelpers();
+    const behavior = {
+      useLineLoopPrimitives: true,
+    } as MilkdropBackendBehavior;
+
+    const group = createWaveObject(
+      makeWave({
+        thickness: 1,
+        alpha: 0.8,
+        perPointAlpha: true,
+        colors: [1, 1, 1, 0.25, 1, 1, 1, 0.5],
+      }),
+      behavior,
+      helpers,
+      1,
+    ) as Group;
+
+    const material = (group.children[0] as Line).material as LineBasicMaterial;
+    expect(material.opacity).toBe(1);
+    expect(material.transparent).toBe(true);
+  });
+
+  test('still folds the wave alpha in when no per-point alpha was written', () => {
+    const helpers = makeHelpers();
+    const behavior = {
+      useLineLoopPrimitives: true,
+    } as MilkdropBackendBehavior;
+
+    const group = createWaveObject(
+      makeWave({
+        thickness: 1,
+        alpha: 0.8,
+        perPointAlpha: false,
+        colors: [1, 0, 0, 1, 0, 1, 0, 1],
+      }),
+      behavior,
+      helpers,
+      0.5,
+    ) as Group;
+
+    const material = (group.children[0] as Line).material as LineBasicMaterial;
+    expect(material.opacity).toBeCloseTo(0.4, 6);
   });
 
   test('keeps existing thick wave groups stable across sync updates', () => {

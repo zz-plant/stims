@@ -5,7 +5,7 @@
 /.github/ @zz-plant
 
 # Build, deploy, and CI config — historically edited 14+ times,
-# each edit risked config rot (npm→bun, deleted workflows, husky).
+# each edit risked config rot (npm→bun, deleted workflows, git hooks).
 /.github/workflows/ @zz-plant
 /scripts/build.mjs @zz-plant
 /scripts/postinstall.mjs @zz-plant
@@ -14,7 +14,8 @@
 /wrangler.site.jsonc @zz-plant
 /wrangler.cron.jsonc @zz-plant
 /wrangler.mcp.jsonc @zz-plant
-/.husky/ @zz-plant
+/lefthook.yml @zz-plant
+/.githooks/ @zz-plant
 
 # Toy implementation and metadata
 /src/js/toys/ @zz-plant

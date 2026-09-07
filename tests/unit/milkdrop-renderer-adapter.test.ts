@@ -21,7 +21,6 @@ import {
   WebGLRenderer,
   ZeroFactor,
 } from 'three';
-// @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { NodeMaterial } from 'three/webgpu';
 import { getFeedbackBackendProfile } from '../../src/js/milkdrop/backend-behavior';
 import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
@@ -852,9 +851,11 @@ shapecode_0_tex_ang=0.35
     expect(batchedFill?.material?.fragmentShader).toContain(
       'textureAspectY / max(vTextureZoom, 0.0001)',
     );
+    // useGradient is 1 even with no r2/a2 declared: MilkDrop always
+    // interpolates the fill toward the rim color, whose default alpha is 0.
     expect(
       getFloat32AttributeArray(batchedFill, 'instanceFillControl'),
-    ).toEqual(Float32Array.from([0, 1, 0.8, 0.35]));
+    ).toEqual(Float32Array.from([1, 1, 0.8, 0.35]));
     expect(meshFills).toHaveLength(0);
   });
 
@@ -2148,12 +2149,11 @@ video_echo_orientation=3
   );
 
   test.each(['webgl', 'webgpu'] as const)(
-    'drops the echo orientation flip for presets with a warp shader on %s',
+    'keeps the echo orientation for warp-shader presets on %s',
     (backend) => {
-      // A preset whose feedback is driven by a warp shader must not get the
-      // legacy echo orientation flip: the direct warp path never applies it,
-      // so applying it in the legacy fallback would rotate the whole previous
-      // frame 180° and render the theme upside down.
+      // Echo reaches the display stage as a second, reoriented draw, so a
+      // warp-shader preset keeps its orientation: the flip never touches the
+      // accumulator the warp shader feeds.
       const preset = compileMilkdropPresetSource(
         `
 title=Feedback Orientation Gating
@@ -2203,9 +2203,13 @@ shader_body {
         }),
       ).toBe(true);
 
+      // Echo is a display-stage blend now, so the orientation flip only
+      // reorients the echoed copy and is safe for warp-shader presets. It
+      // was suppressed while the flip was applied to the accumulator, where
+      // it rotated the carried history and flipped whole shader themes.
       expect(compositeStates[0]).toMatchObject({
         videoEchoAlpha: 0.42,
-        videoEchoOrientation: 0,
+        videoEchoOrientation: 3,
       });
     },
   );
@@ -3178,7 +3182,16 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       );
     const material = line.material as ShaderMaterial;
 
-    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+    // The seed and the crossfade weight are separate uniforms: `alpha` seeds
+    // the per-point block's `a` (which the block may overwrite outright), and
+    // the blend weight is applied after it. Their product is the 0.07 the
+    // single folded uniform used to carry.
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.2, 6);
+    expect(material.uniforms.waveAlphaMultiplier.value).toBeCloseTo(0.35, 6);
+    expect(
+      material.uniforms.alpha.value *
+        material.uniforms.waveAlphaMultiplier.value,
+    ).toBeCloseTo(0.07, 6);
   });
 
   test('keeps interpolated shape blend alpha anchored to the previous frame on webgl', async () => {
@@ -3363,10 +3376,154 @@ shapecode_0_a=0.9
       | undefined;
 
     expect(blendShapeGroup.children).toHaveLength(2);
-    expect(extraFill?.material).toBeInstanceOf(MeshBasicMaterial);
+    // Fills use the gradient shader now that every shape carries a rim
+    // color; the invariant under test is that the previous-only shape stays
+    // visible at the blend-scaled alpha.
+    expect(extraFill?.material).toBeInstanceOf(ShaderMaterial);
     expect(
-      (extraFill?.material as MeshBasicMaterial | undefined)?.opacity,
+      (extraFill?.material as ShaderMaterial | undefined)?.uniforms
+        ?.primaryAlpha?.value,
     ).toBeCloseTo(0.175, 6);
+  });
+
+  test('draws both lanes when one custom wave is GPU-routed and another is not', () => {
+    // wavecode_0 draws dots, which the procedural path does not do, so it
+    // stays on the CPU path. wavecode_1 draws lines and lowers cleanly, so it
+    // goes to the GPU. The adapter used to pick ONE path for the whole group
+    // and never draw the other wave at all — 205 bundled presets mix the two.
+    const preset = compileMilkdropPresetSource(
+      `
+title=Mixed Custom Wave Routing
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=1
+wavecode_0_x=0.35
+wavecode_0_y=0.55
+wavecode_0_r=1
+wavecode_0_g=0.2
+wavecode_0_b=0.2
+wavecode_0_a=0.6
+wavecode_1_enabled=1
+wavecode_1_samples=40
+wavecode_1_usedots=0
+wavecode_1_x=0.55
+wavecode_1_y=0.45
+wavecode_1_r=0.2
+wavecode_1_g=1
+wavecode_1_b=0.4
+wavecode_1_a=0.8
+wave_1_per_point1=x = x + value1 * 0.1;
+      `.trim(),
+      { id: 'mixed-custom-wave-routing' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ frame: 4, time: 0.2 }));
+
+    // The GPU path takes only the line wave.
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    // The VM publishes BOTH waves on the CPU list — a backend with no
+    // procedural path has to be able to draw the complete set — and flags the
+    // one that also went to the GPU so a both-lane renderer can skip it.
+    expect(frameState.customWaves).toHaveLength(2);
+    const dotsWave = frameState.customWaves.find((w) => w.drawMode === 'dots');
+    const lineWave = frameState.customWaves.find((w) => w.drawMode === 'line');
+    expect(dotsWave?.proceduralBacked).toBeFalsy();
+    expect(dotsWave?.positions.length ?? 0).toBeGreaterThan(0);
+    expect(lineWave?.proceduralBacked).toBe(true);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgpu',
+      batcher: null,
+      preset,
+    });
+    adapter.attach();
+    adapter.render({ frameState, blendState: null });
+
+    const [proceduralLane, cpuLane] = (
+      adapter as unknown as {
+        customWaveGroup: { children: Array<{ children: unknown[] }> };
+      }
+    ).customWaveGroup.children;
+
+    // Neither lane is empty: this is the assertion the old all-or-nothing
+    // switch could not satisfy. And the CPU lane holds exactly ONE child —
+    // the dots wave — not two: drawing the GPU-backed wave here as well would
+    // double its brightness and its injection into the feedback loop, from
+    // stale pooled positions the VM never filled this frame.
+    expect(proceduralLane?.children ?? []).toHaveLength(1);
+    expect(cpuLane?.children ?? []).toHaveLength(1);
+  });
+
+  test('does not redraw a wave on the CPU lane after it moves to the GPU lane', () => {
+    // `usedots` is a per-frame value, so a wave can be CPU-routed on one frame
+    // (dots, which the procedural path cannot draw) and GPU-routed on the
+    // next. The VM pools its visual object across frames, so the CPU-side
+    // `positions` from the dots frame are still sitting there on the line
+    // frame. Drawing both lists unfiltered would then paint that stale
+    // geometry underneath the correct GPU wave — doubling the wave's
+    // contribution to the additive blend and to the feedback loop.
+    const preset = compileMilkdropPresetSource(
+      `
+title=Custom Wave Changes Routing Mid-Preset
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=1
+wavecode_0_x=0.5
+wavecode_0_y=0.5
+wavecode_0_r=1
+wavecode_0_g=0.5
+wavecode_0_b=0.2
+wavecode_0_a=0.8
+wave_0_per_frame1=usedots = below(frame, 5);
+wave_0_per_point1=x = x + value1 * 0.1;
+      `.trim(),
+      { id: 'custom-wave-routing-flip' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgpu',
+      batcher: null,
+      preset,
+    });
+    adapter.attach();
+
+    // Frame 1: usedots is on, so the wave is CPU-routed and its pooled
+    // positions get filled in.
+    const dotsFrame = vm.step(makeSignals({ frame: 1, time: 0.1 }));
+    expect(dotsFrame.customWaves[0]?.drawMode).toBe('dots');
+    expect(dotsFrame.customWaves[0]?.positions.length ?? 0).toBeGreaterThan(0);
+    adapter.render({ frameState: dotsFrame, blendState: null });
+
+    // Frame 6: usedots is off, so the same wave now routes to the GPU — while
+    // the CPU list still carries it, positions and all.
+    const lineFrame = vm.step(makeSignals({ frame: 6, time: 0.6 }));
+    expect(lineFrame.gpuGeometry.customWaves).toHaveLength(1);
+    expect(lineFrame.customWaves[0]?.proceduralBacked).toBe(true);
+    expect(lineFrame.customWaves[0]?.positions.length ?? 0).toBeGreaterThan(0);
+    adapter.render({ frameState: lineFrame, blendState: null });
+
+    const [proceduralLane, cpuLane] = (
+      adapter as unknown as {
+        customWaveGroup: { children: Array<{ children: unknown[] }> };
+      }
+    ).customWaveGroup.children;
+
+    // The GPU lane draws it; the CPU lane must have let go of it.
+    expect(proceduralLane?.children ?? []).toHaveLength(1);
+    expect(cpuLane?.children ?? []).toHaveLength(0);
   });
 
   test('keeps previous-only procedural custom waves visible when the current frame has fewer slots', async () => {
@@ -3452,20 +3609,29 @@ wavecode_0_a=0.8
       },
     });
 
-    const blendCustomWaveGroup = (
+    // The blend group holds two lanes — [procedural, cpu] — because custom
+    // waves route per wave; the procedural lane is the first.
+    const blendProceduralLane = (
       adapter as unknown as {
         blendCustomWaveGroup: {
-          children: Array<{ material?: ShaderMaterial }>;
+          children: Array<{ children: Array<{ material?: ShaderMaterial }> }>;
         };
       }
-    ).blendCustomWaveGroup;
-    const extraBlendedWave = blendCustomWaveGroup.children[1];
+    ).blendCustomWaveGroup.children[0];
+    const extraBlendedWave = blendProceduralLane?.children[1];
 
-    expect(blendCustomWaveGroup.children).toHaveLength(2);
+    expect(blendProceduralLane?.children).toHaveLength(2);
     expect(extraBlendedWave?.material).toBeInstanceOf(NodeMaterial);
+    const blendedUniforms = (
+      extraBlendedWave?.material as ShaderMaterial | undefined
+    )?.uniforms;
+    // Seed times crossfade weight, split across two uniforms so a per-point
+    // block that overwrites `a` cannot swallow the fade.
+    expect(blendedUniforms?.alpha.value).toBeCloseTo(0.4, 6);
+    expect(blendedUniforms?.waveAlphaMultiplier.value).toBeCloseTo(0.35, 6);
     expect(
-      (extraBlendedWave?.material as ShaderMaterial | undefined)?.uniforms.alpha
-        .value,
+      (blendedUniforms?.alpha.value ?? 0) *
+        (blendedUniforms?.waveAlphaMultiplier.value ?? 0),
     ).toBeCloseTo(0.14, 6);
   });
 
@@ -3692,7 +3858,7 @@ wavecode_0_thick=4
       children: Array<{ material?: unknown }>;
     };
     const customWaveGroup = root.children[3] as {
-      children: Array<{ material?: unknown }>;
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
     };
     const motionVectorGroup = root.children[8] as {
       children: Array<{ children?: Array<{ material?: unknown }> }>;
@@ -3704,7 +3870,10 @@ wavecode_0_thick=4
     expect(frameState.gpuGeometry.motionVectorField).toBeNull();
     expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
     expect(mainWaveGroup.children).toHaveLength(0);
-    expect(customWaveGroup.children).toHaveLength(0);
+    // Both custom-wave lanes are empty: this preset batches its waves.
+    for (const lane of customWaveGroup.children) {
+      expect(lane.children ?? []).toHaveLength(0);
+    }
     expect(motionVectorGroup.children[0]?.children ?? []).toHaveLength(0);
 
     const tree = scene.children[0] as RenderTreeNode;

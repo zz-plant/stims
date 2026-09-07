@@ -24,14 +24,14 @@ function ErrorButton({
 
 export class StimsErrorBoundary extends Component<
   { children: ReactNode },
-  { error: Error | null }
+  { error: Error | null; copyStatus: 'idle' | 'copied' | 'failed' }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, copyStatus: 'idle' };
   }
   static getDerivedStateFromError(error: Error) {
-    return { error };
+    return { error, copyStatus: 'idle' as const };
   }
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Stims crashed:', error, info);
@@ -52,9 +52,48 @@ export class StimsErrorBoundary extends Component<
               Stims encountered an issue. Reload to retry, or try compatibility
               mode.
             </p>
+            {this.state.error && (
+              <details className="stims-shell__error-details">
+                <summary className="stims-shell__error-details-summary">
+                  Error details ({this.state.error.name})
+                </summary>
+                <pre className="stims-shell__error-stack">
+                  {this.state.error.stack?.trim() ||
+                    `${this.state.error.name}: ${this.state.error.message}`}
+                </pre>
+              </details>
+            )}
             <div className="stims-shell__error-actions">
               <ErrorButton primary onClick={() => window.location.reload()}>
                 Reload page
+              </ErrorButton>
+              <ErrorButton
+                onClick={async () => {
+                  const error = this.state.error;
+                  const clipboard = globalThis.navigator?.clipboard;
+                  if (!error || !clipboard?.writeText) {
+                    this.setState({ copyStatus: 'failed' });
+                    return;
+                  }
+                  const text =
+                    error.stack?.trim() || `${error.name}: ${error.message}`;
+                  try {
+                    await clipboard.writeText(text);
+                    this.setState({ copyStatus: 'copied' });
+                  } catch (err) {
+                    this.setState({ copyStatus: 'failed' });
+                    console.warn(
+                      'Could not copy error details to clipboard:',
+                      err,
+                    );
+                  }
+                }}
+              >
+                {this.state.copyStatus === 'copied'
+                  ? 'Copied error details'
+                  : this.state.copyStatus === 'failed'
+                    ? 'Copy unavailable'
+                    : 'Copy error details'}
               </ErrorButton>
               <ErrorButton
                 onClick={() => {
@@ -62,13 +101,20 @@ export class StimsErrorBoundary extends Component<
                     window.sessionStorage.removeItem(
                       'stims:webgpu-compat-override',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn(
+                      'Failed to clear sessionStorage override:',
+                      error,
+                    );
+                  }
                   try {
                     window.localStorage.setItem(
                       'stims:compatibility-mode',
                       'true',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn('Failed to enable compatibility mode:', error);
+                  }
                   window.location.reload();
                 }}
               >
@@ -88,7 +134,12 @@ export class StimsErrorBoundary extends Component<
                     window.sessionStorage.removeItem(
                       'stims:webgpu-compat-override',
                     );
-                  } catch {}
+                  } catch (error) {
+                    console.warn(
+                      'Failed to reset localStorage settings:',
+                      error,
+                    );
+                  }
                   window.location.href = '/';
                 }}
               >

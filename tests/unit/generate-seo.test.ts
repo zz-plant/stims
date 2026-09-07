@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { isAllowedDiscoverSlug } from '../../functions/discover-slugs.ts';
+import {
+  isAllowedAuthorSlug,
+  isAllowedDiscoverSlug,
+} from '../../functions/discover-slugs.ts';
 import {
   buildSitemapChunk,
   buildSitemapEntries,
@@ -26,8 +29,11 @@ describe('generate-seo sitemap routes', () => {
     // middleware allowlist so the sitemap never advertises a slug the edge
     // won't rewrite.
     for (const path of canonicalPaths.slice(2)) {
-      expect(path.startsWith('/discover/')).toBe(true);
-      expect(isAllowedDiscoverSlug(path.slice('/discover/'.length))).toBe(true);
+      const allowed = path.startsWith('/discover/')
+        ? isAllowedDiscoverSlug(path.slice('/discover/'.length))
+        : path.startsWith('/author/') &&
+          isAllowedAuthorSlug(path.slice('/author/'.length));
+      expect(allowed).toBe(true);
     }
   });
 
@@ -51,9 +57,9 @@ describe('generate-seo sitemap routes', () => {
         imageTitle: 'Compatibility and Performance | Stims',
       }),
     ]);
-    for (const entry of entries.slice(2)) {
-      expect(entry.loc.startsWith('https://toil.fyi/discover/')).toBe(true);
-    }
+    expect(
+      entries.some((entry) => entry.loc === 'https://toil.fyi/author/geiss'),
+    ).toBe(true);
   });
 
   test('renders image metadata without listing the redirect alias', () => {

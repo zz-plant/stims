@@ -1,3 +1,8 @@
+/**
+ * Unified Input System — normalizes multi-touch pointers, mouse gestures, keyboard strokes,
+ * and gamepad axes into a single unified input stream with gesture recognition.
+ */
+
 import type { FrequencyAnalyser } from './audio-handler';
 
 export type InputSource = 'none' | 'pointer' | 'keyboard' | 'gamepad';

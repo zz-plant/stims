@@ -11,14 +11,17 @@ html.light body[data-page="workspace"] {
   background: linear-gradient(180deg, #f4efe4 0%, #e5ded0 100%);
 }
 
+/* The home stage is NOT repainted for the light theme.
+   It used to take a cream gradient, a grey border and a drop shadow here,
+   which turned the one thing this page exists to show — a full-screen,
+   permanently dark MilkDrop render — into a dark rectangle sitting on a pale
+   card, reading as an embedded video rather than as the product. tokens.css
+   already states the rule this follows: the stage is a dark surface in every
+   theme, which is why the on-stage ink palette never flips either. */
 html.light .stims-shell__workspace[data-mode="home"],
 html.light .stims-shell__stage-frame[data-mode="home"] {
-  color: var(--stims-ink);
-  background: linear-gradient(145deg, #f7f2e9, #e8e1d5);
-  border-color: #a9b5ba;
-  box-shadow:
-    0 18px 42px rgba(35, 48, 56, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 html.light
@@ -69,10 +72,6 @@ html.light .stims-shell__preset-card {
   background: #fffaf0;
   color: var(--stims-ink);
   box-shadow: 0 8px 18px rgba(35, 48, 56, 0.08);
-}
-
-html.light .stims-shell__launch-cta {
-  color: #fffaf0;
 }
 
 html.light .stims-shell__launch-source-dock .stims-shell__youtube-primary,
@@ -401,4 +400,69 @@ html.light [data-contrast="high"] .stims-shell,
 [data-contrast="high"].light [data-shell-dialog] :focus-visible {
   outline: 3px solid var(--stims-cool);
   outline-offset: 3px;
+}
+
+/* ── The launch hero is on the stage, in every theme ──────────────────
+ *
+ * app-shell.css pins the hero's whole palette — inks and surfaces — to the
+ * on-stage tokens, because the hero's background is a live MilkDrop frame
+ * rather than the page. The light rules above are page chrome rules: they
+ * paint panels, sheets and cards cream so they read on a cream page. Applied
+ * inside the hero they did the opposite of their purpose, giving the audio
+ * source cards and the YouTube field a #fffaf0 fill while the text on them
+ * stayed near-white — a row of blank slabs with invisible labels.
+ *
+ * This block is last in the file so it wins, and restates one rule rather
+ * than restyling each control: inside the hero, surfaces come from the stage
+ * palette. Panels, sheets and settings outside the hero are untouched.
+ */
+html.light .stims-shell__launch .stims-shell__source-card,
+html.light .stims-shell__launch .stims-shell__youtube-primary,
+html.light .stims-shell__launch .stims-shell__launch-recommendation,
+html.light .stims-shell__launch .stims-shell__launch-source-dock,
+html.light .stims-shell__launch .stims-shell__starter-card {
+  border-color: var(--stims-line);
+  background: var(--card-bg);
+  color: var(--stims-ink);
+  box-shadow: none;
+}
+
+html.light .stims-shell__launch .stims-shell__source-card:hover:not(:disabled),
+html.light .stims-shell__launch .stims-shell__starter-card:hover,
+html.light .stims-shell__launch .stims-shell__launch-recommendation:hover {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill-hover);
+  box-shadow: none;
+}
+
+html.light .stims-shell__launch .stims-shell__input,
+html.light .stims-shell__launch .stims-shell__select {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-panel);
+  color: var(--stims-ink-strong);
+  box-shadow: none;
+}
+
+html.light .stims-shell__launch .stims-shell__input::placeholder {
+  color: var(--stims-muted);
+  opacity: 1;
+}
+
+html.light .stims-shell__launch .stims-shell__input:focus,
+html.light .stims-shell__launch .stims-shell__select:focus {
+  border-color: var(--stims-cool);
+  background: var(--stims-panel-strong);
+  box-shadow: 0 0 0 3px var(--stims-accent-soft);
+}
+
+/* A disabled control should recede. On the dark stage the light theme's
+   disabled fill (#e2e7e6 at full opacity) was brighter than anything around
+   it, so "Load" — unavailable until a link is pasted — was the most eye-
+   catching element in the audio section. */
+html.light .stims-shell__launch .cta-button:disabled,
+html.light .stims-shell__launch .cta-button.primary:disabled {
+  border-color: var(--stims-line);
+  background: var(--stims-control-fill);
+  color: var(--stims-muted);
+  opacity: 1;
 }
