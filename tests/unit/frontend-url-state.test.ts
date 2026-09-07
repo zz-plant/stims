@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildCanonicalUrl,
+  buildPresetCodeHash,
+  buildRemixShareUrl,
   buildSessionRouteSearch,
+  decodePresetCodeFromHash,
   normalizeCollectionTag,
   parsePlainSearch,
   readSessionRouteState,
@@ -287,15 +290,52 @@ describe('frontend url state', () => {
   });
 
   test('encodes and decodes preset source code in url hash fragments', () => {
-    const {
-      buildPresetCodeHash,
-      decodePresetCodeFromHash,
-    } = require('../../src/js/frontend/url-state.ts');
     const milkSource = '[preset00]\nfRating=5.000\nwave_r=0.5';
     const hash = buildPresetCodeHash(milkSource);
 
     expect(hash).toContain('#code=');
     const decoded = decodePresetCodeFromHash(hash);
     expect(decoded).toBe(milkSource);
+  });
+
+  test('writes a live-edited source into a #code= hash that round-trips', () => {
+    const remixed = '[preset00]\nfRating=9.900\nwave_r=0.9';
+    const url = buildRemixShareUrl(
+      'https://toil.fyi/?preset=signal-bloom&audio=demo',
+      remixed,
+    );
+
+    const parsed = new URL(url);
+    expect(parsed.pathname).toBe('/');
+    expect(parsed.search).toBe('?preset=signal-bloom&audio=demo');
+    expect(decodePresetCodeFromHash(parsed.hash)).toBe(remixed);
+  });
+
+  test('replaces a stale #code= hash when the source changes again', () => {
+    const first = buildRemixShareUrl(
+      'https://toil.fyi/?preset=signal-bloom',
+      'a',
+    );
+    const second = buildRemixShareUrl(first, 'b');
+
+    const parsed = new URL(second);
+    expect(decodePresetCodeFromHash(parsed.hash)).toBe('b');
+  });
+
+  test('removes the #code= hash when the session is clean again', () => {
+    const clean = buildRemixShareUrl(
+      'https://toil.fyi/?preset=signal-bloom#code=whatever',
+      null,
+    );
+
+    const parsed = new URL(clean);
+    expect(parsed.hash).toBe('');
+    expect(parsed.search).toBe('?preset=signal-bloom');
+  });
+
+  test('leaves the url untouched when a source cannot be latin-1 encoded', () => {
+    const href = 'https://toil.fyi/?preset=signal-bloom';
+    // btoa throws on non-Latin-1 text; the remix must not wipe the session.
+    expect(buildRemixShareUrl(href, '\u{1F600}')).toBe(href);
   });
 });
