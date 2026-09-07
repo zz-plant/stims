@@ -78,11 +78,9 @@ const browseScrollMemory: { grid: number; list: number } = { grid: 0, list: 0 };
 
 function readSortMode(): SortMode {
   try {
-    return (
-      (localStorage.getItem('stims:browse-sort') as SortMode) ?? 'relevance'
-    );
+    return (localStorage.getItem('stims:browse-sort') as SortMode) ?? 'curated';
   } catch {
-    return 'relevance';
+    return 'curated';
   }
 }
 
@@ -738,6 +736,7 @@ export function BrowseSheetPanel({
               writeStored('stims:browse-sort', next);
             }}
           >
+            <option value="curated">Curated first</option>
             <option value="relevance">Recommended</option>
             <option value="title">Title</option>
             <option value="author">Author</option>

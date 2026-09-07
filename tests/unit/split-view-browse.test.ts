@@ -179,6 +179,39 @@ describe('sortBrowseEntries', () => {
     expect(ids('relevance')).toEqual(['alpha', 'beta', 'gamma']);
   });
 
+  test('curated lifts curated picks and sinks unranked presets', () => {
+    const curated = [
+      makePreset({ id: 'community', title: 'Community', curatedRank: 10_041 }),
+      makePreset({ id: 'picked', title: 'Picked', curatedRank: 4 }),
+      makePreset({ id: 'unranked', title: 'Unranked' }),
+    ];
+    const idsInOrder = sortBrowseEntries(curated, 'curated', 0).map(
+      (entry) => entry.id,
+    );
+    expect(idsInOrder).toEqual(['picked', 'community', 'unranked']);
+  });
+
+  test('curated prefers higher measured quality within one rank', () => {
+    const ranked = [
+      makePreset({
+        id: 'loud',
+        title: 'Loud',
+        curatedRank: 9,
+        quality: { score: 0.8 },
+      }),
+      makePreset({
+        id: 'subtle',
+        title: 'Subtle',
+        curatedRank: 9,
+        quality: { score: 0.55 },
+      }),
+    ];
+    expect(sortBrowseEntries(ranked, 'curated', 0).map((e) => e.id)).toEqual([
+      'loud',
+      'subtle',
+    ]);
+  });
+
   test('title and author sort alphabetically on their own field', () => {
     expect(ids('title')).toEqual(['alpha', 'beta', 'gamma']);
     expect(ids('author')).toEqual(['beta', 'gamma', 'alpha']);
