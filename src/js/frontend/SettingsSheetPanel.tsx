@@ -6,7 +6,9 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   applyAccessibility,
+  clampStageBrightness,
   getActiveAccessibilityPreference,
+  MIN_STAGE_BRIGHTNESS,
   setAccessibilityPreference,
   type TextScale,
 } from '../core/accessibility-preferences.ts';
@@ -188,6 +190,42 @@ function AccessibilitySection({
           setAccessibilityPreference({ highContrast });
         }}
       />
+      {/* The three stage-comfort controls, gathered and labelled by what
+          they actually promise. They were previously interleaved with the
+          chrome settings above, which put a hard limit and a best-effort
+          mitigation side by side with nothing distinguishing them. */}
+      <p className="ctl-row__hint" id="comfort-note">
+        Brightness is a hard ceiling: it applies over every preset, on either
+        renderer. Reduce flashing is a mitigation, not a guarantee — it filters
+        the presets that have been measured and dims strobing as it is detected.
+      </p>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="a11y-stage-brightness">
+            Stage brightness
+          </label>
+          <span className="ctl-row__hint">
+            Caps how bright the visuals can get. Carries across every preset.
+          </span>
+        </span>
+        <input
+          id="a11y-stage-brightness"
+          type="range"
+          min={MIN_STAGE_BRIGHTNESS}
+          max={1}
+          step={0.05}
+          value={prefs.stageBrightness}
+          aria-describedby="comfort-note"
+          aria-valuetext={`${Math.round(prefs.stageBrightness * 100)} percent`}
+          onChange={(event) => {
+            const stageBrightness = clampStageBrightness(
+              Number(event.target.value),
+            );
+            setPrefs((p) => ({ ...p, stageBrightness }));
+            setAccessibilityPreference({ stageBrightness });
+          }}
+        />
+      </div>
       <SwitchRow
         label="Freeze visuals"
         hint="Holds the current frame still so you can inspect it or reduce motion."

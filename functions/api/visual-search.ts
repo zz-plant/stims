@@ -1,3 +1,7 @@
+import {
+  clampVisualSearchResults,
+  DEFAULT_VISUAL_SEARCH_RESULTS,
+} from '../../src/js/core/edge-contracts.ts';
 import { enforceAiRateLimit } from './_ai-guard.ts';
 
 interface Env {
@@ -81,11 +85,18 @@ export async function onRequest(context: { request: Request; env: Env }) {
     const body = (await request.json()) as {
       description: string;
       embedOnly?: boolean;
+      topK?: number;
     };
 
     if (!body.description || body.description.length < 3) {
       return new Response('Description too short', { status: 400 });
     }
+
+    // Clamped here, not trusted: this endpoint is public and Vectorize
+    // charges per queried vector.
+    const resultCount = clampVisualSearchResults(
+      body.topK ?? DEFAULT_VISUAL_SEARCH_RESULTS,
+    );
 
     let queryEmbedding: number[] = [];
 
@@ -117,7 +128,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
     if (env.VECTOR_INDEX) {
       try {
         const vResult = await env.VECTOR_INDEX.query(queryEmbedding, {
-          topK: 5,
+          topK: resultCount,
           // Long preset slugs are stored under hashed vector ids; the real
           // preset id lives in metadata (see src/js/milkdrop/vectorize-id.ts).
           returnMetadata: 'all',
@@ -173,12 +184,15 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
     scored.sort((a, b) => b.score - a.score);
 
-    return new Response(JSON.stringify({ results: scored.slice(0, 5) }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+    return new Response(
+      JSON.stringify({ results: scored.slice(0, resultCount) }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
       },
-    });
+    );
   } catch (error) {
     return new Response(
       JSON.stringify({

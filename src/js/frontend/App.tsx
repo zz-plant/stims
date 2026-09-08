@@ -98,6 +98,7 @@ const NewHomePage = lazy(() =>
   })),
 );
 
+import { togglePresetLock } from '../core/preset-lock.ts';
 import { bindMidiToMilkdropControls } from './performance-hardware-controls.ts';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
@@ -108,6 +109,7 @@ import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
   openRecordPanel,
+  playNearbyPreset,
   presentToExternalDisplayAction,
   setTransition,
   startAudioSource,
@@ -121,7 +123,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { getToolLabel } from './workspace-helpers.ts';
+import { getToolLabel, recentlyOpenedPresetIds } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -531,6 +533,49 @@ function StimsWorkspaceAppShell() {
         label: 'Find similar presets',
         keywords: ['match', 'sound', 'look'],
         run: () => void engine.handleVisualSearch(),
+      },
+      {
+        // The small step next to next-preset's big one. Shares its body with
+        // the dock's Nearby button (workspace-actions.ts) so both mean the
+        // same thing.
+        id: 'nearby-preset',
+        group: 'Presets',
+        label: 'Nearby preset (looks like this one)',
+        keywords: ['similar', 'like', 'neighbour', 'neighbor'],
+        run: () =>
+          void playNearbyPreset({
+            canvas:
+              uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
+            currentPresetId:
+              engineBridgeRef.current.selectedPreset?.id ??
+              engineBridgeRef.current.featuredPreset?.id ??
+              null,
+            recentPresetIds: recentlyOpenedPresetIds(
+              engineBridgeRef.current.catalog,
+            ),
+            isKnownPreset: (presetId) =>
+              engineBridgeRef.current.catalog.some(
+                (entry) => entry.id === presetId,
+              ),
+            play: (presetId) =>
+              engineBridgeRef.current.handlePresetSelection(presetId),
+            announce: uiRef.current.setStatusMessage,
+          }),
+      },
+      {
+        // Pauses auto-advance without touching the autoplay preference, so
+        // unlocking returns whatever the visitor had set. The MilkDrop
+        // keybinding layer's `L` flips the same store.
+        id: 'toggle-preset-lock',
+        group: 'Presets',
+        label: 'Stay on this preset',
+        keywords: ['lock', 'hold', 'stay', 'pin'],
+        run: () =>
+          uiRef.current.setStatusMessage(
+            togglePresetLock()
+              ? 'Staying on this preset. Auto-advance is paused.'
+              : 'Auto-advance on.',
+          ),
       },
       {
         id: 'open-editor',

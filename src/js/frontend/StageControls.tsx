@@ -11,9 +11,15 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/StageControls.module.css';
+import {
+  isPresetLocked,
+  subscribePresetLock,
+  togglePresetLock,
+} from '../core/preset-lock.ts';
 import { splitPresetDisplay } from '../milkdrop/preset-credit.ts';
 import { describeShaderApproximation } from '../milkdrop/shader-execution-mode.ts';
 import type { UiIconName } from '../ui/icon-library.ts';
+import { AudioStatusControl } from './AudioStatusControl.tsx';
 import {
   getAudioEnergy,
   subscribeAudioEnergy,
@@ -31,6 +37,7 @@ import { UiIcon } from './UiIcon.tsx';
 import {
   endWatchParty,
   openRecordPanel,
+  playNearbyPreset,
   presentToExternalDisplayAction,
   setTransition,
   startAudioSource,
@@ -39,6 +46,7 @@ import {
   togglePanel,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+import { recentlyOpenedPresetIds } from './workspace-helpers.ts';
 
 type MenuItem = {
   icon: UiIconName;
@@ -162,6 +170,15 @@ export function StageControls({
   const syncSession = useSyncExternalStore(
     subscribeSyncSession,
     getSyncSessionState,
+  );
+
+  // Read through the store rather than local state: `L` on the MilkDrop
+  // keybinding layer toggles the same flag, and a control that only tracked
+  // its own clicks would sit there showing the wrong thing.
+  const presetLocked = useSyncExternalStore(
+    subscribePresetLock,
+    isPresetLocked,
+    () => false,
   );
   const hostingRoom =
     syncSession.role === 'host' && syncSession.status !== 'idle'
@@ -306,6 +323,33 @@ export function StageControls({
     void engine.handlePreviousPreset();
   }, [engine, signalActivity]);
 
+  // Nearby is the small step in the wandering trio: Back, Nearby, Surprise
+  // me. It reuses the visual-embedding index behind the finder's "by look"
+  // tab, so "similar" means one thing across the app.
+  const handleNearby = useCallback(() => {
+    signalActivity();
+    pulseHaptic(10);
+    void playNearbyPreset({
+      canvas: ui.stageRef.current?.querySelector('canvas') ?? null,
+      currentPresetId,
+      recentPresetIds: recentlyOpenedPresetIds(engine.catalog),
+      isKnownPreset: (presetId) =>
+        engine.catalog.some((entry) => entry.id === presetId),
+      play: (presetId) => engine.handlePresetSelection(presetId),
+      announce: ui.setStatusMessage,
+    });
+  }, [engine, ui, currentPresetId, signalActivity]);
+
+  const handleToggleLock = useCallback(() => {
+    signalActivity();
+    pulseHaptic(10);
+    ui.setStatusMessage(
+      togglePresetLock()
+        ? 'Staying on this preset. Auto-advance is paused.'
+        : 'Auto-advance on.',
+    );
+  }, [ui, signalActivity]);
+
   const handleBrowse = useCallback(() => {
     signalActivity();
     pulseHaptic(10);
@@ -371,6 +415,18 @@ export function StageControls({
       label: 'Performance controls',
       actionId: 'perform-pin',
       action: () => run(() => openPerformPicker()),
+    },
+    {
+      // The behaviour is as old as the MilkDrop keybindings and has always
+      // been reachable by pressing L; what it never had was anything on
+      // screen, so it could only be used by someone who already knew. It
+      // holds off auto-advance without touching the autoplay preference, so
+      // unlocking returns you to whatever you had set.
+      icon: 'pin' as const,
+      label: presetLocked ? 'Stop staying here' : 'Stay here',
+      actionId: 'toggle-preset-lock',
+      action: () => run(() => handleToggleLock()),
+      active: presetLocked,
     },
     {
       // Queueing is a mid-set verb — you spot something while browsing and
@@ -603,7 +659,7 @@ export function StageControls({
               }
             />
           ) : null}
-          <span className={styles.energyBar} aria-hidden="true" />
+          <AudioStatusControl />
           <button
             type="button"
             className={styles.navBtn}
@@ -616,6 +672,25 @@ export function StageControls({
           >
             <UiIcon
               name="arrow-left"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </button>
+          {/* The wandering trio reads left to right as Back, Nearby,
+              Surprise me — one step back, a small step sideways, a big step
+              anywhere. Nearby is not primary: it is the considered move, and
+              giving all three the same weight would leave the bar with no
+              answer to "what do I press?" again. */}
+          <button
+            type="button"
+            className={styles.navBtn}
+            data-action="nearby-preset"
+            aria-label="Play a preset that looks like this one"
+            title={withHint('Nearby', 'nearby-preset')}
+            aria-keyshortcuts={ariaKeyShortcutsFor('nearby-preset')}
+            onClick={handleNearby}
+          >
+            <UiIcon
+              name="nearby"
               className="stims-icon-slot stims-icon-slot--sm"
             />
           </button>
