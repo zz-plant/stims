@@ -20,6 +20,7 @@ export type ShortcutActionId =
   | 'close'
   | 'compile'
   | 'queue-add'
+  | 'preset-lock'
   | 'autoplay'
   | 'live-performance'
   | 'record'
@@ -131,6 +132,22 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     // with independently of this registry. Confirmed unused there and here.
     defaultKeys: ['A'],
     paletteActionId: 'save-preset',
+  },
+  {
+    // Documented here, dispatched elsewhere. The MilkDrop keybinding layer
+    // (runtime/ui-bridge.ts) has owned 'l' for preset lock since long before
+    // this registry existed, and it preventDefault()s, so useKeyboardShortcuts
+    // never sees the key. The entry exists so the hint resolves — the dock's
+    // "Stay here" item can print its key like every other control — and so
+    // `setReservedShellKeys` stops the canvas from claiming it.
+    //
+    // Not configurable, precisely because this registry does not dispatch it:
+    // a rebind here would move the label and leave the behaviour on 'l'.
+    id: 'preset-lock',
+    label: 'Stay on this preset (pause auto-advance)',
+    defaultKeys: ['L'],
+    configurable: false,
+    paletteActionId: 'toggle-preset-lock',
   },
   {
     id: 'quick-select',

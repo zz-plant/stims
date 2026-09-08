@@ -185,6 +185,11 @@ describe('architecture boundary rules', () => {
     ).toBe(false);
   });
 
+  // The only test here that reads every file under src/js: 121ms on an idle
+  // machine, but seconds while the suite's parallel workers compete for the
+  // disk. Under bun's 5s default this test's verdict tracked machine load
+  // rather than the architecture rules it checks, so it gets a timeout sized
+  // to the I/O it does.
   test('scans tsx files when collecting architecture violations', async () => {
     const fixturePath = workspacePath(
       'src/js/utils/__tmp-architecture-violation-fixture.tsx',
@@ -211,5 +216,5 @@ describe('architecture boundary rules', () => {
     } finally {
       await fs.rm(fixturePath, { force: true });
     }
-  });
+  }, 30_000);
 });

@@ -1,0 +1,229 @@
+/* Audio status control — the dock's "is this thing on?" affordance.
+   Same opaque-panel language as the stage menu: no decorative gradients,
+   cool accent for a live/selected state, warm reserved for focus. */
+
+.wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  margin: 0 4px 0 6px;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--ctl-ink-2);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trigger:hover {
+  color: var(--ctl-ink);
+  background: var(--ctl-fill-hover);
+}
+
+.trigger:active {
+  transform: scale(0.94);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.trigger[aria-expanded="true"] {
+  color: var(--stims-cool, #77c9ff);
+  background: var(--ctl-accent-dim);
+}
+
+/* Signal arriving: the cool accent, matching every other "this is on and
+   selected" state in the chrome. */
+.trigger[data-signal="live"] {
+  color: var(--stims-cool, #77c9ff);
+}
+
+/* Connected and silent is the one state worth a warning colour — it is the
+   only one where something the visitor chose is not doing what they expect. */
+.trigger[data-signal="silent"],
+.trigger[data-signal="awaiting-gesture"] {
+  color: var(--stims-warm, #f47a54);
+}
+
+/* ── Meter ───────────────────────────────────────────────────────────
+   The old dock energy bar, kept at its original 6x22 footprint and
+   behaviour so the dock's audio-reactive signature does not change; what
+   is new is that it now sits inside something with a name. */
+.meter {
+  position: relative;
+  flex-shrink: 0;
+  width: 4px;
+  height: 20px;
+  border-radius: var(--radius-hairline);
+  background: var(--ctl-line, rgba(255, 255, 255, 0.09));
+  overflow: hidden;
+}
+
+.meterFill {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  transform-origin: 50% 100%;
+  transform: scaleY(calc(0.08 + var(--meter, 0) * 0.92));
+  opacity: calc(0.5 + var(--meter, 0) * 0.5);
+  transition:
+    transform 0.1s ease,
+    opacity 0.1s ease;
+}
+
+/* Nothing is running, so the meter must not imply a floor of signal. */
+.trigger[data-signal="off"] .meterFill {
+  transform: scaleY(0.08);
+  opacity: 0.35;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+/* ── Popover ─────────────────────────────────────────────────────────
+   Anchored to the control rather than the dock corner: this one is about
+   the button you just pressed, unlike the overflow menu which is about the
+   whole session. */
+/* Left-aligned to the control, not centred on it. Centring put 87px of the
+   panel past the left edge of a 375px viewport — and the dock is fixed, so
+   nothing scrolls to reach it: the source list was simply unreachable on a
+   phone. The control sits at the left end of the pill, so aligning the two
+   left edges keeps the panel on screen at every width the dock supports. */
+.popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: var(--z-dock);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));
+  border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: audio-status-in 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes audio-status-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+
+  .meterFill {
+    transition: none;
+  }
+}
+
+.detail {
+  margin: 0;
+  padding: 6px 8px 8px;
+  color: var(--ctl-ink-2);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.nextStep {
+  display: block;
+  margin-top: 4px;
+  color: var(--stims-warm, #f47a54);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.09));
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--ctl-ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:hover {
+  background: var(--ctl-fill-hover);
+  color: var(--ctl-ink);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: -2px;
+}
+
+/* Same triple-encoded active state the stage menu uses — accent, inset lit
+   edge, and a check glyph — so it never rests on colour alone. */
+.item[data-active="true"] {
+  color: var(--stims-cool, #77c9ff);
+  background: var(--ctl-accent-dim);
+  box-shadow: inset 2px 0 0 var(--stims-cool, #77c9ff);
+}
+
+.item[data-active="true"]::after {
+  content: "✓" / "";
+  margin-left: auto;
+  font-weight: 700;
+}
+
+/* The dock is tight on phones; the source label carries the state there and
+   the meter alone would be ambiguous, so the word stays and the icon goes. */
+@media (max-width: 480px) {
+  .trigger {
+    padding: 0 6px;
+    gap: 4px;
+  }
+
+  .trigger > :global(.stims-icon-slot) {
+    display: none;
+  }
+}

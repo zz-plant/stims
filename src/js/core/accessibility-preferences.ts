@@ -11,7 +11,25 @@ export type AccessibilityPreference = {
    * switch before the catalog stops handing them strobing presets.
    */
   reduceFlashing: boolean;
+  /**
+   * A ceiling on stage brightness, 0.3–1.
+   *
+   * A real limit, not a hint: it is applied as a CSS filter over the
+   * presented canvas, so it holds for every preset on either backend and
+   * cannot be undone by preset code. It composes with the flash governor's
+   * own clamp (see `stage-luminance.ts`) — whichever is darker wins, because
+   * they multiply.
+   */
+  stageBrightness: number;
 };
+
+/** Below this the stage is effectively black, which is not a comfort setting. */
+export const MIN_STAGE_BRIGHTNESS = 0.3;
+
+export function clampStageBrightness(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+  return Math.min(1, Math.max(MIN_STAGE_BRIGHTNESS, value));
+}
 
 type AccessibilitySubscriber = (preference: AccessibilityPreference) => void;
 
@@ -64,6 +82,7 @@ function readFromStorage(): AccessibilityPreference {
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
       reduceFlashing: prefersReducedMotion(),
+      stageBrightness: 1,
     };
   }
   try {
@@ -78,6 +97,7 @@ function readFromStorage(): AccessibilityPreference {
         typeof parsed.reduceFlashing === 'boolean'
           ? parsed.reduceFlashing
           : prefersReducedMotion(),
+      stageBrightness: clampStageBrightness(parsed.stageBrightness),
     };
   } catch {
     return {
@@ -85,6 +105,7 @@ function readFromStorage(): AccessibilityPreference {
       highContrast: prefersMoreContrast(),
       freezeFrame: false,
       reduceFlashing: prefersReducedMotion(),
+      stageBrightness: 1,
     };
   }
 }

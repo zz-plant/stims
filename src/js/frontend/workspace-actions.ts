@@ -188,3 +188,122 @@ export function presentToExternalDisplayAction(
     }
   })();
 }
+
+/**
+ * How many recently-played presets a nearby jump refuses to land on.
+ *
+ * Named `_LIMIT` on purpose: it is the bound on the exclusion Set built
+ * below, and `check-cache-bounds.ts` reads the name to prove that set cannot
+ * grow without one.
+ *
+ * Without this, "Nearby" against a strong match is a two-preset loop: the
+ * nearest neighbour of B is usually A, so the second press walks straight
+ * back. Wandering has to keep moving even when the neighbourhood is small.
+ */
+export const NEARBY_RECENT_EXCLUSION_LIMIT = 8;
+
+/**
+ * How many matches a nearby jump asks the index for.
+ *
+ * Must exceed {@link NEARBY_RECENT_EXCLUSION_LIMIT}, or the control is
+ * guaranteed to exhaust: every candidate ends up in the recency window and
+ * there is nothing left to play. Measured on the deployed index before this
+ * existed — the endpoint's default of five against an eight-deep exclusion
+ * ran dry after four presses, which reads as a broken button rather than a
+ * small neighbourhood.
+ */
+export const NEARBY_SEARCH_RESULTS = 25;
+
+export interface NearbyPresetRequest {
+  /** The stage canvas, which is the query — nearby means "looks like this". */
+  canvas: HTMLCanvasElement | null;
+  currentPresetId: string | null;
+  /** Most-recent-first; the head of this list is what we refuse to repeat. */
+  recentPresetIds: string[];
+  /** Guards against playing an id the index knows and this build does not. */
+  isKnownPreset: (presetId: string) => boolean;
+  play: (presetId: string) => void;
+  announce: (message: string) => void;
+  /**
+   * Test seam for the index lookup.
+   *
+   * An injected function rather than `mock.module`: mocking a module in this
+   * graph and re-importing it is a known way to hang `bun test` here, and the
+   * behaviour worth testing is the filtering around the lookup, not the fetch
+   * inside it.
+   */
+  searchByFrame?: (
+    canvas: HTMLCanvasElement,
+    signal?: AbortSignal,
+    topK?: number,
+  ) => Promise<Array<{ presetId: string; score: number }>>;
+}
+
+/**
+ * Play the nearest look-alike to what is on screen.
+ *
+ * This is the small step next to shuffle's big one: same wandering loop, but
+ * the next preset is chosen for resemblance instead of at random. It rides
+ * the visual-embedding index that already backs the finder's "by look" tab,
+ * so there is one definition of "similar" in the app rather than two.
+ *
+ * The index lives behind `/api/visual-search`, which the Vite dev server does
+ * not serve — `resolveOptionalApiUrl` returns null there and `searchByFrame`
+ * throws. That is a real limit of local development, not a failure state, and
+ * it is worth saying so plainly rather than reporting a broken feature.
+ */
+export async function playNearbyPreset({
+  canvas,
+  currentPresetId,
+  recentPresetIds,
+  isKnownPreset,
+  play,
+  announce,
+  searchByFrame: injectedSearch,
+}: NearbyPresetRequest): Promise<void> {
+  if (!canvas) {
+    announce('Nothing on the stage to match yet.');
+    return;
+  }
+
+  announce('Looking for something nearby…');
+
+  // Deferred so the embedding client and its schema stay out of the initial
+  // bundle; the dock button is on screen from the first frame, and almost
+  // nobody presses it before the stage is running.
+  const searchByFrame =
+    injectedSearch ??
+    (await import('../core/services/visual-embedding.ts')).searchByFrame;
+
+  let matches: Array<{ presetId: string; score: number }>;
+  try {
+    matches = await searchByFrame(canvas, undefined, NEARBY_SEARCH_RESULTS);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    announce(
+      message.includes('dev server')
+        ? 'Nearby needs the visual search index, which the dev server does not run. It works on the deployed site.'
+        : 'Could not reach the visual search index. Try again in a moment.',
+    );
+    return;
+  }
+
+  const excluded = new Set(
+    recentPresetIds.slice(0, NEARBY_RECENT_EXCLUSION_LIMIT),
+  );
+  if (currentPresetId) excluded.add(currentPresetId);
+
+  const next = matches.find(
+    (match) => !excluded.has(match.presetId) && isKnownPreset(match.presetId),
+  );
+
+  if (!next) {
+    // A neighbourhood can genuinely run out — a preset with few look-alikes,
+    // all of them just played. Saying so beats silently doing nothing, and
+    // names the control that does still have somewhere to go.
+    announce('No new neighbours for this one. Try Surprise me.');
+    return;
+  }
+
+  play(next.presetId);
+}
