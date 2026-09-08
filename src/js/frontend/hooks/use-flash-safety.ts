@@ -7,6 +7,7 @@ import type { PresetSensoryProfile } from '../../core/sensory-profile.ts';
 import { primingHoldForProfile } from '../../core/services/flash-governor.ts';
 import {
   createFlashSafetyController,
+  createStageCompositedScale,
   createStageLuminanceApplier,
 } from '../../core/services/flash-safety.ts';
 import { setStageLuminanceChannel } from '../../core/services/stage-luminance.ts';
@@ -58,6 +59,9 @@ export function useFlashSafety(
       controller = createFlashSafetyController({
         canvas,
         applyLuminanceScale: createStageLuminanceApplier(stage),
+        // Reads the whole filter, not just the governor's share of it, so a
+        // visitor brightness ceiling does not make the loop over-clamp.
+        compositedScale: createStageCompositedScale(stage),
       });
       controllerRef.current = controller;
       controller.start();
@@ -101,23 +105,43 @@ export function useFlashSafety(
 export function useStageBrightness(stageRef: {
   current: HTMLDivElement | null;
 }) {
+  const appliedToRef = useRef<HTMLDivElement | null>(null);
+
+  // Deliberately no dependency array. The stage arrives through a ref, so
+  // there is no value whose change announces it — a version of this keyed on
+  // [stageRef] ran exactly once, and on any commit order where the stage
+  // mounts later it found null and never applied the ceiling again for the
+  // rest of the session. That is a silent failure of a setting the
+  // preference calls a real limit rather than a hint.
+  //
+  // Re-checking each commit is cheap: setStageLuminanceChannel early-returns
+  // when the channel has not moved, so the steady state is one comparison.
   useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
-
-    const apply = (scale: number) =>
-      setStageLuminanceChannel(stage, 'ceiling', scale);
-
-    apply(getActiveAccessibilityPreference().stageBrightness);
-    const unsubscribe = subscribeToAccessibilityPreference((preference) =>
-      apply(preference.stageBrightness),
+    appliedToRef.current = stage;
+    setStageLuminanceChannel(
+      stage,
+      'ceiling',
+      getActiveAccessibilityPreference().stageBrightness,
     );
+  });
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAccessibilityPreference((preference) => {
+      const stage = stageRef.current ?? appliedToRef.current;
+      if (!stage) return;
+      setStageLuminanceChannel(stage, 'ceiling', preference.stageBrightness);
+    });
 
     return () => {
       unsubscribe();
       // Leaving the ceiling engaged on a stage this hook no longer owns
-      // would dim a canvas nothing is watching.
-      apply(1);
+      // would dim a canvas nothing is watching. Released against the stage we
+      // actually wrote to: by teardown the ref may already be null.
+      const stage = appliedToRef.current;
+      if (stage) setStageLuminanceChannel(stage, 'ceiling', 1);
+      appliedToRef.current = null;
     };
   }, [stageRef]);
 }

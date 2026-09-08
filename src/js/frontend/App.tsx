@@ -108,6 +108,7 @@ import { buildRemixShareUrl, decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
+  nearbyPresetRequest,
   openRecordPanel,
   playNearbyPreset,
   presentToExternalDisplayAction,
@@ -123,7 +124,7 @@ import {
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { getToolLabel, recentlyOpenedPresetIds } from './workspace-helpers.ts';
+import { getToolLabel } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -543,24 +544,19 @@ function StimsWorkspaceAppShell() {
         label: 'Nearby preset (looks like this one)',
         keywords: ['similar', 'like', 'neighbour', 'neighbor'],
         run: () =>
-          void playNearbyPreset({
-            canvas:
-              uiRef.current.stageRef.current?.querySelector('canvas') ?? null,
-            currentPresetId:
-              engineBridgeRef.current.selectedPreset?.id ??
-              engineBridgeRef.current.featuredPreset?.id ??
-              null,
-            recentPresetIds: recentlyOpenedPresetIds(
-              engineBridgeRef.current.catalog,
-            ),
-            isKnownPreset: (presetId) =>
-              engineBridgeRef.current.catalog.some(
-                (entry) => entry.id === presetId,
-              ),
-            play: (presetId) =>
-              engineBridgeRef.current.handlePresetSelection(presetId),
-            announce: uiRef.current.setStatusMessage,
-          }),
+          void playNearbyPreset(
+            nearbyPresetRequest({
+              stage: uiRef.current.stageRef.current,
+              catalog: engineBridgeRef.current.catalog,
+              currentPresetId:
+                engineBridgeRef.current.selectedPreset?.id ??
+                engineBridgeRef.current.featuredPreset?.id ??
+                null,
+              play: (presetId) =>
+                engineBridgeRef.current.handlePresetSelection(presetId),
+              announce: uiRef.current.setStatusMessage,
+            }),
+          ),
       },
       {
         // Pauses auto-advance without touching the autoplay preference, so

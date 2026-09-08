@@ -11,12 +11,17 @@
  * call in.
  */
 
-import type { AudioSource, PanelState } from './contracts.ts';
+import type {
+  AudioSource,
+  PanelState,
+  PresetCatalogEntry,
+} from './contracts.ts';
 import {
   leaveSyncSession,
   setSyncUrlParam,
   startOrCopyWatchParty,
 } from './sync-session.ts';
+import { recentlyOpenedPresetIds } from './workspace-helpers.ts';
 
 export interface PanelSurface {
   updatePanel: (panel: PanelState) => void;
@@ -214,6 +219,20 @@ export const NEARBY_RECENT_EXCLUSION_LIMIT = 8;
  */
 export const NEARBY_SEARCH_RESULTS = 25;
 
+/**
+ * The nearby search currently on the wire, so a newer press can cancel it.
+ *
+ * Module-scoped because the control is module-scoped: the dock button and the
+ * palette entry are two doors onto one stage, and a press at either supersedes
+ * whatever the other started.
+ */
+let inFlightNearby: AbortController | null = null;
+
+/** Test seam: forget any in-flight search between cases. */
+export function resetNearbyPresetState(): void {
+  inFlightNearby = null;
+}
+
 export interface NearbyPresetRequest {
   /** The stage canvas, which is the query — nearby means "looks like this". */
   canvas: HTMLCanvasElement | null;
@@ -237,6 +256,38 @@ export interface NearbyPresetRequest {
     signal?: AbortSignal,
     topK?: number,
   ) => Promise<Array<{ presetId: string; score: number }>>;
+}
+
+/**
+ * Assembles a nearby request from the two things every caller actually has:
+ * the stage element and the catalog.
+ *
+ * Both entry points — the dock button and the command palette — used to build
+ * this object by hand, and had already drifted apart on how the current
+ * preset was derived, so one press could exclude a different preset depending
+ * on which control you reached it from.
+ */
+export function nearbyPresetRequest({
+  stage,
+  catalog,
+  currentPresetId,
+  play,
+  announce,
+}: {
+  stage: HTMLElement | null;
+  catalog: PresetCatalogEntry[];
+  currentPresetId: string | null;
+  play: (presetId: string) => void;
+  announce: (message: string) => void;
+}): NearbyPresetRequest {
+  return {
+    canvas: stage?.querySelector('canvas') ?? null,
+    currentPresetId,
+    recentPresetIds: recentlyOpenedPresetIds(catalog),
+    isKnownPreset: (presetId) => catalog.some((e) => e.id === presetId),
+    play,
+    announce,
+  };
 }
 
 /**
@@ -266,27 +317,51 @@ export async function playNearbyPreset({
     return;
   }
 
-  announce('Looking for something nearby…');
+  // A press supersedes the one before it. Two searches in flight both reach
+  // play(), and the slower one lands second with an exclusion set built
+  // before the first jump — so the stage moves twice and can land on the
+  // preset the recency window was there to avoid.
+  inFlightNearby?.abort();
+  const attempt = new AbortController();
+  inFlightNearby = attempt;
+  const superseded = () => attempt.signal.aborted;
 
-  // Deferred so the embedding client and its schema stay out of the initial
-  // bundle; the dock button is on screen from the first frame, and almost
-  // nobody presses it before the stage is running.
-  const searchByFrame =
-    injectedSearch ??
-    (await import('../core/services/visual-embedding.ts')).searchByFrame;
+  announce('Looking for something nearby…');
 
   let matches: Array<{ presetId: string; score: number }>;
   try {
-    matches = await searchByFrame(canvas, undefined, NEARBY_SEARCH_RESULTS);
+    // Deferred so the embedding client and its schema stay out of the initial
+    // bundle; the dock button is on screen from the first frame, and almost
+    // nobody presses it before the stage is running. Inside the try because a
+    // chunk that fails to load rejects here, and every caller invokes this as
+    // a bare `void` — an escape becomes an unhandled rejection with the status
+    // line stuck on "Looking for something nearby…".
+    const searchByFrame =
+      injectedSearch ??
+      (await import('../core/services/visual-embedding.ts')).searchByFrame;
+    matches = await searchByFrame(
+      canvas,
+      attempt.signal,
+      NEARBY_SEARCH_RESULTS,
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    if (superseded()) return;
+    // Matched on the error's declared `name`, not on its message: the class
+    // is exported from a module this one deliberately does not import
+    // statically, and `name` is a discriminant the type states rather than
+    // prose that reads as rewordable. Same shape as DOMException's AbortError.
+    const unavailable =
+      error instanceof Error && error.name === 'VisualSearchUnavailableError';
     announce(
-      message.includes('dev server')
+      unavailable
         ? 'Nearby needs the visual search index, which the dev server does not run. It works on the deployed site.'
         : 'Could not reach the visual search index. Try again in a moment.',
     );
     return;
   }
+
+  // A newer press already owns the stage; landing this one would undo it.
+  if (superseded()) return;
 
   const excluded = new Set(
     recentPresetIds.slice(0, NEARBY_RECENT_EXCLUSION_LIMIT),
