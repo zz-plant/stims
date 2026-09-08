@@ -29,10 +29,17 @@ function channelsFor(stage: HTMLElement): Channels {
   return channels;
 }
 
-/** The composed scale currently applied to a stage. Exported for tests. */
+/**
+ * The composed scale currently applied to a stage.
+ *
+ * Reads without creating: a stage nobody has written to has no filter, and
+ * an accessor that registered one would populate this map for every element
+ * it is merely asked about. The flash governor calls this per frame to learn
+ * what the viewer is actually looking at, so it must stay a pure read.
+ */
 export function stageLuminanceScale(stage: HTMLElement): number {
-  const { governor, ceiling } = channelsFor(stage);
-  return governor * ceiling;
+  const channels = channelsByStage.get(stage);
+  return channels ? channels.governor * channels.ceiling : 1;
 }
 
 export function setStageLuminanceChannel(

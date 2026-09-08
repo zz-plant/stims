@@ -36,6 +36,7 @@ import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
 import { UiIcon } from './UiIcon.tsx';
 import {
   endWatchParty,
+  nearbyPresetRequest,
   openRecordPanel,
   playNearbyPreset,
   presentToExternalDisplayAction,
@@ -46,7 +47,6 @@ import {
   togglePanel,
 } from './workspace-actions.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
-import { recentlyOpenedPresetIds } from './workspace-helpers.ts';
 
 type MenuItem = {
   icon: UiIconName;
@@ -329,15 +329,15 @@ export function StageControls({
   const handleNearby = useCallback(() => {
     signalActivity();
     pulseHaptic(10);
-    void playNearbyPreset({
-      canvas: ui.stageRef.current?.querySelector('canvas') ?? null,
-      currentPresetId,
-      recentPresetIds: recentlyOpenedPresetIds(engine.catalog),
-      isKnownPreset: (presetId) =>
-        engine.catalog.some((entry) => entry.id === presetId),
-      play: (presetId) => engine.handlePresetSelection(presetId),
-      announce: ui.setStatusMessage,
-    });
+    void playNearbyPreset(
+      nearbyPresetRequest({
+        stage: ui.stageRef.current,
+        catalog: engine.catalog,
+        currentPresetId,
+        play: (presetId) => engine.handlePresetSelection(presetId),
+        announce: ui.setStatusMessage,
+      }),
+    );
   }, [engine, ui, currentPresetId, signalActivity]);
 
   const handleToggleLock = useCallback(() => {
@@ -659,7 +659,7 @@ export function StageControls({
               }
             />
           ) : null}
-          <AudioStatusControl />
+          <AudioStatusControl onActivity={signalActivity} />
           <button
             type="button"
             className={styles.navBtn}

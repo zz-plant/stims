@@ -1,9 +1,11 @@
 import { expect, mock, test } from 'bun:test';
+import { VisualSearchUnavailableError } from '../../src/js/core/services/visual-embedding.ts';
 import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
 import {
   NEARBY_RECENT_EXCLUSION_LIMIT,
   NEARBY_SEARCH_RESULTS,
   playNearbyPreset,
+  resetNearbyPresetState,
 } from '../../src/js/frontend/workspace-actions.ts';
 import { recentlyOpenedPresetIds } from '../../src/js/frontend/workspace-helpers.ts';
 
@@ -111,13 +113,94 @@ test('the dev server having no index is explained, not reported as a failure', a
     play: () => {},
     announce: (message) => announcements.push(message),
     searchByFrame: async () => {
-      throw new Error(
+      throw new VisualSearchUnavailableError(
         'Visual search API is unavailable in the Vite dev server.',
       );
     },
   });
 
   expect(announcements.at(-1)).toContain('deployed site');
+});
+
+test('a reworded message does not turn a missing index into a retry prompt', async () => {
+  const announcements: string[] = [];
+
+  await playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: null,
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: () => {},
+    announce: (message) => announcements.push(message),
+    // Same condition, nothing recognisable in the prose. The branch reads the
+    // error's type, so the advice stays correct.
+    searchByFrame: async () => {
+      throw new VisualSearchUnavailableError('no endpoint configured');
+    },
+  });
+
+  expect(announcements.at(-1)).toContain('deployed site');
+});
+
+test('a second press supersedes the first, so the stage moves once', async () => {
+  resetNearbyPresetState();
+  const played: string[] = [];
+  let releaseFirst = () => {};
+  const firstSearchGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+
+  const first = playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: null,
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: (presetId) => played.push(presetId),
+    announce: () => {},
+    searchByFrame: async () => {
+      await firstSearchGate;
+      return [{ presetId: 'stale', score: 1 }];
+    },
+  });
+
+  // Second press lands while the first search is still out.
+  await playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: null,
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: (presetId) => played.push(presetId),
+    announce: () => {},
+    searchByFrame: async () => [{ presetId: 'fresh', score: 1 }],
+  });
+
+  releaseFirst();
+  await first;
+
+  // The slower first press must not land on top of the newer one.
+  expect(played).toEqual(['fresh']);
+});
+
+test('a chunk that fails to load is reported, not left hanging', async () => {
+  resetNearbyPresetState();
+  const announcements: string[] = [];
+
+  // The real path resolves searchByFrame through a dynamic import; a rejected
+  // one used to escape the try entirely, leaving an unhandled rejection and
+  // the status line stuck on "Looking for something nearby…".
+  await playNearbyPreset({
+    canvas: {} as HTMLCanvasElement,
+    currentPresetId: null,
+    recentPresetIds: [],
+    isKnownPreset: () => true,
+    play: () => {},
+    announce: (message) => announcements.push(message),
+    searchByFrame: () =>
+      Promise.reject(new Error('Failed to fetch dynamically imported module')),
+  });
+
+  expect(announcements.at(-1)).toContain('Try again');
+  expect(announcements.at(-1)).not.toContain('Looking for');
 });
 
 test('a blank stage does not reach for the index at all', async () => {
