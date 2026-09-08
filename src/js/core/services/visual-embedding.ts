@@ -225,6 +225,20 @@ export function describeFrame(stats: FrameStats): string {
   return describeFrameParts(stats);
 }
 
+/**
+ * Thrown when this build has no visual-search endpoint to talk to at all —
+ * the Vite dev server does not serve `/api/visual-search`.
+ *
+ * A distinct type rather than a recognisable message: callers word the two
+ * cases differently for the user ("this environment has no index" versus
+ * "the index did not answer"), and a caller matching on message text breaks
+ * silently the first time the wording changes, telling people to retry
+ * something that can never succeed.
+ */
+export class VisualSearchUnavailableError extends Error {
+  readonly name = 'VisualSearchUnavailableError';
+}
+
 export async function searchByFrame(
   canvas: HTMLCanvasElement,
   signal?: AbortSignal,
@@ -237,7 +251,9 @@ export async function searchByFrame(
 ): Promise<Array<{ presetId: string; score: number }>> {
   const endpoint = resolveOptionalApiUrl('/api/visual-search');
   if (!endpoint) {
-    throw new Error('Visual search API is unavailable in the Vite dev server.');
+    throw new VisualSearchUnavailableError(
+      'Visual search API is unavailable in the Vite dev server.',
+    );
   }
 
   const stats = extractFrameStats(canvas);
