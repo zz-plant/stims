@@ -76,6 +76,47 @@ describe('flash safety controller', () => {
     expect(hold).toBeGreaterThan(0);
   });
 
+  test('the feedback correction reads the whole filter, not just the governor', () => {
+    // The governor reconstructs what the viewer sees by scaling its sample by
+    // the mitigation in force. Once the visitor's brightness ceiling shares
+    // that same CSS filter, "in force" means the composed value: a ceiling of
+    // 0.5 has already halved the strobe before it reaches anyone's eyes.
+    //
+    // Correcting by the governor's own channel alone overstates what the
+    // viewer sees, so it keeps counting flashes that are already suppressed
+    // and clamps harder than the content warrants.
+    const uncorrected = harness(strobe);
+    // Mirrors stage-luminance's composition: the governor's own channel times
+    // the visitor's ceiling. Reporting a bare constant here would be wrong in
+    // a way worth naming — it drops the governor's own contribution, and the
+    // loop that converges only because it can see its own effect would
+    // escalate straight to the ceiling instead.
+    let governorChannel = 1;
+    const composed = createFlashSafetyController({
+      canvas: {} as HTMLCanvasElement,
+      sampler: scriptedSampler(strobe),
+      isEnabled: () => true,
+      applyLuminanceScale: (scale) => {
+        governorChannel = scale;
+      },
+      compositedScale: () => governorChannel * 0.25,
+      scheduleFrame: () => 1,
+      cancelFrame: () => {},
+    });
+
+    for (let i = 0; i < 600; i += 1) {
+      uncorrected.controller.tick(i * FRAME_MS);
+      composed.tick(i * FRAME_MS);
+    }
+
+    // Same content, but the viewer is already seeing a quarter of it, so the
+    // governor should hold back further than the uncorrected loop does.
+    expect(composed.getState().hold).toBeLessThan(
+      uncorrected.controller.getState().hold,
+    );
+    composed.stop();
+  });
+
   test('does nothing at all when the preference is off', () => {
     const { controller, applied } = harness(strobe, false);
     for (let i = 0; i < 120; i += 1) controller.tick(i * FRAME_MS);

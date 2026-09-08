@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 import {
   classifyAudioSignal,
   describeAudioSignal,
+  isInheritedLevel,
   nextSignalMark,
   SILENCE_GRACE_MS,
 } from '../../src/js/frontend/audio-signal-state.ts';
@@ -99,4 +100,17 @@ test('a steady non-zero level keeps refreshing the mark', () => {
 test('a level under the floor leaves the previous mark to age out', () => {
   expect(nextSignalMark(0, 500, 9_000)).toBe(500);
   expect(nextSignalMark(0, null, 9_000)).toBeNull();
+});
+
+test('a level inherited from the previous source is not believed', () => {
+  // The energy store is not cleared on a source change, so the first sample
+  // after switching still reads the old source's level. Believing it reports
+  // a microphone that has produced nothing as live, which is exactly what
+  // resetting the mark is supposed to prevent.
+  expect(isInheritedLevel(0.6, 0.6)).toBe(true);
+  // Once the new source publishes anything of its own, the hold is released.
+  expect(isInheritedLevel(0.61, 0.6)).toBe(false);
+  expect(isInheritedLevel(0, 0.6)).toBe(false);
+  // Nothing inherited (a first source in a fresh session) is never withheld.
+  expect(isInheritedLevel(0.6, null)).toBe(false);
 });

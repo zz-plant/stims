@@ -90,7 +90,17 @@ function nextStepFor(
   return 'Try another source, or check your system volume.';
 }
 
-export function AudioStatusControl() {
+/**
+ * @param onActivity Keeps the dock awake. The bar auto-hides three seconds
+ * after the last signal, and this popover is the one piece of dock chrome a
+ * visitor is expected to stop and *read* — without this it would vanish
+ * mid-sentence for anyone not holding a mouse over it.
+ */
+export function AudioStatusControl({
+  onActivity,
+}: {
+  onActivity?: () => void;
+}) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const audioSource = engineSnapshot?.audioSource ?? null;
@@ -148,19 +158,33 @@ export function AudioStatusControl() {
       buttonRef.current?.focus();
     };
     document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
+    // Capture phase, so stopPropagation actually holds. The competing Escape
+    // handlers (SidePanel, the overflow menu) are bubble-phase listeners on
+    // this same document, and stopPropagation from a listener registered
+    // alongside them cannot stop them — only stopImmediatePropagation can, and
+    // only for listeners registered later. Intercepting on the way down means
+    // one press closes the popover and nothing else.
+    document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown, true);
     };
   }, [open]);
 
-  const run = useCallback((fn: () => void) => {
-    pulseHaptic(10);
-    setOpen(false);
-    fn();
-    buttonRef.current?.focus();
-  }, []);
+  const run = useCallback(
+    (fn: () => void, { keepFocus = true }: { keepFocus?: boolean } = {}) => {
+      pulseHaptic(10);
+      onActivity?.();
+      setOpen(false);
+      fn();
+      // Returning focus is right for the items that leave you standing in the
+      // dock. It is wrong for the one that hands off to another surface: the
+      // settings panel moves focus into itself on open, and pulling it back
+      // here leaves the panel open with the caret outside it.
+      if (keepFocus) buttonRef.current?.focus();
+    },
+    [onActivity],
+  );
 
   return (
     <div className={styles.wrap}>
@@ -179,6 +203,7 @@ export function AudioStatusControl() {
         title={detail}
         onClick={() => {
           pulseHaptic(10);
+          onActivity?.();
           setOpen((current) => !current);
         }}
       >
@@ -248,14 +273,16 @@ export function AudioStatusControl() {
             className={styles.item}
             data-action="open-audio-setup"
             onClick={() =>
-              run(() =>
-                togglePanel(
-                  {
-                    updatePanel: ui.updatePanel,
-                    routePanel: () => ui.routeState.panel ?? null,
-                  },
-                  'settings',
-                ),
+              run(
+                () =>
+                  togglePanel(
+                    {
+                      updatePanel: ui.updatePanel,
+                      routePanel: () => ui.routeState.panel ?? null,
+                    },
+                    'settings',
+                  ),
+                { keepFocus: false },
               )
             }
           >

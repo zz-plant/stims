@@ -80,6 +80,29 @@ export function nextSignalMark(
   return energy >= SILENCE_ENERGY_FLOOR ? now : previousMark;
 }
 
+/**
+ * Whether a sampled level can be believed yet for a freshly selected source.
+ *
+ * The energy store is not cleared when the source changes — it holds the last
+ * value the previous source published until the new one overwrites it. So
+ * nulling the mark on a source change is not enough on its own: the very next
+ * sample reads the old source's level and re-marks it, which is exactly the
+ * "fresh microphone reported live on the strength of the demo track" the reset
+ * exists to prevent.
+ *
+ * A level counts once it has moved off the value inherited at switch time.
+ * If a new source coincidentally publishes the identical level, this keeps
+ * withholding and the state settles on 'silent' after the grace window —
+ * the safe direction to be wrong in, since it prompts a check rather than
+ * asserting everything is fine.
+ */
+export function isInheritedLevel(
+  energy: number,
+  inherited: number | null,
+): boolean {
+  return inherited !== null && energy === inherited;
+}
+
 export function classifyAudioSignal({
   hasSource,
   awaitingGesture,
@@ -152,6 +175,11 @@ export function useAudioSignalState(hasSource: boolean): AudioSignalState {
     // mark forward would report a fresh microphone as live on the strength of
     // the demo track that preceded it.
     lastSignalAtRef.current = null;
+    // Nulling the mark alone does not achieve that, because the energy store
+    // keeps publishing the previous source's last value until the new one
+    // overwrites it. Hold the inherited level aside and disbelieve it until
+    // it moves; see isInheritedLevel.
+    let inherited: number | null = getAudioEnergy();
 
     // Samples the level itself rather than trusting the subscription to have
     // fired. The store only notifies on *change*, so a level that is high but
@@ -162,8 +190,10 @@ export function useAudioSignalState(hasSource: boolean): AudioSignalState {
     // instead of the only source of truth.
     const evaluate = () => {
       const now = Date.now();
+      const energy = getAudioEnergy();
+      if (!isInheritedLevel(energy, inherited)) inherited = null;
       lastSignalAtRef.current = nextSignalMark(
-        getAudioEnergy(),
+        inherited === null ? energy : 0,
         lastSignalAtRef.current,
         now,
       );
