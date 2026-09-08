@@ -206,7 +206,7 @@
     "pixelmatch": "^7.2.0",
     "playwright": "1.62.1",
     "postcss": "8",
-    "sharp": "^0.35.2",
+    "sharp": "^0.35.4",
     "typescript": "^6.0.3",
     "vite": "8.2.2",
     "wrangler": "^4.123.0",
@@ -236,6 +236,7 @@
     "three": "0.185.1"
   },
   "overrides": {
+    "sharp": "^0.35.4",
     "nanoid": "^3.3.17",
     "@codemirror/language": "6.12.4",
     "@codemirror/view": "6.43.7",
