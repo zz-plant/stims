@@ -104,6 +104,16 @@
    mute, full screen and the overflow menu, so the bar offered six equal
    affordances and no answer to "what do I press?". Bigger, brighter, and
    carrying a resting fill so they read as the bar's primary pair. */
+/* Nearby leaves the dock on phones and lives in the overflow menu instead.
+   The wandering trio is worth its slot on a desktop pill; at 375px its 44px
+   was part of what pushed the menu button off-screen, and swipe already
+   covers previous/next there. */
+@media (max-width: 480px) {
+  .navBtn[data-action="nearby-preset"] {
+    display: none;
+  }
+}
+
 .navBtn[data-primary="true"] {
   width: 38px;
   height: 38px;

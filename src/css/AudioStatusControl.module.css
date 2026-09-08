@@ -215,15 +215,20 @@
   font-weight: 700;
 }
 
-/* The dock is tight on phones; the source label carries the state there and
-   the meter alone would be ambiguous, so the word stays and the icon goes. */
+/* The dock is tight on phones. Measured at 375px: with the word kept this
+   control was 95px, the pill's content ran ~411px inside a 359px pill, and
+   Full screen and the overflow menu were clipped past the viewport edge —
+   the gateway to 25 actions, unreachable. The word goes and the icon stays:
+   the state colour and the icon still read at a glance, the accessible name
+   carries the whole sentence, and SilentAudioNotice already prints the
+   "tap for sound" case on the stage itself. */
 @media (max-width: 480px) {
   .trigger {
     padding: 0 6px;
-    gap: 4px;
+    gap: 3px;
   }
 
-  .trigger > :global(.stims-icon-slot) {
+  .label {
     display: none;
   }
 }
