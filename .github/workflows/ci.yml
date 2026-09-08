@@ -16,6 +16,41 @@ permissions:
   contents: read
 
 jobs:
+  # Which of the jobs below are worth spending a runner on. Measured over the
+  # last 40 commits on main, 9 of them touched nothing under src/, tests/,
+  # scripts/ or functions/ — docs and agent playbooks, mostly — and each one
+  # still paid for three browser matrix jobs, the parity corpus and a
+  # production build. That is roughly a quarter of runs spending ~470 job
+  # seconds to prove that prose did not break Chromium.
+  #
+  # Written as "everything, minus documentation" rather than a list of code
+  # paths, so it fails open: a directory nobody thought of counts as code and
+  # runs the full suite. The quality gate itself is deliberately NOT gated on
+  # this — half its guards read the docs (doc references, README claims,
+  # guardrail and skill-index freshness, SEO), so a docs-only change is
+  # exactly when several of them have something to say.
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Classify changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+              - '!.agent/**'
+              - '!.claude/**'
+              - '!LICENSE'
+
   # Commit-message hygiene was left to the local commit-msg hook alone, on the
   # assumption that every commit passes through it. It does not: 20+ commits
   # whose subjects this guard rejects are on main, including a run of GitHub
@@ -83,13 +118,37 @@ jobs:
       - name: Run quality gate
         run: bun run check -- --no-tests
 
-  # The postflight half of `bun run check`, split onto its own runner. No
-  # Playwright here, exactly as when this ran inside the quality gate job: the
-  # two browser-backed corpus tests skip without it, and the `parity` job
-  # below runs them with a browser.
+      # Folded in from the job this used to be. Pure gate: deploys moved to
+      # Cloudflare Workers Builds (see docs/DEPLOYMENT.md), which builds and
+      # deploys on push independently of Actions, so nothing downstream waits
+      # on it. On its own runner it spent 8s checking out and 18s installing
+      # to do 2s of work — 26s of setup per run to amortise nothing. Here it
+      # rides a checkout and an install that already happened.
+      - name: Build production bundle
+        run: bun run build
+
+      # The budget guard needs dist/, which is why it never ran inside the
+      # gate proper (see the script's docblock). It was added with the lazy
+      # EditorPanel work and then never wired to anything, which left the
+      # startup payload unguarded against step-change regressions.
+      - name: Check bundle-size budget
+        run: bun run check:bundle-size
+
+  # The postflight half of `bun run check`, split onto its own runner.
+  #
+  # Runs the `fast` profile (unit + compat), not `gate`. `gate` also includes
+  # tests/corpus/, which the `parity` job below runs in full — and runs
+  # *better*, because it provisions Playwright, while this job deliberately
+  # does not and so skipped the two browser-backed corpus tests anyway. The
+  # duplicate cost ~44s of runner time every run and covered strictly less
+  # than the job it duplicated. Category coverage is unchanged and asserted by
+  # scripts/check-ci-config.ts: unit and compat here, corpus in `parity`, e2e
+  # in the matrix.
   gate-tests:
     name: Gate test suite
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     steps:
       # The runner must read the local composite action's action.yml from
       # disk before it can run it, so the repository has to be checked out
@@ -105,11 +164,13 @@ jobs:
           checkout: 'false'
 
       - name: Run gate test suite
-        run: bun run test:gate
+        run: bun run test:fast
 
   parity:
     name: Parity corpus
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # tests/corpus/ holds the MilkDrop/projectM parity certification corpus,
     # the compiler/IR/codegen goldens and the pixel-diff suite. The
     # dual-backend boundary they cover is the repo's densest source of
@@ -149,39 +210,11 @@ jobs:
       - name: Run parity corpus
         run: bun run test:corpus
 
-  build:
-    name: Production build
-    runs-on: ubuntu-latest
-    # Pure gate: deploys moved to Cloudflare Workers Builds (see
-    # docs/DEPLOYMENT.md), which builds and deploys on push independently of
-    # Actions. This job only proves the production bundle still builds.
-    steps:
-      # The runner must read the local composite action's action.yml from
-      # disk before it can run it, so the repository has to be checked out
-      # in the workflow itself — a local action can never perform the first
-      # checkout (newer runner versions fail the job at action-resolution
-      # time otherwise).
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup environment
-        uses: ./.github/actions/setup-stims
-        with:
-          checkout: 'false'
-
-      - name: Build production bundle
-        run: bun run build
-
-      # The budget guard needs dist/, so it runs here rather than in the
-      # quality gate (see the script's docblock). It was added with the lazy
-      # EditorPanel work and then never wired to anything, which left the
-      # startup payload unguarded against step-change regressions.
-      - name: Check bundle-size budget
-        run: bun run check:bundle-size
-
   integration:
     name: Browser end-to-end tests (${{ matrix.file }})
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # Each e2e file gets its own runner. They used to share one job's 2 vCPUs
     # sequentially — a fresh `bun test` process per file (see run-tests.ts)
     # stopped in-process leaks from accumulating, but everything still
@@ -308,35 +341,42 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [check, gate-tests, parity, build, integration, commit-messages]
+    needs: [changes, check, gate-tests, parity, integration, commit-messages]
     if: always()
     steps:
       - name: Verify all required jobs passed
         run: |
-          # commit-messages is pull_request-only, so it reports "skipped" on
-          # push/merge_group runs. Skipped is a pass here; only an actual
-          # failure should block.
+          # Two jobs here legitimately report "skipped": commit-messages is
+          # pull_request-only, and the test jobs are gated on the `changes`
+          # filter, so a docs-only run skips all three. Skipped is a pass;
+          # only failure or cancellation should block. `check` is the one job
+          # that always runs, so it stays an exact success check — if the
+          # filter ever mis-fires and skips everything, that is still a real
+          # gate rather than a vacuous green.
+          passed() {
+            [ "$1" != "failure" ] && [ "$1" != "cancelled" ]
+          }
+
+          changes_outcome="${{ needs.changes.result }}"
           commit_outcome="${{ needs['commit-messages'].result }}"
           check_outcome="${{ needs.check.result }}"
           gate_tests_outcome="${{ needs['gate-tests'].result }}"
           parity_outcome="${{ needs.parity.result }}"
-          build_outcome="${{ needs.build.result }}"
           integration_outcome="${{ needs.integration.result }}"
 
-          echo "Commit Messages: $commit_outcome"
-          echo "Quality Gate: $check_outcome"
-          echo "Gate Test Suite: $gate_tests_outcome"
-          echo "Parity Corpus: $parity_outcome"
-          echo "Production Build: $build_outcome"
+          echo "Changed paths:     $changes_outcome"
+          echo "Commit Messages:   $commit_outcome"
+          echo "Quality Gate:      $check_outcome"
+          echo "Gate Test Suite:   $gate_tests_outcome"
+          echo "Parity Corpus:     $parity_outcome"
           echo "Integration Tests: $integration_outcome"
 
-          if [ "$commit_outcome" != "failure" ] && \
-             [ "$commit_outcome" != "cancelled" ] && \
-             [ "$check_outcome" = "success" ] && \
-             [ "$gate_tests_outcome" = "success" ] && \
-             [ "$parity_outcome" = "success" ] && \
-             [ "$build_outcome" = "success" ] && \
-             [ "$integration_outcome" = "success" ]; then
+          if [ "$check_outcome" = "success" ] && \
+             passed "$changes_outcome" && \
+             passed "$commit_outcome" && \
+             passed "$gate_tests_outcome" && \
+             passed "$parity_outcome" && \
+             passed "$integration_outcome"; then
             echo "All CI jobs passed successfully."
             exit 0
           else

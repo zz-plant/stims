@@ -131,33 +131,70 @@ if (
  * notices CI stopped looking at them. Assert the coverage instead of trusting
  * it, so dropping a category from CI has to be a deliberate edit here.
  */
-const ciWorkflow = readText(join(ROOT, '.github/workflows/ci.yml'));
-if (ciWorkflow) {
+/**
+ * Which test categories a CI workflow actually runs.
+ *
+ * Exported so the rules below can be tested against synthetic workflows
+ * rather than only against this repo's own — the two ways this check used to
+ * pass for the wrong reason were both invisible to a test that just asserted
+ * the current tree is clean.
+ */
+export function coveredTestCategories(
+  ciWorkflow: string,
+  scripts: Record<string, string> = {},
+): Set<string> {
   const profileFor = (script: string) =>
-    pkg.scripts?.[script]?.match(/--profile\s+([a-z]+)/)?.[1] ?? null;
+    scripts[script]?.match(/--profile\s+([a-z]+)/)?.[1] ?? null;
 
-  // Which npm scripts does ci.yml actually invoke?
-  const invoked = new Set(
-    [...ciWorkflow.matchAll(/\bbun run (?!--)([A-Za-z0-9:_-]+)/g)].map(
-      (match) => match[1] as string,
-    ),
-  );
+  // Comments are not commands. Scanning the raw file counted `bun run check`
+  // where it appeared in explanatory prose — this workflow has two such
+  // mentions — so the coverage requirement below was satisfied by English,
+  // and stayed satisfied no matter what the steps actually ran. Strip
+  // whole-line YAML comments before looking for invocations.
+  const ciCommands = ciWorkflow
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
 
-  // `check` runs the quality gate, which runs the `fast` profile.
+  // Which npm scripts does ci.yml invoke, and with what arguments? The flags
+  // matter: `bun run check -- --no-tests` runs no tests at all, and crediting
+  // it with a profile anyway is the other half of how this passed for the
+  // wrong reason (see below).
+  const invocations = [
+    ...ciCommands.matchAll(/\bbun run (?!--)([A-Za-z0-9:_-]+)([^\n]*)/g),
+  ].map((match) => ({ script: match[1] as string, args: match[2] ?? '' }));
+  const invoked = new Set(invocations.map((invocation) => invocation.script));
+
   const coveredProfiles = new Set<string>();
-  if (invoked.has('check')) coveredProfiles.add('fast');
+
+  // `check` runs the quality gate, whose postflight suite is `test:gate` — not
+  // `fast`, which is what this said for long enough for both halves to drift:
+  // ci.yml passes `--no-tests` here (the suite moved to its own job), so the
+  // profile it was credited with was one it did not run, of a suite it was not
+  // running either. Meanwhile `test:gate` had no entry in the map below at
+  // all, so the job actually covering unit and compat contributed nothing.
+  // Coverage was real but unattributed: deleting `gate-tests` would have left
+  // this green, which is the exact drift the check exists to catch.
+  const runsCheckWithTests = invocations.some(
+    (invocation) =>
+      invocation.script === 'check' && !/--no-tests\b/.test(invocation.args),
+  );
+  if (runsCheckWithTests) coveredProfiles.add('gate');
   if (invoked.has('check:all')) coveredProfiles.add('all');
   for (const script of invoked) {
     const profile = profileFor(script);
     if (profile) coveredProfiles.add(profile);
   }
 
-  // profile -> categories, mirroring PROFILES in scripts/run-tests.ts.
+  // profile -> categories, mirroring PROFILES in scripts/run-tests.ts. Keep
+  // the two in step: an entry missing here silently stops crediting the job
+  // that runs it, and an over-broad one credits coverage nothing provides.
   const PROFILE_CATEGORIES: Record<string, string[]> = {
     all: ['unit', 'compat', 'corpus', 'e2e'],
+    gate: ['unit', 'compat', 'corpus'],
     fast: ['unit', 'compat'],
     unit: ['unit'],
-    compat: ['compat', 'corpus'],
+    compat: ['compat'],
     corpus: ['corpus'],
     e2e: ['e2e'],
   };
@@ -169,8 +206,19 @@ if (ciWorkflow) {
   );
 
   // e2e is covered by the integration matrix, which names files directly
-  // rather than going through a profile.
-  if (/tests\/e2e\//.test(ciWorkflow)) coveredCategories.add('e2e');
+  // rather than going through a profile. Read from the comment-stripped copy
+  // for the same reason: a comment mentioning tests/e2e/ is not a test run.
+  if (/tests\/e2e\//.test(ciCommands)) coveredCategories.add('e2e');
+
+  return coveredCategories;
+}
+
+const ciWorkflow = readText(join(ROOT, '.github/workflows/ci.yml'));
+if (ciWorkflow) {
+  const coveredCategories = coveredTestCategories(
+    ciWorkflow,
+    pkg.scripts ?? {},
+  );
 
   for (const category of ['unit', 'compat', 'corpus', 'e2e']) {
     if (!coveredCategories.has(category)) {
