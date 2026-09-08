@@ -61,11 +61,18 @@ function SwitchRow({
   hint,
   checked,
   onChange,
+  describedById,
 }: {
   label: string;
   hint?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
+  /**
+   * A note elsewhere on the panel that qualifies what this switch promises.
+   * Sighted users read it as an adjacent paragraph; without this it is not
+   * announced anywhere near the control it is about.
+   */
+  describedById?: string;
 }) {
   return (
     <label className="ctl-row">
@@ -77,6 +84,7 @@ function SwitchRow({
         type="checkbox"
         role="switch"
         aria-checked={checked}
+        aria-describedby={describedById}
         className="ctl-switch"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
@@ -205,7 +213,8 @@ function AccessibilitySection({
             Stage brightness
           </label>
           <span className="ctl-row__hint">
-            Caps how bright the visuals can get. Carries across every preset.
+            Lowest setting is 30% — dark enough to rest against, still bright
+            enough to see.
           </span>
         </span>
         <input
@@ -238,6 +247,7 @@ function AccessibilitySection({
       <SwitchRow
         label="Reduce flashing"
         hint="Hides presets measured above the WCAG flash threshold. Presets that haven't been measured yet still appear, and say so."
+        describedById="comfort-note"
         checked={prefs.reduceFlashing}
         onChange={(reduceFlashing) => {
           setPrefs((p) => ({ ...p, reduceFlashing }));

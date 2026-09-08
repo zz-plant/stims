@@ -34,13 +34,27 @@ import {
   type FlashGovernorDecision,
 } from './flash-governor.ts';
 import { createFlashSampler, type FlashSampler } from './flash-sampler.ts';
-import { setStageLuminanceChannel } from './stage-luminance.ts';
+import {
+  setStageLuminanceChannel,
+  stageLuminanceScale,
+} from './stage-luminance.ts';
 
 export type FlashSafetyOptions = {
   /** The presented canvas to observe. */
   canvas: HTMLCanvasElement;
   /** Applies the mitigation. Called only when the value changes. */
   applyLuminanceScale: (scale: number) => void;
+  /**
+   * What the viewer is actually seeing, as a scale on the rendered pixels.
+   *
+   * Defaults to this controller's own last applied value, which is right
+   * only while the governor is the sole owner of the stage's brightness. It
+   * is not: the visitor's comfort ceiling multiplies into the same CSS
+   * filter, so a caller that composes channels must report the composed
+   * scale here or the feedback correction in `tick` under-counts the
+   * mitigation already in force (see `stage-luminance.ts`).
+   */
+  compositedScale?: () => number;
   /** Overridable for tests; defaults to the accessibility preference. */
   isEnabled?: () => boolean;
   /** Overridable for tests. */
@@ -79,6 +93,7 @@ export function createFlashSafetyController(
     scheduleFrame = (callback) => requestAnimationFrame(callback),
     cancelFrame = (handle) => cancelAnimationFrame(handle),
     sampler = createFlashSampler(),
+    compositedScale,
   } = options;
 
   const governor = createFlashGovernor();
@@ -111,9 +126,16 @@ export function createFlashSafetyController(
     // ceiling and stay there. Scaling the sample by the mitigation currently
     // in force reconstructs what the viewer is actually looking at, which is
     // the same thing tests/unit/flash-governor.test.ts feeds it.
-    if (lastApplied !== 1) {
+    //
+    // The scale to correct by is everything on the filter, not just this
+    // controller's contribution: with a visitor brightness ceiling of 0.5 the
+    // viewer sees half of what `lastApplied` claims, and correcting by
+    // `lastApplied` alone would leave the governor chasing brightness that is
+    // already gone.
+    const applied = compositedScale ? compositedScale() : lastApplied;
+    if (applied !== 1) {
       for (let i = 0; i < tiles.length; i += 1) {
-        tiles[i] = (tiles[i] as number) * lastApplied;
+        tiles[i] = (tiles[i] as number) * applied;
       }
     }
 
@@ -193,4 +215,13 @@ export function createStageLuminanceApplier(stage: HTMLElement) {
   return (scale: number) => {
     setStageLuminanceChannel(stage, 'governor', scale);
   };
+}
+
+/**
+ * The composed scale on that same stage, for the controller's feedback
+ * correction. Paired with the applier above so a caller cannot wire one
+ * without the other and leave the governor reading its own channel.
+ */
+export function createStageCompositedScale(stage: HTMLElement) {
+  return () => stageLuminanceScale(stage);
 }
