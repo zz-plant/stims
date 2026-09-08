@@ -911,6 +911,31 @@ export function pickRecentPresets(
     .slice(0, limit);
 }
 
+/**
+ * Presets opened recently enough that landing on one again would read as a
+ * loop rather than a discovery.
+ *
+ * `pickRecentPresets` cannot serve this: it caps at three for a UI list, and
+ * three is not enough to stop "Nearby" ping-ponging between a preset and its
+ * nearest neighbour — the nearest neighbour of B is usually A. The window
+ * matches the recency penalty in `handleShufflePreset`, so both wandering
+ * controls agree on what "just played" means.
+ */
+export function recentlyOpenedPresetIds(
+  entries: PresetCatalogEntry[],
+  { withinMs = 300_000, limit = 8, now = Date.now() } = {},
+): string[] {
+  return entries
+    .filter(
+      (entry) =>
+        typeof entry.lastOpenedAt === 'number' &&
+        now - entry.lastOpenedAt <= withinMs,
+    )
+    .sort((left, right) => (right.lastOpenedAt ?? 0) - (left.lastOpenedAt ?? 0))
+    .slice(0, limit)
+    .map((entry) => entry.id);
+}
+
 export function pickFavoritePresets(
   entries: PresetCatalogEntry[],
   limit = 3,

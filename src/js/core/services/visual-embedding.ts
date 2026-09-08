@@ -228,6 +228,12 @@ export function describeFrame(stats: FrameStats): string {
 export async function searchByFrame(
   canvas: HTMLCanvasElement,
   signal?: AbortSignal,
+  /**
+   * How many matches to ask for. The finder's list wants the endpoint
+   * default; a caller that filters the results before using them (see
+   * `playNearbyPreset`) needs a deeper list than it intends to show.
+   */
+  topK?: number,
 ): Promise<Array<{ presetId: string; score: number }>> {
   const endpoint = resolveOptionalApiUrl('/api/visual-search');
   if (!endpoint) {
@@ -238,6 +244,9 @@ export async function searchByFrame(
   const description = describeFrame(stats);
 
   const request: VisualSearchRequest = { description };
+  if (topK !== undefined) {
+    request.topK = topK;
+  }
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

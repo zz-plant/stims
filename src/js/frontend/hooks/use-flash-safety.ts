@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react';
+import {
+  getActiveAccessibilityPreference,
+  subscribeToAccessibilityPreference,
+} from '../../core/accessibility-preferences.ts';
 import type { PresetSensoryProfile } from '../../core/sensory-profile.ts';
 import { primingHoldForProfile } from '../../core/services/flash-governor.ts';
 import {
   createFlashSafetyController,
   createStageLuminanceApplier,
 } from '../../core/services/flash-safety.ts';
+import { setStageLuminanceChannel } from '../../core/services/stage-luminance.ts';
 
 /**
  * Runs the WCAG flash governor over whatever the stage is currently showing.
@@ -83,4 +88,36 @@ export function useFlashSafety(
       controllerRef.current?.prime(hold);
     }
   }, [activeProfile]);
+}
+
+/**
+ * Holds the visitor's brightness ceiling on the stage.
+ *
+ * Separate from the governor's own effect and deliberately not gated on
+ * `reduceFlashing`: this one is a comfort preference someone set on purpose,
+ * and it applies whether or not they also asked for flash mitigation. Both
+ * write through `stage-luminance.ts`, which composes them.
+ */
+export function useStageBrightness(stageRef: {
+  current: HTMLDivElement | null;
+}) {
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const apply = (scale: number) =>
+      setStageLuminanceChannel(stage, 'ceiling', scale);
+
+    apply(getActiveAccessibilityPreference().stageBrightness);
+    const unsubscribe = subscribeToAccessibilityPreference((preference) =>
+      apply(preference.stageBrightness),
+    );
+
+    return () => {
+      unsubscribe();
+      // Leaving the ceiling engaged on a stage this hook no longer owns
+      // would dim a canvas nothing is watching.
+      apply(1);
+    };
+  }, [stageRef]);
 }

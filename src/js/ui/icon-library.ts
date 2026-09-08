@@ -137,6 +137,19 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M9 18c-4.51 2-5-2-7-2' } },
   ],
   spinner: [{ tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-6.219-8.56' } }],
+  /* Nearby: a filled centre with a ring around it — "this one, and what
+     sits next to it", distinct from shuffle's crossed arrows. */
+  nearby: [
+    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 2.5 } },
+    { tag: 'path', attrs: { d: 'M12 4.5a7.5 7.5 0 0 1 7.5 7.5' } },
+    { tag: 'path', attrs: { d: 'M12 19.5A7.5 7.5 0 0 1 4.5 12' } },
+  ],
+  /* Stay here: a pin, matching the "pinned parameter" language the perform
+     surface already uses for "held in place on purpose". */
+  pin: [
+    { tag: 'path', attrs: { d: 'M12 17v4' } },
+    { tag: 'path', attrs: { d: 'M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z' } },
+  ],
   shuffle: [
     {
       tag: 'path',
