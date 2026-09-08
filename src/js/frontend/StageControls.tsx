@@ -417,6 +417,15 @@ export function StageControls({
       action: () => run(() => openPerformPicker()),
     },
     {
+      // Duplicated from the dock on purpose: the dock button is hidden at
+      // phone widths (StageControls.module.css), and a verb that vanishes
+      // with the viewport needs a second home. Same body, same id.
+      icon: 'nearby' as const,
+      label: 'Nearby preset',
+      actionId: 'nearby-preset',
+      action: () => run(() => handleNearby()),
+    },
+    {
       // The behaviour is as old as the MilkDrop keybindings and has always
       // been reachable by pressing L; what it never had was anything on
       // screen, so it could only be used by someone who already knew. It
