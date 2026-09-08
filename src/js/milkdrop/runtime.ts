@@ -25,7 +25,11 @@ import {
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
-import { isPresetLocked, togglePresetLock } from '../core/preset-lock.ts';
+import {
+  isPresetLocked,
+  setPresetLocked,
+  togglePresetLock,
+} from '../core/preset-lock.ts';
 import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
@@ -1315,6 +1319,11 @@ function buildExperienceController(
       deps.getDisposeRequestedPresetListener?.()?.();
       deps.catalogCoordinator?.dispose();
       deps.disposeRuntimeSignalHub?.();
+      // The lock outlives this experience otherwise. It used to be a closure
+      // variable that died with the instance; as a module store it survives a
+      // teardown, so a backend switch or remount would come back with
+      // auto-advance still paused and no UI having asked for it.
+      setPresetLocked(false);
     },
   };
 }

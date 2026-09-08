@@ -17,6 +17,14 @@
  * Deliberately not persisted, unlike `live-performance-mode.ts`. Locking is
  * about *this* preset in *this* sitting; restoring it on the next visit
  * would silently disable autoplay for someone with no memory of asking.
+ *
+ * One store per document, which is the same scope `audio-gesture-gate.ts` and
+ * `live-performance-mode.ts` take and the same scope the shell's single stage
+ * has. A page running several experiences at once — the catalog tile lab,
+ * preview capture alongside the stage — shares one lock between them. That is
+ * why `createMilkdropExperience().dispose()` clears it: a module store does
+ * not die with the instance that set it, and inheriting a previous
+ * experience's lock reads as autoplay being broken.
  */
 
 type Listener = () => void;
