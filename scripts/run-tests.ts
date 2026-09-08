@@ -9,7 +9,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const TEST_DIR = path.resolve('tests');
-const TEST_FILE_PATTERN = /\.test\.(?:ts|js)$/;
+// React component tests are `.test.tsx`. Matching only ts/js silently
+// excluded 13 unit files from every profile — they ran only when a developer
+// pointed `bun test` at them by hand, so a guard could rot for a month and the
+// gate stayed green. Mirrors bun test's own default extension set.
+const TEST_FILE_PATTERN = /\.test\.(?:ts|tsx|js|jsx)$/;
 
 /**
  * Test categories are defined by the folder a test lives in, not by a
@@ -51,7 +55,7 @@ const PROFILES: Record<string, Category[]> = {
 
 async function listTestFiles(dir: string): Promise<string[]> {
   try {
-    const glob = new Bun.Glob('**/*.test.{ts,js}');
+    const glob = new Bun.Glob('**/*.test.{ts,tsx,js,jsx}');
     const files: string[] = [];
     const relDir = path.relative(process.cwd(), dir);
     for await (const file of glob.scan({ cwd: dir })) {
