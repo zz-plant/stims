@@ -80,6 +80,18 @@ describe('preset flash-risk lab', () => {
       expect(report.maxTransitionsPerSecondEstimate).toBeGreaterThanOrEqual(0);
       expect(fs.existsSync(report.artifacts.reportJson)).toBe(true);
     },
-    120_000,
+    // A hang guard, not a performance assertion. Measured 2026-09-08 on an
+    // M1 Max: 4.9s run alone, 6–7s to a live preset inside the parallel gate
+    // at load average 20. It sits above the sum of the lab's own waits (dev
+    // server 30s, browser launch 30s, navigation 30s, preset ready 60s, demo
+    // audio 30s, sampling 3s) so whichever of those gives up first reports
+    // why through `loadError`, which the assertion above prints, rather
+    // than bun reporting an opaque timeout. The gate flake that day looked
+    // like a timeout — 73–78s, roughly one run in three — but was the lab
+    // losing Chrome's autoplay gate and then spending 65s on a fallback that
+    // could not work; a longer budget alone would not have changed the
+    // verdict. Both are fixed in preset-lab-flash-risk.ts and the shared
+    // Chromium args in run-milkdrop-loop-visual-sweep.ts.
+    200_000,
   );
 });
