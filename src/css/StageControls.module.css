@@ -1,24 +1,3 @@
-/* Audio level meter. Widened from a 4px hairline: it is the bar's only
-   readout that the sound is actually reaching the visuals, which is the first
-   thing anyone checks when a preset looks inert, and at 4px it read as a
-   rendering artifact rather than a meter. */
-.energyBar {
-  flex-shrink: 0;
-  width: 6px;
-  height: 22px;
-  margin: 0 6px 0 10px;
-  border-radius: var(--radius-hairline);
-  background: var(--stims-cool, #77c9ff);
-  transform-origin: 50% 100%;
-  transform: scaleY(calc(0.3 + var(--energy, 0) * 0.7));
-  opacity: calc(0.55 + var(--energy, 0) * 0.45);
-  box-shadow: 0 0 12px rgba(119, 201, 255, calc(var(--energy, 0) * 0.95));
-  transition:
-    transform 0.1s ease,
-    opacity 0.1s ease,
-    box-shadow 0.1s ease;
-}
-
 .bar {
   position: fixed;
   bottom: 0;

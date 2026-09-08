@@ -34,6 +34,7 @@ import {
   type FlashGovernorDecision,
 } from './flash-governor.ts';
 import { createFlashSampler, type FlashSampler } from './flash-sampler.ts';
+import { setStageLuminanceChannel } from './stage-luminance.ts';
 
 export type FlashSafetyOptions = {
   /** The presented canvas to observe. */
@@ -177,6 +178,10 @@ export function createFlashSafetyController(
  * The DOM half: applies a luminance scale to a stage element as a CSS
  * brightness filter.
  *
+ * Writes through `stage-luminance.ts` rather than touching `style.filter`
+ * directly: the visitor's comfort ceiling shares that one property, and this
+ * loop would overwrite it every frame.
+ *
  * Composited by the browser, so it costs nothing per frame and works
  * identically over a WebGL or a WebGPU canvas. CSS brightness multiplies
  * sRGB-encoded values rather than linear light, so the actual luminance
@@ -186,7 +191,6 @@ export function createFlashSafetyController(
  */
 export function createStageLuminanceApplier(stage: HTMLElement) {
   return (scale: number) => {
-    stage.style.filter =
-      scale >= 0.999 ? '' : `brightness(${scale.toFixed(3)})`;
+    setStageLuminanceChannel(stage, 'governor', scale);
   };
 }

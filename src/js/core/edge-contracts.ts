@@ -79,7 +79,35 @@ export type VisualSearchRequest = {
   description: string;
   /** Returns the raw query embedding instead of running the vector search. */
   embedOnly?: boolean;
+  /**
+   * How many matches to return, 1–{@link MAX_VISUAL_SEARCH_RESULTS}.
+   *
+   * The finder panel shows a short list and wants the default. "Nearby"
+   * wants a deep one: it plays the best match that is not among the
+   * recently-played, so its usable supply is the result count minus the
+   * recency window — measured on the deployed index, a fixed five ran out
+   * after four presses.
+   */
+  topK?: number;
 };
+
+/** Default result count: the size of the finder panel's list. */
+export const DEFAULT_VISUAL_SEARCH_RESULTS = 5;
+
+/**
+ * Ceiling on requested matches. Vectorize charges per queried vector and the
+ * endpoint is rate-limited but public, so the count is clamped server-side
+ * rather than trusted from the client.
+ */
+export const MAX_VISUAL_SEARCH_RESULTS = 30;
+
+/** Clamps a requested count onto the supported range. */
+export function clampVisualSearchResults(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return DEFAULT_VISUAL_SEARCH_RESULTS;
+  }
+  return Math.min(MAX_VISUAL_SEARCH_RESULTS, Math.max(1, Math.floor(value)));
+}
 
 export const VisualSearchRequestSchema = contractSchema<VisualSearchRequest>(
   (input) => {
@@ -90,9 +118,15 @@ export const VisualSearchRequestSchema = contractSchema<VisualSearchRequest>(
     if (input.embedOnly !== undefined && !isBoolean(input.embedOnly)) {
       return null;
     }
+    if (input.topK !== undefined && typeof input.topK !== 'number') {
+      return null;
+    }
     const result: VisualSearchRequest = { description: input.description };
     if (input.embedOnly !== undefined) {
       result.embedOnly = input.embedOnly;
+    }
+    if (input.topK !== undefined) {
+      result.topK = clampVisualSearchResults(input.topK);
     }
     return result;
   },

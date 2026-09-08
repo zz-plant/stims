@@ -25,6 +25,7 @@ import {
 } from '../core/live-performance-mode.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
+import { isPresetLocked, togglePresetLock } from '../core/preset-lock.ts';
 import type {
   AdaptiveQualityController,
   AdaptiveQualityState,
@@ -187,7 +188,6 @@ export function createMilkdropExperience({
   let currentFrameState: MilkdropFrameState | null = null;
   const transitionController = createMilkdropTransitionController();
   let autoplay = preferences.getAutoplay();
-  let lockedPreset = false;
   let blendDuration = preferences.getBlendDuration(
     DEFAULT_BLEND_DURATION_SECONDS,
   );
@@ -791,10 +791,11 @@ export function createMilkdropExperience({
         void nudgeNumericField(args);
       },
       togglePresetLock: () => {
-        lockedPreset = !lockedPreset;
-        setOverlayStatus(lockedPreset ? 'Preset locked.' : 'Preset unlocked.');
+        setOverlayStatus(
+          togglePresetLock() ? 'Staying on this preset.' : 'Auto-advance on.',
+        );
       },
-      isPresetLocked: () => lockedPreset,
+      isPresetLocked,
     },
   });
 
@@ -884,7 +885,7 @@ export function createMilkdropExperience({
     transitionController,
     getBlendDuration: () => blendDuration,
     getTransitionMode: () => transitionMode,
-    getAutoplay: () => autoplay && !lockedPreset,
+    getAutoplay: () => autoplay && !isPresetLocked(),
     getLastPresetSwitchAt: () => lastPresetSwitchAt,
     updateAgentDebugSnapshot,
     agentModeEnabled,

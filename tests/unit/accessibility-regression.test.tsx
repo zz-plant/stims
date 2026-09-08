@@ -22,11 +22,23 @@ describe('Accessibility regression guards', () => {
       }),
     );
 
-    const toggles = rendered.container.querySelectorAll('[aria-expanded]');
-    expect(toggles.length).toBeGreaterThan(0);
-    expect(rendered.container.querySelectorAll('[aria-pressed]').length).toBe(
-      0,
-    );
+    // Scoped to disclosure controls, not the whole bar. StageControls also
+    // holds genuine on/off toggles (full screen, save preset) whose state IS
+    // pressed-ness, and aria-pressed is right for those — the same pattern
+    // BrowseSheetPanel and PresetGrid use. What must never happen is a control
+    // that opens a menu or panel announcing "pressed" when the state a screen
+    // reader needs is collapsed/expanded.
+    const disclosures = [
+      ...rendered.container.querySelectorAll(
+        '[aria-expanded], [aria-haspopup]',
+      ),
+    ];
+    expect(disclosures.length).toBeGreaterThan(0);
+
+    for (const disclosure of disclosures) {
+      expect(disclosure.getAttribute('aria-expanded')).not.toBeNull();
+      expect(disclosure.getAttribute('aria-pressed')).toBeNull();
+    }
 
     rendered.dispose();
   });
