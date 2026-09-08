@@ -1073,21 +1073,51 @@ const stateChangeHandlers = new WeakMap<AudioContext, () => void>();
 let resumeOnVisibleInstalled = false;
 
 /**
+ * Whether the page has ever been interacted with.
+ *
+ * `true` when the browser cannot tell us: a false "tap for sound" on a
+ * browser without this API would be worse than staying quiet, and every
+ * engine that withholds audio this way implements it.
+ */
+function hasHadUserActivation(): boolean {
+  const activation =
+    typeof navigator === 'undefined' ? undefined : navigator.userActivation;
+  return activation ? activation.hasBeenActive : true;
+}
+
+/**
  * Publish "audio is set up but silent, waiting for a gesture" so the UI can
- * say so. A suspended context looks exactly like a working one from the
+ * say so. A gesture-gated context looks exactly like a working one from the
  * outside — the session is active, the analyser just returns zeros — and the
  * deep-link path deliberately starts audio without a click, so without this
  * the visitor gets silence with no explanation. See audio-gesture-gate.ts.
+ *
+ * Two signals, because a suspended context is only one of the two shapes this
+ * takes. Measured in Chrome 2026-09-08 on the `?audio=demo` arrival: both
+ * contexts report `state: 'running'` with `currentTime` advancing, and the
+ * analyser still reads exactly zero until the first real click — after which
+ * it reads 0.59 with nothing else changed. A gate watching only for
+ * 'suspended' therefore reported "nothing is waiting" during precisely the
+ * silence it exists to explain, and `SilentAudioNotice` stayed hidden.
+ *
+ * The activation check is deliberately not a substitute for the state check:
+ * a context can also be suspended long after the visitor has interacted (a
+ * backgrounded tab on mobile), which `hasBeenActive` would call fine.
  */
 function publishGestureGate() {
-  let suspended = false;
+  if (activeContexts.size === 0) {
+    reportAudioAwaitingGesture(false);
+    return;
+  }
+
   for (const context of activeContexts) {
     if (context.state === 'suspended') {
-      suspended = true;
-      break;
+      reportAudioAwaitingGesture(true);
+      return;
     }
   }
-  reportAudioAwaitingGesture(suspended);
+
+  reportAudioAwaitingGesture(!hasHadUserActivation());
 }
 
 function tryResumeAllActiveContexts() {
@@ -1122,6 +1152,10 @@ function installResumeOnVisible() {
 
   const handleUserGesture = () => {
     tryResumeAllActiveContexts();
+    // `navigator.userActivation` fires no event of its own, so the gate has
+    // to be re-published here; a context that was never suspended produces no
+    // `statechange` to ride on, and the notice would outlive the silence.
+    publishGestureGate();
   };
 
   document.addEventListener('pointerdown', handleUserGesture, {

@@ -115,4 +115,109 @@ describe('audio gesture gate wiring', () => {
     unregisterAudioContext(fakeContext);
     expect(isAudioAwaitingGesture()).toBe(false);
   });
+
+  test('a running context still counts as gated before the first interaction', () => {
+    // Measured in Chrome 2026-09-08 on the `?audio=demo` arrival: both
+    // contexts report `state: 'running'` with `currentTime` advancing, and
+    // the analyser reads exactly zero until the first real click — then 0.59
+    // with nothing else changed. Watching only for 'suspended' reported
+    // "nothing is waiting" during the exact silence this gate exists to
+    // explain, and SilentAudioNotice stayed hidden the whole time.
+    withUserActivation(false, () => {
+      const context = fakeContext('running');
+      registerAudioContext(context);
+      expect(isAudioAwaitingGesture()).toBe(true);
+      unregisterAudioContext(context);
+    });
+  });
+
+  test('a running context after an interaction is simply working audio', () => {
+    withUserActivation(true, () => {
+      const context = fakeContext('running');
+      registerAudioContext(context);
+      expect(isAudioAwaitingGesture()).toBe(false);
+      unregisterAudioContext(context);
+    });
+  });
+
+  test('a suspended context is gated even long after an interaction', () => {
+    // The activation check adds to the state check rather than replacing it:
+    // a backgrounded tab on mobile suspends a context the visitor has already
+    // interacted with, and `hasBeenActive` would call that fine.
+    withUserActivation(true, () => {
+      const context = fakeContext('suspended');
+      registerAudioContext(context);
+      expect(isAudioAwaitingGesture()).toBe(true);
+      unregisterAudioContext(context);
+    });
+  });
+
+  test('no contexts means nothing is waiting, whatever the activation state', () => {
+    withUserActivation(false, () => {
+      expect(isAudioAwaitingGesture()).toBe(false);
+    });
+  });
+
+  test('a browser without the activation API is never told to tap', () => {
+    // Claiming a pending gesture on a browser that cannot report one would
+    // put "click for sound" over audio that is already playing.
+    withoutUserActivation(() => {
+      const context = fakeContext('running');
+      registerAudioContext(context);
+      expect(isAudioAwaitingGesture()).toBe(false);
+      unregisterAudioContext(context);
+    });
+  });
 });
+
+function fakeContext(state: AudioContextState): AudioContext {
+  return {
+    state,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  } as unknown as AudioContext;
+}
+
+/** Runs `body` with `navigator.userActivation.hasBeenActive` forced. */
+function withUserActivation(hasBeenActive: boolean, body: () => void) {
+  const target = navigator as unknown as Record<string, unknown>;
+  const had = Object.hasOwn(target, 'userActivation');
+  const previous = target.userActivation;
+  Object.defineProperty(target, 'userActivation', {
+    value: { hasBeenActive, isActive: hasBeenActive },
+    configurable: true,
+    writable: true,
+  });
+  try {
+    body();
+  } finally {
+    if (had) {
+      Object.defineProperty(target, 'userActivation', {
+        value: previous,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      delete target.userActivation;
+    }
+  }
+}
+
+/** Runs `body` on a browser that does not implement the activation API. */
+function withoutUserActivation(body: () => void) {
+  const target = navigator as unknown as Record<string, unknown>;
+  const had = Object.hasOwn(target, 'userActivation');
+  const previous = target.userActivation;
+  delete target.userActivation;
+  try {
+    body();
+  } finally {
+    if (had) {
+      Object.defineProperty(target, 'userActivation', {
+        value: previous,
+        configurable: true,
+        writable: true,
+      });
+    }
+  }
+}
