@@ -293,12 +293,28 @@ export function softwareRenderRequested(): boolean {
   return process.env.STIMS_SOFTWARE_RENDER === '1';
 }
 
+/**
+ * Every harness sharing these args loads the page with `?audio=demo`, and
+ * the demo track is a Web Audio graph. Chrome's autoplay policy decides at
+ * AudioContext creation whether a page may start audio without a user
+ * gesture, and headless under `bun run test:gate` that decision came out
+ * differently from run to run. Measured 2026-09-08 on the flash-risk lab:
+ * failing runs logged "The AudioContext was not allowed to start" five
+ * times and both contexts stayed suspended for the entire 72s the lab
+ * waited; passing runs on the same machine, minutes apart, had audio live
+ * within 200ms of the preset. These harnesses measure presets, not Chrome's
+ * autoplay heuristics, so the policy is switched off — the same flag
+ * generate-thumbnails.ts and generate-readme-clips.ts already pass.
+ */
+const AUTOPLAY_ARGS = ['--autoplay-policy=no-user-gesture-required'];
+
 export function resolveLoopSweepChromiumArgs(
   renderer: SweepOptions['renderer'],
   _headless: boolean,
 ) {
   if (renderer === 'webgpu') {
     return [
+      ...AUTOPLAY_ARGS,
       '--enable-unsafe-webgpu',
       '--ignore-gpu-blocklist',
       '--enable-features=WebGPU,SharedArrayBuffer',
@@ -306,6 +322,7 @@ export function resolveLoopSweepChromiumArgs(
   }
   if (softwareRenderRequested()) {
     return [
+      ...AUTOPLAY_ARGS,
       '--use-angle=swiftshader',
       '--use-gl=angle',
       '--enable-webgl',
@@ -313,7 +330,7 @@ export function resolveLoopSweepChromiumArgs(
       '--ignore-gpu-blocklist',
     ];
   }
-  return ['--ignore-gpu-blocklist'];
+  return [...AUTOPLAY_ARGS, '--ignore-gpu-blocklist'];
 }
 
 /**
