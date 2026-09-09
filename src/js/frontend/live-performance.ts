@@ -20,6 +20,7 @@
  * module stays free of React and the engine graph.
  */
 
+import { parseURLParams } from '../core/url-params.ts';
 import { getAgentTelemetry } from './agent-bridge.ts';
 import {
   bind as bindModulator,
@@ -686,6 +687,37 @@ declare global {
 }
 
 /**
+ * Say once, in the console, that this API exists.
+ *
+ * `window.__stims_live` has no UI and no URL flag — a console global is the
+ * whole interface — so without a line like this the only way to find ramps,
+ * modulators, macros, scenes and pattern playback is to read the bundle. That
+ * is not discovery, and the feature was effectively write-only.
+ *
+ * Deliberately one grouped line rather than a banner: this shares a console
+ * with the app's own diagnostics, and an ASCII splash would push real output
+ * off the top of the buffer.
+ *
+ * Silent in agent and embed modes. Agent mode exists to give automation a
+ * clean console to read, and an embedded canvas is someone else's page —
+ * neither has a person who could act on the hint.
+ */
+function announceConsoleApi(): void {
+  if (consoleApiAnnounced) return;
+  consoleApiAnnounced = true;
+  const { routing } = parseURLParams();
+  if (routing.agentMode || routing.previewMode) return;
+  console.info(
+    '%cstims%c live-coding API on window.__stims_live — ramp(), bind() for LFO/audio modulators, playPattern() for sound, saveScene(). Call __stims_live.listMacros() or read docs/agents/browser-automation.md.',
+    'font-weight:bold',
+    'font-weight:normal',
+  );
+}
+
+/** Module-scoped so an HMR remount does not reprint the hint every save. */
+let consoleApiAnnounced = false;
+
+/**
  * Publish the runtime on `window.__stims_live`. Returns a teardown that only
  * clears the global if it still owns it, so a remount during HMR cannot
  * unpublish its successor.
@@ -734,6 +766,7 @@ export function installLivePerformance(next: LivePerformanceDeps): () => void {
   };
 
   window.__stims_live = api;
+  announceConsoleApi();
 
   return () => {
     uninstallModulation();

@@ -4,7 +4,10 @@ import type {
   MidiBindingMap,
   MidiDeviceInfo,
 } from '../core/services/webmidi-controller.ts';
-import { webMidiService } from '../core/services/webmidi-controller.ts';
+import {
+  VIRTUAL_GAMEPAD_DEVICE_ID,
+  webMidiService,
+} from '../core/services/webmidi-controller.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { describeParameterState } from './parameter-state.ts';
 
@@ -98,6 +101,15 @@ export function PerformanceHardwareSection() {
         Connect a class-compliant MIDI controller and learn your own mappings —
         or let Claude drive the show through an MCP session (shows up below as
         "Claude (MCP)").
+      </p>
+      {/* A gamepad has arrived here as a device since the performance source
+          shipped, but the copy named only MIDI and Claude, so the one piece
+          of hardware most people already own read as unsupported. */}
+      <p className="ctl-section__note">
+        A game controller counts too, with nothing to connect: plug one in and
+        it appears below as "Gamepad", sticks and triggers already mapped. Known
+        controllers — nanoKONTROL2, Launch Control XL, MiniLab 3 — arrive with
+        their factory mapping instead of the generic one.
       </p>
 
       <div className="ctl-row ctl-row--stack">
@@ -248,11 +260,16 @@ function MidiDeviceRow({
         <span className="ctl-row__text">
           <span className="ctl-row__label">{device.name}</span>
           <span className="ctl-row__hint">
-            {device.kind === 'virtual'
-              ? 'Driven by an MCP session, not physical hardware.'
-              : device.state === 'connected'
-                ? 'Connected'
-                : 'Disconnected — plug it back in to resume.'}
+            {/* Both virtual devices used to share Claude's description, so a
+                gamepad row told the user it was "driven by an MCP session" —
+                the one sentence guaranteed to make someone stop looking. */}
+            {device.id === VIRTUAL_GAMEPAD_DEVICE_ID
+              ? 'A connected game controller. Sticks and triggers, mapped like a MIDI device.'
+              : device.kind === 'virtual'
+                ? 'Driven by an MCP session, not physical hardware.'
+                : device.state === 'connected'
+                  ? 'Connected'
+                  : 'Disconnected — plug it back in to resume.'}
           </span>
         </span>
         <input
