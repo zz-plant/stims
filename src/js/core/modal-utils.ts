@@ -32,11 +32,52 @@ export function getFocusableElements(container: HTMLElement) {
   });
 }
 
+/**
+ * Duck-typed rather than `instanceof Node`.
+ *
+ * `instanceof` compares against one realm's constructor, so it answers false
+ * for a node that came from another document — an iframe, or a test DOM whose
+ * globals are not the ones this module closed over — and the focus trap then
+ * silently stops enforcing instead of failing loudly. `nodeType` is the part
+ * `Node.prototype.contains` actually needs.
+ */
+function isNode(value: unknown): value is Node {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Node).nodeType === 'number'
+  );
+}
+
+/**
+ * Every trap currently installed, outermost first.
+ *
+ * Only the innermost one may act. `handleFocusIn` below is a document-level
+ * listener that pulls focus back into its own panel whenever focus lands
+ * outside it, and nothing stopped two of those existing at once: opening the
+ * shortcuts dialog (or the command palette) over an already-trapped Settings
+ * panel left the panel mounted, so the dialog pulled focus in, the panel's
+ * handler saw a target outside itself and pulled it back, and that dispatched
+ * another focusin — synchronously, with no settling state. The tab locks up.
+ *
+ * A stack rather than a single "current" reference, because traps do not
+ * always unwind in order: closing the outer panel first must leave the dialog
+ * still enforcing.
+ */
+const activeFocusTraps: HTMLElement[] = [];
+
+function isInnermostTrap(panel: HTMLElement) {
+  return activeFocusTraps[activeFocusTraps.length - 1] === panel;
+}
+
 export function trapFocusWithin(panel: HTMLElement) {
   const focusable = () => getFocusableElements(panel);
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'Tab') return;
+    // A nested trap's panel may sit inside this one, in which case its Tab
+    // events bubble up here too. The innermost trap owns them.
+    if (!isInnermostTrap(panel)) return;
 
     const items = focusable();
     if (items.length === 0) {
@@ -62,7 +103,8 @@ export function trapFocusWithin(panel: HTMLElement) {
   };
 
   const handleFocusIn = (event: FocusEvent) => {
-    if (!(event.target instanceof Node) || panel.contains(event.target)) {
+    if (!isInnermostTrap(panel)) return;
+    if (!isNode(event.target) || panel.contains(event.target)) {
       return;
     }
 
@@ -74,10 +116,15 @@ export function trapFocusWithin(panel: HTMLElement) {
     }
   };
 
+  activeFocusTraps.push(panel);
   panel.addEventListener('keydown', handleKeydown);
   panel.ownerDocument.addEventListener('focusin', handleFocusIn);
 
   return () => {
+    const index = activeFocusTraps.lastIndexOf(panel);
+    if (index !== -1) {
+      activeFocusTraps.splice(index, 1);
+    }
     panel.removeEventListener('keydown', handleKeydown);
     panel.ownerDocument.removeEventListener('focusin', handleFocusIn);
   };
