@@ -292,6 +292,16 @@ export type EditorPanelCallbacks = {
   onExport: () => void;
   onDeletePreset: () => void;
   onRequestImport: () => void;
+  /**
+   * Copy a link that carries the editor's live source in a `#code=` hash.
+   *
+   * The shell has written that hash into the address bar on every keystroke
+   * since remix links shipped, so the link already existed — it just had no
+   * name, no button, and nothing anywhere saying an unsaved draft travels in
+   * a URL. Sharing work in progress was a feature you could only use if you
+   * had read the router.
+   */
+  onCopyShareLink: () => void;
 };
 
 const MILKDROP_TO_CM_SEVERITY: Record<
@@ -859,6 +869,8 @@ export class EditorPanel {
   private readonly problemsCount: HTMLElement;
   private readonly diagnosticsList: HTMLElement;
   private readonly deleteButton: HTMLButtonElement;
+  /** Relabelled per compile: what the link carries depends on `state.dirty`. */
+  private readonly shareLinkItem: HTMLButtonElement;
   private readonly editor: EditorView;
   private readonly clearEditorDebounce: () => void;
   private readonly unsubscribeTheme: () => void;
@@ -1143,6 +1155,12 @@ export class EditorPanel {
       'danger',
     );
     this.deleteButton.hidden = true;
+    // Sits with Export because they answer the same question — "how do I get
+    // this out of here" — and a link is the answer people reach for first.
+    this.shareLinkItem = menuItem('Copy link to this preset', () =>
+      this.callbacks.onCopyShareLink(),
+    );
+    this.shareLinkItem.dataset.action = 'editor-copy-share-link';
     menu.append(
       menuItem('Remix', () => this.callbacks.onDuplicatePreset()),
       menuItem('Snapshot as Slot A', () => this.snapshotSlotA()),
@@ -1150,6 +1168,7 @@ export class EditorPanel {
       menuItem('Clear snapshots', () => this.clearSnapshots()),
       menuItem('Import…', () => this.callbacks.onRequestImport()),
       menuItem('Export', () => this.callbacks.onExport()),
+      this.shareLinkItem,
       menuSeparator,
       this.deleteButton,
     );
@@ -2016,6 +2035,15 @@ export class EditorPanel {
         : state.dirty
           ? 'dirty'
           : 'synced';
+    // Says out loud that the draft rides along, at the one moment the claim
+    // is checkable: the reader has unsaved edits in front of them.
+    this.shareLinkItem.textContent = state.dirty
+      ? 'Copy link to this edit'
+      : 'Copy link to this preset';
+    this.shareLinkItem.title = state.dirty
+      ? 'Copies a link carrying your unsaved source, so it opens in their editor exactly as it is here.'
+      : 'Copies a link to this preset. Edit anything and the link carries your draft too.';
+
     this.stateEl.dataset.state = state_;
     this.stateLabel.textContent = hasErrors
       ? 'Holding last good frame'

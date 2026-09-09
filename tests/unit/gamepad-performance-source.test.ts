@@ -10,6 +10,7 @@ type NoteCall = [string, number, boolean, number];
 function makeHarness(pads: Array<Partial<Gamepad> | null>) {
   const cc: CcCall[] = [];
   const notes: NoteCall[] = [];
+  const seeded: boolean[] = [];
   let pending: (() => void) | null = null;
 
   const stop = startGamepadPerformanceSource(
@@ -20,6 +21,11 @@ function makeHarness(pads: Array<Partial<Gamepad> | null>) {
       },
       injectNote: (deviceId, note, on, velocity) => {
         notes.push([deviceId, note, on, velocity ?? 0]);
+      },
+      // Installs the pad's default CC map on the first pad seen; the source
+      // holds off until then so an unattached controller claims no targets.
+      ensureGamepadDefaults: () => {
+        seeded.push(true);
       },
     },
     {
@@ -37,6 +43,7 @@ function makeHarness(pads: Array<Partial<Gamepad> | null>) {
   return {
     cc,
     notes,
+    seeded,
     stop,
     tick() {
       const next = pending;
@@ -61,6 +68,22 @@ function makePad(
 }
 
 describe('gamepad performance source', () => {
+  test('installs the default mapping once, and only once a pad exists', () => {
+    // Seeding at construction instead would make `virtual:gamepad` claim
+    // zoom/rot/dx/dy on every machine, and the editor's value chips would
+    // report a controller the user does not own.
+    const empty = makeHarness([null]);
+    empty.tick();
+    expect(empty.seeded).toHaveLength(0);
+    empty.stop();
+
+    const h = makeHarness([makePad([0, 0, 0, 0])]);
+    h.tick();
+    h.tick();
+    expect(h.seeded).toHaveLength(1);
+    h.stop();
+  });
+
   test('maps a centred stick to the middle of the CC range, not zero', () => {
     const h = makeHarness([makePad([0, 0, 0, 0])]);
     h.tick();

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import '../../css/editor-panel.css';
 import type { MilkdropEditorSessionState } from '../milkdrop/types.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { copyRemixLinkAction } from './workspace-actions.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 export function EditorPanel() {
@@ -22,6 +23,9 @@ export function EditorPanel() {
 
   const handleImportRef = useRef(ui.handleImport);
   handleImportRef.current = ui.handleImport;
+
+  const uiRef = useRef(ui);
+  uiRef.current = ui;
 
   const sessionState = engineSnapshot?.sessionState ?? null;
   // The panel is code-split, so it appends itself a tick or two after this
@@ -63,6 +67,16 @@ export function EditorPanel() {
         // Was a no-op, which made the panel's Import button dead UI.
         onRequestImport: () => {
           importInputRef.current?.click();
+        },
+        // Reads the session through refs rather than closing over the render's
+        // values: this callback is handed to the panel once, on mount, and a
+        // captured source would freeze at whatever was on screen then.
+        onCopyShareLink: () => {
+          void copyRemixLinkAction({
+            source: sessionStateRef.current?.source ?? '',
+            dirty: sessionStateRef.current?.dirty ?? false,
+            announce: (message) => uiRef.current.setStatusMessage(message),
+          });
         },
       });
       panelRef.current = panel;

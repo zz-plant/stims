@@ -11,6 +11,7 @@
  * call in.
  */
 
+import { shareOrCopyLink } from '../utils/media/share-link.ts';
 import type {
   AudioSource,
   PanelState,
@@ -21,6 +22,7 @@ import {
   setSyncUrlParam,
   startOrCopyWatchParty,
 } from './sync-session.ts';
+import { buildRemixShareUrl } from './url-state.ts';
 import { recentlyOpenedPresetIds } from './workspace-helpers.ts';
 
 export interface PanelSurface {
@@ -106,6 +108,64 @@ export function startOrCopyWatchPartyAction(
   announce: (message: string) => void,
 ): void {
   void startOrCopyWatchParty(announce);
+}
+
+/**
+ * Put a link to the current preset — including the unsaved editor draft — on
+ * the clipboard.
+ *
+ * The `#code=` hash has been written into the address bar on every keystroke
+ * since remix links shipped, so copying the URL by hand already worked. What
+ * did not exist was any way to learn that: no control produced the link, and
+ * nothing named it, so the only people who could share a work-in-progress
+ * preset were the ones who had read `buildRemixShareUrl`.
+ *
+ * Built from the passed source rather than read off `window.location`,
+ * because the effect that maintains the hash runs after a render and the
+ * keystroke that prompted this copy may not have reached it yet.
+ */
+export async function copyRemixLinkAction({
+  source,
+  dirty,
+  announce,
+  share = shareOrCopyLink,
+  href = typeof window === 'undefined' ? '' : window.location.href,
+}: {
+  source: string;
+  dirty: boolean;
+  announce: (message: string) => void;
+  /** Test seam for the clipboard/native-share path. */
+  share?: typeof shareOrCopyLink;
+  href?: string;
+}): Promise<void> {
+  if (!href) return;
+  const url = buildRemixShareUrl(href, dirty && source ? source : null);
+  const result = await share(url, {
+    title: 'Stims preset',
+    text: dirty
+      ? 'Open this Stims preset draft in the editor.'
+      : 'Open this Stims preset.',
+  });
+
+  if (result === 'cancelled') return;
+
+  if (result === 'shared' || result === 'copied') {
+    const verb = result === 'shared' ? 'shared' : 'copied';
+    announce(
+      dirty && source
+        ? `Link ${verb} — it carries your unsaved edits, and opens in their editor.`
+        : `Link ${verb}.`,
+    );
+    return;
+  }
+
+  // No clipboard and no native share: the address bar is the fallback, and
+  // it already holds the same URL, so say that rather than reporting failure.
+  announce(
+    dirty && source
+      ? 'Could not reach the clipboard. The address bar already holds this link, edits included.'
+      : 'Could not reach the clipboard. Copy the link from the address bar.',
+  );
 }
 
 export function endWatchParty(announce: (message: string) => void): void {
