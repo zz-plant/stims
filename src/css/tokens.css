@@ -309,12 +309,17 @@
   --z-overlay: 18;
   --z-dropdown: 20;
   --z-dock: 25;
+
   /* Floating lab panels (Strudel) — above the dock so stage chrome cannot
      bury a tool the user is dragging, below toasts and modals so a notice or
      a dialog still wins. Previously a raw 40, which tied exactly with
      --z-modal-backdrop and left paint order to DOM order. */
   --z-lab-panel: 26;
   --z-filter-bar: 28;
+  /* The stage overflow menu. Above the dock it belongs to and the floating
+     lab panels, below --z-modal-backdrop so opening a panel covers it. It sat
+     at --z-dock, tying with the bar it opens from. */
+  --z-stage-menu: 29;
   --z-toast: 30;
   --z-alert: 35;
   --z-modal-backdrop: 40;
@@ -331,9 +336,12 @@
   --z-settings-panel: 1250;
   --z-fullscreen-panel: 1260;
   --z-error-overlay: 2000;
-  /* Named for the surface that uses it — the floating workspace toast. It was
-     --z-audio-match, whose only consumer was this toast; the audio-match toast
-     is a different component and lives in the toast stack at --z-toast. */
+  /* Every toast, above every overlay. Both toast surfaces live here now: the
+     ambient stack used to sit at --z-toast, below --z-modal-backdrop, so an
+     audio match found while a panel was open rendered behind it and expired
+     unseen on its own timer. Being on top is only safe because a toast moves
+     out of the way of whatever occupies the bottom of the screen — see the
+     data-sheet-open / data-menu-open rules in app-shell.css. */
   --z-toast-floating: 2100;
   /* Nothing may cover the skip link while it is focused: it is the first
      control a keyboard user reaches. It sat at --z-dropdown (20), under the

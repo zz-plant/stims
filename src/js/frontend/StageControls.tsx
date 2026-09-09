@@ -25,6 +25,10 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
+import {
+  useBottomOverlaySignal,
+  useEscapeHandler,
+} from './hooks/use-escape-handler.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
@@ -195,6 +199,18 @@ export function StageControls({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Toasts render above every overlay, so they have to know when something
+  // occupies the bottom of the screen and move out of its way. Sheets publish
+  // that from the shell as data-sheet-open; this menu is bottom-anchored too.
+  useBottomOverlaySignal(showMenu);
+
+  // A stable registration: the menu must keep Escape while it is open, even
+  // as the shell re-renders around it.
+  useEscapeHandler(showMenu, () => {
+    setShowMenu(false);
+    menuBtnRef.current?.focus();
+  });
+
   // ARIA already promises menu semantics (role="menu"/"menuitem"); this
   // backs that up with the arrow-key traversal a screen reader user would
   // reasonably expect from it, instead of leaving Tab as the only path.
@@ -255,10 +271,13 @@ export function StageControls({
   useEffect(() => {
     if (!showMenu) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
+      // The menu pattern closes on Tab: focus is meant to leave the menu and
+      // continue through the page. Without this, Tab walked focus into the
+      // content the menu is covering while the menu stayed open on top of it.
+      // Focus is left where Tab sends it rather than pulled back to the
+      // button, which is the point of pressing Tab.
+      if (event.key === 'Tab') {
         setShowMenu(false);
-        menuBtnRef.current?.focus();
       }
     };
     const handleResize = () => setShowMenu(false);
@@ -863,6 +882,12 @@ export function StageControls({
           </button>
         </div>
       </div>
+
+      {showMenu ? (
+        // Presentational only: the document pointerdown listener above already
+        // closes the menu on any press outside it, and this sits underneath.
+        <div className={styles.menuScrim} aria-hidden="true" />
+      ) : null}
 
       {showMenu ? (
         <div

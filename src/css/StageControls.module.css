@@ -293,6 +293,29 @@
   outline-offset: 1px;
 }
 
+/* Dims the stage behind the open menu.
+
+   The menu is 26 items and, on a phone, most of the screen. Without a scrim
+   it read as a slab dropped on top of live visuals with no indication that
+   the area around it was the way out, and its own translucent background had
+   to fight whatever the preset was doing underneath. */
+.menuScrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-stage-menu) - 1);
+  background: rgba(4, 7, 12, 0.55);
+  animation: menu-scrim-in 0.16s ease-out both;
+}
+
+@keyframes menu-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .menu {
   position: fixed;
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + 48px);
@@ -300,7 +323,9 @@
     max(12px, env(safe-area-inset-right)) +
     var(--stage-tool-inset, 0px)
   );
-  z-index: var(--z-dock);
+  /* Above the toast layer: this is what the user is pointing at, and an
+     ambient toast used to paint over its items. */
+  z-index: var(--z-stage-menu);
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -555,7 +580,13 @@
     left: max(8px, env(safe-area-inset-left));
     min-width: auto;
     bottom: calc(max(8px, env(safe-area-inset-bottom)) + 52px);
-    max-height: calc(100dvh - 80px);
+    /* Bounded so it reads as a panel over the stage rather than a takeover.
+       At `100dvh - 80px` it rendered 835px tall on a 915px screen, which is a
+       full-screen sheet wearing a menu's clothes — and it still scrolled, so
+       the extra height bought nothing but the impression that the app had
+       navigated somewhere. It stays anchored above the dock either way, so
+       the button that opened it is never covered. */
+    max-height: min(68dvh, calc(100dvh - 120px));
   }
 }
 

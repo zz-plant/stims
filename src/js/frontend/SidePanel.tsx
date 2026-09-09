@@ -15,6 +15,7 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
+import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { UiIcon } from './UiIcon.tsx';
 
@@ -310,17 +311,9 @@ export function SidePanel({
     }
   }, [open, onOpen]);
 
-  useEffect(() => {
-    if (!open || exiting) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        startClose();
-      }
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [open, exiting, startClose]);
+  // Registered rather than listening directly, so a dialog opened *over* this
+  // panel takes Escape instead of the panel underneath taking it.
+  useEscapeHandler(open && !exiting, startClose);
 
   if (!open && !exiting) return null;
 
