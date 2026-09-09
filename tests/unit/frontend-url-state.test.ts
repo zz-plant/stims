@@ -333,9 +333,14 @@ describe('frontend url state', () => {
     expect(parsed.search).toBe('?preset=signal-bloom');
   });
 
-  test('leaves the url untouched when a source cannot be latin-1 encoded', () => {
+  test('carries source that is not latin-1 encodable', () => {
     const href = 'https://toil.fyi/?preset=signal-bloom';
-    // btoa throws on non-Latin-1 text; the remix must not wipe the session.
-    expect(buildRemixShareUrl(href, '\u{1F600}')).toBe(href);
+    // `btoa` throws on anything outside Latin-1, so an emoji or a CJK
+    // comment used to drop the whole hash and share a link that silently
+    // omitted the edits it claimed to carry. The bytes are UTF-8 now.
+    const source = 'warp = 1; // \u{1F600} \u6E29\u5EA6';
+    const shared = buildRemixShareUrl(href, source);
+
+    expect(decodePresetCodeFromHash(new URL(shared).hash)).toBe(source);
   });
 });

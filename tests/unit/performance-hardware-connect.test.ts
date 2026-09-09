@@ -284,6 +284,52 @@ describe('gamepad default bindings', () => {
     localStorage.removeItem(MIDI_STORAGE_KEY);
   });
 
+  it('leaves a map the performer emptied on purpose empty after a reload', () => {
+    localStorage.removeItem(MIDI_STORAGE_KEY);
+    const seeding = new WebMidiControllerService();
+    seeding.ensureGamepadDefaults();
+    for (const cc of Object.keys(DEFAULT_GAMEPAD_CC_BINDINGS)) {
+      seeding.unbindCc(VIRTUAL_GAMEPAD_DEVICE_ID, Number(cc));
+    }
+    expect(seeding.getBindings(VIRTUAL_GAMEPAD_DEVICE_ID)).toEqual({});
+
+    // Removing all six mappings with the per-binding remove controls leaves
+    // the same empty map the old bug left behind. Reading emptiness as the
+    // repair signal put every default back here and silently undid the
+    // choice; the persisted marker is what separates the two.
+    const reloaded = new WebMidiControllerService();
+    reloaded.ensureGamepadDefaults();
+
+    expect(reloaded.getBindings(VIRTUAL_GAMEPAD_DEVICE_ID)).toEqual({});
+    localStorage.removeItem(MIDI_STORAGE_KEY);
+  });
+
+  it('marks a record an older build seeded, so it is repaired at most once', () => {
+    // Written by a build that had no marker: the mapping is the factory one,
+    // so it was seeded, and clearing it later must stick.
+    localStorage.setItem(
+      MIDI_STORAGE_KEY,
+      JSON.stringify({
+        [VIRTUAL_GAMEPAD_DEVICE_ID]: {
+          enabled: true,
+          bindings: { ...DEFAULT_GAMEPAD_CC_BINDINGS },
+          noteBindings: {},
+        },
+      }),
+    );
+    const migrating = new WebMidiControllerService();
+    migrating.ensureGamepadDefaults();
+    for (const cc of Object.keys(DEFAULT_GAMEPAD_CC_BINDINGS)) {
+      migrating.unbindCc(VIRTUAL_GAMEPAD_DEVICE_ID, Number(cc));
+    }
+
+    const reloaded = new WebMidiControllerService();
+    reloaded.ensureGamepadDefaults();
+
+    expect(reloaded.getBindings(VIRTUAL_GAMEPAD_DEVICE_ID)).toEqual({});
+    localStorage.removeItem(MIDI_STORAGE_KEY);
+  });
+
   it('every stick axis rests on its parameter neutral', () => {
     // A pad sitting untouched must not bend the visuals: sticks self-centre
     // to CC 64ish and triggers rest at 0.

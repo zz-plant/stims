@@ -140,6 +140,12 @@ export async function copyRemixLinkAction({
 }): Promise<void> {
   if (!href) return;
   const url = buildRemixShareUrl(href, dirty && source ? source : null);
+  // Whether the draft actually made it into the link, rather than whether we
+  // asked for it. `buildRemixShareUrl` returns the URL unchanged if the hash
+  // cannot be built, and announcing "carries your unsaved edits" over a link
+  // that carries none sends the recipient to an empty editor, or to whatever
+  // stale draft the old hash held.
+  const carriesDraft = Boolean(dirty && source) && url.includes('#code=');
   const result = await share(url, {
     title: 'Stims preset',
     text: dirty
@@ -152,7 +158,7 @@ export async function copyRemixLinkAction({
   if (result === 'shared' || result === 'copied') {
     const verb = result === 'shared' ? 'shared' : 'copied';
     announce(
-      dirty && source
+      carriesDraft
         ? `Link ${verb} — it carries your unsaved edits, and opens in their editor.`
         : `Link ${verb}.`,
     );
@@ -162,7 +168,7 @@ export async function copyRemixLinkAction({
   // No clipboard and no native share: the address bar is the fallback, and
   // it already holds the same URL, so say that rather than reporting failure.
   announce(
-    dirty && source
+    carriesDraft
       ? 'Could not reach the clipboard. The address bar already holds this link, edits included.'
       : 'Could not reach the clipboard. Copy the link from the address bar.',
   );
