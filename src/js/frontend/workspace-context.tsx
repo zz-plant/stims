@@ -55,6 +55,8 @@ export interface WorkspaceContextValue {
   toast: {
     message: string;
     tone: 'info' | 'warn' | 'error';
+    /** True while the exit animation plays, just before it unmounts. */
+    exiting?: boolean;
   } | null;
   dismissToast: () => void;
   toggleExtendedSources: () => void;
