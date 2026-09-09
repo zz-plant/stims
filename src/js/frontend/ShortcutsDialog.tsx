@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { Fragment, useEffect, useState } from 'react';
+import { registerEscapeHandler } from '../core/modal-utils.ts';
 import {
   availableStageKeyDocs,
   availableStageSignalKeys,
@@ -35,11 +36,25 @@ export function ShortcutsDialog({
     autoFocus: true,
     restoreFocusOnUnmount: true,
     externalContainerRef: shortcutsRef,
+    // Land on the dialog itself rather than the first control inside it, as
+    // SidePanel does. Focusing a control scrolled the card to it, so the sheet
+    // opened part-way down with its own heading already scrolled off — and a
+    // screen reader announced that control instead of the dialog's name.
+    initialFocus: 'container',
   });
 
   useEffect(() => {
     if (open) setOverrides(readShortcutOverrides());
   }, [open]);
+
+  // Escape goes through the shared stack, not this dialog's own backdrop
+  // handler. The backdrop only sees keys that originate inside it, so with
+  // focus anywhere else the sheet this dialog was opened from took the press
+  // instead — closing the sheet and leaving the dialog stranded.
+  useEffect(() => {
+    if (!open) return;
+    return registerEscapeHandler(onClose);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -84,28 +99,33 @@ export function ShortcutsDialog({
   };
 
   return (
+    // The backdrop is the pointer affordance for dismiss. Its keyboard
+    // equivalents are Escape, dispatched to the innermost overlay by
+    // registerEscapeHandler above, and the Close button inside the card. A
+    // keydown handler here would be dead code: focus is trapped in the card,
+    // so the backdrop never receives one.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard dismiss is Escape, handled above
     <div
       className="stims-shell__shortcut-overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Shortcuts and gestures"
       onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
     >
       {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
       <div
         ref={shortcutsRef}
         className="stims-shell__shortcut-card"
+        // Focusable only as a landing spot for the trap's initial focus, so
+        // the sheet opens at its heading rather than scrolled to a control.
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           // Suppress everything else from reaching the global shortcut
-          // listener (typing a new binding while editing shouldn't also
-          // trigger it), but let Escape bubble to the backdrop's close
-          // handler above — otherwise the dialog that documents "Esc
-          // closes" is the one dialog Esc can't close, since focus is
-          // trapped inside this card the entire time it's open.
+          // listener — typing a new binding while editing must not also fire
+          // the action it is bound to. Escape is deliberately let through, so
+          // it reaches the document listener that closes the innermost
+          // overlay; this dialog is registered there as long as it is open.
           if (e.key !== 'Escape') {
             e.stopPropagation();
           }
