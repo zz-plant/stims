@@ -524,7 +524,11 @@ export function StageControls({
     },
     {
       icon: 'link' as const,
-      label: 'Share link',
+      // Mirrors the palette row: while the editor holds an unsaved draft the
+      // copied URL carries it, and this is the only place that says so.
+      label: engineSnapshot?.sessionState?.dirty
+        ? 'Share link (carries your edits)'
+        : 'Share link',
       actionId: 'share-link',
       action: () => run(() => void ui.handleShowCurrentLink()),
     },

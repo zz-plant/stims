@@ -46,7 +46,7 @@ export type GamepadPerformanceOptions = {
 
 type MidiSink = Pick<
   WebMidiControllerService,
-  'injectControlChange' | 'injectNote'
+  'injectControlChange' | 'injectNote' | 'ensureGamepadDefaults'
 >;
 
 export function isGamepadPerformanceSupported(): boolean {
@@ -96,11 +96,21 @@ export function startGamepadPerformanceSource(
     midi.injectControlChange(VIRTUAL_GAMEPAD_DEVICE_ID, cc, value);
   };
 
+  let seededBindings = false;
+
   const poll = () => {
     if (stopped) return;
     const pad =
       readGamepads().find((candidate) => candidate?.connected) ?? null;
     if (pad) {
+      // Bindings are installed here, on the first pad seen, rather than when
+      // the service is constructed: `virtual:gamepad` is a device on every
+      // machine, and a mapping that exists before the hardware does makes the
+      // editor and the parameter HUD report a controller nobody plugged in.
+      if (!seededBindings) {
+        seededBindings = true;
+        midi.ensureGamepadDefaults();
+      }
       for (let axis = 0; axis < Math.min(pad.axes.length, 4); axis += 1) {
         emitCc(axis, axisToCc(pad.axes[axis] ?? 0));
       }

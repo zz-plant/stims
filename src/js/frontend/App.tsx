@@ -87,6 +87,7 @@ import { reportLoadStatus } from './load-status.ts';
 import { dismissLoadingScreen } from './loading-screen.ts';
 import { prefetchPanelChunk } from './panel-chunks.ts';
 import { openPerformPicker, pinTarget, unpinTarget } from './perform-pins.ts';
+import { watchPerformanceHardware } from './performance-hardware-connect.ts';
 import {
   SilentAudioNotice,
   useAudioAwaitingGesture,
@@ -495,10 +496,15 @@ function StimsWorkspaceAppShell() {
   const hostingWatchParty =
     syncSession.role === 'host' && syncSession.status !== 'idle';
 
+  // Read here rather than at its use site further down, because the share
+  // action's label depends on it: a link copied mid-edit carries the draft,
+  // and the row is the only place that fact is ever stated.
+  const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
+
   // Behavior bodies live in workspace-actions.ts, shared with the stage
   // dock menu — a verb must not do different things depending on which
   // surface invoked it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen/hosting state
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are stable context methods; the list only needs to refresh with live/fullscreen/hosting/editor state
   const paletteActions: CommandAction[] = useMemo(
     () => [
       {
@@ -665,8 +671,14 @@ function StimsWorkspaceAppShell() {
       {
         id: 'share-link',
         group: 'Share',
-        label: 'Share link',
-        keywords: ['copy', 'url'],
+        // The link has carried a `#code=` hash of the live draft since remix
+        // links shipped — `buildCanonicalUrl` rewrites path and query and
+        // leaves the hash alone — but the row said only "Share link", so the
+        // one property that makes it interesting was invisible. Naming it
+        // costs a word and is the difference between a URL and a way to send
+        // someone the preset you are in the middle of writing.
+        label: editorDirty ? 'Share link (carries your edits)' : 'Share link',
+        keywords: ['copy', 'url', 'remix', 'draft'],
         run: () => void ui.handleShowCurrentLink(),
       },
       {
@@ -858,7 +870,7 @@ function StimsWorkspaceAppShell() {
           ]
         : []),
     ],
-    [liveMode, isFullscreen, hostingWatchParty, themeChoice],
+    [liveMode, isFullscreen, hostingWatchParty, themeChoice, editorDirty],
   );
 
   // Machine-readable state for automation: window.__stims_agent (snapshot,
@@ -1146,10 +1158,18 @@ function StimsWorkspaceAppShell() {
         },
       );
 
+      // Neither of the two lines above used to say anything, so the only way
+      // to find out a controller was live was to move one and watch.
+      const stopHardwareWatch = watchPerformanceHardware({
+        midi: webMidiService,
+        announce: (message) => uiRef.current.setStatusMessage(message),
+      });
+
       return () => {
         uninstallLive();
         unbindMidi();
         stopGamepad?.();
+        stopHardwareWatch();
       };
     });
   }, [engine]);
@@ -1410,6 +1430,16 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.routeState.panel, showHint]);
 
+  // Said at the first keystroke, because that is the moment the claim becomes
+  // checkable: there is now a draft, and the URL already holds it. Guarded on
+  // `visibleHint` like the interaction hint — showing one marks it seen, so
+  // stacking would silently burn whichever lost.
+  useEffect(() => {
+    if (!editorDirty || visibleHint) return;
+    if (ui.routeState.panel !== 'editor') return;
+    showHint('editor-dirty-link');
+  }, [editorDirty, visibleHint, ui.routeState.panel, showHint]);
+
   // Presets that read the interaction signals are the minority, and nothing
   // marked them: the stage keys and drag gestures did nothing on most of the
   // catalog, which reads as broken rather than as "this one doesn't listen".
@@ -1560,7 +1590,6 @@ function StimsWorkspaceAppShell() {
   // is the one place where losing work is silent and irreversible.
   // Deliberately scoped to the editor being dirty: a beforeunload prompt on
   // an idle visualizer would be pure nuisance.
-  const editorDirty = engineSnapshot?.sessionState?.dirty ?? false;
   useEffect(() => {
     if (!editorDirty) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
