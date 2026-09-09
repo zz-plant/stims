@@ -146,6 +146,37 @@ describe('EditorPanel class integration', () => {
     onExport: mock(() => {}),
     onDeletePreset: mock(() => {}),
     onRequestImport: mock(() => {}),
+    onCopyShareLink: mock(() => {}),
+  });
+
+  test('offers a share link, and says what it carries once edits exist', () => {
+    // The `#code=` remix link had no control anywhere: it lived only in the
+    // address bar, unlabelled, so sharing a draft was undiscoverable.
+    const callbacks = createMockCallbacks();
+    const panel = new EditorPanel(callbacks);
+    const item = panel.element.querySelector(
+      '[data-action="editor-copy-share-link"]',
+    ) as HTMLButtonElement | null;
+    expect(item).not.toBeNull();
+
+    const base: MilkdropEditorSessionState = {
+      source: 'zoom=1.05\n',
+      diagnostics: [],
+      latestCompiled: null,
+      activeCompiled: null,
+      dirty: false,
+    };
+
+    panel.setSessionState(base);
+    expect(item?.textContent).toBe('Copy link to this preset');
+
+    panel.setSessionState({ ...base, dirty: true });
+    expect(item?.textContent).toBe('Copy link to this edit');
+
+    item?.click();
+    expect(callbacks.onCopyShareLink).toHaveBeenCalled();
+
+    panel.dispose();
   });
 
   test('instantiates EditorPanel DOM elements correctly', () => {

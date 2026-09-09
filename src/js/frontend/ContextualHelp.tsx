@@ -64,6 +64,17 @@ const HINTS: HelpHintDef[] = [
     autoHideMs: 6000,
     anchor: 'panel',
   },
+  {
+    // The address bar has carried the live draft in a `#code=` hash since
+    // remix links shipped, and nothing said so — so the one way to hand
+    // someone an unfinished preset was known only to people who had read the
+    // router. Taught at the first keystroke that makes the claim true.
+    id: 'editor-dirty-link',
+    message:
+      'Your draft is already in the address bar. Share link sends it exactly as it is here.',
+    autoHideMs: 7000,
+    anchor: 'panel',
+  },
 ];
 
 const STORAGE_KEY = 'stims:seen-hints';

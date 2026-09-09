@@ -148,6 +148,7 @@ describe('editor panel change propagation', () => {
       onExport: mock(),
       onDeletePreset: mock(),
       onRequestImport: mock(),
+      onCopyShareLink: mock(),
     });
     document.body.appendChild(panel.element);
 
