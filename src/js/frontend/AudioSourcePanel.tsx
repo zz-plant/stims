@@ -15,7 +15,9 @@ import {
   AUDIO_FILE_ACCEPT,
   canProbablyPlay,
   createFileAudioStream,
-  type FileAudioHandle,
+  disposeActiveFileAudio,
+  getActiveFileAudioName,
+  setActiveFileAudio,
 } from './file-audio.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -116,12 +118,17 @@ export function AudioSourcePanel({
 
   const fileCardId = `${sourcePanelId}-file-card`;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const fileHandleRef = useRef<FileAudioHandle | null>(null);
+  // Seeded from the session, not from nothing: this panel mounts twice and
+  // the Settings copy is remounted on every open, so starting empty made it
+  // offer to pick a track that was already playing.
   const [fileState, setFileState] = useState<{
     name: string;
     error: string | null;
     loading: boolean;
-  } | null>(null);
+  } | null>(() => {
+    const playing = getActiveFileAudioName();
+    return playing ? { name: playing, error: null, loading: false } : null;
+  });
   const [dragActive, setDragActive] = useState(false);
 
   // One handle at a time: picking a second track must tear the first one's
@@ -136,11 +143,10 @@ export function AudioSourcePanel({
       return;
     }
     setFileState({ name: file.name, error: null, loading: true });
-    fileHandleRef.current?.dispose();
-    fileHandleRef.current = null;
+    disposeActiveFileAudio();
     try {
       const handle = await createFileAudioStream(file);
-      fileHandleRef.current = handle;
+      setActiveFileAudio(handle);
       // Commit the route *and* pass it as launchState, the same way the
       // Strudel bridge starts a stream source. Calling startAudioSource
       // alone leaves routeState.audioSource null, so the engine snapshot
@@ -155,8 +161,7 @@ export function AudioSourcePanel({
       setFileState({ name: handle.name, error: null, loading: false });
       ui.setStatusMessage(`Playing ${handle.name}`);
     } catch (error) {
-      fileHandleRef.current?.dispose();
-      fileHandleRef.current = null;
+      disposeActiveFileAudio();
       setFileState({
         name: file.name,
         error: error instanceof Error ? error.message : 'Could not play file.',
@@ -164,14 +169,6 @@ export function AudioSourcePanel({
       });
     }
   };
-
-  useEffect(
-    () => () => {
-      fileHandleRef.current?.dispose();
-      fileHandleRef.current = null;
-    },
-    [],
-  );
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');

@@ -23,6 +23,7 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
+import { disposeActiveFileAudio } from './file-audio.ts';
 import { buildCanonicalUrl } from './url-state.ts';
 import {
   buildStarterPresets,
@@ -437,6 +438,15 @@ export function useWorkspaceShellOrchestration({
     if (audioStartInProgressRef.current) return;
     audioStartInProgressRef.current = true;
 
+    // Starting any other source replaces file playback, and the file element
+    // loops, so without this it would keep playing underneath the new source.
+    // `'file'` is excluded because that path runs `startAudioSource` directly
+    // after adopting its own handle; disposing here would tear it straight
+    // back down.
+    if (source !== 'file') {
+      disposeActiveFileAudio();
+    }
+
     // Pre-warm the shared Three.js AudioContext while we're still inside
     // the user gesture (click/tap). On iOS Safari, AudioContext.resume()
     // called outside a user gesture stays suspended — the context is
@@ -603,6 +613,10 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handleAudioStop = () => {
+    // The engine side is torn down by the route change, but a playing file is
+    // ours: it is an <audio> element with `loop = true`, so leaving it alone
+    // meant the track carried on audibly after the UI said audio had stopped.
+    disposeActiveFileAudio();
     commitRoute({ ...routeState, audioSource: null });
     setStatusMessage('Audio stopped.');
   };
