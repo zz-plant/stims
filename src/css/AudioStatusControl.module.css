@@ -232,3 +232,16 @@
     display: none;
   }
 }
+
+/* The dock's siblings (.navBtn/.menuBtn in StageControls.module.css) get
+   bumped to 44px on coarse pointers; this module never did, so the one
+   control that answers "why is there no sound?" was the smallest thing in
+   the bar — roughly 35x32 once .label is hidden — wedged between 44px
+   neighbours. */
+@media (pointer: coarse) {
+  .trigger {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+  }
+}

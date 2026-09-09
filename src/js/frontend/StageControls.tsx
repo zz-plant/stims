@@ -185,10 +185,12 @@ export function StageControls({
       ? syncSession.room
       : null;
 
-  const { visible, signalActivity } = useAutoHideActivity(3000, true);
+  const [showMenu, setShowMenu] = useState(false);
+  // An open menu holds the bar up. The menu renders as a sibling of the bar,
+  // so the bar's own `:focus-within` reprieve cannot see focus inside it.
+  const { visible, signalActivity } = useAutoHideActivity(3000, true, showMenu);
   const transition = usePresetTransition();
   const pip = usePictureInPicture(ui.stageRef);
-  const [showMenu, setShowMenu] = useState(false);
   const energyRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
@@ -724,10 +726,14 @@ export function StageControls({
             className={styles.titleBtn}
             data-action="open-browse"
             data-active={String(panel === 'browse')}
+            // The visible text is the preset title, so the name has to
+            // start with it: a name that replaces the visible label outright
+            // leaves voice-control users unable to activate the button by the
+            // words they can see (WCAG 2.5.3 Label in Name).
             aria-label={
               shaderApproximation
-                ? `Browse presets. ${shaderApproximation.detail}`
-                : 'Browse presets'
+                ? `${presetTitle}. Browse presets. ${shaderApproximation.detail}`
+                : `${presetTitle}. Browse presets`
             }
             title={
               shaderApproximation

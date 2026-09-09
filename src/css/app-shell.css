@@ -1341,6 +1341,14 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__launch-center {
     display: grid;
     justify-items: start;
+    /* This column sits in a stage panel taller than its content, and
+       `align-content` defaults to stretch, so every auto row silently
+       absorbed an equal share of the leftover height — about 40px onto each
+       of seven rows on the first-visit page, pushing a two-button decision
+       to the bottom of a phone screen. That whitespace was leftover height
+       being redistributed, not spacing anyone chose, so the gap below is
+       the only spacing here and it means what it says. */
+    align-content: start;
     gap: 10px;
     width: min(52rem, 100%);
   }
@@ -1419,21 +1427,8 @@ body[data-page="workspace"][data-live="true"] {
      establish what it looks like (the old strip was prominent enough to cost
      space but too shallow to do that) and no taller: title, card, Resume,
      the other sources and Browse should all fit one phone screen. */
-  .stims-shell__launch-center[data-variant="resume"] {
-    /* The launch column is a grid inside a stage panel taller than its
-       content, and `align-content` defaults to stretch — so every auto row
-       absorbed an equal share of the leftover height. On this variant that
-       was ~42px added to each of eight rows, which is why the page read as
-       a short interface floating in a screen and a half of nothing: the
-       whitespace was leftover height being redistributed, not spacing
-       anyone chose. Packing the rows to the start makes the gaps below the
-       real ones, so the whole decision fits one phone screen. */
-    align-content: start;
-    gap: 10px;
-  }
-
   .stims-shell__launch-center[data-variant="resume"]
-    .stims-shell__launch-title {
+  .stims-shell__launch-title {
     font-size: clamp(2.25rem, 5vw, 3.5rem);
   }
 
@@ -4406,6 +4401,29 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   /* No hover to reveal it on touch. */
   .stims-preset-grid__fav {
     opacity: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  /* The star is a 26px disc layered on the full-tile "open preset" button,
+     so a near-miss does not do nothing — it opens and starts playing a
+     different preset, which is a bad surprise mid-set. The 44px bump in
+     chrome.css targets `.ctl-preset__fav`, the list-view star, and never
+     matched this one: the grid button only carries that class on its inner
+     icon span.
+
+     The hit area grows, not the disc. A 44px opaque circle on top of the
+     artwork is a much heavier mark than this needs; the pseudo-element is
+     part of the button's own box, so it takes the taps without changing
+     anything the eye sees. */
+  .stims-preset-grid__fav::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
   }
 }
 
