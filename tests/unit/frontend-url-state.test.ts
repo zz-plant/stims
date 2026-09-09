@@ -333,6 +333,15 @@ describe('frontend url state', () => {
     expect(parsed.search).toBe('?preset=signal-bloom');
   });
 
+  test('reads a link from before the encoder as the latin-1 it was', () => {
+    // `btoa('\u00C3\u00A9')` — what an older build wrote for source
+    // containing 'Ã©'. Those bytes, C3 A9, are also valid UTF-8 for 'é', so
+    // a decoder that infers the encoding from UTF-8 validity opens this link
+    // with source its author never typed. The marker on new payloads is what
+    // keeps the two apart.
+    expect(decodePresetCodeFromHash('#code=w6k%3D')).toBe('\u00C3\u00A9');
+  });
+
   test('carries source that is not latin-1 encodable', () => {
     const href = 'https://toil.fyi/?preset=signal-bloom';
     // `btoa` throws on anything outside Latin-1, so an emoji or a CJK

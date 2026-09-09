@@ -221,6 +221,23 @@ export function decodePresetCodeFromHash(
 }
 
 /**
+ * Marks a payload as UTF-8 bytes rather than the Latin-1 ones links written
+ * before this encoder carry.
+ *
+ * `~` is not in the base64 alphabet and `encodeURIComponent` leaves it
+ * alone, so it cannot appear in a legacy payload and cannot change the shape
+ * of the encoded hash. The digit is there so a third encoding, if one is
+ * ever needed, does not have to guess again.
+ *
+ * The alternative — decoding as UTF-8 and falling back when that throws —
+ * looks equivalent but is not: a Latin-1 source containing `Ã©` was stored
+ * as the bytes `C3 A9`, which are perfectly valid UTF-8 for `é`, so the
+ * strict decode succeeds and hands back source the author never wrote. An
+ * explicit marker is the only way to tell the two apart.
+ */
+const PRESET_CODE_UTF8_PREFIX = 'u1~';
+
+/**
  * Base64 for arbitrary text, via UTF-8.
  *
  * `btoa` takes a Latin-1 byte string, so it throws on any character above
@@ -241,25 +258,24 @@ function encodeTextToBase64(text: string): string {
 }
 
 /**
- * The inverse, and tolerant of links written before the encoder was
- * UTF-8-aware: those hold Latin-1 bytes, which are not valid UTF-8 once any
- * accented character is present, so a strict decode throws and the raw byte
- * string is returned instead. Pure-ASCII links decode identically either way.
+ * The inverse, reading the marker rather than guessing: a payload written by
+ * this build decodes as UTF-8, and anything without the marker is a link
+ * from an older build and is read back as the Latin-1 bytes it was written
+ * with, exactly as that build read it.
  */
-function decodeBase64ToText(base64: string): string {
-  const binary = atob(base64);
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return binary;
+function decodeBase64ToText(payload: string): string {
+  if (!payload.startsWith(PRESET_CODE_UTF8_PREFIX)) {
+    return atob(payload);
   }
+  const binary = atob(payload.slice(PRESET_CODE_UTF8_PREFIX.length));
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 }
 
 export function buildPresetCodeHash(milkSource: string): string {
   try {
     const base64 = encodeTextToBase64(milkSource);
-    return `#code=${encodeURIComponent(base64)}`;
+    return `#code=${encodeURIComponent(`${PRESET_CODE_UTF8_PREFIX}${base64}`)}`;
   } catch (_err) {
     return '';
   }
