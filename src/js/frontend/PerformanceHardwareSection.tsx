@@ -262,9 +262,15 @@ function MidiDeviceRow({
           <span className="ctl-row__hint">
             {/* Both virtual devices used to share Claude's description, so a
                 gamepad row told the user it was "driven by an MCP session" —
-                the one sentence guaranteed to make someone stop looking. */}
+                the one sentence guaranteed to make someone stop looking.
+
+                This row is listed on every machine, because the gamepad is a
+                virtual device and those are hardcoded to `connected`. So the
+                copy describes what the row is for and does not assert that a
+                pad is plugged in: "A connected game controller" told everyone
+                with no controller at all that they had one. */}
             {device.id === VIRTUAL_GAMEPAD_DEVICE_ID
-              ? 'A connected game controller. Sticks and triggers, mapped like a MIDI device.'
+              ? 'Game controller sticks and triggers, mapped like a MIDI device. Plug one in and move a stick to use it.'
               : device.kind === 'virtual'
                 ? 'Driven by an MCP session, not physical hardware.'
                 : device.state === 'connected'
