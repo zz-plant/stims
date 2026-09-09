@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/StageControls.module.css';
+import { registerEscapeHandler } from '../core/modal-utils.ts';
 import {
   isPresetLocked,
   subscribePresetLock,
@@ -195,6 +196,21 @@ export function StageControls({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Toasts render above every overlay, so they have to know when something
+  // occupies the bottom of the screen and move out of its way. Sheets publish
+  // that as data-sheet-open on the shell root; this menu is bottom-anchored
+  // too, so it publishes the same kind of signal.
+  useEffect(() => {
+    const shell = document.getElementById('stims-main');
+    if (!shell) return;
+    if (!showMenu) {
+      shell.removeAttribute('data-menu-open');
+      return;
+    }
+    shell.setAttribute('data-menu-open', 'true');
+    return () => shell.removeAttribute('data-menu-open');
+  }, [showMenu]);
+
   // ARIA already promises menu semantics (role="menu"/"menuitem"); this
   // backs that up with the arrow-key traversal a screen reader user would
   // reasonably expect from it, instead of leaving Tab as the only path.
@@ -255,19 +271,29 @@ export function StageControls({
   useEffect(() => {
     if (!showMenu) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
+      // The menu pattern closes on Tab: focus is meant to leave the menu and
+      // continue through the page. Without this, Tab walked focus into the
+      // content the menu is covering while the menu stayed open on top of it.
+      // Focus is left where Tab sends it rather than pulled back to the
+      // button, which is the point of pressing Tab.
+      if (event.key === 'Tab') {
         setShowMenu(false);
-        menuBtnRef.current?.focus();
       }
     };
     const handleResize = () => setShowMenu(false);
+    // Escape goes through the shared overlay stack so the menu, as the
+    // innermost thing open, takes the press rather than a panel behind it.
+    const releaseEscape = registerEscapeHandler(() => {
+      setShowMenu(false);
+      menuBtnRef.current?.focus();
+    });
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, {
       passive: true,
     });
     return () => {
+      releaseEscape();
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
@@ -859,6 +885,12 @@ export function StageControls({
           </button>
         </div>
       </div>
+
+      {showMenu ? (
+        // Presentational only: the document pointerdown listener above already
+        // closes the menu on any press outside it, and this sits underneath.
+        <div className={styles.menuScrim} aria-hidden="true" />
+      ) : null}
 
       {showMenu ? (
         <div
