@@ -417,16 +417,24 @@ browserTest(
 /**
  * Opens the home page's audio-source disclosure.
  *
- * The alternatives to the primary CTA (mic, tab, file, YouTube) now sit
- * behind a `<details>` so "Play demo" ranks above them, which means a real
- * user opens it before choosing mic — and a click on a collapsed
- * descendant does nothing. No-op when already open, or where the controls
- * render without the disclosure (the Settings panel).
+ * On a first visit the alternatives to the primary CTA (mic, tab, file,
+ * YouTube) sit behind a `<details>` so "Play demo" ranks above them, which
+ * means a real user opens it before choosing mic — and a click on a
+ * collapsed descendant does nothing. No-op when already open, or where the
+ * controls render without the disclosure: the Settings panel, and the
+ * returning-visitor launch page, which ranks the same sources as chips
+ * under "Resume with…" and so has nothing to open.
  */
 async function openAudioSourceDisclosure(
   page: import('playwright').Page,
   { attachTimeoutMs = 90000 }: { attachTimeoutMs?: number } = {},
 ) {
+  // The chips surface renders the same source buttons with no disclosure
+  // around them. Racing the two means this helper stays correct whichever
+  // launch variant the test's storage state produces, instead of timing out
+  // for 90s on a page where there is deliberately nothing to open.
+  const chipGrid = page.locator('.stims-shell__source-grid--chips');
+  if ((await chipGrid.count()) > 0) return;
   const details = page.locator('details.stims-shell__launch-source-minimal');
   // Wait for it rather than probing once: callers navigate with
   // `domcontentloaded`, and the home page is a lazy chunk, so an immediate
@@ -449,6 +457,9 @@ async function openAudioSourceDisclosure(
       .first()
       .waitFor({ state: 'attached', timeout: attachTimeoutMs });
   } catch {
+    // The chunk may have landed on the returning-visitor variant, which has
+    // chips and no disclosure. Check once more before blaming the chunk.
+    if ((await chipGrid.count()) > 0) return;
     throw new Error(
       'The audio-source disclosure never appeared. It lives inside the lazy ' +
         'NewHomePage chunk, so this usually means that chunk failed or was ' +
