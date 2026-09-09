@@ -1,7 +1,9 @@
 import type { RefObject } from 'react';
-import { useEffect } from 'react';
-import { registerEscapeHandler } from '../core/modal-utils.ts';
 import { CreditsPanel } from './CreditsPanel.tsx';
+import {
+  useBottomOverlaySignal,
+  useEscapeHandler,
+} from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 
 export function CreditsDialog({
@@ -27,10 +29,8 @@ export function CreditsDialog({
 
   // See ShortcutsDialog: Escape is dispatched to the innermost overlay by the
   // shared stack, so it cannot reach a sheet underneath this dialog.
-  useEffect(() => {
-    if (!open) return;
-    return registerEscapeHandler(onClose);
-  }, [open, onClose]);
+  useEscapeHandler(open, onClose);
+  useBottomOverlaySignal(open);
 
   if (!open) return null;
 

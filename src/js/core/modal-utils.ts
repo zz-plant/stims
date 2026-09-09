@@ -64,6 +64,19 @@ function handleDocumentEscape(event: KeyboardEvent) {
 }
 
 /**
+ * True while an overlay has claimed Escape.
+ *
+ * The global shortcut handler asks before acting: it registers on `document`
+ * when the shell mounts, i.e. before any overlay exists, so it runs first and
+ * neither `preventDefault` nor `stopPropagation` from here can reach back and
+ * cancel it. A user who rebinds Escape to an action would otherwise fire that
+ * action *and* dismiss the overlay with one press.
+ */
+export function escapeIsClaimed(): boolean {
+  return escapeHandlers.length > 0;
+}
+
+/**
  * Registers `handler` as the Escape action for an overlay, and returns the
  * function that unregisters it. The most recently registered handler is the
  * innermost overlay and the only one that runs.

@@ -11,7 +11,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 import styles from '../../css/StageControls.module.css';
-import { registerEscapeHandler } from '../core/modal-utils.ts';
 import {
   isPresetLocked,
   subscribePresetLock,
@@ -26,6 +25,10 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { pulseHaptic } from './haptics.ts';
+import {
+  useBottomOverlaySignal,
+  useEscapeHandler,
+} from './hooks/use-escape-handler.ts';
 import { useListKeyboardNav } from './hooks/use-list-keyboard-nav.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { usePictureInPicture } from './hooks/usePictureInPicture.ts';
@@ -198,18 +201,15 @@ export function StageControls({
 
   // Toasts render above every overlay, so they have to know when something
   // occupies the bottom of the screen and move out of its way. Sheets publish
-  // that as data-sheet-open on the shell root; this menu is bottom-anchored
-  // too, so it publishes the same kind of signal.
-  useEffect(() => {
-    const shell = document.getElementById('stims-main');
-    if (!shell) return;
-    if (!showMenu) {
-      shell.removeAttribute('data-menu-open');
-      return;
-    }
-    shell.setAttribute('data-menu-open', 'true');
-    return () => shell.removeAttribute('data-menu-open');
-  }, [showMenu]);
+  // that from the shell as data-sheet-open; this menu is bottom-anchored too.
+  useBottomOverlaySignal(showMenu);
+
+  // A stable registration: the menu must keep Escape while it is open, even
+  // as the shell re-renders around it.
+  useEscapeHandler(showMenu, () => {
+    setShowMenu(false);
+    menuBtnRef.current?.focus();
+  });
 
   // ARIA already promises menu semantics (role="menu"/"menuitem"); this
   // backs that up with the arrow-key traversal a screen reader user would
@@ -281,19 +281,12 @@ export function StageControls({
       }
     };
     const handleResize = () => setShowMenu(false);
-    // Escape goes through the shared overlay stack so the menu, as the
-    // innermost thing open, takes the press rather than a panel behind it.
-    const releaseEscape = registerEscapeHandler(() => {
-      setShowMenu(false);
-      menuBtnRef.current?.focus();
-    });
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('orientationchange', handleResize, {
       passive: true,
     });
     return () => {
-      releaseEscape();
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);

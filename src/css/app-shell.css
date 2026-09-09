@@ -2512,8 +2512,13 @@ body[data-page="workspace"][data-live="true"] {
      Both now sit above the modal layer and dodge upward, because the messages
      that matter most are raised from inside these panels: a failed preset
      import is reported from the Browse sheet. */
-  :scope[data-sheet-open="true"] .stims-shell__toast,
-  :scope[data-menu-open="true"] .stims-shell__toast {
+  /* `[data-tone]` is on every toast and buys this rule the specificity to
+     beat `:scope[data-mode="live"] .stims-shell__toast`, which sets `bottom`
+     again further down the sheet. Losing that leaves both `top` and `bottom`
+     set on a fixed, auto-height element, and the toast stretches down most of
+     the viewport instead of sitting compactly at the top. */
+  :scope[data-sheet-open="true"] .stims-shell__toast[data-tone],
+  :scope[data-bottom-overlay="true"] .stims-shell__toast[data-tone] {
     top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
     bottom: auto;
   }
@@ -3858,7 +3863,7 @@ body[data-page="workspace"][data-live="true"] {
 }
 
 main.stims-shell[data-sheet-open="true"] .stims-shell__toast-stack,
-main.stims-shell[data-menu-open="true"] .stims-shell__toast-stack {
+main.stims-shell[data-bottom-overlay="true"] .stims-shell__toast-stack {
   top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
   bottom: auto;
 }
