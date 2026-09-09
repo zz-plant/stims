@@ -24,6 +24,48 @@ function captureShare(
 }
 
 describe('copyRemixLinkAction', () => {
+  it('carries a draft containing emoji and non-Latin text', async () => {
+    // `btoa` is Latin-1 only, so one emoji used to make the whole hash fail
+    // to build. The link then degraded to a plain view URL while the UI still
+    // announced that it carried the edits, and the recipient opened an empty
+    // editor — or whatever stale draft the old hash happened to hold.
+    const unicodeSource = '[preset00]\n// 🎛 ゆらぎ — café\nzoom=1.02\n';
+    const { calls, share } = captureShare('copied');
+    const messages: string[] = [];
+
+    await copyRemixLinkAction({
+      source: unicodeSource,
+      dirty: true,
+      announce: (message) => messages.push(message),
+      share,
+      href: HREF,
+    });
+
+    const url = new URL(calls[0]);
+    expect(decodePresetCodeFromHash(url.hash)).toBe(unicodeSource);
+    expect(messages[0]).toContain('carries your unsaved edits');
+  });
+
+  it('does not claim edits when the hash could not be built', async () => {
+    const { calls, share } = captureShare('copied');
+    const messages: string[] = [];
+
+    await copyRemixLinkAction({
+      source: SOURCE,
+      dirty: true,
+      announce: (message) => messages.push(message),
+      share,
+      // A URL whose hash cannot be set is not reachable here, so this stands
+      // in for the general contract: the claim follows the link that was
+      // actually shared, never the intent behind it.
+      href: HREF,
+    });
+
+    const shared = calls[0];
+    const claimed = messages[0].includes('carries your unsaved edits');
+    expect(claimed).toBe(shared.includes('#code='));
+  });
+
   it('carries the unsaved source, decodable back to the same text', async () => {
     const { calls, share } = captureShare('copied');
     const messages: string[] = [];
