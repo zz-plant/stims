@@ -33,6 +33,64 @@ export function getFocusableElements(container: HTMLElement) {
 }
 
 /**
+ * Escape handlers for open overlays, outermost first.
+ *
+ * Escape used to be handled wherever each overlay felt like it. `SidePanel`
+ * listened on `document`; the help dialogs used a React `onKeyDown` on their
+ * backdrop, which React dispatches from the root container — *below*
+ * `document` in the tree, so it runs first only when the event originates
+ * inside that backdrop. Open the shortcuts dialog from inside Settings and
+ * press Escape and the sheet underneath took the keypress: the sheet closed,
+ * the dialog stayed open, and a second press did nothing because the sheet
+ * was already gone. The dialog could only be escaped with a mouse.
+ *
+ * One document-level listener, dispatching to the innermost overlay, makes
+ * Escape mean "close the thing in front of me" everywhere. It listens in the
+ * bubble phase deliberately: a React handler that calls `stopPropagation`
+ * still wins, which is what lets the Browse search field clear itself on
+ * Escape without also closing the panel around it.
+ */
+const escapeHandlers: Array<() => void> = [];
+let escapeListenerAttached = false;
+
+function handleDocumentEscape(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return;
+  const innermost = escapeHandlers[escapeHandlers.length - 1];
+  if (!innermost) return;
+  event.preventDefault();
+  // Nothing further should act on a press that has closed something.
+  event.stopPropagation();
+  innermost();
+}
+
+/**
+ * Registers `handler` as the Escape action for an overlay, and returns the
+ * function that unregisters it. The most recently registered handler is the
+ * innermost overlay and the only one that runs.
+ */
+export function registerEscapeHandler(handler: () => void): () => void {
+  escapeHandlers.push(handler);
+  if (!escapeListenerAttached && typeof document !== 'undefined') {
+    document.addEventListener('keydown', handleDocumentEscape);
+    escapeListenerAttached = true;
+  }
+  return () => {
+    const index = escapeHandlers.lastIndexOf(handler);
+    if (index !== -1) {
+      escapeHandlers.splice(index, 1);
+    }
+    if (
+      escapeHandlers.length === 0 &&
+      escapeListenerAttached &&
+      typeof document !== 'undefined'
+    ) {
+      document.removeEventListener('keydown', handleDocumentEscape);
+      escapeListenerAttached = false;
+    }
+  };
+}
+
+/**
  * Duck-typed rather than `instanceof Node`.
  *
  * `instanceof` compares against one realm's constructor, so it answers false
