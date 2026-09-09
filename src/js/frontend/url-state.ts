@@ -177,10 +177,10 @@ export function buildCanonicalUrl(
  * `#code=` hash carrying the live-edited `.milk` source; passing `null`
  * removes any hash. Pathname and search are preserved so the preset,
  * collection, audio, and tool state in the query string keeps working.
- * Returns the input unchanged when the source cannot be encoded (`btoa` is
- * Latin-1-only and `.milk` files can carry non-Latin-1 text), so an
- * unencodable remix degrades to the plain view URL instead of wiping the
- * session's other state off the address bar. */
+ * Still returns the input unchanged if the hash cannot be built, so a failure
+ * degrades to the plain view URL rather than wiping the session's other state
+ * off the address bar — callers that announce "carries your edits" must check
+ * for the hash rather than assume it. */
 export function buildRemixShareUrl(
   input: string | URL,
   source: string | null,
@@ -210,20 +210,55 @@ export function decodePresetCodeFromHash(
   if (!codeParam) return null;
 
   try {
-    const raw = atob(decodeURIComponent(codeParam));
-    return raw;
+    return decodeBase64ToText(decodeURIComponent(codeParam));
   } catch (_err) {
     try {
-      return atob(codeParam);
+      return decodeBase64ToText(codeParam);
     } catch (_err2) {
       return null;
     }
   }
 }
 
+/**
+ * Base64 for arbitrary text, via UTF-8.
+ *
+ * `btoa` takes a Latin-1 byte string, so it throws on any character above
+ * U+00FF — one emoji or one CJK comment in a `.milk` source was enough to
+ * make the whole remix link silently degrade to a plain view URL while the
+ * UI still announced that it carried the draft. Encoding to UTF-8 first
+ * removes the limit; the chunking keeps a large source off the argument
+ * limit of a single spread call.
+ */
+function encodeTextToBase64(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+  }
+  return btoa(binary);
+}
+
+/**
+ * The inverse, and tolerant of links written before the encoder was
+ * UTF-8-aware: those hold Latin-1 bytes, which are not valid UTF-8 once any
+ * accented character is present, so a strict decode throws and the raw byte
+ * string is returned instead. Pure-ASCII links decode identically either way.
+ */
+function decodeBase64ToText(base64: string): string {
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return binary;
+  }
+}
+
 export function buildPresetCodeHash(milkSource: string): string {
   try {
-    const base64 = btoa(milkSource);
+    const base64 = encodeTextToBase64(milkSource);
     return `#code=${encodeURIComponent(base64)}`;
   } catch (_err) {
     return '';
