@@ -220,11 +220,7 @@ export function HudOverlay() {
   const energyPercent = Math.round(Math.min(1, Math.max(0, audioEnergy)) * 100);
 
   return (
-    <aside
-      className="stims-shell__debug-hud"
-      role="status"
-      aria-label="GPU debug HUD"
-    >
+    <aside className="stims-shell__debug-hud" aria-label="GPU debug HUD">
       <header className="stims-shell__debug-hud-header">
         <span className="stims-shell__debug-hud-title">Debug HUD</span>
         <button
