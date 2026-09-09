@@ -75,14 +75,31 @@ export function usePersistentPresetQueue(catalog: PresetCatalogEntry[]) {
     });
   }, []);
 
+  /**
+   * Reads the head from the rendered state, not from inside the updater.
+   *
+   * This used to assign its return value inside `setPresetIds` and return it
+   * afterwards. React only runs an updater during dispatch on the eager-state
+   * path, which needs the owning fiber to have no pending lanes — and this
+   * queue lives in the workspace provider, which re-renders every frame while
+   * audio plays. So in the one situation the cue deck is even mounted, the
+   * updater was deferred, `popNext()` returned null while still queueing the
+   * removal, and "Take" dropped the cued preset and reported "Nothing is
+   * cued". `queue-skip` already read `presetIds[0]` directly; this now does
+   * the same.
+   *
+   * The updater re-checks the head so a queue that changed in between loses
+   * nothing: it removes the entry this call actually returned, or removes
+   * nothing at all.
+   */
   const popNext = useCallback(() => {
-    let nextId: string | null = null;
-    setPresetIds((current) => {
-      nextId = current[0] ?? null;
-      return current.slice(1);
-    });
+    const nextId = presetIds[0] ?? null;
+    if (nextId === null) return null;
+    setPresetIds((current) =>
+      current[0] === nextId ? current.slice(1) : current,
+    );
     return nextId;
-  }, []);
+  }, [presetIds]);
 
   return { presetIds, entries, add, remove, clear, move, popNext };
 }
