@@ -2500,15 +2500,22 @@ body[data-page="workspace"][data-live="true"] {
     color: #ffd6d1;
   }
 
-  :scope[data-sheet-open="true"] .stims-shell__toast {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(8px);
-  }
+  /* A sheet no longer hides toasts; it moves them.
 
-  :scope[data-sheet-open="true"] [class*="toast"] {
-    opacity: 0;
-    pointer-events: none;
+     Hiding was the old policy and it failed in both directions. The status
+     toast has an entry animation, and an animation outranks a plain
+     declaration in the cascade, so it faded in over the sheet anyway — landing
+     on top of the sheet's own header. The ambient stack has no such animation,
+     so the rule did apply to it, and an audio match found while browsing was
+     invisible while its dismiss timer ran out.
+
+     Both now sit above the modal layer and dodge upward, because the messages
+     that matter most are raised from inside these panels: a failed preset
+     import is reported from the Browse sheet. */
+  :scope[data-sheet-open="true"] .stims-shell__toast,
+  :scope[data-menu-open="true"] .stims-shell__toast {
+    top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
+    bottom: auto;
   }
 
   .cta-button {
@@ -3125,7 +3132,10 @@ body[data-page="workspace"][data-live="true"] {
   );
   left: 50%;
   transform: translateX(-50%);
-  z-index: var(--z-toast);
+  /* The same layer as the status toast. At --z-toast this column sat below
+     --z-modal-backdrop, so an audio match found while a panel was open
+     rendered behind it and ran its dismiss timer out unseen. */
+  z-index: var(--z-toast-floating);
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
@@ -3419,13 +3429,51 @@ body[data-page="workspace"][data-live="true"] {
 
 .stims-shell__credits-card {
   max-width: 640px;
-  max-height: min(84vh, 720px);
+  /* dvh, matching the shared card rule above. `vh` is the *largest* viewport
+     on iOS Safari, so with the URL bar showing an 84vh centred card ran past
+     the visible bottom and took its own Close button with it. */
+  max-height: min(84dvh, 720px);
   overflow-y: auto;
   padding: 36px;
 }
 
 .stims-shell__credits-card > .cta-button {
   margin-top: var(--space-lg, 1.5rem);
+}
+
+/* Phone: the two help dialogs become bottom sheets like every other overlay.
+   They were the only surfaces that stayed centred cards — 92% wide with 32px
+   of padding, which at 390px leaves under 300px of content for a three-column
+   shortcut grid — while the eight panels built on SidePanel all present as
+   sheets. Matching them means the dismissal a user has already learned here
+   (reach the bottom edge, or tap the dimmed area above) works on these too. */
+@media (max-width: 640px) {
+  .stims-shell__shortcut-overlay,
+  .stims-shell__credits-overlay {
+    align-items: flex-end;
+  }
+
+  .stims-shell__shortcut-card,
+  .stims-shell__credits-card {
+    width: 100%;
+    max-width: none;
+    max-height: 88dvh;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: stims-modal-sheet-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes stims-modal-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes stims-modal-scale {
@@ -3809,9 +3857,10 @@ body[data-page="workspace"][data-live="true"] {
   gap: 8px;
 }
 
-main.stims-shell[data-sheet-open="true"] [class*="toast"] {
-  opacity: 0;
-  pointer-events: none;
+main.stims-shell[data-sheet-open="true"] .stims-shell__toast-stack,
+main.stims-shell[data-menu-open="true"] .stims-shell__toast-stack {
+  top: calc(max(12px, env(safe-area-inset-top, 0px)) + 12px);
+  bottom: auto;
 }
 
 /* ── Error Boundary & Skeleton Utilities ────────────────────────────── */

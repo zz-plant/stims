@@ -3,6 +3,15 @@ import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import type { SessionRouteState } from './contracts.ts';
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 
+/**
+ * How long the toast's exit animation runs, matching `toast-exit` in
+ * app-shell.css. The stylesheet has had that keyframe and a reduced-motion
+ * variant for a long time, both keyed on `data-exit="true"` — an attribute
+ * nothing ever set, so every toast animated in and then vanished between
+ * frames.
+ */
+const TOAST_EXIT_MS = 250;
+
 export function useWorkspaceToast({
   engineSnapshot,
   routeState,
@@ -15,11 +24,17 @@ export function useWorkspaceToast({
   const [toast, setToast] = useState<{
     message: string;
     tone: 'info' | 'warn' | 'error';
+    exiting?: boolean;
   } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const toastExitTimerRef = useRef<number | null>(null);
   const shownToastKeysRef = useRef(new Set<string>());
 
   const clearToastTimer = () => {
+    if (toastExitTimerRef.current !== null) {
+      window.clearTimeout(toastExitTimerRef.current);
+      toastExitTimerRef.current = null;
+    }
     if (toastTimerRef.current === null) {
       return;
     }
@@ -32,6 +47,9 @@ export function useWorkspaceToast({
     return () => {
       if (toastTimerRef.current !== null) {
         window.clearTimeout(toastTimerRef.current);
+      }
+      if (toastExitTimerRef.current !== null) {
+        window.clearTimeout(toastExitTimerRef.current);
       }
     };
   }, []);
@@ -51,8 +69,13 @@ export function useWorkspaceToast({
       // audio source substitution) — give visitors more time to read them.
       const duration = tone === 'info' ? 4200 : 7000;
       toastTimerRef.current = window.setTimeout(() => {
-        setToast(null);
         toastTimerRef.current = null;
+        // Mark it exiting, let the animation play, then drop it.
+        setToast((current) => (current ? { ...current, exiting: true } : null));
+        toastExitTimerRef.current = window.setTimeout(() => {
+          toastExitTimerRef.current = null;
+          setToast(null);
+        }, TOAST_EXIT_MS);
       }, duration);
     },
   );
