@@ -28,6 +28,15 @@ const TEST_FILE_PATTERN = /\.test\.(?:ts|tsx|js|jsx)$/;
  * - `serial` runs in its own pass with `--max-concurrency=1`. Browser-backed
  *   tests contend for GPU and port resources, and time out when interleaved
  *   with the rest of the suite.
+ *
+ * `serial` is a property of a *file*, though, and marking whole categories
+ * only covered the case where every file in one is browser-backed. `corpus`
+ * is not that: two of its fourteen files drive real Chromium and the rest are
+ * CPU-heavy compute, so the browser pair got fanned out by `--parallel`
+ * alongside them and lost exactly the contention this trait exists to
+ * prevent — `preset-flash-risk` failed every corpus run while passing alone.
+ * `isBrowserBackedTest` therefore lifts those files out of the parallel pass
+ * on their own merits, whatever category they live in.
  */
 const CATEGORY_TRAITS = {
   unit: { slow: false, serial: false },
@@ -70,6 +79,37 @@ async function listTestFiles(dir: string): Promise<string[]> {
 async function listCategoryFiles(category: Category): Promise<string[]> {
   const dir = path.join(TEST_DIR, category);
   return listTestFiles(dir);
+}
+
+/**
+ * True when a test file drives a real browser.
+ *
+ * Keyed on `browserTest` rather than a hand-maintained list of paths, for the
+ * same reason categories are keyed on folders: a new browser-backed test must
+ * land in the serial pass by existing, not by someone remembering to add it.
+ * The marker is exact — `tests/test-helpers.ts` exports `browserTest` as the
+ * gate for "a real Chromium is installed", so a file that imports it is a file
+ * that launches one, and nothing else in the suite mentions it.
+ */
+async function isBrowserBackedTest(file: string): Promise<boolean> {
+  try {
+    const source = await fs.readFile(file, 'utf8');
+    return /\bbrowserTest\b/.test(source);
+  } catch {
+    // Unreadable here means bun test will fail on it in a moment and say so
+    // properly. Treating it as ordinary keeps that the reported failure.
+    return false;
+  }
+}
+
+/** Splits a file list into [browserBacked, rest], preserving order. */
+async function partitionBrowserBacked(
+  files: string[],
+): Promise<[string[], string[]]> {
+  const flags = await Promise.all(files.map(isBrowserBackedTest));
+  const browserBacked = files.filter((_, index) => flags[index]);
+  const rest = files.filter((_, index) => !flags[index]);
+  return [browserBacked, rest];
 }
 
 /**
@@ -355,9 +395,10 @@ async function main() {
   const parallel = categories.filter((c) => !CATEGORY_TRAITS[c].serial);
   const serial = categories.filter((c) => CATEGORY_TRAITS[c].serial);
 
-  const parallelFiles = (
-    await Promise.all(parallel.map(listCategoryFiles))
-  ).flat();
+  const [browserBackedParallelFiles, parallelFiles] =
+    await partitionBrowserBacked(
+      (await Promise.all(parallel.map(listCategoryFiles))).flat(),
+    );
 
   // Watch mode can only drive one bun process, so keep it to a single pass.
   if (watch) {
@@ -374,6 +415,16 @@ async function main() {
       // unbuffered output, no worker pool.
       ...(parallel === 1 ? {} : { parallel }),
     });
+    if (exitCode !== 0) {
+      process.exit(exitCode);
+    }
+  }
+
+  // Browser-backed files from otherwise-parallel categories get the serial
+  // treatment their contention needs: one process each, and only once the
+  // parallel pass has released its CPU.
+  if (browserBackedParallelFiles.length > 0) {
+    const exitCode = await runSerialCategory(browserBackedParallelFiles);
     if (exitCode !== 0) {
       process.exit(exitCode);
     }

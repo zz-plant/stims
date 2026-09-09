@@ -391,7 +391,20 @@ export function createMilkdropEngineAdapter() {
       await setMilkdropCapturedVideoStream(request.stream, {
         cropTarget: request.cropTarget ?? container,
       });
-      await activeRuntime.startAudio({ stream: request.stream });
+      // Tab and YouTube capture come from getDisplayMedia, so the tracks are
+      // a live screen share the browser advertises with its own "sharing"
+      // bar. `acquireAudioHandle` defaults `stopStreamOnCleanup` to
+      // `!reuseMicrophone`, i.e. false, so without this the teardown only
+      // unregistered the stream: "Stop audio" said audio had stopped, the
+      // dock showed no source, and the tab went on being captured until the
+      // page was closed. Nothing else stops these tracks —
+      // `clearMilkdropCapturedVideoStream` (called by performStopAudio, and
+      // when switching to any other source) drops the texture and its
+      // listeners but never touches the tracks.
+      await activeRuntime.startAudio({
+        stream: request.stream,
+        stopStreamOnCleanup: true,
+      });
       audioActive = true;
       audioSource = request.source;
       setAudioActive(true, request.source);

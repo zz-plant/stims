@@ -66,6 +66,16 @@ let state: ExternalDisplayState = { mode: null, target: null, error: null };
 const listeners = new Set<Listener>();
 let connection: PresentationConnectionLike | null = null;
 let externalWindow: Window | null = null;
+/**
+ * The id of the 1Hz "did they close the popup?" poll.
+ *
+ * Module scope, because the poll cannot cancel itself on the stop path: it
+ * exits only when it observes `externalWindow.closed`, and
+ * `stopExternalDisplay` clears that reference first, so the condition could
+ * never become true again and every send-then-stop cycle left another timer
+ * running for the life of the page.
+ */
+let externalWindowPoll: number | null = null;
 
 function setState(next: Partial<ExternalDisplayState>): void {
   state = { ...state, ...next };
@@ -207,9 +217,10 @@ export async function openOnSecondScreen(receiverUrl: string): Promise<void> {
   externalWindow = opened;
   // A closed window leaves no event on the opener, so poll — cheaply, and
   // only while one is open.
-  const poll = window.setInterval(() => {
+  stopExternalWindowPoll();
+  externalWindowPoll = window.setInterval(() => {
     if (externalWindow?.closed) {
-      window.clearInterval(poll);
+      stopExternalWindowPoll();
       externalWindow = null;
       if (state.mode === 'window') setState({ mode: null, target: null });
     }
@@ -237,6 +248,13 @@ export async function presentToExternalDisplay(
   await startCast(receiverUrl);
 }
 
+function stopExternalWindowPoll(): void {
+  if (externalWindowPoll !== null) {
+    window.clearInterval(externalWindowPoll);
+    externalWindowPoll = null;
+  }
+}
+
 export function stopExternalDisplay(): void {
   if (connection) {
     try {
@@ -246,6 +264,7 @@ export function stopExternalDisplay(): void {
     }
     connection = null;
   }
+  stopExternalWindowPoll();
   if (externalWindow && !externalWindow.closed) {
     externalWindow.close();
   }
@@ -256,6 +275,7 @@ export function stopExternalDisplay(): void {
 export const __externalDisplayTestUtils = {
   reset(): void {
     connection = null;
+    stopExternalWindowPoll();
     externalWindow = null;
     state = { mode: null, target: null, error: null };
     listeners.clear();

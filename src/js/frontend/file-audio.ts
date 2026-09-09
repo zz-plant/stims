@@ -117,3 +117,52 @@ export async function createFileAudioStream(
     },
   };
 }
+
+/**
+ * The file currently feeding the engine, owned here rather than by a
+ * component.
+ *
+ * It used to live in a ref inside `AudioSourcePanel`, disposed on unmount.
+ * But that panel mounts twice — once in the home hero, which stays mounted
+ * all session, and once in the Settings sheet, which is conditionally
+ * rendered — so closing Settings tore down the graph and the context while
+ * the engine's audio session, `routeState.audioSource` and `audioActive` all
+ * carried on: the music stopped and the analyser flatlined, while the dock
+ * still showed the file chip and the stage kept animating on silence.
+ *
+ * The mirror case was worse. From the home copy, which never unmounts,
+ * "Stop audio" tore down the engine side and left this handle untouched — and
+ * the element loops, so the track played on, audibly, forever, after the UI
+ * said audio had stopped.
+ *
+ * Playback belongs to the audio session, so its lifetime is tied to the
+ * session's: `setActiveFileAudio` on play, `disposeActiveFileAudio` when the
+ * session stops or switches to another source.
+ */
+let activeFileAudio: FileAudioHandle | null = null;
+
+/**
+ * Adopts `handle` as the playing file, disposing whichever one it replaces.
+ * One at a time: two live graphs would both feed the analyser and both be
+ * audible.
+ */
+export function setActiveFileAudio(handle: FileAudioHandle | null): void {
+  if (activeFileAudio && activeFileAudio !== handle) {
+    activeFileAudio.dispose();
+  }
+  activeFileAudio = handle;
+}
+
+/** Stops and tears down the playing file, if any. Safe to call repeatedly. */
+export function disposeActiveFileAudio(): void {
+  setActiveFileAudio(null);
+}
+
+/**
+ * The playing file's name, or null. Lets a freshly mounted copy of the audio
+ * panel report what is actually playing instead of offering to pick a track
+ * that is already playing.
+ */
+export function getActiveFileAudioName(): string | null {
+  return activeFileAudio?.name ?? null;
+}
