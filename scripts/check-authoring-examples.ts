@@ -13,6 +13,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { buildPresetCodeHash } from '../src/js/frontend/url-state.ts';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler';
 
 const ROOT = resolve(import.meta.dir, '..');
@@ -40,10 +41,17 @@ function compileOrReport(label: string, source: string) {
   }
 }
 
+/**
+ * Built with the app's own encoder rather than a copy of it, so a generated
+ * link cannot be written in an encoding the reader no longer recognises.
+ *
+ * `source` arrives Latin-1-decoded, the way the compiler wants it; the round
+ * trip through the raw bytes recovers the UTF-8 text the file actually holds,
+ * so an em dash in a lesson example stays an em dash when the link opens.
+ */
 function runUrlFor(source: string) {
-  return `${BASE_URL}#code=${encodeURIComponent(
-    Buffer.from(source, 'latin1').toString('base64'),
-  )}`;
+  const text = Buffer.from(source, 'latin1').toString('utf8');
+  return `${BASE_URL}${buildPresetCodeHash(text)}`;
 }
 
 function resolveExamplePath(title: string) {
