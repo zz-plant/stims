@@ -14,13 +14,25 @@ import { PresetArtwork } from './PresetArtwork.tsx';
 import { LaunchSignalTrace } from './SignalField.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
-import { STIMS_REPO_URL } from './workspace-helpers.ts';
+import { describePresetMood, STIMS_REPO_URL } from './workspace-helpers.ts';
 
 const RESUME_SOURCE_LABEL: Record<ResumableAudioSource, string> = {
   demo: 'demo audio',
   microphone: 'your mic',
   tab: "this tab's audio",
   youtube: 'YouTube audio',
+};
+
+/**
+ * The automation hook (`core/agent-api.ts`, `scripts/play-toy.ts`) for the
+ * source a button starts. The resume CTA used to carry `data-demo-audio-btn`
+ * whatever it resumed with, so `enableDemoAudio()` on a returning visitor's
+ * page asked for their microphone.
+ */
+const RESUME_SOURCE_HOOK: Partial<Record<ResumableAudioSource, string>> = {
+  demo: 'data-demo-audio-btn',
+  microphone: 'data-mic-audio-btn',
+  tab: 'data-tab-audio-btn',
 };
 
 /**
@@ -159,7 +171,10 @@ export function NewHomePage() {
       data-audio-controls
       aria-labelledby="stims-launch-title"
     >
-      <div className="stims-shell__launch-center">
+      <div
+        className="stims-shell__launch-center"
+        data-variant={resume ? 'resume' : deepLink ? 'deep-link' : 'launch'}
+      >
         <Header resume={resume} deepLink={deepLink} />
         <Actions
           resume={resume}
@@ -176,7 +191,19 @@ export function NewHomePage() {
             own.
           </p>
         )}
-        <AudioSources />
+        <AudioSources resume={resume} />
+        {/* Returning visitor: switching preset changes context, it is not
+            a second way to start, so it ranks below the sources as a quiet
+            text action rather than pairing with Resume as an equal. */}
+        {resume ? (
+          <button
+            type="button"
+            className="stims-shell__launch-secondary stims-shell__launch-secondary--quiet"
+            onClick={handleBrowsePresets}
+          >
+            Browse presets
+          </button>
+        ) : null}
         <ProjectMeta />
       </div>
     </section>
@@ -227,16 +254,26 @@ function Header({
     );
   }
   if (resume) {
+    // The preset is one object — its artwork with its name on it — not a
+    // headline, a "Continue with…" sentence and a strip of art each
+    // announcing the same thing. The decision on this page is small (this
+    // preset, or something else) and the layout should look it.
+    const { entry } = resume;
     return (
       <>
         <h1 id="stims-launch-title" className="stims-shell__launch-title">
           Welcome back
         </h1>
-        <p className="stims-shell__launch-tagline">
-          Continue with &ldquo;{resume.entry.title}&rdquo;
-        </p>
-        <div className="stims-shell__launch-resume-art">
-          <PresetArtwork entry={resume.entry} compact />
+        <div className="stims-shell__launch-resume-card">
+          <PresetArtwork entry={entry} compact />
+          <div className="stims-shell__launch-resume-card-copy">
+            <p className="stims-shell__launch-resume-card-title">
+              {entry.title}
+            </p>
+            <p className="stims-shell__launch-resume-card-meta">
+              {entry.author ? `by ${entry.author}` : describePresetMood(entry)}
+            </p>
+          </div>
         </div>
       </>
     );
@@ -299,13 +336,14 @@ function Actions({
       ctaRef.current?.focus();
     }
   }, [isEngineReady]);
+  const resumeHook = resume ? RESUME_SOURCE_HOOK[resume.session.source] : null;
   return (
     <div className="stims-shell__launch-actions-minimal">
       {resume ? (
         <button
           ref={ctaRef}
           id="use-demo-audio"
-          data-demo-audio-btn="true"
+          {...(resumeHook ? { [resumeHook]: 'true' } : {})}
           type="button"
           className="stims-shell__launch-cta"
           disabled={!isEngineReady || isStarting}
@@ -346,29 +384,64 @@ function Actions({
           Audio engine is starting. This will unlock in a moment.
         </p>
       ) : null}
-      <button
-        type="button"
-        className="stims-shell__launch-secondary"
-        onClick={onBrowsePresets}
-      >
-        Browse presets
-      </button>
+      {/* Demo audio is not the visitor's own audio, so it does not belong
+          among "use a different source". For someone resuming with a real
+          source it is the no-permission escape hatch, and lives here as a
+          small action under Resume. */}
+      {resume && resume.session.source !== 'demo' ? (
+        <button
+          type="button"
+          className="stims-shell__launch-demo-link"
+          data-demo-audio-btn="true"
+          disabled={!isEngineReady || isStarting}
+          onClick={onPlayDemo}
+        >
+          Try demo audio instead, no permission needed
+        </button>
+      ) : null}
+      {resume ? null : (
+        <button
+          type="button"
+          className="stims-shell__launch-secondary"
+          onClick={onBrowsePresets}
+        >
+          Browse presets
+        </button>
+      )}
     </div>
   );
 }
 
 /**
- * The alternatives to the primary CTA, behind a disclosure.
+ * The alternatives to the primary CTA.
  *
  * The pitch is "press one button and it plays" — but the YouTube field and
  * the four source cards rendered flat underneath the CTA at roughly equal
  * visual weight, so the page offered six ways to start and ranked none of
- * them. Collapsing them restores the ranking without removing anything: the
- * summary names every source inside, so nothing becomes undiscoverable, and
- * a returning visitor's usual source is already the primary button ("Resume
- * with your mic"), which is why this stays closed even for them.
+ * them. On a first visit they collapse behind a disclosure: the summary
+ * names every source inside, so nothing becomes undiscoverable.
+ *
+ * A returning visitor gets them as a row of compact chips instead. Their
+ * usual source is already the primary button ("Resume with your mic"), so
+ * the chips are ranked by size alone and need no disclosure — which also
+ * removes the page-length jump between its closed and open states, and the
+ * second "Microphone" that the open state used to show a few lines under
+ * "Resume with your mic". Demo audio is not their own audio and is offered
+ * under Resume instead (see `Actions`).
  */
-function AudioSources() {
+function AudioSources({ resume }: { resume: ResumeState }) {
+  if (resume) {
+    return (
+      <div className="stims-shell__launch-sources-inline">
+        <AudioSourcePanel
+          showHelp={false}
+          layout="chips"
+          heading="Use a different source"
+          omitSources={['demo', resume.session.source]}
+        />
+      </div>
+    );
+  }
   return (
     <details className="stims-shell__launch-source-minimal">
       <summary className="stims-shell__launch-sources-summary">

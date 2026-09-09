@@ -20,8 +20,29 @@ import {
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
+/** Every source the panel can offer, by the id its button starts. */
+export type AudioSourceId = 'demo' | 'microphone' | 'file' | 'tab' | 'youtube';
+
 type AudioSourcePanelProps = {
   showHelp?: boolean;
+  /**
+   * `cards` (default): one card per source with a line of copy, for the
+   * Settings sheet and the first-visit launch page.
+   * `chips`: one compact icon-and-name button per source, wrapped on one
+   * line. For surfaces where a primary button is already on screen and these
+   * are its alternatives — a card each with a subtitle would out-weigh it.
+   * The YouTube link field, which needs typing, opens from a chip of its
+   * own instead of sitting expanded above the others.
+   */
+  layout?: 'cards' | 'chips';
+  /** Section heading; "Audio source" unless the surface ranks these as alternatives. */
+  heading?: string;
+  /**
+   * Sources not to offer — a source the surrounding surface already starts
+   * from its own button (the returning visitor's "Resume with your mic")
+   * must not appear a second time a few lines down under another name.
+   */
+  omitSources?: readonly AudioSourceId[];
 };
 
 /**
@@ -56,8 +77,16 @@ function formatPlaybackTime(totalSeconds: number) {
     : `${minutes}:${paddedSeconds}`;
 }
 
-export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
+export function AudioSourcePanel({
+  showHelp = true,
+  layout = 'cards',
+  heading = 'Audio source',
+  omitSources = [],
+}: AudioSourcePanelProps) {
+  const chips = layout === 'chips';
+  const offers = (source: AudioSourceId) => !omitSources.includes(source);
   const sourcePanelId = useId();
+  const youtubeBlockId = `${sourcePanelId}-youtube-block`;
   const sourceHeadingId = `${sourcePanelId}-source-heading`;
   const engineStatusId = `${sourcePanelId}-engine-status`;
   const youtubeInputId = `${sourcePanelId}-youtube-url`;
@@ -209,20 +238,361 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
 
   const isAppBrowser = isInAppBrowser();
 
+  // In the chip layout the link field is closed until its chip is pressed —
+  // unless a link is already in flight, which must stay visible to be
+  // finished (paste-to-load, "Start capture", the transport).
+  const [youtubeOpened, setYoutubeOpened] = useState(false);
+  const offersYouTube = canCaptureDisplayAudio && offers('youtube');
+  const youtubeVisible =
+    offersYouTube &&
+    (!chips || youtubeOpened || youtubeReady || youtubeUrl.trim() !== '');
+  const cardClassName = chips
+    ? 'stims-shell__source-card stims-shell__source-card--chip'
+    : 'stims-shell__source-card';
+
+  const youtubeBlock = (
+    <div
+      id={youtubeBlockId}
+      className="stims-shell__youtube stims-shell__youtube-primary"
+      hidden={!youtubeVisible}
+    >
+      <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
+        YouTube link
+      </label>
+      <div className="stims-shell__youtube-row">
+        <input
+          id={youtubeInputId}
+          className="stims-shell__input"
+          type="url"
+          placeholder="Paste a YouTube link…"
+          autoComplete="off"
+          inputMode="url"
+          spellCheck={false}
+          data-youtube-url-input="true"
+          aria-describedby={
+            !engineReady
+              ? `${youtubeFeedbackId} ${disabledDescription}`
+              : youtubeFeedbackId
+          }
+          aria-invalid={youtubeInputInvalid}
+          value={youtubeUrl}
+          onChange={(event) => onYoutubeUrlChange(event.target.value)}
+          onKeyDown={(e) =>
+            onYoutubeUrlKeyDown(e, () => onAudioStart('youtube'))
+          }
+          onPaste={handleYoutubeUrlPaste}
+        />
+        <button
+          id={`${sourcePanelId}-load-youtube`}
+          data-youtube-load-btn="true"
+          className="cta-button primary"
+          type="button"
+          disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
+          aria-disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          aria-busy={youtubeLoading}
+          onClick={handlePlayYouTube}
+        >
+          {youtubeLoading ? (
+            <>
+              <UiIcon name="spinner" className="stims-shell__button-icon" />
+              Loading…
+            </>
+          ) : youtubeReady ? (
+            'Start capture'
+          ) : (
+            'Load'
+          )}
+        </button>
+      </div>
+      <p
+        id={youtubeFeedbackId}
+        className="stims-shell__youtube-feedback"
+        data-state={
+          youtubeInputInvalid ? 'invalid' : youtubeReady ? 'ready' : 'idle'
+        }
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {youtubeFeedback}
+      </p>
+      {youtubeTransport ? (
+        <fieldset
+          className="stims-shell__youtube-transport"
+          aria-label="YouTube playback"
+        >
+          <button
+            type="button"
+            className="stims-shell__transport-button"
+            onClick={() => youtubeTransportControls.nudge(-10)}
+            aria-label="Back 10 seconds"
+          >
+            −10s
+          </button>
+          <button
+            type="button"
+            className="stims-shell__transport-button"
+            onClick={() =>
+              youtubeTransport.paused
+                ? youtubeTransportControls.play()
+                : youtubeTransportControls.pause()
+            }
+          >
+            {youtubeTransport.paused ? 'Play' : 'Pause'}
+          </button>
+          <button
+            type="button"
+            className="stims-shell__transport-button"
+            onClick={() => youtubeTransportControls.nudge(10)}
+            aria-label="Forward 10 seconds"
+          >
+            +10s
+          </button>
+          <input
+            className="stims-shell__transport-scrubber"
+            type="range"
+            min={0}
+            max={Math.floor(youtubeTransport.durationSeconds)}
+            value={Math.floor(youtubeTransport.currentSeconds)}
+            aria-label="Seek"
+            aria-valuetext={formatPlaybackTime(youtubeTransport.currentSeconds)}
+            onChange={(event) =>
+              youtubeTransportControls.seekTo(Number(event.target.value))
+            }
+          />
+          <span className="stims-shell__transport-time">
+            {formatPlaybackTime(youtubeTransport.currentSeconds)} /{' '}
+            {formatPlaybackTime(youtubeTransport.durationSeconds)}
+          </span>
+        </fieldset>
+      ) : null}
+      {recentYouTubeVideos.length > 0 ? (
+        <div className="stims-shell__youtube-recent">
+          <div className="stims-shell__youtube-recent-header">
+            <p className="stims-shell__field-label">Recent videos</p>
+            <button
+              type="button"
+              className="stims-shell__clear-filters stims-shell__clear-filters--compact"
+              onClick={engine.clearRecentYouTubeVideos}
+            >
+              Clear history
+            </button>
+          </div>
+          <div className="stims-shell__chip-list">
+            {recentYouTubeVideos.map((video) => (
+              <button
+                key={video.id}
+                type="button"
+                className="stims-shell__chip stims-shell__chip--media"
+                onClick={() => onLoadRecentYouTubeVideo(video.id)}
+              >
+                {video.thumbnail ? (
+                  <img
+                    className="stims-shell__chip-thumb"
+                    src={video.thumbnail}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : null}
+                <span className="stims-shell__chip-copy">
+                  <strong>{video.title}</strong>
+                  {video.author ? <span>{video.author}</span> : null}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <div
+        id={youtubeContainerId}
+        ref={youtubePreviewRef}
+        className="stims-shell__youtube-preview"
+        hidden
+      >
+        <div data-youtube-player></div>
+      </div>
+    </div>
+  );
+
+  const fileCopy = fileState?.loading
+    ? 'Loading…'
+    : fileState?.error
+      ? fileState.error
+      : fileState
+        ? `Playing ${fileState.name}`
+        : 'Pick a track, or drop one here';
+
+  const sourceGrid = (
+    <div
+      className={
+        chips
+          ? 'stims-shell__source-grid stims-shell__source-grid--chips'
+          : 'stims-shell__source-grid'
+      }
+    >
+      {offers('demo') ? (
+        <button
+          id={`${sourcePanelId}-use-demo-audio-card`}
+          data-demo-audio-btn="true"
+          type="button"
+          className={cardClassName}
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => onAudioStart('demo')}
+        >
+          <UiIcon
+            name="pulse"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
+          <strong>Demo audio</strong>
+          {chips ? null : <span>No permission needed</span>}
+        </button>
+      ) : null}
+      {offers('microphone') ? (
+        <button
+          id={`${sourcePanelId}-start-audio-btn`}
+          data-mic-audio-btn="true"
+          type="button"
+          className={cardClassName}
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() =>
+            onAudioStart(
+              'microphone',
+              mobileDevice ? undefined : selectedDeviceId || undefined,
+            )
+          }
+        >
+          <UiIcon
+            name="mic"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
+          <strong>Microphone</strong>
+          {chips ? null : <span>Whatever is playing in the room</span>}
+        </button>
+      ) : null}
+      {offers('microphone') && audioDevices.length > 1 ? (
+        <label className="stims-shell__device-select">
+          <span className="stims-shell__field-label">Microphone</span>
+          <select
+            className="stims-shell__input"
+            value={selectedDeviceId}
+            onChange={(e) => setSelectedDeviceId(e.target.value)}
+          >
+            {audioDevices.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <button
+        type="button"
+        // No hardcoded id: this panel mounts twice at once (home + Settings),
+        // so the sibling cards' fixed ids are already duplicated in the DOM.
+        // The data-attribute is the automation hook here, matching
+        // data-demo-audio-btn — which exists for exactly this reason.
+        id={fileCardId}
+        data-file-audio-btn="true"
+        className={cardClassName}
+        data-drag-active={dragActive || undefined}
+        disabled={!engineReady || fileState?.loading}
+        aria-describedby={!engineReady ? disabledDescription : undefined}
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragActive(false);
+          const file = event.dataTransfer.files?.[0];
+          if (file) void playFile(file);
+        }}
+      >
+        <UiIcon
+          name="music"
+          className="stims-shell__source-card-icon stims-icon-slot"
+        />
+        <strong>Audio file</strong>
+        {chips ? null : <span>{fileCopy}</span>}
+      </button>
+      {/* Outside the button: a file input nested in a button swallows the
+            click that is meant to open the picker. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={AUDIO_FILE_ACCEPT}
+        className="stims-shell__sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          // Clear so re-picking the same file fires change again.
+          event.target.value = '';
+          if (file) void playFile(file);
+        }}
+      />
+      {canCaptureDisplayAudio && offers('tab') ? (
+        <button
+          type="button"
+          id={`${sourcePanelId}-use-tab-audio`}
+          data-tab-audio-btn="true"
+          className={cardClassName}
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => onAudioStart('tab')}
+        >
+          <UiIcon
+            name="video"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
+          <strong>This tab</strong>
+          {chips ? null : <span>Audio playing in this browser tab</span>}
+        </button>
+      ) : null}
+      {chips && offersYouTube ? (
+        <button
+          type="button"
+          className={cardClassName}
+          aria-expanded={youtubeVisible}
+          aria-controls={youtubeBlockId}
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => setYoutubeOpened((open) => !open)}
+        >
+          <UiIcon
+            name="link"
+            className="stims-shell__source-card-icon stims-icon-slot"
+          />
+          <strong>YouTube</strong>
+        </button>
+      ) : null}
+    </div>
+  );
+
   return (
     <section
-      className="stims-shell__source-panel"
+      className={
+        chips
+          ? 'stims-shell__source-panel stims-shell__source-panel--chips'
+          : 'stims-shell__source-panel'
+      }
+      data-layout={layout}
       aria-labelledby={sourceHeadingId}
       aria-busy={!engineReady}
     >
       <div className="stims-shell__source-heading">
-        {/* "Audio source" in both cases. This heading names the whole
-            section — YouTube, microphone, a file and this tab — so labelling
-            it "YouTube playback" whenever tab capture happens to be available
-            named one of its four children and mis-described the other three,
-            which is also what a screen reader announced on entering it. */}
+        {/* This heading names the whole section — YouTube, microphone, a
+            file and this tab — so labelling it "YouTube playback" whenever
+            tab capture happens to be available named one of its four
+            children and mis-described the other three, which is also what
+            a screen reader announced on entering it. */}
         <h2 id={sourceHeadingId} className="stims-shell__section-label">
-          Audio source
+          {heading}
         </h2>
       </div>
       {isAppBrowser ? (
@@ -249,298 +619,19 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           Audio engine is starting. Sources will unlock in a moment.
         </p>
       ) : null}
-      <div
-        className="stims-shell__youtube stims-shell__youtube-primary"
-        hidden={!canCaptureDisplayAudio}
-      >
-        <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
-          YouTube link
-        </label>
-        <div className="stims-shell__youtube-row">
-          <input
-            id={youtubeInputId}
-            className="stims-shell__input"
-            type="url"
-            placeholder="Paste a YouTube link…"
-            autoComplete="off"
-            inputMode="url"
-            spellCheck={false}
-            data-youtube-url-input="true"
-            aria-describedby={
-              !engineReady
-                ? `${youtubeFeedbackId} ${disabledDescription}`
-                : youtubeFeedbackId
-            }
-            aria-invalid={youtubeInputInvalid}
-            value={youtubeUrl}
-            onChange={(event) => onYoutubeUrlChange(event.target.value)}
-            onKeyDown={(e) =>
-              onYoutubeUrlKeyDown(e, () => onAudioStart('youtube'))
-            }
-            onPaste={handleYoutubeUrlPaste}
-          />
-          <button
-            id={`${sourcePanelId}-load-youtube`}
-            data-youtube-load-btn="true"
-            className="cta-button primary"
-            type="button"
-            disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
-            aria-disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
-            aria-describedby={!engineReady ? disabledDescription : undefined}
-            aria-busy={youtubeLoading}
-            onClick={handlePlayYouTube}
-          >
-            {youtubeLoading ? (
-              <>
-                <UiIcon name="spinner" className="stims-shell__button-icon" />
-                Loading…
-              </>
-            ) : youtubeReady ? (
-              'Start capture'
-            ) : (
-              'Load'
-            )}
-          </button>
-        </div>
+      {/* Cards: the link field leads, the cards follow. Chips: the chips
+          lead and the field opens beneath them from its own chip. */}
+      {chips ? sourceGrid : youtubeBlock}
+      {chips ? youtubeBlock : sourceGrid}
+      {chips && fileState ? (
         <p
-          id={youtubeFeedbackId}
-          className="stims-shell__youtube-feedback"
-          data-state={
-            youtubeInputInvalid ? 'invalid' : youtubeReady ? 'ready' : 'idle'
-          }
+          className="stims-shell__source-feedback"
+          data-state={fileState.error ? 'error' : 'idle'}
           aria-live="polite"
-          aria-atomic="true"
         >
-          {youtubeFeedback}
+          {fileCopy}
         </p>
-        {youtubeTransport ? (
-          <fieldset
-            className="stims-shell__youtube-transport"
-            aria-label="YouTube playback"
-          >
-            <button
-              type="button"
-              className="stims-shell__transport-button"
-              onClick={() => youtubeTransportControls.nudge(-10)}
-              aria-label="Back 10 seconds"
-            >
-              −10s
-            </button>
-            <button
-              type="button"
-              className="stims-shell__transport-button"
-              onClick={() =>
-                youtubeTransport.paused
-                  ? youtubeTransportControls.play()
-                  : youtubeTransportControls.pause()
-              }
-            >
-              {youtubeTransport.paused ? 'Play' : 'Pause'}
-            </button>
-            <button
-              type="button"
-              className="stims-shell__transport-button"
-              onClick={() => youtubeTransportControls.nudge(10)}
-              aria-label="Forward 10 seconds"
-            >
-              +10s
-            </button>
-            <input
-              className="stims-shell__transport-scrubber"
-              type="range"
-              min={0}
-              max={Math.floor(youtubeTransport.durationSeconds)}
-              value={Math.floor(youtubeTransport.currentSeconds)}
-              aria-label="Seek"
-              aria-valuetext={formatPlaybackTime(
-                youtubeTransport.currentSeconds,
-              )}
-              onChange={(event) =>
-                youtubeTransportControls.seekTo(Number(event.target.value))
-              }
-            />
-            <span className="stims-shell__transport-time">
-              {formatPlaybackTime(youtubeTransport.currentSeconds)} /{' '}
-              {formatPlaybackTime(youtubeTransport.durationSeconds)}
-            </span>
-          </fieldset>
-        ) : null}
-        {recentYouTubeVideos.length > 0 ? (
-          <div className="stims-shell__youtube-recent">
-            <div className="stims-shell__youtube-recent-header">
-              <p className="stims-shell__field-label">Recent videos</p>
-              <button
-                type="button"
-                className="stims-shell__clear-filters stims-shell__clear-filters--compact"
-                onClick={engine.clearRecentYouTubeVideos}
-              >
-                Clear history
-              </button>
-            </div>
-            <div className="stims-shell__chip-list">
-              {recentYouTubeVideos.map((video) => (
-                <button
-                  key={video.id}
-                  type="button"
-                  className="stims-shell__chip stims-shell__chip--media"
-                  onClick={() => onLoadRecentYouTubeVideo(video.id)}
-                >
-                  {video.thumbnail ? (
-                    <img
-                      className="stims-shell__chip-thumb"
-                      src={video.thumbnail}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : null}
-                  <span className="stims-shell__chip-copy">
-                    <strong>{video.title}</strong>
-                    {video.author ? <span>{video.author}</span> : null}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        <div
-          id={youtubeContainerId}
-          ref={youtubePreviewRef}
-          className="stims-shell__youtube-preview"
-          hidden
-        >
-          <div data-youtube-player></div>
-        </div>
-      </div>
-      <div className="stims-shell__source-grid">
-        <button
-          id={`${sourcePanelId}-use-demo-audio-card`}
-          data-demo-audio-btn="true"
-          type="button"
-          className="stims-shell__source-card"
-          disabled={!engineReady}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => onAudioStart('demo')}
-        >
-          <UiIcon
-            name="pulse"
-            className="stims-shell__source-card-icon stims-icon-slot"
-          />
-          <strong>Demo audio</strong>
-          <span>No permission needed</span>
-        </button>
-        <button
-          id={`${sourcePanelId}-start-audio-btn`}
-          data-mic-audio-btn="true"
-          type="button"
-          className="stims-shell__source-card"
-          disabled={!engineReady}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() =>
-            onAudioStart(
-              'microphone',
-              mobileDevice ? undefined : selectedDeviceId || undefined,
-            )
-          }
-        >
-          <UiIcon
-            name="mic"
-            className="stims-shell__source-card-icon stims-icon-slot"
-          />
-          <strong>Microphone</strong>
-          <span>Whatever is playing in the room</span>
-        </button>
-        {audioDevices.length > 1 ? (
-          <label className="stims-shell__device-select">
-            <span className="stims-shell__field-label">Microphone</span>
-            <select
-              className="stims-shell__input"
-              value={selectedDeviceId}
-              onChange={(e) => setSelectedDeviceId(e.target.value)}
-            >
-              {audioDevices.map((device) => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-        <button
-          type="button"
-          // No hardcoded id: this panel mounts twice at once (home + Settings),
-          // so the sibling cards' fixed ids are already duplicated in the DOM.
-          // The data-attribute is the automation hook here, matching
-          // data-demo-audio-btn — which exists for exactly this reason.
-          id={fileCardId}
-          data-file-audio-btn="true"
-          className="stims-shell__source-card"
-          data-drag-active={dragActive || undefined}
-          disabled={!engineReady || fileState?.loading}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragActive(true);
-          }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragActive(false);
-            const file = event.dataTransfer.files?.[0];
-            if (file) void playFile(file);
-          }}
-        >
-          <UiIcon
-            name="music"
-            className="stims-shell__source-card-icon stims-icon-slot"
-          />
-          <strong>Audio file</strong>
-          <span>
-            {fileState?.loading
-              ? 'Loading…'
-              : fileState?.error
-                ? fileState.error
-                : fileState
-                  ? `Playing ${fileState.name}`
-                  : 'Pick a track, or drop one here'}
-          </span>
-        </button>
-        {/* Outside the button: a file input nested in a button swallows the
-            click that is meant to open the picker. */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={AUDIO_FILE_ACCEPT}
-          className="stims-shell__sr-only"
-          tabIndex={-1}
-          aria-hidden="true"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            // Clear so re-picking the same file fires change again.
-            event.target.value = '';
-            if (file) void playFile(file);
-          }}
-        />
-        {canCaptureDisplayAudio ? (
-          <button
-            type="button"
-            id={`${sourcePanelId}-use-tab-audio`}
-            data-tab-audio-btn="true"
-            className="stims-shell__source-card"
-            disabled={!engineReady}
-            aria-describedby={!engineReady ? disabledDescription : undefined}
-            onClick={() => onAudioStart('tab')}
-          >
-            <UiIcon
-              name="video"
-              className="stims-shell__source-card-icon stims-icon-slot"
-            />
-            <strong>This tab</strong>
-            <span>Audio playing in this browser tab</span>
-          </button>
-        ) : null}
-      </div>
+      ) : null}
       {showHelp ? (
         <details className="stims-shell__settings-advanced">
           <summary className="stims-shell__settings-summary">

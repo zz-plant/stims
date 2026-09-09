@@ -1412,6 +1412,140 @@ body[data-page="workspace"][data-live="true"] {
     width: min(16rem, 100%);
   }
 
+  /* Returning visitor. The first screen used to spend itself explaining what
+     was being resumed — headline, "Continue with…" sentence, a strip of art —
+     before a decision that is small: this preset, or something else. The
+     preset is one card now, with its name on the artwork, tall enough to
+     establish what it looks like (the old strip was prominent enough to cost
+     space but too shallow to do that) and no taller: title, card, Resume,
+     the other sources and Browse should all fit one phone screen. */
+  .stims-shell__launch-center[data-variant="resume"] {
+    /* The launch column is a grid inside a stage panel taller than its
+       content, and `align-content` defaults to stretch — so every auto row
+       absorbed an equal share of the leftover height. On this variant that
+       was ~42px added to each of eight rows, which is why the page read as
+       a short interface floating in a screen and a half of nothing: the
+       whitespace was leftover height being redistributed, not spacing
+       anyone chose. Packing the rows to the start makes the gaps below the
+       real ones, so the whole decision fits one phone screen. */
+    align-content: start;
+    gap: 10px;
+  }
+
+  .stims-shell__launch-center[data-variant="resume"]
+    .stims-shell__launch-title {
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+  }
+
+  .stims-shell__launch-center[data-variant="resume"]
+    .stims-shell__launch-actions-minimal {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .stims-shell__launch-resume-card {
+    /* Clears the display headline, which sets its own optical space. */
+    margin-top: 4px;
+    width: min(24rem, 100%);
+    overflow: hidden;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: var(--radius-xl);
+    background: var(--stims-white-04);
+    box-shadow: var(--stims-shadow-control);
+  }
+
+  .stims-shell__launch-resume-card .stims-shell__preset-art {
+    height: 140px;
+    min-height: 140px;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .stims-shell__launch-resume-card-copy {
+    display: grid;
+    gap: 2px;
+    padding: 10px 14px 12px;
+  }
+
+  .stims-shell__launch-resume-card-title {
+    margin: 0;
+    color: var(--stims-ink-strong);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  .stims-shell__launch-resume-card-meta {
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  /* Demo audio under Resume: an escape hatch for someone without their usual
+     source to hand, sized like one. */
+  .stims-shell__launch-demo-link {
+    align-self: flex-start;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: var(--stims-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--stims-line-strong);
+    text-underline-offset: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color var(--transition-fast);
+  }
+
+  .stims-shell__launch-demo-link:hover:not(:disabled) {
+    color: var(--stims-ink-strong);
+  }
+
+  .stims-shell__launch-demo-link:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .stims-shell__launch-demo-link:focus-visible {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 3px;
+    border-radius: var(--stims-radius-control);
+  }
+
+  /* The other sources, as chips, directly under Resume — no disclosure. */
+  .stims-shell__launch-sources-inline {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  /* "Browse presets" on the returning-visitor page changes context; it is
+     not a second way to start, so it must not pair with Resume as an equal
+     outlined button. Doubled class: the 480px rule above stretches every
+     launch-secondary to full width. */
+  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet {
+    width: auto;
+    min-height: 40px;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    color: var(--stims-muted);
+    text-decoration: underline;
+    text-decoration-color: var(--stims-line-strong);
+    text-underline-offset: 3px;
+  }
+
+  .stims-shell__launch-secondary.stims-shell__launch-secondary--quiet:hover {
+    background: none;
+    color: var(--stims-ink-strong);
+  }
+
   .stims-shell__launch-explainer {
     margin: 4px 0 0;
     max-width: 34rem;
@@ -1776,6 +1910,69 @@ body[data-page="workspace"][data-live="true"] {
     color: var(--stims-muted);
     font-size: 0.8125rem;
     line-height: 1.35;
+  }
+
+  /* Chip layout (AudioSourcePanel layout="chips"): one line per source,
+     icon and name, wrapped. For surfaces where a primary button is already
+     on screen and these are its alternatives, so a card each would out-weigh
+     it. Flex, not the card grid: the 148px column minimum is a card's width,
+     and it left a lone chip stretched across the whole row. */
+  .stims-shell__source-grid--chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stims-shell__source-card--chip {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border-radius: 999px;
+  }
+
+  .stims-shell__source-card--chip:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .stims-shell__source-card--chip[aria-expanded="true"] {
+    border-color: rgba(119, 201, 255, 0.5);
+  }
+
+  .stims-shell__source-card--chip .stims-shell__source-card-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .stims-shell__source-card--chip strong {
+    font-size: 0.875rem;
+  }
+
+  .stims-shell__source-panel--chips {
+    gap: 8px;
+  }
+
+  .stims-shell__source-panel--chips .stims-shell__section-label {
+    margin: 0;
+  }
+
+  .stims-shell__source-panel--chips .stims-shell__youtube-primary {
+    margin-top: 4px;
+  }
+
+  /* The file card's state line, moved out of the chip (a chip has no second
+     line) to sit under the row. */
+  .stims-shell__source-feedback {
+    margin: 0;
+    color: var(--stims-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .stims-shell__source-feedback[data-state="error"] {
+    color: var(--stims-danger);
   }
 
   .stims-shell__source-card:disabled {
