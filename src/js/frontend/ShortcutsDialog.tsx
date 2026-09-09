@@ -1,12 +1,15 @@
 import type { RefObject } from 'react';
 import { Fragment, useEffect, useState } from 'react';
-import { registerEscapeHandler } from '../core/modal-utils.ts';
 import {
   availableStageKeyDocs,
   availableStageSignalKeys,
   formatStageKey,
 } from '../core/unified-input.ts';
 import { isMobileDevice } from '../utils/browser/device-detect.ts';
+import {
+  useBottomOverlaySignal,
+  useEscapeHandler,
+} from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { STAGE_GESTURES } from './hooks/useStageGesture.ts';
 import {
@@ -51,10 +54,9 @@ export function ShortcutsDialog({
   // handler. The backdrop only sees keys that originate inside it, so with
   // focus anywhere else the sheet this dialog was opened from took the press
   // instead — closing the sheet and leaving the dialog stranded.
-  useEffect(() => {
-    if (!open) return;
-    return registerEscapeHandler(onClose);
-  }, [open, onClose]);
+  useEscapeHandler(open, onClose);
+  // On phones this dialog is a bottom sheet, and toasts now render above it.
+  useBottomOverlaySignal(open);
 
   if (!open) return null;
 

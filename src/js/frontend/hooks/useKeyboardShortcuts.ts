@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { escapeIsClaimed } from '../../core/modal-utils.ts';
 import {
   NO_RESERVED_KEYS,
   setReservedShellKeys,
@@ -96,6 +97,10 @@ export function useKeyboardShortcuts({
       // resize, the warp gizmo's nudge) prevents default; firing the global
       // preset shortcuts on top of it double-acts the keystroke.
       if (event.defaultPrevented) return;
+      // An open overlay owns Escape. This listener is attached when the shell
+      // mounts, before any overlay exists, so it runs first; without this a
+      // rebound Escape would run its action and dismiss the overlay at once.
+      if (event.key === 'Escape' && escapeIsClaimed()) return;
       const shortcutOverrides = readShortcutOverrides();
       if (
         event.target instanceof HTMLInputElement ||

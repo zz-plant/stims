@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { registerEscapeHandler } from '../../src/js/core/modal-utils.ts';
+import {
+  escapeIsClaimed,
+  registerEscapeHandler,
+} from '../../src/js/core/modal-utils.ts';
 
 /**
  * Escape must close the overlay in front of the user, and only that one.
@@ -103,6 +106,21 @@ describe('registerEscapeHandler', () => {
     pressEscape(field);
 
     expect(calls).toEqual([]);
+  });
+
+  test('reports whether an overlay has claimed Escape', () => {
+    // The global shortcut handler asks this before acting. It attaches on
+    // document when the shell mounts, before any overlay exists, so it runs
+    // first and cannot be cancelled from here — a user who rebinds Escape to
+    // an action would otherwise fire that action *and* dismiss the overlay.
+    expect(escapeIsClaimed()).toBe(false);
+
+    const calls: string[] = [];
+    const release = register(calls, 'dialog');
+    expect(escapeIsClaimed()).toBe(true);
+
+    release();
+    expect(escapeIsClaimed()).toBe(false);
   });
 
   test('the same handler registered twice unwinds one layer at a time', () => {

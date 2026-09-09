@@ -15,7 +15,7 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
-import { registerEscapeHandler } from '../core/modal-utils.ts';
+import { useEscapeHandler } from './hooks/use-escape-handler.ts';
 import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { UiIcon } from './UiIcon.tsx';
 
@@ -313,10 +313,7 @@ export function SidePanel({
 
   // Registered rather than listening directly, so a dialog opened *over* this
   // panel takes Escape instead of the panel underneath taking it.
-  useEffect(() => {
-    if (!open || exiting) return;
-    return registerEscapeHandler(startClose);
-  }, [open, exiting, startClose]);
+  useEscapeHandler(open && !exiting, startClose);
 
   if (!open && !exiting) return null;
 
