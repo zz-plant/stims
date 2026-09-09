@@ -146,6 +146,18 @@ interface DeviceRecord {
   enabled: boolean;
   bindings: MidiBindingMap;
   noteBindings: MidiNoteBindingMap;
+  /**
+   * Set once this device's factory defaults have been installed.
+   *
+   * Emptiness cannot carry that fact on its own. The gamepad's defaults were
+   * originally seeded only for a record with no bindings, on the reasoning
+   * that an empty map could only be the footprint of the bug where the pad
+   * bound to nothing — but a user who removes all six mappings by hand
+   * produces exactly the same state, and would have had every default put
+   * back on the next load, silently. This marker separates "never seeded"
+   * from "seeded, then emptied on purpose".
+   */
+  defaultsSeeded?: boolean;
 }
 
 type PersistedState = Record<string, DeviceRecord>;
@@ -216,6 +228,7 @@ function readStorage(): PersistedState {
       if (value === null || typeof value !== 'object' || Array.isArray(value))
         continue;
       const candidate = value as Partial<DeviceRecord>;
+      const defaultsSeeded = candidate.defaultsSeeded === true;
       const bindings: MidiBindingMap = {};
       if (
         candidate.bindings &&
@@ -278,6 +291,7 @@ function readStorage(): PersistedState {
         enabled: candidate.enabled !== false,
         bindings,
         noteBindings,
+        defaultsSeeded,
       };
     }
     return sanitized;
@@ -325,6 +339,7 @@ export class WebMidiControllerService {
         enabled: rec.enabled ?? true,
         bindings: rec.bindings ?? {},
         noteBindings: rec.noteBindings ?? {},
+        defaultsSeeded: rec.defaultsSeeded === true,
       });
     }
     this.ensureDeviceRecord(VIRTUAL_CLAUDE_DEVICE_ID, {
@@ -349,9 +364,11 @@ export class WebMidiControllerService {
    * the claim is only ever made when it is true.
    *
    * Also repairs the empty map persisted by builds where the pad bound to
-   * nothing. An empty CC map is only ever that bug's footprint — learn adds
-   * bindings and the pad has no unbind control — so refilling it cannot
-   * discard a choice anyone made.
+   * nothing — but only once, and only for a record that has never been
+   * seeded. Emptiness alone is not the bug's signature: removing all six
+   * mappings by hand leaves the same empty map, and treating that as damage
+   * put every default back on the next load and undid the user's choice
+   * without saying so. The `defaultsSeeded` marker is what tells them apart.
    */
   public ensureGamepadDefaults(): void {
     // Checked before ensureDeviceRecord, not after: that call creates the
@@ -360,13 +377,21 @@ export class WebMidiControllerService {
     // early return on a fresh create would skip the notify, leaving the
     // Settings bindings table showing "No mappings yet" for a live pad.
     const existing = this.deviceRecords.get(VIRTUAL_GAMEPAD_DEVICE_ID);
-    if (existing && Object.keys(existing.bindings).length > 0) return;
+    if (existing?.defaultsSeeded) return;
+    if (existing && Object.keys(existing.bindings).length > 0) {
+      // Seeded by an older build, which left no marker. Record that now so
+      // this record is never a repair candidate again.
+      existing.defaultsSeeded = true;
+      this.persist();
+      return;
+    }
     const rec = this.ensureDeviceRecord(VIRTUAL_GAMEPAD_DEVICE_ID, {
       enabled: true,
       bindings: { ...DEFAULT_GAMEPAD_CC_BINDINGS },
       noteBindings: {},
     });
     rec.bindings = { ...DEFAULT_GAMEPAD_CC_BINDINGS };
+    rec.defaultsSeeded = true;
     this.persist();
     this.notifyDevicesChanged();
   }
