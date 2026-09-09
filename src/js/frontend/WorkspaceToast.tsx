@@ -6,6 +6,7 @@ export function WorkspaceToast({
   toast: {
     message: string;
     tone: 'info' | 'warn' | 'error';
+    exiting?: boolean;
   } | null;
 }) {
   if (!toast) {
@@ -23,6 +24,9 @@ export function WorkspaceToast({
     <output
       className="stims-shell__toast"
       data-tone={toast.tone}
+      // Drives the `toast-exit` keyframe in app-shell.css, which had sat
+      // unused because nothing ever set this.
+      data-exit={toast.exiting ? 'true' : undefined}
       role={toast.tone === 'error' ? 'alert' : 'status'}
       aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"

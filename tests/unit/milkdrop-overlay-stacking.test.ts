@@ -62,6 +62,34 @@ describe('shell stacking order', () => {
     expect(z(scale, '--z-sheet-active')).toBeGreaterThan(z(scale, '--z-sheet'));
   });
 
+  test('puts the stage overflow menu above its dock, below any panel', () => {
+    // The menu used to share --z-dock with the bar it opens from, leaving
+    // paint order to the DOM.
+    expect(z(scale, '--z-stage-menu')).toBeGreaterThan(z(scale, '--z-dock'));
+    expect(z(scale, '--z-stage-menu')).toBeGreaterThan(
+      z(scale, '--z-lab-panel'),
+    );
+    expect(z(scale, '--z-modal-backdrop')).toBeGreaterThan(
+      z(scale, '--z-stage-menu'),
+    );
+  });
+
+  test('keeps toasts above every overlay they report on', () => {
+    // Both toast surfaces share --z-toast-floating. The ambient stack used to
+    // sit at --z-toast, below the modal backdrop, so a notice raised while a
+    // panel was open rendered behind it and expired unseen. Being on top is
+    // paired with the dodge rules in app-shell.css, which move a toast to the
+    // top of the screen while a sheet or the stage menu holds the bottom.
+    for (const name of [
+      '--z-dock',
+      '--z-stage-menu',
+      '--z-modal',
+      '--z-shortcut-overlay',
+    ]) {
+      expect(z(scale, '--z-toast-floating')).toBeGreaterThan(z(scale, name));
+    }
+  });
+
   test('reserves the top of the scale for the shortcuts overlay', () => {
     // The shortcuts overlay explains the UI, so nothing in the normal chrome
     // may cover it.
