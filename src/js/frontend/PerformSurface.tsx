@@ -89,18 +89,35 @@ export function PerformSurface() {
   // Re-seed each fader from the incoming preset's own literal on every preset
   // change. Without this the faders keep the outgoing preset's positions and
   // silently misreport where the new preset actually sits.
+  //
+  // A field pinned *during* a preset needs the same treatment, and used not to
+  // get it: the effect listed `pinned` but returned early unless the preset id
+  // had changed, so a newly pinned target stayed absent from `values` and the
+  // row below rendered the range midpoint. Pinning warp on a preset that warps
+  // at 0.01 showed 1.0, and the first nudge jumped the value — a visible lurch
+  // mid-set, which is exactly what this effect exists to prevent. So: reseed
+  // everything on a preset change, and seed only the newly pinned targets
+  // otherwise, leaving positions the performer has already set alone.
   const seededForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!activeSource || seededForRef.current === activePresetId) return;
+    if (!activeSource) return;
+    const presetChanged = seededForRef.current !== activePresetId;
     seededForRef.current = activePresetId;
-    const seeded: Record<string, number> = {};
-    for (const target of pinned) {
-      const field = describePinnableField(target);
-      if (!field) continue;
-      const literal = readMilkdropField(activeSource, target);
-      seeded[target] = literal ?? (field.min + field.max) / 2;
-    }
-    setValues(seeded);
+    setValues((current) => {
+      const seeded: Record<string, number> = presetChanged
+        ? {}
+        : { ...current };
+      let changed = presetChanged;
+      for (const target of pinned) {
+        if (!presetChanged && seeded[target] !== undefined) continue;
+        const field = describePinnableField(target);
+        if (!field) continue;
+        const literal = readMilkdropField(activeSource, target);
+        seeded[target] = literal ?? (field.min + field.max) / 2;
+        changed = true;
+      }
+      return changed ? seeded : current;
+    });
   }, [activeSource, activePresetId, pinned]);
 
   const move = useCallback(
