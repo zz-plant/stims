@@ -511,7 +511,8 @@ Asserts the shipped SEO surface still matches what `generate:seo` would produce.
 Checks canonical/OG/Twitter/JSON-LD tags and crawlable links in the HTML
 entry points, the milkdrop alias redirect, robots.txt, the sitemap index and
 chunk (including image entries), the web manifest's icons and screenshots,
-the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
+the oEmbed and JSON Feed endpoints, the minified preset-meta map, and the
+generated OG/icon PNG dimensions.
 Failures exit non-zero and point at `bun run generate:seo`.
 
 Run it directly: `bun run check:seo`

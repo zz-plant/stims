@@ -5,7 +5,8 @@
  * Checks canonical/OG/Twitter/JSON-LD tags and crawlable links in the HTML
  * entry points, the milkdrop alias redirect, robots.txt, the sitemap index and
  * chunk (including image entries), the web manifest's icons and screenshots,
- * the oEmbed and JSON Feed endpoints, and the generated OG/icon PNG dimensions.
+ * the oEmbed and JSON Feed endpoints, the minified preset-meta map, and the
+ * generated OG/icon PNG dimensions.
  * Failures exit non-zero and point at `bun run generate:seo`.
  */
 import fs from 'node:fs/promises';
@@ -25,6 +26,7 @@ import {
   GENERATED_OG_MILKDROP_PNG_PATH,
   GENERATED_OG_PERFORMANCE_PATH,
   GENERATED_OG_PERFORMANCE_PNG_PATH,
+  GENERATED_PRESET_META_PATH,
   GENERATED_ROBOTS_PATH,
   GENERATED_SCREENSHOT_HERO_NARROW_PATH,
   GENERATED_SCREENSHOT_HERO_WIDE_PATH,
@@ -294,6 +296,14 @@ export async function runSeoChecks(rootDir = repoRoot) {
     rootDir,
     GENERATED_SCREENSHOT_HERO_NARROW_PATH,
     expectedFiles.get(GENERATED_SCREENSHOT_HERO_NARROW_PATH) ?? '',
+    results,
+  );
+  // Byte-compared, not parse-compared: the map ships minified to the edge, and
+  // a pretty-printed copy is a 33KB regression that reads as equivalent.
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_PRESET_META_PATH,
+    expectedFiles.get(GENERATED_PRESET_META_PATH) ?? '',
     results,
   );
 
