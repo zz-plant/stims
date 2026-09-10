@@ -152,6 +152,16 @@ export function AudioStatusControl({
       setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
+      // The menu pattern closes on Tab, as the stage overflow menu already
+      // does: Tab means "leave this and carry on through the page". Without
+      // it, Tab walked out of the popover into the transport dock the
+      // popover is sitting on top of, and left the popover open over
+      // whatever the caret had moved to. Focus is left where Tab put it —
+      // pulling it back to the trigger is the one thing Tab did not ask for.
+      if (event.key === 'Tab') {
+        setOpen(false);
+        return;
+      }
       if (event.key !== 'Escape') return;
       event.stopPropagation();
       setOpen(false);
