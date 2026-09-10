@@ -4,8 +4,8 @@
   "description": "Browser-native MilkDrop-inspired visualizer with curated favorites, live editing, and preset import/export. Open-source, no accounts required.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f1a",
-  "theme_color": "#3b82f6",
+  "background_color": "#0b1014",
+  "theme_color": "#0b1014",
   "orientation": "any",
   "icons": [
     {
