@@ -134,6 +134,9 @@ export function NewHomePage() {
   // reads as broken and invites rage-taps; show the in-flight state.
   const [audioStarting, setAudioStarting] = useState(false);
   const startWithFeedback = (source: ResumableAudioSource) => {
+    // The CTAs stay focusable while this runs (see `aria-disabled` below), so
+    // a second Enter can land before the first start resolves.
+    if (audioStarting) return;
     setAudioStarting(true);
     void Promise.resolve(engine.handleAudioStart(source)).finally(() =>
       setAudioStarting(false),
@@ -346,7 +349,16 @@ function Actions({
           {...(resumeHook ? { [resumeHook]: 'true' } : {})}
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady || isStarting}
+          // Disabled only *before* it can be used. Going `disabled` on press
+          // instead — which is what "Starting…" used to do — makes the
+          // browser blur the button the user just activated: focus drops to
+          // `<body>`, the "Starting…"/busy state is never announced because
+          // nothing is focused to announce it, and the next Tab restarts at
+          // the top of the document. `aria-disabled` states the same thing
+          // without taking focus away; `startWithFeedback` ignores the
+          // repeat press that leaves possible.
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onResume}
@@ -362,7 +374,16 @@ function Actions({
           data-demo-audio-btn="true"
           type="button"
           className="stims-shell__launch-cta"
-          disabled={!isEngineReady || isStarting}
+          // Disabled only *before* it can be used. Going `disabled` on press
+          // instead — which is what "Starting…" used to do — makes the
+          // browser blur the button the user just activated: focus drops to
+          // `<body>`, the "Starting…"/busy state is never announced because
+          // nothing is focused to announce it, and the next Tab restarts at
+          // the top of the document. `aria-disabled` states the same thing
+          // without taking focus away; `startWithFeedback` ignores the
+          // repeat press that leaves possible.
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
           aria-busy={isStarting}
           aria-describedby={!isEngineReady ? engineStatusId : undefined}
           onClick={onPlayDemo}
@@ -393,7 +414,9 @@ function Actions({
           type="button"
           className="stims-shell__launch-demo-link"
           data-demo-audio-btn="true"
-          disabled={!isEngineReady || isStarting}
+          disabled={!isEngineReady}
+          aria-disabled={isStarting || undefined}
+          aria-busy={isStarting}
           onClick={onPlayDemo}
         >
           Try demo audio instead, no permission needed

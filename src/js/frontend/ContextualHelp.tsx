@@ -31,10 +31,14 @@ type HelpHintDef = {
 const HINTS: HelpHintDef[] = [
   {
     id: 'first-play',
+    // "Move the mouse for controls" was the only route this named, which is
+    // a dead end for anyone driving the page from the keyboard — the one
+    // audience that most needs to be told where the controls are, since the
+    // dock is hidden until something asks for it. Tab reaches the same dock.
     message: () =>
       isMobileDevice()
         ? 'Swipe to change the visuals — double-tap to fill the screen'
-        : 'Press → for a different visual. Move the mouse for controls.',
+        : 'Press → for a different visual. Tab (or move the mouse) for the controls.',
     autoHideMs: 6000,
     anchor: 'stage',
   },
@@ -59,8 +63,10 @@ const HINTS: HelpHintDef[] = [
   },
   {
     id: 'editor-open',
+    // The Esc half is not trivia: Tab indents inside the code, so it is the
+    // one place in the app Tab does not walk you out of, and nothing said so.
     message:
-      'This is the preset’s source code. Edits show up in the visuals live.',
+      'This is the preset’s source code. Edits show up in the visuals live. Tab indents; Esc steps out.',
     autoHideMs: 6000,
     anchor: 'panel',
   },

@@ -107,17 +107,23 @@ export function ShortcutsDialog({
     // keydown handler here would be dead code: focus is trapped in the card,
     // so the backdrop never receives one.
     // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard dismiss is Escape, handled above
-    <div
-      className="stims-shell__shortcut-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Shortcuts and gestures"
-      onClick={onClose}
-    >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
+    // biome-ignore lint/a11y/noStaticElementInteractions: click-to-dismiss scrim; the dialog role belongs on the card it wraps
+    <div className="stims-shell__shortcut-overlay" onClick={onClose}>
       <div
         ref={shortcutsRef}
         className="stims-shell__shortcut-card"
+        // The dialog is the card, not the backdrop around it: the card is
+        // what the focus trap fences, what takes initial focus, and what
+        // `aria-modal` should be scoping.
+        //
+        // With the role on the backdrop and `role="presentation"` here, the
+        // element the trap focused carried a role ARIA ignores on anything
+        // focusable. So the dialog's own name was never announced; a screen
+        // reader fell back to naming the focused element from its contents,
+        // and read the card's entire text as one run-on label.
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shortcuts and gestures"
         // Focusable only as a landing spot for the trap's initial focus, so
         // the sheet opens at its heading rather than scrolled to a control.
         tabIndex={-1}
@@ -132,7 +138,6 @@ export function ShortcutsDialog({
             e.stopPropagation();
           }
         }}
-        role="presentation"
       >
         <h2>Shortcuts &amp; gestures</h2>
         {warning ? (
