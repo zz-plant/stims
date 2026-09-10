@@ -51,6 +51,10 @@ export const GENERATED_ICON_FAVICON_SVG_PATH = 'public/icons/favicon.svg';
 export const GENERATED_ICON_FAVICON_32_PATH = 'public/icons/favicon-32.png';
 export const GENERATED_ICON_192_PATH = 'public/icons/icon-192.png';
 export const GENERATED_ICON_512_PATH = 'public/icons/icon-512.png';
+export const GENERATED_ICON_FAVICON_ICO_PATH = 'public/icons/favicon.ico';
+export const GENERATED_ICON_APPLE_TOUCH_PATH =
+  'public/icons/apple-touch-icon.png';
+export const GENERATED_ICON_MASK_PATH = 'public/icons/safari-pinned-tab.svg';
 export const GENERATED_SCREENSHOT_HERO_WIDE_PATH =
   'public/screenshots/hero-wide.png';
 export const GENERATED_SCREENSHOT_HERO_NARROW_PATH =
@@ -191,24 +195,43 @@ export const buildOgSvg = ({
 </svg>`;
 };
 
+// The app mark: a square tunnel receding to a hot core — MilkDrop's warp/zoom
+// feedback, which is what the product actually does. Drawn on the Signal Panel
+// two-accent palette (cool #77c9ff structure, warm #f47a54 core) on the app's
+// own --bg-color tile, so it never reintroduces the multi-hue gradient the
+// chrome dropped. Every stroke is >=36/512 so the thinnest feature is still
+// ~1.1px at a 16px browser tab, where the old ring mark dissolved into mush.
+const ICON_TILE = '#0b1014';
+const ICON_COOL = '#77c9ff';
+const ICON_COOL_DIM = '#2f5f88';
+const ICON_WARM = '#f47a54';
+
+const iconTunnelGeometry = ({
+  cool,
+  coolDim,
+  warm,
+}: {
+  cool: string;
+  coolDim: string;
+  warm: string;
+}) => `<g transform="translate(256 256)">
+    <path d="M-152 -152 L-56 -56 M152 -152 L56 -56 M152 152 L56 56 M-152 152 L-56 56" stroke="${coolDim}" stroke-width="36" />
+    <rect x="-170" y="-170" width="340" height="340" fill="none" stroke="${cool}" stroke-width="46" />
+    <rect x="-62" y="-62" width="124" height="124" fill="${warm}" />
+  </g>`;
+
 export const buildAppIconSvg =
   () => `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stims app icon">
-  <defs>
-    <linearGradient id="icon-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#07111d" />
-      <stop offset="100%" stop-color="#0f7c86" />
-    </linearGradient>
-    <radialGradient id="icon-glow" cx="50%" cy="42%" r="62%">
-      <stop offset="0%" stop-color="rgba(123, 231, 255, 0.95)" />
-      <stop offset="100%" stop-color="rgba(123, 231, 255, 0)" />
-    </radialGradient>
-  </defs>
-  <rect width="512" height="512" rx="128" fill="url(#icon-bg)" />
-  <circle cx="256" cy="220" r="132" fill="url(#icon-glow)" opacity="0.72" />
-  <circle cx="256" cy="256" r="126" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="18" />
-  <circle cx="256" cy="256" r="88" fill="none" stroke="#f5fbff" stroke-width="18" stroke-dasharray="172 62" stroke-linecap="round" />
-  <circle cx="256" cy="256" r="36" fill="#f5fbff" opacity="0.96" />
-  <path d="M112 360c38-29 74-44 108-44 42 0 70 20 98 20 23 0 51-12 83-37" fill="none" stroke="rgba(244,247,255,0.84)" stroke-width="16" stroke-linecap="round" />
+  <rect width="512" height="512" rx="112" fill="${ICON_TILE}" />
+  ${iconTunnelGeometry({ cool: ICON_COOL, coolDim: ICON_COOL_DIM, warm: ICON_WARM })}
+</svg>`;
+
+// Safari's pinned-tab mask flattens everything to one tint, so the silhouette
+// has to survive without colour: no tile, and the corner rays are merged into
+// the same solid black as the frame and core.
+export const buildMaskIconSvg =
+  () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+  ${iconTunnelGeometry({ cool: '#000000', coolDim: '#000000', warm: '#000000' })}
 </svg>`;
 
 export const buildManifestScreenshotSvg = ({
@@ -280,6 +303,36 @@ async function renderSvgPng(
     .resize(width, height, { fit: 'fill' })
     .png()
     .toBuffer();
+}
+
+// sharp cannot write .ico, and the format is small enough to emit directly: a
+// 6-byte header, one 16-byte directory entry per image, then the payloads.
+// PNG-compressed entries (rather than BMP) are understood by every browser
+// that still asks for favicon.ico at all.
+function encodeIco(images: Array<{ size: number; png: Buffer }>) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(images.length, 4);
+
+  let offset = 6 + images.length * 16;
+  const entries = images.map(({ size, png }) => {
+    const entry = Buffer.alloc(16);
+    // 256px is encoded as 0 in this field; nothing we emit is that large, but
+    // keep the rule so a future size bump does not silently write 256 -> 256.
+    entry.writeUInt8(size >= 256 ? 0 : size, 0);
+    entry.writeUInt8(size >= 256 ? 0 : size, 1);
+    entry.writeUInt8(0, 2); // palette colours
+    entry.writeUInt8(0, 3); // reserved
+    entry.writeUInt16LE(1, 4); // colour planes
+    entry.writeUInt16LE(32, 6); // bits per pixel
+    entry.writeUInt32LE(png.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    offset += png.length;
+    return entry;
+  });
+
+  return Buffer.concat([header, ...entries, ...images.map(({ png }) => png)]);
 }
 
 const formatDate = (value: number | Date) =>
@@ -693,6 +746,10 @@ export async function buildSeoArtifacts(
     chip: 'Performance guide',
   });
   const iconSvg = buildAppIconSvg();
+  const maskIconSvg = buildMaskIconSvg();
+  // Only consumed by the .ico below; nothing links a standalone 16px PNG.
+  const icon16Png = await renderSvgPng(iconSvg, { width: 16, height: 16 });
+  const icon32Png = await renderSvgPng(iconSvg, { width: 32, height: 32 });
   const heroWideSvg = buildManifestScreenshotSvg({
     width: 1280,
     height: 720,
@@ -750,7 +807,22 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_ICON_FAVICON_32_PATH,
-        contents: await renderSvgPng(iconSvg, { width: 32, height: 32 }),
+        contents: icon32Png,
+      },
+      {
+        relativePath: GENERATED_ICON_FAVICON_ICO_PATH,
+        contents: encodeIco([
+          { size: 16, png: icon16Png },
+          { size: 32, png: icon32Png },
+        ]),
+      },
+      {
+        relativePath: GENERATED_ICON_APPLE_TOUCH_PATH,
+        contents: await renderSvgPng(iconSvg, { width: 180, height: 180 }),
+      },
+      {
+        relativePath: GENERATED_ICON_MASK_PATH,
+        contents: maskIconSvg,
       },
       {
         relativePath: GENERATED_ICON_192_PATH,
