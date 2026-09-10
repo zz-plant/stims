@@ -661,7 +661,15 @@ export async function buildPresetMetaMap(rootDir = repoRoot) {
     await readdir(libraryDir, { withFileTypes: true }).catch(() => [])
   )
     .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(libraryDir, entry.name, 'catalog.json'));
+    // Sorted, because readdir returns filesystem order: macOS hands back the
+    // libraries in one order and Linux ext4 in another, which shuffled the
+    // insertion order of this map and so the bytes of preset-meta.json. The
+    // key set was identical either way, so nothing was wrong with the data --
+    // but the file could not be byte-compared against a regeneration until the
+    // order was pinned, which is what check:seo now does.
+    .map((entry) => entry.name)
+    .sort()
+    .map((name) => path.join(libraryDir, name, 'catalog.json'));
 
   const meta: Record<string, [string, string]> = {};
   for (const catalogPath of [
