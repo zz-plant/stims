@@ -860,6 +860,10 @@ export async function buildSeoArtifacts(
       },
       {
         relativePath: GENERATED_PRESET_META_PATH,
+        // Minified on purpose: nobody reads this by hand and the edge serves it
+        // on every preset route, so the ~33KB over a pretty-printed copy is
+        // real. biome.json exempts it (and the rest of the generated JSON under
+        // public/) from the formatter so the two cannot fight over the shape.
         contents: JSON.stringify(await buildPresetMetaMap(rootDir)),
       },
       {
