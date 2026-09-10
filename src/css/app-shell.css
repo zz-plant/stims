@@ -1499,11 +1499,17 @@ body[data-page="workspace"][data-live="true"] {
     transition: color var(--transition-fast);
   }
 
-  .stims-shell__launch-demo-link:hover:not(:disabled) {
+  .stims-shell__launch-demo-link:hover:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
     color: var(--stims-ink-strong);
   }
 
-  .stims-shell__launch-demo-link:disabled {
+  /* `aria-disabled` matches too: the busy "Starting…" state keeps the button
+     focusable on purpose (so the press the user just made is still
+     announced), and must still read as unavailable. */
+  .stims-shell__launch-demo-link:disabled,
+  .stims-shell__launch-demo-link[aria-disabled="true"] {
     opacity: 0.55;
     cursor: default;
   }
@@ -1610,12 +1616,13 @@ body[data-page="workspace"][data-live="true"] {
     color: #14100c;
   }
 
-  .stims-shell__launch-cta:hover:not(:disabled) {
+  .stims-shell__launch-cta:hover:not(:disabled):not([aria-disabled="true"]) {
     background: color-mix(in srgb, var(--stims-accent) 88%, #ffffff);
     transform: translateY(-1px);
   }
 
-  .stims-shell__launch-cta:disabled {
+  .stims-shell__launch-cta:disabled,
+  .stims-shell__launch-cta[aria-disabled="true"] {
     opacity: 0.55;
     cursor: default;
   }

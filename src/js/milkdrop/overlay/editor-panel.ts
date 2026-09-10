@@ -693,7 +693,15 @@ function createEditorView({
         // field (axe: aria-input-field-name). The dialog title does not
         // carry over — the control needs its own name.
         EditorView.contentAttributes.of({
-          'aria-label': 'MilkDrop preset code',
+          // Tab indents in here (indentWithTabKeybinding, below), so it
+          // cannot also move focus out — this is the one control in the app
+          // Tab will not leave. WCAG 2.1.2 permits that only where the way
+          // out is told to the user, and the way out (Escape, handled on
+          // contentDOM further down) was documented nowhere. The name
+          // carries it, and `aria-keyshortcuts` publishes it as a binding.
+          'aria-label':
+            'MilkDrop preset code. Tab indents; press Escape to leave the editor.',
+          'aria-keyshortcuts': 'Escape',
         }),
         lineNumbers(),
         highlightActiveLine(),
