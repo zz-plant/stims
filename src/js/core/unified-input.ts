@@ -418,6 +418,22 @@ export function createUnifiedInput({
   if (!target.hasAttribute('tabindex')) {
     target.tabIndex = 0;
   }
+  // This surface is a <canvas> with no text in it, so making it focusable
+  // above without naming it here produced the worst kind of tab stop: a
+  // full-viewport focus ring that announces nothing, on an element a screen
+  // reader cannot describe and a sighted keyboard user cannot tell apart
+  // from a dead end — even though the key layer below is the only way to
+  // steer, zoom and rotate the visuals without a pointer.
+  //
+  // Named here rather than in markup because the canvas belongs to the
+  // renderer, and this is the line that turns it into a stop. A name the
+  // host already chose wins.
+  if (
+    !target.hasAttribute('aria-label') &&
+    !target.hasAttribute('aria-labelledby')
+  ) {
+    target.setAttribute('aria-label', 'Visualizer stage');
+  }
   let bounds = boundsSource.getBoundingClientRect();
 
   const updateBounds = () => {

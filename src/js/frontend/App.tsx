@@ -931,6 +931,35 @@ function StimsWorkspaceAppShell() {
         : 'booting';
   }, [liveMode, engine.engineReady]);
 
+  // Going live unmounts the launch page, and with it the button that was
+  // pressed to get here. Whatever is focused inside a removed subtree falls
+  // to `<body>`, which for a keyboard user means their place in the page is
+  // gone: the next Tab starts over at the skip link instead of continuing
+  // into the transport dock, and a screen reader is left on nothing while
+  // the stage it just asked for comes up behind it.
+  //
+  // The stage is the honest landing spot — it is what was just launched, it
+  // carries the stage's accessible name, and it sits immediately before the
+  // dock in DOM order, so one more Tab reaches the controls.
+  const wasLiveRef = useRef(liveMode);
+  useEffect(() => {
+    const wasLive = wasLiveRef.current;
+    wasLiveRef.current = liveMode;
+    if (!liveMode || wasLive) return;
+    // Only rescue focus that was actually orphaned. Someone who has already
+    // tabbed on (or opened a panel from a shortcut while audio started) is
+    // interacting somewhere on purpose, and must not be yanked to the stage.
+    const active = document.activeElement;
+    if (
+      active &&
+      active !== document.body &&
+      active !== document.documentElement
+    ) {
+      return;
+    }
+    ui.stageRef.current?.focus();
+  }, [liveMode, ui.stageRef]);
+
   // A hidden tab gets zero requestAnimationFrame callbacks — the browser
   // stops scheduling them, so nothing in the render path can report the
   // freeze from inside it. Catch the visibility edge here instead and leave
