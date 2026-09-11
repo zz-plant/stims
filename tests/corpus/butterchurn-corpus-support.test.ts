@@ -27,9 +27,22 @@ function loadButterchurnCorpus() {
 }
 
 describe('butterchurn preset corpus support', () => {
-  // Reading and compiling the full 1,700+ preset corpus takes 6-8s on a warm
-  // laptop, so bun's 5s default made this fail as a matter of course rather
-  // than because anything regressed.
+  /**
+   * Reading and compiling the full 1,700+ preset corpus is pure deterministic
+   * CPU work, so this budget is a hang guard rather than a performance
+   * assertion -- and it has to clear the slowest machine that runs it, not the
+   * fastest.
+   *
+   * Measured 2026-09-10 on an M1 Max: 8.9s run alone, 38.6s inside the
+   * parallel gate, where the previous 30s guard reported "timed out after
+   * 30000ms" and buried whichever count had actually moved. Contention alone
+   * is ~4.4x here, and a 2-core CI runner is slower again before that
+   * multiplier applies, so the budget matches the 90s its sibling
+   * full-corpus compile (milkdrop-loop-visual-sweep) already carries for the
+   * same reason.
+   */
+  const CORPUS_COMPILE_TIMEOUT_MS = 90_000;
+
   test(
     'corpus support statuses match the measured baseline',
     () => {
@@ -117,6 +130,6 @@ describe('butterchurn preset corpus support', () => {
       });
       expect(fullySupported.length).toBe(1578);
     },
-    { timeout: 30000 },
+    { timeout: CORPUS_COMPILE_TIMEOUT_MS },
   );
 });

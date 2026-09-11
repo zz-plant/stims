@@ -8,7 +8,10 @@ import {
   unbind,
   unbindAll,
 } from '../../src/js/frontend/live-modulation.ts';
-import { installAnimationFrameController } from '../environment/animation-frame.ts';
+import {
+  advanceAnimationFrames,
+  installAnimationFrameController,
+} from '../environment/animation-frame.ts';
 
 function rig(centres: Record<string, number> = {}) {
   const applied: Array<[string, number]> = [];
@@ -23,14 +26,30 @@ function rig(centres: Record<string, number> = {}) {
   return { applied, positions, uninstall: installModulation(deps) };
 }
 
-const settle = (ms = 140) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Pump the modulation loop a fixed number of frames.
+ *
+ * This used to sleep 140ms and hope the frame controller's auto-advance timer
+ * got enough turns of the real scheduler to tick more than twice. Under a
+ * loaded machine it sometimes managed one, and "an LFO swings the target
+ * around its centre" failed with `Received: 1` -- a flake about the host, not
+ * the code. Nine frames on the controller's virtual clock covers the same
+ * 144ms of modulation time, deterministically and instantly.
+ */
+const settle = (frames = 9) => {
+  advanceAnimationFrames(frames);
+};
 
 beforeEach(() => {
   // The modulation loop is frame-locked on the shared animation-frame
   // controller. A prior file in the same process can leave that singleton's
   // auto-advance timer in a stale state, starving the loop; a fresh install
   // gives every test its own clean frame queue and rAF globals.
-  installAnimationFrameController();
+  //
+  // autoAdvance is off so frames only happen when `settle` asks for them.
+  // With it on, the loop raced the real scheduler and the timing assertions
+  // below were really assertions about how busy the machine was.
+  installAnimationFrameController({ autoAdvance: false });
 });
 
 afterEach(() => {
@@ -42,7 +61,7 @@ describe('modulation engine', () => {
     const { applied, uninstall } = rig({ warp: 2 });
     bind({ target: 'warp', depth: 1, source: { kind: 'lfo', hz: 8 } });
 
-    await settle();
+    settle();
 
     expect(applied.length).toBeGreaterThan(2);
     const values = applied.map(([, value]) => value);
@@ -59,7 +78,7 @@ describe('modulation engine', () => {
     const { positions, uninstall } = rig({ warp: 2 });
     bind({ target: 'warp', depth: 1, source: { kind: 'lfo', hz: 8 } });
 
-    await settle();
+    settle();
 
     // The centre is the ramp's territory. If modulation fed back into it the
     // resting value would drift away on its own.
@@ -72,10 +91,10 @@ describe('modulation engine', () => {
     const { applied, positions, uninstall } = rig({ warp: 2 });
     bind({ target: 'warp', depth: 0.5, source: { kind: 'lfo', hz: 8 } });
 
-    await settle();
+    settle();
     const before = applied.length;
     positions.set('warp', 10);
-    await settle();
+    settle();
 
     const after = applied.slice(before).map(([, value]) => value);
     expect(after.length).toBeGreaterThan(0);
@@ -98,7 +117,7 @@ describe('modulation engine', () => {
       source: { kind: 'lfo', shape: 'square' },
     });
 
-    await settle();
+    settle();
 
     expect(listModulators()).toHaveLength(2);
     // Two square LFOs at depth 1 reach ±2 together; one alone could not.
@@ -118,7 +137,7 @@ describe('modulation engine', () => {
       source: { kind: 'lfo', hz: 8 },
     });
 
-    await settle();
+    settle();
 
     for (const [, value] of applied) {
       expect(value).toBeGreaterThanOrEqual(0.9);
@@ -131,7 +150,7 @@ describe('modulation engine', () => {
   test('unbinding hands the target back to its centre', async () => {
     const { applied, uninstall } = rig({ warp: 2 });
     bind({ target: 'warp', depth: 1, source: { kind: 'lfo', hz: 8 } });
-    await settle();
+    settle();
 
     const removed = unbind({ target: 'warp' });
 
@@ -148,7 +167,7 @@ describe('modulation engine', () => {
     const { applied, uninstall } = rig({ warp: 2 });
     bind({ target: 'warp', depth: 1, source: { kind: 'audio', band: 'bass' } });
 
-    await settle();
+    settle();
 
     // Silence must read as "no offset", not as an invented value.
     expect(applied.length).toBeGreaterThan(0);
@@ -170,7 +189,7 @@ describe('modulation engine', () => {
     const second = rig({ warp: 2 });
 
     expect(listModulators()).toHaveLength(1);
-    await settle();
+    settle();
     expect(second.applied.length).toBeGreaterThan(0);
 
     second.uninstall();
