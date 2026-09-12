@@ -247,6 +247,11 @@ export function BrowseSheetPanel({
       : null;
     return catalog.filter((entry) => {
       if (
+        routeState.collectionTag === 'collection:favorites' ||
+        routeState.collectionTag === 'favorites'
+      ) {
+        if (!entry.isFavorite) return false;
+      } else if (
         routeState.collectionTag &&
         routeState.collectionTag !== 'collection:community' &&
         !entry.tags?.includes(routeState.collectionTag)
@@ -660,6 +665,28 @@ export function BrowseSheetPanel({
             onClick={() => onCollectionTagChange(null)}
           >
             All
+          </button>
+          <button
+            type="button"
+            className="ctl-chip"
+            data-active={String(
+              routeState.collectionTag === 'collection:favorites',
+            )}
+            aria-pressed={routeState.collectionTag === 'collection:favorites'}
+            onClick={() =>
+              onCollectionTagChange(
+                routeState.collectionTag === 'collection:favorites'
+                  ? null
+                  : 'collection:favorites',
+              )
+            }
+          >
+            ★ Saved
+            {engine.favoritePresets.length > 0 ? (
+              <span className="ctl-chip__count">
+                {engine.favoritePresets.length.toLocaleString()}
+              </span>
+            ) : null}
           </button>
           {featuredTags.map((tag) => (
             <button
