@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  buildAudioProfile,
+  type AudioWindowSample,
+  buildWindowAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
@@ -43,6 +44,48 @@ export type FinderMode = 'sound' | 'look';
 const MIN_SCORE = 0.62;
 
 const FINDER_MODE_STORAGE_KEY = 'stims:finder-mode';
+
+/**
+ * How long the sound search listens before describing what it heard.
+ *
+ * One frame is a coin flip between a kick drum and the gap after it, so the
+ * old single-snapshot profile described whichever transient was playing at
+ * the moment of the click. A couple of seconds sees the piece's actual
+ * balance, dynamics and beat — long enough to span several beats, short
+ * enough that the wait still reads as "analysing" rather than hanging.
+ */
+const AUDIO_WINDOW_MS = 2500;
+
+/** Ask deep enough that the score floor still leaves useful rows. */
+const AUDIO_RESULT_DEPTH = 12;
+
+/**
+ * Samples the live audio store for a fixed span. The store notifies per
+ * engine frame during playback, so subscribing collects at frame cadence;
+ * the leading push guarantees at least one sample even if playback stops
+ * mid-window.
+ */
+function collectAudioSamples(durationMs: number): Promise<AudioWindowSample[]> {
+  return new Promise((resolve) => {
+    const samples: AudioWindowSample[] = [];
+    const push = () => {
+      const { bass, mid, treble } = getAudioBands();
+      samples.push({
+        rms: getAudioEnergy(),
+        bass,
+        mid,
+        treble,
+        t: performance.now(),
+      });
+    };
+    push();
+    const unsubscribe = subscribeAudioEnergy(push);
+    window.setTimeout(() => {
+      unsubscribe();
+      resolve(samples);
+    }, durationMs);
+  });
+}
 
 function readStoredFinderMode(): FinderMode | null {
   try {
@@ -121,22 +164,24 @@ export function PresetFinderPanel({
     setLoading(true);
     setResults(null);
     setError(null);
+    const runMode = mode;
     try {
       // Both services return the same {presetId, score} ranking, so the only
       // real difference between the two modes is what gets embedded.
       let matches: Array<{ presetId: string; score: number }>;
       if (mode === 'sound') {
-        // Real bands, not the fabricated 0.6/0.3/0.1 split of a single scalar
-        // that buildAudioProfile falls back to, so the query reflects how the
-        // music is voiced and not only how loud it is.
-        // No slice: the endpoint already returns topK=5.
-        const bands = getAudioBands();
-        matches = await searchByAudioProfile(
-          buildAudioProfile({
-            audioEnergy: getAudioEnergy(),
-            fftBands: [bands.bass, bands.mid, bands.treble],
-          }),
-        );
+        // Listen for a span, then profile the window: the mean balance says
+        // how the music is voiced, measured onsets and crest say how it
+        // moves, and no single transient can define the whole query.
+        const samples = await collectAudioSamples(AUDIO_WINDOW_MS);
+        if (runMode !== modeRef.current) return;
+        const profile = buildWindowAudioProfile(samples);
+        // Silence mid-window: nothing to profile, so an empty list is the
+        // honest answer (the unavailable hint takes over when it applies).
+        matches = profile
+          ? await searchByAudioProfile(profile, undefined, AUDIO_RESULT_DEPTH)
+          : [];
+        if (runMode !== modeRef.current) return;
       } else {
         const canvas = ui.stageRef.current?.querySelector(
           'canvas',
@@ -165,6 +210,11 @@ export function PresetFinderPanel({
       setLoading(false);
     }
   }, [catalogEntryById, mode, ui]);
+
+  // Latest mode, readable inside the async search: a window takes seconds to
+  // collect, and results for a tab the user already left must not land.
+  const modeRef = useRef<FinderMode>(mode);
+  modeRef.current = mode;
 
   // Each mode runs itself once when it becomes visible, matching what the two
   // separate panels did on mount. Keyed by mode so switching tabs searches
