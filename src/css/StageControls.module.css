@@ -129,10 +129,54 @@
   transform: scale(0.92);
 }
 
-/* Saved-state star rides the existing cool = selected convention (warm
-   stays reserved for focus). */
 .navBtn[data-saved="true"] {
   color: var(--stims-cool, #77c9ff);
+}
+
+.transitionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-round);
+  background: var(--ctl-fill, rgba(255, 255, 255, 0.05));
+  color: var(--ctl-ink-2);
+  font: inherit;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.transitionBtn:hover {
+  color: var(--ctl-ink);
+  background: var(--ctl-fill-hover);
+}
+
+.transitionBtn:active {
+  transform: scale(0.92);
+}
+
+.transitionBtn:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 1px;
+}
+
+.transitionBtnText {
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .transitionBtn {
+    display: none;
+  }
 }
 
 .titleBtn {

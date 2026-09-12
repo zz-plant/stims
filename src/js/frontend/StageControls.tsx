@@ -411,20 +411,16 @@ export function StageControls({
     [signalActivity],
   );
 
-  const libraryItems: MenuItem[] = [
+  const presetItems: MenuItem[] = [
     {
       icon: 'grid' as const,
       label: 'Browse presets',
       action: () => run(() => togglePanel(menuSurface, 'browse')),
       actionId: 'open-browse',
       active: panel === 'browse',
+      sectionLabel: 'Presets & Setlist',
     },
     {
-      // "More like this" and "Match my music" were two menu items opening two
-      // panels that did the same job from different seeds. One entry now
-      // opens the finder; it starts on the audio tab when there is audio to
-      // profile and on the frame tab otherwise, and either tab is one click
-      // away once open.
       icon: 'eye' as const,
       label: 'Find similar',
       actionId: 'find-similar',
@@ -432,26 +428,12 @@ export function StageControls({
       active: panel === 'finder',
     },
     {
-      icon: 'sliders' as const,
-      label: 'Performance controls',
-      actionId: 'perform-pin',
-      action: () => run(() => openPerformPicker()),
-    },
-    {
-      // Duplicated from the dock on purpose: the dock button is hidden at
-      // phone widths (StageControls.module.css), and a verb that vanishes
-      // with the viewport needs a second home. Same body, same id.
       icon: 'nearby' as const,
       label: 'Nearby preset',
       actionId: 'nearby-preset',
       action: () => run(() => handleNearby()),
     },
     {
-      // The behaviour is as old as the MilkDrop keybindings and has always
-      // been reachable by pressing L; what it never had was anything on
-      // screen, so it could only be used by someone who already knew. It
-      // holds off auto-advance without touching the autoplay preference, so
-      // unlocking returns you to whatever you had set.
       icon: 'pin' as const,
       label: presetLocked ? 'Stop staying here' : 'Stay here',
       actionId: 'toggle-preset-lock',
@@ -459,14 +441,14 @@ export function StageControls({
       active: presetLocked,
     },
     {
-      // Queueing is a mid-set verb — you spot something while browsing and
-      // want it next, without taking it now. The cue monitor is where the
-      // result shows up.
       icon: 'bookmark' as const,
       label: 'Queue this preset',
       actionId: 'queue-add',
       action: () => run(() => queueCurrentPreset()),
     },
+  ];
+
+  const studioItems: MenuItem[] = [
     {
       icon: 'sparkles' as const,
       label: 'Generate with AI',
@@ -474,7 +456,7 @@ export function StageControls({
       action: () => run(() => togglePanel(menuSurface, 'synthesize')),
       active: panel === 'synthesize',
       separatorBefore: true,
-      sectionLabel: 'Make your own',
+      sectionLabel: 'Studio & Create',
     },
     {
       icon: 'wand' as const,
@@ -494,28 +476,53 @@ export function StageControls({
       icon: 'video' as const,
       label: 'Record video',
       actionId: 'open-record',
-      // Shared body (workspace-actions.ts): repeat use auto-starts with the
-      // remembered format; the palette's "Record video" runs the same code.
       action: () => run(() => openRecordPanel(menuSurface)),
       active: panel === 'capture',
-      separatorBefore: true,
     },
   ];
 
-  // Rendered after the VJ Stage Controls radio groups (transition + audio
-  // source), which are laid out inline in the JSX below because they are
-  // rows of menuitemradio options rather than single-action items.
-  const utilityItems: MenuItem[] = [
+  const vjItems: MenuItem[] = [
     {
-      icon: 'image' as const,
-      label: 'Camera as video input',
-      actionId: 'toggle-camera',
-      action: () => run(() => toggleCameraAction(ui.setStatusMessage)),
-      separatorBefore: true,
+      icon: 'sliders' as const,
+      label: 'Performance controls',
+      actionId: 'perform-pin',
+      action: () => run(() => openPerformPicker()),
     },
+    ...(engineSnapshot?.audioSource
+      ? [
+          {
+            icon: 'volume-off' as const,
+            label: 'Stop audio',
+            actionId: 'stop-audio',
+            action: () => run(() => engine.handleAudioStop()),
+          } satisfies MenuItem,
+        ]
+      : []),
+  ];
+
+  const displayItems: MenuItem[] = [
     {
-      // Sends the watch-party link, not a video stream: the external display
-      // renders the show itself and follows this tab's preset changes.
+      icon: 'expand' as const,
+      label: isFullscreen ? 'Exit full screen' : 'Full screen',
+      actionId: 'toggle-fullscreen',
+      action: () => run(() => onToggleFullscreen()),
+      separatorBefore: true,
+      sectionLabel: 'Display & Streaming',
+    },
+    ...(pip.supported
+      ? [
+          {
+            icon: 'picture-in-picture' as const,
+            label: pip.active
+              ? 'Exit picture in picture'
+              : 'Picture in picture',
+            actionId: 'toggle-pip',
+            action: () => run(() => pip.toggle()),
+            active: pip.active,
+          } satisfies MenuItem,
+        ]
+      : []),
+    {
       icon: 'expand' as const,
       label: 'Show on second screen or cast',
       actionId: 'external-display',
@@ -523,26 +530,30 @@ export function StageControls({
         run(() => presentToExternalDisplayAction(ui.setStatusMessage)),
     },
     {
+      icon: 'image' as const,
+      label: 'Camera as video input',
+      actionId: 'toggle-camera',
+      action: () => run(() => toggleCameraAction(ui.setStatusMessage)),
+    },
+  ];
+
+  const workspaceItems: MenuItem[] = [
+    {
       icon: 'link' as const,
-      // Mirrors the palette row: while the editor holds an unsaved draft the
-      // copied URL carries it, and this is the only place that says so.
       label: engineSnapshot?.sessionState?.dirty
         ? 'Share link (carries your edits)'
         : 'Share link',
       actionId: 'share-link',
       action: () => run(() => void ui.handleShowCurrentLink()),
+      separatorBefore: true,
+      sectionLabel: 'Workspace & System',
     },
     {
-      // One action: create the room (unless this tab already hosts one) and
-      // put the invite link on the clipboard. Peer count still lives in
-      // Settings → Watch together.
       icon: 'pulse' as const,
       label: hostingRoom ? 'Copy watch party link' : 'Start watch party',
       actionId: 'watch-party',
       action: () => run(handleWatchParty),
     },
-    // Ending should be as close as starting was — symmetric with the item
-    // above, shown only while this tab hosts.
     ...(hostingRoom
       ? [
           {
@@ -559,46 +570,7 @@ export function StageControls({
       actionId: 'open-settings',
       action: () => run(() => togglePanel(menuSurface, 'settings')),
       active: panel === 'settings',
-      separatorBefore: true,
     },
-    {
-      icon: 'expand' as const,
-      label: isFullscreen ? 'Exit full screen' : 'Full screen',
-      actionId: 'toggle-fullscreen',
-      action: () => run(() => onToggleFullscreen()),
-    },
-    // Absent on browsers without the Picture-in-Picture API (a synchronous
-    // support check, unlike a device probe).
-    ...(pip.supported
-      ? [
-          {
-            icon: 'picture-in-picture' as const,
-            label: pip.active
-              ? 'Exit picture in picture'
-              : 'Picture in picture',
-            actionId: 'toggle-pip',
-            // `run` invokes this synchronously inside the click handler, so
-            // the PiP request still carries transient user activation.
-            action: () => run(() => pip.toggle()),
-            active: pip.active,
-          },
-        ]
-      : []),
-    ...(engineSnapshot?.audioSource
-      ? [
-          {
-            icon: 'volume-off' as const,
-            label: 'Stop audio',
-            actionId: 'stop-audio',
-            action: () => run(() => engine.handleAudioStop()),
-            separatorBefore: true,
-          },
-        ]
-      : []),
-    // Discoverability for the palette: keyboard users find Cmd+K, pointer
-    // users find this. Hidden when App doesn't wire the palette (e.g.
-    // harnesses). The key itself is rendered from the registry alongside every
-    // other menu item, so it is not spelled into the label here.
     ...(onOpenPalette
       ? [
           {
@@ -606,7 +578,6 @@ export function StageControls({
             label: 'Command palette',
             actionId: 'open-palette',
             action: () => run(onOpenPalette),
-            separatorBefore: true,
           } satisfies MenuItem,
         ]
       : []),
@@ -742,6 +713,33 @@ export function StageControls({
               name="shuffle"
               className="stims-icon-slot stims-icon-slot--sm"
             />
+          </button>
+
+          <button
+            type="button"
+            className={styles.transitionBtn}
+            data-action="cycle-transition"
+            aria-label={`Transition: ${describeTransitionStep(TRANSITION_STEPS[transitionStepIndex])}. Click to cycle.`}
+            title={`Transition: ${describeTransitionStep(TRANSITION_STEPS[transitionStepIndex])}\nClick to cycle`}
+            onClick={() => {
+              const nextIndex =
+                (transitionStepIndex + 1) % TRANSITION_STEPS.length;
+              const nextStep = TRANSITION_STEPS[nextIndex];
+              signalActivity();
+              pulseHaptic(10);
+              setTransition(
+                engine,
+                ui.setStatusMessage,
+                nextStep.mode,
+                nextStep.seconds,
+              );
+            }}
+          >
+            <span className={styles.transitionBtnText}>
+              {TRANSITION_STEPS[transitionStepIndex].mode === 'cut'
+                ? 'Cut'
+                : `${TRANSITION_STEPS[transitionStepIndex].seconds}s`}
+            </span>
           </button>
 
           <button
@@ -896,11 +894,12 @@ export function StageControls({
           role="menu"
           aria-label="More actions"
         >
-          {libraryItems.map(renderMenuItem)}
+          {presetItems.map(renderMenuItem)}
+          {studioItems.map(renderMenuItem)}
 
           <div className={styles.menuSep} />
           <div className={styles.menuLabel} aria-hidden="true">
-            VJ Stage Controls
+            Live VJ & Audio
           </div>
           {/* Direct picks, not a cycle: mid-set there is no time to click
               through the ladder to reach the rung you want. The active rung
@@ -977,8 +976,10 @@ export function StageControls({
               ))}
             </div>
           </div>
+          {vjItems.map(renderMenuItem)}
 
-          {utilityItems.map(renderMenuItem)}
+          {displayItems.map(renderMenuItem)}
+          {workspaceItems.map(renderMenuItem)}
         </div>
       ) : null}
 
