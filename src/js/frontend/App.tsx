@@ -72,6 +72,7 @@ import { CreditsDialog } from './CreditsDialog.tsx';
 import type { CommandAction } from './command-palette-registry.ts';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
+  getAudioBands,
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
@@ -1589,7 +1590,14 @@ function StimsWorkspaceAppShell() {
     const tryMatch = () => {
       if (controller.signal.aborted) return;
       const audioEnergy = engineSnapshotRef.current?.audioEnergy;
-      const profile = buildAudioProfile({ audioEnergy });
+      // Real bands, not the fabricated 0.6/0.3/0.1 split of a lone scalar:
+      // the store carries the engine's per-frame balance, and without it a
+      // bassy track and a bright one at equal loudness matched identically.
+      const bands = getAudioBands();
+      const profile = buildAudioProfile({
+        audioEnergy,
+        fftBands: [bands.bass, bands.mid, bands.treble],
+      });
       if (profile.rms < QUIET_AUDIO_RMS_THRESHOLD) {
         if (attempts < AUDIO_MATCH_RETRY_SCHEDULE_MS.length) {
           retryTimer = window.setTimeout(
