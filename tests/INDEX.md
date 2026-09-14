@@ -83,12 +83,11 @@ skip-flow, stage-tools, toast-regression, ui-simplification) · `frontend-url-st
 `split-view-browse.test.ts` · `workspace-activity.test.ts` · `workspace-first-fold-actions.test.ts` ·
 `workspace-youtube-preview.test.ts` · `stage-gestures.test.tsx` ·
 `stage-warp-gizmo.test.tsx` · `preflight-mobile-visibility.test.ts` · `mobile-viewport-matrix.test.ts` ·
-`use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts` ·
-`shader-identicon-component.test.tsx`
+`use-auto-hide-activity.test.tsx` · `use-focus-trap.test.tsx` · `use-lazy-factory.test.ts`
 
 ## Services / state / quality
 
-`adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` · `temporal-memory.test.ts` ·
+`adaptive-quality-controller.test.ts` · `continuous-drs.test.ts` ·
 `frame-pacing.test.ts` · `power-state.test.ts` · `simulation-accumulator.test.ts` ·
 `device-profile.test.ts` · `device-refresh-rate.test.ts` · `performance-hardware-controls.test.ts` ·
 `performance-settings-store.test.ts` · `domain-store.test.ts` · `crash-telemetry.test.ts` ·
