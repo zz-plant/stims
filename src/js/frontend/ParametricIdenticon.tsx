@@ -1,4 +1,7 @@
-import type { FilterShaderPreset } from '../ui/svg-filter-shaders.ts';
+import {
+  type FilterShaderPreset,
+  generateSvgFilterDef,
+} from '../ui/svg-filter-shaders.ts';
 import {
   generatePolygonPath,
   generateRoseCurvePath,
@@ -55,6 +58,10 @@ export function ParametricIdenticon({
   }
 
   const filterAttr = filterPreset !== 'none' ? `url(#${filterId})` : undefined;
+  const filterMarkup =
+    filterPreset !== 'none'
+      ? generateSvgFilterDef({ filterId, preset: filterPreset, audioPeak })
+      : '';
   const label =
     ariaLabel ?? `Identicon badge for ${seed}${mood ? ` (${mood})` : ''}`;
 
@@ -83,105 +90,13 @@ export function ParametricIdenticon({
         focusable="false"
         aria-hidden="true"
       >
-        {filterPreset !== 'none' ? (
-          <defs>
-            {filterPreset === 'glass-emboss' ? (
-              <filter
-                id={filterId}
-                x="-30%"
-                y="-30%"
-                width="160%"
-                height="160%"
-              >
-                <feGaussianBlur
-                  in="SourceGraphic"
-                  stdDeviation="1.2"
-                  result="blur"
-                />
-                <feSpecularLighting
-                  in="blur"
-                  surfaceScale={2.5}
-                  specularConstant={1.3}
-                  specularExponent={22}
-                  lightingColor="#ffffff"
-                  result="specular"
-                >
-                  <fePointLight x={-5000} y={-10000} z={15000} />
-                </feSpecularLighting>
-                <feComposite
-                  in="specular"
-                  in2="SourceGraphic"
-                  operator="in"
-                  result="specularOut"
-                />
-                <feBlend in="SourceGraphic" in2="specularOut" mode="screen" />
-              </filter>
-            ) : filterPreset === 'neon-aberration' ? (
-              <filter
-                id={filterId}
-                x="-30%"
-                y="-30%"
-                width="160%"
-                height="160%"
-              >
-                <feOffset
-                  in="SourceGraphic"
-                  dx="-1.5"
-                  dy="0"
-                  result="redShift"
-                />
-                <feOffset
-                  in="SourceGraphic"
-                  dx="1.5"
-                  dy="0"
-                  result="blueShift"
-                />
-                <feGaussianBlur
-                  in="SourceGraphic"
-                  stdDeviation={1.5 + audioPeak * 2}
-                  result="glow"
-                />
-                <feMerge>
-                  <feMergeNode in="glow" />
-                  <feMergeNode in="redShift" />
-                  <feMergeNode in="blueShift" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            ) : filterPreset === 'liquid-warp' ? (
-              <filter
-                id={filterId}
-                x="-30%"
-                y="-30%"
-                width="160%"
-                height="160%"
-              >
-                <feTurbulence
-                  type="fractalNoise"
-                  baseFrequency="0.035"
-                  numOctaves={2}
-                  result="noise"
-                />
-                <feDisplacementMap
-                  in="SourceGraphic"
-                  in2="noise"
-                  scale={6 + audioPeak * 12}
-                  xChannelSelector="R"
-                  yChannelSelector="G"
-                  result="displaced"
-                />
-                <feGaussianBlur
-                  in="displaced"
-                  stdDeviation="0.8"
-                  result="blurred"
-                />
-                <feMerge>
-                  <feMergeNode in="blurred" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            ) : null}
-          </defs>
+        {filterMarkup ? (
+          <defs
+            /* biome-ignore lint/security/noDangerouslySetInnerHtml: static
+               constants from svg-filter-shaders; only a numeric hash and
+               numbers are interpolated, never user input */
+            dangerouslySetInnerHTML={{ __html: filterMarkup }}
+          />
         ) : null}
         <path
           d={pathD}
