@@ -1,3 +1,9 @@
+/**
+ * The find-a-preset side panel: two seeds (live audio, the frame on screen),
+ * one ranked results list. This module owns the panel UI and the audio-window
+ * collection primitive; embedding and ranking live in the visual-search
+ * services, and sample delivery lives in the engine audio store.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type AudioWindowSample,
@@ -60,13 +66,31 @@ const AUDIO_WINDOW_MS = 2500;
 const AUDIO_RESULT_DEPTH = 12;
 
 /**
+ * An abort rejection carries the standard name so guarded catches can tell
+ * "this run was cancelled" from "the search failed".
+ */
+function abortError(): Error {
+  const error = new Error('Operation aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
+/**
  * Samples the live audio store for a fixed span. The store notifies per
  * engine frame during playback, so subscribing collects at frame cadence;
  * the leading push guarantees at least one sample even if playback stops
- * mid-window.
+ * mid-window. An aborted signal stops the window early and rejects, so a
+ * superseded or unmounted run never profiles a partial one.
  */
-function collectAudioSamples(durationMs: number): Promise<AudioWindowSample[]> {
-  return new Promise((resolve) => {
+function collectAudioSamples(
+  durationMs: number,
+  signal?: AbortSignal,
+): Promise<AudioWindowSample[]> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
     const samples: AudioWindowSample[] = [];
     const push = () => {
       const { bass, mid, treble } = getAudioBands();
@@ -80,7 +104,15 @@ function collectAudioSamples(durationMs: number): Promise<AudioWindowSample[]> {
     };
     push();
     const unsubscribe = subscribeAudioEnergy(push);
-    window.setTimeout(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onAbort = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      unsubscribe();
+      reject(abortError());
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
       unsubscribe();
       resolve(samples);
     }, durationMs);
@@ -160,11 +192,43 @@ export function PresetFinderPanel({
     return map;
   }, [engine.catalog]);
 
+  // Latest mode, readable inside the async search: a window takes seconds to
+  // collect, and results for a tab the user already left must not land.
+  const modeRef = useRef<FinderMode>(mode);
+  modeRef.current = mode;
+
+  // Runs are numbered so a superseded search cannot touch state that now
+  // belongs to its replacement, and each carries an AbortController so
+  // leaving a tab or the panel tears the work down instead of letting it
+  // finish unseen.
+  const searchRunsRef = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
+  const aliveRef = useRef(true);
+
+  // Each mode runs itself once when it becomes visible, matching what the two
+  // separate panels did on mount. Keyed by mode so switching tabs searches
+  // the new way without the user asking twice.
+  const autoRunRef = useRef<FinderMode | null>(null);
+
   const search = useCallback(async () => {
+    // Starting a search supersedes whatever is still running: cancelling it
+    // releases its collection window and request immediately, and its
+    // rejection lands after the run bump below, where the guards discard it.
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    const runId = ++searchRunsRef.current;
+    const runMode = mode;
+    const isCurrent = () =>
+      aliveRef.current &&
+      runId === searchRunsRef.current &&
+      runMode === modeRef.current;
+    // Loading means "the newest run is still going", not "this run is
+    // current": switching to a mode that cannot search must still clear it.
+    const isLatest = () => aliveRef.current && runId === searchRunsRef.current;
     setLoading(true);
     setResults(null);
     setError(null);
-    const runMode = mode;
     try {
       // Both services return the same {presetId, score} ranking, so the only
       // real difference between the two modes is what gets embedded.
@@ -173,21 +237,29 @@ export function PresetFinderPanel({
         // Listen for a span, then profile the window: the mean balance says
         // how the music is voiced, measured onsets and crest say how it
         // moves, and no single transient can define the whole query.
-        const samples = await collectAudioSamples(AUDIO_WINDOW_MS);
-        if (runMode !== modeRef.current) return;
+        const samples = await collectAudioSamples(
+          AUDIO_WINDOW_MS,
+          controller.signal,
+        );
+        if (!isCurrent()) return;
         const profile = buildWindowAudioProfile(samples);
         // Silence mid-window: nothing to profile, so an empty list is the
         // honest answer (the unavailable hint takes over when it applies).
         matches = profile
-          ? await searchByAudioProfile(profile, undefined, AUDIO_RESULT_DEPTH)
+          ? await searchByAudioProfile(
+              profile,
+              controller.signal,
+              AUDIO_RESULT_DEPTH,
+            )
           : [];
-        if (runMode !== modeRef.current) return;
+        if (!isCurrent()) return;
       } else {
         const canvas = ui.stageRef.current?.querySelector(
           'canvas',
         ) as HTMLCanvasElement | null;
         if (!canvas) throw new Error('No canvas found');
-        matches = await searchByFrame(canvas);
+        matches = await searchByFrame(canvas, controller.signal);
+        if (!isCurrent()) return;
       }
 
       // A nearest-neighbour index always returns its topK, so without a floor
@@ -205,21 +277,28 @@ export function PresetFinderPanel({
         }),
       );
     } catch (err) {
-      setError((err as Error).message);
+      // A cancelled run rejects with AbortError only after it has already
+      // lost its claim, so the guard skips it and real failures surface.
+      if (isCurrent()) setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isLatest()) setLoading(false);
     }
   }, [catalogEntryById, mode, ui]);
 
-  // Latest mode, readable inside the async search: a window takes seconds to
-  // collect, and results for a tab the user already left must not land.
-  const modeRef = useRef<FinderMode>(mode);
-  modeRef.current = mode;
+  // The panel owns its in-flight searches. Leaving cancels the controller —
+  // ending the collection window and any request — and marks this instance
+  // gone so a late continuation cannot write state. `alive` is restored in
+  // the effect body because refs survive a StrictMode remount without a
+  // re-render, and the auto-run latch resets so the remount re-searches.
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      autoRunRef.current = null;
+      controllerRef.current?.abort();
+    };
+  }, []);
 
-  // Each mode runs itself once when it becomes visible, matching what the two
-  // separate panels did on mount. Keyed by mode so switching tabs searches
-  // the new way without the user asking twice.
-  const autoRunRef = useRef<FinderMode | null>(null);
   useEffect(() => {
     if (autoRunRef.current === mode) return;
     // The audio search needs something audible to profile; without it the
