@@ -1000,6 +1000,11 @@ export function createMilkdropExperience({
           return;
         }
         if (activePresetId === startupPresetId) {
+          // The first-run preset is already on stage and was selected with
+          // recordHistory: false, so nothing has remembered it. Seed the
+          // in-memory history so "Previous" after the first switch can come
+          // back here (catalog-coordinator.seedSelection).
+          catalogCoordinator.seedSelection(startupPresetId);
           return;
         }
       }
