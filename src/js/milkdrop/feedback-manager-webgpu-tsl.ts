@@ -3108,10 +3108,21 @@ function createFeedbackBlendOutputNode(
         point.x.mul(rotationSin).add(point.y.mul(rotationCos)),
       );
 
+    // Divisor floors keep the zoom's sign (floorWarpZoomDivisor in
+    // warp-sample-transform.ts is the scalar twin): `zoom = -1` with zoomexp
+    // 1 is MilkDrop's point mirror, and `max(zoom, 0.0001)` turned it into a
+    // 10000x magnification of the centre pixel.
+    const floorSignedDivisor = (divisor: any) =>
+      select(
+        divisor.lessThan(0),
+        min(divisor, float(-0.0001)),
+        max(divisor, float(0.0001)),
+      );
+
     let transformedUv: any;
     if (!usesWarpTransformVariables) {
       transformedUv = rotateAboutOrigin(centeredUv)
-        .div(max(activeZoom, 0.0001))
+        .div(floorSignedDivisor(activeZoom))
         .add(vec2(activeOffsetX, activeOffsetY));
     } else {
       // The MilkDrop sampling transform, ordered as butterchurn 2.6.7's
@@ -3156,16 +3167,17 @@ function createFeedbackBlendOutputNode(
         0.0001,
         10000,
       );
+      const zoomMagnitude = clamp(
+        pow(clamp(abs(activeZoom), 0.0001, 10000), zoomPowExponent),
+        0.0001,
+        10000,
+      );
       const zoomDivisor = select(
         abs(activeZoomExp.sub(1)).lessThan(0.000001),
         activeZoom,
-        clamp(
-          pow(clamp(activeZoom, 0.0001, 10000), zoomPowExponent),
-          0.0001,
-          10000,
-        ),
+        select(activeZoom.lessThan(0), zoomMagnitude.mul(-1), zoomMagnitude),
       );
-      const zoomedUv = centeredUv.div(max(zoomDivisor, 0.0001));
+      const zoomedUv = centeredUv.div(floorSignedDivisor(zoomDivisor));
 
       // (u - c)/s + c, emitted as u/s + (c - c/s). At s == 1 the bracket is
       // `c - c` -- exactly zero -- and u/1 is exactly u, so a preset that moves
@@ -3225,7 +3237,7 @@ function createFeedbackBlendOutputNode(
       activeRot,
     ).toVar();
     const previousUv = applyFeedbackWarpNode(
-      currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5),
+      currentUv.sub(0.5).div(floorSignedDivisor(uniforms.zoom)).add(0.5),
       activeWarp.mul(0.8),
       activeRot.mul(0.6),
     ).toVar();
