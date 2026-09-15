@@ -268,6 +268,41 @@ test('vec3 volume-noise samples are routed through sampleNoiseVolume', () => {
   expect(warp).not.toMatch(/texture2D\s*\(\s*simplexTex\s*,\s*\(?\s*vec3/);
 });
 
+test('integer loop counters the converter left undeclared are hoisted as int, not float', () => {
+  // hlsl2glsl output in the bundled Butterchurn bodies dropped the
+  // `int xlat_mutablen;` declarations of its loop counters. GLSL ES has no
+  // implicit int→float conversion, so a float hoist made `n = 0;`,
+  // `n < 6` and `float(n)` fail to compile and blanked amandio-c-fume,
+  // flexi-can-t-think-of-mosaic-cages, lit-claw-explorers-grid-… and
+  // martin-elusive-impressions-mix1 on WebGL (2026-09-15).
+  const { warp, composite } = assembleMilkdropDirectFragmentShaders(
+    [
+      'shader_body {',
+      '  xlat_mutablen = 0;',
+      '  while (true) {',
+      '    if (!((xlat_mutablen < 6) && (float(xlat_mutablen) < 3.0))) { break; }',
+      '    xlat_mutablen++;',
+      '  }',
+      '  anz = 4;',
+      '  anz = 2;',
+      '  xlat_mutablem = int((float(mod (float(anz), 2.0))));',
+      '  fl = 0.5;',
+      '  fl = fl + 1.0;',
+      '  ret = vec3(float(xlat_mutablen) + float(xlat_mutablem) + fl);',
+      '}',
+    ].join('\n'),
+    'shader_body { steps = 1; ret = vec3(float(steps)); }',
+  );
+  expect(warp).toContain('int xlat_mutablen;');
+  expect(warp).toContain('int anz;');
+  expect(warp).toContain('int xlat_mutablem;');
+  // A scalar that ever takes a float value stays float.
+  expect(warp).toContain('float fl;');
+  expect(warp).not.toContain('float xlat_mutablen;');
+  // Per-stage classification: the comp body has its own counter.
+  expect(composite).toContain('int steps;');
+});
+
 test('synthetic q-var and aspect swizzle bodies assemble into compilable declarations', () => {
   const { warp } = assembleMilkdropDirectFragmentShaders(
     'shader_body { ret = vec3(q30, q18, q22) * (uv * aspect.xy).x; }',

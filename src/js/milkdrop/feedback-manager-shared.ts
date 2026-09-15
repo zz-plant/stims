@@ -1444,7 +1444,7 @@ const MILKDROP_KNOWN_VECTOR_SIZES: Record<string, number> = {
 type MilkdropPerFrameDeclaration = {
   name: string;
   isLocalScratch: boolean;
-  type: 'float' | 'vec2' | 'vec3' | 'vec4';
+  type: 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
 };
 
 /**
@@ -1462,9 +1462,16 @@ type MilkdropPerFrameDeclaration = {
  * a direct `name = vecN(...)` constructor; the widest single-component
  * swizzle ever assigned to it (`name.z = …` implies at least vec3); a
  * swizzle applied to a known multi-component builtin on its first
- * assignment's right-hand side (`texsize.zw` implies vec2). Defaults to
- * float, which is always safe for genuinely scalar scratch registers and no
- * worse than the previous "uniform float" default otherwise.
+ * assignment's right-hand side (`texsize.zw` implies vec2). A scalar whose
+ * every bare assignment is an integer literal or an `int(...)` cast is an
+ * `int`: the bundled Butterchurn bodies come from hlsl2glsl, whose output
+ * lost the `int xlat_mutablen;` declarations for loop counters, and GLSL ES
+ * has no implicit int→float conversion — declared float, `n = 0;` and
+ * `n < 6` fail to compile, which blanked amandio-c-fume, flexi-can-t-think-
+ * of-mosaic-cages, lit-claw-explorers-grid-… and martin-elusive-impressions-
+ * mix1 on WebGL (2026-09-15). Defaults to float, which is always safe for
+ * genuinely scalar scratch registers and no worse than the previous
+ * "uniform float" default otherwise.
  */
 function classifyPerFrameVariable(
   name: string,
@@ -1478,6 +1485,8 @@ function classifyPerFrameVariable(
   let firstIsAssignment: boolean | null = null;
   let widestComponentIndex = -1;
   let constructorSize: number | null = null;
+  let bareAssignments = 0;
+  let integerAssignments = 0;
   const componentIndex: Record<string, number> = {
     x: 0,
     y: 1,
@@ -1520,6 +1529,10 @@ function classifyPerFrameVariable(
         restFrom,
         statementEnd === -1 ? undefined : statementEnd,
       );
+      bareAssignments += 1;
+      if (/^\s*(?:-?\d+|int\s*\(.*\))\s*$/u.test(rhs)) {
+        integerAssignments += 1;
+      }
       const constructorMatch = rhs.match(/^\s*vec([234])\s*\(/u);
       if (constructorMatch) {
         constructorSize = Math.max(
@@ -1557,6 +1570,13 @@ function classifyPerFrameVariable(
     return { name, isLocalScratch: false, type: 'float' };
   }
   const inferredSize = constructorSize ?? widestComponentIndex + 1;
+  if (
+    inferredSize <= 1 &&
+    bareAssignments > 0 &&
+    integerAssignments === bareAssignments
+  ) {
+    return { name, isLocalScratch: true, type: 'int' };
+  }
   const type =
     inferredSize >= 4
       ? 'vec4'
