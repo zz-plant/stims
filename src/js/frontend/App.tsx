@@ -106,7 +106,11 @@ import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { SyncSessionBridge } from './SyncSessionBridge.tsx';
 import { readStored, writeStored } from './safe-storage.ts';
 import { getSyncSessionState, subscribeSyncSession } from './sync-session.ts';
-import { buildRemixShareUrl, decodePresetCodeFromHash } from './url-state.ts';
+import {
+  buildRemixShareUrl,
+  decodePresetCodeFromHash,
+  REMIX_URL_FAILED,
+} from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   endWatchParty,
@@ -1727,14 +1731,31 @@ function StimsWorkspaceAppShell() {
   // history-entry ownership belongs to the route-sync effect (workspace-hooks),
   // and a keystroke must not add an entry.
   const sessionSource = engineSnapshot?.currentSource ?? '';
+  const remixUrlFailure = useRef<string | null>(null);
   useEffect(() => {
     if (!engine.engineReady) return;
-    const nextHref = buildRemixShareUrl(
-      window.location.href,
-      editorDirty && sessionSource ? sessionSource : null,
-    );
-    if (nextHref !== window.location.href) {
-      window.history.replaceState(window.history.state, '', nextHref);
+    try {
+      const nextHref = buildRemixShareUrl(
+        window.location.href,
+        editorDirty ? sessionSource : null,
+      );
+      if (nextHref !== window.location.href) {
+        window.history.replaceState(window.history.state, '', nextHref);
+      }
+      remixUrlFailure.current = null;
+    } catch (error) {
+      // A previous draft in the address bar must not masquerade as this edit.
+      try {
+        const cleanHref = buildRemixShareUrl(window.location.href, null);
+        window.history.replaceState(window.history.state, '', cleanHref);
+      } catch {
+        // History can also be unavailable; keep the editor working.
+      }
+      const message = error instanceof Error ? error.message : REMIX_URL_FAILED;
+      if (remixUrlFailure.current !== message) {
+        uiRef.current.setStatusMessage(message);
+        remixUrlFailure.current = message;
+      }
     }
   }, [engine.engineReady, editorDirty, sessionSource]);
 

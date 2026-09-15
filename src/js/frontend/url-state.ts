@@ -173,14 +173,16 @@ export function buildCanonicalUrl(
   return url;
 }
 
-/** Full URL for the current session's share state. Passing `source` adds a
- * `#code=` hash carrying the live-edited `.milk` source; passing `null`
- * removes any hash. Pathname and search are preserved so the preset,
- * collection, audio, and tool state in the query string keeps working.
- * Still returns the input unchanged if the hash cannot be built, so a failure
- * degrades to the plain view URL rather than wiping the session's other state
- * off the address bar — callers that announce "carries your edits" must check
- * for the hash rather than assume it. */
+// Product sharing budget, including the query and percent-escaped payload.
+// Larger drafts can still be edited and exported as .milk files.
+export const MAX_REMIX_URL_LENGTH = 16_000;
+export const REMIX_URL_TOO_LONG =
+  'This remix link is too long to share reliably. Your edits are still in the editor. Export the .milk file to share them.';
+export const REMIX_URL_FAILED =
+  'Could not put your edits in a link. Your edits are still in the editor. Export the .milk file to share them.';
+
+/** Full session URL with the live draft, or no hash when source is null.
+ * Throws on failure so callers cannot mistake a stale URL for the draft. */
 export function buildRemixShareUrl(
   input: string | URL,
   source: string | null,
@@ -191,12 +193,16 @@ export function buildRemixShareUrl(
       : new URL(input.toString());
   if (source !== null) {
     const hash = buildPresetCodeHash(source);
-    if (!hash) return typeof input === 'string' ? input : input.toString();
+    if (!hash) throw new Error(REMIX_URL_FAILED);
     url.hash = hash;
   } else {
     url.hash = '';
   }
-  return url.toString();
+  const result = url.toString();
+  if (source !== null && result.length > MAX_REMIX_URL_LENGTH) {
+    throw new Error(REMIX_URL_TOO_LONG);
+  }
+  return result;
 }
 
 export function decodePresetCodeFromHash(
