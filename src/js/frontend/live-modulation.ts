@@ -154,7 +154,7 @@ function advance(modulator: Modulator, deltaMs: number): number {
   return shapeLfo(shape, phase);
 }
 
-function tick() {
+function tick(frameTimeMs: number) {
   frame = null;
   const active = deps;
   if (!active || modulators.size === 0) {
@@ -162,12 +162,21 @@ function tick() {
     return;
   }
 
-  const now = performance.now();
+  // The frame's own timestamp, not performance.now(): it is the instant the
+  // frame was scheduled for, so the delta carries none of the jitter between
+  // the callback firing and this line running. In a browser both sit on the
+  // same clock, so nothing about the motion changes -- but it also means a
+  // test can drive the loop from a virtual clock instead of sleeping on the
+  // real one and hoping the machine keeps up.
+  const now = Number.isFinite(frameTimeMs) ? frameTimeMs : performance.now();
   // Clamped so a backgrounded tab resuming does not jump every LFO forward by
   // however long it was away.
   const deltaMs = Math.min(100, now - (lastFrameAt ?? now - 16));
   lastFrameAt = now;
-  lastTickAt = now;
+  // Staleness stays on the wall clock. "Stalled" means no frame has arrived in
+  // real time -- the hidden-tab case -- which a frame timestamp cannot report,
+  // because when frames stop it stops being issued too.
+  lastTickAt = performance.now();
 
   const offsets = new Map<string, number>();
   for (const modulator of modulators.values()) {

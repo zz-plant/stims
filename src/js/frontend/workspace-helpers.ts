@@ -124,6 +124,7 @@ export function getToolDescription(tool: Exclude<PanelState, null>) {
 }
 
 const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
+  'collection:favorites': 'Saved Presets',
   'collection:hall-of-fame': 'Hall of Fame Masterpieces',
   'collection:webgpu-showcase': 'WebGPU Ultra Showcase',
   'collection:audio-reactive': 'Audio-Reactive Masterpieces',

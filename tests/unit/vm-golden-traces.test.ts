@@ -32,26 +32,47 @@ describe('VM golden traces', () => {
     name.endsWith('.json'),
   );
 
+  /**
+   * Replaying a witness is 120 frames of real VM execution, and the gate runs
+   * this file alongside every other suite. On a busy machine a single replay
+   * has been measured at 5.8-7.3s, which silently tripped Bun's 5s default and
+   * reported "timed out after 5000ms" -- a verdict about how loaded the host
+   * was, not about whether the VM still replays bit-for-bit.
+   *
+   * Room rather than fewer frames: a portability guard that only runs on idle
+   * hardware is the failure mode this whole file exists to prevent. Nothing
+   * here loops or waits, so a real hang still fails, just later.
+   */
+  const REPLAY_TIMEOUT_MS = 30_000;
+
   test('witness traces exist', () => {
     expect(traceFiles.length).toBeGreaterThanOrEqual(4);
   });
 
   for (const name of traceFiles) {
-    test(`replays ${name} bit-for-bit`, () => {
-      const trace = JSON.parse(
-        readFileSync(join(tracesDir, name), 'utf8'),
-      ) as TraceFile;
-      const source = loadPresetSource(repoRoot, { presetId: trace.presetId });
-      const replayed = runTrace(source.raw, trace.presetId, traceInputs(trace));
-      const divergence = compareReplay(trace, replayed);
-      expect(
-        divergence === null,
-        divergence
-          ? `diverged at frame ${divergence.frame}:\n${divergence.details.join('\n')}\n` +
-              'If this change is an intended platform-semantics decision, re-record the trace (see file header).'
-          : '',
-      ).toBe(true);
-    });
+    test(
+      `replays ${name} bit-for-bit`,
+      () => {
+        const trace = JSON.parse(
+          readFileSync(join(tracesDir, name), 'utf8'),
+        ) as TraceFile;
+        const source = loadPresetSource(repoRoot, { presetId: trace.presetId });
+        const replayed = runTrace(
+          source.raw,
+          trace.presetId,
+          traceInputs(trace),
+        );
+        const divergence = compareReplay(trace, replayed);
+        expect(
+          divergence === null,
+          divergence
+            ? `diverged at frame ${divergence.frame}:\n${divergence.details.join('\n')}\n` +
+                'If this change is an intended platform-semantics decision, re-record the trace (see file header).'
+            : '',
+        ).toBe(true);
+      },
+      REPLAY_TIMEOUT_MS,
+    );
   }
 
   /**
@@ -120,8 +141,11 @@ describe('VM golden traces', () => {
      * inherent to what these tests check, so they get room instead of being
      * thinned out — a portability guard that only runs on fast hardware is the
      * failure mode this whole describe block exists to prevent.
+     *
+     * Same budget as the plain replays above, from the same constant, so the
+     * two cannot drift apart.
      */
-    const SLOW_REPLAY_TIMEOUT_MS = 30_000;
+    const SLOW_REPLAY_TIMEOUT_MS = REPLAY_TIMEOUT_MS;
 
     const divergedUnder = (patch: (original: typeof originalMath) => void) => {
       try {

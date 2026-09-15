@@ -15,7 +15,6 @@ describe('optional API endpoint resolution', () => {
         trebleEnergy: 0.05,
         beatIntensity: 1,
         rms: 0.08,
-        centroid: 1200,
       });
 
       expect(results).toEqual([]);

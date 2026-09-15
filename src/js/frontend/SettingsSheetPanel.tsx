@@ -668,7 +668,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'playback' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('playback')}
         >
-          Playback
+          Playback & Audio
         </button>
         <button
           id="tab-hardware"
@@ -680,7 +680,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'hardware' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('hardware')}
         >
-          MIDI
+          Hardware & MIDI
         </button>
         <button
           id="tab-graphics"
@@ -692,7 +692,7 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'graphics' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('graphics')}
         >
-          Graphics
+          Visuals & Display
         </button>
         <button
           id="tab-accessibility"
@@ -704,14 +704,18 @@ export function SettingsSheetPanel({
           className={`ctl-tab ${activeTab === 'accessibility' ? 'ctl-tab--active' : ''}`}
           onClick={() => setActiveTab('accessibility')}
         >
-          Accessibility
+          Appearance & Device
         </button>
       </div>
       {activeTab === 'playback' ? (
         <div role="tabpanel" id="panel-playback" aria-labelledby="tab-playback">
           <section className="ctl-section">
+            <AudioSourcePanel />
+          </section>
+
+          <section className="ctl-section">
             <div className="ctl-section__head">
-              <h3 className="ctl-section__title">Playback</h3>
+              <h3 className="ctl-section__title">Playback & Transitions</h3>
             </div>
             <SwitchRow
               label="Autoplay"
@@ -769,10 +773,6 @@ export function SettingsSheetPanel({
                 </select>
               </div>
             ) : null}
-          </section>
-
-          <section className="ctl-section">
-            <AudioSourcePanel />
           </section>
 
           <SyncSessionSection />
@@ -909,10 +909,6 @@ export function SettingsSheetPanel({
           id="panel-accessibility"
           aria-labelledby="tab-accessibility"
         >
-          <AccessibilitySection
-            onOpenShortcuts={onOpenShortcuts}
-            onOpenCredits={onOpenCredits}
-          />
           <section className="ctl-section">
             <div className="ctl-section__head">
               <h3 className="ctl-section__title">Appearance</h3>
@@ -972,6 +968,10 @@ export function SettingsSheetPanel({
               </button>
             ) : null}
           </section>
+          <AccessibilitySection
+            onOpenShortcuts={onOpenShortcuts}
+            onOpenCredits={onOpenCredits}
+          />
         </div>
       ) : null}
     </div>

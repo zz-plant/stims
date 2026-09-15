@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  type AudioWindowSample,
   buildAudioProfile,
+  buildWindowAudioProfile,
   describeAudioProfile,
 } from '../../src/js/core/services/audio-matcher.ts';
 import {
@@ -225,6 +227,148 @@ describe('audio band plumbing', () => {
     expect(bassy).not.toBe(bright);
     expect(bassy).toContain('red');
     expect(bright).toContain('cyan');
+  });
+});
+
+describe('buildWindowAudioProfile', () => {
+  const FRAME_MS = 16;
+
+  /** A uniform window of `frames` frames, all carrying the same voice. */
+  function windowOf(
+    frames: number,
+    voice: { rms: number; bass: number; mid: number; treble: number },
+    overrides: Record<number, Partial<AudioWindowSample>> = {},
+  ): AudioWindowSample[] {
+    const samples: AudioWindowSample[] = [];
+    for (let i = 0; i < frames; i += 1) {
+      samples.push({
+        rms: voice.rms,
+        bass: voice.bass,
+        mid: voice.mid,
+        treble: voice.treble,
+        t: i * FRAME_MS,
+        ...overrides[i],
+      });
+    }
+    return samples;
+  }
+
+  it('rejects a silent or too-short window instead of fabricating a profile', () => {
+    expect(
+      buildWindowAudioProfile(
+        windowOf(150, { rms: 0.001, bass: 0, mid: 0, treble: 0 }),
+      ),
+    ).toBeNull();
+    expect(
+      buildWindowAudioProfile(
+        windowOf(3, { rms: 0.1, bass: 0.2, mid: 0.3, treble: 0.1 }),
+      ),
+    ).toBeNull();
+  });
+
+  it('does not let one transient define the whole query', () => {
+    // The regression: the old single-frame profile read whichever instant it
+    // sampled, so one kick-drum spike turned a calm track into a busy,
+    // high-motion query.
+    const calm = windowOf(150, {
+      rms: 0.04,
+      bass: 0.2,
+      mid: 0.3,
+      treble: 0.1,
+    });
+    const spiky = [...calm];
+    spiky[75] = {
+      rms: 0.3,
+      bass: 1.4,
+      mid: 0.3,
+      treble: 0.1,
+      t: 75 * FRAME_MS,
+    };
+
+    const windowed = describeAudioProfile(buildWindowAudioProfile(spiky)!);
+    const snapshot = describeAudioProfile(
+      buildAudioProfile({ audioEnergy: 0.3, fftBands: [1.4, 0.3, 0.1] }),
+    );
+    expect(windowed).not.toBe(snapshot);
+    expect(windowed).not.toContain('dense edges');
+    expect(windowed).not.toContain('high motion');
+  });
+
+  it('hears the difference between a steady pad and a pulsed bassline', () => {
+    // Equal loudness, equal spectral balance — only the beat differs, which
+    // is invisible to any single-frame profile.
+    const pad = buildWindowAudioProfile(
+      windowOf(150, { rms: 0.06, bass: 0.2, mid: 0.3, treble: 0.1 }),
+    )!;
+    const pulses = windowOf(150, {
+      rms: 0.06,
+      bass: 0.15,
+      mid: 0.3,
+      treble: 0.1,
+    });
+    for (let i = 6; i < 150; i += 12) {
+      pulses[i] = {
+        rms: 0.06,
+        bass: 0.55,
+        mid: 0.3,
+        treble: 0.1,
+        t: i * FRAME_MS,
+      };
+    }
+    const pulsed = buildWindowAudioProfile(pulses)!;
+
+    expect(pad.onsetRate).toBe(0);
+    expect(pulsed.onsetRate!).toBeGreaterThan(0);
+    expect(describeAudioProfile(pad)).toContain('smooth gradients');
+    expect(describeAudioProfile(pulsed)).not.toBe(describeAudioProfile(pad));
+  });
+
+  it('keeps the hue convention for windowed profiles', () => {
+    const bassy = describeAudioProfile(
+      buildWindowAudioProfile(
+        windowOf(150, { rms: 0.1, bass: 0.9, mid: 0.05, treble: 0.05 }),
+      )!,
+    );
+    const bright = describeAudioProfile(
+      buildWindowAudioProfile(
+        windowOf(150, { rms: 0.1, bass: 0.05, mid: 0.05, treble: 0.9 }),
+      )!,
+    );
+    expect(bassy).toContain('red');
+    expect(bright).toContain('cyan');
+  });
+
+  it('stays inside the catalog vocabulary for every window it profiles', () => {
+    // Both sides of the index speak `dominant {palette}, {edges}, {motion}`;
+    // the audio query is only comparable while it borrows the same words.
+    const palettes =
+      /^(monochrome \w+|\w+-dominant palette|vibrant \w+-centered palette)$/;
+    const edges = /^(smooth gradients|moderate edges|dense edges)$/;
+    const motion = /^(static|subtle motion|moderate motion|high motion)$/;
+
+    for (const rms of [0.01, 0.04, 0.1, 0.3]) {
+      for (const bands of [
+        [0.9, 0.05, 0.05],
+        [0.2, 0.5, 0.3],
+        [0.05, 0.05, 0.9],
+      ]) {
+        const text = describeAudioProfile(
+          buildWindowAudioProfile(
+            windowOf(150, {
+              rms,
+              bass: bands[0]!,
+              mid: bands[1]!,
+              treble: bands[2]!,
+            }),
+          )!,
+        );
+        const parts = text.match(/^dominant (.*), (.*), (.*)$/);
+        expect(parts).not.toBeNull();
+        expect(palettes.test(parts![1]!)).toBe(true);
+        expect(edges.test(parts![2]!)).toBe(true);
+        expect(motion.test(parts?.[3] ?? '')).toBe(true);
+      }
+    }
   });
 });
 

@@ -72,6 +72,7 @@ import { CreditsDialog } from './CreditsDialog.tsx';
 import type { CommandAction } from './command-palette-registry.ts';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
+  getAudioBands,
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
@@ -839,6 +840,38 @@ function StimsWorkspaceAppShell() {
         run: () => setTransition(engine, ui.setStatusMessage, 'blend', 5),
       },
       {
+        id: 'cycle-transition',
+        group: 'Playback',
+        label: 'Cycle transition duration',
+        keywords: ['transition', 'blend', 'cut', 'duration'],
+        run: () => {
+          const currentMode =
+            engineSnapshotRef.current?.transitionMode ?? 'blend';
+          const currentDuration = engineSnapshotRef.current?.blendDuration ?? 2;
+          const steps = [
+            { mode: 'cut' as const, seconds: 0 },
+            { mode: 'blend' as const, seconds: 1 },
+            { mode: 'blend' as const, seconds: 2 },
+            { mode: 'blend' as const, seconds: 5 },
+          ];
+          let best = 1;
+          if (currentMode === 'cut') {
+            best = 0;
+          } else {
+            for (let i = 1; i < steps.length; i += 1) {
+              if (
+                Math.abs(steps[i].seconds - currentDuration) <
+                Math.abs(steps[best].seconds - currentDuration)
+              ) {
+                best = i;
+              }
+            }
+          }
+          const next = steps[(best + 1) % steps.length];
+          setTransition(engine, ui.setStatusMessage, next.mode, next.seconds);
+        },
+      },
+      {
         id: 'audio-demo',
         group: 'Audio',
         label: 'Play demo audio',
@@ -1557,7 +1590,14 @@ function StimsWorkspaceAppShell() {
     const tryMatch = () => {
       if (controller.signal.aborted) return;
       const audioEnergy = engineSnapshotRef.current?.audioEnergy;
-      const profile = buildAudioProfile({ audioEnergy });
+      // Real bands, not the fabricated 0.6/0.3/0.1 split of a lone scalar:
+      // the store carries the engine's per-frame balance, and without it a
+      // bassy track and a bright one at equal loudness matched identically.
+      const bands = getAudioBands();
+      const profile = buildAudioProfile({
+        audioEnergy,
+        fftBands: [bands.bass, bands.mid, bands.treble],
+      });
       if (profile.rms < QUIET_AUDIO_RMS_THRESHOLD) {
         if (attempts < AUDIO_MATCH_RETRY_SCHEDULE_MS.length) {
           retryTimer = window.setTimeout(
